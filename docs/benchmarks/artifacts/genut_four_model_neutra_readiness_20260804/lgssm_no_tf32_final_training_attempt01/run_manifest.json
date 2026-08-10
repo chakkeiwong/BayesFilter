@@ -1,0 +1,64 @@
+{
+  "batch_size": 2,
+  "command": [
+    "docs/benchmarks/run_genut_neutra_one_step.py",
+    "--model",
+    "lgssm",
+    "--output-root",
+    "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_training_attempt01",
+    "--tuning-artifact",
+    "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_tuning_attempt01/result.json",
+    "--disable-tf32"
+  ],
+  "controls": {
+    "balance_steps": 8,
+    "epsilon": 2.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_strength": 0.2,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8,
+    "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_tuning_attempt01/result.json",
+    "tuning_scope": "lgssm_T50_N1008_initial_observation_first_fp32_no_tf32_deterministic_v2"
+  },
+  "deterministic_ops_enabled": true,
+  "device": "/GPU:0",
+  "environment": "tf-gpu",
+  "git_commit": "6a11b689295bfb0e58de6e6d2f84918671b5a685",
+  "gpu_allocator": {
+    "current_bytes": 882176,
+    "peak_bytes": 135105280
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "output_root": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_training_attempt01",
+  "particle_count": 1008,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.14",
+  "result": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_training_attempt01/result.json",
+  "schema": "bayesfilter.genut_neutra_one_step_manifest.v1",
+  "seed": [
+    20260804,
+    701
+  ],
+  "target_signature": "f33c1f18fe35871d26d5143e8063fb92a88044431e17ff453da93f3f9628aeaa",
+  "tensorflow_version": "2.19.1",
+  "tf32_enabled": false,
+  "wall_time_seconds": 12.204719121044036
+}

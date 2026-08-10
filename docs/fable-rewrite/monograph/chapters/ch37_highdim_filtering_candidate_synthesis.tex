@@ -1,0 +1,749 @@
+\chapter[Industrial Defect Calculus]{Industrial Defect Calculus for High-Dimensional Nonlinear Filtering}
+\label{ch:bf-highdim-candidate-synthesis}
+
+\section{Why The Synthesis Must Start With Defects}
+\label{sec:bf-hd-synthesis-purpose}
+
+The preceding chapters explain high-dimensional nonlinear filtering methods.
+An industrial macro-finance program needs a harsher object: a calculus of
+failure.  A method is useful for a global-bank or central-bank model only when
+the failure mode is explicit, the mitigation has a mathematical contract, and
+the cost variable that can kill the method is visible before implementation.
+Academic novelty is not the target here.  The target is a defensible
+composition of known methods under stated assumptions.
+
+This chapter therefore treats every candidate as a conditional component.  A
+Gaussian scaffold is useful if it exposes local curvature and covariance
+failure.  Sparse-grid or high-degree cubature is useful if it diagnoses local
+nonlinearity without pretending to be a global filter.  Tensor methods are
+useful if economic structure keeps ranks stable and preserves probability or
+covariance semantics.  Transport maps are useful if they reduce geometry while
+leaving a checkable target.  HMC is useful only downstream of a same-scalar
+likelihood contract.
+
+The reader-facing synthesis map is this: start with the exact conditional law
+and likelihood normalizers from Chapter~\ref{ch:bf-highdim-nonlinear-foundations};
+replace them only by named approximations; attach one diagnostic to each
+object being approximated; and promote a method only after the previous object
+exports the input required by the next.  The chapter's exact target is not a
+new algorithm.  It is an auditable decision procedure for composing existing
+methods without losing the scalar likelihood, probability-law, support,
+Jacobian, rank, or covariance semantics needed by industrial inference.
+
+\paragraph{Running quadratic-observation cell.}
+The scalar cell
+\[
+  x_t=\rho x_{t-1}+\eta_t,\qquad y_t=x_t^2+\epsilon_t
+\]
+has now served four roles.  Chapter~\ref{ch:bf-highdim-nonlinear-foundations}
+used it to show that the exact filtering law can have two lobes.
+Chapter~\ref{ch:bf-highdim-gaussian-quadrature} used it to show why Gaussian
+projection can preserve moments while losing shape.
+Chapter~\ref{ch:bf-highdim-particle-transport-tensor} used it to separate
+particles, transports, and tensor representations.
+Chapter~\ref{ch:bf-highdim-hmc-research} used it to insist that HMC needs a
+scalar likelihood and a same-scalar gradient.  Here the same cell is not
+evidence for a macro-finance model.  It is the small mechanism that tells a
+mixed numerical reader what the architecture is trying not to lose.
+
+\paragraph{Imports from the preceding chapters.}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{longtable}{@{}p{0.16\linewidth}p{0.20\linewidth}p{0.21\linewidth}p{0.18\linewidth}p{0.16\linewidth}@{}}
+\toprule
+Source chapter & Exported object & Exported defect & Exported diagnostic/veto
+& Consumed here as \\
+\midrule
+\endhead
+Ch.~\ref{ch:bf-highdim-nonlinear-foundations} & conditional law, normalizer,
+likelihood gradient & wrong target, missing normalizer, value-gradient
+mismatch & finite \(Z_t\), mass, positivity, same-scalar check & target and
+likelihood gates \\
+Ch.~\ref{ch:bf-highdim-gaussian-quadrature} & Gaussian moment pair and
+quadrature rule & projection bias, exactness without accuracy, point explosion
+& innovation, PSD, active dimension, comparator residual, approximate-score
+parity & scaffold, local curvature diagnostic, and approximate HMC target gate \\
+Ch.~\ref{ch:bf-highdim-particle-transport-tensor} & empirical measure,
+transport map, TT/TN representation & collapse, support failure, rank/semantic
+failure, PSD loss, nonsmooth adaptive branches & ESS, support/logdet, rank,
+mass, positivity, factor gate, HMC admissibility label & conditional
+non-Gaussian tools \\
+Ch.~\ref{ch:bf-highdim-hmc-research} & scalar potential, gradient, transformed
+target & same-scalar mismatch, divergences, invalid transform & scalar parity,
+finite support/Jacobian, energy diagnostics & downstream sampler gate \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\section[Particle Collapse]{Defect 1: Particle Collapse Is Exponential Without Structure}
+\label{sec:bf-hd-defect-particles}
+
+The bootstrap and SIR filters in Chapter~\ref{ch:bf-highdim-particle-transport-tensor}
+are honest baselines because their collapse mechanism is visible.  Let
+$W_i=\exp(L_i)$ be unnormalized weights and
+$\bar W_i=W_i/\sum_{j=1}^N W_j$.  The effective sample size is
+\begin{equation}
+  \operatorname{ESS}=\frac{1}{\sum_{i=1}^N \bar W_i^2}.
+  \label{eq:bf-hd-synth-ess}
+\end{equation}
+Suppose the log-weight decomposes across conditionally independent observation
+blocks,
+\begin{equation}
+  L_i=\sum_{k=1}^{d_{\mathrm{eff}}} \ell_{ik},\qquad
+  \E[\ell_{ik}]=\mu,\qquad \Var(\ell_{ik})=\sigma_\ell^2,
+  \label{eq:bf-hd-synth-logweight}
+\end{equation}
+with weak dependence sufficient for
+\(\Var(L_i)\asymp d_{\mathrm{eff}}\sigma_\ell^2\).  This is the informal
+calculus behind the high-dimensional particle-filter warnings of
+\citet{bengtsson2008curse} and \citet{snyder2008obstacles}.
+
+\begin{proposition}[Log-weight variance warning]
+\label{prop:bf-hd-particle-collapse-calculus}
+If the log-weight variance grows like
+\(\Var(L_i)=v_d\asymp d_{\mathrm{eff}}\sigma_\ell^2\), then a particle filter
+with proposal independent of the current observation can enter a regime where
+normalized weights are dominated by a small number of particles unless ensemble
+size grows very aggressively with that dispersion scale.
+\end{proposition}
+
+\begin{proof}[Derivation]
+For a lognormal heuristic, \(\E[W]=\exp(\mu_d+v_d/2)\) and
+\(\E[W^2]=\exp(2\mu_d+2v_d)\), so
+\[
+  \frac{\E[W^2]}{\E[W]^2}=\exp(v_d).
+\]
+The usual importance-sampling variance factor is therefore exponential in
+\(v_d\).  Since the denominator of \eqref{eq:bf-hd-synth-ess} is driven by the
+largest normalized weights, stable ESS typically requires sample growth that
+offsets this exponential dispersion.  The cited papers give sharper asymptotic
+statements under stronger assumptions; the monograph uses this calculation to
+expose the industrial defect: without locality, guided proposals, or likelihood
+tempering, dimension enters through log-likelihood variance, not through a
+benign constant.
+\end{proof}
+
+The mitigation is not "use more particles" unless the cost model permits
+exponential growth.  The viable mitigations are structural:
+\begin{enumerate}[label=(\arabic*)]
+  \item reduce \(d_{\mathrm{eff}}\) by block-local assimilation;
+  \item reduce \(\sigma_\ell^2\) by guided or transport proposals;
+  \item use pseudo-marginal or particle-MCMC logic only when the likelihood
+    estimator and variance contract are explicit
+    \citep{andrieu2009pseudo,andrieu2010particle};
+  \item veto by ESS, maximum weight, unique ancestors, and likelihood-variance
+    diagnostics before comparing runtime.
+\end{enumerate}
+
+A concrete Gaussian observation cell makes the exponential defect visible.  If
+\(Y=0\), \(X\sim\calN(0,I_d)\), and the likelihood is
+\(g(y\mid x)\propto \exp\{-\|x\|^2/(2R)\}\), then
+\[
+  L=\log g(0\mid X)=C-\frac{1}{2R}\sum_{k=1}^d X_k^2,\qquad
+  \Var(L)=\frac{d}{2R^2}.
+\]
+The heuristic variance factor above is therefore of exponential order in
+\(d/R^2\).  This example is deliberately simple; its role is to show why a
+large macro-finance observation panel cannot be rescued by a particle count
+that scales only linearly with \(d\).
+
+\section{Defect 2: Gaussian And Cubature Exactness Is Not Posterior Accuracy}
+\label{sec:bf-hd-defect-gaussian}
+
+Gaussian filters fail by projection.  If \(X\sim\calN(m,P)\) and a quadrature
+rule is exact for a polynomial class \(\mathcal P_p\), then
+\begin{equation}
+  \E[\varphi(X)]-\sum_j w_j\varphi(m+L\xi_j)
+  =
+  \E[r_p(X)]-\sum_j w_j r_p(m+L\xi_j),
+  \qquad
+  \varphi=\Pi_p\varphi+r_p .
+  \label{eq:bf-hd-synth-quadrature-remainder}
+\end{equation}
+This identity is harmless only when the non-polynomial remainder \(r_p\) is
+small on the predictive support.  In macro-finance likelihoods, kinks from
+occasionally binding constraints, effective lower bounds, regime switches, or
+measurement transformations can make \(r_p\) the main object.
+
+\begin{proposition}[Local diagnostic role of high-order rules]
+\label{prop:bf-hd-local-cubature-diagnostic}
+Sparse-grid and high-degree cubature rules are industrially defensible first as
+local curvature diagnostics.  They become global filter components only when a
+block decomposition bounds the active dimension and when the higher-order
+moment change alters a decision-relevant likelihood, score, or innovation
+diagnostic.
+\end{proposition}
+
+\begin{proof}[Derivation]
+The CKF, UKF, high-degree CKF, and SGQF sources
+\citep{julier1997new,arasaratnam2009cubature,jia2012sparsegrid,jia2013highdegree}
+construct deterministic rules for Gaussian-weighted moment integrals.  The
+filter still projects the updated law back to a Gaussian moment pair.  Thus a
+high-order rule reduces the quadrature part of
+\eqref{eq:bf-hd-synth-quadrature-remainder}; it does not remove Gaussian
+projection error.  If a block has dimension \(b\), the point count and dense
+linear algebra are controlled by \(b\), not by the full state dimension \(n\).
+Without such a block, improved polynomial exactness can simply buy an
+unaffordable global rule.
+\end{proof}
+
+The mitigation is a two-level test: use the Gaussian scaffold as the default
+stabilizer, then run high-order or sparse-grid diagnostics only on blocks whose
+innovation residuals, score sensitivity, or Hessian contractions indicate
+nonlinear curvature.  \citet{singh2018adaptive} is useful here as an adaptive
+sparse-grid competitor, but its empirical/adaptive construction is not a
+general guarantee for nonsmooth industrial likelihoods.
+
+Projection error is not a subtle tail event.  The symmetric mixture
+\[
+  p_a(x)=\frac12\phi(x;-a,s^2)+\frac12\phi(x;a,s^2)
+\]
+has mean \(0\) and variance \(a^2+s^2\), so a Gaussian projection records only
+\(\calN(0,a^2+s^2)\).  As \(a/s\) grows, the posterior becomes visibly
+bimodal while the projected law remains unimodal.  No polynomial cubature rule
+around the projected Gaussian changes that semantic loss; it can only improve
+the moment integrals used before the projection.
+
+In the running quadratic-observation cell, this is exactly what the observation
+\(y_t=x_t^2+\epsilon_t\) does when \(y_t>0\) and \(R\) is small: it makes the
+state sign hard to identify while making \(|x_t|\) informative.  A cubature
+rule can compute Gaussian-weighted moments of \(x^2\) accurately and still
+passes a single Gaussian lobe to the next method.  The synthesis therefore
+uses Chapter~\ref{ch:bf-highdim-gaussian-quadrature} in a precise way: it
+computes Gaussian projection residuals, innovation covariances, and
+same-scalar likelihood gradients on selected blocks, then refuses to interpret
+those quantities as a global posterior representation when the block posterior
+is visibly multimodal.
+
+\section[Tensor Compression Defects]{Defect 3: Tensor Compression Can Destroy The Object Being Compressed}
+\label{sec:bf-hd-defect-tensor}
+
+Tensor trains replace \(M^d\) grid storage by \(O(dMr^2)\) storage when the
+TT rank is at most \(r\) \citep{oseledets2011tt}.  The condition "when \(r\)
+is small" is not decoration; it is the entire theorem-to-implementation bridge.
+For a filtering density \(p(x)\), tensor compression can fail in four distinct
+ways:
+\begin{equation}
+  \text{rank growth},\qquad
+  \int \widehat p(x)\,dx \ne 1,\qquad
+  \widehat p(x)<0,\qquad
+  \widehat\ell_T(\theta)\not\approx \ell_T(\theta).
+  \label{eq:bf-hd-synth-tt-defects}
+\end{equation}
+For covariance compression, the analogous defect is indefiniteness:
+\begin{equation}
+  \widehat P=\operatorname{round}_{\mathrm{TN}}(P),\qquad
+  \lambda_{\min}(\widehat P)<0.
+  \label{eq:bf-hd-synth-tn-indefinite}
+\end{equation}
+Even an entrywise small covariance perturbation can leave the PSD cone.  For
+\[
+  P=\begin{pmatrix}1&1\\1&1\end{pmatrix},\qquad
+  \widehat P_\epsilon=\begin{pmatrix}1&1+\epsilon\\1+\epsilon&1\end{pmatrix},
+\]
+the eigenvalues of \(\widehat P_\epsilon\) are \(2+\epsilon\) and
+\(-\epsilon\).  Thus a tiny unconstrained rounding error can make a covariance
+unusable as a Gaussian filter object.
+
+\begin{proposition}[Tensor viability requires stable structure]
+\label{prop:bf-hd-tensor-viability}
+A tensor method is a viable industrial filtering component only when the
+economic model induces a stable low-rank structure for the represented object
+and when the compressed object passes the semantic checks appropriate to that
+object: mass and positivity for densities, square-root or PSD checks for
+covariances, and likelihood/score agreement for posterior targets.
+\end{proposition}
+
+\begin{proof}[Derivation]
+The TT storage count \(O(dMr^2)\) follows from storing \(d\) cores of mode size
+\(M\) and adjacent rank bounded by \(r\).  If \(r\) grows exponentially with
+coupling or likelihood interaction, the apparent dimensional saving disappears.
+For a density, rounding error is not only an approximation norm: it may change
+sign or mass and hence leave the probability simplex.  For a covariance,
+rounding entries or tensor cores does not preserve the cone
+\(\{P:P\succeq0\}\).  A factor representation \(P=SS^\top\) preserves PSD
+algebraically, which is the lesson behind square-root Kalman filtering and the
+tensor-network square-root warning of \citet{menzen2024tnsrkf}.  Finally, HMC
+and parameter inference use a scalar target; a small tensor residual is not
+sufficient unless the induced likelihood and score errors are controlled.
+\end{proof}
+
+This proposition explains the synthesis.  The Li--Wang--Yau--Zhang and
+Fox--Dolgov--Morrison--Molteno routes are density/PDE pilots
+\citep{li2019ttfiltering,fox2021grid}; Zhao--Cui is the discrete-time
+TT/KR state-parameter learning route \citep{zhao2024ttsequential}; Meng
+preprints mark provisional PR-DMZ and correlated-noise routes
+\citep{meng2025regularity,meng2026correlated}; Batselier--Chen--Wong and
+Menzen--Kok--Batselier support lifted-linear and square-root covariance
+cautions \citep{batselier2016tnkf,menzen2024tnsrkf}.  None of these sources
+alone validates a general nonlinear tensor filter for BayesFilter.
+
+\section{Defect 4: Transports Can Improve Geometry While Breaking Auditability}
+\label{sec:bf-hd-defect-transport}
+
+Let \(x=T(z)\) be a differentiable bijection.  The transformed density is
+\begin{equation}
+  \pi_Z(z)=\pi_X(T(z))|\det DT(z)|.
+  \label{eq:bf-hd-synth-transport-density}
+\end{equation}
+This identity is the mathematical boundary between a useful transport and a
+dangerous one.  A learned or fitted map can reduce dependence and curvature,
+but if its support, monotonicity, Jacobian, or target correction is wrong, it
+changes the inference problem.
+
+\begin{proposition}[Transport usefulness requires target auditability]
+\label{prop:bf-hd-transport-auditability}
+A transport map is industrially useful only if it reduces a measured geometric
+defect while preserving a checkable target identity: either an explicit
+importance/proposal correction, a deterministic analysis-map contract, or a
+Jacobian-corrected transformed posterior.
+\end{proposition}
+
+\begin{proof}[Derivation]
+Equation~\eqref{eq:bf-hd-synth-transport-density} follows by change of
+variables.  For proposal filtering, the same calculation gives the proposal
+density and the density-ratio correction.  For MCMC, it gives the transformed
+potential used by transport-map MCMC and NeuTra-style HMC
+\citep{parno2018transport,hoffman2019neutra}.  For ensemble filtering,
+\citet{reich2013nonparametric} supports the narrower deterministic transform
+from forecast to equally weighted analysis particles, while
+\citet{spantini2022coupling} supports stochastic and deterministic map filters
+with localization.  In all cases, the map is a computational object, not a
+certificate.  The certificate is the target identity plus residual diagnostics.
+\end{proof}
+
+The mitigation is to report map residuals, finite inverse/Jacobian checks,
+localization sensitivity, ESS or analysis-spread diagnostics, and reference
+moments on controlled cells.  A lower transport loss or smoother geometry is
+not enough if the corrected target cannot be reconstructed.
+
+The support condition is equally concrete.  If the target density
+\(\gamma(x)\) is positive on both half-lines but a proposal or transported
+reference density \(q(x)\) is zero for \(x<0\), then the correction
+\(\gamma(x)/q(x)\) is infinite on a set of positive target mass.  No downstream
+HMC, ESS, or map residual can repair a proposal whose support excludes part of
+the target.
+
+For the running quadratic-observation cell, a proposal or map that covers only
+the positive lobe near \(+\sqrt y\) may look locally excellent.  It is still
+invalid for the two-lobed target unless the excluded negative lobe has zero
+target mass or an explicit approximation decision has been made.  This is why
+transport auditability is a support and correction question before it is an
+efficiency question.
+
+\section{Defect 5: HMC Is Downstream Of The Filter Target}
+\label{sec:bf-hd-defect-hmc}
+
+For parameters \(\theta=\tau(q)\), HMC uses a scalar potential
+\begin{equation}
+  U(q)=-\ell_T(\tau(q))-\log\pi(\tau(q))
+       -\log|\det D\tau(q)|.
+  \label{eq:bf-hd-synth-hmc-target}
+\end{equation}
+If the filter supplies \(\widehat\ell_T\), the sampler targets the declared
+approximate posterior \(\widehat\pi(\theta\mid y_{1:T})\), not the exact
+posterior.  Pseudo-marginal or particle-MCMC citations are relevant only when a
+separately defined extended-state correction scheme is part of the algorithm;
+they do not by themselves convert an approximate-filter HMC trajectory into an
+ordinary exact-target HMC method.  The analytical exact-gradient contract is
+developed in Chapter~\ref{ch:bf-highdim-hmc-research}; an approximate-filter
+gradient supports only the declared approximate scalar.  It is not an exact
+posterior gradient or exact state-space likelihood gradient unless such an
+exact-target correction scheme has been defined and justified.
+
+\begin{proposition}[HMC is downstream of a same-scalar likelihood contract]
+\label{prop:bf-hd-hmc-downstream}
+HMC, RMHMC, NUTS, NeuTra, and transport-preconditioned HMC should be compared
+only after the filter defines the same finite scalar value used for gradients,
+accept/reject decisions, diagnostics, and posterior interpretation.
+\end{proposition}
+
+\begin{proof}[Derivation]
+The detailed-balance argument for HMC in \citet{neal2011mcmc} uses a
+Hamiltonian whose gradient generates the numerical proposal and whose value
+appears in the Metropolis correction.  If the gradient is not the derivative of
+the reported scalar, the proposal is no longer a discretization of the accepted
+Hamiltonian.  If the scalar is approximate, the chain may still be valid for
+the approximate target, but the posterior claim has changed.  RMHMC
+\citep{girolami2011riemann}, NUTS \citep{hoffman2014nuts}, and NeuTra
+\citep{hoffman2019neutra} add geometry or adaptation; they do not remove this
+same-scalar requirement.
+\end{proof}
+
+The mitigation ladder is therefore: finite value and gradient checks, scalar
+parity, fixed-HMC baseline, divergence and energy diagnostics
+\citep{betancourt2017conceptual}, posterior/reference checks on controlled
+models, then transport or metric acceleration.  Speed enters after validity.
+A minimal scalar-parity diagnostic is
+\[
+  \Delta_j(q;h)=
+  \frac{U_{\mathrm{reported}}(q+h e_j)-U_{\mathrm{reported}}(q-h e_j)}{2h}
+  -[\nabla U_{\mathrm{used}}(q)]_j .
+\]
+If \(\max_j|\Delta_j(q;h)|\) is not small on typical parameter states, the
+sampler is not using the gradient of the scalar it reports.
+
+\section{Numerical Defects And Mitigation Equations}
+\label{sec:bf-hd-numerical-defects}
+
+\small
+\begin{longtable}{@{}p{0.16\linewidth}p{0.30\linewidth}p{0.30\linewidth}p{0.15\linewidth}@{}}
+\toprule
+Defect & Mathematical symptom & Mitigation contract & Veto diagnostic \\
+\midrule
+\endhead
+Log-weight underflow &
+\(\log\sum_i e^{L_i}=m+\log\sum_i e^{L_i-m}\), \(m=\max_iL_i\) &
+Use log-sum-exp for arithmetic stability; still reject if
+\(\operatorname{ESS}/N\) collapses &
+ESS, max weight, unique ancestors \\
+Ill-conditioned innovation &
+\(S=HPH^\top+R\), \(\kappa(S)\gg1\) &
+Solve by factorization; regularize only with declared likelihood change &
+failed Cholesky, large residual \( \|SK-C\| \) \\
+PSD loss &
+\(\lambda_{\min}(\widehat P)<0\) &
+Use Joseph/square-root/factor updates; check reconstructed PSD &
+negative eigenvalue, failed factor solve \\
+TT density drift &
+\(\int\widehat p\ne1\) or \(\min_x\widehat p(x)<0\) &
+Track mass, positivity, truncation error; use squared/nonnegative
+representations where source-supported &
+mass error, negative cells, rank spike \\
+Support mismatch &
+\(q(x)=0\) where \(\gamma(x)>0\) &
+Require support coverage and finite density ratio &
+infinite log weight, failed inverse or Jacobian \\
+Scalar mismatch &
+\(\nabla U_{\mathrm{used}}\ne\nabla U_{\mathrm{reported}}\) &
+Differentiate the same scalar used for accept/reject &
+finite-difference mismatch, divergences \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+These mitigations are not evidence of posterior accuracy.  They are necessary
+conditions for an industrial method to remain mathematically auditable.
+
+\section{Performance Models And Killing Variables}
+\label{sec:bf-hd-performance-models}
+
+\small
+\begin{longtable}{@{}p{0.15\linewidth}p{0.30\linewidth}p{0.27\linewidth}p{0.18\linewidth}@{}}
+\toprule
+Component & Nominal cost model & Killing variable & Mitigation \\
+\midrule
+\endhead
+Dense Gaussian filter &
+\(O(n^3)\) factorization, \(O(n^2)\) memory &
+full state dimension \(n\) &
+block, factor, or sparse solves \\
+Sigma point or CKF &
+\(O(N_q C_h)+O(n^3)\), CKF \(N_q=2n\) &
+state dimension and observation cost \(C_h\) &
+block diagnostics, square-root factors \\
+Sparse grid or high degree &
+\(O(N_{\mathrm{sg}}(b,\ell)C_h)\) for block dimension \(b\), level \(\ell\) &
+effective block dimension and smoothness &
+adaptive/local blocks only \\
+Particle methods &
+\(O(NTC_f)\) model calls; stable \(N\) may scale like \(\exp(c d_{\mathrm{eff}})\) &
+effective observation dimension &
+guided, localized, or transport proposals \\
+TT density or PDE &
+\(O(dMr^2)\) storage plus rank-dependent operator cost &
+rank \(r\), grid mode \(M\), boundary error &
+rank diagnostics, local subproblems \\
+Transport maps &
+ensemble/map-fit cost plus logdet/Jacobian cost &
+map dimension, polynomial/order, ensemble size &
+triangular/local maps and residual checks \\
+HMC through the filter &
+\(O(N_{\mathrm{grad}}\, C_{\ell,\nabla\ell})\) &
+gradient-through-filter cost and invalid regions &
+same-scalar checks, fixed baseline, then acceleration \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+The performance rule is simple: compare enhanced methods only after the defect
+vetoes pass.  A fast invalid target or an inexpensive collapsed particle cloud
+is not an industrial solution.
+
+For sparse grids the symbol \(N_{\mathrm{sg}}(b,\ell)\) hides the practical
+danger.  In the source-local SGQF formulation of \citet{jia2012sparsegrid},
+the point count is controlled relative to a tensor product only for a declared
+level and active dimension; it is not a dimension-free filter.  Because the
+original Smolyak, Stroud, and Genz foundations remain scoped as source risks in
+this lane, the industrial mitigation is stated narrowly: spend sparse-grid
+evaluations only where a block diagnostic has made \(b\), level, smoothness,
+and omitted-interaction risk visible.
+
+\section{Synthesis Contract Architecture}
+\label{sec:bf-hd-synthesis-architecture}
+
+The preceding chapters pass explicit defects into the architecture:
+Chapter~\ref{ch:bf-highdim-nonlinear-foundations} passes the exact-target and
+normalizer contract; Chapter~\ref{ch:bf-highdim-gaussian-quadrature} passes
+projection and quadrature defects;
+Chapter~\ref{ch:bf-highdim-particle-transport-tensor} passes collapse,
+correction, rank, positivity, and PSD defects; and
+Chapter~\ref{ch:bf-highdim-hmc-research} passes the same-scalar and
+Jacobian-corrected target defects.  The architecture is therefore not a ranked
+list of fashionable methods.  It is a sequence of vetoes.  This chapter consumes
+those exported defects and gates; it does not reopen the construction of the
+upstream approximation families or strengthen their source support by synthesis
+alone.
+
+Let \(D_j\) denote a method-specific defect diagnostic and let
+\(\tau_j\) denote the threshold or qualitative gate declared before a run.  A
+component \(M_{j+1}\) is admissible only if the preceding component exports
+enough information to check the assumptions of \(M_{j+1}\):
+\[
+  D_j\le \tau_j
+  \quad\Longrightarrow\quad
+  \text{the input object required by }M_{j+1}\text{ is well defined.}
+  \label{eq:bf-hd-contract-handoff}
+\]
+This implication is an engineering contract, not a new convergence theorem.
+It says exactly what must be audited before a method handoff can be defended.
+
+\begin{proposition}[Sparse-grid promotion requires bounded active dimension]
+\label{prop:bf-hd-sparse-grid-promotion}
+A sparse-grid or high-degree cubature rule should remain a local diagnostic
+unless the active block dimension, smoothness class, point budget, and
+omitted-interaction residual are all declared and checked.
+\end{proposition}
+
+\begin{proof}[Derivation]
+The checked sparse-grid and high-degree cubature filtering papers construct
+Gaussian-weighted deterministic integration rules for stated levels, degrees,
+and assumptions.  Their cost is controlled by the active dimension entering the
+rule, not by a slogan that sparse grids beat dimension.  If a nonlinear
+observation block depends effectively on \(b\) variables, the relevant cost is
+\(N_{\rm sg}(b,\ell)C_h\) or the corresponding high-degree point count.  If
+the same map couples all \(n\) variables, \(b=n\) and the local diagnostic
+becomes a global expensive filter.  The promotion gate is therefore a bound on
+\(b\), a smoothness check, and a residual showing that omitted interactions do
+not drive a decision-relevant scalar.
+\end{proof}
+
+\begin{proposition}[Performance claims require validity gates first]
+\label{prop:bf-hd-performance-after-veto}
+Runtime, memory, ESS per gradient, rank, and point count can compare methods
+only after the target, semantic, and numerical veto diagnostics have passed.
+\end{proposition}
+
+\begin{proof}[Derivation]
+Let \(V\) be a validity event: finite scalar likelihood, value-gradient parity,
+noncollapsed weights, support coverage, PSD covariance, or density mass and
+positivity, depending on the component.  A performance statistic \(C\) is
+interpretable for the intended inference problem only on \(V\).  On \(V^c\),
+the computation may be fast because it solves the wrong problem, collapses to a
+single particle, rounds a covariance outside the PSD cone, or samples an
+approximate target that is not being reported.  Thus the admissible comparison
+is conditional: compare \(C\mid V\), and treat \(V^c\) as a veto rather than a
+slow datapoint.
+\end{proof}
+
+\section{Controlled Industrial-Style Worked Example}
+\label{sec:bf-hd-industrial-worked-example}
+
+The scalar running cell now scales into a controlled macro-finance stress cell
+by replacing one latent scalar with a block state and replacing \(x^2\) by a
+block nonlinear observation.  The analogy is useful but limited: the scalar
+cell teaches the defects; it does not validate their severity in a real central
+bank or global-bank model.
+
+Consider a stylized macro-finance state
+\[
+  x_t=(m_t,f_t,v_t,u_t),\qquad
+  m_t\in\R^{b_m},\quad f_t\in\R^{b_f},\quad
+  v_t\in\R,\quad u_t\in\R^{b_u},
+\]
+where \(m_t\) are macro factors, \(f_t\) are financial-stress factors,
+\(v_t\) is a latent volatility state, and \(u_t\) are measurement disturbances
+or survey wedges.  Suppose a Gaussian scaffold supplies a forecast
+\(\calN(a_t,P_t^-)\) with block factors, and a stress observation has nonlinear
+mean
+\[
+  h(x_t)=\beta^\top m_t + f_t^\top A f_t + \exp(v_t/2)u_{t,1},
+  \qquad
+  y_t=h(x_t)+\varepsilon_t,\quad
+  \varepsilon_t\sim\calN(0,R).
+  \label{eq:bf-hd-worked-stress-cell}
+\]
+This is not a NAWM validation, a client model, or production evidence.  It is a
+controlled cell for deciding which defects are active.
+
+The Gaussian scaffold first computes \(\bar y\), \(S\), and \(C\) as in
+Chapter~\ref{ch:bf-highdim-gaussian-quadrature}.  If the block factorization
+fails, \(S\) is ill conditioned, or the posterior covariance loses PSD, the
+cell has already failed the cheapest audit.  If it passes, the pass only says
+that the local moment machinery is numerically coherent.
+
+A particle diagnostic asks whether an unstructured proposal is even plausible.
+For \(d_{\rm eff}\) approximately independent stress indicators with a
+Gaussian cell like the example in Section~\ref{sec:bf-hd-defect-particles},
+\[
+  \Var(L)\approx \frac{d_{\rm eff}}{2R^2},
+  \qquad
+  \frac{\E[W^2]}{\E[W]^2}\approx
+  \exp\!\left\{\frac{d_{\rm eff}}{2R^2}\right\}.
+  \label{eq:bf-hd-worked-pf-factor}
+\]
+If this factor is large, the architecture does not ask for a heroic global
+particle count.  It requires a block-local likelihood, guided proposal,
+transport correction, tempering contract, or rejection of the particle route
+for this cell.
+
+A sparse-grid diagnostic is then local to \(z_t=(f_t,v_t,u_{t,1})\), whose
+dimension is \(b=b_f+2\), not the full model dimension.  The diagnostic is
+allowed only if the map in \eqref{eq:bf-hd-worked-stress-cell} is smooth on the
+forecast support and if \(N_{\rm sg}(b,\ell)C_h\) fits the budget.  The output
+is not a global sparse-grid filter; it is a comparison of Gaussian and
+high-order moment contributions to \(\widehat Z_t\), the score, or the
+innovation residual.
+
+The tensor route is scoped by rank and semantics.  If a TT pilot represents a
+local density over \(z_t\), the admissibility row is
+\[
+  r_{\max}\le r_{\rm cap},\qquad
+  \left|\int \widehat p(z)\,dz-1\right|\le \epsilon_{\rm mass},\qquad
+  \min_z \widehat p(z)\ge -\epsilon_+,
+  \label{eq:bf-hd-worked-tt-gate}
+\]
+plus a likelihood or moment agreement check.  A rank spike or negative density
+cell blocks promotion even if storage is small.
+
+The transport/HMC route is downstream.  A triangular map may be useful if its
+support, monotonicity, and Jacobian checks pass, but the transformed target
+must still be
+\[
+  U_z(z)=-\widehat\ell_T(\tau(T(z)))-\log\pi(\tau(T(z)))
+        -\log|\det D\tau(T(z))|-\log|\det DT(z)|.
+  \label{eq:bf-hd-worked-hmc-target}
+\]
+The scalar-parity diagnostic from Chapter~\ref{ch:bf-highdim-hmc-research} is
+then applied to this same scalar.  Only after these gates pass may the program
+compare fixed HMC, transport-preconditioned HMC, or another sampler by ESS per
+gradient or wall time.
+
+The worked example therefore demonstrates defect scoping.  It does not choose
+a validated method.  It says which defects would force a global bank or central
+bank implementation team to stop, localize, correct, or fall back before
+calling a method industrially meaningful.
+
+\paragraph{Reader checkpoint.}
+What should now be clear: the synthesis is not ranking methods by fashion or
+novelty.  Object preserved: a chain of auditable handoffs from law and
+normalizer to approximation, diagnostic, and sampler target.  Approximation
+enters at: each method-specific representation and each promotion gate.
+Exported to implementation: promote only after the target, semantic, numerical,
+and performance vetoes for the relevant object have passed.
+
+\section{Industrial Synthesis Propositions}
+\label{sec:bf-hd-industrial-propositions}
+
+\begin{proposition}[Block scaffold before exotic methods]
+\label{prop:bf-hd-block-scaffold-first}
+A large nonlinear macro-finance filter should first expose a block-local
+Gaussian scaffold before adding particles, tensors, transports, or HMC.  The
+scaffold is not trusted because it is accurate; it is trusted because its
+innovation, covariance, derivative, and factorization failures are cheap to
+observe.
+\end{proposition}
+
+\begin{proof}[Derivation]
+The Gaussian update computes a moment projection using linear solves and
+covariance factors.  These objects produce residuals, condition numbers,
+innovation sequences, and PSD checks at cost far below global particle or HMC
+experiments.  If this scaffold fails on a controlled block, a more complicated
+method has no reliable local baseline.  If it passes, the pass is only a
+diagnostic: multimodality and nonlocal dependence can still be missed.
+\end{proof}
+
+\begin{proposition}[Useful synthesis need not be novel]
+\label{prop:bf-hd-useful-not-novel}
+A non-novel composition can be industrially superior to a novel standalone
+method when each component removes a specific defect and exports a diagnostic
+that the next component can test.
+\end{proposition}
+
+\begin{proof}[Derivation]
+Let component \(A\) reduce a defect measure \(D_A\) while exporting residual
+\(R_A\), and component \(B\) require \(R_A\le\tau_A\) before its own target is
+well defined.  The composition is meaningful only through the implication
+\[
+  R_A\le\tau_A \quad\Longrightarrow\quad
+  \text{the assumptions of component } B \text{ are approximately testable}.
+\]
+For example, block Gaussian diagnostics can identify curvature blocks for
+sparse-grid checks; a TT density pilot can supply conditional-density structure
+for a KR transport; a transport can precondition HMC only after the
+Jacobian-corrected scalar is audited.  None of these compositions is claimed as
+a new theorem; the value is that every handoff has a defect variable and a
+veto.
+\end{proof}
+
+\begin{algorithm}
+\caption{Defect-first high-dimensional filtering synthesis}
+\label{alg:bf-hd-defect-synthesis}
+\begin{algorithmic}[1]
+\Require Model partition, source-supported method assumptions, controlled
+  references, defect veto thresholds.
+\State Run block Gaussian scaffold; record innovation, factor, derivative, and
+  conditioning residuals.
+\State Apply high-order or sparse-grid diagnostics only to blocks with local
+  curvature or innovation defects.
+\State If particle collapse is predicted by log-weight variance, add guided or
+  transport proposals and retain explicit correction.
+\State If density/PDE structure is plausible, run TT/FTT pilots only on blocks
+  with stable rank, mass, positivity, and boundary diagnostics.
+\State If covariance compression is needed, prefer square-root or factor
+  representations and veto on PSD/factor failure.
+\State Define the scalar likelihood/posterior target and verify value-gradient
+  consistency.
+\State Run fixed HMC baseline; add RMHMC, NeuTra, transport maps, or TT/KR
+  acceleration only after target diagnostics pass.
+\State Promote no component whose performance win occurs before validity
+  gates pass.
+\end{algorithmic}
+\end{algorithm}
+
+\section{Literature Coverage And Source Risks}
+\label{sec:bf-hd-source-risks}
+
+The defect calculus relies on locally inspected source families recorded in the
+P1R--P2R ledgers.  The strongest source-local support covers particle collapse,
+Gaussian/cubature competitors, TT/TN filtering routes, transport-map filtering,
+and HMC/transport preconditioning.  Remaining source risks are explicit:
+Savostyanov-specific maxvol quasioptimality, Stroud's book, Smolyak and Genz
+originals, Knothe's original rearrangement, some local-particle-filter
+literature, and broader numerical-analysis references such as Higham-style
+finite-precision PSD analysis have not been source-local checked in this lane.
+They may motivate future literature expansion, but they do not support
+theorem-level claims here.
+
+\section{Formal And Editorial Boundaries}
+\label{sec:bf-hd-formal-boundaries}
+
+The propositions in this chapter are monograph derivations and industrial
+contracts, not full paper-length proofs.  MathDevMCP diagnostics for the P4 and
+P5 labels are recorded in the corresponding MathDevMCP audit ledgers; they
+locate the relevant obligations and certify only narrow algebraic checks, not
+broad propositions.  Any remaining PDF layout warnings are editorial issues,
+not mathematical support.  A panel should therefore read the chapter as a
+source-grounded synthesis with explicit diagnostics, not as a machine-verified
+theorem file or a completed implementation validation.
+
+\section{What Is Not Concluded}
+\label{sec:bf-hd-synth-nonclaims}
+
+This chapter does not conclude that high-dimensional nonlinear filtering is
+solved for BayesFilter, that any method is NAWM-ready, that HMC converges, that
+tensor or transport methods are validated, that posterior accuracy is
+established, that GPU/XLA is ready, or that any method should become a
+production default.  It concludes only that an industrial candidate must pass a
+defect calculus before speed, elegance, or novelty is allowed to matter.

@@ -1,0 +1,475 @@
+\chapter[HMC Research Program For Nonlinear SSMs]{HMC as a Research Program for Nonlinear State-Space Models}
+\label{ch:bf-highdim-hmc-research}
+
+\section{The Target Comes Before The Sampler}
+\label{sec:bf-hd-hmc-target}
+
+Hamiltonian Monte Carlo is only as meaningful as the scalar potential it is
+given.  For an unconstrained coordinate $q\in\R^d$ and transform
+$\theta=\tau(q)$, the potential associated with the exact likelihood is
+\begin{equation}
+  U(q)
+  =
+  -\ell_T(\tau(q))-\log \pi(\tau(q))
+  -\log\left|\det D\tau(q)\right|.
+  \label{eq:bf-hd-hmc-potential}
+\end{equation}
+If the nonlinear filter supplies $\widehat\ell_T$, HMC samples the posterior
+defined by $\widehat\ell_T$ unless an exact correction is supplied.  The
+gradient must be the gradient of the same scalar:
+\begin{equation}
+  \nabla_q U(q)
+  =
+  -D\tau(q)^\top
+  \left[
+  \nabla_\theta\ell_T(\theta)+\nabla_\theta\log\pi(\theta)
+  \right]_{\theta=\tau(q)}
+  -\nabla_q\log|\det D\tau(q)|.
+  \label{eq:bf-hd-hmc-gradient}
+\end{equation}
+
+The central object is therefore a scalar function \(U(q)\), not a filtering
+distribution.  The input is a likelihood or approximate likelihood from a
+filter, a prior, and a parameter transform.  The output is a Markov transition
+that is meaningful only for the density proportional to \(\exp\{-U(q)\}\).  The
+exact target uses \(\ell_T\) from
+Chapter~\ref{ch:bf-highdim-nonlinear-foundations}; the approximate target uses
+the declared \(\widehat\ell_T\).  The diagnostic role is to check finite
+values, same-scalar gradients, support, Jacobians, divergences, and energy
+behavior before any efficiency comparison.
+
+\paragraph{Running quadratic-observation cell.}
+In the scalar cell \(x_t=\rho x_{t-1}+\eta_t,\ y_t=x_t^2+\epsilon_t\), HMC
+does not rescue an unnamed filtering approximation.  For parameter inference it
+uses the scalar likelihood
+\[
+  \ell_T(\theta)=\sum_{t=1}^T\log Z_t(\theta),
+\]
+or a declared approximation \(\widehat\ell_T(\theta)\).  The two-lobed state
+update matters because it makes \(Z_t\) and its derivative hard to compute;
+HMC begins only after the scalar and its gradient have been named.
+
+\small
+\begin{longtable}{@{}p{0.24\linewidth}p{0.31\linewidth}p{0.33\linewidth}@{}}
+\toprule
+Gradient object & Scalar it differentiates & What a check can and cannot say \\
+\midrule
+\endhead
+Exact sensitivity gradient & \(\ell_T=\sum_t\log Z_t\) & Supports the exact
+parameter target under the assumptions of
+Chapter~\ref{ch:bf-highdim-nonlinear-foundations}. \\
+Autodiff through approximate filter & \(\widehat\ell_T\) actually executed by
+the algorithm & Supports the declared approximate target, not the exact one. \\
+Finite-difference parity & reported \(U(q)\) at nearby points & Vetoes
+same-scalar mismatch; does not prove convergence or posterior accuracy. \\
+Transport/transform gradient & Jacobian-corrected transformed scalar & Valid
+only with support and determinant terms included. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Analytical HMC Gradient From The Filtering Likelihood}
+\label{sec:bf-hd-analytical-hmc-gradient}
+
+The analytical HMC gradient is a chain-rule consequence of the scalar target.
+Let
+\[
+  F(\theta)=\ell_T(\theta)+\log\pi(\theta),
+  \qquad \theta=\tau(q),
+\]
+where \(\tau:\R^d\to\Theta\) is differentiable on the interior of the
+unconstrained parameter space and \(D\tau(q)\) is its Jacobian.  From
+\eqref{eq:bf-hd-hmc-potential},
+\[
+  U(q)=-F(\tau(q))-\log|\det D\tau(q)|.
+\]
+For any coordinate \(q_j\), the ordinary chain rule gives
+\[
+  \frac{\partial U}{\partial q_j}
+  =
+  -\sum_k
+  \frac{\partial \tau_k}{\partial q_j}
+  \frac{\partial F}{\partial \theta_k}(\tau(q))
+  -
+  \frac{\partial}{\partial q_j}\log|\det D\tau(q)|.
+\]
+Stacking the coordinate derivatives gives
+\begin{equation}
+  \nabla_q U(q)
+  =
+  -D\tau(q)^\top
+  \left[
+  \nabla_\theta\ell_T(\theta)+\nabla_\theta\log\pi(\theta)
+  \right]_{\theta=\tau(q)}
+  -
+  \nabla_q\log|\det D\tau(q)|.
+  \label{eq:bf-hd-analytical-hmc-gradient}
+\end{equation}
+The likelihood gradient in \eqref{eq:bf-hd-analytical-hmc-gradient} is the
+filtering sensitivity recursion
+\eqref{eq:bf-hd-prediction-sensitivity}--\eqref{eq:bf-hd-likelihood-gradient}.
+Thus the HMC gradient is analytical only after the filter has supplied the
+analytical or explicitly approximated derivative of the same scalar likelihood
+reported to the sampler.
+
+\begin{proposition}[HMC gradient contract for a state-space likelihood]
+\label{prop:bf-hd-hmc-gradient-contract}
+For the dominated discrete-time state-space model in
+Chapter~\ref{ch:bf-highdim-nonlinear-foundations}, an HMC implementation for
+parameters \(\theta=\tau(q)\) targets the exact posterior only if its potential
+uses \eqref{eq:bf-hd-hmc-potential} and its gradient is
+\eqref{eq:bf-hd-analytical-hmc-gradient} with
+\(\nabla_\theta\ell_T\) computed from the exact likelihood normalizers.
+If the filter supplies only an approximate scalar \(\widehat\ell_T\), then
+ordinary HMC can at most target the declared approximate posterior defined by
+that scalar.  Recovering the exact posterior from an approximate or randomized
+likelihood would require a separately defined exact-target extended-state or
+Metropolis correction scheme; such a scheme is outside the scope of this
+chapter.
+\end{proposition}
+
+Plain-English claim: HMC can only be trusted for the posterior whose scalar
+potential it actually evaluates.  Object being approximated or preserved:
+the posterior density in the unconstrained coordinate \(q\).  Assumptions:
+the transform is differentiable with valid support/Jacobian, the likelihood
+normalizers are finite and positive, and the likelihood gradient is the one
+derived from those normalizers.  Approximation step: replacing
+\(\ell_T\) by \(\widehat\ell_T\) changes the target unless a separately defined
+exact-target correction scheme is introduced.  Failure if assumptions break: HMC
+may still run and report ESS, but the chain no longer targets the stated
+posterior.  Industrial interpretation: same-scalar parity is a promotion gate
+before speed or geometry improvements matter.
+
+\begin{proof}
+The posterior density in \(\theta\) coordinates is proportional to
+\(\exp\{\ell_T(\theta)\}\pi(\theta)\).  The change of variables
+\(\theta=\tau(q)\) gives the \(q\)-density proportional to
+\(\exp\{\ell_T(\tau(q))\}\pi(\tau(q))|\det D\tau(q)|\), whose negative log
+density is \eqref{eq:bf-hd-hmc-potential} up to an additive constant.  The
+gradient is the chain rule in \eqref{eq:bf-hd-analytical-hmc-gradient}.  The
+identity \(\nabla_\theta\ell_T=\sum_t\nabla_\theta Z_t/Z_t\) and the
+sensitivity recursions are derived in
+Chapter~\ref{ch:bf-highdim-nonlinear-foundations}.  If a different scalar or a
+different gradient is used, the Hamiltonian is no longer the exact posterior
+Hamiltonian.
+\end{proof}
+
+\begin{remark}[Scalar Gaussian likelihood gradient]
+\label{ex:bf-hd-scalar-gaussian-gradient}
+Let \(x_t\sim\calN(\theta,\sigma_x^2)\) independently and
+\(y_t\mid x_t\sim\calN(x_t,\sigma_y^2)\), with known variances.  Integrating
+out \(x_t\) gives \(y_t\sim\calN(\theta,S)\), \(S=\sigma_x^2+\sigma_y^2\), so
+\[
+  \ell_T(\theta)
+  =
+  -\frac12\sum_{t=1}^T
+  \left\{\log(2\pi S)+\frac{(y_t-\theta)^2}{S}\right\}.
+\]
+The analytical likelihood gradient is
+\[
+  \nabla_\theta\ell_T(\theta)
+  =
+  \sum_{t=1}^T\frac{y_t-\theta}{S}.
+\]
+With a Gaussian prior \(\theta\sim\calN(\mu_0,\sigma_0^2)\) and identity
+transform \(\tau(q)=q\), the HMC potential is
+\[
+  U(q)=-\ell_T(q)+\frac12\frac{(q-\mu_0)^2}{\sigma_0^2}+C,
+  \qquad
+  \nabla_q U(q)
+  =
+  -\sum_{t=1}^T\frac{y_t-q}{S}
+  +\frac{q-\mu_0}{\sigma_0^2}.
+  \label{eq:bf-hd-scalar-gaussian-hmc-gradient}
+\]
+This toy example is not a nonlinear-filter validation.  Its role is to show
+the scalar contract: the value and gradient both come from the same integrated
+likelihood and prior.
+\end{remark}
+
+\section{Approximate-Filter Gradients}
+\label{sec:bf-hd-approx-filter-gradients}
+
+If a filter reports
+\[
+  \widehat\ell_T(\theta)=\sum_{t=1}^T\log\widehat Z_t(\theta),
+\]
+then an HMC chain using
+\[
+  \widehat U(q)
+  =
+  -\widehat\ell_T(\tau(q))-\log\pi(\tau(q))
+  -\log|\det D\tau(q)|
+  \label{eq:bf-hd-approx-hmc-potential}
+\]
+targets the approximate posterior defined by \(\widehat\ell_T\), not the exact
+posterior in general.  Its same-scalar gradient is
+\[
+  \nabla_q \widehat U(q)
+  =
+  -D\tau(q)^\top
+  \left[
+  \nabla_\theta\widehat\ell_T(\theta)+
+  \nabla_\theta\log\pi(\theta)
+  \right]_{\theta=\tau(q)}
+  -
+  \nabla_q\log|\det D\tau(q)|.
+  \label{eq:bf-hd-approx-hmc-gradient}
+\]
+Automatic differentiation through an approximate filter can be valuable, but it
+differentiates the algorithmic scalar it actually executed.  If tensor
+rounding, resampling, clipping, adaptive sparse-grid stopping, rank caps,
+localization gates, or invalid-state penalties enter the calculation, the
+reported gradient is defensible only after the reported scalar has been named.
+Finite differences check scalar parity; they do not prove exactness.  An
+approximate-filter gradient cannot be described as an exact posterior gradient
+or exact state-space likelihood gradient unless a separately specified
+exact-target correction scheme has been defined and justified.
+
+Chapter~\ref{ch:bf-highdim-gaussian-quadrature} now gives the concrete
+Gaussian/quadrature case: the scalar is the approximate Gaussian innovation
+likelihood in \eqref{eq:p31-fsgq-loglik}, and the score is
+\eqref{eq:p31-score}.  That formula covers fixed EKF/UKF/CKF,
+high-degree cubature, tensor-product Gauss--Hermite, and fixed sparse-grid
+branches only for the approximate scalar they report.  Chapter~\ref{ch:bf-highdim-particle-transport-tensor}
+then records why ordinary resampling particles, adaptive TT ranks, TT-cross
+pivot changes, and adaptive sparse-grid point changes are not smooth HMC
+gradients unless the target is smoothed or the branch is frozen and labeled.
+
+\paragraph{Reader checkpoint.}
+What should now be clear: HMC is downstream of the filtering likelihood, not a
+replacement for it.  Object preserved: the scalar potential and the density it
+defines.  Approximation enters at: \(\widehat Z_t\), autodiff through the
+filter, transforms, and nondifferentiable gates.  Exported to synthesis:
+performance comparisons are admissible only after value-gradient parity,
+finite support/Jacobian checks, and baseline diagnostics pass.
+
+\begin{proposition}[Same-scalar condition]
+\label{prop:bf-hd-same-scalar}
+A Metropolis-corrected HMC transition targets the density proportional to
+$\exp\{-U(q)\}$ only if the Hamiltonian evaluated in the accept/reject step is
+the same Hamiltonian whose gradient is used by the numerical trajectory, up to
+the declared integrator approximation.
+\end{proposition}
+
+\begin{proof}
+The HMC argument in \citet{neal2011mcmc} relies on a reversible,
+volume-preserving numerical map followed by a Metropolis correction using the
+Hamiltonian for which that map is a discretized flow.  If the gradient comes
+from a different scalar, the proposal is not a reversible discretization of the
+accepted Hamiltonian, so the usual detailed-balance argument no longer applies.
+\end{proof}
+
+The diagnostic version is a scalar parity test.  For a coordinate direction
+\(e_j\), define
+\[
+  \Delta_j(q;h)=
+  \frac{U_{\rm reported}(q+h e_j)-U_{\rm reported}(q-h e_j)}{2h}
+  -[\nabla U_{\rm used}(q)]_j .
+\]
+If \(\max_j|\Delta_j(q;h)|\) is not small on typical states over a stable range
+of \(h\), the implementation is not using the derivative of the scalar it
+reports.  Passing this test does not prove HMC convergence; failing it vetoes
+the target contract.
+
+\section{Plain HMC, NUTS, And Diagnostics}
+\label{sec:bf-hd-hmc-diagnostics}
+
+\citet{neal2011mcmc} is the checked source for the Hamiltonian mechanics,
+leapfrog, and Metropolis correction.  \citet{hoffman2014nuts} supplies the NUTS
+reference algorithm and adaptation logic.  \citet{betancourt2017conceptual}
+supplies the diagnostic geometry vocabulary: divergences, energy behavior, and
+bad curvature are not cosmetic warnings.
+
+\begin{algorithm}
+\caption{Fixed-trajectory HMC diagnostic kernel}
+\label{alg:bf-hd-fixed-hmc}
+\begin{algorithmic}[1]
+\Require Potential $U$, gradient $\nabla U$, mass matrix $M$, step size
+  $\epsilon$, leapfrog count $L$, current $q$.
+\State Check that $U(q)$ and $\nabla U(q)$ are finite.
+\State Draw $p\sim\calN(0,M)$.
+\State Apply $L$ leapfrog steps using the declared invalid-region policy.
+\State Recompute the same scalar Hamiltonian at start and proposal.
+\State Accept/reject by the Metropolis probability.
+\State Record energy error, divergence flag, acceptance, finite status, and
+  invalid-region hits.
+\end{algorithmic}
+\end{algorithm}
+
+NUTS is a valuable reference and diagnostic sampler, but this monograph does
+not promote TFP NUTS or any dynamic-control-flow sampler as a BayesFilter
+production default for nonlinear SSMs.  That is an engineering boundary, not a
+claim that NUTS is mathematically inferior.  The later HMC chapters,
+Chapter~\ref{ch:bf-hmc-for-state-space} and
+Chapter~\ref{ch:bf-transport-surrogates}, carry the broader sampler and
+transport-policy discussion; the role here is only to state which high-dimensional
+filter targets are admissible inputs to those later decisions.
+
+\section{RMHMC And Metric Burden}
+\label{sec:bf-hd-rmhmc}
+
+\citet{girolami2011riemann} replaces a fixed mass matrix with a
+position-dependent metric.  In a nonlinear SSM this is appealing because the
+posterior curvature can rotate across the parameter space.  It is also costly:
+one needs a positive-definite metric, derivatives of that metric, generalized
+leapfrog solves for a nonseparable Hamiltonian, and stable filtering Hessian or
+Fisher information approximations.  RMHMC is therefore a geometry-aware
+competitor and a conceptual warning: a dense mass matrix can rescale axes, but
+it cannot remove arbitrary nonlinear geometry.
+
+\section{Transport-Map Accelerated MCMC}
+\label{sec:bf-hd-transport-mcmc}
+
+\citet{parno2018transport} constructs adaptive lower-triangular transport maps
+to precondition Metropolis proposals while preserving an exact target through
+Metropolis correction.  If $q=T_\phi(z)$, the transformed density in $z$ is
+\begin{equation}
+  \log \pi_z(z)=\log \pi_q(T_\phi(z))+\log|\det DT_\phi(z)|.
+  \label{eq:bf-hd-transport-target}
+\end{equation}
+This is the same object that appears in normalizing-flow and NeuTra-style HMC.
+The map can reduce posterior dependence, but if its tails or support are wrong
+the transformed geometry can be worse than the original.
+
+\section{NeuTra And Learned Transports}
+\label{sec:bf-hd-neutra}
+
+\citet{hoffman2019neutra} uses neural transports to "neutralize" bad geometry
+before HMC.  The relevant claim for this monograph is modest: an invertible
+learned map can be a preconditioner for HMC if the transformed target includes
+the Jacobian term and if the sampler diagnostics improve.  It is not a
+correctness substitute.  A trained density model or variational loss can suggest
+a map; it cannot replace the Metropolis target contract.
+
+\begin{proposition}[Transport preconditioning preserves target only with the
+Jacobian]
+\label{prop:bf-hd-jacobian-target}
+Let $T$ be a differentiable bijection from $z$ to $q$ coordinates.  HMC in $z$
+targets the original $q$-density $\pi_q$ only when the $z$-potential includes
+$-\log\pi_q(T(z))-\log|\det DT(z)|$.
+\end{proposition}
+
+\begin{proof}
+For any measurable set $A$ in $q$ space, the probability under the pushforward
+of $\pi_z$ is $\int_{T^{-1}(A)}\pi_z(z)\,dz$.  Choosing
+$\pi_z(z)=\pi_q(T(z))|\det DT(z)|$ and applying the change of variables
+$q=T(z)$ gives $\int_A\pi_q(q)\,dq$.
+\end{proof}
+
+The sign of the Jacobian term is a common source of silent target changes.  If
+the sampler evolves in \(z\) but reports inference in \(q=T(z)\), then
+\[
+  \pi_z(z)\,dz=\pi_q(q)\,dq
+  =\pi_q(T(z))|\det DT(z)|\,dz.
+\]
+The potential is therefore
+\[
+  U_z(z)=-\log\pi_q(T(z))-\log|\det DT(z)|.
+\]
+Using the opposite sign samples a different density unless the determinant is
+constant.
+
+\section{TT/KR Transports As A Bridge}
+\label{sec:bf-hd-tt-kr-hmc}
+
+The deep inverse Rosenblatt transport construction of \citet{cui2021deep} and
+the conditional KR maps in \citet{zhao2024ttsequential} suggest a bridge:
+tensor-train density approximations can induce triangular transports, and those
+transports can precondition sampling or sequential learning.  This is directly
+aligned with the failure mode of plain mass-matrix HMC on nonlinear geometry.
+It is also fragile.  The TT density must remain nonnegative or be squared by
+construction, ranks must stay controlled, the map must be monotone, and the
+transformed HMC target must use the Jacobian-corrected scalar.
+
+\section{Promotion Ladder}
+\label{sec:bf-hd-hmc-ladder}
+
+\begin{algorithm}
+\caption{Transport/HMC promotion ladder for nonlinear SSMs}
+\label{alg:bf-hd-hmc-ladder}
+\begin{algorithmic}[1]
+\Require Filter target, baseline HMC kernel, candidate transport or metric,
+  controlled reference problem.
+\State Verify finite value and gradient for the same scalar target.
+\State Run fixed HMC and record divergences, energy error, acceptance,
+  $\widehat R$, ESS, and posterior/reference checks where meaningful.
+\State Fit or construct transport/metric without changing the intended target.
+\State Run transformed HMC with the Jacobian-corrected potential.
+\State Reject on any persistent divergence, same-scalar mismatch, nonfinite
+  Jacobian, or failed posterior/reference diagnostic.
+\State Compare ESS per gradient or wall time only after validity gates pass.
+\end{algorithmic}
+\end{algorithm}
+
+\section{Defects Passed To Synthesis}
+\label{sec:bf-hd-hmc-defects}
+
+The HMC research program passes five defects to the synthesis chapter.
+
+\begin{enumerate}[label=(\arabic*)]
+  \item The filter must define the scalar likelihood or approximate likelihood
+  before any sampler can be interpreted.
+  \item The gradient used by HMC must be the gradient of the same scalar used in
+  the Metropolis correction and posterior interpretation.
+  \item Transformations, including NeuTra and TT/KR-style maps, require the
+  Jacobian-corrected target and valid support.
+  \item Divergences, energy failures, invalid states, and posterior/reference
+  mismatches are veto diagnostics.  ESS per gradient and wall time enter only
+  after these vetoes pass.
+  \item Geometry acceleration changes efficiency, not the target contract.  A
+  transport or metric can make a valid target easier to explore; it cannot make
+  an invalid or approximate target exact.
+\end{enumerate}
+
+The synthesis chapter therefore places HMC downstream of filtering,
+normalization, scalar parity, and controlled-reference checks.
+
+\paragraph{Exported to synthesis.}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{longtable}{@{}p{0.10\linewidth}p{0.13\linewidth}p{0.12\linewidth}p{0.13\linewidth}p{0.13\linewidth}p{0.08\linewidth}p{0.11\linewidth}p{0.12\linewidth}@{}}
+\toprule
+Object & Exact target & Approximation site & Failure mode & Diagnostic/veto &
+Cost variable & Promotion gate & Citation/derivation anchor \\
+\midrule
+\endhead
+Potential \(U(q)\) & transformed exact posterior & approximate likelihood,
+prior/transform error & wrong target & finite scalar, support, Jacobian &
+likelihood cost & scalar named & \eqref{eq:bf-hd-hmc-potential} \\
+Gradient \(\nabla U\) & derivative of the same scalar & autodiff path,
+sensitivity approximation & value-gradient mismatch & finite-difference
+parity, nonfinite gradient & gradient-through-filter cost & same-scalar pass &
+Proposition~\ref{prop:bf-hd-hmc-gradient-contract} \\
+Transport HMC & Jacobian-corrected transformed target & map fit and determinant
+& changed posterior geometry/target & determinant, inverse, support checks &
+map/logdet cost & corrected scalar pass &
+\citet{parno2018transport,hoffman2019neutra} \\
+Sampler diagnostics & Markov transition for declared target & integrator,
+adaptation, metric & divergences or invalid regions & energy, divergences,
+\(\widehat R\), reference checks & gradients per effective draw & validity
+before speed & \citet{neal2011mcmc,hoffman2014nuts,betancourt2017conceptual} \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\section{Implementation Boundary}
+\label{sec:bf-hd-hmc-boundary}
+
+BayesFilter has no nonlinear HMC convergence result in this lane, no NeuTra
+backend, no RMHMC backend, no tensor/KR transport-preconditioned HMC backend,
+and no NAWM posterior recovery benchmark.  The chapter defines a research
+ladder.  It does not promote HMC, NUTS, RMHMC, NeuTra, XLA, or GPU execution as
+production-ready for nonlinear state-space models.
+
+This chapter imports the exact-target and likelihood-normalizer contract from
+Chapter~\ref{ch:bf-highdim-nonlinear-foundations}, the approximate Gaussian
+innovation scalar and score only from
+Chapter~\ref{ch:bf-highdim-gaussian-quadrature}, and the particle/transport/TT/TN
+object boundaries only from Chapter~\ref{ch:bf-highdim-particle-transport-tensor}.
+It does not re-license those chapters' approximation families as exact targets,
+validated transport backends, or production-ready HMC components.  Exported
+forward, Chapter~\ref{ch:bf-highdim-candidate-synthesis} may consume only the
+same-scalar, Jacobian, divergence, and promotion-ladder consequences stated
+here, not a stronger convergence or deployment claim.

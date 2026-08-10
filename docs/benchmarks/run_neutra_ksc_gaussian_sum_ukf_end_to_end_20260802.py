@@ -78,6 +78,13 @@ def build_spec() -> CellSpec:
             "posterior, component cap 32"
         ),
         initial_step_size=0.1,
+        common_tuning_status_keys=(
+            "status_code",
+            "valid_pre_regularized_score",
+            "floor_count_value",
+            "min_innovation_eigenvalue",
+            "innovation_condition_estimate",
+        ),
         leapfrog_grid=(6, 10),
         plan_path=(
             "docs/plans/bayesfilter-ksc-ukf-neutra-hmc-continuation-plan-"

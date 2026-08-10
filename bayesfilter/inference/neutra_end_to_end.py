@@ -385,144 +385,34 @@ def run_neutra_frozen_transport_broad_grid_cell(
     spec: CellSpec,
     config: FrozenTransportBroadGridConfig,
 ) -> Mapping[str, Any]:
-    """Tune the approved primary and one-hop grid without retained sampling."""
+    """Tune the approved primary and one-hop grid without retained sampling.
 
-    root = config.output_root / spec.cell_id
-    if root.exists():
-        raise NeuTraEndToEndError(f"cell output root must be fresh: {root}")
-    root.mkdir(parents=True)
-    run_state = _RunState(root, cell_id=spec.cell_id, output_root=config.output_root)
-    run_state.update("launch", status="started")
-    started = time.monotonic()
-    memory_policy = configure_tensorflow_gpu_memory_growth(
-        tf, require_gpu=config.require_gpu
-    )
-    tf.config.set_soft_device_placement(False)
-    tf.config.experimental.enable_tensor_float_32_execution(True)
+    Compatibility wrapper: the procedure itself is owned by
+    ``bayesfilter.inference.neutra_shared_procedure`` and runs the explicit
+    ``operational_broad_grid_v1`` variant with ``sampling_launched``: False.
+    """
 
-    frozen_path = config.frozen_transport_path
-    if not frozen_path.is_file():
-        raise NeuTraEndToEndError(f"frozen transport does not exist: {frozen_path}")
-    observed_sha256 = _file_sha256(frozen_path)
-    if observed_sha256 != config.expected_frozen_transport_sha256:
-        raise NeuTraEndToEndError(
-            "frozen transport SHA-256 mismatch: "
-            f"{observed_sha256} != {config.expected_frozen_transport_sha256}"
-        )
-    adapter = spec.adapter_factory()
-    observed_signature = _target_signature(adapter)
-    if observed_signature != spec.target_signature:
-        raise NeuTraEndToEndError(
-            f"target signature mismatch for {spec.cell_id}: "
-            f"{observed_signature} != {spec.target_signature}"
-        )
-    bound_adapter = BatchNativeBoundAdapter(
-        adapter, target_signature=spec.target_signature
-    )
-    loaded = load_frozen_neutra_artifact(
-        _read_mapping(frozen_path),
-        expected_target_signature=spec.target_signature,
-    )
-    transport_input = {
-        "path": str(frozen_path),
-        "sha256": observed_sha256,
-        "target_signature": loaded.manifest.target_signature,
-        "training_state_hash": loaded.manifest.training_state_hash,
-        "retrained": False,
-    }
-    atomic_write_json(root / "frozen_transport_input.json", transport_input)
-    tuned_adapter = _fixed_transport_adapter(
-        bound_adapter,
-        loaded.transport,
-        f"{spec.cell_id}:operational_broad_fixed_identity_grid",
-    )
-    from bayesfilter.inference.neutra_broad_grid import (
-        NeuTraBroadGridTuningConfig,
-        run_neutra_operational_broad_grid_tuning,
+    from bayesfilter.inference.neutra_shared_procedure import (
+        OPERATIONAL_BROAD_GRID_V1,
+        SharedNeuTraProcedureConfig,
+        run_shared_neutra_procedure,
     )
 
-    run_state.update("operational_broad_grid_tuning")
-    broad = run_neutra_operational_broad_grid_tuning(
-        adapter=tuned_adapter,
-        target_signature=spec.target_signature,
-        config=NeuTraBroadGridTuningConfig(
-            initial_step_size=(
-                spec.initial_step_size
-                if config.initial_step_size is None
-                else config.initial_step_size
-            ),
+    return run_shared_neutra_procedure(
+        spec=spec,
+        config=SharedNeuTraProcedureConfig(
+            output_root=config.output_root,
+            frozen_transport_path=config.frozen_transport_path,
+            expected_frozen_transport_sha256=config.expected_frozen_transport_sha256,
             root_seed=config.root_seed,
+            variant=OPERATIONAL_BROAD_GRID_V1,
+            launch_sequential=False,
+            initial_step_size=config.initial_step_size,
             screen_results=config.screen_results,
-            use_xla=config.jit_compile,
-            evidence_path=spec.plan_path,
+            require_gpu=config.require_gpu,
+            jit_compile=config.jit_compile,
         ),
-        output_dir=root / "broad-grid-tuning",
     )
-    public = broad["public"]
-    passed = public.get("disposition") == "viable_pair_set"
-    result = _base_result(
-        spec,
-        root,
-        {
-            "passed": passed,
-            "decision": (
-                "BROAD_GRID_TUNING_VIABLE_PAIR_SET"
-                if passed
-                else "BROAD_GRID_TUNING_NO_HANDOFF"
-            ),
-            "frozen_transport_input": transport_input,
-            "broad_grid": public,
-            "private_tuning_result_path": broad["private_result_path"],
-            "public_tuning_result_path": broad["public_result_path"],
-            "sampling_launched": False,
-            "retained_sampling_authorized": False,
-            "nonclaims": (
-                "discarded broad-grid tuning evidence only",
-                "complete candidate set is unranked",
-                "no convergence, posterior, or default-readiness claim",
-            ),
-        },
-        memory_policy,
-        started,
-    )
-    atomic_write_json(root / "result.json", result)
-    commit = subprocess.run(
-        ("git", "rev-parse", "HEAD"),
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    atomic_write_json(
-        root / "run_manifest.json",
-        {
-            "schema": "bayesfilter.neutra.broad_grid_tuning_manifest.v1",
-            "cell_id": spec.cell_id,
-            "target_signature": spec.target_signature,
-            "git_commit": commit,
-            "command": tuple(sys.argv),
-            "environment": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
-            "python_executable": sys.executable,
-            "python_version": platform.python_version(),
-            "tensorflow_version": tf.__version__,
-            "gpu_memory_policy": memory_policy,
-            "device": "/GPU:0" if config.require_gpu else "explicit_cpu_exception",
-            "jit_compile": config.jit_compile,
-            "tf32_execution_enabled": True,
-            "root_seed": config.root_seed,
-            "initial_step_size_role": "target_specific_warm_start_hypothesis",
-            "screen_results": config.screen_results,
-            "output_root": str(root),
-            "wall_time_seconds": time.monotonic() - started,
-            "frozen_transport_input": transport_input,
-            "plan_path": spec.plan_path,
-            "result_path": str(root / "result.json"),
-            "private_tuning_result_path": broad["private_result_path"],
-            "public_tuning_result_path": broad["public_result_path"],
-            "sampling_launched": False,
-        },
-    )
-    run_state.complete(result)
-    return result
 
 
 def run_neutra_broad_grid_sequential_cell(
@@ -566,29 +456,17 @@ def run_neutra_broad_grid_sequential_cell(
         expected_target_signature=spec.target_signature,
     )
     grid = _read_mapping(config.broad_grid_result_path)
-    if (
-        grid.get("route") != "operational_broad_fixed_mass_l_epsilon_grid_v1"
-        or grid.get("disposition") != "viable_pair_set"
-        or grid.get("stochastic_ranking_performed") is not False
-        or grid.get("all_viable_pairs_preserved") is not True
-    ):
-        raise NeuTraEndToEndError("broad-grid result is not a complete viable set")
-    candidates = grid.get("next_round_candidates")
-    if not isinstance(candidates, Sequence) or len(candidates) != 1:
-        raise NeuTraEndToEndError(
-            "sequential handoff requires exactly one unranked viable pair"
-        )
-    candidate = candidates[0]
-    evidence = candidate.get("evidence", {})
-    if candidate.get("viable") is not True or evidence.get("disposition") != "provisional_viable":
-        raise NeuTraEndToEndError("broad-grid candidate is not viable")
-    request = candidate.get("request", {})
-    if request.get("role") != "independently_tuned_primary":
-        raise NeuTraEndToEndError("unique survivor is not an independently tuned primary")
-    step_size = float(candidate.get("tuned_step_size"))
-    leapfrog = int(request.get("num_leapfrog_steps"))
-    if not math.isfinite(step_size) or step_size <= 0.0 or leapfrog <= 0:
-        raise NeuTraEndToEndError("broad-grid kernel mechanics are invalid")
+    from bayesfilter.inference.neutra_shared_procedure import (
+        extract_sequential_handoff_from_broad_grid_result,
+    )
+
+    try:
+        handoff = extract_sequential_handoff_from_broad_grid_result(grid)
+    except ValueError as error:
+        raise NeuTraEndToEndError(str(error)) from error
+    candidate = handoff["candidate"]
+    step_size = float(handoff["step_size"])
+    leapfrog = int(handoff["num_leapfrog_steps"])
 
     target_scope = f"{spec.cell_id}:fixed_neutra_broad_grid_unique_pair"
     tuned_adapter = _fixed_transport_adapter(bound, loaded.transport, target_scope)
@@ -651,6 +529,7 @@ def run_neutra_broad_grid_sequential_cell(
                 "path": str(config.broad_grid_result_path),
                 "sha256": config.expected_broad_grid_result_sha256,
                 "unique_viable_pair": candidate,
+                "procedure_variant": handoff["procedure_variant"],
                 "stochastic_ranking_performed": False,
             },
             "sequential": {

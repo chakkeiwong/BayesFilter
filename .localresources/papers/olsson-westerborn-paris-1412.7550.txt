@@ -1,0 +1,2659 @@
+                                                 Efficient particle-based online smoothing in
+                                                 general hidden Markov models: the PaRIS
+                                                                   algorithm
+                                                                        Jimmy Olsson∗ and Johan Westerborn
+                                                                                    Department of Mathematics
+arXiv:1412.7550v1 [stat.CO] 23 Dec 2014
+
+
+
+
+                                                                                 KTH Royal Institute of Technology
+                                                                                   SE-100 44 Stockholm, Sweden
+                                                                              e-mail: jimmyol@kth.se, johawes@kth.se
+
+                                                    Abstract: This paper presents a novel algorithm, the particle-based, rapid incremental
+                                                    smoother (PaRIS), for efficient online approximation of smoothed expectations of additive
+                                                    state functionals in general hidden Markov models. The algorithm, which has a linear com-
+                                                    putational complexity under weak assumptions and very limited memory requirements, is
+                                                    furnished with a number of convergence results, including a central limit theorem. An inter-
+                                                    esting feature of PaRIS, which samples on-the-fly from the retrospective dynamics induced
+                                                    by the particle filter, is that it requires two or more backward draws per particle in order to
+                                                    cope with degeneracy of the sampled trajectories and to stay numerically stable in the long
+                                                    run with an asymptotic variance that grows only linearly with time.
+
+                                                     Primary 62M09; secondary 62F12.
+                                                    Keywords and phrases: central limit theorem, general hidden Markov models, Hoeffding-
+                                                    type inequality, online estimation, particle filter, particle path degeneracy, sequential Monte
+                                                    Carlo, smoothing.
+
+
+
+                                          1. Introduction
+
+                                          This paper deals with the problem of state estimation in general state-space hidden Markov models
+                                          (HMMs) using sequential Monte Carlo (SMC) methods (also known as particle filters), and presents
+                                          a novel online algorithm for the computation of smoothed expectations of additive state functionals
+                                          in models of this sort. The algorithm, which copes with the well-known problem of particle ancestral
+                                          path degeneracy at a computational complexity that is only linear in the number of particles, is
+                                          provided with a rigorous theoretical analysis establishing its convergence and long-term stability as
+                                          well as a simulation study illustrating its computational efficiency.
+                                             Given measurable spaces (X, X ) and (Y, Y), an HMM is a bivariate stochastic process {(Xt , Yt )}t∈N
+                                          (where t will often be referred to as “time” without being necessarily a temporal index) taking its
+                                          values in the product space (X × Y, X  Y), where the X-valued marginal process {Xt }t∈N is a
+                                          Markov chain (often referred to as the state sequence) which is only partially observed through the
+                                          Y-valued observation process {Yt }t∈N . Conditionally on the unobserved state sequence {Xt }t∈N , the
+                                          observations are assumed to be independent and such that the conditional distribution of each Yt
+                                          depends on the corresponding state Xt only. HMMs are nowadays used within a large variety of
+                                          scientific and engineering disciplines such as econometrics [6], speech recognition [35], and compu-
+                                          tational biology [27] (the more than 360 references in [2] for the period 1989–2000 gives an idea of
+                                          the applicability of these models).
+                                            ∗ This work is supported by the Swedish Research Council, Grant 2011-5577.
+
+                                                                                                  1
+                               J. Olsson and J. Westerborn/The PaRIS algorithm                                  2
+
+
+    Any kind of statistical inference in HMMs involves typically the computation of conditional
+distributions of unobserved states given observations. Of particular interest are the sequences of
+filter distributions, i.e., the conditional distributions of Xt given Y0:t := (Y0 , . . . , Yt ) (this will be our
+generic notation for vectors), and smoothing distributions, i.e., the joint conditional distributions of
+X0:t given Y0:t , for t ∈ N. We will denote these distributions by φt and φ0:t , respectively (precise
+definitions of these measures are given in Section 2.2). In this paper we are focusing on the problem
+of computing, recursively in time, smoothed expectations
+                                           Z
+                                  φ0:t ht = ht (x0:t ) φ0:t (dx0:t ) (t ∈ N),                                (1.1)
+
+for additive functionals ht of form
+                                                 t−1
+                                                 X
+                                 ht (x0:t ) :=         h̃` (x`:`+1 )   (x0:t ∈ Xt+1 ).                      (1.2)
+                                                 `=0
+
+Expectations of the form (1.1) appear naturally in the context of parameter estimation using the
+maximum-likelihood method, e.g., when computing the score-function (the gradient of the log-
+likelihood function) via the Fisher identity or when computing the intermediate quantity of the
+expectation-maximization (EM) algorithm. Of particular relevance is the situation where the HMM
+belongs to an exponential family. We refer to [5, Sections 10 and 11] for a comprehensive treatment
+of these matters. Moreover, online implementations of EM (see, e.g., [29, 3]) require typically such
+smoothed expectations to be computed in an online fashion. In the case of marginal smoothing the
+interest lies in computing conditional expectations of some state Xŝ given Y0:t for t ≥ ŝ, which
+can be cast into our framework by letting, in (1.2), h̃` = 0 for ` 6= ŝ and h̃ŝ (xŝ:ŝ+1 ) = h̃ŝ (xŝ ).
+Nevertheless, since exact computation of smoothed expectations is possible only in the cases of
+linear Gaussian HMMs or HMMs with finite state space, we are in general referred to finding ap-
+proximations of these quantities, and the present paper focuses on the use of SMC-based techniques
+for this task. A particle filter approximates the flow {φt }t∈N of filter distributions by a sequence of
+occupation measures associated with samples {(ξti , ωti )}N    i=1 , t ∈ N, of random draws, particles (the
+ξti ’s), with associated non-negative importance weights (the ωti ’s). Particle filters revolve around two
+operations: a selection step duplicating/discarding particles with large/small importance weights,
+respectively, and a mutation step evolving randomly the selected particles in the state space. The
+first and most basic implementation, the so-called bootstrap particle filter [21] (see also [25]), prop-
+agates, in the mutation step, the particles according to the dynamics of the hidden Markov chain
+and selects the same multinomially according to importance weights proportional to the local likeli-
+hood of each particle given the current observation. This scheme imposes a dynamics of the particle
+cloud that resembles closely that of the filter distribution flow. Due to its very strong potential
+to solve nonlinear/non-Gaussian filtering problems, SMC methods have been subject to extensive
+research during the last two decades, resulting in a broad range of developments and variations of
+the original scheme; see, e.g., [15, 5, 4, 17] and the references therein.
+     Interestingly, the particle filter provides, as a by-product, approximations also of the joint smooth-
+ing distributions in the sense that for each t ∈ N, the occupation measure associated with the
+ancestral lines of the particles {ξti }N i=1 forms, when the lines are assigned the corresponding weights
+{ωti }Ni=1 , an estimate  of φ 0:t . Unfortunately,  this Poor man’s smoother (using the terminology of
+[14]) has a major flaw in that resampling systematically the particles leads to significant depletion
+of the trajectories and the existence of a random time before which all the ancestor paths coincide.
+                             J. Olsson and J. Westerborn/The PaRIS algorithm                            3
+
+
+In fact, [24] established, in the case of a compact state space X, a bound on the expected hight of
+the “crown” of the ancestral tree, i.e., the expected time distance from the last generation back to
+the most recent common ancestor, which is proportional to N log(N ) and uniform in time. Thus,
+the ratio of the length of the “crown” to that of the “trunk” tends to zero when time increases,
+implying that the Monte Carlo approximation obtained through this naive approach will, for long
+observation records, be based on practically a single draw, leading to a depleted estimator with a
+variance that grows quadratically with time.
+
+
+1.1. Previous work
+
+In the case of additive state functionals it is possible to cope partly with the degeneracy problem
+described above by means of a fixed-lag smoothing technique [26, 30, 32]. This approach avoids
+the particle path degeneracy by “localizing” the smoothing of a certain state around observations
+that are only significantly statistically dependent of the state in question and discarding remote
+and weakly influential observations, i.e., subsequent observations located at a time distance from
+the state exceeding a lag chosen by the user. The method is expected to work well if the mixing
+properties of the model allow the lag to be smaller than the length of the “crown” of the ancestral
+tree. Still, such truncation introduces a mixing-dependent bias, and designing the size of the lag is
+thus a non-trivial task.
+   A completely different way of approaching the problem goes via the so-called forward-filtering
+backward-smoothing decomposition, which is based on the fact that the latent process still satisfies
+the Markov property when evolving backward in time and conditionally on the observations. Con-
+sequently, each smoothing measure φ0:t can be represented as the joint law of this inhomogeneous
+backward chain with initial distribution given by the corresponding filter φt . Since the transition
+kernels of the backward chain depend on the filter distributions, which may be estimated efficiently
+by a particle filter, a particle-based approximation of the smoothing distribution can thus be natu-
+rally obtained by running, in a prefatory filtering pass, the particle filter up to time t (if φ0:t is the
+distribution of interest) and, in a backward pass, forming particle-based estimates of the backward
+kernels (and consequently the smoothing distribution) by modifying the particle weights computed
+in the forward pass. This scheme, which avoids completely the path degeneracy problem at the cost
+of a rather significant computational complexity, is referred to as the forward-filtering backward
+smoothing (FFBSm) algorithm [16, 23, 25]. As an alternative, the forward-filtering backward simu-
+lation (FFBSi) algorithm [20] generates, in order to reduce the computational overhead of FFBSm,
+trajectories being approximately distributed according to the smoothing distribution by simulat-
+ing transitions according to the backward dynamics induced by the particle filter approximations
+produced by the forward pass; as a consequence, FFBSm can be viewed as a Rao-Blackwellized
+version of FFBSi. These two algorithms correspond directly to the Rauch-Tung-Striebel smoother
+[36] for linear Gaussian HMMs or the Baum-Welch algorithm [1] for HMMs with finite state space.
+FFBSm and FFBSi were analyzed theoretically in [11] (see also [9]), which provides exponential
+concentration inequalities and well as central limit theorems (CLTs) for these algorithms. Since each
+backward draw of FFBSi requires a normalizing constant with N terms to be computed, the overall
+complexity of the algorithm is O(N 2 ). Under the mild assumption that the transition density of
+the latent chain is uniformly bounded, this complexity can be reduced to O(N ) by means of simple
+accept-reject approach. The latter technique, which was found in [11], will play a key role also in
+the development of the present paper. Since the Markov transition kernels of the backward chain
+depend on the filter distributions, the FFBSm and FFBSi algorithms require in general batch mode
+                               J. Olsson and J. Westerborn/The PaRIS algorithm                             4
+
+
+processing of the observations. This is the case also for the O(N ) smoother proposed in [19], which
+is based on the two-filter representation of each marginal smoothing distribution.
+   When the objective consists in online smoothing of additive state functionals (1.2), recursive
+approximation of the forward-filtering backward-smoothing decomposition can be achieved by in-
+troducing the auxiliary statistics
+
+                         Tt ht (xt ) = E[ht (X0:t ) | Xt = xt , Y0:t ]   (t ∈ N, xt ∈ X),
+
+where E denotes expectation associated with the law of the canonical version of the HMM (more
+precisely, in the previous expression Tt is a normalized transition kernel which will be defined in
+Section 2.2). This auxiliary statistic can be updated online according to
+
+     Tt+1 ht+1 (xt+1 ) = E[Tt ht (Xt ) + h̃t (Xt , xt+1 ) | Xt+1 = xt+1 , Y0:t ]   (t ∈ N, xt+1 ∈ X);   (1.3)
+
+see [29, 3, 9]. In this recursive formula, the expectation is taken under the backward kernel describing
+the conditional distribution of Xt given Xt+1 and Y0:t . On the basis of the auxiliary statistics, each
+smoothed additive functional may be computed as
+                                            Z
+                                   φ0:t ht = Tt ht (xt ) φt (dxt ) (t ∈ N).
+
+Following [9], a particle representation of the recursion (1.3) is naturally formed using the estimates
+of the retrospective dynamics provided by the FFBSm algorithm. Interestingly, this yields a pro-
+cedure that estimates, as new observations become available, the smoothing distribution flow in a
+forward-only manner while avoiding completely any problems of particle path degeneracy. However,
+since the method requires the normalizations of the backward kernels to be computed for each for-
+ward particle, the overall complexity of this algorithm is again O(N 2 ), which is unrealistic for large
+particle sample sizes.
+
+
+1.2. Our approach
+
+Our novel algorithm, which we will refer to as the particle-based, rapid incremental smoother
+(PaRIS), is, similarly to the forward-only implementation of FFBSm proposed in [9], based on
+(1.3) and can be viewed as an adaptation of the FFBSi algorithm to this recursion. It also shares
+some similarities with the ancestor sampling approach within the framework of particle Gibbs sam-
+pling [28]. Appealingly, we are able to adopt the accept-technique proposed by [11], yielding a fast
+algorithm with O(N ) complexity. PaRIS differs from the forward-only implementation of FFBSm
+in the way the update (1.3) of the auxiliary function is implemented; more specifically, instead of
+computing each subsequent auxiliary statistic as the expected sum of the previous statistic and the
+incremental term under the retrospective dynamics induced by the particle filter, PaRIS simulates
+Ñ such sums using the backward kernel and updates each statistic by taking the sample mean
+of these draws. Thus, as for the FFBSi algorithm, forward-only FFBSm can be viewed as a Rao-
+Blackwellization of PaRIS. Interestingly, the design of the sample size Ñ is ultimately critical, as the
+naive choice Ñ = 1 leads to a degeneracy phenomenon that resembles closely that of the Poor man’s
+smoother and, consequently, a variance that grows quadratically with t; on the other hand, for all
+Ñ ≥ 2 the algorithm stays numerically stable in the long run with a linearly increasing variance.
+The main objective of the present paper is to investigate theoretically this phase transition by, first,
+                            J. Olsson and J. Westerborn/The PaRIS algorithm                          5
+
+
+deriving, via a non-asymptotic Hoeffding-type inequality, the asymptotic (as N tends to infinity)
+variance of the Monte Carlo estimates produced by the algorithm (which is highly nontrivial due to
+the complex dependence structures induced by the backward simulation) and, second, verifying that
+this asymptotic variance is, for any Ñ ≥ 2, of order O(t) and O(1) in the cases of joint smoothing
+and marginal smoothing, respectively.The authors are not aware of any similar analysis in the SMC
+literature. The stability results are obtained under strong mixing assumptions that are standard in
+the literature of SMC analysis (see, e.g., [10, 8, 5]). Also the numerical performance of algorithm
+is investigated in a simulation study, comprising a linear Gaussian state space model (for which
+any quantity of interest may be computed exactly using the Rauch-Tung-Striebel smoother) and a
+stochastic volatility model.
+    We finally point out that the PaRIS algorithm was outlined by us in the conference note [33]
+without any theoretical support; in the present paper we are able to confirm, through a rigorous
+theoretical analysis, the conjectures made in the note in question concerning the stability properties
+of the algorithm.
+    To sum up, the smoothing algorithm we propose
+   • is computationally very efficient and easy to implement,
+   • does not suffer from particle lineage degeneracy,
+   • allows the observed data of the HMM to be processed online with minimal memory require-
+     ments, and
+   • is furnished with rigorous theoretical results describing the convergence and numeric stability
+     of the same.
+
+
+1.3. Outline
+
+After having introduced some kernel notation, HMMs, and the smoothing problem in Section 2, we
+describe carefully, in Section 2.3, particle filters, FFBSm (and its forward-only implementation),
+and FFBSi. Section 3.1 contains the derivation of our novel algorithm as well as some discussion of
+the choice of the design parameter Ñ . Our theoretical results are presented in Section 3.2, including
+a Hoeffding-type inequality (Theorem 1) and a CLT (Theorem 3). Section 3.2.3 is devoted to the
+numerical stability of PaRIS in the case Ñ ≥ 2, and Theorem 8 and Theorem 9 provide variance
+bounds in the cases of joint and marginal smoothing, respectively. In Section 4 we test numerically
+the algorithm and some conclusions are drawn in Section 5. Finally, Appendix A and Appendix B
+provide all proofs and some technical results, respectively.
+
+
+2. Preliminiaries
+
+2.1. Notation
+
+Before going into the details concerning HMMs and particle filters we introduce some notation. For
+any measurable space (X, X ), where X is a countably generated σ-algebra, we denote by F(X ) the
+set of bounded X /B(R)-measurable functions on X. For any h ∈ F(X ), we let khk∞ := supx∈X |h(x)|
+and osc(h) := sup(x,x0 )∈X2 |h(x) − h(x0 )| denote the sup and oscillator norms of h, respectively. Let
+M(X ) be the set of σ-finite measures on (X, X ) and M1 (X ) ⊂ M(X ) the probability measures. Given
+n ∈ N, we will denote product sets and product σ-fields by Xn := X × · · · × X and X n := X  · · ·  X
+(n times), respectively. For real numbers and integers we define the sets R+ := [0, ∞), R∗+ := (0, ∞),
+                             J. Olsson and J. Westerborn/The PaRIS algorithm                              6
+
+
+N := {0, 1, 2, . . .}, and N∗ := {1, 2, 3, . . .}. For any quantities {a` }n`=m we denote vectors as am:n :=
+(am , . . . , an ) and for any (m, n) ∈ N2 such that m ≤ n we denote Jm, nK := {m, m + 1, . . . , n}. The
+cardinality of a set S is denoted by #S.
+   An unnormalized transition kernel K from (X, X ) to (Y, Y) induces two integral operators, one
+acting on functions and the other on measures. More specifically, let h ∈ F(X  Y) and ν ∈ M(X ),
+and define the measurable function
+                                                        Z
+                                      Kh : X 3 x 7→ h(x, y) K(x, dy),
+
+and the measure                                     Z
+                                    νK : Y 3 A 7→       K(x, A) ν(dx),
+
+whenever these quantities are well-defined. Moreover, let K be defined as above and let L be another
+unnormalized transition kernel from (Y, Y) to a third measurable space (Z, Z); we then define two
+different products of K and L, namely
+                                                    Z
+                            KL : X × Z 3 (x, A) 7→ K(x, dy) L(y, A)
+
+and                                                     Z
+                    K  L : X × (Y  Z) 3 (x, A) 7→         1A (y, z) K(x, dy) L(y, dz),
+whenever these are well-defined. Note that the previous products form new transition kernels from
+(X, X ) to (Z, Z) and from (X, X ) to (Y × Z, Y  Z), respectively. We also define the -product of
+a kernel K and a measure ν ∈ M(X ) as the new measure
+                                                Z
+                         ν  K : X  Y 3 A 7→ 1A (x, y) K(x, dy) ν(dx).
+
+The concept of reverse kernels will be of importance in the coming developments. For a kernel K
+                                                                                   ←
+                                                                                   −
+from (X, X ) to (Y, Y) and a probability measure η ∈ M1 (X ), the reverse kernel K η associated with
+(η, K) is a transition kernel from (Y, Y) to (X, X ) satisfying, for all h ∈ F(X  Y),
+                                                          ←
+                                                          −
+                                        (η  K)h = (ηK)  K η h.
+
+A reverse kernel does not always exist; however if K has a transition density κ with respect to some
+                                  ←−
+reference measure in M(Y), then K η exists and is given by
+                                    R
+                        ←
+                        −             h(x̃)κ(x̃, x) η(dx̃)
+                        K η h(x) := R                      (h ∈ F(X ), x ∈ X)                   (2.1)
+                                         κ(x̃, x) η(dx̃)
+
+(see [5, Section 2.1] for details).
+   Finally, for any kernel K and any bounded measurable function h we write K2 h := (Kh)2 and
+Kh2 := K(h2 ). Similar notation will be used for measures.
+                             J. Olsson and J. Westerborn/The PaRIS algorithm                            7
+
+
+2.2. Hidden Markov models
+
+Let (X, X ) and (Y, Y) be some measurable spaces, Q : X × X → [0, 1] and G : X × Y → [0, 1] some
+Markov transition kernels, and χ ∈ M1 (X ). We define an HMM as the canonical version of the
+bivariate Markov chain {(Xt , Yt )}t∈N having transition kernel
+
+                            X × Y × (X  Y) : ((x, y), A) 7→ Q  G(x, A).                           (2.2)
+
+and initial distribution χ  G. The state process {Xt }t∈N is assumed to be only partially ob-
+served through the observations process {Yt }t∈N . The dynamics (2.2) implies that (we refer to [5,
+Section 2.2] for details)
+  (i) the state sequence {Xt }t∈N is a Markov chain with transition kernel Q and initial distribution
+      χ,
+ (ii) the observations are, conditionally on the states, independent and such that the conditional
+      distribution of each Yt depends on the corresponding Xt only and is given by the emission
+      distribution G(Xt , ·).
+We will throughout the paper assume that G admits a density g (referred to as the emission density)
+with respect to some reference measure ν ∈ M(Y), i.e.,
+                                 Z
+                        Gh(x) = h(y)g(x, y) ν(dy) (x ∈ X, h ∈ F(Y)).
+
+   In the following we assume that we are given a distinguished sequence {y}t∈N of observations of
+{Yt }t∈N , and will in general omit the dependence on these observations from the notation. Thus,
+define gt (x) := g(x, yt ), x ∈ X. For any (s, s0 , t) ∈ N3 such that 0 ≤ s ≤ s0 ≤ t we denote by φs:s0 |t
+the conditional distribution (posterior) of Xs:s0 given the observations Y0:t = y0:t . This distribution
+may be expressed as
+                 R    R                         Qt−1
+                   ··· h(xs:s0 )g0 (x0 ) χ(dx0 ) `=0 g`+1 (x`+1 ) Q(x` , dx`+1 )           0
+    φs:s0 |t h =     R    R                 Qt−1                                 (h ∈ F(X s −s+1 )) (2.3)
+                       ··· g0 (x0 ) χ(dx0 ) `=0 g`+1 (x`+1 ) Q(x` , dx`+1 )
+
+(assuming that the denominator is non-zero). If s = s0 = t, we let φt be shorthand for φt|t , i.e., the
+filter distribution at time t. If s = 0 and s0 = t, then φ0:t|t is the joint smoothing distribution. For
+t ∈ N, define the unnormalized transition kernels
+
+                             Lt h(x) := Q(gt+1 h)(x)       (x ∈ X, h ∈ F(X )),
+
+with the convention that Ls Lt ≡ id whenever s > t. In addition, we let L−1 be the Boltzmann
+multiplicative operator associated with g0 , i.e., L−1 h(x) ≡ g0 (x)h(x) for all h ∈ F(X ) and x ∈ X.
+By combining this notation with (2.3) we may express each filter distribution as
+
+                                           χL−1 · · · Lt−1
+                                   φt =                         (t ∈ N),
+                                          χL−1 · · · Lt−1 1X
+which implies immediately the filter recursion
+                                                 φt Lt
+                                       φt+1 =               (t ∈ N).                                (2.4)
+                                                φt Lt 1X
+                               J. Olsson and J. Westerborn/The PaRIS algorithm                                    8
+
+
+   In the following we will often deal with sums and products of functions with possibly different
+arguments. Since these functions will be defined on products of X, we will, when needed, with a
+slight abuse of notation, let subscripts define the domain and the values of such sums and products.
+For instance, ft f˜t : X 3 xt 7→ ft (xt )f˜t (xt ) while ft + f˜t+1 : X2 3 (xt , xt+1 ) 7→ ft (xt ) + f˜t+1 (xt+1 ).
+   We will for simplicity assume that the HMM is fully dominated, i.e., that also Q admits a
+transition density q with respect to some reference measure µ ∈ M(X ). In this case the reverse
+        ←
+        −
+kernel Q η of Q with respect to any η ∈ M1 (X ) is well-defined and specified by (2.1) (with κ = q).
+It may be shown (see, e.g., [5, Proposition 3.3.6]) that the state process has still the Markov property
+when evolving conditionally on Y0:t = y0:t in the time-reversed direction; moreover, the distribution
+                                                                     ←−
+of Xs given Xs+1 and Y0:t = y0:t is, for any s ≤ t, given by Q φs , which is referred to as the backward
+kernel at time s. Consequently, we may express each joint smoothing distribution φ0:t|t as
+                                                  φ0:t|t = φt Tt ,                                             (2.5)
+where we have defined the kernels
+                             (← −       ←
+                                        −                ←
+                                                         −
+                               Q φt−1  Q φt−2  · · ·  Q φ0                    for t ∈ N∗ ,
+                       Tt :=
+                               id                                                for t = 0.
+
+   As discussed in the introduction, the aim of this paper is, given a sequence {h̃t }t∈N of terms, to
+estimate the sequence {φ0:t|t ht }t∈N , where each ht is given by (1.2). By convention, h0 ≡ 0 (implying,
+e.g., that T0 h0 = 0). Using (2.5), each quantity of interest may be expressed as φt Tt ht = φ0:t|t ht .
+In addition, note that {Tt ht }t∈N may be expressed recursively as
+                                                   ←−
+                                       Tt+1 ht+1 = Q φt (Tt ht + h̃t ),                             (2.6)
+a formula that will play a key role in the coming developments.
+   Finally, define, for (s, t) ∈ N2 such that s ≤ t, the retro-prospective kernels
+                      ZZ
+      Ds,t h(xs ) :=       h(x0:t ) Ts (xs , dx0:s−1 ) Ls · · · Lt−1 (xs , dxs+1:t )
+                                                                                     (xs ∈ X, h ∈ F(X t+1 ))
+      D̃s,t h(xs ) := Ds,t (h − φ0:t|t h)(xs )
+operating simultaneously in the backward and forward directions. Note that the only difference
+between Ds,t and D̃s,t is that the latter is centralized around the joint smoothing distribution.
+
+2.3. Particle-based smoothing in HMMs
+
+2.3.1. The bootstrap particle filter
+
+In the following we assume that all random variables are defined on a common probability space
+(Ω, F, P). The bootstrap particle filter updates sequentially in time a set of particles and associated
+weights in order to approximate the filter distribution flow {φt }t∈N given the sequence {yt }t∈N of
+observations. Assume that we have at hand a particle sample {(ωti , ξti )}N
+                                                                          i=1 approximating the filter
+distribution φt in the sense that for all h ∈ F(X ),
+                                                 N
+                                                 X ωi   t             N →∞
+                                        φN
+                                         t h=               h(ξti )    w     φt h,                             (2.7)
+                                                 i=1
+                                                       Ωt
+                                       J. Olsson and J. Westerborn/The PaRIS algorithm                    9
+
+              PN
+where Ωs := i=1 ωti denotes the weight sum. To form a weighted particle sample {(ωt+1     i     i
+                                                                                             , ξt+1 )}N
+                                                                                                      i=1
+                                                                               N
+targeting the subsequent filter φt+1 we simply the plug the approximation φt into the filter recursion
+                                                                                       PN
+(2.4), yielding the approximation of φt+1 by a mixture distribution proportional to i=1 ωti Lt (ξti , ·),
+and aim at updating the particle cloud by sampling from this mixture. However, since Lt is gen-
+erally intractable, we augment the space by the index i and apply importance sampling from the
+extended distribution proportional to ωti Lt (ξti , ·) using the distribution proportional to ωti Q(ξti , ·)
+as instrumental distribution. This yields a sampling schedule comprising two operations: selection
+                                                i
+and mutation. In the selection step, a set {It+1     }N
+                                                      i=1 of indices are drawn multinomially according
+                                    i N
+to probabilities proportional to {ωt }i=1 . After this, the mutation step propagates the particles for-
+ward according to the dynamics of the state process and assigns the mutated particles importance
+weights given by the emission density, i.e., for all i ∈ J1, N K,
+
+                                                      i           Ii
+                                                     ξt+1 ∼ Q(ξt t+1 , ·),
+                                                     i            i
+                                                    ωt+1 = gt+1 (ξt+1 ).
+
+The algorithm, which is the standard bootstrap particle filter presented in [21], is initialized by
+drawing {ξ0i }Ni=1 ∼ χ
+                       N
+                            and letting ω0i = g0 (ξ0i ) for all i ∈ J1, N K. In this basic scheme, which is
+summarized in Algorithm 1, the information provided by the most current observation yt+1 enters
+the algorithm via the importance weights only. However, instead of moving the particles “blindly”
+according to the latent dynamics Q, it is, in order to direct the particle swarm toward regions of the
+state space with large posterior probability, possible to increase the influence of the last observation
+on the mutation moves as well as the selection mechanism step via the framework of auxiliary particle
+filters [34]. Even though all the results of the present paper can be extended straightforwardly to
+auxiliary particle filters, we have chosen to limit the presentation to bootstrap-type particle filters
+only for clarity.
+
+Algorithm 1 Bootstrap particle filter
+Require: A weighted particle sample {(ξti , ωti )}N
+                                                  i=1 targeting φt .
+1: for i = 1 → N do
+2:      i
+      It+1  ∼ Pr({ωt` }N
+                       `=1 );
+                           Ii
+ 3:           i
+       draw ξt+1    ∼ Q(ξt t+1 , ·);
+ 4:         i
+       set ωt+1 ← gt+1 (ξt+1   i );
+ 5: end for
+ 6: return {(ξti , ωti )}N
+                         i=1 .
+
+
+
+   In the following we will express Algorithm 1 in a compact form by writing
+                                  i      i
+                                             )}N           i    i N
+                                                                       
+                              “{(ξt+1 , ωt+1   i=1 ← PF {(ξt , ωt )}i=1 ”.
+
+
+2.3.2. Forward-filtering backward-smoothing (FFBSm)
+
+As discussed in the introduction, the bootstrap filter may also be used for smoothing, as the weighted
+occupation measures associated with the genealogical trees of the particle samples generated by the
+algorithm form consistent estimates of the joint smoothing distributions. A way of detouring the
+particle path degeneracy of this Poor man’s smoother goes via the backward decomposition (2.5),
+                                J. Olsson and J. Westerborn/The PaRIS algorithm                           10
+
+                                                        ←−
+granted that we are able to approximate each kernel Q φs , s ∈ N. However, considering instead the
+reverse kernel associated with the particle filter φN
+                                                    s , yields, via (2.1), the particle approximations
+                                      N
+                      ←
+                      −           X     ωsi q(ξsi , x)
+                      Q φN
+                         s
+                           h(x) =     PN
+                                                            h(ξsi )          (x ∈ X, h ∈ F(X )).       (2.8)
+                                             ω ` q(ξ ` , x)
+                                  i=1  `=1 s         s
+
+FFBSm consists in simply inserting these approximations into (2.5), i.e., approximating, for h ∈
+F(X t+1 ), φ0:t|t h by
+                                                               is+1
+                                  N        N  t−1
+                                                                        !
+                                X        X    Y ωsis q(ξsis , ξs+1  )     ωtit
+                     N
+                    φ0:t|t h :=      ···          PN              i
+                                                                               h(ξ0i0 , . . . , ξtit ). (2.9)
+                                i =1     i =1 s=0
+                                                        `     `    s+1
+                                                   `=1 ωs q(ξs , ξs+1 )
+                                                                          Ω  t
+                             0            t
+
+
+For general objective functions h, this occupation measure is impractical as the cardinality of its
+support grows geometrically fast with time. In the case where the objective function h is of additive
+form (1.2) the computational complexity is still quadratic, since computation of the normalizing
+          PN
+constants `=1 ωs` q(ξs` , ξs+1
+                           i
+                               ) is required for all i ∈ J1, N K and s ∈ J0, t − 1K. Consequently, FFBSm
+a computationally intensive approach.
+
+2.3.3. Forward-only implementation of FFBSm
+
+Appealingly, as noted by [9], in the case of additive state functionals the sequence {φN     t ht }t∈N can be
+computed on-the-fly as t increases on the basis of the recursion (2.6). More specifically, plugging the
+estimates (2.8) into the recursion in question yields particle approximations {τ̃ti }N  i=1 of the statistics
+{Tt ht (ξti )}N
+              i=1 evaluated at the particle locations. After initializing τ̃ i
+                                                                             0 = 0 for all i ∈ J1, N K, these
+approximations may, when new observations become available, be updated by first evolving the
+particle filter sample one step and then setting
+                                N
+                                X      ωtj q(ξtj , ξt+1
+                                                    i
+                                                          )
+                        i
+                      τ̃t+1 =         P       `     `     i
+                                                              {τ̃tj + h̃t (ξtj , ξt+1
+                                                                                  i
+                                                                                      )}   (t ∈ N),   (2.10)
+                                j=1   `=1 t ω   q(ξ   , ξ
+                                                    t t+1   )
+
+yielding, via (2.5), the estimate
+                                                            N
+                                                            X ωi  t i
+                                              φN
+                                               0:t|t ht =            τ̃t ,
+                                                             i=1
+                                                                 Ω t
+
+of φ0:t|t ht . Besides allowing for online processing of the data, the algorithm has also the appeal-
+ing property that only the current statistics {τ̃ti }N                           i   i N
+                                                     i=1 and particle sample {(ξt , ωt )}i=1 need to be
+                                                                     2
+stored in the memory. Still, the complexity of the scheme is O(N ) due to the computation of the
+normalizing constants of the backward kernel induced by the particle filter.
+
+2.3.4. Forward-filtering backward-simulation (FFBSi)
+
+In order to remedy the high computational complexity of FFBSm, FFBSi generates trajectories on
+the index space J1, N Kt+1 by simulating repeatedly a time-reversed, inhomogeneous Markov chain
+{J˜s }ts=0 with transition probabilities
+                                  ωsj q(ξsj , ξs+1
+                                               i
+                                                   )
+                   ΛN
+                    s (i, j) :=  N
+                                                              ((s, i, j) ∈ J0, t − 1K × J1, N K2 )    (2.11)
+                                        `         i
+                                P              `
+                                 `=1 ωt q(ξs , ξs+1 )
+                              J. Olsson and J. Westerborn/The PaRIS algorithm                             11
+
+
+and initial distribution (i.e., distribution at time t) Pr({ωtj }N             ˜ t
+                                                                 j=1 ). Given {Js }s=0 , an approximate
+                                                                                                 ˜   ˜
+draw from the joint smoothing distribution is formed by the random vector (ξ0J0 , . . . , ξtJt ). Conse-
+quently, the uniformly weighted occupation measure associated with a set of conditionally indepen-
+dent such draws provides a finite-dimensional approximation of the smoothing distribution φ0:t|t ;
+see [20]. In this basic formulation of FFBSi, the backward sampling pass requires the normalizing
+constants of the particle-based backward kernels to be computed, and hence the algorithm suffers
+from a quadratic complexity. On the other hand, on the contrary to FFBSm, this complexity is
+the same for all types of objective functions (whereas FFBSm has quadratic complexity only when
+applied to additive state functionals). However, following [11] it is, under the assumption that there
+exists ε̄ ∈ R∗+ such that q(x, x0 ) ≤ ε̄ for all (x, x0 ) ∈ X2 (an assumption that is satisfied for most
+models of interest), possible to reduce the computational complexity of FFBSi by simulating the
+approximate backward kernel using the following accept-reject technique. In order to sample from
+                                                                             ∗
+Pr({ΛN          N
+       s (i, j)}j=1 ) for given s ∈ J0, t − 1K and i ∈ J1, N K, a candidate J drawn from the proposal
+                      j N                                      J∗ i
+distribution Pr({ωs }j=1 ) is accepted with probability q(ξs , ξs+1 )/ε̄. The procedure repeated until
+acceptance; see Algorithm 3 for an efficient way of implementing this approach. Under the additional
+assumption that the transition density is bounded also from below (see Assumption 2 below) it can
+be shown (see [11, Proposition 2]) that the computational complexity of this accept-reject-based
+FFBSi algorithm is indeed linear (i.e., O(N )).
+
+3. Main results
+
+Requiring separate forward and backward processing of the data, the standard design of FFBSi is
+not useful in online applications. We hence propose a novel algorithm which can be viewed as a
+hybrid between the forward-only implementation of the FFBSm algorithm and the FFBSi algorithm.
+In order to gain computational effort, it the replaces, in the spirit of FFBSi, exact computation of
+(2.10) by a Monte Carlo estimate. The algorithm, which is presented in the next section, is furnished
+with rigorous theoretical results concerning its convergence and numerical stability in Section 3.2.
+
+3.1. The particle-based, rapid incremental smoother (PaRIS)
+
+Given estimates {τti }N                                          i N                             i    i N
+                       i=1 of the auxiliary statistics {Tt ht (ξt )}i=1 and a particle sample {(ξt , ωt )}i=1
+targeting the filter φt , the algorithm updates the estimated auxiliary statistics by, first, propagating
+                                           i      i
+the particle cloud one step, yielding {(ξt+1   , ωt+1 )}N
+                                                        i=1 , second, drawing, for each i ∈ J1, N K, condi-
+                                                                   (i,j)                   ∗
+tionally independent and identically distributed indices {Jt+1 }Ñ       j=1 , where Ñ ∈ N is some given
+sample size referred to as the precision parameter, according to
+                              (i,j)
+                           {Jt+1 }Ñ         N        Ñ
+                                  j=1 ∼ Pr({Λt (i, `)}`=1 )
+                                                            Ñ
+                                                                           (i ∈ J1, N K),
+
+where the transition probabilities ΛN
+                                    t are defined in (2.11), and, third, letting
+
+                                      Ñ     (i,j)           (i,j)
+                                                                            
+                                      X     Jt+1            Jt+1
+                       i
+                      τt+1 = Ñ −1         τt       + h̃t (ξt          i
+                                                                    , ξt+1 )    (i ∈ J1, N K).
+                                      j=1
+
+                                i
+Using the updated statistics {τt+1 }Ñ
+                                    i=1 , an estimate of φ0:t+1|t+1 ht+1 = φt+1 Tt+1 ht+1 is obtained
+  PN
+as i=1 ωt+1 τt+1 /Ωt+1 . As for FFBSm, the algorithm is initialized by setting τ0i = 0 for i ∈ J1, N K.
+         i   i
+                                 J. Olsson and J. Westerborn/The PaRIS algorithm                                 12
+
+
+The resulting smoother, which is summarized in Algorithm 2, allows for online processing with
+constant memory requirements, as it requires only the current particle cloud and estimated auxiliary
+statistics to be stored at each iteration. In addition, applying, in Step (4), the accept-reject technique
+described in the previous section yields, for a given Ñ , an algorithm with linear complexity.
+
+Algorithm 2 Particle-based, rapid incremental smoother (PaRIS)
+Require: Particles sample {(ξti , ωti )}N                                                      i N
+                                         i=1 targeting φt and estimated auxiliary statistics {τt }i=1 .
+          i      i       N             i    i   N
+1: run {(ξt+1 , ωt+1 )}i=1 ← PF({(ξt , ωt )}i=1 );
+2: for i = 1 → N do
+3:    for j = 1 → Ñ do
+                   (i,j)
+4:        draw Jt+1 ∼ Pr({ωtj q(ξt` , ξt+1i   )}N `=1 );
+5:    end for                                                         !
+                                     (i,j)             (i,j)
+                                   Jt+1               Jt+1
+            i    ← Ñ −1 Ñ                                      i
+                           P
+6:    Set τt+1              j=1  τ t        +  h̃t (ξt       , ξ t+1 ) ;
+
+ 7: end for
+             i
+ 8: return {τt+1 }N          i      i     N
+                  i=1 and {(ξt+1 , ωt+1 )}i=1 .
+
+
+
+   In the PaRIS scheme, the precision parameter Ñ has to be set by the user. As shown in Section 3.2,
+the algorithm is asymptotically consistent (as the particle sample size N tends to infinity) for any
+fixed Ñ ∈ N∗ (i.e., the precision parameter does not need to be increased with N in order to
+guarantee consistency). Increasing the precision parameter increases the accuracy of the algorithm
+at the cost of additional computational complexity. Importantly, there is a significant qualitative
+difference between the cases Ñ = 1 and Ñ ≥ 2, and it turns out that the latter is required to keep
+PaRIS numerically stable. This will be clear from the theoretical bounds on the asymptotic variance
+obtained in Section 3.2 as well as from the numerical experiments in Section 4.
+   In order to understand the fundamental difference between the cases Ñ = 1 and Ñ ≥ 2 we may
+use the backward indices to connect the particles of different generations. Hence, let, for all t ∈ N
+                   (i,∅)
+and i ∈ J1, N K, Jt,t := i and, for all s ∈ J0, t − 1K and js:t−1 ∈ J1, Ñ Kt−s ,
+                                                                  (i,js+1:t−1 )
+                                             (i,j     )      (J                   ,js )
+                                           Js,t s:t−1 := Js+1s+1,t
+                                                                                                          (i,j   )
+and let us write “ξs` L99 ξti ” if there exists a sequence js:t−1 of indices such that ` = Js,t s:t−1 .
+                                                                                 Qt
+Note that the support of the PaRIS estimator at time t is given by St := s=0 As,t ⊂ Xt+1 , where
+As,t := ∪N       `    `      i       ` N                     i      i                               ` N
+           i=1 {ξs : ξs L99 ξt } ⊂ {ξs }`=1 (so that, since ξt L99 ξt for all i ∈ J1, N K, At,t = {ξt }`=1 ).
+                                          ∞
+When Ñ = 1, the sequence {#As,t }t=s is non-decreasing, and #As,t = 1 ⇒ #Au,t = 1 for all
+u ∈ J0, sK. This implies a degeneracy phenomenon that resembles closely that of the Poor man’s
+smoother. On the contrary, in the case Ñ ≥ 2 it may well occur that #As,t > #As,t+1 , also when
+#As,t+1 = 1. The previous is, for N = 3 and t = 4, illustrated graphically in Figure 1, where
+columns of nodes represent particle clouds at different time steps (with time increasing rightward)
+and arrows indicate connections through the relation L99. Black-colored particles are included in the
+support S4 of the final estimator, while gray-colored ones are inactive. As clear from Figure 1(a),
+setting Ñ = 1 depletes quickly the support of the estimator, leading to a numerically unstable
+algorithm. Figure 1(b) shows the same configuration as in (a), but with one additional backward
+sample (i.e., Ñ = 2). In this case, the sequence {#As,4 }4s=0 is no longer non-decreasing, and a high
+degree of depletion at some time points (such as s = 2) has merely local effect of the support of the
+estimator. In the coming sections, the fact that PaRIS stays numerically stable for any fixed Ñ ≥ 2
+is established theoretically as well as through simulations.
+                                 J. Olsson and J. Westerborn/The PaRIS algorithm                                13
+
+
+
+
+                    (a) Ñ = 1                                                                   (b) Ñ = 2
+
+Fig 1. Genealogical traces corresponding to backward simulation in the PaRIS algorithm. Columns of nodes refer
+to different particle populations (with N = 3) at different time points (with time increasing rightward) and arrows
+indicate connections through the relation L99. Black-colored particles are included in the support S4 of the final
+estimator, while gray-colored ones are inactive.
+
+
+
+3.2. Theoretical results
+
+The coming convergence analysis is driven by the following assumption.
+Assumption 1.
+  (i) For all t ∈ N, gt ∈ F(X ) and gt (x) > 0, x ∈ X,
+ (ii) q ∈ F(X 2 ).
+   Assumption 1(i) implies finiteness and positiveness of the particle weights; the boundedness of
+the transition density q implied by Assumption 1(ii) allows, besides certain technical arguments
+(formalized in Lemma 14) based on the generalized Lebesgue theorem, the accept-reject sampling
+technique discussed in Section 2.3.4 to be used.
+   In turns out to be necessary to establish the convergence of PaRIS for a slightly more general
+affine modification of the additive state functional (1.2) under consideration. More specifically, we
+will verify that for all t ∈ N and (ft , f˜t ) ∈ F(X )2 ,
+                             N
+                             X ωi                                       N →∞
+                                     t
+                                         {τti ft (ξti ) + f˜t (ξti )}    w     φt (Tt ht ft + f˜t ),          (3.1)
+                              i=1
+                                  Ωt
+
+where {τti }N           i   i N
+            i=1 and {(ξt , ωt )}i=1 are the output of Algorithm 2, in the senses of exponential con-
+centration, weak convergence, and Lp error. The analogous results for the original additive state
+functional are then obtained as corollaries by simply applying (3.1) with ft ≡ 1X and f˜t ≡ 1Xc . Our
+proofs, which are presented in Appendix A, are based on single-step analyses of the scheme and rely
+on techniques developed in [11] and [12]. Nevertheless, the analysis of PaRIS is, especially in the
+case of weak convergence, highly non-trivial due to the complex dependence between the ancestral
+lineages of the particles induced by the backward sampling approach (on the contrary to standard
+FFBSi, where the backward trajectories are conditionally independent; see the previous section).
+
+3.2.1. Hoeffding-type inequalities
+
+Besides being a result of independent interest, the following exponential concentration inequality
+for finite sample sizes N plays an instrumental role in the proof of the CLT in the next section. For
+reasons that will be clear in the proof of Theorem 3, the bound is established for the unnormalized
+(i) as well as normalized (ii) estimator.
+                                     J. Olsson and J. Westerborn/The PaRIS algorithm                                14
+
+
+Theorem 1. Let Assumption 1 hold. Then for all t ∈ N, (ft , f˜t ) ∈ F(X )2 , and Ñ ∈ N∗ there exist
+constants (ct , c̃t ) ∈ (R∗+ )2 (depending on ht , Ñ , ft , and f˜t ) such that for all N ∈ N∗ and all ε ∈ R∗+ ,
+                 N
+                                                                                !
+           1 X i i                       ˜                                ˜
+  (i) P               ω {τ ft (ξt ) + ft (ξt )} − φt−1 Lt−1 (Tt ht ft + ft ) ≥ ε ≤ ct exp(−c̃t N ε2 ),
+                                   i          i
+          N i=1 t t
+           N
+                                                                        !
+          X      ωti i               ˜                         ˜
+ (ii) P               {τt ft (ξt ) + ft (ξt ) − φt (Tt ht ft + ft )} ≥ ε ≤ ct exp(−c̃t N ε2 )
+                               i           i
+
+          i=1
+                 Ω  t
+
+(with the convention φ−1 ≡ χ).
+   The following is an immediate consequence of Theorem 1.
+Corollary 2. Let Assumption 1 hold. Then for all t ∈ N and Ñ ∈ N∗ there exist constants
+(ct , c̃t ) ∈ (R∗+ )2 (depending on ht and Ñ ) such that for all N ∈ N∗ and all ε ∈ R∗+ ,
+
+                                       N
+                                                                          !
+                                       X ωi   t
+                             P                    (τti − φt Tt ht ) ≥ ε       ≤ ct exp(−c̃t N ε2 ).
+                                       i=1
+                                           Ωt
+
+
+3.2.2. Central limit theorems and asymptotic Lp error
+
+Theorem 3. Let Assumption 1 hold. Then for all t ∈ N, (ft , f˜t ) ∈ F(X )2 , and Ñ ∈ N∗ , as N → ∞,
+                          N
+                  √       X ωi                                                            D
+                      N          t
+                                     {τti ft (ξti ) + f˜t (ξti ) − φt (Tt ht ft + f˜t )} −→ σt hft , f˜t i(h)Z,
+                          i=1
+                              Ωt
+
+where Z has standard Gaussian distribution and
+
+ σt2 hft , f˜t i(ht ) := σ̃t2 hft , f˜t i(ht )
+  t−1 X  s                          ←−                             2                                      2
+                 `−(s+1) φ` L` { Q φ` (T` h` + h̃` − T`+1 h`+1 ) L`+1 · · · Ls (gs+1 {Ls+1 · · · Lt−1 ft } )}
+  X
++             Ñ                                                                                                  (3.2)
+  s=0
+                                               (φ` L` · · · Ls−1 1X )(φs Ls · · · Lt−1 1X )2
+       `=0
+
+with
+                                                        t−1
+                                                        X   φs Ls {gs+1 D̃2s+1,t (ht ft + f˜t )}
+                             σ̃t2 hft , f˜t i(ht ) :=
+                                                        s=0
+                                                                     (φs Ls · · · Lt−1 1X )2
+
+being the asymptotic variance of the FFBSm algorithm (where, by convention, Lm Ln = id if m > n).
+Remark 4. Since for all s ∈ J0, t − 1K and ` ∈ J0, sK, ` − (s + 1) ≤ −1, it holds, in (3.2), that
+
+                                            lim σt2 hft , f˜t i(ht ) = σ̃t2 hft , f˜t i(ht ),
+                                           Ñ →∞
+
+
+i.e., for large Ñ the asymptotic variance of PaRIS tends to that of the FFBSm algorithm. This
+is in line with our expectations, as the forward-only version of FFBSm can be viewed as a Rao-
+Blackwellization of PaRIS.
+   Again, the following is an immediate consequence of Theorem 3.
+                                     J. Olsson and J. Westerborn/The PaRIS algorithm                                        15
+
+
+Corollary 5. Let Assumption 1 hold. Then for all t ∈ N and Ñ ∈ N∗ , as N → ∞,
+                                                 N
+                                         √       X ωi   t                      D
+                                             N              (τti − φt Tt ht ) −→ σt (ht )Z,
+                                                 i=1
+                                                     Ωt
+
+where Z has standard Gaussian distribution and
+
+  σt2 (ht ) := σ̃t2 (ht )
+                                         ←−
+                                  φ` L` { Q φ` (T` h` + h̃` − T`+1 h`+1 )2 L`+1 · · · Ls (gs+1 {Ls+1 · · · Lt−1 1X }2 }
+           t−1 X
+           X   s
+       +             Ñ `−(s+1)                                                                                         .
+           s=0 `=0
+                                                       (φ` L` · · · Ls−1 1X )(φs Ls · · · Lt−1 1X )2
+                                                                                                                      (3.3)
+with
+                                                             t−1
+                                                             X   φs Ls (gs+1 D̃2s+1,t ht )
+                                             σ̃t2 (ht ) :=
+                                                             s=0
+                                                                   (φs Ls · · · Lt−1 1X )2
+being the asymptotic variance of the FFBSm algorithm.
+  By following identically the lines of the proof of [13, Theorem 8], we may use Corollary 2 and
+Corollary 5 for deriving also the asymptotic Lp error of the estimates produced by the algorithm.
+Corollary 6. Let Assumption 1 hold. Then for all p ∈ R∗+ , t ∈ N, and Ñ ∈ N∗ ,
+                        N                                                   1/p
+                  √        ωti i                  √
+                                                             
+                       X                                       Γ{(p + 1)/2}
+              lim N           (τt − φt Tt ht ) = 2σt (ht )         √             ,
+             N →∞
+                       i=1
+                           Ωt                                        2π
+                                                                    Lp
+
+where σt2 (ht ) is given in (3.3).
+
+3.2.3. Time uniform asymptotic variance bounds
+
+In the present section we establish the long-term numerical stability of the PaRIS algorithm by
+bounding the asymptotic variance (3.3) (and hence, by Corollary 6, the asymptotic Lp error) using
+mixing-based arguments. We will treat separately joint smoothing and marginal smoothing, and
+derive, for precision parameters Ñ ≥ 2, O(t) and O(1) bounds, respectively, on the asymptotic
+variances in these cases. Since such time dependence is the best possible for SMC error bounds
+on the path and marginal spaces, these results confirm the conjecture that the algorithm stays
+numerically stable for precision parameters of this sort. Similar results for the FFBSm and FFBSi
+algorithms were obtained in [11, 18]. The analysis will be carried through under the following
+strong mixing assumption, which is standard in the literature of SMC analysis (see [10] and, e.g.,
+[8, 5, 7, 13] for refinements) and points to applications where the state space X is a compact set.
+Assumption 2.
+
+ (i) There exist constants 0 < ε < ε̄ < ∞ such that for all (x, x̃) ∈ X2 ,
+                                                               ε ≤ q(x, x̃) ≤ ε̄.
+ (ii) There exist constants 0 < δ < δ̄ < ∞ such that for all t ∈ N, kgt k∞ ≤ δ̄ and δ ≤ Lt 1X (x),
+      x ∈ X.
+                              J. Olsson and J. Westerborn/The PaRIS algorithm                    16
+
+
+Joint smoothing
+
+The following assumption implies that the additive functional under consideration grows at most
+linearly with time, which is a minimal requirement for obtaining an O(t) asymptotic variance.
+Assumption 3. There exists |h̃|∞ ∈ R∗+ such that for all s ∈ N, osc(h̃s ) ≤ |h̃|∞ .
+   As an auxiliary result, we provide an O(t) bound on the asymptotic variance of the FFBSm
+algorithm; see [18] for a similar result on the Lp error for finite particle sample sizes.
+Proposition 7. Let Assumption 2 and Assumption 3 hold. Then
+
+                                              1                        4δ̄
+                                       lim sup σ̃t2 (ht ) ≤ |h̃|2∞           .
+                                         t→∞ t                     δ(1 − %)4
+
+   In the light of (7) it suffices to bound the second term of (3.3) by a quantity of order O(t).
+This yields the following result, where, interestingly, the incremental asymptotic variance caused
+by the backward simulation is inversely proportional to the precision parameter Ñ . This is well
+in line with the theory of random weight SMC methods, in which, in similarity to our algorithm,
+intractable quantities (the importance weights) are replaced by random and unbiased estimates of
+the same (see [32, 31]).
+Theorem 8. Let Assumption 2 and Assumption 3 hold. Then for all Ñ ≥ 2,
+
+                                                           (4δ̄%2 + 1 − %)2
+                                                                           
+                        1                       δ̄
+                 lim sup σt2 (ht ) ≤ |h̃|2∞            4 +                    ,
+                   t→∞ t                    δ(1 − %)4      (Ñ − 1)(1 − %)
+
+where σt2 (ht ) is defined in (3.3).
+
+Marginal smoothing
+
+We turn to marginal smoothing, i.e., the situation when all terms of the additive functional are
+zero but a single one. For such a particular objective function we able to construct a time uniform
+bound on the unnormalized asymptotic variance of the same form as before, with one term rep-
+resenting the FFBSm asymptotic variance (see [11, Theorem 12]) and one additional term being
+inversely proportional to the precision parameter and representing the loss of accuracy introduced
+by backward sampling.
+Assumption 4. The additive functional has the following form. For some ŝ ∈ N,
+                                             (
+                                              0           for s 6= ŝ,
+                             h̃s (xs:s+1 ) =
+                                              h̃ŝ (xŝ ) for s = ŝ.
+
+Theorem 9. Let Assumption 2 and Assumption 4 hold. Then for all t ∈ N and Ñ ≥ 2,
+
+                                                1 + %2
+                                                                                      
+            2            2           δ̄                                1
+           σt (ht ) ≤ osc (h̃ŝ )            δ̄        +4                                ,
+                                  (1 − %)3      1+%       δ(Ñ − 1){(1 − %2 ) ∧ (1/2)}
+
+where σt2 (ht ) is defined in (3.3).
+                                   J. Olsson and J. Westerborn/The PaRIS algorithm                                 17
+
+
+3.2.4. Computational complexity
+
+We conclude this section with some comments on the complexity of the algorithm. Under Assump-
+tion 1(ii), we may cast the accept-reject technique proposed in [11, Algorithm 1] into the framework
+of PaRIS. A pseudo-code describing the resulting scheme is provided by Algorithm 3 in Section B.2.
+For a given t ∈ N, we denote by Ct hN, Ñ i the (random) number of elementary operations needed
+for executing the PaRIS algorithm parameterized by (N, Ñ ) ∈ (N∗ )2 from time zero to time t.
+Note that Ct hN, Ñ i is strongly data dependent, as the observations {ys }ts=0 effect, via the particle
+weights, the acceptance probabilities at the different time steps. Still, under the strong mixing as-
+sumption above it is possible to bound uniformly this random variable. The following result is an
+immediate consequence of [11, Proposition 2].
+Theorem 10. Let Assumption 2 hold. Then there exists a constant c ∈ R∗+ such that E[Ct hN, Ñ i] ≤
+ctN Ñ /(1 − %) for all t ∈ N.
+   Thus, the expected number of trials grows linearly with time, the number of particles, and the
+precision parameter, showing the importance of keeping the latter at a minimum. On the other
+hand, since the variance bound derived in Proposition 7 (and Theorem 9) is inversely proportional
+to Ñ , using an excessively large precision parameter will not pay off in terms of variance reduction
+(as the variance term controlled by the precision parameter will be negligible beside the variance
+corresponding to FFBSm). We hence advocate keeping Ñ at a highly moderate value, and will return
+to this matter in connection to the numerical illustrations of the next section.
+
+4. Simulations
+
+An exhaustive study of the numerical aspects of PaRIS is beyond the scope of the present paper;
+nevertheless, we benchmark the algorithm on two different models, namely
+   • a linear Gaussian state-space model (for which all quantities of interest can be computed
+     exactly for comparison) and
+   • a stochastic volatility model [22].
+
+4.1. Linear Gaussian state-space model
+
+We first consider the linear Gaussian state-space model
+                                         Xt+1 = aXt + σε εt+1
+                                                                        (t ∈ N),                                 (4.1)
+                                            Yt = bXt + σζ ζt
+
+where Y = X = R and {εt }t∈N∗ and {ζt }t∈N are sequences of mutually independent standard nor-
+mally distributed random variables. The parameters (a, b) ∈ R2 and (σε , σζ ) ∈ (R∗+ )2 are considered
+to be known. We aim at computing smoothed expectations of the sufficient statistics
+                      t                            t                            t−1
+       (1)                          (2)                           (3)
+                      X                            X                            X
+      ht (x0:t ) :=         xs ,   ht (x0:t ) :=         x2s ,   ht (x0:t ) =         xs xs+1   (x0:t ∈ Xt+1 )   (4.2)
+                      s=0                          s=0                          s=0
+
+under the dynamics governed by the parameter vector (a, b, σε , σζ ) = (.7, 1, .2, 1), and assume for
+simplicity that the model is well-specified. For this model, the disturbance smoother (see, e.g., [5,
+                            J. Olsson and J. Westerborn/The PaRIS algorithm                          18
+
+
+Algorithm 5.2.15]) provides the exact values of the smoothed sufficient statistics, and we compared
+these values with approximations obtained using PaRIS as well as the forward-only implementation
+of FFBSm. With our implementation, parameterizing PaRIS and FFBSm with (N, Ñ ) = (150, 2)
+and N = 50, respectively, resulted in very similar computational times for the two algorithms, with
+PaRIS being slightly faster (recall that FFBSm has a quadratic complexity). As clear from the
+box plots (based on time-normalized estimates) displayed in Figure 2, PaRIS outperforms clearly
+FFBSm as the former exhibits lower variance as well as smaller bias for equal computational time.
+    As a measure of numerical performance, we define efficiency as inverse sample variance over
+computational time. Figure 3 reports the efficiencies by which the PaRIS and forward-only FFBSm
+                              (1)
+algorithms estimate φ0:t|t ht using each N = 500 particles. As evident from the plot, PaRIS exhibits
+a higher efficiency uniformly over all time points. The variance estimates were based on 50 replicates.
+    In order to examine the dependence of the performance of PaRIS on the design of the precision
+                                                    (1)
+parameter Ñ , we produced estimates of φ0:t|t ht for t ∈ J0, 1000K using the algorithm for each of
+the precision parameters Ñ ∈ {1, 2, 3, 4, 10, 30}. All these estimators were computed on the basis of
+the same forward particles, so also an additional FFBSm-based estimator. This experiment was, in
+order to estimate the variances of the (seven) different estimators, replicated 100 times for the same
+fixed sequence of observations. Figure 4, displaying estimated variance as a function of time, shows
+a momentous difference between the cases Ñ = 1 and Ñ > 1 (note the difference in y-axis scale
+between the two graphs); the graphs in the top (Ñ = 1) and bottom (Ñ > 1) figures exhibit variance
+growths that appear to be close to quadratic and linear, respectively, which is well in accordance
+with the theory. Increasing the precision parameter Ñ from 2 to 4 implies some decrease of variance,
+while increasing the same from 4 to 30 has only marginal effect on the accuracy of the estimator (the
+difference between the variances corresponding to Ñ = 10 and Ñ = 30 is close to indistinguishable).
+This is perfectly in line with the theoretical results obtained in Section 3, where the second term
+of the variance bound in Theorem 8 is inversely proportional to the precision parameter. Finally,
+ratios of variances of estimators associated with different Ñ are displayed in Figure 5, which shows
+a linearly increasing ratio of the variances associated with Ñ = 1 and Ñ = 2 and a close to constant
+ratio of the variances associated with Ñ = 2 and Ñ = 3.
+    Finally, in order to illustrate our algorithm’s capacity of coping with particle path degeneracy, we
+report, in Figure 6, the ratios #St /N t+1 , t ∈ J0, 1000K, where #St is the cardinality of the support
+of the PaRIS algorithm at time t (in the notation of Section 3.1), for the precision parameters
+Ñ ∈ {1, 2, 3, 10, 30}. Here N = 100, and again the estimators associated with different precision
+parameters were based on the same forward particles. The 95% confidence bounds displayed the
+same plot were obtained on the basis of 100 replicates of observation record. Judging by these
+confidence bounds, the dependence of the copiousness of the support on the observations is fairly
+robust. Interestingly, for Ñ = 1 the sequence of ratios tends quickly to zero, while letting Ñ > 1
+stabilizes completely the support of the estimator. Already Ñ = 2 yields a support that involves,
+on the average and in the long run, more than 50% of all forward particles. Again, increasing
+the precision parameter has some effect for moderate values of the same, say, up to Ñ = 10, while
+increasing the parameter further from 10 to 30 (which implies a significant increase of computational
+overhead) effects only marginally the cardinality of the support. Also this observation is perfectly
+in line with the theory presented in Section 3, consolidating our apprehension that only a modest
+value of Ñ is required as long as Ñ ≥ 2.
+                                   J. Olsson and J. Westerborn/The PaRIS algorithm                                   19
+
+
+
+                            Forward FFBSm                                                     PaRIS
+
+         0.015                                                          0.015
+
+          0.01                                                           0.01
+
+         0.005                                                          0.005
+h1t/t
+
+
+
+
+                                                               h1t/t
+                0                                                          0
+
+        −0.005                                                         −0.005
+
+         −0.01                                                          −0.01
+
+        −0.015                                                         −0.015
+
+                    1000   2000   3000   4000    5000                           1000   2000    3000   4000    5000
+                                    t                                                           t
+
+
+
+        0.082                                                          0.082
+
+
+         0.08                                                           0.08
+
+
+        0.078                                                          0.078
+h2t/t
+
+
+
+
+                                                               h2t/t
+
+
+
+        0.076                                                          0.076
+
+
+        0.074                                                          0.074
+
+                    1000   2000   3000   4000    5000                           1000   2000    3000   4000    5000
+                                   t                                                            t
+
+
+
+        0.058                                                          0.058
+
+        0.057                                                          0.057
+
+        0.056                                                          0.056
+
+        0.055                                                          0.055
+h3t/t
+
+
+
+
+                                                               h3t/t
+
+
+
+
+        0.054                                                          0.054
+
+        0.053                                                          0.053
+
+        0.052                                                          0.052
+
+        0.051                                                          0.051
+
+         0.05                                                           0.05
+                    1000   2000   3000   4000    5000                           1000   2000    3000   4000    5000
+                                   t                                                            t
+
+Fig 2. Box plots of estimates of smoothed sufficient statistics (4.2) for the linear Gaussian model (4.1) produced by
+PaRIS (right column) and the forward-only version of FFBSm (left column) using (N, Ñ ) = (150, 2) and N = 50,
+respectively (yielding close to identical computational times). The boxes are based on 50 replicates of the estimates
+for the same fixed observation sequence and asterisks indicate exact values obtained with the disturbance smoother.
+                                                                         J. Olsson and J. Westerborn/The PaRIS algorithm                                                       20
+
+                                                      2500
+                                                                                                                                                      Forward FFBSm
+                                                      2000                                                                                            PaRIS
+
+
+                                    efficency (1/s)   1500
+
+                                                      1000
+
+                                                      500
+
+                                                        0
+                                                         0           5      10         15           20            25          30     35          40       45      50
+                                                                                                                   t
+
+
+Fig 3. Estimated efficiencies for the PaRIS and forward-only FFBSm algorithms using each N = 500 particles.
+(The first time step is removed from the plot due to very high efficiencies for both algorithms.)
+
+                                                                                                         Variance for Ñ = 1
+             300
+                           Ñ=1
+
+             200
+Variance
+
+
+
+
+             100
+
+
+
+                      0
+                       0         100                           200           300             400                500            600         700           800           900    1000
+                                                                                                                 t
+                                                                                                         Variance for Ñ > 1
+                      4
+                           Ñ=2
+                           Ñ=3
+                      3
+                           Ñ=4
+           Variance
+
+
+
+
+                           Ñ = 10
+                      2    Ñ = 30
+                           FFBSm
+                      1
+
+
+                      0
+                       0         100                           200           300             400                500            600         700           800           900    1000
+                                                                                                                 t
+
+
+
+Fig 4. Estimated variances of PaRIS estimators for Ñ = 1 (top graph) and Ñ ∈ {2, 3, 4, 10, 30} (bottom graph)
+at different time steps t ∈ J0, 1000K. The bottom graph includes variance estimates of the forward-only FFBSm
+estimator. The variance estimates are based on 100 replicates.
+
+
+
+4.2. Stochastic volatility model
+
+For the sake of completeness we also consider a nonlinear model, namely the standard stochastic
+volatility model
+
+                                                                                   Xt+1 = φXt + σε εt+1
+                                                                                                                              (t ∈ N),                                       (4.3)
+                                                                                      Yt = β exp(Xt /2)ζt
+
+where X = Y = R and {εt }t∈N∗ and {ζt }t∈N are as in the previous example. We assume that the
+model parameters φ ∈ R and (σ, β) ∈ (R∗+ )2 are known and that the model is well-specified. Our
+aim is to compute, using again PaRIS and the forward-only implementation of FFBSm, smoothed
+expectations of the sufficient statistics
+                                                                              t                                         s−1
+                                                              (1)                                  (2)
+                                                                              X                                         X
+                                                             ht (x0:t ) :=           x2s ,    ht (x0:t ) :=                   xs xs+1     (x0:t ∈ Xt+1 )                     (4.4)
+                                                                              s=0                                       s=0
+                                        J. Olsson and J. Westerborn/The PaRIS algorithm                        21
+
+                                              Quotient of variance for different values of Ñ
+           90
+
+           80
+                    Ñ = 1/ Ñ =2
+                    Ñ = 2/ Ñ =3
+           70
+
+           60
+Quotient
+
+
+
+
+           50
+
+           40
+
+           30
+
+           20
+
+           10
+
+            0
+                0      100        200       300        400         500         600        700   800   900    1000
+                                                                    t
+
+Fig 5. Ratios of variances of the estimators associated with Ñ = 1 and Ñ = 2 (solid line) and Ñ = 2 and Ñ = 3
+(dashed line).
+
+
+
+for a model parameterized by (φ, σ, β) = (.975, .16, .63). In this case, both algorithms used N = 250
+particles and the precision parameter of PaRIS was set to Ñ = 2. Figure 7 shows box plots based on
+                                       (i)
+100 replicates of estimates of φ0:t|t ht /t, for i ∈ {1, 2} and t ∈ {2,000, 4,000, 6,000, 8,000, 10,000},
+obtained using these methods. Even though the variance and the bias of the estimates produced by
+the two algorithms are comparable, PaRIS was now 5 times faster than the FFBSm algorithm.
+
+4.3. Some comments on the implementation
+
+When applying accept-reject-based backward sampling (Algorithm 3), some acceptance probabil-
+ities will be small due to the random support of the particle-based backward kernel. In order to
+avoid getting stuck, it may be convenient to equip the algorithm with a threshold for the number
+of trials used at each accept-reject operation; when the threshold is reached, accept-reject sampling
+is cancelled and replaced by a draw from original distribution (recall that we are just using accept-
+reject sampling in order to reduce the computational work). Figure 8 displays computational time
+as a function of the size of this threshold for the linear Gaussian model and N = 250 particles.
+Interestingly, the graph has a minimum for the threshold value 14, and using this value we run the
+algorithm and counted the number of trials at any accept-reject sampling operation. The outcome is
+presented in the histogram plot to the right, from which it is clear that the majority of the particles
+are accepted after just a few trials (moreover, an index is most commonly accepted at once). In ad-
+dition, at only 3.55% of the occasions, the number of trials exceeded the threshold. Needless to say,
+the optimal threshold depends on the model as well as the number of particles (when the number
+of particles is small, a too high threshold may have significant negative effect on the computational
+efficiency; on the contrary, when the number of particles is large, the performance of the algorithm
+is relatively robust vis-à-vis the design of the threshold).
+                                                   √          Further simulations not presented here
+indicate however that a threshold value around N could be a rule of thumb.
+
+5. Conclusions
+
+We have presented a novel algorithm, the particle-based, rapid incremental smoother, PaRIS, for
+computationally efficient online smoothing of additive state functionals in general HMMs. The
+                                 J. Olsson and J. Westerborn/The PaRIS algorithm                                    22
+
+                                                Cardinality of support / N t
+            1
+
+           0.9
+
+           0.8
+
+           0.7
+
+           0.6
+Fraction
+
+
+
+
+           0.5
+                                                                                                          Ñ=1
+           0.4
+                                                                                                          Ñ=2
+           0.3                                                                                            Ñ=3
+           0.2                                                                                            Ñ = 10
+                                                                                                          Ñ = 30
+           0.1
+
+            0
+                 0   100   200       300        400         500         600       700        800        900        1000
+                                                             t
+
+Fig 6. Plot the ratios #St /N t+1 , t ∈ J0, 1000K, for the precision parameters Ñ ∈ {1, 2, 3, 10, 30} and N = 100. The
+95% confidence bounds are obtained on the basis of 100 replicates of the observation record.
+
+
+
+algorithm, which is based on a backward decomposition of the smoothing distribution which can
+be implemented recursively for objective functions of additive type, can be viewed as a hybrid
+between the forward-only implementation of FFBSm and the FFBSi algorithm; more specifically,
+forward-only FFBSm may be viewed as a Rao-Blackwellized version of PaRIS. The algorithm is
+furnished with a number of  √ convergence results, where the main result is a CLT of PaRIS’s Monte
+Carlo output at the rate N . The analysis of PaRIS is considerably more involved than that of
+the FFBSi algorithm due to the complex dependence structure introduced by the retrospective
+simulation (on the contrary to FFBSi, where the trajectories are conditionally independent given
+the particles generated in the forward pass). Interestingly, the design of the precision parameter,
+i.e., the number of Monte Carlo simulations used for approximating the backward decomposition,
+turns out to be critical, since using a single backward draw yields a degeneracy phenomenon that
+resembles closely that of the Poor man’s smoother. However, as established theoretically as well as
+through simulations, using at lest two such draws stabilizes completely the support of the estimator.
+For Ñ ≥ 2 we are able to derive O(1+1/(Ñ −1)) and O(t{1+1/(Ñ −1)}) bounds on the asymptotic
+variance in the cases of marginal and joint smoothing, respectively, and since the second term of
+these bounds is inversely proportional to the precision parameter, we suggest this parameter to be
+kept at a moderate value in order to gain computational speed. As known to the authors, this is
+the first analysis ever of this kind.
+    The algorithm we propose has a linear complexity in the number of particles while the forward-
+only implementation of FFBSm has a quadratic complexity, and a numerical comparison between
+the two shows clearly that PaRIS achieves the same accuracy as FFBSm at a considerably lower
+computational cost. In addition, similarly to forward-only FFBSm, our smoother has limited and
+constant memory requirements, as it needs only the current particle sample and a set of estimated
+auxiliary statistics to be stored at each iteration.
+    Smoothing of additive state functionals is a key ingredient of most—frequentistic or Bayesian—
+online parameter estimation techniques for HMMs. Since these applications are most often charac-
+terized by strict computational requirements, PaRIS can be naturally cast into any such framework.
+                                                   J. Olsson and J. Westerborn/The PaRIS algorithm                                                                                                      23
+
+
+
+
+                             Forward version of FFBSm                                                                                                      PaRIS
+               0.58                                                                                   0.58
+
+               0.56                                                                                   0.56
+
+               0.54                                                                                   0.54
+h1t /t
+
+
+
+
+                                                                                             h1t /t
+               0.52                                                                                   0.52
+
+                0.5                                                                                    0.5
+
+               0.48                                                                                   0.48
+                      2000     4000          6000          8000         10000                                2000              4000                         6000                8000          10000
+                                               t                                                                                                               t
+
+
+
+               0.56                                                                                   0.56
+
+               0.54                                                                                   0.54
+h2t /t
+
+
+
+
+                                                                                             h2t /t
+               0.52                                                                                   0.52
+
+                0.5                                                                                    0.5
+
+               0.48                                                                                   0.48
+
+               0.46                                                                                   0.46
+                      2000     4000          6000          8000         10000                                2000              4000                         6000                8000          10000
+                                               t                                                                                                               t
+
+Fig 7. Box plots of estimates of smoothed sufficient statistics (4.4) for the stochastic volatility model (4.3) produced
+by PaRIS (right column) and the forward-only version of FFBSm (left column) using (N, Ñ ) = (250, 2) and N = 250,
+respectively. With this parameterization, PaRIS was 5 times faster than the FFBSm algorithm. The boxes are based
+on 100 replicates of the estimates for the same fixed observation sequence.
+
+
+
+
+                                    Time as a function of maximum accept−reject tries                                                              4
+                                                                                                                                                x 10   Number of tries before acceptance
+       8                                                                                                                                  4.5
+
+                                                                                                                                           4
+       7
+
+                                                                                                                                          3.5
+                                                                                                                    Number of particles
+
+
+
+
+       6
+                                                                                                                                           3
+
+       5                                                                                                                                  2.5
+Time
+
+
+
+
+       4                                                                                                                                   2
+
+                                                                                                                                          1.5
+       3
+                                                                                                                                           1
+
+       2
+                                                                                                                                          0.5
+
+       1                                                                                                                                   0
+           0           5       10             15            20           25             30      35            40                                   1   2   3   4   5    6   7   8   9   10 11 12 13 14 15
+                                             Limit in accept−reject algorithm                                                                                          Number of tries
+
+
+
+
+Fig 8. Computational time as a function of the size of the accept-reject threshold for the linear Gaussian model and
+N = 250 particles (left panel). The histogram to the right displays the number of trials needed before acceptance at
+any accept-reject sampling operation in algorithm when the threshold is 14 (corresponding to minimal computational
+time); the bar at 15 represents 3.55% of the occasions.
+                                      J. Olsson and J. Westerborn/The PaRIS algorithm                                   24
+
+
+Appendix A: Proofs
+
+A.1. Two prefatory lemmas
+
+Lemma 11. For all t ∈ N and (ft+1 , f˜t+1 ) ∈ F(X )2 it holds that
+                                                     φt {Tt ht Lt ft+1 + Lt (h̃t ft+1 + f˜t+1 )}
+                    φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 ) =                                             .
+                                                                      φt Lt 1X
+Proof. By combining the definitions of Tt , Lt and using reversibility,
+                                                  ←−
+                   φt Lt (Tt+1 ht+1 ft+1 ) = φt Q{ Q φt (Tt ht + h̃t )gt+1 ft+1 }
+                                                    ←
+                                                    −
+                                           = φt Q  Q φt {(Tt ht + h̃t )gt+1 ft+1 }
+                                                          = φt  Q{(Tt ht + h̃t )gt+1 ft+1 }
+                                                          = φt {Tt ht Lt ft+1 + Lt (h̃t ft+1 )}.
+Now the statement of the lemma follows by dividing both sides of the previous equation by φt Lt 1X
+and using the identity φt+1 = φt Lt /φt Lt 1X .
+Lemma 12. For all t ∈ N, (ft+1 , f˜t+1 ) ∈ F(X )2 , and (N, Ñ ) ∈ (N∗ )2 the random variables
+  i
+{ωt+1   i
+      (τt+1        i
+            ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                   i
+                                       ))}N                           N
+                                          i=1 are, conditionally on F̃t−1 , i.i.d. with expectation
+                                                      N
+  h                                               i X    ωti i
+    1
+ E ωt+1   1
+        {τt+1        1
+              ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                     1
+                                         )} | F̃tN =         {τt Lt ft+1 (ξti )+Lt (h̃t ft+1 +f˜t+1 )(ξti )}. (A.1)
+                                                     i=1
+                                                         Ω t
+
+                                                                                         i
+Proof. The multinomial selection procedure implies that the particles {ξt+1                  }Ni=1 are i.i.d. condi-
+                                                                       (i,j)
+tionally on F̃tN . Hence, since also the backward indices {Jt+1 }Ñ          j=1  are i.i.d. conditionally      on the
+          i                      N                             i     i          i        ˜       i      N
+particle ξt and the σ-field F̃t , we conclude that {ωt+1 (τt+1 ft+1 (ξt+1 ) + ft+1 (ξt+1 ))}i=1 are i.i.d.
+conditionally on F̃tN .
+   In order to compute the common conditional expectation we decompose the same according to
+    h                                                 i
+       1
+   E ωt+1    1
+           {τt+1        1
+                 ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                        1
+                                            )} | F̃tN
+                                                 h                              i     h                           i
+                                            = E ωt+1 1   1
+                                                        τt+1        1
+                                                             ft+1 (ξt+1 ) | F̃tN + E ωt+1  1
+                                                                                              f˜t+1 (ξt+1
+                                                                                                      1
+                                                                                                          ) | F̃tN ,
+
+where, by the tower property,
+            h                                i
+               1    1            1
+          E ωt+1  τt+1  ft+1 (ξt+1  ) | F̃tN
+                h                     h                          i         i
+                  1            1          1
+          = E ωt+1    ft+1 (ξt+1   )E τt+1     | F̃tN ∨ Ft+1 N
+                                                                    | F̃tN
+                "                     N
+                                                                                                             #
+                  1             1
+                                     X          ωt` q(ξt` , ξt+1
+                                                             1
+                                                                 )           `           ` 1              N
+          = E ωt+1 ft+1 (ξt+1 )           PN                              {τt + h̃t (ξt , ξt+1 )} | F̃t
+                                                      `0      `0 1
+                                     `=1     `0 =1 ωt q(ξt , ξt+1 )
+               N                                          N
+                  ωti                                                ωt` q(ξt` , x)
+              X       Z                                  X
+          =              q(ξti , x)gt+1 (x)ft+1 (x)            PN                         {τt` + h̃t (ξt` , x)} µ(dx)
+                  Ω t                                                    ω `0 q(ξ `0 , x)
+              i=1                                        `=1       0
+                                                                  ` =1 t          t
+                  N
+                  X ω`   t
+              =              {τt` Lt ft+1 (ξt` ) + Lt (h̃t ft+1 )(ξt` )}.
+                        Ωt
+                  `=1
+                                        J. Olsson and J. Westerborn/The PaRIS algorithm                                           25
+
+
+We conclude the proof by noting that
+                                                   N                            N
+                      h                         i X  ωt`                        X ωt` ˜
+                        1
+                     E ωt+1 f˜t+1 (ξt+1
+                                    1
+                                        ) | F̃tN =       Q(gt+1 f˜t+1 )(ξt` ) =      Lt ft+1 (ξt` ).
+                                                     Ωt                           Ωt
+                                                          `=1                             `=1
+
+
+
+
+A.2. Proof of Theorem 1
+
+We proceed by induction and assume that the claim of the theorem holds for t ∈ N. To establish
+(i) for t + 1, write, using Lemma 11,
+
+      N
+  1 X i
+       ω {τ i ft+1 (ξt+1
+                     i
+                         ) + f˜t+1 (ξt+1
+                                     i
+                                         )} − φt Lt (Tt+1 ht+1 ft+1 + f˜t+1 )
+  N i=1 t+1 t+1
+             N
+          1 X i                                             h                                                i
+      =                i
+                ωt+1 {τt+1        i
+                           ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                                  i           1
+                                                      )} − E ωt+1   1
+                                                                  {τt+1        1
+                                                                        ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                                                                               1
+                                                                                                   )} | F̃tN
+          N i=1
+                N
+                X ωi
+            +            t
+                             {τti Lt ft+1 (ξti ) + Lt (h̃t ft+1 + f˜t+1 )(ξti )} − φt {Tt ht Lt ft+1 + Lt (h̃t ft+1 + f˜t+1 )}.
+                i=1
+                    Ωt
+
+Since the functions Lt ft+1 and Lt (h̃t ft+1 + f˜t+1 ) belong to F(X ), the induction hypothesis (ii)
+implies that for all ε ∈ R∗+ ,
+
+          N
+                                                                                                                               !
+          X ωi
+  P              t
+                     {τti Lt ft+1 (ξti ) + Lt (h̃t ft+1 + f˜t+1 )(ξti )} − φt {Tt ht Lt ft+1 + Lt (h̃t ft+1 + f˜t+1 )}    ≥ε
+          i=1
+                Ωt
+                                                                                                        ≤ ct exp(−c̃t N ε2 ).
+
+In addition, by Lemma 12, {ωt+1  i   i
+                                   (τt+1        i
+                                         ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                                                i
+                                                                    ))}N                                    N
+                                                                       i=1 are conditionally i.i.d. given F̃t ;
+thus, since for all i ∈ J1, N K,
+            i
+          |ωt+1   i
+                {τt+1        i
+                      ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                             i
+                                                 )}| ≤ kgt+1 k∞ (kht+1 k∞ kft+1 k∞ + kf˜t+1 k∞ ) < ∞,
+                                                            ˜ ∈ (R∗ )2 such that
+the conditional Hoeffding inequality provides constants (d, d)    +
+
+             N
+                                                                                                                                       !
+          1 X i                                             h                                               i
+  P                    i
+                ωt+1 {τt+1        i
+                           ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                                  i           1
+                                                      )} − E ωt+1   1
+                                                                  {τt+1        1
+                                                                        ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                                                                               1
+                                                                                                   )} | F̃tN ≥ ε
+          N i=1
+                                                                                                                  ˜ ε2 ).
+                                                                                                         ≤ d exp(−dN
+
+This establishes (i).
+   The inequality (ii) for the self-normalized estimator is an immediate consequence of (i) and the
+generalized Hoeffding inequality in [11, Lemma 4].
+   Finally, we conclude the proof by checking that the result is straightforwardly true for the base
+case t = 0, since T0 h0 = 0, τ0i = 0 for all i ∈ J1, N K, and the weighted sample {(ξ0i , ω0i )}Ni=1
+(targeting φ0 ) is generated by standard importance sampling.
+                                         J. Olsson and J. Westerborn/The PaRIS algorithm                                   26
+
+
+A.3. Proof of Theorem 3
+
+We proceed by induction and suppose that the claim of the theorem holds true for some t ∈ N.
+Thus, pick (ft+1 , f˜t+1 ) ∈ F(X )2 and assume first that φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 ) = 0. Write
+
+          N                                                                       N
+  √       X ωi                                                   1 X
+      N         t   i
+                  {τt+1        i
+                        ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                               i
+                                                   )} = N Ω−1
+                                                           t √
+                                                                              i
+                                                                           ωt+1     i
+                                                                                 {τt+1        i
+                                                                                       ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                                                                                              i
+                                                                                                                  )}
+          i=1
+              Ω t                                                N    i=1
+                                 N
+                                                                                           !
+                               X    ωt` `
+                            −          {τ Lt ft+1 (ξt+1 ) + Lt (h̃t ft+1 + f˜t+1 )(ξt+1 )}
+                                                      `                             `
+                                    Ωt t
+                                      `=1
+                                                             N
+                                                          √ X  ωt` `
+                                                  + N Ω−1
+                                                       t   N                   `
+                                                                  {τ Lt ft+1 (ξt+1 ) + Lt (h̃t ft+1 + f˜t+1 )(ξt+1
+                                                                                                               `
+                                                                                                                   )},
+                                                               Ωt t
+                                                                  `=1
+
+where, by Theorem 1, N Ω−1  t  tends to (φt Lt 1X )−1 in probability. In order to establish the weak
+convergence of the first term, we will apply Theorem 16 to the triangular array
+
+                                                    Ñ
+                                              1     X           (i,j)
+                                    i
+                                   υN :=      √                       i
+                                                         υ̃N (Jt+1 , ξt+1 )    (i ∈ J1, N K, N ∈ N∗ ),
+                                            Ñ N j=1
+
+where
+
+  υ̃N (j, x) := gt+1 (x){(τtj + h̃t (ξtj , x))ft+1 (x) + f˜t+1 (x)}
+                        N
+                        X ω`
+                    −          t
+                                   {τt` Lt ft+1 (ξt` ) + Lt (h̃t ft+1 + f˜t+1 )(ξt` )}   (x ∈ X, j ∈ J1, Ñ K, N ∈ N∗ ), (A.2)
+                              Ωt
+                        `=1
+
+
+furnished with the filtration {F̃tN }N ∈N∗ . Note that for all
+                                                           √
+                                                                               i
+                                                               i ∈ J1, N K, E[υN | F̃tN ] = 0 (by Lemma 12)
+and |υNi
+         | ≤ 2kgt+1 k∞ (kht+1 k∞ kft+1 k∞ + kf˜t+1 k∞ )/ N . To check the condition (B1) in Theo-
+                                       i
+rem 16, write, using, first, that {υN    }i=1 are conditionally i.i.d. given F̃tN and, second, that the
+                      (i,j) Ñ
+backward indices {Jt+1 }j=1 are, for all i ∈ J1, N K, i.i.d. conditionally on F̃tN and ξt+1   i
+                                                                                                 ,
+                                                           2       
+          N  h            i             Ñ
+                                                 (1,j) 1
+          X                            X
+            E (υN ) | F̃tN = Ñ −2 E 
+                i 2
+                                           υ̃N (Jt+1 , ξt+1 ) | F̃tN 
+                                                                     
+          i=1                                            j=1
+                                                 h h                                  i         i
+                                                           (1,1) 1
+                                        = Ñ −1 E E υ̃N2
+                                                         (Jt+1 , ξt+1 ) | F̃tN ∨ Ft+1
+                                                                                  N
+                                                                                         | F̃tN                         (A.3)
+                                                            h h                                     i       i
+                                                                        (1,1) 1
+                                          + Ñ −1 (Ñ − 1)E E2 υ̃N (Jt+1 , ξt+1   ) | F̃tN ∨ Ft+1 N
+                                                                                                      | F̃tN .          (A.4)
+                                         J. Olsson and J. Westerborn/The PaRIS algorithm                                                   27
+
+
+We treat separately the two terms (A.3) and (A.4). Concerning (A.3),
+                                                    "N                                                                #
+                                                                                     `     ` 1
+ h h
+       2   (1,1)  1
+                                      i       i       X                            ω t q(ξ t , ξt+1   )
+E E υ̃N  (Jt+1 , ξt+1 ) | F̃tN ∨ Ft+1
+                                  N
+                                        | F̃tN = E           2
+                                                           υ̃N       1
+                                                               (`, ξt+1   ) PN                                 | F̃tN
+                                                                                       ω `0 q(ξ `0 , ξ 1 )
+                                                      `=1                        0
+                                                                               ` =1      t       t     t+1
+                                                   N     i Z                N
+                                                  X    ωt                 X                           ω ` q(ξ ` , x)
+                                                =              q(ξti , x)       υ̃N2
+                                                                                      (`, x) PN t 0t                    µ(dx)
+                                                       Ωt                                                   `      `0
+                                                  i=1                     `=1                      `0 =1 ωt q(ξt , x)
+                                                   N
+                                                       ωt`
+                                                  X        Z
+                                                =              q(ξt` , x)υ̃N2
+                                                                              (`, x) µ(dx).
+                                                       Ωt
+                                                                  `=1
+
+Now, using the definition (A.2),
+
+   N                                                 N
+     ω`                                                ω`
+   X    Z                                            X
+           t                                                t
+                    q(ξt` , x)υ̃N
+                                2
+                                  (`, x) µ(dx) =                (τt` )2 Lt (gt+1 ft+1
+                                                                                  2
+                                                                                      )(ξt` )
+         Ωt                                                Ωt
+   `=1                                               `=1
+                 N
+                 X ωt`  `                                                                                  
+               +        τt 2Lt {gt+1 ft+1 (h̃t ft+1 + f˜t+1 )}(ξt` ) + Lt {gt+1 (h̃t ft+1 + f˜t+1 )2 }(ξt` )
+                   Ωt
+                    `=1
+                                                                    N
+                                                                                                                                 !2
+                                                                    X ω`
+                                                            −              t
+                                                                               {τt` Lt ft+1 (ξt` ) + Lt (h̃t ft+1 + f˜t+1 )(ξt` )}     .
+                                                                          Ωt
+                                                                    `=1
+
+In the previous expression, by Lemma 13,
+                   N
+                   X ω`    t                               P
+                               (τt` )2 Lt (gt+1 ft+1
+                                                 2
+                                                     )(ξt` ) −→ φt {T2t ht Lt (gt+1 ft+1
+                                                                                     2                      2
+                                                                                         )} + ηt {Lt (gt+1 ft+1 )},
+                          Ωt
+                   `=1
+
+where the functional ηt is defined in (A.9), and, by Corollary 2 and Lemma 11 (recalling that
+φt Lt (Tt+1 ft+1 + f˜t+1 ) = 0 by assumption),
+     N
+     X ω`                                                                                                       
+               t
+                     τt` 2Lt {gt+1 ft+1 (h̃t ft+1 + f˜t+1 )}(ξt` ) + Lt {gt+1 (h̃t ft+1 + f˜t+1 )2 }(ξt` )
+           Ωt
+     `=1
+
+                                  −→ 2φt (Tt ht Lt {gt+1 ft+1 (h̃t ft+1 + f˜t+1 )}) + φt Lt {gt+1 (h̃t ft+1 + f˜t+1 )2 },
+                                    P
+
+     N
+     X ω`      t
+                   {τt` Lt ft+1 (ξt` ) + Lt (h̃t ft+1 + f˜t+1 )(ξt` )} −→ 0.
+                                                                        P
+                                                                                                                                     (A.5)
+           Ωt
+     `=1
+
+We hence conclude that
+                
+ (A.3) −→ Ñ −1 φt {T2t ht Lt (gt+1 ft+1
+        P                            2                      2
+                                         )} + ηt {Lt (gt+1 ft+1 )}
+                                                                                                           
+                      +2φt (Tt ht Lt {gt+1 ft+1 (h̃t ft+1 + f˜t+1 )}) + φt Lt {gt+1 (h̃t ft+1 + f˜t+1 )2 }
+                                                                                                              
+                                = Ñ −1 φt Lt (gt+1 {(Tt ht + h̃t )ft+1 + f˜t+1 }2 ) + ηt {Lt (gt+1 ft+1  2
+                                                                                                             )} . (A.6)
+                               J. Olsson and J. Westerborn/The PaRIS algorithm                                                    28
+
+
+  We turn to (A.4) and write
+            h h                                   i         i
+                      (1,1) 1
+          E E2 υ̃N (Jt+1 , ξt+1 ) | F̃tN ∨ Ft+1N
+                                                    | F̃tN
+                             
+                                  N
+                                                                                    !2          
+                                                            `     ` 1
+                                X                         ω   q(ξ  , ξ      )
+                        = E                   1
+                                     υ̃N (`, ξt+1 ) PN t 0t t+1                          | F̃tN 
+                                                              ω ` q(ξ `0 , ξ 1 )
+                                `=1                     0
+                                                       ` =1     t      t     t+1
+
+                            N                      N
+                                                                                               !2
+                               ωti                                            `     `
+                                   Z
+                           X                      X                         ω   q(ξ   , x)
+                        =             q(ξti , x)       υ̃N (`, x) PN t 0t                         µ(dx),
+                               Ω                                                  `      `0
+                           i=1   t
+                                                                `=1      `0 =1 ωt q(ξt , x)
+
+where we note that the right hand side can, by (A.2), be written as φN
+                                                                     t QϕN , with
+
+                                  N
+                                  X          ωt` q(ξt` , x)
+  ϕN (x) :=    gt+1 (x)ft+1 (x)         PN                            {τt` + h̃t (ξt` , x)} + gt+1 (x)f˜t+1 (x)
+                                                 `0   `0
+                                  `=1     `0 =1 ωt q(ξt , x)
+                                         N    0
+                                                                                                              !2
+                                         X ω`               0              0                              0
+                                     −               t
+                                                         {τt` Lt ft+1 (ξt` ) + Lt (h̃t ft+1 + f˜t+1 )(ξt` )}           (x ∈ X).
+                                                 Ωt
+                                         `0 =1
+
+
+Note that kϕN k∞ ≤ 4kgt+1 k2∞ (kht+1 k∞ kft+1 k∞ + kf˜t+1 k∞ )2 for all N ∈ N. Moreover, by Corol-
+lary 2 (and, in particular, the implication (A.5)) it holds, for all x ∈ X, P-a.s.,
+                                                 R                                                                !2
+                                            q(x̃, x){Tt ht (x̃) + h̃t (x̃, x)} φt (dx̃)
+                      2
+            ϕN (x) → gt+1 (x)     ft+1 (x)            R                                 + f˜t+1 (x)
+                                                        q(x̃, x) φt (dx̃)
+                                           ←−
+                            2
+                        = gt+1 (x){ft+1 (x) Q φt (Tt ht + h̃t )(x) + f˜t+1 (x)}2
+                        = g 2 (x){ft+1 (x)Tt+1 ht+1 (x) + f˜t+1 (x)}2 .
+                            t+1
+
+Thus, under Assumption 1 we may apply Lemma 14, yielding
+
+                             φN
+                                     P                               ˜     2
+                              t QϕN −→ φt Lt {gt+1 (ft+1 Tt+1 ht+1 + ft+1 ) },
+
+and we may hence conclude that
+
+                       (A.4) −→ Ñ −1 (Ñ − 1)φt Lt {gt+1 (ft+1 Tt+1 ht+1 + f˜t+1 )2 }.
+                              P
+
+
+Finally, by combining this limit with (A.6) we obtain, using the identity
+
+       φt Lt (gt+1 {(Tt ht + h̃t )ft+1 + f˜t+1 }2 ) − φt Lt {gt+1 (ft+1 Tt+1 ht+1 + f˜t+1 )2 }
+                = φt  Q(gt+12
+                                 {(Tt ht + h̃t )ft+1 + f˜t+1 }2 − gt+1
+                                                                    2
+                                                                        {ft+1 Tt+1 ht+1 + f˜t+1 }2 )
+                          ←−
+                = φt Q  Q φt (gt+12
+                                      {(Tt ht + h̃t )ft+1 + f˜t+1 }2 − gt+1
+                                                                         2
+                                                                            {ft+1 Tt+1 ht+1 + f˜t+1 }2 )
+                          ←−       2    2
+                = φt Q  Q φt {gt+1    ft+1 (Tt ht + h̃t − Tt+1 ht+1 )2 }
+                       ←−            2
+                = φt Lt Q φt {gt+1 ft+1  (Tt ht + h̃t − Tt+1 ht+1 )2 },
+                                  J. Olsson and J. Westerborn/The PaRIS algorithm                                       29
+
+
+the convergence
+
+    N
+    X  h            i
+            ) | F̃tN −→ φt Lt {gt+1 (ft+1 Tt+1 ht+1 + f˜t+1 )2 }
+          i 2         P
+      E (υN
+    i=1
+                                  ←−                                                                   
+                      + Ñ −1 φt Lt Q φt {gt+1 ft+1
+                                                2
+                                                    (Tt ht + h̃t − Tt+1 ht+1 )2 } + ηt {Lt (gt+1 ft+1
+                                                                                                  2
+                                                                                                      )} , (A.7)
+
+which verifies (B1). In order to check also the condition (B2), write, for ε ∈ R∗+ ,
+
+    N  h                        i
+            ) 1{|υN
+    X
+          i 2
+      E (υN       i |≥ε} | F̃
+                             t
+                              N
+                                  ≤ 4kgt+1 k2∞ (kht+1 k∞ kft+1 k∞ + kf˜t+1 k∞ )2
+    i=1
+                                                                × 1{2kgt+1 k∞ (kht+1 k∞ kft+1 k∞ +kf˜t+1 k∞ )≥ε√N } ,
+
+where the indicator function on the right hand side is zero for N large enough. This shows the
+condition (B2). Hence, for general (ft+1 , f˜t+1 ) (by just replacing f˜t+1 by f˜t+1 −φt+1 (Tt+1 ht+1 ft+1 +
+f˜t+1 )), by Theorem 16, [37, Lemma A.5], and Slutsky’s lemma,
+        N
+√       X  i
+          ωt+1                                                                           D
+    N                i
+                   {τt+1        i
+                         ft+1 (ξt+1 ) + f˜t+1 (ξt+1
+                                                i
+                                                    ) − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )} −→ σt+1 hft+1 , f˜t+1 i(h)Z,
+        i=1
+            Ωt+1
+
+where Z is a standard Gaussian variable and
+
+                                  φt Lt (gt+1 {ft+1 Tt+1 ht+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )}2 )
+     2
+    σt+1 hft+1 , f˜t+1 i(ht+1 ) :=
+                                                                    (φt Lt 1X )2
+                     t                   ←−
+                     X            φ` L` { Q φ` (T` h` + h̃` − T`+1 h`+1 )2 L`+1 · · · Lt (gt+1 ft+1
+                                                                                                2
+                                                                                                    )}
+                   +   Ñ `−(t+1)
+                                                    (φ` L` · · · Lt−1 1X )(φt Lt 1X )2
+                     `=0
+
+                                     σt2 (Lt ft+1 , Lt {h̃t+1 ft+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )})
+                                +                                                                             . (A.8)
+                                                                     (φt Lt 1X )2
+
+We now apply the induction hypothesis to the last term. For this purpose, note that, by Lemma 11,
+
+    ht Lt ft+1 + Lt {h̃t+1 ft+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )}
+                  − φt (ht Lt ft+1 + Lt {h̃t+1 ft+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )})
+                                                  = Lt {ht+1 ft+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )},
+
+yielding, for all N 3 s < t,
+
+                      D̃s+1,t (ht Lt ft+1 + Lt {h̃t+1 ft+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )})
+                               = Ds+1,t Lt {ht+1 ft+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )}
+                              = D̃s+1,t+1 (ht+1 ft+1 + f˜t+1 ).
+                                        J. Olsson and J. Westerborn/The PaRIS algorithm                                                 30
+
+
+We may hence conclude that
+
+   σt2 (Lt ft+1 , Lt {h̃t+1 ft+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )})
+                                   (φt Lt 1X )2
+                                            t−1
+                                            X   φs Ls {gs+1 D̃2s+1,t+1 (ht+1 ft+1 + f˜t+1 )}
+                                        =
+                                            s=0
+                                                                   (φs Ls · · · Lt 1X )2
+          t−1 X
+              s                       ←−                               2                                        2
+                       `−(s+1) φ` L` { Q φ` (T` h` + h̃` − T`+1 h`+1 ) L`+1 · · · Ls (gs+1 {Ls+1 · · · Lt ft+1 } )}
+          X
+      +             Ñ                                                                                              .
+          s=0 `=0
+                                                                                   1
+                                                     (φ` L` · · · Ls−1 X )(φs Ls · · · Lt X )2           1
+Finally, we complete the induction step by noting that
+
+   φt Lt (gt+1 {ft+1 Tt+1 ht+1 + f˜t+1 − φt+1 (Tt+1 ht+1 ft+1 + f˜t+1 )}2 )
+                                 (φt Lt 1X )2
+                                                                                       φt Lt {gt+1 D̃2t+1,t+1 (ht+1 ft+1 + f˜t+1 )}
+                                                                                 =                                                  .
+                                                                                                        (φt Lt 1X )2
+   It remains to check the base case; however, letting, in (A.8), t = 0 and σ02 ≡ 0 (as T0 h0 = 0 and
+τ0i = 0 for all i ∈ J1, N K) yields
+                                                                                             ←−
+                      φ0 L0 (g1 {f1 T1 h1 + f˜1 − φ1 (T1 h1 f1 + f˜1 )}2 )                                       2    2
+                                                                                   −1 φ0 L0 { Q φ0 (h̃0 − T1 h1 ) g1 f1 }
+σ12 hf1 , f˜1 i(h1 ) =                                                       +  Ñ
+                                           (φ0 L0 1X ) 2                                          (φ0 L0 1X )2
+                                                                       ←−
+                      φ0 L0 {g1 D̃1,1 (h1 f1 + f˜1 )2 }         φ0 L0 { Q φ0 (h̃0 − T1 h1 )2 g1 f12 }
+                    =                                   + Ñ −1
+                               (φ0 L0 1X )  2                              (φ0 L0 1X )2
+which is, under the standard convention that Lm Ln = id if m > n, in agreement with (3.2). This
+completes the proof.
+Lemma 13. Let Assumption 1 hold. Then for all t ∈ N, ft ∈ F(X ), and Ñ ∈ N∗ ,
+                                         N
+                                         X ωi     t                   P
+                                                      (τti )2 ft (ξti ) −→ φt (T2t ht ft ) + ηt (ft ),
+                                         i=1
+                                             Ωt
+
+where
+                                  t−1                   ←−
+                                  X              φ` L` { Q φ` (T` h` + h̃` − T`+1 h`+1 )2 L`+1 · · · Lt−1 ft }
+                    ηt (ft ) :=         Ñ `−t                                                                 .                 (A.9)
+                                                                      φ` L` · · · Lt−1 1X
+                                  `=0
+Proof. Again, we proceed byP     induction. First, the base case t = 0 is trivially true since T0 h0 = 0,
+                                   −1
+τ0i = 0 for all i ∈ J1, N K, and `=0 = 0 by convention. We now assume that the claim of the lemma
+holds true for some t ∈ N. Since Corollary 2 implies that N −1 Ωt+1 −→ φt Lt 1X it is enough to study
+                                                                                                  P
+                         PN
+the convergence of N −1 i=1 ωt+1i    i
+                                   (τt+1 )2 ft+1 (ξt+1
+                                                   i
+                                                       ). For this purpose we will apply Theorem 15 to
+the triangular array
+                              i
+                             υN := N −1 ωt+1
+                                         i     i
+                                             (τt+1 )2 ft+1 (ξt+1
+                                                             i
+                                                                 )                 (i ∈ J1, N K, N ∈ N∗ )
+
+furnished with the filtration {F̃tN }N ∈N∗ . Note that |υN i
+                                                             | ≤ kgt+1 k∞ kht+1 k2∞ kft+1 k∞ /N for all
+                     ∗
+i ∈ J1, N K and N ∈ N . In addition, using, first, that {υN }i=1 are conditionally i.i.d given F̃tN and,
+                                                          i N
+                                       J. Olsson and J. Westerborn/The PaRIS algorithm                                                  31
+
+                                                                               (i,j)
+second, that for all i ∈ J1, N K, the backward indices {Jt+1 }Ñ                                   N
+                                                              j=1 are conditionally i.i.d. given F̃t and
+ i
+ξt+1 ,
+
+    N
+    X  h          i
+         i
+      E υN | F̃tN
+    i=1
+        h                                  i
+          1     1
+     = E ωt+1 (τt+1 )2 ft+1 (ξt+1
+                              1
+                                  ) | F̃tN
+            "                      "                                                  2                   #            #
+                                                   (1,1)               (1,1)
+            −1        1          1               J                 J        1
+     = Ñ        E   ωt+1 ft+1 (ξt+1 )E         τt t+1     + h̃t (ξt t+1 , ξt+1 )           | F̃tN ∨ Ft+1
+                                                                                                      N
+                                                                                                                | F̃tN              (A.10)
+                                             (1,1)           (1,1)
+                                                                                                 
+                                               J             J
+        + Ñ −1 (Ñ − 1)E ωt+1
+                           1          1
+                               ft+1 (ξt+1 )E2 τt t+1 + h̃t (ξt t+1 , ξt+1
+                                                                      1
+                                                                          ) | F̃tN ∨ Ft+1
+                                                                                      N
+                                                                                            | F̃tN .                                (A.11)
+
+We treat separately the two terms (A.10) and (A.11). First,
+                     "                    N
+                                                                                                                 #
+                −1     1           1
+                                         X                      1
+                                                   ωt` q(ξt` , ξt+1 )           `          ` 1        2        N
+   (A.10) = Ñ E ωt+1 ft+1 (ξt+1 )           PN                             {τt + h̃t (ξt , ξt+1 )} | F̃t
+                                                         `0      `0 1
+                                         `=1    `0 =1 ωt q(ξt , ξt+1 )
+                    N                                         N
+                       ωti                                              ωt` q(ξt` , x)
+                   X       Z                                X
+                −1
+           = Ñ              q(ξti , x)gt+1 (x)ft+1 (x)            PN                        {τt` + h̃t (ξt` , x)}2 µ(dx)
+                       Ω t                                                  ω `0 q(ξ `0 , x)
+                   i=1                                      `=1       0
+                                                                     ` =1     t      t
+                    N    ` Z
+                   X   ωt
+           = Ñ −1           q(ξt` , x) gt+1 (x)ft+1 (x){τt` + h̃t (ξt` , x)}2 µ(dx).
+                       Ωt
+                         `=1
+
+Using Corollary 2 and the induction hypothesis we obtain the limits
+                           N
+                           X ω`    t                              P
+                                       (τt` )2 Lt (ξt` , ft+1 ) −→ φt (T2t ht Lt ft+1 ) + ηt (Lt ft+1 ),
+                                  Ωt
+                            `=1
+                           N
+                           X ω`    t `                            P
+                                    τ Lt (ξt` , h̃t ft+1 ) −→ φt {Tt ht Lt (h̃t ft+1 )},
+                                  Ωt t
+                            `=1
+                           N
+                           X ω`    t                          P
+                                       Lt (ξt` , h̃2t ft+1 ) −→ φt Lt (h̃2t ft+1 ),
+                                  Ωt
+                            `=1
+
+which yield
+                                                                                                        
+  (A.10) −→ Ñ −1 φt (T2t ht Lt ft+1 ) + ηt (Lt ft+1 ) + 2φt {Tt ht Lt (h̃t ft+1 )} + φt Lt (h̃2t ft+1 )
+          P
+
+                                                                                                          
+                                                      = Ñ −1 φt Lt {(Tt ht + h̃t )2 ft+1 } + ηt (Lt ft+1 ) .
+
+We turn to the second term (A.11) and equate the same with Ñ −1 (Ñ − 1)φN
+                                                                          t QϕN , where
+
+                                                    N
+                                                                                                                !2
+                                                    X             ωt` q(ξt` , x)
+             ϕN (x) := gt+1 (x)ft+1 (x)                    PN             0    0
+                                                                                        {τt` + h̃t (ξt` , x)}            (x ∈ X).
+                                                    `=1        `0 =1   ωt` q(ξt` , x)
+                               J. Olsson and J. Westerborn/The PaRIS algorithm                                     32
+
+
+Since, kϕN k∞ ≤ kgt+1 k∞ kft+1 k∞ kht+1 k∞ for all N ∈ N, and, by Corollary 2, for all x ∈ X, P-a.s.,
+                                                     R                                        !2
+                                                q(x̃, x){Tt ht (x̃) + h̃t (x̃, x)} φt (dx̃)
+                   ϕN (x) → gt+1 (x)ft+1 (x)               R
+                                                             q(x̃, x) φt (dx̃)
+                                              ←−2
+                            = gt+1 (x)ft+1 (x) Q φt (Tt ht + h̃t )(x)
+                              = gt+1 (x)ft+1 (x)T2t+1 ht+1 (x),
+
+we may, under Assumption 1, apply Lemma 14, yielding
+                                 P
+                      φN                        2                    2
+                       t QϕN −→ φt Q(gt+1 ft+1 Tt+1 ht+1 ) = φt Lt (Tt+1 ht+1 ft+1 ).
+
+Consequently,
+
+  N
+  X  h         i
+       i         P
+    E υN | F̃tN −→ φt Lt (T2t+1 ht+1 ft+1 )
+  i=1
+                                                                                                     
+                      + Ñ −1 φt Lt {(Tt ht + h̃t )2 ft+1 } − φt Lt (T2t+1 ht+1 ft+1 ) + ηt (Lt ft+1 ) . (A.12)
+                        PN i
+In order to show that     i=1 υN has the same limit (A.12) in probability we use Theorem 15.
+Condition (A1) is easily checked by reusing (A.12) with ft+1 replaced by |ft+1 |. In order to check
+(A2) we simply note that for all ε ∈ R∗+ ,
+
+        N  h                       i
+                |1{|υN               ≤ kgt+1 k∞ kht+1 k2∞ kft+1 k∞ 1{kgt+1 k∞ kht+1 k2∞ kft+1 k∞ ≥εN } ,
+        X
+              i                  N
+          E |υN      i |≥ε} | F̃
+                                t
+        i=1
+
+where the right hand side is zero for N large enough. Thus, Theorem 15 applies and since, by
+reversibility,
+
+                        φt Lt {(Tt ht + h̃t )2 ft+1 } − φt Lt (T2t+1 ht+1 ft+1 )
+                                = φt  Q({(Tt ht + h̃t )2 − T2t+1 ht+1 }gt+1 ft+1 )
+                                           ←
+                                           −
+                                = φt Q  Q φt {(Tt ht + h̃t − Tt+1 ht+1 )2 gt+1 ft+1 }
+                                         ←−
+                                = φt Lt { Q φt (Tt ht + h̃t − Tt+1 ht+1 )2 ft+1 },
+
+Slutsky’s lemma implies
+
+  N  i                                         N
+  X ωt+1                                       X
+                                  ) = N Ω−1
+                i                                         P
+              (τt+1 )2 ft+1 (ξt+1
+                              i
+                                         t+1
+                                                      i
+                                                     υN −→ φt+1 (T2t+1 ht+1 ft+1 )
+  i=1
+      Ωt+1                                     i=1
+                                    1                ←−                                                      
+                            +                  φt Lt { Q φt (Tt ht + h̃t − Tt+1 ht+1 )2 ft+1 } + ηt (Lt ft+1 ) .
+                              Ñ (φt Lt 1X )
+
+We may now conclude the proof by noting, using the induction hypothesis, the identity
+
+                                (φ` L` · · · Lt−1 1X )(φt Lt 1X ) = φ` L` · · · Lt 1X ,
+                               J. Olsson and J. Westerborn/The PaRIS algorithm                                         33
+
+
+and the convention Lt+1 Lt = id, that
+        1                ←−                                                      
+                   φt Lt { Q φt (Tt ht + h̃t − Tt+1 ht+1 )2 ft+1 } + ηt (Lt ft+1 )
+  Ñ (φt Lt 1X )
+                                       t                    ←−
+                                      X              φ` L` { Q φ` (T` h` + h̃` − T`+1 h`+1 )2 L`+1 · · · Lt ft+1 }
+                                   =      Ñ `−(t+1)                                                               .
+                                                                           φ` L` · · · Lt 1X
+                                       `=0
+
+
+
+   The following lemma formalizes an argument used in the proof of [11, Theorem 8].
+Lemma 14. Let Assumption 1 hold. Let Ψ be a possibly unnormalized transition kernel on (X, X )
+having transition density ψ ∈ F(X 2 ) with respect to some reference measure λ. Moreover, let
+{ϕN }N ∈N∗ be a sequence of functions in F(X ) for which
+  (i) there exists ϕ ∈ F(X ) such that for all x ∈ X, ϕN (x) → ϕ(x), P-a.s., and
+ (ii) there exists |ϕ|∞ ∈ R∗+ such that kϕN k∞ ≤ |ϕ|∞ for all N ∈ N∗ .
+                                   P
+Then for all t ∈ N, φN
+                     t ΨϕN −→ φt Ψϕ.
+                                             P
+Proof. Since, by Corollary 2, φN
+                               t Ψϕ −→ φt Ψϕ, it is enough to establish that
+                                                          P
+                                              φN         N
+                                               t ΨϕN −→ φt Ψϕ.
+
+For this purpose, set
+                                                Z
+                      aN (x)  := |ϕN (x) − ϕ(x)| ψ(x̃, x) φN
+                                                           t (dx̃),
+                                 Z                                  (N ∈ N∗ , x ∈ X).
+                                            N
+                      ãN (x) := ψ(x̃, x) φt (dx̃)
+
+Since |φN          N
+        t ΨϕN − φt Ψϕ| ≤ λaN it is, by Markov’s inequality, enough to show that E[λaN ] tends
+to zero as N tends to infinity. However, by Fubini’s theorem,
+                                                 Z
+                             lim E[λaN ] = lim      E[aN (x)] λ(dx) = 0,
+                                N →∞               N →∞
+
+where the last equality is a consequence of the generalized Lebesgue dominated convergence theorem
+provided that
+  (i) limN →∞ E[aN (x)] = 0 for all x ∈ X,
+                       ∗
+               R c ∈ R+ such thatR E[aN (x)] ≤ c E[ãN (x)] for all x ∈ X,
+ (ii) there exists
+(iii) limN →∞ E[ãN (x)] λ(dx) = limN →∞ E[ãN (x)] λ(dx).
+Here (i) is implied by Corollary 2 and, as |aN (x)| ≤ kψk∞ (kϕk∞ + |ϕ|∞ ) for all x ∈ X, the standard
+dominated convergence theorem. Moreover, (ii) is satisfied with c = kϕk∞ + |ϕ|∞ . Finally, to check
+(iii), notice that
+          Z                                                          ZZ
+                                             1               1
+                              (a)                  (b)           (c)
+     lim     E[ãN (x)] λ(dx) = lim E[φNt Ψ    X ] =   φ t Ψ   X =      ψ(x̃, x) φt (dx̃) λ(dx)
+    N →∞                          N →∞
+                                                                                  Z
+                                                                              (d)
+                                                                               =       lim E[ãN (x)] λ(dx),
+                                                                                          N →∞
+                                  J. Olsson and J. Westerborn/The PaRIS algorithm                                              34
+
+
+where (a) and (c) follow by Fubini’s theorem and (b) and (d) are obtained from Corollary 2 and the
+standard dominated convergence theorem (as Ψ1X ∈ F(X ) and ψ ∈ F(X 2 ) by assumption). This
+completes the proof.
+
+A.4. Proof of Proposition 7
+
+By [18, Lemma 1],
+                                                                 t−1
+                    kD̃s+1,t ht k∞ ≤ kLs+1 . . . Lt 1X k∞
+                                                                 X
+                                                                       %max{s−`+2,`−s−3,0} osc(h̃` ),             (A.13)
+                                                                 `=0
+
+and, consequently,
+                                                                                                                      !2
+                                                 (φs Ls gs+1 )kLs+1 . . . Lt 1X k2
+  t−1                                        t−1                                       t−1
+  X   φs Ls (gs+1 D̃2s+1,t ht )              X
+                                                                                  ∞
+                                                                                       X
+                                  ≤ |h̃|2∞                                                   %   max{s−`+2,`−s−3,0}
+                                                                                                                           .
+  s=0
+        (φs Ls · · · Lt−1 1X )2              s=0
+                                                       (φs Ls · · · Lt−1 1X )2
+                                                                                       `=0
+
+Now, under Assumption 2, for all x ∈ X,
+
+                   εµ(gs+2 Ls+2 · · · Lt 1X ) ≤ Ls+1 · · · Lt 1X (x) ≤ ε̄µ(gs+2 Ls+2 . . . Lt 1X )                (A.14)
+
+implying that
+
+     (φs Ls gs+1 )kLs+1 · · · Lt 1X k2∞     (φs+1 gs+1 )kLs+1 · · · Lt 1X k2∞
+                                                                                                  2
+                                                                                   δ̄             ε̄        δ̄
+                                        =                                        ≤                    =           .
+          (φs Ls · · · Lt−1 1X )2         (φs Ls 1X )(φs+1 Ls+1 · · · Lt−1 1X )2   δ              ε     δ(1 − %)2
+Moreover, as
+                      t−1 X
+                          t−1
+                                                            !2       t−4                    2
+                      X
+                                       max{s−`+2,`−s−3,0}
+                                                                     X     2 − %s+3 − %t−s−3
+                                   %                             =
+                      s=0                                       s=0
+                                                                            1−%
+                             `=0
+                                                   t−1
+                                                              1 − ρ−t
+                                                                      
+                                                   X                          4t
+                                                +        ρs+2       −1
+                                                                         =          + o(t),
+                                                  s=t−3
+                                                              1−ρ          (1 − %)2
+
+we conclude that
+                                           t−1
+                                         1 X φs Ls (gs+1 D̃2s+1,t ht )              4δ̄
+                            lim sup                                    ≤ |h̃|2∞           .
+                              t→∞        t s=0 (φs Ls · · · Lt−1 1X )2          δ(1 − %)4
+
+
+A.5. Proof of Theorem 8
+
+The first term of σt2 (ht ) is the asymptotic variance of the FFBSm algorithm, which is, by Proposi-
+tion 7, bounded by 4|h̃|2∞ δ̄/{δ(1 − %)4 }. To treat the second term, we bound, using (A.14),
+
+  L`+1 · · · Ls (gs+1 {Ls+1 · · · Lt−1 1X }2 )             kL`+1 · · · Ls−1 1X k∞ δ̄kLs+1 · · · Lt−1 1X k2∞
+                                                  ≤
+(φ`+1 L`+1 · · · Ls−1 1X )(φs Ls · · · Lt−1 1X )2   (φ`+1 L`+1 · · · Ls−1 1X )(φs Ls 1X )(φs+1 Ls+1 · · · Lt−1 1X )2
+                                                        δ̄
+                                                  ≤           .                                             (A.15)
+                                                    δ(1 − %)3
+                                    J. Olsson and J. Westerborn/The PaRIS algorithm                                  35
+
+                             ←−
+Moreover, since T`+1 h`+1 = Q φ` (T` h` + h̃` ) and T` h` = D`,` h` , we obtain, by reusing (A.13),
+
+                                                                                             4δ̄%2
+                                                                                                    
+ kT` h` + h̃` − T`+1 h`+1 k∞ ≤ osc(T` h` ) + osc(h̃` ) ≤ 4kD̃`,` h` k∞ + osc(h̃` ) ≤ |h̃|∞         +1 .
+                                                                                             1−%
+Thus,
+
+     t−1 s             ←−
+   1 X X `−(s+1) φ`+1 { Q φ` (T` h` + h̃` − T`+1 h`+1 )2 L`+1 · · · Ls (gs+1 {Ls+1 · · · Lt−1 ft }2 )}
+             Ñ
+   t s=0                           (φ`+1 L`+1 · · · Ls−1 1X )(φs Ls · · · Lt−1 1X )2
+         `=0
+                                                                                 2 X  t−1 X
+                                                                                           s
+                                                                    4δ̄%2
+                                                                  
+                                                          δ̄                         1
+                                             ≤ |h̃|2∞                       +  1              Ñ `−(s+1) ,
+                                                      δ(1 − %)3 1 − %                t s=0
+                                                                                                     `=0
+
+and since
+                                                     s
+                                                     X
+                                               lim         Ñ `−(s+1) = (Ñ − 1)−1
+                                              s→∞
+                                                     `=0
+
+we may conclude the proof by taking the Cesàro mean.
+
+A.6. Proof of Theorem 9
+
+In the case of marginal smoothing, [11, Theorem 12] provides, for t ≥ ŝ (since the variance vanishes
+for t < ŝ, the result holds trivially true in this case), the time uniform bound
+
+                                                                            δ̄ 2 (1 + %2 )
+                                             σ̃t2 (ht ) ≤ osc2 (h̃ŝ )
+                                                                         (1 + %)(1 − %)3
+
+and hence, since all terms are zero except h̃ŝ , it is enough to bound the quantity
+  t−1 X
+      s                          ←−
+  X                        φ`+1 { Q φ` (T` h` + h̃` − T`+1 h`+1 )2 L`+1 · · · Ls (gs+1 {Ls+1 · · · Lt−1 ft }2 )}
+              Ñ `−(s+1)                                                                                         (A.16)
+                                             (φ`+1 L`+1 · · · Ls−1 1X )(φs Ls · · · Lt−1 1X )2
+  s=ŝ `=ŝ
+
+(where h̃` = 0 for ` > ŝ). In addition, by [11, Lemma 10], for all ` ≥ ŝ,
+
+                                                  kD̃`,` h` k∞ ≤ %`−ŝ osc(h̃ŝ ),
+
+yielding
+                                     kT` h` + h̃` − T`+1 h`+1 k∞ ≤ 2%`−ŝ osc(h̃ŝ ).
+By combining this with (A.15) we obtain, via standard operations on geometric sums,
+                                       t−1    s
+                             δ̄    XX
+(A.16) ≤ 4 osc2 (h̃ŝ )          3
+                                             Ñ `−(s+1) %2(`−ŝ)
+                         δ(1 − %)
+                                   s=ŝ `=ŝ
+                                                                                            !
+                                                                 −(t−ŝ)             2(t−ŝ)
+                                               1         1 −  Ñ             2 1 − %
+                                                                         −%                                if Ñ %2 6= 1,
+                                     
+                                     
+                             δ̄      
+                                         (1 − Ñ %2 )       Ñ − 1               1 − %2
+        = 4 osc2 (h̃ŝ )         3
+                                   ×
+                         δ(1 − %)
+                                      1
+                                                                                                      
+                                                    2 − Ñ −(t−ŝ) − (t − ŝ)Ñ −(t−ŝ)+1 − Ñ −(t−ŝ)
+                                     
+                                                                                                           if Ñ %2 = 1,
+                                     
+                                         Ñ − 1
+                              J. Olsson and J. Westerborn/The PaRIS algorithm                           36
+
+
+and hence, letting t tend to infinity,
+                                                             1
+                                                                             if Ñ %2 6= 1,
+                                  2           δ̄       (
+                                                         
+                                                        Ñ − 1)(1 − %2 )
+                   (A.16) ≤ 4 osc (h̃ŝ )          ×      2
+                                          δ(1 − %)3                         if Ñ %2 = 1,
+                                                       Ñ − 1
+which concludes the proof.
+
+Appendix B: Technical results
+
+B.1. Conditional limit theorems for triangular arrays of dependent random variables
+
+We first recall two results, obtained in [12] (but reformulated slightly here for our purposes), which
+are essential for the developments of the present paper.
+                                                                                                   i N
+ Theorem 15 ([12]). Let (Ω, A, {FN }N ∈N∗ , P) be a filtered probability space. In addition, let {υN }i=1 ,
+         ∗                                                                                    ∗
+ N ∈ N , be a triangular array of random variables on (Ω, A, P) such that for all N ∈ N , the vari-
+           i N                                                         i
+ ables {υN    }i=1 are conditionally independent given FN with E[|υN     | | FN ] < ∞, P-a.s., for all
+ i ∈ J1, N K. Moreover, assume that
+                          N
+                                               !
+                         X
+                                 i
+(A1)        lim sup P        E[|υN | | FN ] ≥ λ = 0.
+         λ→∞ N ∈N∗
+                        i=1
+
+(A2) For all ε > 0, as N → ∞,
+                                       N      h                     i
+                                                   |1{|υN
+                                       X                               P
+                                                 i
+                                             E |υN      i |≥ε} | FN   −→ 0.
+                                       i=1
+
+Then, as N → ∞,
+                                          m
+                                          X            m
+                                                       X
+                                                 i
+                                                           i      P
+                                 max            υN −     E υN | FN −→ 0.
+                               m∈J1,N K
+                                          i=1          i=1
+                                                                   i 2
+Theorem 16 ([12]). Let the assumptions of Theorem 15 hold with E[(υN ) | FN ] < ∞, P-a.s., for
+all i ∈ J1, N K, and (A1) and (A2) replaced by
+(B1) For some constant ς 2 > 0, as N → ∞,
+                                 N
+                                 X
+                                           i 2
+                                                                   P
+                                             ) | FN ] − E2 υN
+                                                           i
+                                       E[(υN                  | FN −→ ς 2 .
+                                 i=1
+
+(B2) For all ε > 0, as N → ∞,
+                                       N  h                      i
+                                               ) 1{|υN
+                                       X                            P
+                                             i 2
+                                         E (υN       i |≥ε} | FN   −→ 0.
+                                       i=1
+
+Then, for all u ∈ R, as N → ∞,
+                   "        N
+                                                 !     #
+                           X    i                       P
+                                        i
+                                                   | FN −→ exp −u2 ς 2 /2 .
+                                                                         
+                 E exp i u      υN − E[υN | FN ]
+                                i=1
+                                     J. Olsson and J. Westerborn/The PaRIS algorithm                       37
+
+
+B.2. An accept-reject-based algorithm for backward sampling
+
+                                            i     i
+Given two subsequent particle samples {(ξs−1   , ωs−1 )}N          i    i N
+                                                        i=1 and {(ξs , ωs )}i=1 , the following algorithm,
+                                                                                    (i,j)
+which is a trivial adjustment of [11, Algorithm 1], simulates the full set {Js            : (i, j) ∈ J1, N K ×
+J1, Ñ K} of backward indices required for one iteration of PaRIS. The algorithm requires Assump-
+tion 1(ii) to hold true.
+
+Algorithm 3 Accept-reject-based backward sampling
+Require: Particle samples {(ξs−1     i      i   )}N          i    i N
+                                         , ωs−1   i=1 and {(ξs , ωs )}i=1 .
+1: for j = 1 → Ñ do
+2:    set L ← J1, N K;
+3:    while L 6= ∅ do
+4:        set n ← #L;
+5:        draw (I1 , . . . , IN ) ∼ Pr({ωs−1i   }N
+                                                 i=1 )
+                                                      N ;
+
+6:        draw (U1 , . . . , UN ) ∼ U(0, 1)   N  ;
+7:        set Ln ← ∅;
+8:        for k = 1 → n do
+                              Ik     L(k)
+9:            if Uk ≤ q(ξs−1      , ξs )/ε̄ then
+                          (L(k),j)
+10:               set Js         ← Ik ;
+11:           else
+12:               set Ln ← Ln ∪ {L(k)};
+13:           end if
+14:       end for
+15:       set L ← Ln ;
+16:    end while
+17: end for
+              (i,j)
+18: return {Js      : (i, j) ∈ J1, N K × J1, Ñ K}
+
+
+
+
+References
+
+ [1] L. E. Baum, T. P. Petrie, G. Soules, and N. Weiss. A maximization technique occurring
+     in the statistical analysis of probabilistic functions of Markov chains. Ann. Math. Statist.,
+     41(1):164–171, 1970.
+ [2] O. Cappé. Ten years of HMMs (online bibliography 1989–2000), March 2001.
+ [3] O. Cappé. Online EM algorithm for hidden Markov models. Journal of Computational and
+     Graphical Statistics, 20(3):728–749, 2011.
+ [4] O. Cappé, S. J. Godsill, and E. Moulines. An overview of existing methods and recent advances
+     in sequential Monte Carlo. IEEE Proceedings, 95(5):899–924, 2007.
+ [5] O. Cappé, E. Moulines, and T. Rydén. Inference in Hidden Markov Models. Springer, 2005.
+ [6] S. Chib, F. Nadari, and N. Shephard. Markov chain Monte Carlo methods for stochastic
+     volatility models. J. Econometrics, 108:281–316, 2002.
+ [7] D. Crisan and K. Heine. Stability of the discrete time filter in terms of the tails of noise
+     distributions. J. Lond. Math. Soc. (2), 78(2):441–458, 2008.
+ [8] P. Del Moral. Feynman-Kac Formulae. Genealogical and Interacting Particle Systems with
+     Applications. Springer, 2004.
+ [9] P. Del Moral, A. Doucet, and S. Singh. A Backward Particle Interpretation of Feynman-Kac
+     Formulae. ESAIM M2AN, 44(5):947–975, 2010.
+                           J. Olsson and J. Westerborn/The PaRIS algorithm                         38
+
+
+[10] P. Del Moral and A. Guionnet. On the stability of interacting processes with applications to
+     filtering and genetic algorithms. Annales de l’Institut Henri Poincaré, 37:155–194, 2001.
+[11] R. Douc, A. Garivier, E. Moulines, and J. Olsson. Sequential Monte Carlo smoothing for
+     general state space hidden Markov models. Ann. Appl. Probab., 21(6):2109–2145, 2011.
+[12] R. Douc and E. Moulines. Limit theorems for weighted samples with applications to sequential
+     Monte Carlo methods. Ann. Statist., 36(5):2344–2376, 2008.
+[13] R. Douc, E. Moulines, and J. Olsson. Long-term stability of sequential Monte Carlo methods
+     under verifiable conditions. Ann. Appl. Probab., 24(5):1767–1802, 2014.
+[14] R. Douc, E. Moulines, and D. Stoffer. Nonlinear Time Series: Theory, Methods and Applica-
+     tions with R Examples. Chapman & Hall/CRC Texts in Statistical Science, 2014.
+[15] A. Doucet, N. De Freitas, and N. Gordon, editors. Sequential Monte Carlo Methods in Practice.
+     Springer, New York, 2001.
+[16] A. Doucet, S. Godsill, and C. Andrieu. On sequential Monte-Carlo sampling methods for
+     Bayesian filtering. Stat. Comput., 10:197–208, 2000.
+[17] A. Doucet and A. M. Johansen. A tutorial on particle filtering and smoothing: fifteen years
+     later. Oxford handbook of nonlinear filtering, 2009.
+[18] C. Dubarry and S. Le Corff. Non-asymptotic deviation inequalities for smoothed additive
+     functionals in nonlinear state-space models. Bernoulli, 19(5B):2222–2249, 2013.
+[19] P. Fearnhead, D. Wyncoll, and J. Tawn. A sequential smoothing algorithm with linear com-
+     putational cost. Biometrika, 97(2):447–464, 2010.
+[20] S. J. Godsill, A. Doucet, and M. West. Monte Carlo smoothing for non-linear time series. J.
+     Am. Statist. Assoc., 50:438–449, 2004.
+[21] N. Gordon, D. Salmond, and A. F. Smith. Novel approach to nonlinear/non-Gaussian Bayesian
+     state estimation. IEE Proc. F, Radar Signal Process., 140:107–113, 1993.
+[22] J. Hull and A. White. The pricing of options on assets with stochastic volatilities. J. Finance,
+     42:281–300, 1987.
+[23] M. Hürzeler and H. R. Künsch. Monte Carlo approximations for general state-space models.
+     J. Comput. Graph. Statist., 7:175–193, 1998.
+[24] P. E. Jacob, L. M. Murray, and S. Rubenthaler. Path storage in the particle filter. Statistics
+     and Computing, pages 1–10, 2013.
+[25] G. Kitagawa. Monte-Carlo filter and smoother for non-Gaussian nonlinear state space models.
+     J. Comput. Graph. Statist., 1:1–25, 1996.
+[26] G. Kitagawa and S. Sato. Monte Carlo smoothing and self-organising state-space model. In
+     Sequential Monte Carlo methods in practice, Stat. Eng. Inf. Sci., pages 177–195. Springer, New
+     York, 2001.
+[27] T. Koski. Hidden Markov Models for Bioinformatics. Kluwer, 2001.
+[28] F. Lindsten and T. B. Schön. Backward simulation methods for Monte Carlo statistical infer-
+     ence. Foundations and Trends in Machine Learning, 6(1):1–143, 2013.
+[29] G. Mongillo and S. Denève. Online learning with hidden Markov models. Neural Computation,
+     20(7):1706–1716, 2008.
+[30] J. Olsson, O. Cappé, R. Douc, and E. Moulines. Sequential Monte Carlo smoothing with
+     application to parameter estimation in non-linear state space models. Bernoulli, 14(1):155–
+     179, 2008. arXiv:math.ST/0609514.
+[31] J. Olsson and J. Ströjby. Convergence of random weight particle filters. Technical report, Lund
+     University, 2010.
+[32] J. Olsson and J. Ströjby. Particle-based likelihood inference in partially observed diffusion
+                            J. Olsson and J. Westerborn/The PaRIS algorithm                        39
+
+
+     processes using generalised Poisson estimators. Electron. J. Statist., 5:1090–1122, 2011.
+[33] J. Olsson and J. Westerborn. Efficient particle-based online smoothing in general hidden
+     Markov models. In IEEE 2014 International Conference on Acoustics, Speech, and Signal
+     Processing (ICASSP 2014), 2014.
+[34] M. K. Pitt and N. Shephard. Filtering via simulation: Auxiliary particle filters. J. Am. Statist.
+     Assoc., 94(446):590–599, 1999.
+[35] L. R. Rabiner and B-H. Juang. Fundamentals of Speech Recognition. Prentice-Hall, 1993.
+[36] H. Rauch, F. Tung, and C. Striebel. Maximum likelihood estimates of linear dynamic systems.
+     AIAA Journal, 3(8):1445–1450, 1965.
+[37] C. Vergé, P. Del Moral, E. Moulines, and J. Olsson. Convergence properties of weighted particle
+     islands with application to the double bootstrap algorithm. Preprint, 2014.
+

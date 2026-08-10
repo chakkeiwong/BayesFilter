@@ -13,12 +13,12 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_registry_has_six_executable_five_blocked_and_one_owner_excluded_cell() -> None:
+def test_registry_has_five_executable_six_blocked_and_one_owner_excluded_cell() -> None:
     from bayesfilter.testing.neutra_model_registry_tf import validate_registry
 
     payload = validate_registry()
-    assert len(payload["executable"]) == 6
-    assert len(payload["blocked"]) == 5
+    assert len(payload["executable"]) == 5
+    assert len(payload["blocked"]) == 6
     assert len(payload["owner_excluded"]) == 1
     ids = [
         row["cell_id"]
@@ -56,6 +56,18 @@ def test_sir_ukf_is_owner_excluded_and_not_master_executable() -> None:
     )
     assert excluded.state == "OWNER_EXCLUDED_METHOD_NOT_APPLICABLE"
     assert excluded.reentry_rung == "none; reentry requires a new owner direction"
+
+
+def test_svx_zc_is_blocked_until_explicit_xla_hmc_admission() -> None:
+    from bayesfilter.testing.neutra_model_registry_tf import (
+        BLOCKED_CELLS,
+        EXECUTABLE_CELLS,
+    )
+
+    assert "SVX-ZC" not in {spec.cell_id for spec in EXECUTABLE_CELLS}
+    blocked = next(item for item in BLOCKED_CELLS if item.cell_id == "SVX-ZC")
+    assert blocked.state == "TARGET_BLOCKED_XLA_HMC_ADMISSION"
+    assert "fresh scope-specific tuning" in blocked.reentry_rung
 
 
 @pytest.mark.parametrize(
@@ -489,12 +501,16 @@ def test_runner_exposes_broad_grid_as_explicit_tuning_only_action() -> None:
     broad = (ROOT / "bayesfilter/inference/neutra_broad_grid.py").read_text(
         encoding="utf-8"
     )
+    shared = (
+        ROOT / "bayesfilter/inference/neutra_shared_procedure.py"
+    ).read_text(encoding="utf-8")
     assert '"broad-grid-frozen"' in runner
     assert 'parser.add_argument("--broad-grid-root-seed", nargs=2, type=int)' in runner
     assert "run_neutra_frozen_transport_broad_grid_cell" in implementation
-    assert "run_neutra_operational_broad_grid_tuning" in implementation
-    assert '"sampling_launched": False' in implementation
-    assert '"retained_sampling_authorized": False' in implementation
+    assert "run_shared_neutra_procedure" in implementation
+    assert "run_neutra_operational_broad_grid_tuning" in shared
+    assert '"sampling_launched": False' in implementation or '"sampling_launched": sequential_result is not None' in shared
+    assert '"retained_sampling_authorized": False' in shared
     assert "run_operational_broad_grid(" in broad
     assert "tune_hmc_kernel(" not in broad
     assert "run_sequential_neutra_hmc(" not in broad

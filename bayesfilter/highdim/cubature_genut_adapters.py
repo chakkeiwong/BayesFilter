@@ -653,7 +653,9 @@ def reduced_sir_candidate_adapter(
     )
 
 
-def parameterized_austria_sir_candidate_adapter() -> CandidateModelAdapter:
+def parameterized_austria_sir_candidate_adapter(
+    *, latent_preclip: bool = False
+) -> CandidateModelAdapter:
     """Build the score-capable Austria SIR ``d=18`` candidate adapter.
 
     The parameter order is ``(log_kappa_scale, log_nu_scale,
@@ -781,16 +783,44 @@ def parameterized_austria_sir_candidate_adapter() -> CandidateModelAdapter:
             [tf.shape(noise)[0], state_dimension, parameter_count], tf.float32
         )
 
-    def transition_value(theta, particles, noise, _time):
+    def previous_physical_and_tangent(particles, tangent, time_index):
+        if not latent_preclip:
+            return particles, tangent
+        clip_active = tf.not_equal(time_index, tf.zeros([], tf.int32))
+        susceptible = particles[:, 0::2]
+        clipped_susceptible = tf.maximum(susceptible, 0.0)
+        clipped = tf.reshape(
+            tf.stack([clipped_susceptible, particles[:, 1::2]], axis=2),
+            [tf.shape(particles)[0], state_dimension],
+        )
+        susceptible_tangent = tangent[:, 0::2, :] * tf.cast(
+            susceptible[:, :, None] > 0.0, tangent.dtype
+        )
+        clipped_tangent = tf.reshape(
+            tf.stack([susceptible_tangent, tangent[:, 1::2, :]], axis=2),
+            [tf.shape(particles)[0], state_dimension, parameter_count],
+        )
+        return (
+            tf.where(clip_active, clipped, particles),
+            tf.where(clip_active, clipped_tangent, tangent),
+        )
+
+    def transition_value(theta, particles, noise, time_index):
         tangent = tf.zeros(
             [tf.shape(particles)[0], state_dimension, parameter_count], tf.float32
         )
-        mean, _ = rk4(theta, particles, tangent)
+        previous, previous_tangent = previous_physical_and_tangent(
+            particles, tangent, time_index
+        )
+        mean, _ = rk4(theta, previous, previous_tangent)
         return mean + noise
 
-    def transition_tangent(theta, particles, noise, particle_tangent, _time):
+    def transition_tangent(theta, particles, noise, particle_tangent, time_index):
         del noise
-        return rk4(theta, particles, particle_tangent)[1]
+        previous, previous_tangent = previous_physical_and_tangent(
+            particles, particle_tangent, time_index
+        )
+        return rk4(theta, previous, previous_tangent)[1]
 
     def observation_value(theta, particles, observation, _time):
         _, _, variance = physical(theta)

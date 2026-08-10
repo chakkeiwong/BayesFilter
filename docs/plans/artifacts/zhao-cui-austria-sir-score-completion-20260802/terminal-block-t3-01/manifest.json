@@ -1,0 +1,124 @@
+{
+  "schema": "bayesfilter.zhao_cui_austria_sir_score_completion_terminal.v1",
+  "created_at": "2026-08-03T00:35:06+08:00",
+  "status": "BLOCK_T3_PROPOSAL_QUALITY",
+  "scientific_question": "Can one frozen Zhao-Cui-derived proposal program produce a finite deterministic T20 Austria finite likelihood scalar and manual total score over the predeclared compact domain?",
+  "answer": "No for the tested persistent nine-guide analytic proposal: it fails the T3 proposal-quality continuation gate.",
+  "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-score-completion-plan-2026-08-02.md",
+  "plan_sha256_after_closeout": "d8147ef7770a1fab458d45c5de0b2adffef87fb1755637ed924de9dc9a7b46c4",
+  "result": "docs/plans/bayesfilter-zhao-cui-austria-sir-score-completion-result-2026-08-03.md",
+  "result_sha256": "850dba2f9df52c4ffebb85e51aef88623e55d1d84ad7452b28b1cc566d288324",
+  "reset_memo": "docs/plans/bayesfilter-zhao-cui-austria-sir-score-completion-reset-memo-2026-08-03.md",
+  "reset_memo_sha256": "5cf48e513cc0eea6b5e30a53d66c5fcf3a92f9652c9e60166f82a6fd4aa7fdb0",
+  "git_commit": "f3ca5aa990fa0997414359983da2e93be8bee40c",
+  "git_dirty": true,
+  "environment": {
+    "conda_prefix": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tensorflow_probability": "0.25.0",
+    "device": "NVIDIA GeForce RTX 4080 SUPER",
+    "dtype": "float64",
+    "tf32_enabled": false,
+    "xla_jit_compile": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "memory_policy": "fixed_logical_device_limit",
+    "memory_limit_mib": 6144
+  },
+  "scope": {
+    "target_id": "zhao_cui_austria_sir_seed81120_latent_preclip_y1_y20_v1",
+    "event_order": "x0_then_20_transition_then_observe_steps_y1_y20",
+    "target_seed": 81120,
+    "proposal_seed": 31201,
+    "particle_count_per_guide": 1008,
+    "guide_family": "persistent_kappa_nu_cartesian_9",
+    "guide_half_width": 0.03,
+    "guide_count": 9,
+    "domain_half_width_ladder": [0.03, 0.10, 0.25, 0.50],
+    "ess_fraction_floor": 0.10,
+    "maximum_weight_ceiling": 0.10,
+    "parent_t20_program_id": "936216cd0a8c4cab2b4551b6d44d99821a662046441c2cfb07200c2e23438fad",
+    "route_classification": "extension_or_invention"
+  },
+  "commands": [
+    "CUDA_VISIBLE_DEVICES=-1 /home/chakwong/anaconda3/bin/conda run -p /home/chakwong/anaconda3/envs/tf-gpu python -m pytest -q tests/highdim/test_zhao_cui_austria_sir_fixed_variant_tf.py tests/highdim/test_zhao_cui_austria_sir_rank_one_proposal_tf.py",
+    "/home/chakwong/anaconda3/bin/conda run -p /home/chakwong/anaconda3/envs/tf-gpu python scripts/run_zhao_cui_austria_sir_frozen_score_tuning.py --horizon 1 --particle-count 1008 --seed 31201 --output-dir docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/phase3-t1-persistent-guide-tuning-01",
+    "/home/chakwong/anaconda3/bin/conda run -p /home/chakwong/anaconda3/envs/tf-gpu python scripts/run_zhao_cui_austria_sir_frozen_score_tuning.py --horizon 2 --particle-count 1008 --seed 31201 --output-dir docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/phase3-t2-persistent-guide-tuning-01",
+    "/home/chakwong/anaconda3/bin/conda run -p /home/chakwong/anaconda3/envs/tf-gpu python scripts/run_zhao_cui_austria_sir_frozen_score_tuning.py --horizon 3 --particle-count 1008 --seed 31201 --output-dir docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/phase3-t3-persistent-guide-tuning-01"
+  ],
+  "artifacts": [
+    {
+      "path": "docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/phase2-fp64-gpu-xla-preflight-01/result.json",
+      "sha256": "b7705920f8dc25e6c000da7bbce5fef6f9dc48eb28fd785e0237955eeb464cf2",
+      "status": "PASS_FP64_GPU_XLA_FROZEN_SCORE_PREFLIGHT",
+      "wall_time_seconds": 13.982620608003344
+    },
+    {
+      "path": "docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/phase3-t1-persistent-guide-tuning-01/tuning.json",
+      "sha256": "f57190c82cbbbb6994c0d6f728d3c3015060129c8fc041e49ad0bc9b3b3ba525",
+      "status": "PASS_T1_PERSISTENT_GUIDE_TUNING",
+      "wall_time_seconds": 4.905410970037337
+    },
+    {
+      "path": "docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/phase3-t2-persistent-guide-tuning-01/tuning.json",
+      "sha256": "ee951e469d95266ccd668ad19b44631b487dddb4f9f6aad1a4e607a526c9d0b1",
+      "status": "PASS_T2_PERSISTENT_GUIDE_TUNING",
+      "wall_time_seconds": 5.206564762047492
+    },
+    {
+      "path": "docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/phase3-t3-persistent-guide-tuning-01/tuning.json",
+      "sha256": "b51f3591c29fd01fcafcbb4f1c1130f112fe0a73012d72fe806644bedc1ace77",
+      "status": "BLOCK_T3_PERSISTENT_GUIDE_TUNING",
+      "wall_time_seconds": 5.632364517019596
+    }
+  ],
+  "focused_tests": {
+    "passed": 15,
+    "warnings": 2,
+    "wall_time_seconds": 39.12,
+    "gpu_hidden": true
+  },
+  "source_hashes": {
+    "bayesfilter/highdim/zhao_cui_austria_sir_rank_one_proposal_tf.py": "fa37b475ee93bba8cb96c68d53e7cbb2e7b9387443d5fdb464cc0e7b519aa282",
+    "bayesfilter/highdim/zhao_cui_austria_sir_fixed_variant_tf.py": "cc17d3848108b5b86c45ec8766340c85e451619dc63d847897c40f4bbd9f0300",
+    "bayesfilter/highdim/zhao_cui_predator_prey_fixed_variant_tf.py": "a55b31eb91808d0e98373207542b0de983b085073ca289f07c327eb82965708b",
+    "scripts/run_zhao_cui_austria_sir_frozen_score_tuning.py": "ed153f5b767d9034d22fa0bdf4d32ff85d7946e79748f8c8660bc78ab9df6130",
+    "scripts/run_zhao_cui_austria_sir_frozen_score_preflight.py": "5a3863a635bbf1a01b4aaa045f41bdf172c75b3e0dbf83da2c091259d15ff928"
+  },
+  "failure": {
+    "horizon": 3,
+    "failed_theta_points": [
+      {
+        "theta": [0.015, -0.0075, 0.0225],
+        "best_ess_fraction": 0.09603899861180609,
+        "best_ess_guide_maximum_weight": 0.051617233208313046,
+        "veto": "ess_fraction"
+      },
+      {
+        "theta": [-0.015, 0.0075, -0.0225],
+        "best_ess_fraction": 0.07037039448932912,
+        "best_ess_guide_maximum_weight": 0.05268248192551788,
+        "veto": "ess_fraction"
+      },
+      {
+        "theta": [0.018, -0.020999999999999998, -0.012],
+        "best_ess_fraction": 0.04567356303937629,
+        "best_ess_guide_maximum_weight": 0.1029631804236548,
+        "veto": "ess_fraction_and_maximum_weight"
+      }
+    ],
+    "all_outputs_finite": true,
+    "xla_graph_has_while": true,
+    "xla_graph_has_host_callback": false
+  },
+  "decision": "stop_before_t5_and_require_fresh_proposal_repair_plan",
+  "physical_reference_status": "LIMITED",
+  "nonclaims": [
+    "no T20 score completion claim",
+    "no exact physical-likelihood claim",
+    "no source-faithful Austria parameter-score claim",
+    "no HMC or posterior claim",
+    "no default or production readiness claim",
+    "no statistical superiority claim"
+  ]
+}

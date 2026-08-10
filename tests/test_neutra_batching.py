@@ -62,6 +62,16 @@ class NoConditionEstimateAdapter(VectorizedAdapter):
         }
 
 
+class ExplicitlyUnavailableConditionEstimateAdapter(VectorizedAdapter):
+    def neutra_batch_log_prob_and_grad_status(self, theta):
+        value, score, status = super().neutra_batch_log_prob_and_grad_status(theta)
+        leading = tf.shape(value)
+        return value, score, {
+            **status,
+            "innovation_condition_estimate_available": tf.zeros(leading, tf.bool),
+        }
+
+
 class RowMappedAdapter(VectorizedAdapter):
     def neutra_batch_log_prob_and_grad_status(self, theta):
         values = tf.convert_to_tensor(theta, tf.float64)
@@ -144,6 +154,24 @@ def test_optional_condition_estimate_is_normalized_with_availability() -> None:
     tf.debugging.assert_equal(
         status["innovation_condition_estimate"], tf.ones([8], tf.float64)
     )
+    assert bool(
+        tf.reduce_all(status["min_innovation_eigenvalue_available"]).numpy()
+    )
+    assert not bool(
+        tf.reduce_any(status["innovation_condition_estimate_available"]).numpy()
+    )
+
+
+def test_explicit_condition_estimate_availability_overrides_field_presence() -> None:
+    binding = require_batch_native_neutra_target(
+        ExplicitlyUnavailableConditionEstimateAdapter(),
+        target_signature=TARGET_SIGNATURE,
+        batch_size=8,
+    )
+    target = batch_native_value_status_target_fn(binding)
+
+    _value, status = target(tf.ones((8, 3), tf.float64))
+
     assert not bool(
         tf.reduce_any(status["innovation_condition_estimate_available"]).numpy()
     )

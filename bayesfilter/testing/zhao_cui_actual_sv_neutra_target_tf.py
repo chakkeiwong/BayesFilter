@@ -1,4 +1,13 @@
-"""Scope-bound batch-native SVX-ZC posterior target for NeuTra and HMC."""
+"""Scope-bound batch-native SVX-ZC posterior target for NeuTra and HMC.
+
+The default adapter in this module preserves the reviewed UKF-frozen initializer
+identity and emits the active same-program batch-native finite target.
+
+The serious/common HMC route uses the analytic score backend built below, which
+keeps that same frozen UKF initializer identity but replaces the HMC-facing
+score path with the same-program adjacent-state analytic derivative.
+"""
+
 
 from __future__ import annotations
 
@@ -15,6 +24,7 @@ from bayesfilter.highdim.zhao_cui_actual_sv_batched_tt_tf import (
     DEGREE,
     ORDER,
     RANK,
+    batched_fixed_tt_likelihood_analytic_score_status,
     batched_fixed_tt_likelihood_value_score_status,
     source_two_probit_jacobian_value_score,
     source_uniform_prior_value_score,
@@ -40,6 +50,7 @@ NONCLAIMS = (
     "score is a diagnostic derivative of the same finite program",
     "no posterior correctness, HMC convergence, or production-readiness claim",
 )
+SCORE_BACKEND_ID = "svx_zc_same_program_scaled_adjacent_state_manual_v1"
 
 
 def _semantic_hash(payload: Mapping[str, Any]) -> str:
@@ -56,6 +67,8 @@ class ActualSVZCNeuTraAdapter:
     parameter_names = PARAMETER_NAMES
     supports_retained_flat_batch = True
     supports_retained_value_score_status = True
+    score_backend_id = SCORE_BACKEND_ID
+    runtime_autodiff_for_hmc = False
 
     def __init__(
         self,
@@ -89,9 +102,9 @@ class ActualSVZCNeuTraAdapter:
     def value_score_capability(self) -> ValueScoreCapability:
         return ValueScoreCapability(
             value_score_authority="graph_native",
-            xla_hmc_ready=True,
-            full_chain_xla_diagnostic_ready=True,
-            runtime_backend="tensorflow_batched_fixed_adjacent_squared_tt_actual_sv",
+            xla_hmc_ready=False,
+            full_chain_xla_diagnostic_ready=False,
+            runtime_backend="tensorflow_batched_fixed_adjacent_squared_tt_actual_sv_same_program_manual_score",
             evidence_path="bayesfilter/testing/zhao_cui_actual_sv_neutra_target_tf.py",
             target_scope=self.target_scope,
             nonclaims=NONCLAIMS,
@@ -113,7 +126,7 @@ class ActualSVZCNeuTraAdapter:
         self, theta: Any
     ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
         likelihood_value, likelihood_score, status = (
-            batched_fixed_tt_likelihood_value_score_status(
+            batched_fixed_tt_likelihood_analytic_score_status(
                 theta, **self.program_tensors
             )
         )

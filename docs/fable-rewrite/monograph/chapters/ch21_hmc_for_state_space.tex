@@ -1,0 +1,144 @@
+\chapter{HMC for State-Space Likelihoods}
+\label{ch:bf-hmc-for-state-space}
+
+This chapter develops fixed-trajectory Hamiltonian Monte Carlo for
+filtering-based posterior targets.  The mathematical foundations follow the
+standard HMC literature \citep{neal2011mcmc,betancourt2017conceptual}, but
+implementation claims remain gated by BayesFilter's target, gradient, privacy,
+and compilation contracts.
+
+\section{Target Contract}
+\label{sec:bf-hmc-target-contract}
+
+For BayesFilter, an HMC transition is valid only relative to the target in
+Definition~\ref{def:bf-filtering-target}.  The sampler needs the scalar log
+target and its gradient in the coordinates used by the integrator.  If the
+filter supplies a custom score, that score must correspond to the same log
+likelihood value used in the Metropolis correction.
+
+The HMC chapter therefore depends on the earlier derivative chapters.  A
+filtering backend that can evaluate $\ell(\theta)$ but has no declared gradient
+policy is value-only evidence.  It can be used for optimization, diagnostics,
+or likelihood comparison, but it should not be promoted to HMC production use.
+
+\section{Implementation Position}
+\label{sec:bf-hmc-implementation-position}
+
+TensorFlow Probability provides useful reference implementations of HMC and
+NUTS, but BayesFilter does not treat TFP NUTS as the production tuning backend.
+This is a project implementation decision, not a mathematical criticism of
+NUTS \citep{hoffman2014nuts}.  The fixed-trajectory HMC path is the promoted
+TensorFlow/TFP route for model-owned tuning because it keeps the value,
+gradient, mass-matrix, step-size, and leapfrog-count contracts inspectable.
+
+The reasons to keep TFP NUTS as a reference rather than the default production
+path are:
+
+\begin{itemize}
+  \item full-trajectory NUTS control flow is hard to keep reliably XLA-compiled
+    across model-specific likelihoods, adaptation logic, and diagnostics;
+  \item nested TensorFlow Probability kernels can obscure whether the complete
+    value-and-gradient pipeline is compiled or only partially traced;
+  \item debugging numerical failures inside TFP kernel internals is slower than
+    debugging a small BayesFilter-owned fixed-trajectory HMC transition;
+  \item large DSGE targets require explicit policies for finite log density,
+    finite gradients, static shapes, filter failure handling, and custom
+    derivative backends.
+\end{itemize}
+
+Consequently, BayesFilter's production direction is a small, inspectable HMC
+layer whose contracts are designed around filtering likelihoods,
+analytic/custom gradients, and XLA/JIT discipline. Any future NUTS
+implementation would need its own reviewed filter-aware contracts before it is
+promoted beyond reference or diagnostic use.
+
+\section{Promoted Fixed-Trajectory Tuning Algorithm}
+\label{sec:bf-promoted-fixed-trajectory-hmc-tuning}
+
+BayesFilter's promoted one-call tuning tool uses fixed-trajectory HMC rather
+than a single one-dimensional search over the integration time.  The algorithm
+is deliberately conservative:
+
+\begin{enumerate}
+  \item Build an initial mass matrix from posterior, pilot, or local covariance
+    information.
+  \item Regularize that covariance toward a symmetric positive-definite matrix;
+    if dense regularization is not credible, use a recorded diagonal fallback.
+  \item Choose an initial grid of leapfrog counts \(L\).
+  \item For each \(L\), tune the step size \(\epsilon\) using bounded HMC
+    screens and the target acceptance rule.
+  \item Select the best pair \((L,\epsilon)\) using finite-value diagnostics,
+    acceptance, trajectory-window membership, and hard-veto checks.
+  \item If the selected \(L\) lies on a grid boundary, repair the grid upward or
+    downward and repeat the screen.
+  \item Run one final local grid around the selected pair.
+  \item Freeze \((L,\epsilon)\), update the mass matrix moderately from a
+    windowed draw, and repeat only while the repair loop records meaningful
+    progress and an attempt slot remains.
+\end{enumerate}
+
+The step-size search and the trajectory length must refer to the same HMC
+kernel.  In particular, a reasonable-step calculation performed with one
+leapfrog step is not valid evidence for a later fixed trajectory with
+\(L>1\).  BayesFilter therefore evaluates every reasonable-step proposal with
+the active fixed \(L\), and records that value in the private attempt evidence.
+
+Operational warmup also distinguishes a screened step from an unscreened
+proposal.  If the bootstrap stage has already passed a fixed-kernel screen at
+\((L,\epsilon_{\mathrm{screen}})\), the first warmup chart treats
+\(\epsilon_{\mathrm{screen}}\) as a qualified upper bound.  Dual averaging may
+adapt below that value, but the step actually supplied to the inner HMC kernel
+and the retained handoff step are clamped so that
+\[
+  0 < \epsilon_t \leq \epsilon_{\mathrm{screen}}.
+\]
+The artifact records the raw dual-averaging proposal, the bounded next step,
+the step consumed by HMC, and the number of ceiling hits.  Ceiling hits are
+explanatory diagnostics: they show pressure toward an unqualified region, but
+do not by themselves prove that the bound is optimal.
+
+When a windowed mass update changes coordinates, the old step bound does not
+transfer automatically.  BayesFilter maps the endpoint into the candidate
+chart and qualifies a new fixed-\(L\) step using four independent momentum
+probes per candidate.  All probes must execute with finite, target-valid
+states; their acceptance probabilities are aggregated for the bracket.  A
+model-domain failure, such as a non-positive-definite covariance at a proposed
+parameter value, rejects that epsilon candidate and drives the bracket
+downward.  An unrelated TensorFlow runner or device error remains an
+implementation failure rather than being misclassified as low acceptance.
+
+If a candidate chart cannot obtain a qualified step, the mass update is
+rejected and the incumbent chart is retained.  This is a non-promoting metric
+decision, not permission to weaken target-domain assertions or replace the
+declared target.
+
+This procedure is a tuning and diagnostics policy, not a posterior-validity
+proof.  A passing tuner means that BayesFilter found a finite fixed HMC kernel
+that survived the declared local screens.  Posterior convergence, scientific
+validity, sampler superiority, default readiness, and GPU readiness require
+their own retained-chain evidence.
+
+\section{Public And Private Handoffs}
+\label{sec:bf-hmc-public-private-handoffs}
+
+The final frozen kernel has two different artifacts.  The private BayesFilter
+handoff contains the adapted mass arrays, step size, and leapfrog count needed
+to replay the exact fixed kernel.  The public handoff is non-replayable: it may
+expose hashes, signatures, target dimension, verification status, acceptance
+summary, and nonclaims, but it must not expose raw samples, final states, mass
+arrays, step size, leapfrog count, candidate grids, or private file paths.
+
+This split lets downstream model repositories record that tuning completed
+without forcing them to own or publish HMC mechanics.  If a retained frozen
+kernel must be launched, the replay boundary remains BayesFilter-owned and
+requires the private payload.
+
+\section{Diagnostic Use of NUTS}
+\label{sec:bf-nuts-diagnostic-use}
+
+NUTS remains valuable as an algorithmic reference and as a diagnostic sampler on
+small controlled targets.  The bounded BayesFilter decision is narrower: the
+project should not treat TFP NUTS as the default answer to every convergence,
+geometry, or compilation problem.  Larger filtering targets add the hard parts
+omitted by small benchmarks: spectral derivative risk, missing-data branches,
+model-specific invalid regions, and backend fallbacks.

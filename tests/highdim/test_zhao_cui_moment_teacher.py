@@ -341,6 +341,77 @@ def test_frozen_tt_targets_feed_shape_correction_with_ordered_pair_masks():
     assert bool(result["valid"].numpy())
 
 
+def test_zhao_cui_tt_pairwise_targets_support_capped_reset_jvp():
+    density = _density()
+    targets = squared_tt_shape_targets_jvp(
+        density,
+        tf.constant([0.1, -0.2], tf.float64),
+        tf.constant([[1.0, 0.15], [-0.2, 0.9]], tf.float64),
+        tuple(
+            highdim.TTCore(tf.zeros_like(core.values))
+            for core in density.sqrt_tt.cores
+        ),
+        pair_indices=((0, 1), (1, 0)),
+    )
+    count = 32
+    source = tf.random.stateless_normal([count, 2], [101, 102], dtype=tf.float64)
+    weights = tf.nn.softmax(
+        tf.random.stateless_normal([count], [103, 104], dtype=tf.float64)
+    )
+    points = tf.random.stateless_normal([count, 2], [105, 106], dtype=tf.float64)
+    source_dot = tf.random.stateless_normal([count, 2], [107, 108], dtype=tf.float64) * 0.01
+    weights_dot = tf.random.stateless_normal([count], [109, 110], dtype=tf.float64) * 0.001
+    weights_dot -= tf.reduce_sum(weights_dot) * weights
+    points_dot = tf.random.stateless_normal([count, 2], [111, 112], dtype=tf.float64) * 0.01
+
+    def forward(source_value, weights_value, points_value):
+        zero_points = tf.zeros([count, 2, 1], tf.float64)
+        zero_weights = tf.zeros([count, 1], tf.float64)
+        return higher_moment_shape_jvp(
+            source_value,
+            weights_value,
+            zero_points,
+            zero_weights,
+            points_value,
+            zero_points,
+            correction_steps=1,
+            strength=0.01,
+            floor=1e-6,
+            pairwise_correction_steps=2,
+            pairwise_strength=0.01,
+            pairwise_floor=1e-6,
+            pairwise_particle_rms_cap=0.7,
+            **targets.explicit_target_kwargs(),
+        )["particles"]
+
+    with tf.autodiff.ForwardAccumulator(
+        (source, weights, points), (source_dot, weights_dot, points_dot)
+    ) as accumulator:
+        output = forward(source, weights, points)
+    automatic = accumulator.jvp(output)
+    result = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_dot[:, :, None],
+        weights_dot[:, None],
+        points,
+        points_dot[:, :, None],
+        correction_steps=1,
+        strength=0.01,
+        floor=1e-6,
+        pairwise_correction_steps=2,
+        pairwise_strength=0.01,
+        pairwise_floor=1e-6,
+        pairwise_particle_rms_cap=0.7,
+        **targets.explicit_target_kwargs(),
+    )
+    tf.debugging.assert_near(
+        automatic, result["particles_tangent"][:, :, 0], atol=3e-10, rtol=3e-10
+    )
+    assert float(result["maximum_pairwise_post_cap_particle_rms"].numpy()) < 0.7
+    tf.debugging.assert_equal(result["target_source_id"], 1)
+
+
 def test_recursive_shape_target_jvp_matches_finite_difference():
     density = _density()
     dot_cores = tuple(

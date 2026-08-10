@@ -1,0 +1,1104 @@
+             THE JOURNAL OF NAVIGATION (2017), 70, 527–546. © The Royal Institute of Navigation 2016
+             doi:10.1017/S0373463316000692
+
+
+
+
+                      Robust Huber-Based Cubature
+                     Kalman Filter for GPS Navigation
+                                Processing
+                          Chien-Hao Tseng1, Sheng-Fuu Lin1 and Dah-Jing Jwo2
+                   (Institute of Electrical Control Engineering, National Chiao Tung University)
+                     1
+                 2
+                  (Department of Communications, Navigation and Control Engineering, National
+                                              Taiwan Ocean University)
+                                         (E-mail: djjwo@mail.ntou.edu.tw)
+
+
+
+                A robust state estimation technique based on the Huber-based Cubature Kalman Filter
+                (HCKF) is proposed for Global Positioning System (GPS) navigation processing. The
+                Cubature Kalman Filter (CKF) employs a third-degree spherical-radial cubature rule to
+                compute the Gaussian weighted integration, such that the numerical instability induced by
+                round-off errors can be avoided. In GPS navigation, the filter-based estimation of the position
+                and velocity states can be severely degraded due to contaminated measurements caused by
+                outliers or deviation from a Gaussian distribution assumption. For the signals contaminated
+                with non-Gaussian noise or outliers, a robust scheme combining the Huber M-estimation
+                methodology and the CKF framework is beneficial where the Huber M-estimation method-
+                ology is used to reformulate the measurement information of the CKF. GPS navigation pro-
+                cessing using the HCKF algorithm has been carried out and the performance has been
+                compared to those based on the Extended Kalman Filter (EKF), Unscented Kalman Filter
+                (UKF) and CKF approaches. Simulation and experimental results presented in this paper
+                confirm the effectiveness of the method.
+
+                                                               K E Y WO R D S
+                          1. GPS navigation.         2. Unscented Kalman filter.           3. Cubature Kalman filter
+                                                          4. Huber M-estimation.
+
+
+                     Submitted: 8 June 2015. Accepted: 3 September 2016. First published online: 19 October 2016.
+
+
+
+             1. INTRODUCTION. The Global Positioning System (GPS) is a satellite-based
+             navigation system that provides a user access to useful and accurate positioning infor-
+             mation anywhere on the globe (Axelrad and Brown, 1996). The well-known Kalman
+             Filter (KF) (Gelb, 1974; Brown and Hwang, 1997), which provides an optimal
+             (minimum mean square error) estimate of the system state vector, has been widely
+             applied to the field of navigation.
+               In navigation filter processing, the linear model increases modelling errors since the
+             vehicle motions are normally nonlinear. It has been common that additional fictitious
+             process noise can be added to the system process model, nevertheless, the more suitable
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          528                            C H I E N - H AO T S E N G A N D O T H E R S       VOL. 70
+
+                          cure for the divergence problem caused by mis-modelling is to correct the dynamics
+                          model. To achieve improved estimation accuracy, the designers are required to
+                          possess complete a priori knowledge on both the dynamic process and measurement
+                          models. The Extended Kalman Filter (EKF) relies on the first order linearization of
+                          the system model to propagate the mean and covariance of the state. The EKF is sen-
+                          sitive to outliers in the measurements, thus it is likely to yield poor performance if the
+                          measurements include outliers.
+                             The Unscented Kalman Filter (UKF) (Julier, 2002; Julier et al., 1995; Julier et al.,
+                          2000) has been developed to deal with highly nonlinear state estimation problems.
+                          The UKF performs a Gaussian approximation with a limited number of points
+                          (sigma points) using the Unscented Transform (UT). The sigma points are used to
+                          propagate the probability of state distribution through the nonlinear dynamics of
+                          the system. The standard EKF is generally a first order approximation, whereas the
+                          EKF based on a second-order Taylor expansion is shown to be quite closely related
+                          to UKF. Gustafsson and Hendeby (2012) indicated that the UT gives a good approxi-
+                          mation of many standard sensor models in tracking and navigation applications,
+                          however, UT generally does not give the same elements in the covariance as the
+                          second-order Taylor expansion. A simple counterexample was demonstrated in
+                          Gustafsson and Hendeby (2012). Furthermore, for high-dimensional systems, the
+                          UT or the UKF is believed to be unstable due to the possible negative weights on
+                          the centre point.
+                             As a general approach to approximating the Bayesian solution, the Cubature
+                          Kalman Flter (CKF) proposed by Arasaratnam and Haykin (2009) has been an in-
+                          creasing interest in the development of nonlinear Bayesian filters. The CKF uses a
+                          third-degree spherical-radial cubature rule to solve the integration in the Bayesian
+                          filtering problem for numerically computing the multivariate moment integrals
+                          encountered in the nonlinear filtering framework. The CKF is considered to be a
+                          more accurate and stable nonlinear filtering approach than the UKF and has been
+                          used in many engineering applications (Fernandez-Prades and Vila-Valls, 2010). The
+                          spherical-radial cubature rule is composed of two different integrals which include
+                          spherical and radial integrals. This is based on the spherical-radial transformation
+                          and generates an even number of equally weighted cubature points. These integrals
+                          are then numerically computed by the spherical cubature rule and the Gaussian quad-
+                          rature rule, respectively. The performance in terms of estimation accuracy, numerical
+                          stability and computational costs can be improved.
+                             Gustafsson and Hendeby (2012) pointed out that the CKF can be viewed as a
+                          special case of UKF. The viewpoint provided by Wu et al. (2006) has validated the
+                          statement. As stated in this paper, the UT is essentially a Gaussian quadrature rule
+                          and other similar rules can also be applied. The spherical-radial cubature rule used
+                          in CKF is a special case of the quadrature rules. The higher-degree CKF was
+                          studied in Jia et al. (2013), and higher-order UKF has already been studied in Wu
+                          et al. (2006). The possible negative weights of the centre point in UT can be avoided
+                          through tuning the parameters (Julier et al., 2000). Using the additional tuning para-
+                          meters of UKF compared to CKF provides flexibility. If one does not want to bother
+                          to tune them, we can fix them as their default values, or just exclude the centre point,
+                          and the CKF is automatically obtained.
+                             The differences between UKF and CKF are summarised as follows: (1) The CKF
+                          uses cubature points with the same weights through the spherical-radial integration
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3           RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R   529
+             rule, which employs an analytical Probability Density Function (PDF) to capture the
+             mean and covariance of the posterior distribution using the total probability theorem
+             and subsequently uses the measurement to update with Bayes’ rule. From the perspec-
+             tive of numerical analysis, the third-degree cubature rule can be viewed as a UT of
+             special form with better numerical stability; (2) the CKF follows directly from the
+             spherical-radial cubature rule for numerically computing Gaussian-weighted integrals
+             whose important property is that they do not entail any free parameters. The UKF
+             introduces a non-zero scaling parameter, which defines the non-zero centre point
+             and is often associated with a set of weighted samples higher than that of the
+             minimal set of sigma points (Julier et al., 1995; Wan and Van der Merwe, 2001; Van
+             der Merwe and Wan, 2004); (3) the UKF-calculated estimation covariance matrix is
+             not always guaranteed to be positive definite, hence the decomposition of the covari-
+             ance matrix is unavailable. To improve the stability of the nonlinear filter, the CKF can
+             effectively avoid round-off errors of numerical computation, and it is more stable than
+             the UKF and EKF (Jia et al., 2013).
+                Investigation of the CKF algorithm on the navigation problem presented by Xu
+             et al. (2014) assumed that the Kalman-type filters are concerned with estimation of
+             the dynamics model from noisy measurements where the dynamic and measurement
+             processes can be approximated by Gaussian state-space models. Those nonlinear
+             filters are very sensitive to measurement errors when the distribution of the true
+             noise deviates from the assumed Gaussian model, often being characterised by high-
+             intensity measurement noise and heavy tail distributions. There is considerable motiv-
+             ation to consider robust statistical procedures to improve the performance of the CKF
+             in non-Gaussian environments, particularly in the presence of outliers.
+                Masreliez and Martin (1977) used the M-estimator to “robustify” the KF. Boncelet
+             and Dickinson (1983) recast the measurement update as a linear regression problem
+             and solved it using the M-estimator. Using the M-estimator, Yang (1991) robustified
+             the general Bayes estimator by which KF had been seen as a special case. An adap-
+             tively Robust Kalman Filter (RKF), capable of dealing with uncertainties in both
+             process and measurement models, was proposed in Yang et al. (2001) and Yang and
+             Gao (2006a; 2006b), in which the influences of measurement outliers were controlled
+             using the M-estimator. The Sigma Point Kalman Filter (SPKF) was robustified by
+             Karlgaard et al. (2007), focusing on the divided difference filter. As the statistical lin-
+             earization perspective of the UT is incorrectly employed in the work by Karlgaard
+             et al. (2007) and Wang et al. (2010), Chang et al. (2012a) robustified the measurement
+             update of the UKF using the M-estimator in a straightforward and intuitive manner.
+             Recently, the robust sigma point Kalman smoother was studied by Karlgaard (2015).
+             It should be noted that two kinds of nonlinearity exist, i.e., the original nonlinearity in
+             the measurement equation, and that brought by the re-weighting procedure of the M-
+             estimator, and the iteration becomes rather complex. If both nonlinearities were to be
+             accounted for in the iteration, it involves issues of iterative UKF (Chang et al., 2012b;
+             2012c).
+                The Huber M-estimation methodology (Huber, 1981; Maronna et al., 2006; Gandhi
+             and Mili, 2010; Chang and Liu, 2015) is one of the robust techniques that is based on
+             the combination of minimum ℓ1 – and ℓ2 – norm estimator. The method has been suc-
+             cessfully used for robust state estimation, inertial navigation system and visual tracking
+             applications (Wang et al., 2010; Gao et al., 2014; Hou, 2014). The development of a
+             RKF uses the Huber technique applied to a linear regression problem at each
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          530                              C H I E N - H AO T S E N G A N D O T H E R S          VOL. 70
+
+                          measurement update (Kovacevic et al. 1992; Durgaprasad and Thakur, 1998). The
+                          Huber M-estimation methodology is essentially based on modifying the quadratic
+                          cost function in the filter framework, and works between smooth ℓ2 – norm properties
+                          for small residuals and robust ℓ1 – norm properties for large residuals (Petrus, 1999).
+                          Alternative functional equations, such as the Huber criterion and the hybrid ℓ1/ℓ2 cri-
+                          terion have also been considered (Huber, 1973; Bube and Langan, 1997; Guitton and
+                          Symes, 2003).
+                             The robust Huber-based Cubature Kalman Filter (HCKF) algorithm integrates the
+                          merits of the Huber M-estimation methodology and CKF. The CKF is used to avoid
+                          the numerical instability and the Huber M-estimation methodology is incorporated to
+                          handle outliers through reformulating the measurement information in the CKF
+                          framework to provide robustness against deviations from Gaussian behaviour.
+                             This paper is organised as follows. In Section 2, the preliminary background to the
+                          nonlinear filter is introduced, where the UKF and the CKF will be reviewed. The
+                          Huber M-estimate regression filtering strategy is presented in Section 3. In Section
+                          4, some results from simulation and experiments are presented to evaluate GPS navi-
+                          gation performance for the HCKF approach in comparison to those by the conven-
+                          tional approach. Conclusions are given in Section 5.
+
+
+                          2. THE NONLINEAR FILTERS. The nonlinear filtering deals with the case gov-
+                          erned by the nonlinear stochastic difference equations:
+                                                                        xkþ1 ¼ fðxk ; kÞ þ wk                        ð1aÞ
+                                                                         zk ¼ hðxk ; kÞ þ vk                         ð1bÞ
+                          where the state vector is xk ∈ ℜn, process noise vector wk ∈ ℜn, measurement vector
+                          zk ∈ ℜm , and measurement noise vector vk ∈ ℜm. The vectors wk and vk are zero
+                          mean Gaussian white sequences having zero cross-correlation with each other:
+                                                                          
+                                                 Qk ; i ¼ k                  Rk ; i ¼ k
+                                 E½wk wi  ¼
+                                        T
+                                                             ; E½vk vi  ¼
+                                                                     T
+                                                                                        ; E½wk vTi  ¼ 0
+                                                  0; i ≠ k                   0; i ≠ k                     ð2Þ
+                                    for all i and k
+                          where Qk is the process noise covariance matrix, Rk is the measurement noise covari-
+                          ance matrix.
+                            2.1. Unscented Kalman Filter. The first step in the UKF involves the UT to gen-
+                          erate a set of weighted samples/sigma points, which are deterministically chosen so that
+                          they adequately capture the true mean and covariance of the random variable.
+                          Consider an n dimensional random variable x, which has the mean x     ^ and covariance
+                          P, and suppose that it propagates through an arbitrary nonlinear function f. The UT
+                          creates 2n + 1 sigma vectors x (a capital letter) and weighted points W,
+
+                                                       pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ          pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+                                Xð0Þ ¼ x          ^ þ ð ðn þ λÞPÞTi ; XðiþnÞ ¼ x
+                                        ^; XðiÞ ¼ x                            ^  ð ðn þ λÞPÞTi ; i ¼ 1; :::; n      ð3Þ
+                                    ðmÞ      λ        ðcÞ         ðmÞ               ðmÞ            ðcÞ     1
+                                 W0 ¼             ; W0 ¼ W0 þ ð1  α2 þ βÞ; Wi ¼ Wi ¼                            ;
+                                          ðn þ λÞ                                                       2ðn þ λÞ      ð4Þ
+                                       i ¼ 1, . . . , 2n
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3       RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R        531
+                      pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ                                               pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+             where ð ðn þ λÞPÞi is the ith row of the matrix square root. ðn þ λÞP can be
+             obtained from the lower-triangular matrix of the Cholesky factorisation; λ ¼
+             α2 ðn þ κÞ  n is a scaling parameter; α determines the spread of the sigma points
+                     ⌢
+             around x; κ is a secondary scaling parameter; β is used to incorporate prior knowledge
+             of the distribution of x     ; WiðmÞ and WiðcÞ are the weights for the mean and covariance,
+             respectively, associated with the ith point.
+                The sigma vectors are propagated through the nonlinear function to yield a set of
+             transformed sigma points,
+                                                         yi ¼ f ðXi Þ i ¼ 0; :::; 2n                       ð5Þ
+
+               The mean and covariance of yi are approximated by a weighted average mean and
+             covariance of the transformed sigma points:
+                                                                      X
+                                                                      2n
+                                                                              ðmÞ
+                                                              yu ¼         Wi      yi                     ð6Þ
+                                                                      i¼0
+                                                          X
+                                                          2n
+                                                                   ðcÞ
+                                                  Pu ¼           Wi ðyi  yu Þðyi  yu ÞT                ð7Þ
+                                                           i¼0
+
+             To implement the UKF, the set of sigma points are firstly created by Equation (3). After
+             that, the algorithm for implementation of the UKF is summarized in Table 1 (Tseng
+             et al., 2016). The UKF involves the time update (prediction) stage, i.e., Equations
+             (8)–(12), and the measurement update (correction) stage, i.e., Equations (13)–(17).
+                 2.2. The Cubature Kalman Filter. Like the UKF, the CKF is another type of non-
+             linear filtering approach without linearization of the nonlinear model. The first step of
+             the CKF algorithm is to approximate the mean and variance of the probability distri-
+             bution through a set of 2n (n is the dimension of the system model) cubature points.
+             The cubature points are then propagated through the nonlinear functions. The mean
+             and variance of the current approximate Gaussian distribution by the propagated
+             cubature points can then be calculated. A set of 2n cubature points are given by
+             ½ξi ; ωi , where ξi is the ith cubature point and ωi is the corresponding weight:
+                                 pﬃﬃﬃ
+                                     pﬃﬃnﬃ ½1i ; i ¼ 1; 2; :::; n
+                                                                               1
+                           ξi ¼                                          ; ωi ¼ ; i ¼ 1; 2; :::; 2n ð18Þ
+                                    n½1in ; i ¼ n þ 1; n þ 2; :::; 2n       2n
+             where ½1i ∈ ℜn denotes the ith column vector of the identity matrix In×n. Under the
+             assumption that the posterior density at time k – 1 is known, the steps involved in
+             the time and measurement updates are given by Equations (19)–(32), summarised in
+             Table 2. See Tseng et al. (2016) for further discussion.
+
+
+             3. THE HUBER-BASED REGRESSION FILTERING STRATEGY. As a re-
+             cursive minimum ℓ2 – norm estimation technique, the KF exhibits sensitivity to devia-
+             tions from the assumed underlying probability distributions.
+                3.1. The Huber M-estimate regression filtering. The technique that relies on
+             Huber’s generalised Maximum Likelihood (ML) methodology exhibits robustness
+             against deviations from the commonly assumed Gaussian probability density func-
+             tions and can solve the non-Gaussian distribution problem efficiently. The
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          532                            C H I E N - H AO T S E N G A N D O T H E R S                       VOL. 70
+                                                Table 1. Implementation algorithm for the unscented Kalman ﬁlter.
+
+                                                                    ^0j0 and state covariance matrix P0j0
+                          - Initialisation: Initialise state vector x
+                          - Time update
+                          (1) The transformed set is given by instantiating each point through the process model
+
+                                                                       ζi;kjk1 ¼ fðXi;k1 Þ; i ¼ 0; :::; 2n                    ð8Þ
+
+                          (2) Predicted mean
+
+                                                                                               X
+                                                                                               2n
+                                                                                                           ðmÞ
+                                                                                  ^kjk1 ¼
+                                                                                  x                   Wi         ζi;kjk1       ð9Þ
+                                                                                                i¼0
+
+
+                          (3) Predicted covariance
+
+                                                               X
+                                                               2n
+                                                                            ðcÞ
+                                                    Pkjk1 ¼                         ^kjk1 ½ζi;kjk1  x
+                                                                      Wi ½ζi;kjk1  x                   ^kjk1 T þ Qk1      ð10Þ
+                                                               i¼0
+
+
+                          (4) Instantiate each of the prediction points through observation model
+
+                                                                                        Zi;kjk1 ¼ hðζi;kjk1 Þ                ð11Þ
+
+                          (5) Predicted observation
+
+                                                                                               X
+                                                                                               2n
+                                                                                                       ðmÞ
+                                                                                 ^zkjk1 ¼            Wi     Zi;kjk1          ð12Þ
+                                                                                               i¼0
+
+
+
+                          - Measurement update
+                          (6) Innovation covariance
+
+                                                               X
+                                                               2n
+                                                                           ðcÞ
+                                                       Pzz ¼         Wi ½Zi;kjk1  ^zkjk1 ½Zi;kjk1  ^zkjk1 T þ Rk       ð13Þ
+                                                               i¼0
+
+
+                          (7) Cross covariance
+
+                                                                     X
+                                                                     2n
+                                                                                  ðcÞ
+                                                          Pxz ¼                           ^kjk1 ½Zi;kjk1  ^zkjk1 T
+                                                                           Wi ½ζi;kjk1  x                                    ð14Þ
+                                                                     i¼0
+
+
+                          (8) Performing update
+
+                                                                                           Kk ¼ Pxz P1
+                                                                                                     zz                        ð15Þ
+
+
+
+                                                                           ^kjk ¼ x
+                                                                           x      ^kjk1 þ Kk ðzk  ^zkjk1 Þ                  ð16Þ
+
+
+
+
+                                                                                 Pkjk ¼ Pkjk1  Kk Pzz KTk                    ð17Þ
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3           RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R       533
+                                   Table 2. Implementation algorithm for the cubature Kalman ﬁlter.
+
+                                                       ^0j0 and state covariance matrix P0j0
+             - Initialisation: Initialise state vector x
+             - Time update
+
+             (1) Factorise the covariance
+
+                                                              Pk1jk1 ¼ Sk1jk1 STk1jk1                    ð19Þ
+
+             (2) Evaluate the cubature points
+
+                                                                                   ^k1jk1
+                                                        Xi;k1jk1 ¼ Sk1jk1 ξi þ x                           ð20Þ
+
+             (3) Evaluate the propagated cubature points through the process model
+
+                                                                Xi;kjk1 ¼ fðXi;k1jk1 Þ                     ð21Þ
+
+             (4) Estimate the predicted mean
+
+                                                                            X
+                                                                            2n
+                                                                ^kjk1 ¼
+                                                                x                 ωi Xi;kjk1                 ð22Þ
+                                                                            i¼1
+
+
+             (5) Estimate the predicted error covariance
+
+                                                        X
+                                                        2n
+                                                              ωi Xi;kjk1 Xi;kjk1  x
+                                                                             T
+                                             Pkjk1 ¼                                  ^kjk1 x
+                                                                                              ^Tkjk1 þ Qk1   ð23Þ
+                                                        i¼1
+
+
+
+             - Measurement update
+             (6) Factorize the covariance
+
+                                                                 Pkjk1 ¼ Skjk1 STkjk1                       ð24Þ
+
+             (7) Evaluate the cubature points
+
+                                                                                     ^kjk1
+                                                              Xi;kjk1 ¼ Skjk1 ξi þ x                         ð25Þ
+
+             (8) Evaluate the propagated cubature points through observation model
+
+                                                                 Zi;kjk1 ¼ hðXi;kjk1 Þ                       ð26Þ
+
+             (9) Evaluate the propagated observation
+
+                                                                            X
+                                                                            2n
+                                                                ^zkjk1 ¼         ωi Zi;kjk1                  ð27Þ
+                                                                            i¼1
+
+
+             (10) Estimate the innovation covariance
+
+                                                        X
+                                                        2n
+                                                Pzz ¼          ωi Zi;kjk1 ZTi;kjk1 ^zkjk1 ^zTkjk1 þ Rk    ð28Þ
+                                                        i¼1
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          534                            C H I E N - H AO T S E N G A N D O T H E R S                          VOL. 70
+                                                                               Table 2. (Cont. )
+
+                                                                    ^0j0 and state covariance matrix P0j0
+                          - Initialisation: Initialise state vector x
+                          - Measurement update
+
+                          (11) Estimate the cross-covariance
+
+                                                                        X
+                                                                        2n
+                                                                Pxz ¼                                xkjk1 ^zTkjk1
+                                                                              ωi Xi;kjk1 ZTi;kjk1 ^                            ð29Þ
+                                                                        i¼1
+
+
+                                                           ^kjk and its covariance matrix Pkjk
+                          (12) Perform update state vector x
+
+                                                                                  Kk ¼ Pxz P1
+                                                                                            zz                                    ð30Þ
+
+
+                                                                     ^kjk ¼ x
+                                                                     x      ^kjk1 þ Kk ðzk  ^zkjk1 Þ                           ð31Þ
+
+
+
+                                                                         Pkjk ¼ Pkjk1  Kk Pzz KTk                               ð32Þ
+
+
+
+
+                          measurement update can be modified to enhance robustness using the Huber M-esti-
+                          mation methodology.
+                             To incorporate this mechanism into the CKF framework, it is necessary to reformu-
+                          late the measurement update as a nonlinear regression problem between the state pre-
+                          diction and the observed quantity, and then the nonlinear regression model has the
+                          form (Chang et al., 2012a; Tsakonas et al., 2014)
+                                                                             
+                                                         zk        hðxk Þ      vk
+                                                               ¼           þ                               ð33Þ
+                                                       ^kjk1
+                                                       x             xk       δxk
+                                                       ^kjk1 is the predicted state, which is obtained from the
+                          where zk is the measurement; x
+                          time update of the CKF, and δxk is the error between the true state and its prediction.
+                          Denote
+                                                                         
+                                                                       vk
+                                                              ek ¼                                           ð34Þ
+                                                                      δxk
+                          with
+                                                                                                               
+                                                                                              Rk          0
+                                                    E½ek  ¼ 0 and E½ek eTk  ¼                                     ¼ Λk ΛTk
+                                                                                              0       Pkjk1
+
+                          where the term Λk may be obtained by Cholesky decomposition, Rk is assumed to be a
+                          known noise covariance of vk , and Pkjk1 is the error covariance propagation.
+                            Multiplying Equation (33) with Λ1k yields the nonlinear regression model
+                                                                              ~zk ¼ gðxk Þ þ υk                                  ð35Þ
+                          where
+                                                                                                     
+                                                                                               zk
+                                                                         ~zk ¼ Λ1                                               ð36Þ
+                                                                                k            ^kjk1
+                                                                                             x
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3           RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R   535
+             and
+                                                                                          
+                                                                   hðxk Þ                 vk
+                                              gðxk Þ ¼ Λ1                  ; υk ¼ Λ1                     ð37Þ
+                                                        k           xk              k    δxk
+             The covariance matrix of υk is the identity matrix, as can be seen from expanding the
+             expectation E½υk υTk .
+               In Equation (35), the nonlinear regression problem can be solved efficiently for ro-
+             bustness using Huber’s generalised ML method, in which the solution is found by mini-
+             mising the cost function
+                                                                               X
+                                                                               mþn
+                                                        ^kjk ¼ arg min
+                                                        x                            ρðυk;i Þ              ð38Þ
+                                                                               i¼1
+
+             where υk,i is the ith component of the residual vector, υk , and ρðÞ is the score function
+             used to handle the outlier measurements or contaminated Gaussian; m is the dimen-
+             sion of the measurement. The Huber ρ – function used in the M-estimation is given by
+                                                 8
+                                                 >     1 2
+                                                 <         υ
+                                                       2 k;i     forjυk;i j < γ
+                                      ρðυk;i Þ ¼                                                    ð39Þ
+                                                 >           1
+                                                 : γjυk;i j  γ2 forjυ k;i j  γ
+                                                             2
+             where γ is a tuning parameter. The ρ function is a blend of the ℓ1 – and ℓ2 – norm es-
+             timation functions, which provides ℓ2 – norm properties for small residuals to ensure
+             both quality and efficiency simultaneously with normal distribution and ℓ1 – norm
+             properties for large residuals to suppress the impact of outliers or contaminated
+             Gaussian noises.
+               If the ρ – function is differentiable, the solution to the nonlinear regression problem
+             can be found by deriving the cost function as
+                                                            X
+                                                            mþn
+                                                                              ∂υk;i
+                                                                   fðυk;i Þ         ¼0                     ð40Þ
+                                                            i¼1
+                                                                              ∂xk
+
+             where fðυk;i Þ ¼ ρ0 ðυk;i Þ. By defining the ψ – function as ψðυk;i Þ ¼ fðυk;i Þ=υk;i, and cor-
+             responding to the Huber density
+                                                    
+                                                            1          forjυk;i j  γ
+                                         ψðυk;i Þ ¼                                                     ð41Þ
+                                                      γsgnðυk;i Þ=υk;i forjυk;i j > γ
+             The Huber M-estimation methodology makes use of the weighting matrix Ψk ¼
+             diag½ψðυk;i Þ to recast the measurement information. The weighting matrix Ψk can
+             be interpreted in terms of re-weighting the residual error covariance and constructing
+             the measurement process. The modified covariance is given by
+                                                             k ¼ Λ1=2 Ψ1 ΛT=2
+                                                            S                                              ð42Þ
+                                                                   k    k   k
+
+             The decomposition of the S                                  k;x and S
+                                         k matrix into two submatrices S          k;z corresponding
+             to the state update and state correction with measurements so that
+                                                                  
+                                                        
+                                                k ¼ Sk;z
+                                               S
+                                                              0
+                                                                                                 ð43Þ
+                                                         0    k;x
+                                                             S
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          536                            C H I E N - H AO T S E N G A N D O T H E R S        VOL. 70
+
+                          where the S   k;x ∈ ℜn×n and S
+                                                         k;z ∈ ℜm×m , and the robust measure of correlation can be
+                          expressed in the recursive filter as the CKF measurement-update.
+                             3.2. The Huber M-estimation methodology-based cubature Kalman filter. The
+                          Huber M-estimation methodology is robust to the outliers and ensures the accuracy
+                          of the state estimation. To apply this method, the ψ – function is the component of
+                          the residual vector υk. Specifically, when |υk,i | ≤ γ, the accurate estimation of the
+                          system state reaches the expected behaviour demand and Huber-based filtering is
+                          equal to the CKF measurement update because Ψk ¼ I. On the other hand, when
+                          |υk,i | > γ, the CKF has a divergent trend due to the noisy signal contaminated with
+                          outliers. The measurement update is modified to exhibit robustness using the Huber
+                          M-estimation methodology. Defining
+
+                                                                               R     k;z
+                                                                               ~k ¼ S                           ð44Þ
+
+                          as the modified measurement covariance, and replacing Rk with R  ~ k for operating the
+                          CKF framework in the measurement update process leads to the HCKF.
+                             The M-estimation problem in Huber-based regression filtering aims to minimise
+                          Equation (38), which is essentially nonlinear. In general, the calculation procedure
+                          of the RKF based on the M-estimation should be solved iteratively because the
+                          reweight matrix is constructed based on the residuals which are further related to
+                          the state parameter estimates. By setting the weighting matrix Ψk ¼ diag½ψðυk;i Þ, an
+                          iterative solution to Equation (40) can be obtained using statistical approximation
+                          of the nonlinear function Mk ðÞ. The implicit Equation (40) can be written in matrix
+                          form,
+
+                                                                      MTk Ψk ðMk xk  ~zk Þ ¼ 0                 ð45Þ
+
+                          which can be solved for xk to give xk ¼ ðMTk Ψk Mk Þ1 MTk Ψk ~zk. An iterative solution to
+                          Equation (45) is expressed as
+
+                                                                ð jþ1Þ              ð jÞ          ð jÞ
+                                                              xk         ¼ ðMTk Ψk Mk Þ1 MTk Ψk ~zk            ð46Þ
+
+                          where the superscript ðjÞ is the iteration index. The method can be initialised using the
+                                                                             ð0Þ
+                          iteratively reweighted least squares solution: xk ¼ ðMTk Mk Þ1 MTk ~zk . The iteration
+                          will converge if the ψ function is non-increasing when using the Huber ρ function.
+                          The Huber M-estimation methodology can be iterated until convergence or can be
+                          carried out through only one fixed iteration step to save the computational costs.
+                             The one-step Huber update is summarised as follows: (1) Calculate Xi;kjk1, Zi;kjk1
+                          and ^zkjk1 using Equations (24)–(27); (2) Form a redundant observation vector shown
+                          as in Equation (33); (3) Solve the nonlinear regression model, Equation (35), using the
+                          solution based on Equation (46); (4) Update the modified covariance matrix using
+                          Equation (42); (5) Perform the modified measurement covariance R         ~k ¼ S  k;z, and
+                                            ~
+                          replace Rk with Rk for operating the CKF framework in Equation (28). A high level
+                          operation of the HCKF is shown in Figure 1(a). Figure 1(b) presents the architecture
+                          of the GPS navigation processing using the HCKF implementation. The block indi-
+                          cated by the dashed-line is the Huber M-estimation mechanism for reformulating
+                          the measurement information of the CKF framework.
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3           RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R        537
+
+
+
+
+                      Figure 1. (a) High level operation of the HCKF. (b) Configuration of the GPS navigation
+                                                     processing using the HCKF.
+
+             4. GPS         NAVIGATION          PROCESSING           AND         PERFORMANCE
+             EVALUATION. Both the Position-Velocity (PV) model and the Position-Velocity-
+             Acceleration (PVA) model are linear. The nonlinear dynamic model that provides
+             more adequate description of the vehicle is adopted from Jwo and Lai (2008).
+                4.1. Nonlinear dynamic modelling for GPS navigation. Consider a vehicle moving
+                                                          j þ wb~
+             at the velocity represented as Vb ¼ ub~i þ vb~     k. The velocity in the fixed frame in
+             terms of Euler angles and body velocity components has the relation
+                             2 3 2                                                  32 3
+                               x_      Cθ Cψ SΦ Sθ Cψ  CΦ Sψ CΦ Sθ Cψ þ SΦ Sψ           ub
+                      Vb ¼ 4 y_ 5 ¼ 4 Cθ Sψ SΦ Sθ Sψ þ CΦ Cψ CΦ Sθ Sψ  SΦ Cψ 54 vb 5
+                               z_      Sθ           SΦ Cθ              CΦ Cθ           wb
+             where the following notations are used: SΦ ≡ sinðΦÞ, CΦ ≡ cosðΦÞ, Sθ ≡ sinðθÞ,
+             Sψ ≡ sinðψÞ, Sψ ≡ sinðψÞ, and Cψ ≡ cosðψÞ. Suppose that the non-holonomic con-
+             straint is applied, only the longitudinal movement is considered and the lateral slip-
+             page is neglected. In case the velocity in the x-component of the body frame is
+             considered, jjVb jj ≈ jjub~ijj ≈ V , the dynamic process model of the GPS receiver,
+             when written in the form x_ ¼ fðx; tÞ þ uðtÞ, can be represented as
+                                   2 3 2 3 2                           3 2      3
+                                     x_        x_ 1      V cos θ cos ψ       u1
+                                   6 y_ 7 6 x_ 2 7 6 V cos θ sin ψ 7 6 u2 7
+                                   6 7 6 7 6                           7 6      7
+                                   6 z_ 7 6 x_ 3 7 6 V sin θ 7 6 u3 7
+                                   6 7 6 7 6                           7 6      7
+                                   6Φ _ 7 6 7 6                        7 6 u4 7
+                                   6 7 6 x_ 4 7 6             0        7 6      7
+                                   6 θ_ 7 ¼ 6 x_ 5 7 ¼ 6      0        7 þ 6 u5 7             ð47Þ
+                                   6 7 6 7 6                           7 6      7
+                                   6 ψ_ 7 6 x_ 6 7 6          0        7 6 u6 7
+                                   6 7 6 7 6                           7 6      7
+                                   6 V_ 7 6 x_ 7 7 6          0        7 6 u7 7
+                                   6 7 6 7 6                           7 6      7
+                                   4 b_ 5 4 x_ 8 5 4          d        5 4 u8 5
+                                     d_        x_ 9           0              u9
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          538                            C H I E N - H AO T S E N G A N D O T H E R S                               VOL. 70
+
+                          The process noise covariance matrix for this nonlinear model has the form
+                                                       2                                 3
+                                                         diagðq11 ; . . . ;q77 Þ      0
+                                                 Qk ¼ 4                          q88 q98 5                                              ð48Þ
+                                                                 0               q89 q99
+                          where diagðq11 ; . . . ;q77 Þ denotes the 7 × 7 diagonal matrix, and q88 = SfΔt + SgΔt3/2;
+                          q98 = SgΔt2/2; q89 = SgΔt2/2; q99 = SgΔt.
+                            If only the pseudorange observables are available, the expected pseudorange hk ð^                              x
+                                                                                                                                            kÞ
+                                                                                                                             
+                                                                                                                           ^k is given by
+                          based on the GPS satellite position and the a priori estimate x
+                                                            qﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+                                                    x
+                                                hk ð^ k Þ ¼    x
+                                                              ð^ k  xi Þ þ ð^
+                                                                                2
+                                                                                         y k  yi Þ þ ð^
+                                                                                                          2
+                                                                                                                    zk  zi Þ
+                                                                                                                                   2
+                                                                                                                                          ð49Þ
+
+                          The elements of the measurement model Hk are the partial derivatives of the predicted
+                          measurements with respect to each state, which is an n × 9 matrix:
+                                                      2 ð1Þ ð1Þ ð1Þ                          3
+                                                        ex   ey    ez    0 0 0 0 1 0
+                                                      6 ð2Þ ð2Þ ð2Þ                          7
+                                                ∂hk 6 6 ex   ey    ez    0 0 0 0 1 07        7
+                                          Hk ¼     ¼
+                                                ∂xk 6 4 ...    ..   ..   .. .. .. .. ..      7
+                                                                .    .    . . . . . 05
+                                                         ð3Þ  ð3Þ
+                                                        ex   ey    eð3Þ
+                                                                    z    0 0 0 0 1 0
+                                                                                                                 ðiÞ   ðiÞ
+                          where the line-of-sight vector from the user to the satellites is ðex ; ex ; eðiÞ
+                                                                                                        z Þ
+
+                                                                ^
+                                                                x k  xi        ^y
+                                                                                  k  yi        ^z
+                                                                                                  k  zi
+                                                       eðiÞ
+                                                        x ¼              ; eðiÞ
+                                                                            y ¼          ; eðiÞ
+                                                                                            z ¼
+                                                                    ^ri             ^ri             ^ri
+
+                            4.2. Simulation test. The commercial software Satellite Navigation (SATNAV)
+                          Toolbox by GPSoft LLC was employed for generating the satellite positions and pseu-
+                          doranges. The scenario for simulation used in this paper is adopted from Jwo and Lai
+                          (2008). The three dimensional vehicle trajectory and the vehicle velocity in the east,
+                          north, and altitude components is shown in Figure 2. The description of the vehicle
+                          motion is provided in Table 3. The dynamic process model used in the EKF is the
+                          PV model, while the nonlinear model has been applied to the other approaches. The
+                          spectral amplitudes for the clock model, Sf ¼ 102 sec and Sg ¼ 102 sec1 , were
+                          used to find the Qk matrix as in Equation (48) for the nonlinear dynamic model.
+                            It is assumed that the Differential GPS (DGPS) mode is used, and most of the re-
+                          ceiver-dependent errors are removed. We assume the remaining errors, mostly
+                          caused by multipath errors and thermal noise, follow a Gaussian mixture distribution
+                          of the form, defined by the PDF of the form
+                                                              2                      2 
+                                                 1ε             x              ε             x
+                                      fX ðxÞ ¼     pﬃﬃﬃﬃﬃﬃ exp         þ       pﬃﬃﬃﬃﬃﬃ exp               ð50Þ
+                                                σ 1 2π              2
+                                                                 2σ 1        σ 2 2π           2σ 22
+                          or equivalently by X ∼ ð1  εÞNð0; σ 21 Þ þ εNð0; σ 22 Þ, where σ1 and σ2 are the standard
+                          deviations of the individual Gaussian distributions, and ɛ is a perturbing parameter
+                          that represents error model contamination. In order to demonstrate the validity of
+                          the robustness of the proposed algorithm in non-Gaussian distributions, the perturbed
+                          conditions ɛ = 0·6 (i.e., with 60% contamination), and σ2 = 10σ1 = 10 × 1 (m) have been
+                          used. Figure 3 shows the Gaussian mixture model for the pseudorange errors in the
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3           RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R                539
+
+
+
+
+                   Figure 2. The scenario for simulation: (a) three dimensional trajectory of the vehicle and (b) the
+                                    east, north, and altitude components of the vehicle velocity.
+
+
+                                                 Table 3. Description of the vehicle motion.
+
+             Time interval (sec)                                                           Motion
+
+             [0–50] [101–150] [201–250] [351–450]                                          Constant velocity
+             [51–100]                                                                      Constant acceleration
+             [151–200]                                                                     Variable acceleration
+             [251–350]                                                                     Circular motion, clockwise turn
+
+
+             simulation. The initial measurement noise variances rρi value are set to be 8 m2. The
+             parameters utilised are α = 1·4, β = 2·5, κ = 0 in the UKF; γ = 1·345 in the CKF, for
+             which the same value of the bounded-influence estimation selected by Huber (1981)
+             is used.
+                The results are shown in Figures 4–6. Prior to the incorporation of the Huber M-es-
+             timation mechanism, the GPS navigation accuracies based on the conventional non-
+             linear approaches: EKF, UKF and CKF are presented, shown in Figure 4, where
+             the merits of the CKF have been shown. After that, evaluation of the results based
+             on the nonlinear approaches compared to the Huber-based M-estimation CKF ap-
+             proach is conducted. Figure 5 provides comparison for the three types of filters:
+             UKF, CKF, and HCKF. To show the benefit of the Huber M-estimation methodology,
+             the comparison among Huber-based EKF, Huber-based UKF and Huber-based CKF
+             has also be presented, shown in Figure 6. The HCKF, which inherits the virtue of ro-
+             bustness, shows the best performance among the various approaches. The simulation
+             results show the superiority of the HCKF in highly dynamic situations which lead to
+             the model to be mismatched to the actual situation. The improvement in robustness for
+             the non-Gaussian measurement errors has also been presented.
+                Several important remarks are given as follows.
+
+                (1) In the four time intervals, 0–50, 101–150, 201–250, 350–450 s, the vehicle does
+                    not conduct manoeuvring and is performing constant-velocity straight-line
+                    motion. The navigation errors of all the nonlinear filters are not significantly dis-
+                    tinguishable between the six methods.
+                (2) In the three time intervals, 51–100, 151–200, 251–350 s, the vehicle is conducting
+                    manoeuvring (constant acceleration, variable acceleration, or circular motion).
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          540                            C H I E N - H AO T S E N G A N D O T H E R S                     VOL. 70
+
+
+
+
+                                      Figure 3 The Gaussian mixture model used in the simulation of pseudorange errors.
+
+
+
+
+                                              Figure 4. Comparison of positioning errors for EKF, UKF and CKF.
+
+
+
+
+                                             Figure 5. Comparison of positioning errors for UKF, CKF and HCKF.
+
+                                   The model mismatch to the actual situation leads to increased errors, as can be
+                                   seen from the solution using the standard EKF. The CKF is about to converge in
+                                   the high dynamic regions where there still exist noticeably large errors for the
+                                   UKF-based solutions. However, performances based on the nonlinear filters
+                                   are sensitive when the actual noise distribution deviates from the assumed
+                                   Gaussian model. To further improve the performance of the CKF, a robust tech-
+                                   nique where the Huber M-estimation mechanism is incorporated can be utilised.
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3           RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R   541
+
+
+
+
+                              Figure 6. Comparison of positioning errors for HEKF, HUKF and HCKF.
+
+
+
+                (3) When the GPS pseudorange observables are contaminated with non-Gaussian
+                    measurement errors, the CKF can adequately capture the non-Gaussianity
+                    and demonstrate noticeably better performance. Due to the appropriate
+                    tuning via the Huber M-estimation methodology, the HCKF exhibits robust be-
+                    haviour and therefore outperforms the CKF when the non-Gaussian measure-
+                    ment errors are involved.
+                (4) The HCKF associates the contaminated measurements with an increase in the
+                    measurement covariance, causing the reformulated error covariance. This modi-
+                    fied covariance inflation is known to cause an increase in the state estimation
+                    error due to the fact that all measurements are processed as if they were outliers.
+                (5) The HCKF and CKF filters give comparable results to each other for the posi-
+                    tioning error during the non-manoeuvring intervals, while the HCKF provides
+                    a substantially improved performance in the high dynamic regions (51–100,
+                    151–200, and 251–350 s), where it adequately captures both nonlinearity and
+                    non-Gaussianity. The HCKF is expected to provide further improved perform-
+                    ance since the residual error covariance and measurement information used in
+                    computing the Huber M-estimation is the ML estimates for perfectly compensat-
+                    ing against deviations from Gaussianity. The navigation results show that the
+                    HCKF demonstrates superior performance as compared to the other approaches.
+
+                4.3. Outdoor tests. Two tests conducted outdoors were carried out to further val-
+             idate the effectiveness of the proposed algorithm. The two tests conducted at the
+             National Taiwan Ocean University (NTOU) campus involved a field test and a
+             rooftop experiment. The data collected by the Ashtech GPS receiver (DG14
+             module) was used for processing to perform a comparative study on navigation per-
+             formance using various nonlinear estimators. The sampling rate of the measurements
+             is 1 Hz. The measurement noise variances rρi value are set to be 100 m2. The test results
+             were obtained by post-processing of logged sensor data using the Matlab® software.
+             The high accuracy relative positioning solution was used as the reference trajectory.
+                4.3.1. Field test. The first dataset was collected on the sports field at the univer-
+             sity campus, shown in Figure 7. The raw data was collected for 140 seconds. In this test,
+             the number of visible satellites varied between eight and nine in the clear open sky. To
+             investigate the effect due to the contaminated non-Gaussian measurement errors, add-
+             itional errors in the GPS pseudorange observables are added. The errors are assumed
+             to possess the distribution again in the form as in Figure 3. Figure 8 shows the posi-
+             tioning errors for EKF, UKF and CKF. The CKF framework possesses some
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          542                            C H I E N - H AO T S E N G A N D O T H E R S                VOL. 70
+
+
+
+
+                                                      Figure 7. The trajectory for the field test in Google map.
+
+
+
+
+                                               Figure 8. Positioning errors for EKF, UKF and CKF – the field test.
+
+
+
+                          capability to deal with the non-Gaussian measurement errors/outliers. A comparison
+                          of the positioning errors for the three types of filters: UKF, CKF, and HCKF, is
+                          shown in Figure 9.
+                             4.3.2. Rooftop experiment. The second dataset selected for performance evalu-
+                          ation was collected on the rooftop of the department building. The trajectory for
+                          the rooftop experiment is shown in Figure 10, where a close look at the trajectory is
+                          also provided using the data collected by the Ashtech GPS receiver. The picture
+                          shown inside the trajectory based on the Ashtech GPS receiver is a zoomed-in shot
+                          for the upper right corner where a red tower is located. The starting point of the tra-
+                          jectory is at one side of the red tower, and the terminated point at the other side. In this
+                          experiment, the raw data was collected for 124 seconds. The rooftop environment pre-
+                          sented a negative impact on the quality of GPS signals in such a challenging multipath
+                          environment. In this environment, there are several reflective objects on the rooftop,
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3           RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R           543
+
+
+
+
+                                 Figure 9. Positioning errors for UKF, CKF and HCKF– the field test.
+
+
+
+
+                  Figure 10. The trajectory for the rooftop experiment by Google map (left, circled area) and by the
+                                  data collected by the Ashtech GPS receiver (right), respectively.
+
+
+
+
+                                    Figure 11. Number of visible satellites for the rooftop experiment.
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          544                            C H I E N - H AO T S E N G A N D O T H E R S                  VOL. 70
+
+
+
+
+                                    Figure 12. Positioning errors for EKF, UKF, CKF and HCKF–the rooftop experiment.
+
+
+                          including the door that provides access to the roof. In addition, there are several other
+                          antennae in the vicinity. Multipath reflections from rooftop objects introduced a sig-
+                          nificant number of non-Gaussian errors to the GPS pseudorange observables.
+                          Furthermore, some of the GPS signals were blocked by the mountains in the south
+                          such that the number of visible satellites varied between four and seven, as shown in
+                          Figure 11. Figure 12 presents the positioning errors for the four approaches: EKF,
+                          UKF, CKF and HCKF.
+                             The results for the two outdoor tests do not try to demonstrate the superiority of
+                          the HCKF in high dynamic environments, but exhibit effectiveness against the non-
+                          Gaussian measurement errors. In the above three illustrative examples, the improve-
+                          ment due to the incorporation of the Huber M-estimation mechanism has been
+                          demonstrated. The GPS positioning errors clearly show the superiority of the HCKF
+                          algorithm.
+
+
+                          5. CONCLUSIONS. This paper has presented a Huber-based Cubature Kalman
+                          Filter (HCKF) for GPS navigation processing. The measurements are GPS pseudor-
+                          ange observables contaminated with non-Gaussian errors. The cubature Kalman
+                          filter is based on the third-degree spherical-radial cubature rule to propagate the cuba-
+                          ture points through the nonlinear functions, so as to solve the integration in the
+                          Bayesian filtering problem for numerically computing the multivariate moment inte-
+                          grals. The Huber M-estimation methodology is essentially based on Huber’s general-
+                          ised ML estimation theory, which exhibits robustness against the deviations from the
+                          Gaussian distribution.
+                             The HCKF algorithm integrates the merits of the Huber M-estimation method-
+                          ology to handle non-Gaussian errors or outliers and the cubature Kalman filter to
+                          avoid the numerical instability problem and improve the estimation accuracy in
+                          high-dimensional systems. The CKF framework was recast in the form of a sequence
+                          of nonlinear regression problems to be solved, at each measurement update using the
+                          robust Huber M-estimation methodology so as to enhance the CKF performance. In
+                          addition to the simulation test, the real GPS navigation data is also applied to validate
+                          the proposed algorithm. Performance comparisons on the six types of filters, EKF,
+                          UKF, CKF, HEKF, HUKF, and HCKF have been presented, among which the
+                          HCKF algorithm shows superior performance in GPS navigational accuracy.
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+             NO. 3           RO BU S T H U B E R - B A S E D G P S C U B AT U R E K A L M A N F I LT E R               545
+                                                      AC K N O W L E D G M E N T
+             This work has been supported in part by the Ministry of Science and Technology of the Republic
+             of China under grant numbers NSC 101-2221-E-019-027-MY3 and MOST 104-2221-E-019-
+             026-MY2.
+
+
+
+                                                             REFERENCES
+             Axelrad, P. and Brown, R.G. (1996). GPS navigation algorithms, in: Parkinson, B.W., Spilker, J.J., Axelrad, P.
+                and Enga, P. (Ed.), Global Positioning System: Theory and Applications, Volume I, AIAA, Washington
+                DC, Chap. 9.
+             Arasaratnam, I. and Haykin, S. (2009). Cubature Kalman filters, IEEE Transactions on Automatic Control,
+                54(6), 1254–1269.
+             Boncelet, C.G. and Dickinson, B.W. (1983). An approach to robust Kalman filtering. in: The 22nd IEEE
+                Conference on Decision and Control, San Antonio, USA, 304–305.
+             Brown, R.G. and Hwang, P.Y.C. (1997). Introduction to Random Signals and Applied Kalman Filtering. John
+                Wiley & Sons, New York.
+             Bube, K.P. and Langan, R.T. (1997). Hybrid ℓ1/ℓ2 minimization with applications to tomography,
+                Geophysics, 62(4), 1183–1195.
+             Chang, L., Hu, B., Chang, G. and Li, A. (2012a). Huber-based novel robust unscented Kalman filter, IET
+                Science, Measurement & Technology, 6(6), 502–509.
+             Chang, L., Hu, B., Chang, G. and Li, A. (2012b). Marginalised iterated unscented Kalman filter, IET
+                Control Theory & Applications, 6, 847–854.
+             Chang, L., Hu, B., Chang, G. and Li, A. (2012c). Multiple outliers suppression derivative-free filter based on
+                unscented transformation, Journal of guidance, control, and dynamics, 35, 1902–1907.
+             Chang, G. and Liu, M. (2015). M-estimator-based robust Kalman filter for systems with process modeling
+                errors and rank deficient measurement models, Nonlinear Dynamics, 80(3), 1431–1449.
+             Durgaprasad, G. and Thakur, S.S. (1998). Robust dynamic state estimation of power systems based on M-
+                estimation and realistic modeling of system dynamics, IEEE Transactions on Power Systems, 13(4), 1331–
+                1336.
+             Fernandez-Prades, C. and Vila-Valls, J. (2010). Bayesian nonlinear filtering using quadrature and cubature
+                rules applied to sensor data fusion for positioning, in: Proceeding of IEEE international conference on com-
+                munications, 1–5.
+             Gandhi, M.A. and Mili, L. (2010). Robust Kalman filter based on a generalized maximum-likelihood-type
+                estimator, IEEE Transactions on Signal Processing, 58(5), 2509–2520.
+             Gao, W., Liu, Y. and Xu, B. (2014). Robust Huber-based iterated divided difference filtering with application
+                to cooperative localization of autonomous underwater vehicles, Sensors, 14(12), 24523–24542.
+             Gelb, A. (1974). Applied Optimal Estimation. M. I. T. Press, MA.
+             Guitton, A. and Symes, W.W. (2003). Robust inversion of seismic data using the Huber norm, Geophysics,
+                68(4), 1310–1319.
+             Gustafsson, F. and Hendeby, G. (2012). Some relations between extended and unscented Kalman filters.
+                IEEE Transactions on Signal Processing, 60, 545–555.
+             Hou, Y. (2014). Multiple-sensor fusion tracking based on square-root cubature Kalman filtering, Journal of
+                networks, 9(7), 1955–1961.
+             Huber, P.J. (1973). Robust regression: asymptotics, conjectures and Monte Carlo, Annals of Statistics, 1,
+                799–821.
+             Huber, P.J. (1981). Robust statistics. Wiley, New York.
+             Jia, B., Xin, M. and Cheng, Y. (2013). Higher-degree cubature Kalman flter, Automatica, 49(2), 510–518.
+             Julier, S.J. (2002). The scaled unscented transformation, in: Proceedings of the American Control Conference,
+                Anchorage, USA, 4555–4559.
+             Julier, S.J., Uhlmann, J.K. and Durrant-Whyte, H.F. (1995). A new approach for filtering nonlinear system,
+                in: Proceeding of the American Control Conference, 1628–1632.
+             Julier, S.J., Uhlmann, J.K. and Durrant-Whyte, H.F. (2000). A new method for the nonlinear transformation of
+                means and covariances in filters and estimators, IEEE Transactions on Automatic Control, 5(3), 477–482.
+             Jwo, D. -J. and Lai, C. -N. (2008). Unscented Kalman filter with nonlinear dynamic process modeling for
+                GPS navigation, GPS Solutions, 12(4), 249–260.
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+                          546                            C H I E N - H AO T S E N G A N D O T H E R S                         VOL. 70
+                          Karlgaard, C.D. (2015). Nonlinear regression Huber–Kalman filtering and fixed-interval smoothing.
+                            Journal of Guidance, Control and Dynamics, 38, 322–330.
+                          Karlgaard, C.D., Schaub, H., Crassidis, J.L., Psiaki, M., Chiang, R., Ohlmeyer, E.J. and Norgaard, M.
+                            (2007). Huber-based divided difference filtering, Journal of guidance, control, and dynamics, 30, 885–891.
+                          Kovacevic, B., Durovic, Z. and Glavaski, S. (1992). On robust Kalman filtering, International Journal of
+                            Control, 56(3), 547–562.
+                          Maronna, R.A., Martin, R.D. and Yohai, V.J. (2006). Robust statistics: theory and methods. Wiley, West
+                            Sussex, England.
+                          Masreliez, C. and Martin, R. (1977). Robust Bayesian estimation for the linear model and robustifying the
+                            Kalman filter, IEEE Transactions on Automatic Control, 22, 361–371.
+                          Petrus, P. (1999). Robust Huber adaptive filter, IEEE Transactions on Signal Processing, 47(4), 1129–1133.
+                          Tsakonas, E., Jaldén, J., Sidiropoulos, N.D. and Ottersten, B. (2014). Convergence of the Huber regression
+                            M-estimate in the presence of dense outliers, IEEE Signal Processing Letters, 21(10), 1211–1214.
+                          Tseng, C. -H, Lin, S. -F. and Jwo, D.J. (2016). Fuzzy Adaptive Cubature Kalman Filter for Integrated
+                            Navigation Systems, Sensors, 16(8), 1167.
+                          Van der Merwe, R. and Wan, E.A. (2004). Sigma-point Kalman filters for nonlinear estimation and sensor-
+                            fusion: applications to integrated navigation, in: Proceedings of the AIAA Guidance, Navigation & Control
+                            Conference and Exhibit, 16–19.
+                          Wan, E.A. and Van der Merwe, R. (2001). The Unscented Kalman Filter, in: Simon Haykin (Ed.), Kalman
+                            Filtering and Neural Networks, Wiley, (Chapter 7).
+                          Wang, X., Cui, N. and Guo, J. (2010). Huber-based unscented filtering and its application to vision-based
+                            relative navigation, IET Radar, Sonar & Navigation, 4(1), 134–141.
+                          Wu, Y., Hu, D., Wu, M. and Hu, X. (2006). A numerical-integration perspective on Gaussian filters, IEEE
+                            Transactions on Signal Processing, 54, 2910–2921.
+                          Xu, B., Xiao, Y.P., Gao, W., Zhang, Y.G., Liu, Y.L. and Liu, Y. (2014). Dual-model reverse CKF algorithm
+                            in cooperative navigation for USV, Mathematical Problems in Engineering, 2014, 1–17.
+                          Yang, Y. (1991). Robust Bayesian estimation, Bulletin Géodésique, 65, 145–150.
+                          Yang, Y. and Gao, W. (2006a). An optimal adaptive Kalman filter, Journal of Geodesy, 80, 177–183.
+                          Yang, Y. and Gao, W. (2006b). A new learning statistic for adaptive filter based on predicted residuals,
+                            Progress in Natural Science, 16(8), 833–837.
+                          Yang, Y., He, H. and Xu, G. (2001). Adaptively robust filtering for kinematic geodetic positioning, Journal of
+                            Geodesy, 75, 109–116.
+
+
+
+
+https://doi.org/10.1017/S0373463316000692 Published online by Cambridge University Press
+

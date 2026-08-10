@@ -1,0 +1,50 @@
+{
+  "command": [
+    "docs/benchmarks/run_genut_neutra_scalar_parity.py",
+    "--model",
+    "lgssm",
+    "--claim-artifact",
+    "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_claim_attempt02/result.json",
+    "--output-root",
+    "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_scalar_parity_attempt02",
+    "--batch-size",
+    "2",
+    "--diagnostic-disable-tf32"
+  ],
+  "deterministic_ops_enabled": true,
+  "device": "/GPU:0",
+  "environment": "tf-gpu",
+  "git_commit": "6a11b689295bfb0e58de6e6d2f84918671b5a685",
+  "gpu_allocator": {
+    "current_bytes": 892928,
+    "peak_bytes": 135110144
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "output_root": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_scalar_parity_attempt02",
+  "particle_count": 1008,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.14",
+  "result": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_scalar_parity_attempt02/result.json",
+  "schema": "bayesfilter.genut_neutra_real_scope_scalar_parity_manifest.v1",
+  "target_signature": "f33c1f18fe35871d26d5143e8063fb92a88044431e17ff453da93f3f9628aeaa",
+  "tensorflow_version": "2.19.1",
+  "tf32_enabled": false,
+  "wall_time_seconds": 18.28511488600634
+}

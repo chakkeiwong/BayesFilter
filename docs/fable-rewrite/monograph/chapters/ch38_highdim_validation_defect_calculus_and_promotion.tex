@@ -1,0 +1,448 @@
+\chapter{Validation, Defect Calculus, and Method Promotion}
+\label{ch:bf-highdim-validation-defect-promotion}
+\label{ch:bf-highdim-candidate-synthesis}
+
+This chapter closes the restarted high-dimensional block.  It synthesizes the
+validation and promotion logic shared by the deterministic Gaussian/sparse-grid
+lane and the non-Gaussian low-rank retained-object lane.  Its purpose is not to
+re-derive the methods, but to consume their exported defects, diagnostics,
+approximate-target contracts, and HMC-admissibility consequences.
+
+The previous chapters have already separated:
+\begin{itemize}[leftmargin=0.28in]
+  \item exact target from approximate target,
+  \item carried object from moment or retained-object engine,
+  \item frozen branch-defining structure from recomputed numerical values.
+\end{itemize}
+The role here is therefore downstream and comparative: which diagnostics veto a
+method, which diagnostics only explain it, and under what conditions a chapter-
+local approximation becomes an industrially credible component rather than a
+merely interesting computation.
+
+\section{Validation Architecture And Benchmark Roles}
+\label{sec:bf-hd-validation-architecture}
+
+The restarted high-dimensional block uses three ledgers of evidence that must not
+be conflated:
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{Engineering correctness.}  Did the declared scalar build, factor,
+  and update without violating its own branch rules?
+  \item \textbf{Numerical or sampler validity.}  Did finite-difference parity,
+  ESS, PSD, rank, support, Jacobian, or divergence diagnostics pass?
+  \item \textbf{Scientific interpretation.}  Given the surviving diagnostics,
+  what may be concluded about approximation quality, target fidelity, or method
+  promotion?
+\end{enumerate}
+A result in one ledger cannot be silently upgraded into the next.  A green build
+is engineering evidence.  A valid same-scalar finite-difference row is numerical
+evidence.  Neither by itself is a scientific proof that the approximation is the
+right industrial method.
+
+The benchmark roles are therefore tiered:
+\begin{itemize}[leftmargin=0.28in]
+  \item exact or controlled references test whether the declared scalar behaves
+  as intended on small models,
+  \item local diagnostics test whether the approximation object stays meaningful,
+  \item promotion ladders decide whether a method deserves more expensive
+  downstream comparison.
+\end{itemize}
+
+\section{Finite-Difference Verification As The First Shared Gate}
+\label{sec:bf-hd-validation-fd-first}
+
+The first shared validation gate is finite-difference parity on a fixed branch.
+For a base parameter \(\theta_0\) and coordinate direction \(e_i\), define
+\begin{equation}
+  D_i(h)=
+  \frac{\widehat\ell_T(\theta_0+h e_i;B)-\widehat\ell_T(\theta_0-h e_i;B)}{2h},
+  \qquad
+  G_i=\partial_i\widehat\ell_T(\theta_0;B),
+  \label{eq:bf-hd-validation-fd}
+\end{equation}
+where both perturbed evaluations reuse the same fixed branch ledger and
+recompute the parameter-dependent numerical objects through the same declared
+equations.  The row is branch-valid only if the branch identity is unchanged on
+both sides.
+
+A useful reporting contract is:
+\begin{equation}
+  e_i(h)=\frac{|D_i(h)-G_i|}{\max\{1,|D_i(h)|,|G_i|\}},
+  \label{eq:bf-hd-validation-fd-error}
+\end{equation}
+with a small ladder such as
+\begin{equation}
+  h\in\{10^{-1},10^{-2},10^{-3},10^{-4},10^{-5}\}\max\{1,|\theta_i|\}.
+  \label{eq:bf-hd-validation-fd-ladder}
+\end{equation}
+The diagnostic supports the same-scalar claim only when branch-valid rows show a
+stable decreasing error window.  Failure may indicate a wrong derivative, a
+branch mismatch, or a nonsmooth/ill-conditioned value path.  It is a validation
+gate, not a posterior-accuracy theorem.
+
+\section{Why The Synthesis Must Start With Defects}
+\label{sec:bf-hd-synthesis-purpose}
+
+The preceding chapters explain high-dimensional nonlinear filtering methods.
+An industrial macro-finance program needs a harsher object: a calculus of
+failure.  A method is useful for a global-bank or central-bank model only when
+the failure mode is explicit, the mitigation has a mathematical contract, and
+the cost variable that can kill the method is visible before implementation.
+Academic novelty is not the target here.  The target is a defensible
+composition of known methods under stated assumptions.
+
+This chapter therefore treats every candidate as a conditional component.  A
+Gaussian scaffold is useful if it exposes local curvature and covariance
+failure.  Sparse-grid or high-degree cubature is useful if it diagnoses local
+nonlinearity without pretending to be a global filter.  Tensor methods are
+useful if economic structure keeps ranks stable and preserves probability or
+covariance semantics.  Transport maps are useful if they reduce geometry while
+leaving a checkable target.  HMC is useful only downstream of a same-scalar
+likelihood contract.
+
+The reader-facing synthesis map is this: start with the exact conditional law
+and likelihood normalizers from Chapter~\ref{ch:bf-highdim-nonlinear-foundations};
+replace them only by named approximations; attach one diagnostic to each object
+being approximated; and promote a method only after the previous object exports
+the input required by the next.  The chapter's exact target is not a new
+algorithm.  It is an auditable decision procedure for composing existing methods
+without losing the scalar likelihood, probability-law, support, Jacobian, rank,
+or covariance semantics needed by industrial inference.
+
+\paragraph{Running quadratic-observation cell.}
+The scalar cell
+\[
+  x_t=\rho x_{t-1}+\eta_t,\qquad y_t=x_t^2+\epsilon_t
+\]
+has now served five roles.  Chapter~\ref{ch:bf-highdim-nonlinear-foundations}
+used it to show that the exact filtering law can have two lobes.
+Chapter~\ref{ch:bf-highdim-gaussian-quadrature} used it to show why Gaussian
+projection can preserve moments while losing shape.  Chapter~\ref{ch:bf-highdim-fixed-cloud-sgqf-validation}
+used it to turn one fixed sparse-grid cloud into a concrete value-path and
+numeric-oracle contract.  Chapter~\ref{ch:bf-highdim-low-rank-density-kr} and
+Chapter~\ref{ch:bf-highdim-squared-tt-fixed-branch-likelihoods} used it to
+separate retained-object semantics from fixed-branch likelihood construction.
+Chapter~\ref{ch:bf-highdim-hmc-research} used it to insist that HMC needs a
+scalar likelihood and a same-scalar gradient.  Here the same cell is not
+evidence for a macro-finance model.  It is the small mechanism that tells a
+mixed numerical reader what the architecture is trying not to lose.
+
+\paragraph{Imports from the preceding chapters.}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{longtable}{@{}p{0.14\linewidth}p{0.19\linewidth}p{0.22\linewidth}p{0.17\linewidth}p{0.18\linewidth}@{}}
+\toprule
+Source chapter & Exported object & Exported defect & Exported diagnostic/veto
+& Consumed here as \\
+\midrule
+\endhead
+Ch.~\ref{ch:bf-highdim-nonlinear-foundations} & conditional law, normalizer,
+likelihood gradient & wrong target, missing normalizer, value-gradient
+mismatch & finite \(Z_t\), mass, positivity, same-scalar check & target and
+likelihood gates \\
+Ch.~\ref{ch:bf-highdim-gaussian-quadrature} & Gaussian moment pair and
+point-rule family & projection bias, exactness without accuracy, point explosion
+& innovation, PSD, active dimension, comparator residual & scaffold and local
+curvature diagnostic \\
+Ch.~\ref{ch:bf-highdim-fixed-cloud-sgqf-validation} & fixed sparse-grid scalar,
+numeric oracle, branch record & merge mismatch, signed-weight instability,
+branch-invalid finite differences & oracle reproduction, branch-valid FD,
+minimum-eigenvalue veto, cloud reproduction & deterministic Gaussian lane
+validation \\
+Ch.~\ref{ch:bf-highdim-low-rank-density-kr} & retained object, coordinate map,
+KR / preconditioning semantics & support failure, Jacobian mismatch,
+rank/semantic failure & support/logdet, rank, mass, positivity & retained-object
+meaning gate \\
+Ch.~\ref{ch:bf-highdim-squared-tt-fixed-branch-likelihoods} & fixed-branch TT/KR
+scalar, stored-field contract & wrong saved object, branch-identity loss,
+incomplete next-step closure & stored-field audit, retained-marginal closure,
+branch-fixed structural check & operational middle gate \\
+Ch.~\ref{ch:bf-highdim-hmc-research} & scalar potential, gradient, transformed
+target & same-scalar mismatch, divergences, invalid transform & scalar parity,
+finite support/Jacobian, energy diagnostics & downstream sampler gate \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\section{Lane-Specific Validation Ladders Before Promotion}
+\label{sec:bf-hd-validation-lane-ladders}
+
+The high-dimensional part now contains two distinct approximation lanes with
+different local failure modes, so the validation ladder must stay lane-aware
+before the closing promotion comparison begins.
+
+\subsection{FixedSGQF ladder}
+\label{sec:bf-hd-validation-sgqf-ladder}
+
+The sparse-grid lane should not be promoted from elegant construction alone.
+Before any cross-method comparison, it should pass a ladder that includes:
+\begin{enumerate}[leftmargin=0.28in]
+  \item deterministic cloud reproduction and duplicate-merge checks,
+  \item the one-step numeric oracle from
+  Chapter~\ref{ch:bf-highdim-fixed-cloud-sgqf-validation},
+  \item branch-valid finite differences on a saved fixed-cloud branch,
+  \item signed-weight stability checks through \(P_t^-\), \(S_t\), and carried
+  covariance objects,
+  \item controlled GHQ / linear-Gaussian comparators where available.
+\end{enumerate}
+These diagnostics answer whether the implementation is evaluating the declared
+fixed-cloud scalar, not whether Gaussian projection has become an exact
+high-dimensional posterior method.
+
+\subsection{Retained-object TT/KR ladder}
+\label{sec:bf-hd-validation-ttkr-ladder}
+
+The TT/KR lane carries a richer retained object and therefore faces richer local
+failure modes.  Before cross-method promotion, it should pass a ladder that
+includes:
+\begin{enumerate}[leftmargin=0.28in]
+  \item coordinate-system and Jacobian-consistency checks,
+  \item positivity / nonnegativity and normalization checks for the represented
+  object,
+  \item rank-growth and conditioning diagnostics,
+  \item stored-field and retained-marginal closure checks for the next step,
+  \item branch-valid finite differences on the fixed-branch likelihood route.
+\end{enumerate}
+These diagnostics do not prove that moderate TT rank is always sufficient or that
+the adaptive source algorithm is globally smooth.  They only establish whether
+the frozen retained-object branch remains a scientifically interpretable scalar
+object on the tested route.
+
+\paragraph{Copied-core and branch-status reporting.}
+When the derivative claim is part of the result, the TT/KR lane should report not
+only a finite-difference error table but also the branch-status fields imported
+from Chapter~\ref{ch:bf-highdim-hmc-research}: branch-identity indicators,
+copied-core indicators, decreasing-window indicators, and the resulting status
+classification.  A small error alone is insufficient if the perturbed values were
+computed on different frozen fields or with copied fitted cores.
+
+A useful derivative reporting object is:
+\begin{equation}
+  \mathcal R_{\rm FD}=
+  \{\widehat\ell_T(\theta_0;B),\ G_i,\ (h_i,D_i(h_i),e_i(h_i))_i,
+    I_\pm(h_i),K_\pm(h_i),W_i,\text{status}\}.
+  \label{eq:bf-hd-validation-fd-report-object}
+\end{equation}
+Here the report should also retain the scalar values
+\(\widehat\ell_T(\theta_0+h_i e_j;B)\) and
+\(\widehat\ell_T(\theta_0-h_i e_j;B)\) for each \(h_i\), not merely the final
+error summary.  The derivative table is meaningful only when the branch record is
+identical in the three columns base / plus / minus.
+
+\paragraph{Benchmark-specific interpretation.}
+The benchmark ledger should stay explicit about what each model can and cannot
+establish.  A linear-Gaussian benchmark can establish exact-reference agreement
+for the declared run contract, but not nonlinear posterior accuracy.  A
+stochastic-volatility or predator-prey benchmark can establish long-horizon
+nonlinear stability or preconditioning benefit under the declared run contract,
+but not universal scalability.  A spatial SIR benchmark can establish whether the
+method remains useful at the tested state dimension, horizon, rank ladder, and
+basis ladder, but not that all spatial epidemic models admit moderate TT rank.
+One-seed demonstrations remain diagnostic unless the result artifact explicitly
+justifies a stronger interpretation.
+
+\paragraph{Runtime, memory, and veto interpretation.}
+Runtime and memory should be interpreted only after veto diagnostics have passed.
+When reported, they should be split into mathematically meaningful components:
+forward target evaluation, fitting solves, mass contractions, KR inversion or
+sampling work, retained-object storage work, and derivative overhead.  Likewise,
+peak memory should separate value-only storage from value-plus-gradient storage.
+These are not mere profiling counters; they are the places where the fixed-branch
+approximation can become unaffordable or mathematically fragile.
+
+\section{Mathematical Veto Ledger Before Interpretation}
+\label{sec:bf-hd-validation-veto-ledger}
+
+The validation report should mark a run as failed before interpreting posterior
+plots, trajectory summaries, or method rankings if any mathematical veto fires.
+Let
+\begin{equation}
+  \mathcal F_t=
+  \{Z_t,\widehat Z_t,\widehat p_t,C_{t,k},\dot C_{t,k},w_i,D_h,G_{\rm FB}\}
+  \label{eq:bf-hd-veto-ledger-objects}
+\end{equation}
+collect the scalar, tensor, weight, and derivative objects used at time \(t\).
+The finite-value veto is
+\begin{equation}
+  V_{\rm finite}=
+  \mathbf{1}\{\exists t,\exists a\in\mathcal F_t:\ a\text{ contains NaN or Inf}\}.
+  \label{eq:bf-hd-veto-finite}
+\end{equation}
+The normalization veto is
+\begin{equation}
+  V_{\rm norm}=
+  \mathbf{1}\{\exists t:\ \widehat Z_t\le0\ \text{or}\ |\int \widehat p_t(z)\dd z-1|>\varepsilon_{\rm norm}\}.
+  \label{eq:bf-hd-veto-norm}
+\end{equation}
+The least-squares conditioning veto is
+\begin{equation}
+  V_{\rm cond}=
+  \mathbf{1}\{\max_{t,k}\kappa(N_{t,k})>\kappa_{\rm max}^{\rm allowed}\}.
+  \label{eq:bf-hd-veto-cond}
+\end{equation}
+The rank-saturation veto is
+\begin{equation}
+  V_{\rm rank}=
+  \mathbf{1}\{\exists t:\ R_t=R_{\rm max}\ \text{and}\ {\rm residual}_t>\varepsilon_{\rm fit}\}.
+  \label{eq:bf-hd-veto-rank}
+\end{equation}
+The KR monotonicity veto is
+\begin{equation}
+  V_{\rm KR}=
+  \mathbf{1}\{\exists j,z_{<j},a<b:\ F_j(b\mid z_{<j})<F_j(a\mid z_{<j})\}.
+  \label{eq:bf-hd-veto-kr}
+\end{equation}
+Finally, the fixed-branch derivative veto is
+\begin{equation}
+  V_{\rm grad}=
+  \mathbf{1}\{B(\beta+h)\ne B(\beta)\ \text{or}\ B(\beta-h)\ne B(\beta)\ \text{or no branch-stable decreasing window holds}\}.
+  \label{eq:bf-hd-veto-grad}
+\end{equation}
+A run should be interpreted only if
+\begin{equation}
+  V_{\rm finite}+V_{\rm norm}+V_{\rm cond}+V_{\rm rank}+V_{\rm KR}+V_{\rm grad}^{\rm required}=0,
+  \label{eq:bf-hd-veto-sum-rule}
+\end{equation}
+where \(V_{\rm grad}^{\rm required}=V_{\rm grad}\) only when the claim includes
+validating the derivative.  The tolerances in these vetoes must be declared
+before a run.  A minimal default table is:
+\begin{equation}
+\begin{array}{c|c|c}
+\text{quantity} & \text{default} & \text{meaning}\\
+\hline
+\varepsilon_{\rm norm} & 10^2\epsilon_{\rm mach}+10\,\varepsilon_{\rm quad} & \text{normalization tolerance}\\
+\kappa_{\rm max}^{\rm allowed} & 10^{10}\ \text{in double precision} & \text{least-squares conditioning ceiling}\\
+\varepsilon_{\rm fit} & \max(10^{-8},10\,{\rm tol}_{\rm ALS}) & \text{rank-saturation residual ceiling}\\
+\varepsilon_{\rm KR} & 10^2\epsilon_{\rm mach}+10\,\varepsilon_{\rm quad} & \text{monotonicity/inversion tolerance}
+\end{array}
+  \label{eq:bf-hd-veto-defaults}
+\end{equation}
+These are implementation tolerances, not scientific outcomes.  Changing them
+after seeing posterior plots invalidates the benchmark interpretation.
+
+\section[Particle Collapse]{Defect 1: Log-Weight Dispersion Can Become Exponential Without Structure}
+\label{sec:bf-hd-defect-particles}
+
+The bootstrap and SIR filters in Chapter~\ref{ch:bf-highdim-particle-transport-tensor}
+are honest baselines because their collapse mechanism is visible.  The aim of
+this section is not to prove the strongest available particle-collapse theorem.
+It is to record a heuristic defect calculus showing why, without locality,
+guided proposals, or tempering, the variance scale entering the weights can grow
+rapidly with effective dimension.  The sharper asymptotic statements belong to
+the cited particle-filter literature; the present derivation is a warning model,
+not a complete theorem of exponential collapse.
+\begin{equation}
+  \operatorname{ESS}=\frac{1}{\sum_{i=1}^N \bar W_i^2}.
+  \label{eq:bf-hd-synth-ess}
+\end{equation}
+Suppose the log-weight decomposes across conditionally independent observation
+blocks,
+\begin{equation}
+  L_i=\sum_{k=1}^{d_{\mathrm{eff}}} \ell_{ik},\qquad
+  \E[\ell_{ik}]=\mu,\qquad \Var(\ell_{ik})=\sigma_\ell^2,
+  \label{eq:bf-hd-synth-logweight}
+\end{equation}
+with weak dependence sufficient for
+\(\Var(L_i)\asymp d_{\mathrm{eff}}\sigma_\ell^2\).  This is the informal
+calculus behind the high-dimensional particle-filter warnings of
+\citet{bengtsson2008curse} and \citet{snyder2008obstacles}.
+
+\begin{proposition}[Log-weight variance warning]
+\label{prop:bf-hd-particle-collapse-calculus}
+If the log-weight variance grows like
+\(\Var(L_i)=v_d\asymp d_{\mathrm{eff}}\sigma_\ell^2\), then the associated
+importance-weight dispersion scale grows exponentially in \(v_d\) under the
+lognormal heuristic below.  In that regime, a particle filter with proposal
+independent of the current observation can enter a practically severe collapse
+regime unless ensemble size grows very aggressively with that dispersion scale.
+\end{proposition}
+
+\begin{proof}[Derivation]
+For a lognormal heuristic, \(\E[W]=\exp(\mu_d+v_d/2)\) and
+\(\E[W^2]=\exp(2\mu_d+2v_d)\), so
+\[
+  \frac{\E[W^2]}{\E[W]^2}=\exp(v_d).
+\]
+The usual importance-sampling variance factor is therefore exponential in
+\(v_d\).  Since the denominator of \eqref{eq:bf-hd-synth-ess} is driven by the
+largest normalized weights, stable ESS typically requires sample growth that
+offsets this exponential dispersion.  The cited papers give sharper asymptotic
+statements under stronger assumptions; the monograph uses this calculation only
+to justify a heuristic defect warning about log-weight dispersion, not to claim a
+full theorem of exponential particle collapse for every proposal/model pair.
+\end{proof}
+
+\section{Validation Benchmarks And Promotion Logic}
+\label{sec:bf-hd-validation-benchmarks}
+
+The validation ladder should combine exact or controlled references, local
+object-validity diagnostics, and promotion rules.  Exact or reference-density
+metrics such as Hellinger distance, relative \(L^1\) error, moment error,
+trajectory RMSE, coverage, and ESS quantiles are meaningful only when the target
+and branch contracts have already been named.  Their role is not to replace the
+same-scalar contract, but to test whether a declared approximation remains
+useful after the engineering and branch-validity gates have passed.
+
+For the restarted high-dimensional block, the benchmark architecture should at
+least cover:
+\begin{enumerate}[label=(\arabic*), leftmargin=0.28in]
+  \item an exact or controlled linear-Gaussian reference where available,
+  \item a nonlinear toy case that reveals posterior-shape or retained-object
+  limitations,
+  \item a branch-valid finite-difference check on the declared approximate scalar,
+  \item structural diagnostics specific to the lane: rank, mass, positivity,
+  PSD, support, Jacobian, or ESS as appropriate.
+\end{enumerate}
+These ladders are not optional appendices.  They are what stops a chapter-local
+approximation from being promoted on speed or elegance alone.
+
+The benchmark backbone should be named explicitly so the reader does not have to
+reconstruct it from isolated examples:
+\begin{enumerate}[label=(V\arabic*), leftmargin=0.34in]
+  \item exact-reference linear Gaussian benchmark,
+  \item long-horizon stochastic-volatility benchmark,
+  \item spatial SIR benchmark for high-dimensional partial-observation filtering,
+  \item predator-prey benchmark for nonlinear preconditioning,
+  \item derivative validation table whenever a fixed-branch gradient is part of
+  the claim.
+\end{enumerate}
+A useful compact benchmark table should pair the resource ledger with the
+model-specific accuracy ledger and, when derivatives are claimed, with a separate
+finite-difference table containing \(D_h\), \(G_{\rm FB}\), \(|D_h-G_{\rm FB}|\),
+and the branch-status fields for each \(h\).  The derivative table is meaningful
+only when the branch record is identical in the three columns
+\(\theta-h\), \(\theta\), and \(\theta+h\).
+
+\paragraph{What each benchmark can and cannot establish.}
+The linear-Gaussian benchmark can establish exact-reference agreement for the
+declared run contract, but it cannot establish nonlinear posterior accuracy.  The
+stochastic-volatility benchmark can establish long-horizon nonlinear stability and
+credible agreement with references or synthetic truth under the declared run
+contract, but it cannot by itself establish high-dimensional scalability.  The
+spatial SIR benchmark can establish whether the method remains useful at the
+tested latent dimension, horizon, rank ladder, and basis ladder, but it cannot
+prove that all spatial graphs or epidemic models admit moderate TT rank.  The
+predator-prey benchmark can establish that nonlinear preconditioning yields a
+measurable benefit on the tested nonlinear dynamical system, but it cannot prove
+that such preconditioning is always worth its cost.  One-seed demonstrations are
+diagnostic unless the result artifact explicitly justifies stronger
+interpretation.
+
+\section{Defect Calculus And Promotion Rules}
+\label{sec:bf-hd-promotion-logic}
+
+The chapter closes with a simple rule: runtime, memory, ESS per gradient, rank,
+and point count can compare methods only after the target, semantic, and
+numerical veto diagnostics have passed.  The industrial promotion logic is
+therefore conditional:
+\begin{equation}
+  V \text{ passes } \Longrightarrow \text{compare performance};
+  \qquad
+  V^c \Longrightarrow \text{veto, not ranking.}
+  \label{eq:bf-hd-validation-veto-logic}
+\end{equation}
+This chapter does not conclude that high-dimensional nonlinear filtering is
+solved for BayesFilter, that any method is NAWM-ready, that HMC converges, or
+that any lane should become a production default.  It concludes only that a
+candidate method must pass the declared validation and defect calculus before
+speed, elegance, or novelty are allowed to matter.

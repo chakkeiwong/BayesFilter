@@ -1,0 +1,216 @@
+{
+  "blocked_models": [
+    "austria_sir"
+  ],
+  "campaign_question_answered": true,
+  "decision": "proceed_to_target_specific_serious_neutra_training_for_three_models_only",
+  "default_ready_models": [],
+  "hmc_ready_models": [],
+  "models": {
+    "austria_sir": {
+      "blocking_gate": "value_score_route_and_tangent_free_endpoint_are_not_the_same_finite_program",
+      "claim_artifact": "austria_final_claim_attempt01/result.json",
+      "endpoint_value_max_relative_error": 0.0015679028939552878,
+      "model": "austria_sir",
+      "ready_for_hmc": false,
+      "ready_for_target_specific_serious_neutra_training": false,
+      "target_signature": "ddd4f9a7b76157ad1d37a1f680a11c6c983e3d2bee80bbd28e9dcf530878bcd3",
+      "tf32_enabled": true,
+      "threshold": 0.0002
+    },
+    "ksc_sv": {
+      "b4_peak_allocator_bytes": 71500288,
+      "capacity_artifact": "ksc_final_capacity_b4_attempt01/result.json",
+      "claim_artifacts": [
+        "ksc_final_claim_attempt02/result.json",
+        "ksc_final_claim_attempt03/result.json"
+      ],
+      "controls": {
+        "balance_steps": 8,
+        "epsilon": 2.0,
+        "higher_moment_correction_steps": 4,
+        "higher_moment_floor": 1e-05,
+        "higher_moment_strength": 0.2,
+        "ridge": 1e-05,
+        "sinkhorn_steps": 8,
+        "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_tuning_attempt02/result.json",
+        "tuning_scope": "ksc_sv_T1000_N1008_initial_observation_first_fp32_tf32_deterministic_v2"
+      },
+      "cross_process_replay": {
+        "passed": true,
+        "same_validity_decision": true,
+        "score_max_relative_error": 0.0,
+        "thresholds": {
+          "score": 2e-05,
+          "value": 2e-06
+        },
+        "value_max_relative_error": 0.0
+      },
+      "endpoint_value_max_relative_error": 0.0,
+      "evidence_paths": [
+        "ksc_final_claim_attempt02/result.json",
+        "ksc_final_claim_attempt03/result.json",
+        "ksc_final_capacity_b4_attempt01/result.json",
+        "ksc_scalar_parity_attempt01/result.json",
+        "ksc_final_training_attempt02/result.json"
+      ],
+      "finite_difference_max_relative_errors": [
+        0.018103717955982545,
+        0.007964128113359874
+      ],
+      "finite_difference_steps": [
+        0.016,
+        0.032
+      ],
+      "model": "ksc_sv",
+      "one_step_training_peak_allocator_bytes": 37942528,
+      "particle_count": 1008,
+      "ready_for_hmc": false,
+      "ready_for_target_specific_serious_neutra_training": true,
+      "scalar_parity_artifact": "ksc_scalar_parity_attempt01/result.json",
+      "scalar_parity_score_max_relative_error": 1.1891511904911296e-05,
+      "scalar_parity_value_relative_error": 0.0,
+      "target_signature": "53c41570c2fde8ed3693e5044919127efd7a9cb4843a078a97a2be616fae3627",
+      "tf32_enabled": true,
+      "training_artifact": "ksc_final_training_attempt02/result.json",
+      "tuning_artifact": "ksc_tuning_attempt02/result.json"
+    },
+    "lgssm": {
+      "b4_peak_allocator_bytes": 269325312,
+      "capacity_artifact": "lgssm_no_tf32_final_capacity_b4_attempt01/result.json",
+      "claim_artifacts": [
+        "lgssm_no_tf32_final_claim_attempt01/result.json",
+        "lgssm_no_tf32_final_claim_attempt02/result.json"
+      ],
+      "controls": {
+        "balance_steps": 8,
+        "epsilon": 2.0,
+        "higher_moment_correction_steps": 4,
+        "higher_moment_floor": 1e-05,
+        "higher_moment_strength": 0.2,
+        "ridge": 1e-05,
+        "sinkhorn_steps": 8,
+        "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_tuning_attempt01/result.json",
+        "tuning_scope": "lgssm_T50_N1008_initial_observation_first_fp32_no_tf32_deterministic_v2"
+      },
+      "cross_process_replay": {
+        "passed": true,
+        "same_validity_decision": true,
+        "score_max_relative_error": 0.0,
+        "thresholds": {
+          "score": 2e-05,
+          "value": 2e-06
+        },
+        "value_max_relative_error": 0.0
+      },
+      "endpoint_value_max_relative_error": 1.0756517489755462e-07,
+      "evidence_paths": [
+        "lgssm_no_tf32_final_claim_attempt01/result.json",
+        "lgssm_no_tf32_final_claim_attempt02/result.json",
+        "lgssm_no_tf32_final_capacity_b4_attempt01/result.json",
+        "lgssm_no_tf32_scalar_parity_attempt02/result.json",
+        "lgssm_no_tf32_final_training_attempt01/result.json"
+      ],
+      "finite_difference_max_relative_errors": [
+        0.002195918340959113,
+        0.009825312873097292
+      ],
+      "finite_difference_steps": [
+        0.008,
+        0.016
+      ],
+      "kalman_artifact": "lgssm_no_tf32_kalman_attempt02/result.json",
+      "kalman_gross_error": {
+        "posterior_score_direction_cosine": 0.6988699762292437,
+        "posterior_score_max_absolute_error": 3.084251681995625,
+        "posterior_value_error": 0.7959572661017944
+      },
+      "model": "lgssm",
+      "one_step_training_peak_allocator_bytes": 135105280,
+      "particle_count": 1008,
+      "ready_for_hmc": false,
+      "ready_for_target_specific_serious_neutra_training": true,
+      "scalar_parity_artifact": "lgssm_no_tf32_scalar_parity_attempt02/result.json",
+      "scalar_parity_score_max_relative_error": 1.717079355034734e-06,
+      "scalar_parity_value_relative_error": 0.0,
+      "target_signature": "f33c1f18fe35871d26d5143e8063fb92a88044431e17ff453da93f3f9628aeaa",
+      "tf32_enabled": false,
+      "training_artifact": "lgssm_no_tf32_final_training_attempt01/result.json",
+      "tuning_artifact": "lgssm_no_tf32_tuning_attempt01/result.json"
+    },
+    "predator_prey": {
+      "b4_peak_allocator_bytes": 268643328,
+      "capacity_artifact": "predator_prey_final_capacity_b4_attempt01/result.json",
+      "claim_artifacts": [
+        "predator_prey_final_claim_attempt02/result.json",
+        "predator_prey_final_claim_attempt03/result.json"
+      ],
+      "controls": {
+        "balance_steps": 8,
+        "epsilon": 4.0,
+        "higher_moment_correction_steps": 4,
+        "higher_moment_floor": 1e-05,
+        "higher_moment_strength": 0.2,
+        "ridge": 1e-05,
+        "sinkhorn_steps": 8,
+        "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_tuning_attempt02/result.json",
+        "tuning_scope": "predator_prey_T20_N1008_initial_observation_first_fp32_tf32_deterministic_v2"
+      },
+      "cross_process_replay": {
+        "passed": true,
+        "same_validity_decision": true,
+        "score_max_relative_error": 0.0,
+        "thresholds": {
+          "score": 2e-05,
+          "value": 2e-06
+        },
+        "value_max_relative_error": 0.0
+      },
+      "endpoint_value_max_relative_error": 6.410165866619214e-06,
+      "evidence_paths": [
+        "predator_prey_final_claim_attempt02/result.json",
+        "predator_prey_final_claim_attempt03/result.json",
+        "predator_prey_final_capacity_b4_attempt01/result.json",
+        "predator_prey_scalar_parity_attempt01/result.json",
+        "predator_prey_final_training_attempt02/result.json"
+      ],
+      "finite_difference_max_relative_errors": [
+        0.04909765418401822,
+        0.02049054816142662
+      ],
+      "finite_difference_steps": [
+        0.016,
+        0.032
+      ],
+      "model": "predator_prey",
+      "one_step_training_peak_allocator_bytes": 134425856,
+      "particle_count": 1008,
+      "ready_for_hmc": false,
+      "ready_for_target_specific_serious_neutra_training": true,
+      "scalar_parity_artifact": "predator_prey_scalar_parity_attempt01/result.json",
+      "scalar_parity_score_max_relative_error": 0.0016837302107992058,
+      "scalar_parity_value_relative_error": 1.8813181717650453e-06,
+      "target_signature": "41b9b4f24d880554e222d36b465b390f4360f1efec8570b2cef6f1b06c790dbe",
+      "tf32_enabled": true,
+      "training_artifact": "predator_prey_final_training_attempt02/result.json",
+      "tuning_artifact": "predator_prey_tuning_attempt02/result.json"
+    }
+  },
+  "nonclaims": [
+    "no serious NeuTra training has been run",
+    "no learned transport has been selected",
+    "no HMC chain, convergence, posterior correctness, or default readiness claim",
+    "no stochastic method ranking"
+  ],
+  "passed": true,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "result_note": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-result-2026-08-04.md",
+  "schema": "bayesfilter.genut_four_model_neutra_readiness_aggregate.v1",
+  "serious_neutra_training_eligible_models": [
+    "lgssm",
+    "ksc_sv",
+    "predator_prey"
+  ],
+  "statistical_ranking_supported": false,
+  "wall_time_seconds": 0.0018918630084954202
+}

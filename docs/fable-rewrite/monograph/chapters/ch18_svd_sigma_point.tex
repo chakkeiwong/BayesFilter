@@ -1,0 +1,1241 @@
+\chapter{SVD Sigma-Point Filters}
+\label{ch:bf-svd-sigma-point}
+
+The SVD sigma-point filter is the most important nonlinear-filtering lesson
+from the recent source-project debugging work.  It improved value-side
+robustness by using spectral covariance factors and explicit finite-arithmetic
+guards, but it also exposed why raw autodiff through spectral decompositions is
+not a comfortable industrial HMC default.  BayesFilter should preserve both
+lessons.
+
+\section{What the Source Audit Established}
+\label{sec:bf-svd-audit-established}
+
+The math/code audit recorded in
+the source-project SVD filter audit result from 2026-04-25
+established the following bounded facts:
+\begin{itemize}
+  \item the linear SVD Kalman path uses a Joseph-style covariance update;
+  \item the nonlinear sigma-point path uses the simplified update
+    \[
+      P^+ = P^- - K P_{zz} K^\top ;
+    \]
+  \item PSD projection occurs after the candidate covariance is formed, so it
+    cannot prevent overflow or non-finite values during the formation of
+    $P^+$;
+  \item the conditioning guard with threshold
+    \texttt{\_SVD\_CONDITIONING\_MAX\_ABS = 1e100} is an engineering
+    finite-arithmetic guard, not a mathematically derived posterior threshold;
+  \item prior short HMC diagnostics were numerical-path regressions, not
+    convergence evidence.
+\end{itemize}
+These are implementation facts, not general theorems about SVD filtering.
+BayesFilter should cite them as project evidence and should avoid converting
+them into unsupported production-readiness claims.
+
+\section{Spectral Differentiation Risk}
+\label{sec:bf-svd-spectral-risk}
+
+The Phase 2B literature gate accepted the Matrix Backprop source for the
+bounded claim that gradients through SVD or eigendecomposition contain terms
+with denominators involving singular-value or eigenvalue gaps.  When two
+singular values or eigenvalues are equal, the decomposition is not uniquely
+differentiable; when they are merely close, derivative terms can become large
+and numerically unstable.
+
+This is directly relevant to HMC.  A large DSGE or NAWM-sized model can visit
+parameter regions where covariance factors are ill conditioned, nearly rank
+deficient, or spectrally clustered.  A value-side SVD factor may still return a
+finite covariance approximation, while the tape gradient through the spectral
+basis becomes noisy, discontinuous, or non-finite.  Larger dimensions make
+close spectral gaps more likely in practice, so BayesFilter should require
+gap telemetry and derivative validation before using SVD sigma-point gradients
+inside production HMC.
+
+\section{Analytic Score and Hessian Recursion}
+\label{sec:bf-svd-sp-analytic-recursion}
+
+The SVD sigma-point derivative problem has two layers.  The likelihood layer is
+not new: after the sigma-point update has produced
+\[
+  v_t,\quad S_t,\quad
+  \dot v_t^{(i)},\quad \dot S_t^{(i)},\quad
+  \ddot v_t^{(ij)},\quad \ddot S_t^{(ij)},
+\]
+the score and Hessian are exactly the solve-form expressions in
+Chapter~\ref{ch:bf-kalman-hessian}.  The new work is the sigma-point layer:
+differentiate the point cloud, the nonlinear maps, and the weighted moment
+assemblies that generate these innovation objects.
+
+Thus this chapter plugs into the analytic-derivative stack as follows.
+Chapter~\ref{ch:bf-structural-derivatives} supplies derivatives of structural
+maps and parameter transforms; Chapter~\ref{ch:bf-factor-derivatives} defines
+what differentiated SVD factors must reconstruct; Chapter~\ref{ch:bf-custom-gradient-wrappers}
+requires the SVD score to differentiate the same implemented scalar value; and
+Chapter~\ref{ch:bf-derivative-validation} supplies the finite-difference,
+backend-parity, branch, and HMC-gating tests.
+
+Let a Gaussian input at some predict or update substep be
+\[
+  X\sim\calN(m(\theta),P(\theta)).
+\]
+Let an SVD/eigendecomposition factor be written
+\[
+  P=U\Lambda U^\top,\qquad
+  C=U\Lambda_+^{1/2},
+\]
+where $\Lambda_+$ denotes the eigenvalue policy actually used for point
+generation: active positive eigenvalues, a smooth floor, or a hard floor.  A
+fixed sigma-point rule can be written as
+\begin{equation}
+\label{eq:bf-svd-sp-cloud}
+  \chi^{(r)} = m + C\xi^{(r)},\qquad r=0,\ldots,N-1,
+\end{equation}
+where the standardized offsets $\xi^{(r)}$ and weights
+$w_r^{(m)},w_r^{(c)}$ are fixed by the UKF, CKF, or another deterministic
+quadrature rule.  For the UKF, for example, the nonzero offsets are
+$\pm\gamma e_a$.  If tuning parameters such as $\alpha$ or $\kappa$ are
+estimated, the same formulas hold with additional $\dot\xi^{(r)}$,
+$\ddot\xi^{(r)}$, $\dot w_r$, and $\ddot w_r$ terms.  BayesFilter's default
+derivative contract treats the rule as fixed.
+
+With fixed quadrature offsets, the point derivatives are
+\begin{align}
+\label{eq:bf-svd-sp-point-first}
+  \dot\chi^{(r,i)} &= \dot m^{(i)}+\dot C^{(i)}\xi^{(r)},\\
+\label{eq:bf-svd-sp-point-second}
+  \ddot\chi^{(r,ij)} &= \ddot m^{(ij)}+\ddot C^{(ij)}\xi^{(r)}.
+\end{align}
+Thus all spectral difficulty enters through $\dot C$ and $\ddot C$; the
+remaining recursion is ordinary chain rule and product rule.
+
+\subsection{Map and Moment Derivatives}
+\label{sec:bf-svd-sp-map-moment-derivatives}
+
+Let $g_\theta$ denote either the transition map in the predict step or the
+observation map in the update step, and define
+\[
+  \eta^{(r)} = g_\theta(\chi^{(r)}).
+\]
+Using $D_xg_\theta$ for the Jacobian in the state argument, and
+$D^2_{xx}g_\theta[a,b]$ for the second directional derivative in directions
+$a,b$, the propagated point derivatives are
+\begin{align}
+\label{eq:bf-svd-sp-map-first}
+  \dot\eta^{(r,i)}
+  &=
+  D_xg_\theta(\chi^{(r)})\dot\chi^{(r,i)}
+  +\partial_i g_\theta(\chi^{(r)}),\\
+\label{eq:bf-svd-sp-map-second}
+  \ddot\eta^{(r,ij)}
+  &=
+  D_xg_\theta(\chi^{(r)})\ddot\chi^{(r,ij)}
+  +D^2_{xx}g_\theta(\chi^{(r)})
+      [\dot\chi^{(r,i)},\dot\chi^{(r,j)}] \nonumber\\
+  &\quad
+  +D^2_{x\theta_i}g_\theta(\chi^{(r)})\dot\chi^{(r,j)}
+  +D^2_{x\theta_j}g_\theta(\chi^{(r)})\dot\chi^{(r,i)}
+  +\partial^2_{ij}g_\theta(\chi^{(r)}).
+\end{align}
+These equations are the exact place where the structural model derivatives
+enter the SVD sigma-point score and Hessian.
+
+The sigma-point mean and covariance of the transformed cloud are
+\begin{align}
+\label{eq:bf-svd-sp-transformed-mean}
+  \bar\eta &= \sum_{r=0}^{N-1} w_r^{(m)}\eta^{(r)},\\
+\label{eq:bf-svd-sp-transformed-cov}
+  M_\eta &= \sum_{r=0}^{N-1}w_r^{(c)}
+    \Delta_\eta^{(r)}\Delta_\eta^{(r)\top}+\Omega_\theta,
+  \qquad
+  \Delta_\eta^{(r)}=\eta^{(r)}-\bar\eta,
+\end{align}
+where $\Omega_\theta$ is the process-noise covariance in a predict step or the
+measurement-noise covariance in an update step.  Their derivatives are
+\begin{align}
+\label{eq:bf-svd-sp-mean-first}
+  \dot{\bar\eta}^{(i)}
+  &=\sum_r w_r^{(m)}\dot\eta^{(r,i)},\\
+\label{eq:bf-svd-sp-mean-second}
+  \ddot{\bar\eta}^{(ij)}
+  &=\sum_r w_r^{(m)}\ddot\eta^{(r,ij)},
+\end{align}
+and, with
+$\dot\Delta_\eta^{(r,i)}=\dot\eta^{(r,i)}-\dot{\bar\eta}^{(i)}$,
+\begin{align}
+\label{eq:bf-svd-sp-cov-first}
+  \dot M_\eta^{(i)}
+  &=
+  \sum_r w_r^{(c)}
+  \left[
+    \dot\Delta_\eta^{(r,i)}\Delta_\eta^{(r)\top}
+    +\Delta_\eta^{(r)}\dot\Delta_\eta^{(r,i)\top}
+  \right]
+  +\dot\Omega_\theta^{(i)},\\
+\label{eq:bf-svd-sp-cov-second}
+  \ddot M_\eta^{(ij)}
+  &=
+  \sum_r w_r^{(c)}
+  \left[
+    \ddot\Delta_\eta^{(r,ij)}\Delta_\eta^{(r)\top}
+    +\Delta_\eta^{(r)}\ddot\Delta_\eta^{(r,ij)\top}
+    +\dot\Delta_\eta^{(r,i)}\dot\Delta_\eta^{(r,j)\top}
+    +\dot\Delta_\eta^{(r,j)}\dot\Delta_\eta^{(r,i)\top}
+  \right]
+  +\ddot\Omega_\theta^{(ij)} .
+\end{align}
+Equations
+\eqref{eq:bf-svd-sp-point-first}--\eqref{eq:bf-svd-sp-cov-second}
+are the analytic derivative recursion for any sigma-point predict moment.
+
+\subsection{UKF Update Objects}
+\label{sec:bf-svd-sp-update-objects}
+
+At the observation update, take the input mean and covariance to be
+$m_t^-=m_{t|t-1}$ and $P_t^-=P_{t|t-1}$, construct points
+$\chi_t^{(r)}$ by \eqref{eq:bf-svd-sp-cloud}, and propagate
+\[
+  z_t^{(r)}=h_\theta(\chi_t^{(r)}).
+\]
+Equations \eqref{eq:bf-svd-sp-mean-first}--\eqref{eq:bf-svd-sp-cov-second}
+give
+\[
+  \bar z_t,\quad
+  S_t=\sum_r w_r^{(c)}
+    (z_t^{(r)}-\bar z_t)(z_t^{(r)}-\bar z_t)^\top+R_\theta,
+\]
+and their first and second derivatives.  The innovation is
+\begin{align}
+\label{eq:bf-svd-sp-innovation-derivatives}
+  v_t &= y_t-\bar z_t, &
+  \dot v_t^{(i)} &= -\dot{\bar z}_t^{(i)}, &
+  \ddot v_t^{(ij)} &= -\ddot{\bar z}_t^{(ij)},
+\end{align}
+unless the data transformation itself depends on parameters.
+
+The cross-covariance used in the Kalman gain is
+\begin{equation}
+\label{eq:bf-svd-sp-cross-cov}
+  P_{xz,t}
+  =
+  \sum_r w_r^{(c)}
+  \Delta_x^{(r)}\Delta_z^{(r)\top},
+  \qquad
+  \Delta_x^{(r)}=\chi_t^{(r)}-m_t^-,
+  \qquad
+  \Delta_z^{(r)}=z_t^{(r)}-\bar z_t .
+\end{equation}
+Its first and second derivatives are
+\begin{align}
+\label{eq:bf-svd-sp-cross-first}
+  \dot P_{xz,t}^{(i)}
+  &=
+  \sum_r w_r^{(c)}
+  \left[
+    \dot\Delta_x^{(r,i)}\Delta_z^{(r)\top}
+    +\Delta_x^{(r)}\dot\Delta_z^{(r,i)\top}
+  \right],\\
+\label{eq:bf-svd-sp-cross-second}
+  \ddot P_{xz,t}^{(ij)}
+  &=
+  \sum_r w_r^{(c)}
+  \left[
+    \ddot\Delta_x^{(r,ij)}\Delta_z^{(r)\top}
+    +\Delta_x^{(r)}\ddot\Delta_z^{(r,ij)\top}
+    +\dot\Delta_x^{(r,i)}\dot\Delta_z^{(r,j)\top}
+    +\dot\Delta_x^{(r,j)}\dot\Delta_z^{(r,i)\top}
+  \right].
+\end{align}
+The gain is best differentiated as a solved matrix equation.  Since
+$K_t=P_{xz,t}S_t^{-1}$, equivalently
+\[
+  S_tK_t^\top=P_{xz,t}^\top.
+\]
+Therefore
+\begin{align}
+\label{eq:bf-svd-sp-gain-first}
+  \dot K_t^{(i)\top}
+  &=
+  \mathcal{S}_{S_t}
+  \left(\dot P_{xz,t}^{(i)\top}-\dot S_t^{(i)}K_t^\top\right),\\
+\label{eq:bf-svd-sp-gain-second}
+  \ddot K_t^{(ij)\top}
+  &=
+  \mathcal{S}_{S_t}
+  \left(
+    \ddot P_{xz,t}^{(ij)\top}
+    -\ddot S_t^{(ij)}K_t^\top
+    -\dot S_t^{(i)}\dot K_t^{(j)\top}
+    -\dot S_t^{(j)}\dot K_t^{(i)\top}
+  \right).
+\end{align}
+Finally, the usual sigma-point update
+\begin{align}
+\label{eq:bf-svd-sp-filtered-update}
+  m_t^+ &= m_t^-+K_tv_t,\\
+  P_t^+ &= P_t^- - K_tS_tK_t^\top
+\end{align}
+has derivatives
+\begin{align}
+\label{eq:bf-svd-sp-filtered-mean-first}
+  \dot m_t^{+(i)}
+  &=
+  \dot m_t^{-(i)}
+  +\dot K_t^{(i)}v_t
+  +K_t\dot v_t^{(i)},\\
+\label{eq:bf-svd-sp-filtered-mean-second}
+  \ddot m_t^{+(ij)}
+  &=
+  \ddot m_t^{-(ij)}
+  +\ddot K_t^{(ij)}v_t
+  +\dot K_t^{(i)}\dot v_t^{(j)}
+  +\dot K_t^{(j)}\dot v_t^{(i)}
+  +K_t\ddot v_t^{(ij)}.
+\end{align}
+For the covariance, define
+\begin{align}
+\label{eq:bf-svd-sp-filtered-cov-first}
+  \dot P_t^{+(i)}
+  &=
+  \dot P_t^{-(i)}
+  -\dot K_t^{(i)}S_tK_t^\top
+  -K_t\dot S_t^{(i)}K_t^\top
+  -K_tS_t\dot K_t^{(i)\top},
+\end{align}
+and
+\begin{align}
+\label{eq:bf-svd-sp-filtered-cov-second}
+  \ddot P_t^{+(ij)}
+  &=
+  \ddot P_t^{-(ij)}
+  -\ddot K_t^{(ij)}S_tK_t^\top
+  -\dot K_t^{(i)}\dot S_t^{(j)}K_t^\top
+  -\dot K_t^{(i)}S_t\dot K_t^{(j)\top} \nonumber\\
+  &\quad
+  -\dot K_t^{(j)}\dot S_t^{(i)}K_t^\top
+  -K_t\ddot S_t^{(ij)}K_t^\top
+  -K_t\dot S_t^{(i)}\dot K_t^{(j)\top} \nonumber\\
+  &\quad
+  -\dot K_t^{(j)}S_t\dot K_t^{(i)\top}
+  -K_t\dot S_t^{(j)}\dot K_t^{(i)\top}
+  -K_tS_t\ddot K_t^{(ij)\top}.
+\end{align}
+The next time step then refactors $P_t^+$ and differentiates the new SVD factor.
+This is where the spectral contract below enters the recursion again.
+
+\subsection{Likelihood Score and Hessian}
+\label{sec:bf-svd-sp-likelihood-derivatives}
+
+The SVD sigma-point likelihood contribution is the Gaussian innovation
+likelihood
+\[
+  \ell_t
+  =
+  -\frac{1}{2}
+  \left[
+    \log\det S_t+v_t^\top S_t^{-1}v_t+n_y\log(2\pi)
+  \right],
+\]
+where $S_t$ and $v_t$ are the sigma-point objects above.  Let
+$S_tw_t=v_t$.  The score is
+\begin{equation}
+\label{eq:bf-svd-sp-score}
+  \partial_i\ell_t
+  =
+  -\frac{1}{2}
+  \left[
+    \tr(S_t^{-1}\dot S_t^{(i)})
+    +2\dot v_t^{(i)\top}w_t
+    -w_t^\top\dot S_t^{(i)}w_t
+  \right],
+\end{equation}
+and the Hessian is obtained by substituting the sigma-point
+$\dot v_t,\dot S_t,\ddot v_t,\ddot S_t$ into
+\eqref{eq:bf-solve-hessian-w-dot}--\eqref{eq:bf-solve-hessian-quadratic}.
+Thus the UKF/SVD Hessian is not a separate likelihood theorem.  It is the
+Kalman solve-form Hessian applied to approximate moments generated by
+\eqref{eq:bf-svd-sp-cloud}--\eqref{eq:bf-svd-sp-filtered-cov-second}.
+
+\section{Structural Fixed-Support Score}
+\label{sec:bf-svd-sp-structural-fixed-support-score}
+
+Chapter~\ref{ch:bf-structural-deterministic-dynamics} explains why a
+structural sigma-point filter places points on the pre-transition uncertainty
+variable
+\begin{equation}
+\label{eq:bf-svd-sp-structural-input-law}
+  A_t=(x_{t-1},\varepsilon_t),
+  \qquad
+  A_t\mid y_{1:t-1}\approx\calN(\mu_{a,t},P_{a,t}),
+\end{equation}
+and then completes the state pointwise:
+\begin{equation}
+\label{eq:bf-svd-sp-structural-point-map}
+  A_t^{(r)}=\mu_{a,t}+C_{a,t}\xi^{(r)},\qquad
+  X_t^{(r)}=F_\theta(A_t^{(r)}),\qquad
+  Z_t^{(r)}=h_\theta(X_t^{(r)}).
+\end{equation}
+Equations~\eqref{eq:bf-svd-sp-structural-input-law}--%
+\eqref{eq:bf-svd-sp-structural-point-map} are the derivative version of
+Proposition~\ref{prop:bf-structural-ukf-pushforward}.  The filtered state is
+still $x_t$; the sigma-point variable is the pre-transition uncertainty whose
+pushforward generates the predictive law.  This is the object that must be
+differentiated for deterministic-completion examples such as Model C in
+Chapter~\ref{ch:bf-nonlinear-ssm-validation}.
+
+The subtle case is a fixed structural zero direction.  Write
+\[
+  P_{a,t}=U_t\Lambda_tU_t^\top,\qquad
+  \Lambda_t=\operatorname{diag}(\lambda_{1t},\ldots,\lambda_{dt}),
+\]
+and split the spectral indices into
+\[
+  \mathcal I_t^+=\{a:\lambda_{at}>\tau\},\qquad
+  \mathcal I_t^0=\{a:\lambda_{at}\le \tau\}.
+\]
+The structural fixed-support branch assumes that the zero-support block is
+part of the model law, not a numerical floor:
+\begin{align}
+\label{eq:bf-svd-sp-fixed-support-null-conditions}
+  u_b^\top \dot P_{a,t}^{(i)}u_c &=0
+  \qquad
+  \text{whenever } b\in\mathcal I_t^0
+  \text{ or } c\in\mathcal I_t^0,\\
+\label{eq:bf-svd-sp-fixed-support-gap-condition}
+  |\lambda_{at}-\lambda_{bt}| &> g_{\min}
+  \qquad
+  \text{for every differentiated active pair.}
+\end{align}
+Here ``differentiated active pair'' means any pair that enters the derivative
+of an active factor column: active-active pairs and active-null pairs.  Gaps
+between two null directions do not matter because their factor columns are
+identically zero on this branch.
+
+The implemented factor is
+\begin{equation}
+\label{eq:bf-svd-sp-fixed-support-factor}
+  C_{a,t}
+  =
+  \begin{bmatrix}
+    \sqrt{\lambda_{1t}}u_{1t} & \cdots & \sqrt{\lambda_{dt}}u_{dt}
+  \end{bmatrix},
+  \qquad
+  \sqrt{\lambda_{at}}u_{at}=0
+  \quad\text{for }a\in\mathcal I_t^0 .
+\end{equation}
+For an active column $a\in\mathcal I_t^+$,
+\begin{align}
+\label{eq:bf-svd-sp-fixed-support-eigenvector-first}
+  \dot u_{at}^{(i)}
+  &=
+  \sum_{b\ne a}
+  u_{bt}
+  \frac{u_{bt}^\top\dot P_{a,t}^{(i)}u_{at}}
+       {\lambda_{at}-\lambda_{bt}},\\
+\label{eq:bf-svd-sp-fixed-support-column-first}
+  \dot c_{at}^{(i)}
+  &=
+  \sqrt{\lambda_{at}}\,\dot u_{at}^{(i)}
+  +
+  \frac{u_{at}^\top\dot P_{a,t}^{(i)}u_{at}}
+       {2\sqrt{\lambda_{at}}}\,u_{at}.
+\end{align}
+For a null column $a\in\mathcal I_t^0$,
+\begin{equation}
+\label{eq:bf-svd-sp-fixed-support-null-column}
+  c_{at}=0,\qquad \dot c_{at}^{(i)}=0.
+\end{equation}
+Under \eqref{eq:bf-svd-sp-fixed-support-null-conditions}, these column rules
+reconstruct the derivative of the same pre-transition covariance:
+\begin{equation}
+\label{eq:bf-svd-sp-fixed-support-reconstruction}
+  \dot P_{a,t}^{(i)}
+  =
+  \dot C_{a,t}^{(i)}C_{a,t}^\top
+  +C_{a,t}\dot C_{a,t}^{(i)\top}.
+\end{equation}
+The reconstruction target is not a nuggeted covariance.  A positive floor that
+turns a structural zero direction into positive variance changes the law and
+must be reported as a different regularized branch.
+
+With this fixed-support factor, the score recursion is the ordinary
+sigma-point chain rule.  For a scalar parameter component $\theta_i$,
+\begin{align}
+\label{eq:bf-svd-sp-structural-point-first}
+  \dot A_t^{(r,i)}
+  &=
+  \dot\mu_{a,t}^{(i)}+\dot C_{a,t}^{(i)}\xi^{(r)},\\
+\label{eq:bf-svd-sp-structural-state-point-first}
+  \dot X_t^{(r,i)}
+  &=
+  D_aF_\theta(A_t^{(r)})\dot A_t^{(r,i)}
+  +\partial_iF_\theta(A_t^{(r)}),\\
+\label{eq:bf-svd-sp-structural-observation-point-first}
+  \dot Z_t^{(r,i)}
+  &=
+  D_xh_\theta(X_t^{(r)})\dot X_t^{(r,i)}
+  +\partial_i h_\theta(X_t^{(r)}).
+\end{align}
+The moment derivatives are
+\begin{align}
+\label{eq:bf-svd-sp-structural-moment-first}
+  \dot{\hat x}_t^{(i)}
+    &=\sum_r w_r^{(m)}\dot X_t^{(r,i)},&
+  \dot{\hat z}_t^{(i)}
+    &=\sum_r w_r^{(m)}\dot Z_t^{(r,i)},\\
+\label{eq:bf-svd-sp-structural-S-first}
+  \dot S_t^{(i)}
+    &=
+    \sum_r w_r^{(c)}
+    \left[
+      \dot\Delta_z^{(r,i)}\Delta_z^{(r)\top}
+      +
+      \Delta_z^{(r)}\dot\Delta_z^{(r,i)\top}
+    \right]
+    +\dot R_t^{(i)},\\
+\label{eq:bf-svd-sp-structural-cross-first}
+  \dot P_{xz,t}^{(i)}
+    &=
+    \sum_r w_r^{(c)}
+    \left[
+      \dot\Delta_x^{(r,i)}\Delta_z^{(r)\top}
+      +
+      \Delta_x^{(r)}\dot\Delta_z^{(r,i)\top}
+    \right],
+\end{align}
+where
+\[
+  \Delta_x^{(r)}=X_t^{(r)}-\hat x_t,\qquad
+  \Delta_z^{(r)}=Z_t^{(r)}-\hat z_t,
+\]
+and dotted centered quantities subtract the corresponding dotted means.  The
+innovation derivative remains
+\[
+  v_t=y_t-\hat z_t,\qquad
+  \dot v_t^{(i)}=-\dot{\hat z}_t^{(i)}.
+\]
+Therefore the per-period score is
+\begin{equation}
+\label{eq:bf-svd-sp-structural-score}
+  \partial_i\ell_t
+  =
+  -\frac12
+  \left[
+    \operatorname{tr}(S_t^{-1}\dot S_t^{(i)})
+    +2\dot v_t^{(i)\top}S_t^{-1}v_t
+    -v_t^\top S_t^{-1}\dot S_t^{(i)}S_t^{-1}v_t
+  \right].
+\end{equation}
+This sign convention is the direct derivative of the likelihood in
+\eqref{eq:bf-structural-ukf-loglik-object}; the term
+$\dot v_t=-\dot{\hat z}_t$ is where the observation mean derivative enters.
+
+The diagnostics for this branch must report at least the fixed null count, the
+maximum fixed-null derivative residual in
+\eqref{eq:bf-svd-sp-fixed-support-null-conditions}, the active spectral gap in
+\eqref{eq:bf-svd-sp-fixed-support-gap-condition}, the factor reconstruction
+residual in \eqref{eq:bf-svd-sp-fixed-support-reconstruction}, and the
+deterministic-completion residual of the propagated points.  Passing these
+checks means that the score differentiates the implemented structural
+sigma-point likelihood.  It does not certify a nonlinear Hessian, HMC target,
+or GPU/XLA scaling claim.
+
+\section{Spectral Factor Derivative Contract}
+\label{sec:bf-svd-factor-derivative-contract}
+
+The preceding section assumes $\dot C$ and $\ddot C$ are available.  This
+subsection states what those derivatives mean for an SVD/eigen factor.  Suppose
+first that $P(\theta)$ has a smooth simple spectrum and no active hard floor:
+\[
+  P=\sum_{a=1}^n \lambda_a u_au_a^\top,\qquad
+  \lambda_a>0,\qquad \lambda_a\ne\lambda_b\ (a\ne b).
+\]
+For a parameter component $\theta_i$,
+\begin{align}
+\label{eq:bf-svd-eigenvalue-first}
+  \dot\lambda_a^{(i)}
+  &=u_a^\top\dot P^{(i)}u_a,\\
+\label{eq:bf-svd-eigenvector-first}
+  \dot u_a^{(i)}
+  &=
+  \sum_{b\ne a}
+  u_b\,
+  \frac{u_b^\top\dot P^{(i)}u_a}{\lambda_a-\lambda_b}.
+\end{align}
+For the column factor $c_a=\sqrt{\lambda_a}\,u_a$,
+\begin{equation}
+\label{eq:bf-svd-factor-column-first}
+  \dot c_a^{(i)}
+  =
+  \sqrt{\lambda_a}\,\dot u_a^{(i)}
+  +\frac{\dot\lambda_a^{(i)}}{2\sqrt{\lambda_a}}u_a .
+\end{equation}
+Second derivatives can be written in the same eigenbasis.  Define
+$A_a^{(i)}=\dot P^{(i)}-\dot\lambda_a^{(i)}I$ and
+$A_a^{(ij)}=\ddot P^{(ij)}-\ddot\lambda_a^{(ij)}I$.  Then
+\begin{equation}
+\label{eq:bf-svd-eigenvalue-second}
+  \ddot\lambda_a^{(ij)}
+  =
+  u_a^\top\ddot P^{(ij)}u_a
+  +2\sum_{b\ne a}
+    \frac{
+      (u_b^\top\dot P^{(i)}u_a)
+      (u_b^\top\dot P^{(j)}u_a)
+    }{\lambda_a-\lambda_b}.
+\end{equation}
+The second derivative of the eigenvector is determined by differentiating the
+eigen-equation and the normalization condition:
+\begin{equation}
+\label{eq:bf-svd-eigenvector-second}
+  \ddot u_a^{(ij)}
+  =
+  -u_a\,\dot u_a^{(i)\top}\dot u_a^{(j)}
+  +\sum_{b\ne a}u_b
+  \frac{
+    u_b^\top
+    \left(
+      A_a^{(ij)}u_a
+      +A_a^{(i)}\dot u_a^{(j)}
+      +A_a^{(j)}\dot u_a^{(i)}
+    \right)
+  }{\lambda_a-\lambda_b}.
+\end{equation}
+Consequently
+\begin{align}
+\label{eq:bf-svd-factor-column-second}
+  \ddot c_a^{(ij)}
+  &=
+  \sqrt{\lambda_a}\,\ddot u_a^{(ij)}
+  +\frac{\dot\lambda_a^{(i)}}{2\sqrt{\lambda_a}}\dot u_a^{(j)}
+  +\frac{\dot\lambda_a^{(j)}}{2\sqrt{\lambda_a}}\dot u_a^{(i)}
+  \nonumber\\
+  &\quad
+  +\left(
+      \frac{\ddot\lambda_a^{(ij)}}{2\sqrt{\lambda_a}}
+      -\frac{\dot\lambda_a^{(i)}\dot\lambda_a^{(j)}}{4\lambda_a^{3/2}}
+    \right)u_a .
+\end{align}
+Equations
+\eqref{eq:bf-svd-eigenvalue-first}--\eqref{eq:bf-svd-factor-column-second}
+are the branch-local eigenderivative formulas for an eigen-factor covariance
+square root on a smooth simple-spectrum branch, before any active hard-floor
+or ordering/sign fallback is crossed.
+
+The formulas also show why the derivative path is fragile.  Eigenvector
+derivatives contain denominators $\lambda_a-\lambda_b$; the Hessian contains
+the same gaps again through $\dot u_a$ and through differentiation of the gap.
+This is the spectral-gap risk identified by matrix-backpropagation calculus
+\citep{ionescu2015matrixbackprop}.  If eigenvalues are repeated, individual
+eigenvectors are not uniquely differentiable.  If a hard floor
+$\lambda_a^+=\max(\lambda_a,\epsilon)$ is used, the derivative is branch
+dependent and undefined at $\lambda_a=\epsilon$.  A smooth floor
+$\lambda_a^+=\phi_\epsilon(\lambda_a)$ replaces
+$\dot\lambda_a$ and $\ddot\lambda_a$ by
+\[
+  \dot\lambda_a^+=\phi_\epsilon'(\lambda_a)\dot\lambda_a,\qquad
+  \ddot\lambda_a^+
+  =
+  \phi_\epsilon'(\lambda_a)\ddot\lambda_a
+  +\phi_\epsilon''(\lambda_a)\dot\lambda_a^{(i)}\dot\lambda_a^{(j)},
+\]
+but it does not remove the eigenvector gap denominators.
+
+For this reason BayesFilter should validate SVD factor derivatives through
+reconstruction identities, not merely by checking that autodiff returns finite
+numbers.  The reconstruction target is the covariance represented by the
+implemented factor,
+\[
+  P_+ = CC^\top=U\Lambda_+U^\top,
+\]
+not necessarily the pre-floor covariance $P$:
+\begin{align}
+\label{eq:bf-svd-factor-reconstruction-first}
+  \dot P_+^{(i)}
+  &\stackrel{?}{=}
+  \dot C^{(i)}C^\top+C\dot C^{(i)\top},\\
+\label{eq:bf-svd-factor-reconstruction-second}
+  \ddot P_+^{(ij)}
+  &\stackrel{?}{=}
+  \ddot C^{(ij)}C^\top+C\ddot C^{(ij)\top}
+  +\dot C^{(i)}\dot C^{(j)\top}
+  +\dot C^{(j)}\dot C^{(i)\top}.
+\end{align}
+The residuals in
+\eqref{eq:bf-svd-factor-reconstruction-first}--\eqref{eq:bf-svd-factor-reconstruction-second},
+the minimum spectral gap, the active-floor set, and any fallback branch are part
+of the derivative output contract.
+
+\section{Principal-Square-Root UKF Backend}
+\label{sec:bf-svd-principal-sqrt-backend}
+
+The preceding eigenderivative formulas define the historical
+\texttt{tf\_svd\_ukf} branch.  BayesFilter also has a distinct promoted
+strict-SPD backend, \texttt{tf\_principal\_sqrt\_ukf}, whose factor is the
+principal matrix square root rather than a signed or ordered eigenvector column
+factor.  The historical eigenderivative branch is retained for diagnostic
+comparison and bounded regression use, not as the HMC-facing production route on
+the promoted strict-SPD scope.  The two names are backend contracts, not
+aliases.
+
+On a strict-SPD branch, let
+\[
+  P\in\mathbb S_{++}^n,\qquad
+  S=P^{1/2}=S^\top\succ0,\qquad
+  S^2=P .
+\]
+For a covariance perturbation $dP$, the Frechet derivative of the principal
+square root is the unique solution $dS$ of the Sylvester equation
+\begin{equation}
+\label{eq:bf-svd-principal-sqrt-sylvester-first}
+  S\,dS+dS\,S=dP .
+\end{equation}
+Equivalently, for a parameter component $\theta_i$,
+\begin{equation}
+\label{eq:bf-svd-principal-sqrt-first}
+  S\,\dot S^{(i)}+\dot S^{(i)}S=\dot P^{(i)} .
+\end{equation}
+Because the eigenvalues of strict-SPD $S$ are positive, the linear
+Sylvester operator $X\mapsto SX+XS$ is invertible on all matrices.  This is the
+reason the principal-square-root derivative does not contain the active
+repeated-positive-eigenvalue denominators that appear in
+\eqref{eq:bf-svd-eigenvector-first}.  This statement is only a strict-SPD
+square-root derivative statement.  It is not a rank-loss theorem, not a
+structural-null completion rule, and not an HMC convergence result.
+
+For second derivatives on the same strict-SPD branch, differentiate
+\eqref{eq:bf-svd-principal-sqrt-first} once more:
+\begin{equation}
+\label{eq:bf-svd-principal-sqrt-second}
+  S\,\ddot S^{(ij)}+\ddot S^{(ij)}S
+  =
+  \ddot P^{(ij)}
+  -\dot S^{(i)}\dot S^{(j)}
+  -\dot S^{(j)}\dot S^{(i)} .
+\end{equation}
+Thus the same Sylvester primitive supplies the Hessian-level square-root
+factor derivative once $\dot S^{(i)}$, $\dot S^{(j)}$, and
+$\ddot P^{(ij)}$ are available.
+
+The same strict-SPD rule applies at the update stage to the innovation
+covariance.  Let
+\[
+  S_t\in\mathbb S_{++}^{n_y},\qquad
+  R_t=S_t^{1/2}=R_t^\top\succ0,
+\]
+where $S_t$ is the innovation covariance assembled from the sigma-point moment
+recursion in
+\eqref{eq:bf-svd-sp-transformed-cov}--\eqref{eq:bf-svd-sp-cross-second}.  Then
+for each parameter component $\theta_i$ the promoted principal-square-root UKF
+contract uses
+\begin{equation}
+\label{eq:bf-svd-principal-sqrt-innovation-first}
+  R_t\,\dot R_t^{(i)}+\dot R_t^{(i)}R_t=\dot S_t^{(i)}
+\end{equation}
+rather than differentiating an eigendecomposition of $S_t$.  Likewise the
+second-order update branch, when needed, is defined by
+\begin{equation}
+\label{eq:bf-svd-principal-sqrt-innovation-second}
+  R_t\,\ddot R_t^{(ij)}+\ddot R_t^{(ij)}R_t
+  =
+  \ddot S_t^{(ij)}
+  -\dot R_t^{(i)}\dot R_t^{(j)}
+  -\dot R_t^{(j)}\dot R_t^{(i)} .
+\end{equation}
+On this branch the repeated-positive-eigenvalue hazard is handled by the same
+strict-SPD Sylvester operator as in the placement stage; the backend must not
+reintroduce eigen-gap denominators by differentiating innovation eigenvectors or
+innovation eigenvalues under a separate SVD branch.
+
+This update-side contract also keeps the Gaussian score and gain derivatives in
+solve form.  Let $S_tw_t=v_t$ as in
+\eqref{eq:bf-svd-sp-score}.  Then
+\begin{equation}
+\label{eq:bf-svd-principal-sqrt-innovation-solve-first}
+  S_t\,\dot w_t^{(i)}
+  =
+  \dot v_t^{(i)}-\dot S_t^{(i)}w_t,
+\end{equation}
+and
+\begin{equation}
+\label{eq:bf-svd-principal-sqrt-innovation-logdet-first}
+  \partial_i\log\det S_t
+  =
+  2\tr\left(R_t^{-1}\dot R_t^{(i)}\right)
+  =
+  \tr\left(S_t^{-1}\dot S_t^{(i)}\right).
+\end{equation}
+Therefore the promoted principal-square-root branch may use a symmetric square
+root of $S_t$ for value-side solves and diagnostics, but its derivative contract
+is the solve/Sylvester form in
+\eqref{eq:bf-svd-principal-sqrt-innovation-first}--
+\eqref{eq:bf-svd-principal-sqrt-innovation-logdet-first}, not an
+innovation-eigendecomposition derivative.
+
+The sigma-point rule has square-root gauge freedom.  If $C C^\top=P$, then
+the standardized point cloud $\chi^{(r)}=m+C\xi^{(r)}$ matches the same first
+and second Gaussian moments whenever the chosen rule's offsets and weights
+have the required standardized moment identities.  Replacing an eigenvector
+factor $C=U\Lambda^{1/2}$ by the principal factor $S=P^{1/2}$ is therefore a
+change of square-root gauge for moment placement.  It does not imply that
+nonlinear propagated values may differ only by roundoff: after a nonlinear map
+$g$, the clouds $\{g(m+C\xi^{(r)})\}$ and $\{g(m+S\xi^{(r)})\}$ may differ.
+BayesFilter must therefore validate the implemented likelihood and score, not
+claim nonlinear value identity across gauges.
+
+The current principal-square-root backend is strict-SPD only.  It must keep
+fixed-null support disabled unless a separate reviewed branch specifies how
+structural nulls, active floors, and rank-deficient covariance laws are
+represented and differentiated.  A promoted principal-square-root UKF backend
+must fail closed whenever the strict-SPD assumptions for either placement or
+innovation covariance are violated.  An active floor, a semidefinite innovation
+law, or a structural-null completion rule is a different backend branch, not a
+silent reinterpretation of
+\eqref{eq:bf-svd-principal-sqrt-first} or
+\eqref{eq:bf-svd-principal-sqrt-innovation-first}.  Required diagnostics for
+this backend include the Sylvester residuals in
+\eqref{eq:bf-svd-principal-sqrt-first} and
+\eqref{eq:bf-svd-principal-sqrt-innovation-first}, the reconstruction residuals
+$\dot P^{(i)}-(\dot S^{(i)}S+S\dot S^{(i)})$ and
+$\dot S_t^{(i)}-(\dot R_t^{(i)}R_t+R_t\dot R_t^{(i)})$, the minimum eigenvalues
+of $P$ and $S_t$, any jitter or floor policy, and eager/compiled parity for the
+complete value-and-score path.
+
+The Phase 2026-06 strict-SPD implementation evidence is bounded: repeated
+positive-spectrum fixtures, reconstruction checks, compiled value/score smoke,
+and the two-candidate NK replay are engineering artifacts.  They do not
+establish posterior correctness, HMC convergence, runtime superiority,
+GPU readiness, default readiness, or full baseline launch readiness.
+
+\section{Validation Targets for SVD Score and Hessian}
+\label{sec:bf-svd-sp-derivative-validation}
+
+The analytical derivation above leads to concrete tests:
+\begin{enumerate}[label=(\roman*)]
+  \item On affine Gaussian systems, the SVD sigma-point score and Hessian must
+    match the exact Kalman score and Hessian from
+    Chapters~\ref{ch:bf-kalman-score}--\ref{ch:bf-kalman-hessian}.
+  \item On small nonlinear systems, the analytical score and Hessian must match
+    finite differences of the same SVD sigma-point likelihood.
+  \item The factor residuals
+    \eqref{eq:bf-svd-factor-reconstruction-first}--\eqref{eq:bf-svd-factor-reconstruction-second}
+    must remain small on well-separated spectra.
+  \item Tests must deliberately include clustered eigenvalues, zero eigenvalues,
+    floor crossings, and sign/order changes, and report when the derivative is a
+    branch derivative rather than the derivative of a smooth mathematical SVD.
+  \item HMC diagnostics must record whether gradients came from the structural
+    analytic recursion, a custom spectral derivative, raw autodiff, or a
+    regularized fallback.
+\end{enumerate}
+These tests turn the phrase ``SVD sigma-point Hessian'' into an auditable object:
+a sigma-point moment derivative recursion, a solve-form likelihood Hessian, and
+a declared spectral-factor derivative policy.
+
+\section{SVD-CUT Score and Hessian}
+\label{sec:bf-cut-svd-score-hessian}
+
+The conjugate unscented transform can be inserted into the same spectral
+sigma-point filter.  The precise object is an SVD-placed CUT rule: use an
+SVD/eigen factor to place the CUT offsets, then use the ordinary sigma-point
+moment and likelihood recursions.  This is sometimes called CUT-SVD and
+sometimes SVD-CUT.  The name is less important than the contract
+\[
+  P_\star=C C^\top ,
+\]
+where $P_\star$ is the covariance actually represented by the implemented
+factor.  If eigenvalues have been floored, truncated, or otherwise regularized,
+$P_\star$ is the floored or truncated covariance, not necessarily the
+pre-regularized covariance submitted to the factor routine.
+
+Let the SVD branch return a factor $C(\theta)\in\mathbb R^{n_x\times q}$ and
+let $Z\sim\calN(0,I_q)$.  A CUT rule in the factor coordinates supplies
+standardized offsets and weights
+\[
+  \{(\xi^{(r)},w_r): r=0,\ldots,N_{\mathrm{CUT}}-1\},
+  \qquad
+  \xi^{(r)}\in\mathbb R^q.
+\]
+For CUT4-G, when $q\ge3$,
+\[
+  N_{\mathrm{CUT4}}=2q+2^q .
+\]
+The SVD-CUT points are
+\begin{equation}
+\label{eq:bf-svd-cut-cloud}
+  \chi^{(r)}=m+C\xi^{(r)},\qquad
+  r=0,\ldots,N_{\mathrm{CUT}}-1.
+\end{equation}
+The quadrature approximation to an expectation under the implemented Gaussian
+law $X_\star=m+CZ\sim\calN(m,P_\star)$ is
+\begin{equation}
+\label{eq:bf-svd-cut-quadrature}
+  \mathcal Q_{\mathrm{SVD}\text{-}\mathrm{CUT}}[\varphi]
+  =
+  \sum_{r=0}^{N_{\mathrm{CUT}}-1} w_r
+  \varphi(m+C\xi^{(r)}).
+\end{equation}
+
+\begin{proposition}[Polynomial exactness under affine SVD placement]
+\label{prop:bf-svd-cut-affine-exactness}
+Suppose the standardized CUT rule is exact for standard-normal polynomials on
+$\mathbb R^q$ through degree $d$.  If $C C^\top=P_\star$, then
+\eqref{eq:bf-svd-cut-quadrature} integrates every polynomial
+$p:\mathbb R^{n_x}\to\mathbb R$ of total degree at most $d$ exactly under
+$X_\star\sim\calN(m,P_\star)$.  The statement remains true when
+$P_\star$ is singular.
+\end{proposition}
+
+\begin{proof}
+For any polynomial $p$ of degree at most $d$, define
+\[
+  \psi(z)=p(m+Cz).
+\]
+The affine composition cannot increase total degree, so $\psi$ is a polynomial
+on $\mathbb R^q$ of degree at most $d$.  By standardized CUT exactness,
+\[
+  \sum_r w_r \psi(\xi^{(r)})
+  =
+  \mathbb E[\psi(Z)].
+\]
+Substituting the definition of $\psi$ gives
+\[
+  \sum_r w_r p(m+C\xi^{(r)})
+  =
+  \mathbb E[p(m+CZ)]
+  =
+  \mathbb E[p(X_\star)].
+\]
+No inverse of $C$ is used.  Hence rank deficiency of $P_\star=C C^\top$ does
+not affect the formal quadrature exactness statement; it only changes the
+affine support on which the degenerate Gaussian law lives.
+\end{proof}
+
+This proposition is the clean mathematical answer to the accuracy question:
+abstracting from finite arithmetic, SVD placement does not by itself destroy
+CUT accuracy.  It is not a recommendation to hide a structural state split
+inside a large singular covariance.  A full zero-padded factor may reproduce
+the same law, but it also creates duplicate or nearly duplicate points in null
+directions and pushes the derivative path through the larger spectral branch.
+
+\subsection{SVD-CUT Moment Derivatives}
+\label{sec:bf-svd-cut-moment-derivatives}
+
+The analytic gradient and Hessian follow by differentiating
+\eqref{eq:bf-svd-cut-cloud}--\eqref{eq:bf-svd-cut-quadrature}.  Assume first
+that the CUT offsets and weights are fixed.  If CUT tuning parameters are
+estimated, the same derivation applies after adding the explicit
+$\dot \xi^{(r)}$, $\ddot \xi^{(r)}$, $\dot w_r$, and $\ddot w_r$ terms.
+
+For a parameter component $\theta_i$, the point derivatives are
+\begin{align}
+\label{eq:bf-svd-cut-point-first}
+  \dot\chi^{(r,i)}
+  &=
+  \dot m^{(i)}+\dot C^{(i)}\xi^{(r)},\\
+\label{eq:bf-svd-cut-point-second}
+  \ddot\chi^{(r,ij)}
+  &=
+  \ddot m^{(ij)}+\ddot C^{(ij)}\xi^{(r)}.
+\end{align}
+Let $g_\theta$ be the nonlinear map being integrated.  In a predict step this
+is the transition map; in an update step it is the observation map.  Write
+\[
+  y^{(r)}=g_\theta(\chi^{(r)}),\qquad
+  \bar y=\sum_r w_r y^{(r)},\qquad
+  d^{(r)}=y^{(r)}-\bar y .
+\]
+The propagated point derivatives are
+\begin{align}
+\label{eq:bf-svd-cut-map-first}
+  \dot y^{(r,i)}
+  &=
+  D_xg_\theta(\chi^{(r)})\dot\chi^{(r,i)}
+  +\partial_i g_\theta(\chi^{(r)}),\\
+\label{eq:bf-svd-cut-map-second}
+  \ddot y^{(r,ij)}
+  &=
+  D_xg_\theta(\chi^{(r)})\ddot\chi^{(r,ij)}
+  +D^2_{xx}g_\theta(\chi^{(r)})
+    [\dot\chi^{(r,i)},\dot\chi^{(r,j)}] \nonumber\\
+  &\quad
+  +D^2_{x\theta_i}g_\theta(\chi^{(r)})\dot\chi^{(r,j)}
+  +D^2_{x\theta_j}g_\theta(\chi^{(r)})\dot\chi^{(r,i)}
+  +\partial^2_{ij}g_\theta(\chi^{(r)}).
+\end{align}
+Therefore
+\begin{align}
+\label{eq:bf-svd-cut-mean-first}
+  \dot{\bar y}^{(i)}
+  &=
+  \sum_r w_r\dot y^{(r,i)},\\
+\label{eq:bf-svd-cut-mean-second}
+  \ddot{\bar y}^{(ij)}
+  &=
+  \sum_r w_r\ddot y^{(r,ij)}.
+\end{align}
+Let $\Omega_\theta$ denote the additive covariance in the moment being formed:
+$Q_\theta$ in a predict step or $R_\theta$ in an observation update.  The
+SVD-CUT covariance moment is
+\begin{equation}
+\label{eq:bf-svd-cut-cov}
+  M=\sum_r w_r d^{(r)}d^{(r)\top}+\Omega_\theta .
+\end{equation}
+With
+\[
+  \dot d^{(r,i)}=\dot y^{(r,i)}-\dot{\bar y}^{(i)},\qquad
+  \ddot d^{(r,ij)}=\ddot y^{(r,ij)}-\ddot{\bar y}^{(ij)},
+\]
+its derivatives are
+\begin{align}
+\label{eq:bf-svd-cut-cov-first}
+  \dot M^{(i)}
+  &=
+  \sum_r w_r
+  \left[
+    \dot d^{(r,i)}d^{(r)\top}
+    +d^{(r)}\dot d^{(r,i)\top}
+  \right]
+  +\dot\Omega_\theta^{(i)},\\
+\label{eq:bf-svd-cut-cov-second}
+  \ddot M^{(ij)}
+  &=
+  \sum_r w_r
+  \left[
+    \ddot d^{(r,ij)}d^{(r)\top}
+    +d^{(r)}\ddot d^{(r,ij)\top}
+    +\dot d^{(r,i)}\dot d^{(r,j)\top}
+    +\dot d^{(r,j)}\dot d^{(r,i)\top}
+  \right]
+  +\ddot\Omega_\theta^{(ij)}.
+\end{align}
+
+\begin{proof}[Derivation]
+Equations \eqref{eq:bf-svd-cut-point-first} and
+\eqref{eq:bf-svd-cut-point-second} are the first and second derivatives of the
+affine point map $\chi^{(r)}=m+C\xi^{(r)}$, using fixed $\xi^{(r)}$.  Equations
+\eqref{eq:bf-svd-cut-map-first} and \eqref{eq:bf-svd-cut-map-second} are the
+first and second multivariate chain rules for
+$g_\theta(\chi^{(r)}(\theta))$.  Equations
+\eqref{eq:bf-svd-cut-mean-first} and \eqref{eq:bf-svd-cut-mean-second} follow
+from linearity of the weighted sum.  Finally, differentiating
+$d^{(r)}d^{(r)\top}$ once and twice gives
+\[
+  \partial_i(dd^\top)=\dot d_i d^\top+d\dot d_i^\top
+\]
+and
+\[
+  \partial_{ij}^2(dd^\top)
+  =
+  \ddot d_{ij}d^\top+d\ddot d_{ij}^\top
+  +\dot d_i\dot d_j^\top+\dot d_j\dot d_i^\top ,
+\]
+which proves \eqref{eq:bf-svd-cut-cov-first} and
+\eqref{eq:bf-svd-cut-cov-second} after summing over the fixed weights and
+adding the derivatives of $\Omega_\theta$.
+\end{proof}
+
+\subsection{SVD-CUT Likelihood Gradient and Hessian}
+\label{sec:bf-svd-cut-likelihood-derivatives}
+
+For an observation update, set $g_\theta=h_\theta$ and identify
+\[
+  \bar z_t=\bar y,\qquad
+  S_t=M,\qquad
+  v_t=y_t^{\mathrm{obs}}-\bar z_t .
+\]
+If the recorded observation does not depend on $\theta$, then
+\begin{equation}
+\label{eq:bf-svd-cut-innovation-derivatives}
+  \dot v_t^{(i)}=-\dot{\bar z}_t^{(i)},\qquad
+  \ddot v_t^{(ij)}=-\ddot{\bar z}_t^{(ij)} .
+\end{equation}
+Let $S_tw_t=v_t$.  The per-time SVD-CUT log likelihood is
+\begin{equation}
+\label{eq:bf-svd-cut-loglik}
+  \ell_t
+  =
+  -\frac{1}{2}
+  \left[
+    \log\det S_t+v_t^\top S_t^{-1}v_t+n_y\log(2\pi)
+  \right].
+\end{equation}
+Its score is
+\begin{equation}
+\label{eq:bf-svd-cut-score}
+  \partial_i\ell_t
+  =
+  -\frac{1}{2}
+  \left[
+    \tr(S_t^{-1}\dot S_t^{(i)})
+    +2\dot v_t^{(i)\top}w_t
+    -w_t^\top\dot S_t^{(i)}w_t
+  \right].
+\end{equation}
+For the Hessian, define
+\begin{equation}
+\label{eq:bf-svd-cut-w-dot}
+  \dot w_t^{(j)}
+  =
+  \mathcal{S}_{S_t}
+  \left(\dot v_t^{(j)}-\dot S_t^{(j)}w_t\right).
+\end{equation}
+Then
+\begin{align}
+\label{eq:bf-svd-cut-hessian-pieces}
+  T_{ij}^{\log\det}
+  &=
+  \tr\!\left(
+    S_t^{-1}\ddot S_t^{(ij)}
+    -S_t^{-1}\dot S_t^{(j)}S_t^{-1}\dot S_t^{(i)}
+  \right),\\
+  T_{ij}^{v}
+  &=
+  2\ddot v_t^{(ij)\top}w_t
+  +2\dot v_t^{(i)\top}\dot w_t^{(j)},\\
+  T_{ij}^{S}
+  &=
+  2\dot w_t^{(j)\top}\dot S_t^{(i)}w_t
+  +w_t^\top\ddot S_t^{(ij)}w_t ,
+\end{align}
+and
+\begin{equation}
+\label{eq:bf-svd-cut-hessian}
+  \partial_{ij}^2\ell_t
+  =
+  -\frac{1}{2}
+  \left[
+    T_{ij}^{\log\det}+T_{ij}^{v}-T_{ij}^{S}
+  \right].
+\end{equation}
+
+\begin{proof}[Derivation]
+Equations \eqref{eq:bf-svd-cut-cov-first} and
+\eqref{eq:bf-svd-cut-cov-second}, with $\Omega_\theta=R_\theta$, supply
+$\dot S_t$ and $\ddot S_t$.  Equation
+\eqref{eq:bf-svd-cut-innovation-derivatives} supplies $\dot v_t$ and
+$\ddot v_t$.  Differentiating the solve $S_tw_t=v_t$ gives
+\[
+  S_t\dot w_t^{(j)}+\dot S_t^{(j)}w_t=\dot v_t^{(j)},
+\]
+hence \eqref{eq:bf-svd-cut-w-dot}.  The differential identities
+$\partial_i\log\det S=\tr(S^{-1}\dot S_i)$ and
+$\partial_i S^{-1}=-S^{-1}\dot S_iS^{-1}$ give
+\eqref{eq:bf-svd-cut-score}.  Differentiating the three pieces of
+\eqref{eq:bf-svd-cut-loglik} a second time gives
+\eqref{eq:bf-svd-cut-hessian-pieces} and
+\eqref{eq:bf-svd-cut-hessian}.  This is the same solve-form likelihood
+Hessian as Chapter~\ref{ch:bf-kalman-hessian}; the SVD-CUT-specific work is the
+construction of $v_t,S_t,\dot v_t,\dot S_t,\ddot v_t,\ddot S_t$ from the CUT
+point cloud.
+\end{proof}
+
+All dependence on the SVD backend enters through
+$C,\dot C,\ddot C$.  Consequently the derivative must reconstruct the same
+implemented covariance branch:
+\[
+  \dot P_\star^{(i)}
+  =
+  \dot C^{(i)}C^\top+C\dot C^{(i)\top},
+\]
+and
+\[
+  \ddot P_\star^{(ij)}
+  =
+  \ddot C^{(ij)}C^\top+C\ddot C^{(ij)\top}
+  +\dot C^{(i)}\dot C^{(j)\top}
+  +\dot C^{(j)}\dot C^{(i)\top}.
+\]
+These are exactly the reconstruction identities
+\eqref{eq:bf-svd-factor-reconstruction-first}--\eqref{eq:bf-svd-factor-reconstruction-second}.
+If a hard eigenvalue floor is active, the equations describe the branch
+derivative of the floored covariance $P_\star$, not the derivative of the
+pre-floor covariance.  If eigenvalues are clustered, repeated, reordered, or
+sign-flipped, the smooth-branch formulas in
+Section~\ref{sec:bf-svd-factor-derivative-contract} may fail or become
+ill-conditioned.
+
+\subsection{Point Count, GPU, and XLA}
+\label{sec:bf-svd-cut-gpu-xla}
+
+Modern GPUs and XLA make large sigma-point clouds much less painful than
+scalar Python loops, but they do not make the point count disappear.  The CUT
+map evaluations are embarrassingly parallel over points and chains, and the
+point dimension is static when $q$ is fixed.  This fits the XLA discipline in
+Chapter~\ref{ch:bf-xla-jit}: construct a fixed tensor of offsets, evaluate the
+transition or observation map in batch, and reduce over the point axis inside
+the compiled value-and-gradient path.
+
+The remaining costs still scale with
+\[
+  N_{\mathrm{CUT4}}=2q+2^q .
+\]
+For one observation update with output dimension $n_y$, the value-side moment
+assembly contains
+\[
+  O(N_{\mathrm{CUT}}\,c_h)
+  \quad\text{map work},\qquad
+  O(N_{\mathrm{CUT}}\,n_y^2)
+  \quad\text{innovation-covariance reductions},
+\]
+plus
+$O(N_{\mathrm{CUT}}\,n_x n_y)$ if the cross covariance and Kalman gain are
+formed.  With $p$ parameters, a direct analytic score stores or recomputes
+$O(N_{\mathrm{CUT}}\,p\,n_y)$ propagated first derivatives, and a direct
+Hessian stores or recomputes
+$O(N_{\mathrm{CUT}}\,p^2\,n_y)$ propagated second derivatives, in addition to
+the SVD-factor derivative work.  XLA can fuse many elementwise operations and
+run the point axis in parallel, but memory traffic, reductions, spectral
+factorization, compile time, and the sequential time scan remain real
+constraints.
+
+Thus the correct engineering conclusion is conditional.  A large number of
+CUT points may be acceptable on modern GPU/XLA hardware when the stochastic
+factor dimension $q$ is modest, the maps are sufficiently expensive to amortize
+compile and launch overhead, tensor shapes are static, and chains or particles
+provide enough batch parallelism.  It is not generally acceptable to collapse a
+large DSGE state into a full-state CUT rule and rely on the GPU to absorb the
+$2^q$ corner set.  The preferred design remains structural SVD-CUT: apply
+higher-order CUT quadrature only to the declared stochastic integration block,
+then complete deterministic coordinates through the structural transition map
+and use SVD regularization only where the covariance factor actually needs it.
+
+\section{Status Labels for SVD-HMC}
+\label{sec:bf-svd-status-labels}
+
+The SVD/HMC gap-closure plan introduced four labels that BayesFilter should
+reuse:
+\begin{description}
+  \item[filter-correct] the likelihood and gradients agree with a reference
+    behavior on controlled cases;
+  \item[sampler-usable] short or medium HMC runs produce finite chains and
+    useful diagnostics;
+  \item[converged] strict multi-chain posterior diagnostics pass on the
+    intended target;
+  \item[production-XLA-gated] fixed-solution, full-solve, boundary rejection,
+    gradient, and tiny HMC paths compile and run under the production
+    compilation policy.
+\end{description}
+These labels prevent a recurring mistake: a clean smoke run is not a
+convergence result, and a finite likelihood is not a validated HMC gradient.
+
+\section{BayesFilter Policy}
+\label{sec:bf-svd-policy}
+
+BayesFilter may use SVD sigma-point filters as robust approximate likelihood
+infrastructure and as a diagnostic backend.  To use them as HMC production
+targets, the project must additionally provide:
+\begin{enumerate}[label=(\roman*)]
+  \item affine-Gaussian recovery against the exact Kalman backend;
+  \item nonlinear controlled recovery against dense quadrature or a trusted
+    reference;
+  \item finite value and finite gradient stress tests across invalid and
+    near-boundary parameter proposals;
+  \item eigenvalue or singular-value gap telemetry during HMC;
+  \item eager/compiled parity for the complete value-and-gradient path;
+  \item a custom-gradient or analytic-gradient policy if raw spectral autodiff
+    fails the preceding checks.
+\end{enumerate}
+For industrial-size models, the conservative default is prevention rather than
+debugging: rely on the promoted strict-SPD principal-square-root derivative path
+for HMC-facing work, and keep the historical eigenderivative SVD-UKF branch as a
+diagnostic comparator rather than the production route.

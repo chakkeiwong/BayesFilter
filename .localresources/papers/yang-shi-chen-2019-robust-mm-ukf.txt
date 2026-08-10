@@ -1,0 +1,1141 @@
+                                                                                                                 This is the Pre-Published Version.
+This version of the article has been accepted for publication, after peer review (when applicable) and is subject to Springer Nature’s AM terms of use(https://
+www.springernature.com/gp/open-research/policies/accepted-manuscript-terms), but is not the Version of Record and does not reflect post-acceptance
+improvements, or any corrections. The Version of Record is available online at: http://dx.doi.org/10.1007/s00190-018-01227-5.
+
+
+                                    Robust M-M Unscented Kalman Filtering for GPS/IMU Navigation
+
+               Cheng Yang1*, Wenzhong Shi2, Wu Chen2
+
+               1 School of Land Science and Geomatics, China University of Geosciences Beijing, P.R. China
+
+               2 Department of Land Surveying and Geo-Informatics, The Hong Kong Polytechnic University, Hong
+               Kong, China; lswzshi@polyu.edu.hk; lswuchen@polyu.edu.hk
+
+               *Correspondence: c.yang@connect.polyu.hk
+
+
+
+               Abstract
+
+               In this paper, a robust Unscented Kalman filter (UKF) based on the generalized maximum likelihood
+               estimation (M-estimation) is proposed to improve the robustness of the integrated navigation system of
+               Global Navigation Satellite System (GNSS) and Inertial Measurement Unit (IMU). The UKF is a variation
+               of Kalman filter by which the Jacobian matrix calculation in a nonlinear system state model is not necessary.
+               The proposed robust M-M Unscented Kalman filter (RMUKF) applies the M-estimation principle to both
+               functional model errors and measurement errors. Hence, this robust filter attenuates the influences of
+               disturbances in the dynamic model and of measurement outliers without linearizing the nonlinear state space
+               model. In addition, an equivalent weight matrix, composed of the bi-factor shrink elements, is proposed in
+               order to keep the original correlation coefficients of the predicted state unchanged. Furthermore, a nonlinear
+               error model is used as the dynamic equation to verify the performance of the proposed RMUKF with a
+               simulation and field test. Compared with the conventional UKF, the impacts of measurement outliers and
+               system disturbances on the state estimation are both controlled by RMUKF.
+
+
+
+               Keywords: Integrated Navigation; Unscented Kalman Filter; Robust Estimation; M-Estimation; Nonlinear
+               Filter
+
+
+
+               1 Introduction
+
+               The Kalman filter has been widely applied in real time navigation using integrated Global Navigation
+               Satellite System (GNSS) and Inertial Measurement Unit (IMU), since it is optimal in linear systems. The
+               filter reduces the effects of errors on the state estimates in a least squares sense, by using weighting
+               information from various sources. In this sense, the state and its covariance matrix are obtained by solving
+               the linear parameter estimation problem. It is well documented, however, that outliers (i.e. data that is
+               inconsistent with the overall pattern of distribution) degrade the estimation quality and render the estimate
+               unreliable (Fitzgerald 1971; Durgaprasad and Thakur 1998).
+
+                   In static geodetic measurement adjustment, different methods have been applied in an effort to reduce the
+               influence of outliers in observations on the estimated state parameters. These include conventional test
+               procedures (Baarda 1968; Pope 1976) and robust estimation techniques (Huber 1981; Hampel et al. 1986;
+               Rousseeuw and Leroy 1987; Koch 1999; Yang 1999; Xu 2005). The former methods detect, identify and
+               remove the outliers based on statistical hypothesis testing; the latter methods design robust estimation criteria
+               to reduce the influence of outliers on the parameter estimates. Different robust estimators have been proposed,
+               including the so-called L-estimator, L1-norm estimator, M-estimator and M split-estimator (Bickel 1973;
+               Bloomfield and Steiger 1983; Huber 1964, 1981; Andrew 1974; Wiśniewski 2009, 2010), and some of these
+have been successfully applied in GNSS/INS navigations. Among these robust estimators, the robust M-
+estimator has received wide spread attention due to its high efficiency and high accuracy (Hampel et al. 1986;
+Wiśniewski 1999, 2009; Yu et al. 2017). The M-estimator has also been extended to deal with correlated
+observations (Koch 1988; Xu, 1989; Yang et al. 2002). Specifically, Koch (1988) uses the Cholesky decomposition
+to de-correlate the correlated observations; Xu (1989) extends the robust estimator by a bivariate robust function
+which addresses the correlations between the observations; while Yang et al. (2002) keeps the correlations
+among the observations unchanged using a bi-factor robust equivalent matrix. Nevertheless, the M-estimates
+may not be robust in some circumstances, if the weights of outlying observations satisfy a certain condition (Xu
+2005).
+
+    In Kalman filtering, different robust estimators have been studied, such as the Gaussian sum approach,
+H∞ filter and robust M-estimation based Kalman filter (Alspach and Sorenson 1972; Caputi and Moose 1993;
+Koch and Yang 1998; Yang et al. 2001; He and Han 2010). In addition, Wang et al. (2008) proposed a robust
+extended Kalman filter (EKF) using W-test statistics based on filtering residuals in order to eliminate the
+effect of outliers on GNSS navigation solutions. The Gaussian sum approach, approximate the non-Gaussian
+distribution analytically by a finite sum of Gaussian density functions (Alspach and Sorenson 1972; Caputi
+and Moose 1993; Nikusokhan and Nobahari 2017). The approximation accuracy of the Gaussian sum
+approach, however, relies on the number of Gaussian terms. If only few Gaussian terms are employed the
+poor approximation of true densities could be provided (Stano et al. 2013). The H ∞-based Kalman filter
+minimizes the worst-case estimate error averaged over all samples by treating process noises, measurement
+noises and model uncertainties as unknown-but-bounded noise (He and Han 2010). The filter breaks down,
+however, in the presence of randomly occurring outliers (Gandhi and Mili 2010). The M-estimation technique
+improves the robustness of the Kalman filter by assuming that the observation errors follow Huber’s
+distribution (Durgaprasad and Thakur 1998), and then uses the M-estimation approach (Kovacevic et al. 1992;
+Durovic and Kovacevic 1999). The approaches down weight the contaminated measurements and conduct
+like least squares filters on the other measurements with the assumption that the predicted state is accurate
+and any of the outliers are uncorrelated. If a correlation exists between the measurements, the Cholesky
+decomposition can be used to de-correlate the dependent measurements into independent ones, but the
+outlying errors are also transformed, meaning that the error detection may fail (Xu, 1989; Yang 1994).
+
+    In general, two types of outliers are assumed: the dynamic model disturbances and the measurement
+outliers. These two types of outliers arise naturally in many areas of engineering, such as disturbances in the
+dynamic environment, imprecise knowledge of prior information, and faults in hardware, etc. In the literature,
+adaptive filters and robust filters have been proposed to overcome these two types of outliers. In respect to
+disturbances in the dynamic environment, adaptive Kalman filter (AKF) is applied. A conventional adaptive
+method uses a re-weighting technique to re-evaluate the covariance matrices of the predicted state and the
+measurements with a moving window (Sage and Husa 1969). A more flexible adaptive Kalman Filter (AKF)
+has also been proposed in which an adaptive factor is introduced based on the discrepancy between the
+estimated and predicted states, or based on the predicted residuals (Yang et al. 2001; Yang and Gao 2005).
+Furthermore, an optimal AKF has been derived based on both the predicted state errors and the predicted
+residuals (Yang and Gao 2006), while Yang and Xu (2003) proposed a combined AKF based on the moving
+window variance estimate. By applying the adaptive variance estimation or adaptive factors, the performance
+of Kalman filter is improved. Furthermore, the robust adaptive estimation techniques have also been applied
+to control the effects of both the measurement outliers and dynamic model disturbances. Despite the care
+taken during individual observation solutions, a new robust adaptive Kalman filter with adaptive factors for
+different state components has been proposed (Yang and Cui 2008). These adaptive factors, however, are
+constructed under the individual robust solution based on recent measurement information, which is often
+unavailable. In addition, different robust filters, namely the robust M-LS, LS-M, and M-M filters, have been
+developed to accommodate effects of the outliers or outlying disturbances by using equivalent weights (Yang
+1991).
+
+   The above approaches are derived based on the Kalman Filter or Extended Kalman Filter (EKF). The
+latter uses the first order Taylor expansion, i.e. it calculates the Jacobian matrix in order to analytically
+linearize the nonlinear model. The cumbersome derivation and determination of the Jacobian matrix not only
+increases the complexity of the mathematical computation, but also introduces linearization errors. The
+Unscented Kalman filter (UKF), which was introduced by Julier and Uhlmann (1997), is another probabilistic
+approach to approximate the state distribution by Gaussian random variables. The filter utilizes the unscented
+transform (UT) to estimate the system state vector and its covariance matrix, which undergoes a nonlinear
+transformation (Wan and van der Merwe 2000; Julier and Uhlmann 2004). An adaptive UKF with a
+covariance matching technique and a nonlinear Strapdown Inertial Navigation System (SINS) error model
+with large misalignment angle are used for Doppler Velocity Log (DVL) aided SINS alinement (Li et al.
+2013). A robust adaptive UKF has been proposed to deal simultaneously with dynamic model errors and
+measurement outliers (Wang et al. 2014). The algorithm uses Huber’s robust function to adjust the
+measurement weight based on the innovation vector, while the process noise matrix is adjusted by a fading
+factor, based on the discrepancy between the predicted state and the robust estimated state at the present
+epoch. A fault tolerant estimation algorithm based on the UKF, which adaptively estimates the process noise
+covariance or measurement noise covariance, depending on the type of fault, has also been studied (Hajiyev
+and Soken 2014). Li et al. (2016) proposed a robust adaptive UKF to handle the uncertainties of process noise
+and measurement noise. This algorithm uses the moving window and matrix matching technology to estimate
+the measurement noise and process noise adaptively. It is difficult to determine the length of the moving
+window, however.
+
+    In this paper, we focus on the robust M-M UKF (RMUKF), based on the M-M estimation proposed by
+Yang (1991), by extending the equivalent weight matrices to bi-factor weight matrices and extending this
+approach from linear models to the nonlinear models. More precisely, this study extends the robust M-M
+estimation to a nonlinear state space model, in which the influences of the dynamic model disturbances and
+measurement outliers are controlled simultaneously by inflating the variances of the outliers. The correlations
+among the state vector elements are solved by introducing the bi-factor equivalent variance elements, which
+preserve the original correlation between the states. The rest of the paper is organized as follows. We first
+review the M-M estimator. The new robust M-M UKF (RMUKF) based on the bi-factor covariance matrix
+is presented. A simulation and field test are carried out with a loosely coupled integrated Global Positioning
+System (GPS) and Inertial Measurement Unit (IMU) to verify the performance of the proposed filter. Finally,
+conclusions are drawn.
+
+2 Mathematical model and M-M robust Kalman Filtering
+
+2.1 Dynamic model and measurement model
+
+The classical linear error model for an IMU usually ignores the second order terms and assumes that the
+angle error is small. Environmental disturbances and sensor errors, however, may break the small error
+assumption. Thus, IMU error models for large misalignment angles have been reported in the literature (Yan
+et al. 2008), in which the nonlinear error model is derived based on the Euler angle errors. The Jacobian
+matrix of this nonlinear error model is complicated, hence, the UKF is reasonably applied to complete the
+state estimation. This nonlinear error model states:
+                                                                 𝑝
+ 𝜑̇       =                                         𝐶𝜔−1 [(𝐼 − 𝐶𝑙 )𝛿𝜔𝑖𝑙𝑙 ]
+                     𝑝 𝑇   𝑝          𝑙      𝑙                 𝑙    𝑙                𝑙      𝑙
+𝛿𝑣̇ 𝑙     = [𝐼 − (𝐶𝑙 ) ] 𝐶𝑏 𝑓 𝑏 − (2𝛿𝜔𝑖𝑒 + 𝛿𝜔𝑒𝑙 ) × 𝑣̃ 𝑙 − (2𝜔
+                                                             ̃𝑖𝑒 +𝜔
+                                                                  ̃𝑒𝑙 ) × 𝛿𝑣 𝑙 + (2𝛿𝜔𝑖𝑒 + 𝛿𝜔𝑒𝑙 ) × 𝛿𝑣 𝑙 + 𝛿𝑔𝑙
+                                                                1
+                                                    0                    0
+                                                               𝑀+ℎ
+      𝑙
+𝛿𝑝̇       =                                      1                            𝛿𝑣 𝑙
+                                                    cos 𝜙         0      0
+                                                𝑁+ℎ
+                                              [    0              0      1]
+
+                                                                                                           (1)
+where
+
+                                              cos 𝜑𝑦 cos 𝜑𝑥      0       sin 𝜑𝑦 cos 𝜑𝑥
+                              −1     1
+                             C𝜔  =           [ sin 𝜑𝑦 sin 𝜑𝑥   cos 𝜑𝑥   − cos 𝜑𝑦 sin 𝜑𝑥 ]                      (2)
+                                   cos 𝜑   𝑥
+                                                 − sin 𝜑𝑥        0           cos 𝜑𝑦
+
+ 𝑝
+𝐶𝑙 is the rotation matrix from the local level frame (𝑙) to the platform frame (𝑝); 𝛿𝜔𝑖𝑙𝑙 is the angular velocity
+                                                               𝑙
+error of the 𝑙 frame with respect to the inertial frame (𝑖). 𝜔
+                                                             ̃𝑖𝑒 is the earth rotation velocity at the 𝑙 frame; and
+  𝑙
+̃𝑒𝑙 is the rotation velocity of the 𝑙 frame with respect to the earth-centred, earth-fixed frame (𝑒) at the 𝑙
+𝜔
+frame. 𝑓 𝑏 is the measurement of the accelerometer at the body frame (𝑏). 𝑣̃ 𝑙 = [𝑉𝐸 𝑉𝑁 𝑉𝑈 ]𝑇 are the
+velocity components of the east, north and up directions; and 𝛿𝑝𝑙 = [𝛿 𝐿 𝛿𝜆 𝛿ℎ]𝑇 are the position error
+components of the latitude, longitude and altitude. Thus, the state vector can be expressed as 𝑋 =
+[𝜑1×3 𝛿𝑣1×3 𝛿𝑝1×3 ]𝑇 . The dynamic model can be rewritten more economically as:
+
+                                              𝑥𝑘 = 𝑓𝑘,𝑘−1 (𝑥𝑘−1 ) + 𝜔𝑘−1                                       (3)
+
+where 𝑥𝑘 and 𝑥𝑘−1 are the state vectors at epoch k and k-1 respectively, including the position vector and
+velocity vector; 𝑓𝑘,𝑘−1 (𝑥𝑘−1 ) is the state transition function; 𝜔𝑘−1 is the model error vector.
+
+     The measurement equation is written as:
+
+                                              𝐿𝑘 = ℎ𝑘 (𝑥𝑘 ) + 𝑒𝑘                                               (4)
+
+where 𝐿𝑘 is an 𝑚 × 1 measurement vector; ℎ𝑘 (𝑥𝑘 ) is the transformation function that maps the state vector
+parameters into the measurement domain; 𝑒𝑘 is the measurement error vector. In case the velocity and
+positioning outputs from GPS receivers are taken as measurements, the measurement equation is:
+
+                                              𝐿𝑘 = 𝐴𝑘 𝑥𝑘 + 𝑒𝑘                                                  (5)
+
+where 𝑥𝑘 is the 𝑛 × 1 state vector with prior estimated 𝑥̅𝑘 and covariance matrix 𝛴𝑋̅ ; 𝑒𝑘 is the 6 × 1 error
+vector; 𝐴𝑘 is the 6 × 𝑛 linear map function between the state vector parameters and measurements, and is
+expressed as:
+
+                                         0        𝐼3×3 03×3 … 03×𝑛
+                                    𝐴 = [ 3×3                      ]                                           (6)
+                                         03×3     03×3 𝐼3×3 … 03×𝑛
+
+where 𝐼3×3 is an identity matrix.
+
+2.2 M-M Robust Estimation
+
+Yang (1991) introduced three robust estimators, based on the M-estimation technique, for three
+corresponding error models, in which the measurements follow a contaminated normal distribution (M-LS),
+or in which the prior estimate contains outliers (LS-M), or both measurements and prior estimates follow
+contaminated normal distributions (M-M). This section reviews the methodology of the three estimators. The
+error equation of the measurement is:
+
+                                              𝑣𝑘 = 𝐴𝑘 𝑥̂𝑘 − 𝐿𝑘                                                 (7)
+
+where 𝑣𝑘 is the 𝑛 × 1 residual vector of measurements and 𝑥̂𝑘 is the estimated state vector of 𝑥. If the
+predicted correction vector, Δ𝑥̅𝑘 = 𝑥̅𝑘 − 𝑥𝑘 , and the measurements are independently and identically
+distributed with a Gaussian distribution, the risk function, based on the least squares (LS) Bayesian estimation,
+is:
+                                   𝛺𝑘 = 𝑣𝑘𝑇 Σ𝑘−1 𝑣𝑘 + (𝑥̅𝑘 − 𝑥̂𝑘 )𝑇 𝛴𝑥̅−1
+                                                                        𝑘
+                                                                          (𝑥̅𝑘 − 𝑥̂𝑘 )                      (8)
+
+where 𝛴𝑘 is the covariance matrix of the measurements.
+
+    Assuming that the measurements, 𝐿𝑘 , and the predicted state vector, 𝑥̅𝑘 , are contaminated by outliers and
+the corresponding contaminated distributions for both measurement errors and predicted state elements are,
+respectively:
+
+                                         𝐹𝛥 (𝜀) = (1 − 𝜀)𝜙𝛥 + 𝜀𝐻                                            (9)
+
+and,
+
+                                       𝐹𝛥𝑥̅ (𝜀𝑥 ) = (1 − 𝜀𝑥 )𝜙𝑥 + 𝜀𝑥 𝐻                                     (10)
+
+where 0 < 𝜀 < 1, 𝐻 is any symmetric distribution, and 𝜙𝛥 and 𝜙𝑥 are the normal distributions. The risk
+function based on the robust M-estimation is as follows:
+
+                                      𝛺 = ∑𝑛𝑖=1 𝜌(𝑣𝑖 ) + ∑𝑚
+                                                          𝑗=1 𝛽(𝛿𝑥
+                                                                 ̃𝑗 )                                      (11)
+
+with,
+
+                                                   𝑣𝑖2
+                                                              |𝑣𝑖 | < 𝜏
+                                                   2
+                                 𝜌(𝑣𝑖 ) = {                                                                (12)
+                                                         𝜏2
+                                              𝜏|𝑣𝑖 | −        |𝑣𝑖 | ≥ 𝜏
+                                                         2
+
+
+where 𝑣𝑖 denotes the 𝑖th element of the vector 𝑣𝑘 ; 𝜏 is chosen to give the desired efficiency at the Gaussian
+model (Kovacevic et al., 1992); the 𝛽(∙) function is similar to 𝜌(∙).
+
+    The estimator determined by the condition function (11) is known as the M-M estimator, since the M-
+estimation principle is applied for both the measurement and the predicted state vectors. The robust estimator
+is expressed as:
+
+                                                      −1
+                           𝑥̂𝑘 = (𝐴𝑇𝑘 𝑃̅𝑘 𝐴𝑘 + 𝑃̅𝑥̅𝑘 ) (𝐴𝑇𝑘 𝑃̅𝑘 𝐿𝑘 + 𝑃̅𝑥̅𝑘 𝑥̅𝑘 )                           (13)
+
+where 𝑃̅𝑘 and 𝑃̅𝑥̅𝑘 are equivalent weight matrices of the measurements and predicted state vector, respectively.
+The M-M Kalman filter is the combination of LS-M and M-LS estimator. It can also be written as follows
+(Koch and Yang 1999; Yang et al. 2001):
+
+                           𝑥̂𝑘 = 𝑥̅𝑘 + Σ̅𝑥̅ 𝐴𝑇𝑘 (𝐴𝑘 Σ̅𝑥̅ 𝐴𝑇𝑘 + 𝛴̅𝑘 )−1 (𝐿𝑘 − 𝐿̅𝑘 )                         (14)
+
+where 𝛴̅𝑘 = 𝑃̅𝑘−1 and 𝛴̅𝑥̅ = 𝑃̅𝑥̅−1
+                                  𝑘
+                                    are called equivalent covariance matrices of the measurements and predicted
+state vector, respectively (for the detailed component calculation, please refer to Koch and Yang 1999).
+
+    If the dynamic model and measurement equations are linear, the M-M Kalman filter can provide robust
+estimates of the state vector. In practice, however, the dynamic model and measurement equations may be
+nonlinear, and the linearization process introduces not only a heavy computational burden but also additional
+uncertainty in respect to model errors.
+
+3 Robust M-M Unscented Kalman Filter
+
+The M-M estimator mentioned above reweights the measurements and predicted state elements by using
+iterated residuals of the measurements and corrections of predicted state elements based on the linear or
+linearized models. The RMUKF, however, starts from the general nonlinear models, equations (3) and (4).
+   The predicted state vector and its covariance matrix are:
+
+                                          (𝑥̃𝑘 )𝑖 = 𝑓𝑘 [(𝑥̃𝑘 )𝑖 ]                                        (15)
+
+                                          𝑥̅𝑘 = ∑2𝑛
+                                                 𝑖=0 𝑤𝑖 (𝑥
+                                                         ̃𝑘 )𝑖                                           (16)
+
+with the covariance matrix:
+
+                                𝛴𝑥̅𝑘 = 𝛴𝜔𝑘−1 + ∑2𝑛       ̃𝑘 )𝑖 − 𝑥̅𝑘 ] [(𝑥̃𝑘 )𝑖 − 𝑥̅𝑘 ]𝑇
+                                                𝑖=0 𝑤𝑖 [(𝑥                                               (17)
+
+where (𝑥̃𝑘 )𝑖 is the 𝑖𝑡ℎ sigma point, which is chosen based on the current Gaussian distribution; 𝑤𝑖 is the
+weight of the sigma point. The details of the UKF can be found in Yang et al. (2016, 2018). The predicted
+measurement vector and innovation vector are:
+
+                                          (𝐿̃𝑘 )𝑖 = ℎ𝑘 [(𝑥̃𝑘 )𝑖 ]                                        (18)
+
+                                          𝐿̅𝑘 = ∑2𝑛      ̃
+                                                 𝑖=0 𝑤𝑖 (𝐿𝑘 )𝑖                                           (19)
+
+                                          𝑉̅𝑘 = 𝐿𝑘 − 𝐿̅𝑘                                                 (20)
+
+with the covariance matrix:
+
+                                                                             𝑇
+                       𝛴𝑉̅𝑘 = 𝛴𝑘 + ∑2𝑚       ̃       ̅      ̃       ̅
+                                    𝑖=0 𝑤𝑖 [(𝐿𝑘 )𝑖 − 𝐿𝑘 ] [(𝐿𝑘 )𝑖 − 𝐿𝑘 ] = Σ𝑘 + Σ𝐿̅𝑘                     (21)
+
+   The cross-covariance matrix is:
+
+                                                                                  𝑇
+                                𝛴𝑥̅𝑘 𝐿̅𝑘 = ∑2𝑚       ̃𝑘 )𝑖 − 𝑥̅𝑘 ] [(𝐿̃𝑘 )𝑖 − 𝐿̅𝑘 ]
+                                            𝑖=0 𝑤𝑖 [(𝑥                                                   (22)
+
+where (𝐿̃𝑘 )𝑖 is the sigma point of the predicted measurements; 𝐿̅𝑘 is the weighted mean of the sigma points.
+If a linear equation is used to describe the measurement model, the linear propagation of the state vector and
+its covariance matrix have equivalent accuracy as those from the unscented transform but there is less
+computational consumption (Yang et al. 2016).
+
+The estimated state vector and its covariance matrix can be obtained as:
+
+                                          𝑥̂𝑘 = 𝑥̅𝑘 + 𝐾𝑘 (𝐿𝑘 − 𝐿̅𝑘 )                                     (23)
+
+                                          𝛴𝑥̂𝑘 = 𝛴𝑥̅𝑘 − 𝐾𝑘 𝛴𝑦̅𝑘 𝐾𝑘𝑇                                      (24)
+
+where 𝐾𝑘 is the Kalman gain matrix (Yang et al. 2018):
+
+                                          𝐾𝑘 = 𝛴𝑥̅𝑘 𝑦̅𝑘 𝛴𝑦−1
+                                                          ̅𝑘                                             (25)
+
+The residual vector of the measurements and the correction vector of the predicted state can be obtained using
+the estimated state vector. They are:
+
+                                          𝐿̂𝑘 = ℎ(𝑥̂𝑘 )                                                  (26)
+
+                                          𝑉𝑘 = 𝐿̂𝑘 − 𝐿𝑘                                                  (27)
+
+                                          𝑉𝑥̅𝑘 = 𝑥̂𝑘 − 𝑥̅𝑘                                               (28)
+where 𝐿̂𝑘 is the estimated measurement vector. Based on the M-estimation principle, the cost function is:
+
+                                   𝑉𝑥̅𝑇𝑘 𝑃̅𝑥̅𝑘 𝑉𝑥̅𝑘 + 𝑉𝑘𝑇 𝑃̅𝑘 𝑉𝑘 = 𝑚𝑖𝑛                                        (29)
+
+where 𝑃̅𝑥̅𝑘 and 𝑃̅𝑘 are equivalent weight matrices of the respective predicted state and measurement vectors.
+An equivalent expression may be written as:
+
+                                     𝑉𝑥̅𝑇𝑘 𝛴̅𝑥̅−1 𝑉 + 𝑉𝑘𝑇 𝛴̅𝑘−1 𝑉𝑘 = 𝑚𝑖𝑛
+                                                𝑘 𝑥̅𝑘
+                                                                                                              (30)
+
+where 𝛴̅𝑥̅𝑘 and 𝛴̅𝑘 are the equivalent covariance matrices of the respective 𝑥̅𝑘 and 𝐿𝑘 , and,
+
+                                                 𝛴̅𝑥̅𝑘 = 𝑃𝑥̅−1
+                                                             𝑘
+                                                                                                              (31)
+
+                                                 𝛴̅𝑘 = 𝑃̅𝑘−1                                                  (32)
+
+It should be noted that although the observations are independent within a loosely coupled integration, the
+predicted state elements are correlated. Thus, if both the predicted state and measurement vectors are
+contaminated by outliers, a bi-factor inflation covariance model is introduced to suppress the impact on the
+estimated state vector (Yang et al. 2002). The equivalent covariance matrices of the predicted state vector,
+𝑥̅𝑘 , and the measurement vector, 𝐿𝑘 , are then:
+
+                                          𝜎̅𝑖2      = 𝜆𝑖𝑖 𝜎𝑖2      𝜆𝑖𝑖 ≥ 1
+                                          𝜎̅𝑗2      = 𝜆𝑗𝑗 𝜎𝑗2      𝜆𝑗𝑗 ≥ 1                                   (33a)
+                                          𝜎̅𝑖𝑗      = 𝜆𝑖𝑗 𝜎𝑖𝑗
+
+where 𝜆𝑖𝑖 and 𝜆𝑗𝑗 are two inflation factors of the covariance elements, and 𝜆𝑖𝑗 = √𝜆𝑖𝑖 𝜆𝑗𝑗 is the bi-factor; 𝜎̅𝑖2 ,
+𝜎̅𝑗2 and 𝜎̅𝑖𝑗 are equivalent variances and covariance elements, respectively. The newly generated covariance
+matrix has thus kept the original correlations unchanged.
+
+                                     2                  2         2                 2
+                                   𝜎̅11      ⋯        𝜎̅1𝑛   𝜆11 𝜎11         ⋯ 𝜆1𝑛 𝜎1𝑛
+                                ̅
+                                Σ=[ ⋮        ⋱          ⋮ ]=[ ⋮              ⋱    ⋮ ]                        (33b)
+                                     2                  2         2                 2
+                                   𝜎̅𝑛1      ⋯        𝜎̅𝑛𝑛   𝜆𝑛1 𝜎𝑛1         ⋯ 𝜆𝑛𝑛 𝜎𝑛𝑛
+
+The bi-factor can be chosen as follows:
+
+                                                    1          |𝑣̃𝑖 | ≤ 𝑐
+                                           𝜆𝑖𝑖 = {|𝑣̃𝑖|                                                       (34)
+                                                               |𝑣̃𝑖 | > 𝑐
+                                                        𝑐
+
+
+where 𝑐 is a constant, usually chosen as 1.0-2.0; 𝑣̃𝑖 = 𝑣𝑖 /𝜎0 is the standardized residual corresponding to
+the 𝑖th measurement or standardized correction for the 𝑖th predicted state element. The variance scale factor
+is
+
+                                           𝜎0 = median {|𝑣̃𝑖 |}/0.6745                                        (35)
+
+The constant 1/0.6745 is a correction factor for Fisher consistency at the Gaussian distribution (Fakharian et
+al. 2011). The robust estimated state vector and its covariance matrix then can be derived via the equations
+(23) and (24), while the iterations can effectively suppress the influences of the outliers.
+
+   It can be found from the above derivation that the robust estimation process requires iteration at the
+present epoch. The estimated state vector at the first iteration acts as the reference state and completes the
+robust M-M estimation. The RMUKF calculation flow is presented in Figure 1.
+                                       Generate sigma points (𝑥̃𝑘 )𝑖
+
+
+
+                                          Predict the state by UT
+
+
+
+                                          Estimate the state 𝑥̂𝑘 and
+                                           covariance matrix Σ𝑥̂𝑘
+
+
+
+                                            Measurement Update
+
+
+
+                                       Calculate the residual vectors
+                                                𝑉𝑥̅𝑘 and 𝑉𝑘
+
+
+
+                                           Calculate bi-factors 𝜆𝑖𝑖
+
+
+
+                                        Obtain the robust covariance
+                                        matrix of predicted state 𝛴̅𝑥̅𝑘
+                                           and measurement Σ̅𝑘
+
+
+
+                                      Figure 1 Flow chart of RMUKF
+
+   The following characteristics can be obtained from the above derivation.
+
+(1) The M-M estimation is not only limited to linear models, but also to nonlinear models if unscented
+Kalman filter is applied.
+
+(2) The RMUKF can effectively attenuate the effects of the dynamic disturbances and measurement outliers
+on the estimated state vector by iteration procedures.
+
+(3) The algorithm can be modified into an adaptive algorithm by adding an adaptive factor to the innovation
+vector and its covariance matrix. If the measurement errors were not contaminated by the outliers, the
+innovation vector could indicate the system discrepancy. The weight function decreases the contribution of
+the dynamic model to the estimated state vector based on the extent of the discrepancy.
+
+(4) The equivalent covariance matrices determined by equations (33a) and (33b) are symmetrical and keep
+the original predicted state correlation coefficients unchanged.
+
+(5) The derivation is carried out with nonlinear state space models. It should be noted that the derivation is
+also valid for a linear model.
+4 Computation and Analysis
+
+To verify the proposed RMUKF, both a simulation test and a field test were carried out. A loosely coupled
+integration strategy was used to fuse the output data from a GPS receiver and IMU. A nine-state nonlinear
+error model was used as the dynamic equation. The tests were processed in the MATLAB R2010a 64-bit
+program on a PC with Intel Core i7-3770 CPU at 3.40 GHz, 16-GB RAM equipped with Win10.
+
+4.1 Simulation tests
+
+The simulation tests were based on a moving vehicle with different moving behaviours. The simulation
+duration was 549s with a 100 Hz sampling frequency, and the simulation initial conditions were listed in
+Table 1. In Table 1, the initial state variance elements approximately correspond to the initial state errors.
+The simulation was processed without initial alignment, and the misalignment angle was randomly set to a
+considerable number. The simulated trajectory and velocity are presented in Figures 2 and 3. The
+measurement outliers at four different epochs are arbitrarily given as presented in Table 2. The differences
+between the observations with outliers and the simulated true observations, positioning and velocity
+components are plotted in Figures 4 and 5. The estimation results were also compared with the simulated true
+values. A complementary simulation was also carried out with different initial conditions, in which the initial
+position errors were enlarged to [20 m, 20 m, 30 m], and the velocity errors were enlarged to 2 m/s.
+
+                                     Table 1 Simulation initial Conditions
+                           Gyro drift [º/h]                              100
+                     Accelerometer bias [ug]                             500
+                   Angular random walk [º/√h]                            200
+                 Velocity random walk [ug/√Hz]                           5000
+                           Initial position                     [22.31º114.18 º41 m]
+                        Measurement noise                     e = [1 1 3 0.2 0.2 0.2]𝑇
+                     Initial position error [m]                         [2 2 3]
+                    Initial velocity error [m/s]                          0.2
+                  Initial misalignment angle [º]                     [-20 37 80]
+                  Initial variance of state vector     [0.04 0.04 0.04 9.83e-14 9.83e-14 9]
+
+                                     Table 2 Magnitude of input outliers
+                               Velocity                                  Position
+       Epoch    East [m/s]    North [m/s] Up [m/s] Latitude [m] Longitude [m]               Altitude [m]
+        150s       +1              -            -             -          +10.84                   -
+        200s         -            -1            -          -22.64            -                    -
+        300s         -             -            -          -11.16         -22.32                 +10
+        450s         -             -           -1                            -                   -10
+
+
+
+
+            Figure 2 The simulated trajectory. The red dot is the initial position of the trajectory.
+                  Figure 3 The simulated velocity at East, North and Up components.
+
+
+
+
+Figure 4 The difference between the outlying position components and the simulated true observations in
+                              Latitude (a), Longitude (b) and Altitude (c)
+ Figure 5 The difference between the outlying velocity components and the simulated true observations in
+                                respect to East (a), North (b) and Up (c)
+
+    The positioning errors of simulation results are illustrated in Figure 6, in which (a) presents the error of
+the Latitude component, (b) the error in the Longitude component, and (c) the error in the Altitude component.
+Figure 7 presents the velocity error, in which (a) gives the error of the East component, (b) gives the error of
+the North component, and (c) gives the error of Up component. The absolute maximum error of UKF and
+RMUKF is given in Figure 8. The Root Mean Square Error (RMSE) is given in Table 3.
+
+                                          5
+                                                                       UKF RMUKF
+
+
+                                          0
+                            Error [m]
+
+
+
+
+                                         -5
+
+
+
+                                        -10
+                                           0   100   200   300   400    500     600
+                                                           (a)
+                           5
+
+
+                           0
+
+
+
+
+        Error [m]
+                           -5
+
+
+                    -10
+
+
+                    -15
+                       0         100   200     300      400    500    600
+                                               (b)
+
+                       10
+
+
+                           5
+        Error [m]
+
+
+
+
+                           0
+
+
+                           -5
+
+
+                    -10
+                       0         100   200     300      400     500   600
+                                             Time [s]
+                                                (c)
+Figure 6 Position Error in Latitude (a), Longitude (b) and Altitude (c)
+
+
+                           2                                  UKF RMUKF
+
+                           0
+            Error [m/s]
+
+
+
+
+                           -2
+
+                           -4
+
+                           -6
+
+                           -8
+                             0   100   200     300      400    500    600
+                                               (a)
+                           4
+
+                           2
+            Error [m/s]
+
+
+
+
+                           0
+
+                           -2
+
+                           -4
+
+                           -6
+                             0   100   200     300      400    500    600
+                                               (b)
+
+                           2
+
+
+                           0
+             Error [m/s]
+
+
+
+
+                           -2
+
+
+                           -4
+
+
+                           -6
+                             0   100   200     300      400    500    600
+                                             Time [s]
+                                                (c)
+      Figure 7 Velocity Error in East (a), North (b) and Up (c)
+                                                 15
+                                                                      Latitude Longitude Altitude
+
+
+
+
+                             Maximum Error [m]
+                                                 10
+
+
+
+                                                            5
+
+
+
+                                                            0
+                                                                UKF              RMUKF
+                                                                       (a)
+
+                                                            8
+                                                                                  East North Up
+                                      Maximum Error [m/s]
+
+
+                                                            6
+
+                                                            4
+
+                                                            2
+
+                                                            0
+                                                                UKF              RMUKF
+                                                                      Class
+                                                                       (b)
+                    Figure 8 Absolute Maximum Error of Position (a) and Velocity (b)
+
+                            Table 3 RMSE of UKF and RMUKF in simulation
+                          Latitude   Longitude  Altitude  East      North                             Up
+                            [m]        [m]        [m]    [m/s]      [m/s]                           [m/s]
+               UKF         1.91        2.68       1.99    1.00       0.87                            0.67
+              RMUKF        1.27        1.11       1.93    0.28       0.43                            0.26
+
+    The two cases of the simulation calculation results are labelled as RMUKF1 (with original small initial
+errors) and RMUKF2 (with enlarged initial errors).
+
+                                 Table 4 RMSE of RMUKF1 and RMUKF2
+                            Latitude Longitude Altitude      East  North                              Up
+                              [m]         [m]       [m]     [m/s]  [m/s]                            [m/s]
+              RMUKF1         1.27         1.11      1.93     0.28   0.43                             0.26
+              RMUKF2         6.55         5.79     15.02     1.85   2.05                             1.79
+
+
+   From the calculation results, we observe that:
+
+(1) The UKF failed to constrain the position error influence between epoch 300 s and 386 s due to the outlying
+observations, see Figure 6.
+
+(2) The maximum positioning error of RMUKF is smaller than that of UKF. It is noted that the error
+magnitude of UKF is more than 12 m in the Longitude component, while that of RMUKF is less than 5 m.
+This means that the RMUKF proposed in this paper has the ability to reduce the outlying measurement effects
+to the state parameter estimates. In particular, the peak value is confined.
+
+(3) The velocity component errors reveal a similar phenomenon as the positioning component errors; that is,
+the velocity estimated from RMUKF is superior to that of UKF, as shown in Figure 7.
+(4) It is noted that a large fluctuation occurred after epoch 300 s due to the outlying observation elements,
+while the fluctuation in RMUKF is smaller and RMUKF converges faster than that of UKF.
+
+(5) The RMSE presented in Table 3 also proved that RMUKF was better able to minimize the influences of
+outliers on positioning and velocity results.
+
+(6) From Table 4 it can be seen that the RMSE of RMUKF with a large initial error is greatly increased. Thus,
+the proposed RMUKF requires a relatively accurate initial state.
+
+4.2 Field Test
+
+This subsection presents experimental results to demonstrate the performance of the proposed RMUKF when
+applied to GPS/ IMU integrated vehicle navigation. The experiment was conducted next to a lake in Wuhan,
+China. The vehicle trajectory is shown in Figure 9(a); the three positioning components, which are solved by
+single point positioning technique, are presented in Figures 9 (b), (c) and (d). In Figure 9 (d), it is noted that
+the altitude component fluctuated between 6.6 m and 49.22 m during the epochs 283310 s to 284248 s. The
+sampling frequencies of the IMU and GPS were 100 Hz and 10 Hz, respectively. The bias variances of the
+gyro and accelerometer were 1 deg/h and 500 μg, respectively. The initial position errors were set to [7 m, 7
+m, 7 m], initial velocity errors to [0.1 m/s, 0.1 m/s, 0.1 m/s] and initial attitude errors to [16ˊ 16ˊ 83ˊ].
+
+                                         114.43
+
+                                         114.42
+                           Longitude 
+
+
+
+
+                                         114.41
+
+                                          114.4
+
+                                         114.39
+                                             30.48    30.49   30.5     30.51 30.52    30.53     30.54
+                                                                     Latitude 
+                                                                        (a)
+
+                                         114.44
+                                                                                       Longitude
+                                         114.43
+                           Longitude 
+
+
+
+
+                                         114.42
+
+                                         114.41
+
+                                          114.4
+
+                                         114.39
+                                                     2.83       2.835          2.84             2.845
+                                                                   Time [s]                        5
+                                                                                              x 10
+                                                                      (b)
+
+                                         30.54
+                                                                                        Latitude
+
+
+                                         30.52
+                           Latitude 
+
+
+
+
+                                          30.5
+
+
+                                         30.48
+                                                  2.83          2.835          2.84             2.845
+                                                                   Time [s]                        5
+                                                                                              x 10
+                                                                      (c)
+                                             60
+                                                                                 Altitude
+
+
+
+
+                              Altitude [m]
+                                             40
+
+
+                                             20
+
+
+                                              0
+                                                  2.83   2.835         2.84          2.845
+                                                            Time [s]                    5
+                                                                                   x 10
+                                                               (d)
+Figure 9 The vehicle trajectory (a) and position components in Longitude (b), Latitude (c) and Altitude (d)
+
+    The estimated results were compared with double differenced GPS positioning and velocity. The UKF
+and RMUKF positioning errors are presented in Figure 10. The velocity errors are presented in Figure 11.
+The RMSE are shown in Figure 12 and Table 5. The running time for both UKF and RMUKF is presented
+in Table 6.
+
+
+                                              2                               UKF RMUKF
+
+
+                                              1
+                               Error [m]
+
+
+
+
+                                              0
+
+                                             -1
+
+                                             -2
+                                                  2.83   2.835         2.84           2.845
+                                                                 (a)                     5
+                                                                                    x 10
+
+
+                                             10
+
+                                              5
+                           Error [m]
+
+
+
+
+                                              0
+
+                                             -5
+
+                                       -10
+                                                  2.83   2.835         2.84           2.845
+                                                                 (b)                     5
+                                                                                    x 10
+
+                                             20
+
+                                             10
+                           Error [m]
+
+
+
+
+                                              0
+
+                                       -10
+
+                                       -20
+
+                                                  2.83   2.835         2.84           2.845
+                                                            Time [s]                     5
+                                                                                    x 10
+                                                               (c)
+     Figure 10 Position Error of UKF (a) and RMUKF in Latitude (a), Longitude (b) and Altitude (c)
+                                                                     UKF RMUKF
+                             2
+
+                             1
+
+
+
+
+               Error [m/s]
+                             0
+
+                             -1
+
+                             -2
+                                   2.83         2.835           2.84          2.845
+                                                        (a)                      5
+                                                                            x 10
+
+                             4
+
+
+                             2
+               Error [m/s]
+
+
+
+                             0
+
+
+                             -2
+
+
+                             -4
+                                   2.83         2.835            2.84         2.845
+                                                        (b)                      5
+                                                                            x 10
+
+
+                             4
+               Error [m/s]
+
+
+
+
+                             2
+
+                             0
+
+                             -2
+
+                                   2.83         2.835            2.84         2.845
+                                                   Time [s]                      5
+                                                                            x 10
+                                                      (c)
+Figure 11 Velocity Error of UKF vs. RMUKF in East (a), North (b) and Up (c)
+
+
+                               6
+                                                        Latitude Longitude Altitude
+                               5
+
+                               4
+                    RMSE [m]
+
+
+
+
+                               3
+
+                               2
+
+                               1
+
+                               0
+                                          UKF                      RMUKF
+                                                         (a)
+
+                         0.5
+                                                                    East North Up
+                         0.4
+            RMSE [m/s]
+
+
+
+
+                         0.3
+
+                         0.2
+
+                         0.1
+
+                               0
+                                          UKF                       RMUKF
+                                                        Class
+                                                         (b)
+                 Figure 12 RMSE of Position (a) and Velocity (b)
+                              Table 5 RMSE of UKF and RMUKF in field test
+                           Latitude    Longitude Altitude  East       North                 Up
+                             [m]         [m]       [m]    [m/s]        [m/s]              [m/s]
+               UKF          0.35         1.24      5.58    0.47         0.48               0.25
+              RMUKF         0.31         0.37      0.60    0.09         0.08               0.14
+
+                                Table 6 Running Time of UKF and RMUKF
+                                                  Running Time [s]
+                                        UKF            400.42
+                                      RMUKF            414.19
+
+   By analysing from the actual field test, we observe:
+
+(1) The peak positioning error values provided by RMUKF are smaller than those of UKF. In particular, the
+outlying effects in the Longitude component around epoch 2.84 disappear, see Figure 10 (b). The RMUKF
+controls the outlying measurement effects.
+
+(2) It is also noted that there are considerable fluctuations in the UKF positioning errors, especially in
+Longitude and Altitude components, shown in Figure 10 (b) and (c). The RMUKF not only has fewer peak
+values in positioning errors than those of UKF, but also converges faster than UKF after the error peaks have
+occurred.
+
+(3) The RMUKF velocity error in the East and North components during the initial period is bounded, while
+the UKF velocity error tends to diverge.
+
+(4) The RMSE presented in Figure 12 and Table 5 also demonstrate the superior performance of the RMUKF.
+
+(5) The proposed RMUKF took 414.19 seconds to run in the field test, compared to 400.42 seconds for UKF.
+
+5 Conclusions
+
+This study presents a robust M-Unscented Kalman Filter, based on an M-M estimation principle. The filter
+has the ability to suppress the effects of outliers from both the dynamic model and measurements on dynamic
+state estimates and hence provides a robust solution in an iterative manner, without requiring the linearization
+of nonlinear models. Furthermore, the correlations of the predicted state parameters are rigorously taken into
+account by the correlated bi-factor equivalent covariance matrix, in which the original correlations of the
+predicted parameters are kept unchanged. The performance of RMUKF is verified by simulation and field
+tests. The influences of measurement outliers and dynamic model disturbances, as well as the stochastic
+model uncertainties, are controlled well by RMUKF. In addition, RMUKF makes the filter converge quickly.
+The proposed method, however, requires a relative accurate initial state vector.
+
+Acknowledgement This work is supported by the National Science Foundation of China (No. 41804036).
+Special thanks to the editor and anonymous reviewers. Their constructive comments and suggestions for
+amendment have significantly improved the article.
+Reference
+
+Alspach D, Sorenson H (1972) Nonlinear Bayesian estimation using Gaussian sum approximations. IEEE
+Transactions on Automatic Control, 17(4): 439-448
+
+Andrews DF (1974) A robust method for multiple linear regression. Technometrics 16:523–531
+
+Bickel PJ (1973) On some analogues to linear combinations of order statistics in the linear model. Ann Stat
+1:597–616
+
+Bloomfield P, Steiger WL (1983) Least absolute deviations: theory, applications, and algorithms. Birkhäuser,
+Boston
+
+Caputi MJ, Moose RL (1993) A modified Gaussian sum approach to estimation of non-Gaussian signals.
+IEEE Transactions on Aerospace and Electronic Systems, 29(2): 446-451
+
+Chang L, Hu B, Chang G, Li A (2012) Multiple outliers suppression derivative-free filter based on unscented
+transformation. Journal of Guidance, Control and Dynamics, 35(6): 1902-1906
+
+Durgaprasad G, Thakur SS (1998) Robust dynamic state estimation of power systems based on M-Estimation
+and realistic modelling of system dynamics. IEEE Transactions on Power Systems, 13(4): 1331-1336
+
+Durovic ZM, Kovacevic BD (1999) Robust estimation with unknown noise statistics. IEEE Transactions on
+Automatic Control, 44(6): 1292-1296
+
+Fakharian A, Gustafsson T, Mehrfam M (2011) Adaptive Kalman filtering based navigation: An IMU/GPS
+integration approach. In Networking, Sensing and Control (ICNSC), Proceedings of 2011 IEEE International
+Conference on IEEE: 181-185
+
+Fitzgerald R (1971) Divergence of the Kalman filter. IEEE Transactions on Automatic Control, 16(6): 736-
+747
+
+Gandhi MA, Mili L (2010) Robust Kalman filter based on a generalized Maximum-Likelihood-Type
+estimator. IEEE Transactions On Signal Processing, 58(5): 2509-2520
+
+Hajiyev C, Soken HE (2014) Robust adaptive unscented Kalman filter for attitude estimation of pico satellites.
+International Journal of Adaptive Control and Signal Processing, 28(2): 107-120
+
+Hampel FR, Ronchetti EM, Rousseeuw PJ, Stahel WA (1986) Robust statistics: the approach based on
+influence functions. Wiley, New York
+
+He YQ, Han JD (2010) Acceleration-Feedback-Enhanced robust control of an unmanned helicopter. Journal
+of Guidance, Control, and Dynamics, 33(4): 1236-1250
+
+Huber PJ (1964) Robust estimation of a location parameter. Ann Math Stat 35:73–101
+
+Huber PJ (1981) Robust statistics. Wiley, New York
+
+Julier SJ, Uhlman JK (1997) A new extension of the Kalman filter to nonlinear systems. Proceedings of the
+Society of Photo-Optical Instrumentation Engineers 3068:182–193
+
+Julier SJ, Uhlmann JK (2004) Unscented filtering and nonlinear estimation. Proceedings of the IEEE, 92(3):
+401-422
+Koch KR (1988) Parameter estimation and hypothesis testing in linear models. Berlin, Heidelberg, New York:
+Springer
+
+Koch KR (1999) Parameter estimation and hypothesis testing in linear models. Berlin, New York: Springer
+
+Koch KR, Yang Y (1998) Robust Kalman filter for rank deficient observation models. Journal of Geodesy,
+72(7): 436-441
+
+Kovacevic B, Durovic Z, Glavaski S (1992) On robust Kalman filtering. International Journal of Control,
+56(3): 547-562
+
+Li W, Wang J, Lu L, Wu W (2013) A novel scheme for DVL-aided SINS In-motion Alignment Using UKF
+technoiques. Sensors, 13: 1046-1063
+
+Li W, Sun S, Jia Y, Du J (2016) Robust Unscented Kalman filter with adaptation of process and measurement
+noise covariances. Digital Signal Processing, 48: 93-103
+
+Nikusokhan M, Nobahari H (2017) A Gaussian Sum Method to Analyze Bounded Acceleration Guidance
+Systems. IEEE Transactions on Aerospace and Electronic Systems, 53(4): 2060-2076
+
+Pope A (1976) The statistics of residuals and outlier detection of outliers. NOAA Technical Report, Rockville
+
+Rousseeuw PJ, Leroy AM (1987) Robust regression and outlier detection. Wiley, New York
+
+Sage AP, Husa GW (1969) Adaptive filtering with unknown prior statistics. Proceedings of the Joint
+Automatic Control Conference, 7: 760-769
+
+Stano P, Lendek Z, Braaksma J, Babuska R, Keizer CD, Dekker AJD (2013) Parametric Bayesian filters for
+nonlinear stochastic dynamical systems: a survey. IEEE Transactions on Cybernetics, 43(6), 1607-1624
+
+Wan EA, van der Merwe R (2000) The Unscented Kalman filter for nonlinear estimation. Proceedings of
+Adaptive Systems for Signal Processing, Communications, and Control Symposium 2000 AS-SPCC. The
+IEEE 2000: 153-158
+
+Wang J, Xu C, Wang J (2008) Applications of robust Kalman filtering schemes in GNSS navigation.
+Proceedings of international symposium on GPS/GNSS: 308–316
+
+Wang Y, Sun S, Li L (2014) Adaptively robust Unscented Kalman filter for tracking a maneuvering vehicle.
+Journal of Guidance, Control, and Dynamics, 37(5): 1696-1701.
+
+Wiśniewski Z (1999) Concept of robust estimation of variance coefficient (VR-estimation). Boll Geod Sci
+Affin 3:291–310
+
+Wiśniewski, Z (2009) Estimation of parameters in a split functional model of geodetic observations (M split
+estimation). Journal of geodesy, 83(2), 105–120
+
+Wiśniewski, Z (2010) Msplit (q) estimation: estimation of parameters in a multi split functional model of
+geodetic observations. Journal of Geodesy, 84(6): 355–372
+
+Xu P (1989) On robust estimation with correlated observations, Bulletin géodésique 63(3): 237-252
+
+Xu P (2005) Sign-constrained robust least squares, subjective breakdown point and the effect of weights of
+observations on robustness. Journal of Geodesy, 79(1-3): 146-159
+Yan G, Yan W, Xu D (2008) Application of simplified UKF in SINS initial alignment for large misalignment
+angles. Journal of Chinese Inertial Technology, 16(3): 253-264
+
+Yang C, Shi W, Chen W (2016) Comparison of Unscented and Extended Kalman filters with application in
+vehicle navigation. The Journal of Navigation, 70(2): 411-431
+
+Yang C, Shi W, Chen W (2018) Adaptive Unscented Kalman Filtering based on Correlated Inference with
+Application in GNSS/IMU integrated Navigation. GPS Solutions, DOI: 10.1007/s10291-018-0766-2
+
+Yang Y (1991) Robust Bayesian estimation. Bulletin géodésique, 65(3): 145-150
+
+Yang Y (1994) Robust estimation for dependent observations. Manuscripta Geodeatica, 19, 10-17
+
+Yang Y (1999) Robust estimation of geodetic datum transformation. Journal of Geodesy, 73(5): 268-274
+
+Yang Y, Cui X (2008) Adaptively robust filter with multi adaptive factors, Survey Review, 40(309):
+260-270
+
+Yang Y, Gao W (2005) Comparison of adaptive factors in Kalman filters on navigation results. The Journal
+of Navigation, 58(3): 471-478
+
+Yang Y, Gao W (2006) An optimal adaptive Kalman filter. Journal of Geodesy, 80(4): 177-183
+
+Yang Y, He H, Xu G (2001) Adaptively robust filtering for kinematic geodetic positioning. Journal of
+Geodesy, 75(2): 109-116
+
+Yang Y, Song L, Xu T (2002) Robust estimator for correlated observations based on bifactor equivalent
+weights. Journal of Geodesy, 76(6): 353-358
+
+Yang Y, Xu T (2003) An adaptive Kalman filter based on Sage windowing weights and variance components.
+The Journal of Navigation, 56(2): 231-240
+
+Yu H, Shen Y, Yang L, Nie Y (2017) Robust M-estimation using the equivalent weights constructed by
+removing the influence of an outlier on the residuals. Survey Review, 1995: 1-10
+

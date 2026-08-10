@@ -1,0 +1,69 @@
+\chapter{Diagnostics and Failure Taxonomy}
+\label{ch:bf-diagnostics}
+
+Diagnostics are evidence about failures and geometry.  They are not proofs of
+convergence.  BayesFilter should report diagnostics at three levels: filter
+evaluation, derivative evaluation, and sampler behavior.
+
+\section{Filter and Derivative Diagnostics}
+\label{sec:bf-filter-derivative-diagnostics}
+
+Filter diagnostics include factor pivots, reconstruction errors, solve
+residuals, condition numbers, invalid-region counts, and finite-value checks.
+Derivative diagnostics include score/Hessian finite checks, symmetry errors,
+backend parity deltas, finite-difference residuals, and custom-gradient parity.
+For SVD or eigendecomposition paths, singular-value or eigenvalue gap telemetry
+is mandatory before HMC claims are made.
+
+\section{Sampler Diagnostics}
+\label{sec:bf-sampler-diagnostics}
+
+Sampler diagnostics include acceptance rate, divergences, energy behavior,
+effective sample size, split R-hat, mass-matrix conditioning, and tree depth if
+NUTS is used diagnostically.  Short clean runs are smoke tests.  They can justify
+the next experiment, but they do not establish convergence for an industrial
+target.
+
+\section{Failure Taxonomy}
+\label{sec:bf-failure-taxonomy}
+
+Common failure classes are:
+\begin{itemize}
+  \item target-domain failures;
+  \item factorization or solve failures;
+  \item non-finite value or gradient failures;
+  \item spectral derivative instability;
+  \item JIT retracing or partial compilation;
+  \item sampler geometry failures;
+  \item unsupported missing-data or mask patterns.
+\end{itemize}
+Each failure should point to a next action: fix the model contract, change the
+backend, add jitter or regularization, strengthen derivative validation, or
+downgrade the backend to diagnostic use.
+
+\section{Curvature Diagnostic Roles}
+\label{sec:bf-curvature-diagnostic-roles}
+
+Fixed-center curvature diagnostics have explicit roles:
+\begin{description}
+  \item[required gate] finite raw matrices, caller-declared raw inertia,
+    selection-holdout error, projection burden, complete pairwise stability
+    caps, and the independent audit error;
+  \item[promotion veto] a failed required gate blocks nomination for an exact
+    HMC mechanics canary;
+  \item[repair trigger] failed one-factor holdout can trigger an identified
+    two-factor fit, while unstable dense curvature triggers structured or
+    consensus analysis;
+  \item[explanatory] center score magnitude, optimizer iterations, descriptive
+    runtimes, and any stability metric for which no cap was supplied.
+\end{description}
+
+SPD projection does not convert failed raw curvature into a pass.  Raw inertia
+and matrices remain visible.  Likewise, a low score is not a curvature gate and
+a stable nonzero-score center is not a MAP.  A locally useful geometry for an
+exact Metropolis-corrected HMC canary remains unproved as a posterior covariance
+or global-mode Hessian.
+
+\texttt{geometry\_readiness\_blocked} rejects the current evidence and mass
+handoff.  It does not imply that the model, target, or curvature-preconditioning
+research direction has failed.

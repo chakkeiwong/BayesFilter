@@ -1,0 +1,1297 @@
+\chapter[High-Dimensional Filtering Foundations]{High-Dimensional Nonlinear Filtering Foundations}
+\label{ch:bf-highdim-nonlinear-foundations}
+
+\section{The Filtering Problem In Its Least Forgiving Form}
+\label{sec:bf-highdim-foundations-problem}
+
+A high-dimensional nonlinear filter is not merely a large Kalman filter.  It is
+an approximation to a sequence of conditional probability laws whose update
+can become singular, multimodal, sharply curved, or numerically inaccessible.
+This chapter fixes the mathematical objects that the later chapters approximate.
+It also separates exact identities from approximation policies.  That separation
+matters because a filter used inside optimization or Hamiltonian Monte Carlo
+does not only produce state estimates; it defines a scalar likelihood target and
+possibly a gradient of that target.
+
+Let $\theta\in\Theta$ be static parameters, $x_t\in\R^n$ a latent state, and
+$y_t\in\R^m$ an observation.  In discrete time a state-space model is
+\begin{align}
+  x_0 &\sim \mu_\theta, &
+  x_t\mid x_{t-1},\theta &\sim f_\theta(\cdot\mid x_{t-1}), &
+  y_t\mid x_t,\theta &\sim g_\theta(\cdot\mid x_t).
+  \label{eq:bf-hd-ssm}
+\end{align}
+The continuous-time diffusion analogue, used by the Zakai/DMZ and tensor-train
+PDE papers, is commonly written
+\begin{align}
+  dX_t &= a_\theta(X_t,t)\,dt + B_\theta(X_t,t)\,dV_t, \\
+  dY_t &= h_\theta(X_t,t)\,dt + dW_t,
+  \label{eq:bf-hd-continuous-ssm}
+\end{align}
+with variants for correlated noise.  The discrete recursion is the natural
+contract for production filtering APIs; the continuous formulation exposes the
+PDE and pathwise robust methods in \citet{davis1980multiplicative},
+\citet{yau2000realtime}, \citet{yau2008realtime},
+\citet{li2019ttfiltering}, and \citet{meng2025regularity}.
+
+For a reader coming from numerical analysis, physics, or computational
+chemistry, the central object is the conditional law
+\(p_\theta(x_t\mid y_{1:t})\).  The input object at time \(t\) is the previous
+conditional law and a new observation; the output object is a new conditional
+law plus the normalizer \(Z_t\).  The exact target is the Bayes recursion below.
+Every later method is an approximation to one of three objects: the law
+\(p_\theta(x_t\mid y_{1:t})\), the likelihood scalar
+\(\ell_T(\theta)\), or a derivative of that scalar.  A diagnostic is useful only
+when it says which of these objects it is checking.
+
+\paragraph{Running quadratic-observation cell.}
+The same teaching example will be used through
+Chapters~\ref{ch:bf-highdim-nonlinear-foundations}--\ref{ch:bf-highdim-candidate-synthesis}:
+\begin{equation}
+  x_t=\rho x_{t-1}+\eta_t,\qquad
+  \eta_t\sim\calN(0,Q),\qquad
+  y_t=x_t^2+\epsilon_t,\qquad
+  \epsilon_t\sim\calN(0,R).
+  \label{eq:bf-hd-running-cell}
+\end{equation}
+It is deliberately small.  Its purpose is to make the objects visible, not to
+validate a macro-finance model.  With a one-step Gaussian prediction
+\(X\sim\calN(0,P^-)\), the filtering density after observing \(y>0\) is
+proportional to
+\begin{equation}
+  \exp\!\left\{-\frac{x^2}{2P^-}
+  -\frac{(y-x^2)^2}{2R}\right\}.
+  \label{eq:bf-hd-running-posterior}
+\end{equation}
+When \(R\) is small and \(y\) is away from zero, the likelihood rewards states
+near both \(+\sqrt y\) and \(-\sqrt y\).  The exact filtering object is
+therefore a conditional law that may have two lobes.  A mean alone, a covariance
+alone, or a finite scalar likelihood alone is only one view of that object.
+
+\small
+\begin{longtable}{@{}p{0.20\linewidth}p{0.36\linewidth}p{0.34\linewidth}@{}}
+\toprule
+Object & Role in the exact recursion & Why the running cell exposes it \\
+\midrule
+\endhead
+Conditional law \(p_t\) & Probability law of \(x_t\) given observations &
+\(x^2\) observations can create two separated lobes. \\
+Normalizer \(Z_t\) & One-step predictive likelihood contribution &
+It integrates both lobes and is the scalar used in inference. \\
+Likelihood \(\ell_T\) & Sum of log normalizers over time & Changing \(Z_t\)
+changes the parameter posterior. \\
+Sensitivity \(s_t\) & Derivative of the law or normalizer with respect to
+parameters & HMC needs the gradient of the same scalar it reports. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\begin{assumption}[Dominated filtering model]
+\label{ass:bf-hd-dominated}
+The kernels in \eqref{eq:bf-hd-ssm} admit densities with respect to reference
+measures, the predictive normalizing constants below are finite and positive on
+the observed path, and every differentiation under an integral sign is justified
+by a local dominating function.  Continuous-time PDE statements additionally
+use the regularity, ellipticity, growth, and boundary assumptions stated in the
+cited source.
+\end{assumption}
+
+\section{Exact Discrete-Time Recursion And Likelihood}
+\label{sec:bf-hd-exact-recursion}
+
+Under Assumption~\ref{ass:bf-hd-dominated}, prediction and update are
+\begin{align}
+  p_\theta(x_t\mid y_{1:t-1})
+    &= \int f_\theta(x_t\mid x_{t-1})
+       p_\theta(x_{t-1}\mid y_{1:t-1})\,dx_{t-1},
+       \label{eq:bf-hd-prediction}\\
+  p_\theta(x_t\mid y_{1:t})
+    &= \frac{g_\theta(y_t\mid x_t)p_\theta(x_t\mid y_{1:t-1})}
+            {Z_t(\theta)},\qquad
+  Z_t(\theta)=\int g_\theta(y_t\mid x_t)
+       p_\theta(x_t\mid y_{1:t-1})\,dx_t .
+       \label{eq:bf-hd-update}
+\end{align}
+The likelihood factors as
+\begin{equation}
+  p_\theta(y_{1:T})=\prod_{t=1}^T Z_t(\theta),\qquad
+  \ell_T(\theta)=\sum_{t=1}^T \log Z_t(\theta).
+  \label{eq:bf-hd-likelihood-factor}
+\end{equation}
+The derivation is short, but it is the contract that every later approximation
+must respect.  Write the joint density through time \(t\) as
+\begin{equation}
+  p_\theta(x_{0:t},y_{1:t})
+  =
+  \mu_\theta(x_0)
+  \prod_{s=1}^t f_\theta(x_s\mid x_{s-1})
+  \prod_{s=1}^t g_\theta(y_s\mid x_s).
+\end{equation}
+Integrating out \(x_{0:t-1}\) after conditioning on \(y_{1:t-1}\) gives
+\eqref{eq:bf-hd-prediction}.  Multiplying the predictive density by the
+likelihood \(g_\theta(y_t\mid x_t)\) gives an unnormalized density
+\[
+  \gamma_t(x_t)=g_\theta(y_t\mid x_t)
+       p_\theta(x_t\mid y_{1:t-1}).
+\]
+Its integral is exactly the one-step predictive density of the observation,
+\[
+  Z_t(\theta)=p_\theta(y_t\mid y_{1:t-1}).
+\]
+Bayes' formula then gives \eqref{eq:bf-hd-update}.  Finally, the chain rule for
+the observation density gives
+\[
+  p_\theta(y_{1:T})
+  =p_\theta(y_1)\prod_{t=2}^T p_\theta(y_t\mid y_{1:t-1})
+  =\prod_{t=1}^T Z_t(\theta).
+\]
+Thus a filtering implementation that changes the normalizers changes the
+likelihood, not merely the state estimate.
+
+For actual stochastic-volatility rows, the target discipline is now explicit:
+there is one cumulative likelihood target,
+\(
+\ell_T(\theta)=\sum_{t=1}^T\log Z_t(\theta)
+\),
+and every admissible numerical route must approximate that same scalar.  In the
+transformed observation parameterization used in the code and later chapters,
+\[
+  z_t=\log(y_t^2),
+  \qquad
+  z_t-\log(\beta^2)-h_t\sim \log(\chi_1^2),
+\]
+so the one-step normalizer is defined by the exact transformed actual-SV
+observation law.  Direct-likelihood quadrature, fixed-cloud reweighting, and the
+current Zhao--Cui comparator are therefore comparable only because they are meant
+to approximate that same normalizer sequence.
+
+The previous actual-SV ``Lane~B'' framing was wrong for this inference problem.
+It replaced the transformed actual-SV observation law by a Gaussian-closure
+construction built from predictive observation moments of an augmented variable.
+That replacement changes the implied one-step normalizer and therefore changes
+the cumulative likelihood target itself.  A filter may still be internally
+self-consistent for that replacement scalar, but it is not evidence about the
+intended actual-SV likelihood in \eqref{eq:bf-hd-likelihood-factor}.  Any
+implementation, benchmark, or gradient check must therefore keep two questions
+separate: whether a method differentiates its own declared scalar correctly, and
+whether that declared scalar is the right target in the first place.
+
+\subsection{Actual-SV Single-Target Derivation}
+\label{sec:bf-hd-actual-sv-single-target-derivation}
+
+The corrected actual-SV statement can now be written as a short derivation.
+Start from the raw observation equation
+\begin{equation}
+  y_t=\beta e^{h_t/2}\varepsilon_t,
+  \qquad
+  \varepsilon_t\sim \calN(0,1),
+  \qquad
+  \beta>0.
+  \label{eq:bf-hd-actual-sv-raw-observation}
+\end{equation}
+For nonzero observations define the transformed datum
+\begin{equation}
+  z_t=\log(y_t^2).
+  \label{eq:bf-hd-actual-sv-z-definition}
+\end{equation}
+Squaring \eqref{eq:bf-hd-actual-sv-raw-observation} gives
+\(
+  y_t^2=\beta^2 e^{h_t}\varepsilon_t^2
+\), and taking logs yields
+\begin{equation}
+  z_t-\log(\beta^2)-h_t
+  =
+  \log(\varepsilon_t^2).
+  \label{eq:bf-hd-actual-sv-transform-identity}
+\end{equation}
+Since \(\varepsilon_t^2\sim\chi_1^2\), the transformed observation density is
+therefore
+\begin{equation}
+  g_\theta(z_t\mid h_t)
+  =
+  p_{\log\chi_1^2}\!\left(z_t-\log(\beta^2)-h_t\right).
+  \label{eq:bf-hd-actual-sv-transform-density}
+\end{equation}
+Thus the transformed actual-SV one-step normalizer is
+\begin{equation}
+  Z_t(\theta)
+  =
+  \int g_\theta(z_t\mid h_t)
+  p_\theta(h_t\mid z_{1:t-1})\,dh_t,
+  \label{eq:bf-hd-actual-sv-normalizer}
+\end{equation}
+and the target remains the single cumulative likelihood
+\(
+  \ell_T(\theta)=\sum_{t=1}^T\log Z_t(\theta)
+\).
+
+This identity fixes the admissible same-target routes.  A dense exact-transformed
+reference, a direct-likelihood fixed-cloud rule, or the current factorized
+scalar Zhao--Cui wrapper may differ numerically, but they remain comparable only
+when they all evaluate \eqref{eq:bf-hd-actual-sv-transform-density} and then
+accumulate the resulting transformed normalizers.  The direct-likelihood route
+has the generic node-reweighting form
+\begin{equation}
+  \widehat Z_t^{\rm dir}(\theta;B)
+  =
+  \sum_{r=1}^M
+  w_r
+g_\theta\bigl(z_t\mid h_t^{(r)}\bigr),
+  \label{eq:bf-hd-actual-sv-direct-normalizer}
+\end{equation}
+with node locations \(h_t^{(r)}\) and weights \(w_r\) supplied by the declared
+predictive approximation branch \(B\).  The dense reference and the present
+Zhao--Cui comparator are same-target for the same reason: their value paths also
+consume the transformed observations \(z_t\) and the exact transformed density
+in \eqref{eq:bf-hd-actual-sv-transform-density}.
+
+\begin{proposition}[Augmented Gaussian closure changes the actual-SV scalar]
+\label{prop:bf-hd-actual-sv-gc-wrong-target}
+Suppose instead that one augments the one-step state with an explicit
+observation-noise coordinate and uses the raw observation map in
+\eqref{eq:bf-hd-actual-sv-raw-observation}.  If the resulting filter propagates
+that augmented cloud through the raw map, replaces
+\eqref{eq:bf-hd-actual-sv-transform-density} by predictive observation moments,
+and accumulates a Gaussian innovation likelihood such as
+\eqref{eq:bf-hd-sgqf-loglik}, then the accumulated scalar is not the transformed
+actual-SV likelihood target \(\ell_T(\theta)\).
+\end{proposition}
+
+\begin{proof}
+The transformed target in \eqref{eq:bf-hd-actual-sv-normalizer} is defined by
+integrating the exact transformed observation density
+\(g_\theta(z_t\mid h_t)\).  By contrast, the augmented Gaussian-closure route
+uses the raw map \(y_t=\beta e^{h_t/2}\varepsilon_t\), forms predictive
+observation moments such as \(\bar z_t\) and \(S_t\), and then accumulates a
+Gaussian innovation scalar.  That replacement changes the observation-density
+object inside the one-step normalizer.  Once the one-step normalizer changes, the
+cumulative likelihood changes as well by \eqref{eq:bf-hd-likelihood-factor}.
+Hence the Gaussian-closure route may define a different declared approximate
+scalar, but it is not a same-target approximation to the transformed actual-SV
+likelihood.
+\end{proof}
+
+\begin{proposition}[When a Gaussian-closure likelihood surrogate can be reasonable]
+\label{prop:bf-hd-gaussian-closure-surrogate-regime}
+Let \(p_t^{\rm obs}(y)\) be the predictive observation density induced by the
+correct augmented input law, and let \((\bar z_t,S_t)\) be the predictive mean
+and covariance used in the Gaussian innovation scalar
+\eqref{eq:bf-hd-sgqf-loglik}.  Suppose:
+\begin{enumerate}[label=(\roman*), leftmargin=0.28in]
+  \item the sigma-point or fixed-cloud rule is applied to the correct augmented
+    input variable, so that the moment statement in
+    Proposition~\ref{prop:bf-structural-ukf-ut-accuracy} applies;
+  \item the local small-uncertainty and smoothness hypotheses behind
+    Proposition~\ref{prop:bf-structural-ukf-ut-accuracy} hold, so the predictive
+    mean and covariance are accurate through the stated second-order regime; and
+  \item on a neighborhood \(\mathcal U_t\) containing the realized observation
+    \(y_t\), the predictive observation log density satisfies
+    \begin{equation}
+      \log p_t^{\rm obs}(y)
+      =
+      \log \varphi_{n_y}(y;\bar z_t,S_t)+r_t(y),
+      \qquad y\in\mathcal U_t,
+      \label{eq:bf-hd-gaussian-closure-log-density-remainder}
+    \end{equation}
+    with remainder bounded by
+    \begin{equation}
+      |r_t(y)|\le \delta_t,
+      \qquad y\in\mathcal U_t.
+      \label{eq:bf-hd-gaussian-closure-remainder-bound}
+    \end{equation}
+\end{enumerate}
+Then, provided \(y_t\in\mathcal U_t\), the one-step Gaussian innovation scalar
+is a local likelihood surrogate with error bounded by
+\begin{equation}
+  \left|
+    \log p_t^{\rm obs}(y_t)
+    -
+    \left[-\frac12\left\{\log\det S_t+v_t^\top S_t^{-1}v_t+n_y\log(2\pi)\right\}\right]
+  \right|
+  \le \delta_t.
+  \label{eq:bf-hd-gaussian-closure-surrogate-bound}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+By definition of the Gaussian density,
+\[
+  \log \varphi_{n_y}(y_t;\bar z_t,S_t)
+  =
+  -\frac12\left\{\log\det S_t+v_t^\top S_t^{-1}v_t+n_y\log(2\pi)\right\},
+\]
+with \(v_t=y_t-\bar z_t\).  Evaluating
+\eqref{eq:bf-hd-gaussian-closure-log-density-remainder} at \(y_t\) gives
+\begin{equation}
+  \log p_t^{\rm obs}(y_t)
+  -
+  \log \varphi_{n_y}(y_t;\bar z_t,S_t)
+  =
+  r_t(y_t),
+\end{equation}
+and \eqref{eq:bf-hd-gaussian-closure-surrogate-bound} follows from
+\eqref{eq:bf-hd-gaussian-closure-remainder-bound}.
+\end{proof}
+
+This proposition states the admissible sense in which a UKF-style or
+fixed-cloud Gaussian closure can still be useful.  The structural UKF result
+controls predictive moments under the correct augmented input law; the extra
+remainder assumption controls how far the full predictive observation density is
+from the Gaussian density built from those moments.  Both ingredients are needed.
+Accurate moments alone do not guarantee an accurate likelihood scalar when the
+predictive observation law is strongly skewed, heavy-tailed, multimodal, or
+otherwise far from Gaussian near the realized observation.
+
+For actual SV this means the augmented Gaussian-closure route may be a reasonable
+local surrogate likelihood under a small-uncertainty, near-Gaussian predictive
+observation regime, but it still does not become the same target as the
+transformed exact likelihood in \eqref{eq:bf-hd-actual-sv-normalizer}.  It is a
+surrogate scalar, not a second exact route to the same inference problem.
+
+\subsection{Actual-SV SR-UKF Augmented-Noise Adapter}
+\label{sec:bf-hd-actual-sv-srukf-augmented-adapter}
+
+This subsection gives the model-specific adapter for the factor-propagating
+SR-UKF score contract in
+Section~\ref{sec:bf-srukf-factor-propagating-score-contract}.  It is deliberately
+an adapter for the raw-observation Gaussian-closure surrogate in
+Proposition~\ref{prop:bf-hd-gaussian-closure-surrogate-regime}; it is not an
+admission that the surrogate equals the transformed actual-SV target in
+\eqref{eq:bf-hd-actual-sv-normalizer}.
+
+For one panel coordinate, use the scalar latent recursion
+\begin{equation}
+  H_t=\gamma H_{t-1}+U_t,
+  \qquad
+  U_t\sim\calN(0,\sigma^2),
+  \qquad
+  Y_t=\beta \exp(H_t/2)E_t,
+  \qquad
+  E_t\sim\calN(0,1).
+  \label{eq:bf-hd-actual-sv-srukf-model}
+\end{equation}
+The candidate score contract for this surrogate uses the unconstrained
+parameterization
+\begin{equation}
+  \theta=(\theta_\gamma,\theta_\beta),
+  \qquad
+  \gamma=\Phi(\theta_\gamma),
+  \qquad
+  \beta=\exp(\theta_\beta),
+  \qquad
+  \sigma \text{ fixed}.
+  \label{eq:bf-hd-actual-sv-srukf-parameterization}
+\end{equation}
+Here \(\Phi\) is the standard normal distribution function and
+\(\varphi\) is its density, so
+\begin{equation}
+  \partial_{\theta_\gamma}\gamma=\varphi(\theta_\gamma),
+  \qquad
+  \partial_{\theta_\beta}\beta=\beta,
+  \qquad
+  \partial_{\theta_i}\sigma=0.
+  \label{eq:bf-hd-actual-sv-srukf-parameter-derivatives}
+\end{equation}
+A sigma-point adapter must place points on the pre-observation uncertainty
+variable
+\begin{equation}
+  A_t=(H_{t-1},U_t,E_t)^\top .
+  \label{eq:bf-hd-actual-sv-srukf-augmented-variable}
+\end{equation}
+If the previous filtered approximation is
+\[
+  H_{t-1}\mid y_{1:t-1}\approx
+  \calN(m_{t-1},c_{t-1}c_{t-1}^\top),
+\]
+then the declared augmented law is
+\begin{equation}
+  A_t\mid y_{1:t-1}
+  \approx
+  \calN\!\left(
+    \begin{bmatrix}m_{t-1}\\0\\0\end{bmatrix},
+    C_{a,t}C_{a,t}^\top
+  \right),
+  \qquad
+  C_{a,t}
+  =
+  \begin{bmatrix}
+    c_{t-1} & 0 & 0\\
+    0 & \sigma & 0\\
+    0 & 0 & 1
+  \end{bmatrix}.
+  \label{eq:bf-hd-actual-sv-srukf-augmented-law}
+\end{equation}
+The exact shape of \(c_{t-1}\) follows the scalar factor branch used by the
+generic SR-UKF handoff.  The crucial point is the three-coordinate law:
+lagged latent state, state innovation, and observation shock are all present.
+
+The state and raw-observation maps sent to the generic SR-UKF backend are
+\begin{align}
+  X_\theta(A_t)
+    &=
+    \gamma H_{t-1}+U_t,
+    \label{eq:bf-hd-actual-sv-srukf-transition-map}\\
+  Z_\theta(A_t)
+    &=
+    \beta\exp(X_\theta(A_t)/2)E_t .
+    \label{eq:bf-hd-actual-sv-srukf-observation-map}
+\end{align}
+The symbol \(Z_\theta(A_t)\) in
+\eqref{eq:bf-hd-actual-sv-srukf-observation-map} is the raw predicted
+observation coordinate used by the Gaussian closure; it is not the transformed
+datum \(z_t=\log(y_t^2)\) from
+\eqref{eq:bf-hd-actual-sv-z-definition}.
+
+For a placed point \(a^{(j)}=(h_-^{(j)},u^{(j)},e^{(j)})\), the local map
+derivatives required by
+\eqref{eq:bf-srukf-propagated-point-first} are
+\begin{align}
+  D_a X_\theta(a^{(j)})
+    &=
+    \begin{bmatrix}\gamma&1&0\end{bmatrix},
+    &
+  \partial_{\theta_\gamma}X_\theta(a^{(j)})
+    &=
+    \varphi(\theta_\gamma)h_-^{(j)},
+    &
+  \partial_{\theta_\beta}X_\theta(a^{(j)})
+    &=0,
+    \label{eq:bf-hd-actual-sv-srukf-transition-derivatives}\\
+  D_a Z_\theta(a^{(j)})
+    &=
+    \beta\exp(x^{(j)}/2)
+    \begin{bmatrix}
+      \frac12\gamma e^{(j)}&
+      \frac12 e^{(j)}&
+      1
+    \end{bmatrix},
+    \label{eq:bf-hd-actual-sv-srukf-observation-state-derivative}\\
+  \partial_{\theta_\gamma}Z_\theta(a^{(j)})
+    &=
+    \frac12
+    \beta\exp(x^{(j)}/2)e^{(j)}
+    \varphi(\theta_\gamma)h_-^{(j)},
+    &
+  \partial_{\theta_\beta}Z_\theta(a^{(j)})
+    &=
+    \beta\exp(x^{(j)}/2)e^{(j)},
+    \label{eq:bf-hd-actual-sv-srukf-observation-parameter-derivatives}
+\end{align}
+where \(x^{(j)}=X_\theta(a^{(j)})\).  These are ordinary pointwise derivatives
+of the declared maps.  They do not differentiate a principal matrix square
+root, an eigensystem, an SVD basis, or an autodiff tape.
+
+The initial stationary branch, when used, is
+\begin{equation}
+  H_0\sim\calN\!\left(0,\frac{\sigma^2}{1-\gamma^2}\right),
+  \qquad |\gamma|<1,
+  \label{eq:bf-hd-actual-sv-srukf-initial-law}
+\end{equation}
+with score handoff derivatives
+\begin{equation}
+  \partial_{\theta_\gamma}m_0=0,\qquad
+  \partial_{\theta_\beta}m_0=0,\qquad
+  \partial_{\theta_\gamma}
+  \frac{\sigma^2}{1-\gamma^2}
+  =
+  \frac{2\sigma^2\gamma}{(1-\gamma^2)^2}\varphi(\theta_\gamma),
+  \qquad
+  \partial_{\theta_\beta}
+  \frac{\sigma^2}{1-\gamma^2}=0.
+  \label{eq:bf-hd-actual-sv-srukf-initial-derivatives}
+\end{equation}
+If the factor-propagating backend consumes the scalar stationary factor
+\(c_0=\sigma(1-\gamma^2)^{-1/2}\) rather than the variance, the corresponding
+fixed-\(\sigma\) branch derivative is
+\begin{equation}
+  \partial_{\theta_\gamma}c_0
+  =
+  \sigma\gamma(1-\gamma^2)^{-3/2}\varphi(\theta_\gamma),
+  \qquad
+  \partial_{\theta_\beta}c_0=0.
+  \label{eq:bf-hd-actual-sv-srukf-initial-factor-derivatives}
+\end{equation}
+If a nonstationary initialization is chosen, the initialization law and its
+derivatives must replace \eqref{eq:bf-hd-actual-sv-srukf-initial-law}--
+\eqref{eq:bf-hd-actual-sv-srukf-initial-factor-derivatives} explicitly.
+
+Given the placed points from
+\eqref{eq:bf-hd-actual-sv-srukf-augmented-law}, the generic SR-UKF backend
+computes
+\begin{equation}
+  \bar x_t,\quad \bar y_t,\quad
+  P_{xx,t,\star},\quad S_{t,\star},\quad P_{xy,t,\star}
+\end{equation}
+from the propagated pairs
+\((X_\theta(a_t^{(j)}),Z_\theta(a_t^{(j)}))\).  The declared one-step
+surrogate contribution is
+\begin{equation}
+  \widehat\ell_t^{\rm rawGC}(\theta)
+  =
+  -\frac12
+  \left[
+    \log(2\pi)+\log S_{t,\star}
+    +(y_t-\bar y_t)^2S_{t,\star}^{-1}
+  \right],
+  \label{eq:bf-hd-actual-sv-srukf-surrogate-loglik}
+\end{equation}
+or its vector-panel analogue when several independent coordinates are combined.
+Its analytical score is exactly the specialization of
+\eqref{eq:bf-srukf-score-first} with \(v_t=y_t-\bar y_t\), followed by the
+filtered-state derivative handoff
+\eqref{eq:bf-srukf-filtered-mean-first}--
+\eqref{eq:bf-srukf-filtered-factor-first}:
+\begin{equation}
+  \partial_{\theta_i}
+  \sum_{t=1}^T\widehat\ell_t^{\rm rawGC}(\theta)
+  =
+  \sum_{t=1}^T
+  \partial_{\theta_i}
+  \widehat\ell_t^{\rm rawGC}(\theta),
+  \qquad i\in\{\gamma,\beta\}.
+  \label{eq:bf-hd-actual-sv-srukf-score-handoff}
+\end{equation}
+This is the score of the raw actual-SV Gaussian-closure surrogate scalar.  It
+is not the score of \(\ell_T(\theta)\) in
+\eqref{eq:bf-hd-actual-sv-normalizer}.
+
+A two-coordinate collapsed-process specialization may be used only after this
+three-coordinate adapter has been audited.  The required proof obligation is
+the scalar Gaussian law equivalence
+\begin{equation}
+  (H_t^-,E_t)
+  =
+  (\gamma H_{t-1}+U_t,E_t)
+  \sim
+  \calN\!\left(
+    \begin{bmatrix}\gamma m_{t-1}\\0\end{bmatrix},
+    \begin{bmatrix}
+      \gamma^2 c_{t-1}c_{t-1}^\top+\sigma^2 & 0\\
+      0 & 1
+    \end{bmatrix}
+  \right),
+  \label{eq:bf-hd-actual-sv-srukf-collapsed-law-equivalence}
+\end{equation}
+together with derivative equivalence for the mean and factor handoff.  A
+collapsed route that cannot demonstrate
+\eqref{eq:bf-hd-actual-sv-srukf-collapsed-law-equivalence} and the matching
+derivatives remains a separate approximation and cannot be used as the admitted
+SR-UKF analytical-score route.
+
+\begin{equation}
+  \boxed{
+  \begin{gathered}
+  \text{No exact actual-SV likelihood claim;}\\
+  \text{no same-target transformed-likelihood claim;}\\
+  \text{no GradientTape score admission;}\\
+  \text{no historical SVD/eigenderivative score admission;}\\
+  \text{no strict-SPD principal-root derivative admission.}
+  \end{gathered}}
+  \label{eq:bf-hd-actual-sv-srukf-nonclaims}
+\end{equation}
+
+The practical consequence is strict.  Same-scalar derivative checks, fixed-branch
+audits, or optimizer/HMC experiments are meaningful only after the value path is
+a route to \eqref{eq:bf-hd-actual-sv-normalizer}.  Internal consistency of a
+Gaussian-closure scalar does not repair the target mismatch.  This is why the
+current transformed direct-likelihood route and the current Zhao--Cui comparator
+remain admissible same-target comparators, whereas the previous augmented
+Gaussian-closure framing does not.
+
+\paragraph{Reader checkpoint.}
+What should now be clear: filtering updates a probability law and a scalar
+normalizer at the same time.  Object preserved: the conditional law after
+normalization.  Approximation enters at: the representation of the predictive
+law, the integral for \(Z_t\), or both.  Exported to synthesis: any industrial
+method must say whether it preserves the intended likelihood scalar, merely a
+different surrogate scalar, or only a moment summary.
+
+\begin{proposition}[Predictive score identity]
+\label{prop:bf-hd-score}
+Let $Z_t(\theta)=\int a_t(x,\theta)\,dx$ with
+$a_t(x,\theta)=g_\theta(y_t\mid x)p_\theta(x\mid y_{1:t-1})$.  If
+$a_t>0$ on the posterior support and dominated differentiation holds, then
+\begin{equation}
+  \nabla_\theta\log Z_t(\theta)
+  =
+  \int \nabla_\theta\log a_t(x,\theta)\,
+       p_\theta(x\mid y_{1:t})\,dx .
+  \label{eq:bf-hd-score}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Under dominated differentiation,
+\[
+  \nabla_\theta\log Z_t(\theta)
+  =\frac{\nabla_\theta Z_t(\theta)}{Z_t(\theta)}
+  =
+  \frac{\int \nabla_\theta a_t(x,\theta)\,dx}
+       {\int a_t(x,\theta)\,dx}.
+\]
+On the support where \(a_t>0\),
+\(\nabla_\theta a_t=a_t\nabla_\theta\log a_t\).  Substitution gives
+\begin{equation}
+  \nabla_\theta\log Z_t(\theta)
+  =
+  \int \nabla_\theta\log a_t(x,\theta)
+       \frac{a_t(x,\theta)}{Z_t(\theta)}\,dx .
+\end{equation}
+The last factor is the filtering density in
+\eqref{eq:bf-hd-update}.  Hence \eqref{eq:bf-hd-score} follows.  The identity
+does not say that a numerical score is correct; it says that any reported score
+must correspond to the derivative of the same normalizer used in the reported
+likelihood.
+\end{proof}
+
+This proposition is exact but not automatically implementable.  A numerical
+filter supplies an approximate normalizer $\widehat Z_t$ and an approximate
+history-dependent distribution.  If value and gradient are not derivatives of
+the same scalar approximation, a downstream optimizer or HMC sampler is solving
+a different problem from the one reported by the filter.
+
+\section{Analytical Likelihood-Gradient And Filtering Sensitivities}
+\label{sec:bf-hd-analytical-likelihood-gradient}
+
+This section is a project derivation for the dominated discrete-time model in
+\eqref{eq:bf-hd-ssm}.  It is not a continuous-time adjoint theorem.  The PDE
+and robust-DMZ settings require their own sensitivity or adjoint analysis under
+the regularity assumptions of the cited sources.
+
+Write
+\[
+  p_t^-(x_t)=p_\theta(x_t\mid y_{1:t-1}),\qquad
+  p_t(x_t)=p_\theta(x_t\mid y_{1:t}),
+\]
+and let the parameter-gradient sensitivities be
+\begin{equation}
+  s_t^-(x_t)=\nabla_\theta p_t^-(x_t),\qquad
+  s_t(x_t)=\nabla_\theta p_t(x_t).
+\end{equation}
+These sensitivities are vector-valued when \(\theta\) is vector-valued; the
+derivation is componentwise.  Differentiating the prediction equation
+\eqref{eq:bf-hd-prediction} under Assumption~\ref{ass:bf-hd-dominated} gives
+\begin{equation}
+  s^-_t(x_t)
+  =
+  \int
+  \left[
+  \nabla_\theta f_\theta(x_t\mid x_{t-1})
+  p_{t-1}(x_{t-1})
+  +
+  f_\theta(x_t\mid x_{t-1})
+  s_{t-1}(x_{t-1})
+  \right]dx_{t-1}.
+  \label{eq:bf-hd-prediction-sensitivity}
+\end{equation}
+The first term is the direct parameter effect on the transition density.  The
+second term is the inherited sensitivity of the previous filtering law.  If
+the initial distribution depends on \(\theta\), the recursion starts from
+\(s_0(x_0)=\nabla_\theta p_\theta(x_0)\), or from the corresponding
+post-initial-observation sensitivity if an initial update is used.
+
+The one-step normalizer is
+\begin{equation}
+  Z_t(\theta)=\int g_\theta(y_t\mid x_t)p_t^-(x_t)\,dx_t .
+  \label{eq:bf-hd-gradient-normalizer}
+\end{equation}
+Differentiating it gives
+\begin{equation}
+  \nabla_\theta Z_t(\theta)
+  =
+  \int
+  \left[
+  \nabla_\theta g_\theta(y_t\mid x_t)p^-_t(x_t)
+  +
+  g_\theta(y_t\mid x_t)s^-_t(x_t)
+  \right]dx_t .
+  \label{eq:bf-hd-normalizer-gradient}
+\end{equation}
+Therefore
+\begin{equation}
+  \nabla_\theta \ell_T(\theta)
+  =
+  \sum_{t=1}^T
+  \nabla_\theta \log Z_t(\theta)
+  =
+  \sum_{t=1}^T
+  \frac{\nabla_\theta Z_t(\theta)}{Z_t(\theta)} .
+  \label{eq:bf-hd-likelihood-gradient}
+\end{equation}
+
+It remains to differentiate the normalized update.  Define
+\[
+  n_t(x_t,\theta)=g_\theta(y_t\mid x_t)p_t^-(x_t),
+  \qquad
+  p_t(x_t)=\frac{n_t(x_t,\theta)}{Z_t(\theta)}.
+\]
+The numerator sensitivity is
+\begin{equation}
+  \nabla_\theta n_t(x_t,\theta)
+  =
+  \nabla_\theta g_\theta(y_t\mid x_t)p_t^-(x_t)
+  +
+  g_\theta(y_t\mid x_t)s_t^-(x_t).
+\end{equation}
+Using the quotient rule and
+\(\nabla_\theta Z_t/Z_t=\nabla_\theta\log Z_t\),
+\begin{equation}
+  s_t(x_t)
+  =
+  \frac{
+  \nabla_\theta g_\theta(y_t\mid x_t)p^-_t(x_t)
+  +
+  g_\theta(y_t\mid x_t)s^-_t(x_t)
+  }{Z_t(\theta)}
+  -
+  p_t(x_t)\nabla_\theta\log Z_t(\theta).
+  \label{eq:bf-hd-update-sensitivity}
+\end{equation}
+Integrating \eqref{eq:bf-hd-update-sensitivity} over \(x_t\) gives zero,
+because a normalized density has derivative of total mass equal to zero.  This
+is the sensitivity analogue of probability conservation.
+
+\begin{proposition}[Discrete-time likelihood sensitivity recursion]
+\label{prop:bf-hd-likelihood-sensitivity}
+Under Assumption~\ref{ass:bf-hd-dominated}, with differentiable transition and
+observation densities and finite positive \(Z_t(\theta)\), equations
+\eqref{eq:bf-hd-prediction-sensitivity}--\eqref{eq:bf-hd-update-sensitivity}
+give an analytical recursion for \(\nabla_\theta\ell_T(\theta)\) in the exact
+discrete-time filter.
+\end{proposition}
+
+\begin{proof}
+Equation~\eqref{eq:bf-hd-prediction-sensitivity} is differentiation of the
+prediction integral.  Equation~\eqref{eq:bf-hd-normalizer-gradient} is
+differentiation of the predictive normalizer.  Equation
+\eqref{eq:bf-hd-likelihood-gradient} follows from the likelihood factorization
+\eqref{eq:bf-hd-likelihood-factor} and the identity
+\(\nabla\log Z=\nabla Z/Z\) for \(Z>0\).  Equation
+\eqref{eq:bf-hd-update-sensitivity} is the quotient rule applied to
+\(p_t=n_t/Z_t\).  Each step is componentwise in \(\theta\) and uses dominated
+differentiation to exchange gradient and integral.
+\end{proof}
+
+This recursion is the analytical object needed by Chapter~\ref{ch:bf-highdim-hmc-research}.
+An automatic-differentiation tape through an approximate filter is a different
+object unless it differentiates exactly the same scalar displayed to the
+sampler.
+
+\section{Compact Sensitivity Score For Finite LEDH--PFPF--OT}
+\label{sec:bf-hd-ledh-compact-sensitivity-score}
+
+This section specializes the preceding sensitivity principle to the finite
+LEDH--PFPF--OT scalar used by the benchmark code.  The object is not the exact
+Kalman likelihood and not the derivative of an ideal infinite-iteration
+transport solve.  It is the derivative of the finite computation actually run:
+fixed base random numbers, a fixed resampling mask, finitely many LEDH flow
+steps, finitely many Sinkhorn balancing steps, and the displayed accumulated
+log normalizers.  A partial derivative that treats the transport
+normalization, scale, Sinkhorn potentials, or transported particles as fixed
+when they change with \(\theta\) is not the score of this finite scalar.
+
+Let \(\theta\in\R^p\), and let \(r_{0,i}\) and \(r_{t,i}\) be the fixed
+standard-normal base draws used to form the initial particles and transition
+noise.  The compact method carries, at each time \(t\),
+\[
+  X_t=\{x_{t,i}\}_{i=1}^N,\qquad
+  \lambda_t=\{\lambda_{t,i}\}_{i=1}^N,\qquad
+  \dot X_t=\partial_\theta X_t,\qquad
+  \dot\lambda_t=\partial_\theta \lambda_t,
+\]
+where \(\lambda_t\) are normalized log weights.  It does not store the full
+history of LEDH matrices or transport plans.  For a diagonal LGSSM row with
+\begin{equation}
+  A_\theta=\operatorname{diag}(\phi_1,\ldots,\phi_d),\qquad
+  Q_\theta=q^2 I,\qquad
+  R_\theta=r^2 I,
+\end{equation}
+the fixed-randomness prediction is
+\begin{align}
+  m_{t,i} &= A_\theta x_{t-1,i},&
+  x^-_{t,i} &= m_{t,i}+q\,r_{t,i},&
+  \dot m_{t,i} &= A_\theta\dot x_{t-1,i}
+    +(\partial_\theta A_\theta)x_{t-1,i},&
+  \dot x^-_{t,i} &= \dot m_{t,i}+(\partial_\theta q)r_{t,i}.
+  \label{eq:bf-hd-ledh-compact-prediction-sensitivity}
+\end{align}
+These are total derivatives under the fixed base draws.  They are not
+derivatives after redrawing the particles.
+
+For a linear observation \(y_t=H x_t+\epsilon_t\), the LEDH affine map used in
+the row can be written
+\begin{align}
+  P_\theta &= Q_\theta^{-1},&
+  S_\theta &= R_\theta^{-1},&
+  \Lambda_\theta &= P_\theta+H^\top S_\theta H,&
+  C_\theta &= \Lambda_\theta^{-1},
+  \label{eq:bf-hd-ledh-compact-ledh-matrices}\\
+  \mu_{t,i} &= C_\theta\{P_\theta m_{t,i}+H^\top S_\theta y_t\},&
+  B_\theta &= \operatorname{chol}(C_\theta)\operatorname{chol}(Q_\theta)^{-1},&
+  z_{t,i} &= \mu_{t,i}+B_\theta(x^-_{t,i}-m_{t,i}).
+  \label{eq:bf-hd-ledh-compact-ledh-map}
+\end{align}
+Here \(Q_\theta\) and \(R_\theta\) are positive definite, so
+\(P_\theta\), \(S_\theta\), \(\Lambda_\theta\), \(C_\theta\), the Cholesky
+factors, and the log determinant below are well defined.  If a numerical
+implementation adds jitter or projects a covariance to a positive-definite
+matrix, the derivative is the derivative of that jittered or projected finite
+operation, not of the unjittered formula.
+The tangent of this map is obtained by differentiating these matrix equations:
+\begin{align}
+  \dot P_\theta &=-P_\theta\dot Q_\theta P_\theta,&
+  \dot S_\theta &=-S_\theta\dot R_\theta S_\theta,&
+  \dot\Lambda_\theta&=\dot P_\theta+H^\top\dot S_\theta H,&
+  \dot C_\theta&=-C_\theta\dot\Lambda_\theta C_\theta,
+  \label{eq:bf-hd-ledh-compact-matrix-sensitivity}\\
+  \dot\mu_{t,i}
+    &=\dot C_\theta\{P_\theta m_{t,i}+H^\top S_\theta y_t\}
+      +C_\theta\{\dot P_\theta m_{t,i}
+      +P_\theta\dot m_{t,i}+H^\top\dot S_\theta y_t\},\\
+  \dot z_{t,i}
+    &=\dot\mu_{t,i}
+      +\dot B_\theta(x^-_{t,i}-m_{t,i})
+      +B_\theta(\dot x^-_{t,i}-\dot m_{t,i}).
+  \label{eq:bf-hd-ledh-compact-ledh-sensitivity}
+\end{align}
+For \(L=\operatorname{chol}(C_\theta)\), the Cholesky tangent is defined by
+\[
+  E=L^{-1}\dot C_\theta L^{-\top},\qquad
+  M_{ij}=
+  \begin{cases}
+    E_{ij}, & i>j,\\
+    E_{ii}/2, & i=j,\\
+    0, & i<j,
+  \end{cases}
+  \qquad
+  \dot L=LM.
+  \label{eq:bf-hd-ledh-compact-cholesky-jvp}
+\]
+Thus \(\dot B_\theta=\dot L\operatorname{chol}(Q_\theta)^{-1}
+ +L\,\partial_\theta\{\operatorname{chol}(Q_\theta)^{-1}\}\).
+
+The log-weight correction is differentiated in the same forward pass.  With
+\begin{equation}
+  c_{t,i}
+  =\lambda_{t-1,i}
+   +\log f_\theta(z_{t,i}\mid x_{t-1,i})
+   +\log g_\theta(y_t\mid z_{t,i})
+   -\log f_\theta(x^-_{t,i}\mid x_{t-1,i})
+   +\log|\det B_\theta|,
+  \label{eq:bf-hd-ledh-compact-corrected-weight}
+\end{equation}
+define \(a_t=\operatorname{logsumexp}_i c_{t,i}\) and
+\(\lambda^+_{t,i}=c_{t,i}-a_t\).  The one-step likelihood contribution and
+normalized-log-weight tangent are
+\begin{align}
+  \dot a_t &= \sum_{i=1}^N \omega^+_{t,i}\dot c_{t,i},&
+  \dot\lambda^+_{t,i} &= \dot c_{t,i}-\dot a_t,&
+  \omega^+_{t,i}&=\exp(\lambda^+_{t,i}).
+  \label{eq:bf-hd-ledh-compact-normalize-sensitivity}
+\end{align}
+If an implementation floors normalized weights by replacing
+\(\omega^+_{t,i}\) with \(\max(\omega^+_{t,i},\epsilon_{\mathrm{floor}})\),
+then the derivative must include that branch: active floored entries have zero
+tangent for the displayed floored log weight.  Ignoring this branch is again a
+different derivative.
+
+It remains to differentiate the finite Sinkhorn equal-weighting map.  Write the
+streaming softmin used by the code as
+\begin{equation}
+  \operatorname{sm}_\varepsilon(q;K,v)
+  =
+  -\varepsilon\log\sum_j
+    \exp\{v_j-\|q-k_j\|^2/(2\varepsilon)\}.
+  \label{eq:bf-hd-ledh-compact-softmin}
+\end{equation}
+For tangents \((\dot q,\dot K,\dot v,\dot\varepsilon)\), define
+\begin{equation}
+  \pi_j(q)
+  =
+  \frac{\exp\{v_j-\|q-k_j\|^2/(2\varepsilon)\}}
+       {\sum_l\exp\{v_l-\|q-k_l\|^2/(2\varepsilon)\}} .
+\end{equation}
+The softmin tangent is
+\begin{align}
+  \partial\operatorname{sm}_\varepsilon
+  &=
+  -\dot\varepsilon\log\sum_j
+    \exp\{v_j-\|q-k_j\|^2/(2\varepsilon)\}
+  -\varepsilon\sum_j\pi_j(q)\dot h_j,
+  \label{eq:bf-hd-ledh-compact-softmin-jvp}\\
+  \dot h_j
+  &=
+  \dot v_j
+  -\frac{(q-k_j)^\top(\dot q-\dot k_j)}{\varepsilon}
+  +\frac{\|q-k_j\|^2}{2\varepsilon^2}\dot\varepsilon .
+  \nonumber
+\end{align}
+This equation is local and can be evaluated in blocks.  It does not require a
+dense \(N\times N\) matrix to be stored.
+
+The finite Sinkhorn potentials are a fixed composition of the softmin
+\eqref{eq:bf-hd-ledh-compact-softmin}.  With source log weights
+\(\alpha=\lambda^+_t\), target log weights \(\beta=-\log N\), scaled particles
+\(u_i=(z_{t,i}-\bar z_t)/s_t\), and deterministic annealing values
+\(\varepsilon_k\), the executed code carries four potentials.  Starting from
+the cold-start softmins, one finite balancing step has the form
+\begin{align}
+  a_y^{k+1} &=\frac12\left[
+    a_y^k+\operatorname{sm}_{\varepsilon_k}
+      (u;u,\alpha+b_x^k/\varepsilon_k)\right],\\
+  b_x^{k+1} &=\frac12\left[
+    b_x^k+\operatorname{sm}_{\varepsilon_k}
+      (u;u,\beta+a_y^k/\varepsilon_k)\right],\\
+  a_x^{k+1} &=\frac12\left[
+    a_x^k+\operatorname{sm}_{\varepsilon_k}
+      (u;u,\alpha+a_x^k/\varepsilon_k)\right],\\
+  b_y^{k+1} &=\frac12\left[
+    b_y^k+\operatorname{sm}_{\varepsilon_k}
+      (u;u,\beta+b_y^k/\varepsilon_k)\right].
+  \label{eq:bf-hd-ledh-compact-sinkhorn-recursion}
+\end{align}
+After the declared finite number of balancing steps, the transport application
+uses \(a=\operatorname{sm}_{\varepsilon}(u;u,\alpha+b_x/\varepsilon)\) and
+\(b=\operatorname{sm}_{\varepsilon}(u;u,\beta+a_y/\varepsilon)\).
+The tangent recursion is exactly the derivative of
+\eqref{eq:bf-hd-ledh-compact-sinkhorn-recursion}, using
+\eqref{eq:bf-hd-ledh-compact-softmin-jvp} at each finite iteration.  The scale
+and initial annealing value are part of the same derivative:
+\begin{align}
+  \bar z_t &= N^{-1}\sum_i z_{t,i},&
+  u_{t,i}&=(z_{t,i}-\bar z_t)/s_t,&
+  \dot u_{t,i}
+    &=\frac{\dot z_{t,i}-\dot{\bar z}_t}{s_t}
+      -\frac{z_{t,i}-\bar z_t}{s_t^2}\dot s_t,\\
+  \varepsilon_0&=\max\{(\max_{i,j}u_{t,ij}-\min_{i,j}u_{t,ij})^2,10^{-6}\}.
+  \label{eq:bf-hd-ledh-compact-scale-epsilon-sensitivity}
+\end{align}
+When the max or min is tied, the implementation must choose and document a
+subgradient convention.  Away from ties, this is the ordinary derivative.
+
+Given final finite potentials \(a,b\), the barycentric transport row is
+\begin{equation}
+  \tilde z_{t,i}
+  =
+  \sum_j
+  \exp\left\{
+    \frac{a_i+b_j-\|u_i-u_j\|^2/2}{\varepsilon}
+    -\rho_j+\log N+\lambda^+_{t,j}
+  \right\}z_{t,j},
+  \label{eq:bf-hd-ledh-compact-transport-application}
+\end{equation}
+where \(\rho_j\) is the column log normalizer for the same finite potentials.
+Its tangent is the direct product rule:
+\begin{equation}
+  \dot{\tilde z}_{t,i}
+  =
+  \sum_j T_{ij}\left[
+    \dot z_{t,j}
+    + z_{t,j}
+      \left(
+        \dot\eta_{ij}-\dot\rho_j+\dot\lambda^+_{t,j}
+      \right)
+  \right],
+  \label{eq:bf-hd-ledh-compact-transport-jvp}
+\end{equation}
+where \(T_{ij}\) is the finite transport weight in
+\eqref{eq:bf-hd-ledh-compact-transport-application} and
+\[
+  \eta_{ij}
+  =
+  \frac{a_i+b_j-\|u_i-u_j\|^2/2}{\varepsilon}.
+\]
+The column-normalizer tangent is the softmax average of \(\dot\eta_{ij}\) over
+rows \(i\).  Equation~\eqref{eq:bf-hd-ledh-compact-transport-jvp} is the
+forward-mode counterpart of a manual VJP.  It computes the same total
+derivative of the same finite Sinkhorn map, but it carries tangents forward in
+time and therefore does not need the full filtering history.
+
+\begin{proposition}[Compact finite LEDH--PFPF--OT score recursion]
+\label{prop:bf-hd-ledh-compact-sensitivity-score}
+Assume \(Q_\theta\) and \(R_\theta\) are positive definite with the stated
+dimensions, every jittered or projected matrix used by the finite code remains
+positive definite, and the parameter point is away from nondifferentiable max,
+floor, active-resampling, covariance-projection, and Cholesky-boundary ties.
+Assume also that the finite LEDH and Sinkhorn operations above are executed with
+fixed base random numbers and a fixed resampling mask.  If the filter loop carries
+\((X_t,\lambda_t,\dot X_t,\dot\lambda_t)\) and updates the tangents by
+\eqref{eq:bf-hd-ledh-compact-prediction-sensitivity}--
+\eqref{eq:bf-hd-ledh-compact-transport-jvp}, then
+\begin{equation}
+  \dot{\widehat\ell}_T(\theta)
+  =
+  \sum_{t=1}^T \dot a_t
+  \label{eq:bf-hd-ledh-compact-score}
+\end{equation}
+is the total derivative of the finite scalar
+\(\widehat\ell_T(\theta)=\sum_{t=1}^T a_t(\theta)\) computed by that same
+fixed-randomness LEDH--PFPF--OT run.
+\end{proposition}
+
+\begin{proof}
+Each displayed update is a differentiable finite-dimensional operation away
+from the stated branch boundaries: matrix inverse, Cholesky, affine maps,
+Gaussian log densities, logsumexp normalization, softmin, a fixed finite
+composition of Sinkhorn updates, column log normalization, and barycentric
+transport.  Equations
+\eqref{eq:bf-hd-ledh-compact-prediction-sensitivity}--
+\eqref{eq:bf-hd-ledh-compact-transport-jvp} are the chain rule applied to this
+finite composition in the same order as the value computation.  The scalar
+reported by the filter is the sum of the log normalizers \(a_t\).  Therefore
+the carried scalar tangent is the sum of their tangents, which is
+\eqref{eq:bf-hd-ledh-compact-score}.  No reverse-time cotangent or stored
+history is required for this forward-mode proof.
+\end{proof}
+
+The memory difference is simple.  The full-history reverse route stores
+time-indexed LEDH auxiliaries, transported states, and weights before scanning
+backward.  The compact sensitivity route stores only the current state and its
+\(p\) parameter tangents.  Its leading state memory is
+\begin{equation}
+  O(BNDp+BNp+D^2p)
+\end{equation}
+plus local streaming blocks for Sinkhorn, rather than a time-multiplied
+history.  This is the right route for a small parameter dimension such as the
+LGSSM row.  For very large \(p\), a checkpointed adjoint may be cheaper, but it
+must still differentiate the same finite scalar.
+
+\paragraph{Reader checkpoint.}
+What should now be clear: the likelihood gradient is not a separate numerical
+decoration.  It is the derivative of the same normalizers that define
+\(\ell_T\).  Object preserved: scalar value-gradient consistency.  Approximation
+enters at: any approximate \(p_t^-\), \(\widehat Z_t\), truncation, rounding, or
+adaptive gate.  Exported to synthesis: HMC can start only after the scalar and
+gradient contract is named.
+
+\section{Zakai, Kushner--Stratonovich, And DMZ Equations}
+\label{sec:bf-hd-zakai-dmz}
+
+For diffusion models, the normalized conditional distribution satisfies a
+nonlinear filtering equation, while the unnormalized conditional measure
+satisfies a linear Zakai equation.  We use \citet{vanhandel2007filtering} as the
+standard checked derivation anchor for the normalized and unnormalized
+equations rather than relying on unchecked historical priority papers.  In an
+informal density notation, the unnormalized density $\sigma_t$ obeys a linear
+stochastic equation of the form
+\begin{equation}
+  d\sigma_t
+  =
+  \mathcal L_\theta^\ast \sigma_t\,dt
+  + h_\theta^\top \sigma_t\,dY_t,
+  \label{eq:bf-hd-zakai-density}
+\end{equation}
+where $\mathcal L_\theta^\ast$ is the Fokker--Planck adjoint associated with the
+signal generator.  The normalized density is
+\begin{equation}
+  \rho_t(x)=\frac{\sigma_t(x)}{\int \sigma_t(u)\,du}.
+  \label{eq:bf-hd-normalize-zakai}
+\end{equation}
+The Duncan--Mortensen--Zakai viewpoint emphasizes the density/PDE form of
+\eqref{eq:bf-hd-zakai-density}.  It is attractive in high dimension because it
+turns filtering into density propagation; it is frightening for exactly the same
+reason, since a tensor-product grid has exponentially many degrees of freedom.
+
+\begin{remark}[Bibliographic scope]
+For the equations used below, this chapter relies on checked technical sources:
+van Handel for the standard normalized and unnormalized filtering equations, and
+Davis/Yau papers for the pathwise robust DMZ transformation and memoryless
+algorithm.  Classical priority names are retained for orientation, but a
+historical citation is not used as a substitute for an inspected theorem or
+derivation.
+\end{remark}
+
+\section{Pathwise Robust DMZ And Memoryless Computation}
+\label{sec:bf-hd-pathwise-dmz}
+
+\citet{davis1980multiplicative} studies a multiplicative functional
+transformation for nonlinear filtering.  In the simple scalar-observation
+diffusion setting, the idea is to absorb observation-path dependence into a
+path-dependent transformation of the unnormalized density.  The transformed
+object evolves according to a generator/PDE that can be studied pathwise rather
+than only as a stochastic differential equation.
+
+\citet{yau2000realtime} and \citet{yau2008realtime} build a robust DMZ
+algorithm around this principle.  Their central computational move is to
+freeze observation increments on a time partition and repeatedly solve
+observation-independent Kolmogorov-type equations, correcting by
+observation-dependent multiplicative factors.  In schematic form, over
+$[t_j,t_{j+1}]$ one computes
+\begin{align}
+  \partial_s u_j(s,x) &= \mathcal K_{y_{t_j}} u_j(s,x),
+       \qquad s\in[t_j,t_{j+1}], \label{eq:bf-hd-frozen-kolmogorov}\\
+  u_{j+1}(t_{j+1},x) &=
+       \mathcal M(y_{t_{j+1}}-y_{t_j},x)\,u_j(t_{j+1},x),
+       \label{eq:bf-hd-memoryless-update}
+\end{align}
+where $\mathcal K_{y_{t_j}}$ and $\mathcal M$ denote the paper-specific frozen
+operator and multiplicative observation update.  The details are not optional:
+the convergence and bounded-domain approximation theorems in
+\citet{yau2000realtime,yau2008realtime} depend on their growth, regularity,
+weak-solution, and boundary assumptions.
+
+\begin{algorithm}
+\caption{Robust DMZ offline/online template}
+\label{alg:bf-hd-robust-dmz}
+\begin{algorithmic}[1]
+\Require Partition $0=t_0<\cdots<t_K=T$, initial density, checked PR-DMZ
+  assumptions, spatial domain or truncation rule.
+\State Build or choose the observation-independent Kolmogorov solver required by
+  the cited theorem.
+\For{$j=0,\ldots,K-1$}
+  \State Freeze the observation path according to the cited rule.
+  \State Solve the frozen Kolmogorov equation on $[t_j,t_{j+1}]$.
+  \State Apply the multiplicative observation correction.
+  \State Normalize only after preserving the unnormalized-density semantics.
+  \State Record mass, positivity, boundary, and discretization residuals.
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\citet{meng2025regularity} is a recent arXiv contribution rather than a settled
+classical reference.  It is therefore used here as a contextual reference: it
+links pathwise robust DMZ regularity estimates to sparse functional
+tensor-train approximations and a finite-difference QTT algorithm.  The
+durable lesson for the rest of the monograph is methodological rather than evidentiary: a tensor
+filter must make regularity, rank/compressibility, discretization error,
+rounding error, and online-assimilation stability visible before small storage
+can be interpreted as a filtering result.
+
+\section{Approximate Targets And The HMC Boundary}
+\label{sec:bf-hd-approx-target}
+
+For a prior $\pi(\theta)$, the exact parameter posterior is proportional to
+\begin{equation}
+  \pi(\theta\mid y_{1:T})
+  \propto \exp\{\ell_T(\theta)\}\pi(\theta).
+  \label{eq:bf-hd-exact-posterior}
+\end{equation}
+If a filter supplies $\widehat\ell_T(\theta)$, the posterior implied by the
+calculation is
+\begin{equation}
+  \widehat\pi(\theta\mid y_{1:T})
+  \propto \exp\{\widehat\ell_T(\theta)\}\pi(\theta),
+  \label{eq:bf-hd-approx-posterior}
+\end{equation}
+unless a pseudo-marginal or other exact correction is part of the algorithm.
+The corresponding gradient is
+\[
+  \nabla_\theta \widehat\ell_T(\theta)
+  =
+  \nabla_\theta\sum_{t=1}^T\log\widehat Z_t(\theta),
+\]
+provided the reported gradient is the derivative of the reported scalar.
+Truncation, resampling, clipping, tensor rounding, adaptive stopping, and
+discrete accept/reject gates must therefore state which scalar is being
+differentiated.  The HMC chapter returns to this point: exact Hamiltonian
+dynamics for \eqref{eq:bf-hd-approx-posterior} is not exact sampling from
+\eqref{eq:bf-hd-exact-posterior}.
+
+\section{Why Dimension Breaks Filters}
+\label{sec:bf-hd-failure-modes}
+
+High dimension is a family of failure mechanisms.
+
+\begin{description}[leftmargin=*, style=nextline]
+  \item[Particle collapse.]
+  The bootstrap and SIR filters of \citet{gordon1993novel} and
+  \citet{arulampalam2002tutorial} represent the filtering law by particles and
+  weights.  \citet{bengtsson2008curse} and \citet{snyder2008obstacles} show
+  that, under their assumptions, weight concentration can be governed by the
+  variance of the log likelihood and can require enormous ensembles.  These
+  results do not say every structured particle method fails; they say proposal,
+  localization, and correction must be central.
+
+  \item[Grid explosion.]
+  A density grid with $M$ points per coordinate has $M^n$ entries.  Sparse grids,
+  tensor trains, and transport maps are attempts to exploit smoothness,
+  low-order interactions, low rank, or triangular structure.  If the posterior
+  lacks that structure, the format fails.
+
+  \item[Gaussian projection bias.]
+  EKF/UKF/CKF-style filters propagate only selected moments.  Multimodality,
+  skewness, sharp likelihoods, and nonlocal curvature can be invisible to the
+  chosen moment rule.
+
+  \item[Sampler geometry.]
+  HMC and NUTS can fail through divergences, poor energy exploration, invalid
+  regions, or a value/gradient mismatch even when the filter returns finite
+  numbers.
+\end{description}
+
+\section{Defects Passed To Synthesis}
+\label{sec:bf-hd-foundations-defects}
+
+This chapter passes five defects to the synthesis chapter.
+
+\begin{enumerate}[label=(\arabic*)]
+  \item The exact object is a sequence of probability laws and normalizers.
+  A later method that returns a mean but not a defensible \(Z_t\) has not
+  supplied a likelihood target for parameter inference.
+  \item The approximate posterior in \eqref{eq:bf-hd-approx-posterior} is a
+  different target unless an exact correction is part of the method.  This is
+  the first same-scalar obligation inherited by HMC.
+  \item Analytical score recursions such as
+  \eqref{eq:bf-hd-likelihood-gradient} are available in the dominated
+  discrete-time setting.  Continuous-time/PDE score and adjoint formulas are
+  not derived here and remain source-specific obligations.
+  \item Density/PDE formulations require mass, positivity, boundary, and
+  regularity checks.  A low residual in a transformed PDE does not by itself
+  prove that the normalized density is a valid filtering law.
+  \item Source-local PDE assumptions matter.  The Davis and Yau robust-DMZ
+  transformations and the Meng tensor approximation results support the
+  statements made under their hypotheses; they do not license an unrestricted
+  high-dimensional filtering theorem for BayesFilter.
+\end{enumerate}
+
+The synthesis chapter uses these defects as gates: exact target first,
+approximation target second, sampler or acceleration only downstream.
+
+\paragraph{Exported to synthesis.}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{longtable}{@{}p{0.10\linewidth}p{0.13\linewidth}p{0.12\linewidth}p{0.13\linewidth}p{0.13\linewidth}p{0.08\linewidth}p{0.11\linewidth}p{0.12\linewidth}@{}}
+\toprule
+Object & Exact target & Approximation site & Failure mode & Diagnostic/veto &
+Cost variable & Promotion gate & Citation/derivation anchor \\
+\midrule
+\endhead
+Conditional law & \(p_\theta(x_t\mid y_{1:t})\) & density, particles,
+moments, tensor, or map & mean-only or invalid law & mass, positivity,
+reference moments & state dimension & law semantics named &
+\eqref{eq:bf-hd-prediction}--\eqref{eq:bf-hd-update} \\
+Normalizer & \(Z_t=p(y_t\mid y_{1:t-1})\) & quadrature, Monte Carlo,
+tensor/PDE solve & wrong likelihood & finite positive \(Z_t\), scalar parity &
+integral cost & scalar likelihood reported &
+\eqref{eq:bf-hd-update}--\eqref{eq:bf-hd-likelihood-factor} \\
+Likelihood gradient & \(\nabla_\theta\ell_T\) & sensitivity approximation or
+autodiff path & gradient of a different scalar & finite-difference parity,
+same-scalar check & filter-gradient cost & value and gradient match &
+Proposition~\ref{prop:bf-hd-likelihood-sensitivity} \\
+DMZ/PDE density & unnormalized filtering density & spatial discretization,
+operator compression & mass, boundary, or regularity drift & residual, mass,
+positivity, boundary checks & grid/rank & source assumptions checked &
+\citet{davis1980multiplicative,yau2000realtime,yau2008realtime} \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\section{Methodological Boundary}
+\label{sec:bf-hd-foundations-boundary}
+
+The chapters that follow are literature-grounded design chapters, not production
+promotion notes.  A numerical smoke test can show that a command ran, values
+were finite, shapes matched, or a stop rule triggered.  It cannot establish
+posterior accuracy, NAWM readiness, tensor validation, HMC convergence, GPU/XLA
+readiness, or a default production policy.
+
+\section{Bibliographic Limits}
+\label{sec:bf-hd-foundations-limits}
+
+Several historical or specialized sources were not available for direct
+technical inspection in this pass: Savostyanov-specific maxvol/quasioptimality,
+Stroud's book, Smolyak's original sparse-grid construction, Genz-specific
+cubature foundations, and Knothe's original rearrangement source.  When later
+chapters use successor or alternative sources, their claims are restricted to
+what those inspected sources actually state.

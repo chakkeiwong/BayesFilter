@@ -1,0 +1,1483 @@
+                                                       Gradient-free Hamiltonian Monte Carlo
+                                                      with Efficient Kernel Exponential Families
+
+
+                                               Heiko Strathmann∗ Dino Sejdinovic+ Samuel Livingstoneo Zoltan Szabo∗ Arthur Gretton∗
+arXiv:1506.02564v2 [stat.ML] 24 Nov 2015
+
+
+
+
+                                                       ∗                          +                                o
+                                                        Gatsby Unit                   Department of Statistics         School of Mathematics
+                                                 University College London            University of Oxford              University of Bristol
+
+
+
+                                                                                          Abstract
+                                                    We propose Kernel Hamiltonian Monte Carlo (KMC), a gradient-free adaptive
+                                                    MCMC algorithm based on Hamiltonian Monte Carlo (HMC). On target densities
+                                                    where classical HMC is not an option due to intractable gradients, KMC adap-
+                                                    tively learns the target’s gradient structure by fitting an exponential family model
+                                                    in a Reproducing Kernel Hilbert Space. Computational costs are reduced by two
+                                                    novel efficient approximations to this gradient. While being asymptotically exact,
+                                                    KMC mimics HMC in terms of sampling efficiency, and offers substantial mixing
+                                                    improvements over state-of-the-art gradient free samplers. We support our claims
+                                                    with experimental studies on both toy and real-world applications, including Ap-
+                                                    proximate Bayesian Computation and exact-approximate MCMC.
+
+                                           1     Introduction
+                                           Estimating expectations using Markov Chain Monte Carlo (MCMC) is a fundamental approximate
+                                           inference technique in Bayesian statistics. MCMC itself can be computationally demanding, and
+                                           the expected estimation error depends directly on the correlation between successive points in the
+                                           Markov chain. Therefore, efficiency can be achieved by taking large steps with high probability.
+                                           Hamiltonian Monte Carlo [1] is an MCMC algorithm that improves efficiency by exploiting gra-
+                                           dient information. It simulates particle movement along the contour lines of a dynamical system
+                                           constructed from the target density. Projections of these trajectories cover wide parts of the target’s
+                                           support, and the probability of accepting a move along a trajectory is often close to one. Remark-
+                                           ably, this property is mostly invariant to growing dimensionality, and HMC here often is superior to
+                                           random walk methods, which need to decrease their step size at a much faster rate [1, Sec. 4.4].
+                                           Unfortunately, for a large class of problems, gradient information is not available. For example, in
+                                           Pseudo-Marginal MCMC (PM-MCMC) [2, 3], the posterior does not have an analytic expression,
+                                           but can only be estimated at any given point, e.g. in Bayesian Gaussian Process classification [4]. A
+                                           related setting is MCMC for Approximate Bayesian Computation (ABC-MCMC), where the pos-
+                                           terior is approximated through repeated simulation from a likelihood model [5, 6]. In both cases,
+                                           HMC cannot be applied, leaving random walk methods as the only mature alternative. There have
+                                           been efforts to mimic HMC’s behaviour using stochastic gradients from mini-batches in Big Data
+                                           [7], or stochastic finite differences in ABC [8]. Stochastic gradient based HMC methods, however,
+                                           often suffer from low acceptance rates or additional bias that is hard to quantify [9].
+                                           Random walk methods can be tuned by matching scaling of steps and target. For example, Adaptive
+                                           Metropolis-Hastings (AMH) [10, 11] is based on learning the global scaling of the target from the
+                                           history of the Markov chain. Yet, for densities with nonlinear support, this approach does not work
+                                           very well. Recently, [12] introduced a Kernel Adaptive Metropolis-Hastings (KAMH) algorithm
+                                           whose proposals are locally aligned to the target. By adaptively learning target covariance in a
+                                           Reproducing Kernel Hilbert Space (RKHS), KAMH achieves improved sampling efficiency.
+
+
+                                                                                               1
+In this paper, we extend the idea of using kernel methods to learn efficient proposal distributions [12].
+Rather than locally smoothing the target density, however, we estimate its gradients globally. More
+precisely, we fit an infinite dimensional exponential family model in an RKHS via score matching
+[13, 14]. This is a non-parametric method of modelling the log unnormalised target density as an
+RKHS function, and has been shown to approximate a rich class of density functions arbitrarily well.
+More importantly, the method has been empirically observed to be relatively robust to increasing
+dimensionality – in sharp contrast to classical kernel density estimation [15, Sec. 6.5]. Gaussian
+Processes (GP) were also used in [16] as an emulator of the target density in order to speed up
+HMC, however, this requires access to the target in closed form, to provide training points for the
+GP.
+We require our adaptive KMC algorithm to be computationally efficient, as it deals with high-
+dimensional MCMC chains of growing length. We develop two novel approximations to the infinite
+dimensional exponential family model. The first approximation, score matching lite, is based on
+computing the solution in terms of a lower dimensional, yet growing, subspace in the RKHS. KMC
+with score matching lite (KMC lite) is geometrically ergodic on the same class of targets as stan-
+dard random walks. The second approximation uses a finite dimensional feature space (KMC finite),
+combined with random Fourier features [17]. KMC finite is an efficient online estimator that allows
+to use all of the Markov chain history, at the cost of decreased efficiency in unexplored regions. A
+choice between KMC lite and KMC finite ultimately depends on the ability to initialise the sampler
+within high-density regions of the target; alternatively, the two approaches could be combined.
+Experiments show that KMC inherits the efficiency of HMC, and therefore mixes significantly better
+than state-of-the-art gradient-free adaptive samplers on a number of target densities, including on
+synthetic examples, and when used in PM-MCMC and ABC-MCMC. All code can be found at
+https://github.com/karlnapf/kernel_hmc
+
+2       Background and Previous Work
+Let the domain of interest X be a compact1 subset of Rd , and denote the unnormalised target den-
+sity on X by π. We are interested in constructing a Markov chain x1 → x2 → . . . such that
+limt→∞ xt ∼ π. By running the Markov chain for a long time T , we can consistently approximate
+any expectation w.r.t. π. Markov chains are constructed using the Metropolis-Hastings algorithm,
+which at the current state xt draws a point from a proposal mechanism x∗ ∼ Q(·|xt ), and sets
+xt+1 ← x∗ with probability min(1, [π(x∗ )Q(xt |x∗ )]/[π(xt )Q(x∗ |xt )]), and xt+1 ← xt otherwise.
+We assume that π is intractable,2 i.e. that we can neither evaluate π(x) nor3 ∇ log π(x) for any x,
+but can only estimate it unbiasedly via π̂(x). Replacing π(x) with π̂(x) results in PM-MCMC [2, 3],
+which asymptotically remains exact (exact-approximate inference).
+
+(Kernel) Adaptive Metropolis-Hastings In the absence of ∇ log π, the usual choice of Q is a
+random walk, i.e. Q(·|xt ) = N (·|xt , Σt ). A popular choice of the scaling is Σt ∝ I. When the
+scale of the target density is not uniform across dimensions, or if there are strong correlations, the
+AMH algorithm [10, 11] improves mixing by adaptively learning global covariance structure of π
+from the history of the Markov chain. For cases where the local scaling does not match the global
+covariance of π, i.e. the support of the target is nonlinear, KAMH [12] improves mixing by learning
+the target covariance in a RKHS. KAMH proposals are Gaussian with a covariance that matches the
+local covariance of π around the current state xt , without requiring access to ∇ log π.
+
+Hamiltonian Monte Carlo Hamiltonian Monte Carlo (HMC) uses deterministic, measure-
+preserving maps to generate efficient Markov transitions [1, 18]. Starting from the negative log
+target, referred to as the potential energy U (q) = − log π(q), we introduce an auxiliary momen-
+tum variable p ∼ exp(−K(p)) with p ∈ X . The joint distribution of (p, q) is then proportional
+to exp (−H(p, q)), where H(p, q) := K(p) + U (q) is called the Hamiltonian. H(p, q) defines a
+                                                                                              ∗ ∗
+Hamiltonian flow, parametrised by a trajectory length t ∈ R, which is a map φHt : (p, q) 7→ (p , q )
+for which H(p∗ , q ∗ ) = H(p, q). This allows constructing π-invariant Markov chains: for a chain at
+state q = xt , repeatedly (i) re-sample p0 ∼ exp(−K(·)), and then (ii) apply the Hamiltonian flow
+
+    1
+      The compactness restriction is imposed to satisfy the assumptions in [13].
+    2
+      π is analytically intractable, as opposed to computationally expensive in the Big Data context.
+    3
+      Throughout the paper ∇ denotes the gradient operator w.r.t. to x.
+
+
+                                                        2
+for time t, giving (p∗ , q ∗ ) = φH   0
+                                  t (p , q). The flow can be generated by the Hamiltonian operator
+
+                                           ∂K ∂    ∂U ∂
+                                                 −                                                    (1)
+                                           ∂p ∂q   ∂q ∂p
+In practice, (1) is usually unavailable and we need to resort to approximations. Here, we limit our-
+selves to the leap-frog integrator; see [1] for details. To correct for discretisation error, a Metropolis
+acceptance procedure can be applied: starting from (p0 , q), the end-point of the approximate tra-
+jectory is accepted with probability min [1, exp (−H(p∗ , q ∗ ) + H(p0 , q))]. HMC is often able to
+propose distant, uncorrelated moves with a high acceptance probability.
+
+Intractable densities In many cases the gradient of log π(q) = −U (q) cannot be written in closed
+form, leaving random-walk based methods as the state-of-the-art [11, 12]. We aim to overcome
+random-walk behaviour, so as to obtain significantly more efficient sampling [1].
+
+3   Kernel Induced Hamiltonian Dynamics
+KMC replaces the potential energy in (1) by a kernel induced surrogate computed from the history of
+the Markov chain. This surrogate does not require gradients of the log-target density. The surrogate
+induces a kernel Hamiltonian flow, which can be numerically simulated using standard leap-frog
+integration. As with the discretisation error in HMC, any deviation of the kernel induced flow
+from the true flow is corrected via a Metropolis acceptance procedure. This here also contains
+the estimation noise from π̂ and re-uses previous values of π̂, c.f. [3, Table 1]. Consequently,
+the stationary distribution of the chain remains correct, given that we take care when adapting the
+surrogate.
+Infinite Dimensional Exponential Families in a RKHS We construct a kernel induced potential
+energy surrogate whose gradients approximate the gradients of the true potential energy U in (1),
+without accessing π or ∇π directly, but only using the history of the Markov chain. To that end, we
+model the (unnormalised) target density π(x) with an infinite dimensional exponential family model
+[13] of the form
+                          const × π(x) ≈ exp (hf, k(x, ·)iH − A(f )) ,                           (2)
+
+which in particular implies ∇f ≈ −∇U = ∇ log π. Here H is a RKHS of real valued functions
+on X . The RKHS has a uniquely associated symmetric, positive definite kernel k : X × X → R,
+which satisfies f (x) = hf, k(x, ·)iH for any f ∈ H [19]. The canonical feature map k(·, x) ∈ H
+here takes the´ role of the sufficient statistics while f ∈ H are the natural parameters, and
+A(f ) := log X exp(hf, k(x, ·)iH )dx is the cumulant generating function. Eq. (2) defines broad
+class of densities: when universal kernels are used, the family is dense in the space of continuous
+densities on compact domains, with respect to e.g. Total Variation and KL [13, Section 3]. It is pos-
+sible to consistently fit an unnormalised version of (2) by directly minimising the expected gradient
+mismatch between the model (2) and the true target density π (observed through the Markov chain
+history). This is achieved by generalising the score matching approach [14] to infinite dimensional
+parameter spaces. The technique avoids the problem of dealing with the intractable A(f ), and re-
+duces the problem to solving a linear system. More importantly, the approach is observed to be
+relatively robust to increasing dimensions. We return to estimation in Section 4, where we develop
+two efficient approximations. For now, assume access to an fˆ ∈ H such that ∇f (x) ≈ ∇ log π(x).
+
+Kernel Induced Hamiltonian Flow We define a kernel induced Hamiltonian operator by replac-
+ing U in the potential energy part ∂U        ∂
+                                        ∂p ∂q in (1) by our kernel surrogate Uk = f . It is clear that,
+depending on Uk , the resulting kernel induced Hamiltonian flow differs from the original one. That
+said, any bias on the resulting Markov chain, in addition to discretisation error from the leap-frog
+integrator, is naturally corrected for in the Pseudo-Marginal Metropolis step. We accept an end-point
+φH     0                                   0
+  t (p , q) of a trajectory starting at (p , q) along the kernel induced flow with probability
+   k
+
+                                  h                                     i
+                                                         0            0
+                             min 1, exp −H φH       t (p , q) + H(p , q)
+                                                      k
+                                                                              ,                     (3)
+                   
+where H φH       0                                               Hk 0
+           t (p , q) corresponds to the true Hamiltonian at φt (p , q). Here, in the Pseudo-
+             k
+
+
+Marginal context, we replace both terms in the ratio in (3) by unbiased estimates, i.e., we replace
+
+
+                                                    3
+               HMC                           Acceptance prob.                   KMC                      Acceptance prob.
+                            1.00                                                        1.00
+                            0.95                                                        0.95
+                            0.90                                                        0.90
+                            0.85                                                        0.85
+                            0.80                                                        0.80
+                            0.75                                                        0.75
+                            0.70                                                        0.70
+
+                                   0   100     200      300     400   500                      0   100     200      300     400   500
+                                              Leap-frog steps                                             Leap-frog steps
+
+
+
+
+Figure 1: Hamiltonian trajectories on a 2-dimensional standard Gaussian. End points of such trajec-
+tories (red stars to blue stars) form the proposal of HMC-like algorithms. Left: Plain Hamiltonian
+trajectories oscillate on a stable orbit, and acceptance probability is close to one. Right: Kernel
+induced trajectories and acceptance probabilities on an estimated energy function.
+
+
+π(q) within H with an unbiased estimator π̂(q). Note that this also involves ‘recycling’ the es-
+timates of H from previous iterations to ensure anyymptotic correctness, c.f. [3, Table 1]. Any
+deviations of the kernel induced flow from the true flow result in a decreased acceptance probability
+(3). We therefore need to control the approximation quality of the kernel induced potential energy
+to maintain high acceptance probability in practice. See Figure 1 for an illustrative example.
+
+4         Two Efficient Estimators for Exponential Families in RKHS
+We now address estimating the infinite dimensional exponential family model (2) from data. The
+original estimator in [13] has a large computational cost. This is problematic in the adaptive MCMC
+context, where the model has to be updated on a regular basis. We propose two efficient approxima-
+tions, each with its strengths and weaknesses. Both are based on score matching.
+4.1 Score Matching
+Following [14], we model an unnormalised log probability density log π(x) with a parametric model
+                                             log π̃Z (x; f ) := log π̃(x; f ) − log Z(f ),                                              (4)
+where f is a collection of parameters of yet unspecified dimension (c.f. natural parameters of (2)),
+and Z(f ) is an unknown normalising constant. We aim to find fˆ from a set of n samples4 D :=
+{xi }ni=1 ∼ π such that π(x) ≈ π̃(x; fˆ) × const. From [14, Eq. 2], the criterion being optimised is
+the expected squared distance between gradients of the log density, so-called score functions,
+                                 ˆ
+                               1                                        2
+                      J(f ) =       π(x) k∇ log π̃(x; f ) − ∇ log π(x)k2 dx,
+                               2 X
+where we note that the normalising constants vanish from taking the gradient ∇. As shown in [14,
+Theorem 1], it is possible to compute an empirical version without accessing π(x) or ∇ log π(x)
+other than through observed samples,
+                                  d
+                                     "                                         2 #
+                                         2
+                                                             
+                   ˆ )=     1 XX       ∂   log π̃(x; f )   1   ∂ log π̃(x; f )
+                  J(f                                    +                          .        (5)
+                           n                 ∂x2`          2        ∂x`
+                                             x∈D `=1
+
+Our approximations of the original model (2) are based on minimising (5) using approximate scores.
+4.2        Infinite Dimensional Exponential Families Lite
+The original estimator of f in (2) takes a dual form in a RKHS sub-space spanned by nd + 1 kernel
+derivatives, [13, Thm. 4]. The update of the proposal at the iteration t of MCMC requires inversion
+of a (td + 1) × (td + 1) matrix. This is clearly prohibitive if we are to run even a moderate number
+of iterations of a Markov chain. Following [12], we take a simple approach to avoid prohibitive
+computational costs in t: we form a proposal using a random sub-sample of fixed size n from the
+Markov chain history, z := {zi }ni=1 ⊆ {xi }ti=1 . In order to avoid excessive computation when d is
+                                                                                      n
+large, we replace the full dual solution with a solution in terms of span ({k(zi , ·)}i=1 ), which covers
+the support of the true density by construction, and grows with increasing n. That is, we assume that
+the model (4) takes the ‘light’ form
+      4
+          We assume a fixed sample set here but will use both the full chain history {xi }ti=1 or a sub-sample later.
+
+
+                                                                            4
+                                                    n
+                                                    X
+                                          f (x) =         αi k(zi , x),                             (6)
+                                                    i=1
+where α ∈ Rn are real valued parameters that are obtained by minimising the empirical score match-
+ing objective (5). This representation is of a form similar to [20, Section 4.1], the main differences
+being that the basis functions are chosen randomly, the basis set grows with n, and we will require
+an additional regularising term. The estimator is summarised in the following proposition, which is
+proved in Appendix A.
+                                                                              Pn
+Proposition 1. Given a set of samples z = {zi }ni=1 and assuming     f (x) = i=1 αi k(zi , x) for the
+Gaussian kernel of the form k(x, y) = exp −σ −1 kx − yk22 , and λ > 0, the unique minimiser of
+                                                               
+
+the λkf k2H -regularised empirical score matching objective (5) is given by
+                                                σ
+                                      α̂λ = − (C + λI)−1 b,                                        (7)
+                                                2
+where b ∈ Rn and C ∈ Rn×n are given by
+        d                                               d
+        X   2                                             X
+  b=              (Ks` + Ds` K1 − 2Dx` Kx` ) − K1 and C =   [Dx` K − KDx` ] [KDx` − Dx` K] ,
+              σ
+        `=1                                                          `=1
+
+with entry-wise products s` := x`      x` and Dx := diag(x).
+The estimator costs O(n3 + dn2 ) computation (for computing C, b, and for inverting C) and O(n2 )
+storage, for a fixed random chain history sub-sample size n. This can be further reduced via low-rank
+approximations to the kernel matrix and conjugate gradient methods, which are derived in Appendix
+A.
+                                                Pn
+Gradients of the model are given as ∇f (x) = i=1 αi ∇k(x, xi ), i.e. they simply require to evalu-
+ate gradients of the kernel function. Evaluation and storage of ∇f (·) both cost O(dn).
+4.3 Exponential Families in Finite Feature Spaces
+Instead of fitting an infinite-dimensional model on a subset of the available data, the second estimator
+is based on fitting a finite dimensional approximation using all available data {xi }ti=1 , in primal
+form. As we will see, updating the estimator when a new data point arrives can be done online.
+Define an m-dimensional approximate feature space Hm = Rm , and denote by φx ∈ Hm the
+embedding of a point x ∈ X = Rd into Hm = Rm . Assume that the embedding approximates the
+kernel function as a finite rank expansion k(x, y) ≈ φ>
+                                                      x φy . The log unnormalised density of the
+infinite model (2) can be approximated by assuming the model in (4) takes the form
+                                   f (x) = hθ, φx iHm = θ> φx                               (8)
+            m
+To fit θ ∈ R , we again minimise the score matching objective (5), as proved in Appendix B.
+Proposition 2. Given a set of samples x = {xi }ti=1 and assuming f (x) = θ> φx for a finite
+dimensional feature embedding x 7→ φx ∈ Rm , and λ > 0, the unique minimiser of the λkθk22 -
+regularised empirical score matching objective (5) is given by
+                                           θ̂λ := (C + λI)−1 b,                                     (9)
+where
+                           t   d                                 t    d
+                       1 XX `                                1 X X `  ` T
+              b := −         φ̈xi ∈ Rm ,            C :=           φ̇xi φ̇xi ∈ Rm×m ,
+                       n i=1                                 n i=1
+                           `=1                                       `=1
+       `     ∂           `     ∂2
+with φ̇x := ∂x` φx and φ̈x := ∂x 2 φx .
+                                   `
+
+
+An example feature
+              q embedding based on random Fourier          features [17, 21] and a standard Gaussian
+                 2        T                    T
+                                                         
+kernel is φx = m cos(ω1 x + u1 ), . . . , cos(ωm x + um ) , with ωi ∼ N (ω) and ui ∼ Uniform[0, 2π].
+The estimator has a one-off cost of O(tdm2 + m3 ) computation and O(m2 ) storage. Given that we
+have computed a solution based on the Markov chain history {xi }ti=1 , however, it is straightforward
+to update C, b, and the solution θ̂λ online, after a new point xt+1 arrives. This is achieved by
+storing running averages and performing low-rank updates of matrix inversions, and costs O(dm2 )
+computation and O(m2 ) storage, independent of t. Further details are given in Appendix B.
+                                               >
+Gradients of the model are ∇f (x) = [∇φx ] θ̂ , i.e., they require the evaluation of the gradient of
+the feature space embedding, costing O(md) computation and and O(m) storage.
+
+                                                      5
+Algorithm 1 Kernel Hamiltonian Monte Carlo – Pseudo-code
+Input: Target (possibly noisy estimator) π̂, adaptation schedule at , HMC parameters,
+        Size of basis m or sub-sample size n.
+At iteration t + 1, current state xt , history {xi }ti=1 , perform (1-4) with probability at
+KMC lite:                                                     KMC finite:
+       1. Update sub-sample z ⊆ {xi }ti=1                         1. Update to C, b from Prop. 2
+       2. Re-compute C, b from Prop. 1                            2. Perform rank-d update to C −1
+       3. Solve α̂λ = − σ2 (C + λI)−1 b                           3. Update θ̂λ = (C + λI)−1 b
+       4. ∇f (x) ← ni=1 αi ∇k(x, zi )
+                     P
+                                                                  4. ∇f (x) ← [∇φx ]> θ̂
+       5. Propose (p0 , x∗ ) with kernel induced Hamiltonian flow, using ∇x U = ∇x f
+       6. Perform Metropolis step using π̂: accept xt+1 ← x∗ w.p. (3) and reject xt+1 ← xt otherwise
+          If π̂ is noisy and x∗ was accepted, store above π̂(x∗ ) for evaluating (3) in the next iteration
+
+
+
+5    Kernel Hamiltonian Monte Carlo
+Constructing a kernel induced Hamiltonian flow as in Section 3 from the gradients of the infinite di-
+mensional exponential family model (2), and approximate estimators (6),(8), we arrive at a gradient
+free, adaptive MCMC algorithm: Kernel Hamiltonian Monte Carlo (Algorithm 1).
+Computational Efficiency, Geometric Ergodicity, and Burn-in KMC finite using (8) allows for
+online updates using the full Markov chain history, and therefore is a more elegant solution than
+KMC lite, which has greater computational cost and requires sub-sampling the chain history. Due
+to the parametric nature of KMC finite, however, the tails of the estimator are not guaranteed to
+decay. For example, the random Fourier feature embedding described below Proposition 2 contains
+periodic cosine functions, and therefore oscillates in the tails of (8), resulting in a reduced acceptance
+probability. As we will demonstrate in the experiments, this problem does not appear when KMC
+finite is initialised in high-density regions, nor after burn-in. In situations where information about
+the target density support is unknown, and during burn-in, we suggest to use the lite estimator (7),
+whose gradients decay outside of the training data. As a result, KMC lite is guaranteed to fall back
+to a Random Walk Metropolis in unexplored regions, inheriting its convergence properties, and
+smoothly transitions to HMC-like proposals as the MCMC chain grows. A proof of the proposition
+below can be found in Appendix C.
+Proposition 3. Assume d = 1, π(x) has log-concave tails, the regularity conditions of [22, Thm
+2.2] (implying π-irreducibility and smallness of compact sets), that MCMC adaptation stops after
+a fixed time, and a fixed number L of -leapfrog steps. If lim supkxk2 →∞ k∇f (x)k2 = 0, and
+∃M : ∀x : k∇f (x)k2 ≤ M , then KMC lite is geometrically ergodic from π-almost any starting
+point.
+
+Vanishing adaptation MCMC algorithms that use the history of the Markov chain for construct-
+ing proposals might not be asymptotically correct. We follow [12, Sec. 4.2] and the idea of ‘vanish-
+                                                    ∞
+                          P∞such biases. Let {at }i=0 be a schedule of decaying probabilities such
+ing adaptation’ [11], to avoid
+that limt→∞ at = 0 and t=0 at = ∞. We update the density gradient estimate according to this
+schedule in Algorithm 1. Intuitively, adaptation becomes less likely as the MCMC chain progresses,
+but never fully stops, while sharing asymptotic convergence with adaptation that stops at a fixed
+point [23, Theorem 1]. Note that Proposition 3 is a stronger statement about the convergence rate.
+Free Parameters KMC has two free parameters: the Gaussian kernel bandwidth σ, and the regu-
+larisation parameter λ. As KMC’s performance depends on the quality of the approximate infinite
+dimensional exponential family model in (6) or (8), a principled approach is to use the score match-
+ing objective function in (5) to choose σ, λ pairs via cross-validation (using e.g. ‘hot-started’ black-
+box optimisation). Earlier adaptive kernel-based MCMC methods [12] did not address parameter
+choice.
+
+6    Experiments
+We start by quantifying performance of KMC finite on synthetic targets. We emphasise that these
+results can be reproduced with the lite version.
+
+                                                          6
+                                                                            n=5000                                            d=8
+                                                  0.9    1.0                                            1.0
+                                                  0.8
+                                                  0.7    0.8                                            0.8
+               101
+                                                  0.6
+                                                         0.6                                            0.6
+
+
+
+
+        d
+                                                  0.5
+                                                                   HMC
+                                                  0.4    0.4                                            0.4
+                                                                   KMC median
+                                                  0.3
+                                                         0.2       KMC 25%-75%                          0.2
+                                                  0.2
+                                                                   KMC 5%-95%
+               100                                0.1    0.0                                            0.0
+                 102         103            104             100                          101               102               103              104
+                               n                                                     d                                         n
+
+
+
+
+Figure 2: Hypothetical acceptance probability of KMC finite on a challening target in growing
+dimensions. Left: As a function of n = m (x-axis) and d (y-axis). Middle/right: Slices through
+left plot with error bars for fixed n = m and as a function of d (left), and for fixed d as a function of
+n = m (right).
+
+                             Acc. rate                                      kÊ[X]k                                      Minimum ESS
+         0.9                                             10                                             35
+         0.8                                                                                            30        HMC
+         0.7                                              8                                                       KMC
+                                                                                                        25
+         0.6                                                                                                      RW
+         0.5                                              6                                             20        KAMH
+         0.4                                                                                            15
+                                                          4
+         0.3
+                                                                                                        10
+         0.2                                              2
+         0.1                                                                                             5
+         0.0                                              0                                              0
+               0       500     1000      1500     2000         0    500      1000         1500   2000         0    500       1000      1500   2000
+                                   n                                             n                                            n
+
+
+
+
+Figure 3: Results for the 8-dimensional synthetic Banana. As the amout of observed data increases,
+KMC performance approaches HMC – outperforming KAMH and RW. 80% error bars over 30 runs.
+
+
+KMC Finite: Stability of Trajectories in High Dimensions In order to quantify efficiency in
+growing dimensions, we study hypothetical acceptance rates along trajectories on the kernel induced
+Hamiltonian flow (no MCMC yet) on a challenging Gaussian target: We sample the diagonal entries
+of the covariance matrix from a Gamma(1,1) distribution and rotate with a uniformly sampled
+random orthogonal matrix. The resulting target is challenging to estimate due to its ‘non-singular
+smoothness’, i.e., substantially differing length-scales across its principal components. As a single
+Gaussian kernel is not able to effeciently represent such scaling families, we use a rational quadratic
+kernel for the gradient estimation, whose random features are straightforward to compute. Figure
+2 shows the average acceptance over 100 independent trials as a function of the number of (ground
+truth) samples and basis functions, which are set to be equal n = m, and of dimension d. In low to
+moderate dimensions, gradients of the finite estimator lead to acceptance rates comparable to plain
+HMC. On targets with more ‘regular’ smoothness, the estimator performs well in up to d ≈ 100,
+with less variance. See Appendix D.1 for details.
+KMC Finite: HMC-like Mixing on a Synthetic Example We next show that KMC’s perfor-
+mance approaches that of HMC as it sees more data. We compare KMC, HMC, an isotropic random
+walk (RW), and KAMH on the 8-dimensional nonlinear banana-shaped target; see Appendix D.2.
+We here only quantify mixing after a sufficient burn-in (burn-in speed is included in next example).
+We quantify performance on estimating the target’s mean, which is exactly 0. We tuned the scaling
+of KAMH and RW to achieve 23% acceptance. We set HMC parameters to achieve 80% acceptance
+and then used the same parameters for KMC. We ran all samplers for 2000+200 iterations from a
+random start point, discarded the burn-in and computed acceptance rates, the norm of the empirical
+mean kÊ[x]k, and the minimum effective sample size (ESS) across dimensions. For KAMH and
+KMC, we repeated the experiment for an increasing number of burn-in samples and basis functions
+m = n. Figure 3 shows the results as a function of m = n. KMC clearly outperforms RW and
+KAMH, and eventually achieves performance close to HMC as n = m grows.
+KMC Lite: Pseudo-Marginal MCMC for GP Classification on Real World Data We next
+apply KMC to sample from the marginal posterior over hyper-parameters of a Gaussian Process
+Classification (GPC) model on the UCI Glass dataset [24]. Classical HMC cannot be used for this
+problem, due to the intractability of the marginal data likelihood. Our experimental protocol mostly
+follows [12, Section 5.1], see Appendix D.3, but uses only 6000 MCMC iterations without discard-
+ing a burn-in, i.e., we study how fast KMC initially explores the target. We compare convergence in
+terms of all mixed moments of order up to 3 to a set of benchmark samples (MMD [25], lower is bet-
+ter). KMC randomly uses between 1 and 10 leapfrog steps of a size chosen uniformly in [0.01, 0.1],
+
+
+                                                                             7
+                                                                                               1.2                                                   0.7
+                                                                                               1.0                             KMC
+                              107                                                                                                                    0.6
+                                                                KMC                                                            RW
+                                                                                               0.8
+                                                                                                                               HABC
+
+
+
+
+      MMD from ground truth
+
+
+
+
+                                                                            Autocorrelation
+                                                                KAMH                                                                                 0.5
+                              106
+                                                                RW                             0.6
+                                                                                                                                                     0.4
+
+
+
+
+                                                                                                                                            p(θ1 )
+                              105                                                              0.4
+                                                                                                                                                     0.3
+                                                                                               0.2
+                              104                                                                                                                    0.2
+                                                                                               0.0
+                              103                                                             −0.2                                                   0.1
+
+                                                                                              −0.4                                                   0.0
+                              102
+                                    0   1000   2000    3000   4000   5000                            0   20   40         60   80      100               −10   0   10   20   30   40   50
+                                                Iterations                                                         Lag                                                 θ1
+
+
+
+
+Figure 4: Left: Results for 9-dimensional marginal posterior over length scales of a GPC model
+applied to the UCI Glass dataset. The plots shows convergence (no burn-in discarded) of all mixed
+moments up to order 3 (lower MMD is better). Middle/right: ABC-MCMC auto-correlation and
+marginal θ1 posterior for a 10-dimensional skew normal likelihood. While KMC mixes as well as
+HABC, it does not suffer from any bias (overlaps with RW, while HABC is significantly different)
+and requires fewer simulations per proposal.
+
+
+a standard Gaussian momentum, and a kernel tuned by cross-validation, see Appendix D.3. We did
+not extensively tune the HMC parameters of KMC as the described settings were sufficient. Both
+KMC and KAMH used 1000 samples from the chain history. Figure 4 (left) shows that KMC’s burn-
+in contains a short ‘exploration phase’ where produced estimates are bad, due to it falling back to a
+random walk in unexplored regions, c.f. Proposition 3. From around 500 iterations, however, KMC
+clearly outperforms both RW and the earlier state-of-the-art KAMH. These results are backed by the
+minimum ESS (not plotted), which is around 415 for KMC and is around 35 and 25 for KAMH and
+RW, respectively. Note that all samplers effectively stop improving from 3000 iterations – indicating
+a burn-in bias. All samplers took 1h time, with most time spent estimating the marginal likelihood.
+KMC Lite: Reduced Simulations and no Additional Bias in ABC We now apply KMC in the
+context of Approximate Bayesian Computation (ABC), which often is employed when the data like-
+lihood is intractable but can be obtained by simulation, see e.g. [6]. ABC-MCMC [5] targets an
+approximate posterior by constructing an unbiased Monte Carlo estimator of the approximate like-
+lihood. As each such evaluation requires expensive simulations from the likelihood, the goal of all
+ABC methods is to reduce the number of such simulations. Accordingly, Hamiltonian ABC was
+recently proposed [8], combining the synthetic likelihood approach [26] with gradients based on
+stochastic finite differences. We remark that this requires to simulate from the likelihood in every
+leapfrog step, and that the additional bias from the Gaussian likelihood approximation can be prob-
+lematic. In contrast, KMC does not require simulations to construct a proposal, but rather ‘invests’
+simulations into an accept/reject step (3) that ensures convergence to the original ABC target. Fig-
+ure 4 (right) compares performance of RW, HABC (sticky random numbers and SPAS, [8, Sec. 4.3,
+4.4]), and KMC on a 10-dimensional skew-normal distribution p(y|θ) = 2N (θ, I) Φ (hα, yi) with
+θ = α = 1 · 10. KMC mixes as well as HABC, but HABC suffers from a severe bias. KMC also
+reduces the number of simulations per proposal by a factor 2L = 100. See Appendix D.4 for details.
+7   Discussion
+We have introduced KMC, a kernel-based gradient free adaptive MCMC algorithm that mimics
+HMC’s behaviour by estimating target gradients in an RKHS. In experiments, KMC outperforms
+random walk based sampling methods in up to d = 50 dimensions, including the recent kernel-
+based KAMH [12]. KMC is particularly useful when gradients of the target density are unavailable,
+as in PM-MCMC or ABC-MCMC, where classical HMC cannot be used. We have proposed two
+efficient empirical estimators for the target gradients, each with different strengths and weaknesses,
+and have given experimental evidence for the robustness of both.
+Future work includes establishing theoretical consistency and uniform convergence rates for the
+empirical estimators, for example via using recent analysis of random Fourier Features with tight
+bounds [21], and a thorough experimental study in the ABC-MCMC context where we see a lot of
+potential for KMC. It might also be possible to use KMC as a precomputing strategy to speed up
+classical HMC as in [27]. For code, see https://github.com/karlnapf/kernel_hmc
+
+
+
+
+                                                                                                               8
+References
+ [1] R.M. Neal. MCMC using Hamiltonian dynamics. Handbook of Markov Chain Monte Carlo,
+     2, 2011.
+ [2] M.A. Beaumont. Estimation of population growth or decline in genetically monitored popula-
+     tions. Genetics, 164(3):1139–1160, 2003.
+ [3] C. Andrieu and G.O. Roberts. The pseudo-marginal approach for efficient Monte Carlo com-
+     putations. The Annals of Statistics, 37(2):697–725, April 2009.
+ [4] M. Filippone and M. Girolami. Pseudo-marginal Bayesian inference for Gaussian Processes.
+     IEEE Transactions on Pattern Analysis and Machine Intelligence, 2014.
+ [5] P. Marjoram, J. Molitor, V. Plagnol, and S. Tavaré. Markov chain Monte Carlo without likeli-
+     hoods. Proceedings of the National Academy of Sciences, 100(26):15324–15328, 2003.
+ [6] S.A. Sisson and Y. Fan. Likelihood-free Markov chain Monte Carlo. Handbook of Markov
+     chain Monte Carlo, 2010.
+ [7] T. Chen, E. Fox, and C. Guestrin. Stochastic Gradient Hamiltonian Monte Carlo. In ICML,
+     pages 1683–1691, 2014.
+ [8] E. Meeds, R. Leenders, and M. Welling. Hamiltonian ABC. In UAI, 2015.
+ [9] M. Betancourt. The Fundamental Incompatibility of Hamiltonian Monte Carlo and Data Sub-
+     sampling. arXiv preprint arXiv:1502.01510, 2015.
+[10] H. Haario, E. Saksman, and J. Tamminen. Adaptive proposal distribution for random walk
+     Metropolis algorithm. Computational Statistics, 14(3):375–395, 1999.
+[11] C. Andrieu and J. Thoms. A tutorial on adaptive MCMC. Statistics and Computing, 18(4):343–
+     373, December 2008.
+[12] D. Sejdinovic, H. Strathmann, M. Lomeli, C. Andrieu, and A. Gretton. Kernel Adaptive
+     Metropolis-Hastings. In ICML, 2014.
+[13] B. Sriperumbudur, K. Fukumizu, R. Kumar, A. Gretton, and A. Hyvärinen. Density Estimation
+     in Infinite Dimensional Exponential Families. arXiv preprint arXiv:1312.3516, 2014.
+[14] A. Hyvärinen. Estimation of non-normalized statistical models by score matching. JMLR,
+     6:695–709, 2005.
+[15] Larry Wasserman. All of nonparametric statistics. Springer, 2006.
+[16] C.E. Rasmussen. Gaussian Processes to Speed up Hybrid Monte Carlo for Expensive Bayesian
+     Integrals. Bayesian Statistics 7, pages 651–659, 2003.
+[17] A. Rahimi and B. Recht. Random features for large-scale kernel machines. In NIPS, pages
+     1177–1184, 2007.
+[18] M. Betancourt, S. Byrne, and M. Girolami. Optimizing The Integrator Step Size for Hamilto-
+     nian Monte Carlo. arXiv preprint arXiv:1503.01916, 2015.
+[19] A. Berlinet and C. Thomas-Agnan. Reproducing Kernel Hilbert Spaces in Probability and
+     Statistics. Kluwer, 2004.
+[20] A. Hyvärinen. Some extensions of score matching. Computational Statistics & Data Analysis,
+     51:2499–2512, 2007.
+[21] B.K. Sriperumbudur and Z. Szabó. Optimal rates for random Fourier features. In NIPS, 2015.
+[22] G.O. Roberts and R.L. Tweedie. Geometric convergence and central limit theorems for multi-
+     dimensional Hastings and Metropolis algorithms. Biometrika, 83(1):95–110, 1996.
+[23] G.O. Roberts and J.S. Rosenthal. Coupling and ergodicity of adaptive Markov chain Monte
+     Carlo algorithms. Journal of Applied Probability, 44(2):458–475, 03 2007.
+[24] K. Bache and M. Lichman. UCI Machine Learning Repository, 2013.
+[25] A. Gretton, K. Borgwardt, B. Schölkopf, A. J. Smola, and M. Rasch. A kernel two-sample test.
+     JMLR, 13:723–773, 2012.
+[26] S. N. Wood. Statistical inference for noisy nonlinear ecological dynamic systems. Nature,
+     466(7310):1102–1104, 08 2010.
+[27] C. Zhang, B. Shahbaba, and H. Zhao. Hamiltonian Monte Carlo Acceleration Using Neural
+     Network Surrogate functions. arXiv preprint arXiv:1506.05555, 2015.
+[28] J. Shawe-Taylor and N. Cristianini. Kernel methods for pattern analysis. Cambridge university
+     press, 2004.
+[29] Q. Le, T. Sarlós, and A. Smola. Fastfood–approximating kernel expansions in loglinear time.
+     In ICML, 2013.
+[30] K.L. Mengersen and R.L. Tweedie. Rates of convergence of the Hastings and Metropolis
+     algorithms. The Annals of Statistics, 24(1):101–121, 1996.
+
+
+
+                                                9
+Appendix
+The Appendix contains proofs for Propositions 1 and 2, as well as additional computational details
+for both KMC lite in Section A and KMC finite in Section B. Section C covers the proof of geometric
+ergodicity of KMC lite from Proposition 3. Section D describes further experimental details.
+
+A     Lite Estimator
+Proof of Proposition 1
+The proof below extends the model in [20, Section 4.1]. We assume that the model log-density (4)
+takes the form in Proposition 1, then directly implement score functions (5), from which we derive
+an empirical score matching objective as a system of linear equations.
+
+Proof. As assumed the log unnormalised density takes the form
+
+                                                    n
+                                                    X
+                                          f (x) =         αi k(xi , x)
+                                                    i=1
+where k : Rd × Rd → R is the Gaussian kernel in the form
+                                                         d
+                                                                         !
+                                 1                       1 X
+               k(xi , x) = exp − kxi − xk2 = exp −           (xi` − x` )2 .
+                                 σ                       σ
+                                                                         `=1
+
+The score functions for (5) are then given by
+                                                n
+                                                                        kxi − xk2
+                                                                                 
+                           ∂ log π̃(x; f )   2X
+              ψ` (x; α) :=                 =       αi (xi` − x` ) exp −             ,
+                                ∂x`          σ i=1                          σ
+and
+                  ∂ 2 log π̃(x; f )
+∂` ψ` (x; α) :=
+                        ∂ 2 x`
+                             n                        2 X n
+                                          kxi − xk2                                  kxi − xk2
+                                                                                             
+                         2X                              2                    2
+                  =−            αi exp −              +         αi (xi` − x` ) exp −
+                         σ i=1                 σ         σ  i=1
+                                                                                         σ
+                           n
+                                         kxi − xk2
+                                                                   
+                       2X                                 2
+                  =            αi exp −              −1 + (xi` − x` )2 .
+                      σ i=1                  σ            σ
+Substituting this into (5) yields
+                          n     d                                 
+                       1 XX                           1
+              J(α) =                ∂` ψ` (xi ; α) + ψ` (xi ; α)2
+                       n i=1                          2
+                              `=1
+                            d    n   n
+                                                      kxi − xj k2
+                                                                                     
+                        2 XXX                                             2
+                     =                   αi exp −                    −1 + (xi` − xj` )2
+                       nσ                                  σ              σ
+                          `=1 i=1 j=1
+
+                                                                                     2
+                                                                                    
+                                   d X  n      n                                 2
+                              2   X          X                          kxi − xj k 
+                         +                       αj (xj` − xi` ) exp −                 .
+                            nσ 2      i=1 j=1
+                                                                            σ
+                                    `=1
+
+We now rewrite J(α) in matrix form. The expression for the term J(α) being optimised is the sum
+of two terms.
+First Term:
+                      d X
+                        n X
+                          n
+                                             kxi − xj k2
+                                                                                
+                      X                                             2            2
+                                    αi exp −                    −1 + (xi` − xj` )
+                            i=1 j=1
+                                                 σ                  σ
+                      `=1
+
+
+                                                     10
+We only need to compute
+                        n X
+                          n
+                                         kxi − xj k2
+                        X                           
+                                αi exp −               (xi` − xj` )2
+                        i=1 j=1
+                                             σ
+                         n X n
+                                         kxi − xj k2
+                        X                           
+                                                        x2i` + x2j` − 2xi` xj` .
+                                                                              
+                      =         αi exp −
+                        i=1 j=1
+                                             σ
+
+Define
+                                                                    >
+                                 x` := [ x1` . . . xm` ] .
+The final term may be computed with the right ordering of operations,
+                                            −2(α     x` )> Kx` ,
+where α x` is the entry-wise product. The remaining terms are sums with constant row or column
+terms. Define s` := x` x` with components si` = x2i` . Then
+                                     n X
+                                     X n
+                                               αi kij sj` = α> Ks` .
+                                     i=1 j=1
+
+Likewise
+                                 n X
+                                 X n
+                                            αi x2i` kij = (α   s` )> K1.
+                                  i=1 j=1
+
+Second Term: Considering only the `-th dimension, this is
+                                                                    2
+                                                                   
+                       n    n                                   2
+                      X    X                           kxi − xj k 
+                              αj (xj` − xi` ) exp −                   .
+                      i=1 j=1
+                                                           σ
+
+In matrix notation, the inner sum is a column vector,
+                                      K(α       x` ) − (Kα)        x` .
+We take the entry-wise square and sum the resulting vector. Denote by Dx := diag(x), then the
+following two relations hold
+
+
+                                        K(α x) = KDx α,
+                                        (Kα) x = Dx Kα.
+This means that J(α) as defined previously,
+
+                         d                                                                
+                       2 X 2 T
+                                                    s` )> K1 − 2(α        x` )> Kx` − αT K1
+                                                                                   
+           J(α) =              α Ks` + (α
+                      nσ     σ
+                         `=1
+                          d
+                       2 X
+                                    x` ) > K − x>        (α> K) [K(α
+                                                               
+                +           (α                  `                          x` ) − (Kα)   x` ] ,
+                      nσ 2
+                         `=1
+can be rewritten as
+
+                                   d                                     
+                            2 TX 2
+                    J(α) =     α          (Ks` + Ds` K1 − 2Dx` Kx` ) − K1
+                           nσ           σ
+                                  `=1
+                                      d
+                                                                        !
+                            2 T X
+                         +      α        [Dx` K − KDx` ] [KDx` − Dx` K] α
+                           nσ 2
+                                      `=1
+                             2 T     2 >
+                          =    α b+      α Cα,
+                            nσ      nσ 2
+
+
+                                                    11
+where
+
+
+                               d                                                
+                               X   2
+                          b=              (Ks` + Ds` K1 − 2Dx` Kx` ) − K1            ∈ Rn ,
+                                      σ
+                               `=1
+                               d
+                               X
+                         C=          [Dx` K − KDx` ] [KDx` − Dx` K] ∈ Rn×n .
+                               `=1
+
+Assuming C is invertible, this is minimised by
+                                                       σ
+                                                 α̂ = − C −1 b.
+                                                       2
+
+
+
+As in [13], we add a term λkf k2H for λ ∈ R+ , in order to control the norm of the natural parameters
+in the RKHS kf k2H . This results in the regularised and numerically more stable solution α̂λ :=
+(C + λI)−1 b.
+
+Reduced Computational Costs via Low-rank Approximations and Conjugate Gradient
+
+Solving the linear system in (7) requires O(n3 ) computation and O(n2 ) storage for a fixed random
+sub-sample of the chain history z. In order to allow for large n, and to exploit potential manifold
+structure in the RKHS, we apply a low-rank approximation to the kernel matrix via incomplete
+Cholesky [28, Alg. 5.12], that is a standard way to achieve linear computational costs for kernel
+methods. We rewrite the kernel matrix
+                                            K ≈ LL> ,
+where L ∈ Rn×` is obtained via dual partial Gram–Schmidt orthonormalisation and costs both
+O(n`) computation and storage. Usually `  n, and ` can be chosen via an accuracy cut-off
+parameter on the kernel spectrum in the same fashion as for other low-rank approximations, such as
+PCA5 . Given such a representation of K, we can rewrite any matrix-vector product as
+
+                                            Kb ≈ (LL> )b = L(L> b),
+where each left multiplication of L costs O(n`) and we never need to store LL> . This idea can be
+used to achieve costs of O(n`) when computing b, and left-multiplying C. Combining the technique
+with conjugate gradient (CG) allows to solve (7) with a maximum of n such matrix-vector products,
+yielding a total computational cost of O(n2 `). In practice, we can monitor residuals and stop CG
+after a fixed number of iterations τ  n, where τ depends on the decay of the spectrum of K.
+We arrive at a total cost of O(n`τ ) computation and O(n`) storage. CG also has the advantage of
+allowing for ’hot starts’, i.e. initialising the linear solver at a previous solution. Further details can
+be found in our implementation.
+
+
+B        Finite Feature Space Estimator
+
+Proof of Proposition 2
+We assume the model log-density (4) takes the primal form in a finite dimensional feature space as
+in Proposition 2, then again directly implement score functions in (5) and minimise it via a linear
+solve.
+
+Proof. As assumed the log unnormalised density takes the form
+
+                                           f (x) = hθ, φx iHm = θ> φx ,
+    5
+        In this paper, we solely use the Gaussian kernel, whose spectrum decays exponentially fast.
+
+
+                                                         12
+where x ∈ Rd is embedded into a finite dimensional feature space Hm = Rm as x 7→ φx . The score
+functions in (5) then can be written as the simple linear form
+                        ∂ log π̃(x; θ)                                     ∂ 2 log π̃(x; θ)
+         ψ` (ξ; θ) :=                  = θ> φ̇`x     and ∂` ψ` (ξ; θ) :=                    = θ> φ̈`x ,       (10)
+                             ∂x`                                                 ∂x2`
+                                                                                                          2
+                                                                           ∂                  ∂
+where we defined the m-dimensional feature vector derivatives φ̇`x := ∂x     `
+                                                                               φx and φ̈`x := ∂x2 φx .
+                                                                                                `
+Plugging those into the empirical score matching objective in (5), we arrive at
+                                   n   d                                
+                               1 XX                         1
+                       J(θ) =               ∂` ψ` (xi ; θ) + ψ`2 (xi ; θ)
+                               n i=1                        2
+                                      `=1
+                                   n   d                         T  
+                               1 XX T `                 1 T
+                            =               θ φ̈xi + θ        φ̇xi φ̇`xi
+                                                                `
+                                                                           θ
+                               n i=1                    2
+                                          `=1
+                                   1
+                                  = θT Cθ − θT b                                                              (11)
+                                   2
+where
+                        n    d                          n  d            
+                 1 XX `                              1 X X `  ` >
+          b := −       φ̈xi ∈ Rm            and C :=           φ̇xi φ̇xi   ∈ Rm×m .                           (12)
+                 n i=1                               n i=1
+                            `=1                                    `=1
+
+Assuming that C is invertible (trivial for n ≥ m), the objective is uniquely minimised by differenti-
+ating (11) wrt. θ, setting to zero, and solving for θ. This gives
+                                                   θ̂ := C −1 b.                                              (13)
+
+
+
+Again, similar to [13], we add a term λ/2kθk22 for λ ∈ R+ to (11), in order to control the norm of
+the natural parameters θ ∈ Hm . This results in the regularised and numerically more stable solution
+θ̂λ := (C + λI)−1 b.
+Next, we give an example for the approximate feature space Hm . Note that the above approach can
+be combined with any set of finite dimensional approximate feature mappings φx .
+
+Example: Random Fourier Features for the Gaussian Kernel
+
+We now combine the finite dimensional approximate infinite dimensional exponential family model
+with the “random kitchen sink” [17]. Assume a translation invariant kernel k(x, y) = k̃(x − y).
+Bochner’s theorem gives the representation
+                                           ˆ
+                                              exp iω > (x − y) dΓ(ω),
+                                                                
+                     k(x, y) = k̃(x − y) =
+                                                      Rd
+
+where Γ(ω) is the Fourier transform of the kernel. An approximate feature mapping for such kernels
+can be obtained via dropping imaginary terms and approximating the integral with Monte Carlo
+integration. This gives
+                              r
+                                 2 
+                                    cos(ω1> x + u1 ), . . . , cos(ωm
+                                                                   >
+                                                                             
+                        φx =                                         x + um ) ,
+                                m
+with fixed random basis vector realisations that depend on the kernel via Γ(ω),
+                                                   ωi ∼ Γ(ω),
+and fixed random offset realisations
+                                          ui ∼ Uniform[0, 2π],
+for i = 1 . . . m. It is easy to see that this approximation is consistent for m → ∞, i.e.
+                                           Eω,b φTx φy = k(x, y).
+                                                      
+
+
+                                                        13
+See [17] for details and a uniform convergence bound and [21] for a more detailed analysis with
+tighter bounds. Note that it is possible to achieve logarithmic computational costs in d exploiting
+properties of Hadamard matrices [29].
+The feature map derivatives (10) are given by
+                   r
+               `      2 ∂ 
+                              cos(ω1T ξ + u1 ), . . . , cos(ωm T
+                                                                          
+             φ̇ξ =                                               ξ + um )
+                      m ∂ξ`
+                     r
+                         2 
+                            sin(ω1T ξ + u1 )ω1` , . . . , sin(ωmT
+                                                                                
+                 =−                                               ξ + um )ωm`
+                        m
+                     r
+                         2 
+                            sin(ω1T ξ + u1 ), . . . , sin(ωmT
+                                                                       
+                 =−                                           ξ + um )      [ω1` , . . . , ωm` ] ,
+                        m
+where ωj` is the `-th component of ωj , and
+                      r
+             `          2 ∂ 
+                                sin(ω1T ξ + u1 ), . . . , sin(ωmT
+                                                                          
+           φ̈ξ : = −                                              ξ + um )    [ω1` , . . . , ωm` ]
+                        m ∂ξ`
+                      r
+                        2 
+                           cos(ω1T ξ + u1 ), . . . , cos(ωm T
+                                                                         2               2
+                                                                                              
+                 =−                                           ξ + um )      ω1` , . . . , ωm`
+                        m
+                           2             2
+                                             
+                 = −φξ     ω1` , . . . , ωm`   ,
+where        is the element-wise product. Consequently the gradient is given by
+                                                 1
+                                                  φ̇ξ
+                                                 .. 
+                                        ∇ξ φξ =  .  ∈ Rd×m .
+                                                  φ̇dξ
+As an example, the translation invariant Gaussian kernel and its Fourier transform are
+                                                                                 
+             k(x, y) = exp −σ −1 kx − yk22        and Γ(ω) = N ω 0, σ −2 Im .
+                                              
+
+
+Constant Cost Updates
+
+A convenient property of the finite feature space approximation is that its primal representation of
+the solution allows to update (12) in an online fashion. When combined with MCMC, each new
+                                                                              Pd
+point xt+1 of the Markov chain history only adds a term of the form − `=1 φ̈`xt+1 ∈ Rm and
+Pd       `       `     >      m×m
+   `=1 φ̇xt+1 (φ̇xt+1 ) ∈ R           to the moving averages of b and C respectively. Consequently, at
+iteration t, rather than fully re-computing (13) at the cost of O(tdm2 + m3 ) for every new point, we
+can use rank-d updates to construct the minimiser of (11) from the solution of the previous iteration.
+Assume we have computed the sum of all moving average terms,
+                                                            >  −1
+                                               t Xd 
+                                                                    !
+                                              X
+                                  C̄t−1 :=            φ̇`xi φ̇`xi
+                                                  i=1 `=1
+                                                                       t
+from feature vectors derivatives φ̈`xi ∈ Rm of some set of points {xi }i=1 , and subsequently receive
+receive a new point xt+1 . We can then write the inverse of the new sum as
+                                                     d 
+                                                                             !−1
+                                                     X               > 
+                                   −1                     `      `
+                                 C̄t+1 :=      C̄t +    φ̇xt+1 φ̇xt+1              .
+                                                      `=1
+
+This is the inverse of the rank-d perturbed previous matrix C̄t . We can therefore construct this
+inverse using d successive applications of the Sherman-Morrison-Woodbury formula for rank-one
+updates, each using O(m2 ) computation. Since C̄t is positive definite6 , we can represent its inverse
+as a numerically much more stable Cholesky factorisation C̄t = L̄t L̄>
+                                                                     t . It is also possible to perform
+   6
+       C is the empirical covariance of the feature derivatives φ̇`xi .
+
+
+                                                            14
+cheap rank-d updates of such Cholesky factors7 . Denote by b̄t the sum of the moving average b. We
+solve (13) as
+                                         −1       
+                                    1           1
+                    θ̂ = C −1 b =     C̄t         b̄t = C̄t−1 b̄t = L̄−>  −1
+                                                                      t L̄t b̄t ,
+                                    t           t
+using cheap triangular back-substitution from L̄t , and never storing C̄t−1 or L̄−1
+                                                                                 t explicitly.
+
+Using such updates, the computational costs for updating the approximate infinite dimensional ex-
+ponential family model in every iteration of the Markov chain are O(dm2 ), which constant in t. We
+can therefore use all points in the history for constructing a proposal. See our implementation for
+further details.
+
+Algorithmic Description:
+         1. Update sums
+                                       d                                           d
+                                       X                                        1X `
+                       b̄t+1 = b̄t −         φ̈`xt+1   and     C̄t+1 = C̄t +      φ̇xt+1 (φ̇`xt+1 )> .
+                                                                                2
+                                       `=1                                        `=1
+
+         2. Perform rank-d update to obtain updated Cholesky factorisation L̄t+1 L̄Tt+1 = C̄t+1 .
+         3. Update approximate infinite dimensional exponential family parameters
+
+                                                θ̂ = L̄−>    −1
+                                                       t+1 L̄t+1 b̄t+1 .
+
+
+C        Ergodicity of KMC lite
+Notation Denote by α(xt , x∗ (p0 )) the probability of accepting a (p0 , x∗ ) proposal at state xt . Let
+                                                                  PL−1
+a ∧ b = min(a, b). Define c(x(0) ) := L2 ∇ log π(x(0) )/2 + 2 i=1 (L − i)∇ log π(x(i) ) and
+                                               L−1
+d(x(0) ) := (∇f (x(0) ) + ∇f (x(L) ))/2 +  i=1 ∇f (x(i) ), where x(i) is the i-th point of the
+                                             P
+                               (0)
+leapfrog integration from x = x .
+
+Proof of Proposition 3
+Proof. We assumed π(x) is log-concave in the tails, meaning ∃xU > 0 s.t. for x∗ > xt > xU ,
+                                       ∗
+we have π(x∗ )/π(xt ) ≤ e−α1 (kx k2 −kxt k2 ) and for xt > x∗ > xU , we have π(x∗ )/π(xt ) ≥
+        ∗
+e−α1 (kx k2 −kxt k2 ) , and a similar condition holds in the negative tail. Furthermore, we assumed
+fixed HMC parameters: L leapfrog steps of size , and wlog the identity mass matrix I. Following
+[22, 30], it is sufficient to show
+                               ˆ h                           i
+                                         ∗ 0
+                      lim sup      es(kx (p )k2 −kxt k2 ) − 1 α(xt , x∗ (p0 ))µ(dp0 ) < 0,
+                     kxt k2 →∞
+                                                                                  ∞
+for some s > 0, where µ(·) is a standard Gaussian measure. Denoting the integral I−∞ , we split it
+into
+                                        −xδ     xδt      ∞
+                                       I−∞t + I−x   δ + Ixδ ,
+                                                               t            t
+
+for some δ ∈ (0, 1). We show that the first and third terms decay to zero whilst the second remains
+strictly negative as xt → ∞ (a similar argument holds as xt → −∞). We detail the case ∇f (x) ↑ 0
+                                                                   xδ
+as x → ∞ here, the other is analogous. Taking I−x
+                                                t
+                                                  δ , we can choose an xt large enough that
+                                                                        t
+xt − C − Lxδt > xU , −γ1 < c(xt − xδt ) < 0 and −γ2 < d(xt − xδt ) < 0. So for p0 ∈ (0, xδt ) we
+have
+                                                                            0      ∗
+          Lp0 > x∗ − xt > Lp0 − γ1 =⇒ e−α1 (−γ1 +Lp ) ≥ e−α1 (x −xt ) ≥ π(x∗ )/π(xt ),
+where the last inequality comes from the log-concave tails assumption. For p0 ∈ (γ22 /2, xδt )
+                          π(x∗ )
+       α(xt , x∗ ) ≤ 1 ∧         exp p0 γ2 /2 − γ22 /2 ≤ 1 ∧ exp −α2 p0 + α1 γ1 − γ22 /2 ,
+                                                                                         
+                          π(xt )
+    7
+        We use the open-source implementation provided at https://github.com/jcrudy/choldate
+
+
+                                                          15
+                102                                                                n=2000                                   d=16
+                                                   0.9       1.0                                            1.0
+                                                   0.8
+                                                   0.7       0.8                                            0.8
+                                                   0.6
+                                                   0.5       0.6                                            0.6
+                101
+
+
+
+
+            d
+                                                   0.4                    HMC
+                                                             0.4          KMC median                        0.4
+                                                   0.3
+                                                   0.2       0.2          KMC 25%-75%                       0.2
+                                                   0.1                    KMC 5%-95%
+                100                                          0.0                                            0.0
+                      102   103         104                     100                 101              102              102   103        104
+                            n                                                           d                                    n
+
+
+
+
+Figure 5: Acceptance probability of kernel induced Hamiltonian flow for a standard Gasussian in
+high dimensions for an isotropic Gaussian. Left: As a function of n = m (x-axis) and d (y-axis).
+Middle: Slices through left plot with error bars for a fixed n = m and as a function in d (left), and
+for a fixed d as a function of n = m (right).
+
+
+where xt is large enough that α2 = α1 L − γ2 /2 > 0. Similarly for p0 ∈ (γ1 /L, xδt )
+                                          0                           ∗                               0
+                                  esLp − 1 ≥ es(x −xt ) − 1 ≥ es(Lp −γ1 ) − 1 > 0.
+Because γ1 and γ2 can be chosen to be arbitrarily small, then for large enough xt we will have
+                     ˆ xδt
+                xδt               0                                                γ /L
+                            [esLp − 1] exp −α2 p0 + α1 γ1 − γ22 /2 µ(dp0 ) + I0 1
+                                                                       
+          0 < I0 ≤
+                                  γ1 /L
+                                       ˆ xδt
+                                                              0                         0                 γ /L
+                            =e    c1
+                                                   [es2 p − 1]e−α2 p µ(dp0 ) + I0 1                               ,                          (14)
+                                        γ1 /L
+
+where c1 = α1 γ1 − γ22 /2 > 0 for large enough xt , as γ1 and γ2 are of the same order. Now turning
+to p0 ∈ (−xδt , 0), we can use an exact rearrangement of the same argument (noting that c1 can be
+made arbitrarily small) to get
+                                          ˆ xδt
+                                                       0
+                               0
+                             I−x δ ≤ e
+                                       c1
+                                                [e−s2 p − 1]µ(dp0 ) < 0.                       (15)
+                                               t
+                                                                      γ1 /L
+
+                                                                                                                             xδ
+Combining (14) and (15) and rearranging as in [30, Theorem 3.2] shows that I−x
+                                                                             t
+                                                                               δ is strictly negative
+                                                                                                                                   t
+                                                                                            γ /L
+in the limit if s2 = sL is chosen small enough, as I0 2                                            can also be made arbitrarily small.
+      −xδ
+For I−∞t it suffices to note that the Gaussian tails of µ(·) will dominate the exponential growth of
+     ∗  0
+es(kx (p )k2 −kxt k2 ) meaning the integral can be made arbitrarily small by choosing large enough xt ,
+and the same argument holds for Ix∞δ .
+                                                         t
+
+
+
+D     Additional Experimental Details
+This section contains additional details for the experiments in Section 6.
+
+D.1   Stability in High Dimensions
+
+We reproduce the experiment in Figure 2 on an isotropic Gaussian in increasing dimension. As
+length-scales across all principal components are equal, this is a significantly less challenging target
+to estimate gradients for; though still useful as a benchmark representing very smooth targets. We
+use a standard Gaussian kernel and the same experimental protocol as for Figure 2. The estimator
+works slightly better than on the target considered in Figure 2, and performs well up to d ≈ 100, see
+Figure 5.
+
+D.2   Banana target
+
+Following [10, 12], let X ∼ N (0, Σ) be a multivariate normal in d ≥ 2 dimensions, with Σ =
+diag(v, 1, . . . , 1), which undergoes the transformation X → Y , where Y2 = X2 + b(X12 − v), and
+Yi = Xi for i 6= 2. We will write Y ∼ B(b, v). It is clear that EY = 0, and that
+
+
+                                                                                   16
+                                                                            d
+                                                                            Y
+                    B(y; b, v) = N (y1 ; 0, v)N (y2 ; b(y12 − v), 1)              N (yj ; 0, 1).
+                                                                            j=3
+We choose d = 8, V = 100 and b = 0.03, which corresponds to the ‘strongly twisted’ 8-dimensional
+Banana in [10, 12]. The target is challenging due to the nonlinear dependence of the first two
+dimensions and the highly position dependent scaling within these dimensions.
+
+D.3     Pseudo-Marginal MCMC for GP Classification
+
+Model Closely following [12], we consider a joint distribution of GP-latent variables f , labels y
+(with covariate matrix X), and hyper-parameters θ, given by
+                                    p(f , y, θ) = p(θ)p(f |θ)p(y|f ),
+where f |θ ∼ N (0, Kθ ), with Kθ modeling the covariance         between latent variables evaluated at the
+                                                            PD (xi,d −x0j,d )2 
+input covariates: (Kθ )ij = κ(xi , x0j |θ) = exp − 12 d=1                `2d
+                                                                                  and θd = log `2d . This
+covariance parametrisation allows to perform Automatic Relevance Determination. We here restrict
+our attention to the binary logistic classifier, i.e. the likelihood is given by
+                                                           1
+                                     p(yi |fi ) =                    ,
+                                                    1 − exp(−yi fi )
+where yi ∈ {−1, 1}. Aiming for a fully Bayesian treatment, we wish to estimate the marginal
+posterior of the hyper-parameters θ, motivated in [4]. The marginal likelihood p(y|θ) is intractable
+for non-Gaussian likelihoods p(y|f ), but can be replaced with an unbiased estimate
+
+                                                nimp
+                                              1 X                     p(f (i) |θ)
+                                p̂(y|θ) :=              p(y|f (i) )               ,                  (16)
+                                             nimp i=1                 q(f (i) |θ)
+              nimp
+where f (i) i=1 ∼ q(f |θ) are nimp importance samples. In [4], the importance distribution q(f |θ)
+is chosen as the Laplacian or as the Expectation Propagation (EP) approximation of p(f |y, θ) ∝
+p(y|f )p(f |θ), leading to state-of-the-art results.
+
+Experimental details We here use a Laplace approximation and nimp = 100. We consider clas-
+sification of window against non-window glass in the UCI Glass dataset, which induces a posterior
+that has a nonlinear shape [12, Figure 3]. Since the ground truth for the hyperparameter posterior is
+not available, we initially run multiple hand-tuned standard Metropolis-Hastings chains for 500,000
+iterations (with a 100,000 burn-in), keep every 1000-th sample in each of the chains, and combine
+them. The resulting samples are used as a benchmark, to evaluate the performance all algorithms.
+We use the MMD between each sampler output and the benchmark sample is computed, using the
+                                 3
+polynomial kernel (1 + hθ, θ0 i) . This corresponds to the estimation error of all mixed moments of
+order up to 3.
+
+Cross-validation Kernel parameters are tuned using a black box Bayesian optimisation pack-
+age8 and the median heuristic for KMC and KAMH repsectively. The Bayesian optimisation uses
+standard parameters and is stopped after 15 iterations, where each trial is done via a 5-fold cross-
+validation of the score matching objective (5). We learn parameters after MCMC 500 iterations, and
+then re-learn after 2000. We tried re-learning parameters after more iterations, but this did not lead
+to significant changes. The costs for this are neglectable in the context of PM-MCMC as estimating
+the marginal likelihood takes significantly more time than generating the KMC proposal.
+
+D.4     ABC MCMC
+
+In this section, we give a brief background on Approximate Bayesian Computation, and how KMC
+can be used within the framework. We then give details of the competing approach in the final
+experiment in Section 6, including experimental details and an analytic counterexample.
+   8
+       We use the open-source package pybo, available under https://github.com/mwhoffman/pybo
+
+
+                                                     17
+Likelihood-free Models Approximate Bayesian Computation is a method for inference in the
+scenario where conditional on some parameter of interest θ, we can easily simulate data x ∼ f (·|θ),
+but for which the likelihood function f is unavailable [6]. We however have data y which assume
+to be from the model, and we have a prior π0 (θ). A simple ABC algorithm is to sample θi ∼ π0 (·)
+(or any other suitable distribution), simulate data xi ∼ f (·|θi ), and ‘accept’ xi as a sample from
+the approximate posterior π (θ|y) if d(y, x) ≤ . This procedure can be formalised by defining the
+approximate likelihood as                   ˆ
+                                  f (y|θ) ∝ g (y|x, θ)f (x|θ)dx,                               (17)
+
+where g (y|x, θ) is an appropriate kernel that gives more importance to points for which d(y, x) is
+smaller. In the simple case above g (y|x, θ) = 1{d(y,x)≤} . The ABC posterior is then found using
+π (θ|y) ∝ f (y|θ)π0 (θ). Often g is based on some low-dimensional summary statistics, which can
+have both advantages and disadvantages.
+
+Likelihood-free MCMC There are many different way to do ABC, and clearly not all involve
+Markov chain Monte Carlo. If the posterior however is not similar to the prior, and if θ is more
+than three or four dimensional, MCMC is a sensible option. Since the likelihood (17) is intractable,
+typically algorithms are considered for which an approximation to either the likelihood, or the ABC
+posterior are used either in constructing proposals, defining Metropolis-Hastings acceptance rates,
+or both. We focus here on samplers which target π (θ|y) directly, c.f. [5].
+
+Pseudo-Marginal Metropolis-Hastings Similar to the approach taken in Section D.3, we here
+accept proposals θ0 ∼ Q(θ, ·) where Q is some proposal mechanism (i.e. KMC), via replacing the
+likelihood with an unbiased estimate. We accept according to the ratio
+                                                       π̃ (θ0 |y)Q(θ|θ0 )
+                                        α̃(θ, θ0 ) =                       ,                       (18)
+                                                       π̃ (θ|y)Q(θ0 |θ)
+where π̃ (θ|y) = π0 (θ)g̃ (y|θ), and
+                                         1 X
+                          g̃ (y|θ) =          g (y|xi , θ), {xi }ni=1
+                                                                     lik
+                                                                         ∼ f (·|θi )
+                                        nlik i
+
+is a simple Monte Carlo estimator for the intractable likelihood (17). Since it is easy to simulate from
+f then g̃ (y|θ) is typically easy to compute. As with other general Pseudo-Marginal schemes, and as
+mentioned below the KMC acceptance (3), it is crucial that if θ0 is accepted, the same estimate for
+π̃(θ0 |y) is used on the denominator of the Hastings ratio in future iterations until the next proposal
+is accepted for the scheme, c.f. [3, Table 1].
+We can directly adapt KMC to the ABC case via plugging in the estimated likelihood g̃ in the KMC
+acceptance ratio (3).
+
+Synthetic Likelihood Metropolis-Hastings Following [26], one idea to approximate the in-
+tractable likelihood is to draw nlik samples xi ∼ f (·|θi ), and fit a Gaussian approximation to f ,
+producing estimates µ̂ and Σ̂ for the mean and covariance using {xi }ni=1
+                                                                        lik
+                                                                            . If the error functon g is
+also chosen to be a Gaussian (with mean y and variance ), then the marginal likelihood f (y|θ) can
+be approximated as                                          
+                                       y|θ ∼ N µ̂, Σ̂ + 2 I
+The likelihood is essentially approximated by a Gaussian fG , producing a synthetic posterior πs (·),
+which is then used in the accept-reject step. Clearly some approximation error is introduced by the
+Gaussian likelihood approximation step, but as shown in [26], it can be a reasonable choice for some
+models.
+
+Hamiltonian ABC Introduced in [8], the synthetic likelihood formulation is used to construct a
+proposal, with the accept-reject step removed altogether. Hamiltonian dynamics use the gradient
+∇ log π(θ) to suggest candidate values for the next state of a Markov chain which are far from the
+current point, thus increasing the chances that the chain mixes quickly. Here the gradient of the
+log-likelihood is unavailable, so is approximated with that of a Gaussian (since the map θ → (µ, Σ)
+
+
+                                                        18
+is not always clear this is done numerically, using a stochastic finite differences estimate of the
+gradient, SPAS [8, Sec. 4.3, 4.4]), giving
+                                        nlik
+                                        X
+                         ∇ log π(θ) ≈          ∇ log fG (yi |µ̂, Σ̂) + ∇ log π0 (θ).
+                                        i=1
+
+Since there is no accept-reject step, the synthetic posterior is also the target of this scheme (although
+there is also further bias introduced by discretisation error), but the introduction of gradient-based
+dynamics is hoped to improve mixing and hence efficiency of inferences compared to random-walk
+type schemes.
+
+A Counter-example We give a very simple toy model to highlight the bias introduced by the
+Hamiltonian ABC sampler. Consider posterior inference for the mean parameter in a log-Normal
+model. Specifically, the true model is
+                                             µ ∼ N (µ0 , τ0 ),
+                                        y|µ, τ ∼ log N (µ, τ ),
+where the precision τ and hyper-parameters µ0 , τ0 are known. The model is in fact conjugate, giving
+a Gaussian posterior                             P                 
+                                      τ0 µ0 + τ i log xi
+                           µ|y ∼ N                         , τ0 + nτ .
+                                            τ0 + nτ
+If we introduce a Gaussian approximation to the likelihood, then the mean and precision of this
+approximation fG are (empirical estimates for)
+                                                                     e−2µ−1/τ
+                           µG = eµ+1/2τ , τG = 1/Var[Yi ] =                   ,
+                                                                     e1/τ − 1
+which depend on the current value for µ in the chain. The resulting synthetic posterior is no longer
+tractable, but since it is one dimensional we can approximate it numerically. Using µ0 = 0, τ0 =
+1/100,  = 0.1 and τ = 1 then the true and approximate posteriors for 100 data points generated
+using the truth µ = 2 are shown in Figure 6. This is a proof of concept that a likelihood with a
+positive skew being approximated by a Gaussian introduces an upwards bias to the posterior.
+
+Experimental details The simulation study in Section 6 uses a slightly more complex and multi-
+dimensional simulation example: a 10-dimensional multivariate skew-Normal distribution, given
+by
+                                p(y|θ) = 2N (θ, I) Φ (hα, yi)
+with θ = α = 1 · 10. In each iteration of KMC, the likelihood is estimated via simulating nlik = 10
+samples from the above likelihood. We use the mean of all samples as summary statistic, and a
+Gaussian similarity kernel g (y|x, θ) with a fixed  = 0.55. Both KMC and HABC use a standard
+Gaussian momentum, a uniformly random stepsize in [0.01, 0.1] and L = 50 leapfrog steps. HABC
+is used with the suggested ‘sticky random numbers’ [8, Section 4.4], i.e. we use the same seed for
+all simulations along a single proposal trajectory. Both algorithms are run for 200 + 5000 MCMC
+iterations. KMC then attempts to re-learn smoothness parameters, and stops adaptation. Burn-in
+samples are discarded when quantifying performance of all algorithms.
+
+Friction, mixing, and number of simulations HABC is used in its ‘stochastic gradient’ [7] and
+has a ‘friction’ parameter that we estimate using a running average of the global covariance of all
+SPAS gradient evaluations, [8, Equation 21]. Note that we ran HABC with both the friction term
+included and removed, where we found that adding friction has severely negative impact on mixing,
+where not adding friction results in a wider posterior (with the same bias). Figure 4 (middle, right)
+show the results without friction, Figure 7 shows the same plots with friction. We refer to our
+implementation for further details.
+Due to the gradient estimation in every of the L = 50 leap-frog steps, every MCMC proposal for
+HABC requires 2L = 100 simulations to be generated. In contrast, KMC only requires a single
+simulation, for evaluating the accept/reject probability (3). We leave studying the exact trade-offs of
+KMC’s learning phase and its ability to mix well as compared to HABC to future work.
+
+
+                                                      19
+                                                          True Posterior
+
+
+
+
+                                            6
+                                                          Synthetic Approximation
+
+
+
+
+                                            5
+                                            4
+                                            3
+                                            2
+                                            1
+                                            0
+
+
+
+
+                                                 1.4      1.6        1.8            2.0            2.2   2.4
+
+                                                                               mu
+
+
+
+
+Figure 6: Counter example showing posterior and its synthetic approximation for a simple toy
+model.
+
+
+
+
+                      1.2                                                                    0.7
+                      1.0                            KMC
+                                                                                             0.6
+                                                     RW
+                      0.8
+                                                     HABC naive
+   Autocorrelation
+
+
+
+
+                                                                                             0.5
+                      0.6                            HABC friction
+                                                                                             0.4
+                                                                                    p(θ1 )
+
+
+
+
+                      0.4
+                                                                                             0.3
+                      0.2
+                                                                                             0.2
+                      0.0
+                     −0.2                                                                    0.1
+
+                     −0.4                                                                    0.0
+                            0   20   40         60        80           100                      −10       0    10   20   30   40   50
+                                          Lag                                                                       θ1
+
+
+
+Figure 7: Left: Counterexample showing posterior and its synthetic approximation for a simple toy
+model Middle/right: The same results as in Figure 4, i.e. autocorrelation and marginal posterior for
+θ1 , but here we also show performance of HABC with added friction, which has a severely negative
+impact on mixing.
+
+
+
+
+                                                                           20
+

@@ -1,0 +1,225 @@
+\chapter{Mass Matrices and Local Geometry}
+\label{ch:bf-mass-matrices}
+
+Mass matrices translate derivative information into sampler geometry.  In a
+linear Gaussian validation problem, a local posterior Hessian or observed
+information matrix can be a useful preconditioner.  In a nonlinear or weakly
+identified model, the same matrix can be misleading unless it is regularized and
+checked against diagnostics.
+
+\section{Sources of Curvature}
+\label{sec:bf-curvature-sources}
+
+BayesFilter recognizes several curvature sources:
+\begin{itemize}
+  \item analytic likelihood Hessian plus prior curvature;
+  \item observed-information or expected-information approximations;
+  \item finite-difference Hessian diagnostics at a MAP point;
+  \item empirical covariance from warmup draws;
+  \item diagonal fallbacks when dense curvature is unstable.
+\end{itemize}
+The source must be recorded because each source has a different failure mode.
+MacroFinance mass-matrix tests check eigenvalue regularization, dense versus
+diagonal choices, whitening finiteness, and covariance construction from
+Hessian helpers.  These are geometry utilities; they are not identification
+proofs.
+
+\section{Regularization Policy}
+\label{sec:bf-mass-regularization}
+
+A mass matrix used by HMC must be symmetric positive definite.  If a curvature
+estimate is indefinite or ill-conditioned, BayesFilter should regularize it,
+record the regularization, and expose the eigenvalue diagnostics.  Silently
+using an indefinite curvature matrix as if it were a covariance is a target
+geometry error.
+
+\section{Geometry-Scaled Tuning Budgets}
+\label{sec:bf-geometry-scaled-tuning-budgets}
+
+Mass-matrix diagnostics also determine how much evidence a tuning stage needs
+before BayesFilter makes a repair decision.  A fixed number of samples is not a
+property of the model; it is a policy choice.  BayesFilter therefore records a
+public-safe geometry summary before serious HMC tuning:
+
+\begin{itemize}
+  \item parameter dimension \(d\);
+  \item covariance condition number, when available;
+  \item effective dimension, computed from the covariance eigenvalue spectrum;
+  \item anisotropy ratio \(d/d_{\mathrm{eff}}\);
+  \item regularization pressure, including eigenvalue clipping, non-positive
+    raw eigenvalues, and diagonal fallback use.
+\end{itemize}
+
+The serious tuning budget uses this summary only to decide how much local
+tuning work to allocate.  In code, the central policy is
+\texttt{HMCGeometryScaledBudgetTimingPolicy}.  Its first attempt budget is
+\[
+  B_0 =
+  \operatorname{clamp}\left(
+    \left\lceil c_d\, d\, m_{\mathrm{geom}}\right\rceil,
+    B_{\min}, B_{\max,0}
+  \right),
+\]
+where \(m_{\mathrm{geom}}\) is a clipped multiplier built from condition,
+anisotropy, and regularization pressure.  Later attempts grow as
+\[
+  B_k = \min(B_{\max}, B_0 2^k).
+\]
+Bootstrap screens use a smaller square-root dimension rule,
+\[
+  N_{\mathrm{boot}} =
+  \operatorname{clamp}\left(
+    \left\lceil c_{\sqrt d}\sqrt d\,m_{\mathrm{geom}}\right\rceil,
+    N_{\min}, N_{\max}
+  \right),
+\]
+with burn-in chosen as a fixed fraction of the screen length.
+
+These formulas are not posterior convergence criteria.  They are a disciplined
+replacement for arbitrary constants: larger, more anisotropic, or more heavily
+regularized targets receive more local tuning evidence before BayesFilter
+decides whether a step-size, trajectory, or mass repair is making progress.
+
+\section{Timing And Progress}
+\label{sec:bf-hmc-timing-and-progress}
+
+Wall-clock limits are treated differently from statistical tuning budgets.  A
+stage may run for a long time because the model is large but still making
+meaningful progress.  BayesFilter therefore separates:
+
+\begin{itemize}
+  \item progress evidence, such as stage transitions, updated mass summaries,
+    changed step-size hashes, changed trajectory hashes, repair decisions, and
+    fresh verification summaries;
+  \item emergency caps, which are machine-protection limits rather than claims
+    that the sampler has failed scientifically.
+\end{itemize}
+
+The staged timeout policy records emergency stage caps, a global cap, and a
+reserve.  Those numbers should be read as safety rails.  A scientific result
+note must not interpret an emergency cap as evidence against the posterior
+unless the predeclared continuation veto says so.
+
+\section{Fixed-Center Score Curvature}
+\label{sec:bf-fixed-center-score-curvature}
+
+Let $c$ be an unchanged reviewed center and $z$ a standardized local offset.
+Writing $g_z$ for the score in those coordinates, BayesFilter fits
+\begin{equation}
+  g_z(c)-g_z(c+z) \approx P_z z,
+  \qquad P_z=C_z^{-1}.
+  \label{eq:bf-fixed-center-score-curvature}
+\end{equation}
+This relation identifies a local score derivative only when its fit and
+stability diagnostics pass.  It does not require $g_z(c)=0$, so it is not a
+Hessian-at-MAP statement.  Score magnitude is explanatory telemetry;
+curvature stability is the geometry target for this API.
+
+The dense comparator estimates a symmetric $P_z$ directly and preserves it
+before SPD projection.  The structured route parameterizes $C_z$ and predicts
+with its inverse.  Covariance parameters preserve SPD by construction, whereas
+the score equation consumes precision.
+
+\section{One- and Two-Factor Covariance Geometry}
+\label{sec:bf-factor-correlation-geometry}
+
+For $q\in\{1,2\}$, let $D=\operatorname{diag}(\sigma_1,\ldots,\sigma_N)$ and
+let row $L_i$ contain the factor loadings of coordinate $i$.  The covariance is
+\begin{equation}
+  C_z=D R D,
+  \qquad
+  R=\operatorname{diag}\!\left(1-\lVert L_i\rVert_2^2\right)+LL^\top,
+  \qquad \lVert L_i\rVert_2^2<1.
+  \label{eq:bf-factor-correlation-covariance}
+\end{equation}
+The row-ball transform enforces strict interior loadings.  For independent
+standard normals $F_k$ and $e_i$, the same correlation follows from
+\begin{equation}
+ x_i=\sum_{k=1}^{q}\rho_{ki}F_k+
+ \sqrt{1-\sum_{k=1}^{q}\rho_{ki}^2}\,e_i,
+ \qquad
+ \operatorname{corr}(x_i,x_j)=
+ \sum_{k=1}^{q}\rho_{ki}\rho_{kj}.
+ \label{eq:bf-factor-correlation-identity}
+\end{equation}
+The implementation decodes unconstrained variables to $C_z$, obtains $P_z$ by
+a Cholesky solve inside every objective evaluation, and predicts $P_z z$.  It
+returns both matrices so callers cannot silently reverse them.
+
+One factor has $N$ deviation coordinates and $N$ loadings, hence $2N$
+continuous parameters.  The largest-absolute loading is constrained positive
+to remove the discrete sign ambiguity.  Two factors begin with $N+2N$
+coordinates.  A two-row triangular anchor forces one loading to zero, leaving
+$3N-1$ continuous parameters; positive anchor diagonals remove discrete sign
+symmetries.  A prediction-Jacobian rank check rejects an unidentified second
+factor.  Factor columns and rotations are nuisance representations: covariance
+and precision are the downstream objects.
+
+\section{Cloud Size, Reuse, and Escalation}
+\label{sec:bf-curvature-cloud-policy}
+
+The implemented search-count rule is
+\begin{equation}
+ m(N)=
+ \begin{cases}
+   N^2, & N\leq 10,\\
+   100+(N-10)\log(N-10), & N>10,
+ \end{cases}
+ \qquad
+ m_{\mathrm{even}}=2\left\lceil m(N)/2\right\rceil .
+ \label{eq:bf-dimension-scaled-cloud}
+\end{equation}
+It is a user-selected computational policy, not a sample-complexity theorem.
+The search uses stateless randomized orthogonal frames and antithetic pairs.
+Finite nonzero earlier rows within the current standardized radius may be
+reused for training only.  Every structured replicate still supplies at least
+$4N$ fresh rows, split between training and selection holdout.  Fixed-center
+selection adds at least $2N$ fresh audit rows that are used only after selection.
+
+Both APIs try one factor before two.  The fixed-center route fits two factors
+only when one-factor fit, holdout, or cross-replicate stability fails, or when
+the caller explicitly requests a two-factor shrinkage target.  The sequential
+proposal path follows the same one-before-two order.  Its trust-region
+quadratic proposes a step, but the exact target value and score determine actual
+improvement and acceptance; regression never replaces the posterior.  The
+fixed-center path does not propose a new center.
+
+\section{Stability, Consensus, and Fallback}
+\label{sec:bf-curvature-consensus}
+
+Every requested replicate retains raw eigenvalues and inertia.  Pairwise
+diagnostics include generalized-eigenvalue spread, trace-normalized Frobenius
+and operator differences, and principal angles for a caller-declared dominant
+subspace.  Projection burden and selection-holdout error are separate gates.
+Omitted caps make these quantities descriptive and prohibit HMC-canary
+eligibility; the DZ5 case does not define universal thresholds.
+
+For admissible SPD precision replicates $K_s$, convex consensus shrinkage is
+\begin{equation}
+  \bar K=S^{-1}\sum_{s=1}^{S}K_s,
+  \qquad
+  K_\lambda=(1-\lambda)\bar K+\lambda T,
+  \qquad 0\leq\lambda\leq1.
+  \label{eq:bf-consensus-shrinkage}
+\end{equation}
+This is plain convex shrinkage of designed score-regression fits, not the
+classical Ledoit--Wolf estimator.  No closed-form Ledoit--Wolf intensity is
+used.  The caller supplies a finite weight grid containing zero and one.
+Training and selection-holdout evidence select the weight; a disjoint audit
+cloud can veto but cannot alter it.
+
+The fail-closed order is:
+\begin{enumerate}[label=(\roman*)]
+  \item a stable, identified, holdout-passing one-factor precision;
+  \item a stable, identified two-factor precision when one factor is
+    inadequate;
+  \item a stable dense consensus combined with an explicitly selected, stable,
+    identified structured target;
+  \item if no structured target is supported, a stable dense consensus
+    combined with its diagonal;
+  \item diagonal-only output as an explicitly reviewed diagnostic or
+    operational artifact, never an automatic scientific promotion.
+\end{enumerate}
+An inadmissible raw dense family cannot be repaired by diagonalizing its
+projected consensus.  Identity is not an automatic fallback.  If no branch
+passes, BayesFilter returns \texttt{geometry\_readiness\_blocked}.

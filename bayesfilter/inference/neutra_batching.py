@@ -28,6 +28,7 @@ REQUIRED_STATUS_FIELDS = (
 OPTIONAL_STATUS_FIELDS = ("innovation_condition_estimate",)
 NORMALIZED_STATUS_FIELDS = (
     *REQUIRED_STATUS_FIELDS,
+    "min_innovation_eigenvalue_available",
     *OPTIONAL_STATUS_FIELDS,
     "innovation_condition_estimate_available",
 )
@@ -254,12 +255,29 @@ def batch_native_value_status_target_fn(
                 raise ValueError(
                     f"batch-native target status is missing fields: {missing}"
                 )
-            condition_available = "innovation_condition_estimate" in status
+            condition_present = "innovation_condition_estimate" in status
+            condition_available = tf.convert_to_tensor(
+                status.get(
+                    "innovation_condition_estimate_available",
+                    tf.fill(
+                        tf.shape(value_tensor),
+                        condition_present,
+                    ),
+                ),
+                tf.bool,
+            )
+            min_eigen_available = tf.convert_to_tensor(
+                status.get(
+                    "min_innovation_eigenvalue_available",
+                    tf.ones_like(value_tensor, tf.bool),
+                ),
+                tf.bool,
+            )
             condition_estimate = (
                 tf.convert_to_tensor(
                     status["innovation_condition_estimate"], tf.float64
                 )
-                if condition_available
+                if condition_present
                 else tf.ones_like(value_tensor, tf.float64)
             )
             outputs = (
@@ -268,8 +286,9 @@ def batch_native_value_status_target_fn(
                     tf.stop_gradient(tf.convert_to_tensor(status[name]))
                     for name in REQUIRED_STATUS_FIELDS
                 ),
+                tf.stop_gradient(min_eigen_available),
                 tf.stop_gradient(condition_estimate),
-                tf.fill(tf.shape(value_tensor), tf.constant(condition_available)),
+                tf.stop_gradient(condition_available),
             )
 
             def grad(upstream: Any, *_status_gradients: Any) -> tf.Tensor:

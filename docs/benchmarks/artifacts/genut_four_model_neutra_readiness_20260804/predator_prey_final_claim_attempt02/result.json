@@ -1,0 +1,265 @@
+{
+  "adapter_signature": "2be34ff225c8780878291d8c366718cabd0d7edfa69cb82ee9c6a871cfda584e",
+  "batch_binding": {
+    "adapter_signature": "2be34ff225c8780878291d8c366718cabd0d7edfa69cb82ee9c6a871cfda584e",
+    "backend_id": "tensorflow_batch_native_genut_forward_jvp_fp32",
+    "callable_module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+    "callable_qualname": "GenUTNeuTraTargetAdapter.neutra_batch_log_prob_and_grad_status",
+    "callable_source_sha256": "429e5861fb0ae6eb2fd206d525408ed88ea79e06c6eab71ead108f59a3b6f09b",
+    "dependency_callable_sources": [
+      {
+        "global_name": "_posterior_value_score_status",
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "qualname": "_posterior_value_score_status",
+        "source_sha256": "4d1788e96192c168ab1e1457530255645997208a771b5d1e80c2fb353c105daf"
+      }
+    ],
+    "dependency_closure_sha256": "3a9499222a3ab39d1d2243526bbebefaa7e3467765de018e0c9042e2e5e60adf",
+    "dependency_module_sources": [
+      {
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "source_sha256": "e4b191d420fb2180eb5730d8433589696fecbc83eba91de82e4eecbc76db28e4"
+      }
+    ],
+    "evidence_path": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+    "jit_compile_required": true,
+    "method_name": "neutra_batch_log_prob_and_grad_status",
+    "minimum_batch_size": 2,
+    "row_mapped_scalar_target_used": false,
+    "sample_axis_python_loop_used": false,
+    "scalar_fallback_used": false,
+    "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+    "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+    "status_telemetry_required": true,
+    "target_scope": "GENUT-predator_prey-fixed-posterior-v1",
+    "target_signature": "41b9b4f24d880554e222d36b465b390f4360f1efec8570b2cef6f1b06c790dbe"
+  },
+  "batch_size": 2,
+  "compile_and_first_run_seconds": 26.68791997100925,
+  "control_status": "repository_tuning_artifact_bound",
+  "controls": {
+    "balance_steps": 8,
+    "epsilon": 4.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_strength": 0.2,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8,
+    "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_tuning_attempt02/result.json",
+    "tuning_scope": "predator_prey_T20_N1008_initial_observation_first_fp32_tf32_deterministic_v2"
+  },
+  "deterministic_ops_enabled": true,
+  "dtype": "float32_filter_float64_posterior",
+  "endpoint": [
+    -109.49093037357993,
+    -109.49861695937541
+  ],
+  "endpoint_compile_and_first_run_seconds": 10.010968597023748,
+  "endpoint_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "endpoint_status": {
+    "floor_count_value": [
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false
+    ],
+    "max_col_residual": [
+      1.73225998878479e-06,
+      1.6577541828155518e-06
+    ],
+    "max_mean_residual": [
+      3.0517578125e-05,
+      3.24249267578125e-05
+    ],
+    "max_row_residual": [
+      1.1106021702289581e-07,
+      1.1094380170106888e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.36093950271606445,
+      0.36093950271606445
+    ],
+    "maximum_skew_residual": [
+      0.1160573810338974,
+      0.11535358428955078
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.7684387564659119,
+      0.7684387564659119
+    ],
+    "status_code": [
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true
+    ]
+  },
+  "finite_difference": {
+    "center_valid": true,
+    "center_value": -109.49411316794252,
+    "diagnostic_coordinate_python_loop_used": true,
+    "finite_difference": [
+      -9.564638137817383,
+      7.869962526907859,
+      -0.018358230590820312,
+      0.06628401433461661,
+      -0.042438507080078125,
+      -0.1380443572998047
+    ],
+    "maximum_relative_error": 0.04909765418401822,
+    "relative_error": [
+      0.0008620355632314461,
+      0.0001256665478861581,
+      0.000660622164641439,
+      0.0038852263249937735,
+      0.04909765418401822,
+      0.011430642155567244
+    ],
+    "score": [
+      -9.556393079593144,
+      7.870951642229317,
+      -0.017697608426178874,
+      0.07016924065961039,
+      -0.09153616126409635,
+      -0.14947499945537193
+    ],
+    "stencil_valid": true,
+    "step": 0.016,
+    "training_sample_loop_used": false
+  },
+  "finite_difference_gate_passed": true,
+  "gpu_allocator": {
+    "current_bytes": 211200,
+    "peak_bytes": 134425600
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "model": "predator_prey",
+  "nonclaims": [
+    "capacity, replay, endpoint, and optional FD diagnostic only",
+    "no NeuTra training, HMC, convergence, or posterior claim"
+  ],
+  "particle_count": 1008,
+  "passed_capacity_replay_endpoint_gate": true,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "same_process_endpoint_replay_max_absolute_error": 0.0,
+  "same_process_score_replay_max_absolute_error": 0.0,
+  "same_process_value_replay_max_absolute_error": 0.0,
+  "schema": "bayesfilter.genut_four_model_neutra_readiness_cell.v1",
+  "score": [
+    [
+      -9.390063076137691,
+      7.968803500145585,
+      -0.013684687508499537,
+      0.044616689914076746,
+      -0.10896779531098938,
+      -0.12237131485888969
+    ],
+    [
+      -9.722245045463687,
+      7.771815128665865,
+      -0.02167338411384359,
+      0.09622809951866262,
+      -0.0752813526488268,
+      -0.17474750165200442
+    ]
+  ],
+  "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "status": {
+    "floor_count_value": [
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false
+    ],
+    "max_col_residual": [
+      1.6987323760986328e-06,
+      1.695007085800171e-06
+    ],
+    "max_mean_residual": [
+      3.167986869812012e-05,
+      2.288818359375e-05
+    ],
+    "max_row_residual": [
+      1.1094380170106888e-07,
+      1.1106021702289581e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.36580872535705566,
+      0.36580872535705566
+    ],
+    "maximum_skew_residual": [
+      0.11451455950737,
+      0.11527292430400848
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.7684387564659119,
+      0.7684387564659119
+    ],
+    "status_code": [
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true
+    ]
+  },
+  "target_scope": "GENUT-predator_prey-fixed-posterior-v1",
+  "target_signature": "41b9b4f24d880554e222d36b465b390f4360f1efec8570b2cef6f1b06c790dbe",
+  "tf32_enabled": true,
+  "value": [
+    -109.49054127445883,
+    -109.49791505507854
+  ],
+  "value_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "value_endpoint_max_absolute_error": 0.000701904296875,
+  "value_endpoint_max_relative_error": 6.410165866619214e-06,
+  "wall_time_seconds": 39.171356884995475,
+  "warm_replay_seconds": 0.16826046502683312
+}

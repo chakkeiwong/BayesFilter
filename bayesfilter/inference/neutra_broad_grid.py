@@ -44,6 +44,137 @@ DEFAULT_SCREEN_RESULTS = 128
 CHAIN_COUNT = 4
 REPLICATION_COUNT = 3
 
+from bayesfilter.inference.neutra_shared_procedure import (  # noqa: E402
+    BASE_REQUIRED_STATUS_KEYS,
+    DEFAULT_REQUIRED_STATUS_KEYS,
+    _normalized_status_keys,
+)
+
+
+def combined_target_health(
+    adapter: Any,
+    samples: Any,
+    *,
+    required_status_keys: tuple[str, ...] = DEFAULT_REQUIRED_STATUS_KEYS,
+) -> tuple[str, ...]:
+    """Hard target-validity reasons for one fixed-kernel run's samples.
+
+    Presence is enforced for every declared required key; the extended UKF
+    numeric telemetry checks apply to whichever of those keys the target
+    actually returns, so a target whose contract lacks innovation telemetry is
+    not misclassified as unhealthy while a target that provides it is always
+    checked.
+    """
+
+    keys = _normalized_status_keys(required_status_keys)
+    tensor = tf.convert_to_tensor(samples, tf.float64)
+    flat = tf.reshape(tensor, (-1, int(adapter.parameter_dim)))
+    value, score = adapter.log_prob_and_grad(flat)
+    status = adapter.target_status_telemetry(flat)
+    reasons: list[str] = []
+    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
+        reasons.append("nonfinite_candidate_state")
+    if not bool(tf.reduce_all(tf.math.is_finite(value)).numpy()):
+        reasons.append("nonfinite_target_log_prob")
+    if not bool(tf.reduce_all(tf.math.is_finite(score)).numpy()):
+        reasons.append("nonfinite_target_score")
+    if any(name not in status for name in keys):
+        return tuple((*reasons, "target_status_telemetry_failure"))
+    status_ok = tf.reduce_all(
+        tf.logical_and(
+            tf.equal(tf.convert_to_tensor(status["status_code"]), 0),
+            tf.convert_to_tensor(status["valid_pre_regularized_score"], tf.bool),
+        )
+    )
+    numeric_ok = tf.constant(True)
+    if "floor_count_value" in status:
+        numeric_ok = tf.logical_and(
+            numeric_ok,
+            tf.reduce_all(tf.convert_to_tensor(status["floor_count_value"]) >= 0),
+        )
+    for name in ("min_innovation_eigenvalue", "innovation_condition_estimate"):
+        if name in status:
+            numeric_ok = tf.logical_and(
+                numeric_ok,
+                tf.reduce_all(
+                    tf.math.is_finite(tf.convert_to_tensor(status[name], tf.float64))
+                ),
+            )
+    if not bool(tf.logical_and(status_ok, numeric_ok).numpy()):
+        reasons.append("target_status_telemetry_failure")
+    return tuple(dict.fromkeys(reasons))
+
+
+def evaluate_fixed_screen_run(
+    adapter: Any,
+    result: Any,
+    *,
+    chain_count: int,
+    required_status_keys: tuple[str, ...] = DEFAULT_REQUIRED_STATUS_KEYS,
+) -> Mapping[str, Any]:
+    """Shared hard gates and acceptance chain means for one fixed screen run."""
+
+    reasons = list(
+        combined_target_health(
+            adapter, result.samples, required_status_keys=required_status_keys
+        )
+    )
+    trace = result.trace
+    required = ("log_accept_ratio", "is_accepted", "target_log_prob")
+    if any(name not in trace for name in required):
+        raise ValueError("required_standard_trace_missing")
+    telemetry = summarize_hmc_tuning_telemetry(
+        samples=result.samples,
+        log_accept_ratio=trace["log_accept_ratio"],
+        is_accepted=trace["is_accepted"],
+    )
+    chain_means_tensor = tf.reshape(
+        telemetry["mean_acceptance_probability_by_chain"], [-1]
+    )
+    chain_means = tuple(float(item) for item in chain_means_tensor.numpy().tolist())
+    if len(chain_means) != int(chain_count) or any(
+        not math.isfinite(item) for item in chain_means
+    ):
+        reasons.append("nonfinite_log_accept_ratio")
+    for name in ("log_accept_ratio", "target_log_prob"):
+        if not bool(tf.reduce_all(tf.math.is_finite(trace[name])).numpy()):
+            reasons.append(f"nonfinite_{name}")
+    movement = tf.convert_to_tensor(telemetry["movement_rate_by_chain"], tf.float64)
+    repeated = tf.convert_to_tensor(
+        telemetry["repeated_state_fraction_by_chain"], tf.float64
+    )
+    normalized = tf.convert_to_tensor(
+        telemetry["normalized_return_displacement_by_chain"], tf.float64
+    )
+    path_return = tf.convert_to_tensor(
+        telemetry["path_return_fraction_by_chain"], tf.float64
+    )
+    movement_ok = tf.reduce_all(
+        tf.logical_and(
+            tf.logical_and(movement >= 0.05, repeated <= 0.95),
+            normalized >= 1.0e-4,
+        )
+    )
+    if not bool(movement_ok.numpy()):
+        reasons.append("movement_gate_failed")
+    if not bool(tf.reduce_all(path_return <= 0.95).numpy()):
+        reasons.append("path_return_resonance_detected")
+    divergence_status = str(
+        result.diagnostics.get("native_divergence_status", "not_exposed_by_kernel")
+    )
+    divergence_count = result.diagnostics.get("divergence_count")
+    if hasattr(divergence_count, "numpy"):
+        divergence_count = int(divergence_count.numpy())
+    if divergence_status == "available" and int(divergence_count or 0) > 0:
+        reasons.append("native_divergence_positive")
+    return {
+        "hard_rejection_reasons": tuple(dict.fromkeys(reasons)),
+        "chain_means": chain_means,
+        "telemetry": telemetry,
+        "native_divergence_status": divergence_status,
+        "native_divergence_count": divergence_count,
+    }
+
 
 @dataclass(frozen=True)
 class NeuTraBroadGridTuningConfig:
@@ -56,6 +187,7 @@ class NeuTraBroadGridTuningConfig:
     screen_burnin: int = DEFAULT_SCREEN_BURNIN
     screen_results: int = DEFAULT_SCREEN_RESULTS
     use_xla: bool = True
+    required_status_keys: tuple[str, ...] = DEFAULT_REQUIRED_STATUS_KEYS
     evidence_path: str = (
         "docs/plans/bayesfilter-neutra-remaining-models-broad-grid-"
         "continuation-plan-2026-07-30.md"
@@ -81,6 +213,11 @@ class NeuTraBroadGridTuningConfig:
         object.__setattr__(self, "initial_step_size", step)
         object.__setattr__(self, "root_seed", seed)
         object.__setattr__(self, "use_xla", bool(self.use_xla))
+        object.__setattr__(
+            self,
+            "required_status_keys",
+            _normalized_status_keys(self.required_status_keys),
+        )
         object.__setattr__(self, "evidence_path", evidence_path)
 
     def payload(self) -> Mapping[str, Any]:
@@ -92,6 +229,7 @@ class NeuTraBroadGridTuningConfig:
             "screen_burnin": self.screen_burnin,
             "screen_results": self.screen_results,
             "use_xla": self.use_xla,
+            "required_status_keys": self.required_status_keys,
             "evidence_path": self.evidence_path,
             "primary_l_grid": PRIMARY_L_GRID,
             "chain_count": CHAIN_COUNT,
@@ -235,54 +373,11 @@ class NeuTraBroadGridCallbacks:
         )
 
     def _combined_health(self, samples: Any) -> tuple[str, ...]:
-        tensor = tf.convert_to_tensor(samples, tf.float64)
-        flat = tf.reshape(tensor, (-1, int(self.adapter.parameter_dim)))
-        value, score = self.adapter.log_prob_and_grad(flat)
-        status = self.adapter.target_status_telemetry(flat)
-        reasons: list[str] = []
-        if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
-            reasons.append("nonfinite_candidate_state")
-        if not bool(tf.reduce_all(tf.math.is_finite(value)).numpy()):
-            reasons.append("nonfinite_target_log_prob")
-        if not bool(tf.reduce_all(tf.math.is_finite(score)).numpy()):
-            reasons.append("nonfinite_target_score")
-        required = (
-            "status_code",
-            "valid_pre_regularized_score",
-            "floor_count_value",
-            "min_innovation_eigenvalue",
-            "innovation_condition_estimate",
+        return combined_target_health(
+            self.adapter,
+            samples,
+            required_status_keys=self.config.required_status_keys,
         )
-        if any(name not in status for name in required):
-            return tuple((*reasons, "target_status_telemetry_failure"))
-        status_ok = tf.reduce_all(
-            tf.logical_and(
-                tf.equal(tf.convert_to_tensor(status["status_code"]), 0),
-                tf.convert_to_tensor(status["valid_pre_regularized_score"], tf.bool),
-            )
-        )
-        numeric_ok = tf.logical_and(
-            tf.reduce_all(tf.convert_to_tensor(status["floor_count_value"]) >= 0),
-            tf.logical_and(
-                tf.reduce_all(
-                    tf.math.is_finite(
-                        tf.convert_to_tensor(
-                            status["min_innovation_eigenvalue"], tf.float64
-                        )
-                    )
-                ),
-                tf.reduce_all(
-                    tf.math.is_finite(
-                        tf.convert_to_tensor(
-                            status["innovation_condition_estimate"], tf.float64
-                        )
-                    )
-                ),
-            ),
-        )
-        if not bool(tf.logical_and(status_ok, numeric_ok).numpy()):
-            reasons.append("target_status_telemetry_failure")
-        return tuple(dict.fromkeys(reasons))
 
     def _screen(
         self,
@@ -298,65 +393,22 @@ class NeuTraBroadGridCallbacks:
             step_size=float(epsilon),
             num_leapfrog_steps=int(leapfrog),
         )
-        reasons = list(self._combined_health(result.samples))
-        trace = result.trace
-        required = ("log_accept_ratio", "is_accepted", "target_log_prob")
-        if any(name not in trace for name in required):
-            raise ValueError("required_standard_trace_missing")
-        telemetry = summarize_hmc_tuning_telemetry(
-            samples=result.samples,
-            log_accept_ratio=trace["log_accept_ratio"],
-            is_accepted=trace["is_accepted"],
+        evaluation = evaluate_fixed_screen_run(
+            self.adapter,
+            result,
+            chain_count=CHAIN_COUNT,
+            required_status_keys=self.config.required_status_keys,
         )
-        chain_means_tensor = tf.reshape(
-            telemetry["mean_acceptance_probability_by_chain"], [-1]
-        )
-        chain_means = tuple(float(item) for item in chain_means_tensor.numpy().tolist())
-        if len(chain_means) != CHAIN_COUNT or any(
-            not math.isfinite(item) for item in chain_means
-        ):
-            reasons.append("nonfinite_log_accept_ratio")
-        for name in ("log_accept_ratio", "target_log_prob"):
-            if not bool(tf.reduce_all(tf.math.is_finite(trace[name])).numpy()):
-                reasons.append(f"nonfinite_{name}")
-        movement = tf.convert_to_tensor(telemetry["movement_rate_by_chain"], tf.float64)
-        repeated = tf.convert_to_tensor(
-            telemetry["repeated_state_fraction_by_chain"], tf.float64
-        )
-        normalized = tf.convert_to_tensor(
-            telemetry["normalized_return_displacement_by_chain"], tf.float64
-        )
-        path_return = tf.convert_to_tensor(
-            telemetry["path_return_fraction_by_chain"], tf.float64
-        )
-        movement_ok = tf.reduce_all(
-            tf.logical_and(
-                tf.logical_and(movement >= 0.05, repeated <= 0.95),
-                normalized >= 1.0e-4,
-            )
-        )
-        if not bool(movement_ok.numpy()):
-            reasons.append("movement_gate_failed")
-        if not bool(tf.reduce_all(path_return <= 0.95).numpy()):
-            reasons.append("path_return_resonance_detected")
-        divergence_status = str(
-            result.diagnostics.get("native_divergence_status", "not_exposed_by_kernel")
-        )
-        divergence_count = result.diagnostics.get("divergence_count")
-        if hasattr(divergence_count, "numpy"):
-            divergence_count = int(divergence_count.numpy())
-        if divergence_status == "available" and int(divergence_count or 0) > 0:
-            reasons.append("native_divergence_positive")
         row = {
             "role": role,
             "num_leapfrog_steps": int(leapfrog),
             "step_size": float(epsilon),
             "seed": seed,
-            "chain_means": chain_means,
-            "hard_rejection_reasons": tuple(dict.fromkeys(reasons)),
-            "native_divergence_status": divergence_status,
-            "native_divergence_count": divergence_count,
-            "telemetry": _json_ready(telemetry),
+            "chain_means": evaluation["chain_means"],
+            "hard_rejection_reasons": evaluation["hard_rejection_reasons"],
+            "native_divergence_status": evaluation["native_divergence_status"],
+            "native_divergence_count": evaluation["native_divergence_count"],
+            "telemetry": _json_ready(evaluation["telemetry"]),
             "wall_seconds": time.perf_counter() - started,
             "runner_metadata": result.metadata,
             "all_draws_discarded": True,
@@ -489,9 +541,17 @@ def run_neutra_operational_broad_grid_tuning(
     config: NeuTraBroadGridTuningConfig,
     output_dir: Path,
     callbacks_factory: Callable[..., Any] = NeuTraBroadGridCallbacks,
+    procedure_metadata: Mapping[str, Any] | None = None,
 ) -> Mapping[str, Any]:
     """Run the complete tuning barriers and emit private/public artifacts."""
 
+    if procedure_metadata is None:
+        from bayesfilter.inference.neutra_shared_procedure import (
+            operational_procedure_metadata,
+        )
+
+        procedure_metadata = operational_procedure_metadata()
+    metadata = dict(procedure_metadata)
     root = Path(output_dir)
     if root.exists():
         raise FileExistsError(f"broad-grid output directory must be fresh: {root}")
@@ -521,11 +581,13 @@ def run_neutra_operational_broad_grid_tuning(
     )
     private_payload = {
         **result.payload(),
+        **metadata,
         "execution_config": config.payload(),
         "events": tuple(callbacks.events),
     }
     public_payload = {
         **result.public_payload(),
+        **metadata,
         "execution_config": {
             key: value
             for key, value in config.payload().items()

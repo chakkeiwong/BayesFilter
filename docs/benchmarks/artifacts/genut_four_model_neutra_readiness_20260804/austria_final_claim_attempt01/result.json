@@ -1,0 +1,227 @@
+{
+  "adapter_signature": "e61b8d4770b4768c89d809e87bf2b94fcfaf7b6598d6de7372613f3820de9cd7",
+  "batch_binding": {
+    "adapter_signature": "e61b8d4770b4768c89d809e87bf2b94fcfaf7b6598d6de7372613f3820de9cd7",
+    "backend_id": "tensorflow_batch_native_genut_forward_jvp_fp32",
+    "callable_module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+    "callable_qualname": "GenUTNeuTraTargetAdapter.neutra_batch_log_prob_and_grad_status",
+    "callable_source_sha256": "429e5861fb0ae6eb2fd206d525408ed88ea79e06c6eab71ead108f59a3b6f09b",
+    "dependency_callable_sources": [
+      {
+        "global_name": "_posterior_value_score_status",
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "qualname": "_posterior_value_score_status",
+        "source_sha256": "4d1788e96192c168ab1e1457530255645997208a771b5d1e80c2fb353c105daf"
+      }
+    ],
+    "dependency_closure_sha256": "3a9499222a3ab39d1d2243526bbebefaa7e3467765de018e0c9042e2e5e60adf",
+    "dependency_module_sources": [
+      {
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "source_sha256": "e4b191d420fb2180eb5730d8433589696fecbc83eba91de82e4eecbc76db28e4"
+      }
+    ],
+    "evidence_path": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+    "jit_compile_required": true,
+    "method_name": "neutra_batch_log_prob_and_grad_status",
+    "minimum_batch_size": 2,
+    "row_mapped_scalar_target_used": false,
+    "sample_axis_python_loop_used": false,
+    "scalar_fallback_used": false,
+    "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+    "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+    "status_telemetry_required": true,
+    "target_scope": "GENUT-austria_sir-fixed-posterior-v1",
+    "target_signature": "ddd4f9a7b76157ad1d37a1f680a11c6c983e3d2bee80bbd28e9dcf530878bcd3"
+  },
+  "batch_size": 2,
+  "compile_and_first_run_seconds": 13.968560829001945,
+  "control_status": "scope_tuned_current_source",
+  "controls": {
+    "balance_steps": 8,
+    "epsilon": 8.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_strength": 0.2,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8,
+    "tuning_artifact": "docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/tuning_attempt01/result.json",
+    "tuning_scope": "austria_sir_T20_N1008_current_source"
+  },
+  "deterministic_ops_enabled": true,
+  "dtype": "float32_filter_float64_posterior",
+  "endpoint": [
+    -684.2745049446254,
+    -683.0312798469691
+  ],
+  "endpoint_compile_and_first_run_seconds": 4.760370147007052,
+  "endpoint_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "endpoint_status": {
+    "floor_count_value": [
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false
+    ],
+    "max_col_residual": [
+      2.246350049972534e-06,
+      6.109476089477539e-07
+    ],
+    "max_mean_residual": [
+      0.000274658203125,
+      0.0001220703125
+    ],
+    "max_row_residual": [
+      1.0954681783914566e-07,
+      1.0512303560972214e-07
+    ],
+    "maximum_kurtosis_residual": [
+      19.654895782470703,
+      16.540851593017578
+    ],
+    "maximum_skew_residual": [
+      2.557656764984131,
+      2.268617868423462
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.29420965909957886,
+      0.5737952589988708
+    ],
+    "status_code": [
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true
+    ]
+  },
+  "finite_difference": null,
+  "finite_difference_gate_passed": true,
+  "gpu_allocator": {
+    "current_bytes": 2988544,
+    "peak_bytes": 137202944
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "model": "austria_sir",
+  "nonclaims": [
+    "capacity, replay, endpoint, and optional FD diagnostic only",
+    "no NeuTra training, HMC, convergence, or posterior claim"
+  ],
+  "particle_count": 1008,
+  "passed_capacity_replay_endpoint_gate": false,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "same_process_endpoint_replay_max_absolute_error": 0.0,
+  "same_process_score_replay_max_absolute_error": 0.0,
+  "same_process_value_replay_max_absolute_error": 0.0,
+  "schema": "bayesfilter.genut_four_model_neutra_readiness_cell.v1",
+  "score": [
+    [
+      -37.26330126953125,
+      -76.08336962890625,
+      6.773604019165039
+    ],
+    [
+      -948.5494428710938,
+      340.7195085449219,
+      38.260287658691404
+    ]
+  ],
+  "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "status": {
+    "floor_count_value": [
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false
+    ],
+    "max_col_residual": [
+      5.047768354415894e-07,
+      9.387731552124023e-07
+    ],
+    "max_mean_residual": [
+      0.0001220703125,
+      0.0001220703125
+    ],
+    "max_row_residual": [
+      1.0558869689702988e-07,
+      1.0489020496606827e-07
+    ],
+    "maximum_kurtosis_residual": [
+      18.81661605834961,
+      16.36713409423828
+    ],
+    "maximum_skew_residual": [
+      1.2579095363616943,
+      2.072392702102661
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.3761887848377228,
+      0.4094558656215668
+    ],
+    "status_code": [
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true
+    ]
+  },
+  "target_scope": "GENUT-austria_sir-fixed-posterior-v1",
+  "target_signature": "ddd4f9a7b76157ad1d37a1f680a11c6c983e3d2bee80bbd28e9dcf530878bcd3",
+  "tf32_enabled": true,
+  "value": [
+    -683.2016289680629,
+    -684.0631401985316
+  ],
+  "value_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "value_endpoint_max_absolute_error": 1.0728759765625,
+  "value_endpoint_max_relative_error": 0.0015679028939552878,
+  "wall_time_seconds": 20.65278828603914,
+  "warm_replay_seconds": 0.27417515602428466
+}
