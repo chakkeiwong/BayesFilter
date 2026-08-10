@@ -1014,6 +1014,8 @@ def _principal_sqrt_sigma_point_score_with_rule(
     max_innovation_sylvester_residual = tf.constant(0.0, dtype=tf.float64)
     min_placement_eigen_gap = tf.constant(float("inf"), dtype=tf.float64)
     min_innovation_eigen_gap = tf.constant(float("inf"), dtype=tf.float64)
+    min_innovation_eigenvalue = tf.constant(float("inf"), dtype=tf.float64)
+    max_innovation_condition_estimate = tf.constant(0.0, dtype=tf.float64)
     last_implemented_innovation_covariance = tf.zeros(
         [observation_dim, observation_dim],
         dtype=tf.float64,
@@ -1160,6 +1162,15 @@ def _principal_sqrt_sigma_point_score_with_rule(
             fixed_null_tolerance=fixed_null_tolerance,
             label="principal-sqrt sigma-point innovation",
         )
+        step_min_innovation_eigenvalue = tf.reduce_min(
+            innovation_factor.eigenvalues
+        )
+        step_condition_estimate = tf.reduce_max(
+            tf.abs(raw_innovation_covariance)
+        ) / tf.maximum(
+            step_min_innovation_eigenvalue,
+            tf.constant(1.0e-300, dtype=tf.float64),
+        )
         cross_covariance = tf.transpose(centered_x) @ (
             centered_y * sigma_rule.covariance_weights[:, tf.newaxis]
         )
@@ -1284,6 +1295,14 @@ def _principal_sqrt_sigma_point_score_with_rule(
             min_innovation_eigen_gap,
             innovation_factor.min_eigen_gap,
         )
+        min_innovation_eigenvalue = tf.minimum(
+            min_innovation_eigenvalue,
+            step_min_innovation_eigenvalue,
+        )
+        max_innovation_condition_estimate = tf.maximum(
+            max_innovation_condition_estimate,
+            step_condition_estimate,
+        )
         last_implemented_innovation_covariance = innovation_factor.implemented_covariance
 
     checked_value = tf.debugging.check_numerics(
@@ -1307,6 +1326,8 @@ def _principal_sqrt_sigma_point_score_with_rule(
         "deterministic_residual": max_deterministic_residual,
         "min_placement_eigen_gap": min_placement_eigen_gap,
         "min_innovation_eigen_gap": min_innovation_eigen_gap,
+        "min_innovation_eigenvalue": min_innovation_eigenvalue,
+        "innovation_condition_estimate": max_innovation_condition_estimate,
         "factor_derivative_reconstruction_residual": max_factor_derivative_residual,
         "innovation_sylvester_residual": max_innovation_sylvester_residual,
         "fixed_null_derivative_residual": tf.constant(0.0, dtype=tf.float64),

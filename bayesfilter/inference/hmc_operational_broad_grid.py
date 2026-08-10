@@ -442,10 +442,10 @@ class OperationalPairEvidence:
 
     chain_run_means: tuple[float, ...]
     replication_means: tuple[float, ...]
-    grand_mean: float
-    sample_standard_deviation: float
-    standard_error: float
-    working_interval: tuple[float, float]
+    grand_mean: float | None
+    sample_standard_deviation: float | None
+    standard_error: float | None
+    working_interval: tuple[float, float] | None
     disposition: str
     hard_rejection_reasons: tuple[str, ...]
     evidence_signature: str
@@ -492,14 +492,31 @@ def classify_operational_pair_evidence(
 
     if not isinstance(policy, OperationalBroadGridPolicy):
         raise TypeError("policy must be OperationalBroadGridPolicy")
+    reasons = tuple(dict.fromkeys(str(item) for item in hard_rejection_reasons))
+    if any(not item for item in reasons):
+        raise ValueError("hard rejection reasons must be non-empty")
     values = tuple(float(item) for item in chain_run_means)
+    if not values:
+        if not reasons:
+            raise ValueError("empty chain_run_means require a hard rejection reason")
+        return OperationalPairEvidence(
+            chain_run_means=(),
+            replication_means=(),
+            grand_mean=None,
+            sample_standard_deviation=None,
+            standard_error=None,
+            working_interval=None,
+            disposition="hard_rejected",
+            hard_rejection_reasons=reasons,
+            evidence_signature=_nonempty(
+                evidence_signature,
+                name="evidence_signature",
+            ),
+        )
     if len(values) != policy.evidence_unit_count or any(
         not math.isfinite(item) or not 0.0 <= item <= 1.0 for item in values
     ):
         raise ValueError("chain_run_means are incomplete or invalid")
-    reasons = tuple(dict.fromkeys(str(item) for item in hard_rejection_reasons))
-    if any(not item for item in reasons):
-        raise ValueError("hard rejection reasons must be non-empty")
     replication_means = tuple(
         math.fsum(values[start : start + policy.chain_count]) / policy.chain_count
         for start in range(0, len(values), policy.chain_count)
@@ -1063,6 +1080,158 @@ class OperationalBroadGridResult:
             "metric_arrays_exposed": False,
             "nonclaims": NONCLAIMS,
         }
+
+
+@dataclass(frozen=True)
+class OperationalCandidateUnionSelection:
+    """Deterministic policy selection over a complete viable ``(L, epsilon)`` union.
+
+    This boundary intentionally consumes candidate summaries rather than HMC
+    tensors.  It preserves the broad-grid uncertainty contract: viability is
+    decided by each candidate's typed evidence, while the representative is a
+    policy tie-break and never a ranking by acceptance, ESJD, or runtime.
+    """
+
+    anchor_l: int
+    candidate_records: tuple[Mapping[str, Any], ...]
+    selected_index: int | None
+    disposition: str
+    selection_order: tuple[int, ...]
+    stochastic_ranking_performed: bool = False
+
+    def __post_init__(self) -> None:
+        anchor = _strict_integer(self.anchor_l, name="anchor_l", minimum=1)
+        records = tuple(dict(record) for record in self.candidate_records)
+        if not records:
+            raise ValueError("candidate union must not be empty")
+        if self.selected_index is not None:
+            index = _strict_integer(
+                self.selected_index,
+                name="selected_index",
+                minimum=0,
+            )
+            if index >= len(records):
+                raise ValueError("selected_index is outside candidate union")
+            object.__setattr__(self, "selected_index", index)
+        order = tuple(
+            _strict_integer(item, name="selection_order item", minimum=0)
+            for item in self.selection_order
+        )
+        if order != tuple(sorted(order, key=lambda item: self._sort_key(records[item]))):
+            raise ValueError("selection_order does not match deterministic policy")
+        if set(order) != set(range(len(records))):
+            raise ValueError("selection_order must cover the complete candidate union")
+        disposition = str(self.disposition)
+        if disposition not in {"representative_selected", "no_viable_candidate"}:
+            raise ValueError("invalid candidate-union selection disposition")
+        if disposition == "representative_selected" and self.selected_index is None:
+            raise ValueError("selected disposition requires a representative")
+        if disposition == "no_viable_candidate" and self.selected_index is not None:
+            raise ValueError("no-viable disposition cannot carry a representative")
+        if bool(self.stochastic_ranking_performed):
+            raise ValueError("candidate-union selection cannot use stochastic ranking")
+        object.__setattr__(self, "anchor_l", anchor)
+        object.__setattr__(self, "candidate_records", records)
+        object.__setattr__(self, "selection_order", order)
+        object.__setattr__(self, "stochastic_ranking_performed", False)
+
+    @staticmethod
+    def _sort_key(record: Mapping[str, Any]) -> tuple[Any, ...]:
+        return (
+            abs(int(record["num_leapfrog_steps"]) - int(record["anchor_l"])),
+            int(record["num_leapfrog_steps"]),
+            str(record.get("content_signature", "")),
+        )
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.operational_candidate_union_selection.v1",
+            "anchor_l": self.anchor_l,
+            "candidate_records": self.candidate_records,
+            "selected_index": self.selected_index,
+            "disposition": self.disposition,
+            "selection_order": self.selection_order,
+            "selection_rule": "closest_to_anchor_then_lower_l_then_content_signature",
+            "stochastic_ranking_performed": False,
+            "nonclaims": NONCLAIMS,
+        }
+
+
+def select_operational_candidate_union(
+    candidate_records: Sequence[Mapping[str, Any]],
+    *,
+    anchor_l: int,
+    expected_lineage: Mapping[str, Any],
+) -> OperationalCandidateUnionSelection:
+    """Validate and select a complete, viable candidate union by policy only.
+
+    Each record must expose ``num_leapfrog_steps``, ``tuned_step_size``,
+    ``viable``, ``anchor_l``, and the shared ``metric_signature``,
+    ``coordinate_signature``, and ``lineage_signature``.  The function never
+    inspects acceptance magnitudes, runtime, or efficiency metrics.
+    """
+
+    anchor = _strict_integer(anchor_l, name="anchor_l", minimum=1)
+    expected = {str(key): str(value) for key, value in expected_lineage.items()}
+    required = {
+        "metric_signature",
+        "coordinate_signature",
+        "lineage_signature",
+    }
+    if set(expected) != required or any(not value for value in expected.values()):
+        raise ValueError("expected_lineage must contain the three shared signatures")
+    records = tuple(dict(record) for record in candidate_records)
+    if not records:
+        raise ValueError("candidate union must not be empty")
+    seen_l: set[int] = set()
+    normalized: list[dict[str, Any]] = []
+    for record in records:
+        try:
+            leapfrog = _strict_integer(
+                record["num_leapfrog_steps"],
+                name="candidate num_leapfrog_steps",
+                minimum=2,
+            )
+            epsilon = _finite_step(record["tuned_step_size"])
+            record_anchor = _strict_integer(record["anchor_l"], name="candidate anchor_l")
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("candidate union record is malformed") from error
+        if record_anchor != anchor:
+            raise ValueError("candidate anchor does not match selection anchor")
+        if leapfrog in seen_l:
+            raise ValueError("candidate union contains duplicate L")
+        seen_l.add(leapfrog)
+        for name in required:
+            if str(record.get(name, "")) != expected[name]:
+                raise ValueError("candidate union lineage mismatch")
+        if "viable" not in record or not isinstance(record["viable"], bool):
+            raise ValueError("candidate viability must be boolean")
+        record["num_leapfrog_steps"] = leapfrog
+        record["tuned_step_size"] = epsilon
+        record["anchor_l"] = anchor
+        record["content_signature"] = str(record.get("content_signature", ""))
+        normalized.append(record)
+    order = tuple(
+        sorted(
+            range(len(normalized)),
+            key=lambda index: OperationalCandidateUnionSelection._sort_key(
+                normalized[index]
+            ),
+        )
+    )
+    selected = next(
+        (index for index in order if normalized[index]["viable"]),
+        None,
+    )
+    return OperationalCandidateUnionSelection(
+        anchor_l=anchor,
+        candidate_records=tuple(normalized),
+        selected_index=selected,
+        disposition=(
+            "representative_selected" if selected is not None else "no_viable_candidate"
+        ),
+        selection_order=order,
+    )
 
 
 def assemble_operational_broad_grid_result(

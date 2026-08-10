@@ -27,6 +27,8 @@ from bayesfilter.inference.hmc_kernel_selection import (
     run_bounded_operational_fixed_trajectory_selection,
     run_operational_fixed_trajectory_selection,
     select_fixed_trajectory_representative,
+    deterministic_candidate_order,
+    build_verified_fixed_kernel_handoff,
 )
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptancePolicy,
@@ -269,6 +271,51 @@ def test_representative_policy_is_permutation_invariant_and_not_efficiency_ranke
     assert first.signature == second.signature
     assert first.representative.candidate.num_leapfrog_steps == 10
     assert first.payload()["stochastic_ranking_performed"] is False
+
+
+def test_arbitrary_candidate_order_is_deterministic_and_ignores_metrics() -> None:
+    candidates = (
+        {"L": 5, "signature": "b", "acceptance": 0.99, "runtime": 1.0},
+        {"L": 3, "signature": "c", "acceptance": 0.60, "runtime": 9.0},
+        {"L": 5, "signature": "a", "acceptance": 0.10, "runtime": 2.0},
+    )
+    ordered = deterministic_candidate_order(candidates, anchor_l=4)
+    assert tuple(item["signature"] for item in ordered) == ("c", "a", "b")
+    reversed_metrics = tuple(
+        {**item, "acceptance": 1.0 - item["acceptance"], "runtime": 100.0 - item["runtime"]}
+        for item in reversed(candidates)
+    )
+    assert tuple(
+        item["signature"] for item in deterministic_candidate_order(reversed_metrics, anchor_l=4)
+    ) == ("c", "a", "b")
+
+
+def test_verified_handoff_is_bayesfilter_owned_and_uses_policy_only() -> None:
+    candidates = (
+        {
+            "L": 5,
+            "step_size": 0.24,
+            "signature": "l5",
+            "lineage_signature": "lineage",
+            "verification_checkpoint_sha256": "5" * 64,
+            "qualification_passed": True,
+            "acceptance": 0.99,
+        },
+        {
+            "L": 3,
+            "step_size": 0.29,
+            "signature": "l3",
+            "lineage_signature": "lineage",
+            "verification_checkpoint_sha256": "3" * 64,
+            "qualification_passed": True,
+            "acceptance": 0.01,
+        },
+    )
+    handoff = build_verified_fixed_kernel_handoff(candidates, anchor_l=4)
+    assert handoff is not None
+    assert handoff.num_leapfrog_steps == 3
+    assert handoff.payload()["stochastic_ranking_performed"] is False
+    assert handoff.payload()["retained_sampling_authorized"] is False
 
 
 def test_candidate_result_uses_explicit_v3_schema_for_repair_role_semantics() -> None:

@@ -125,6 +125,38 @@ def test_batched_svd_custom_gradient_matches_experimental_principal_sqrt() -> No
     assert bool(diagnostics["filter_autodiff_allowed_for_hmc"].numpy()) is False
 
 
+def test_batched_svd_custom_gradient_tensorflow_eigh_matches_custom_operator() -> None:
+    tensors = _fixture()
+    model, derivatives = _model_derivatives(tensors)
+    theta = _theta_for_fixture(tensors)
+
+    custom_value, custom_score, custom_diagnostics = (
+        tf_batched_svd_sigma_point_value_and_score_custom_gradient(
+            theta,
+            tensors["observations"],
+            model,
+            derivatives,
+            principal_sqrt_backend="compiled_custom_op",
+        )
+    )
+    native_value, native_score, native_diagnostics = (
+        tf_batched_svd_sigma_point_value_and_score_custom_gradient(
+            theta,
+            tensors["observations"],
+            model,
+            derivatives,
+            principal_sqrt_backend="tensorflow_eigh",
+        )
+    )
+
+    np.testing.assert_allclose(native_value.numpy(), custom_value.numpy(), atol=1.0e-8)
+    np.testing.assert_allclose(
+        native_score.numpy(), custom_score.numpy(), rtol=1.0e-7, atol=1.0e-7
+    )
+    assert custom_diagnostics["principal_sqrt_backend"].numpy() == b"compiled_custom_op"
+    assert native_diagnostics["principal_sqrt_backend"].numpy() == b"tensorflow_eigh"
+
+
 def test_batched_svd_custom_gradient_tape_uses_returned_score() -> None:
     tensors = _fixture()
     model, derivatives = _model_derivatives(tensors)

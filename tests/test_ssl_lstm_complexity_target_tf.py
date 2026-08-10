@@ -6,6 +6,7 @@ import tensorflow as tf
 from bayesfilter.nonlinear.ssl_lstm_complexity_target_tf import (
     FREE_NAMES,
     PRIOR_CENTER,
+    STATIC_DATA_CONSTRUCTION_POLICY,
     complexity_posterior_target,
     make_complexity_config,
     make_full_fixture,
@@ -107,8 +108,50 @@ def test_target_chart_contract_is_four_dimensional_and_identity_oriented() -> No
     }
     assert target.config.signature_payload()["filter_backend"] == "tf_principal_sqrt_ukf"
     assert target.config.signature_payload()["score_backend"] == "tf_principal_sqrt_ukf_score"
+    assert target.config.signature_payload()["static_data_construction_policy"] == (
+        STATIC_DATA_CONSTRUCTION_POLICY
+    )
+    assert "CPU:0" in target.config.fixture.device
+    assert "CPU:0" in target.config.observations.device
     assert len(target.target_signature()) == 64
     assert len(target.adapter_signature()) == 64
+
+
+def test_target_status_instrumentation_preserves_value_and_score() -> None:
+    target = complexity_posterior_target(2, jit_compile=False)
+    point = PRIOR_CENTER + tf.constant((0.03, -0.02, 0.01, -0.04), tf.float64)
+    expected_value, expected_score = target.value_and_score(point)
+    value, score, status = target.log_prob_and_grad_status(point)
+    tf.debugging.assert_equal(value, expected_value)
+    tf.debugging.assert_equal(score, expected_score)
+    assert set(status) == {
+        "status_code",
+        "valid_pre_regularized_score",
+        "floor_count_value",
+        "min_innovation_eigenvalue",
+        "innovation_condition_estimate",
+    }
+    assert int(status["status_code"].numpy()) == 0
+    assert bool(status["valid_pre_regularized_score"].numpy())
+    assert int(status["floor_count_value"].numpy()) == 0
+    assert float(status["min_innovation_eigenvalue"].numpy()) > 0.0
+    tf.debugging.assert_all_finite(
+        status["innovation_condition_estimate"], "condition estimate must be finite"
+    )
+
+
+def test_batched_target_status_preserves_batch_value_and_score() -> None:
+    target = complexity_posterior_target(2, jit_compile=False)
+    points = tf.stack((PRIOR_CENTER, PRIOR_CENTER + 0.01), axis=0)
+    expected_value, expected_score = target.batch_value_and_score(points)
+    value, score, status = target.log_prob_and_grad_status(points)
+    tf.debugging.assert_equal(value, expected_value)
+    tf.debugging.assert_equal(score, expected_score)
+    assert status["status_code"].shape == (2,)
+    tf.debugging.assert_equal(status["status_code"], tf.zeros((2,), tf.int32))
+    tf.debugging.assert_equal(
+        status["valid_pre_regularized_score"], tf.ones((2,), tf.bool)
+    )
 
 
 def test_q2_directional_score_matches_finite_difference() -> None:

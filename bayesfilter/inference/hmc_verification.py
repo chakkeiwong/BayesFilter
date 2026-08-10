@@ -75,12 +75,18 @@ _CANDIDATE_DATA_INVALIDITY_REASON_CODES = frozenset(
     }
 )
 
-TARGET_STATUS_TELEMETRY_FIELDS = (
+TARGET_STATUS_TELEMETRY_CORE_FIELDS = (
     "status_code",
     "valid_pre_regularized_score",
     "floor_count_value",
+)
+TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS = (
     "min_innovation_eigenvalue",
     "innovation_condition_estimate",
+)
+TARGET_STATUS_TELEMETRY_FIELDS = (
+    *TARGET_STATUS_TELEMETRY_CORE_FIELDS,
+    *TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS,
 )
 
 
@@ -93,12 +99,26 @@ def target_status_telemetry_has_failure(
 
     if not isinstance(telemetry, Mapping):
         raise TypeError("target_status_telemetry trace must be a mapping")
-    missing = tuple(key for key in TARGET_STATUS_TELEMETRY_FIELDS if key not in telemetry)
+    missing = tuple(
+        key for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS if key not in telemetry
+    )
     if missing:
         raise ValueError(
             "target_status_telemetry missing required fields: " + ", ".join(missing)
         )
-    arrays = {key: np.asarray(telemetry[key]) for key in TARGET_STATUS_TELEMETRY_FIELDS}
+    optional_present = tuple(
+        key in telemetry for key in TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS
+    )
+    if any(optional_present) and not all(optional_present):
+        raise ValueError(
+            "target_status_telemetry conditioning fields must be both present or both absent"
+        )
+    active_fields = (
+        TARGET_STATUS_TELEMETRY_FIELDS
+        if all(optional_present)
+        else TARGET_STATUS_TELEMETRY_CORE_FIELDS
+    )
+    arrays = {key: np.asarray(telemetry[key]) for key in active_fields}
     if any(value.shape != expected_shape for value in arrays.values()):
         raise ValueError("target_status_telemetry fields must match the chain-step shape")
     status = arrays["status_code"]
@@ -118,7 +138,9 @@ def target_status_telemetry_has_failure(
     valid_entries = ~status_nonvalid
     if np.any(floors[valid_entries] < 0):
         raise ValueError("valid target floor_count_value must be nonnegative")
-    for name in ("min_innovation_eigenvalue", "innovation_condition_estimate"):
+    for name in TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS:
+        if name not in arrays:
+            continue
         if not np.issubdtype(arrays[name].dtype, np.number):
             raise ValueError(f"target {name} must be numeric")
         if not np.all(np.isfinite(arrays[name][valid_entries])):
@@ -326,8 +348,11 @@ def _evaluate_retained_target_health(
                         status_failure_count += int(
                             np.sum((status != 0) | (~valid))
                         )
-                        evaluated += 1
-                        break
+                        # Keep scanning the retained draws so the public
+                        # count reflects all logical failures, not only the
+                        # first one encountered.
+                        continue
+                    draw_failure_found = False
                     for offset, draw in enumerate(chunk):
                         draw_expected_shape = tuple(
                             int(item) for item in draw.shape[:-1]
@@ -361,6 +386,7 @@ def _evaluate_retained_target_health(
                             shared.append("shared_schema_invalid")
                             break
                         if draw_failed:
+                            draw_failure_found = True
                             status = draw_arrays["status_code"]
                             valid = draw_arrays[
                                 "valid_pre_regularized_score"
@@ -368,13 +394,18 @@ def _evaluate_retained_target_health(
                             status_failure_count += int(
                                 np.sum((status != 0) | (~valid))
                             )
-                            evaluated += offset + 1
-                            break
-                    else:
+                            continue
+                    if shared:
+                        break
+                    if not draw_failure_found and not shared:
                         # A batched-only failure that cannot be reproduced per
                         # logical draw violates the declared adapter contract.
                         shared.append("shared_schema_invalid")
-                    break
+                        break
+                    # A valid telemetry failure is candidate-local evidence;
+                    # continue scanning later chunks to count every failure.
+                    evaluated += int(chunk.shape[0])
+                    continue
             except (AttributeError, TypeError, ValueError):
                 shared.append("shared_schema_invalid")
                 break

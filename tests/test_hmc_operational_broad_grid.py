@@ -256,6 +256,37 @@ def test_uncertainty_interval_can_preserve_noisy_candidate_and_hard_veto_wins():
     assert veto.disposition == "hard_rejected"
 
 
+def test_candidate_local_invalidity_is_a_pair_rejection_without_fake_means():
+    evidence = classify_operational_pair_evidence(
+        chain_run_means=(),
+        evidence_signature="candidate-local-invalid",
+        policy=POLICY,
+        hard_rejection_reasons=("nonfinite_log_accept_ratio",),
+    )
+    assert evidence.disposition == "hard_rejected"
+    assert evidence.chain_run_means == ()
+    assert evidence.replication_means == ()
+    assert evidence.grand_mean is None
+    assert evidence.working_interval is None
+    assert not evidence.viable
+
+
+def test_missing_or_partial_pair_evidence_still_fails_closed():
+    with pytest.raises(ValueError, match="require a hard rejection reason"):
+        classify_operational_pair_evidence(
+            chain_run_means=(),
+            evidence_signature="missing",
+            policy=POLICY,
+        )
+    with pytest.raises(ValueError, match="incomplete or invalid"):
+        classify_operational_pair_evidence(
+            chain_run_means=(0.70,),
+            evidence_signature="partial",
+            policy=POLICY,
+            hard_rejection_reasons=("candidate_invalid",),
+        )
+
+
 def test_precise_mean_outside_practical_band_is_directional_not_viable():
     above = classify_operational_pair_evidence(
         chain_run_means=(0.7597853586512194,) * POLICY.evidence_unit_count,

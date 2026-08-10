@@ -17,6 +17,9 @@ from pathlib import Path
 from typing import Any
 
 
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+
+
 def _select_gpu() -> str:
     mode = None
     if "--mode" in sys.argv:
@@ -49,6 +52,21 @@ SELECTED_GPU = _select_gpu()
 
 import numpy as np
 import tensorflow as tf
+
+
+def _enable_memory_growth_before_project_imports() -> None:
+    for gpu in tf.config.list_physical_devices("GPU"):
+        try:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        except RuntimeError as exc:
+            raise RuntimeError(
+                "GPU memory growth must be established before project imports"
+            ) from exc
+        if tf.config.experimental.get_memory_growth(gpu) is not True:
+            raise RuntimeError("GPU memory growth verification failed")
+
+
+_enable_memory_growth_before_project_imports()
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -243,11 +261,8 @@ def configure_gpu() -> None:
     if not gpus:
         raise HMCBudgetRateError("HMC budget-rate canary requires a visible GPU")
     for gpu in gpus:
-        try:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        except RuntimeError as exc:
-            if "cannot be modified after being initialized" not in str(exc):
-                raise
+        if tf.config.experimental.get_memory_growth(gpu) is not True:
+            raise HMCBudgetRateError("GPU memory growth verification failed")
     tf.config.experimental.enable_tensor_float_32_execution(True)
     tf.config.set_soft_device_placement(False)
     try:
@@ -392,6 +407,13 @@ def run_canary(args: argparse.Namespace) -> dict[str, Any]:
             "logical_gpus": [
                 device.name for device in tf.config.list_logical_devices("GPU")
             ],
+            "tf_force_gpu_allow_growth": os.environ.get(
+                "TF_FORCE_GPU_ALLOW_GROWTH"
+            ),
+            "gpu_memory_growth_verified": all(
+                tf.config.experimental.get_memory_growth(gpu) is True
+                for gpu in tf.config.list_physical_devices("GPU")
+            ),
             "jit_compile": True,
             "tf32": bool(tf.config.experimental.tensor_float_32_execution_enabled()),
             "wall_seconds": time.perf_counter() - started,

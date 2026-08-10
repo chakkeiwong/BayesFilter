@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
+import signal
 import sys
 from pathlib import Path
 
@@ -131,6 +133,49 @@ def test_contract_smoke_records_external_boundary_and_best_state_repair() -> Non
     assert payload["source_bindings"]["source_sha256"]["runner"]
 
 
+def test_loss_only_control_is_explicit_and_manifested() -> None:
+    args = runner.parse_args(
+        ["--mode", "single-diagnostic", "--q", "20", "--loss-only-control"]
+    )
+    assert args.loss_only_control is True
+    params = runner.fixed_smoke_parameters()
+    payload = runner.plateau_config(
+        params, saturation_repair_enabled=not args.loss_only_control
+    ).manifest_payload()
+    assert payload["saturation_repair_enabled"] is False
+    source = RUNNER.read_text(encoding="utf-8")
+    assert "saturation_repair_enabled=not args.loss_only_control" in source
+    assert '"audit": audit' in source
+    assert "AUDIT_BATCH_SIZE = 256" in source
+    assert "LOSS_ONLY_ARCHITECTURE_PLAN" in source
+    assert runner.plan_for_args(args) == runner.LOSS_ONLY_ARCHITECTURE_PLAN
+    assert "process_launch_after_import_before_execution" in source
+    assert '"gpu_memory_growth_verified"' in source
+    assert '"gpu_allocator_memory_bytes"' in source
+
+
+def test_external_transport_audit_uses_frozen_batch_api() -> None:
+    class FrozenTransport:
+        def forward_batch(self, z):
+            return z + 1.0
+
+        def log_abs_det_jacobian_batch(self, z):
+            return runner.tf.zeros((runner.AUDIT_BATCH_SIZE,), dtype=runner.tf.float64)
+
+    class Pool:
+        def evaluate_values(self, rows, *, request_id):
+            assert rows.shape == (runner.AUDIT_BATCH_SIZE, 4)
+            assert request_id == "audit-test"
+            return [0.0] * runner.AUDIT_BATCH_SIZE, {}
+
+    audit = runner._external_transport_audit(
+        FrozenTransport(), Pool(), runner.tf.zeros((runner.AUDIT_BATCH_SIZE, 4), runner.tf.float64),
+        request_id="audit-test",
+    )
+    assert audit["batch_size"] == runner.AUDIT_BATCH_SIZE
+    assert audit["mean_loss"] == 0.0
+
+
 def test_runner_uses_external_pool_paths_and_sequential_optuna_streams() -> None:
     source = RUNNER.read_text(encoding="utf-8")
     assert "train_step_with_external_value_score" in source
@@ -163,6 +208,82 @@ def test_budget_resume_charges_prior_seconds() -> None:
     assert budget.elapsed >= 40.0
     with pytest.raises(runner.ResourceStop):
         budget.require(61.0)
+
+
+def _joint_checkpoint(step: int = 250):
+    best = {
+        "step": step,
+        "config": {"family": "fixture"},
+        "state_hash": "a" * 64,
+    }
+    current = {
+        "step": step,
+        "config": {"family": "fixture"},
+        "state_hash": "b" * 64,
+    }
+    controller = {
+        "last_observation_step": step,
+        "best_trainer_state_hash": best["state_hash"],
+    }
+    return runner.joint_training_checkpoint_payload(
+        trainer_state=current,
+        controller_state=controller,
+        best_trainer_state=best,
+    )
+
+
+def test_latest_verified_progress_checkpoint_rejects_tampering(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    stream = runner.STREAMS[0]
+    checkpoint = tmp_path / "checkpoint-0250.json"
+    runner.write_json(checkpoint, _joint_checkpoint())
+    receipt = {
+        "step": 250,
+        "path": checkpoint.relative_to(tmp_path).as_posix(),
+        "sha256": runner.sha256(checkpoint),
+        "checkpoint_hash": json.loads(checkpoint.read_text())["checkpoint_hash"],
+    }
+    progress = json.loads(runner.canonical({
+        "schema": runner.SCHEMA,
+        "status": "RUNNING",
+        "stream": runner.asdict(stream),
+        "last_program_step": 250,
+        "history": [{"step": 250}],
+        "checkpoints": [receipt],
+    }))
+    joint, source = runner.latest_verified_progress_checkpoint(
+        progress=progress,
+        stream=stream,
+    )
+    assert joint["checkpoint_hash"] == receipt["checkpoint_hash"]
+    assert source["step"] == 250
+
+    tampered = dict(progress)
+    tampered["last_program_step"] = 500
+    with pytest.raises(runner.ComplexityTrainingError, match="step mismatch"):
+        runner.latest_verified_progress_checkpoint(progress=tampered, stream=stream)
+
+    checkpoint.write_text(checkpoint.read_text() + " ", encoding="utf-8")
+    with pytest.raises(runner.ComplexityTrainingError, match="file hash mismatch"):
+        runner.latest_verified_progress_checkpoint(progress=progress, stream=stream)
+
+
+def test_signal_interruption_is_deferred_and_resettable() -> None:
+    runner.reset_training_interruption()
+    runner.request_training_interruption(signal.SIGTERM, None)
+    assert runner._INTERRUPTION_SIGNAL == signal.SIGTERM
+    runner.reset_training_interruption()
+    assert runner._INTERRUPTION_SIGNAL is None
+
+
+def test_runner_supports_interruption_receipts_and_orphan_resume() -> None:
+    source = RUNNER.read_text(encoding="utf-8")
+    assert '"interruption-stop.json"' in source
+    assert "latest_verified_progress_checkpoint" in source
+    assert '"single-diagnostic orphan resume requires RUNNING progress"' in source
+    assert "install_training_signal_handlers" in source
 
 
 def test_confirmation_mode_is_trigger_bound_and_fail_closed(tmp_path, monkeypatch) -> None:

@@ -27,6 +27,9 @@ from bayesfilter.inference.hmc_tuning import (
 )
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptancePolicy,
+    TARGET_STATUS_TELEMETRY_CORE_FIELDS,
+    TARGET_STATUS_TELEMETRY_FIELDS,
+    TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS,
     _evaluate_retained_target_health,
     evaluate_hmc_acceptance_evidence,
     summarize_hmc_tuning_telemetry,
@@ -6430,7 +6433,21 @@ def _trace_fn_for_config(
 def _standard_trace_fn_with_target_status(adapter: Any) -> Callable[[Any, Any], Mapping[str, Any]]:
     def trace_fn(state: Any, kernel_results: Any) -> Mapping[str, Any]:
         trace = dict(_standard_trace_fn(state, kernel_results))
-        trace["target_status_telemetry"] = adapter.target_status_telemetry(state)
+        telemetry = adapter.target_status_telemetry(state)
+        # TFP's trace_scan stacks every returned field.  Keep only the declared
+        # tensor telemetry fields here; explanatory metadata (for example a
+        # string diagnostic-limits note) belongs in the adapter API, not in a
+        # TensorArray trace.
+        missing = tuple(
+            key for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS if key not in telemetry
+        )
+        if missing:
+            raise ValueError(
+                "target_status_telemetry missing required fields: " + ", ".join(missing)
+            )
+        trace["target_status_telemetry"] = {
+            key: telemetry[key] for key in TARGET_STATUS_TELEMETRY_FIELDS if key in telemetry
+        }
         return trace
 
     return trace_fn
@@ -6457,7 +6474,17 @@ def _standard_trace_fn(_state: Any, kernel_results: Any) -> Mapping[str, Any]:
 def _adaptive_standard_trace_fn_with_target_status(adapter: Any) -> Callable[[Any, Any], Mapping[str, Any]]:
     def trace_fn(state: Any, kernel_results: Any) -> Mapping[str, Any]:
         trace = dict(_adaptive_standard_trace_fn(state, kernel_results))
-        trace["target_status_telemetry"] = adapter.target_status_telemetry(state)
+        telemetry = adapter.target_status_telemetry(state)
+        missing = tuple(
+            key for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS if key not in telemetry
+        )
+        if missing:
+            raise ValueError(
+                "target_status_telemetry missing required fields: " + ", ".join(missing)
+            )
+        trace["target_status_telemetry"] = {
+            key: telemetry[key] for key in TARGET_STATUS_TELEMETRY_FIELDS if key in telemetry
+        }
         return trace
 
     return trace_fn
@@ -7103,42 +7130,49 @@ def _target_status_telemetry_diagnostics(telemetry: Mapping[str, Any]) -> Mappin
 
     if not isinstance(telemetry, Mapping):
         raise TypeError("target_status_telemetry trace must be a mapping")
-    required = (
-        "status_code",
-        "valid_pre_regularized_score",
-        "floor_count_value",
-        "min_innovation_eigenvalue",
-        "innovation_condition_estimate",
-    )
-    missing = tuple(key for key in required if key not in telemetry)
+    missing = tuple(key for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS if key not in telemetry)
     if missing:
         raise ValueError(
             "target_status_telemetry missing required fields: " + ", ".join(missing)
         )
+    optional_present = tuple(
+        key in telemetry for key in TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS
+    )
+    if any(optional_present) and not all(optional_present):
+        raise ValueError(
+            "target_status_telemetry conditioning fields must be both present or both absent"
+        )
     status = tf.convert_to_tensor(telemetry["status_code"], dtype=tf.int32)
     valid = tf.convert_to_tensor(telemetry["valid_pre_regularized_score"], dtype=tf.bool)
     floors = tf.convert_to_tensor(telemetry["floor_count_value"], dtype=tf.int32)
-    min_eigen = tf.convert_to_tensor(telemetry["min_innovation_eigenvalue"], dtype=tf.float64)
-    condition = tf.convert_to_tensor(
-        telemetry["innovation_condition_estimate"],
-        dtype=tf.float64,
-    )
     status_nonvalid = tf.logical_or(
         tf.not_equal(status, tf.zeros_like(status)),
         tf.logical_not(valid),
     )
-    return {
+    summary = {
         "trace_entry_count": tf.size(status),
         "status_nonvalid_count": tf.reduce_sum(tf.cast(status_nonvalid, tf.int32)),
         "all_status_valid": tf.reduce_all(tf.logical_not(status_nonvalid)),
         "floor_count_total": tf.reduce_sum(floors),
         "max_floor_count_value": tf.reduce_max(floors),
-        "min_min_innovation_eigenvalue": tf.reduce_min(min_eigen),
-        "max_innovation_condition_estimate": tf.reduce_max(condition),
         "telemetry_failure_veto": tf.logical_not(
             tf.reduce_all(tf.logical_not(status_nonvalid))
         ),
     }
+    if all(optional_present):
+        min_eigen = tf.convert_to_tensor(
+            telemetry["min_innovation_eigenvalue"], dtype=tf.float64
+        )
+        condition = tf.convert_to_tensor(
+            telemetry["innovation_condition_estimate"], dtype=tf.float64
+        )
+        summary.update(
+            {
+                "min_min_innovation_eigenvalue": tf.reduce_min(min_eigen),
+                "max_innovation_condition_estimate": tf.reduce_max(condition),
+            }
+        )
+    return summary
 
 
 def program_signature(payload: Mapping[str, Any] | Any) -> str:

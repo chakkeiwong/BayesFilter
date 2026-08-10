@@ -8,6 +8,8 @@ cap. Contract-smoke mode hides GPUs and performs no target or HMC evaluation.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import fcntl
 import hashlib
 import json
 import math
@@ -16,9 +18,12 @@ import resource
 import subprocess
 import sys
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
+
+
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
 
 def _configure_visibility_before_tensorflow_import() -> str:
@@ -57,6 +62,21 @@ import numpy as np
 import tensorflow as tf
 
 
+def _enable_memory_growth_before_project_imports() -> None:
+    for gpu in tf.config.list_physical_devices("GPU"):
+        try:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        except RuntimeError as exc:
+            raise RuntimeError(
+                "GPU memory growth must be established before project imports"
+            ) from exc
+        if tf.config.experimental.get_memory_growth(gpu) is not True:
+            raise RuntimeError("GPU memory growth verification failed")
+
+
+_enable_memory_growth_before_project_imports()
+
+
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -74,10 +94,11 @@ from bayesfilter.nonlinear.ssl_lstm_complexity_target_tf import (  # noqa: E402
 
 
 SCHEMA = "bayesfilter.ssl_lstm.neutra_complexity_hmc_tuning.v1"
+CHECKPOINT_SCHEMA = "bayesfilter.ssl_lstm.neutra_complexity_hmc_tuning.checkpoint.v1"
 PHASE3_SCHEMA = "bayesfilter.ssl_lstm.neutra_complexity_training.v1"
 PLAN = Path(
     "docs/plans/"
-    "bayesfilter-ssl-lstm-neutra-hmc-state-complexity-ladder-plan-2026-07-19.md"
+    "bayesfilter-ssl-lstm-q20-32x32-hmc-tuning-plan-2026-07-21.md"
 )
 SCRIPT = Path(__file__).resolve().relative_to(ROOT)
 Q_VALUES = (1, 2, 5, 10, 20)
@@ -101,6 +122,8 @@ CONFIRMATION_MIN_MOVEMENT = 0.50
 MIN_RMS_JUMP_DISTANCE = 0.05
 FD_ABS_TOL = 2.0e-5
 FD_REL_TOL = 2.0e-5
+FD_STEPS = (1.0e-2, 3.0e-3, 1.0e-3)
+FD_REQUIRED_ERROR_REDUCTION = 0.50
 PILOT_RESULTS = 16
 PILOT_BURNIN = 8
 CONFIRMATION_RESULTS = 64
@@ -197,6 +220,26 @@ def write_json(path: Path, payload: Any, *, replace: bool = False) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_bytes(canonical(payload))
     temporary.replace(path)
+
+
+@contextlib.contextmanager
+def output_writer_lock(output: Path):
+    """Allow at most one material run to own an output root."""
+    lock_path = output / ".material-run.lock"
+    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise ComplexityHMCError(
+                f"output root is already locked by another material run: {output}"
+            ) from exc
+        yield
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
 
 
 def strict_json(path: Path) -> dict[str, Any]:
@@ -364,6 +407,21 @@ def validate_distinct_bindings(bindings: Mapping[str, Mapping[str, Any]]) -> Non
             )
 
 
+def finite_difference_ladder_decision(
+    residuals: Sequence[float],
+) -> tuple[int, float, bool]:
+    if len(residuals) != len(FD_STEPS) or not all(
+        math.isfinite(float(value)) and float(value) >= 0.0 for value in residuals
+    ):
+        raise ComplexityHMCError("finite-difference ladder residuals are invalid")
+    best_index = min(range(len(residuals)), key=lambda index: float(residuals[index]))
+    first = float(residuals[0])
+    best = float(residuals[best_index])
+    reduction = best / first if first > 0.0 else (0.0 if best == 0.0 else math.inf)
+    converged = best_index > 0 and reduction <= FD_REQUIRED_ERROR_REDUCTION
+    return best_index, reduction, converged
+
+
 def transformed_preflight(adapter: Any) -> dict[str, Any]:
     transport = adapter.transport
     z = tf.constant(INITIAL_Z, tf.float64)
@@ -388,25 +446,41 @@ def transformed_preflight(adapter: Any) -> dict[str, Any]:
             )
         ).numpy()
     )
-    epsilon = tf.constant(1.0e-5, tf.float64)
     origin = tf.zeros((4,), tf.float64)
     _origin_value, origin_score = adapter.log_prob_and_grad(origin)
-    finite_difference = []
-    for coordinate in range(4):
-        direction = tf.one_hot(coordinate, 4, dtype=tf.float64)
-        plus, _ = adapter.log_prob_and_grad(origin + epsilon * direction)
-        minus, _ = adapter.log_prob_and_grad(origin - epsilon * direction)
-        finite_difference.append((plus - minus) / (2.0 * epsilon))
-    finite_difference_tensor = tf.stack(finite_difference)
-    fd_residual = float(
-        tf.reduce_max(tf.abs(finite_difference_tensor - origin_score)).numpy()
+    fd_rows = []
+    for step in FD_STEPS:
+        epsilon = tf.constant(step, tf.float64)
+        finite_difference = []
+        for coordinate in range(4):
+            direction = tf.one_hot(coordinate, 4, dtype=tf.float64)
+            plus, _ = adapter.log_prob_and_grad(origin + epsilon * direction)
+            minus, _ = adapter.log_prob_and_grad(origin - epsilon * direction)
+            finite_difference.append((plus - minus) / (2.0 * epsilon))
+        finite_difference_tensor = tf.stack(finite_difference)
+        fd_residual = float(
+            tf.reduce_max(tf.abs(finite_difference_tensor - origin_score)).numpy()
+        )
+        fd_scale = max(
+            1.0,
+            float(tf.reduce_max(tf.abs(finite_difference_tensor)).numpy()),
+            float(tf.reduce_max(tf.abs(origin_score)).numpy()),
+        )
+        fd_rows.append(
+            {
+                "step": step,
+                "finite_difference": finite_difference_tensor,
+                "max_abs_residual": fd_residual,
+                "scale": fd_scale,
+                "tolerance": FD_ABS_TOL + FD_REL_TOL * fd_scale,
+            }
+        )
+    best_fd_index, fd_error_reduction, fd_converged = (
+        finite_difference_ladder_decision(
+            [float(row["max_abs_residual"]) for row in fd_rows]
+        )
     )
-    fd_scale = max(
-        1.0,
-        float(tf.reduce_max(tf.abs(finite_difference_tensor)).numpy()),
-        float(tf.reduce_max(tf.abs(origin_score)).numpy()),
-    )
-    fd_tolerance = FD_ABS_TOL + FD_REL_TOL * fd_scale
+    best_fd = fd_rows[best_fd_index]
     tensors = (
         z,
         theta,
@@ -418,7 +492,8 @@ def transformed_preflight(adapter: Any) -> dict[str, Any]:
         expected_score,
         actual_value,
         actual_score,
-        finite_difference_tensor,
+        origin_score,
+        *(row["finite_difference"] for row in fd_rows),
     )
     all_finite = all(bool(tf.reduce_all(tf.math.is_finite(row)).numpy()) for row in tensors)
     vetoes = []
@@ -430,7 +505,10 @@ def transformed_preflight(adapter: Any) -> dict[str, Any]:
         vetoes.append("change_of_variables_value_identity_failed")
     if score_residual > 1.0e-9:
         vetoes.append("change_of_variables_score_identity_failed")
-    if fd_residual > fd_tolerance:
+    if (
+        float(best_fd["max_abs_residual"]) > float(best_fd["tolerance"])
+        or not fd_converged
+    ):
         vetoes.append("transformed_score_finite_difference_failed")
     return {
         "status": "PASSED" if not vetoes else "VETOED",
@@ -438,10 +516,25 @@ def transformed_preflight(adapter: Any) -> dict[str, Any]:
         "roundtrip_max_abs": roundtrip,
         "value_identity_max_abs": value_residual,
         "score_identity_max_abs": score_residual,
-        "finite_difference_max_abs": fd_residual,
-        "finite_difference_scale": fd_scale,
-        "finite_difference_tolerance": fd_tolerance,
+        "finite_difference_max_abs": best_fd["max_abs_residual"],
+        "finite_difference_scale": best_fd["scale"],
+        "finite_difference_tolerance": best_fd["tolerance"],
         "finite_difference_tolerance_rule": "atol + rtol * max(1,abs(fd),abs(score))",
+        "finite_difference_steps": list(FD_STEPS),
+        "finite_difference_rows": [
+            {
+                "step": row["step"],
+                "finite_difference": json_safe(row["finite_difference"]),
+                "max_abs_residual": row["max_abs_residual"],
+                "scale": row["scale"],
+                "tolerance": row["tolerance"],
+            }
+            for row in fd_rows
+        ],
+        "finite_difference_best_step": best_fd["step"],
+        "finite_difference_error_reduction": fd_error_reduction,
+        "finite_difference_required_error_reduction": FD_REQUIRED_ERROR_REDUCTION,
+        "finite_difference_converged_before_cancellation": fd_converged,
         "initial_z": [list(row) for row in INITIAL_Z],
         "initial_theta": json_safe(theta),
         "vetoes": vetoes,
@@ -472,7 +565,9 @@ def diagnose_run(
     movement = tf.reduce_mean(tf.cast(jump_norm > 0.0, tf.float64), axis=0)
     any_moved = tf.reduce_any(jump_norm > 0.0, axis=0)
     rms_jump = tf.sqrt(tf.reduce_mean(tf.square(jump_norm), axis=0))
-    acceptance = tf.reduce_mean(tf.cast(accepted, tf.float64), axis=0)
+    acceptance_probability = tf.exp(tf.minimum(log_accept, 0.0))
+    acceptance = tf.reduce_mean(acceptance_probability, axis=0)
+    binary_acceptance = tf.reduce_mean(tf.cast(accepted, tf.float64), axis=0)
     finite = {
         "samples": bool(tf.reduce_all(tf.math.is_finite(sample_tensor)).numpy()),
         "log_accept_ratio": bool(tf.reduce_all(tf.math.is_finite(log_accept)).numpy()),
@@ -518,6 +613,9 @@ def diagnose_run(
         "finite": finite,
         "acceptance_rate": float(tf.reduce_mean(acceptance).numpy()),
         "acceptance_rate_by_chain": json_safe(acceptance),
+        "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+        "binary_acceptance_rate_by_chain": json_safe(binary_acceptance),
+        "binary_acceptance_role": "explanatory_movement_diagnostic",
         "movement_rate_by_chain": json_safe(movement),
         "chain_moved": json_safe(any_moved),
         "rms_jump_distance_by_chain": json_safe(rms_jump),
@@ -626,14 +724,16 @@ def select_scale(rows: Sequence[Mapping[str, Any]]) -> Mapping[str, Any] | None:
 
 
 def scale_expansion(rows: Sequence[Mapping[str, Any]]) -> tuple[float, ...]:
+    if not rows or select_scale(rows) is not None:
+        return ()
+    boundary = max(rows, key=lambda row: float(row["step_size"]))
     rates = [
-        float(rate)
-        for row in rows
-        for rate in row["diagnostics"]["acceptance_rate_by_chain"]
+        float(rate) for rate in boundary["diagnostics"]["acceptance_rate_by_chain"]
     ]
-    if rates and all(rate > PILOT_ACCEPTANCE_BAND[1] for rate in rates):
+    pooled = sum(rates) / len(rates)
+    if pooled > PILOT_ACCEPTANCE_BAND[1]:
         return HIGH_SCALE_EXPANSION
-    if rates and all(rate < PILOT_ACCEPTANCE_BAND[0] for rate in rates):
+    if pooled < PILOT_ACCEPTANCE_BAND[0]:
         return LOW_SCALE_EXPANSION
     return ()
 
@@ -647,8 +747,21 @@ def scale_bracket_repair(rows: Sequence[Mapping[str, Any]]) -> float | None:
         upper_rates = [
             float(value) for value in upper["diagnostics"]["acceptance_rate_by_chain"]
         ]
-        if all(value > PILOT_ACCEPTANCE_BAND[1] for value in lower_rates) and all(
-            value < PILOT_ACCEPTANCE_BAND[0] for value in upper_rates
+        lower_reaches_or_exceeds_band = (
+            min(lower_rates) >= PILOT_ACCEPTANCE_BAND[0]
+            and max(lower_rates) > PILOT_ACCEPTANCE_BAND[1]
+        )
+        upper_reaches_or_crosses_band = (
+            max(upper_rates) <= PILOT_ACCEPTANCE_BAND[1]
+            and min(upper_rates) < PILOT_ACCEPTANCE_BAND[0]
+        )
+        upper_hard_vetoes = upper["diagnostics"].get("hard_vetoes", [])
+        lower_hard_vetoes = lower["diagnostics"].get("hard_vetoes", [])
+        if (
+            lower_reaches_or_exceeds_band
+            and upper_reaches_or_crosses_band
+            and not lower_hard_vetoes
+            and not upper_hard_vetoes
         ):
             return math.sqrt(float(lower["step_size"]) * float(upper["step_size"]))
     return None
@@ -707,6 +820,7 @@ def run_or_reuse_arm(
     binding_signature: str,
     source_signature: str,
     resume: bool,
+    checkpoint: Callable[[float], None],
 ) -> dict[str, Any]:
     path = arm_path(output, label, stage, index)
     contract = {
@@ -746,6 +860,7 @@ def run_or_reuse_arm(
         cold_runner=int(getattr(runner, "_call_count", 0)) == 0,
     )
     budget.require(reserve)
+    checkpoint(reserve)
     result = run_arm(
         runner,
         step_size=step_size,
@@ -759,6 +874,7 @@ def run_or_reuse_arm(
     result["resource_reserve_seconds_before_launch"] = reserve
     budget.observe(result["timing"]["seconds_per_transition_leapfrog"])
     write_json(path, {"schema": SCHEMA, "contract": contract, "result": result})
+    checkpoint(0.0)
     return result
 
 
@@ -772,6 +888,7 @@ def tune_transport(
     budget: Budget,
     resume: bool,
     seed_offset: int,
+    checkpoint: Callable[[float], None],
 ) -> dict[str, Any]:
     pilot_runner = build_runner(
         adapter,
@@ -798,9 +915,11 @@ def tune_transport(
                 binding_signature=str(binding["binding_signature"]),
                 source_signature=source_signature,
                 resume=resume,
+                checkpoint=checkpoint,
             )
         )
     expansion = scale_expansion(scale_rows)
+    expansion_executed = []
     for local_index, step in enumerate(expansion):
         index = len(INITIAL_SCALE_GRID) + local_index
         scale_rows.append(
@@ -820,8 +939,12 @@ def tune_transport(
                 binding_signature=str(binding["binding_signature"]),
                 source_signature=source_signature,
                 resume=resume,
+                checkpoint=checkpoint,
             )
         )
+        expansion_executed.append(step)
+        if select_scale(scale_rows) is not None or scale_bracket_repair(scale_rows) is not None:
+            break
     selected_scale = select_scale(scale_rows)
     bracket_repair_step = None
     if selected_scale is None:
@@ -844,6 +967,7 @@ def tune_transport(
                     binding_signature=str(binding["binding_signature"]),
                     source_signature=source_signature,
                     resume=resume,
+                    checkpoint=checkpoint,
                 )
             )
             selected_scale = select_scale(scale_rows)
@@ -871,6 +995,7 @@ def tune_transport(
                     binding_signature=str(binding["binding_signature"]),
                     source_signature=source_signature,
                     resume=resume,
+                    checkpoint=checkpoint,
                 )
             )
         selected_trajectory = select_trajectory(trajectory_rows)
@@ -898,6 +1023,7 @@ def tune_transport(
             binding_signature=str(binding["binding_signature"]),
             source_signature=source_signature,
             resume=resume,
+            checkpoint=checkpoint,
         )
         if not confirmation["diagnostics"]["viable"]:
             adjacent = adjacent_repair_candidate(confirmation, trajectory_rows)
@@ -925,6 +1051,7 @@ def tune_transport(
                     binding_signature=str(binding["binding_signature"]),
                     source_signature=source_signature,
                     resume=resume,
+                    checkpoint=checkpoint,
                 )
     admitted = (
         repair
@@ -938,6 +1065,7 @@ def tune_transport(
         "status": "ADMITTED" if admitted is not None else "VETOED",
         "scale_rows": scale_rows,
         "scale_expansion": list(expansion),
+        "scale_expansion_executed": list(expansion_executed),
         "scale_bracket_repair_step": bracket_repair_step,
         "selected_scale": selected_scale,
         "trajectory_rows": trajectory_rows,
@@ -1022,6 +1150,11 @@ def run_manifest(args: argparse.Namespace, budget: Budget) -> dict[str, Any]:
         "selected_physical_gpu": SELECTED_GPU,
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
         "logical_gpus": [device.name for device in tf.config.list_logical_devices("GPU")],
+        "tf_force_gpu_allow_growth": os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH"),
+        "gpu_memory_growth_verified": all(
+            tf.config.experimental.get_memory_growth(gpu) is True
+            for gpu in tf.config.list_physical_devices("GPU")
+        ),
         "jit_compile": True,
         "tf32": bool(tf.config.experimental.tensor_float_32_execution_enabled()),
         "charged_seconds": budget.elapsed,
@@ -1042,11 +1175,8 @@ def configure_gpu() -> list[Any]:
     if not gpus:
         raise ComplexityHMCError("transformed-HMC execution requires a visible GPU")
     for gpu in gpus:
-        try:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        except RuntimeError as exc:
-            if "cannot be modified after being initialized" not in str(exc):
-                raise
+        if tf.config.experimental.get_memory_growth(gpu) is not True:
+            raise ComplexityHMCError("GPU memory growth verification failed")
     tf.config.experimental.enable_tensor_float_32_execution(True)
     tf.config.set_soft_device_placement(False)
     try:
@@ -1069,6 +1199,35 @@ def validate_material_args(args: argparse.Namespace) -> None:
         repo_path(args.output_root, label="output root")
         repo_path(args.phase3_result_a, label="Phase 3 result a")
         repo_path(args.phase3_result_b, label="Phase 3 result b")
+
+
+def resume_prior_seconds(
+    *,
+    args: argparse.Namespace,
+    summary_path: Path,
+    checkpoint_path: Path,
+    contract: Mapping[str, Any],
+) -> float:
+    if not args.resume:
+        return 0.0
+    if summary_path.is_file():
+        previous = strict_json(summary_path)
+        expected_schema = SCHEMA
+        charged = previous.get("run_manifest", {}).get("charged_seconds")
+    elif checkpoint_path.is_file():
+        previous = strict_json(checkpoint_path)
+        expected_schema = CHECKPOINT_SCHEMA
+        charged = previous.get("charged_seconds")
+    else:
+        raise ComplexityHMCError("resume requires summary.json or checkpoint.json")
+    if previous.get("schema") != expected_schema or int(previous.get("q", -1)) != args.q:
+        raise ComplexityHMCError("resume artifact mismatch")
+    if previous.get("material_contract") != contract:
+        raise ComplexityHMCError("resume material contract mismatch")
+    value = float(charged)
+    if not math.isfinite(value) or value < 0.0:
+        raise ComplexityHMCError("resume charged-seconds value is invalid")
+    return value
 
 
 def contract_payload(args: argparse.Namespace) -> dict[str, Any]:
@@ -1111,23 +1270,36 @@ def contract_payload(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def run_material(args: argparse.Namespace) -> dict[str, Any]:
-    output = repo_path(args.output_root, label="output root")
-    output.mkdir(parents=True, exist_ok=args.resume)
+def _run_material_locked(
+    args: argparse.Namespace, output: Path
+) -> dict[str, Any]:
     summary_path = output / "summary.json"
+    checkpoint_path = output / "checkpoint.json"
     source_signature = execution_source_signature()
     contract = material_contract(args, source_signature)
-    prior_seconds = 0.0
-    if args.resume:
-        if not summary_path.is_file():
-            raise ComplexityHMCError("resume requires summary.json")
-        previous = strict_json(summary_path)
-        if previous.get("schema") != SCHEMA or int(previous.get("q", -1)) != args.q:
-            raise ComplexityHMCError("resume summary mismatch")
-        if previous.get("material_contract") != contract:
-            raise ComplexityHMCError("resume material contract mismatch")
-        prior_seconds = float(previous.get("run_manifest", {}).get("charged_seconds", 0.0))
+    prior_seconds = resume_prior_seconds(
+        args=args,
+        summary_path=summary_path,
+        checkpoint_path=checkpoint_path,
+        contract=contract,
+    )
     budget = Budget(args.cap_seconds, prior_seconds=prior_seconds)
+
+    def checkpoint(pending_reserve_seconds: float) -> None:
+        write_json(
+            checkpoint_path,
+            {
+                "schema": CHECKPOINT_SCHEMA,
+                "q": args.q,
+                "material_contract": contract,
+                "charged_seconds": budget.elapsed + float(pending_reserve_seconds),
+                "pending_nonpreemptive_reserve_seconds": float(
+                    pending_reserve_seconds
+                ),
+            },
+            replace=True,
+        )
+
     bindings = {}
     adapters = {}
     preflights = {}
@@ -1136,10 +1308,14 @@ def run_material(args: argparse.Namespace) -> dict[str, Any]:
     hard_veto = None
     try:
         budget.require(2.0 * FIRST_COMPILED_ARM_RESERVE_SECONDS)
-        for label, path in (
+        preflight_inputs = (
             ("chart-a", args.phase3_result_a),
             ("chart-b", args.phase3_result_b),
-        ):
+        )
+        for index, (label, path) in enumerate(preflight_inputs):
+            checkpoint(
+                (len(preflight_inputs) - index) * FIRST_COMPILED_ARM_RESERVE_SECONDS
+            )
             started = time.perf_counter()
             adapter, binding = load_binding(args.q, label, path)
             adapters[label] = adapter
@@ -1151,6 +1327,7 @@ def run_material(args: argparse.Namespace) -> dict[str, Any]:
                 raise HostMemoryVeto(
                     "transformed-target preflight RSS exceeded 64 GiB"
                 )
+        checkpoint(0.0)
         validate_distinct_bindings(bindings)
     except ResourceStop as exc:
         resource_stop = str(exc)
@@ -1179,6 +1356,7 @@ def run_material(args: argparse.Namespace) -> dict[str, Any]:
                     budget=budget,
                     resume=args.resume,
                     seed_offset=15100 + 1000 * args.q + index * 300,
+                    checkpoint=checkpoint,
                 )
         except ResourceStop as exc:
             resource_stop = str(exc)
@@ -1242,6 +1420,13 @@ def run_material(args: argparse.Namespace) -> dict[str, Any]:
     }
     write_json(summary_path, payload, replace=args.resume)
     return payload
+
+
+def run_material(args: argparse.Namespace) -> dict[str, Any]:
+    output = repo_path(args.output_root, label="output root")
+    output.mkdir(parents=True, exist_ok=args.resume)
+    with output_writer_lock(output):
+        return _run_material_locked(args, output)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

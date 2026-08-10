@@ -17,6 +17,7 @@ from bayesfilter.inference.hmc_verification import (
     hmc_acceptance_evidence_v2_migration_view,
     hmc_acceptance_evidence_v3_migration_view,
     summarize_hmc_tuning_telemetry,
+    target_status_telemetry_has_failure,
 )
 
 
@@ -25,6 +26,20 @@ def _moving_samples(draw_count: int = 64) -> np.ndarray:
     chain = np.arange(4, dtype=float)[None, :, None]
     direction = np.array([1.0, -0.5], dtype=float)[None, None, :]
     return draw * direction + chain
+
+
+def test_target_status_validator_accepts_core_only_and_rejects_partial_conditioning():
+    payload = {
+        "status_code": np.zeros(4, dtype=np.int32),
+        "valid_pre_regularized_score": np.ones(4, dtype=bool),
+        "floor_count_value": np.zeros(4, dtype=np.int32),
+    }
+    assert target_status_telemetry_has_failure(payload, expected_shape=(4,)) is False
+    with pytest.raises(ValueError, match="both present or both absent"):
+        target_status_telemetry_has_failure(
+            {**payload, "min_innovation_eigenvalue": np.ones(4)},
+            expected_shape=(4,),
+        )
 
 
 def _evidence(

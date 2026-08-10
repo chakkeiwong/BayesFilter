@@ -194,6 +194,58 @@ def test_train_step_updates_variables_and_clips_global_norm() -> None:
     )
 
 
+@pytest.mark.parametrize("family", ("affine_diag", "dense_iaf"))
+def test_generic_train_step_rejects_nonfinite_without_mutating_state(family) -> None:
+    class NonfiniteTarget:
+        def batch_value_and_score(self, theta):
+            value = tf.fill(theta.shape[:-1], tf.constant(float("nan"), tf.float64))
+            return value, tf.fill(tf.shape(theta), tf.constant(float("nan"), tf.float64))
+
+    trainer = NeuTraReverseKLTrainer(
+        NonfiniteTarget(), _config(family=family, jit_compile=True)
+    )
+    before = trainer.state_payload()
+    with pytest.raises(NeuTraTrainingError, match="rejected nonfinite"):
+        trainer.train_step(_base_rows())
+    assert trainer.state_payload() == before
+
+
+def test_chunked_external_update_matches_full_external_update() -> None:
+    config = _config(family="affine_diag", gradient_clip_norm=10.0)
+    full = NeuTraReverseKLTrainer(CorrelatedGaussianTarget(), config)
+    chunked = NeuTraReverseKLTrainer(CorrelatedGaussianTarget(), config)
+    chunked.restore_state(full.state_payload())
+    z = tf.constant(
+        [[0.2, -0.4], [0.1, 0.3], [-0.8, 0.5]], dtype=tf.float64
+    )
+    theta, _ = full.forward_and_logdet(z)
+    target_value, target_score = full.target.batch_value_and_score(theta)
+    expected = full.train_step_with_external_value_score(z, target_value, target_score)
+    actual = chunked.train_step_with_external_value_score_chunks(
+        (z[:2], tf.concat((z[2:3], z[2:3]), axis=0)),
+        (target_value[:2], tf.concat((target_value[2:3], target_value[2:3]), axis=0)),
+        (target_score[:2], tf.concat((target_score[2:3], target_score[2:3]), axis=0)),
+        (2, 1),
+    )
+    np.testing.assert_allclose(actual.loss.numpy(), expected.loss.numpy(), rtol=1e-7, atol=1e-8)
+    np.testing.assert_allclose(
+        actual.gradient_norm.numpy(), expected.gradient_norm.numpy(), rtol=1e-7, atol=1e-8
+    )
+    np.testing.assert_allclose(
+        actual.surrogate.numpy(), expected.surrogate.numpy(), rtol=1e-7, atol=1e-8
+    )
+    np.testing.assert_allclose(
+        actual.target_value_mean.numpy(), expected.target_value_mean.numpy(), rtol=1e-7, atol=1e-8
+    )
+    assert int(actual.step.numpy()) == int(expected.step.numpy()) == 1
+    for left, right in zip(chunked.variables, full.variables):
+        np.testing.assert_allclose(left.numpy(), right.numpy(), rtol=1e-7, atol=1e-8)
+    for left, right in zip(chunked.first_moments, full.first_moments):
+        np.testing.assert_allclose(left.numpy(), right.numpy(), rtol=1e-7, atol=1e-8)
+    for left, right in zip(chunked.second_moments, full.second_moments):
+        np.testing.assert_allclose(left.numpy(), right.numpy(), rtol=1e-7, atol=1e-8)
+
+
 def test_state_restore_replays_next_update_exactly() -> None:
     config = _config()
     first = NeuTraReverseKLTrainer(CorrelatedGaussianTarget(), config)

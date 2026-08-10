@@ -117,6 +117,7 @@ def tf_batched_svd_sigma_point_value_and_score_custom_gradient(
             "numpy_runtime_allowed": tf.constant(False),
             "python_loop_over_time_allowed": tf.constant(False),
             "python_loop_over_batch_allowed": tf.constant(False),
+            "principal_sqrt_backend": tf.constant(principal_sqrt_backend),
         }
     )
     return custom_value, score_tensor, production_diagnostics

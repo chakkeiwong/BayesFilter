@@ -611,11 +611,31 @@ def test_public_config_hides_raw_hmc_mechanics() -> None:
         "screen_num_results",
         "verification_num_results",
         "verification_num_burnin_steps",
+        "operational_evidence_extension_checkpoints",
     }
 
     assert parameters.isdisjoint(forbidden)
     assert "max_leapfrog_steps" in parameters
     assert set(HMCKernelTuningConfig.smoke().payload()["forbidden_public_fields"]) >= forbidden
+
+
+def test_public_config_exposes_named_operational_evidence_policy_only() -> None:
+    default = HMCKernelTuningConfig.serious()
+    opted_in = HMCKernelTuningConfig.serious(
+        operational_evidence_policy="one_doubling"
+    )
+
+    assert default.operational_evidence_policy == "initial_only"
+    assert default.payload()["operational_evidence_policy"] == "initial_only"
+    assert opted_in.payload()["operational_evidence_policy"] == "one_doubling"
+    assert "operational_evidence_extension_checkpoints" not in inspect.signature(
+        HMCKernelTuningConfig
+    ).parameters
+
+    with pytest.raises(ValueError, match="operational_evidence_policy"):
+        HMCKernelTuningConfig.serious(operational_evidence_policy="unknown")
+    with pytest.raises(ValueError, match="requires preset='serious'"):
+        HMCKernelTuningConfig.standard(operational_evidence_policy="one_doubling")
 
 
 def test_public_config_accepts_diagnostic_bootstrap_sizing_without_raw_mechanics() -> None:
