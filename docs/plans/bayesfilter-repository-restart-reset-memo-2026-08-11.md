@@ -84,15 +84,19 @@ the removed `docs/main.pdf` must be rebuilt locally from tracked TeX sources.
 | Registry repair | `SVX-ZC` moved to blocked until explicit XLA/HMC admission and fresh scope-specific tuning |
 | Directly affected CPU-only rerun | `67 passed` |
 | Custom TensorFlow op | ignored `.so` rebuilt against the installed TensorFlow after an ABI-stale import failure; import then passed |
+| Upstream reconciliation | `origin/main` merged cleanly as `b8223ecd`; no content conflicts and remote tip is an ancestor |
+| Merged-tree Python compile | pass |
+| Merged cross-line CPU-only suite | `185 passed`; covers local NeuTra registry/shared procedure and upstream HMC selection, uncertainty-retuning, and training-control changes |
+| Git object validation | `git fsck --no-dangling --no-progress` passed |
 | Staged secret-pattern scan | no finding |
 | Staged object-size scan | no object over 10 MB |
 | Literature validation | staged `.pdf` files identified as PDFs; one HTML response mislabeled as the Huber PDF is ignored |
 | `git ls-files --others --exclude-standard` | empty |
 
 All test commands deliberately set `CUDA_VISIBLE_DEVICES=-1`; they are CPU
-correctness checks and are not GPU evidence. The final commit hash, upstream
-reconciliation, and post-push branch status are supplied by Git after this memo
-is committed; this file does not self-attest a hash that cannot exist yet.
+correctness checks and are not GPU evidence. The final closeout commit hash and
+post-push branch status are supplied by Git after this memo is committed; this
+file does not self-attest a hash that cannot exist yet.
 
 ## First Restart Action
 
