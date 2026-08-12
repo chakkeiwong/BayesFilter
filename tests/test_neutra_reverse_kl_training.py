@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import math
 import os
+import warnings
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
@@ -16,6 +17,7 @@ from bayesfilter.inference.neutra_training import (
     NeuTraReverseKLTrainer,
     NeuTraTrainerConfig,
     NeuTraTrainingError,
+    preflight_neutra_affine_chart,
 )
 
 
@@ -99,6 +101,144 @@ def test_affine_reverse_kl_gradient_has_analytic_sign_and_reduction() -> None:
     )
     assert math.isfinite(float(result.loss.numpy()))
     assert "training loss is not a transport promotion criterion" in NEUTRA_TRAINING_NONCLAIMS
+
+
+def test_composed_training_warns_for_identity_chart() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: TARGET_SIGNATURE
+        config = type(
+            "Config",
+            (),
+            {
+                "prior_center": tf.zeros(2, tf.float64),
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                },
+            },
+        )()
+
+    config = NeuTraTrainerConfig(
+        dimension=2,
+        family="ssl_lstm_tuned_capacity_dense_iaf",
+        hidden_layers=(32, 32),
+        activation="elu",
+        initialization_seed=(1, 2),
+        learning_rate=1.0e-3,
+        learning_rate_schedule="adaptive_constant",
+        epsilon=1.0e-7,
+        initialization_scale=0.02,
+        gradient_clip_norm=10.0,
+        gradient_clip_mode="per_variable",
+        stages=3,
+        fixed_translation=(0.0, 0.0),
+        target_parameter_names=("x", "y"),
+        target_chart="identity",
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature=TARGET_SIGNATURE,
+        jit_compile=False,
+    )
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        NeuTraReverseKLTrainer(Target(), config)
+    assert any("appropriately scaled" in str(item.message) for item in caught)
+
+
+def test_composed_training_unspecified_chart_is_nonbreaking_and_warns() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: TARGET_SIGNATURE
+        config = type(
+            "Config",
+            (),
+            {
+                "prior_center": tf.zeros(2, tf.float64),
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                },
+            },
+        )()
+
+    config = NeuTraTrainerConfig(
+        dimension=2,
+        family="ssl_lstm_tuned_capacity_dense_iaf",
+        hidden_layers=(32, 32),
+        activation="elu",
+        initialization_seed=(1, 2),
+        learning_rate=1.0e-3,
+        learning_rate_schedule="adaptive_constant",
+        epsilon=1.0e-7,
+        initialization_scale=0.02,
+        gradient_clip_norm=10.0,
+        gradient_clip_mode="per_variable",
+        stages=3,
+        fixed_translation=(0.0, 0.0),
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature=TARGET_SIGNATURE,
+        jit_compile=False,
+    )
+    assert config.target_chart == "unspecified"
+    with pytest.warns(RuntimeWarning, match="appropriately scaled"):
+        NeuTraReverseKLTrainer(Target(), config)
+
+
+def test_affine_chart_preflight_checks_value_score_and_jacobian() -> None:
+    class Physical(DiagonalGaussianTarget):
+        pass
+
+    physical = Physical(mean=(0.3, -0.2), variance=(0.25, 4.0))
+    factor = tf.constant([[0.5, 0.0], [0.0, 2.0]], tf.float64)
+    center = tf.constant([0.3, -0.2], tf.float64)
+    z = tf.constant([[0.1, -0.4], [1.2, 0.7]], tf.float64)
+
+    class Transformed:
+        def batch_value_and_score(self, latent):
+            theta = center[None, :] + tf.matmul(latent, factor, transpose_b=True)
+            value, score = physical.batch_value_and_score(theta)
+            return value + tf.linalg.slogdet(factor)[1], tf.matmul(score, factor)
+
+    report = preflight_neutra_affine_chart(
+        chart_name="test",
+        center=center,
+        factor=factor,
+        latent=z,
+        physical_target=physical,
+        transformed_target=Transformed(),
+    )
+    assert report.passed
+    assert report.value_max_abs_residual == 0.0
+    assert report.score_max_abs_residual == 0.0
+
+
+def test_affine_chart_preflight_rejects_singular_factor() -> None:
+    with pytest.raises(ValueError, match="preflight failed"):
+        preflight_neutra_affine_chart(
+            chart_name="singular",
+            center=tf.zeros(2, tf.float64),
+            factor=tf.constant([[1.0, 0.0], [0.0, 0.0]], tf.float64),
+            latent=tf.ones((2, 2), tf.float64),
+        )
+
+    report = preflight_neutra_affine_chart(
+        chart_name="singular",
+        center=tf.zeros(2, tf.float64),
+        factor=tf.constant([[1.0, 0.0], [0.0, 0.0]], tf.float64),
+        latent=tf.ones((2, 2), tf.float64),
+        strict=False,
+    )
+    assert not report.passed
+    assert not report.finite
 
 
 def test_reversed_target_score_fails_the_analytic_gradient_contract() -> None:

@@ -239,6 +239,7 @@ def _single_forecast_core(
     process_standard_normal: tf.Tensor,
     observation_standard_normal: tf.Tensor,
     target: SSLLSTMComplexityPosteriorTarget,
+    horizon: int,
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     full = target.full_theta(free)
     params, model = _value_model(full, target)
@@ -263,12 +264,12 @@ def _single_forecast_core(
     conditional_rows = []
     observation_rows = []
     variance = tf.square(params.observation_std[0])
-    for horizon in range(FORECAST_HORIZON):
+    for horizon_index in range(horizon):
         deterministic = ssl_lstm_transition(params, state)
         state = tf.concat(
             (
                 deterministic[:, : target.q]
-                + process_standard_normal[:, horizon, :]
+                + process_standard_normal[:, horizon_index, :]
                 * params.process_std[tf.newaxis, :],
                 deterministic[:, target.q :],
             ),
@@ -280,7 +281,7 @@ def _single_forecast_core(
         observations = (
             means
             + params.observation_std[0]
-            * observation_standard_normal[:, horizon]
+            * observation_standard_normal[:, horizon_index]
         )
         conditional_rows.append(means)
         observation_rows.append(observations)
@@ -312,7 +313,9 @@ def _single_forecast_core(
     )
 
 
-_PROGRAM_CACHE: dict[tuple[int, int, int, str], Callable[..., tuple[tf.Tensor, ...]]] = {}
+_PROGRAM_CACHE: dict[
+    tuple[int, int, int, int, str], Callable[..., tuple[tf.Tensor, ...]]
+] = {}
 
 
 def complexity_forecast_compiled_program(
@@ -320,13 +323,16 @@ def complexity_forecast_compiled_program(
     *,
     draw_count: int,
     replication_count: int = FORECAST_REPLICATION_COUNT,
+    horizon: int = FORECAST_HORIZON,
 ) -> Callable[..., tuple[tf.Tensor, ...]]:
     count = int(draw_count)
     replications = int(replication_count)
+    if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
+        raise ComplexityPredictiveError("forecast horizon must be a positive integer")
     if count <= 0 or replications <= 0:
         raise ComplexityPredictiveError("draw and replication counts must be positive")
     state_dim = int(target.config.static_config.augmented_state_dim)
-    key = (target.q, count, replications, target.target_signature())
+    key = (target.q, count, replications, horizon, target.target_signature())
     cached = _PROGRAM_CACHE.get(key)
     if cached is not None:
         return cached
@@ -339,7 +345,7 @@ def complexity_forecast_compiled_program(
     ) -> tuple[tf.Tensor, ...]:
         return tf.map_fn(
             lambda rows: _single_forecast_core(
-                rows[0], rows[1], rows[2], rows[3], target
+                rows[0], rows[1], rows[2], rows[3], target, horizon
             ),
             (
                 free_draws,
@@ -348,9 +354,9 @@ def complexity_forecast_compiled_program(
                 observation_standard_normal,
             ),
             fn_output_signature=(
-                tf.TensorSpec((replications, FORECAST_HORIZON), tf.float64),
-                tf.TensorSpec((replications, FORECAST_HORIZON), tf.float64),
-                tf.TensorSpec((replications, FORECAST_HORIZON), tf.float64),
+                tf.TensorSpec((replications, horizon), tf.float64),
+                tf.TensorSpec((replications, horizon), tf.float64),
+                tf.TensorSpec((replications, horizon), tf.float64),
                 tf.TensorSpec((replications, state_dim), tf.float64),
                 tf.TensorSpec((), tf.bool),
             ),
@@ -362,8 +368,8 @@ def complexity_forecast_compiled_program(
         input_signature=(
             tf.TensorSpec((count, 4), tf.float64),
             tf.TensorSpec((count, replications, state_dim), tf.float64),
-            tf.TensorSpec((count, replications, FORECAST_HORIZON, target.q), tf.float64),
-            tf.TensorSpec((count, replications, FORECAST_HORIZON), tf.float64),
+            tf.TensorSpec((count, replications, horizon, target.q), tf.float64),
+            tf.TensorSpec((count, replications, horizon), tf.float64),
         ),
         jit_compile=True,
         reduce_retracing=True,
@@ -378,12 +384,15 @@ def forecast_complexity_conditional_moments(
     q: int,
     seed: Any,
     replication_count: int = FORECAST_REPLICATION_COUNT,
+    horizon: int = FORECAST_HORIZON,
 ) -> ComplexityConditionalForecast:
     values = tf.convert_to_tensor(free_draws, tf.float64)
     if values.shape.rank != 2 or values.shape[-1] != 4 or values.shape[0] is None:
         raise ComplexityPredictiveError("free_draws must have static shape [draw,4]")
     count = int(values.shape[0])
     replications = int(replication_count)
+    if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon <= 0:
+        raise ComplexityPredictiveError("forecast horizon must be a positive integer")
     target = complexity_posterior_target(int(q), jit_compile=True)
     state_dim = int(target.config.static_config.augmented_state_dim)
     root, seed_values = _require_seed(seed)
@@ -394,13 +403,13 @@ def forecast_complexity_conditional_moments(
         alg="philox",
     )
     process = tf.random.stateless_normal(
-        (count, replications, FORECAST_HORIZON, int(q)),
+        (count, replications, horizon, int(q)),
         _fold(root, PROCESS_FAMILY),
         dtype=tf.float64,
         alg="philox",
     )
     observation = tf.random.stateless_normal(
-        (count, replications, FORECAST_HORIZON),
+        (count, replications, horizon),
         _fold(root, OBSERVATION_FAMILY),
         dtype=tf.float64,
         alg="philox",
@@ -409,6 +418,7 @@ def forecast_complexity_conditional_moments(
         target,
         draw_count=count,
         replication_count=replications,
+        horizon=horizon,
     )
     means, variances, observations, terminal_states, status = program(
         values, terminal, process, observation
@@ -421,7 +431,7 @@ def forecast_complexity_conditional_moments(
             "q": int(q),
             "draw_count": count,
             "replication_count": replications,
-            "horizon": FORECAST_HORIZON,
+            "horizon": horizon,
             "seed": list(seed_values),
             "target_signature": target.target_signature(),
             "filter_backend": "tf_principal_sqrt_ukf",
@@ -438,7 +448,7 @@ def forecast_complexity_conditional_moments(
         q=int(q),
         draw_count=count,
         replication_count=replications,
-        horizon=FORECAST_HORIZON,
+        horizon=horizon,
         seed=seed_values,
         target_signature=target.target_signature(),
         construction_signature=signature,

@@ -32,6 +32,19 @@ def _evidence(probability: float):
     )
 
 
+def _inconclusive_evidence():
+    draw = np.arange(64, dtype=float)[:, None, None]
+    chain = np.arange(4, dtype=float)[None, :, None]
+    block_probabilities = np.repeat((0.60, 0.80, 0.60, 0.80), 16)
+    values = np.repeat(block_probabilities[:, None], 4, axis=1)
+    return evaluate_hmc_acceptance_evidence(
+        samples=draw + chain,
+        log_accept_ratio=np.log(values),
+        is_accepted=np.ones_like(values, dtype=bool),
+        policy=HMCAcceptancePolicy(),
+    )
+
+
 def _local_veto(*reasons: str):
     values = np.full((64, 4), 0.70)
     return evaluate_hmc_acceptance_evidence(
@@ -234,6 +247,81 @@ def test_bracketed_repair_fails_closed_on_repeated_proposal() -> None:
     )
     assert stalled.disposition == "inconclusive_stalled_or_oscillating"
     assert stalled.repaired_step_size is None
+
+
+def test_bracketed_repair_refines_one_sided_mixed_neutral_evidence() -> None:
+    higher = aggregate_bracketed_step_repair(
+        (_evidence(0.90),) * 3,
+        base_step_size=0.1,
+        repair_factor=2.0,
+        verification_reserved=True,
+    )
+    mixed = aggregate_bracketed_step_repair(
+        (_evidence(0.40), _evidence(0.40), _inconclusive_evidence()),
+        base_step_size=0.2,
+        repair_factor=2.0,
+        empirical_bracket=higher.bracket,
+        direction_history=("higher_epsilon",),
+        repaired_step_history=(0.2,),
+        verification_reserved=True,
+    )
+
+    assert mixed.disposition == "repair_step"
+    assert mixed.direction == "lower_epsilon"
+    assert mixed.bracket == pytest.approx((0.1, 0.2))
+    assert mixed.repaired_step_size == pytest.approx(np.sqrt(0.1 * 0.2))
+    assert mixed.directional_evidence_count == 2
+    assert mixed.neutral_evidence_count == 1
+    assert mixed.one_sided_directional_support is True
+    assert mixed.payload()["neutral_evidence_count"] == 1
+
+
+def test_bracketed_repair_does_not_mask_conflict_pass_or_invalidity() -> None:
+    low = _evidence(0.40)
+    high = _evidence(0.90)
+    neutral = _inconclusive_evidence()
+    conflict = aggregate_bracketed_step_repair(
+        (low, high, neutral),
+        base_step_size=0.1,
+        repair_factor=2.0,
+        verification_reserved=True,
+    )
+    passed = aggregate_bracketed_step_repair(
+        (low, _evidence(0.70), neutral),
+        base_step_size=0.1,
+        repair_factor=2.0,
+        verification_reserved=True,
+    )
+    invalid = aggregate_bracketed_step_repair(
+        (_local_veto("nonfinite_log_accept_ratio"), low, neutral),
+        base_step_size=0.1,
+        repair_factor=2.0,
+        verification_reserved=True,
+    )
+
+    assert conflict.disposition == "inconclusive_conflict"
+    assert conflict.repaired_step_size is None
+    assert passed.disposition == "repair_step"
+    assert passed.bracket == (None, None)
+    assert passed.one_sided_directional_support is False
+    assert invalid.disposition == "repair_step"
+    assert invalid.direction == "lower_epsilon"
+    assert invalid.bracket == (None, None)
+    assert invalid.one_sided_directional_support is False
+
+
+def test_bracketed_mixed_repair_requires_reserved_verification() -> None:
+    repair = aggregate_bracketed_step_repair(
+        (_evidence(0.40), _inconclusive_evidence()),
+        base_step_size=0.2,
+        repair_factor=2.0,
+        empirical_bracket=(0.1, 0.3),
+        verification_reserved=False,
+    )
+
+    assert repair.disposition == "inconclusive_evidence"
+    assert repair.repaired_step_size is None
+    assert repair.bracket == pytest.approx((0.1, 0.2))
 
 
 @pytest.mark.parametrize(

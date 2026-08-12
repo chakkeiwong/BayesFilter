@@ -510,7 +510,48 @@ def _batch_native_neutra_value_score_status(
         "status_code": tf.where(valid, 0, 1),
         "valid_pre_regularized_score": valid,
         "floor_count_value": floor_count,
+        "placement_floor_count": placement_floors,
+        "innovation_floor_count": innovation_floors,
+        "principal_sqrt_target_row_class_code": row_class,
+        "principal_sqrt_target_valid_count": valid_count,
         "min_innovation_eigenvalue": min_eigenvalue,
+        "min_placement_eigenvalue": tf.convert_to_tensor(
+            diagnostics["min_placement_eigenvalue"], tf.float64
+        ),
+        "min_placement_eigen_gap": tf.convert_to_tensor(
+            diagnostics["min_placement_eigen_gap"], tf.float64
+        ),
+        "min_innovation_eigen_gap": tf.convert_to_tensor(
+            diagnostics["min_innovation_eigen_gap"], tf.float64
+        ),
+        "placement_classified_invalid_count": tf.convert_to_tensor(
+            diagnostics["placement_classified_invalid_count"], tf.int32
+        ),
+        "innovation_classified_invalid_count": tf.convert_to_tensor(
+            diagnostics["innovation_classified_invalid_count"], tf.int32
+        ),
+        "placement_derivative_rhs_nonfinite_count": tf.convert_to_tensor(
+            diagnostics["placement_derivative_rhs_nonfinite_count"], tf.int32
+        ),
+        "innovation_derivative_rhs_nonfinite_count": tf.convert_to_tensor(
+            diagnostics["innovation_derivative_rhs_nonfinite_count"], tf.int32
+        ),
+        "principal_sqrt_target_classified_invalid_count": tf.convert_to_tensor(
+            diagnostics["principal_sqrt_target_classified_invalid_count"], tf.int32
+        ),
+        "principal_sqrt_target_derivative_rhs_nonfinite_count": tf.convert_to_tensor(
+            diagnostics["principal_sqrt_target_derivative_rhs_nonfinite_count"],
+            tf.int32,
+        ),
+        "placement_roundoff_repair_count": tf.convert_to_tensor(
+            diagnostics["placement_roundoff_repair_count"], tf.int32
+        ),
+        "innovation_roundoff_repair_count": tf.convert_to_tensor(
+            diagnostics["innovation_roundoff_repair_count"], tf.int32
+        ),
+        "value_finite": tf.math.is_finite(value),
+        "score_finite": tf.reduce_all(tf.math.is_finite(score), axis=1),
+        "input_finite": tf.reduce_all(tf.math.is_finite(values), axis=1),
     }
     return (
         tf.ensure_shape(value, [values.shape[0]]),

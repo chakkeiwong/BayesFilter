@@ -332,3 +332,27 @@ third_party/**/.git/
 .research/
 local_research/
 .localsource/
+
+# Restart-boundary cleanup: runtime payloads are reproducible execution state,
+# even when an older campaign exception re-included their parent directory.
+# Durable result/summary/manifest/receipt files remain visible for staging.
+docs/plans/artifacts/**/checkpoint*.json
+docs/plans/artifacts/**/progress*.json
+docs/plans/artifacts/**/trainer_states.json
+docs/plans/artifacts/**/nominate.json
+docs/plans/artifacts/**/diagnostic-start.json
+docs/plans/artifacts/**/diagnostic-result.json
+docs/plans/artifacts/**/*.tftensor
+docs/plans/artifacts/**/*.tensor
+docs/plans/artifacts/**/*.npz
+docs/plans/artifacts/**/*.npy
+docs/plans/artifacts/**/*.jsonl
+docs/plans/artifacts/**/*.log
+docs/plans/artifacts/**/*.pid
+docs/plans/artifacts/**/archive/checkpoints/
+docs/plans/artifacts/**/archive/warmup/
+docs/plans/artifacts/**/archive/retained/*.tftensor
+docs/plans/artifacts/**/archive/warmup/*.tftensor
+
+# Downloaded literature corpora are local inputs, not repository evidence.
+.localresources/papers/multimodal_hmc/

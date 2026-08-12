@@ -33,6 +33,7 @@ from bayesfilter.inference import (
 )
 from bayesfilter.inference.hmc_coordinates import transform_from_precomputed_mass_artifact
 from bayesfilter.inference.hmc_warmup import (
+    MetricAdequacyDecision,
     compose_base_transform_with_nested_artifact,
 )
 
@@ -300,6 +301,78 @@ def test_windowed_mass_config_does_not_expose_hmc_mechanics() -> None:
     }
 
     assert parameters.isdisjoint(forbidden)
+
+
+def test_metric_update_requirement_is_typed_and_compatible_by_default() -> None:
+    default = HMCWindowedMassStageConfig()
+    required = HMCWindowedMassStageConfig(
+        metric_update_requirement="require_operational_update"
+    )
+
+    assert default.metric_update_requirement == "allow_valid_incumbent"
+    assert default.payload()["metric_update_requirement"] == "allow_valid_incumbent"
+    assert required.payload()["metric_update_requirement"] == (
+        "require_operational_update"
+    )
+    with pytest.raises(ValueError, match="metric_update_requirement"):
+        HMCWindowedMassStageConfig(metric_update_requirement="unknown")
+    with pytest.raises(ValueError, match="incompatible with fixed_identity"):
+        HMCWindowedMassStageConfig(
+            mass_policy="fixed_identity",
+            metric_update_requirement="require_operational_update",
+        )
+
+
+def test_required_metric_update_reports_nonpromoting_zero_update_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, geometry, bootstrap = _operational_inputs()
+
+    def reject_metric(_states: Any, **_kwargs: Any) -> MetricAdequacyDecision:
+        return MetricAdequacyDecision(
+            outcome="no_update_insufficient_metric_evidence",
+            covariance=None,
+            estimator_family=None,
+            report={
+                "forced_test_fixture": True,
+                "diagonal_fallback_used": False,
+                "shrinkage_spd_not_treated_as_adequacy": True,
+            },
+        )
+
+    import bayesfilter.inference.hmc_warmup as hmc_warmup
+
+    monkeypatch.setattr(hmc_warmup, "assess_metric_covariance", reject_metric)
+
+    result = run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=HMCWindowedMassStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260730, 810),
+            chain_execution_mode="tf_function",
+            target_scope="kernel_windowed_mass_toy_gaussian",
+            metric_update_requirement="require_operational_update",
+        ),
+        _attempt_budget_policy=_operational_budget(),
+    )
+
+    assert result.operational_warmup_result is not None
+    assert result.operational_warmup_result.status == "passed"
+    assert result.operational_warmup_result.metric_adaptation_status == (
+        "no_metric_update"
+    )
+    assert result.operational_warmup_result.operational_metric_update_count == 0
+    assert result.final_status == "passed_no_metric_update"
+    assert result.passed is False
+    assert result.hard_vetoes == ()
+    assert result.diagnostic_role == "metric_adaptation_not_observed"
+    assert result.repair_triggers == (
+        "windowed_mass_no_operational_metric_update",
+    )
+    assert result.diagnostics["required_operational_metric_update_missing"] is True
+    assert result.diagnostics["metric_adaptation_status"] == "no_metric_update"
 
 
 def test_fixed_identity_windowed_diagnostic_makes_no_mass_updates() -> None:
@@ -1524,6 +1597,58 @@ def test_real_operational_route_with_generous_timeout_never_uses_legacy() -> Non
         == "bayesfilter.hmc_algorithm_route.v1"
         and payload["route_category"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
         for _stage, payload in events
+    )
+
+
+def test_legacy_projection_failure_cannot_change_operational_handoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, geometry, bootstrap = _operational_inputs()
+
+    def fail_legacy_projection(*_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError("forced non-operational compatibility failure")
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_windowed_mass_adaptation_diagnostic",
+        fail_legacy_projection,
+    )
+    result = run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=_stage_config(
+            algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+            chain_execution_mode="tf_function",
+        ),
+        _attempt_budget_policy=_operational_budget(),
+    )
+
+    assert result.passed is True
+    assert result.operational_warmup_result is not None
+    operational = result.operational_warmup_result
+    assert result.windowed_mass_result is None
+    assert result.diagnostics["runtime_metadata"][
+        "legacy_v1_mass_updates_operational"
+    ] is False
+    compatibility = result.diagnostics["runtime_metadata"][
+        "legacy_v1_compatibility_projection"
+    ]
+    assert compatibility["status"] == "unavailable_error"
+    assert compatibility["authoritative"] is False
+    assert compatibility["error_type"] == "RuntimeError"
+    assert result.operational_mass_artifact is not None
+    assert result.adapted_mass_artifact_signature == (
+        hmc_kernel_tuning._mass_artifact_signature(result.operational_mass_artifact)
+    )
+    assert hmc_kernel_tuning._phase4_adapted_mass_artifact(result) is (
+        result.operational_mass_artifact
+    )
+    assert result.candidate_step_size == pytest.approx(
+        operational.final_kernel_state.epsilon
+    )
+    assert result.diagnostics["metric_adaptation_status"] == (
+        operational.metric_adaptation_status
     )
 
 

@@ -16,6 +16,16 @@ from typing import Any, Mapping
 _TARGET: Any | None = None
 _READY_BARRIER: Any | None = None
 _METADATA: Mapping[str, Any] | None = None
+_STATUS_CALLS: Mapping[int, Any] = {}
+
+# Preserve admission for the historical worker route while allowing the
+# current status-bearing batch-native target to use the same CPU pool.
+_ADMITTED_EVALUATION_POLICIES = frozenset(
+    {
+        "batch_native_tensorflow_no_row_mapping_v1",
+        "batch_native_tensorflow_status_no_row_mapping_v2",
+    }
+)
 
 
 def _worker_environment(cores: int) -> Mapping[str, str]:
@@ -40,7 +50,7 @@ def _worker_init(
     barrier: Any,
     assigned_cpu: int | None,
 ) -> None:
-    global _TARGET, _READY_BARRIER, _METADATA
+    global _TARGET, _READY_BARRIER, _METADATA, _STATUS_CALLS
 
     expected = _worker_environment(cores)
     mismatched = {
@@ -64,11 +74,28 @@ def _worker_init(
     module_name, symbol_name = str(factory_path).split(":", 1)
     factory = getattr(importlib.import_module(module_name), symbol_name)
     target = factory(dict(factory_config))
-    if getattr(target, "evaluation_policy", None) != "batch_native_tensorflow_no_row_mapping_v1":
-        raise RuntimeError("worker target is not the reviewed batch-native route")
+    if getattr(target, "evaluation_policy", None) not in _ADMITTED_EVALUATION_POLICIES:
+        raise RuntimeError("worker target is not an admitted batch-native route")
     if assigned_cpu is not None:
         _bind_process_threads_to_cpu(assigned_cpu)
     _TARGET = target
+    status_method = getattr(target, "neutra_batch_log_prob_and_grad_status", None)
+    status_jit_compile = bool(getattr(target, "_jit_compile", False))
+    _STATUS_CALLS = (
+        {
+            int(size): tf.function(
+                status_method,
+                input_signature=(
+                    tf.TensorSpec([int(size), int(target.parameter_dim)], tf.float64),
+                ),
+                jit_compile=status_jit_compile,
+                reduce_retracing=False,
+            )
+            for size in batch_sizes
+        }
+        if callable(status_method)
+        else {}
+    )
     _READY_BARRIER = barrier
     _METADATA = {
         "pid": os.getpid(),
@@ -77,6 +104,7 @@ def _worker_init(
         "worker_backend": "batch_native_value_score",
         "evaluation_policy": target.evaluation_policy,
         "compiled_batch_sizes": list(batch_sizes),
+        "status_jit_compile": status_jit_compile,
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
         "tensorflow_gpu_devices": [],
         "target_signature": target.target_signature(),
@@ -120,12 +148,32 @@ def _worker_evaluate(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     rows = tf.io.parse_tensor(payload["rows"], out_type=tf.float64)
     rows = tf.ensure_shape(rows, [int(payload["row_count"]), int(_TARGET.parameter_dim)])
     started = time.perf_counter()
-    value, score = _TARGET.batch_value_and_score(rows)
+    preserve_status = bool(payload.get("preserve_status", False))
+    if preserve_status:
+        status_call = _STATUS_CALLS.get(int(payload["row_count"]))
+        if not callable(status_call):
+            raise RuntimeError(
+                "status-preserving evaluation requires a compiled target row-status call"
+            )
+        value, score, raw_status = status_call(rows)
+        status = {
+            str(key): tf.convert_to_tensor(tensor)
+            for key, tensor in raw_status.items()
+        }
+        for key, tensor in status.items():
+            if tensor.shape.rank != 1 or tensor.shape[0] != int(payload["row_count"]):
+                raise RuntimeError(
+                    f"target status field {key!r} must have shape [row_count]"
+                )
+    else:
+        value, score = _TARGET.batch_value_and_score(rows)
+        status = {}
     assigned_cpu = _METADATA.get("assigned_cpu")
     if assigned_cpu is not None:
         _bind_process_threads_to_cpu(int(assigned_cpu))
-    tf.debugging.assert_all_finite(value, "batch-native worker value")
-    tf.debugging.assert_all_finite(score, "batch-native worker score")
+    if not preserve_status:
+        tf.debugging.assert_all_finite(value, "batch-native worker value")
+        tf.debugging.assert_all_finite(score, "batch-native worker score")
     return {
         "worker_index": int(payload["worker_index"]),
         "item_start": int(payload["item_start"]),
@@ -135,6 +183,13 @@ def _worker_evaluate(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         "assigned_cpu": assigned_cpu,
         "value": bytes(tf.io.serialize_tensor(value).numpy()),
         "score": bytes(tf.io.serialize_tensor(score).numpy()),
+        "status": {
+            key: {
+                "dtype": tensor.dtype.name,
+                "tensor": bytes(tf.io.serialize_tensor(tensor).numpy()),
+            }
+            for key, tensor in status.items()
+        },
         "runtime_seconds": time.perf_counter() - started,
         "ru_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024),
         "metadata": dict(_METADATA),
@@ -259,6 +314,28 @@ class TFBatchValueScorePool:
     def evaluate(
         self, rows: Any, *, request_id: str
     ) -> tuple[Any, Any, Mapping[str, Any]]:
+        values, scores, _status, metadata = self._evaluate(
+            rows, request_id=request_id, preserve_status=False
+        )
+        return values, scores, metadata
+
+    def evaluate_with_status(
+        self, rows: Any, *, request_id: str
+    ) -> tuple[Any, Any, Mapping[str, Any], Mapping[str, Any]]:
+        """Return raw target outputs and per-row status without finite asserts.
+
+        A completed invalid target evaluation is data, not a worker failure. The
+        caller must reject the full batch before any optimizer update.
+        """
+
+        values, scores, status, metadata = self._evaluate(
+            rows, request_id=request_id, preserve_status=True
+        )
+        return values, scores, status, metadata
+
+    def _evaluate(
+        self, rows: Any, *, request_id: str, preserve_status: bool
+    ) -> tuple[Any, Any, Mapping[str, Any], Mapping[str, Any]]:
         import tensorflow as tf
 
         matrix = tf.convert_to_tensor(rows, tf.float64)
@@ -314,6 +391,7 @@ class TFBatchValueScorePool:
                         "row_count": shard_size,
                         "request_id": request,
                         "rows": serialized,
+                        "preserve_status": bool(preserve_status),
                     },
                 )
             )
@@ -331,9 +409,37 @@ class TFBatchValueScorePool:
         )
         values = tf.ensure_shape(values, [int(row_count)])
         scores = tf.ensure_shape(scores, [int(row_count), int(self.config.dimension)])
-        tf.debugging.assert_all_finite(values, "batch-native pooled values")
-        tf.debugging.assert_all_finite(scores, "batch-native pooled scores")
-        return values, scores, self._metadata(results, request=request)
+        status: dict[str, Any] = {}
+        if preserve_status:
+            status_fields = tuple(sorted(results[0]["status"]))
+            if not status_fields or any(
+                tuple(sorted(row["status"])) != status_fields for row in results
+            ):
+                raise RuntimeError("worker target status fields are missing or inconsistent")
+            for key in status_fields:
+                dtype_name = str(results[0]["status"][key]["dtype"])
+                if any(
+                    str(row["status"][key]["dtype"]) != dtype_name for row in results
+                ):
+                    raise RuntimeError(f"worker target status dtype changed for {key}")
+                dtype = tf.dtypes.as_dtype(dtype_name)
+                status[key] = tf.ensure_shape(
+                    tf.concat(
+                        [
+                            tf.io.parse_tensor(
+                                row["status"][key]["tensor"], out_type=dtype
+                            )
+                            for row in results
+                        ],
+                        axis=0,
+                    ),
+                    [int(row_count)],
+                )
+        else:
+            tf.debugging.assert_all_finite(values, "batch-native pooled values")
+            tf.debugging.assert_all_finite(scores, "batch-native pooled scores")
+        metadata = self._metadata(results, request=request)
+        return values, scores, status, metadata
 
     def _ensure_started(self) -> None:
         if self._executor is not None or self._pinned_executors:
@@ -443,6 +549,16 @@ class TFBatchValueScorePool:
             "worker_result_pids": [int(row["worker_pid"]) for row in results],
             "worker_assigned_cpu_ids": [
                 row.get("assigned_cpu") for row in results
+            ],
+            "worker_tasks": [
+                {
+                    "worker_index": int(row["worker_index"]),
+                    "item_start": int(row["item_start"]),
+                    "item_stop": int(row["item_stop"]),
+                    "worker_pid": int(row["worker_pid"]),
+                    "assigned_cpu": row.get("assigned_cpu"),
+                }
+                for row in results
             ],
             "active_worker_ru_maxrss_sum_bytes": sum(
                 int(row["ru_maxrss_bytes"]) for row in results

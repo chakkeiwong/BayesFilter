@@ -1,0 +1,1790 @@
+{
+  "archive_label": "weighted-analytic",
+  "native_divergence_status": "not_exposed_by_kernel",
+  "nonclaims": [
+    "native divergence unavailability is not zero divergences",
+    "finite-sample operational screen only",
+    "no posterior correctness or stationarity proof"
+  ],
+  "physical_coordinate_role": "explanatory_only",
+  "policy": {
+    "acceptance_max": 0.95,
+    "acceptance_min": 0.35,
+    "bulk_ess_min": 400.0,
+    "chain_count": 4,
+    "delta_h_abs_max": 1000.0,
+    "num_leapfrog_steps": 20,
+    "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+    "retained_check_interval_results": 1000,
+    "retained_chunk_size": 500,
+    "retained_ess_required": true,
+    "retained_max_results": 10000,
+    "retained_min_results": 1000,
+    "retained_rhat_max": 1.01,
+    "seed": [
+      20260812,
+      91012
+    ],
+    "step_size": 0.14091138276334744,
+    "tail_ess_min": 400.0,
+    "target_status_required": true,
+    "use_xla": true,
+    "warmup_chunk_size": 500,
+    "warmup_max_results": 10000,
+    "warmup_min_results": 2000,
+    "warmup_rhat_max": 1.05,
+    "warmup_window_results": 1000,
+    "xla_qualification_required": false
+  },
+  "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+  "retained_chunks": [
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7383046513937243,
+        0.7794099262733218,
+        0.7623136921679127,
+        0.7722839668432742
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 0,
+      "chunk_seconds": 21.72890427103266,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 69512658305.28278,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-receipt.json",
+        "sha256": "7f27e55c7dfc154b76746b742d6158a0777cf056d1cdc356c95cea674285e9d8"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-samples.tftensor",
+        "sha256": "5741fc798056f4877a41d6986e26c6d9f5f0377c14ff0aeccdfca1a4ec4033c0",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1092024
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-delta_h.tftensor",
+          "sha256": "ff8989121410c397178d6a881b8f431a87fbed78e708071d56c58ea0768c9ced",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-is_accepted.tftensor",
+          "sha256": "2ad65f406845b044ea3910f21c42676204c52bb721ad9c73a6c9457e8bb032f7",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-log_accept_ratio.tftensor",
+          "sha256": "2d09dc2f0f6e36cfd7ddc779b79c403359cdcb965a0b9d524eea7947e0864bbf",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-proposed_target_log_prob.tftensor",
+          "sha256": "ae38db387ba605ac792195f5a89156326e4057885c8dbe3bcbef0c6458f1b29c",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-target_log_prob.tftensor",
+          "sha256": "5ca07db1fe1295f3b797c7e9b29d2173f7b8cc529ba218ec7ef868cc303e6fc9",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-target_score.tftensor",
+          "sha256": "264ef6a088014a4727cd7b025e479785dc91c0de18d2283fce2c0eb023158b7f",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-000-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7611714424741687,
+        0.7165034384337331,
+        0.7491237162642609,
+        0.7098511221063903
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            7258.831400636574,
+            6570.611661667175,
+            10832.08799143367,
+            8800.725648893276
+          ],
+          "max_rhat": 1.035495657427702,
+          "min_bulk_ess": 6570.611661667175,
+          "min_tail_ess": 323.7516266361781,
+          "rhat_by_parameter": [
+            1.0191615769504039,
+            1.0043101795878442,
+            1.018527697190477,
+            1.035495657427702
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            323.7516266361781,
+            484.38591272807327,
+            459.87974338470326,
+            467.49439160335567
+          ]
+        },
+        "max_rhat": 1.035495657427702,
+        "min_bulk_ess": 2322.673950380315,
+        "min_tail_ess": 226.91970188769596,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            2322.673950380315,
+            2365.723089705906,
+            4785.788227725165,
+            3072.5426180320114
+          ],
+          "max_rhat": 1.0147641874974647,
+          "min_bulk_ess": 2322.673950380315,
+          "min_tail_ess": 226.91970188769596,
+          "rhat_by_parameter": [
+            1.0053557228704944,
+            1.0097256055343076,
+            1.0034047512129889,
+            1.0147641874974647
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            502.7368005843891,
+            542.3309852381208,
+            480.17244317429817,
+            226.91970188769596
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.01
+      },
+      "chunk_index": 1,
+      "chunk_seconds": 21.363332042004913,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 544902658522594.75,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-receipt.json",
+        "sha256": "76d6571f14a9fd800b1f474e589c3f066bb33821607c55cd31a44dca67fef863"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-samples.tftensor",
+        "sha256": "7e6fbe0b3c6609053deec17fd0a1a946cb38d7cdeffeded2a2436ce683259497",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1093033
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-delta_h.tftensor",
+          "sha256": "53edf31d7ddb1650761daba42615f26053fd6fb276d78593ffddc6782518b360",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-is_accepted.tftensor",
+          "sha256": "f57db6cfcf76aeee0f8e28e747282a0043006a4c3986664437665005e86cc3dd",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-log_accept_ratio.tftensor",
+          "sha256": "a59fb5ba549d823192c3b037039943590ec02e8467559c7b8cebafb5f574f2a2",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-proposed_target_log_prob.tftensor",
+          "sha256": "39b8b01e01b3512285c7e63c711c1df77ed8a369ca3f60f1e8892305752bbe8a",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-target_log_prob.tftensor",
+          "sha256": "24b0dbea937fcc36edd50ac77681faac9d2e27ceed3685b9d05b76c1dc015abc",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-target_score.tftensor",
+          "sha256": "06e506e45a15d8d51e1f47acd1ad5d7c374e8bbf8e6e317b299f691676b25928",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-001-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7733775665616174,
+        0.7441542059601879,
+        0.7135802481353885,
+        0.7341646031799189
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 2,
+      "chunk_seconds": 21.738570110988803,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 43374507944766.74,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-receipt.json",
+        "sha256": "6ebeb97599acda70e1d808d5dd7252fc83beda5dee9165cd42f64ad8dba04606"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-samples.tftensor",
+        "sha256": "6d742593a29888441d14ba758cdf8a4399dd1625fbf21453b3b36f2bf629c42e",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1094042
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-delta_h.tftensor",
+          "sha256": "443196a4347ef85348e5cf1b42cfa08f78cb0c3970ba583ba3f2c6979fce120f",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-is_accepted.tftensor",
+          "sha256": "2e94447cfc89f881d367bc925b1f2a8736119f7f67e8d355fd488b3eb7b6c42b",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-log_accept_ratio.tftensor",
+          "sha256": "de284b4bd4d96083af490ddef143ea7455d57d7099aa2ae8c408d2aa5e530f63",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-proposed_target_log_prob.tftensor",
+          "sha256": "43b4702dc3e24ba98e58294e4154fbc2ee6caaf80be773fc2851c3075cb81bf2",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-target_log_prob.tftensor",
+          "sha256": "4ac0d54e1490af4a94b8a932eb308b7f5c8b019d95444ad0d3afd6a95718fc8f",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-target_score.tftensor",
+          "sha256": "48450174e5e8c62d34355a6f6d49a2c78fc6d830ac7bb20bfa01378bccae0e77",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-002-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7778190218149418,
+        0.7521797390402735,
+        0.7455033213068248,
+        0.7907927546724991
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            14312.393342312578,
+            11920.776454125631,
+            18397.07687565558,
+            15981.104497605462
+          ],
+          "max_rhat": 1.0078594727447154,
+          "min_bulk_ess": 11920.776454125631,
+          "min_tail_ess": 710.2218745550937,
+          "rhat_by_parameter": [
+            1.0078594727447154,
+            1.006034640146376,
+            1.0055430741661493,
+            1.0046699217141495
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            710.2218745550937,
+            1145.0337993283629,
+            874.8355850737341,
+            886.827383852802
+          ]
+        },
+        "max_rhat": 1.0078594727447154,
+        "min_bulk_ess": 4147.130301135622,
+        "min_tail_ess": 637.1434865111773,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            4147.130301135622,
+            4398.0716628111195,
+            9624.521258274288,
+            5851.699228514109
+          ],
+          "max_rhat": 1.0060255333113526,
+          "min_bulk_ess": 4147.130301135622,
+          "min_tail_ess": 637.1434865111773,
+          "rhat_by_parameter": [
+            1.0045791053562638,
+            1.0046710200679778,
+            1.0044858079212655,
+            1.0060255333113526
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            968.981112093139,
+            1146.2089594605757,
+            1223.6907144117545,
+            637.1434865111773
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.01
+      },
+      "chunk_index": 3,
+      "chunk_seconds": 19.908684177906252,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 15540303391857.572,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-receipt.json",
+        "sha256": "9c4965053b725331d37b74bcb0c4c029bbb95887a3cabddefe247c8472c842c9"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-samples.tftensor",
+        "sha256": "f90e292d2ea38adf02a24838b620a33425e7e4601b5e66bc6d09eb9c80a86d47",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1095051
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-delta_h.tftensor",
+          "sha256": "b4b18a0e074f30fe8b5c851ffe56a855d8504b8658639d5b074acbd8863f21f9",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-is_accepted.tftensor",
+          "sha256": "10913b3ccd377f1ee017eca24dd2f5509797fa099a03f2d4ccf9ad78e149231a",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-log_accept_ratio.tftensor",
+          "sha256": "0b29304ad562c1f4bfdf87a52a449a9968214fb38af6cfe6bf18d27f9d825b55",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-proposed_target_log_prob.tftensor",
+          "sha256": "53f04cb4daf97d8fdcd2111ccd0d40e7e63de6d2794fd232b26e3cfd16ca9529",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-target_log_prob.tftensor",
+          "sha256": "686b5c7b954707a4cf29c0b29243b392720307c04ad415c8ff6aa7e056110e6b",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-target_score.tftensor",
+          "sha256": "1f86781c348fc88d1b599431eb8a231bcb833a593102fd13ea420488d9af8415",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/retained/weighted-analytic-retained-003-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    }
+  ],
+  "retained_ess_role": "promotion_veto",
+  "runner_programs": [
+    {
+      "num_results": 500,
+      "program_signature": "0f9201602a1a9c85091177855b21346fee14b580ca055528f1ad0b7bec7d1d57",
+      "tracing_count": 1
+    }
+  ],
+  "schema": "bayesfilter.neutra.sequential_hmc_result.v1",
+  "warmup_chunks": [
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7354087593842534,
+        0.7059747195704184,
+        0.7380960441295763,
+        0.7351521760688072
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 0,
+      "chunk_seconds": 24.530426097102463,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 1178529048.2717223,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-receipt.json",
+        "sha256": "48e8701b77888877ac47e240eb141969fdb47003e24af7ff875724146e017ec3"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-samples.tftensor",
+        "sha256": "e4c069b6828bc85f43da67b5d8f237602f97cafb1097acca0b52bb938f44caba",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        92021
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-delta_h.tftensor",
+          "sha256": "8d8e4d4f7dd4642d623f796465024a5fac8a71cbce7adf4cd8d6e3a19c92a564",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-is_accepted.tftensor",
+          "sha256": "b891cf563d2a3d9e67d6ebc1eb52e75d7185f85a579f25cab05a470bb0856f10",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-log_accept_ratio.tftensor",
+          "sha256": "4fa84b725b7a901fca8ea20511956b6414c973330b20ccd7658b1412e228b1cf",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-proposed_target_log_prob.tftensor",
+          "sha256": "e47ad525740adcd9b8dbbd2b5d3a36fc1023732338f95f40bb75a83d94792294",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-target_log_prob.tftensor",
+          "sha256": "2479855e61dbfbd3f4eca9dc12fd8605d88a7aaf0f45bab4c69fca1fe7701b57",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-target_score.tftensor",
+          "sha256": "0b02b46bf172b802fc94f8255201ee73e2ec56d9c31e8d5c9b4767c9d23a1dda",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-000-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.758673667236484,
+        0.7341092024639293,
+        0.73094247797058,
+        0.7623231493141114
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 1,
+      "chunk_seconds": 20.056333624990657,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 2.716090465951866e+16,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-receipt.json",
+        "sha256": "c51c281abff89ebba2f676e62b54d36f0a3ce87ed1f1a587a18a8f19adc82d81"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-samples.tftensor",
+        "sha256": "cd2d8615109de151e6959ace0cdd3f8ad8097f75007f5d9e1e6214fa4c414331",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        93030
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-delta_h.tftensor",
+          "sha256": "503c748941e8ef8f86cfbfda6f9a9c06b66dfe536fdc0fd5fc1a8225d8780290",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-is_accepted.tftensor",
+          "sha256": "b2039269315b0d2f13a5c338df66f5dbb9e62ccda0cebe5b02e06df26dae15d6",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-log_accept_ratio.tftensor",
+          "sha256": "8ec654111b0256ea09abbfa800edd22e2d718d816a9c11f89a0d834f8ce71cf2",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-proposed_target_log_prob.tftensor",
+          "sha256": "61332245760d71d54aed8624b50a30c75f79ba435b5f475e18a25db5985e444c",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-target_log_prob.tftensor",
+          "sha256": "c1227d749c32f2782ba533bba86d9c98f7a69962bfa7a6fee3f7c4e60d043163",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-target_score.tftensor",
+          "sha256": "7c8be0cbff8f4bb25e0af5b675d4664e69cb9d0da074c4f7c9b6d338ab5a78d5",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-001-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7240927321393349,
+        0.7184492343508262,
+        0.7610660602758824,
+        0.7372538900003877
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 2,
+      "chunk_seconds": 21.672206575982273,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 2829319499728.268,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-receipt.json",
+        "sha256": "9a2593405ffe89849db711915e7d2cadc469ad1aa44f32fa740df6dacab4443f"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-samples.tftensor",
+        "sha256": "896c2e424bb00413b33a1d6f6e6974d318a671f3c42259a9d73489788065ff5e",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        94039
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-delta_h.tftensor",
+          "sha256": "251ff238574cf88e08c3a8aeebedf9c84887af31f85fdb78e7d9eaed325318ae",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-is_accepted.tftensor",
+          "sha256": "34e6a8f156044df494677f3c872cd961daa5770ac491a1faa1f6639603819dda",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-log_accept_ratio.tftensor",
+          "sha256": "a8d335649776cda790d7d6f26286bd9ea7d9c5d9ddb3c706a34721aa99abc1f4",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-proposed_target_log_prob.tftensor",
+          "sha256": "19fd778750be6d816d9ecfa2e24fade3c124f191761825a7a104aefb766ecda0",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-target_log_prob.tftensor",
+          "sha256": "011c2f6e35b9cd06e67e440e4b9e5d1e10e3cbc4fbb45f19817b376ceb6b5f89",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-target_score.tftensor",
+          "sha256": "54b00cc1e0aa768561e630084d250adea0a12e7e50e23a75b8a8bc2fc6134d41",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-002-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7421640466002561,
+        0.7461954106521268,
+        0.7276218324855666,
+        0.7050814128759271
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            7423.150315820374,
+            5805.520137983066,
+            8238.6003001552,
+            7640.3250624669545
+          ],
+          "max_rhat": 1.058562038998361,
+          "min_bulk_ess": 5805.520137983066,
+          "min_tail_ess": 163.32179447193846,
+          "rhat_by_parameter": [
+            1.058562038998361,
+            1.014040938646789,
+            1.0159315784161442,
+            1.0309655575413563
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            163.32179447193846,
+            506.8397350173154,
+            323.72867841857084,
+            478.9000158581425
+          ]
+        },
+        "max_rhat": 1.058562038998361,
+        "min_bulk_ess": 2435.6137457990308,
+        "min_tail_ess": 163.01204095090193,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            2669.918699210143,
+            2435.6137457990308,
+            3389.935872518851,
+            3157.3828725324647
+          ],
+          "max_rhat": 1.0447287811267945,
+          "min_bulk_ess": 2435.6137457990308,
+          "min_tail_ess": 163.01204095090193,
+          "rhat_by_parameter": [
+            1.003548771887832,
+            1.0066454988782367,
+            1.0126334478381727,
+            1.0447287811267945
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            522.8228537708213,
+            599.2184352991999,
+            526.32893613967,
+            163.01204095090193
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.05
+      },
+      "chunk_index": 3,
+      "chunk_seconds": 21.664972701924853,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 177195070150.17468,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-receipt.json",
+        "sha256": "ae014dbaaf8895e02a2a5f40dcabd072580ee2f49320bebc646bdcc2c61f9af3"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-samples.tftensor",
+        "sha256": "dbd282fcb93276ea44b2f3a709c3ea767c3c182a68c7ad2809c578947cec5c33",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        95048
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-delta_h.tftensor",
+          "sha256": "c0c305fe053cafd7535dd806ac01f4fc5b27a18331113809d1ec659ef35730ae",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-is_accepted.tftensor",
+          "sha256": "2552d620e1299c28a36cfb54e734193f9cdffc0c69d932dd217229fd33e25a59",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-log_accept_ratio.tftensor",
+          "sha256": "290a267308fc6de48e651dbf22958e0fdea5e556fd06b91a3321c72f6e0748be",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-proposed_target_log_prob.tftensor",
+          "sha256": "71d3fa425786b5520b448ae5c53285400d26a11468188fc792069bf9ac1d2e26",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-target_log_prob.tftensor",
+          "sha256": "c7ca21b35acb83d39a4dd11e8b17c563857d18daa874b3990c5344e995f35a74",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-target_score.tftensor",
+          "sha256": "8cccb973dc8b56dbdb0fbeb399eebcb633a5bce1952fd7fb13d154d92a0b2469",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-003-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7293766692845634,
+        0.7135355091573587,
+        0.7687888035160209,
+        0.7402792385261922
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            8040.903735395378,
+            5996.278399102206,
+            7654.077660190741,
+            6706.876216946174
+          ],
+          "max_rhat": 1.0250020023044182,
+          "min_bulk_ess": 5996.278399102206,
+          "min_tail_ess": 344.6418289994965,
+          "rhat_by_parameter": [
+            1.0081574213678484,
+            1.0098239120678087,
+            1.0067159136879587,
+            1.0250020023044182
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            520.6274165277013,
+            526.3435697143761,
+            568.0720482470144,
+            344.6418289994965
+          ]
+        },
+        "max_rhat": 1.0250020023044182,
+        "min_bulk_ess": 1935.4571297685993,
+        "min_tail_ess": 344.6418289994965,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            2137.855042063085,
+            1935.4571297685993,
+            3933.9750620793593,
+            4897.010556798032
+          ],
+          "max_rhat": 1.0065454472037507,
+          "min_bulk_ess": 1935.4571297685993,
+          "min_tail_ess": 474.1662128730134,
+          "rhat_by_parameter": [
+            1.005923242832077,
+            1.0065454472037507,
+            1.0064692134849151,
+            1.0061082287171192
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            589.0731288406758,
+            609.1988435415163,
+            538.1598680110011,
+            474.1662128730134
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.05
+      },
+      "chunk_index": 4,
+      "chunk_seconds": 19.52116857992951,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 91343840354792.72,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-receipt.json",
+        "sha256": "c951264ce2de2c51a7a7faa590f2088fa861c409ed77b8ffe7e04e50ed148671"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-samples.tftensor",
+        "sha256": "2401cab5e19763404fbe972bb46b619f19c8b40de01d9e7bb120681e759df1ad",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        96057
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-delta_h.tftensor",
+          "sha256": "88fe76d70d3db3776f11d33f8b128693653fe8ef8c4029ac69d38f813893bef3",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-is_accepted.tftensor",
+          "sha256": "a46437f7127df60fd9e74de0fcbef3844648eb9fa0e0519227d59caccd4f37ab",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-log_accept_ratio.tftensor",
+          "sha256": "f6cc0da5102f8f7087023ea2cf069ed538f7c5c0130145255886bc142e84f663",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-proposed_target_log_prob.tftensor",
+          "sha256": "1bb858712c01d8108daff2a47947b6ec434a5cf49878f3b8587a761941780b19",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-target_log_prob.tftensor",
+          "sha256": "5dc78399cebd5939e6867468fe358f4b18f930ab7773cd3bdf964f99a754d7f1",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-target_score.tftensor",
+          "sha256": "19def944f5276109bd4a9b01537809e12124178d4ad4d3dfa65a760d7100bfe2",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1/archive/warmup/weighted-analytic-warmup-004-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    }
+  ],
+  "warmup_excluded_from_posterior": true
+}

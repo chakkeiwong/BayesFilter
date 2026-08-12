@@ -175,13 +175,68 @@ def _sample_sd(values: Any, *, axis: Any) -> Any:
 
 
 def _cross_chain_ess(sample_major: Any) -> Any:
-    import tensorflow_probability as tfp
+    """Vehtari cross-chain ESS with a warning-free real FFT covariance.
 
-    return tfp.mcmc.effective_sample_size(
-        sample_major,
-        filter_threshold=None,
-        filter_beyond_positive_pairs=True,
-        cross_chain_dims=1,
+    TFP 0.25 computes the same autocovariance through a complex FFT and then
+    casts ``complex128`` to ``float64``.  The mathematical result is real, but
+    that cast emits a lossy-conversion warning for every ESS call.  Using
+    ``rfft``/``irfft`` preserves the real-valued contract directly.
+    """
+
+    import tensorflow as tf
+
+    values = tf.cast(tf.convert_to_tensor(sample_major), tf.float64)
+    if values.shape.rank != 3 or any(dim is None for dim in values.shape):
+        raise ValueError("cross-chain ESS requires static [draw, chain, parameter]")
+    draw_count, chain_count, _ = (int(dim) for dim in values.shape)
+    rotated = tf.transpose(values, (1, 2, 0))
+    centered = rotated - tf.reduce_mean(rotated, axis=-1, keepdims=True)
+    fft_length = 1 << int(math.ceil(math.log2(2 * draw_count)))
+    padded = tf.pad(centered, ((0, 0), (0, 0), (0, fft_length - draw_count)))
+    spectrum = tf.signal.rfft(padded)
+    autocov_rotated = tf.signal.irfft(
+        spectrum * tf.math.conj(spectrum), fft_length=(fft_length,)
+    )[..., :draw_count]
+    denominators = tf.cast(
+        tf.range(draw_count, 0, -1), tf.float64
+    )
+    autocov = tf.transpose(
+        autocov_rotated / denominators[tf.newaxis, tf.newaxis, :],
+        (2, 0, 1),
+    )
+
+    chain_means = tf.reduce_mean(values, axis=0)
+    between_div_n = tf.math.reduce_variance(chain_means, axis=0) * (
+        tf.cast(chain_count, tf.float64)
+        / tf.cast(chain_count - 1, tf.float64)
+    )
+    biased_within = tf.reduce_mean(autocov[0], axis=0)
+    variance_plus = biased_within + between_div_n
+    mean_autocov = tf.reduce_mean(autocov, axis=1)
+    autocorrelation = 1.0 - (
+        biased_within[tf.newaxis, :] - mean_autocov
+    ) / variance_plus[tf.newaxis, :]
+    lag_weight = tf.cast(
+        tf.range(draw_count, 0, -1), tf.float64
+    ) / tf.cast(draw_count, tf.float64)
+    weighted = autocorrelation * lag_weight[:, tf.newaxis]
+
+    even_count = draw_count - draw_count % 2
+    pair_shape = (even_count // 2, 2, int(values.shape[2]))
+    pair_correlation = tf.reduce_sum(
+        tf.reshape(autocorrelation[:even_count], pair_shape), axis=1
+    )
+    positive_mask = tf.maximum(
+        1.0
+        - tf.cumsum(tf.cast(pair_correlation < 0.0, tf.float64), axis=0),
+        0.0,
+    )
+    weighted_pairs = tf.reduce_sum(
+        tf.reshape(weighted[:even_count], pair_shape), axis=1
+    ) * positive_mask
+    return (
+        tf.cast(chain_count * draw_count, tf.float64)
+        / (-1.0 + 2.0 * tf.reduce_sum(weighted_pairs, axis=0))
     )
 
 

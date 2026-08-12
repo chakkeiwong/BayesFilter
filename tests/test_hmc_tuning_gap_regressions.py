@@ -60,13 +60,15 @@ def test_acceptance_admission_rejects_one_frozen_coordinate_in_314_dimensions() 
     assert evidence.promotion_eligible is False
 
 
-def test_acceptance_interval_meets_nominal_coverage_under_persistent_chain_effects() -> None:
+def test_acceptance_interval_records_working_coverage_under_persistent_chain_effects() -> None:
     policy = HMCAcceptancePolicy()
     samples = _moving_high_dimensional_samples(dimension=2)
     covered = []
 
     # Exact finite enumeration: each chain is persistently at 0.60 or 0.80,
-    # independently with equal probability. The population mean is 0.70.
+    # independently with equal probability. The population mean is 0.70. This
+    # deliberately non-Gaussian four-unit fixture is explanatory only: the
+    # working Student-t interval is not claimed to have exact nominal coverage.
     for chain_probabilities in itertools.product((0.60, 0.80), repeat=4):
         probability = np.tile(np.asarray(chain_probabilities, dtype=float), (64, 1))
         evidence = evaluate_hmc_acceptance_evidence(
@@ -80,7 +82,8 @@ def test_acceptance_interval_meets_nominal_coverage_under_persistent_chain_effec
         covered.append(evidence.interval[0] <= policy.target <= evidence.interval[1])
 
     exact_coverage = float(np.mean(covered))
-    assert exact_coverage >= policy.confidence_level
+    assert exact_coverage == pytest.approx(0.875)
+    assert exact_coverage < policy.confidence_level
 
 
 def test_dense_metric_gate_rejects_highly_autocorrelated_full_rank_states() -> None:
@@ -320,7 +323,7 @@ def test_retained_target_health_flat_batch_preserves_logical_draw_accounting() -
     assert adapter.shapes == [(64, 2), (16, 2)]
 
 
-def test_retained_target_health_localizes_batched_telemetry_failure() -> None:
+def test_retained_target_health_counts_all_batched_telemetry_failures() -> None:
     import tensorflow as tf
 
     class BatchedTelemetryAdapter:
@@ -362,10 +365,10 @@ def test_retained_target_health_localizes_batched_telemetry_failure() -> None:
         "target_status_telemetry_failure",
     )
     assert health["target_status_failure_count"] == 1
-    assert health["evaluated_draw_count"] == 6
+    assert health["evaluated_draw_count"] == 20
 
 
-def test_retained_target_health_localizes_flat_batch_telemetry_failure() -> None:
+def test_retained_target_health_counts_all_flat_batch_telemetry_failures() -> None:
     import tensorflow as tf
 
     class FlatBatchedTelemetryAdapter:
@@ -412,8 +415,10 @@ def test_retained_target_health_localizes_flat_batch_telemetry_failure() -> None
         "target_status_telemetry_failure",
     )
     assert health["target_status_failure_count"] == 1
-    assert health["evaluated_draw_count"] == 6
-    assert adapter.telemetry_shapes == [(64, 2)] + [(4, 2)] * 6
+    assert health["evaluated_draw_count"] == 20
+    assert adapter.telemetry_shapes == (
+        [(64, 2)] + [(4, 2)] * 16 + [(16, 2)]
+    )
 
 
 def test_retained_target_health_uses_combined_value_score_status_once_per_batch() -> None:
@@ -521,9 +526,9 @@ def test_combined_retained_status_failure_localization_does_not_call_legacy_tele
     )
     assert health["target_status_failure_count"] == 4
     assert adapter.telemetry_calls == 0
-    # One batched call plus six combined calls to localize the first failing
-    # logical draw; no legacy telemetry replay is permitted.
-    assert adapter.combined_calls == 7
+    # One batched call, all sixteen logical-draw checks, and one final batch;
+    # no legacy telemetry replay is permitted.
+    assert adapter.combined_calls == 18
 
 
 def test_private_start_bank_rejects_negligibly_dispersed_distinct_states() -> None:

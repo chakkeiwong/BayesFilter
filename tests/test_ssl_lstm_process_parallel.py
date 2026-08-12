@@ -25,6 +25,56 @@ from bayesfilter.nonlinear.ssl_lstm_complexity_target_tf import (
 )
 
 
+class _SyntheticStatusTarget:
+    evaluation_policy = "batch_native_tensorflow_status_no_row_mapping_v2"
+    parameter_dim = 4
+
+    @staticmethod
+    def target_signature() -> str:
+        return "1" * 64
+
+    @staticmethod
+    def adapter_signature() -> str:
+        return "2" * 64
+
+    def neutra_batch_log_prob_and_grad_status(self, rows):
+        values = tf.convert_to_tensor(rows, tf.float64)
+        invalid = values[:, 0] < 0.0
+        raw_value = tf.where(
+            invalid,
+            tf.fill([tf.shape(values)[0]], tf.constant(float("nan"), tf.float64)),
+            -tf.reduce_sum(tf.square(values), axis=1),
+        )
+        score = -2.0 * values
+        return raw_value, score, {
+            "status_code": tf.cast(invalid, tf.int32),
+            "valid_pre_regularized_score": tf.logical_not(invalid),
+            "floor_count_value": tf.cast(invalid, tf.int32),
+            "placement_floor_count": tf.cast(invalid, tf.int32),
+            "innovation_floor_count": tf.zeros_like(invalid, tf.int32),
+            "principal_sqrt_target_row_class_code": tf.cast(invalid, tf.int32),
+            "principal_sqrt_target_valid_count": tf.cast(
+                tf.logical_not(invalid), tf.int32
+            ),
+            "min_innovation_eigenvalue": tf.where(
+                invalid,
+                tf.zeros_like(raw_value),
+                tf.ones_like(raw_value),
+            ),
+            "value_finite": tf.math.is_finite(raw_value),
+            "score_finite": tf.reduce_all(tf.math.is_finite(score), axis=1),
+            "input_finite": tf.reduce_all(tf.math.is_finite(values), axis=1),
+        }
+
+    def batch_value_and_score(self, rows):
+        value, score, _status = self.neutra_batch_log_prob_and_grad_status(rows)
+        return value, score
+
+
+def synthetic_status_target_factory(_config):
+    return _SyntheticStatusTarget()
+
+
 def _pool_config(q: int = 1, worker_count: int = 2) -> CPUValueScorePoolConfig:
     return CPUValueScorePoolConfig(
         worker_factory_path=(
@@ -139,6 +189,56 @@ def test_tf_batch_pool_pins_persistent_processes_and_chunks_by_four() -> None:
             tuple(int(cpu) for cpu in task["affinity"])
             for task in row["thread_affinity"]
         } == {tuple(expected_cpu)}
+
+
+def test_tf_batch_pool_preserves_invalid_status_without_aborting_workers() -> None:
+    available = tuple(sorted(os.sched_getaffinity(0)))
+    if len(available) < 2:
+        pytest.skip("two logical CPUs are required for the affinity contract")
+    config = TFBatchValueScorePoolConfig(
+        factory_path=(
+            "tests.test_ssl_lstm_process_parallel:"
+            "synthetic_status_target_factory"
+        ),
+        factory_config={},
+        dimension=4,
+        worker_count=2,
+        cores_per_worker=1,
+        batch_sizes=(2,),
+        batch_per_worker=2,
+        worker_cpu_ids=available[:2],
+    )
+    mixed = tf.constant(
+        [
+            [0.2, 0.0, 0.0, 0.0],
+            [-0.1, 0.0, 0.0, 0.0],
+            [0.3, 0.0, 0.0, 0.0],
+            [0.4, 0.0, 0.0, 0.0],
+        ],
+        tf.float64,
+    )
+    valid = tf.abs(mixed)
+    with TFBatchValueScorePool(config) as pool:
+        values, scores, status, first = pool.evaluate_with_status(
+            mixed, request_id="mixed-status"
+        )
+        second_values, _second_scores, second_status, second = (
+            pool.evaluate_with_status(valid, request_id="valid-after-mixed")
+        )
+
+    assert status["status_code"].numpy().tolist() == [0, 1, 0, 0]
+    assert status["valid_pre_regularized_score"].numpy().tolist() == [
+        True,
+        False,
+        True,
+        True,
+    ]
+    assert not bool(tf.math.is_finite(values[1]).numpy())
+    tf.debugging.assert_all_finite(scores, "synthetic raw score")
+    tf.debugging.assert_all_finite(second_values, "pool survived invalid status")
+    assert bool(tf.reduce_all(second_status["valid_pre_regularized_score"]).numpy())
+    assert set(first["worker_result_pids"]) == set(second["worker_result_pids"])
+    assert len(first["worker_tasks"]) == 2
 
 
 def test_process_pool_matches_scalar_eager_target_and_records_cpu_workers():

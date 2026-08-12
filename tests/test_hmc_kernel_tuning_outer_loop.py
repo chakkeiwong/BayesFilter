@@ -671,13 +671,17 @@ def test_operational_seed_domain_and_policy_identifiers_are_invariant() -> None:
     ):
         assert domain in source
     assert 'domain="independent_final_verification"' in tuning_source
-    assert 'domain="repair_verification"' in tuning_source
+    assert '"repair_verification"' in tuning_source
+    assert '"verified_bracket_midpoint"' in tuning_source
     assert 'domain="evidence_extension"' in tuning_source
     assert hmc_kernel_tuning._PHASE7_OPERATIONAL_SELECTION_SEED_POLICY == (
         "bayesfilter.phase7_operational_selection_verification_seed.v2"
     )
     assert hmc_kernel_tuning._PHASE7_OPERATIONAL_REPAIR_SEED_POLICY == (
         "bayesfilter.phase7_operational_repair_verification_seed.v2"
+    )
+    assert hmc_kernel_tuning._PHASE7_OPERATIONAL_BRACKET_MIDPOINT_SEED_POLICY == (
+        "bayesfilter.phase7_operational_bracket_midpoint_verification_seed.v1"
     )
     assert hmc_kernel_tuning._PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY == (
         "bayesfilter.phase7_operational_evidence_extension_seed.v2"
@@ -1233,6 +1237,99 @@ def test_outer_loop_rejects_windowed_algorithm_lineage_mismatch_before_phase5() 
     assert diagnostics["error_type"] == "ValueError"
     assert "algorithm route lineage mismatch" in diagnostics["error_message"]
     assert stage_calls == []
+
+
+def test_required_zero_metric_update_retries_phase4_without_fixed_mass_selection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import bayesfilter.inference.hmc_warmup as hmc_warmup
+
+    def reject_metric(_states: Any, **_kwargs: Any):
+        return hmc_warmup.MetricAdequacyDecision(
+            outcome="no_update_insufficient_metric_evidence",
+            covariance=None,
+            estimator_family=None,
+            report={
+                "forced_test_fixture": True,
+                "diagonal_fallback_used": False,
+                "shrinkage_spd_not_treated_as_adequacy": True,
+            },
+        )
+
+    monkeypatch.setattr(hmc_warmup, "assess_metric_covariance", reject_metric)
+    adapter, geometry, bootstrap = _operational_inputs()
+    zero_update = hmc_kernel_tuning.run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=hmc_kernel_tuning.HMCWindowedMassStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260730, 811),
+            chain_execution_mode="tf_function",
+            target_scope="kernel_windowed_mass_toy_gaussian",
+            metric_update_requirement="require_operational_update",
+        ),
+        _attempt_budget_policy=_operational_budget(),
+    )
+    assert zero_update.final_status == "passed_no_metric_update"
+    fixed_stage_calls: list[str] = []
+    windowed_stage_calls: list[Mapping[str, Any]] = []
+
+    def windowed_stage_runner(**kwargs: Any) -> Any:
+        windowed_stage_calls.append(kwargs)
+        return zero_update
+
+    def forbidden_fixed_stage(**_kwargs: Any) -> Any:
+        fixed_stage_calls.append("fixed_mass_step")
+        raise AssertionError("zero-update Phase 4 must stop before Phase 5")
+
+    result = run_hmc_tune_verify_repair_loop(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=_loop_config(
+            algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+            max_attempts=2,
+            chain_execution_mode="tf_function",
+            target_scope="kernel_windowed_mass_toy_gaussian",
+            metric_update_requirement="require_operational_update",
+        ),
+        run_full_chain=lambda *_args, **_kwargs: _fake_result(),
+        _budget_policy_factory=lambda _dimension, attempt_index: _operational_budget(
+            attempt_index
+        ),
+        _windowed_stage_runner=windowed_stage_runner,
+        _fixed_mass_step_stage_runner=forbidden_fixed_stage,
+    )
+
+    assert fixed_stage_calls == []
+    assert result.passed is False
+    assert result.hard_vetoes == ()
+    assert result.final_kernel_payload is None
+    assert result.final_status == "budget_exhausted"
+    assert result.diagnostic_role == "budget_exhausted_non_promoting"
+    assert len(result.attempts) == 2
+    assert len(windowed_stage_calls) == 2
+    assert windowed_stage_calls[0]["_attempt_state"] is None
+    retry_state = windowed_stage_calls[1]["_attempt_state"]
+    assert retry_state.handoff_stage == "phase4"
+    assert retry_state.has_mass_handoff is True
+    assert retry_state.canonical_theta_state is not None
+    assert retry_state.private_start_bank_theta is not None
+    assert retry_state.selected_step_size is None
+    assert windowed_stage_calls[1]["_attempt_budget_policy"].attempt_index == 1
+    for attempt in result.attempts:
+        assert attempt.windowed_stage is zero_update
+        assert attempt.fixed_mass_step_stage is None
+        assert attempt.final_status == "repair_or_retry"
+        assert attempt.diagnostic_role == "repair_trigger"
+        assert attempt.handoff_state_payload["handoff_stage"] == "phase4"
+        assert attempt.handoff_state_payload["required_private_handoff_complete"] is True
+        assert "windowed_mass_no_operational_metric_update" in attempt.repair_triggers
+        assert "phase4_windowed_mass_status:passed_no_metric_update" in (
+            attempt.repair_triggers
+        )
+    assert "windowed_mass_no_operational_metric_update" in result.repair_triggers
 
 
 def test_phase7_public_timeout_before_windowed_mass_skips_windowed_runner(
@@ -7439,3 +7536,511 @@ def test_public_progress_writes_are_atomic_under_concurrent_reader(
     payload = json.loads(progress_path.read_text(encoding="utf-8"))
     assert payload["schema"] == "bayesfilter.hmc_kernel_tuning_progress.v1"
     assert not tuple(tmp_path.glob("*.tmp"))
+
+
+def _verified_bracket_config() -> HMCTuneVerifyRepairLoopConfig:
+    return HMCTuneVerifyRepairLoopConfig(
+        operational_verification_bracket_policy="one_verified_log_midpoint",
+        max_attempts=3,
+        seed=(20260730, 880),
+        chain_execution_mode="eager",
+        target_scope="verified_bracket_toy",
+    )
+
+
+def _verified_bracket_input(
+    *,
+    step_size: float,
+    step_hash: str,
+    seed_policy: str,
+    attempt_index: int,
+    metric_signature: str = "metric-signature",
+) -> Any:
+    return hmc_kernel_tuning._HMCPhase7FixedKernelVerificationInput(
+        source_kind="operational_selection_v2",
+        attempt_index=attempt_index,
+        target_scope="verified_bracket_toy",
+        target_dimension=2,
+        windowed_stage_artifact_hash="windowed-hash",
+        adapted_mass_artifact_signature="mass-signature",
+        fixed_mass_step_stage_artifact_hash="fixed-stage-hash",
+        candidate_batch_hash=None,
+        candidate_identity=None,
+        candidate_record_hash=None,
+        operational_selection_signature="selection-signature",
+        operational_candidate_signature="candidate-signature",
+        trajectory_stage_artifact_hash=None,
+        selected_step_hash=step_hash,
+        step_size=step_size,
+        num_leapfrog_steps=3,
+        adapter_signature="adapter-signature",
+        phase4_adapter_signature="phase4-adapter-signature",
+        verification_hmc_adapter_signature="verification-adapter-signature",
+        verification_seed=(100 + attempt_index, 200 + attempt_index),
+        seed_policy=seed_policy,
+        coordinate_signature="coordinate-signature",
+        metric_signature=metric_signature,
+        trajectory_signature="trajectory-signature",
+        start_bank_signature="start-bank-signature",
+    )
+
+
+def _verified_bracket_outcome(
+    verification_input: Any,
+    acceptance: float,
+    *,
+    evidence_payload: Mapping[str, Any] | None = None,
+) -> Any:
+    diagnostics = dict(_sequential_verification_diagnostics(acceptance))
+    if evidence_payload is not None:
+        diagnostics["acceptance_evidence"] = evidence_payload
+    return hmc_kernel_tuning._HMCPhase7FixedKernelVerificationOutcome(
+        verification_input=verification_input,
+        verification_config_payload={"max_results": 64, "num_results": 64},
+        diagnostics=diagnostics,
+        callback_result=FixedMassHMCTuningBudgetCallbackResult(),
+        final_status="repair_or_retry",
+        diagnostic_role="verification_acceptance_repair_trigger",
+        hard_vetoes=(),
+        continuation_scope="repair_or_retry",
+        repair_triggers=("verification_acceptance_outside_pass_band",),
+    )
+
+
+def _verified_bracket_attempt_state(
+    verification_input: Any,
+    repair: Mapping[str, Any],
+) -> _HMCPhaseAttemptState:
+    return _HMCPhaseAttemptState(
+        mass_artifact_payload={"dimension": 2},
+        mass_artifact_signature="mass-signature",
+        selected_step_size=verification_input.step_size,
+        selected_step_hash=verification_input.selected_step_hash,
+        selected_num_leapfrog_steps=verification_input.num_leapfrog_steps,
+        verification_acceptance_rate=repair["verification_acceptance_rate"],
+        verification_acceptance_relation=repair["verification_acceptance_relation"],
+        verification_repair_trigger=repair["verification_repair_trigger"],
+        verification_repair_source=repair["verification_repair_source"],
+        verification_repair_step_size=repair["verification_repair_step_size"],
+        verification_repair_step_hash=repair["verification_repair_step_hash"],
+        verification_repair_applied=repair["verification_repair_applied"],
+        verification_repair_direction=repair["verification_repair_direction"],
+        verification_repair_disposition=repair["verification_repair_disposition"],
+        repair_direction_history=repair["repair_direction_history"],
+        repaired_step_history=repair["repaired_step_history"],
+        repair_verification_reserved=repair["repair_verification_reserved"],
+        verified_acceptance_bracket_state=repair[
+            "verified_acceptance_bracket_state"
+        ],
+        handoff_stage="phase7_direct",
+        direct_candidate_handoff={
+            "source_kind": "operational_selection_v2",
+            "operational_selection_signature": (
+                verification_input.operational_selection_signature
+            ),
+            "operational_candidate_signature": (
+                verification_input.operational_candidate_signature
+            ),
+            "coordinate_signature": verification_input.coordinate_signature,
+            "metric_signature": verification_input.metric_signature,
+            "trajectory_signature": verification_input.trajectory_signature,
+            "start_bank_signature": verification_input.start_bank_signature,
+            "verification_seed_policy": verification_input.seed_policy,
+            "verification_input_hash": verification_input.input_hash,
+            "private_handoff_only": True,
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    ("initial_step", "initial_acceptance", "second_acceptance"),
+    ((1.0, 0.90, 0.40), (2.0, 0.40, 0.90)),
+)
+def test_verified_bracket_repairs_both_endpoint_orders_to_one_log_midpoint(
+    initial_step: float,
+    initial_acceptance: float,
+    second_acceptance: float,
+) -> None:
+    config = _verified_bracket_config()
+    first_input = _verified_bracket_input(
+        step_size=initial_step,
+        step_hash="initial-step-hash",
+        seed_policy=hmc_kernel_tuning._PHASE7_OPERATIONAL_SELECTION_SEED_POLICY,
+        attempt_index=0,
+    )
+    first = hmc_kernel_tuning._phase7_operational_verified_bracket_repair_handoff_payload(
+        config=config,
+        verification_input=first_input,
+        outcome=_verified_bracket_outcome(first_input, initial_acceptance),
+        incoming_state=None,
+        verification_reserved=True,
+    )
+    first_state = _verified_bracket_attempt_state(first_input, first)
+    assert first["verification_repair_applied"] is True
+    assert first["verified_acceptance_bracket_state"]["phase"] == "one_endpoint"
+
+    second_input = _verified_bracket_input(
+        step_size=first["verification_repair_step_size"],
+        step_hash=first["verification_repair_step_hash"],
+        seed_policy=hmc_kernel_tuning._PHASE7_OPERATIONAL_REPAIR_SEED_POLICY,
+        attempt_index=1,
+    )
+    second = hmc_kernel_tuning._phase7_operational_verified_bracket_repair_handoff_payload(
+        config=config,
+        verification_input=second_input,
+        outcome=_verified_bracket_outcome(second_input, second_acceptance),
+        incoming_state=first_state,
+        verification_reserved=True,
+    )
+    bracket = second["verified_acceptance_bracket_state"]
+    assert second["verification_repair_applied"] is True
+    assert bracket["phase"] == "midpoint_pending"
+    assert bracket["high_acceptance_endpoint"]["step_size"] == pytest.approx(1.0)
+    assert bracket["low_acceptance_endpoint"]["step_size"] == pytest.approx(2.0)
+    assert second["verification_repair_step_size"] == pytest.approx(np.sqrt(2.0))
+    assert 1.0 < second["verification_repair_step_size"] < 2.0
+
+    second_state = _verified_bracket_attempt_state(second_input, second)
+    midpoint_input = _verified_bracket_input(
+        step_size=second["verification_repair_step_size"],
+        step_hash=second["verification_repair_step_hash"],
+        seed_policy=(
+            hmc_kernel_tuning._PHASE7_OPERATIONAL_BRACKET_MIDPOINT_SEED_POLICY
+        ),
+        attempt_index=2,
+    )
+    midpoint = hmc_kernel_tuning._phase7_operational_verified_bracket_repair_handoff_payload(
+        config=config,
+        verification_input=midpoint_input,
+        outcome=_verified_bracket_outcome(midpoint_input, 0.90),
+        incoming_state=second_state,
+        verification_reserved=False,
+    )
+    assert midpoint["verification_repair_applied"] is False
+    assert midpoint["verified_acceptance_bracket_state"]["phase"] == (
+        "midpoint_consumed"
+    )
+    assert midpoint["verified_acceptance_bracket_state"][
+        "midpoint_verification_input_hash"
+    ] == midpoint_input.input_hash
+
+
+def test_verified_bracket_same_direction_and_invalid_second_evidence_do_not_repair() -> None:
+    config = _verified_bracket_config()
+    first_input = _verified_bracket_input(
+        step_size=1.0,
+        step_hash="initial-step-hash",
+        seed_policy=hmc_kernel_tuning._PHASE7_OPERATIONAL_SELECTION_SEED_POLICY,
+        attempt_index=0,
+    )
+    first = hmc_kernel_tuning._phase7_operational_verified_bracket_repair_handoff_payload(
+        config=config,
+        verification_input=first_input,
+        outcome=_verified_bracket_outcome(first_input, 0.90),
+        incoming_state=None,
+        verification_reserved=True,
+    )
+    first_state = _verified_bracket_attempt_state(first_input, first)
+    second_input = _verified_bracket_input(
+        step_size=first["verification_repair_step_size"],
+        step_hash=first["verification_repair_step_hash"],
+        seed_policy=hmc_kernel_tuning._PHASE7_OPERATIONAL_REPAIR_SEED_POLICY,
+        attempt_index=1,
+    )
+
+    same_direction = hmc_kernel_tuning._phase7_operational_verified_bracket_repair_handoff_payload(
+        config=config,
+        verification_input=second_input,
+        outcome=_verified_bracket_outcome(second_input, 0.90),
+        incoming_state=first_state,
+        verification_reserved=True,
+    )
+    invalid = hmc_kernel_tuning._phase7_operational_verified_bracket_repair_handoff_payload(
+        config=config,
+        verification_input=second_input,
+        outcome=_verified_bracket_outcome(
+            second_input,
+            0.40,
+            evidence_payload={"schema": "invalid"},
+        ),
+        incoming_state=first_state,
+        verification_reserved=True,
+    )
+
+    assert same_direction["verification_repair_applied"] is False
+    assert invalid["verification_repair_applied"] is False
+    assert same_direction["verified_acceptance_bracket_state"]["phase"] == (
+        "one_endpoint"
+    )
+    assert invalid["verified_acceptance_bracket_state"]["phase"] == "one_endpoint"
+
+
+def test_verified_bracket_fails_closed_on_lineage_drift_or_noninterior_midpoint() -> None:
+    config = _verified_bracket_config()
+    first_input = _verified_bracket_input(
+        step_size=1.0,
+        step_hash="initial-step-hash",
+        seed_policy=hmc_kernel_tuning._PHASE7_OPERATIONAL_SELECTION_SEED_POLICY,
+        attempt_index=0,
+    )
+    first = hmc_kernel_tuning._phase7_operational_verified_bracket_repair_handoff_payload(
+        config=config,
+        verification_input=first_input,
+        outcome=_verified_bracket_outcome(first_input, 0.90),
+        incoming_state=None,
+        verification_reserved=True,
+    )
+    first_state = _verified_bracket_attempt_state(first_input, first)
+    drifted = _verified_bracket_input(
+        step_size=first["verification_repair_step_size"],
+        step_hash=first["verification_repair_step_hash"],
+        seed_policy=hmc_kernel_tuning._PHASE7_OPERATIONAL_REPAIR_SEED_POLICY,
+        attempt_index=1,
+        metric_signature="drifted-metric-signature",
+    )
+
+    with pytest.raises(ValueError, match="lineage drift"):
+        hmc_kernel_tuning._phase7_operational_verified_bracket_repair_handoff_payload(
+            config=config,
+            verification_input=drifted,
+            outcome=_verified_bracket_outcome(drifted, 0.40),
+            incoming_state=first_state,
+            verification_reserved=True,
+        )
+    low_input = _verified_bracket_input(
+        step_size=2.0,
+        step_hash="low-step-hash",
+        seed_policy=hmc_kernel_tuning._PHASE7_OPERATIONAL_REPAIR_SEED_POLICY,
+        attempt_index=1,
+    )
+    low_evidence = hmc_kernel_tuning.hmc_acceptance_evidence_from_payload(
+        _acceptance_evidence_payload(0.40)
+    )
+    low_endpoint = hmc_kernel_tuning._phase7_verified_endpoint_payload(
+        verification_input=low_input,
+        evidence=low_evidence,
+    )
+    with pytest.raises(ValueError, match="strict interior"):
+        hmc_kernel_tuning._phase7_verified_acceptance_bracket_payload(
+            high_endpoint=first["verified_acceptance_bracket_state"][
+                "high_acceptance_endpoint"
+            ],
+            low_endpoint=low_endpoint,
+            phase="midpoint_pending",
+            midpoint_step_size=1.0,
+            midpoint_step_hash="midpoint-hash",
+        )
+
+
+def test_verified_bracket_policy_is_opt_in_and_budgets_three_starts() -> None:
+    default = hmc_kernel_tuning.HMCKernelTuningConfig.serious()
+    opted_in = hmc_kernel_tuning.HMCKernelTuningConfig.serious(
+        operational_verification_bracket_policy="one_verified_log_midpoint"
+    )
+    default_budget = _public_budget_policy_factory(default)(2, 0)
+    opted_in_budget = _public_budget_policy_factory(opted_in)(2, 0)
+
+    assert default.operational_verification_bracket_policy == "single_repair"
+    assert default_budget.operational_verification_starts_per_outer_attempt == 2
+    assert opted_in_budget.operational_verification_starts_per_outer_attempt == 3
+    assert default_budget.operational_budget_policy_hash != (
+        opted_in_budget.operational_budget_policy_hash
+    )
+    assert hmc_kernel_tuning._public_loop_config(
+        opted_in
+    ).operational_verification_bracket_policy == "one_verified_log_midpoint"
+    with pytest.raises(ValueError, match="preset='serious'"):
+        hmc_kernel_tuning.HMCKernelTuningConfig.standard(
+            operational_verification_bracket_policy="one_verified_log_midpoint"
+        )
+    with pytest.raises(ValueError, match="at least three"):
+        HMCTuneVerifyRepairLoopConfig(
+            operational_verification_bracket_policy="one_verified_log_midpoint",
+            max_attempts=2,
+        )
+
+
+def test_operational_outer_loop_runs_one_verified_midpoint_then_stops(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, geometry, bootstrap = _operational_inputs()
+    windowed = hmc_kernel_tuning.run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=hmc_kernel_tuning.HMCWindowedMassStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260730, 881),
+            chain_execution_mode="tf_function",
+            target_scope="kernel_windowed_mass_toy_gaussian",
+        ),
+        _attempt_budget_policy=_operational_budget(),
+    )
+    selector_calls: list[Mapping[str, Any]] = []
+
+    def operational_runner(_adapter: Any, initial_state: Any, config: Any):
+        selector_calls.append(
+            {
+                "seed": tuple(config.seed),
+                "leapfrog": int(config.num_leapfrog_steps),
+                "uses_dual_averaging": bool(
+                    config.tuning_policy.uses_dual_averaging
+                ),
+            }
+        )
+        if config.tuning_policy.uses_dual_averaging:
+            return _operational_exact_l_retune_result(
+                num_results=int(config.num_results),
+                step_size=1.0,
+            )
+        bank = np.asarray(initial_state, dtype=float)
+        draw = np.arange(int(config.num_results), dtype=float)[:, None, None]
+        samples = draw + bank[None, :, :]
+        probability = np.full((int(config.num_results), 4), 0.70)
+        return replace(
+            _fake_result(
+                num_results=int(config.num_results),
+                acceptance=0.70,
+                samples=samples,
+            ),
+            trace={
+                "log_accept_ratio": np.log(probability),
+                "is_accepted": np.ones_like(probability, dtype=bool),
+                "target_log_prob": np.zeros_like(probability),
+            },
+            diagnostics={
+                "native_divergence_status": "not_exposed_by_kernel",
+                "divergence_count": None,
+            },
+        )
+
+    verification_inputs: list[Any] = []
+
+    def scripted_verification_core(*, verification_input: Any, **_kwargs: Any):
+        verification_inputs.append(verification_input)
+        acceptance = (0.90, 0.40, 0.90)[len(verification_inputs) - 1]
+        diagnostics = _sequential_verification_diagnostics(acceptance)
+        return hmc_kernel_tuning._HMCPhase7FixedKernelVerificationOutcome(
+            verification_input=verification_input,
+            verification_config_payload={"max_results": 64, "num_results": 64},
+            diagnostics=diagnostics,
+            callback_result=FixedMassHMCTuningBudgetCallbackResult(),
+            final_status="repair_or_retry",
+            diagnostic_role="verification_acceptance_repair_trigger",
+            hard_vetoes=(),
+            continuation_scope="repair_or_retry",
+            repair_triggers=("verification_acceptance_outside_pass_band",),
+        )
+
+    def forbidden(*_args: Any, **_kwargs: Any):
+        raise AssertionError("historical or repeated warmup route was called")
+
+    windowed_calls = 0
+
+    def windowed_runner(**_kwargs: Any):
+        nonlocal windowed_calls
+        windowed_calls += 1
+        return windowed
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_full_chain_tfp_hmc",
+        operational_runner,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "_run_phase7_fixed_kernel_verification",
+        scripted_verification_core,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_fixed_mass_hmc_tuning_budget_ladder",
+        forbidden,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "_fixed_mass_step_initial_state_factory",
+        forbidden,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "_run_phase7_direct_candidate_queue",
+        forbidden,
+    )
+
+    config = HMCTuneVerifyRepairLoopConfig(
+        operational_verification_bracket_policy="one_verified_log_midpoint",
+        target_accept_prob=0.70,
+        acceptance_band=(0.65, 0.75),
+        repair_band=(0.55, 0.85),
+        max_attempts=3,
+        seed=(20260730, 882),
+        chain_execution_mode="tf_function",
+        target_scope="kernel_windowed_mass_toy_gaussian",
+    )
+    operational_policy = hmc_kernel_tuning.HMCOperationalStatisticalWorkPolicy(
+        fresh_verification_starts_per_outer_attempt=3
+    )
+    result = run_hmc_tune_verify_repair_loop(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=config,
+        run_full_chain=operational_runner,
+        _budget_policy_factory=lambda dimension, attempt: (
+            _default_attempt_budget_policy(
+                dimension,
+                attempt,
+                operational_policy=operational_policy,
+            )
+        ),
+        _windowed_stage_runner=windowed_runner,
+        _frozen_step_trajectory_stage_runner=forbidden,
+    )
+
+    assert result.final_status == "budget_exhausted"
+    assert result.diagnostic_role == "verified_bracket_repair_exhausted_non_promoting"
+    assert windowed_calls == 1
+    assert len(verification_inputs) == 3
+    first_input, scalar_input, midpoint_input = verification_inputs
+    assert scalar_input.step_size == pytest.approx(2.0 * first_input.step_size)
+    assert midpoint_input.step_size == pytest.approx(
+        np.sqrt(first_input.step_size * scalar_input.step_size)
+    )
+    assert tuple(item.seed_policy for item in verification_inputs) == (
+        hmc_kernel_tuning._PHASE7_OPERATIONAL_SELECTION_SEED_POLICY,
+        hmc_kernel_tuning._PHASE7_OPERATIONAL_REPAIR_SEED_POLICY,
+        hmc_kernel_tuning._PHASE7_OPERATIONAL_BRACKET_MIDPOINT_SEED_POLICY,
+    )
+    assert len({item.verification_seed for item in verification_inputs}) == 3
+    for field in (
+        "coordinate_signature",
+        "metric_signature",
+        "trajectory_signature",
+        "start_bank_signature",
+        "operational_selection_signature",
+        "operational_candidate_signature",
+    ):
+        assert len({getattr(item, field) for item in verification_inputs}) == 1
+    assert result.attempts[-1].handoff_state_payload[
+        "verified_acceptance_bracket_state"
+    ]["phase"] == "midpoint_consumed"
+    assert result.attempts[-1].handoff_state_payload[
+        "verification_repair_applied"
+    ] is False
+    assert all(
+        attempt.fixed_mass_step_stage is result.attempts[0].fixed_mass_step_stage
+        for attempt in result.attempts
+    )
+    cumulative = result.attempts[-1].verification_diagnostics[
+        "operational_work_reconciliation"
+    ]
+    assert cumulative["fresh_verification_start_count_charged"] == 3
+    assert cumulative["fresh_verification_start_count_upper_bound"] == 3
+    assert cumulative["reconciliation"]["within_public_bounds"] is True
+    reports = result.seed_report["direct_candidate_verification_seed_maps"]
+    assert tuple(report["verification_seed_domain"] for report in reports) == (
+        "independent_final_verification",
+        "repair_verification",
+        "verified_bracket_midpoint",
+    )

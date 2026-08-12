@@ -25,6 +25,13 @@ from bayesfilter.inference.hmc_posterior_diagnostics import (
 from bayesfilter.inference.neutra_hmc_policy import (
     NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
 )
+from bayesfilter.inference.fixed_transport_hmc_mechanics_tf import (
+    FixedTransportFullChainConfig,
+    FixedTransportHMCPolicy,
+    build_fixed_transport_reusable_runner,
+    fixed_transport_base_adapter_signature,
+)
+from bayesfilter.inference.posterior_adapter import value_score_capability
 
 
 MAX_RESULTS_PER_CHAIN = 10_000
@@ -33,6 +40,65 @@ DEFAULT_ENERGY_ERROR_LOG_ACCEPT_THRESHOLD = -1000.0
 ArchiveCallback = Callable[..., Mapping[str, Any]]
 TargetStatusSummaryCallback = Callable[[Any], Mapping[str, Any]]
 RetainedDiagnosticCallback = Callable[[tf.Tensor], Mapping[str, Any]]
+
+
+@dataclass(frozen=True)
+class SequentialNeuTraHMCXLAQualificationReceipt:
+    """Evidence-bound authority for one canonical sequential XLA program."""
+
+    status: str
+    policy_id: str
+    adapter_signature: str
+    initial_state_shape: tuple[int, int]
+    chunk_results: int
+    program_signature: str
+    tracing_count: int
+    target_value_max_abs_residual: float
+    target_score_max_abs_residual: float
+    all_chains_moved: bool
+    final_state_equals_last_sample: bool
+    sequential_handoff_verified: bool
+    target_status_passed: bool
+    evidence_path: str
+    evidence_sha256: str
+    qualification_code_hash: str = ""
+    qualified_programs: tuple[Mapping[str, Any], ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.status != "passed" or self.policy_id != NEUTRA_SEQUENTIAL_HMC_POLICY_ID:
+            raise ValueError("sequential XLA qualification receipt did not pass")
+        shape = tuple(int(item) for item in self.initial_state_shape)
+        if len(shape) != 2 or any(item <= 0 for item in shape):
+            raise ValueError("sequential XLA qualification state shape is invalid")
+        object.__setattr__(self, "initial_state_shape", shape)
+        if int(self.chunk_results) <= 0 or int(self.tracing_count) != 1:
+            raise ValueError("sequential XLA qualification program counts are invalid")
+        for name in (
+            "all_chains_moved",
+            "final_state_equals_last_sample",
+            "sequential_handoff_verified",
+            "target_status_passed",
+        ):
+            if getattr(self, name) is not True:
+                raise ValueError(f"sequential XLA qualification failed {name}")
+        if not self.adapter_signature or not self.program_signature:
+            raise ValueError("sequential XLA qualification signatures are required")
+        if not self.evidence_path or not self.evidence_sha256:
+            raise ValueError("sequential XLA qualification evidence is required")
+        programs = tuple(dict(item) for item in self.qualified_programs)
+        if programs:
+            sizes = tuple(int(item.get("chunk_results", 0)) for item in programs)
+            if any(size <= 0 for size in sizes) or len(set(sizes)) != len(sizes):
+                raise ValueError("sequential XLA qualified programs are invalid")
+            if int(self.chunk_results) not in sizes:
+                raise ValueError("primary sequential XLA program is missing")
+        object.__setattr__(self, "qualified_programs", programs)
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.neutra.sequential_hmc_xla_qualification.v1",
+            **asdict(self),
+        }
 
 
 class NeuTraHMCError(RuntimeError):
@@ -679,7 +745,7 @@ def _shared_sequential_chunk_seed(
 
 
 def _validated_initial_state(initial_state: Any) -> tuple[tf.Tensor, int, int]:
-    state = tf.convert_to_tensor(initial_state, dtype=tf.float64)
+    state = tf.cast(tf.convert_to_tensor(initial_state), tf.float64)
     if state.shape.rank != 2:
         raise NeuTraHMCError("initial_state must have shape [chain, dimension]")
     chain_count, dimension = state.shape.as_list()
@@ -767,6 +833,7 @@ class _ArchivedSequentialNeuTraHMCConfig:
     retained_chunk_size: int = 500
     retained_min_results: int = 1000
     retained_max_results: int = 10000
+    retained_check_interval_results: int | None = None
     warmup_rhat_max: float = 1.05
     retained_rhat_max: float = 1.01
     bulk_ess_min: float = 400.0
@@ -777,6 +844,9 @@ class _ArchivedSequentialNeuTraHMCConfig:
     chain_count: int = 4
     use_xla: bool = True
     target_status_required: bool = True
+    primary_diagnostic_coordinate: str = "maximum_over_z_and_model"
+    retained_ess_required: bool = True
+    xla_qualification_required: bool = False
 
     def __post_init__(self) -> None:
         if not math.isfinite(float(self.step_size)) or float(self.step_size) <= 0.0:
@@ -820,6 +890,17 @@ class _ArchivedSequentialNeuTraHMCConfig:
         ):
             if int(getattr(self, total_name)) % int(getattr(self, chunk_name)):
                 raise ValueError(f"{total_name} must be a multiple of {chunk_name}")
+        check_interval = (
+            self.retained_chunk_size
+            if self.retained_check_interval_results is None
+            else int(self.retained_check_interval_results)
+        )
+        if check_interval <= 0 or check_interval % self.retained_chunk_size:
+            raise ValueError(
+                "retained_check_interval_results must be a positive multiple "
+                "of retained_chunk_size"
+            )
+        object.__setattr__(self, "retained_check_interval_results", check_interval)
         for name in (
             "warmup_rhat_max",
             "retained_rhat_max",
@@ -846,6 +927,14 @@ class _ArchivedSequentialNeuTraHMCConfig:
         object.__setattr__(self, "seed", seed)
         object.__setattr__(self, "use_xla", bool(self.use_xla))
         object.__setattr__(self, "target_status_required", bool(self.target_status_required))
+        object.__setattr__(self, "retained_ess_required", bool(self.retained_ess_required))
+        object.__setattr__(
+            self, "xla_qualification_required", bool(self.xla_qualification_required)
+        )
+        coordinate = str(self.primary_diagnostic_coordinate)
+        if coordinate not in {"hmc_coordinates_z", "maximum_over_z_and_model"}:
+            raise ValueError("primary_diagnostic_coordinate is invalid")
+        object.__setattr__(self, "primary_diagnostic_coordinate", coordinate)
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -904,6 +993,22 @@ def run_sequential_neutra_hmc(*args: Any, **kwargs: Any) -> Any:
     if config is None and len(args) >= 3:
         config = args[2]
     if isinstance(config, _ArchivedSequentialNeuTraHMCConfig):
+        receipt = kwargs.pop("xla_qualification_receipt", None)
+        adapter = kwargs.get("adapter") if "adapter" in kwargs else args[0]
+        initial_state = (
+            kwargs.get("initial_state") if "initial_state" in kwargs else args[1]
+        )
+        if config.xla_qualification_required:
+            if receipt is None:
+                raise NeuTraHMCError(
+                    "sequential XLA production requires an exact qualification receipt"
+                )
+            validate_sequential_neutra_hmc_xla_receipt(
+                receipt,
+                adapter=adapter,
+                initial_state=initial_state,
+                config=config,
+            )
         return _run_archived_sequential_neutra_hmc(*args, **kwargs)
     return _run_shared_sequential_neutra_hmc(*args, **kwargs)
 
@@ -965,6 +1070,427 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def _payload_hash(payload: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        _tensor_tree_python(payload),
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _write_json_atomic(path: Path, payload: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(
+        json.dumps(_tensor_tree_python(payload), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def _read_tensor_receipt(receipt: Mapping[str, Any]) -> tf.Tensor:
+    path = Path(str(receipt["path"]))
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != str(receipt["sha256"]):
+        raise NeuTraHMCError(f"tensor receipt hash mismatch: {path}")
+    dtype = tf.dtypes.as_dtype(str(receipt["dtype"]))
+    tensor = tf.io.parse_tensor(data, out_type=dtype)
+    expected_shape = tuple(int(item) for item in receipt["shape"])
+    if tuple(tensor.shape) != expected_shape:
+        raise NeuTraHMCError(f"tensor receipt shape mismatch: {path}")
+    return tensor
+
+
+def _read_json_receipt(receipt: Mapping[str, Any]) -> Mapping[str, Any]:
+    path = Path(str(receipt["path"]))
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != str(receipt["sha256"]):
+        raise NeuTraHMCError(f"JSON receipt hash mismatch: {path}")
+    payload = json.loads(data)
+    if not isinstance(payload, Mapping):
+        raise NeuTraHMCError(f"JSON receipt is not a mapping: {path}")
+    return payload
+
+
+def _maximum_absolute_residual(left: Any, right: Any) -> float:
+    left_tensor = tf.cast(tf.convert_to_tensor(left), tf.float64)
+    right_tensor = tf.cast(tf.convert_to_tensor(right), tf.float64)
+    if left_tensor.shape != right_tensor.shape:
+        raise NeuTraHMCError("XLA parity tensors have different shapes")
+    return float(tf.reduce_max(tf.abs(left_tensor - right_tensor)).numpy())
+
+
+def _sequential_xla_qualification_code_hash() -> str:
+    """Bind qualification receipts to the exact target and runner implementation."""
+
+    from bayesfilter.inference import batched_value_score
+    from bayesfilter.inference import fixed_transport_hmc_mechanics_tf
+
+    digest = hashlib.sha256()
+    for path in sorted(
+        (
+            Path(__file__).resolve(),
+            Path(batched_value_score.__file__).resolve(),
+            Path(fixed_transport_hmc_mechanics_tf.__file__).resolve(),
+        )
+    ):
+        digest.update(path.name.encode("utf-8"))
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def qualify_sequential_neutra_hmc_xla(
+    *,
+    adapter: Any,
+    initial_state: Any,
+    step_size: float,
+    num_leapfrog_steps: int,
+    seed: tuple[int, int],
+    evidence_path: str | Path,
+    chunk_results: int = 500,
+    additional_chunk_results: Sequence[int] = (),
+    value_score_atol: float = 2.0e-9,
+) -> SequentialNeuTraHMCXLAQualificationReceipt:
+    """Qualify the exact canonical sequential XLA graph and state handoff."""
+
+    output = Path(evidence_path).resolve()
+    if output.exists():
+        raise FileExistsError(f"XLA qualification evidence exists: {output}")
+    state, chain_count, dimension = _validated_initial_state(initial_state)
+    if (chain_count, dimension) != (4, 9):
+        raise NeuTraHMCError("DZ5 exact qualification requires state shape [4,9]")
+    capability = value_score_capability(adapter)
+    if not capability.is_accepted_xla_hmc_authority:
+        raise NeuTraHMCError(
+            "sequential XLA qualification requires accepted target-XLA authority"
+        )
+    target = reviewed_value_score_target_fn(adapter, dtype=tf.float64, require_batched=True)
+
+    def target_value_score(values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        with tf.GradientTape() as tape:
+            tape.watch(values)
+            target_value = target(values)
+            target_total = tf.reduce_sum(target_value)
+        return target_value, tape.gradient(target_total, values)
+
+    eager_value, eager_score = target_value_score(state)
+    compiled_target = tf.function(
+        target_value_score,
+        input_signature=(tf.TensorSpec((4, 9), tf.float64),),
+        jit_compile=True,
+        reduce_retracing=True,
+    )
+    compiled_value, compiled_score = compiled_target(state)
+    value_residual = _maximum_absolute_residual(eager_value, compiled_value)
+    score_residual = _maximum_absolute_residual(eager_score, compiled_score)
+    if value_residual > value_score_atol or score_residual > value_score_atol:
+        raise NeuTraHMCError("canonical sequential target XLA parity failed")
+
+    config = _ArchivedSequentialNeuTraHMCConfig(
+        step_size=step_size,
+        num_leapfrog_steps=num_leapfrog_steps,
+        seed=seed,
+        warmup_chunk_size=chunk_results,
+        warmup_min_results=chunk_results,
+        warmup_window_results=chunk_results,
+        warmup_max_results=chunk_results,
+        retained_chunk_size=chunk_results,
+        retained_min_results=chunk_results,
+        retained_max_results=chunk_results,
+        bulk_ess_min=1.0,
+        tail_ess_min=1.0,
+        acceptance_min=0.0,
+        acceptance_max=1.0,
+        chain_count=4,
+        use_xla=True,
+        target_status_required=True,
+        primary_diagnostic_coordinate="hmc_coordinates_z",
+        retained_ess_required=False,
+    )
+    sizes = tuple(dict.fromkeys((int(chunk_results), *(int(item) for item in additional_chunk_results))))
+    if any(size <= 0 for size in sizes):
+        raise ValueError("qualified chunk sizes must be positive")
+    runners = {
+        size: _ChunkRunner(adapter, state, config, num_results=size) for size in sizes
+    }
+    runner = runners[int(chunk_results)]
+    first_seed = tf.constant(_archived_sequential_chunk_seed(seed, phase_index=0, chunk_index=0), tf.int32)
+    second_seed = tf.constant(_archived_sequential_chunk_seed(seed, phase_index=0, chunk_index=1), tf.int32)
+    first_samples, first_trace = runner.run(state, first_seed)
+    first_final = tf.cast(first_samples[-1], tf.float64)
+    second_samples, second_trace = runner.run(first_final, second_seed)
+    second_final = tf.cast(second_samples[-1], tf.float64)
+    if runner.tracing_count != 1:
+        raise NeuTraHMCError("canonical sequential XLA runner retraced")
+    moved = tf.logical_and(
+        _chain_moved(state, first_samples),
+        _chain_moved(first_final, second_samples),
+    )
+    all_moved = bool(tf.reduce_all(moved).numpy())
+    final_equal = bool(tf.reduce_all(tf.equal(second_final, second_samples[-1])).numpy())
+    handoff = bool(tf.reduce_all(tf.equal(first_final, first_samples[-1])).numpy())
+    required_trace = (
+        "log_accept_ratio",
+        "target_log_prob",
+        "proposed_target_log_prob",
+        "target_score",
+        "delta_h",
+    )
+    trace_finite = all(
+        bool(
+            tf.reduce_all(
+                tf.math.is_finite(tf.cast(tf.convert_to_tensor(trace[name]), tf.float64))
+            ).numpy()
+        )
+        for trace in (first_trace, second_trace)
+        for name in required_trace
+    )
+    samples_finite = bool(
+        tf.reduce_all(tf.math.is_finite(first_samples)).numpy()
+        and tf.reduce_all(tf.math.is_finite(second_samples)).numpy()
+    )
+    status_rows = []
+    for trace, samples in ((first_trace, first_samples), (second_trace, second_samples)):
+        status = _target_status_from_trace(trace)
+        if status is None:
+            status = _target_status(adapter, samples)
+        status_rows.append(status)
+    program_records: list[Mapping[str, Any]] = [
+        {
+            "chunk_results": int(chunk_results),
+            "program_signature": runner.program_signature,
+            "tracing_count": runner.tracing_count,
+            "call_count": 2,
+        }
+    ]
+    continuation_state = second_final
+    for size in sizes[1:]:
+        additional_runner = runners[size]
+        additional_samples, additional_trace = additional_runner.run(
+            continuation_state,
+            tf.constant(
+                _archived_sequential_chunk_seed(
+                    seed, phase_index=1, chunk_index=size
+                ),
+                tf.int32,
+            ),
+        )
+        all_moved = bool(
+            all_moved
+            and tf.reduce_all(
+                _chain_moved(continuation_state, additional_samples)
+            ).numpy()
+        )
+        samples_finite = bool(
+            samples_finite
+            and tf.reduce_all(tf.math.is_finite(additional_samples)).numpy()
+        )
+        trace_finite = bool(
+            trace_finite
+            and all(
+                tf.reduce_all(
+                    tf.math.is_finite(
+                        tf.cast(tf.convert_to_tensor(additional_trace[name]), tf.float64)
+                    )
+                ).numpy()
+                for name in required_trace
+            )
+        )
+        status = _target_status_from_trace(additional_trace)
+        if status is None:
+            status = _target_status(adapter, additional_samples)
+        status_rows.append(status)
+        if additional_runner.tracing_count != 1:
+            raise NeuTraHMCError("canonical sequential XLA runner retraced")
+        program_records.append(
+            {
+                "chunk_results": size,
+                "program_signature": additional_runner.program_signature,
+                "tracing_count": additional_runner.tracing_count,
+                "call_count": 1,
+            }
+        )
+        continuation_state = tf.cast(additional_samples[-1], tf.float64)
+    status_passed = bool(all(row["passed"] is True for row in status_rows))
+    if not (all_moved and final_equal and handoff and trace_finite and samples_finite and status_passed):
+        raise NeuTraHMCError("canonical sequential XLA mechanics qualification failed")
+
+    code_hash = _sequential_xla_qualification_code_hash()
+    evidence = {
+        "schema": "bayesfilter.neutra.sequential_hmc_xla_evidence.v1",
+        "status": "passed",
+        "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+        "adapter_signature": fixed_transport_base_adapter_signature(adapter),
+        "initial_state_shape": [4, 9],
+        "chunk_results": int(chunk_results),
+        "program_signature": runner.program_signature,
+        "qualified_programs": program_records,
+        "qualification_code_hash": code_hash,
+        "tracing_count": runner.tracing_count,
+        "target_value_max_abs_residual": value_residual,
+        "target_score_max_abs_residual": score_residual,
+        "all_chains_moved": all_moved,
+        "final_state_equals_last_sample": final_equal,
+        "sequential_handoff_verified": handoff,
+        "target_status_passed": status_passed,
+        "trace_all_finite": trace_finite,
+        "samples_all_finite": samples_finite,
+        "seeds": [first_seed.numpy().tolist(), second_seed.numpy().tolist()],
+        "nonclaims": [
+            "discarded exact-program XLA qualification only",
+            "no candidate, convergence, retained-sampling, or posterior claim",
+        ],
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    evidence_sha256 = hashlib.sha256(output.read_bytes()).hexdigest()
+    return SequentialNeuTraHMCXLAQualificationReceipt(
+        status="passed",
+        policy_id=NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+        adapter_signature=evidence["adapter_signature"],
+        initial_state_shape=(4, 9),
+        chunk_results=int(chunk_results),
+        program_signature=runner.program_signature,
+        tracing_count=int(runner.tracing_count),
+        target_value_max_abs_residual=value_residual,
+        target_score_max_abs_residual=score_residual,
+        all_chains_moved=all_moved,
+        final_state_equals_last_sample=final_equal,
+        sequential_handoff_verified=handoff,
+        target_status_passed=status_passed,
+        evidence_path=output.as_posix(),
+        evidence_sha256=evidence_sha256,
+        qualification_code_hash=code_hash,
+        qualified_programs=tuple(program_records),
+    )
+
+
+def validate_sequential_neutra_hmc_xla_receipt(
+    receipt: SequentialNeuTraHMCXLAQualificationReceipt,
+    *,
+    adapter: Any,
+    initial_state: Any,
+    config: _ArchivedSequentialNeuTraHMCConfig,
+) -> None:
+    """Fail closed unless a receipt binds the exact production program."""
+
+    if not isinstance(receipt, SequentialNeuTraHMCXLAQualificationReceipt):
+        raise TypeError("receipt must be SequentialNeuTraHMCXLAQualificationReceipt")
+    state, _, _ = _validated_initial_state(initial_state)
+    if not config.use_xla:
+        raise NeuTraHMCError("sequential production requires XLA")
+    required_sizes = tuple(
+        dict.fromkeys((config.warmup_chunk_size, config.retained_chunk_size))
+    )
+    runners = {
+        size: _ChunkRunner(adapter, state, config, num_results=size)
+        for size in required_sizes
+    }
+    runner = runners[config.warmup_chunk_size]
+    expected = {
+        "adapter_signature": fixed_transport_base_adapter_signature(adapter),
+        "initial_state_shape": tuple(int(item) for item in state.shape),
+        "chunk_results": config.warmup_chunk_size,
+        "program_signature": runner.program_signature,
+    }
+    mismatches = tuple(
+        name for name, value in expected.items() if getattr(receipt, name) != value
+    )
+    if mismatches:
+        raise NeuTraHMCError(
+            "sequential XLA qualification receipt mismatch: " + ", ".join(mismatches)
+        )
+    qualified = {
+        int(item["chunk_results"]): str(item["program_signature"])
+        for item in receipt.qualified_programs
+    }
+    if not qualified:
+        qualified = {receipt.chunk_results: receipt.program_signature}
+    program_mismatches = tuple(
+        size
+        for size, required_runner in runners.items()
+        if qualified.get(size) != required_runner.program_signature
+    )
+    if program_mismatches:
+        raise NeuTraHMCError(
+            "sequential XLA qualification program set mismatch: "
+            + ", ".join(str(size) for size in program_mismatches)
+        )
+    if receipt.qualification_code_hash != _sequential_xla_qualification_code_hash():
+        raise NeuTraHMCError("sequential XLA qualification code hash is stale")
+    evidence = Path(receipt.evidence_path)
+    if not evidence.is_file() or hashlib.sha256(evidence.read_bytes()).hexdigest() != receipt.evidence_sha256:
+        raise NeuTraHMCError("sequential XLA qualification evidence hash mismatch")
+    try:
+        payload = json.loads(evidence.read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise NeuTraHMCError(
+            "sequential XLA qualification evidence is not valid JSON"
+        ) from error
+    expected_payload = {
+        "schema": "bayesfilter.neutra.sequential_hmc_xla_evidence.v1",
+        "status": "passed",
+        "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+        "adapter_signature": receipt.adapter_signature,
+        "initial_state_shape": list(receipt.initial_state_shape),
+        "chunk_results": receipt.chunk_results,
+        "program_signature": receipt.program_signature,
+        "tracing_count": receipt.tracing_count,
+        "qualification_code_hash": receipt.qualification_code_hash,
+        "qualified_programs": [dict(item) for item in receipt.qualified_programs],
+        "all_chains_moved": True,
+        "final_state_equals_last_sample": True,
+        "sequential_handoff_verified": True,
+        "target_status_passed": True,
+    }
+    observed = {name: payload.get(name) for name in expected_payload}
+    if observed != expected_payload:
+        raise NeuTraHMCError("sequential XLA qualification evidence payload mismatch")
+
+
+def load_sequential_neutra_hmc_xla_receipt(
+    evidence_path: str | Path,
+) -> SequentialNeuTraHMCXLAQualificationReceipt:
+    """Load a hash-bound qualification receipt from its immutable evidence."""
+
+    path = Path(evidence_path).resolve()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise NeuTraHMCError("sequential XLA qualification evidence is unreadable") from error
+    if payload.get("schema") != "bayesfilter.neutra.sequential_hmc_xla_evidence.v1":
+        raise NeuTraHMCError("sequential XLA qualification evidence schema mismatch")
+    return SequentialNeuTraHMCXLAQualificationReceipt(
+        status=str(payload.get("status")),
+        policy_id=str(payload.get("policy_id")),
+        adapter_signature=str(payload.get("adapter_signature")),
+        initial_state_shape=tuple(payload.get("initial_state_shape", ())),
+        chunk_results=int(payload.get("chunk_results", 0)),
+        program_signature=str(payload.get("program_signature")),
+        tracing_count=int(payload.get("tracing_count", 0)),
+        target_value_max_abs_residual=float(
+            payload.get("target_value_max_abs_residual", float("nan"))
+        ),
+        target_score_max_abs_residual=float(
+            payload.get("target_score_max_abs_residual", float("nan"))
+        ),
+        all_chains_moved=payload.get("all_chains_moved") is True,
+        final_state_equals_last_sample=(
+            payload.get("final_state_equals_last_sample") is True
+        ),
+        sequential_handoff_verified=(
+            payload.get("sequential_handoff_verified") is True
+        ),
+        target_status_passed=payload.get("target_status_passed") is True,
+        evidence_path=path.as_posix(),
+        evidence_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+        qualification_code_hash=str(payload.get("qualification_code_hash", "")),
+        qualified_programs=tuple(payload.get("qualified_programs", ())),
+    )
+
+
 def _coordinate_diagnostics(
     samples: tf.Tensor, *, rhat_max: float
 ) -> Mapping[str, Any]:
@@ -1005,23 +1531,40 @@ def _mapped_model_samples(adapter: Any, samples: tf.Tensor) -> tf.Tensor:
 
 
 def _diagnostics(
-    adapter: Any, samples: tf.Tensor, *, rhat_max: float
+    adapter: Any,
+    samples: tf.Tensor,
+    *,
+    rhat_max: float,
+    primary_diagnostic_coordinate: str = "maximum_over_z_and_model",
 ) -> Mapping[str, Any]:
     latent = _coordinate_diagnostics(samples, rhat_max=rhat_max)
     model = _coordinate_diagnostics(
         _mapped_model_samples(adapter, samples), rhat_max=rhat_max
     )
+    if primary_diagnostic_coordinate == "hmc_coordinates_z":
+        primary = latent
+    elif primary_diagnostic_coordinate == "maximum_over_z_and_model":
+        primary = {
+            "all_finite": bool(latent["all_finite"] and model["all_finite"]),
+            "max_rhat": max(float(latent["max_rhat"]), float(model["max_rhat"])),
+            "min_bulk_ess": min(
+                float(latent["min_bulk_ess"]), float(model["min_bulk_ess"])
+            ),
+            "min_tail_ess": min(
+                float(latent["min_tail_ess"]), float(model["min_tail_ess"])
+            ),
+        }
+    else:
+        raise NeuTraHMCError("primary diagnostic coordinate is invalid")
     return {
         "hmc_coordinates": latent,
         "model_parameters": model,
-        "all_finite": bool(latent["all_finite"] and model["all_finite"]),
-        "max_rhat": max(float(latent["max_rhat"]), float(model["max_rhat"])),
-        "min_bulk_ess": min(
-            float(latent["min_bulk_ess"]), float(model["min_bulk_ess"])
-        ),
-        "min_tail_ess": min(
-            float(latent["min_tail_ess"]), float(model["min_tail_ess"])
-        ),
+        "primary_diagnostic_coordinate": primary_diagnostic_coordinate,
+        "physical_coordinate_role": "explanatory_only",
+        "all_finite": bool(primary["all_finite"]),
+        "max_rhat": float(primary["max_rhat"]),
+        "min_bulk_ess": float(primary["min_bulk_ess"]),
+        "min_tail_ess": float(primary["min_tail_ess"]),
         "rhat_threshold": float(rhat_max),
     }
 
@@ -1119,84 +1662,85 @@ def _target_status(adapter: Any, samples: tf.Tensor) -> Mapping[str, Any]:
 
 
 class _ChunkRunner:
-    def __init__(self, adapter: Any, state: tf.Tensor, config: _ArchivedSequentialNeuTraHMCConfig):
+    """Canonical sequential wrapper around the shared fixed-transport runner."""
+
+    def __init__(
+        self,
+        adapter: Any,
+        state: tf.Tensor,
+        config: _ArchivedSequentialNeuTraHMCConfig,
+        *,
+        num_results: int | None = None,
+    ):
         self.adapter = adapter
         self.config = config
-        self.state_shape = tuple(int(dim) for dim in state.shape)
-        self.dtype = state.dtype
-        target = reviewed_value_score_target_fn(adapter, dtype=self.dtype, require_batched=True)
-
-        def run(current_state: tf.Tensor, seed: tf.Tensor):
-            kernel = tfp.mcmc.HamiltonianMonteCarlo(
-                target_log_prob_fn=target,
-                step_size=tf.constant(config.step_size, self.dtype),
-                num_leapfrog_steps=config.num_leapfrog_steps,
-            )
-
-            def trace_fn(_state: Any, results: Any) -> Mapping[str, tf.Tensor]:
-                target_log_prob = results.accepted_results.target_log_prob
-                target_score = results.accepted_results.grads_target_log_prob[0]
-                trace = {
-                    "is_accepted": results.is_accepted,
-                    "log_accept_ratio": results.log_accept_ratio,
-                    "target_log_prob": target_log_prob,
-                    "proposed_target_log_prob": results.proposed_results.target_log_prob,
-                    "target_score": target_score,
-                    # For identity-mass TFP HMC, log(alpha ratio) = -Delta H.
-                    "delta_h": -results.log_accept_ratio,
-                }
-                telemetry = getattr(adapter, "target_status_telemetry", None)
-                if config.target_status_required and bool(
-                    getattr(adapter, "target_status_invalid_rows_become_nonfinite", False)
-                ):
-                    valid = tf.logical_and(
-                        tf.math.is_finite(target_log_prob),
-                        tf.reduce_all(tf.math.is_finite(target_score), axis=-1),
-                    )
-                    trace["target_status_code"] = tf.where(valid, 0, 1)
-                    trace["target_valid_pre_regularized_score"] = valid
-                elif config.target_status_required and callable(telemetry):
-                    status = telemetry(_state)
-                    required = ("status_code", "valid_pre_regularized_score")
-                    missing = tuple(key for key in required if key not in status)
-                    if missing:
-                        raise NeuTraHMCError(
-                            "target status telemetry missing: " + ", ".join(missing)
-                        )
-                    trace["target_status_code"] = tf.cast(
-                        status["status_code"], tf.int32
-                    )
-                    trace["target_valid_pre_regularized_score"] = tf.cast(
-                        status["valid_pre_regularized_score"], tf.bool
-                    )
-                    if "floor_count_value" in status:
-                        trace["target_floor_count_value"] = tf.cast(
-                            status["floor_count_value"], tf.int32
-                        )
-                    if "min_innovation_eigenvalue" in status:
-                        trace["target_min_innovation_eigenvalue"] = tf.cast(
-                            status["min_innovation_eigenvalue"], tf.float64
-                        )
-                return trace
-
-            return tfp.mcmc.sample_chain(
-                num_results=config.warmup_chunk_size,
-                num_burnin_steps=0,
-                current_state=current_state,
-                kernel=kernel,
-                trace_fn=trace_fn,
-                seed=seed,
-            )
-
-        self.run = tf.function(
-            run,
-            input_signature=(
-                tf.TensorSpec(self.state_shape, self.dtype),
-                tf.TensorSpec((2,), tf.int32),
-            ),
-            jit_compile=config.use_xla,
-            reduce_retracing=True,
+        if config.xla_qualification_required:
+            capability = value_score_capability(adapter)
+            if not capability.is_accepted_full_chain_xla_diagnostic_authority:
+                raise NeuTraHMCError(
+                    "sequential production requires full-chain XLA authority"
+                )
+        self.num_results = int(num_results or config.warmup_chunk_size)
+        policy = FixedTransportHMCPolicy.fixed(
+            source=NEUTRA_SEQUENTIAL_HMC_POLICY_ID
         )
+        fixed_config = FixedTransportFullChainConfig(
+            num_results=self.num_results,
+            num_burnin_steps=0,
+            step_size=config.step_size,
+            num_leapfrog_steps=config.num_leapfrog_steps,
+            seed=config.seed,
+            use_xla=config.use_xla,
+            trace_policy="standard",
+            # Only adapters exposing graph-safe per-state telemetry can trace
+            # status inside XLA.  Other supported adapters are audited after
+            # the fixed chunk by _target_status().
+            target_status_trace_policy=(
+                "per_chain_step"
+                if config.target_status_required
+                and callable(getattr(adapter, "target_status_telemetry", None))
+                else "none"
+            ),
+            tuning_policy=policy,
+            target_scope=str(getattr(adapter, "target_scope", "neutra_hmc")),
+            chain_execution_mode="tf_function",
+        )
+        self._runner = build_fixed_transport_reusable_runner(
+            adapter, state, fixed_config
+        )
+        self.program_signature = self._runner.program_signature
+
+    @property
+    def tracing_count(self) -> int | None:
+        return self._runner.tracing_count
+
+    def run(self, current_state: tf.Tensor, seed: tf.Tensor):
+        result = self._runner.run(
+            current_state=current_state,
+            seed=seed,
+            step_size=tf.constant(self.config.step_size, tf.float64),
+            num_leapfrog_steps=tf.constant(
+                self.config.num_leapfrog_steps, tf.int32
+            ),
+        )
+        trace = dict(result.trace)
+        telemetry = trace.pop("target_status_telemetry", None)
+        if isinstance(telemetry, Mapping):
+            for source, target in (
+                ("status_code", "target_status_code"),
+                (
+                    "valid_pre_regularized_score",
+                    "target_valid_pre_regularized_score",
+                ),
+                ("floor_count_value", "target_floor_count_value"),
+                (
+                    "min_innovation_eigenvalue",
+                    "target_min_innovation_eigenvalue",
+                ),
+            ):
+                if source in telemetry:
+                    trace[target] = telemetry[source]
+        return result.samples, trace
 
 
 def _chain_moved(pre_chunk_state: tf.Tensor, samples: tf.Tensor) -> tf.Tensor:
@@ -1260,9 +1804,7 @@ def _chunk_policy_vetoes(
     target_score_finite: bool,
     delta_h_finite: bool,
     target_status_passed: bool,
-    acceptance_probability_by_chain: Any,
-    acceptance_min: float,
-    acceptance_max: float,
+    chain_moved: Any,
     native_divergence_status: str,
     native_divergence_count: int | None,
 ) -> tuple[str, ...]:
@@ -1281,17 +1823,9 @@ def _chunk_policy_vetoes(
         vetoes.append("nonfinite_delta_h")
     if not target_status_passed:
         vetoes.append("target_status_veto")
-    acceptance = tf.convert_to_tensor(
-        acceptance_probability_by_chain, dtype=tf.float64
-    )
-    acceptance_in_bounds = tf.reduce_all(
-        tf.logical_and(
-            acceptance >= tf.constant(acceptance_min, tf.float64),
-            acceptance <= tf.constant(acceptance_max, tf.float64),
-        )
-    )
-    if not bool(acceptance_in_bounds.numpy()):
-        vetoes.append("acceptance_probability_outside_declared_bounds")
+    movement = tf.convert_to_tensor(chain_moved, dtype=tf.bool)
+    if not bool(tf.reduce_all(movement).numpy()):
+        vetoes.append("chain_without_movement")
     if (
         str(native_divergence_status) == "available"
         and native_divergence_count is not None
@@ -1314,6 +1848,7 @@ def _run_archived_sequential_neutra_hmc(
         tuple[Any, Mapping[str, Any]],
     ]
     | None = None,
+    resume: bool = False,
 ) -> _ArchivedSequentialNeuTraHMCResult:
     """Run fixed-kernel sequential warm-up and retained HMC."""
 
@@ -1322,13 +1857,24 @@ def _run_archived_sequential_neutra_hmc(
         raise ValueError("initial_state must have shape [chain, parameter]")
     if any(dim is None for dim in state.shape):
         raise ValueError("initial_state must have a fully static shape")
-    if int(config.retained_chunk_size) != int(config.warmup_chunk_size):
-        raise ValueError("current compiled controller requires equal chunk sizes")
     root = Path(archive_root)
-    if root.exists() and any(root.iterdir()):
-        raise NeuTraHMCError("archive_root must be new or empty")
+    checkpoint_path = root / f"{archive_label}-checkpoint.json"
+    manifest_path = root / f"{archive_label}-manifest.json"
+    if manifest_path.exists():
+        raise NeuTraHMCError("sequential HMC archive is already terminal")
+    if root.exists() and any(root.iterdir()) and not resume:
+        raise NeuTraHMCError("archive_root must be new or empty unless resume=True")
+    if resume and not checkpoint_path.is_file():
+        raise NeuTraHMCError("resume requires an existing block checkpoint")
     root.mkdir(parents=True, exist_ok=True)
-    runner = None if run_chunk is not None else _ChunkRunner(adapter, state, config)
+    runners = (
+        {}
+        if run_chunk is not None
+        else {
+            size: _ChunkRunner(adapter, state, config, num_results=size)
+            for size in {config.warmup_chunk_size, config.retained_chunk_size}
+        }
+    )
     started = time.perf_counter()
     phase_rows: dict[str, list[Mapping[str, Any]]] = {"warmup": [], "retained": []}
     phase_samples: dict[str, list[tf.Tensor]] = {"warmup": [], "retained": []}
@@ -1339,8 +1885,108 @@ def _run_archived_sequential_neutra_hmc(
     retained_count = 0
     last_warmup_diagnostics: Mapping[str, Any] = {}
     last_retained_diagnostics: Mapping[str, Any] = {}
+    next_phase = "warmup"
+    next_chunk_index = 0
+    resumed = False
+
+    initial_state_payload = _tensor_tree_python(state)
+    run_contract = {
+        "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+        "adapter_signature": fixed_transport_base_adapter_signature(adapter),
+        "config": config.payload(),
+        "archive_label": archive_label,
+        "initial_state_shape": [int(item) for item in state.shape],
+        "initial_state_hash": _payload_hash({"state": initial_state_payload}),
+        "runner_programs": (
+            []
+            if run_chunk is not None
+            else [
+                {
+                    "num_results": size,
+                    "program_signature": runners[size].program_signature,
+                }
+                for size in sorted(runners)
+            ]
+        ),
+    }
+    run_contract_hash = _payload_hash(run_contract)
+    if resume:
+        checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+        if checkpoint.get("schema") != "bayesfilter.neutra.sequential_hmc_checkpoint.v1":
+            raise NeuTraHMCError("sequential HMC checkpoint schema mismatch")
+        if checkpoint.get("terminal") is not False:
+            raise NeuTraHMCError("sequential HMC checkpoint is terminal")
+        checkpoint_contract = checkpoint.get("run_contract")
+        if not isinstance(checkpoint_contract, Mapping) or _payload_hash(
+            checkpoint_contract
+        ) != checkpoint.get("run_contract_hash"):
+            raise NeuTraHMCError("sequential HMC checkpoint contract hash is invalid")
+        if checkpoint.get("run_contract_hash") != run_contract_hash:
+            raise NeuTraHMCError("sequential HMC checkpoint run contract mismatch")
+        rows = checkpoint.get("phase_rows")
+        if not isinstance(rows, Mapping):
+            raise NeuTraHMCError("sequential HMC checkpoint rows are missing")
+        phase_rows = {
+            phase: [dict(item) for item in rows.get(phase, ())]
+            for phase in ("warmup", "retained")
+        }
+        for phase in ("warmup", "retained"):
+            for expected_index, row in enumerate(phase_rows[phase]):
+                if row.get("phase") != phase or int(row.get("chunk_index", -1)) != expected_index:
+                    raise NeuTraHMCError("sequential HMC checkpoint chunk ordering mismatch")
+                samples = _read_tensor_receipt(row["sample_receipt"])
+                phase_samples[phase].append(tf.cast(samples, tf.float64))
+                receipt_payload = _read_json_receipt(row["receipt"])
+                expected_receipt_payload = {
+                    key: value for key, value in row.items() if key != "receipt"
+                }
+                if _tensor_tree_python(receipt_payload) != _tensor_tree_python(
+                    expected_receipt_payload
+                ):
+                    raise NeuTraHMCError(
+                        "sequential HMC checkpoint receipt payload mismatch"
+                    )
+                for receipt in row["trace_receipts"].values():
+                    _read_tensor_receipt(receipt)
+        expected_paths = {checkpoint_path.resolve()}
+        for phase in ("warmup", "retained"):
+            for row in phase_rows[phase]:
+                expected_paths.add(Path(row["sample_receipt"]["path"]).resolve())
+                expected_paths.add(Path(row["receipt"]["path"]).resolve())
+                expected_paths.update(
+                    Path(receipt["path"]).resolve()
+                    for receipt in row["trace_receipts"].values()
+                )
+                prefix = f"{archive_label}-{phase}-{int(row['chunk_index']):03d}"
+                expected_paths.add(
+                    (root / "checkpoints" / f"{prefix}-final-state.tftensor").resolve()
+                )
+        expected_paths.add(Path(checkpoint["final_state"]["path"]).resolve())
+        observed_paths = {path.resolve() for path in root.rglob("*") if path.is_file()}
+        orphan_paths = sorted(observed_paths - expected_paths)
+        if orphan_paths:
+            raise NeuTraHMCError(
+                "sequential HMC archive contains orphan partial-block artifacts: "
+                + ", ".join(path.as_posix() for path in orphan_paths)
+            )
+        state = tf.cast(_read_tensor_receipt(checkpoint["final_state"]), tf.float64)
+        if tuple(state.shape) != tuple(int(item) for item in initial_state.shape):
+            raise NeuTraHMCError("sequential HMC checkpoint state shape mismatch")
+        warmup_count = int(checkpoint["warmup_results_per_chain"])
+        retained_count = int(checkpoint["retained_results_per_chain"])
+        warmup_ready = bool(checkpoint["warmup_ready"])
+        retained_passed = bool(checkpoint["retained_passed"])
+        last_warmup_diagnostics = dict(checkpoint.get("last_warmup_diagnostics", {}))
+        last_retained_diagnostics = dict(checkpoint.get("last_retained_diagnostics", {}))
+        next_phase = str(checkpoint["next_phase"])
+        next_chunk_index = int(checkpoint["next_chunk_index"])
+        if next_phase not in {"warmup", "retained"}:
+            raise NeuTraHMCError("sequential HMC checkpoint next phase is invalid")
+        resumed = True
 
     for phase_index, phase in enumerate(("warmup", "retained")):
+        if phase == "warmup" and next_phase == "retained":
+            continue
         maximum = (
             config.warmup_max_results if phase == "warmup" else config.retained_max_results
         )
@@ -1348,7 +1994,8 @@ def _run_archived_sequential_neutra_hmc(
             config.warmup_chunk_size if phase == "warmup" else config.retained_chunk_size
         )
         chunk_count = maximum // chunk_size
-        for chunk_index in range(chunk_count):
+        start_index = next_chunk_index if phase == next_phase else 0
+        for chunk_index in range(start_index, chunk_count):
             if budget_check is not None:
                 budget_allowed = budget_check(
                     chunk_size * config.num_leapfrog_steps
@@ -1362,6 +2009,7 @@ def _run_archived_sequential_neutra_hmc(
             pre_chunk_state = state
             chunk_started = time.perf_counter()
             if run_chunk is None:
+                runner = runners.get(chunk_size)
                 if runner is None:
                     raise NeuTraHMCError("internal chunk runner is unavailable")
                 samples, trace = runner.run(state, tf.constant(seed, tf.int32))
@@ -1432,9 +2080,7 @@ def _run_archived_sequential_neutra_hmc(
                     target_score_finite=bool(target_score_finite.numpy()),
                     delta_h_finite=bool(delta_h_finite.numpy()),
                     target_status_passed=bool(status["passed"]),
-                    acceptance_probability_by_chain=acceptance_probability_by_chain,
-                    acceptance_min=config.acceptance_min,
-                    acceptance_max=config.acceptance_max,
+                    chain_moved=moved,
                     native_divergence_status=native_divergence_status,
                     native_divergence_count=native_divergence_count,
                 )
@@ -1448,29 +2094,52 @@ def _run_archived_sequential_neutra_hmc(
                         combined = tf.concat(phase_samples[phase], axis=0)
                         window = combined[-config.warmup_window_results :]
                         last_warmup_diagnostics = _diagnostics(
-                            adapter, window, rhat_max=config.warmup_rhat_max
+                            adapter,
+                            window,
+                            rhat_max=config.warmup_rhat_max,
+                            primary_diagnostic_coordinate=(
+                                config.primary_diagnostic_coordinate
+                            ),
                         )
                         warmup_ready = bool(
                             last_warmup_diagnostics["all_finite"]
                             and last_warmup_diagnostics["max_rhat"]
-                            <= config.warmup_rhat_max
+                            < config.warmup_rhat_max
                         )
                         checkpoint_diagnostics = last_warmup_diagnostics
                 else:
                     retained_count += chunk_size
-                    if retained_count >= config.retained_min_results:
+                    if (
+                        retained_count >= config.retained_min_results
+                        and (
+                            retained_count == config.retained_min_results
+                            or (retained_count - config.retained_min_results)
+                            % config.retained_check_interval_results
+                            == 0
+                        )
+                    ):
                         combined = tf.concat(phase_samples[phase], axis=0)
                         last_retained_diagnostics = _diagnostics(
-                            adapter, combined, rhat_max=config.retained_rhat_max
+                            adapter,
+                            combined,
+                            rhat_max=config.retained_rhat_max,
+                            primary_diagnostic_coordinate=(
+                                config.primary_diagnostic_coordinate
+                            ),
                         )
                         retained_passed = bool(
                             last_retained_diagnostics["all_finite"]
                             and last_retained_diagnostics["max_rhat"]
-                            <= config.retained_rhat_max
-                            and last_retained_diagnostics["min_bulk_ess"]
-                            >= config.bulk_ess_min
-                            and last_retained_diagnostics["min_tail_ess"]
-                            >= config.tail_ess_min
+                            < config.retained_rhat_max
+                            and (
+                                not config.retained_ess_required
+                                or (
+                                    last_retained_diagnostics["min_bulk_ess"]
+                                    >= config.bulk_ess_min
+                                    and last_retained_diagnostics["min_tail_ess"]
+                                    >= config.tail_ess_min
+                                )
+                            )
                         )
                         checkpoint_diagnostics = last_retained_diagnostics
             prefix = f"{archive_label}-{phase}-{chunk_index:03d}"
@@ -1479,6 +2148,7 @@ def _run_archived_sequential_neutra_hmc(
                 key: _write_tensor(root / phase / f"{prefix}-{key}.tftensor", value)
                 for key, value in trace.items()
             }
+            receipt_path = root / phase / f"{prefix}-receipt.json"
             row = {
                 "phase": phase,
                 "chunk_index": chunk_index,
@@ -1490,8 +2160,9 @@ def _run_archived_sequential_neutra_hmc(
                     acceptance_probability_by_chain
                 ),
                 "acceptance_bounds": [config.acceptance_min, config.acceptance_max],
+                "acceptance_role": "explanatory_only_not_a_convergence_veto",
                 "chain_moved": _tensor_tree_python(moved),
-                "chain_movement_role": "explanatory_only",
+                "chain_movement_role": "hard_validity_veto",
                 "target_status": status,
                 "energy_error": {
                     "identity": "delta_h_equals_negative_log_accept_ratio",
@@ -1513,9 +2184,44 @@ def _run_archived_sequential_neutra_hmc(
                     else "unavailable is not zero divergences"
                 ),
             }
-            _write_json(root / phase / f"{prefix}-receipt.json", row)
+            _write_json(receipt_path, row)
+            row = {
+                **row,
+                "receipt": {
+                    "path": receipt_path.as_posix(),
+                    "sha256": hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
+                },
+            }
             phase_rows[phase].append(row)
             hard_vetoes.extend(chunk_hard)
+            if not chunk_hard:
+                final_state_receipt = _write_tensor(
+                    root / "checkpoints" / f"{prefix}-final-state.tftensor",
+                    state,
+                )
+                if phase == "warmup" and warmup_ready:
+                    checkpoint_next_phase = "retained"
+                    checkpoint_next_index = 0
+                else:
+                    checkpoint_next_phase = phase
+                    checkpoint_next_index = chunk_index + 1
+                checkpoint = {
+                    "schema": "bayesfilter.neutra.sequential_hmc_checkpoint.v1",
+                    "run_contract": run_contract,
+                    "run_contract_hash": run_contract_hash,
+                    "phase_rows": phase_rows,
+                    "final_state": final_state_receipt,
+                    "warmup_results_per_chain": warmup_count,
+                    "retained_results_per_chain": retained_count,
+                    "warmup_ready": warmup_ready,
+                    "retained_passed": retained_passed,
+                    "last_warmup_diagnostics": last_warmup_diagnostics,
+                    "last_retained_diagnostics": last_retained_diagnostics,
+                    "next_phase": checkpoint_next_phase,
+                    "next_chunk_index": checkpoint_next_index,
+                    "terminal": False,
+                }
+                _write_json_atomic(checkpoint_path, checkpoint)
             if chunk_hard:
                 break
             if (phase == "warmup" and warmup_ready) or (
@@ -1541,6 +2247,25 @@ def _run_archived_sequential_neutra_hmc(
         "warmup_chunks": phase_rows["warmup"],
         "retained_chunks": phase_rows["retained"],
         "warmup_excluded_from_posterior": True,
+        "primary_diagnostic_coordinate": config.primary_diagnostic_coordinate,
+        "physical_coordinate_role": "explanatory_only",
+        "retained_ess_role": (
+            "promotion_veto"
+            if config.retained_ess_required
+            else "explanatory_only"
+        ),
+        "runner_programs": (
+            []
+            if run_chunk is not None
+            else [
+                {
+                    "num_results": size,
+                    "program_signature": runners[size].program_signature,
+                    "tracing_count": runners[size].tracing_count,
+                }
+                for size in sorted(runners)
+            ]
+        ),
         "native_divergence_status": "not_exposed_by_kernel",
         "nonclaims": [
             "native divergence unavailability is not zero divergences",
@@ -1548,8 +2273,20 @@ def _run_archived_sequential_neutra_hmc(
             "no posterior correctness or stationarity proof",
         ],
     }
-    manifest_path = root / f"{archive_label}-manifest.json"
     _write_json(manifest_path, manifest)
+    terminal_checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8")) if checkpoint_path.exists() else {
+        "schema": "bayesfilter.neutra.sequential_hmc_checkpoint.v1",
+        "run_contract": run_contract,
+        "run_contract_hash": run_contract_hash,
+        "phase_rows": phase_rows,
+    }
+    terminal_checkpoint.update(
+        terminal=True,
+        stop_reason=stop_reason,
+        manifest_path=manifest_path.as_posix(),
+        manifest_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+    )
+    _write_json_atomic(checkpoint_path, terminal_checkpoint)
     manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
     return _ArchivedSequentialNeuTraHMCResult(
         passed=retained_passed and not hard_vetoes,
@@ -1560,10 +2297,17 @@ def _run_archived_sequential_neutra_hmc(
             "warmup": last_warmup_diagnostics,
             "retained": last_retained_diagnostics,
             "hard_vetoes": list(dict.fromkeys(hard_vetoes)),
-            "acceptance_role": "per_chain_declared_bound_gate",
+            "acceptance_role": "explanatory_only_not_a_convergence_veto",
             "acceptance_bounds": [config.acceptance_min, config.acceptance_max],
+            "primary_diagnostic_coordinate": config.primary_diagnostic_coordinate,
+            "physical_coordinate_role": "explanatory_only",
+            "retained_ess_role": (
+                "promotion_veto"
+                if config.retained_ess_required
+                else "explanatory_only"
+            ),
             "finite_delta_h_tail_role": "explanatory_alert_only",
-            "movement_role": "explanatory_only",
+            "movement_role": "hard_validity_veto",
             "native_divergence_status": "not_exposed_by_kernel",
         },
         archive={
@@ -1572,12 +2316,16 @@ def _run_archived_sequential_neutra_hmc(
             "manifest_sha256": manifest_hash,
             "warmup_chunk_count": len(phase_rows["warmup"]),
             "retained_chunk_count": len(phase_rows["retained"]),
+            "checkpoint_path": checkpoint_path.as_posix(),
+            "resumed": resumed,
         },
         metadata={
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
             "wall_seconds": time.perf_counter() - started,
             "use_xla": config.use_xla,
             "warmup_excluded_from_posterior": True,
+            "resumed": resumed,
+            "run_contract_hash": run_contract_hash,
         },
     )
 
@@ -1585,6 +2333,12 @@ def _run_archived_sequential_neutra_hmc(
 __all__ = [
     "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
     "NeuTraHMCError",
+    "SequentialNeuTraHMCConfig",
+    "SequentialNeuTraHMCXLAQualificationReceipt",
+    "qualify_sequential_neutra_hmc_xla",
+    "load_sequential_neutra_hmc_xla_receipt",
+    "run_sequential_neutra_hmc",
+    "validate_sequential_neutra_hmc_xla_receipt",
     "_ArchivedSequentialNeuTraHMCConfig",
     "_ArchivedSequentialNeuTraHMCResult",
     "_run_archived_sequential_neutra_hmc",

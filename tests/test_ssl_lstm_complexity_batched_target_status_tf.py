@@ -99,6 +99,25 @@ def test_training_value_score_fails_closed_when_kernel_status_is_invalid(
                 "principal_sqrt_target_row_class_code": tf.ones([batch], tf.int32),
                 "principal_sqrt_target_valid_count": tf.zeros([batch], tf.int32),
                 "min_innovation_eigenvalue": tf.zeros([batch], tf.float64),
+                "min_placement_eigenvalue": tf.zeros([batch], tf.float64),
+                "min_placement_eigen_gap": tf.zeros([batch], tf.float64),
+                "min_innovation_eigen_gap": tf.zeros([batch], tf.float64),
+                "placement_classified_invalid_count": tf.ones([batch], tf.int32),
+                "innovation_classified_invalid_count": tf.zeros([batch], tf.int32),
+                "placement_derivative_rhs_nonfinite_count": tf.zeros(
+                    [batch], tf.int32
+                ),
+                "innovation_derivative_rhs_nonfinite_count": tf.zeros(
+                    [batch], tf.int32
+                ),
+                "principal_sqrt_target_classified_invalid_count": tf.ones(
+                    [batch], tf.int32
+                ),
+                "principal_sqrt_target_derivative_rhs_nonfinite_count": tf.zeros(
+                    [batch], tf.int32
+                ),
+                "placement_roundoff_repair_count": tf.zeros([batch], tf.int32),
+                "innovation_roundoff_repair_count": tf.zeros([batch], tf.int32),
             },
         )
 
@@ -121,5 +140,26 @@ def test_training_value_score_fails_closed_when_kernel_status_is_invalid(
     tf.debugging.assert_all_finite(raw_score, "raw classified scores are retained")
     tf.debugging.assert_equal(status["status_code"], tf.ones([2], tf.int32))
     assert not bool(tf.reduce_any(status["valid_pre_regularized_score"]).numpy())
+    tf.debugging.assert_equal(status["placement_floor_count"], tf.ones([2], tf.int32))
+    tf.debugging.assert_equal(status["innovation_floor_count"], tf.zeros([2], tf.int32))
+    tf.debugging.assert_equal(
+        status["principal_sqrt_target_row_class_code"], tf.ones([2], tf.int32)
+    )
+    tf.debugging.assert_equal(
+        status["principal_sqrt_target_valid_count"], tf.zeros([2], tf.int32)
+    )
+    assert bool(tf.reduce_all(status["value_finite"]).numpy())
+    assert bool(tf.reduce_all(status["score_finite"]).numpy())
+    assert bool(tf.reduce_all(status["input_finite"]).numpy())
+    tf.debugging.assert_equal(
+        status["placement_classified_invalid_count"], tf.ones([2], tf.int32)
+    )
+    tf.debugging.assert_equal(
+        status["innovation_classified_invalid_count"], tf.zeros([2], tf.int32)
+    )
+    tf.debugging.assert_equal(
+        status["principal_sqrt_target_derivative_rhs_nonfinite_count"],
+        tf.zeros([2], tf.int32),
+    )
     assert not bool(tf.reduce_any(tf.math.is_finite(value)).numpy())
     assert not bool(tf.reduce_any(tf.math.is_finite(score)).numpy())

@@ -8,6 +8,9 @@ import tensorflow_probability as tfp
 from bayesfilter.linear.kalman_tf import (
     tf_kalman_log_likelihood,
     tf_linear_gaussian_log_likelihood,
+    tf_masked_kalman_filter,
+    tf_masked_kalman_filter_checked_with_diagnostics,
+    tf_masked_kalman_filter_with_diagnostics,
     tf_masked_kalman_log_likelihood,
 )
 from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
@@ -174,6 +177,151 @@ def test_masked_all_missing_row_contributes_zero_likelihood_and_predicts() -> No
     )
     assert result.metadata.filter_name == "tf_masked_cholesky_kalman"
     assert result.diagnostics.mask_convention == "static_dummy_row"
+
+
+def test_masked_diagnostics_preserve_likelihood_and_filtered_state() -> None:
+    model = _tiny_model()
+    observations = tf.constant(
+        [[0.3, -0.1], [0.2, 0.05], [0.1, 0.04]],
+        dtype=tf.float64,
+    )
+    mask = tf.constant(
+        [[True, True], [True, False], [False, False]],
+        dtype=tf.bool,
+    )
+    arguments = dict(
+        observations=observations,
+        transition_offset=model.transition_offset,
+        transition_matrix=model.transition_matrix,
+        transition_covariance=model.transition_covariance,
+        observation_offset=model.observation_offset,
+        observation_matrix=model.observation_matrix,
+        observation_covariance=model.observation_covariance,
+        initial_state_mean=model.initial_mean,
+        initial_state_covariance=model.initial_covariance,
+        observation_mask=mask,
+        jitter=tf.constant(1e-9, dtype=tf.float64),
+    )
+
+    value, means, covariances = tf_masked_kalman_filter(**arguments, return_filtered=True)
+    diagnostic_value, minimums, conditions, final_mean, final_covariance = (
+        tf_masked_kalman_filter_with_diagnostics(**arguments)
+    )
+
+    np.testing.assert_allclose(diagnostic_value.numpy(), value.numpy(), atol=0.0)
+    np.testing.assert_allclose(final_mean.numpy(), means.numpy()[-1], atol=0.0)
+    np.testing.assert_allclose(
+        final_covariance.numpy(), covariances.numpy()[-1], atol=0.0
+    )
+    assert minimums.shape == [3]
+    assert conditions.shape == [3]
+    assert bool(tf.reduce_all(minimums > 0.0))
+    assert bool(tf.reduce_all(conditions >= 1.0))
+
+
+def test_masked_diagnostics_all_missing_row_reports_dummy_identity() -> None:
+    model = _tiny_model()
+    observations = tf.zeros([1, model.observation_dim], dtype=tf.float64)
+    mask = tf.zeros(tf.shape(observations), dtype=tf.bool)
+
+    value, minimums, conditions, _, _ = tf_masked_kalman_filter_with_diagnostics(
+        observations=observations,
+        transition_offset=model.transition_offset,
+        transition_matrix=model.transition_matrix,
+        transition_covariance=model.transition_covariance,
+        observation_offset=model.observation_offset,
+        observation_matrix=model.observation_matrix,
+        observation_covariance=model.observation_covariance,
+        initial_state_mean=model.initial_mean,
+        initial_state_covariance=model.initial_covariance,
+        observation_mask=mask,
+        jitter=tf.constant(1e-9, dtype=tf.float64),
+    )
+
+    np.testing.assert_allclose(value.numpy(), 0.0, atol=1e-12)
+    np.testing.assert_allclose(minimums.numpy(), [1.0 + 1e-9], atol=1e-12)
+    np.testing.assert_allclose(conditions.numpy(), [1.0], atol=1e-12)
+
+
+def test_checked_masked_filter_matches_exact_valid_recursion() -> None:
+    model = _tiny_model()
+    observations = tf.constant([[0.3, -0.1], [0.2, 0.05]], tf.float64)
+    mask = tf.constant([[True, True], [True, False]], tf.bool)
+    arguments = dict(
+        observations=observations,
+        transition_offset=model.transition_offset,
+        transition_matrix=model.transition_matrix,
+        transition_covariance=model.transition_covariance,
+        observation_offset=model.observation_offset,
+        observation_matrix=model.observation_matrix,
+        observation_covariance=model.observation_covariance,
+        initial_state_mean=model.initial_mean,
+        initial_state_covariance=model.initial_covariance,
+        observation_mask=mask,
+        jitter=tf.constant(1e-9, tf.float64),
+    )
+    expected = tf_masked_kalman_filter_with_diagnostics(**arguments)
+    actual = tf_masked_kalman_filter_checked_with_diagnostics(**arguments)
+    np.testing.assert_allclose(actual[0].numpy(), expected[0].numpy(), atol=0.0)
+    np.testing.assert_allclose(actual[1].numpy(), expected[1].numpy(), atol=0.0)
+    np.testing.assert_allclose(actual[2].numpy(), expected[2].numpy(), atol=0.0)
+    np.testing.assert_allclose(actual[4].numpy(), expected[3].numpy(), atol=0.0)
+    np.testing.assert_allclose(actual[5].numpy(), expected[4].numpy(), atol=0.0)
+    assert bool(tf.reduce_all(actual[3]))
+
+
+def test_checked_masked_filter_rejects_indefinite_innovation_before_cholesky() -> None:
+    value, minimums, conditions, validity, final_mean, final_covariance = (
+        tf_masked_kalman_filter_checked_with_diagnostics(
+            observations=tf.zeros([1, 1], tf.float64),
+            transition_offset=tf.zeros([1], tf.float64),
+            transition_matrix=tf.eye(1, dtype=tf.float64),
+            transition_covariance=tf.zeros([1, 1], tf.float64),
+            observation_offset=tf.zeros([1], tf.float64),
+            observation_matrix=tf.ones([1, 1], tf.float64),
+            observation_covariance=tf.constant([[-2.0]], tf.float64),
+            initial_state_mean=tf.zeros([1], tf.float64),
+            initial_state_covariance=tf.eye(1, dtype=tf.float64),
+            observation_mask=tf.ones([1, 1], tf.bool),
+        )
+    )
+    assert bool(tf.math.is_finite(value))
+    assert float(minimums[0]) < 0.0
+    np.testing.assert_allclose(conditions.numpy(), [0.0], atol=0.0)
+    assert not bool(validity[0])
+    np.testing.assert_allclose(final_mean.numpy(), [0.0], atol=0.0)
+    np.testing.assert_allclose(final_covariance.numpy(), [[1.0]], atol=0.0)
+
+
+def test_checked_masked_filter_repeated_compiled_gradient_static_horizon() -> None:
+    observations = tf.zeros([4, 1], tf.float64)
+
+    def value_and_score(raw_transition: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        with tf.GradientTape() as tape:
+            tape.watch(raw_transition)
+            transition = tf.reshape(0.8 * tf.math.sigmoid(raw_transition), [1, 1])
+            value, _, _, validity, _, _ = (
+                tf_masked_kalman_filter_checked_with_diagnostics(
+                    observations=observations,
+                    transition_offset=tf.zeros([1], tf.float64),
+                    transition_matrix=transition,
+                    transition_covariance=tf.constant([[0.05]], tf.float64),
+                    observation_offset=tf.zeros([1], tf.float64),
+                    observation_matrix=tf.ones([1, 1], tf.float64),
+                    observation_covariance=tf.constant([[0.08]], tf.float64),
+                    initial_state_mean=tf.zeros([1], tf.float64),
+                    initial_state_covariance=tf.constant([[0.4]], tf.float64),
+                    observation_mask=tf.ones([4, 1], tf.bool),
+                )
+            )
+        score = tape.gradient(value, raw_transition)
+        return value, score, tf.reduce_all(validity)
+
+    first = value_and_score(tf.constant(0.1, tf.float64))
+    second = value_and_score(tf.constant(0.2, tf.float64))
+    assert bool(first[2]) and bool(second[2])
+    assert bool(tf.math.is_finite(first[0])) and bool(tf.math.is_finite(second[0]))
+    assert bool(tf.math.is_finite(first[1])) and bool(tf.math.is_finite(second[1]))
 
 
 def test_wrapper_uses_model_mask_and_preserves_tensor_result() -> None:

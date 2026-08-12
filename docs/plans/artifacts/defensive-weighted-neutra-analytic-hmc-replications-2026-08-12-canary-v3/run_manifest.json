@@ -1,0 +1,151 @@
+{
+  "adapter_signature_pair_status": "exact_v5_gpu_pair",
+  "base_adapter_signature": "2253ee2bf30b54269201a898d661fb462e12805af8040fa9b6049d51a534b8e0",
+  "checkpoint": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-validation-2026-08-11/r1-two-mode/capacity-depth6-width128-updates10000-confirmation-1-v1/trainer_states.json",
+    "sha256": "af961871dcc3b626216d7500e695534f147ecfd9ba4fe0f9907f59018d40e8e5"
+  },
+  "checkpoint_manifest": {
+    "checkpoint_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-validation-2026-08-11/r1-two-mode/capacity-depth6-width128-updates10000-confirmation-1-v1/trainer_states.json",
+    "checkpoint_sha256": "af961871dcc3b626216d7500e695534f147ecfd9ba4fe0f9907f59018d40e8e5",
+    "config": {
+      "activation": "tanh",
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "dimension": 4,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "hidden_layers": [
+        128,
+        128
+      ],
+      "initialization_scale": 0.02,
+      "initialization_seed": [
+        20360811,
+        11001
+      ],
+      "jit_compile": true,
+      "learning_rate": 0.001,
+      "s_max": 2.0,
+      "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+      "stages": 6
+    },
+    "schema": "bayesfilter.neutra.loaded_weighted_transport.v1",
+    "selected_step": 7000,
+    "training_state_hash": "8cf673ffe7252b3f5a61fa6c5b307b474801019e29a56c0f417bbd6a6456a761",
+    "transport_manifest": {
+      "activation": "tanh",
+      "config": {
+        "activation": "tanh",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "dimension": 4,
+        "epsilon": 1e-07,
+        "gradient_clip_norm": 10.0,
+        "hidden_layers": [
+          128,
+          128
+        ],
+        "initialization_scale": 0.02,
+        "initialization_seed": [
+          20360811,
+          11001
+        ],
+        "jit_compile": true,
+        "learning_rate": 0.001,
+        "s_max": 2.0,
+        "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+        "stages": 6
+      },
+      "frozen_identity": {
+        "checkpoint_sha256": "af961871dcc3b626216d7500e695534f147ecfd9ba4fe0f9907f59018d40e8e5",
+        "training_state_hash": "8cf673ffe7252b3f5a61fa6c5b307b474801019e29a56c0f417bbd6a6456a761",
+        "transport_tensor_hash": "3d954e8133a63701493bff229d284544114d2511b1a54f79cf1fb6be77a13c9c"
+      },
+      "hidden_layers": [
+        128,
+        128
+      ],
+      "parameter_dim": 4,
+      "s_max": 2.0,
+      "schema": "bayesfilter.neutra.weighted_dense_iaf_frozen.v1",
+      "stages": 6,
+      "transport_id": "weighted_dense_iaf_frozen"
+    },
+    "transport_tensor_hash": "3d954e8133a63701493bff229d284544114d2511b1a54f79cf1fb6be77a13c9c"
+  },
+  "command": "docs/benchmarks/run_defensive_weighted_neutra_analytic_hmc_replication_2026_08_12.py --mode canary --replication 0 --seed-second 91011 --output-root docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12-canary-v3 --device 1 --cap-seconds 600",
+  "cuda_visible_devices": "1",
+  "dtype": "float64",
+  "environment": "tfgpu",
+  "frozen_kernel": {
+    "mass_policy": "fixed_identity_z",
+    "num_leapfrog_steps": 20,
+    "step_size": 0.14091138276334744
+  },
+  "git": {
+    "commit": "9ebaecc59f792f49bf7b946342ea512e71f5b3e4",
+    "dirty": true,
+    "status_line_count": 305
+  },
+  "jit_compile": true,
+  "logical_gpu_devices": [
+    "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+  ],
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-defensive-weighted-neutra-analytic-hmc-replication-plan-2026-08-12.md",
+  "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+  "replication": 0,
+  "root_seed": [
+    20260812,
+    91011
+  ],
+  "route_ledger_status": "preexisting_referenced_ledger_artifact_absent_not_used_for_scientific_adjudication",
+  "schema": "bayesfilter.defensive_weighted_neutra_analytic_hmc_replication_manifest.v1",
+  "target_signature_compatibility": {
+    "comparison_point_count": 4110,
+    "covariance_differences": [],
+    "current_target_signature": "9baf0a51f5a1219401ea72c16996359ad8a2a8a1436f621b9cff0a9cc58d664c",
+    "interpretation": "one_ulp_serialization_migration_same_checked_value_score_program",
+    "maximum_covariance_absolute_delta": 0.0,
+    "maximum_output_absolute_deltas": {
+      "log_prob": 0.0,
+      "responsibilities": 0.0,
+      "score": 0.0
+    },
+    "passed": true,
+    "schema": "bayesfilter.defensive_weighted_neutra_target_signature_compatibility.v1",
+    "v5_base_adapter_signature": "2253ee2bf30b54269201a898d661fb462e12805af8040fa9b6049d51a534b8e0",
+    "v5_live_transformed_adapter_signature": "6b4e5c287309163c105fd803ca9d3f97ad0ff25c991dad15a57d1d4b29d1a6ba",
+    "v5_manifest_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-2026-08-12-run-v5/run_manifest.json",
+    "v5_manifest_sha256": "172613cd7a979edc1e324d538890a70c76ec97e54f7cf382c69fd5b68cc3dcfb",
+    "v5_tuning_transformed_adapter_signature": "7d188d2373215877cd393ec10f0df83d0e2c19f15484957420bf6e2785317f46"
+  },
+  "tensorflow": "2.20.0",
+  "tensorflow_probability": "0.25.0",
+  "tf32_enabled": false,
+  "tf_force_gpu_allow_growth": "true",
+  "transformed_adapter_signature": "6b4e5c287309163c105fd803ca9d3f97ad0ff25c991dad15a57d1d4b29d1a6ba",
+  "transport_manifest_hash": "e32d8e4c4762858baf6b2a13ab1e860c7308a4fa152e549890a3b809b5e8b938",
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "tuning": {
+    "kernel_sha256": "85ca343ea97d5f1548c672c6da5b49b41bce091362858a74faf77ac8d69af670",
+    "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-2026-08-12-run-v5/tuning/tuning_result.json",
+    "sha256": "6dfe2b8145040a18831a08032bfd61854189f2651e76c70842e59d4e4e12eb4f"
+  }
+}

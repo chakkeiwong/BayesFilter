@@ -888,7 +888,11 @@ def test_evidence_extension_replaces_only_inconclusive_replication_identity() ->
 
 
 def test_acceptance_policy_mismatch_is_shared_invalidity() -> None:
-    different_policy = HMCAcceptancePolicy(target=0.71, practical_region=(0.66, 0.76))
+    different_policy = HMCAcceptancePolicy(
+        target=0.71,
+        practical_region=(0.66, 0.76),
+        repair_region=(0.56, 0.86),
+    )
 
     def screen(request):
         return FixedMetricScreenOutcome(

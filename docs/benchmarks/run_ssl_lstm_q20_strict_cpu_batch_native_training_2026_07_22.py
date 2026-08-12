@@ -61,6 +61,7 @@ from bayesfilter.nonlinear.ssl_lstm_complexity_target_tf import FREE_NAMES, PRIO
 
 SCHEMA = "bayesfilter.ssl_lstm.q20_strict_cpu_batch_native_training.v1"
 PLAN = Path("docs/plans/bayesfilter-ssl-lstm-q20-strict-cpu-training-plan-2026-07-22.md")
+MAX_CAMPAIGN_SECONDS = 51500.0
 MAX_STEPS = 2000
 CHECK_EVERY = 250
 BATCH_SIZE = 100
@@ -345,7 +346,7 @@ def _load_resume(
     progress = json.loads(progress_path.read_text(encoding="utf-8"))
     if progress.get("schema") != SCHEMA or progress.get("status") != "RUNNING":
         raise CampaignError("resume progress schema or status is invalid")
-    if progress.get("stream") != asdict(stream):
+    if canonical(progress.get("stream")) != canonical(asdict(stream)):
         raise CampaignError("resume progress stream does not match --stream")
     receipts = list(progress.get("checkpoints", ()))
     if not receipts:
@@ -591,8 +592,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--prior-wall-seconds", type=float, default=0.0)
     parser.add_argument("--debug-stop-after-steps", type=int)
     args = parser.parse_args(argv)
-    if not math.isfinite(args.cap_seconds) or args.cap_seconds <= 0.0 or args.cap_seconds > 31500.0:
-        parser.error("--cap-seconds must be in (0, 31500]")
+    if not math.isfinite(args.cap_seconds) or args.cap_seconds <= 0.0 or args.cap_seconds > MAX_CAMPAIGN_SECONDS:
+        parser.error(f"--cap-seconds must be in (0, {MAX_CAMPAIGN_SECONDS:g}]")
     if not math.isfinite(args.prior_wall_seconds) or args.prior_wall_seconds < 0.0:
         parser.error("--prior-wall-seconds must be finite and nonnegative")
     if args.resume_checkpoint is None and args.prior_wall_seconds != 0.0:

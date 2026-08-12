@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
+import sys
 import time
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Mapping, Sequence
@@ -33,7 +35,6 @@ from bayesfilter.inference.hmc_tuning import (
     WindowedMassAdaptationConfig,
     WindowedWarmupWindow,
     build_windowed_warmup_schedule,
-    welford_covariance,
 )
 from bayesfilter.inference.hmc_verification import (
     _evaluate_retained_target_health,
@@ -179,6 +180,35 @@ class MetricAdequacyDecision:
         }
 
 
+def _unbiased_covariance_and_correlation(states: Any) -> tuple[Any, Any, Any]:
+    """Return TensorFlow `N-1` covariance, variances, and correlation."""
+
+    import tensorflow as tf
+
+    tensor = tf.cast(tf.convert_to_tensor(states), tf.float64)
+    if tensor.shape.rank != 2 or any(dim is None for dim in tensor.shape):
+        raise ValueError("covariance states must have a static rank-2 shape")
+    count = int(tensor.shape[0])
+    if count < 2 or int(tensor.shape[1]) <= 0:
+        raise ValueError("covariance requires at least two nonempty states")
+    tf.debugging.assert_all_finite(tensor, "covariance states must be finite")
+    centered = tensor - tf.reduce_mean(tensor, axis=0, keepdims=True)
+    covariance = tf.matmul(centered, centered, transpose_a=True) / tf.cast(
+        count - 1,
+        tf.float64,
+    )
+    covariance = 0.5 * (covariance + tf.transpose(covariance))
+    variances = tf.linalg.diag_part(covariance)
+    safe_scale = tf.where(
+        tf.math.is_finite(variances) & (variances > 0.0),
+        tf.sqrt(variances),
+        tf.ones_like(variances),
+    )
+    correlation = covariance / (safe_scale[:, None] * safe_scale[None, :])
+    correlation = 0.5 * (correlation + tf.transpose(correlation))
+    return covariance, variances, correlation
+
+
 def assess_metric_covariance(
     latent_states: Any,
     *,
@@ -186,23 +216,32 @@ def assess_metric_covariance(
     dense_min_states: int | None = None,
     diagonal_min_states: int | None = None,
 ) -> MetricAdequacyDecision:
-    """Apply the R0 dense-information and diagonal-fallback gates."""
+    """Assess a unit-equivariant position covariance in correlation space.
 
-    temporal = np.asarray(latent_states, dtype=float)
-    if (
-        temporal.ndim not in {2, 3}
-        or temporal.shape[0] < 2
-        or temporal.shape[-1] <= 0
-    ):
+    Numerical decisions in this active adaptation path are TensorFlow-owned.
+    The covariance is materialized only when constructing the immutable public
+    decision boundary.
+    """
+
+    import tensorflow as tf
+
+    temporal = tf.cast(tf.convert_to_tensor(latent_states), tf.float64)
+    rank = temporal.shape.rank
+    if rank not in {2, 3} or any(dim is None for dim in temporal.shape):
         raise ValueError(
             "latent_states must be draw/dimension or draw/chain/dimension"
         )
-    if not np.all(np.isfinite(temporal)):
+    if int(temporal.shape[0]) < 2 or int(temporal.shape[-1]) <= 0:
+        raise ValueError(
+            "latent_states must be draw/dimension or draw/chain/dimension"
+        )
+    if not bool(tf.reduce_all(tf.math.is_finite(temporal)).numpy()):
         raise ValueError("latent_states must be finite")
-    explicit_chains = temporal.ndim == 3
+    explicit_chains = rank == 3
     chain_states = temporal[:, None, :] if not explicit_chains else temporal
-    states = chain_states.reshape((-1, chain_states.shape[-1]))
-    n, dimension = (int(states.shape[0]), int(states.shape[1]))
+    dimension = int(chain_states.shape[-1])
+    states = tf.reshape(chain_states, (-1, dimension))
+    n = int(states.shape[0])
     dense_required = (
         max(64, 4 * dimension)
         if dense_min_states is None
@@ -213,7 +252,7 @@ def assess_metric_covariance(
         )
     )
     diagonal_required = (
-        max(32, 2 * int(np.ceil(np.log2(dimension + 1))))
+        max(32, 2 * int(math.ceil(math.log2(dimension + 1))))
         if diagonal_min_states is None
         else _strict_integer(
             diagonal_min_states,
@@ -224,62 +263,108 @@ def assess_metric_covariance(
     if dense_required < 2 or diagonal_required < 2:
         raise ValueError("metric adequacy minimums must be at least two")
     weight = float(shrinkage)
-    if not np.isfinite(weight) or not 0.0 <= weight <= 1.0:
+    if not math.isfinite(weight) or not 0.0 <= weight <= 1.0:
         raise ValueError("shrinkage must be finite and in [0, 1]")
 
-    ess_by_coordinate = _summed_chain_ess(chain_states)
-    min_ess = float(np.min(ess_by_coordinate))
+    ess_tensor = _summed_chain_ess(chain_states)
+    ess_by_coordinate = tuple(float(item) for item in ess_tensor.numpy().tolist())
+    min_ess = float(tf.reduce_min(ess_tensor).numpy())
     dense_min_ess = max(8, dimension + 1)
-    diagonal_min_ess = max(4, int(np.ceil(np.log2(dimension + 1))))
+    diagonal_min_ess = max(4, int(math.ceil(math.log2(dimension + 1))))
     split_rhat = _split_rhat_by_coordinate(chain_states)
     split_rhat_finite = bool(
-        split_rhat is not None and np.all(np.isfinite(split_rhat))
+        split_rhat is not None
+        and tf.reduce_all(tf.math.is_finite(split_rhat)).numpy()
     )
     max_split_rhat = (
-        float(np.max(split_rhat)) if split_rhat_finite else None
+        float(tf.reduce_max(split_rhat).numpy()) if split_rhat_finite else None
     )
     dense_chain_compatible = bool(
         not explicit_chains
-        or (np.all(np.isfinite(split_rhat)) and max_split_rhat <= 1.10)
+        or (split_rhat_finite and max_split_rhat <= 1.10)
     ) if split_rhat is not None else not explicit_chains
     diagonal_chain_compatible = bool(
         not explicit_chains
-        or (np.all(np.isfinite(split_rhat)) and max_split_rhat <= 1.25)
+        or (split_rhat_finite and max_split_rhat <= 1.25)
     ) if split_rhat is not None else not explicit_chains
 
-    welford = welford_covariance(states)
-    empirical = np.asarray(welford.covariance, dtype=float)
-    raw_rank = int(np.linalg.matrix_rank(empirical))
-    raw_eigenvalues = np.linalg.eigvalsh(0.5 * (empirical + empirical.T))
-    raw_positive = bool(np.all(raw_eigenvalues > 0.0))
-    raw_condition = (
-        float(np.max(raw_eigenvalues) / np.min(raw_eigenvalues))
-        if raw_positive
+    empirical, empirical_diagonal, correlation = (
+        _unbiased_covariance_and_correlation(states)
+    )
+    diagonal_finite_positive = bool(
+        tf.reduce_all(
+            tf.math.is_finite(empirical_diagonal) & (empirical_diagonal > 0.0)
+        ).numpy()
+    )
+    standardized_eigenvalues = tf.linalg.eigvalsh(correlation)
+    spectrum_finite = bool(
+        tf.reduce_all(tf.math.is_finite(standardized_eigenvalues)).numpy()
+    )
+    maximum_abs_eigenvalue = tf.reduce_max(tf.abs(standardized_eigenvalues))
+    rank_tolerance = (
+        tf.cast(dimension, tf.float64)
+        * tf.constant(sys.float_info.epsilon, tf.float64)
+        * maximum_abs_eigenvalue
+    )
+    standardized_rank = int(
+        tf.reduce_sum(
+            tf.cast(standardized_eigenvalues > rank_tolerance, tf.int32)
+        ).numpy()
+    )
+    standardized_positive = bool(
+        spectrum_finite
+        and tf.reduce_all(standardized_eigenvalues > 0.0).numpy()
+    )
+    standardized_condition = (
+        float(
+            (
+                tf.reduce_max(standardized_eigenvalues)
+                / tf.reduce_min(standardized_eigenvalues)
+            ).numpy()
+        )
+        if standardized_positive
         else float("inf")
     )
-    identity = np.eye(dimension)
-    dense_shrunk = (1.0 - weight) * empirical + weight * identity
+    identity = tf.eye(dimension, dtype=tf.float64)
+    dense_standardized = (1.0 - weight) * correlation + weight * identity
+    dense_shrunk = (1.0 - weight) * empirical + weight * tf.linalg.diag(
+        empirical_diagonal
+    )
+    dense_shrunk = 0.5 * (dense_shrunk + tf.transpose(dense_shrunk))
     dense_discrepancy = float(
-        np.linalg.norm(dense_shrunk - empirical, ord="fro")
-        / max(np.linalg.norm(empirical, ord="fro"), np.finfo(float).eps)
+        (
+            tf.norm(dense_standardized - correlation)
+            / tf.maximum(
+                tf.norm(correlation),
+                tf.constant(sys.float_info.epsilon, tf.float64),
+            )
+        ).numpy()
+    )
+    dense_candidate_eigenvalues = tf.linalg.eigvalsh(dense_shrunk)
+    dense_candidate_finite_positive = bool(
+        tf.reduce_all(
+            tf.math.is_finite(dense_candidate_eigenvalues)
+            & (dense_candidate_eigenvalues > 0.0)
+        ).numpy()
     )
     dense_checks = {
         "state_count_sufficient": n >= dense_required,
         "effective_information_sufficient": min_ess >= dense_min_ess,
         "cross_chain_location_compatible": dense_chain_compatible,
-        "full_raw_rank": raw_rank == dimension,
-        "raw_condition_acceptable": raw_condition <= 1.0e8,
+        "full_raw_rank": standardized_rank == dimension,
+        "raw_condition_acceptable": standardized_condition <= 1.0e8,
         "regularization_discrepancy_acceptable": dense_discrepancy <= 0.50,
+        "candidate_covariance_finite_positive": dense_candidate_finite_positive,
     }
     common = {
         "state_count": n,
         "dimension": dimension,
         "dense_min_states": dense_required,
         "diagonal_min_states": diagonal_required,
+        "covariance_backend": "tensorflow_float64_unbiased_n_minus_1",
         "ess_method": "geyer_initial_positive_sequence_fft_autocorrelation",
-        "effective_sample_size_by_coordinate": tuple(
-            float(item) for item in ess_by_coordinate
-        ),
+        "ess_positive_variance_rule": "finite_and_strictly_positive_scale_free",
+        "effective_sample_size_by_coordinate": ess_by_coordinate,
         "minimum_effective_sample_size": min_ess,
         "dense_min_effective_sample_size": dense_min_ess,
         "diagonal_min_effective_sample_size": diagonal_min_ess,
@@ -297,42 +382,49 @@ def assess_metric_covariance(
             None
             if split_rhat is None
             else tuple(
-                float(item) if np.isfinite(item) else None for item in split_rhat
+                float(item) if math.isfinite(float(item)) else None
+                for item in split_rhat.numpy().tolist()
             )
         ),
         "maximum_split_rhat": max_split_rhat,
-        "raw_numerical_rank": raw_rank,
-        "raw_condition_number": raw_condition,
+        "adequacy_geometry_space": "correlation",
+        "rank_tolerance": float(rank_tolerance.numpy()),
+        "raw_numerical_rank": standardized_rank,
+        "standardized_numerical_rank": standardized_rank,
+        "raw_condition_number": standardized_condition,
+        "standardized_condition_number": standardized_condition,
+        "standardized_eigenvalues": tuple(
+            float(item) for item in standardized_eigenvalues.numpy().tolist()
+        ),
         "shrinkage": weight,
         "dense_relative_frobenius_discrepancy": dense_discrepancy,
+        "dense_discrepancy_space": "correlation",
         "dense_checks": dense_checks,
     }
     if all(dense_checks.values()):
-        median_diagonal = float(np.median(np.diag(dense_shrunk)))
-        floor = max(1.0e-9, 1.0e-8 * median_diagonal)
-        eigenvalues, eigenvectors = np.linalg.eigh(dense_shrunk)
-        regularized = (eigenvectors * np.maximum(eigenvalues, floor)) @ eigenvectors.T
         return MetricAdequacyDecision(
             outcome="dense_update",
-            covariance=0.5 * (regularized + regularized.T),
-            estimator_family="dense_welford_identity_shrinkage",
+            covariance=dense_shrunk.numpy(),
+            estimator_family="dense_unbiased_correlation_shrinkage",
             report={
                 **common,
-                "eigenvalue_floor": floor,
-                "clipped_eigenvalue_count": int(np.sum(eigenvalues < floor)),
+                "eigenvalue_floor": None,
+                "clipped_eigenvalue_count": 0,
+                "regularization_method": "shrink_correlations_preserve_variances",
+                "absolute_regularization_applied": False,
                 "dense_information_gate_passed": True,
                 "diagonal_fallback_used": False,
             },
         )
 
-    empirical_diagonal = np.diag(empirical)
-    diagonal_finite_positive = bool(
-        np.all(np.isfinite(empirical_diagonal)) and np.all(empirical_diagonal > 0.0)
-    )
-    shrunk_diagonal = (1.0 - weight) * empirical_diagonal + weight
     diagonal_discrepancy = float(
-        np.linalg.norm(shrunk_diagonal - empirical_diagonal)
-        / max(np.linalg.norm(empirical_diagonal), np.finfo(float).eps)
+        (
+            tf.norm(identity - correlation)
+            / tf.maximum(
+                tf.norm(correlation),
+                tf.constant(sys.float_info.epsilon, tf.float64),
+            )
+        ).numpy()
     )
     diagonal_checks = {
         "state_count_sufficient": n >= diagonal_required,
@@ -344,21 +436,21 @@ def assess_metric_covariance(
     report = {
         **common,
         "diagonal_relative_euclidean_discrepancy": diagonal_discrepancy,
+        "diagonal_discrepancy_space": "correlation",
         "diagonal_checks": diagonal_checks,
         "dense_information_gate_passed": False,
     }
     if all(diagonal_checks.values()):
-        median_diagonal = float(np.median(shrunk_diagonal))
-        floor = max(1.0e-9, 1.0e-8 * median_diagonal)
-        regularized_diagonal = np.maximum(shrunk_diagonal, floor)
         return MetricAdequacyDecision(
             outcome="diagonal_fallback",
-            covariance=np.diag(regularized_diagonal),
-            estimator_family="diagonal_welford_identity_shrinkage",
+            covariance=tf.linalg.diag(empirical_diagonal).numpy(),
+            estimator_family="diagonal_unbiased_variance_preserving",
             report={
                 **report,
-                "eigenvalue_floor": floor,
-                "clipped_eigenvalue_count": int(np.sum(shrunk_diagonal < floor)),
+                "eigenvalue_floor": None,
+                "clipped_eigenvalue_count": 0,
+                "regularization_method": "diagonal_empirical_variances",
+                "absolute_regularization_applied": False,
                 "diagonal_fallback_used": True,
             },
         )
@@ -415,60 +507,84 @@ def _rejected_metric_candidate(
     )
 
 
-def _summed_chain_ess(chain_states: np.ndarray) -> np.ndarray:
-    """Conservative per-coordinate ESS with time kept within each chain."""
+def _summed_chain_ess(chain_states: Any) -> Any:
+    """TensorFlow Geyer ESS with time kept within each chain."""
 
-    draw_count, chain_count, dimension = chain_states.shape
-    total = np.zeros(dimension, dtype=float)
-    fft_size = 1 << int(np.ceil(np.log2(max(2, 2 * draw_count))))
+    import tensorflow as tf
+
+    tensor = tf.cast(tf.convert_to_tensor(chain_states), tf.float64)
+    if tensor.shape.rank != 3 or any(dim is None for dim in tensor.shape):
+        raise ValueError("ESS states must have static draw/chain/coordinate shape")
+    draw_count, chain_count, dimension = (int(dim) for dim in tensor.shape)
+    total = tf.zeros((dimension,), dtype=tf.float64)
+    fft_size = 1 << int(math.ceil(math.log2(max(2, 2 * draw_count))))
     for chain_index in range(chain_count):
-        centered = chain_states[:, chain_index, :] - np.mean(
-            chain_states[:, chain_index, :], axis=0, keepdims=True
-        )
-        spectrum = np.fft.rfft(centered, n=fft_size, axis=0)
-        autocovariance = np.fft.irfft(
-            spectrum * np.conjugate(spectrum), n=fft_size, axis=0
+        chain = tensor[:, chain_index, :]
+        centered = chain - tf.reduce_mean(chain, axis=0, keepdims=True)
+        spectrum = tf.signal.rfft(tf.transpose(centered), fft_length=[fft_size])
+        autocovariance = tf.transpose(
+            tf.signal.irfft(
+                spectrum * tf.math.conj(spectrum),
+                fft_length=[fft_size],
+            )
         )[:draw_count]
         variance = autocovariance[0]
-        valid = variance > np.finfo(float).eps
-        rho = np.zeros_like(autocovariance, dtype=float)
-        rho[:, valid] = autocovariance[:, valid] / variance[valid]
-        pair_sum = np.zeros(dimension, dtype=float)
-        active = valid.copy()
-        previous = np.full(dimension, np.inf, dtype=float)
+        valid = tf.math.is_finite(variance) & (variance > 0.0)
+        denominator = tf.where(valid, variance, tf.ones_like(variance))
+        rho = tf.where(
+            valid[None, :],
+            autocovariance / denominator[None, :],
+            tf.zeros_like(autocovariance),
+        )
+        pair_sum = tf.zeros((dimension,), dtype=tf.float64)
+        active = valid
+        previous = tf.fill((dimension,), tf.constant(float("inf"), tf.float64))
         for lag in range(1, draw_count - 1, 2):
-            pair = rho[lag] + rho[lag + 1]
-            pair = np.minimum(pair, previous)
-            positive = active & np.isfinite(pair) & (pair > 0.0)
-            pair_sum[positive] += pair[positive]
-            active &= positive
-            previous[positive] = pair[positive]
-            if not np.any(active):
-                break
-        tau = np.maximum(1.0, 1.0 + 2.0 * pair_sum)
-        chain_ess = np.zeros(dimension, dtype=float)
-        chain_ess[valid] = np.clip(draw_count / tau[valid], 1.0, draw_count)
-        total += chain_ess
+            pair = tf.minimum(rho[lag] + rho[lag + 1], previous)
+            positive = active & tf.math.is_finite(pair) & (pair > 0.0)
+            pair_sum = pair_sum + tf.where(positive, pair, 0.0)
+            active = active & positive
+            previous = tf.where(positive, pair, previous)
+        tau = tf.maximum(1.0, 1.0 + 2.0 * pair_sum)
+        chain_ess = tf.where(
+            valid,
+            tf.clip_by_value(float(draw_count) / tau, 1.0, float(draw_count)),
+            tf.zeros_like(tau),
+        )
+        total = total + chain_ess
+    tf.debugging.assert_all_finite(total, "metric ESS must be finite")
     return total
 
 
-def _split_rhat_by_coordinate(chain_states: np.ndarray) -> np.ndarray | None:
-    """Return split R-hat only when multiple explicit chains are available."""
+def _split_rhat_by_coordinate(chain_states: Any) -> Any | None:
+    """Return TensorFlow split R-hat for multiple explicit chains."""
 
-    draw_count, chain_count, _dimension = chain_states.shape
+    import tensorflow as tf
+
+    tensor = tf.cast(tf.convert_to_tensor(chain_states), tf.float64)
+    if tensor.shape.rank != 3 or any(dim is None for dim in tensor.shape):
+        raise ValueError("split R-hat states require a static rank-3 shape")
+    draw_count, chain_count, _dimension = (int(dim) for dim in tensor.shape)
     if chain_count < 2 or draw_count < 4:
         return None
     half = draw_count // 2
-    split = np.concatenate(
-        (chain_states[:half], chain_states[draw_count - half :]),
+    split = tf.concat(
+        (tensor[:half], tensor[draw_count - half :]),
         axis=1,
     )
-    split_means = np.mean(split, axis=0)
-    within = np.mean(np.var(split, axis=0, ddof=1), axis=0)
-    between = half * np.var(split_means, axis=0, ddof=1)
+    split_means = tf.reduce_mean(split, axis=0)
+    within_chain_centered = split - split_means[None, :, :]
+    within_chain_variance = tf.reduce_sum(
+        tf.square(within_chain_centered), axis=0
+    ) / tf.cast(half - 1, tf.float64)
+    within = tf.reduce_mean(within_chain_variance, axis=0)
+    grand_mean = tf.reduce_mean(split_means, axis=0, keepdims=True)
+    split_chain_count = int(split.shape[1])
+    between = tf.cast(half, tf.float64) * tf.reduce_sum(
+        tf.square(split_means - grand_mean), axis=0
+    ) / tf.cast(split_chain_count - 1, tf.float64)
     variance = ((half - 1.0) / half) * within + between / half
-    with np.errstate(divide="ignore", invalid="ignore"):
-        return np.sqrt(variance / within)
+    return tf.sqrt(variance / within)
 
 
 def normalize_operational_warmup_config(
@@ -1581,6 +1697,14 @@ class OperationalWindowedWarmupResult:
         )
 
     @property
+    def metric_adaptation_status(self) -> str:
+        return (
+            "metric_updated"
+            if self.operational_metric_update_count > 0
+            else "no_metric_update"
+        )
+
+    @property
     def every_update_used_by_later_transition(self) -> bool:
         for index, window in enumerate(self.windows):
             update_applied = (
@@ -1604,6 +1728,7 @@ class OperationalWindowedWarmupResult:
         return {
             "schema": "bayesfilter.hmc_operational_windowed_warmup.v2",
             "status": self.status,
+            "metric_adaptation_status": self.metric_adaptation_status,
             "algorithm_id": self.algorithm_id,
             "route_contract_version": self.route_contract_version,
             "config": self.config.payload(),
@@ -2302,28 +2427,40 @@ def run_operational_windowed_warmup(
                     stage="metric_candidate_construction",
                     window=window,
                 )
-                latent_covariance = np.asarray(metric_decision.covariance, dtype=float)
-                canonical_covariance = (
-                    active_transform.factor
-                    @ latent_covariance
-                    @ active_transform.factor.T
+                latent_covariance = tf.convert_to_tensor(
+                    metric_decision.covariance,
+                    dtype=tf.float64,
                 )
-                canonical_mean = np.mean(
-                    canonical_draws.reshape((-1, active_transform.dimension)),
+                active_factor = tf.convert_to_tensor(
+                    active_transform.factor,
+                    dtype=tf.float64,
+                )
+                canonical_covariance = tf.matmul(
+                    tf.matmul(active_factor, latent_covariance),
+                    active_factor,
+                    transpose_b=True,
+                )
+                canonical_covariance = 0.5 * (
+                    canonical_covariance + tf.transpose(canonical_covariance)
+                )
+                canonical_state_tensor = tf.reshape(
+                    tf.convert_to_tensor(canonical_draws, dtype=tf.float64),
+                    (-1, active_transform.dimension),
+                )
+                canonical_mean = tf.reduce_mean(
+                    canonical_state_tensor,
                     axis=0,
                 )
                 try:
                     estimate = PositionCovarianceEstimate(
-                        center=canonical_mean,
-                        covariance=canonical_covariance,
+                        center=canonical_mean.numpy(),
+                        covariance=canonical_covariance.numpy(),
                         source_coordinate_signature=active_transform.signature,
                         estimator_family=str(metric_decision.estimator_family),
-                        state_count=int(
-                            latent_draws.reshape(
-                                (-1, active_transform.dimension)
-                            ).shape[0]
+                        state_count=int(canonical_state_tensor.shape[0]),
+                        effective_rank=int(
+                            tf.linalg.matrix_rank(latent_covariance).numpy()
                         ),
-                        effective_rank=int(np.linalg.matrix_rank(latent_covariance)),
                         regularization_report=metric_decision.report,
                         adequacy_report={
                             "outcome": metric_decision.outcome,
@@ -2340,7 +2477,11 @@ def run_operational_windowed_warmup(
                         raise ValueError(
                             "metric update did not produce a new coordinate signature"
                         )
-                except (TypeError, ValueError, np.linalg.LinAlgError) as exc:
+                except (
+                    TypeError,
+                    ValueError,
+                    tf.errors.InvalidArgumentError,
+                ) as exc:
                     metric_decision = _rejected_metric_candidate(
                         metric_decision,
                         stage="transform_construction",
@@ -2755,17 +2896,35 @@ def compose_operational_transform_in_base_coordinates(
     """
 
     from bayesfilter.inference.hmc import PrecomputedMassArtifact
+    import tensorflow as tf
 
     if base_transform.dimension != final_transform.dimension:
         raise ValueError("base and final transform dimensions must match")
-    center_delta = final_transform.center - base_transform.center
-    nested_center = np.linalg.solve(base_transform.factor, center_delta)
-    nested_factor = np.linalg.solve(base_transform.factor, final_transform.factor)
-    nested_covariance = nested_factor @ nested_factor.T
+    base_factor = tf.convert_to_tensor(base_transform.factor, dtype=tf.float64)
+    final_factor = tf.convert_to_tensor(final_transform.factor, dtype=tf.float64)
+    center_delta = tf.convert_to_tensor(
+        final_transform.center - base_transform.center,
+        dtype=tf.float64,
+    )
+    nested_center = tf.linalg.triangular_solve(
+        base_factor,
+        center_delta[:, None],
+        lower=True,
+    )[:, 0]
+    nested_factor = tf.linalg.triangular_solve(
+        base_factor,
+        final_factor,
+        lower=True,
+    )
+    nested_covariance = tf.matmul(nested_factor, nested_factor, transpose_b=True)
+    tf.debugging.assert_all_finite(
+        nested_covariance,
+        "operational compatibility covariance must be finite",
+    )
     artifact = PrecomputedMassArtifact(
-        position=nested_center,
-        covariance=nested_covariance,
-        factor=nested_factor,
+        position=nested_center.numpy(),
+        covariance=nested_covariance.numpy(),
+        factor=nested_factor.numpy(),
         adapter_signature=str(adapter_signature),
         position_role="operational_final_center_in_geometry_latent",
         covariance_source="operational_final_covariance_in_geometry_latent",
@@ -2779,13 +2938,28 @@ def compose_operational_transform_in_base_coordinates(
         },
         nonclaims=OPERATIONAL_WARMUP_NONCLAIMS,
     )
-    probe = np.stack(
-        [np.zeros(base_transform.dimension), np.linspace(-0.3, 0.4, base_transform.dimension)]
+    probe = tf.stack(
+        [
+            tf.zeros((base_transform.dimension,), dtype=tf.float64),
+            tf.linspace(
+                tf.constant(-0.3, tf.float64),
+                tf.constant(0.4, tf.float64),
+                base_transform.dimension,
+            ),
+        ]
     )
     nested_theta = base_transform.latent_to_theta(
         artifact.build_latent_transform().latent_to_position(probe)
     )
     direct_theta = final_transform.latent_to_theta(probe)
-    if not np.allclose(nested_theta, direct_theta, rtol=1.0e-10, atol=1.0e-10):
-        raise ValueError("operational compatibility composition failed")
+    try:
+        tf.debugging.assert_near(
+            nested_theta,
+            direct_theta,
+            rtol=1.0e-10,
+            atol=1.0e-10,
+            message="operational compatibility composition failed",
+        )
+    except tf.errors.InvalidArgumentError as exc:
+        raise ValueError("operational compatibility composition failed") from exc
     return artifact

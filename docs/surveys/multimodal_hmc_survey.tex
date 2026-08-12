@@ -1,0 +1,550 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,tabularx}
+\usepackage[round,authoryear]{natbib}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\ESS}{\operatorname{ESS}}
+\newcommand{\given}{\,\middle|\,}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\cmark}{\textsf{yes}}
+\newcommand{\pmark}{\textsf{partial}}
+\newcommand{\xmark}{\textsf{no}}
+
+\title{Hamiltonian Monte Carlo for Multimodal Targets:\\
+Mechanisms, Corrections, Diagnostics, and a BayesFilter Evaluation Strategy}
+\author{BayesFilter research note}
+\date{9 August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Standard Hamiltonian Monte Carlo (HMC) can explore a connected typical set very
+efficiently while failing almost completely to cross a low-density barrier between
+isolated modes.  This failure can coexist with finite trajectories, high acceptance,
+and apparently satisfactory within-basin convergence diagnostics.  This survey
+separates three tasks that are often conflated: discovering important modes, moving
+between known modes, and estimating their relative posterior masses.  It reviews
+replica exchange, tempered transitions, symmetric-schedule tempered HMC,
+continuous and geometric tempering, wormhole geometry, transport maps, annealed
+importance sampling (AIS), and sequential Monte Carlo (SMC).  Exactness requires
+the appropriate product target, Metropolis correction, Jacobian, or importance
+weight; observing transitions is not itself an estimate of relative mode mass.  For
+BayesFilter, the recommended first comparison is fixed-kernel parallel-tempered HMC
+as an exact baseline and symmetric-schedule tempered HMC as a single-chain
+candidate, with AIS or annealed SMC supplying independent evidence about global
+mass.  NeuTra remains useful for within-region geometry but is not, by itself, a
+multimodal coverage or weight authority.  The recommendation is an experiment
+sequence, not a claim that any method is already correct for the SSL--LSTM target.
+\end{abstract}
+
+\section{Scope and source method}
+
+The question is not whether multimodal sampling has a universal solution.  It is:
+which HMC-compatible mechanisms can plausibly generate an empirical posterior with
+the correct global mixture, what correction makes each method target the intended
+distribution, and what evidence would reveal failure on the BayesFilter SSL--LSTM
+problem?  This is a bounded technical survey, not a systematic review or a ranking
+supported by a common benchmark.
+
+The claim-bearing primary sources were stored locally, converted to text, and read
+through their method, invariant-target or detailed-balance arguments, experiments,
+and limitations.  The exact files, SHA-256 values, sections inspected, original-code
+links, and one quarantined invalid download are recorded in
+\code{.localresources/papers/multimodal\_hmc/CORPUS\_AUDIT.md}.  The original
+1996 tempered-transitions article could not be recovered as a valid local PDF; the
+algorithm and acceptance formula used below were therefore checked in the complete
+technical account in Section~7 of \citet{neal2001ais}, which explicitly relates it to
+\citet{neal1996tempered}.  No local implementation is claimed for any surveyed
+method.
+
+The BayesFilter policy in this work excludes TFP NUTS.  ``HMC'' below means a
+fixed, explicitly tuned leapfrog kernel unless a cited method defines a different
+corrected trajectory.  Literature evidence can nominate an implementation and an
+experiment; it cannot establish correctness, speed, or posterior validity for this
+repository.
+
+\section{The failure mechanism in ordinary HMC}
+
+Let the target have unnormalised density
+\begin{equation}
+  \widetilde\pi(q)=\exp\{-U(q)\}, \qquad q\in\R^d,
+\end{equation}
+and augment it with momentum $p\sim N(0,M)$.  Euclidean HMC uses
+\begin{equation}
+  H(q,p)=U(q)+K(p), \qquad K(p)=\tfrac12p^\mathsf{T}M^{-1}p.
+\end{equation}
+Exact Hamiltonian flow preserves $H$; a reversible, volume-preserving numerical
+trajectory is corrected with
+\begin{equation}
+  a\{(q,p),(q',p')\}=1\wedge
+  \exp\{-H(q',p')+H(q,p)\}.
+  \label{eq:hmc-accept}
+\end{equation}
+Momentum refresh changes the energy between trajectories, but its kinetic energy is
+typically of order $d/2$, with fluctuations of order $\sqrt d$.  A potential barrier
+far into the kinetic-energy tail is therefore crossed only rarely
+\citep{betancourt2017conceptual,graham2017continuous,nishimura2020geometric}.
+
+This explains an important distinction.  HMC may mix rapidly \emph{inside} each
+mode and still have a transition time between modes far longer than the run.  Low
+rank-normalised $\widehat R$ cannot rule that out when every chain is confined to the
+same basin, when initialisation omits an important basin, or when a symmetry is not
+visible in the monitored marginal.  Conversely, deliberately putting equal numbers
+of chains in two basins does not imply that the posterior masses are equal.  Their
+initialisation counts were chosen by the analyst, not sampled from the posterior.
+
+For later discussion, define three separate objectives:
+\begin{description}
+  \item[Discovery.] Locate every basin with non-negligible posterior mass.
+  \item[Transition.] Move repeatedly among those basins while preserving a declared
+        target.
+  \item[Weight.] Estimate the relative posterior mass of the basins, with Monte Carlo
+        uncertainty.
+\end{description}
+No finite generic algorithm certifies discovery of every important mode.  A method
+that improves transition can still give poor weights if it has not reached its global
+stationary regime.  A weighted path method can estimate masses consistently while
+having intolerably variable weights in finite computation.
+
+\section{Discrete tempering}
+
+\subsection{Bridging family}
+
+Let $g_0$ be a normalised base density and define inverse temperatures
+$0=\beta_0<\cdots<\beta_L=1$ with
+\begin{equation}
+  \widetilde\pi_\beta(q)
+  =g_0(q)^{1-\beta}\widetilde\pi(q)^\beta,
+  \qquad
+  \pi_\beta(q)=\frac{\widetilde\pi_\beta(q)}{Z_\beta}.
+  \label{eq:bridge}
+\end{equation}
+For a pure power bridge, $g_0$ is omitted.  Smaller $\beta$ flattens target-energy
+barriers, but it can also change mode volumes and therefore change relative mode
+probabilities.  A broad mode becoming dominant at high temperature can make a
+narrow mode effectively disappear.  This unequal-scale failure grows rapidly with
+dimension and affects parallel tempering, tempered HMC, and tempered SMC
+\citep{park2025athmc}.
+
+\subsection{Parallel tempering or replica exchange}
+
+Replica exchange runs one invariant Markov kernel at each temperature and targets
+the exact product density
+\begin{equation}
+  \Pi(q_0,\ldots,q_L)=\prod_{\ell=0}^{L}\pi_{\beta_\ell}(q_\ell).
+\end{equation}
+An exchange of adjacent states $q_\ell$ and $q_{\ell+1}$ is accepted with
+\begin{equation}
+  a_{\mathrm{swap}}=1\wedge
+  \frac{widetilde\pi_{\beta_\ell}(q_{\ell+1})
+        \widetilde\pi_{\beta_{\ell+1}}(q_\ell)}
+       {\widetilde\pi_{\beta_\ell}(q_\ell)
+        \widetilde\pi_{\beta_{\ell+1}}(q_{\ell+1})}.
+  \label{eq:swap}
+\end{equation}
+This is a detailed-balance correction for the product target, so samples at
+$\beta_L=1$ target the original posterior.  \citet{hukushima1996exchange} show that
+exchange probabilities fall exponentially as the temperature gap grows and identify
+three distinct operating conditions: every adjacent exchange must remain possible,
+replicas must traverse the full temperature range, and a replica at the hot end must
+actually forget its original basin.  The first two do not imply the third.
+
+For HMC, each within-temperature kernel can be an ordinary fixed HMC transition
+with the temperature-specific potential and its own Metropolis correction.  This is
+the simplest exact multimodal baseline for BayesFilter because it changes the
+orchestration more than the local kernel.  Its costs are multiple concurrent states,
+temperature-specific tuning, and a ladder that may require many replicas as dimension
+increases.  Swap acceptance alone is explanatory, not proof of global mixing.
+
+\subsection{Tempered transitions}
+
+Tempered transitions propose one global move by applying an upward sequence of
+kernels through increasingly diffuse distributions and a matched downward sequence
+back to the target.  Suppose $\widehat T_j$ leaves $\pi_j$ invariant and
+$\check T_j$ is its reversal with respect to $\pi_j$.  Starting at
+$\widehat x_0$, the construction produces
+\begin{equation*}
+ \widehat x_0\rightarrow\widehat x_1\rightarrow\cdots
+ \rightarrow\widehat x_{L-1}\rightarrow\bar x_L
+ \rightarrow\check x_{L-1}\rightarrow\cdots\rightarrow\check x_0.
+\end{equation*}
+The terminal proposal is accepted with the telescoping density-ratio product given
+by Eq.~(27) of \citet{neal2001ais}.  In compact notation,
+\begin{equation}
+ a_{\mathrm{TT}}=1\wedge
+ \prod_{j=1}^{L}
+ \frac{\widetilde\pi_j(\widehat x_{j-1})
+       \widetilde\pi_{j-1}(\check x_{j-1})}
+      {\widetilde\pi_{j-1}(\widehat x_{j-1})
+       \widetilde\pi_j(\check x_{j-1})}.
+ \label{eq:tt}
+\end{equation}
+The paired path and correction preserve the target; merely annealing upward and
+back without Eq.~\eqref{eq:tt} does not.  Each proposal costs both an upward and a
+downward traversal.  The ladder can still be deceptive: intermediate distributions
+may suppress a target-relevant mode or fail to connect the regions that matter.
+
+\section{Tempering inside Hamiltonian dynamics}
+
+\subsection{Symmetric-schedule tempered HMC}
+
+\citet{park2025athmc} replace the fixed Hamiltonian during a proposal by
+\begin{equation}
+ H_\alpha(q,p,t)=\tfrac12p^\mathsf{T}M^{-1}p+\frac{U(q)}{\alpha(t)},
+ \label{eq:park-hamiltonian}
+\end{equation}
+where the temperature $\alpha(t)$ rises and then falls.  The outward part helps a
+trajectory leave a basin; the return to unit temperature directs the endpoint back
+toward a target mode.  The numerical step size is scaled using a transformed time
+coordinate.  Crucially, the schedule is symmetric, starts and ends at unit
+temperature, and the terminal state is accepted using the original endpoint
+Hamiltonians as in Eq.~\eqref{eq:hmc-accept}.  Proposition~1 and its appendix proof
+show that this symmetric construction is reversible and leaves $\pi$ invariant.
+
+This method is attractive for BayesFilter because it produces a single fixed-length
+HMC-style transition without a permanent population of replicas.  It is not made
+exact by a visually symmetric temperature plot alone: half-step indexing, numerical
+reversibility, endpoint temperature, and Metropolis correction are part of the
+construction.  Its maximum temperature, schedule length, transformed step-size
+scaling, and local mass matrix need target-specific tuning.  The paper explicitly
+shows the unequal-mode-scale difficulty discussed after Eq.~\eqref{eq:bridge}.
+Transitions therefore nominate a viable sampler but do not by themselves establish
+relative masses.
+
+\subsection{Continuously tempered HMC}
+
+\citet{graham2017continuous} augment $q$ with a continuous temperature-control
+coordinate $u$.  A smooth map $\beta(u)$ connects the target to a normalised base,
+so that the extended potential contains
+\begin{equation}
+  \beta(u)U(q)+(1-\beta(u))[-\log g_0(q)]
+\end{equation}
+plus a bias or confinement term for $u$.  Ordinary leapfrog on the augmented
+Hamiltonian remains reversible and volume preserving, followed by a Metropolis
+correction.  Target expectations and the target normalising constant are recovered
+with the paper's conditional or importance-weighted estimators, rather than by
+silently treating all augmented states as target draws.
+
+The method unifies temperature movement and state movement in one differentiable
+dynamics.  Its practical dependence on a base distribution that overlaps the target,
+and on calibration of the temperature marginal or normalising-constant estimate, is
+substantial.  A base trained on one mode can provide an easy route to that mode and
+no useful route to another.  The thermostat-assisted extension of
+\citet{luo2019thermostat} adds Nos\'e--Hoover variables and adaptive biasing force for
+minibatch noise.  That extension is scientifically relevant but is not the first
+BayesFilter candidate: it changes the dynamics and stochastic-gradient assumptions
+more than the fixed-HMC problem requires.
+
+\subsection{Geometric tempering}
+
+Riemannian HMC with a position-dependent metric $G(q)$ uses
+\begin{equation}
+  H(q,p)=-\log\pi(q)+\tfrac12\log|G(q)|
+         +\tfrac12p^\mathsf{T}G(q)^{-1}p.
+  \label{eq:rmhmc}
+\end{equation}
+The metric terms cancel appropriately after integrating over momentum, preserving
+the intended position marginal.  \citet{nishimura2020geometric} choose metrics whose
+volume factor satisfies
+\begin{equation}
+  |G_T(q)|^{1/2}\ \propto\ \pi(q)^{1-1/T},
+  \label{eq:gthmc-condition}
+\end{equation}
+which lowers effective energy barriers by a factor $T$.  Their isometric variant
+changes distances in all directions; the directional variant can be more efficient
+when a useful inter-mode direction is known.  Barrier reduction is not sufficient to
+cause a transition, however, and the directional construction imports geometric
+knowledge.
+
+Fast changes in the metric make standard integrators unstable.  The paper therefore
+develops a reversible variable-step integrator and includes its non-unit Jacobian in
+the acceptance probability.  This is not a drop-in mass-matrix change.  A faithful
+BayesFilter implementation would need the metric determinant, its derivatives, the
+integrator, Jacobian, and reversibility tests.  The larger implementation and tuning
+surface makes GTHMC a later candidate, not the initial baseline.
+
+\section{Mode-informed geometry and transport}
+
+\subsection{Wormhole HMC}
+
+Wormhole HMC shortens the metric distance along tubes connecting known mode
+locations \citep{lan2014wormhole}.  The method adds a vector field, an auxiliary
+dimension to reduce interference among connections, and a correction for a
+non-volume-preserving integrator.  Its appendices establish detailed balance and
+stationarity for the corrected transition.  The paper begins with known or
+approximately known modes, then proposes residual-density optimisation to find new
+ones.  Adaptation of the mode library and wormhole network occurs at regeneration
+times so that arbitrary ongoing adaptation does not destroy stationarity.
+
+This construction directly encodes useful global information, which can make it
+powerful when reliable mode locations are available.  It is also the source of its
+main limitation: missed modes, inaccurate local geometry, a poorly connected
+wormhole network, or rare regenerations can defeat the method.  The approximate
+weights used in its residual search are search machinery, not an independent
+posterior-mass authority.  It is best classified as a mode-discovery and
+mode-transition mechanism, followed by separate weight validation.
+
+\subsection{Transport maps and NeuTra}
+
+For a bijection $q=f(z)$, exact change of variables gives
+\begin{equation}
+  \pi_Z(z)=\pi(f(z))\left|\det Df(z)\right|.
+  \label{eq:change-variable}
+\end{equation}
+HMC or another Metropolis-corrected kernel targeting Eq.~\eqref{eq:change-variable}
+is exact even when $f$ only approximately Gaussianises the target.  Transport-map
+MCMC combines learned maps with Metropolis--Hastings correction and gives conditions
+under which adaptive, inexact maps retain the exact target
+\citep{parno2018transport}.  NeuTra learns an inverse-autoregressive-flow map by
+minimising the reverse divergence $\mathrm{KL}(q\Vert\pi)$, runs HMC in $z$-space,
+then maps draws forward \citep{hoffman2019neutra}.
+
+The correction fixes proposal bias conditional on the chain exploring the transformed
+target; it does not make a missing mode appear in the training distribution.  Reverse
+KL can assign almost no proposal mass to a separated mode with little training signal
+from that mode.  A chain can then have excellent local geometry and still have a
+global transition problem.  Consequently, NeuTra should be used as within-region
+preconditioning, or trained only after an independent global method has supplied
+weighted multimodal coverage.  NeuTra loss, validation loss, and local HMC
+acceptance are explanatory diagnostics, not multimodal posterior-weight evidence.
+
+\section{Estimating global mass: AIS and SMC}
+
+Mode transition counts estimate posterior masses only after global stationarity and
+adequate effective sample size have been established.  When that premise is exactly
+what is in doubt, a separate weighted path provides discriminating evidence.
+
+\subsection{Annealed importance sampling}
+
+Let $f_0,\ldots,f_L$ be unnormalised densities with normalising constants
+$Z_0,\ldots,Z_L$.  AIS starts at $x_0\sim\pi_0$ and applies transitions that leave
+successive $\pi_j$ invariant.  With a consistent indexing convention, its weight is
+\begin{equation}
+  W=\prod_{j=1}^{L}\frac{f_j(x_{j-1})}{f_{j-1}(x_{j-1})}.
+  \label{eq:ais-weight}
+\end{equation}
+The average of independent AIS weights is an unbiased estimator of $Z_L/Z_0$;
+self-normalised weights estimate target expectations \citep{neal2001ais}.  Terminal
+mode counts need not be representative because the weights, not unweighted counts,
+perform the correction.  This makes AIS useful for estimating relative basin masses:
+combine the terminal basin indicator with $W$ and report uncertainty across
+independent runs.
+
+The guarantee does not imply useful finite variance.  If an important mode is almost
+never found, the few runs that reach it can carry enormous weights, and the upward
+tail may be absent from the observed sample.  Neal explicitly warns of heavy-tailed
+importance weights that yield drastically wrong finite results without an obvious
+warning.  Weight ESS, maximum normalised weight, repeated independent batches, and
+schedule sensitivity are therefore mandatory diagnostics.  No observed mode at all
+is a discovery failure, not evidence of zero posterior mass.
+
+\subsection{Annealed sequential Monte Carlo}
+
+SMC samplers propagate a population through a sequence such as
+Eq.~\eqref{eq:bridge}, alternating importance weighting, unbiased resampling, and
+MCMC rejuvenation kernels invariant for the current target
+\citep{delmoral2002smc,delmoral2006smc}.  Resampling prevents all future computation
+from being spent on negligible-weight particles; rejuvenation restores diversity
+after replication.  Products of mean incremental weights estimate normalising
+constants.
+
+The particle population can preserve multiple basins better than one local chain,
+but only if the schedule resolves changes in relative mass and rejuvenation moves
+particles enough within relevant regions.  Premature resampling can delete a basin;
+later invariant kernels cannot recover it if inter-mode movement is absent.  Adaptive
+temperature placement based on conditional ESS can control a particular weight
+degeneracy measure but does not certify mode discovery.  Results must include basin
+survival across stages, ancestry diversity, weight ESS, rejuvenation movement, and
+replicate uncertainty.  Unequal mode scales remain a difficult case
+\citep{park2025athmc}.
+
+\section{What each family actually addresses}
+
+Table~\ref{tab:comparison} is a functional classification, not a performance ranking.
+``Exact target'' means that the cited correction is present and its assumptions hold;
+it does not mean a finite run has mixed.
+
+\small
+\begingroup
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{p{0.18\linewidth}p{0.13\linewidth}p{0.12\linewidth}p{0.12\linewidth}p{0.16\linewidth}p{0.20\linewidth}}
+\caption{Roles and principal failure modes.}\label{tab:comparison}\\
+\toprule
+Family & Exact target mechanism & Discovery & Transition & Relative weight & Principal finite-run risk \\
+\midrule
+\endfirsthead
+\toprule
+Family & Exact target mechanism & Discovery & Transition & Relative weight & Principal finite-run risk \\
+\midrule
+\endhead
+Ordinary fixed HMC & Endpoint Metropolis correction & \xmark & local & only after global mixing & Energy barrier never crossed \\
+Parallel tempering & Product target plus swap correction & \pmark & \cmark & target-replica occupancy after round trips & Ladder bottleneck; hot chain retains basin identity \\
+Tempered transitions & Reversed up/down kernels plus density-ratio correction & \pmark & \cmark & only after global mixing; optional AIS estimators & Deceptive bridge; low global acceptance \\
+Symmetric THMC & Symmetric schedule and endpoint Metropolis correction & \pmark & \cmark & only after global mixing & Wrong schedule discretisation; unequal mode scales \\
+Continuous tempering & Corrected augmented target and target-specific weighting and conditioning & \pmark & \cmark & possible through weighted estimators & Poor base overlap; temperature-marginal calibration \\
+Geometric tempering & RMHMC determinant, reversible integrator, and Jacobian correction & \xmark/\pmark & \cmark & only after global mixing & Metric/integrator complexity; missing direction \\
+Wormhole HMC & Corrected non-volume-preserving dynamics; regeneration-safe adaptation & \pmark & \cmark & only after global mixing & Requires or must discover modes and connections \\
+Transport/NeuTra HMC & Exact transformed density and HMC/MH correction & \xmark & \pmark & only after global mixing & Learned map omits a mode \\
+AIS & Importance weights across invariant bridges & \pmark & not a chain property & \cmark & Rare enormous weights; important mode never found \\
+Annealed SMC & Sequential weights, unbiased resampling, invariant rejuvenation & \pmark & \pmark & \cmark & Basin extinction and particle degeneracy \\
+\bottomrule
+\end{longtable}
+\endgroup
+\normalsize
+
+\section{Diagnostics that answer different questions}
+
+Diagnostics must be assigned a role before looking at results.
+
+\paragraph{Hard validity vetoes.}
+Any non-finite target, state, gradient, correction term, or weight; an invalid target
+status; an uncorrected non-volume-preserving map; failure of a reversibility or
+invariance fixture; a divergence under the declared energy-error rule; or a corrupted
+artifact invalidates that run.  Acceptance is not a convergence gate, although an
+extreme value can trigger tuning investigation.
+
+\paragraph{Mode-discovery diagnostics.}
+On synthetic targets with known modes, define basins before the claim run and report
+whether every material basin was reached from dispersed initial states.  On unknown
+targets, use independent optimisation, hot replicas, AIS/SMC populations, or multiple
+discovery seeds, but label the resulting list as incomplete.  Finding the same list
+twice is descriptive stability, not proof of completeness.
+
+\paragraph{Transition diagnostics.}
+For parallel tempering, report adjacent swap rates, temperature-index traces,
+complete cold-to-hot-to-cold round trips, and whether configurations lose their
+starting-basin label at the hottest temperature.  For any sampler, report basin
+transition counts, transition directions, dwell times, and results from each
+initial basin.  A few transitions show reachability; they do not establish stationary
+weights.
+
+\paragraph{Weight diagnostics.}
+For target-replica occupancy, give binomial or Markov-chain-aware uncertainty using
+effective rather than raw counts.  For AIS/SMC, report weight ESS,
+\begin{equation}
+  \ESS_W=\frac{(\sum_i W_i)^2}{\sum_i W_i^2},
+\end{equation}
+the largest normalised weight, basin-specific weighted mass with uncertainty, and
+replication across independent batches.  Check schedule refinement and alternative
+bases.  Agreement of two methods with the same undiscovered-mode failure is not an
+independent authority.
+
+\paragraph{Within-mode diagnostics.}
+Modern split/folded rank $\widehat R$, bulk/tail ESS, energy error, movement, and
+posterior geometry checks remain necessary.  They are conditional on the explored
+support and cannot be promoted to a global coverage claim.
+
+\paragraph{Downstream predictive diagnostics.}
+For synthetic SSL--LSTM data, the relevant object is the posterior predictive
+mixture
+\begin{equation}
+ p(y\mid y_{\mathrm{obs}})
+ =\int p(y\mid\theta)p(\theta\mid y_{\mathrm{obs}})\,d\theta.
+ \label{eq:posterior-predictive}
+\end{equation}
+Its empirical simulation must independently select one retained posterior draw for
+each output path and generate one conditional path from that selected row.  Reusing
+one posterior mean or one randomly chosen parameter for many paths computes a
+different distribution.  Predictive agreement is scientifically useful when the
+parameterisation is non-identifiable, but it does not prove posterior correctness:
+different parameter distributions can induce the same finite-horizon output law.
+
+\section{BayesFilter staged recommendation}
+
+The immediate target is a valid empirical posterior mixture for the SSL--LSTM
+posterior-predictive diagnostic, not the maximum possible number of mode switches.
+The following sequence keeps local geometry, global transitions, and relative weights
+separate.
+
+\begin{enumerate}
+  \item \textbf{Build known-answer fixtures.}  Before the SSL--LSTM target, use
+  unequal-weight Gaussian mixtures with equal and unequal component scales.  Check
+  target density, gradients, XLA parity, reversibility, swap or endpoint corrections,
+  basin probabilities, and uncertainty calibration.  A sampler that cannot recover
+  known unequal weights is not eligible for the real target.
+
+  \item \textbf{Use parallel-tempered fixed HMC as the exact baseline.}  Keep the
+  current fixed HMC kernel at every temperature; tune the ladder and local kernel on
+  calibration data or calibration seeds, freeze them, and run untouched validation.
+  Require adjacent communication, repeated temperature round trips, hot-basin
+  forgetting, finite corrected transitions, and target-replica convergence from each
+  known basin.  Do not infer weights from equal chain initialisation.
+
+  \item \textbf{Evaluate symmetric-schedule THMC as the plain candidate.}  Implement
+  the exact symmetric half-step schedule and endpoint Metropolis correction from
+  \citet{park2025athmc}.  Compare it with parallel tempering at matched target/gradient
+  evaluation budgets.  Predeclare the primary comparison and uncertainty analysis;
+  transition count and runtime alone are descriptive.
+
+  \item \textbf{Add an independent weighted path.}  Run AIS first because it is the
+  smallest separate normalising-constant and basin-mass authority.  If weights
+  collapse, move to annealed SMC with conditional-ESS temperature placement,
+  resampling, and fixed-HMC rejuvenation.  Keep independent runs and report
+  basin-specific weighted uncertainty.  A low weight ESS is a repair trigger, not a
+  reason to use unweighted terminal counts.
+
+  \item \textbf{Use NeuTra only where it has evidence.}  A trained transport may
+  accelerate each local or tempered HMC kernel.  It is not allowed to create a
+  multimodal-weight authority from reverse-KL training loss or a mode-limited replay
+  set.  If a transport is trained from globally weighted particles, test whether it
+  preserves both basin coverage and corrected HMC movement.
+
+  \item \textbf{Issue the posterior archive only after agreement.}  The archive must
+  exclude warm-up, bind the exact target and sampler result, record equal or explicit
+  importance-weight semantics, and classify relative mode weights as resolved only
+  when the predeclared global evidence passes.  If transition and weighted evidence
+  conflict, preserve both artifacts and repair; do not average them into a claim.
+
+  \item \textbf{Then run the posterior-predictive diagnostic.}  Draw one posterior
+  parameter independently per path as in Eq.~\eqref{eq:posterior-predictive}, simulate
+  the truth arm independently, and compare complete-path distributions at each
+  horizon.  Non-rejection means ``not distinguished at this sample size and horizon,''
+  not equality and not HMC correctness.
+\end{enumerate}
+
+The initial baseline ladder is methodologically justified, but its numerical ladder,
+temperature ceiling, step sizes, leapfrog counts, number of replicas, AIS schedule,
+and compute budget are deliberately not specified here.  Those are target-specific
+hypotheses requiring a reviewed experiment plan and calibration canaries; literature
+defaults cannot be silently promoted to the SSL--LSTM target.
+
+\section{Decision and nonclaims}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{p{0.22\textwidth}X}
+\toprule
+Decision field & Status \\
+\midrule
+Primary conclusion & Ordinary HMC evidence is insufficient for a posterior known to have an unvisited competing mode. \\
+Viable first baseline & Parallel-tempered fixed HMC with exact swap correction and global-mixing diagnostics. \\
+Viable plain candidate & Symmetric-schedule, endpoint-corrected THMC. \\
+Required independent evidence & AIS or annealed SMC basin-mass estimates with weight diagnostics and replicate uncertainty. \\
+NeuTra status & Within-region geometry aid; not a standalone discovery or mode-weight authority. \\
+Main uncertainty & Whether all material SSL--LSTM modes can be found and whether the annealing path avoids unequal-scale weight collapse. \\
+Next justified action & Write and audit a known-mixture plus SSL--LSTM tempering experiment plan before implementation or a long run. \\
+Not concluded & No surveyed method is promoted, no SSL--LSTM posterior is validated, and no runtime or statistical ranking is established. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The strongest alternative explanation for the current apparent multimodality is an
+implementation or coordinate error rather than a genuine second posterior region.
+That possibility must be checked by evaluating both modes with the same canonical
+target and gradients before a sampler comparison.  Conversely, successful transitions
+between two known regions would not rule out a third undiscovered region.  The weakest
+part of all finite multimodal evidence is mode completeness; the proposed weighted
+methods address relative mass among reached regions, not a proof that no other region
+exists.
+
+\bibliographystyle{plainnat}
+\bibliography{multimodal_hmc_survey}
+
+\end{document}

@@ -2,7 +2,7 @@
 
 Date: 2026-07-30
 Tier: bounded serious diagnostic CPU campaign  
-Status: `SEED_A_EXECUTION_AUTHORIZED_AND_PREFLIGHT_PASSED`
+Status: `SEED_A_CPU_DIAGNOSTIC_COMPLETED_SCREEN_PASSED`
 
 ## Research Intent And Evidence Contract
 
@@ -12,7 +12,7 @@ Status: `SEED_A_EXECUTION_AUTHORIZED_AND_PREFLIGHT_PASSED`
 | Exact inputs | Existing q=20 synthetic target, fixed hyperparameters `learning_rate=0.0004`, `initialization_scale=0.01`, `gradient_clip_norm=10`, and existing independent seed-a/seed-b definitions. |
 | Candidate mechanism | Existing adaptive NeuTra procedure, executed by a standalone batch-native CPU runner and TensorFlow-only target boundary. |
 | Primary completion criterion | Seed A reaches its existing plateau stop or 2,000-step maximum, writes checkpoints and final audit, and remains finite under the 25-process topology. |
-| Hard vetoes | Visible GPU; configured compute cores above 50; nonfinite target/score/loss/gradient/support/audit; host memory above 64 GiB; corrupted or incomplete artifact; `31,500 s` cumulative cap. |
+| Hard vetoes | Visible GPU; configured compute cores above 50; nonfinite target/score/loss/gradient/support/audit; host memory above 64 GiB; corrupted or incomplete artifact; `51,500 s` cumulative cap. |
 | Explanatory only | Loss trajectory, saturation telemetry, learning-rate reductions, and runtime. |
 | Artifact | Fresh seed-A attempt under `docs/plans/artifacts/ssl-lstm-q20-cpu-batch4x25-seed-a-training-2026-07-30/`. |
 | Nonclaims | CPU results cannot establish transport promotion, HMC readiness, posterior correctness, scientific validity, architecture ranking, or a change to the GPU NeuTra default. |
@@ -40,11 +40,13 @@ configured compute cores.
 
 ## Budget
 
-The seed-A cap is `31,500 s` (`8.75` CPU-hours), derived from the measured
-`13.616 s` steady-state q=20 batch-100 target evaluation time, 2,000 maximum
-updates, validation/audit overhead, and a 15% margin. This is a cap, not an
-expected-use claim; sequential stopping returns unused time. It authorizes only
-one CPU diagnostic seed and no HMC or candidate search.
+The original seed-A cap was `31,500 s` (`8.75` CPU-hours), derived from the
+measured `13.616 s` steady-state q=20 batch-100 target evaluation time, 2,000
+maximum updates, validation/audit overhead, and a 15% margin. On 2026-07-30,
+the owner authorized exactly `20,000 s` more headroom after attempt 001 stopped
+at step 1750. The active cumulative cap is therefore `51,500 s`. This is a cap,
+not an expected-use claim; sequential stopping returns unused time. It still
+authorizes only one CPU diagnostic seed and no HMC or candidate search.
 
 Each update admits only when at least 180 s remain. Final support and audit
 admit only when at least 120 s remain. These reserves are derived from the r4
@@ -73,7 +75,7 @@ an infrastructure interruption occurs after the stop decision.
   q=1, q=2, and q=20 smoke points.
 - Proxy promotion: prevented; training loss and CPU screen status cannot admit
   a transport for HMC.
-- Missing stop: repaired; 2,000 seed-A program updates and 31,500 cumulative seconds.
+- Missing stop: repaired; 2,000 seed-A program updates and 51,500 cumulative seconds.
 - Hidden topology assumption: repaired; pinned worker identity, CPU affinity,
   shard sizes, and configured compute cores are checked on every target evaluation.
 - Batch-training policy: repaired; the prior `r1` route reported
@@ -89,6 +91,50 @@ an infrastructure interruption occurs after the stop decision.
   thread/resource/infrastructure failures separately from training-screen vetoes.
 
 Audit decision: `PASS_FOR_BOUNDED_CPU_DIAGNOSTIC_EXECUTION_REVISED_BATCH_NATIVE_ROUTE`.
+
+## Attempt-002 Budget Extension Addendum
+
+Attempt 001 stopped cleanly at the original campaign cap after writing a valid
+step-1750 checkpoint. The owner then authorized exactly `20,000 s` additional
+wall time. Attempt 002 conservatively charges prior cumulative time as
+`31,350 s`, one second above the attempt-001 manifest value
+`31,349.25759465 s`, and uses a `20,000 s` outer timeout. The launcher cap is
+`51,500 s`, leaving 150 seconds of conservative accounting slack beyond the
+outer timeout.
+
+The research question, target, architecture, batch, stream seeds, optimizer,
+adaptive controller, topology, promotion criterion, vetoes, nonclaims, and
+hardware class are unchanged. The latest checkpoint records program step 1750,
+controller status `running`, learning rate `0.0002`, and restored best trainer
+step 1500. This is the declared adaptive repair state, not a state mismatch.
+
+```bash
+timeout 20000 taskset -c 0-49 python \
+  docs/benchmarks/run_ssl_lstm_q20_strict_cpu_batch_native_training_2026_07_22.py \
+  --stream seed-a --cpu-processes 25 --batch-per-process 4 \
+  --output-root docs/plans/artifacts/ssl-lstm-q20-cpu-batch4x25-seed-a-training-2026-07-30 \
+  --cap-seconds 51500 \
+  --resume-checkpoint docs/plans/artifacts/ssl-lstm-q20-cpu-batch4x25-seed-a-training-2026-07-30/seed-a/checkpoint-1750.json \
+  --prior-wall-seconds 31350
+```
+
+The additional budget does not authorize seed B, HMC, a new architecture,
+retuning, threshold relaxation, or promotion from CPU-only evidence.
+
+## Attempt-002 Terminal Result
+
+Attempt 002 completed the declared 2,000 program updates and final support and
+heldout audit work. The terminal summary status is
+`CPU_DIAGNOSTIC_COMPLETED`; the seed-A result status is
+`CPU_DIAGNOSTIC_SCREEN_PASSED` with no vetoes. The controller selected best
+step 1500, reduced the learning rate once at step 1750, and stopped at step
+2000 with `maximum_steps_reached`.
+
+This closes the bounded CPU seed-A campaign. It does not authorize more use of
+the remaining headroom: no further optimizer updates, seed B, HMC, retuning,
+new architecture, or GPU campaign is implied. The result remains a one-seed,
+non-XLA CPU diagnostic exception and is ineligible for transport promotion,
+posterior claims, HMC readiness, or a repository default change.
 
 ## Seed-A Execution Addendum
 

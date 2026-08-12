@@ -1,0 +1,762 @@
+{
+  "adjudication": {
+    "analytic_primary_gate_names": [
+      "all_finite",
+      "minority_mass_99pct_interval_contains_truth",
+      "both_modes_observed_overall",
+      "both_hard_modes_observed_per_chain"
+    ],
+    "analytic_primary_passed": true,
+    "marginal_mean_covariance_role": "descriptive_only_not_joint_veto",
+    "nonclaims": [
+      "no stationarity or distributional equality proof",
+      "no seed ranking or sampler superiority claim",
+      "no cross-transport or SSL-LSTM claim"
+    ],
+    "sequential_passed": true,
+    "status": "passed_frozen_seed_replication"
+  },
+  "frozen_inputs": {
+    "kernel": {
+      "base_adapter_signature": "2253ee2bf30b54269201a898d661fb462e12805af8040fa9b6049d51a534b8e0",
+      "fixed_transport_manifest_hash": "e32d8e4c4762858baf6b2a13ab1e860c7308a4fa152e549890a3b809b5e8b938",
+      "identity_z_mass_artifact_payload": {
+        "adapter_signature": "7d188d2373215877cd393ec10f0df83d0e2c19f15484957420bf6e2785317f46",
+        "artifact_type": "bayesfilter_precomputed_mass_artifact",
+        "covariance": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "covariance_source": "fixed_identity_z",
+        "dimension": 4,
+        "factor": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "factor_orientation": "row_right_transpose",
+        "include_arrays": true,
+        "matrix_used_for_square_root": "identity_z",
+        "nonclaims": [
+          "fixed identity mass in trained-transport z coordinates",
+          "no residual mass adaptation claim"
+        ],
+        "position": [
+          -0.106465467943145,
+          0.21788546066410858,
+          0.13309272894548743,
+          -0.11402883217277023
+        ],
+        "position_role": "fixed_neutra_initial_z",
+        "regularization_report": {
+          "regularization_applied": false
+        },
+        "schema_version": 2,
+        "source": "bayesfilter.fixed_transport_hmc_tuning.identity_z_mass"
+      },
+      "identity_z_mass_artifact_signature": "ac17b322fd70339649323ba3b191c47335ca7566f76f63c9f8e94b1546dc64d0",
+      "mass_adaptation_used": false,
+      "mass_policy": "fixed_identity_z",
+      "nonclaims": [
+        "fixed trained transport HMC tuning only",
+        "transport is not trained or adapted by this tuner",
+        "identity z-mass policy only",
+        "no windowed mass adaptation claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no external-client scientific claim",
+        "native divergence unavailability is not zero divergences"
+      ],
+      "num_leapfrog_steps": 20,
+      "proposal_dynamics_identity": "exact_transformed_gradient",
+      "rank2_chain_batched_target_required": true,
+      "runtime": "bayesfilter.inference.tune_fixed_transport_hmc_kernel",
+      "runtime_numerical_backend": "tensorflow_tfp_only",
+      "schema": "bayesfilter.fixed_transport_hmc_kernel.v2",
+      "shared_scalar_step_across_chain_bank": true,
+      "step_size": 0.14091138276334744,
+      "transformed_adapter_signature": "7d188d2373215877cd393ec10f0df83d0e2c19f15484957420bf6e2785317f46",
+      "transport_training_or_adaptation_used": false,
+      "use_xla": true,
+      "verification_diagnostics": {
+        "acceptance_probability_by_chain": [
+          0.736988233141901,
+          0.7392189791887919,
+          0.7368487622320042,
+          0.7372385690268766
+        ],
+        "acceptance_rate": 0.7375736358973934,
+        "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+        "binary_acceptance_by_chain": [
+          0.73575,
+          0.743,
+          0.73625,
+          0.7365
+        ],
+        "binary_acceptance_rate": 0.737875,
+        "diagnostic_context": "fixed_transport_fresh_verification",
+        "divergence_count": null,
+        "divergence_status": "not_exposed_by_kernel",
+        "initial_state_all_zero": false,
+        "initial_state_bank": [
+          [
+            -0.106465467943145,
+            0.21788546066410858,
+            0.13309272894548743,
+            -0.11402883217277023
+          ],
+          [
+            -0.14254966313714088,
+            0.328193841472795,
+            -0.025057717076664692,
+            0.22262543888836772
+          ],
+          [
+            0.361399383432463,
+            -1.1990934630373027,
+            -0.1289733259912047,
+            -0.009565360570613229
+          ],
+          [
+            0.26732410297070675,
+            -1.2577961965976374,
+            -0.05721055350375043,
+            0.20899681919708898
+          ]
+        ],
+        "initial_state_shape": [
+          4,
+          4
+        ],
+        "log_accept_energy_proxy_alert": true,
+        "log_accept_energy_proxy_role": "explanatory_alert_only",
+        "log_accept_ratio_finite": true,
+        "max_abs_log_accept_energy_proxy": 2535178366465521.5,
+        "max_abs_log_accept_ratio": 2535178366465521.5,
+        "modern_rank_normalized_verification": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 4000,
+          "finite_rhat_count": 4,
+          "folded_rank_normalized_split_rhat": [
+            1.0098543630491614,
+            1.0064729845522378,
+            1.006676367655622,
+            1.0074734862764905
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.0098543630491614,
+          "max_folded_rank_normalized_split_rhat": 1.0098543630491614,
+          "max_rank_normalized_split_rhat": 0.9999991369960523,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 4,
+          "passed": true,
+          "rank_normalized_split_rhat": [
+            0.9995883130325357,
+            0.999745043964208,
+            0.9999331103502388,
+            0.9999991369960523
+          ],
+          "rhat": [
+            1.0098543630491614,
+            1.0064729845522378,
+            1.006676367655622,
+            1.0074734862764905
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.01,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 2000
+        },
+        "modern_verification_coordinate_system": "hmc_coordinates",
+        "native_divergence_interpretation": "unavailable is not zero divergences",
+        "nonclaims": [
+          "fixed trained transport HMC tuning only",
+          "transport is not trained or adapted by this tuner",
+          "identity z-mass policy only",
+          "no windowed mass adaptation claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim",
+          "no external-client scientific claim",
+          "native divergence unavailability is not zero divergences"
+        ],
+        "probe_only": false,
+        "proposed_target_log_prob_finite": true,
+        "rank2_chain_batched_initial_state": true,
+        "runtime_metadata": {
+          "chain_execution_mode": "tf_function",
+          "initial_state_shape": [
+            4,
+            4
+          ],
+          "jit_compile": true,
+          "runtime": "tfp.mcmc.sample_chain",
+          "runtime_numerical_backend": "tensorflow_tfp_only",
+          "sample_chain_call_s": 91.64345110091381,
+          "shared_mechanics_route": "bayesfilter.inference.fixed_transport_hmc_mechanics_tf",
+          "shared_scalar_step_across_chain_bank": true,
+          "tuning_policy": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "label": "fixed_kernel_screen",
+            "num_adaptation_steps": 0,
+            "source": "bayesfilter.inference.fixed_transport_hmc_tuning",
+            "target_accept_prob": null
+          },
+          "use_xla": true
+        },
+        "sample_shape": [
+          4000,
+          4,
+          4
+        ],
+        "samples_all_finite": true,
+        "target_log_prob_finite": true,
+        "target_score_finite": true,
+        "target_status_telemetry": null
+      },
+      "windowed_mass_adaptation_used": false
+    },
+    "kernel_sha256": "85ca343ea97d5f1548c672c6da5b49b41bce091362858a74faf77ac8d69af670",
+    "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-2026-08-12-run-v5/tuning/tuning_result.json",
+    "sha256": "6dfe2b8145040a18831a08032bfd61854189f2651e76c70842e59d4e4e12eb4f"
+  },
+  "git": {
+    "commit": "9ebaecc59f792f49bf7b946342ea512e71f5b3e4",
+    "dirty": true,
+    "status_line_count": 308
+  },
+  "mode_transition_diagnostics": {
+    "all_chains_transitioned": true,
+    "hard_assignment_transition_count_by_chain": [
+      726,
+      616,
+      561,
+      632
+    ],
+    "hard_assignment_visit_count_by_chain_and_mode": [
+      [
+        2328,
+        672
+      ],
+      [
+        2458,
+        542
+      ],
+      [
+        2487,
+        513
+      ],
+      [
+        2448,
+        552
+      ]
+    ],
+    "role": "explanatory_only_not_convergence_or_equality_evidence",
+    "schema": "bayesfilter.defensive_weighted_neutra_mode_transitions.v1"
+  },
+  "replication": 0,
+  "retained_analytic_diagnostics": {
+    "analytic_covariance": [
+      [
+        10.802000000000001,
+        1.3980000000000001,
+        -1.9150000000000003,
+        0.7040000000000001
+      ],
+      [
+        1.3980000000000001,
+        0.644,
+        -0.22900000000000004,
+        0.11400000000000002
+      ],
+      [
+        -1.9150000000000003,
+        -0.22900000000000004,
+        0.6745000000000001,
+        -0.07800000000000001
+      ],
+      [
+        0.7040000000000001,
+        0.11400000000000002,
+        -0.07800000000000001,
+        0.25850000000000006
+      ]
+    ],
+    "analytic_mean": [
+      -2.4000000000000004,
+      -0.30000000000000004,
+      0.45000000000000007,
+      -0.15000000000000002
+    ],
+    "analytic_minority_mass": 0.2,
+    "confidence_level": 0.99,
+    "covariance_absolute_error": [
+      [
+        0.29750464847162306,
+        0.029614337075664743,
+        0.14354297653330494,
+        0.08908518405454069
+      ],
+      [
+        0.029614337075664743,
+        0.017691594316737835,
+        0.034431652557850245,
+        0.008318282548701914
+      ],
+      [
+        0.14354297653330494,
+        0.034431652557850245,
+        0.03712188505144087,
+        0.025264306229867618
+      ],
+      [
+        0.08908518405454069,
+        0.008318282548701914,
+        0.025264306229867618,
+        0.019070244738826625
+      ]
+    ],
+    "covariance_moment_batch_means_mcse": [
+      [
+        0.33343579004855173,
+        0.08481392792677188,
+        0.08816321816540959,
+        0.0511299413889814
+      ],
+      [
+        0.08481392792677188,
+        0.036699167954618736,
+        0.02515076154754916,
+        0.014953941219826315
+      ],
+      [
+        0.08816321816540959,
+        0.02515076154754916,
+        0.029220737859980223,
+        0.014837322369045306
+      ],
+      [
+        0.0511299413889814,
+        0.014953941219826315,
+        0.014837322369045306,
+        0.012167975939372043
+      ]
+    ],
+    "covariance_moment_estimate": [
+      [
+        10.508026454960236,
+        1.368726671085135,
+        -1.7726263964395652,
+        0.6150092147422894
+      ],
+      [
+        1.368726671085135,
+        0.661683443638926,
+        -0.1946881344362655,
+        0.10568795050810297
+      ],
+      [
+        -1.7726263964395652,
+        -0.1946881344362655,
+        0.6377186192749047,
+        -0.05277482806472604
+      ],
+      [
+        0.6150092147422894,
+        0.10568795050810297,
+        -0.05277482806472604,
+        0.23941461649084553
+      ]
+    ],
+    "covariance_moment_interval_lower": [
+      [
+        9.649152776101197,
+        1.1502604701822714,
+        -1.9997197972852019,
+        0.48330721342381333
+      ],
+      [
+        1.1502604701822714,
+        0.5671526514055563,
+        -0.2594722030370135,
+        0.06716915051052655
+      ],
+      [
+        -1.9997197972852019,
+        -0.2594722030370135,
+        0.5624509864238468,
+        -0.09099323780911453
+      ],
+      [
+        0.48330721342381333,
+        0.06716915051052655,
+        -0.09099323780911453,
+        0.20807198750133304
+      ]
+    ],
+    "covariance_moment_interval_upper": [
+      [
+        11.366900133819275,
+        1.5871928719879984,
+        -1.5455329955939285,
+        0.7467112160607655
+      ],
+      [
+        1.5871928719879984,
+        0.7562142358722956,
+        -0.1299040658355175,
+        0.14420675050567938
+      ],
+      [
+        -1.5455329955939285,
+        -0.1299040658355175,
+        0.7129862521259626,
+        -0.01455641832033755
+      ],
+      [
+        0.7467112160607655,
+        0.14420675050567938,
+        -0.01455641832033755,
+        0.270757245480358
+      ]
+    ],
+    "gates": {
+      "all_finite": true,
+      "both_hard_modes_observed_per_chain": true,
+      "both_modes_observed_overall": true,
+      "minority_mass_99pct_interval_contains_truth": true
+    },
+    "joint_moment_test_performed": false,
+    "mean_batch_means_mcse": [
+      0.060712360592385675,
+      0.009748823877704543,
+      0.00967545060963333,
+      0.00480196609952617
+    ],
+    "mean_interval_lower": [
+      -2.622765985446437,
+      -0.3319662524905531,
+      0.4449175287289336,
+      -0.16456306169320725
+    ],
+    "mean_interval_upper": [
+      -2.309996630443448,
+      -0.2817436400518959,
+      0.4947621471396008,
+      -0.1398249717055914
+    ],
+    "minority_mass": 0.18991666666666662,
+    "minority_mass_batch_means_mcse": 0.007986862314966056,
+    "minority_mass_interval": [
+      0.16934387267236664,
+      0.2104894606609666
+    ],
+    "moment_diagnostics": {
+      "covariance_99pct_interval_contains_truth_by_entry": [
+        [
+          true,
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true,
+          true
+        ]
+      ],
+      "covariance_interval_pass_count": 16,
+      "covariance_interval_total_count": 16,
+      "mean_99pct_interval_contains_truth_by_coordinate": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "mean_interval_pass_count": 4,
+      "mean_interval_total_count": 4,
+      "role": "marginal_explanatory_diagnostics_not_joint_vetoes"
+    },
+    "multiple_testing_note": "Mean/covariance intervals are marginal diagnostics and are not combined into a joint rejection or p-value.",
+    "passed_primary_screens": true,
+    "per_chain_both_hard_modes_observed": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "per_chain_hard_minority_mass": [
+      0.224,
+      0.18066666666666667,
+      0.171,
+      0.184
+    ],
+    "per_chain_soft_minority_mass": [
+      0.224,
+      0.18066666666666667,
+      0.17099999999999982,
+      0.184
+    ],
+    "sample_covariance": [
+      [
+        10.504495351528378,
+        1.3683856629243354,
+        -1.7714570234666953,
+        0.6149148159454594
+      ],
+      [
+        1.3683856629243354,
+        0.6616915943167379,
+        -0.1945683474421498,
+        0.1056817174512981
+      ],
+      [
+        -1.7714570234666953,
+        -0.1945683474421498,
+        0.6373781149485592,
+        -0.052735693770132396
+      ],
+      [
+        0.6149148159454594,
+        0.1056817174512981,
+        -0.052735693770132396,
+        0.23942975526117344
+      ]
+    ],
+    "sample_mean": [
+      -2.4663813079449426,
+      -0.3068549462712245,
+      0.4698398379342672,
+      -0.15219401669939933
+    ],
+    "sample_shape": [
+      3000,
+      4,
+      4
+    ],
+    "schema": "bayesfilter.defensive_weighted_neutra_retained_analytic_diagnostics.v1",
+    "target_identity": "separated_two_mode_unequal_weight_d4_v1"
+  },
+  "root_seed": [
+    20260812,
+    91011
+  ],
+  "schema": "bayesfilter.defensive_weighted_neutra_analytic_hmc_replication_result.v1",
+  "sequential": {
+    "archive": {
+      "checkpoint_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-0/archive/weighted-analytic-checkpoint.json",
+      "manifest_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-0/archive/weighted-analytic-manifest.json",
+      "manifest_sha256": "79e86e8b334b1a9676a2007c29e5b255790568ac96fb59f9ce9347dd183959e3",
+      "resumed": false,
+      "retained_chunk_count": 6,
+      "root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-0/archive",
+      "warmup_chunk_count": 4
+    },
+    "diagnostics": {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "finite_delta_h_tail_role": "explanatory_alert_only",
+      "hard_vetoes": [],
+      "movement_role": "hard_validity_veto",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "physical_coordinate_role": "explanatory_only",
+      "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+      "retained": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            22660.295070609598,
+            21673.3331985757,
+            32691.19493764912,
+            20629.00853956662
+          ],
+          "max_rhat": 1.0084679888238384,
+          "min_bulk_ess": 20629.00853956662,
+          "min_tail_ess": 1071.9777148111064,
+          "rhat_by_parameter": [
+            1.0039762363434281,
+            1.0075398717689328,
+            1.0057652604513296,
+            1.0084679888238384
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            1360.9476306687181,
+            1842.515641136452,
+            1112.3437269493807,
+            1071.9777148111064
+          ]
+        },
+        "max_rhat": 1.0084679888238384,
+        "min_bulk_ess": 5952.355762376119,
+        "min_tail_ess": 1071.9777148111064,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            5952.355762376119,
+            7620.051292570708,
+            12381.425648097735,
+            12153.480877276297
+          ],
+          "max_rhat": 1.0066406745555738,
+          "min_bulk_ess": 5952.355762376119,
+          "min_tail_ess": 1385.877177888626,
+          "rhat_by_parameter": [
+            1.005033695986224,
+            1.002020690814294,
+            1.0066406745555738,
+            1.0037927331182377
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            1896.692763683922,
+            1385.877177888626,
+            2100.3575737802275,
+            1478.197937015028
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.01
+      },
+      "retained_ess_role": "promotion_veto",
+      "warmup": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            6933.1785643784815,
+            6713.151977294726,
+            7511.343385627337,
+            6301.523679572597
+          ],
+          "max_rhat": 1.035014094209312,
+          "min_bulk_ess": 6301.523679572597,
+          "min_tail_ess": 214.31608454234583,
+          "rhat_by_parameter": [
+            1.0150190163194037,
+            1.0318013955193386,
+            1.035014094209312,
+            1.0067931037119198
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            486.1242055836618,
+            717.575147594115,
+            214.31608454234583,
+            484.7161108514913
+          ]
+        },
+        "max_rhat": 1.035014094209312,
+        "min_bulk_ess": 2088.3254485255475,
+        "min_tail_ess": 214.31608454234583,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            2112.448176104758,
+            2088.3254485255475,
+            3837.089370814305,
+            3638.037234915225
+          ],
+          "max_rhat": 1.0198870167814462,
+          "min_bulk_ess": 2088.3254485255475,
+          "min_tail_ess": 256.16824531074263,
+          "rhat_by_parameter": [
+            1.0088237083296112,
+            1.017856295214715,
+            1.0198870167814462,
+            1.0067268482787777
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            607.0459448966968,
+            256.16824531074263,
+            604.486364734307,
+            639.8603940958336
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.05
+      }
+    },
+    "metadata": {
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "resumed": false,
+      "run_contract_hash": "65ce66881c81d030414b4167209be8c9be0beebdd679d32d80ccf976be15feb4",
+      "use_xla": true,
+      "wall_seconds": 233.70049692993052,
+      "warmup_excluded_from_posterior": true
+    },
+    "passed": true,
+    "retained_results_per_chain": 3000,
+    "schema": "bayesfilter.neutra.sequential_hmc_result.v1",
+    "stop_reason": "retained_diagnostics_passed",
+    "warmup_results_per_chain": 2000
+  },
+  "wall_seconds": 241.67637368000578
+}

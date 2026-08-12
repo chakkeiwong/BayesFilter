@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from typing import Any
@@ -60,6 +61,10 @@ COMPOSED_NEUTRA_FAMILIES = frozenset(
 DSGE_PAPER_TRAINING_STEPS = 5000
 DSGE_PAPER_TRAINING_BATCH_SIZE = 480
 DSGE_PAPER_LR_BOUNDARIES = (999, 3999)
+# Adam serializes its scalar learning rate through float32 in some TensorFlow
+# versions.  Permit only the resulting sub-ppm roundoff above the configured
+# rate; a materially larger value remains an invalid checkpoint.
+_LEARNING_RATE_RESTORE_REL_TOL = 1.0e-6
 
 
 @dataclass(frozen=True)
@@ -82,8 +87,11 @@ class NeuTraTrainerConfig:
     gradient_clip_mode: str = "global"
     stages: int = 1
     fixed_translation: tuple[float, ...] = ()
+    fixed_output_scale: tuple[float, ...] = ()
+    fixed_output_factor: tuple[tuple[float, ...], ...] = ()
     target_parameter_names: tuple[str, ...] = ()
     target_chart: str = "unspecified"
+    chart_signature: str | None = None
     target_signature: str | None = None
     target_adapter_signature: str | None = None
     jit_compile: bool = True
@@ -126,8 +134,31 @@ class NeuTraTrainerConfig:
         if int(self.stages) <= 0:
             raise ValueError("stages must be positive")
         translation = tuple(float(value) for value in self.fixed_translation)
+        output_scale = tuple(float(value) for value in self.fixed_output_scale)
+        factor_rows = tuple(
+            tuple(float(item) for item in row) for row in self.fixed_output_factor
+        )
         if any(not math.isfinite(value) for value in translation):
             raise ValueError("fixed_translation must be finite")
+        if any(not math.isfinite(value) or value <= 0.0 for value in output_scale):
+            raise ValueError("fixed_output_scale must be finite and positive")
+        if output_scale and factor_rows:
+            raise ValueError("fixed_output_scale and fixed_output_factor are mutually exclusive")
+        if factor_rows:
+            if len(factor_rows) != int(self.dimension) or any(
+                len(row) != int(self.dimension) for row in factor_rows
+            ):
+                raise ValueError("fixed_output_factor must be square with dimension rows")
+            factor_tensor = tf.constant(factor_rows, dtype=tf.float64)
+            sign, logdet = tf.linalg.slogdet(factor_tensor)
+            if not bool(tf.reduce_all(tf.math.is_finite(factor_tensor)).numpy()):
+                raise ValueError("fixed_output_factor must be finite")
+            if not bool(tf.math.is_finite(logdet).numpy()) or bool(tf.equal(sign, 0.0).numpy()):
+                raise ValueError("fixed_output_factor must be nonsingular")
+        if self.chart_signature is not None and len(str(self.chart_signature)) != 64:
+            raise ValueError("chart_signature must be a sha256 hex digest")
+        if factor_rows and self.chart_signature is None:
+            raise ValueError("fixed_output_factor requires chart_signature")
         names = tuple(str(value) for value in self.target_parameter_names)
         if len(set(names)) != len(names):
             raise ValueError("target_parameter_names must be unique")
@@ -149,7 +180,6 @@ class NeuTraTrainerConfig:
                 "beta2": 0.999,
                 "gradient_clip_mode": "per_variable",
                 "stages": 3,
-                "target_chart": "identity",
             }
             if self.family in {
                 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
@@ -203,6 +233,8 @@ class NeuTraTrainerConfig:
                     )
             if len(translation) != int(self.dimension):
                 raise ValueError(f"{self.family} requires fixed_translation")
+            if output_scale and len(output_scale) != int(self.dimension):
+                raise ValueError(f"{self.family} fixed_output_scale length mismatch")
             if len(names) != int(self.dimension):
                 raise ValueError(f"{self.family} requires target_parameter_names")
             for field_name in ("target_signature", "target_adapter_signature"):
@@ -214,14 +246,20 @@ class NeuTraTrainerConfig:
                 raise ValueError(
                     "paper_piecewise is reserved for named composed IAF presets"
                 )
-            if int(self.stages) != 1 or translation:
-                raise ValueError("stages and fixed_translation are reserved for composed IAF")
+            if int(self.stages) != 1 or translation or output_scale or factor_rows:
+                raise ValueError(
+                    "stages, fixed_translation, fixed_output_scale, and "
+                    "fixed_output_factor are reserved "
+                    "for composed IAF"
+                )
 
     def manifest_payload(self) -> Mapping[str, Any]:
         payload = asdict(self)
         payload["hidden_layers"] = list(self.hidden_layers)
         payload["initialization_seed"] = list(self.initialization_seed)
         payload["fixed_translation"] = list(self.fixed_translation)
+        payload["fixed_output_scale"] = list(self.fixed_output_scale)
+        payload["fixed_output_factor"] = [list(row) for row in self.fixed_output_factor]
         payload["target_parameter_names"] = list(self.target_parameter_names)
         payload["schema"] = "bayesfilter.neutra.trainer_config.v1"
         return payload
@@ -311,6 +349,10 @@ def ssl_lstm_tuned_capacity_neutra_config(
     learning_rate: float,
     initialization_scale: float,
     gradient_clip_norm: float,
+    fixed_output_scale: Sequence[float] = (),
+    fixed_output_factor: Sequence[Sequence[float]] = (),
+    target_chart: str = "identity",
+    chart_signature: str | None = None,
     initialization_seed: tuple[int, int] = (20260715, 4101),
     jit_compile: bool = True,
 ) -> NeuTraTrainerConfig:
@@ -333,8 +375,13 @@ def ssl_lstm_tuned_capacity_neutra_config(
         gradient_clip_mode="per_variable",
         stages=3,
         fixed_translation=tuple(float(value) for value in fixed_translation),
+        fixed_output_scale=tuple(float(value) for value in fixed_output_scale),
+        fixed_output_factor=tuple(
+            tuple(float(item) for item in row) for row in fixed_output_factor
+        ),
         target_parameter_names=tuple(str(value) for value in target_parameter_names),
-        target_chart="identity",
+        target_chart=str(target_chart),
+        chart_signature=None if chart_signature is None else str(chart_signature),
         target_signature=str(target_signature),
         target_adapter_signature=str(target_adapter_signature),
         jit_compile=bool(jit_compile),
@@ -391,6 +438,10 @@ def ssl_lstm_wide_capacity_neutra_config(
     learning_rate: float,
     initialization_scale: float,
     gradient_clip_norm: float,
+    fixed_output_scale: Sequence[float] = (),
+    fixed_output_factor: Sequence[Sequence[float]] = (),
+    target_chart: str = "identity",
+    chart_signature: str | None = None,
     initialization_seed: tuple[int, int] = (20260715, 4101),
     jit_compile: bool = True,
 ) -> NeuTraTrainerConfig:
@@ -413,8 +464,13 @@ def ssl_lstm_wide_capacity_neutra_config(
         gradient_clip_mode="per_variable",
         stages=3,
         fixed_translation=tuple(float(value) for value in fixed_translation),
+        fixed_output_scale=tuple(float(value) for value in fixed_output_scale),
+        fixed_output_factor=tuple(
+            tuple(float(item) for item in row) for row in fixed_output_factor
+        ),
         target_parameter_names=tuple(str(value) for value in target_parameter_names),
-        target_chart="identity",
+        target_chart=str(target_chart),
+        chart_signature=None if chart_signature is None else str(chart_signature),
         target_signature=str(target_signature),
         target_adapter_signature=str(target_adapter_signature),
         jit_compile=bool(jit_compile),
@@ -445,6 +501,155 @@ class NeuTraTrainStep:
     clipped_gradient_norm: tf.Tensor
     clipping_applied: tf.Tensor
     step: tf.Tensor
+
+
+@dataclass(frozen=True)
+class NeuTraChartPreflight:
+    """Diagnostics for a caller-declared affine NeuTra training chart.
+
+    The chart is model-owned: BayesFilter checks its algebra and numerical
+    contract but does not infer scientifically meaningful parameter scales.
+    """
+
+    chart_name: str
+    dimension: int
+    roundtrip_max_abs: float
+    value_max_abs_residual: float | None
+    score_max_abs_residual: float | None
+    logdet: float
+    finite: bool
+    passed: bool
+
+
+def preflight_neutra_affine_chart(
+    *,
+    chart_name: str,
+    center: Any,
+    factor: Any,
+    latent: Any,
+    physical_target: Any | None = None,
+    transformed_target: Any | None = None,
+    strict: bool = True,
+    value_score_tolerance: float = 1.0e-10,
+) -> NeuTraChartPreflight:
+    """Validate a caller-supplied ``theta=center+z@factor.T`` chart.
+
+    This check validates finite/nonsingular chart algebra and, when the target
+    exposes a value/score call, the exact affine score chain rule. It does not
+    decide whether a model-specific scale is scientifically adequate.
+    """
+
+    center_t = tf.convert_to_tensor(center, dtype=tf.float64)
+    factor_t = tf.convert_to_tensor(factor, dtype=tf.float64)
+    latent_t = tf.convert_to_tensor(latent, dtype=tf.float64)
+    if center_t.shape.rank != 1 or factor_t.shape.rank != 2:
+        raise ValueError("center must be rank 1 and factor rank 2")
+    dimension = center_t.shape[0]
+    if dimension is None or factor_t.shape != (dimension, dimension):
+        raise ValueError("affine chart dimensions do not match")
+    if latent_t.shape.rank != 2 or latent_t.shape[-1] != dimension:
+        raise ValueError("latent must have shape [batch, dimension]")
+    inputs_finite = bool(
+        tf.reduce_all(
+            tf.math.is_finite(
+                tf.concat(
+                    (
+                        tf.reshape(center_t, [-1]),
+                        tf.reshape(factor_t, [-1]),
+                        tf.reshape(latent_t, [-1]),
+                    ),
+                    axis=0,
+                )
+            )
+        ).numpy()
+    )
+    sign, slogdet_t = tf.linalg.slogdet(factor_t)
+    lower = tf.linalg.band_part(factor_t, -1, 0)
+    upper = tf.linalg.band_part(factor_t, 0, -1)
+    triangular = bool(tf.reduce_all(tf.equal(factor_t, lower)).numpy()) or bool(
+        tf.reduce_all(tf.equal(factor_t, upper)).numpy()
+    )
+    logdet_t = (
+        tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(factor_t))))
+        if triangular
+        else slogdet_t
+    )
+    logdet_finite = bool(tf.math.is_finite(logdet_t).numpy())
+    nonsingular = (
+        inputs_finite
+        and logdet_finite
+        and bool(tf.not_equal(sign, 0.0).numpy())
+    )
+    theta = center_t[tf.newaxis, :] + tf.matmul(latent_t, factor_t, transpose_b=True)
+    if nonsingular:
+        recovered = tf.transpose(
+            tf.linalg.solve(factor_t, tf.transpose(theta - center_t[tf.newaxis, :]))
+        )
+        roundtrip = tf.reduce_max(tf.abs(recovered - latent_t))
+    else:
+        roundtrip = tf.constant(math.inf, tf.float64)
+    finite = inputs_finite and logdet_finite
+    finite = finite and bool(tf.reduce_all(tf.math.is_finite(theta)).numpy())
+    value_residual = None
+    score_residual = None
+    if nonsingular and physical_target is not None and transformed_target is not None:
+        physical_call = getattr(physical_target, "batch_value_and_score", None)
+        transformed_call = getattr(transformed_target, "batch_value_and_score", None)
+        if not callable(physical_call) or not callable(transformed_call):
+            raise ValueError(
+                "physical_target and transformed_target must expose "
+                "batch_value_and_score"
+            )
+        physical_value, physical_score = physical_call(theta)
+        transformed_value, transformed_score = transformed_call(latent_t)
+        expected_value = physical_value + logdet_t
+        expected_score = tf.matmul(physical_score, factor_t)
+        value_residual = float(
+            tf.reduce_max(tf.abs(transformed_value - expected_value)).numpy()
+        )
+        score_residual = float(
+            tf.reduce_max(tf.abs(transformed_score - expected_score)).numpy()
+        )
+        finite = finite and bool(
+            tf.reduce_all(
+                tf.math.is_finite(
+                    tf.concat(
+                        (
+                            tf.reshape(physical_value, [-1]),
+                            tf.reshape(physical_score, [-1]),
+                            tf.reshape(transformed_value, [-1]),
+                            tf.reshape(transformed_score, [-1]),
+                        ),
+                        axis=0,
+                    )
+                )
+            ).numpy()
+        )
+    value_score_tolerance = float(value_score_tolerance)
+    if not math.isfinite(value_score_tolerance) or value_score_tolerance < 0.0:
+        raise ValueError("value_score_tolerance must be finite and nonnegative")
+    passed = (
+        nonsingular
+        and finite
+        and bool(float(roundtrip.numpy()) <= value_score_tolerance)
+    )
+    if value_residual is not None:
+        passed = passed and value_residual <= value_score_tolerance
+    if score_residual is not None:
+        passed = passed and score_residual <= value_score_tolerance
+    report = NeuTraChartPreflight(
+        chart_name=str(chart_name),
+        dimension=int(dimension),
+        roundtrip_max_abs=float(roundtrip.numpy()),
+        value_max_abs_residual=value_residual,
+        score_max_abs_residual=score_residual,
+        logdet=float(logdet_t.numpy()),
+        finite=finite,
+        passed=passed,
+    )
+    if strict and not passed:
+        raise ValueError("NeuTra affine chart preflight failed")
+    return report
 
 
 @dataclass(frozen=True)
@@ -676,9 +881,30 @@ class _FixedMixingReverse(_TrainableTransport):
 
 
 class _FixedTranslation(_TrainableTransport):
-    def __init__(self, values: Sequence[float]) -> None:
+    def __init__(
+        self,
+        values: Sequence[float],
+        scale: Sequence[float] = (),
+        factor: Sequence[Sequence[float]] = (),
+    ) -> None:
         self.offset = tf.constant(tuple(float(value) for value in values), tf.float64)
         self.dimension = int(self.offset.shape[0])
+        scale_values = tuple(float(value) for value in scale)
+        factor_rows = tuple(tuple(float(item) for item in row) for row in factor)
+        if scale_values and factor_rows:
+            raise ValueError("fixed output scale and factor are mutually exclusive")
+        self.output_scale = tf.constant(
+            scale_values if scale_values else (1.0,) * self.dimension, tf.float64
+        )
+        self.output_factor = (
+            None if not factor_rows else tf.constant(factor_rows, tf.float64)
+        )
+        if self.output_factor is not None:
+            lower = tf.linalg.band_part(self.output_factor, -1, 0)
+            upper = tf.linalg.band_part(self.output_factor, 0, -1)
+            self._factor_triangular = bool(
+                tf.reduce_all(tf.equal(self.output_factor, lower)).numpy()
+            ) or bool(tf.reduce_all(tf.equal(self.output_factor, upper)).numpy())
 
     @property
     def trainable_variables(self) -> tuple[tf.Variable, ...]:
@@ -689,20 +915,32 @@ class _FixedTranslation(_TrainableTransport):
         return ()
 
     def forward_and_logdet(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        return z + self.offset, tf.zeros(tf.shape(z)[:-1], z.dtype)
+        if self.output_factor is None:
+            output = self.offset + z * self.output_scale
+            logdet = tf.reduce_sum(tf.math.log(self.output_scale))
+        else:
+            output = self.offset + tf.matmul(z, self.output_factor, transpose_b=True)
+            if self._factor_triangular:
+                logdet = tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(self.output_factor))))
+            else:
+                logdet = tf.linalg.slogdet(self.output_factor)[1]
+        return output, tf.zeros(tf.shape(z)[:-1], z.dtype) + logdet
 
     def scale_log(self, z: tf.Tensor) -> tf.Tensor:
         return tf.zeros_like(z)
 
     def frozen_component_payload(self, *, component_id: str) -> Mapping[str, Any]:
-        return {
+        payload = {
             "component_id": component_id,
-            "kind": "affine",
             "dim": self.dimension,
             "dtype": "float64",
             "offset": _tensor_values(self.offset),
-            "scale": _tensor_values(tf.ones_like(self.offset)),
         }
+        if self.output_factor is None:
+            payload.update({"kind": "affine", "scale": _tensor_values(self.output_scale)})
+        else:
+            payload.update({"kind": "affine_dense", "matrix": _tensor_values(self.output_factor)})
+        return payload
 
 
 class _TrainableComposedIAF(_TrainableTransport):
@@ -712,7 +950,13 @@ class _TrainableComposedIAF(_TrainableTransport):
             components.append(_TrainableDenseIAF(config, stage_index=stage))
             if stage + 1 < int(config.stages):
                 components.append(_FixedMixingReverse(config.dimension))
-        components.append(_FixedTranslation(config.fixed_translation))
+        components.append(
+            _FixedTranslation(
+                config.fixed_translation,
+                config.fixed_output_scale,
+                config.fixed_output_factor,
+            )
+        )
         self.components = tuple(components)
 
     @property
@@ -791,6 +1035,18 @@ class NeuTraReverseKLTrainer:
     def __init__(self, target: Any, config: NeuTraTrainerConfig) -> None:
         self.target = target
         self.config = config
+        if config.family in COMPOSED_NEUTRA_FAMILIES and config.target_chart in {
+            "identity",
+            "unspecified",
+        }:
+            warnings.warn(
+                "BayesFilter NeuTra training assumes the target chart is already "
+                "appropriately scaled for standard-normal latent inputs; no "
+                "automatic physical-parameter scaling is applied. Declare and "
+                "validate a model-owned affine chart for heterogeneous units.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
         self.transport: _TrainableTransport
         if config.family == "affine_diag":
             self.transport = _TrainableAffineDiagonal(config)
@@ -1211,12 +1467,18 @@ class NeuTraReverseKLTrainer:
         effective_learning_rate = float(
             state.get("effective_learning_rate", self.config.learning_rate)
         )
+        configured_learning_rate = float(self.config.learning_rate)
+        learning_rate_tolerance = max(
+            1.0e-12, _LEARNING_RATE_RESTORE_REL_TOL * configured_learning_rate
+        )
         if (
             not math.isfinite(effective_learning_rate)
             or effective_learning_rate <= 0.0
-            or effective_learning_rate > float(self.config.learning_rate)
+            or effective_learning_rate > configured_learning_rate + learning_rate_tolerance
         ):
             raise NeuTraTrainingError("trainer effective_learning_rate is invalid")
+        if effective_learning_rate > configured_learning_rate:
+            effective_learning_rate = configured_learning_rate
         validated_variables = _validated_rows(
             self.variables, state.get("variables"), "variables", dtype=tf.float64
         )
@@ -1321,6 +1583,11 @@ class NeuTraReverseKLTrainer:
                     "target_chart": self.config.target_chart,
                     "target_parameter_names": list(self.config.target_parameter_names),
                     "fixed_translation": list(self.config.fixed_translation),
+                    "fixed_output_scale": list(self.config.fixed_output_scale),
+                    "fixed_output_factor": [
+                        list(row) for row in self.config.fixed_output_factor
+                    ],
+                    "chart_signature": self.config.chart_signature,
                     "procedure": procedure,
                 }
             )
@@ -1725,14 +1992,9 @@ def _validate_named_composed_target(target: Any, config: NeuTraTrainerConfig) ->
         "inverse_orientation"
     ) != "identity":
         raise NeuTraTrainingError(f"{label} target chart is not identity-oriented")
-    prior_center = getattr(target_config, "prior_center", None)
-    if prior_center is None:
-        raise NeuTraTrainingError(f"{label} target fixed translation unavailable")
-    actual_center = tuple(
-        float(value) for value in tf.reshape(tf.convert_to_tensor(prior_center), (-1,))
-    )
-    if actual_center != tuple(config.fixed_translation):
-        raise NeuTraTrainingError(f"{label} target fixed translation mismatch")
+    # The affine chart is model-owned and may be centered away from the
+    # physical target's prior center.  Target identity is checked above;
+    # chart identity/factor are carried separately in the trainer config.
 
 
 def _rank2(value: Any, *, dimension: int, name: str) -> tf.Tensor:

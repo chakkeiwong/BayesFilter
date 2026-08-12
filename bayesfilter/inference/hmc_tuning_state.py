@@ -248,12 +248,52 @@ class HMCStepRepair:
             "factor": self.factor,
             "bracket": self.bracket,
             "source_decisions": self.source_decisions,
+            "directional_evidence_count": self.directional_evidence_count,
+            "neutral_evidence_count": self.neutral_evidence_count,
+            "one_sided_directional_support": self.one_sided_directional_support,
             "source_health_failures": self.source_health_failures,
             "lower_bound_source_attempt_index": (
                 self.lower_bound_source_attempt_index
             ),
             "verification_reserved": self.verification_reserved,
         }
+
+    @property
+    def directional_evidence_count(self) -> int:
+        """Count typed directional records in the immutable evidence batch."""
+
+        return sum(
+            decision in {"repair_step_lower", "repair_step_higher"}
+            for decision in self.source_decisions
+        )
+
+    @property
+    def neutral_evidence_count(self) -> int:
+        """Count valid neutral records retained alongside directional evidence."""
+
+        return self.source_decisions.count("inconclusive_evidence")
+
+    @property
+    def one_sided_directional_support(self) -> bool:
+        """Whether every non-neutral record supports this repair direction.
+
+        This is a lineage predicate, not a promotion decision.  Invalid,
+        opposite-direction, passed, and trajectory records are deliberately
+        excluded so they cannot silently establish an empirical bracket bound.
+        """
+
+        if self.disposition != "repair_step" or self.direction is None:
+            return False
+        expected = (
+            "repair_step_higher"
+            if self.direction == "higher_epsilon"
+            else "repair_step_lower"
+        )
+        decisions = set(self.source_decisions)
+        return bool(
+            expected in decisions
+            and decisions.issubset({expected, "inconclusive_evidence"})
+        )
 
 
 def aggregate_step_repair(
@@ -373,17 +413,32 @@ def aggregate_bracketed_step_repair(
             verification_reserved=verification_reserved,
         )
 
+    # A bracket endpoint is stronger evidence than an ordinary directional
+    # repair.  Only a fully valid one-sided batch may establish the bound; a
+    # candidate-local invalid peer may not erase a healthy record's existing
+    # directional repair authority, but it cannot contribute a bracket bound.
+    # Likewise, ``passed`` and opposite-direction records are not neutral.
     expected_direction_decision = (
         "repair_step_higher"
         if direction == "higher_epsilon"
         else "repair_step_lower"
     )
-    complete_direction_support = all(
-        item.evidence_validity == "valid"
-        and item.acceptance_decision == expected_direction_decision
+    valid_decisions = {
+        item.acceptance_decision
         for item in records
+        if item.evidence_validity == "valid"
+    }
+    one_sided_bound_support = (
+        all(item.evidence_validity == "valid" for item in records)
+        and expected_direction_decision in valid_decisions
+        and valid_decisions.issubset(
+            {expected_direction_decision, "inconclusive_evidence"}
+        )
     )
-    if complete_direction_support:
+
+    # Neutral records do not erase a one-sided directional bound.  They remain
+    # in ``source_decisions`` and are exposed through the typed count fields.
+    if one_sided_bound_support:
         if direction == "higher_epsilon":
             lower = base if lower is None else max(lower, base)
         else:
@@ -401,7 +456,7 @@ def aggregate_bracketed_step_repair(
         )
 
     configured_factor = float(np.clip(repair_factor, 1.25, 2.0))
-    if complete_direction_support and lower is not None and upper is not None:
+    if one_sided_bound_support and lower is not None and upper is not None:
         repaired = float(np.exp(0.5 * (np.log(lower) + np.log(upper))))
     elif direction == "higher_epsilon":
         repaired = base * configured_factor

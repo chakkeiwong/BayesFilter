@@ -285,7 +285,7 @@ def _validate_reasonable_epsilon_payload(
 
 
 def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
-    expected_fields = {
+    required_fields = {
         "schema",
         "status",
         "algorithm_id",
@@ -308,7 +308,12 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
         "reports_posterior_convergence",
         "nonclaims",
     }
-    if set(warmup) != expected_fields or warmup.get("status") != "passed":
+    optional_fields = {"metric_adaptation_status"}
+    if (
+        not required_fields <= set(warmup)
+        or set(warmup) - required_fields - optional_fields
+        or warmup.get("status") != "passed"
+    ):
         raise ValueError("invalid operational warmup field set or status")
     if (
         warmup.get("algorithm_id") != OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
@@ -676,6 +681,15 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
     )
     if reported_updates != applied_updates:
         raise ValueError("operational warmup metric-update count is inconsistent")
+    expected_adaptation_status = (
+        "metric_updated" if applied_updates > 0 else "no_metric_update"
+    )
+    reported_adaptation_status = warmup.get("metric_adaptation_status")
+    if (
+        reported_adaptation_status is not None
+        and reported_adaptation_status != expected_adaptation_status
+    ):
+        raise ValueError("operational warmup adaptation status is inconsistent")
     if expected_transition != configured_steps:
         raise ValueError("operational warmup did not execute its configured transitions")
     if (
