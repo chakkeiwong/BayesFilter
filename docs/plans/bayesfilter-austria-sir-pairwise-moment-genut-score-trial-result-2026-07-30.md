@@ -5,6 +5,13 @@ Plan: `docs/plans/bayesfilter-austria-sir-pairwise-moment-genut-score-trial-plan
 Artifact: `docs/benchmarks/artifacts/austria_sir_pairwise_moment_genut_score_20260730/attempt01/result.json`  
 Status: `PAIRWISE_SCORE_VARIANCE_PROMOTION_FAIL`
 
+> **2026-08-05 active-verdict addendum:** The historical status above remains
+> correct for its predeclared value no-regression gate.  The broader practical
+> interpretation has been revised: pairwise correction is materially useful
+> because it prevented massive Austria score deterioration and is now the
+> leading stabilization candidate.  See
+> `docs/plans/bayesfilter-austria-genut-pairwise-verdict-reassessment-2026-08-05.md`.
+
 ## Outcome
 
 The pairwise correction is implemented and works mechanically. It matches all

@@ -9,8 +9,15 @@ import tensorflow as tf
 
 from bayesfilter.highdim.cubature_genut_adapters import exact_transformed_sv_candidate_adapter
 from bayesfilter.highdim.cubature_genut_candidate import gaussian_genut_design, replicate_positive_genut
-from bayesfilter.highdim.cubature_genut_filter import finite_value_score
-from bayesfilter.highdim.higher_moment_contract_e import higher_moment_shape_jvp
+from bayesfilter.highdim.cubature_genut_filter import (
+    BoundedFeatureShapeTeacher,
+    finite_value_score,
+)
+from bayesfilter.highdim.higher_moment_contract_e import (
+    affine_restore_cloud_jvp,
+    higher_moment_shape_jvp,
+    weighted_shape_targets_jvp,
+)
 from docs.benchmarks.run_projected_cumulant_genut_austria import (
     _canonical_basis,
     _partition_summary,
@@ -233,6 +240,362 @@ def test_pairwise_moment_manual_jvp_matches_independent_forward_accumulator():
         pairwise_floor=1e-6,
     )["particles_tangent"][:, :, 0]
     tf.debugging.assert_near(automatic, manual, atol=2e-10, rtol=2e-10)
+
+
+def test_pairwise_particle_rms_cap_is_bounded_and_restores_affine_moments():
+    n = 96
+    d = 3
+    source, weights, points, source_tangent, weights_tangent, points_tangent = _fixture(
+        n=n, d=d
+    )
+    cap = 0.75
+    common = dict(
+        correction_steps=2,
+        strength=0.02,
+        floor=1e-6,
+        pairwise_correction_steps=3,
+        pairwise_strength=0.02,
+        pairwise_floor=1e-6,
+    )
+    uncapped = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        **common,
+    )
+    explicit_disabled = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        pairwise_particle_rms_cap=0.0,
+        **common,
+    )
+    capped = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        pairwise_particle_rms_cap=cap,
+        **common,
+    )
+    tf.debugging.assert_equal(uncapped["particles"], explicit_disabled["particles"])
+    tf.debugging.assert_equal(
+        uncapped["particles_tangent"], explicit_disabled["particles_tangent"]
+    )
+    assert float(capped["maximum_pairwise_post_cap_particle_rms"].numpy()) < cap
+    assert float(capped["maximum_pairwise_post_cap_particle_rms"].numpy()) < float(
+        capped["maximum_pairwise_pre_cap_particle_rms"].numpy()
+    )
+    assert float(capped["minimum_pairwise_particle_cap_scale"].numpy()) < 1.0
+
+    output_mean = tf.reduce_mean(capped["particles"], axis=0)
+    output_centered = capped["particles"] - output_mean[None, :]
+    output_covariance = tf.einsum(
+        "ni,nj->ij", output_centered, output_centered
+    ) / tf.cast(n, tf.float64)
+    target_mean = tf.reduce_sum(weights[:, None] * source, axis=0)
+    target_centered = source - target_mean[None, :]
+    target_covariance = tf.einsum(
+        "n,ni,nj->ij", weights, target_centered, target_centered
+    )
+    tf.debugging.assert_near(output_mean, target_mean, atol=2e-10, rtol=2e-10)
+    tf.debugging.assert_near(
+        output_covariance, target_covariance, atol=2e-10, rtol=2e-10
+    )
+
+
+def test_pairwise_particle_rms_cap_manual_jvp_matches_forward_accumulator():
+    source, weights, points, source_tangent, weights_tangent, points_tangent = _fixture(
+        n=24, d=3
+    )
+
+    def forward(source_value, weights_value, points_value):
+        zeros_source = tf.zeros([24, 3, 1], tf.float64)
+        zeros_weights = tf.zeros([24, 1], tf.float64)
+        return higher_moment_shape_jvp(
+            source_value,
+            weights_value,
+            zeros_source,
+            zeros_weights,
+            points_value,
+            zeros_source,
+            correction_steps=2,
+            strength=0.02,
+            floor=1e-6,
+            pairwise_correction_steps=2,
+            pairwise_strength=0.01,
+            pairwise_floor=1e-6,
+            pairwise_particle_rms_cap=0.8,
+        )["particles"]
+
+    with tf.autodiff.ForwardAccumulator(
+        (source, weights, points),
+        (source_tangent, weights_tangent, points_tangent),
+    ) as accumulator:
+        output = forward(source, weights, points)
+    automatic = accumulator.jvp(output)
+    manual = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        correction_steps=2,
+        strength=0.02,
+        floor=1e-6,
+        pairwise_correction_steps=2,
+        pairwise_strength=0.01,
+        pairwise_floor=1e-6,
+        pairwise_particle_rms_cap=0.8,
+    )["particles_tangent"][:, :, 0]
+    tf.debugging.assert_near(automatic, manual, atol=3e-10, rtol=3e-10)
+
+
+def test_coordinatewise_bounded_cap_is_strictly_bounded_and_tail_selective():
+    source, weights, points, source_tangent, weights_tangent, points_tangent = _fixture(
+        n=48, d=3
+    )
+    uncapped = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        correction_steps=1,
+        strength=0.02,
+        floor=1e-6,
+        coordinatewise_bounded_cap=0.0,
+        coordinatewise_bounded_cap_power=8,
+    )
+    capped = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        correction_steps=1,
+        strength=0.02,
+        floor=1e-6,
+        coordinatewise_bounded_cap=0.9,
+        coordinatewise_bounded_cap_power=8,
+    )
+    assert float(capped["maximum_coordinatewise_post_cap_absolute"].numpy()) < 0.9
+    assert float(capped["mean_coordinatewise_cap_displacement"].numpy()) >= 0.0
+    assert float(capped["fraction_coordinatewise_cap_active"].numpy()) >= 0.0
+    assert float(capped["minimum_coordinatewise_cap_derivative"].numpy()) > 0.0
+    assert bool(capped["valid"].numpy())
+    assert float(capped["mean_coordinatewise_cap_displacement"].numpy()) > 0.0
+    assert float(capped["maximum_coordinatewise_post_cap_absolute"].numpy()) < float(
+        uncapped["maximum_coordinatewise_pre_cap_absolute"].numpy()
+    )
+    output = capped["particles"]
+    output_mean = tf.reduce_mean(output, axis=0)
+    output_centered = output - output_mean[None, :]
+    output_covariance = tf.einsum("ni,nj->ij", output_centered, output_centered) / tf.cast(
+        tf.shape(output)[0], output.dtype
+    )
+    output_chol = tf.linalg.cholesky(output_covariance)
+    output_standardized = tf.transpose(
+        tf.linalg.triangular_solve(
+            output_chol, tf.transpose(output_centered), lower=True
+        )
+    )
+    expected_skew = tf.reduce_mean(tf.pow(output_standardized, 3.0), axis=0)
+    expected_kurtosis = tf.reduce_mean(tf.pow(output_standardized, 4.0), axis=0)
+    tf.debugging.assert_near(
+        capped["target_skew"] - capped["skew_residual"], expected_skew, atol=1e-10
+    )
+    tf.debugging.assert_near(
+        capped["target_kurtosis"] - capped["kurtosis_residual"],
+        expected_kurtosis,
+        atol=1e-10,
+    )
+
+
+def test_coordinatewise_bounded_cap_manual_jvp_matches_forward_accumulator():
+    source, weights, points, source_tangent, weights_tangent, points_tangent = _fixture(
+        n=32, d=3
+    )
+
+    def forward(source_value, weights_value, points_value, cap):
+        zeros_source = tf.zeros([32, 3, 1], tf.float64)
+        zeros_weights = tf.zeros([32, 1], tf.float64)
+        return higher_moment_shape_jvp(
+            source_value,
+            weights_value,
+            zeros_source,
+            zeros_weights,
+            points_value,
+            zeros_source,
+            correction_steps=1,
+            strength=0.02,
+            floor=1e-6,
+            coordinatewise_bounded_cap=cap,
+            coordinatewise_bounded_cap_power=8,
+        )["particles"]
+
+    with tf.autodiff.ForwardAccumulator(
+        (source, weights, points),
+        (source_tangent, weights_tangent, points_tangent),
+    ) as accumulator:
+        output = forward(source, weights, points, 0.9)
+    automatic = accumulator.jvp(output)
+    manual = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        correction_steps=1,
+        strength=0.02,
+        floor=1e-6,
+        coordinatewise_bounded_cap=0.9,
+        coordinatewise_bounded_cap_power=8,
+    )["particles_tangent"][:, :, 0]
+    tf.debugging.assert_near(automatic, manual, atol=4e-9, rtol=4e-9)
+
+    with tf.autodiff.ForwardAccumulator(
+        (source, weights, points),
+        (source_tangent, weights_tangent, points_tangent),
+    ) as accumulator:
+        output = forward(source, weights, points, 0.0)
+    automatic_disabled = accumulator.jvp(output)
+    manual_disabled = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        correction_steps=1,
+        strength=0.02,
+        floor=1e-6,
+        coordinatewise_bounded_cap=0.0,
+        coordinatewise_bounded_cap_power=8,
+    )["particles_tangent"][:, :, 0]
+    tf.debugging.assert_near(
+        automatic_disabled, manual_disabled, atol=4e-9, rtol=4e-9
+    )
+
+
+def test_coordinatewise_standardized_cap_restores_affine_moments_and_is_opt_in():
+    source, weights, points, source_tangent, weights_tangent, points_tangent = _fixture(
+        n=48, d=3
+    )
+    common = dict(
+        correction_steps=2,
+        strength=0.02,
+        floor=1e-6,
+        pairwise_correction_steps=2,
+        pairwise_strength=0.01,
+    )
+    baseline = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        **common,
+    )
+    disabled = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        coordinatewise_standardized_cap=0.0,
+        **common,
+    )
+    tf.debugging.assert_equal(disabled["particles"], baseline["particles"])
+    tf.debugging.assert_equal(
+        disabled["particles_tangent"], baseline["particles_tangent"]
+    )
+
+    capped = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        coordinatewise_standardized_cap=0.98,
+        **common,
+    )
+    output_mean = tf.reduce_mean(capped["particles"], axis=0)
+    output_centered = capped["particles"] - output_mean[None, :]
+    output_covariance = tf.einsum(
+        "ni,nj->ij", output_centered, output_centered
+    ) / tf.cast(tf.shape(source)[0], tf.float64)
+    target_mean = tf.reduce_sum(weights[:, None] * source, axis=0)
+    target_centered = source - target_mean[None, :]
+    target_covariance = tf.einsum(
+        "n,ni,nj->ij", weights, target_centered, target_centered
+    )
+    tf.debugging.assert_near(output_mean, target_mean, atol=1e-10, rtol=1e-10)
+    tf.debugging.assert_near(
+        output_covariance, target_covariance, atol=1e-10, rtol=1e-10
+    )
+    assert bool(capped["valid"].numpy())
+
+
+def test_coordinatewise_standardized_cap_manual_jvp_matches_forward_accumulator():
+    source, weights, points, source_tangent, weights_tangent, points_tangent = _fixture(
+        n=32, d=3
+    )
+
+    def forward(source_value, weights_value, points_value):
+        zeros_source = tf.zeros([32, 3, 1], tf.float64)
+        zeros_weights = tf.zeros([32, 1], tf.float64)
+        return higher_moment_shape_jvp(
+            source_value,
+            weights_value,
+            zeros_source,
+            zeros_weights,
+            points_value,
+            zeros_source,
+            correction_steps=2,
+            strength=0.02,
+            floor=1e-6,
+            pairwise_correction_steps=2,
+            pairwise_strength=0.01,
+            coordinatewise_standardized_cap=0.98,
+        )["particles"]
+
+    with tf.autodiff.ForwardAccumulator(
+        (source, weights, points),
+        (source_tangent, weights_tangent, points_tangent),
+    ) as accumulator:
+        output = forward(source, weights, points)
+    automatic = accumulator.jvp(output)
+    manual = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        correction_steps=2,
+        strength=0.02,
+        floor=1e-6,
+        pairwise_correction_steps=2,
+        pairwise_strength=0.01,
+        coordinatewise_standardized_cap=0.98,
+    )["particles_tangent"][:, :, 0]
+    tf.debugging.assert_near(automatic, manual, atol=8e-9, rtol=8e-9)
 
 
 def test_projected_cumulant_reduces_complete_tensor_residual_and_restores_affine_moments():
@@ -520,6 +883,65 @@ def test_finite_value_score_default_is_unchanged_and_candidate_is_finite():
     assert bool(tf.reduce_all(tf.math.is_finite(candidate[1])).numpy())
 
 
+def test_zero_step_bounded_teacher_is_exact_noop():
+    n = 12
+    adapter = exact_transformed_sv_candidate_adapter()
+    theta = tf.constant([0.2, -0.1], tf.float32)
+    observations = tf.constant([[0.1], [-0.2]], tf.float32)
+    initial = tf.random.stateless_normal([n, 1], [811, 812], dtype=tf.float32)
+    process = tf.random.stateless_normal([2, n, 1], [813, 814], dtype=tf.float32)
+    design = replicate_positive_genut(
+        gaussian_genut_design(dim=1), num_particles=n
+    )
+    zeros_matrix = tf.zeros([2, 1, 1], tf.float32)
+    zeros_tangent = tf.zeros([2, 1, 1, 2], tf.float32)
+    teacher = BoundedFeatureShapeTeacher(
+        frame_mu=tf.zeros([2, 1], tf.float32),
+        frame_matrix=tf.ones([2, 1, 1], tf.float32),
+        skew=tf.zeros([2, 1], tf.float32),
+        kurtosis=tf.ones([2, 1], tf.float32) * 3.0,
+        skew_tangent=tf.zeros([2, 1, 2], tf.float32),
+        kurtosis_tangent=tf.zeros([2, 1, 2], tf.float32),
+        pairwise_co_skew=zeros_matrix,
+        pairwise_co_kurtosis=zeros_matrix,
+        pairwise_co_skew_tangent=zeros_tangent,
+        pairwise_co_kurtosis_tangent=zeros_tangent,
+        pairwise_co_skew_mask=zeros_matrix,
+        pairwise_co_kurtosis_mask=zeros_matrix,
+    )
+    baseline = finite_value_score(
+        adapter,
+        theta,
+        observations,
+        initial,
+        process,
+        design,
+        transition_before_first_observation=False,
+    )
+    observed = finite_value_score(
+        adapter,
+        theta,
+        observations,
+        initial,
+        process,
+        design,
+        transition_before_first_observation=False,
+        bounded_feature_teacher=teacher,
+    )
+    tf.debugging.assert_equal(observed[0], baseline[0])
+    tf.debugging.assert_equal(observed[1], baseline[1])
+    tf.debugging.assert_equal(
+        observed[2]["maximum_normalized_shape_displacement"],
+        baseline[2]["maximum_normalized_shape_displacement"],
+    )
+    tf.debugging.assert_equal(
+        observed[2]["maximum_physical_affine_mean_residual"], 0.0
+    )
+    tf.debugging.assert_equal(
+        observed[2]["maximum_physical_affine_covariance_residual"], 0.0
+    )
+
+
 def test_finite_value_score_projected_cumulant_path_is_finite_and_reports_diagnostics():
     n = 12
     adapter = exact_transformed_sv_candidate_adapter()
@@ -633,3 +1055,91 @@ def test_explicit_teacher_shape_targets_reject_partial_group():
             floor=1e-6,
             explicit_target_skew=tf.zeros([2], tf.float64),
         )
+
+
+def test_weighted_shape_target_score_jvp_matches_centered_difference():
+    points = tf.random.stateless_uniform(
+        [80, 3], [901, 902], minval=-0.9, maxval=0.9, dtype=tf.float64
+    )
+    score = tf.random.stateless_normal([80, 2], [903, 904], dtype=tf.float64)
+    log_weight = tf.random.stateless_normal([80], [905, 906], dtype=tf.float64)
+    weights = tf.nn.softmax(log_weight)
+    centered_score = score - tf.reduce_sum(weights[:, None] * score, axis=0)
+    weight_tangent = weights[:, None] * centered_score
+    analytic = weighted_shape_targets_jvp(
+        points,
+        weights,
+        tf.zeros([80, 3, 2], tf.float64),
+        weight_tangent,
+    )
+    step = tf.constant(1.0e-5, tf.float64)
+    for parameter in range(2):
+        plus = tf.nn.softmax(log_weight + step * score[:, parameter])
+        minus = tf.nn.softmax(log_weight - step * score[:, parameter])
+        plus_target = weighted_shape_targets_jvp(
+            points,
+            plus,
+            tf.zeros([80, 3, 1], tf.float64),
+            tf.zeros([80, 1], tf.float64),
+        )
+        minus_target = weighted_shape_targets_jvp(
+            points,
+            minus,
+            tf.zeros([80, 3, 1], tf.float64),
+            tf.zeros([80, 1], tf.float64),
+        )
+        for name, tangent_name in (
+            ("skew", "skew_tangent"),
+            ("kurtosis", "kurtosis_tangent"),
+            ("pairwise_co_skew", "pairwise_co_skew_tangent"),
+            ("pairwise_co_kurtosis", "pairwise_co_kurtosis_tangent"),
+        ):
+            finite_difference = (
+                plus_target[name] - minus_target[name]
+            ) / (2.0 * step)
+            tf.debugging.assert_near(
+                analytic[tangent_name][..., parameter],
+                finite_difference,
+                atol=3e-7,
+                rtol=3e-7,
+            )
+
+
+def test_affine_restore_cloud_jvp_matches_forward_autodiff():
+    source, weights, points, source_dot, weights_dot, points_dot = _fixture(
+        n=32, d=3
+    )
+
+    def forward(source_value, weights_value, points_value):
+        return affine_restore_cloud_jvp(
+            source_value,
+            weights_value,
+            tf.zeros([32, 3, 1], tf.float64),
+            tf.zeros([32, 1], tf.float64),
+            points_value,
+            tf.zeros([32, 3, 1], tf.float64),
+        )["particles"]
+
+    with tf.autodiff.ForwardAccumulator(
+        (source, weights, points), (source_dot, weights_dot, points_dot)
+    ) as accumulator:
+        output = forward(source, weights, points)
+    automatic = accumulator.jvp(output)
+    manual = affine_restore_cloud_jvp(
+        source,
+        weights,
+        source_dot[:, :, None],
+        weights_dot[:, None],
+        points,
+        points_dot[:, :, None],
+    )
+    tf.debugging.assert_near(
+        manual["particles_tangent"][:, :, 0],
+        automatic,
+        atol=3e-10,
+        rtol=3e-10,
+    )
+    assert float(manual["maximum_mean_residual"].numpy()) < 1e-12
+    assert float(manual["maximum_covariance_residual"].numpy()) < 1e-12
+    assert float(manual["maximum_normalized_mean_residual"].numpy()) < 1e-12
+    assert float(manual["maximum_normalized_covariance_residual"].numpy()) < 1e-12

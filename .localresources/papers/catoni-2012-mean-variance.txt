@@ -1,0 +1,3126 @@
+                                                                                                                                 1
+
+
+                                           Challenging the empirical mean and empirical variance: a deviation study
+
+                                                                            O LIVIER C ATONI1
+
+                                                                            November 26, 2024
+
+                                               A BSTRACT : We present new M-estimators of the mean and variance of real valued
+                                          random variables, based on PAC-Bayes bounds. We analyze the non-asymptotic minimax
+                                          properties of the deviations of those estimators for sample distributions having either a
+                                          bounded variance or a bounded variance and a bounded kurtosis. Under those weak hy-
+arXiv:1009.2048v2 [math.ST] 12 Aug 2011
+
+
+
+
+                                          potheses, allowing for heavy-tailed distributions, we show that the worst case deviations
+                                          of the empirical mean are suboptimal. We prove indeed that for any confidence level,
+                                          there is some M-estimator whose deviations are of the same order as the deviations of
+                                          the empirical mean of a Gaussian statistical sample, even when the statistical sample is
+                                          instead heavy-tailed. Experiments reveal that these new estimators perform even better
+                                          than predicted by our bounds, showing deviation quantile functions uniformly lower at
+                                          all probability levels than the empirical mean for non-Gaussian sample distributions as
+                                          simple as the mixture of two Gaussian measures.
+                                          2010 M ATHEMATICS S UBJECT C LASSIFICATION : 62G05, 62G35.
+                                          K EYWORDS : Non-parametric estimation, M-estimators, PAC-Bayes bounds.
+
+
+                                                                           1. I NTRODUCTION
+
+                                              This paper is devoted to the estimation of the mean and possibly also of the
+                                          variance of a real random variable from an independent identically distributed
+                                          sample. While the most traditional way to deal with this question is to focus on
+                                          the mean square error of estimators, we will instead focus on their deviations. De-
+                                          viations are related to the estimation of confidence intervals which are of impor-
+                                          tance in many situations. While the empirical mean has an optimal minimax mean
+                                          square error among all mean estimators in all models including Gaussian distribu-
+                                          tions, its deviations tell a different story. Indeed, as far as the mean square error is
+                                          concerned, Gaussian distributions represent already the worst case, so that in the
+                                          framework of a minimax mean least square analysis, no need is felt to improve
+                                          estimators for non-Gaussian sample distributions. On the contrary, the deviations
+                                          of estimators, and especially of the empirical mean, are worse for non-Gaussian
+                                          samples than for Gaussian ones. Thus a deviation analysis will point out possible
+                                          improvements of the empirical mean estimator more successfully. It was nonethe-
+                                          less quite unexpected for us, and will undoubtedly also be for some of our readers,
+                                             1
+                                              CNRS – UMR 8553, Département de Mathématiques et Applications, Ecole Normale
+                                          Supérieure, 45, rue d’Ulm, F75230 Paris cedex 05, and INRIA Paris-Rocquencourt – CLASSIC
+                                          team.
+
+
+
+                                          N OVEMBER 26, 2024                                                    O LIVIER C ATONI
+2                                                                1   I NTRODUCTION
+
+
+that the empirical mean could be improved, under such a weak hypothesis as the
+existence of a finite variance, and that this has remained unnoticed until now. One
+of the reasons may be that the weaknesses of the empirical mean disappear if we
+let the sample distribution be fixed and the sample size go to infinity. This does
+not mean however that a substantial improvement is not possible, nor that it is
+only concerned with specific sample sizes or weird worst case distributions : in
+the end of this paper, we will present experiments made on quite simple sample
+distributions, consisting in the mixture of two to three Gaussian measures, show-
+ing that more than twenty five percent can be gained on the widths of confidence
+intervals, for realistic sample sizes ranging from 100 to 2000. We think that, be-
+yond the technicalities involved here, this exemplifies more broadly the pitfalls of
+asymptotic studies in statistics and should be quite thought provoking about the
+notions of optimality commonly used to assess the performance of estimators.
+     Our deviation study will use two kinds of tools: M-estimators to truncate ob-
+servations and PAC-Bayesian theorems to combine estimates on the same sample
+without using a split scheme [13, 12, 14, 8, 2, 1].
+     Its general conclusion is that, whereas the deviations of the empirical mean es-
+timate may increase a lot when the sample distribution is far from being Gaussian,
+those of some new M-estimators will not. The improvement is the best for heavy-
+tailed distributions, as the worst case analysis performed to prove lower bounds
+will show. The improvement also increases as the confidence level at which devi-
+ations are computed increases.
+     Similar conclusions can be drawn in the case of least square regression with
+random design [3, 4]. Discovering that using truncated estimators permits to get
+rid of sub Gaussian tail assumptions was the spur to study the simpler case of
+mean estimation for its own sake. Restricting the subject in this way (which is of
+course a huge restriction compared with least square regression) makes it possible
+to propose simpler dedicated estimators and to push their analysis further. It will
+indeed be possible here to obtain mathematical proofs for numerically significant
+non-asymptotic bounds.
+     The weakest hypothesis we will consider is the existence of a finite but un-
+known variance. In our M-estimators, adapting the truncation level depends on
+the value of the variance. However, this adaptation can be done without actually
+knowing the variance, through Lepski’s approach.
+     Computing an observable confidence interval, on the other hand, requires
+more information. The simplest case is when the variance is known, or at least
+lower than a known bound. If it is not so, another possibility is to assume that the
+kurtosis is known, or lower than a known bound. Introducing the kurtosis is natu-
+ral to our approach: in order to calibrate the truncation level for the estimation of
+the mean, we need to know the variance, and in the same way, in order to calibrate
+the truncation level for the estimation of the variance, we need to use the variance
+
+
+O LIVIER C ATONI                                               N OVEMBER 26, 2024
+                                                                                       3
+
+
+of the variance, which is provided by the kurtosis as a function of the variance
+itself.
+    In order to assess the quality of the results, we prove corresponding lower
+bounds for the best estimator confronted to the worst possible sample distribu-
+tion, following the minimax approach. We also compute lower bounds for the
+deviations of the empirical mean estimator when the sample distribution is the
+worst possible. These latter bounds show the improvement that can be brought
+by M-estimators over the more traditional empirical mean. We plot the numerical
+values of these upper and lower bounds against the confidence level for typical
+finite sample sizes to show the gap between them.
+    The reader may wonder why we only consider the following extreme models,
+the narrow Gaussian model and the broad models
+                                  
+                          Avmax = P ∈ M1+ (R) : VarP ≤ vmax ,               (1.1)
+                                  
+                 and Bvmax ,κmax = P ∈ Avmax : κP ≤ κmax ,                  (1.2)
+where VarP is the variance of P, κP its kurtosis, and M1+ (R) is the set of prob-
+ability measures (positive measures of mass 1) on the real line equipped with the
+Borel sigma-algebra.
+    The reason is that, the minimax bounds obtained in these broad models being
+close to the ones obtained in the Gaussian model, introducing intermediate models
+would not change the order of magnitude of the bounds.
+    Let us end this introduction by advocating the value of confidence bounds,
+stressing more particularly the case of high confidence levels, since this is the
+situation where truncation brings the most decisive improvements.
+    One situation of interest which we will not comment further is when the es-
+timated parameter is critical and making a big mistake on its value, even with a
+small probability, is unacceptable.
+    Another scenario to be encountered in statistical learning is the case when lots
+of estimates are to be computed and compared in the course of some decision
+making. Let us imagine, for instance, that
+                                          some  parameter θ ∈ Θ is to be tuned
+ order to optimize the expected loss E fθ (X) of some family of loss functions
+in
+  fθ : θ ∈ Θ computed on some random input X. Let us consider a split sample
+                                                     def                              def
+scheme where two i.i.d. samples (X1 , . . . , Xs ) = X1s and (Xs+1 , . . . , Xs+n ) =
+                                                                                    
+   s+n
+Xs+1    are used, one to build some estimators θbk (X1s ) of argminθ∈Θk E fθ (X) in
+subsets Θk , k = 1, . . . , K of Θ, and the other to test those estimators and keep
+hopefully the best. This is a very common model selection situation. One can
+think for instance of the choice
+                                  of a basis to expand some regression function. If
+K is large, estimates of E fθbk (X s ) (Xs+1 ) will be required for a lot of values of k.
+                                  1
+In order to keep safe from over-fitting, very high confidence levels will be required
+if the resulting confidence level is to be computed through a union bound (because
+no special structure of the problem can be used to do better). Namely, a confidence
+
+
+N OVEMBER 26, 2024                                                    O LIVIER C ATONI
+4                                                                 1   I NTRODUCTION
+
+
+level of 1 −  on the final result of the optimization on the test sample will require
+a confidence level of 1 − /K for each mean estimate on the test sample. Even
+if  is not very small (like, say, 5/100), /K may be very small. For instance,    
+if 10 parameters are to be selected among a set of 100, this gives K = 100      10
+                                                                                     '
+1.7·1013 . In practice, except in some special situations where fast algorithms exist,
+a heuristic scheme will be used to compute only a limited number of estimators
+θbk . An example of heuristics is to add greedily parameters one at a time, choosing
+at each step the one with the best estimated performanceincrease (in our example,
+this requires to compute 1000 estimators instead of 100  10
+                                                            ). Nonetheless, asserting
+the quality of the resulting choice requires a union bound on the whole set of
+possible outcomes of the data driven heuristic, and therefore calls    for very high
+confidence levels for each estimate of the mean performance E fθbk (X s ) (Xs+1 )
+                                                                            1
+on the test set.
+      The question we are studying in this paper should not be confused with robust
+statistics [9, 10]. The most fundamental difference is that we are interested in
+estimating the mean of the sample distribution. In robust statistics, it is assumed
+that the sample distribution is in the neighbourhood of some known parametric
+model. This gives the possibility to replace the mean by some other location
+parameter, which as a rule will not be equal to the mean when the shape of the
+distribution is not constrained (and in particular is not assumed to be symmetric).
+      Other differences are that our point of view is non-asymptotic and that we
+study the deviations of estimators whereas robust statistics is focussed on their
+asymptotic mean square error.
+      Although we end up defining M-estimators with the help of influence func-
+tions, like in robust statistics, we use a truncation level depending on the sample
+size, whereas in robust statistics, the truncation level depends on the amount of
+contamination. Also, we truncate at much higher levels (that is we eliminate less
+outliers) that what would be advisable for instance in the case of a contaminated
+Gaussian statistical sample. Thus, although we have some tools in common with
+robust statistics, we use them differently to achieve a different purpose.
+      Adaptive estimation of a location parameter [15, 5, 6] is another setting where
+the empirical mean can be replaced by more efficient estimators. However, the
+setting studied by these authors is quite different from ours. The main difference,
+here again, is that the location parameter is assumed to be the center of symmetry
+of the sample distribution, a fact that is used to tailor location estimators based
+on a symmetrized density estimator. Another difference is that in these papers,
+the estimators are built with asymptotic properties in view, such as asymptotic
+normality with optimal variance and asymptotic robustness. These properties,
+although desirable, give no information on the non-asymptotic deviations we are
+studying here, and therefore do not provide as we do non-asymptotic confidence
+intervals.
+
+
+O LIVIER C ATONI                                                N OVEMBER 26, 2024
+                                                                                               5
+
+
+                             2. S OME NEW M- ESTIMATORS
+
+    Let (Yi )ni=1 be an i.i.d. sample drawn from some unknown probability dis-
+tribution P on the real line R equipped with the Borel σ-algebra B. Let Y be
+independent from (Yi )ni=1 with the same marginal distribution P. Assuming that
+Y ∈ L2 (P), let m be the mean of Y and let v be its variance:
+
+                        E(Y ) = m        and     E[(Y − m)2 ] = v.
+
+    Let us consider some non-decreasing2 influence function ψ : R → R such
+that
+                                                             
+              − log 1 − x + x2 /2 ≤ ψ(x) ≤ log 1 + x + x2 /2 .        (2.1)
+
+The widest possible choice of ψ compatible with these inequalities is
+                              (                 
+                               log 1 + x + x2 /2 ,               x ≥ 0,
+                       ψ(x) =                                                             (2.2)
+                               − log 1 − x + x2 /2 ,             x ≤ 0,
+
+whereas the narrowest possible choice is
+                          
+                          
+                          log(2),               x ≥ 1,
+                          − log 1 − x + x2 /2, 0 ≤ x ≤ 1,
+                          
+                   ψ(x) =                                                                 (2.3)
+                          log 1 + x + x2 /2 ,
+                                                −1 ≤ x ≤ 0,
+                          
+                          
+                           − log(2),             x ≤ −1.
+
+Although ψ is not the derivative of some explicit error function, we will use it in
+the same way, so that it can be considered as an influence function.
+    Indeed, α being some positive real parameter to be chosen later, we will build
+our estimator θbα of the mean m as the solution of the equation
+
+                                  X
+                                  n
+                                                 
+                                    ψ α(Yi − θbα ) = 0.
+                                  i=1
+
+
+(When the narrow choice of ψ defined by equation (2.3) is made, the above equa-
+tion may have more than one solution, in which case any of them can be used to
+define θbα .)
+   2
+     We would like to thank one of the anonymous referees of an early version of this paper for
+pointing out the benefits that could be drawn from the use of a non-decreasing influence function
+in this section.
+
+
+
+N OVEMBER 26, 2024                                                           O LIVIER C ATONI
+6                                                                     2   S OME NEW M- ESTIMATORS
+
+
+                                              Plot of x 7→ ψ(x)
+           4
+
+
+
+
+                  Identity map x 7→ x
+
+                  Narrow influence function
+
+                  Wide influence function
+           2
+    ψ(x)
+           0
+
+
+
+
+                                                          1.0
+                                                                                 Zoom
+
+
+
+
+                                                          0.8
+           −2
+
+
+
+
+                                                          0.6
+                                                          0.4
+                                                          0.2
+           −4
+
+
+
+
+                                                            0.0   0.2      0.4     0.6       0.8       1.0
+
+
+            −5   −4         −3          −2     −1     0           1          2           3         4         5
+
+                                                      x
+
+
+   The widest choice of ψ is the one making θbα the closest to the empirical mean.
+For this reason it may be preferred if our aim is to stabilize the empirical mean by
+making the smallest possible change, which could be justified by the fact that the
+empirical mean is optimal in the case when the sample (Yi )ni=1 is Gaussian.
+   Our analysis of θbα will rely on the following exponential moment inequalities,
+from which deviation bounds will follow. Let us introduce the quantity
+
+                                         1 X 
+                                            n
+                                                          
+                         r(θ) =                ψ α(Yi − θ) ,              θ ∈ R.
+                                        αn i=1
+
+
+P ROPOSITION 2.1
+      n         o n              α2               on
+                                                   2
+     E exp αnr(θ) ≤ 1 + α(m − θ) +      v + (m − θ)
+                                    2
+                                  n              nα2              o
+                            ≤ exp nα(m − θ) +          v + (m − θ)2 .
+                                                   2
+In the same way
+      n          o n              α2              on
+                                                   2
+     E exp −αnr(θ) ≤ 1 − α(m − θ) +     v + (m − θ)
+                                    2
+
+O LIVIER C ATONI                                                                 N OVEMBER 26, 2024
+                                                                                    7
+
+                                       n             nα2             o
+                                  ≤ exp −nα(m − θ) +      v + (m − θ)2 .
+                                                      2
+The proof of this proposition is an obvious consequence of inequalities (2.1) and
+of the fact that the sample is assumed to be i.i.d. It justifies the special choice of
+influence function we made. If we had taken for ψ the identity function, and thus
+for θbα the empirical mean, the exponential moments of r(θ) would have existed
+only in the case when the random variable Y itself has exponential moments. In
+order to bound θbα , we will find two non-random values θ− and θ+ of the parameter
+such that with large probability r(θ− ) > 0 > r(θ+ ), which will imply that θ− <
+θbα < θ+ , since r(θbα ) = 0 by construction and θ 7→ r(θ) is non-increasing.
+
+P ROPOSITION 2.2 The values of the parameters α ∈ R+ and  ∈)0, 1( being set,
+let us define for any θ ∈ R the bounds
+                                                        −1
+                                                           
+                                   α             log 
+                 B+ (θ) = m − θ + v + (m − θ)2 +             ,
+                                   2                  nα 
+                                   α            log −1
+                 B− (θ) = m − θ − v + (m − θ)2 −             .
+                                    2                 nα
+They satisfy
+                                                        
+               P r(θ) < B+ (θ) ≥ 1 − ,     P r(θ) > B− (θ) ≥ 1 − .
+
+The proof of this proposition is also straightforward: it is a mere consequence of
+Chebyshev’s inequality and of the previous proposition. Let us assume that
+                                               
+                               2     2 log −1
+                             α v+                ≤ 1.
+                                          n
+Let θ+ be the smallest solution of the quadratic equation B+ (θ+ ) = 0 and let θ−
+be the largest solution of the equation B− (θ− ) = 0.
+
+L EMMA 2.3
+
+                                −1
+                                  !        s                         −1
+                                                                  −1
+                     αv log          1 + 1 1 − α2 v −
+                                                           2 log 
+                                                                        
+      θ+ = m +          +
+                      2      αn        2 2                      n
+
+                               −1
+                                  !                   −1
+                                                           !−1
+                          log              2    log 
+                     αv                   α v
+         ≤m+            +             1−       −                ,
+                      2      αn             2        n
+
+                               −1
+                                  !        s                         −1
+                                                                   −1
+                     αv log          1 + 1 1 − α2 v −
+                                                           2 log 
+                                                                        
+      θ− = m −          +
+                      2      αn        2 2                      n
+
+
+N OVEMBER 26, 2024                                                  O LIVIER C ATONI
+8                                                 2   S OME NEW M- ESTIMATORS
+
+
+                                 !                        !−1
+                   αv log −1             α2 v log −1
+         ≥m−          +                1−     −                   .
+                    2    αn                2      n
+
+Moreover, since the map θ 7→ r(θ) is non-increasing, with probability at least
+1 − 2,
+                              θ− < θbα < θ+ .
+The proof of this lemma is also an obvious consequence of the previous propo-
+sition and of the definitions of θ+ and θ− . Optimizing the choice of α provides
+
+
+P ROPOSITION 2.4 Let us assume that n > 2 log(−1 ) and let us consider
+          v                                              s             
+          u               −1
+                 2v log( )                                 2 log −1
+          u
+      η=u                            and          α=                   .
+          t          2 log(−1 )                             n(v + η 2 )
+            n 1−
+                          n
+
+In this case θ+ = m + η and θ− = m − η, so that with probability at least 1 − 2,
+                                    v
+                                    u     2v log(−1 )
+                                    u
+                   |m − θbα | ≤ η = u                    .
+                                    t         2 log(−1 )
+                                      n 1−
+                                                   n
+
+   In the same way, if we want to make a choice of α independent from , we can
+choose                                r
+                                          2
+                                  α=        ,
+                                         nv
+and assume that                                
+                             n > 2 1 + log(−1 ) .
+In this latter case, with probability at least 1 − 2,
+                                   −1
+                                                r                  −1
+                                                                        r
+                          1 + log                  v     1 + log         v
+    |θbα − m| ≤         r                              ≤              −1     .
+                  1 1          2[1 + log(−1 )] 2n          1 + log( ) 2n
+                    +      1−                            1−
+                  2 2                  n                          n
+
+    In the following plots, we compare the bounds on the deviations of our M-
+                                                              1X
+                                                                 n
+           b
+estimator θα with the deviations of the empirical mean M =         Yi when the
+                                                             n i=1
+sample distribution is Gaussian and when it belongs to the model A1 defined in
+the introduction by equation (1.1, page 3). (The bounds for the empirical mean
+will be explained and proved in subsequent sections.)
+
+
+O LIVIER C ATONI                                            N OVEMBER 26, 2024
+                                                                                                               9
+
+
+    More precisely, the deviation upper bounds for our estimator θbα for the worst
+sample distribution in A1 , the model defined by (1.1, page 3), are compared with
+the exact deviations of the empirical mean M of a Gaussian sample. This is the
+minimax bound at all confidence levels in the Gaussian model, as will be proved
+later on. Consequently, the deviations of our estimator cannot be smaller for the
+worst sample distribution in A1 , which contains Gaussian distributions. We see on
+the plots that starting from  = 0.1 (corresponding to a 80% confidence level), our
+upper bound is close to being minimax, not only in A1 , but also in the small Gaus-
+sian sub-model. This shows that the deviations of our estimator are close to reach
+the minimax bound in any intermediate model containing Gaussian distributions
+and contained in A1 .
+    Our estimator is also compared with the deviations of the empirical mean for
+the worst distribution in A1 , (to be established later). In particular the lower bound
+proves that there are sample distributions in A1 for which the deviations of the
+empirical mean are far from being optimal, showing the need to introduce a new
+estimator to correct this.
+    In the first plot, we chose a sample size n = 100 and plotted the deviations
+against the confidence level (or rather against , the confidence level being 1 − 2).
+                                                                n = 100, v = 1
+                                       1.0
+
+
+
+
+                                                                 θbα upper bound, worst sample in A1
+ deviations from m plotted against 
+                                       0.8
+
+
+
+
+                                                                 M upper bound, Gaussian sample
+
+                                                                 M upper bound, worst sample in A1
+
+                                                                 M lower bound, worst sample in A1
+                                       0.6
+                                       0.4
+                                       0.2
+
+
+
+
+                                                         10−2                            10−1
+
+                                             , starting from 0.5, the confidence level being 1 − 2
+
+    As shown on the second plot, showing a wider range of  values, our bound
+stays close to the Gaussian bound up to very high confidence levels (up to  =
+10−9 and more). On the other hand, it already outperforms the empirical mean by
+a factor larger than two at confidence level 98% (that is for  = 10−2 ).
+
+
+N OVEMBER 26, 2024                                                                               O LIVIER C ATONI
+10                                                                                             2   S OME NEW M- ESTIMATORS
+
+
+                                                                            n = 100, v = 1
+                                       1.0
+
+
+
+
+                                                              θbα upper bound, worst sample in A1
+ deviations from m plotted against 
+                                       0.8
+
+
+
+
+                                                              M upper bound, Gaussian sample
+
+                                                              M upper bound, worst sample in A1
+
+                                                              M lower bound, worst sample in A1
+                                       0.6
+                                       0.4
+                                       0.2
+
+
+
+
+                                         10−9   10−8       10−7      10−6      10−5     10−4        10−3     10−2   10−1
+
+                                                       , starting from 0.5, the confidence level being = 1 − 2
+
+
+    When we increase the sample size to n = 500, the performance of our M-
+estimator is even closer to optimal.
+                                                                            n = 500, v = 1
+                                       0.40
+
+
+
+
+                                                              θbα upper bound, worst sample in A1
+                                       0.35
+ deviations from m plotted against 
+
+
+
+
+                                                              M upper bound, Gaussian sample
+                                       0.30
+
+
+
+
+                                                              M upper bound, worst sample in A1
+                                       0.25
+
+
+
+
+                                                              M lower bound, worst sample in A1
+                                       0.20
+                                       0.15
+                                       0.10
+                                       0.05
+
+
+
+
+                                         10−9   10−8       10−7      10−6      10−5     10−4        10−3     10−2   10−1
+
+                                                       , starting from 0.5, the confidence level being = 1 − 2
+
+
+
+O LIVIER C ATONI                                                                                           N OVEMBER 26, 2024
+                                                                                            11
+
+
+                        3. A DAPTING TO AN UNKNOWN VARIANCE
+
+    In this section, we will use Lepski’s renowned adaptation method [11] when
+nothing is known, except that the variance is finite. Under so uncertain, (but un-
+fortunately so frequent) circumstances, it is impossible to provide any observable
+confidence intervals, but it is still possible to define an adaptive estimator and to
+bound its deviations by unobservable bounds (depending on the unknown vari-
+ance). To understand the subject of this section, one should keep in mind that
+adapting to the variance is a weaker requirement than estimating the variance :
+estimating the variance at any predictable rate would require more prior informa-
+tion (bearing for instance on higher moments of the sample distribution).
+    The idea of Lepski’s method is powerful and simple : consider a sequence
+of confidence intervals obtained by assuming that the variance is bounded by a
+sequence of bounds vk and pick up as an estimator the middle of the smallest
+interval intersecting all the larger ones. For this to be legitimate, we need all the
+confidence regions for which the variance bound is valid to hold together, which
+is performed using a union bound.
+    Let us describe this idea more precisely. Let θ(v  b max ) be some estimator of
+the mean depending on some assumed variance bound vmax , as the ones described
+in the beginning of this paper. Let δ(vmax , ) ∈ R+ ∪ {+∞} be some deviation
+bound3 proved in Avmax : namely let us assume that for any sample distribution in
+Avmax , with probability at least 1 − 2,
+
+                                        b max )| ≤ δ(vmax , ).
+                                   |m − θ(v
+
+Let us also decide by convention that δ(vmax , 0) = +∞.
+    Let ν ∈ M1+ (R+ ) be some coding atomic probability measure on the positive
+real line, which will serve to take a union bound on a (countable) set of possible
+values of vmax .
+    We can choose for instance for ν the following coding distribution : expressing
+vmax by comparison with some reference value V ,
+
+                     X
+                     d
+       vmax = V 2s          ck 2−k ,   s ∈ Z, d ∈ N, (ck )dk=0 ∈ {0, 1}d+1 , c0 = cd = 1,
+                      k=0
+
+we set
+                                                     2−2(d−1)
+                                  ν(vmax ) =
+                                               5(|s| + 2)(|s| + 3)
+and otherwise we set ν(vmax ) = 0. It is easy to see that this defines a probability
+distribution on R+ (supported by dyadic numbers scaled by the factor V). It is
+   3
+       Avmax is defined by (1.1, page 3)
+
+
+
+N OVEMBER 26, 2024                                                         O LIVIER C ATONI
+12                                        3     A DAPTING TO AN UNKNOWN VARIANCE
+
+
+clear that, as far as possible, the reference value V should be chosen as close as
+possible to the true variance v.
+    Another possibility is to set for some parameters V ∈ R, ρ > 1 and s ∈ N,
+
+                                        1
+                       ν(V ρ2k ) =          ,    k ∈ Z, |k| ≤ s.                (3.1)
+                                     2s + 1
+
+    Let us consider for any vmax such that δ(vmax , ν(vmax )) < +∞ the confidence
+interval                                               
+                            b max ) + δ vmax , ν(vmax ) × (−1, 1).
+                I(vmax ) = θ(v
+Let us put I(vmax ) = R when δ(vmax , ν(vmax )) = +∞.
+    Let us consider the non-decreasing family of closed intervals
+                         \n                      o
+                J(v1 ) =     I(vmax ) : vmax ≥ v1 ,      v1 ∈ R+ .
+
+(In this definition, we can restrict the intersection to the support of ν, since oth-
+erwise I(vmax ) = R.) A union bound shows immediately that with probability at
+least 1 − 2, m ∈ J(v), implying as a consequence that J(v) 6= ∅.
+
+P ROPOSITION 3.1 Since v1 7→ J(v1 ) is a non-decreasing family of closed inter-
+vals, the intersection
+                       \n                              o
+                         J(v1 ) : v1 ∈ R+ , J(v1 ) 6= ∅
+
+is a non-empty closed interval, and we can therefore pick up an adaptive estimator
+θe belonging to it, choosing for instance the middle of this interval.
+     With probability at least 1 − 2, m ∈ J(v), which implies that J(v) 6= ∅, and
+therefore that θe ∈ J(v).
+     Thus with probability at least 1 − 2
+
+                        e ≤ |J(v)| ≤ 2 inf δ(vmax , ν(vmax )).
+                   |m − θ|
+                                          vmax >v
+
+
+If the confidence bound δ(vmax , ) is homogeneous, in the sense that
+                                               √
+                             δ(vmax , ) = B() vmax ,
+
+as it is the case in Proposition 2.4 (page 8) with
+                                   v
+                                   u       2 log(−1 )
+                                   u
+                          B() = u                        
+                                   t           2 log(−1 )
+                                      n 1−
+                                                    n
+
+
+O LIVIER C ATONI                                                   N OVEMBER 26, 2024
+                                                                                                                                    13
+
+
+then with probability at least 1 − 2,
+                                                                                 
+                                                             e ≤ 2 inf B ν(vmax ) √vmax .
+                                                        |m − θ|
+                                                                       vmax >v
+
+
+Thus in the case when ν is defined by equation (3.1, page 12) and |log(v/V )| ≤
+2s log(ρ), with probability at least 1 − 2
+                                                   
+                                                     √
+                          |m − θ|e ≤ 2ρB                v.
+                                             2s + 1
+
+Let us see what happens for a sample size of n = 500, when we assume that
+|log(v/V )| ≤ 2 log(100) and we take ρ = 1.05.
+                                                                           n = 500, v = 1
+                                       1.0
+
+
+
+
+                                                        |θe − m| upper bound, worst sample in A1 , unknown variance
+ deviations from m plotted against 
+
+
+
+
+                                                        |θbα − m| upper bound, worst sample in A1 , known variance
+                                       0.8
+
+
+
+
+                                                        |M − m| upper bound, Gaussian sample
+
+                                                        |M − m| upper bound, worst sample in A1
+                                       0.6
+
+
+
+
+                                                        |M − m| lower bound, worst sample in A1
+                                       0.4
+
+
+
+
+                                                                                                          = 0.005
+                                       0.2
+
+
+
+
+                                        10−9   10−8       10−7      10−6      10−5     10−4       10−3               10−2    10−1
+
+                                                      , starting from 0.5, the confidence level being = 1 − 2
+
+
+This plot shows that, for a sample of size n = 500, there are sample distribu-
+tions with a finite variance for which the deviations of the empirical mean blow
+up for confidence levels higher than 99%, where as the deviations of our adaptive
+estimator remain under control, even at confidence levels as high as 1 − 10−9 .
+    The conclusion is that if our aim is to minimize the worst estimation error
+over 100 statistical experiments or more and we have no information on the stan-
+dard deviation except that it is in some range of the kind (1/100, 100) (which is
+pretty huge and could be increased even more if desired), then the performance of
+the empirical mean estimator for the worst sample distribution breaks down but
+thresholding very large outliers as θe does can cure this problem.
+
+
+N OVEMBER 26, 2024                                                                                                    O LIVIER C ATONI
+14            4    M EAN AND VARIANCE ESTIMATES DEPENDING ON THE KURTOSIS
+
+
+     4. M EAN AND VARIANCE ESTIMATES DEPENDING ON THE KURTOSIS
+
+    Situations where the variance is unknown are likely to happen. We have seen
+in the previous section how to adapt to an unknown variance. The price to pay
+is a loss of a factor two in the deviation bound, and the fact that it is no longer
+observable.
+    Here we will make hypotheses under which it is possible to estimate both the
+variance and the mean, and to obtain an observable confidence interval, without
+loosing a factor two as in the previous section. Making use of the kurtosis pa-
+rameter is the most natural way to achieve these goals in the framework of our
+approach. This is what we are going to do here.
+
+4.1. S OME VARIANCE ESTIMATE DEPENDING ON THE KURTOSIS . In this sec-
+tion, we are going to consider an alternative to the unbiased usual variance esti-
+mate
+                                     n                 2
+                               1 X             1X
+                                                   n
+                        b
+                       V =               Yi −        Yj                     (4.1)
+                            n − 1 i=1          n j=1
+                                1        X              2
+                          =                     Yi − Yj .
+                            n(n − 1) 1≤i<j≤n
+
+We will assume that the fourth moment E(Y 4 ) is finite and that some upper bound
+is known for the kurtosis                        
+                                     E (Y − m)4
+                                κ=                  .
+                                           v2
+Our aim will be, as before with the mean, to define an estimate with better de-
+viations than Vb . We will use κ in the following computations, but when only an
+upper bound is known, κ can be replaced with this upper bound in the definition
+of the estimator and the estimates of its performance.
+                                                                       q
+                                                                      G
+    Let us write n = pq + r, with 0 ≤ r < p, and let {1, . . . , n} =    I` be the
+                                                                       `=1
+partition of the n first intergers defined by
+                        (
+                          {i ∈ N; p(` − 1) < i ≤ p`}, 1 ≤ ` < q,
+                 I` =
+                          {i ∈ N; p(` − 1) < i ≤ n}, ` = q.
+
+We will develop some kind of block threshold scheme, introducing
+                       q                                              
+                    1X                1         X
+                                                                2
+                                                                      
+           Qδ (β) =       ψ                          β(Yi − Yj ) − 2δ
+                    q `=1     |I` |(|I` | − 1) i,j∈I
+                                                    `
+                                              i<j
+
+
+
+O LIVIER C ATONI                                              N OVEMBER 26, 2024
+4.1       S OME VARIANCE ESTIMATE DEPENDING ON THE KURTOSIS                                 15
+
+                                  "                                    #
+                          1X
+                             q
+                                         β    X        1 X
+                                                                   2
+                        =       ψ                 Yi −           Yj − δ .
+                          q `=1     |I` | − 1 i∈I      |I` | j∈I
+                                                  `                `
+
+
+where ψ is a non-decreasing influence function satisfying (2.1, page5).
+    If ψ were replaced with the identity, we would have E Qδ (β) = βv − δ.
+The idea is to solve Qδ (β)b = 0 in βb and to estimate v by δ/β.    b Anyhow, for
+technical reasons, we will adopt a slightly different definition for βb as well as for
+the estimate of v, as we will show now. Let us first get some deviation inequalities
+for Qδ (β), derived as usual from exponential bounds. It is straightforward to see
+that
+                            (
+     n           o Y   q
+  E exp q Q(β) ≤              1 + (βv − δ)
+                              `=1
+                                                                        )
+ 1                 β 2         X n                                o
++ (βv−δ)2 + 2                       E (Yi −Yj )2 −2v (Ys −Yt )2 −2v       .
+ 2         |I` | (|I` | − 1)2 i<j∈I
+                                              `
+                                         s<t∈I`
+
+We can now compute for any i 6= j
+      n                      2 o                 
+  E        (Yi − Yj )2 − 2v          = E (Yi − Yj )4 − 4v 2
+                                                      = 2κv 2 + 6v 2 − 4v 2 = 2(κ + 1)v 2 ,
+
+and for any distinct values of i, j and s,
+      n                          o                        
+  E (Yi − Ys ) − 2v (Yj − Ys ) − 2v = E (Yi − Ys )2 (Yj − Ys )2 − 4v 2
+                    2         2
+
+       n                                          
+   = E (Yi − m)2 + 2(Yi − m)(Ys − m) + (Ys − m)2
+                                                             o
+                × (Yj − m)2 + 2(Yj − m)(Ys − m) + (Ys − m)2 − 4v 2
+                      n                             o
+   = E (Ys − m)4 + E (Ys − m)2 (Yi − m)2 + (Yj − m)2
+                                                 
+                           + E (Yi − m)2 (Yj − m)2 − 4v 2 = (κ − 1)v 2 .
+
+      Thus
+      X n                                o
+                      2               2
+          E (Yi − Yj ) − 2v (Ys − Yt ) − 2v
+  i<j∈I`
+  s<t∈I`
+
+               = |I` |(|I` | − 1)(κ + 1)v 2 + |I` |(|I` | − 1)(|I` | − 2)(κ − 1)v 2
+                                                                                       
+                                                                2                  2
+                                             = |I` |(|I` | − 1) (κ − 1) +                 v2.
+                                                                              |I` | − 1
+
+
+N OVEMBER 26, 2024                                                          O LIVIER C ATONI
+16               4   M EAN AND VARIANCE ESTIMATES DEPENDING ON THE KURTOSIS
+
+
+It shows that
+   n           
+             o
+  E exp qQ(β) ≤ 1 + (βv − δ)
+                                                                     q
+                                          1        2  β 2v2        2
+                                         + (βv − δ) +        κ−1+         .
+                                          2            2p         p−1
+
+In the same way
+   n            
+              o
+  E exp −qQ(β) ≤ 1 − (βv − δ)
+                                                                     q
+                                          1        2  β 2v2        2
+                                         + (βv − δ) +        κ−1+         .
+                                          2            2p         p−1
+
+                       2
+Let χ = κ − 1 +             ' κ − 1. For any given β1 , β2 ∈ R+ , with probability
+                     p − 1 p→∞
+at least 1 − 21 ,
+
+                                   1             χβ 2 v 2 log(−1
+                                                                1 )
+                Q(β1 ) < β1 v − δ + (β1 v − δ)2 + 1 +               ,
+                                   2              2p         q
+                                   1             χβ 2 v 2 log(−1
+                                                                1 )
+                Q(β2 ) > β2 v − δ − (β2 v − δ)2 − 2 −               .
+                                   2              2p          q
+
+Let us define, for some parameter y ∈ R, βb as
+
+       b = −y,                                χδ 2 log(−1
+                                                        1 )                 δ
+     Q(β)            and let us choose     y=     +         ,     and   β2 = ,
+                                              2p      q                     v
+
+so that Q(β2 ) > −y. Let us put ξ = δ − β1 v and let us choose ξ such that
+Q(β1 ) < −y. This implies that ξ is solution of
+
+          1+ζ 2                                                         χ
+             ξ − (1 + ζδ)ξ + 2y ≤ 0                where           ζ=     .
+           2                                                            p
+
+Provided that (1 + ζδ)2 ≥ 4(1 + ζ)y, the smallest solution of this equation is
+
+                                             4y
+                       ξ=              p                     .
+                            1 + ζδ +(1 + ζδ)2 − 4(1 + ζ)y
+                                                                     
+With these parameters, with probability at least 1 − 21 , Q (δ − ξ)/v < −y <
+Q(δ/v), implying that
+                               δ−ξ             δ
+                                      ≤ βb ≤ .
+                                 v             v
+
+O LIVIER C ATONI                                                N OVEMBER 26, 2024
+4.1   S OME VARIANCE ESTIMATE DEPENDING ON THE KURTOSIS                               17
+
+
+Thus putting                             p
+                                             δ(δ − ξ)
+                                  vb =                ,
+                                               βb
+we get
+                                1/2           −1/2
+                               ξ       v       ξ
+                           1−         ≤ ≤ 1−           .
+                               δ       vb      δ
+                                                  s
+                       ξ    2y                        2p log(−1
+                                                               1 )
+In order to minimize ' , we are led to take δ =                    . We get
+                       δ     δ                             χq
+                                              s
+             2 log(−1
+                    1  )                  y      2χ log(−1
+                                                          1 )
+       y=                ,                  =                 ,
+                  q                       δ        n−r
+          y                                            2 log(−1
+                                                              1 )   2χ log(−1
+                                                                            1 )
+      ζδ = ,                    and      (1 + ζ)y =               +             .
+          δ                                                 q         n−r
+Thus the condition becomes
+                                                   s                 !−2
+                                    
+                           −1      χ                   2χ log(−1
+                                                               1 )
+                q ≥ 8 log(1 ) 1 +     1+                                  .        (4.2)
+                                   p                     n−r
+
+
+P ROPOSITION 4.1 Under condition (4.2), with probability at least 1 − 21 ,
+                                                     
+                                         1          ξ
+                  log(v) − log(bv ) ≤ − log 1 −         .
+                                         2          δ
+A simpler result is obtained by choosing ξ = 2y(1 + 2y), (the values of y and δ
+being kept the same, so that we modify only the choice of β1 through a different
+choice of ξ). In this case, Q(β1 ) < −y as soon as
+                             2 + 2ζδ + ζδ/y     2ζδ + ζδ/y − 2ζ
+               (1 + 2y)2 ≤                  =2+                 ,
+                                  1+ζ                1+ζ
+                                         δ
+which is true as soon as (1+2y)2 ≤ 2 and ≥ 2, yielding the simplified condition
+                                         y
+                                                     
+                           −1              q     n−r
+                      log(1 ) ≤ min         √ ,         .                (4.3)
+                                       4(1 + 2) 8χ
+In this case, we get with probability at least 1 − 21 that
+                                                             
+                                      1            2y(1 + 2y)    y
+               |log(v) − log(b
+                             v )| ≤ − log 1 −                   ' .
+                                      2                 δ        δ
+
+
+
+N OVEMBER 26, 2024                                                     O LIVIER C ATONI
+18             4   M EAN AND VARIANCE ESTIMATES DEPENDING ON THE KURTOSIS
+
+
+P ROPOSITION 4.2 Under condition (4.3), with probability at least 1 − 21 ,
+
+  |log(v) − log(b
+                v )|
+                       "     s                               #
+                                                       −1 
+                   1           2χ log(−1
+                                       1  )      4 log(1 )
+                ≤ − log 1 − 2                 1+
+                   2             n−r                  q
+                                                            r
+                                                              2χ log(−1
+                                                                      1 )
+                                                          '               .
+                                                                   n
+
+                             2
+Recalling that χ = κ − 1 +       , we can choose in the previous proposition the
+                           p−1
+approximately optimal block size
+                            r                            
+                                             n
+                       p=                                .
+                                 (κ − 1) 4 log(−1
+                                                1 ) + 1/2
+
+
+
+
+C OROLLARY 4.3 For this choice of parameter, as soon as the kurtosis (or its
+upper bound) κ ≥ 3, under the condition
+
+                                             n     1
+                            log(−1
+                                 1 ) ≤            − ,                          (4.4)
+                                         36(κ − 1) 8
+
+with probability at least 1 − 2−1
+                                1 ,
+
+
+     log(v) − log(b
+                  v)
+                  "   r                         s                   !#
+             1          2(κ − 1) log(−1
+                                      1  )        4 log(−1
+                                                         1  ) + 1/2
+         ≤ − log 1 − 2                     exp 4
+             2                 n                      (κ − 1)n
+                                                      r
+                                                         2(κ − 1) log(−1
+                                                                       1 )
+                                                  '                        .
+                                                 n→∞             n
+
+This is the asymptotics we hoped for, since the variance of (Yi − m)2 is equal to
+(κ − 1)v 2 . The proof is page 31.
+    Let us plot some curves, showing the tighter bounds of Proposition 4.1 (page
+17), with optimal choice of p. We compare our deviation bounds with the exact
+deviation quantiles of the variance estimate of equation (4.1, page 14) applied to a
+Gaussian sample, (given by a χ2 distribution). This demonstrates that we can stay
+of the same order under much weaker assumptions.
+
+
+O LIVIER C ATONI                                               N OVEMBER 26, 2024
+4.1                                     S OME VARIANCE ESTIMATE DEPENDING ON THE KURTOSIS                                          19
+
+
+                                                              n = 1000, v = 1, κ = 3, p = 4
+
+
+                                                                          The non biased estimate Vb in the Gaussian case
+                                       0.4
+
+
+
+
+                                                                          Our estimate vb
+                                v )|
+ upper bound for | log(v) − log(b
+                                       0.3
+                                       0.2
+                                       0.1
+
+
+
+
+                                         10−9   10−8   10−7      10−6    10−5        10−4        10−3        10−2           10−1
+
+                                                       , starting from 0.5, confidence level = 1 − 2
+
+
+
+
+                                                              n = 5000, v = 1, κ = 3, p = 10
+                                       0.14
+
+
+
+
+                                                                          The non biased estimate Vb in the Gaussian case
+
+                                                                          Our estimate vb
+                                       0.12
+                                v )|
+ upper bound for | log(v) − log(b
+                                       0.10
+                                       0.08
+                                       0.06
+                                       0.04
+                                       0.02
+
+
+
+
+                                         10−9   10−8   10−7      10−6    10−5        10−4        10−3        10−2           10−1
+
+                                                       , starting from 0.5, confidence level = 1 − 2
+
+
+
+
+N OVEMBER 26, 2024                                                                                             O LIVIER C ATONI
+20                                              4      M EAN AND VARIANCE ESTIMATES DEPENDING ON THE KURTOSIS
+
+
+                                                                 n = 5000, v = 1, κ = 6, p = 5
+
+
+                                                                              The non biased estimate Vb in the Gaussian case
+                                       0.20
+
+
+
+
+                                                                              Our estimate vb
+                                v )|
+ upper bound for | log(v) − log(b
+                                       0.15
+                                       0.10
+                                       0.05
+
+
+
+
+                                         10−9   10−8      10−7      10−6     10−5        10−4        10−3        10−2           10−1
+
+                                                           , starting from 0.5, confidence level = 1 − 2
+
+
+4.2. M EAN ESTIMATE UNDER A KURTOSIS ASSUMPTION . Here, we are going
+to plug a variance estimate vb into a mean estimate. Let us therefore assume that vb
+is a variance estimate such that with probability at least 1 − 21 ,
+                                                                   log(v) − log(b
+                                                                                v ) ≤ ζ.
+This estimate may for example be the one defined in the previous section. Let α  b
+be some estimate of the desired value of the parameter α, to be defined later as a
+function of vb. Let us define θb = θbαb by
+                                                                   1 X 
+                                                                      n
+                                                                                    
+                                                             b
+                                                           r(θ) =        ψ α      b = 0,
+                                                                           b(Yi − θ)                                                   (4.5)
+                                                                  nb
+                                                                   α i=1
+where ψ is the narrow influence function defined by equation (2.3, page 5). As
+usual, we are looking for non-random values θ− and θ+ such that with large prob-
+ability r(θ+ ) < 0 < r(θ− ), implying that θ− < θb < θ+ . But there is a new
+                                    b will be an estimate depending on the value of
+difficulty, caused by the fact that α
+the sample. This problem will be solved with the help of PAC-Bayes inequalities.
+    To take advantage of PAC-Bayes theorems, we are going to compare α      b with
+a perturbation αe built with the help of some supplementary random variable. Let
+indeed U be some uniform real random variable on the interval (−1, +1), inde-
+pendent from everything else. Let us consider
+                                                     
+                              e=α
+                              α    b + xα sinh ζ/2 U.
+
+
+O LIVIER C ATONI                                                                                             N OVEMBER 26, 2024
+4.2   M EAN ESTIMATE UNDER A KURTOSIS ASSUMPTION                                   21
+
+
+Let ρ be the distribution of α e given the sample value. We are going to compare
+this posterior distribution (meaning that it depends on the sample), with a prior
+                                      the sample. Let π be the
+distribution that is independent from                                 uniform proba-
+                                                                               
+bility distribution on the interval α exp −ζ/2) − x sinh ζ/2 , α exp ζ/2 +
+             
+x sinh ζ/2 . Let us assume that α       b and α are defined with the help of some
+                              r              r
+                                  c              c
+positive constant c as α b =        and α =        . In this case, with probability at
+                                 vb              v
+least 1 − 21
+                                                      ζ
+                                log(α) − log(bα) ≤ .                             (4.6)
+                                                      2
+As a result, with probability at least 1 − 21 ,
+                                                        
+                              K(ρ, π) = log 1 + x−1 .
+
+Indeed, whenever equation (4.6) holds, the (random) support of ρ is included in
+the (fixed) support of π, so that the relative entropy of ρ with respect to π is given
+by the logarithm of the ratio ofthe lengths of their supports.
+    Let us now upper-bound ψ α    b(Yi − θ) as a suitable function of ρ.
+
+L EMMA 4.4 For any posterior distribution ρ and any f ∈ L2 (ρ),
+                       Z            h                           i
+      R                                        1          a
+     ψ ρ(dβ)f (β) ≤ ρ(dβ) log 1 + f (β) + f (β)2 + Varρ (f ) ,
+                                                 2          2
+where a ≤ 4.43 is the numerical constant of equation (7.1, page 34).
+   Applying this inequality to f (β) = β(Yi − θ) in the first place and f (β) =
+β(θ − Yi ) to get the reversed inequality, we obtain
+                             Z            n
+                        
+          ψ α  b(Yi − θ) ≤ ρ(dβ) log 1 + β(Yi − θ)
+                                  1h       a            i           o
+                               + β 2 + x2 α2 sinh(ζ/2)2 (Yi − θ)2 ,        (4.7)
+                             Z 2          n
+                                           3
+                        
+          ψ α  b(θ − Yi ) ≤ ρ(dβ) log 1 + β(θ − Yi )
+                                  1h       a            i           o
+                               + β 2 + x2 α2 sinh(ζ/2)2 (Yi − θ)2 .        (4.8)
+                                  2        3
+    Let us now recall the fundamental PAC-Bayes inequality, concerned with any
+function (β, y) 7→ f (β, y) ∈ L1 (π ⊗ P), where P is the distribution of Y , such
+that inf f > −1.
+    Z       X
+              n                                                      
+                                                       
+  E exp ρ(dβ)   log 1 + f (β, Yi ) − n log 1 + E f (β, Y ) − K(ρ, π)
+                      i=1
+
+
+
+N OVEMBER 26, 2024                                                  O LIVIER C ATONI
+22              4       M EAN AND VARIANCE ESTIMATES DEPENDING ON THE KURTOSIS
+
+      Z            X
+                     n                                              
+                                                               
+≤E         π(dβ) exp   log 1 + f (β, Yi ) − n log 1 + E f (β, Y )      = 1,
+                           i=1
+
+according to [7, page 159] and Fubini’s lemma for the last equality. Thus, from
+Chebyshev’s inequality, with probability at least 1 − 2 ,
+  Z           X
+              n
+                                      
+      ρ(dβ)         log 1 + f (β, Yi )
+              i=1
+                    Z
+                                                                    
+              <n         ρ(dβ) log 1 + E f (β, Y ) + K(ρ, π) + log −1
+                                                                    2
+                                       Z
+                                                                            
+                                    ≤ n ρ(dβ)E f (β, Y ) + K(ρ, π) + log −1
+                                                                          2   .
+
+    Applying this inequality to the case we are interested in, that is to equations
+(4.7) and (4.8), we obtain with probability at least 1 − 21 − 22 that
+
+                            1 h 2 (a + 1) 2 2                    i           
+  br(θ+ ) < α
+  α          b(m − θ+ ) + α      b +                           2
+                                             x α sinh(ζ/2) v + (m − θ+ )2
+                            2             3                             
+                                                         log 1 + x−1 + log(−1
+                                                                            2 )
+                                                     +
+                                                                        n
+and
+                             1 h 2 (a + 1) 2 2                   i           
+  br(θ− ) > α
+  α          b(m − θ− ) − α      b +         x α sinh(ζ/2)2 v + (m − θ− )2
+                             2            3                            
+                                                        log 1 + x−1 + log(−1
+                                                                           2 )
+                                                     −                          .
+                                                                       n
+                                   √
+Let us put θ+ − m = m − θ− = γv and let us look for some value of γ ensuring
+that r(θ+ ) < 0 < r(θ− ), implying that θ− ≤ θb ≤ θ+ . Let us choose
+                   s                                 
+                           2 log(1 + x−1 ) + log(−1
+                                                   2 )
+               α=                                          ,
+                     n 1 − (a+1) 3
+                                    x2 sinh(ζ/2)2 (1 + γ)v
+                   s                                              r
+                           2 log(1 + x−1 ) + log(−1
+                                                   2 )                v
+               b=
+               α                                             =α        ,   (4.9)
+                     n 1−      (a+1) 2
+                                    x sinh(ζ/2)2 (1 + γ)b  v          vb
+                                    3
+
+assuming that x will be chosen later on such that
+                                 (a + 1) 2
+                                        x sinh(ζ/2)2 < 1.
+                                    3
+Since
+                                                             
+        log(1 + x−1 ) + log(−1
+                             2 )   α2     (a + 1) 2         2
+                                 =     1−        x sinh(ζ/2) (1 + γ)v,
+                  n                2         3
+
+
+O LIVIER C ATONI                                              N OVEMBER 26, 2024
+4.2   M EAN ESTIMATE UNDER A KURTOSIS ASSUMPTION                                 23
+
+
+we obtain with probability at least 1 − 21 − 22
+                                            
+                √       αv(1 + γ) α   b α         √
+    r(θ+ ) < − γv +                     +      ≤ − γv + αv(1 + γ) cosh(ζ/2),
+                             2        α α  b
+                                          
+              √      αv(1 + γ) α     b α        √
+and r(θ−) > γv −                       +     ≥ γv − αv(1 + γ) cosh(ζ/2).
+                           2        α α  b
+                                    √
+Therefore, if we choose γ such that γv = αv(1 + γ) cosh(ζ/2), we obtain with
+probability at least 1 − 21 − 22 that r(θ+ ) < 0 < r(θ− ), and therefore that
+θ− < θb < θ+ . The corresponding value of γ is γ = η/(1 − η), where
+                                                            
+                       2 cosh(ζ/2)2 log(1 + x−1 ) + log(−1
+                                                          2 )
+                   η=                                        .
+                             n 1 − (a+1)
+                                      3
+                                         x 2 sinh(ζ/2)2
+
+
+
+
+P ROPOSITION 4.5 With probability at least 1−21 −22 , the estimator θbαb defined
+                                  b is set as in (4.9, page 22), satisfies
+by equation (4.5, page 20), where α
+                      r          s                       r
+                          ηv          ηbv                    ηv
+         |θbαb − m| ≤         ≤            exp(ζ/2) ≤              exp(ζ).
+                        1−η         1−η                     1−η
+
+The optimal value of x is the one minimizing
+
+                           log(1 + x−1 ) + log(−1
+                                                2 )
+                                                     .
+                               (a + 1) 2           2
+                           1−         x sinh(ζ/2)
+                                  3
+Assuming ζ to be small, the optimal x will be large, so that log(1 + x−1 ) ' x−1 ,
+and we can choose the approximately optimal value
+                                         −1/3
+                     2(a + 1)
+                  x=          log(−1
+                                   2 )            sinh(ζ/2)−2/3 .
+                        3
+
+Let us discuss now the question of balancing 1 and 2 . Let us put  = 1 + 2
+and let y = 1 /. Optimizing y for a fixed value of  could be done numerically,
+although it seems difficult to obtain a closed formula. However, the entropy term
+in η can be written as log(1 + x−1 ) + log(−1 ) − log(1 − y). Since ζ decreases,
+and therefore the almost optimal x above increases, when y increases, we will get
+an optimal order of magnitude (up to some constant less than 2) for the bound if
+we balance − log(1 − y) and log(1 + x−1 ), resulting in the choice y = (1 + x)−1 ,
+where x is approximately optimized as stated above (this choice of x depends on
+y, so we end up with an equation for x, which can be solved using an iterative
+
+
+N OVEMBER 26, 2024                                                  O LIVIER C ATONI
+24                                                 4      M EAN AND VARIANCE ESTIMATES DEPENDING ON THE KURTOSIS
+
+
+approach). This results, with probability at least 1 − 2, in an upper bound for
+|θb − m| equivalent for large values of the sample size n to
+
+                                                                             r
+                                                                                  2 log(−1 )v
+                                                                                               .
+                                                                                       n
+
+
+Thus we recover, as desired, the same asymptotics as when the variance is known.
+   Let us illustrate what we get when n = 500 or n = 1000 and it is known that
+κ ≤ 3.
+    On these figures, we have plotted upper and lower bounds for the deviations
+of the empirical mean when the sample distribution4 is the least favourable one
+in B1,κ . (These bounds will be proved later on. The upper bound is computed by
+taking the minimum of three bounds, explaining the discontinuities of its deriva-
+tive). What we see on the n = 500 example is that our bound remains of the same
+order as the Gaussian bound up to confidence levels of order 1 − 10−8 , whereas
+this is not the case with the empirical mean.
+   In the case when n = 1000, we see that our estimator possibly improves on the
+empirical mean in the range of confidence levels going from 1 − 10−2 to 1 − 10−6
+and is a proved winner in the range going from 1 − 10−6 to 1 − 10−14 .
+                                                                      n = 500, v = 1, κ = 3, p = 3
+                                        1.0
+
+
+
+
+                                                              |M − m| lower bound, worst sample in B1,κ
+ deviations from m plotted against 
+
+
+
+
+                                                              |M − m| upper bound, worst sample in B1,κ
+                                        0.8
+
+
+
+
+                                                              |θb − m| conf. int. upper bound, worst sample in B1,κ
+
+                                                              |θb − m| conf. int. typical value, worst sample in B1,κ
+
+                                                              |θb − m| upper bound, worst sample in B1,κ
+                                        0.6
+
+
+
+
+                                                              |θbα − m| upper bound, worst sample in A1
+
+                                                              |M − m| upper bound, Gaussian sample
+                                        0.4
+                                        0.2
+
+
+
+
+                                         10−9      10−8      10−7         10−6         10−5         10−4          10−3     10−2   10−1
+
+                                                              , starting from 0.5, confidence level = 1 − 2
+                          4
+                                       B1,κ is defined by (1.2, page 3)
+
+
+
+O LIVIER C ATONI                                                                                                         N OVEMBER 26, 2024
+4.2                                    M EAN ESTIMATE UNDER A KURTOSIS ASSUMPTION                                                                   25
+
+
+                                                                     n = 1000, v = 1, κ = 3, p = 3
+                                       1.0
+
+
+
+
+                                                              |M − m| lower bound, worst sample in B1,κ
+ deviations from m plotted against 
+
+
+
+
+                                                              |M − m| upper bound, worst sample in B1,κ
+                                       0.8
+
+
+
+
+                                                              |θb − m| conf. int. upper bound, worst sample in B1,κ
+
+                                                              |θb − m| conf. int. typical value, worst sample in B1,κ
+
+                                                              |θb − m| upper bound, worst sample in B1,κ
+                                       0.6
+
+
+
+
+                                                              |θbα − m| upper bound, worst sample in A1
+
+                                                              |M − m| upper bound, Gaussian sample
+                                       0.4
+                                       0.2
+
+
+
+
+                                        10−15 10−14 10−13 10−12 10−11 10−10      10−9    10−8    10−7    10−6    10−5   10−4   10−3   10−2   10−1
+
+                                                             , starting from 0.5, confidence level = 1 − 2
+
+    Let us see now the influence of κ and plot the curves corresponding to increas-
+ing values of n and κ.
+                                                                     n = 1000, v = 1, κ = 6, p = 3
+                                       1.0
+
+
+
+
+                                                              |M − m| lower bound, worst sample in B1,κ
+ deviations from m plotted against 
+
+
+
+
+                                                              |M − m| upper bound, worst sample in B1,κ
+                                       0.8
+
+
+
+
+                                                              |θb − m| conf. int. upper bound, worst sample in B1,κ
+
+                                                              |θb − m| conf. int. typical value, worst sample in B1,κ
+
+                                                              |θb − m| upper bound, worst sample in B1,κ
+                                       0.6
+
+
+
+
+                                                              |θbα − m| upper bound, worst sample in A1
+
+                                                              |M − m| upper bound, Gaussian sample
+                                       0.4
+                                       0.2
+
+
+
+
+                                        10−15 10−14 10−13 10−12 10−11 10−10      10−9    10−8    10−7    10−6    10−5   10−4   10−3   10−2   10−1
+
+                                                             , starting from 0.5, confidence level = 1 − 2
+
+
+
+
+N OVEMBER 26, 2024                                                                                                             O LIVIER C ATONI
+26                                                4    M EAN AND VARIANCE ESTIMATES DEPENDING ON THE KURTOSIS
+
+
+
+
+                                                                    n = 2000, v = 1, κ = 12, p = 3
+                                       1.0
+
+
+
+
+                                                              |M − m| lower bound, worst sample in B1,κ
+ deviations from m plotted against 
+
+
+
+
+                                                              |M − m| upper bound, worst sample in B1,κ
+                                       0.8
+
+
+
+
+                                                              |θb − m| conf. int. upper bound, worst sample in B1,κ
+
+                                                              |θb − m| conf. int. typical value, worst sample in B1,κ
+
+                                                              |θb − m| upper bound, worst sample in B1,κ
+                                       0.6
+
+
+
+
+                                                              |θbα − m| upper bound, worst sample in A1
+
+                                                              |M − m| upper bound, Gaussian sample
+                                       0.4
+                                       0.2
+
+
+
+
+                                        10−15 10−14 10−13 10−12 10−11 10−10      10−9    10−8    10−7    10−6    10−5   10−4   10−3   10−2   10−1
+
+                                                             , starting from 0.5, confidence level = 1 − 2
+
+
+
+                                                                   n = 10000, v = 1, κ = 60, p = 3
+                                       1.0
+
+
+
+
+                                                              |M − m| lower bound, worst sample in B1,κ
+ deviations from m plotted against 
+
+
+
+
+                                                              |M − m| upper bound, worst sample in B1,κ
+                                       0.8
+
+
+
+
+                                                              |θb − m| conf. int. upper bound, worst sample in B1,κ
+
+                                                              |θb − m| conf. int. typical value, worst sample in B1,κ
+
+                                                              |θb − m| upper bound, worst sample in B1,κ
+                                       0.6
+
+
+
+
+                                                              |θbα − m| upper bound, worst sample in A1
+
+                                                              |M − m| upper bound, Gaussian sample
+                                       0.4
+                                       0.2
+
+
+
+
+                                        10−15 10−14 10−13 10−12 10−11 10−10      10−9    10−8    10−7    10−6    10−5   10−4   10−3   10−2   10−1
+
+                                                             , starting from 0.5, confidence level = 1 − 2
+
+
+
+
+O LIVIER C ATONI                                                                                                         N OVEMBER 26, 2024
+                                                                                     27
+
+
+
+When we double the kurtosis letting n = 1000, we follow the Gaussian curve up
+to confidence levels of 1 − 10−10 instead of 1 − 10−14 . This is somehow the maxi-
+mum kurtosis for which the bounds are satisfactory for this sample size. Looking
+at Proposition 4.2 (page 18), we see that the bound in first approximation depends
+on the ratio χ/n = κ/n (when p = 3), suggesting that to obtain similar perfor-
+mances, we have to take n proportional to κ, which gives a minimum sample size
+of n = 1000κ/6, if we want to follow the Gaussian curve up to confidence levels
+of order at least 1 − 10−10 .
+     These curves suggest another approach to choose the kurtosis parameter κ.
+It is to use the largest value of the kurtosis with a low impact on the bound of
+Proposition 4.5 (page 23), given the sample size. This leads, when in doubt about
+the true kurtosis value, for sample sizes n ≥ 1000, to set, according to the pre-
+vious rule of thumb, the kurtosis in the definition of the estimator to the value
+κmax = 6n/1000. Doing so, we get almost the same deviations as if the sample
+distribution were Gaussian, at levels of confidence up to 1 − 10−10 , for the largest
+range of (possibly non-Gaussian) sample distributions.
+
+
+     5. U PPER BOUNDS FOR THE DEVIATIONS OF THE EMPIRICAL MEAN
+
+    In the previous sections, we compared new mean estimators with the empirical
+mean. We will devote the end of this paper to prove the bounds on the empirical
+mean used in these comparisons.
+    This section deals with upper bounds, whereas the next one will study corre-
+sponding lower bounds.
+    Let us start with the case when the sample distribution may be any probability
+measure with a finite variance. It is natural in this situation to bound the deviations
+of the empirical mean
+                                          1X
+                                               n
+                                    M=            Yi
+                                          n i=1
+applying Chebyshev’s inequality to its second moment, to conclude that
+                                        r      
+                                             v
+                       P |M − m| ≥                ≤ 2.                           (5.1)
+                                            2n
+    This is in general close to optimal, as will be shown later when we will com-
+pute corresponding lower bounds.
+    When the sample distribution has a finite kurtosis, it is possible to take this into
+account to refine the bound. The analysis becomes less straightforward, and will
+be carried out in this section. The following bound uses a truncation argument,
+allowing to study separately the behaviour of small and large values. It is to our
+
+
+N OVEMBER 26, 2024                                                    O LIVIER C ATONI
+28              5   U PPER BOUNDS FOR THE DEVIATIONS OF THE EMPIRICAL MEAN
+
+
+knowledge a new result. We will show later in this paper that its leading term is
+                                        1/4
+                                      κ
+essentially tight — up to a factor            , — when the proper asymptotic is
+                                     κ−1
+considered.
+
+P ROPOSITION 5.1 For any probability distribution whose kurtosis is not greater
+than κ, the empirical mean M is such that with probability at least 1 − 2,
+                        r                   √
+   |M − m|                2 log(λ−1 −1 )     κ log(λ−1 −1 )
+     √       ≤ inf                        +
+       v        λ∈(0,1)         n                  3n
+                      1/4                              
+                                                  −1 −1 2 1/4        κ 1/4
+              κ                  3(n − 1)κ log(λ  )
+    +                         1+             √                  '            .
+         2(1 − λ)n3                  43 (1 + 2)4 n2          n→0
+                                                              1/n
+                                                                      2n3 
+                                                                   →1
+
+Instead of minimizing the bound in λ, one can also take for simplicity
+                                    1/4 s             
+                             1 7/4 n                 κ
+                  λ = min , 2                  log            .
+                             2         κ             2n5
+We see that there are two regimes in the behaviour of the deviations of M . A
+Gaussian regime for levels of confidence less than 1 − 1/n and long tail regime
+for higher confidence levels, depending on the value of the kurtosis κ.
+    In addition to this, let us also put forward the fact that, even in the simple case
+when the mean m is known, estimating the variance under a kurtosis hypothesis
+at high confidence levels cannot be done using the empirical estimator
+                                   1X
+                                         n
+                              M2 =       (Yi − m)2 .
+                                   n i=1
+
+Indeed, assuming without loss of generality that m = 0 and computing the quadratic
+mean
+           n               o E(Y 4 ) − E(Y 2 )2       (κ − 1)
+                         2 2
+          E M2 − E(Y )          =                    =          E(Y 2 )2 ,
+                                           n               n
+we can only conclude, using Chebyshev’s inequality, that with probability at least
+1 − 2
+                                            M
+                             E(Y 2 ) ≤      r2      ,
+                                              κ−1
+                                       1−
+                                                2n
+                                                        κ−1
+a bound which blows up at level of confidence  =             , and which we do
+                                                         2n
+not suspect to be substantially improvable in the worst case. In contrast to this,
+Propositions 4.1 and 4.2 (page 18) provide variance estimators with high confi-
+dence levels.
+
+
+O LIVIER C ATONI                                                N OVEMBER 26, 2024
+                                                                                 29
+
+
+                               6. L OWER BOUNDS
+
+6.1. L OWER BOUND FOR G AUSSIAN SAMPLE DISTRIBUTIONS . This lower
+bound is well known. We recall it here for the sake of completeness.
+   The empirical mean has optimal deviations when the sample distribution is
+Gaussian in the following precise sense.
+
+P ROPOSITION 6.1 For any estimator of the mean θb : Rn → R, any variance
+value v > 0, and any deviation level η > 0, there is some Gaussian measure
+N(m, v) (with variance v and mean m) such that the i.i.d. sample of length n
+drawn from this distribution is such that
+                                                                       
+ P θb ≥ m + η ≥ P M ≥ m + η             or P θb ≤ m − η ≥ P M ≤ m − η ,
+
+          1X
+                n
+where M =       Yi is the empirical mean.
+          n i=1
+    This means that any distribution free symmetric confidence interval based on
+the (supposedly known) value of the variance has to include the confidence in-
+terval for the empirical mean of a Gaussian distribution, whose length is exactly
+known and equal to the properly scaled quantile of the Gaussian measure.
+    Let us state this more precisely. With the notations of the previous proposition
+
+  P(M ≥ m + η) = P M ≤ m − η)
+                                           r                r 
+                                                 n                n
+                                     =G            η, +∞   =1−F     η ,
+                                                 v                v
+where G is the standard normal measure and F its distribution function.
+   The upper bounds proved in this paper can be decomposed into
+
+              P(θb ≥ m + η) ≤          and      P(θb ≤ m − η) ≤ ,
+
+although we preferred for simplicity to state them in the slightly weaker form
+P(|θ − m| ≥ η) ≤ 2.
+    As the Gaussian shift model made of Gaussian sample distributions with a
+given variance and varying means, is included in all the models we are considering
+in this paper, we necessarily should have according to the previous proposition
+                                         r 
+                                              n
+                               ≥1−F            η ,
+                                              v
+which can be also written as
+                                    r
+                                        v −1
+                               η≥         F (1 − ).
+                                        n
+
+
+N OVEMBER 26, 2024                                                O LIVIER C ATONI
+30                                                                    6       L OWER BOUNDS
+
+
+    Therefore some visualisation
+                              r of the quality of our bounds can be obtained by
+                                v −1
+plotting  7→ η against  7→       F (1 − ), as we did in the previous sections.
+                                n
+    Let us remark eventually that the assumed symmetry of the confidence region
+is not a real limitation. Indeed, if we can prove for any given estimator θb that for
+any Gaussian sample distribution with a given variance v,
+                                    h               i
+                                  P m ≥ θb + η+ () ≤ ,
+                                    h               i
+                                          b
+                           and P m ≤ θ − η− () ≤ ,
+
+then we may consider for any value of  the estimator with symmetric confidence
+levels defined as
+                                      η+ () − η− ()
+                           θbs = θb +                 .
+                                             2
+This symmetric estimator is such that for any Gaussian sample distribution with
+variance v,
+                                 h          η− () + η+ () i
+                                       b
+                                P m ≥ θs +                    ≤ ,
+                                                   2
+                                 h          η− () + η+ () i
+                                P m ≤ θbs −                   ≤ .
+                                                   2
+Thus, applying the previous proposition, we obtain that
+                                         r
+                       η+ () + η− ()     v −1
+                                       ≥     F (1 − ).
+                              2            n
+
+6.2. L OWER BOUND FOR THE DEVIATIONS OF THE EMPIRICAL MEAN DE -
+PENDING ON THE VARIANCE . In the following proposition, we state a lower
+bound for the deviations of the empirical mean when the sample distribution5 is
+the least favourable in Avmax (meaning the distribution for which the deviations of
+the empirical mean are the largest).
+
+P ROPOSITION 6.2 For any value of the variance v, any deviation level η > 0,
+there is some distribution with variance v and mean 0 such that the i.i.d. sample
+of size n drawn from it satisfies
+                                                                  n−1
+                                                       v 1 − η2vn2
+                        P(M ≥ η) = P(M ≤ −η) ≥                            .
+                                                             2nη 2
+     5
+         Avmax is defined by (1.1, page 3)
+
+
+
+O LIVIER C ATONI                                                     N OVEMBER 26, 2024
+6.3   D EVIATIONS OF THE EMPIRICAL MEAN DEPENDING ON THE KURTOSIS               31
+
+
+Thus, as soon as  ≤ (2e)−1 , with probability at least 2,
+                                    r                n−1
+                                         v        2e 2
+                       |M − m| ≥               1−          .
+                                        2n        n
+
+Let us remark that this bound is pretty tight, since, according to equation (5.1,
+page 27) with probability at least 1 − 2,
+                                              r
+                                                   v
+                               |M − m| ≤              .
+                                                  2n
+
+This can also be observed on the plots following Proposition 2.4 (page 8).
+
+6.3. L OWER BOUND FOR THE DEVIATIONS OF EMPIRICAL MEAN DEPENDING
+ON THE VARIANCE AND THE KURTOSIS . Let us now refine the previous lower
+bound by taking into account the kurtosis κ of the sample distribution, assuming
+of course that it is finite.
+
+P ROPOSITION 6.3 As soon as −1 ≥ n ≥ 16, there exists a sample distribution
+with mean m, finite variance v and finite kurtosis κ, such that with probability at
+least 2,
+                (                 1/4
+                   (κ − 1)(1 − 8)
+  |M − m| ≥ max                         ,
+                         4n
+             "                                    s 
+                                       #1/4                )r
+               (κ − 1)       n 1/4                log 16/(n) v   v
+                        1−           − 4       −                    .
+                 2n         16                         2n         n
+
+Let us remark that the asymptotic behaviour of this lower bound when n and
+log(−1 )/n both tend to zero matches the upper bound of Proposition 5.1 (page
+                                     κ
+                                       1/4
+28) up to a multiplicative factor κ−1        ≤ 1.11 when the kurtosis is κ ≥ 3,
+which is the kurtosis of the Gaussian distribution.
+    The plots following Proposition 4.5 (page 23) show that this lower bound is
+not too far from the upper bound obtained by combining Proposition 5.1 (page
+28), Proposition 7.3 (page 37) and equation (5.1, page 27).
+
+
+                                    7. P ROOFS
+
+7.1. P ROOF OF C OROLLARY 4.3 ( PAGE 18). Let us remark first that condition
+(4.4, page 18) implies condition (4.3, page 17), as can be easily checked. Putting
+
+
+N OVEMBER 26, 2024                                                O LIVIER C ATONI
+32                                                                       7   P ROOFS
+
+      r
+                  n
+x=                            , so that p = bxc, we can also check that p−1 ≥
+      (κ − 1) 4 log(−1
+                     1 ) + 1/2
+x/2 and n − p + 1 ≥ n/2. We can then write
+  s                               
+      2χ log(−1
+              1 )       4 log(−1
+                               1 )
+                   1+
+        n − r)               q
+                      r                        
+                         2(κ − 1) log(−1
+                                        1 )              1
+                    ≤                       exp
+                                  n               (κ − 1)(p − 1)
+                                                                                 
+                                                        p−1          4 log(−1
+                                                                            1 )p
+                                                +                 +
+                                                    2(n − p + 1)      n−p+1
+            r                                                           
+               2(κ − 1) log(−1
+                             1 )           2         2x 4 log(−1
+                                                               1 ) + 1/2
+         ≤                       exp             +
+                      n                (κ − 1)x                n
+                               r                           s                    !
+                                 2(κ − 1) log(−1
+                                               1  )           4 log(−1
+                                                                     1  ) + 1/2
+                            =                        exp 4                        .
+                                         n                        (κ − 1)n
+
+7.2. P ROOF OF L EMMA 4.4 ( PAGE 21). Let us introduce some modification
+of ψ in order to improve the compromise between inf ψ 00 and sup ψ. Let us put
+ψ(x) = log(1 + x + x2 /2). We would like to squeeze some function χ between ψ
+                                         00
+and ψ, in such a way that inf χ00 = inf ψ . This will be better than using ψ itself
+since
+                                             00
+                                      inf ψ = −1/4
+                              whereas inf ψ 00 = −2.
+
+Indeed
+    these
+         two values can be computed in the following way. Let us put ϕ(x) =
+                     2
+exp ψ(x) = 1 + x + x /2. It is easy to check that
+                           00                       
+                         ψ (x) = −ϕ(x)−1 1 − ϕ(x)−1 ,
+                                                      
+                         ψ 00 (x) = ϕ(−x)−1 1 − ϕ(−x)−1 ,
+                 00
+implying that ψ (x)√≥ −1/4. This inequality becomes an equality when ϕ(x) =
+2, that is when x = 3 − 1 ' 0.73. In the same way ψ 00 (x) ≥ −2 and equality is
+reached when ϕ(−x) = 1/2, that is when x = 1. We are going to build a function
+χ which follows ψ when x ≤ x1 , where x1 satisfies ψ 00 (x
+                                                         √1 ) = −1/4. The value
+                                               −1
+of x1 is computed from the equation ϕ(−x1 ) = (1 + 2)/2. Let y1 = ψ(x1 )
+and p1 = ψ 0 (x1 ). They have the following values
+                                   q
+                                       √
+                        x1 = 1 − 4 2 − 5 ' 0.1895
+
+
+O LIVIER C ATONI                                               N OVEMBER 26, 2024
+7.2                    P ROOF OF L EMMA 4.4 ( PAGE 21)                                                         33
+
+                                                     √     
+                                          y1 = − log 2 2 − 1 ' 0.1882,
+                                               p √
+                                                  4 2−5
+                                          p1 = √         ' 0.978.
+                                               2( 2 − 1)
+After x1 , we continue χ with a quadratic function, until its derivatives cancels.
+Thus, the second derivative of χ being less than the second derivative of ψ at each
+point of the positive real line, we are sure that χ(x) ≤ ψ(x) for any x ∈ R. The
+function χ built in this way satisfies the equation
+                 
+                 
+                   ψ(x),                              x ≤ x1 ,
+                 
+                                         1
+         χ(x) = y1 + p1 (x − x1 ) − (x − x1 )2 , x1 ≤ x ≤ x1 + 4p1 ,
+                 
+                                        8
+                 
+                    y1 + 2p21 ≤ 2.103,                 x ≥ x1 + 4p1 .
+As we have proved, and as can be seen on the next plot, the function χ is such that
+                                          ψ(x) ≤ χ(x) ≤ ψ(x),          x ∈ R.
+                                                   Plot of ψ, χ and ψ
+
+
+                                          ψ
+                       4
+
+
+
+
+                                          χ
+
+                                          ψ
+                       2
+ ψ(x), χ(x) and ψ(x)
+                       0
+
+
+
+
+                                                               1.0
+
+
+
+
+                                                                                   Zoom
+                                                               0.8
+                       −2
+
+
+
+
+                                                               0.6
+                                                               0.4
+                                                               0.2
+                       −4
+
+
+
+
+                                                                 0.0   0.2   0.4     0.6       0.8       1.0
+
+
+                        −5    −4     −3       −2    −1     0           1       2           3         4         5
+
+                                                           x
+Let us now compare χ with a suitable convex function (in order to apply Jensen’s
+inequality). Let us introduce to this purpose the function χx∗ = χ(x)+ 81 (x−x∗ )2 ,
+which is convex for any choice of the parameter x∗ ∈ R.
+    Let us consider as in the lemma we have to prove some function f ∈ L2 (ρ)
+                         R                      R              R 2
+and let us choose x∗ = ρ(dβ)f (β) and put ρ(dβ) f (β) − ρf = Varρ (f ).
+We obtain by Jensen’s inequality
+
+
+
+N OVEMBER 26, 2024                                                                         O LIVIER C ATONI
+34                                                                      7    P ROOFS
+
+                                      R              R             
+  ψ(x∗ ) ≤ χ(x∗ ) = χx∗ (x∗ ) = χx∗        ρ(dβ)f (β) ≤ ρ(dβ)χx∗ f (β)
+                                                     R           1
+                                                   = ρ(dβ)χ f (β) + Varρ (f ).
+                                                                    8
+
+On the other hand, it is clear that
+             R                            R           
+     ψ(x∗ ) ≤ ρ(dβ)χ f (β) − inf χ + sup ψ = ρ(dβ)χ f (β) + log(4).
+
+We have proved
+
+L EMMA 7.1 For any posterior distribution ρ and any f ∈ L2 (ρ),
+
+            R              R                n       1         o
+        ψ        ρ(dβ)f (β) ≤ ρ(dβ)χ f (β) + min log(4), Varρ (f ) .
+                                                        8
+
+To end the proof of Lemma 4.4 (page 21), it remains to establish that for any
+x ∈ R and y ∈ R+ ,
+                            n        yo      h                ay i
+                  χ(x) + min log(4),    ≤ log 1 + x + x2 /2 +     ,
+                                     8                         2
+
+where                              
+                       3 exp sup(χ)     3 exp(y1 + 2p21 )
+                    a=                =                   ≤ 4.43.              (7.1)
+                          4 log(4)          4 log(4)
+Indeed a should satisfy
+                  n       y o           
+   2                                 x2 
+a≥     exp χ(x) min 4, exp      − 1+x+       ,                 x ∈ R,       y ∈ R+ .
+   y                        8          2
+
+                       x2
+Since exp χ(x) ≤ 1 + x + , the right-hand side of this inequality is less than
+                          2
+                               n       y o      
+                  2 exp χ(x)
+                              min 4, exp         −1 .
+                       y                    8
+             h y           i
+As y 7→ y −1 exp         − 1 is increasing on R+ , this last expression reaches
+                    8                            y 
+its maximum when x ∈ arg max χ and exp                 = 4, and is then equal to
+                                                 8
+3 exp sup(χ)
+               , which is the value stated for a in equation (7.1) above.
+    4 log(4)
+
+
+O LIVIER C ATONI                                              N OVEMBER 26, 2024
+7.3   P ROOF OF P ROPOSITION 5.1 ( PAGE 28)                                         35
+
+
+7.3. P ROOF OF P ROPOSITION 5.1 ( PAGE 28). Consider the function
+                           (                     
+                            x − log 1 + x + x2 /2 , x ≥ 0,
+                    g(x) =                       
+                            x + log 1 − x + x2 /2 , x ≤ 0.
+
+This function could also be defined as g(x) = x − ψ(x), where ψ is the wide
+version of the influence function defined by equation (2.2, page 5). It is such that
+
+                                      x2        x2
+                   g 0 (x) =                  ≤ ,            x ≥ 0.
+                               2 1 + x + x2 /2  2
+
+Therefore
+                                             x3
+                               0 ≤ g(x) ≤       ,    x ≥ 0,
+                                             6
+implying by symmetry that
+
+                                          |x|3
+                               |g(x)| ≤        ,    x ∈ R.
+                                           6
+We can also remark that
+                                          x
+                          g 0 (x) ≤         √ ,        x ≥ 0,
+                                      2(1 + 2)
+
+implying that
+                                          x2
+                         |g(x)| ≤           √ ,        x ∈ R.
+                                      4(1 + 2)
+As it is also obvious that |g(x)| ≤ |x|, we get
+
+L EMMA 7.2                                                   
+                                                   x2    |x|3
+                      |g(x)| ≤ min |x|,              √ ,       .
+                                               4(1 + 2) 6
+Now let us write
+
+                                 1 X                 1 X
+                                    n                    n
+                                                  
+                   M =m+               ψ α(Yi − m) +        Gi ,
+                                αn i=1               αn i=1
+                        
+where Gi = g α(Yi − m) and ψ is the wide influence function of equation (2.2,
+page 5). As we have already seen in Proposition 2.2 (page 7), with probability at
+least 1 − 21 ,
+                   1 X 
+                        n
+                                            αv log(−1  1 )
+                           ψ α(Yi − m) ≤         +           .
+                  nα i=1                      2        nα
+
+
+N OVEMBER 26, 2024                                                     O LIVIER C ATONI
+36                                                                          7   P ROOFS
+
+
+On the other hand with probability at least 1 − 2
+                                                 Xn                
+                                                                     4 1/4
+                                           E          |Gi | − E |G|
+      1 X           1 X
+          n              n
+                                   E |G|           i=1
+             Gi ≤          |Gi | ≤           +                 1/4
+     nα i=1        nα i=1              α                  nα2
+
+Let us put Hi = |Gi | and let us compute
+        X                   4         n
+  1
+          n
+                                                      4 o            n        2 o2
+    E          Hi − E H              =E        H − E(H)     + 3(n − 1)E H − E(H)
+  n      i=1
+        = E(H 4 ) − 4E(H 3 )E(H) + 6E(H 2 )E(H)2 − 3E(H)4
+                                                                         
+                              + 3(n − 1) E(H 2 )2 − 2E(H 2 )E(H)2 + E(H)4
+        ≤ E(H 4 ) + 2E(H 2 )E(H)2 − 3E(H)4
+                                                                         
+                              + 3(n − 1) E(H 2 )2 − 2E(H 2 )E(H)2 + E(H)4
+        ≤ E(H 4 ) + 3(n − 1)E(H 2 )2 − (3n − 2)E(H)4
+                            4   2               κ2 α8 v 4
+                        ≤ α κv + 3(n − 1)          √ 4 − (3n − 2)E(H)4 .
+                                             4(1 + 2)
+Moreover
+                                α3             α3 √
+                      E(H) ≤       E |Y − m|3 ≤     κv 3
+                                 6              6
+Thus with probability at least 1 − 21 − 2 ,
+
+                  αv log(−1 1 )
+ |M − m| ≤            +
+                   2       nα
+                                                                                1/4
+                    x    −3/4 −1 −1/4       4 2  3(n − 1)κ2 α8 v 4             4
++      sup
+       √
+                      +n      α 2        κα v +        √ 4 − (3n − 2)x
+  x∈(0, κα6 v 3 /6) α                              4(1 + 2)
+                              √            √  1/4                         1/4
+         αv log(−1    1 )      κv 3 α2      v κ             3(n − 1)κα4 v 2
+     ≤       +             +            + 3/4           1+         √ 4          .
+          2          nα          6         n    2             4(1 + 2)
+
+Let us take                                    r
+                                         2 log(−1
+                                                1 )
+                                      α=
+                                             nv
+and let us put 1 = λ and 2 = (1 − λ)2.
+    The bound can either be optimized in λ or we can for simplicity choose λ to
+balance the following factors
+                      r                       √  1/4
+                         2v log(λ−1 −1 )       v κ    λ
+                                          ' 3/4          .
+                                n            n      2 4
+
+
+O LIVIER C ATONI                                                    N OVEMBER 26, 2024
+7.3   P ROOF OF P ROPOSITION 5.1 ( PAGE 28)                                        37
+
+
+This leads to consider the value
+                                  r       κ   2n 1/4 
+                                 1
+                        λ = min , 2 2 log                    .
+                                 2         2n5    κ
+
+As stated in Proposition 5.1 (page 28), with probability at least 1 − 2,
+                   r             √
+              2v log(λ−1 −1 )     κv log(λ−1 −1 )
+  |M − m| ≤                    +
+                     n                   3n
+           r                1/4 "                              #1/4
+            v         κ                 3(n − 1)κ log(λ−1 −1 )2
+        +                           1+              √
+            n 2(1 − λ)n                      43 (1 + 2)4 n2
+                                                             r 
+                                                                v κ 1/4
+                                                         '               .
+                                                        →0    n 2n
+
+    Another bound can be obtained applying Chebyshev’s inequality directly to
+the fourth moment of the empirical mean, which however does not reach the right
+speed when  is small and n large.
+
+P ROPOSITION 7.3 For any probability distribution whose kurtosis is not greater
+than κ, the empirical mean M is such that with probability at least 1 − 2,
+                                                        1/4 r
+                                          3(n − 1) + κ            v
+                          |M − m| ≤
+                                              2n                 n
+
+    P ROOF. Let us assume to simplify notations and without loss of generality
+that E(Y ) = 0.
+
+                1 X           1 X
+                    n
+      4
+                        4              2     2    E(Y 4 ) 3(n − 1)E(Y 2 )2
+E M           = 4    E(Yi ) + 4    6E(Yi )E(Yj ) =        +                 .
+               n i=1         n i<j                  n3           n3
+
+It implies that
+                                E(M 4 )                     
+                                                 3(n − 1) + κ v 2
+                P |M − m| ≥ η ≤              ≤                    ,
+                                        η4            n3 η 4
+                                                            
+                                              3(n − 1) + κ v 2
+and the result is proved by considering 2 =                    . 
+                                                   n3 η 4
+    In our comparisons with new estimators, we took the minimum over the three
+bounds given by Proposition 5.1 (page 28), Proposition 7.3 (page 37) and equation
+(5.1, page 27).
+
+
+N OVEMBER 26, 2024                                                    O LIVIER C ATONI
+38                                                                       7   P ROOFS
+
+
+7.4. P ROOF OF P ROPOSITION 6.1 ( PAGE 29). Let us consider the distributions
+P1 and P2 of the sample (Yi )ni=1 obtained when the marginal distributions are
+respectively the Gaussian measure with variance v and mean m1 = −η and the
+Gaussian measure with variance v and mean m2 = η. We see that, whatever the
+          b
+estimator θ,
+
+  P1 (θb ≥ m1 + η) + P2 (θb ≤ m2 − η) = P1 (θb ≥ 0) + P2 (θb ≤ 0)
+                      ≥ (P1 ∧ P2 )(θb ≥ 0) + (P1 ∧ P2 )(θb ≤ 0) ≥ |P1 ∧ P2 |,
+
+where P1 ∧P2 is the measure whose density with respect to the Lebesgue measure
+(or equivalently with respect to any dominating measure, such as P1 + P2 ) is the
+minimum of the densities of P1 and P2 and whose total variation is |P1 ∧ P2 |.
+    Now, using the fact that the empirical mean is a sufficient statistics of the
+Gaussian shift model, it is easy to realize that
+
+                |P1 ∧ P2 | = P1 (M ≥ m1 + η) + P2 (M ≤ m2 − η),
+
+which obviously proves the proposition.
+
+7.5. P ROOF OF P ROPOSITION 6.2 ( PAGE 30). Let us consider the distribution
+with support {−nη, 0, nη} defined by
+                                                          v
+               P {nη} = P {−nη} = 1 − P({0}) /2 =                   .
+                                                            2n2 η 2
+
+It satisfies E(Y ) = 0, E(Y 2 ) = v and
+                                                                       n−1
+                                          v                       v
+       P(M ≥ η) = P(M ≤ −η) ≥ P(M = η) =                    1−                 .
+                                         2nη 2                   n η2
+                                                                  2
+
+
+
+7.6. P ROOF OF P ROPOSITION 6.3 ( PAGE 31). Let us consider for Y the follow-
+ing distribution, with support {−nη, −ξ, ξ, nη}, where ξ and η are two positive
+real parameters, to be adjusted to obtain the desired variance and kurtosis.
+
+
+                       P(Y = −nη) = P(Y = nη) = q,
+                                               1
+                        P(Y = −ξ) = P(Y = ξ) = − q.
+                                               2
+     In this case
+
+                            m = 0,
+                            v = (1 − 2q)ξ 2 + 2qn2 η 2 ,
+
+
+O LIVIER C ATONI                                            N OVEMBER 26, 2024
+7.6    P ROOF OF P ROPOSITION 6.3 ( PAGE 31)                                        39
+
+
+                                 κv 2 = (1 − 2q)ξ 4 + 2qn4 η 4 .
+
+Thus                                               
+                                        κ = fq nη/ξ ,
+where
+                                      1 − 2q + 2qx4
+                          fq (x) =                  2 ,      x ≥ 1.
+                                      1 − 2q + 2qx2
+It is easy to see that fq is an increasing one to one mapping of (1, +∞( into itself.
+We obtain
+                                  s
+                                               v             √
+                             ξ=                         2 ≤ v,
+                                     1 − 2q + 2q fq−1 (κ)
+                                     ξfq−1 (κ)
+                      and       η=             .
+                                         n
+Consequently
+                              1/4 √                  1/4 √
+                          κ          v       κ − 1 + 2q        v
+                                       ≥η≥                       .
+                          2q        n            2q          n
+On the other hand,
+             X                                                   
+                            1X
+              n
+                  
+  P M ≥η−γ ≥     P Yi = nη,          Yj ≥ −γ, Yj ∈ {−ξ, ξ}, j 6= i
+             i=1
+                            n j,j6=i
+        = nP(Y1 = nη)(1 − 2q)n−1
+                             X  n                                #
+                               1
+                    × 1−P            Yi ≥ γ Yj ∈ {−ξ, ξ , 2 ≤ j ≤ n .
+                               n i=2
+
+Let us remark that
+     X  n                                 
+      1
+  P         Yi ≥ γ Yj ∈ {−ξ, ξ}, 2 ≤ j ≤ n
+      n i=2
+                                                                2 2      
+                                     n−1                        λξ
+             ≤ inf cosh λξ/n                exp(−λγ) ≤ inf exp       − λγ
+               λ≥0                                     λ≥0        2n
+                                                                              
+                                                             nγ 2           nγ 2
+                                                    = exp − 2 ≤ exp −              .
+                                                              2ξ            2v
+Also, by symmetry
+               X   n                                
+                 1                                     1
+             P         Yi ≥ γ Yj ∈ {−ξ, ξ}, 2 ≤ j ≤ n ≤ .
+                 n i=2                                 2
+
+
+N OVEMBER 26, 2024                                                     O LIVIER C ATONI
+40             8   G ENERALIZATION TO NON - IDENTICALLY DISTRIBUTED SAMPLES
+
+
+Thus, as m = 0,
+                                                                    
+                                         n−1        1          nγ 2
+     P |M − m| ≥ η − γ ≥ 2nq 1 − 2q              max , 1 − exp −         .
+                                                      2          2v
+
+Let us put                                    
+                                    1      nγ 2
+                           χ = min , exp −
+                                    2      2v
+                          1
+and let us assume that  ≤  . Let us put
+                         16
+                                          −(n−1)
+                                     4                2
+               q=             1−                   ≤          ,
+                  n(1 − χ)        n(1 − χ)           n(1 − χ)
+
+the last inequality being a consequence of the convexity of x 7→ (1 − x)n−1 ≥
+1 − (n − 1)x ≥ 1 − nx, 0 ≤ x ≤ 1. Let us remark then that
+                                                       n−1
+                                          2 1 − 2q
+              P |M − m| ≥ η − γ ≥                       n−1 ≥ 2.
+                                                4
+                                          1−
+                                             n(1 − χ)
+
+Thus, with probability at least 2,
+                                    1/4                (n−1)/4 r
+               (κ − 1 + 2/n)(1 − χ)               4                v
+ |M − m| ≥                                  1−
+                        2n                     n(1 − χ)             n
+                                r
+                                  2 log(χ−1 )v
+                              −
+                                        n          s
+          "                            #1/4 r                           
+            (κ − 1 + 2/n) 1 − χ − 4          v     2 log(χ−1 )1 χ < 1/2 v
+≥ sup                                            −                          .
+  0<χ≤1/2               2n                    n                 n
+
+In order to obtain Proposition 6.3 (page 31), it is enough to restrict optimization
+with respect to χ to the two values
+                                   1/4
+                                 n            1
+                              χ=        and χ = .
+                                   2           2
+
+     8. G ENERALIZATION TO NON - IDENTICALLY DISTRIBUTED SAMPLES
+
+   The assumption that the sample is identically distributed can be dropped in
+Proposition 2.4 (page 8). Indeed, assuming only that the random variables (Yi )ni=1
+
+
+O LIVIER C ATONI                                              N OVEMBER 26, 2024
+                                                                                     41
+
+                                                                                Nn
+are independent, meaning that their joint distribution is of the product form    i=1 Pi ,
+we can still write, for Wi = ±α(Yi − θ),
+    X  n                   
+                          Wi2
+  E exp     log 1 + Wi +
+        i=1
+                           2
+                     X n                         
+                                            E Wi2
+                = exp      log 1 + E Wi ) +
+                       i=1
+                                              2
+                                                                 
+                                     1X               1 X
+                                        n                n
+                                                               2
+                                                                  
+                    ≤ exp n log 1 +        E Wi +           E Wi     .
+                                     n i=1           2n i=1
+
+    Starting from these exponential inequalities, we can reach the same conclu-
+sions as in Proposition 2.4 (page 8), as long as we set
+
+                                        1X
+                                           n
+                               m=             E(Yi ),
+                                        n i=1
+                                   1X 
+                                      n
+                                                    
+                         and    v=       E (Yi − m)2 .
+                                   n i=1
+
+                                                      1X
+                                                           n
+We see that the mean marginal sample distribution            Pi is playing here the
+                                                      n i=1
+same role as the marginal sample distribution in the i.i.d. case.
+
+
+                                9. E XPERIMENTS
+
+9.1. M EAN ESTIMATORS . Theoretical bounds can explore high confidence lev-
+els better than experiments, and have also the advantage to hold true in the worst
+case. They have led us to introduce new M-estimators, and in particular the one
+described in Proposition 4.5 (page 23). Nonetheless, they may be expected to be
+rather pessimistic and are clearly insufficient to explore the moderate deviations
+of the proposed estimators. In particular it would be interesting to know whether
+the improvement in high confidence deviations has been obtained as a trade-off
+between large and moderate deviations (by which we mean a trade-off between
+the left part and the tail of the quantile function of |θb − m|).
+    This is a good reason to launch into some experiments. We are going to test
+sample distributions of the form
+
+                                 X
+                                 d
+                                        pi N(mi , σi2 ),
+                                  i=1
+
+
+
+N OVEMBER 26, 2024                                                 O LIVIER C ATONI
+42                                                                                                                                       9     E XPERIMENTS
+
+
+where d ∈ {1, 2, 3}, (pi )i=1,...,d is a vector of probabilities and N(m, σ 2 ) is as usual
+the Gaussian measure with mean m and variance σ 2 . To visualize results, we have
+chosen to plot the quantile function of the deviations from the true parameter, that
+is the quantile function of |θb − m|, where θb is one of the mean estimators studied
+in this paper.
+     Let us start with an asymmetric distribution with a so to speak intermittent
+high variance component. Let us take accordingly
+                                                      p1 = 0.7,                                  m1 = 2,                             σ1 = 1,
+                                                      p2 = 0.2,                                  m2 = −2,                            σ2 = 1,
+                                                      p3 = 0.1,                                  m3 = 0,                             σ3 = 30.
+In this case, m = 1, κ = 27.86 and v = 93.5, so that, when the sample size n
+is in the range 100 ≤ n ≤ 1000, the variance estimates we are proposing in this
+paper are not proved to be valid. For this reason we will challenge the empirical
+mean with the two following estimates : the estimate θbα of Proposition 2.4 (page
+8) (where α is chosen using the true value of v) and a naive plug-in estimate, θbαb ,
+where α b is set as was α, replacing the true variance v with its unbiased estimate
+Vb given by equation (4.1, page 14). The parameter  is set to  = 0.05 for both
+estimators, targeting the probability level 1 − 2 = 0.9.
+    We will plot also the sample median estimator, in this case where the distribu-
+tion median is different from its mean, to show that robust location estimators for
+symmetric distributions do not apply here.
+    When the sample size is n = 100, we obtain the following results (computed
+from 1000 experiments).
+                                                              sample size n = 100, number of experiments : 1000
+                                          3.0
+
+
+
+
+                                                                                                        |M − m|
+                                                3.0
+
+
+
+
+                                                                      Zoom                              |θbα − m|, known variance
+ empirical quantile function of |θ − m|
+                                          2.5
+
+
+
+
+                                                                                                        |θbα
+                                                                                                           b − m|, unknown variance
+                                                2.5
+
+
+
+
+                                                                                                        deviations of the empirical median from m
+                                                2.0
+                                          2.0
+
+
+
+                                                1.5
+                                          1.5
+
+
+
+                                                1.0
+                                                0.5
+                                          1.0
+
+
+
+
+                                                  0.90      0.92   0.94   0.96     0.98   1.00
+                                          0.5
+
+
+
+
+                                                      0.1          0.2           0.3        0.4         0.5         0.6        0.7       0.8        0.9   1.0
+
+                                                                                                 probability levels
+
+O LIVIER C ATONI                                                                                                                      N OVEMBER 26, 2024
+9.1                                       M EAN ESTIMATORS                                                                                                43
+
+
+
+In this first example, the new M-estimators have uniformly better quantiles than
+the empirical mean, at any probability level. Moreover the variance can be harm-
+lessly estimated from the data when it is unknown. Thus, in this case, the empiri-
+cal mean is outperformed from any conceivable point of view.
+
+
+                         Let us now increase the sample size to n = 1000.
+
+                                                             sample size n = 1000, number of experiments : 1000
+
+                                                                                                        |M − m|
+
+                                                                      Zoom                              |θbα − m|, known variance
+ empirical quantile function of |θ − m|
+                                          0.8
+
+
+
+
+                                                                                                        |θbα
+                                                                                                           b − m|, unknown variance
+                                                0.8
+
+
+
+
+                                                                                                        deviations of the empirical median from m
+                                                0.6
+                                          0.6
+
+
+
+                                                0.4
+                                          0.4
+
+
+
+                                                0.2
+
+
+
+
+                                                  0.90      0.92   0.94   0.96     0.98   1.00
+                                          0.2
+
+
+
+
+                                                      0.1          0.2           0.3        0.4         0.5         0.6        0.7       0.8        0.9   1.0
+
+                                                                                                 probability levels
+
+As should be expected, the values of the three estimators get close for this larger
+sample size (whereas it becomes more obvious that the empirical median is esti-
+mating something different from the mean).
+
+
+    The empirical mean can still be challenged for this larger sample size, but for
+a different sample distribution. To illustrate this, let us consider a situation as
+simple as the mixture of two centered Gaussian measures. Let d = 2 and
+
+                                                      p1 = 0.99,                                  m1 = 0,                            σ1 = 1,
+                                                      p2 = 0.01,                                  m2 = 0,                            σ2 = 30.
+
+
+
+
+N OVEMBER 26, 2024                                                                                                                        O LIVIER C ATONI
+44                                                                                                                                          9     E XPERIMENTS
+
+
+   Here κ = 243.5, v = 9.99 and m = 0. We take  = 0.005, targeting the
+probability level 1 − 2 = 1 − 10/n = 0.99.
+                                                                sample size n = 1000, number of experiments : 1000
+                                          0.30
+
+
+
+
+                                                                                                           |M − m|
+
+                                                                                                           |θbα − m|, known variance
+                                                 0.30
+
+
+
+
+                                                                         Zoom
+ empirical quantile function of |θ − m|
+
+
+
+
+                                                                                                           |θbα
+                                          0.25
+
+
+
+
+                                                                                                              b − m|, unknown variance
+                                                 0.25
+
+
+
+
+                                                                                                           deviations of the empirical median from m
+                                                 0.20
+                                          0.20
+
+
+
+                                                 0.15
+                                          0.15
+
+
+
+                                                 0.10
+                                                 0.05
+                                          0.10
+
+
+
+
+                                                   0.90        0.92   0.94   0.96     0.98   1.00
+                                          0.05
+
+
+
+
+                                                         0.1          0.2           0.3        0.4         0.5         0.6        0.7       0.8        0.9   1.0
+
+                                                                                                    probability levels
+
+
+
+
+    Let us show some heavily asymmetric situation where the left-hand side of the
+quantile function of the new estimators does not improve on the empirical mean.
+In what follows κ = 33.4, v = 72.25, m = −1.3, and the mixture parameters are
+
+                                                        p1 = 0.94                                   m1 = 0,                              σ1 = 1,
+                                                        p2 = 0.01,                                  m2 = 20,                             s2 = 20,
+                                                        p3 = 0.05,                                  m3 = −30,                            s3 = 20.
+
+We plot below two estimators using the value of the variance, optimized for the
+confidence level 1 − 2 with  = 0.05 and  = 0.0005 respectively (the estimators
+with unknown variance show the same behaviour).
+    Here, choosing a moderate value of the estimator parameter  is required to
+improve uniformly on the empirical mean performance, whereas higher values of 
+produce a trade-off between low and high probability levels. Whether this remains
+true in general would require to be confirmed by more extensive experiments.
+
+
+O LIVIER C ATONI                                                                                                                         N OVEMBER 26, 2024
+9.1                                        M EAN ESTIMATORS                                                                                                   45
+
+
+                                                                sample size n = 100, number of experiments : 1000
+                                          3.0
+
+
+
+                                                                                                          |M − m|
+
+                                                                                                          |θbα − m|, known variance,  = 0.05
+                                                 3.0
+
+
+                                                                        Zoom
+ empirical quantile function of |θ − m|
+
+
+
+
+                                                                                                          |θbα − m|, known variance,  = 0.0005
+                                          2.5
+
+
+
+                                                 2.5
+
+
+
+
+                                                                                                          deviations of the empirical median from m
+                                                 2.0
+                                          2.0
+
+
+
+                                                 1.5
+                                          1.5
+
+
+
+                                                 1.0
+                                                 0.5
+                                          1.0
+
+
+
+
+                                                   0.90       0.92   0.94   0.96     0.98   1.00
+                                          0.5
+
+
+
+
+                                                        0.1          0.2           0.3        0.4          0.5        0.6        0.7            0.8    0.9    1.0
+
+                                                                                                   probability levels
+
+                         Let us end this section with a Gaussian sample.
+                                                               sample size n = 1000, number of experiments : 1000
+                                          0.14
+
+
+
+
+                                                                                                          |M − m|
+                                                 0.14
+
+
+
+
+                                                                                                          |θbα − m|, known variance
+                                          0.12
+
+
+
+
+                                                                        Zoom
+ empirical quantile function of |θ − m|
+
+
+
+                                                 0.12
+
+
+
+
+                                                                                                          |θbα
+                                                                                                             b − m|, unknown variance
+                                          0.10
+
+
+
+                                                 0.10
+
+
+
+
+                                                                                                          deviations of the empirical median from m
+                                                 0.08
+                                          0.08
+
+
+
+                                                 0.06
+                                                 0.04
+                                          0.06
+
+
+
+                                                 0.02
+                                          0.04
+
+
+
+
+                                                   0.90       0.92   0.94   0.96     0.98   1.00
+                                          0.02
+
+
+
+
+                                                        0.1          0.2           0.3        0.4          0.5        0.6        0.7            0.8    0.9    1.0
+
+                                                                                                   probability levels
+
+   When the sample is Gaussian, as could be expected, our new M-estimators
+coincide with the empirical mean. What we obtained for a sample size n = 1000
+
+
+N OVEMBER 26, 2024                                                                                                                               O LIVIER C ATONI
+46                                                                                                                                         9     E XPERIMENTS
+
+
+could also be observed for other sample sizes. The deviations of the empirical
+median are higher in the Gaussian case, as proved in Proposition 6.1 (page 29)
+(stating that the deviations of the empirical mean of a Gaussian sample are opti-
+mal).
+
+9.2. VARIANCE ESTIMATORS . Let us now test some variance estimates. This
+is an example where the usual unbiased estimate Vb defined by equation (4.1, page
+14) shows its weakness. To demonstrate things on simple sample distributions,
+we choose again a mixture of two Gaussian measures
+
+                                                             p1 = 0.995,                                   m1 = 0,                      σ1 = 1,
+                                                             p2 = 0.005,                                   m2 = 1,                      σ2 = 5.
+
+Here κ = 10.357, v = 1.125 and m = 0.005. To be in a situation where the
+variance estimates of Proposition 4.1 (page 17) work at high confidence levels,
+we choose a sample size n = 2000, and use in the estimator the parameters
+κmax = 6 ∗ n/1000 = 12, p = 2 and  = 0.0025 (targeting the probability
+level 1 − 2 = 1 − 10/n = 0.0995).
+                                                                    sample size n = 2000, number of experiments : 1000
+                                      v /v)|
+
+
+
+
+                                                                             Zoom
+                                               0.25
+
+
+
+
+                                                                                                                  | log(Vb /v)|
+                                                      0.25
+ empirical quantile function of | log(b
+
+
+
+
+                                                                                                                  | log(b
+                                                                                                                        v /v)|
+                                                      0.20
+                                               0.20
+
+
+
+                                                      0.15
+                                               0.15
+
+
+
+                                                      0.10
+                                                      0.05
+                                               0.10
+
+
+
+
+                                                        0.90       0.92   0.94   0.96     0.98   1.00
+                                               0.05
+
+
+
+
+                                                             0.1          0.2           0.3         0.4        0.5          0.6   0.7      0.8      0.9   1.0
+
+                                                                                                        probability levels
+So, for the variance as well as for the mean, there are simple situations in which
+our new estimators perform better in practice than the more traditional ones.
+
+
+
+
+O LIVIER C ATONI                                                                                                                        N OVEMBER 26, 2024
+                                                                                 47
+
+
+9.3. C OMPUTATION DETAILS . To compute the estimators in these experiments,
+we used the two following iterative schemes (performing two iterations was enough
+for all the examples shown).
+                θ0 = M,                      θk+1 = r(θk ) + θk ,
+                     δ−y                               δ−y
+                β0 =     ,                   βk+1 =              βk .
+                      Vb                            Q(βk ) + δ
+They are based on two principles: they have the desired fixed point and their right-
+hand side would be independent respectively of θk and βk if ψ was replaced with
+the identity. The fact that ψ is close to the identity explains why the convergence
+is fast and only a few iterations are required.
+     These numerical schemes involve only a reasonable amount of computations,
+opening the possibility to use the new estimators in improved filtering algorithms
+in signal and image processing (a subject for future research that will not be
+pushed further in this paper).
+
+
+                                10. C ONCLUSION
+
+    Theoretical results show that, for some sample distributions, the deviations
+of the empirical mean at confidence levels higher than 90% are larger than the
+deviations of some well chosen M-estimator. Moreover, in our experiments, based
+on non-Gaussian sample distributions, the deviation quantile function of this M-
+estimator is uniformly below the quantile function of the empirical mean. The
+improvement of the confidence interval at level 90% can be more than 25%.
+    Using Lepski’s adapting approach offers a response with proved properties to
+the case when the variance is unknown. For sample sizes starting from 1000, an
+alternative is to use an M-estimator of the variance depending on some assumption
+on the value of the kurtosis. However, it seems that the variance can in practice
+be estimated by the usual unbiased estimator Vb , defined by equation (4.1, page
+14), and plugged in the estimator of Proposition 2.4 (page 8), although there is no
+mathematical warrant for this simplified scheme.
+
+
+                                  R EFERENCES
+
+ [1] P. Alquier. PAC-Bayesian bounds for randomized empirical risk minimizers.
+     Mathematical Methods of Statistics, 17(4):279–304, 2008.
+ [2] J.-Y. Audibert.    A better variance control for PAC-Bayesian clas-
+     sification. Preprint n.905bis, http://www.proba.jussieu.fr/
+     mathdoc/textes/PMA-905Bis.pdf, Laboratoire de Probabilités et
+     Modèles Aléatoires, Universités Paris 6 and Paris 7, 2004.
+
+
+N OVEMBER 26, 2024                                                 O LIVIER C ATONI
+48                                                                  R EFERENCES
+
+
+ [3] Jean-Yves Audibert and Olivier Catoni. Robust linear least squares regres-
+     sion. http://hal.inria.fr/hal-00522534, 2010.
+
+ [4] Jean-Yves Audibert and Olivier Catoni. Robust linear regression through
+     PAC-bayesian truncation. http://hal.inria.fr/hal-00522536,
+     2010.
+
+ [5] Rudolf Beran. An efficient and robust adaptive estimator of location. Ann.
+     Statist., 6(2):292–313, 1978.
+
+ [6] P. J. Bickel. On adaptive estimation. Ann. Statist., 10(3):647–671, 1982.
+
+ [7] O. Catoni. Statistical Learning Theory and Stochastic Optimization, Lec-
+     tures on Probability Theory and Statistics, École d’Été de Probabilités de
+     Saint-Flour XXXI – 2001, volume 1851 of Lecture Notes in Mathematics.
+     Springer, 2004. Pages 1–269.
+
+ [8] Olivier Catoni. Pac-Bayesian Supervised Classification: The Thermody-
+     namics of Statistical Learning, volume 56 of IMS Lecture Notes Monograph
+     Series. Institute of Mathematical Statistics, 2007. Pages i-xii, 1-163.
+
+ [9] Peter J. Huber. Robust estimation of a location parameter. The Annals of
+     Mathematical Statistics, 35(1):73–101, 1964.
+
+[10] Peter J. Huber. Robust Statistics. Wiley series in probability and mathemat-
+     ical statistics. Wiley-Interscience, 1981.
+
+[11] O. Lepski. Asymptotically minimax adaptive estimation I: Upper bounds.
+     Optimally adaptive estimates. Theory Probab. Appl., 36(4):682–697, 1991.
+
+[12] D. A. McAllester. PAC-Bayesian model averaging. In Proceedings of the
+     12th annual conference on Computational Learning Theory. Morgan Kauf-
+     mann, 1999.
+
+[13] D. A. McAllester. Some PAC-Bayesian theorems. Mach. Learn., 37:355–
+     363, 1999.
+
+[14] D. A. McAllester. PAC-Bayesian stochastic model selection. Mach. Learn.,
+     51(1):5–21, April 2003.
+
+[15] Charles J. Stone. Adaptive maximum likelihood estimators of a location
+     parameter. Ann. Statist., 3(2):267–284, 1975.
+
+
+
+
+O LIVIER C ATONI                                            N OVEMBER 26, 2024
+

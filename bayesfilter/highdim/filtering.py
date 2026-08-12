@@ -1260,7 +1260,6 @@ def scalar_nonlinear_fixed_design_tt_score_path(
                 ),
                 core_index=axis,
             )
-            del dot_design
             derivative_result = fixed_design_lsq_derivative(
                 design_matrix=design,
                 target_values=target_result.target_batch.sqrt_target,
@@ -1268,6 +1267,7 @@ def scalar_nonlinear_fixed_design_tt_score_path(
                 coefficients=coefficients,
                 dot_target_values=target_derivative.dot_sqrt_target,
                 ridge=fit_config.ridge,
+                dot_design_matrix=dot_design,
                 condition_number_veto=derivative_config.solve_condition_number_veto,
             )
             if derivative_result.status is not HighDimStatus.OK:

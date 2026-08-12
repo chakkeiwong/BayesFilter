@@ -84,3 +84,29 @@ def test_gaussian_sum_cpu_xla_has_fixed_observation_loop() -> None:
     tf.debugging.assert_all_finite(value, "XLA Gaussian-sum value")
     tf.debugging.assert_all_finite(score, "XLA Gaussian-sum score")
     tf.debugging.assert_equal(status["status_code"], tf.zeros([5], tf.int32))
+
+
+def test_gaussian_sum_cpu_xla_accepts_dynamic_batch_signature() -> None:
+    _, raw = generate_frozen_exact_sv_dataset_tf(horizon=20)
+    mixture = ksc_1998_log_chi_square_mixture()
+    transformed = transformed_ksc_observations(raw)
+
+    @tf.function(
+        input_signature=[tf.TensorSpec([None, 2], tf.float64)],
+        jit_compile=True,
+    )
+    def compiled(values):
+        return ksc_gaussian_sum_ukf_likelihood_value_score_status(
+            values,
+            transformed_observations=transformed,
+            mixture_weights=mixture.weights,
+            mixture_means=mixture.means,
+            mixture_variances=mixture.variances,
+            component_cap=32,
+        )
+
+    for size in (2, 5):
+        value, score, status = compiled(tf.zeros([size, 2], tf.float64))
+        assert value.shape == (size,)
+        assert score.shape == (size, 2)
+        tf.debugging.assert_equal(status["status_code"], tf.zeros([size], tf.int32))

@@ -1,0 +1,210 @@
+\chapter{Sigma-Point Filters}
+\label{ch:bf-sigma-point-filters}
+
+Sigma-point filters replace local linearization with deterministic quadrature.
+They propagate a finite set of points through nonlinear maps and reconstruct
+approximate Gaussian moments from weighted averages.  This makes them more
+accurate than the EKF for some nonlinear transformations, while preserving the
+Gaussian filtering closure used by the prediction-error likelihood.  The price
+is that the likelihood remains approximate and the derivative path becomes
+more complicated.
+
+\section{Moment-Matching Interface}
+\label{sec:bf-sigma-point-interface}
+
+At each time step, a sigma-point backend starts from a Gaussian approximation
+\[
+  x_t \mid y_{1:t-1}
+  \approx \calN(m_{t|t-1},P_{t|t-1}).
+\]
+A deterministic rule constructs points
+$\chi^{(j)}_{t|t-1}$ and weights $w_j^{(m)},w_j^{(c)}$.  Passing the points
+through the observation map gives
+\[
+  z_t^{(j)}=h_\theta(\chi^{(j)}_{t|t-1}).
+\]
+The backend then forms approximate predicted observations, innovation
+covariances, and cross covariances:
+\begin{align}
+  \bar z_t &= \sum_j w_j^{(m)}z_t^{(j)}, \\
+  P_{zz,t} &= \sum_j w_j^{(c)}
+    (z_t^{(j)}-\bar z_t)(z_t^{(j)}-\bar z_t)^\top + R_\theta, \\
+  P_{xz,t} &= \sum_j w_j^{(c)}
+    (\chi^{(j)}_{t|t-1}-m_{t|t-1})
+    (z_t^{(j)}-\bar z_t)^\top .
+\end{align}
+The gain is $K_t=P_{xz,t}P_{zz,t}^{-1}$ and the innovation is
+$v_t=y_t-\bar z_t$.  The same Gaussian innovation likelihood formula is then
+used, with $P_{zz,t}$ replacing $S_t$.
+
+\section{Conjugate Unscented Transform Rules}
+\label{sec:bf-cut-rules}
+
+The ordinary unscented transform is not the only deterministic quadrature rule
+that can be used in the interface above.  The conjugate unscented transform
+(CUT) of \citet{adurthi2012cut,adurthi2012cutfiltering} constructs higher-order
+Gaussian point sets by combining symmetric conjugate point families.  The
+experimental file
+\[
+  \texttt{/home/chakwong/python/src/dsge\_hmc/filters/CUTSRUKF.py}
+\]
+implements a deprecated TensorFlow square-root CUT4 demonstration for a
+coordinated-turn tracking model.  It is not wired into the current BayesFilter
+filter hierarchy, but it is a useful design reference because it separates the
+sigma-point rule from the square-root covariance backend.
+
+For a standard normal variable $Z\in\mathbb{R}^n$, the CUT4-G rule used there
+has
+\[
+  N_{\mathrm{CUT4}} = 2n + 2^n
+\]
+points: $2n$ axis points and $2^n$ hypercube-corner points.  In the convention
+used by the demo, for $n\ge3$,
+\[
+  r_a^2=\frac{n+2}{2},\qquad
+  r_c^2=\frac{n+2}{n-2},
+\]
+with weights
+\[
+  w_a=\frac{4}{(n+2)^2},\qquad
+  w_c=\frac{(n-2)^2}{2^n(n+2)^2}.
+\]
+More explicitly, define
+\[
+  \mathcal A=\{\pm r_a e_i:i=1,\ldots,n\},
+  \qquad
+  \mathcal C=\{r_c s:s\in\{-1,+1\}^n\}.
+\]
+The CUT4-G quadrature operator is
+\begin{equation}
+\label{eq:bf-cut4-quadrature}
+  \mathcal Q_{\mathrm{CUT4}}[\varphi]
+  =
+  w_a\sum_{\xi\in\mathcal A}\varphi(\xi)
+  +w_c\sum_{\xi\in\mathcal C}\varphi(\xi).
+\end{equation}
+
+\begin{proposition}[CUT4-G Gaussian moment exactness]
+\label{prop:bf-cut4-moment-exactness}
+For $n\ge3$, the point set
+\eqref{eq:bf-cut4-quadrature} integrates every standard-normal monomial in
+$Z\in\mathbb R^n$ of total degree at most five exactly.  Equivalently, it is a
+degree-five Gaussian rule.
+\end{proposition}
+
+\begin{proof}
+Both $\mathcal A$ and $\mathcal C$ are centrally symmetric and sign-symmetric
+in every coordinate.  Hence every monomial with at least one odd coordinate
+exponent has zero quadrature value, matching the standard normal.  This covers
+all odd total degrees through five and also the mixed even-odd monomials.
+
+It remains to check total degrees $0$, $2$, and $4$.  The total mass is
+\[
+  2n w_a+2^n w_c=1 .
+\]
+For a coordinate $i$,
+\[
+  \mathcal Q_{\mathrm{CUT4}}[z_i^2]
+  =
+  2w_a r_a^2+2^n w_c r_c^2
+  =
+  1
+  =
+  \mathbb E[Z_i^2],
+\]
+and, for $i\ne j$,
+$\mathcal Q_{\mathrm{CUT4}}[z_i z_j]=0=\mathbb E[Z_iZ_j]$ by sign symmetry.  The
+fourth marginal moment is
+\[
+  \mathcal Q_{\mathrm{CUT4}}[z_i^4]
+  =
+  2w_a r_a^4+2^n w_c r_c^4
+  =
+  3
+  =
+  \mathbb E[Z_i^4],
+\]
+while the mixed fourth moment is
+\[
+  \mathcal Q_{\mathrm{CUT4}}[z_i^2z_j^2]
+  =
+  2^n w_c r_c^4
+  =
+  1
+  =
+  \mathbb E[Z_i^2Z_j^2],
+  \qquad i\ne j.
+\]
+All remaining fourth-degree monomials contain an odd coordinate exponent and
+therefore vanish on both sides.  These identities exhaust the Gaussian
+monomials of total degree at most five, so the rule has degree-five exactness.
+\end{proof}
+
+Thus the rule is symmetric, has positive weights, and integrates Gaussian
+polynomials through degree five.  By contrast, the usual $2n+1$ unscented rule
+is commonly described as third-degree accurate for Gaussian moment propagation.
+The extra corner points are what allow CUT4-G to match cross moments such as
+$\mathbb{E}[Z_i^2Z_j^2]$ that axis-only rules do not represent in the same way.
+
+The price is exponential growth in the corner set.  CUT4-G uses $42$ points at
+$n=5$, $1044$ points at $n=10$, and becomes unattractive in large structural
+states unless the quadrature is applied to a low-dimensional stochastic block.
+This reinforces the structural lesson of
+Chapter~\ref{ch:bf-structural-deterministic-dynamics}: higher-order quadrature
+should be spent on the declared stochastic integration coordinates, not on
+deterministic-completion directions that add no stochastic law.
+
+\section{Approximation Boundary}
+\label{sec:bf-sigma-point-approximation-boundary}
+
+BayesFilter should label sigma-point filters as approximate likelihood
+backends unless a special model structure supplies an exactness argument.
+The source SR-UKF material contains model-specific claims about quadratic
+observation equations and pruned DSGE structure.  Those claims are useful
+case-study material, but they should not be promoted to a general BayesFilter
+theorem without a separate derivation in BayesFilter notation and a regression
+test against an exact reference.
+
+For HMC, this distinction matters.  If the sigma-point likelihood is used in
+the target, the chain targets the sigma-point posterior.  If the sigma-point
+filter is only a surrogate for an exact nonlinear likelihood, then a correction
+or delayed-acceptance policy is needed before exact-posterior claims are made.
+
+\section{Derivative and Compilation Requirements}
+\label{sec:bf-sigma-point-derivative-requirements}
+
+Sigma-point HMC requires differentiating through:
+\begin{itemize}
+  \item the covariance factor used to generate points;
+  \item the nonlinear transition and observation maps;
+  \item the weighted covariance assembly;
+  \item linear solves or factorizations for $P_{zz,t}$;
+  \item any PSD projection, jitter, clipping, or fallback branch.
+\end{itemize}
+The derivative provider must return the derivative of the same approximate log
+likelihood that supplies the Metropolis value.  Static shapes are also
+non-negotiable: the number of sigma points, state dimension, observed-data
+mask shape, and scan length must not vary inside the compiled transition.
+
+\section{Evidence Ladder}
+\label{sec:bf-sigma-point-evidence-ladder}
+
+The minimum evidence ladder for a sigma-point backend is:
+\begin{enumerate}[label=(\roman*)]
+  \item exact recovery on affine Gaussian systems against the Kalman backend;
+  \item finite value and finite gradient on controlled nonlinear systems;
+  \item eager/compiled parity where a compiled sampler is claimed;
+  \item comparison to a denser quadrature, long simulation, or trusted
+    reference on low-dimensional nonlinear examples;
+  \item HMC diagnostics that remain explicitly separated from convergence
+    proof.
+\end{enumerate}
+This ladder is the consolidation of the source-project SVD/HMC validation
+plans, not a completed BayesFilter certification result.
+
+CUT backends should pass the same ladder plus one rule-specific check: for
+standard-normal polynomial test functions up to the declared degree, the
+implemented points and weights should reproduce the analytic Gaussian moments
+before the points are used in a filter.  This catches mistakes in point
+enumeration, weights, dimension restrictions, and transformed-coordinate
+scaling before nonlinear filtering errors obscure the quadrature issue.

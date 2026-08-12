@@ -1,0 +1,225 @@
+\chapter{BayesFilter API Design}
+\label{ch:bf-api-design}
+
+The monograph is not an API reference, but its mathematical contracts should be
+precise enough that an implementation can be audited against them.  The API
+shape below is therefore a documentation contract rather than a final Python
+interface.
+
+\section{Core Objects}
+\label{sec:bf-api-core-objects}
+
+A BayesFilter implementation should expose five separable objects:
+\begin{itemize}
+  \item a parameter transform from sampler coordinates $u$ to model parameters
+    $\theta$;
+  \item a structural state partition describing stochastic, deterministic, and
+    auxiliary coordinates;
+  \item a model provider that builds state-space objects from $\theta$;
+  \item a filter backend that returns log likelihood and diagnostics;
+  \item a derivative provider or autodiff policy that returns the score and,
+    when needed, curvature information.
+\end{itemize}
+
+For a linear Gaussian model, the model provider returns
+\[
+  (c,F,Q,a,H,R,m_0,P_0)
+\]
+and optionally their first and second derivatives with respect to $\theta$.
+For a nonlinear model, it returns transition and observation maps together with
+the sigma-point, linearization, or simulation policy required by the selected
+backend.
+
+\section{Structural Model Protocol}
+\label{sec:bf-api-structural-model-protocol}
+
+The exact software interface may change, but implementations should be
+auditable against the following documentation contract:
+\begin{align*}
+  \texttt{partition} &:\quad \text{state names, role indices, innovation dimension},\\
+  \texttt{initial\_law} &:\quad (m_0,P_0)\ \text{or a sampling rule},\\
+  \texttt{innovation\_law} &:\quad \Sigma_\varepsilon\ \text{or an innovation sampler},\\
+  \texttt{unpack\_state},\ \texttt{pack\_state} &:\quad
+    x \leftrightarrow (s,d,a),\\
+  \texttt{propagate\_stochastic} &:\quad
+    (s_{t-1},\varepsilon_t,\theta) \mapsto s_t,\\
+  \texttt{complete\_deterministic} &:\quad
+    (d_{t-1},s_{t-1},s_t,\theta) \mapsto d_t,\\
+  \texttt{observe} &:\quad
+    x_t \mapsto p_\theta(y_t\mid x_t).
+\end{align*}
+Here $s_t$ denotes the declared stochastic block, $d_t$ the deterministic
+completion block, and $a_t$ any auxiliary or backend-specific block.  A model
+with no deterministic block can set $d_t$ empty; a linear Gaussian companion
+form can still expose the partition even if the exact Kalman backend consumes
+only the collapsed matrices.
+
+DSGE, MacroFinance, and other application projects should implement this
+protocol through adapters.  BayesFilter should not require those projects to
+copy filter internals, and those projects should not define private
+near-duplicates of BayesFilter filters.
+
+\section{Filter Run Metadata}
+\label{sec:bf-api-filter-run-metadata}
+
+Every backend should return metadata that records what target was actually
+evaluated.  At minimum, diagnostics should include:
+\begin{itemize}
+  \item backend name and version;
+  \item structural partition summary;
+  \item integration space: innovation, stochastic-state, or full-state;
+  \item deterministic-completion policy;
+  \item approximation label, if any;
+  \item derivative policy;
+  \item compiled/eager execution status when relevant;
+  \item finite-failure or warning codes.
+\end{itemize}
+This metadata prevents a collapsed approximation, a diagnostic surrogate, or a
+partially compiled run from being misreported as a structural HMC target.
+
+For mixed structural models, the metadata must also be strong enough to audit
+deterministic completion.  A sigma-point, cubature, or particle backend should
+therefore expose:
+\begin{itemize}
+  \item whether deterministic identities were checked pointwise;
+  \item the maximum deterministic identity residual when such a check is
+    available;
+  \item whether a full-state integration path was used for a mixed model;
+  \item the approximation label attached to any enlarged stochastic space;
+  \item whether artificial jitter was only a numerical linear-algebra device or
+    part of the model transition being evaluated.
+\end{itemize}
+These fields are not cosmetic.  They are the evidence that the backend followed
+the \texttt{structural\_filter\_step} contract from
+Chapter~\ref{ch:bf-structural-deterministic-dynamics}.  If they are missing,
+the safest interpretation is that the result has not yet earned a structural
+filtering claim.
+
+\section{Structural Filter Implementation Requirements}
+\label{sec:bf-api-structural-filter-requirements}
+
+A BayesFilter structural filter implementation should satisfy the following
+requirements before a client adapter uses it as an HMC likelihood:
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Fail-closed partition validation:} mixed models must declare
+    stochastic, deterministic-completion, and auxiliary coordinates before a
+    non-full-state backend runs.
+  \item \textbf{Visible integration space:} the result must state whether the
+    backend integrated over innovations, stochastic states, or the full state.
+  \item \textbf{Deterministic identity diagnostics:} test fixtures with known
+    identities, such as AR(p) lag shifts or
+    $k_t-\phi k_{t-1}-\gamma m_t^2=0$, must be checked pointwise for propagated
+    points or particles.
+  \item \textbf{Approximation-label propagation:} if a mixed model is evaluated
+    by a full-state Gaussian approximation, the label must survive into the
+    likelihood result, HMC target wrapper, case-study tables, and reset memo.
+  \item \textbf{Reference-oracle tests:} affine Gaussian cases must recover the
+    exact Kalman value, and low-dimensional nonlinear cases should be compared
+    with dense quadrature, high-particle simulation, or another explicit
+    reference.
+  \item \textbf{Derivative and compilation gates:} value-side structural
+    correctness is not a gradient guarantee.  SVD/eigen derivatives, static
+    shapes, eager/compiled parity, and HMC diagnostics need separate gates.
+\end{enumerate}
+
+DSGE and MacroFinance adapters should supply model timing and economics.
+BayesFilter should supply this generic validation and filtering machinery.
+That boundary keeps the common structural-filtering rule in one place while
+still allowing client projects to own their own solution methods and priors.
+
+\section{Return Contract}
+\label{sec:bf-api-return-contract}
+
+The minimum likelihood return is
+\[
+  (\ell,\ d),
+\]
+where $\ell$ is a scalar log likelihood and $d$ is a diagnostics record.  A
+gradient-capable backend returns
+\[
+  (\ell,\ \nabla_\theta \ell,\ d),
+\]
+and a curvature backend returns
+\[
+  (\ell,\ \nabla_\theta \ell,\ \nabla^2_{\theta\theta}\ell,\ d).
+\]
+Diagnostics should include enough information to decide whether the result is a
+valid target evaluation, a finite invalid-region return, or a numerical warning
+that should influence sampler adaptation or backend selection.
+
+\section{Backend Promotion}
+\label{sec:bf-api-backend-promotion}
+
+BayesFilter should promote a backend through stages:
+\begin{enumerate}[label=(\roman*)]
+  \item value-only likelihood evaluation;
+  \item gradient validation on small problems;
+  \item compiled value-and-gradient execution;
+  \item stress tests under masks, boundaries, and near-singular covariances;
+  \item HMC diagnostics on controlled targets;
+  \item application case studies.
+\end{enumerate}
+No backend should skip directly from value-only likelihood tests to industrial
+HMC use.
+
+\section{Client Adapter Boundary}
+\label{sec:bf-api-client-adapter-boundary}
+
+The adapter boundary is intentionally strict.  A client project owns:
+\begin{itemize}
+  \item structural equations and timing;
+  \item parameter transformations and priors;
+  \item model-specific observation equations;
+  \item perturbation, no-arbitrage, or equilibrium solution objects;
+  \item application-level HMC targets and case-study data.
+\end{itemize}
+BayesFilter owns:
+\begin{itemize}
+  \item generic filter recursions;
+  \item structural partition validation;
+  \item square-root and SVD numerical backends;
+  \item derivative validation ladders;
+  \item finite-failure and diagnostic conventions;
+  \item backend promotion gates.
+\end{itemize}
+The boundary is a maintenance device.  It lets MacroFinance reuse analytic
+Kalman derivatives, DSGE reuse structural nonlinear filtering, and future
+large models reuse the same validation ladder without forking the numerical
+core.
+
+\section{Fixed-Center Curvature API}
+\label{sec:bf-api-fixed-center-curvature}
+
+BayesFilter distinguishes two initialization contracts that must not be
+collapsed into one.  The legacy
+\path{estimate_sequential_map_covariance} contract localizes a MAP
+candidate and therefore requires its standardized maximum absolute score to
+pass the configured terminal cap, a fresh terminal dense fit to be usable, and
+its projection burden to pass the configured cap.  Those checks do not certify
+a global MAP, but they are part of that API's stated semantics.
+
+The fixed-center contract instead accepts a reviewed center $c$ and disjoint
+exact-score clouds.  It does not move $c$ or impose a stationarity gate.  Its
+public result records the center and explanatory score; every dense or
+structured replicate; raw precision matrices, eigenvalues, inertia, projection
+burden, and selection-holdout error; pairwise stability metrics; and the final
+audit-cloud error.
+
+Training and selection-holdout rows are separate for every replicate.  The API
+rejects shared-memory aliases and exact copied offset rows across training,
+selection, and audit partitions.  Disjoint generator seeds remain required
+lineage because this array-level check cannot establish stochastic
+independence.  A third fresh audit cloud is evaluated only after family, target,
+and shrinkage weight selection; it can veto but cannot retune the result.  The
+status \path{eligible_for_exact_hmc_canary} requires complete caller-reviewed
+stability caps and a passing audit cloud.  Missing caps produce
+\path{diagnostic_only}; a failed audit produces
+\path{audit_holdout_rejected}; and no admissible branch produces
+\path{geometry_readiness_blocked}.
+
+Only the eligible state can construct a
+\path{PrecomputedMassArtifact}.  Its position role is
+\path{diagnostic_center}, never \path{map}.  The implemented entry points are
+\path{fit_fixed_center_curvature}, \path{compare_precision_geometry}, and
+\path{consensus_shrunk_precision}.  Exact HMC mechanics, retained-chain
+diagnostics, and posterior convergence remain separate gates.

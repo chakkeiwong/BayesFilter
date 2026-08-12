@@ -1,0 +1,1406 @@
+                                                                                                                                                                                              1
+
+
+
+
+                                                      A Generalized Unscented Transformation for
+                                                               Probability Distributions
+                                           Donald Ebeigbe, Tyrus Berry, Michael M. Norton, Andrew J. Whalen, Dan Simon, Timothy Sauer, and Steven J.
+                                                                                             Schiff
+
+
+                                              Abstract—The unscented transform uses a weighted set of                            For many dynamic systems in practice, linearity is a rea-
+                                           samples called sigma points to propagate the means and covari-                    sonable assumption. For others, system non-linearities cause
+                                           ances of nonlinear transformations of random variables. How-                      methods based on linear models to perform poorly. Most non-
+arXiv:2104.01958v2 [stat.ME] 15 Nov 2021
+
+
+
+
+                                           ever, unscented transforms developed using either the Gaussian
+                                           assumption or a minimum set of sigma points typically fall                        linear systems can behave approximately linearly over small
+                                           short when the random variable is not Gaussian distributed and                    operation ranges. The extended Kalman filter (EKF) is one
+                                           the nonlinearities are substantial. In this paper, we develop the                 of the most widely used Kalman filter for nonlinear dynamic
+                                           generalized unscented transform (GenUT), which uses 2n + 1                        systems. The EKF employs a linear approximation of the
+                                           sigma points to accurately capture up to the diagonal compo-                      nonlinear system around a nominal state trajectory [1], [2], [4].
+                                           nents of the skewness and kurtosis tensors of most probability
+                                           distributions. Constraints can be analytically enforced on the                    However, for highly nonlinear systems, linear approximations
+                                           sigma points while guaranteeing at least second-order accuracy.                   can introduce errors that can lead to divergence of the state
+                                           The GenUT uses the same number of sigma points as the original                    estimate.
+                                           unscented transform while also being applicable to non-Gaussian                       To address the drawbacks of the EKF, several well-known
+                                           distributions, including the assimilation of observations in the                  state estimators such as the ensemble Kalman filter [5]–[8],
+                                           modeling of infectious diseases such as coronavirus (SARS-CoV-
+                                           2) causing COVID-19.                                                              the unscented Kalman filter (UKF) [9], [10], and the particle
+                                                                                                                             filter [1], [11] have been developed. Although the particle filter
+                                             Index Terms—Unscented transform, Probability distributions,                     can give better performance than the UKF, this comes at the
+                                           Estimation, Kalman filtering, Infectious disease
+                                                                                                                             cost of a higher computational effort. In some applications,
+                                                                                                                             the improved performance might not be worth the additional
+                                                                      I. I NTRODUCTION                                       computational costs [1].
+                                                                                                                                 The UKF is a nonlinear filter that uses the unscented
+
+                                           T     HE Kalman filter provides the basis for most of the
+                                                 popular state estimation techniques used for linear and
+                                           nonlinear dynamic systems. The linear Kalman filter works
+                                                                                                                             transformation to approximate the mean and covariance of a
+                                                                                                                             Gaussian random variable [9], [12]. The unscented transform
+                                                                                                                             uses the intuition that with a fixed number of parameters
+                                           by propagating the means and covariance of the state of                           it should be easier to approximate a Gaussian distribution
+                                           a dynamic system [1], [2]. Originally developed under the                         than it is to approximate an arbitrary nonlinear function or
+                                           Gaussian assumption for measurement and process noise, the                        transformation [9]. It produces sets of vectors called sigma
+                                           Kalman filter is the optimal estimator when this assumption is                    points that capture the moments of the standard Gaussian
+                                           satisfied. Under non-Gaussian noise, the Kalman filter is the                     distribution. The UKF uses the generated sigma points to
+                                           optimal linear estimator but its performance can sometimes                        obtain estimates of the states and the state estimation error
+                                           deteriorate [1], [3].                                                             covariance. The UKF has been used to generate distributions
+                                                                                                                             which improve the performance of a particle filter [13], [14].
+                                              This work was supported by NIH Director’s Transformative Award
+                                           No. 1R01AI145057, and from the National Science Foundation DMS-                   It has also been employed to improve the performance of the
+                                           1723175, DMS-1854204, and DMS-2006808. (Corresponding author:                     EnKF [15]. Despite the several types of sigma points that
+                                           dee5127@psu.edu).                                                                 exist in the literature [16], [17], a majority of them that were
+                                              D. Ebeigbe and M. M. Norton are with the Center for Neural Engi-
+                                           neering, Department of Engineering Science and Mechanics, Pennsylva-              not developed using the Gaussian assumption do not try to
+                                           nia State University, University Park, PA, USA (email: dee5127@psu.edu;           match the skewness or kurtosis of a random variable, thereby
+                                           mmn5439@psu.edu).                                                                 ensuring only second-order accuracy.
+                                              T. Berry and T. Sauer are with the Department of Mathematical Sci-
+                                           ences, George Mason University, Fairfax, VA, USA (email: tberry@gmu.edu;              The need to effectively monitor, predict, and control the
+                                           tsauer@gmu.edu ).                                                                 spread of infectious disease has led to the application of
+                                              A. J. Whalen is with the Center for Neural Engineering, Department of          numerous state estimation techniques. The EKF [18], [19]
+                                           Engineering Science and Mechanics, Pennsylvania State University, Uni-
+                                           versity Park, PA, USA, and also with the Department of Neurosurgery,              and the particle filter [20] have been used to estimate the
+                                           Massachusetts General Hospital, Harvard Medical School, Boston, MA, USA           parameters of the measles virus transmission dynamics from
+                                           (email: awhalen7@mgh.harvard.edu ).                                               real data. The ensemble adjustment Kalman filter (EAKF) has
+                                              D. Simon is with the Department of Electrical Engineering and Com-
+                                           puter Science, Cleveland State University, Cleveland, OH, USA (email:             been employed in the forecasting of influenza [21] and dengue
+                                           d.j.simon@csuohio.edu).                                                           fever [22]. Several infectious disease such as Ebola [23],
+                                              S. J. Schiff is with the Center for Neural Engineering and Center for Infec-   HIV [24], and neonatal sepsis [25] have seen implementation
+                                           tious Disease Dynamics, Departments of Engineering Science and Mechanics,
+                                           Neurosurgery, and Physics, Pennsylvania State University, University Park,        of different Kalman filters. More recently, the outbreak of the
+                                           PA, USA (email: sschiff@psu.edu).                                                 novel coronavirus (SARS-CoV-2) causing COVID-19 has led
+2
+
+
+
+to concerted efforts to properly understand its transmission            generally employs 2n2 +3n+1 free parameters (2n+1 weights
+and offer policy guidelines that can mitigate its spread. Recent        and 2n2 + n constants that define the coordinates of the sigma
+efforts have employed the iterated EAKF to assimilate daily             points). Trying to match the mean, covariance, skewness, and
+observations in the modeling of COVID-19 [26]. Distributions            kurtosis imposes n, O(n2 ), O(n3 ), and O(n4 ) constraints
+such as Poisson, negative-binomial, and binomial are typically          respectively. In principle, it is impossible to match all these
+used for modeling infectious disease from count data. Addi-             moments using only 2n + 1 sigma points. The zero skewness
+tionally, the number of patients arriving at a hospital or a            nature of the Gaussian distribution made it possible to use
+testing center can be modeled by a Poisson distribution whose           2n + 1 sigma points to accurately match up to the skewness in
+rate is proportional to the infected population. Although the           [9]. The presence of the O(n3 ) skewness and O(n4 ) kurtosis
+use of standard Kalman filters in infectious disease estimation         constraints are what prompted researchers to look beyond
+and prediction under the Poisson assumption can be justified            2n + 1 sigma points. However, we note that matching the
+with the fact that a Poisson distribution with a large rate can         mean and covariance constraints of any random vector using
+be approximated by a Gaussian distribution of the same mean             2n + 1 sigma points still leaves n2 + 2n + 1 free parameters.
+and variance, the approximation breaks down when the rates              These residual parameters have been underutilized in capturing
+are small [27].                                                         as much information as possible about the components of
+   The usage of Kalman filters to assimilate data generated by          the skewness and kurtosis tensors when the random variable
+the transformation of random variables from different prob-             is not Gaussian. One instance where the residual parameters
+ability distributions revealed a fundamental mismatch in the            were leveraged was in the capturing of the average marginal
+application of the filters – the accuracy of the filter is reduced if   skewness and kurtosis, which only represents a total of 2
+the Gaussian assumption is not satisfied and the nonlinearities         constraints [28].
+are high. This led to the development of unscented transforms
+                                                                           In this paper, we develop the generalized unscented trans-
+that can account for some higher-order moment information
+                                                                        form (GenUT) which is able to adapt to the unique statistics
+such as the skewness and kurtosis [28]–[32]. The unscented
+                                                                        of most probability distributions. We use the intuition that
+transforms can be grouped into two categories: the ones that
+                                                                        employing sigma points more suitable to the inherent dis-
+employ 2n + 1 sigma points [28]–[30] and the ones that use
+                                                                        tributions of a random vector can lead to a more accurate
+more than 2n + 1 sigma points [31], [32].
+                                                                        propagation of means and covariances. Our method uses
+   First, we consider those that use 2n+1 sigma points. In [28],
+                                                                        2n + 1 sigma points that not only accurately matches the
+an unscented transform was developed to match the average
+                                                                        mean and covariance matrix, but also takes advantage of the
+marginal skewness and kurtosis. The method however did not
+                                                                        additional free parameters to accurately match the diagonal
+match the true skewness and true kurtosis for each element of
+                                                                        components of the skewness tensor and kurtosis tensor of
+the random vector. In [29], a randomized unscented transform                                                 2
+                                                                        most random vectors. We employ n 2+n + 3n constraints in
+was used in the development of a filter for non-Gaussian                                          2
+                                                                        total; n for the mean, n 2+n for the covariance, n for the
+systems. Although the method uses a stochastic integration
+                                                                        diagonal components of the skewness tensor, and n for the
+rule to solve state and measurement statistics, the sigma points
+                                                                        diagonal components of the kurtosis tensor. This total falls
+are generated under the Gaussian assumption. In [30], an
+                                                                        within the 2n2 + 3n + 1 free parameters available. While more
+unscented transform was developed to capture the skewness of
+                                                                        parameters remain, the diagonal components of the skewness
+a random vector. However, the method assumes a closed skew
+                                                                        and kurtosis tensors are the most significant. In comparison
+normal distribution in its development. All preceding methods
+                                                                        to [28]–[31], our method gives a general way to accurately
+that use 2n + 1 sigma points either apply only to special
+                                                                        match the diagonal components of the skewness and kurtosis
+distributions or can capture at most the average skewness and
+                                                                        tensors of most random vectors. In comparison to [32], our
+kurtosis.
+                                                                        method uses fewer sigma points which is crucial for larger
+   Now we consider those that use more than 2n + 1 sigma
+                                                                        system dimensions. In comparison to the standard unscented
+points. In [31], an unscented transform was developed to match
+                                                                        transform, we acquire the most significant higher moment
+the first four moments of Gaussian random variables. In [32],
+                                                                        information of most probability distributions with the same
+a higher order unscented transform was developed to match
+                                                                        number of sigma points.
+the skewness and kurtosis tensors with high accuracy. The
+method uses an approximate CANDECOMP/PARAFAC (CP)                          In Section II, we discuss the problems that arise when the
+tensor decomposition to generate its sigma points. However,             Gaussian assumption is employed in the unscented transform.
+depending on the dimension of the problem and the error                 In Section III, we develop the GenUT sigma points that can
+tolerance level in approximating the skewness and kurtosis              capture certain properties of most probability distributions,
+tensors, this method can require significant computational              such as its mean, covariance, skewness, and kurtosis. In
+costs. This is because the sequence of vectors and constants            Section IV, we show that our sigma points are accurate in
+used in the approximate CP method can significantly increase            approximating the mean, covariance, and diagonal components
+when the error tolerance level is made small. All preceding             of the skewness and kurtosis tensors. In Section V, we address
+methods that use more than 2n + 1 sigma points either applied           constraints and show that imposing constraints can at least
+to only to special distributions or had significantly higher            maintain second-order accuracy. In Section VI, we evaluate
+complexity and computational cost.                                      the accuracy of the GenUT sigma points in propagating means
+   For an n-dimensional random vector, 2n + 1 sigma points              and covariances of nonlinear transformations of arbitrarily
+                                                                                                                                                3
+
+
+
+distributed random vectors and we give several examples that                       4) Evaluate the sample covariance of the transformed sigma
+demonstrate its effectiveness when compared against other un-                         points
+scented transforms. We discuss the conclusions in Section VII.
+                                                                                                        2n
+     II. L IMITATIONS OF THE U NSCENTED T RANSFORM                                                      X
+                                                                                                 Py =         wi (Y [i] − ȳ)(Y [i] − ȳ)T    (8)
+  We analyze the performance of unscented transforms that                                               i=0
+were motivated by the Gaussian statistics [9], [12]. We will
+show how linearization approximations, via Taylor series ex-
+pansion of a nonlinear transformation of a random vector x
+evaluated about its mean x̄, introduces errors in the propa-
+gation of means and covariances. We will see that errors can                     A. Accuracy in Approximating the True Mean
+be introduced in the propagation of means and covariances
+beyond the second order when used to approximate a nonlinear                        Applying a Taylor series expansion of λ(x) about its mean
+function λ(x) of a possibly non-Gaussian distributed random                      x̄, we show in Appendix A-A that the true mean of y = λ(x)
+vector x ∈ Rn .                                                                  is given as
+Definition 1. Let x ∈ Rn be a random vector. We define
+the mean x̄ ∈ Rn , covariance P ∈ Rn×n , skewness tensor
+S ∈ Rn×n×n , and kurtosis tensor K ∈ Rn×n×n×n as                                               
+                                                                                                 n                       n
+                                                                                               X  P    ij  ∂2λ        X     S ijk   ∂3λ
+             x̄ = E[x]                                                    (1)    ȳ =λ(x̄) +                       +
+                                                                                               
+                                                                                                  i,j=1
+                                                                                                        2! ∂xi ∂xj            3! ∂xi ∂xj ∂xk
+                                                T                                                                    i,j,k=1
+            P = E[(x − x̄)(x − x̄) ]                                      (2)                                            
+                                                                                            n
+         S ijk = E [(x − x̄)i (x − x̄)j (x − x̄)k ]                       (3)              X       K ijkl     ∂4λ        
+                                                                                      +
+        K ijkl = E [(x − x̄)i (x − x̄)j (x − x̄)k (x − x̄)l ]             (4)                        4! ∂xi ∂xj ∂xk ∂xl 
+                                                                                        i,j,k,l=1
+                                                                                                                           x=x̄
+                                                                                            5
+                                                                                             Dx̃ λ Dx̃6 λ
+                                                                                                                 
+for i, j, k, l ∈ {1, · · · , n}.
+                                                                                      +E             +     + ···                           (9)
+                                                                                               5!       6!
+   The sample mean and sample covariance of the nonlinear
+transformation y ∈ Rn given by
+                                   y = λ(x)                               (5)    The analytical expression for the approximated mean from [9]
+                                                                                 is given as
+can be calculated as follows [9].
+  1) Calculate the 2n + 1 sigma points given by 1                                                       n
+                                                      κ                                            1 X              ∂λ
+        χ[0] = x̄                            w0 =                                     ȳ u = λ(x̄) +       P ij
+                                                   n+κ                                             2 i,j=1      ∂xi ∂xj x=x̄
+                      p                               1                                               2n
+                                                                                                              Dσ4 i λ Dσ6 i λ
+                                                                                                                                   
+         χ[i] = x̄ +      (n + κ)P           wi =                                                1      X
+                                     [i]            2(n + κ)                                +                        +        + ···          (10)
+                      p                                  1                                  2(n + κ) i=1      4!      6!
+      χ[i+n] = x̄ −       (n + κ)P           wi+n =
+                                     [i]               2(n + κ)
+                                   p             
+     for i ∈ {1, · · · , n}, where       (n + κ)P      is the ith                Comparing the above equation with the true mean of (9),
+                 p                                 [i]                           we notice the following problems about the sigma points
+     column of (n + κ)P , wi is the weight associated with                       developed using the Gaussian assumption
+     the ith sigma point, and κ is a free parameter 2 We
+     typically set κ = n − 3 to minimize the fourth-order                          1) The odd-powered moments in the approximation of the
+     moment mismatch.                                                                 true mean are always zero due to their symmetry. This
+  2) Pass the sigma points through the known nonlinear                                introduces significant approximation errors in situations
+     function to get the transformed sigma points                                     where the odd-powered moments of the distribution of x
+                                                                                      are non-zero and the transformation y = λ(x) is highly
+                                   Y [i] = λ(χ[i] )                       (6)         nonlinear.
+   3) Evaluate the sample mean of the transformed sigma                            2) The fourth-order term fails to capture a part of the true
+      points                                                                          kurtosis even when the optimal value of κ = n − 3 is
+                                          2n
+                                                                                      selected because of the Gaussian assumption.
+                                          X
+                                   ȳ =         wi Y [i]                  (7)    We also note that errors in approximating the mean beyond the
+                                          i=0
+                                                                                 second order occur not only for sets of 2n + 1 sigma points
+  1 Bold fonts are used to represent vectors, matrices, and tensors.
+  2 The notation P
+                                                                                 existing in the literature, but also for sets of n + 1 sigma
+                     [i] represents the ith column of the matrix P , P ij
+represents the ith entry in the jth column of the matrix P , and xi represents   points [10], [33] – this is because they do not account for the
+the ith entry of the vector x.                                                   skewness and kurtosis of x when it is not Gaussian distributed.
+4
+
+
+
+B. Accuracy in Approximating the True Covariance Matrix
+  The true covariance matrix, which was evaluated in Ap-
+pendix A-B, is given as
+                                "                            #
+                      n
+           T
+                 X       S ijk      ∂ 2 λ ∂λT    ∂λ ∂ 2 λT          Fig. 1. Samples chosen for a one-dimensional distribution for the GenUT.
+Py =λP λ +                                      +                    The locations and weights of the sigma points are determined by the moments
+                          2!      ∂xi ∂xj ∂xk    ∂xi ∂xj ∂xk
+                  i,j,k=1                                            of the probability distribution.
+            n
+                        "
+          X               1       ∂3λ      ∂λT
+     +           K ijkl                                                      √                                                  √ √ T
+                          3! ∂xi ∂xj ∂xk ∂xl                         where       P is the matrix square root of P ,              P P =P
+       i,j,k,l=1
+                                                    #
+        1 ∂λ       ∂ 3 λT         1 ∂ 2 λ ∂ 2 λT                     Definition 2. Let x be a vector, P be a square matrix, and k
+     +                        +
+       3! ∂xi ∂xj ∂xk ∂xl         4 ∂xi ∂xj ∂xk ∂xl                  be some positive integer. We define the element-wise product
+                                T                               (Hadamard product) as , such that
+             n
+                 P ij ∂ 2 λ   
+            X                              
+     +                             ···         + ···      (11)                                   x k=x           x       ···       x
+           i,j=1
+                  2 ∂xi ∂xj                
+                                                                                                     |                 {z          }
+                                           x=x̄                                                                      k times
+                                                                                                                              −1
+                                           T              T
+where we have used the notation xx = x[· · · ] . The
+                                                                                         −k
+analytical expression for the approximated covariance matrix                         P        = P       P        ···     P
+                                                                                                 |           {z           }
+from [9] is given as                                                                                       k times
+                              2n 
+              T         1     X       Dσi λ(Dσ3 i λ)T                We also define the element-wise division (Hadamard division)
+   P u =λP λ +
+                     2(n + κ) i               3!                     as .
+            Dσ3 i λ(Dσi λ)T     Dσ2 i λ(Dσ2 i λ)T
+                                                  
+          +                  +
+                    3!                2! × 2!                        A. One-Dimensional Distribution
+                                           T
+                    n          2
+               1   X         ∂ λ                                        We develop sigma points that match the first three moments
+         +            P ij                 · · ·  + · · · (12)
+               2 i,j=1      ∂xi ∂xj x=x̄                             of z in a single dimension, and then constrain those points
+                                                                     to match the fourth moment of z. For a one-dimensional
+Comparing the above equation with the true covariance matrix         distribution, we will show how to select sigma points such
+of (11), we notice similar issues that were pointed out in           that the first four moments satisfy
+approximating the mean – the approximation is only accurate
+                                                                                                         E (z − z̄)2 = 1
+                                                                                                                    
+up to the second order when x is not Gaussian distributed. All                       E [z i ] = 0,
+the odd-powered moments are zero because of the symmetric                                          S                      K
+                                                                            E (z − z̄)3 = √ 3 ,          E (z − z̄)4 = 2
+                                                                                                                  
+nature of the sigma points, while the fourth-powered moment                                                              P
+                                                                                                   P
+is also inaccurate because of the Gaussian nature of the
+sigma points. As with the mean approximation, errors in the             To capture the first three moments in a single dimension,
+covariance matrix approximation are introduced beyond the            three points are used: the first point lies at the origin with a
+second order not only for sets of 2n + 1 sigma points existing       weight of w0 ; the second point lies at a distance −u from the
+in the literature, but also for sets of n + 1 sigma points.          origin with a weight of w1 ; the third point lies at a distance
+                                                                     v from the origin with a weight of w2 . Therefore, in one-
+        III. G ENERALIZED U NSCENTED T RANSFORM
+                                                                     dimension, we use the following 3 sigma points
+   For a random vector x ∈ Rn , we develop sigma points
+that can accurately capture the mean, covariance matrix, and                                   χ(0) = {0}, w0
+the diagonal components of both the skewness tensor and
+                                                                                               χ(1) = {−u}, w1
+the kurtosis tensor. This is done by selecting sigma point
+distributions that have the flexibility to either be symmetric                                 χ(2) = {v}, w2
+when x is symmetrically distributed or be asymmetric when
+x is asymmetrically distributed.                                     where w0 , w1 , and w2 are the weights for the respective
+                                                                     sigma points. A visual representation of our sigma points in
+Assumption 1. The random vector x follows a probability              one dimension is shown in Fig. 1. Obeying the moments of
+distribution with finite moments.                                    z and the fact that the sum of all weights should equal 1, we
+  We reduce the problem of approximating x to the prob-              write
+lem of approximating a user-specified arbitrarily distributed
+random vector z ∈ Rn with zero mean and unit variance,                                    w0 + w1 + w2 = 1                                 (14)
+whose higher-order moments are functions of the higher-order                               −w1 u + w2 v = 0                                (15)
+moments of x. We write
+                             √                                                           w 1 u2 + w 2 v 2 = 1                            (16)
+                                                                                                                      √        −3
+                    x = x̄ +    P z                      (13)                            −w1 u3 + w2 v 3 = S P                             (17)
+                                                                                                                                          5
+
+
+
+                            v
+From (15), we see that w1 = u w2 . Rewriting (16) using (17)
+gives
+                           w2 v(u + v) = 1               (18)
+                                     √ −3
+                  w2 v(v 2 − u2 ) = S P                  (19)
+We designate u as the free parameter while assuming that
+u > 0. Using the fact that v 2 − u2 = (u + v)(v − u),
+substituting (18) into (19) gives
+                                  √ −3
+                       v =u+S P                     (20)
+From (14) and (18), we see that the weights are given as
+                                                                 Fig. 2. Samples chosen for a two-dimensional distribution for the GenUT.
+                   1                                             The locations and weights of the sigma points are determined by the moments
+         w2 =            ,          w0 = 1 − w1 − w2     (21)    of the probability distribution.
+                v(u + v)
+We note that the free parameter u can be selected to match
+the fourth moment of z. We now attempt to satisfy the fourth
+moment constraint given by                                          For a multi-dimensional distribution, we will show how to
+                                                                 select the 2n + 1sigma points such that the first four moments
+                   w1 u4 + w2 v 4 = KP −2                (22)    satisfy
+                          v
+Eliminating w1 using w1 = u w2 gives
+                  w2 v(u3 + v 3 ) = KP −2                (23)                                  E [z] = 0
+                                                                                E (z − z̄)(z − z̄)T = I
+                                                                                                  
+Using the relationships w2 v(u + v) = 1, u3 + v 3 = (u +
+                                 √ −3                                                               √               −3
+                                                                                     E (z − z̄) 3 = P
+                                                                                       
+v)(u2 + v 2 − uv), and v = u + S P , the above equation                                                                   S̆
+reduces to                                                                                          √               −4
+                                                                                     E (z − z̄) 4 = P
+                                                                                       
+                 √ −3                                                                                                     K̆
+          u2 + S P u + S 2 P −3 − KP −2 = 0
+The solution to the above quadratic equation is                  where I ∈ Rn×n is the identity matrix.
+           1h     √ −3 p                          i
+     u=       −S P + 4KP −2 − 3S 2 P −3                  (24)    Remark 2. Due to the positive definiteness of the covariance
+           2
+                                                                 matrix P ∈ Rn×n , it is always invertible.
+where v is given in (20). The equations for w1 , w2 , and w0
+remain unchanged.                                                   A visual representation of our sigma points for a two-
+Remark 1. We note that the sigma points described above,         dimensional distribution is shown in Fig. 2. Our first point
+which accurately capture the kurtosis when constrained, were     lies at (0, 0) with a weight of w0 . Our second point lies on
+designed for when the state has a dimension of 1. This implies   the coordinate axes a distance −u1 from the origin with a
+that z, P , S, K ∈ R1 .                                          weight of w1 . Our third point lies on the coordinate axes a
+                                                                 distance −u2 from the origin with a weight of w2 . Our fourth
+  In the next section, we extend this to multiple dimensions.    point lies on the coordinate axes a distance v 1 from the origin
+                                                                 with a weight of w3 . Our fifth point lies on the coordinate axes
+B. Multi-Dimensional Distribution                                a distance v 2 from the origin with a weight of w4 . Therefore,
+                                                                 our unscented transform uses the following 2n+1 sigma points
+   For an n-dimensional vector z, we develop a set of sigma
+points that accurately matches its mean and covariance ma-
+trix, while accurately matching the diagonal components of                    χ(0) = {0}, w0
+the skewness tensor. Furthermore, by constraining the sigma
+                                                                              χ[i] = {−ui I [i] }, wi             i = 1, · · · , n
+points, we show that we can accurately match the diagonal
+                                                                            (i+n)
+components of the kurtosis tensor. We note that for an inde-               χ       = {v i I [i] }, wi+n        i = 1, · · · , n
+pendent random vector, accurately matching the diagonal com-
+ponents of the skewness tensor implies an accurate matching
+of the entire skewness tensor.                                   where I [i] is the ith column of the identity matrix. 0 ∈ Rn is
+                                                                 a vector of zeros. We note that u = [u1 , u2 , · · · , un ]T and
+Definition 3. We define the vectors S̆ ∈ Rn and K̆ ∈ Rn          v = [v 1 , v 2 , · · · , v n ]T
+which contain the diagonal components of the skewness tensor
+and kurtosis tensor respectively, such that                      Definition 4. We partition the weight vector w =
+                                                                 [w0 , w1 , · · · , w2n ]T by defining w0 = [w1 , w2 , · · · , wn ]T
+             S̆ = [S 111 , S 222 , · · · , S nnn ]T              and w00 = [w1+n , w2+n , · · · , w2n ]T such that w =
+            K̆ = [K 1111 , K 2222 , · · · , K nnnn ]T            [w0 , w0T , w00T ]T .
+6
+
+
+
+    Obeying the moments of z, we write                                                     and kurtosis for a random variable x that is not from any
+                                                  2n                                       known probability distribution. Randomly selecting the mean
+                                                  X
+                                                        wi = 1                      (25)   x̄, variance P , and skewness S as x̄ = 0.1, P = 0.2,
+                                                  i=0                                      and S = −0.5 respectively, we can use Algorithm 1 to
+                           −w0          u+w        00
+                                                         v=0                        (26)   match them exactly. However, we can not randomly select
+                       0            2        00          2                                 a kurtosis K and expect to match it. The selection of the
+               w               u        +w          v  =1                           (27)
+                                                        √                                  kurtosis K must satisfy (35), so for this example, we require
+                                                                    −3                                 2
+            −w0                u 3 + w00            v 3= P               S̆         (28)   K > −0.5 0.2 = 1.25. Prescribing a kurtosis value of K = 1.3
+                   n                                                                       satisfies (35). Now using Algorithm 1, we see that w0 = 0.2,
+where 1 ∈ R is a vector of ones. From (26), we see that
+                                                                                           w1 = 0.0286, w2 = 0.7714, u = 5.8055, and v = 0.2153.
+w0 = w00 v u. Rewriting (27) and (28) gives
+                                                                                           The sample mean, sample covariance, sample skewness, and
+                                   w00     v       (u + v) = 1                      (29)   sample kurtosis exactly match their true prescribed values. We
+              00
+                                                             √           −3                show how to calculate the sample statistics in Section IV.
+         −w                v       (u + v)         (v + u) = P                 S̆   (30)
+Selecting u > 0 as the free parameters, we get                                             C. Moments of a Probability Distribution
+                              √    −3
+                    v =u+ P           S̆                                            (31)     We use the moment generating function (MGF) M (t) to
+                                                                                           evaluate the mean and higher-order central moments of a
+Therefore, from (25) and (29), we see that
+                                                                                           probability distribution. For any random variable x [35], its
+                                                                    2n
+                                                                    X                      MGF and n-th moment are given by
+         w00 = 1               v        (u + v),         w0 = 1 −             wi    (32)
+                                                                                                                                                       ∂nM
+                                                                    i=1
+                                                                                                         M (t) = E[etx ],                  E[xn ] =                (36)
+To match the diagonal components of the kurtosis tensor, we                                                                                             ∂tn t=0
+need to satisfy                                                                            We also use the gamma notation
+                                    √    −4                                                                         Z ∞
+            w0 u 4 + w00 v 4 = P            K̆         (33)
+                                                                                                            Γ (k) =     xk−1 e−x dx                                (37)
+Solving the above equation results in constrained values for                                                                           0
+
+u, such that                                                                               The first four moments of 10 different probability distributions
+                       r                                   !                               can be found in Table I.
+     1     √    −3        √     −4
+                                          √     −3
+                                                        2
+u=       − P       S̆ + 4 P        K̆ − 3     P     S̆
+     2
+                                                                                             IV. ACCURACY OF S IGMA P OINT S AMPLE S TATISTICS
+                                                         (34)
+                                                                                             We demonstrate the accuracy of our sigma points in approx-
+It can be shown from (13) that the algorithm for selecting                                 imating any random vector x ∈ Rn .
+the 2n + 1 sigma points for any random vector x is given in
+Algorithm 1.                                                                               Theorem 1. Let x ∈ Rn be any random vector with mean
+   We recall from (31) the constraint u > 0 exists. Applying                               x̄ and covariance matrix P , skewness tensor S, and kurtosis
+this constraint on (34), we see that                                                       tensor K. The following statements are true for the 2n + 1
+                       √     4 √
+                                    −3
+                                            2                                             sigma points be defined as shown in Algorithm 1.
+                 K̆ > P           P     S̆              (35)                                  1) The sample mean, x̄    ˆ = 2n
+                                                                                                                              P
+                                                                                                                                  i=0 w i χ[i] isP
+                                                                                                                                                 equal to x̄.
+                                                                                                                                                    2n
+The inequality in (35) – at least for a one-dimensional case –                                2) The sample covariance matrix, P̂ =                 i=0 w i (χ[i] −
+agrees with the findings by Pearson in [34] that for probability                                 x̄          ˆ )T , is equal to P .
+                                                                                                 ˆ )(χ[i] − x̄
+                                                                                                                                                 P2n
+distributions, the standardized kurtosis always exceeds the                                   3) The sample skewness tensor Ŝ jkl =                i=1 w i (χ[i] −
+squared of the standardized skewness. If the inequality in (35)                                  ˆ )j (χ[i] − x̄
+                                                                                                 x̄           ˆ )k (χ[i] − x̄
+                                                                                                                           ˆ )l , is equal to S jkl if j = k = l.
+                                                                                                                                                 P2n
+were violated, then (34) becomes infeasible, which in turn                                    4) The sample kurtosis tensor K̂ jklm = i=1 wi (χ[i] −
+requires the free parameter u > 0 in (31) to be selected                                         ˆ )j (χ[i] − x̄
+                                                                                                 x̄             ˆ )k (χ[i] − x̄ˆ )l (χ[i] − x̄ˆ )m , is equal to
+such that v > 0 – although this eliminates the accuracy in                                       K jklm if √   j = k = l = m whenever u =
+                                                                                                   √                     √                 √
+matching the diagonal components of the kurtosis tensor, the                                      − P
+                                                                                                             −3
+                                                                                                                  S̆+   4 P
+                                                                                                                                  −4
+                                                                                                                                       K̆−3 P
+                                                                                                                                                −6
+                                                                                                                                                      S̆
+                                                                                                                                                           2
+
+                                                                                                                              2                                .
+sigma points are still able to accurately match the diagonal
+components of the skewness tensor.                                                         Proof. For our proof, we introduce diagonal matrices U , V ∈
+   There might be concerns that v in (31) might be negative
+                     √                                                                     Rn×n such that U = diag(u) and V = diag(v). In matrix
+                          −3
+whenever the term P          S̆ is negative. If (35) is satisfied,                         form, we evaluate the sample mean as
+then selecting u using (34) leads to v > 0. Alternatively,                                                 √              √
+                                        √      −3                                            ˆ = [x̄, x̄ − P U , x̄ + P V ][w0 , w0T , w00T ]T
+                                                                                             x̄
+arbitrarily selecting u such that u > P           S̆ ensures that
+                                                                                                       2n
+v > 0.                                                                                                 X                √
+                                                                                                = x̄         wi +           P (V w00 − U w0 )
+   Algorithm 1 can be used to create sigma points that can
+                                                                                                       i=0
+match up to the kurtosis if (35) is satisfied. For example, we                                           √
+want to prescribe some arbitrary mean, variance, skewness,                                      = x̄ +        P (w00          v − w0         u) = x̄               (38)
+                                                                                                                                             7
+
+
+
+
+                                                                     TABLE I
+                                                            P ROBABILITY D ISTRIBUTIONS
+
+                              Probability density              Mean         Variance (P )        Skewness (S)          Kurtosis (K)
+Random Variable                    function                    E[x]         E[(x − x̄)2 ]         E[(x − x̄)3 ]        E[(x − x̄)4 ]
+
+                                1       1 x−µ 2
+
+                   2
+                             √       e− 2 ( σ ) ,
+Gaussian N (µ, σ )             2πσ 2                               µ             σ2                    0                       3σ 4
+                             x ∈ (−∞, ∞)
+
+
+Exponential E(λ)             λe−λx , x ≥ 0, λ > 0                  1
+                                                                   λ
+                                                                                   1
+                                                                                  λ2
+                                                                                                       2
+                                                                                                      λ3
+                                                                                                                                9
+                                                                                                                               λ4
+
+
+
+
+                              xa−1 −x
+                                     e b ,
+Gamma G(a, b)                Γ (a)ba                               ab            ab2                 2ab3              3ab4 (a + 2)
+                             x ≥ 0, a > 0, b > 0
+
+
+
+
+                             b  x b−1 −( xa )b
+                                        e        ,
+                             a a                                                                                      a4 (Γ4b − 3Γ1b
+                                                                                                                                  4
+
+                             x ≥ 0, a > 0, b > 0,                                                a3 (Γ3b + 2Γ1b
+                                                                                                              3
+                                                                                      2
+                                                                            a2 Γ2b − Γ1b
+                                                                                        
+Weibull W (a, b)                                                aΓ1b                                                  − 4Γ1b Γ3b
+                                      
+                                        k
+                                                                                                − 3Γ1b Γ2b )             2
+                             Γkb = Γ      +1                                                                          + 6Γ1b Γ2 )
+                                        b
+
+
+
+                              x − x22
+                                                                                                                                        
+                                                                                                                               32−3π 2
+                                                                             σ 2 2 − π2         σ 3 (π − 3)           σ4
+                                                                   pπ                                        pπ
+Rayleigh R(σ)                    e 2σ , x ≥ 0                  σ        2                                      2                  4
+                              σ2
+
+
+                        Γ (a + b) a−1
+                                  x   (1 − x)b−1 ,
+                       Γ (a)Γ (b)                                  a              ab                2ab(b−a)         3ab(2(b−a)2 +abζ2
+Beta BE(a, b)                                                                     2ζ                  3ζ ζ                 4ζ ζ ζ
+                       x ∈ (0, 1), a > 0, b > 0                    ζ0            ζ0  1               ζ0 1 2              ζ0  1 2 3
+
+                       ζk = a + b + k
+
+                        
+                        n k
+                           p (1 − p)n−k ,                                                                           np(1 − p)(1+
+Binomial B(n, p)        k                                          np         np(1 − p)       np(1 − p)(1 − 2p)
+                                                                                                                    p(1 − p)(3n − 6))
+                       p ∈ [0, 1], k = 0, 1, 2, · · · , n
+
+
+                             λk −λ
+                                e , λ > 0,
+Poisson P (λ)                k!                                    λ              λ                    λ                   3λ2 + λ
+                             k = 0, 1, 2, · · · , ∞
+
+
+                          p(1 − p)k , p ∈ (0, 1],             (1 − p)          (1 − p)           (p − 1)(p − 2)    (1 − p)(p2 − 9p + 9)
+Geometric GE(p)
+                          k = 0, 1, 2, · · · , ∞                 p                p2                   p3                   p4
+
+
+                                                                                                                  r(1 − p)(p2 − 6p
+                             r+k−1 r
+Negative                            p (1 − p)r ,              r(1 − p)        r(1 − p)          r(p − 1)(p − 2)     − 3pr + 3r + 6)
+                               k
+Binomial N B(r, p)                                                p              p2                   p3                       p−4
+                        k = 0, 1, 2, · · · , ∞
+8
+
+
+
+                                                                                   skewness tensor as
+    1   Prescribe the mean x̄, covariance P , diagonal                                         √      √
+                                                                                      ˆ
+         component of the skewness tensor                                             S̆ = ([− P U ,     P V ]) 3 [w0T , w00T ]T             (40)
+         S̆ = [S 111 , S 222 , · · · , S nnn ]T , and the diagonal                            √    3        √    3       0T      00T T
+                                                                                         = [− P U 3 ,         P V 3 ][w , w ]                (41)
+         components of the kurtosis tensor                                                 √     3
+         K̆ = [S 1111 , K 2222 , · · · , K nnnn ]T ;                                     = P [−w0 u 3 + w00 v 3 ]
+                                                                                           √     3√   −3
+    2    Choose the free parameter vector u > 0;                                         = P        P    S̆ = S̆                             (42)
+    3   Calculate the parameter vector v ;                                         We see that our sigma points accurately match the diagonal
+                                 √                                                                                                           ˆ
+                         v =u+ P
+                                       −3
+                                          S̆                                       components of the skewness tensor. Finally, defining K̆ ∈ Rn
+                                                                                   as a vector containing the diagonal components of the sample
+    4   Calculate the 2n + 1 sigma points;                                         kurtosis tensor such that
+                                                                                                 ˆ
+                          χ[0] = x̄                         w0                                  K̆ = [K̂ 1111 , K̂ 2222 , · · · , K̂ nnnn ]T
+                                              √
+                        χ[i] = x̄ − ui P [i]       w0i                             we can evaluate the diagonal components of the sample
+                                      √                                            kurtosis tensor as
+                   χ[i+n] = x̄ + v i P [i]        w00i                                       ˆ        √      √
+                                      √                                                     K̆ = ([− P U ,      P V ]) 4 [w0T w00T ]T (43)
+         for i ∈ {1, · · · , n}, where P [i] is the ith column                                    √     4
+         of the matrix square root of P .                                                      = P [w0 u 4 + w00 v 4 ]
+                                                                                                  √     4√   −4
+    5   Calculate the weights ;                                                                = P         P    K̆ = K̆               (44)
+
+                 w00 = 1        v       (u + v)                                    We see that our sigma points accurately match the diagonal
+                                                             2n                    components of the kurtosis tensor.
+                                                             X
+                 w0 = w00           v    u,     w0 = 1 −           wi                Theorem 1 shows that our sigma points in Algorithm 1
+                                                             i=1                   can accurately approximate the mean and covariance of any
+         where w = [w0 , w0T , w00T ]T                                             random vector, as well as the diagonal components of the
+                                                                                   skewness and kurtosis tensors – this makes it applicable to
+        Note : To match the diagonal components of the
+                                                                                   a wide variety of applications.
+               kurtosis tensor, select                 !
+                               √               √    −4 K̆ − 3 √P
+                                 r
+                                    −3 S̆ +
+                                                             
+                                                                   −3 S̆
+                                                                              2
+                  u = 1    −    P             4 P
+                      2                                                                          V. C ONSTRAINED S IGMA P OINTS
+                  in step 2.
+                                                                                      Noting that several physical systems require some con-
+    Algorithm 1: Sigma Points for the Generalized Un-                              straints on their states or parameters, we show how our sigma
+    scented Transform                                                              points can be constrained while at least maintaining second-
+                                                                                   order accuracy.
+                                                                                      We require the sigma points to be constrained such that
+        P2n
+because i=0 wi = 1 and w00 v = w0 u. We see that the                                           a < χ[i] < b      for i ∈ {0, · · · , 2n}
+sample mean equals the actual mean. Evaluating the sample
+                                                                                   where a ∈ Rn and b ∈ Rn are the lower bounds and upper
+covariance matrix, we get
+                                                                                   bounds respectively.
+                                                 √                              Assumption 2. The mean x̄ is within the bounds, such that
+             √            diag(w0 ),
+                         
+                                          0       U √P                             a < x̄ < b
+        P̂ = P [U , V ]
+                              0,     diag(w00 ) V P
+            √                                 √                                      We note that our sigma points of Algorithm 1 can violate
+           = P [diag(w0 )U 2 + diag(w00 )V 2 ] P                                   some state constraints despite being able to accurately capture
+            √ √
+           = PI P = P                                  (39)                        the mean and covariance of a random vector, as well as the
+                                                                                   diagonal components of its skewness and kurtosis tensors. This
+                                                                                   might make them inapplicable in situations/models that only
+because w0      u 2 + w00      v 2 = 1 is the diagonal of                          permit constrained values. For example, in applications that
+       0    2         00   2
+diag(w )U +diag(w )V . We see that the sample covariance                           assume a Poisson distribution for the states, such as count
+                                                     ˆ
+matrix equals the actual covariance matrix. Defining S̆ ∈ Rn                       data, the states are usually positive by default and can never
+as a vector containing the diagonal components of the sample                       be negative. When our sigma point of Algorithm 1 is applied,
+skewness tensor such that                                                          the positive constraint on an independent random vector can
+                                                                                   be violated. We demonstrate this using the following example.
+                    ˆ                                                              Example 1. We generate sigma points for an independent
+                    S̆ = [Ŝ 111 , Ŝ 222 , · · · , Ŝ nnn ]T
+                                                                                   Poisson random vector x such that
+                                                                                                                                   
+                                                                                             1.5       1.5, 0            1.5         8.25
+we can evaluate the diagonal components of the sample                                  x̄ =      ,P =            , S̆ =      , K̆ =
+                                                                                              1          0, 1             1           4
+                                                                                                                                           9
+
+
+
+where x̄ is the mean, P is the covariance matrix, and S̆
+and K̆ are vectors containing the diagonal components of             1    Implement Algorithm 1
+the skewness tensor and kurtosis tensor respectively. Using          2    if χ[i] < a for i ∈ {1, · · · , 2n} then
+Algorithm 1, we see that w0 = 0.3333, w1 = 0.2049,                    3       if i ≤ n then
+w2 = 0.2129, w3 = 0.1284, w4 = 0.1204, u1 = 1.3713,                                      h      n                  √           oi
+u2 = 1.3028, v 1 = 2.1878, and v 2 = 2.3028. The 2n + 1               4            ui = θ min       (x̄ − a)           P [i]
+sigma points in matrix form is                                        5       end
+                                                                    6       if i > n then h
+         1.5, −0.1794,         1.5,   4.1794,    1.5                                                n                   √             oi
+    χ=                                                                7      v i−n = θ min              (a − x̄)            P [i−n]
+          1,       1,      −0.3028,      1,    3.3028
+                                                                     8    end
+The sample statistics are
+                                                             9 end
+
+   ˆ =  1.5            1.5, 0     ˆ     1.5   ˆ      8.25
+   x̄         , P̂ =            , S̆ =      , K̆ =                  10    Repeat steps 3 and 4 of Algorithm 1 if v was not
+         1              0, 1             1             4
+                                                                           redefined, otherwise repeat only step 4 of
+  We see from Example 1 that despite the accuracy of the                   Algorithm 1;
+sample statistics, the sigma points χ[1] and χ[2] both had          11    if χ[i] > b for i ∈ {1, · · · , 2n} then
+a negative value which do not satisfy the non-negativity of
+Poisson draws.                                                       12       if i ≤ n then
+                                                                                         h      n                  √           oi
+Corollary 1. If the bound a < x̄ is violated after implement-        13            ui = θ min       (x̄ − b)           P [i]
+ing Algorithm 1, then enforcing the constraint a < x̄ leads to       14       end
+accuracy in capturing only the mean, covariance matrix, and          15       if i > n then h       n                  √              oi
+the diagonal components of the skewness tensor.                      16      v i−n = θ min              (b − x̄)           P [i−n]
+Proof. Lower bounding x will require redefining the variable        17    end
+u such that (34) is no longer satisfied. Theorem 1 establishes      18 end
+
+that violating (34) ensures an inaccurate approximation of the
+                                                                    19    Repeat steps 3, 4, and 5 of Algorithm 1 if v was not
+diagonal components of the kurtosis tensor.
+                                                                           redefined, otherwise repeat only steps 4 and 5 of
+Corollary 2. If the bound x̄ < b is violated after implement-              Algorithm 1;
+ing Algorithm 1, then enforcing either x̄ < b or a < x̄ < b
+                                                                          Note : θ ∈ (0, · · · , 1) is a user defined constant.
+leads to accuracy in capturing only the mean and covariance
+                                                                                 The sigma points get closer to their
+matrix.
+                                                                                 constraints as θ → 1.
+Proof. Both cases, x̄ < b or a < x̄ < b, require the                 Algorithm 2: Constrained Sigma Points for the Gen-
+redefinition of the variable v. This means that (31) will            eralized Unscented Transform
+no longer be satisfied. Theorem 1 establishes that violating
+(31) ensures an inaccurate approximation of the diagonal
+components of skewness and kurtosis tensor.                        u2 = 0.9, v 1 = 1.9188, and v 2 = 1.9. The 2n + 1 positive
+                                                                   sigma points in matrix form is
+  To enforce constraints on the sigma points, we introduce                                                     
+a slack parameter θ ∈ (0, · · · , 1) which is a user selected                       1.5, 0.15, 1.5, 3.85 1.5
+                                                                              χ=
+constant. Using θ, we now redefine the free parameters ui                            1,      1,   0.1,  1, 2.9
+and v i for i ∈ {1, · · · , n} as
+                                                                   while the corresponding sample statistics are
+              h    n              √       oi
+     ui = θ min (x̄ − a)            P [i]    if χ[i] < a
+                                                                                                                      
+                                                                     ˆ = 1.5 , P̂ = 1.5, 0 , S̆
+                                                                     x̄
+                                                                                                 ˆ
+                                                                                                   =
+                                                                                                        1.5 ˆ
+                                                                                                             , K̆ =
+                                                                                                                      6.2587
+              h    n              √       oi                                 1          0, 1             1            2.7100
+     v i = θ min (b − x̄)           P [i]    if χ[i+n] > b
+                                                                      We see from Example 2 that using Algorithm 2 ensures that
+where |.| denotes the absolute value, and the sigma points get     the sigma points are always positive while ensuring accuracy
+closer to their constraints as θ → 1. We note that the equations   in approximating the true mean and covariance of a random
+for w0 and w00 are unchanged.                                      vector, as well as capturing the diagonal components of the
+   We note that enforcing constrains on the sigma points results   skewness tensor. However, the ability to exactly capture the
+in a loss of accuracy in capturing the diagonal components         diagonal components of the kurtosis tensor is lost. A graphical
+of at least the kurtosis tensor. The constrained sigma point       representation of Examples 1 and 2 is shown in Fig. 3 where
+algorithm is given in Algorithm 2. We now show a benefit of        we plot the sigma points and the covariance.
+Algorithm 2 in the following example.
+Example 2. Using Algorithm 2 to generate positively con-              VI. P ROPAGATION OF M EANS AND C OVARIANCES OF
+strained sigma points for the Poisson random vector, we                        N ONLINEAR T RANSFORMATIONS
+select θ = 0.9. We see that w0 = −0.0576, w1 = 0.3003,               We analyze the performance of our new sigma point al-
+w2 = 0.3968, w3 = 0.1725, w4 = 0.188, u1 = 1.1023,                 gorithm when they undergo nonlinear transformations. We
+10
+
+
+
+
+                   3.5
+                                                 Unconstrained          Truncated       Constrained
+                                                                                                                                           For our comparison, we use the scaled unscented transform
+                                                                                                                                        of [36], which is denoted as UT for the remainder of this
+                     3
+                                                                                                                                        paper, and the higher order sigma point unscented transform
+                   2.5                                                                                                                  (HOSPUT) of [28]. The scaling of the UT was selected to
+                     2
+                                                                                                                                        match a Gaussian distribution. We do not compare against the
+                                                                                                                                        sigma points in [29]–[32] because they either use a Gaussian
+              x2
+
+
+
+
+                   1.5
+                                                                                                                                        assumption, a closed skew normal distribution, or more than
+                     1                                                                                                                  2n + 1 sigma points. The sample mean and sample covariance
+                                                                                                                                        can be evaluated using (6)–(8).
+                   0.5
+
+
+
+                     0
+                                                                                                                                        A. Case Study 1 – Transformation of Random Variables
+                   -0.5
+                      -0.5       0   0.5         1        1.5          2          2.5     3           3.5         4     4.5                Defining x as a random variable that can follow any of the
+                                                                       x1
+                                                                                                                                        probability distributions given in the Table I, we evaluate the
+                                                                 (a)                                                                    sample mean and covariance of two nonlinear transformations:
+              True Mean
+              True Covariance
+                                     Unconstrained Mean
+                                     Unconstrained Covariance
+                                                                            Truncated Mean
+                                                                            Truncated Covariance
+                                                                                                            Constrained Mean
+                                                                                                            Constrained Covariance
+                                                                                                                                        a quadratic function of the random variable y = 3x + 2x2 , and
+      1.6
+                                                                                                                                        a trigonometric function of the random variable y = sin(x).
+      1.4
+                                                                                                                                        We also use 105 Monte Carlo draws from the different
+                                                                                                                                        probability distributions. The true mean and covariance of
+      1.2
+                                                                                                                                        the quadratic function can be easily evaluated using the raw
+                                                                                                                                        moments of x up to its fourth order. The true mean and
+                                                                                                                                        covariance of the trigonometric function can be evaluated
+     x2
+
+
+
+
+          1
+
+
+                                                                                                                                        using their characteristic functions. A comparison between
+      0.8
+                                                                                                                                        the accuracy of the GenUT, UT, 105 Monte Carlo draws, and
+                                                                                                                                        HOSPUT in approximating the true mean and true covariance
+      0.6
+                                                                                                                                        of the nonlinear transformations for the different probability
+      0.4
+                                                                                                                                        distributions is shown in Tables II-V.
+        0.8                  1             1.2           1.4
+                                                                  x1
+                                                                            1.6           1.8                 2            2.2
+                                                                                                                                           For the quadratic function, we see that both the GenUT and
+                                                                 (b)
+                                                                                                                                        HOSPUT gave an exact approximation of the true mean and
+                                                                                                                                        true covariance for all the probability distributions while the
+Fig. 3. (a) Locations of sigma points for the unconstrained (Algorithm 1),                                                              UT was only accurate in approximating the true mean when
+truncated, and constrained (Algorithm 2) sigma points. (b) Mean and co-
+variance of the unconstrained (Algorithm 1), truncated, and constrained
+                                                                                                                                        the probability distribution was not Gaussian. This is because
+(Algorithm 2) sigma points.                                                                                                             the GenUT and HOSPUT are accurate up to the fourth order
+                                                                                                                                        moments when the random variable x has a dimension of 1.
+                                                                                                                                        Although the 105 Monte Carlo draws gave relatively good
+will show how linearization approximations, via Taylor series                                                                           approximations, they were not as accurate as the GenUT.
+expansion of a nonlinear transformation of a random vector x                                                                               For the trigonometric function, we see that the GenUT,
+evaluated about its mean x̄, introduce errors in the propagation                                                                        HOSPUT, and UT were unable to give exact approximations
+of means and covariances. In Appendix A, we evaluated the                                                                               of the true mean and true covariance in most cases because the
+true mean and true covariance of a random vector, as well                                                                               Taylor series expansion of λ(x) has terms beyond the fourth
+as the approximated mean and approximated covariance. We                                                                                order. The GenUT and HOSPUT were more accurate than the
+see that although errors are introduced beyond the third order                                                                          UT for all the non-Gaussian probability distributions because
+when approximating a nonlinear transformation of a random                                                                               they are both accurate up to the fourth order while the UT is
+vector, these errors are minimized because of our ability to                                                                            accurate up to the second order. The 105 Monte Carlo draws
+match the diagonal components of the skewness and kurtosis                                                                              sometimes gave better accuracy than the GenUT because of the
+tensors. We also see that errors are introduced beyond the third                                                                        random nature of its draws. A box plot of the accuracy of the
+order when the random vector is independent.                                                                                            GenUT, UT, and several Monte Carlo draws of different sizes
+   We will see that errors can be introduced in the propagation                                                                         is shown in Fig. 4 for the trigonometric function. We do not
+of means and covariances beyond the second order when sigma                                                                             include the HOSPUT because it gives the same performance as
+points developed under the Gaussian assumption [9], [12], [36]                                                                          the GenUT when a single random variable is transformed. We
+are used to approximate the nonlinear function λ(x) when x                                                                              see that a significant number of Monte Carlo draws is needed
+is an independent random vector. We note that the nonlinear                                                                             to achieve the accuracy of the GenUT when approximating
+transformation y ∈ Rn is given by                                                                                                       the mean. A significant number of Monte Carlo draws gives
+                                                                                                                                        better accuracy in approximating the variance.
+                                                       y = λ(x)                                                                  (45)
+
+where E[x] = x̄. x̄, P , S̆, and K̆, we evaluate the sample                                                                             B. Case Study 2 – Transformation of a Random Vector
+mean and covariance of the nonlinear transformation of (45)                                                                               We examine the performance of the GenUT, HOSPUT,
+using Algorithm 1.                                                                                                                      and UT in approximating the true mean and covariance of
+                                                                                                                                                                                                   11
+
+
+
+
+                                                                                                                40
+
+
+
+
+                                                                                        % error of mean
+                                                                                                                30
+                                TABLE II
+  P ERCENTAGE ERROR IN P ROPAGATING THE MEAN OF y = 3x + 2x2                                                    20
+
+                                                                                                                10
+
+
+               x       GenUT         UT      MC        HOSPUT                                                   0
+                                                                                                                     300 Monte   25000 Monte   100000 Monte 400000 Monte   GenUT     UT
+
+         N (1, 4)           0         0      0.015       0
+           E(2)             0         0      0.069       0
+
+
+
+
+                                                                                        % error of covariance
+                                                                                                                40
+
+
+          G(1, 2)           0         0      0.452       0                                                      30
+
+                                                                                                                20
+         W (1, 2)           0         0      0.005       0                                                      10
+
+           R(1)             0         0      0.097       0                                                      0
+                                                                                                                     300 Monte   25000 Monte   100000 Monte 400000 Monte   GenUT     UT
+         BE(3, 4)           0         0      0.063       0                                                                                               Method
+
+
+         B(3, 0.3)          0         0      0.457       0                                                                                            (a)
+           P (2)            0         0      0.270       0                                                      6
+
+                                                                                                                5
+         GE(0.5)            0         0      1.251       0
+
+
+
+
+                                                                                        % error of mean
+                                                                                                                4
+
+       N B(4, 0.67)         0         0      0.668       0                                                      3
+
+                                                                                                                2
+
+                                                                                                                1
+
+                                                                                                                0
+                                                                                                                     300 Monte   25000 Monte   100000 Monte 400000 Monte   GenUT     UT
+
+
+
+
+                                                                                                          30
+
+
+
+
+                                                                              % error of covariance
+                                TABLE III                                                                 20
+P ERCENTAGE ERROR IN P ROPAGATING THE COVARIANCE OF y = 3x + 2x2
+                                                                                                          10
+
+
+           x          GenUT          UT        MC       HOSPUT                                                  0
+                                                                                                                     300 Monte   25000 Monte   100000 Monte 400000 Monte   GenUT     UT
+        N (1, 4)        0             0       0.029          0                                                                                          Method
+
+
+         E(2)           0          49.057     0.249          0                                                                                       (b)
+
+        G(1, 2)         0            64       1.889          0     Fig. 4. (a) Moments of y = sin(x) when x is a Poisson random variable.
+        W (1, 2)        0          15.003     0.310          0     (b) Moments of y = sin(x) when x is a Weibull random variable.
+
+         R(1)           0          16.815     0.381          0
+                                                                                               TABLE V
+       BE(3, 4)         0           2.307     0.613          0      P ERCENTAGE ERROR IN P ROPAGATING THE COVARIANCE OF y = sin(x)
+       B(3, 0.3)        0          16.380     0.359          0
+         P (2)          0          25.946     1.061          0                x                                                    GenUT                    UT               MC           HOSPUT
+       GE(0.5)          0          67.662     1.036          0          N (1.57, 0.1)                                               5.026                  5.026            0.444         5.026
+     N B(4, 0.67)       0          43.224     2.356          0              E(2)                                                   23.499                72.557             0.213         23.499
+                                                                         G(0.5, 0.5)                                               20.749                61.391             0.372         20.749
+                                                                           W (1, 2)                                                 4.862                31.760             0.043         4.862
+                                                                            R(1)                                                   12.158                50.678             0.531         12.158
+                                                                          BE(3, 4)                                                  0.031                  0.940            0.225         0.031
+                            TABLE IV                                      B(3, 0.3)                                                11.033                24.806             0.060         11.033
+    P ERCENTAGE ERROR IN P ROPAGATING THE MEAN OF y = sin(x)
+                                                                           P (0.1)                                                  6.646                45.895             0.461         6.646
+           x          GenUT           UT        MC      HOSPUT            GE(0.7)                                                  12.074                87.637             0.070         12.074
+                                                                       N B(0.4, 0.67)                                              39.068               135.783             0.366         39.068
+     N (1.57, 0.1)     0.001        0.001      0.012     0.001
+         E(2)          0.219        5.788      0.110     0.219
+      G(0.5, 0.5)      0.312        6.964      0.050     0.312     a nonlinear transformation of different random variables such
+        W (1, 2)       0.017        0.831      0.029     0.017     that
+                                                                                                                      
+         R(1)          0.049        0.912      0.007     0.049              x        Poisson(0.1)              sin(x1 x2 )
+                                                                      x= 1 =                        , Y =                    (46)
+       BE(3, 4)         0           0.038      0.037         0              x2       Rayleigh(1)              cos(x1 x2 )
+       B(3, 0.3)       0.158        4.814      0.046     0.158     We calculate the true mean and true covariance of y using 107
+        P (0.1)        0.275        18.305     0.531     0.275     Monte Carlo draws. The percentage error in approximating
+       GE(0.7)         2.416        32.906     0.138     2.416     each element of the mean is
+                                                                                                                
+    N B(0.4, 0.67)     0.176        44.172     0.383     0.176                Mean        24.7      63.87      51.64
+                                                                                      =        ,          ,
+                                                                            % error       0.05      1.43        1.23
+                                                                                         | {z } | {z } | {z }
+                                                                                                                                      GenUT                       UT               HOSPUT
+12
+
+
+
+The percentage error in approximating each element of the          to exactly match the true covariance matrix is because the
+covariance matrix is                                               GenUT is only able to capture the diagonal components of
+                                                                   the skewness and kurtosis tensors.
+                                                
+    Covariance      24.68, 8.77      145.51, 68.47
+                =                 ,
+      % error        8.77, 20.13      68.47, 83.16
+                  |       {z     } |        {z     }                                     VII. C ONCLUSION
+                        GenUT               UT
+                                                                     In this paper we have developed the generalized unscented
+                    126.93, 28.51
+                                                                   transform (GenUT) that is capable of adapting to the unique
+                     28.51, 71.72
+                  |        {z     }                                statistics of an arbitrarily distributed random variable. We
+                          HOSPUT                                   showed that due to its ability to match the diagonal elements
+We see that for the nonlinear transformation, the GenUT gave       of the skewness and kurtosis tensors of most random vectors
+the lowest percentage error when approximating the elements        using 2n+1 sigma points, the GenUT is preferable to and more
+of the mean and covariance matrix. The UT gave the worst           accurate than unscented transforms that were either developed
+performance because it was unable to account for the non-          using the Gaussian assumption or were developed without any
+Gaussian distributed nature of the random variable x. The          probability distribution in mind.
+HOSPUT performed worse than the GenUT because, when                    In terms of ease of implementation, we demonstrated that
+the problem dimension exceeds 1, it is only able to match the      like the unscented transform originally developed in [12]
+average values of the diagonal elements of the skewness and        which uses 2n + 1 sigma points, the GenUT uses the same
+kurtosis tensors.                                                  number of sigma points. When compared against unscented
+                                                                   transforms that employ more than 2n + 1 sigma points, the
+C. Case Study 3 - Infectious Disease Models                        GenUT is characterized by a lower computational cost due to
+                                                                   its lower number of sigma points that scales linearly with the
+   We consider an SIR (susceptible-infectious-recovered) in-
+                                                                   problem dimension.
+fectious disease model given by the difference equation [37]
+                                                                       In terms of performance, the GenUT and unscented trans-
+                              βSk Ik                               forms that use 2n + 1 sigma points developed under the
+                 Sk+1 = Sk −
+                               N                                   Gaussian assumption give the same performance when the
+                             βSk Ik                                random variable is Gaussian distributed. However, when the
+                 Ik+1 = It +         − γIk                  (47)
+                               N                                   random variable or random vector is not Gaussian distributed,
+                 Rk+1 = Rk + γIk                                   the GenUT gives better accuracy in the propagation of means
+where β is the infection rate, γ is the recovery rate, and N =     and covariances. Additionally, we also showed that the GenUT
+Sk +Ik +Rk . Using the conservation principle S +I +R = N ,        formulation makes it easy to analytically enforce constraints
+we reduce the model of (47) to                                     on the sigma points while still guaranteeing at least a second-
+                                                                   order accuracy, which makes it appealing in models that permit
+                                            Ik
+            Ik+1 = It + β (N − Ik − Rk )       − γIk               only constrained values for random variables or parameters.
+                                            N                          For uncertainty quantification, estimation, or prediction ap-
+           Rk+1 = Rk + γIk                                         plications, when compared to existing unscented transforms,
+                                           
+We note that by defining x = Poisson Ik Rk , we can
+                                                    T             the GenUT gives the most accuracy that can be gotten by
+rewrite the above equation as                                      employing 2n + 1 sigma points. This accuracy will have more
+                                                                   significant consequences if the nonlinearities are strong and the
+                                β (N − x1 − x2 ) xN1
+                                                
+            Ik+1       Ik                                          problem dimension is large. The GenUT can be applied to any
+                  =        +                               (48)
+           Rk+1       Rk                 γx1                       filter that uses linear or nonlinear transformations of random
+where xi is the ith element of the vector x.                       variables. The MATLAB® source code used to generate the
+   We examine the performance of the GenUT, HOSPUT, and            results in this paper is available at [38].
+UT in approximating the true mean and covariance of (48).
+We use the parameters Ik = 10, Rk = 2, β = 1.5, γ = 0.3,                                A PPENDIX A
+and N = 100. The percentage error in approximating each                  T RUE M EAN AND C OVARIANCE OF N ONLINEAR
+element of the mean is                                                               T RANSFORMATIONS
+                                       
+              Mean        0       0        0                         We derive analytical expressions for the true mean and
+                      =      ,        ,                            covariance when we take the Taylor series expansion of the
+             % error      0       0        0
+                        |{z}     |{z}     |{z}                     nonlinear function y = λ(x) where x is a random vector.
+                          GenUT    UT     HOSPUT
+
+The percentage error in approximating each element of the
+                                                                   A. True Mean of the Nonlinear Transformation
+covariance matrix is
+                                                               Applying Taylor series expansion around x̄, where x̃ =
+ Covariance     0.03, 0      2.56, 1.3       0.3, 0.13
+            =            ,              ,                          x − x̄, we write the true mean of y as
+  % error        0,   0      1.3,    0      0.13,   0
+              | {z } |
+                  GenUT
+                                 {z
+                                    UT
+                                       } |       {z    }
+                                                   HOSPUT
+                                                                    ȳ = E [λ(x)]
+                                                                                          Dx̃2 λ Dx̃3 λ Dx̃4 λ
+                                                                                                                     
+We see that the GenUT gave the least approximation error              = λ(x̄) + E Dx̃ λ +       +      +       + · · · (49)
+of the true covariance matrix. The inability of the GenUT                                  2!     3!     4!
+                                                                                                                                                     13
+
+
+
+where Dx̃ λ is the total differential of λ(x) when perturbed                             A PPENDIX B
+around a nominal value x̄ by x̃. We note that                         A PPROXIMATION OF M EANS AND C OVARIANCES USING
+                                    !k                                     THE G ENERALIZED U NSCENTED T RANSFORM
+                         n
+               k
+                        X        ∂                                     We analytically show the accuracy in capturing the true
+             Dx̃ λ =        x̃i        λ(x)             (50)
+                        i=1
+                                ∂xi                                 mean and true covariance of y = λ(x) when using our 2n + 1
+                                              x=x̄
+                                                                    sigma points. We also show that our sigma point transfor-
+Using (50), we can evaluate the true mean of (49) as                mations give improved accuracy by capturing the diagonal
+            
+                n                      n                            components of the skewness and kurtosis tensors. We define
+            X      P ij ∂ 2 λ             S ijk    ∂3λ
+                                                                    χ̃[i] = χ[i] − x̄ while recalling that C = P P T . We note that
+                                     X
+ȳ =λ(x̄) +                      +
+            
+              i,j=1
+                     2! ∂xi ∂xj             3! ∂xi ∂xj ∂xk
+                                   i,j,k=1                                                                     k
+                                                                          2n              2n       n
+          n                                                              X                X        X        ∂
+         X     K ijkl      ∂4λ         
+                                                                              wi Dx̃k λ =     wi      x̃j       λ(x)         (57)
+     +                                        + ···     (51)                                               ∂x j
+                 4! ∂xi ∂xj ∂xk ∂xl                                      i=1             i=1      j=1
+        i,j,k,l=1                                                                                                                    x=x̄
+                                           x=x̄
+
+where P ij = E[x̃i x̃j ], S ijk = E[x̃i x̃j x̃k ], and K ijkl =
+                                                                    A. Approximation of the Mean
+E[x̃i x̃j x̃k x̃l ].
+                                                                       The approximated mean is given as
+                                                                             2n
+B. True Covariance of the Nonlinear Transformation                           X
+                                                                      ˆ=
+                                                                      ȳ           wi λ(χ[i] )
+  The true covariance of y is given as                                       i=0
+                                                                                                                2              3
+                                                                              2n
+                                                                                      "                                                          #
+                P y = E (y − ȳ)(y − ȳ)T
+                                         
+                                                             (52)            X                                 Dχ̃[i]
+                                                                                                                      λ       Dχ̃[i]
+                                                                                                                                     λ
+                                                                         =         wi λ(x̄) + Dχ̃[i] λ +                  +              + ···
+Evaluating the expression y − ȳ, we write                                   i=0
+                                                                                                                 2!             3!
+                                                                                                                2              3
+                                                                                       2n
+                                                                                                  "                                              #
+                  Dx̃2 λ Dx̃3 λ
+                                      2
+                                      Dx̃ λ Dx̃3 λ
+                                                                                      X                       Dχ̃[i]
+                                                                                                                      λ       Dχ̃[i]
+                                                                                                                                     λ
+ y − ȳ = Dx̃ λ +       +        −E        +         + ···               = λ(x̄) +             wi Dχ̃[i] λ +              +              + ···
+                    2!      3!          2!   3!                                          i=1
+                                                                                                                 2!             3!
+                                                       (53)
+                                                                    Using (57), we can evaluate the above equation as
+Substituting (53) into (52) gives                                               
+                                                                                    n                      n
+           
+                              D2 λ(Dx̃ λ)T    Dx̃ λ(Dx̃2 λ)T
+                                                                                X      P ij ∂λ          X     Ŝ ijk    ∂3λ
+ P y = E Dx̃ λ(Dx̃ λ)T + x̃                 +                       ˆ =λ(x̄) +
+                                                                    ȳ                               +
+                                   2!                 2!                        
+                                                                                  i,j=1
+                                                                                           2 ∂xi ∂xj             3! ∂xi ∂xj ∂xk
+                                                                                                       i,j,k=1
+           Dx̃3 λ(Dx̃ λ)T   Dx̃ λ(Dx̃3 λ)T   Dx̃2 λ(Dx̃2 λ)T
+                                                                                                          
+                                                                              n
+        +                 +                +                                 X     K̂ ijkl      ∂4λ        
+                  3!              3!              2! × 2!                +                                         + ···     (58)
+              2   2 T                                                            4! ∂xi ∂xj ∂xk ∂xl 
+                Dx̃ λ     Dx̃ λ                                              i,j,k,l=1
+                                                                                                                      x=x̄
+        +E             E          + ···                     (54)
+                 2!        2!                                                P2n                               P2n
+                                                                    where i=1 wi χ̃ji χ̃ki = P jk , i=1 wi χ̃ji χ̃ki χ̃li = Ŝ jkl
+                                                                         P2n
+We note that we can write the first term in the above equation      and i=1 wi χ̃ji χ̃ki χ̃li χ̃mi = K̂ jklm .
+as                                                                     In the Section IV, we already showed that we can accurately
+                  ∂λ               ∂λT                             capture the diagonal components of the skewness and kurtosis
+E Dx̃ λ(Dx̃ λ)T =         E x̃x̃T                        = λP λT
+                         
+                                                                    tensors because Ŝ jkl = S jkl whenever j = k = l and
+                  ∂x x=x̄            ∂x
+                                                  x=x̄              K̂ jklm = K jklm whenever j = k = l = m. Therefore, by
+                                                             (55)   comparing (58) with the true mean of (51), we can see that
+Using (50) and (55), we can rewrite the true covariance matrix      our sigma points improves on the accuracy of propagating the
+of (54) as                                                          mean of a nonlinear transformation.
+                                 "                                #
+                       n
+            T
+                  X       S ijk       ∂ 2 λ ∂λT       ∂λ ∂ 2 λT     B. Approximation of the Covariance
+Py =λP λ +                                           +
+                             2!     ∂xi ∂xj ∂xk        ∂xi ∂xj ∂xk
+                                                                       The approximated covariance can be evaluated using the
+                 
+                   i,j,k=1
+                                                                     expression
+             n
+                         "
+                                     3           T
+           X                1      ∂ λ        ∂λ
+      +           K ijkl                                                                  2n
+                           3! ∂xi ∂xj ∂xk ∂xl
+                                                                                                                         ˆ T
+                                                                                         X                             
+        i,j,k,l=1
+                                                         #                         P u =                 ˆ Y [i] − ȳ
+                                                                                             wi Y [i] − ȳ                        (59)
+         1 ∂λ       ∂ 3 λT         1 ∂ 2 λ ∂ 2 λT                                        i=1
+      +                         +
+        3! ∂xi ∂xj ∂xk ∂xl         4 ∂xi ∂xj ∂xk ∂xl                 From
+                                                                                                  2           3
+                                 T                                                         Dχ̃     λ Dχ̃       λ
+              n                                                                  ˆ                  [i]         [i]
+                           2                                             Y [i] − ȳ =Dχ̃[i] λ +
+                                              
+             X    P ij   ∂   λ                                                                          +
+      +
+                   2 ∂xi ∂xj
+                                  · · ·           + ···      (56)
+                                                                                          2n
+                                                                                                " 2!2         3!
+                                                                                                                 3
+                                                                                                                          #
+            i,j=1
+                                              
+                                                                                        X        Dχ[j] λ Dχ        [j]
+                                                                                                                        λ
+                                                x=x̄                                   −     wj            +                + ··· (60)
+                                            T          T
+                                                                                                      2!          3!
+where we have used the notation xx = x[· · · ] .                                         j=1
+14
+
+
+
+Substituting (60) into (59) and multiplying out gives                                 [6] P. L. Houtekamer and H. L. Mitchell, “Data assimilation using an
+                                                                                          ensemble kalman filter technique,” Monthly Weather Review, vol. 126,
+                                          2
+                                                λ(Dχ̃[i] λ)T
+            2n
+                  "
+           X                            Dχ̃                                               no. 3, pp. 796–811, 1998.
+                                    T       [i]
+                                                                                      [7] J. L. Anderson, “An ensemble adjustment kalman filter for data assimi-
+    Pu =       wi Dχ̃[i] λ(Dχ̃[i] λ) +
+           i=1
+                                                  2!                                      lation,” Monthly weather review, vol. 129, no. 12, pp. 2884–2903, 2001.
+                                                                                      [8] T. Berry and T. Sauer, “Adaptive ensemble kalman filtering of non-linear
+                          2
+                Dχ̃[i] λ(Dχ̃[i]
+                                λ)T          3
+                                            Dχ̃[i]
+                                                   λ(Dχ̃[i] λ)T                           systems,” Tellus A: Dynamic Meteorology and Oceanography, vol. 65,
+            +                           +                                                 no. 1, p. 20331, 2013.
+                         2!                          3!                               [9] S. J. Julier and J. K. Uhlmann, “A general method for approximating
+                            3
+                                  λ)T        2          2        T
+                                                                   #
+                Dχ̃[i] λ(Dχ̃  [i]
+                                            Dχ̃[i]
+                                                   λ(D  χ̃[i] λ)                          nonlinear transformations of probability distributions,” Robotics Re-
+            +                           +                                                 search Group, University of Oxford, Tech. Rep., 1996.
+                         3!               2! × 2!                                    [10] ——, “Reduced sigma point filters for the propagation of means and
+                                T                                                     covariances through nonlinear transformations,” in Proceedings of the
+                 2n     2                                                                 American Control Conference, 2002, pp. 887–892.
+               X       Dχ [j]
+                              λ
+            +      wj           · · ·  + · · ·                            (61)   [11] G. Kitagawa, “Monte carlo filter and smoother for non-gaussian non-
+                j=1
+                         2!                                                               linear state space models,” Journal of computational and graphical
+                                                                                          statistics, vol. 5, no. 1, pp. 1–25, 1996.
+                                                                                     [12] S. J. Julier and J. K. Uhlmann, “Consistent debiased method for con-
+For the first term in (61),                                                               verting between polar and cartesian coordinate systems,” in Acquisition,
+2n                                 n X
+                                     2n
+                                                                                          Tracking, and Pointing XI, vol. 3086, 1997, pp. 110–121.
+X                                  X                           ∂λ ∂λT                [13] Y. Rui and Y. Chen, “Better proposal distributions: Object tracking using
+      wi Dχ̃[i] λ(Dχ̃[i] λ)T =                  wi χ̃ji χ̃ki                              unscented particle filter,” in Proceedings of the IEEE Conference on
+i=1
+                                                               ∂xj ∂xk                    Computer Vision and Pattern Recognition, vol. 2, 2001, pp. 786—-793.
+                                   j,k=1 i=1                                  x=x̄
+                                     n                                               [14] R. Van Der Merwe, A. Doucet, N. De Freitas, and E. A. Wan, “The
+                                    X       ∂λ           ∂λT                              unscented particle filter,” in Advances in neural information processing
+                               =                     Pjk                                  systems, 2001, pp. 584–590.
+                                            ∂xj x=x̄     ∂xk                         [15] X. Luo and I. M. Moroz, “Ensemble kalman filter with the unscented
+                                   j,k=1                               x=x̄
+                                            T                                             transform,” Physica D: Nonlinear Phenomena, vol. 238, no. 5, pp. 549–
+                               = λP λ                                         (62)        562, 2009.
+                                                                                     [16] D. Simon, “Kalman filtering with state constraints: a survey of linear
+Using (57) and (62), we can rewrite the approximated covari-                              and nonlinear algorithms,” IET Control Theory & Applications, vol. 4,
+ance matrix of (61) as                                                                    no. 8, pp. 1303–1318, 2010.
+                                                                                    [17] Y. Cheng and Z. Liu, “Optimized selection of sigma points in the
+                       n
+                                   "                           #                          unscented kalman filter,” in International Conference on Electrical and
+           T
+                 X         Ŝ ijk    ∂ 2 λ ∂λT     ∂λ ∂ 2 λT                             Control Engineering. IEEE, 2011, pp. 3073–3075.
+Pu =λP λ +                                       +                                   [18] E. Simons, M. Ferrari, J. Fricks, K. Wannemuehler, A. Anand, A. Bur-
+                             2!     ∂xi ∂xj ∂xk    ∂xi ∂xj xk
+                   i,j,k=1                                                                ton, and P. Strebel, “Assessment of the 2010 global measles mortality
+            n
+                          "                                                               reduction goal: results from a model of surveillance data,” The Lancet,
+           X                 1      ∂3λ      ∂λT                                          vol. 379, no. 9832, pp. 2173–2178, 2012.
+     +            K̂ ijkl                                                            [19] S. Chen, J. Fricks, and M. J. Ferrari, “Tracking measles infection through
+                            3! ∂xi ∂xj ∂xk ∂xl
+        i,j,k,l=1                                                                         non-linear state space models,” Journal of the Royal Statistical Society:
+                                                      #                                   Series C (Applied Statistics), vol. 61, no. 1, pp. 117–134, 2012.
+        1 ∂λ         ∂ 3 λT         1 ∂ 2 λ ∂ 2 λT                                   [20] C. Bretó, D. He, E. L. Ionides, A. A. King et al., “Time series analysis
+      +                           +                                                       via mechanistic models,” The Annals of Applied Statistics, vol. 3, no. 1,
+        3! ∂xi ∂xj ∂xk ∂xl          4 ∂xi ∂xj ∂xk ∂xl
+                                                                                          pp. 319–348, 2009.
+                                       T                                        [21] J. Shaman and A. Karspeck, “Forecasting seasonal outbreaks of in-
+              n             2
+                                             
+            X     P ij ∂ λ                                                             fluenza,” Proceedings of the National Academy of Sciences, vol. 109,
+     +                               ···        + ···      (63)                         no. 50, pp. 20 425–20 430, 2012.
+             i,j=1
+                   2 ∂xi ∂xj                 
+                                                                                    [22] T. K. Yamana, S. Kandula, and J. Shaman, “Superensemble forecasts of
+                                                     x=x̄                                 dengue outbreaks,” Journal of The Royal Society Interface, vol. 13, no.
+                                                                                          123, p. 20160410, 2016.
+Comparing (63) with the true covariance of (56), we can see                          [23] D. Ndanguza, I. S. Mbalawata, H. Haario, and J. M. Tchuenche,
+that our sigma points improves on the accuracy of propagating                             “Analysis of bias in an ebola epidemic model by extended kalman filter
+the covariance of a nonlinear transformation because we are                               approach,” Mathematics and Computers in Simulation, vol. 142, pp.
+                                                                                          113–129, 2017.
+able to accurately capture the diagonal components of the                            [24] B. Cazelles and N. P. Chau, “Using the kalman filter and dynamic models
+skewness and kurtosis tensors.                                                            to assess the changing HIV/AIDS epidemic,” Mathematical Biosciences,
+                                                                                          vol. 140, no. 2, pp. 131–154, 1997.
+                                                                                     [25] D. Ebeigbe, T. Berry, S. J. Schiff, and T. Sauer, “A poisson kalman
+                              R EFERENCES                                                 filter to control the dynamics of neonatal sepsis and postinfectious
+                                                                                          hydrocephalus,” Physical Review Research, vol. 2, no. 4, 2020.
+ [1] D. Simon, Optimal state estimation: Kalman, H infinity, and nonlinear           [26] R. Li, S. Pei, B. Chen, Y. Song, T. Zhang, W. Yang, and J. Shaman,
+     approaches. John Wiley & Sons, 2006.                                                 “Substantial undocumented infection facilitates the rapid dissemination
+ [2] R. Kandepu, L. Imsland, and B. A. Foss, “Constrained state estimation                of novel coronavirus (SARS-CoV-2),” Science, vol. 368, no. 6490, pp.
+     using the unscented kalman filter,” in 16th Mediterranean Conference                 489–493, 2020.
+     on Control and Automation, 2008, pp. 1453–1458.                                 [27] L. J. Curtis, “Simple formula for the distortions in a gaussian represen-
+ [3] R. Izanloo, S. A. Fakoorian, H. S. Yazdi, and D. Simon, “Kalman                      tation of a poisson distribution,” American Journal of Physics, vol. 43,
+     filtering based on the maximum correntropy criterion in the presence of              no. 12, pp. 1101–1103, 1975.
+     non-gaussian noise,” in 50th Annual Conference on Information Science           [28] K. Ponomareva, P. Date, and Z. Wang, “A new unscented kalman
+     and Systems (CISS), 2016, pp. 530–535.                                               filter with higher order moment-matching,” Proceedings of Mathematical
+ [4] F. Gustafsson and G. Hendeby, “Some relations between extended and                   Theory of Networks and Systems (MTNS 2010), Budapest, 2010.
+     unscented kalman filters,” IEEE Transactions on Signal Processing,              [29] O. Straka, J. Dunı́k, M. Šimandl, and E. Blasch, “Randomized unscented
+     vol. 60, no. 2, pp. 545–555, 2011.                                                   transform in state estimation of non-gaussian systems: Algorithms and
+ [5] G. Evensen, “Sequential data assimilation with a nonlinear quasi-                    performance,” in 2012 15th International Conference on Information
+     geostrophic model using monte carlo methods to forecast error statis-                Fusion. IEEE, 2012, pp. 2004–2011.
+     tics,” Journal of Geophysical Research: Oceans, vol. 99, no. C5, pp.            [30] J. Rezaie and J. Eidsvik, “A skewed unscented kalman filter,” Interna-
+     10 143–10 162, 1994.                                                                 tional Journal of Control, vol. 89, no. 12, pp. 2572–2583, 2016.
+                                                                                 15
+
+
+
+[31] J. Hou, W. Zhou, W.-A. Zhang, C. Zhang, C. Chen, and C. Shan,
+     “High-order unscented transformation based on the bayesian learning for
+     nonlinear systems with non-gaussian noises,” in 2019 15th International
+     Conference on Computational Intelligence and Security (CIS). IEEE,
+     2019, pp. 26–30.
+[32] D. C. Easley and T. Berry, “A higher order unscented transform,”
+     SIAM/ASA Journal on Uncertainty Quantification, vol. 9, no. 3, pp.
+     1094–1131, 2021.
+[33] H. M. Menegaz, J. Y. Ishihara, G. A. Borges, and A. N. Vargas, “A sys-
+     tematization of the unscented kalman filter theory,” IEEE Transactions
+     on automatic control, vol. 60, no. 10, pp. 2583–2598, 2015.
+[34] K. Pearson, “Mathematical contributions to the theory of evolu-
+     tion.—XIX. Second supplement to a memoir on skew variation,” Philo-
+     sophical Transactions of the Royal Society of London, Series A, vol.
+     216, no. 538-548, pp. 429–457, 1916.
+[35] A. Papoulis and S. U. Pillai, Probability, random variables, and stochas-
+     tic processes, 4th ed. Tata McGraw-Hill Education, 2002.
+[36] S. J. Julier and J. K. Uhlmann, “Unscented filtering and nonlinear
+     estimation,” Proceedings of the IEEE, vol. 92, no. 3, pp. 401–422, 2004.
+[37] M. J. Keeling and P. Rohani, Modeling infectious diseases in humans
+     and animals. Princeton university press, 2011.
+[38] “Generalized unscented transform MATLAB® source code,”
+     https://github.com/Schiff-Lab/Generalized-Unscented-Transform,
+     Accessed: 11-11-2021.
+

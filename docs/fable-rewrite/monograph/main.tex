@@ -1,0 +1,112 @@
+\documentclass[12pt,a4paper,openany]{book}
+
+\input{preamble}
+
+\title{\Huge\textbf{BayesFilter}\\[12pt]
+  \Large Bayesian Estimation for Structural State-Space Models\\[4pt]
+  \large HMC-Safe Filtering, Analytic Likelihood Derivatives,\\
+  and Industrial-Scale Inference}
+\author{Chak Wong}
+\date{\today}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+\tableofcontents
+
+\mainmatter
+
+\part{Scope and Interfaces}
+\input{chapters/ch01_introduction}
+\input{chapters/ch02_state_space_contracts}
+\input{chapters/ch03_hmc_target_requirements}
+\input{chapters/ch04_bayesfilter_api}
+
+\part{Linear Gaussian Filtering}
+\input{chapters/ch05_prediction_error_decomposition}
+\input{chapters/ch06_stable_linear_filtering}
+\input{chapters/ch07_missing_data_mixed_frequency}
+\input{chapters/ch08_large_scale_lgssm}
+
+\part{Analytic Derivatives}
+\input{chapters/ch09_kalman_score}
+\input{chapters/ch10_kalman_hessian}
+\input{chapters/ch11_structural_derivatives}
+\input{chapters/ch12_factor_derivatives}
+\input{chapters/ch13_custom_gradient_wrappers}
+\input{chapters/ch14_derivative_validation}
+
+\part{Nonlinear Filtering}
+\input{chapters/ch15_ekf}
+\input{chapters/ch16_sigma_point_filters}
+\input{chapters/ch17_square_root_sigma_point}
+\input{chapters/ch18_svd_sigma_point}
+\input{chapters/ch18b_structural_deterministic_dynamics}
+
+\part{Particle Foundations and Proposal Transport}
+\input{chapters/ch19_particle_filters}
+\input{chapters/ch19b_dpf_literature_survey}
+\input{chapters/ch19c_dpf_implementation_literature}
+
+\part{Differentiable Resampling and Transport}
+\input{chapters/ch32a_soft_differentiable_resampling}
+\input{chapters/ch32b_deterministic_ot_equalweighting}
+\input{chapters/ch32c_entropic_ot_sinkhorn}
+\input{chapters/ch32c2_ledh_pfpf_ot_custom_gradient}
+
+\part{Learned Transport Extensions}
+\input{chapters/ch32d_retained_teacher_neural_ot}
+\input{chapters/ch32e_icnn_brenier_monge_gap_map_learning}
+\input{chapters/ch32f_dynamic_geodesic_operator_learning_target_contract}
+
+\part{HMC Target Interpretation, Verification, and Filter Choice}
+\input{chapters/ch19e_dpf_hmc_target_suitability}
+\input{chapters/ch19f_dpf_debugging_crosswalk}
+\input{chapters/ch20_filter_choice}
+
+\part{High-Dimensional Nonlinear Filtering}
+\input{chapters/ch33_highdim_nonlinear_filtering_foundations}
+\input{chapters/ch34_highdim_gaussian_projection_and_point_rule_foundations}
+\input{chapters/ch35_highdim_sparse_grid_quadrature_and_fixed_cloud_scalar}
+\input{chapters/ch35b_highdim_fixed_cloud_filtering_and_sgqf_validation}
+\input{chapters/ch36_highdim_low_rank_density_filters_and_kr_maps}
+\input{chapters/ch36b_highdim_squared_tt_recursion_and_fixed_branch_likelihoods}
+\input{chapters/ch37_highdim_fixed_branch_likelihoods_and_same_scalar_gradients}
+\input{chapters/ch38_highdim_validation_defect_calculus_and_promotion}
+
+\part{HMC, Geometry, and Diagnostics}
+\input{chapters/ch21_hmc_for_state_space}
+\input{chapters/ch22_mass_matrices}
+\input{chapters/ch23_boundary_gradients}
+\input{chapters/ch24_xla_jit}
+\input{chapters/ch25_diagnostics}
+\input{chapters/ch26_transport_surrogates}
+\input{chapters/ch26b_neutra_transport_hmc}
+\input{chapters/ch26c_hnn_surrogate_hmc}
+
+\part{Industrial Applications and Case Studies}
+\input{chapters/ch27_lgssm_validation}
+\input{chapters/ch28_nonlinear_ssm_validation}
+\input{chapters/ch28a_neural_network_state_space_model_applications}
+\input{chapters/ch29_nk_svd_case_study}
+\input{chapters/ch30_cip_afns_case_study}
+\input{chapters/ch31_nawm_design_target}
+\input{chapters/ch32_production_checklist}
+
+\appendix
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
+\input{appendices/app_a_notation}
+\input{appendices/app_b_matrix_calculus}
+\input{appendices/app_c_factor_derivative_proofs}
+\input{appendices/app_d_mathdevmcp_workflows}
+\input{appendices/app_e_researchassistant_workflows}
+\input{appendices/app_f_source_map}
+\input{appendices/app_g_experiment_templates}
+
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

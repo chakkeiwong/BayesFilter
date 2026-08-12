@@ -1,0 +1,354 @@
+\chapter{Low-Rank Density Filters, KR Maps, and Retained Objects}
+\label{ch:bf-highdim-low-rank-density-kr}
+\label{ch:bf-highdim-particle-transport-tensor}
+\label{prop:bf-hd-corrected-proposal}
+
+\section{Orientation And Scope}
+\label{sec:bf-hd-ttkr-purpose}
+
+This chapter studies a high-dimensional nonlinear filtering problem through the
+lens of one specific computational object: a low-rank non-Gaussian retained
+representation built from tensor-train density approximations, conditional
+Knothe--Rosenblatt maps, and squared-density repair.  The exact target remains
+the filtering law and normalizer from
+Chapter~\ref{ch:bf-highdim-nonlinear-foundations}; the approximation here is the
+retained low-rank density or retained-object representation that numerically
+replaces that law.
+
+The scientific tension is the same one that appears across many high-dimensional
+filtering problems.  The exact Bayesian recursion propagates a full conditional
+law, but once the model is nonlinear that law is usually not available in a
+finite-dimensional closed form.  Zhao and Cui answer that tension with a
+non-Gaussian density-approximation lane based on tensor trains,
+squared-density repair, conditional KR maps, and preconditioning.  The purpose
+of this chapter is to make that retained-object construction readable in source
+order and to state clearly what object is being carried, normalized, updated,
+and later handed to the shared fixed-branch derivative chapter.
+
+\paragraph{What this chapter does not claim.}
+This chapter does not claim that adaptive TT/KR algorithms are globally smooth,
+that moderate TT rank is always sufficient in high dimension, or that a retained
+low-rank object automatically yields an exact posterior target for HMC.  Its
+purpose is narrower: define the retained object, explain when that object is
+scientifically meaningful, and state the diagnostics that later chapters must use
+before promotion.
+
+\section{Running Example And Notation}
+\label{sec:bf-hd-ttkr-notation}
+
+The running nonlinear example should stay conceptually continuous with the rest
+of the block, but the retained-object lane needs a slightly richer notation than
+the deterministic Gaussian lane.  The key distinction is between:
+\begin{itemize}[leftmargin=0.28in]
+  \item the exact Bayesian target law and its normalizer,
+  \item the adaptive low-rank approximation family that numerically replaces it,
+  \item and the fixed-branch scalar/derivative objects that later chapters may
+  define from a frozen member of that family.
+\end{itemize}
+The method uses state variables \(x_t\), observation variables \(y_t\), and a
+static parameter \(\alpha\).  Coordinate group notation such as
+\(x_{t,<j},x_{t,>j},x_{t,\le j},x_{t,\ge j}\) matters because conditional
+transport and conditional density construction are coordinate-local operations.
+For TT/KR methods, the essential bookkeeping objects are coordinate groups,
+conditional densities, retained marginal/filter objects, and any Jacobian terms
+needed when the retained object is moved into preconditioned coordinates.
+
+\section{Exact Filtering Target And Recursive Bottleneck}
+\label{sec:bf-hd-ttkr-exact-target}
+
+The retained-object lane starts from the same target discipline as the rest of
+the block.  At time \(t\), the filtering problem is to update
+\[
+  p(x_t,\alpha\mid y_{1:t}),
+\]
+and the path problem is to update
+\[
+  p(x_{0:t},\alpha\mid y_{1:t}).
+\]
+After observing \(y_t\), the exact adjacent-state target has the three-block
+form
+\[
+  q_t(x_t,\alpha,x_{t-1})
+  =
+  p(x_{t-1},\alpha\mid y_{1:t-1})
+  f_\alpha(x_t\mid x_{t-1})
+  g_\alpha(y_t\mid x_t),
+\]
+and the next filter is obtained by integrating out \(x_{t-1}\) and normalizing.
+The bottleneck is therefore always the same: how to represent this object and
+how to integrate the represented object without returning to an infeasible full
+grid.
+
+Implementation object.  A minimal implementation must expose evaluators for the
+previous retained filter, the transition density, and the observation density,
+then build an evaluator for the three-block target.  The first failure check is
+that this target must be finite and nonnegative at all fitting points; otherwise
+neither a square root nor an importance weight is meaningful.
+
+\section{Tensor-Train Approximation Toolkit}
+\label{sec:bf-hd-tt-toolkit}
+
+A tensor train is a compressed representation of a multidimensional array or
+function.  For a grid tensor \(A(i_1,\ldots,i_D)\), the TT format writes
+\begin{equation}
+  A(i_1,\ldots,i_D)=G_1(i_1)G_2(i_2)\cdots G_D(i_D),
+  \label{eq:bf-hd-tt-format}
+\end{equation}
+where the \(G_k(i_k)\) are small matrices with connecting ranks.  If the mode
+size is \(M\) and ranks are bounded by \(r\), storage is \(O(DMr^2)\) instead
+of \(O(M^D)\).  The key condition is rank stability: if ranks grow with the
+effective dimension, the compression disappears.
+
+The chapter uses this toolkit for filtering objects, not for abstract storage
+arithmetic alone.  The object being approximated may be a density, an
+unnormalized adjacent-state target, a retained marginal, or a conditional map.
+The approximation only helps if the represented object remains interpretable as a
+probability or retained filtering quantity after truncation, marginalization, and
+normalization.
+
+\subsection{Rank-Count Plausibility}
+\label{sec:bf-hd-rank-plausibility}
+
+The method is plausible when the posterior geometry has limited interaction width
+after ordering and preconditioning.  If every coordinate uses \(p\) basis
+functions and the function has \(D\) coordinates, a full tensor stores
+\(p^D\) coefficients, while a TT with moderate ranks stores approximately
+\(DpR^2\) coefficients.  This is the theorem-to-implementation bridge: low-rank
+structure is not decoration, but the empirical condition under which the method
+escapes the full-grid curse of dimensionality.
+
+Rank diagnostics therefore belong to the method contract.  If fitted ranks grow
+persistently toward the cap or if conditioning deteriorates at the same time,
+then the chosen ordering, basis, or preconditioner is not expressing the target
+compactly.
+
+\section{Coordinate Systems, Conditional Maps, And Retained Objects}
+\label{sec:bf-hd-ttkr-coordinates}
+
+The retained-object lane uses several coordinate systems because different
+operations are easiest in different spaces.  Let
+\begin{equation}
+  r=(x_t,\alpha,x_{t-1})
+  \label{eq:bf-hd-coord-physical}
+\end{equation}
+denote physical filtering coordinates.  A domain map sends a reference cube
+coordinate \(z\in[-1,1]^D\) to physical coordinates:
+\begin{equation}
+  r=\Psi_t(z),
+  \qquad
+  J_{\Psi,t}(z)=\left|\det\nabla\Psi_t(z)\right|.
+  \label{eq:bf-hd-coord-domain}
+\end{equation}
+The target seen by the TT in reference coordinates is
+\begin{equation}
+  \widetilde q_t(z)=q_t(\Psi_t(z))J_{\Psi,t}(z).
+  \label{eq:bf-hd-coord-reference-density}
+\end{equation}
+Thus \(z\) is the coordinate in which basis functions, fitting points, and mass
+matrices are declared.
+
+Preconditioning introduces another coordinate \(u\).  Let \(T_t\) be an
+invertible map from physical coordinates to a preconditioned coordinate:
+\begin{equation}
+  u=T_t(r),
+  \qquad
+  r=T_t^{-1}(u).
+  \label{eq:bf-hd-coord-preconditioner}
+\end{equation}
+If \(\eta(u)\) is the reference density used in \(u\)-space, then
+\begin{equation}
+  q_t(r)\dd r
+  =
+  q_t(T_t^{-1}(u))\left|\det\nabla T_t^{-1}(u)\right|\dd u.
+  \label{eq:bf-hd-coord-density-u}
+\end{equation}
+The retained coordinate \(z_t\) is the part of the reference coordinate retained
+after marginalizing the previous state:
+\begin{equation}
+  z=(z_t,z_{t-1}),
+  \qquad
+  a_t(z_t)=\int \widehat q_t(z_t,z_{t-1})\dd z_{t-1},
+  \label{eq:bf-hd-coord-retained}
+\end{equation}
+and
+\begin{equation}
+  \widehat p_t(z_t)=\frac{a_t(z_t)}{\widehat Z_t}.
+  \label{eq:bf-hd-coord-retained-filter}
+\end{equation}
+Most implementation mistakes in this lane are coordinate mistakes: using a
+physical density in reference coordinates without the Jacobian, applying a KR map
+in \(u\)-space to a point still in \(r\)-space, or carrying a retained filter in
+\(z_t\) while evaluating it as if it were already a physical density.
+
+\subsection{One Observation Step Through All Coordinate Systems}
+\label{sec:bf-hd-ttkr-coordinate-walkthrough}
+
+The symbols \(r,z,u,z_t\) become easier to track when one observation update is
+written as a single chain.  Begin in physical coordinates
+\begin{equation}
+  r=(x_t,\alpha,x_{t-1}),
+  \qquad
+  q_t(r)=
+  \widehat p_{t-1}(x_{t-1},\alpha)
+  f_\alpha(x_t\mid x_{t-1})
+  g_\alpha(y_t\mid x_t).
+  \label{eq:bf-hd-ttkr-walk-physical}
+\end{equation}
+A domain map
+\begin{equation}
+  r=\Psi_t(z),
+  \qquad
+  z\in[-1,1]^D,
+  \qquad
+  J_{\Psi,t}(z)=|\det\nabla\Psi_t(z)|
+  \label{eq:bf-hd-ttkr-walk-domain}
+\end{equation}
+turns the physical density into a reference-coordinate density
+\begin{equation}
+  \widetilde q_t(z)=q_t(\Psi_t(z))J_{\Psi,t}(z).
+  \label{eq:bf-hd-ttkr-walk-reference}
+\end{equation}
+The squared-TT route fits a source-scale square root in reference coordinates and
+then returns to the unshifted evidence scale through
+\begin{equation}
+  q_{t,{\rm src}}(z)=\phi_t(z)^2+\tau_t\lambda_t(z),
+  \qquad
+  \widehat q_t(z)=e^{-c_t}q_{t,{\rm src}}(z).
+  \label{eq:bf-hd-ttkr-walk-source-evidence}
+\end{equation}
+The carried filter is not the full joint object.  If \(z=(z_t,z_{t-1})\), then
+\begin{equation}
+  a_t(z_t)=\int \widehat q_t(z_t,z_{t-1})\dd z_{t-1},
+  \qquad
+  \widehat p_t^{\rm ref}(z_t)=\frac{a_t(z_t)}{\widehat Z_t}.
+  \label{eq:bf-hd-ttkr-walk-retained}
+\end{equation}
+If a later formula needs the filter as a physical density, write
+\begin{equation}
+  (x_t,\alpha)=\Psi_{t,{\rm ret}}(z_t),
+  \qquad
+  \widehat p_t^{\rm phys}(x_t,\alpha)=
+  \widehat p_t^{\rm ref}(\Psi_{t,{\rm ret}}^{-1}(x_t,\alpha))
+  \left|\det\nabla\Psi_{t,{\rm ret}}^{-1}(x_t,\alpha)\right|.
+  \label{eq:bf-hd-ttkr-walk-physical-filter}
+\end{equation}
+The bookkeeping rule is: \(\widetilde q_t(z)\), \(a_t(z_t)\), \(\widehat Z_t\),
+and \(\widehat p_t^{\rm ref}(z_t)\) are reference-coordinate objects integrated
+with \(\dd z\); \(\widehat p_t^{\rm phys}\) is the corresponding physical
+object after the declared Jacobian correction.
+
+Preconditioning inserts one additional coordinate \(u\).  A bridge density
+\(\rho_t(r)\) and map \(T_t:r\mapsto u\) are chosen so that the dominant shape
+of \(q_t\) is easier in \(u\)-space.  The residual target is
+\begin{equation}
+  q_t^\sharp(u)=
+  \frac{q_t(T_t^{-1}(u))}{\widehat\rho_t(T_t^{-1}(u))}\eta(u),
+  \label{eq:bf-hd-ttkr-walk-residual}
+\end{equation}
+and the pullback relation after fitting is
+\begin{equation}
+  \widehat q_t(r)=
+  \frac{\widehat\nu_t^\sharp(T_t(r))}{\eta(T_t(r))}\widehat\rho_t(r).
+  \label{eq:bf-hd-ttkr-walk-pullback}
+\end{equation}
+Thus the full coordinate story of one observation step is
+\begin{equation}
+  q_t(r)
+  \to
+  \widetilde q_t(z)
+  \to
+  \widehat q_t(z)
+  \to
+  \widehat p_t^{\rm ref}(z_t)
+  \to
+  \widetilde q_{t+1}(z_{t+1},z_t),
+  \label{eq:bf-hd-ttkr-walk-full-chain}
+\end{equation}
+with the preconditioned route adding
+\begin{equation}
+  q_t(r)\to q_t^\sharp(u)\to\widehat\nu_t^\sharp(u)\to\widehat q_t(r).
+  \label{eq:bf-hd-ttkr-walk-preconditioned-chain}
+\end{equation}
+The filtering task does not change; only the coordinate system in which the hard
+part of the density is approximated changes.
+
+\section{TT Sequential Learning And Conditional KR Transports}
+\label{sec:bf-hd-zhao-cui}
+
+\citet{zhao2024ttsequential} is the central discrete-time TT source for this
+lane.  Its checked role here is direct: the chapter uses the paper’s sequential
+state-and-parameter learning setup, its posterior-density approximation view,
+and its conditional Knothe--Rosenblatt map construction from a TT approximation.
+
+A nonnegative TT approximation supplies conditional density factors or
+conditional cumulative distribution functions.  A triangular conditional map can
+then be constructed from one-dimensional conditional CDFs, which is the KR
+transport idea in operational form.  For BayesFilter this is attractive because
+it connects low-rank density approximation to transport preconditioning.  It
+remains conditional because normalization, monotonicity, rank error, and
+Jacobian stability are part of the method, not afterthoughts.
+
+\section{What This Chapter Exports Forward}
+\label{sec:bf-hd-ttkr-front-half-exports}
+
+At the end of this front-half chapter, the retained-object lane has fixed the
+objects that later operational chapters are allowed to manipulate:
+\begin{enumerate}[leftmargin=0.28in]
+  \item the adjacent-state target and its coordinate systems,
+  \item the TT approximation toolkit and rank-count plausibility logic,
+  \item the retained numerator \(a_t\) and normalized carried filter
+  \(\widehat p_t\),
+  \item the KR / preconditioning map perspective,
+  \item the core diagnostics that decide whether the retained object remains
+  scientifically meaningful.
+\end{enumerate}
+The next chapter,
+Chapter~\ref{ch:bf-highdim-squared-tt-fixed-branch-likelihoods}, then takes up
+the operational middle: squared-TT recursion, fixed-branch likelihood
+construction, stored fields, and the exact scalar object exported to the
+same-scalar derivative chapter.
+
+\section{Tensor-Network Kalman And Square-Root Caution}
+\label{sec:bf-hd-tn-kalman}
+
+Tensor-network covariance compression is included here only as a cautionary
+adjacent lane.  If a covariance-like object is compressed, the method must expose
+either a PSD reconstruction check or a factor/square-root representation whose
+product is positive semidefinite by construction.  This material remains
+secondary to the retained TT/KR density lane; it is kept because it clarifies one
+important boundary between density compression and covariance compression.
+
+\section{Complexity, Diagnostics, And Exports}
+\label{sec:bf-hd-ttkr-complexity}
+
+The retained-object lane exports five primary diagnostics:
+\begin{enumerate}[label=(\arabic*), leftmargin=0.28in]
+  \item rank growth,
+  \item normalization/mass error,
+  \item positivity / nonnegativity construction,
+  \item support / Jacobian / map validity,
+  \item retained-object consistency for the next time step.
+\end{enumerate}
+These diagnostics are not side comments; they are the mechanism by which the
+chapter decides whether the retained object remains scientifically meaningful.
+
+\paragraph{Exported forward.}
+The next operational chapter may import only the retained-object scalar
+ingredients and branch-defining structural choices that this chapter makes
+explicit.  The later validation/promotions chapter may import only the defects,
+diagnostics, promotion gates, and source-risk boundaries stated here.  Neither
+later chapter should silently strengthen TT/KR transport existence,
+branch-local differentiability, or retained-object feasibility beyond what the
+checked sources support.
+
+\section{Methodological Boundary And Sources}
+\label{sec:bf-hd-ptt-boundary}
+
+The substantive claims in this chapter are tied to TT, KR, transport, and
+adjacent tensor-network sources where their checked constructions are used.
+Savostyanov maxvol theory and Knothe's original rearrangement source were not
+inspected directly here; the chapter therefore uses Oseledets--Tyrtyshnikov for
+TT-cross and Rosenblatt plus modern transport-filtering papers for triangular
+maps.  No source here is used to claim production readiness, NAWM readiness,
+posterior accuracy, tensor-method validation, transport-method validation, HMC
+convergence, GPU/XLA readiness, or default readiness.

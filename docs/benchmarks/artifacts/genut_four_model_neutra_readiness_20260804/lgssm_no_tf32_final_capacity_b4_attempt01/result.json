@@ -1,0 +1,301 @@
+{
+  "adapter_signature": "cc0afdfeecf51acb6bedcd8b98e93b1772d9159dad6e02b4b17e90f9e16015b9",
+  "batch_binding": {
+    "adapter_signature": "cc0afdfeecf51acb6bedcd8b98e93b1772d9159dad6e02b4b17e90f9e16015b9",
+    "backend_id": "tensorflow_batch_native_genut_forward_jvp_fp32",
+    "callable_module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+    "callable_qualname": "GenUTNeuTraTargetAdapter.neutra_batch_log_prob_and_grad_status",
+    "callable_source_sha256": "429e5861fb0ae6eb2fd206d525408ed88ea79e06c6eab71ead108f59a3b6f09b",
+    "dependency_callable_sources": [
+      {
+        "global_name": "_posterior_value_score_status",
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "qualname": "_posterior_value_score_status",
+        "source_sha256": "4d1788e96192c168ab1e1457530255645997208a771b5d1e80c2fb353c105daf"
+      }
+    ],
+    "dependency_closure_sha256": "3a9499222a3ab39d1d2243526bbebefaa7e3467765de018e0c9042e2e5e60adf",
+    "dependency_module_sources": [
+      {
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "source_sha256": "e4b191d420fb2180eb5730d8433589696fecbc83eba91de82e4eecbc76db28e4"
+      }
+    ],
+    "evidence_path": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+    "jit_compile_required": true,
+    "method_name": "neutra_batch_log_prob_and_grad_status",
+    "minimum_batch_size": 2,
+    "row_mapped_scalar_target_used": false,
+    "sample_axis_python_loop_used": false,
+    "scalar_fallback_used": false,
+    "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+    "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+    "status_telemetry_required": true,
+    "target_scope": "GENUT-lgssm-fixed-posterior-v1",
+    "target_signature": "f33c1f18fe35871d26d5143e8063fb92a88044431e17ff453da93f3f9628aeaa"
+  },
+  "batch_size": 4,
+  "compile_and_first_run_seconds": 9.53496381099103,
+  "control_status": "repository_tuning_artifact_bound",
+  "controls": {
+    "balance_steps": 8,
+    "epsilon": 2.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_strength": 0.2,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8,
+    "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_tuning_attempt01/result.json",
+    "tuning_scope": "lgssm_T50_N1008_initial_observation_first_fp32_no_tf32_deterministic_v2"
+  },
+  "deterministic_ops_enabled": true,
+  "dtype": "float32_filter_float64_posterior",
+  "endpoint": [
+    -141.85620425679778,
+    -141.85829177285683,
+    -141.8613342227266,
+    -141.86534686519622
+  ],
+  "endpoint_compile_and_first_run_seconds": 3.286782242998015,
+  "endpoint_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "endpoint_status": {
+    "floor_count_value": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "max_col_residual": [
+      1.3515353202819824e-05,
+      1.3388693332672119e-05,
+      1.3232231140136719e-05,
+      1.3180077075958252e-05
+    ],
+    "max_mean_residual": [
+      1.1920928955078125e-07,
+      5.960464477539063e-08,
+      1.1920928955078125e-07,
+      1.1920928955078125e-07
+    ],
+    "max_row_residual": [
+      1.5029218047857285e-07,
+      1.4994293451309204e-07,
+      1.501757651567459e-07,
+      1.491280272603035e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.6687703132629395,
+      0.6690545082092285,
+      0.6693034172058105,
+      0.6695199012756348
+    ],
+    "maximum_skew_residual": [
+      0.32912856340408325,
+      0.3275696635246277,
+      0.32600075006484985,
+      0.32442140579223633
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.0459335520863533,
+      0.04616400599479675,
+      0.04639538750052452,
+      0.04662759602069855
+    ],
+    "status_code": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "finite_difference": null,
+  "finite_difference_gate_passed": true,
+  "gpu_allocator": {
+    "current_bytes": 893184,
+    "peak_bytes": 269325312
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "model": "lgssm",
+  "nonclaims": [
+    "capacity, replay, endpoint, and optional FD diagnostic only",
+    "no NeuTra training, HMC, convergence, or posterior claim"
+  ],
+  "particle_count": 1008,
+  "passed_capacity_replay_endpoint_gate": true,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "same_process_endpoint_replay_max_absolute_error": 0.0,
+  "same_process_score_replay_max_absolute_error": 0.0,
+  "same_process_value_replay_max_absolute_error": 0.0,
+  "schema": "bayesfilter.genut_four_model_neutra_readiness_cell.v1",
+  "score": [
+    [
+      0.7394290965149095,
+      -2.5526316765971413,
+      0.1363868641289674,
+      -0.34566840057940396,
+      0.8415474427958678
+    ],
+    [
+      0.6956313138711998,
+      -2.5700271707962026,
+      0.125956294509791,
+      -0.6290175569914702,
+      0.452759669369355
+    ],
+    [
+      0.6521932466943836,
+      -2.5873534323574843,
+      0.11548092001121163,
+      -0.9108280414535674,
+      0.06603087374858907
+    ],
+    [
+      0.6091148151002346,
+      -2.6046144459683487,
+      0.10496305644999293,
+      -1.1911353738498132,
+      -0.31871032329314686
+    ]
+  ],
+  "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "status": {
+    "floor_count_value": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "max_col_residual": [
+      1.3515353202819824e-05,
+      1.3358891010284424e-05,
+      1.325458288192749e-05,
+      1.3142824172973633e-05
+    ],
+    "max_mean_residual": [
+      1.1920928955078125e-07,
+      1.1920928955078125e-07,
+      1.1920928955078125e-07,
+      1.1920928955078125e-07
+    ],
+    "max_row_residual": [
+      1.5029218047857285e-07,
+      1.5029218047857285e-07,
+      1.498265191912651e-07,
+      1.4936085790395737e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.6687483787536621,
+      0.6690378189086914,
+      0.6693148612976074,
+      0.6695232391357422
+    ],
+    "maximum_skew_residual": [
+      0.32912755012512207,
+      0.3275691866874695,
+      0.3260009288787842,
+      0.3244209289550781
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.04593353345990181,
+      0.046164028346538544,
+      0.04639540612697601,
+      0.04662759602069855
+    ],
+    "status_code": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "target_scope": "GENUT-lgssm-fixed-posterior-v1",
+  "target_signature": "f33c1f18fe35871d26d5143e8063fb92a88044431e17ff453da93f3f9628aeaa",
+  "tf32_enabled": false,
+  "value": [
+    -141.85621951558684,
+    -141.8583070316459,
+    -141.8613342227266,
+    -141.86534686519622
+  ],
+  "value_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "value_endpoint_max_absolute_error": 1.52587890625e-05,
+  "value_endpoint_max_relative_error": 1.0756517489755462e-07,
+  "wall_time_seconds": 15.387931361969095,
+  "warm_replay_seconds": 0.8556713950238191
+}

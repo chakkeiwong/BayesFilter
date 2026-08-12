@@ -1,0 +1,260 @@
+{
+  "adapter_signature": "cc0afdfeecf51acb6bedcd8b98e93b1772d9159dad6e02b4b17e90f9e16015b9",
+  "batch_binding": {
+    "adapter_signature": "cc0afdfeecf51acb6bedcd8b98e93b1772d9159dad6e02b4b17e90f9e16015b9",
+    "backend_id": "tensorflow_batch_native_genut_forward_jvp_fp32",
+    "callable_module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+    "callable_qualname": "GenUTNeuTraTargetAdapter.neutra_batch_log_prob_and_grad_status",
+    "callable_source_sha256": "429e5861fb0ae6eb2fd206d525408ed88ea79e06c6eab71ead108f59a3b6f09b",
+    "dependency_callable_sources": [
+      {
+        "global_name": "_posterior_value_score_status",
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "qualname": "_posterior_value_score_status",
+        "source_sha256": "4d1788e96192c168ab1e1457530255645997208a771b5d1e80c2fb353c105daf"
+      }
+    ],
+    "dependency_closure_sha256": "3a9499222a3ab39d1d2243526bbebefaa7e3467765de018e0c9042e2e5e60adf",
+    "dependency_module_sources": [
+      {
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "source_sha256": "e4b191d420fb2180eb5730d8433589696fecbc83eba91de82e4eecbc76db28e4"
+      }
+    ],
+    "evidence_path": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+    "jit_compile_required": true,
+    "method_name": "neutra_batch_log_prob_and_grad_status",
+    "minimum_batch_size": 2,
+    "row_mapped_scalar_target_used": false,
+    "sample_axis_python_loop_used": false,
+    "scalar_fallback_used": false,
+    "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+    "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+    "status_telemetry_required": true,
+    "target_scope": "GENUT-lgssm-fixed-posterior-v1",
+    "target_signature": "f33c1f18fe35871d26d5143e8063fb92a88044431e17ff453da93f3f9628aeaa"
+  },
+  "batch_size": 2,
+  "compile_and_first_run_seconds": 9.155671133019496,
+  "control_status": "repository_tuning_artifact_bound",
+  "controls": {
+    "balance_steps": 8,
+    "epsilon": 2.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_strength": 0.2,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8,
+    "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_tuning_attempt01/result.json",
+    "tuning_scope": "lgssm_T50_N1008_initial_observation_first_fp32_no_tf32_deterministic_v2"
+  },
+  "deterministic_ops_enabled": true,
+  "dtype": "float32_filter_float64_posterior",
+  "endpoint": [
+    -141.85620425679778,
+    -141.86534686519622
+  ],
+  "endpoint_compile_and_first_run_seconds": 3.1330535489832982,
+  "endpoint_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "endpoint_status": {
+    "floor_count_value": [
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false
+    ],
+    "max_col_residual": [
+      1.2487173080444336e-05,
+      1.4171004295349121e-05
+    ],
+    "max_mean_residual": [
+      1.1920928955078125e-07,
+      2.384185791015625e-07
+    ],
+    "max_row_residual": [
+      1.467997208237648e-07,
+      1.5320256352424622e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.6603126525878906,
+      0.6752843856811523
+    ],
+    "maximum_skew_residual": [
+      0.3056621551513672,
+      0.34761887788772583
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.048038870096206665,
+      0.04452578350901604
+    ],
+    "status_code": [
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true
+    ]
+  },
+  "finite_difference": {
+    "center_valid": true,
+    "center_value": -141.8596898163681,
+    "diagnostic_coordinate_python_loop_used": true,
+    "finite_difference": [
+      0.6748829650877752,
+      -2.5778805541989414,
+      0.12129165649366058,
+      -0.7700466918949544,
+      0.26896154785216453
+    ],
+    "maximum_relative_error": 0.009825312873097292,
+    "relative_error": [
+      0.001015667188065228,
+      0.0003176532381395863,
+      0.0005669392001736995,
+      6.522088940430493e-05,
+      0.009825312873097292
+    ],
+    "score": [
+      0.67386729789971,
+      -2.578699686504549,
+      0.12072471729348688,
+      -0.7701119127843588,
+      0.25913623497906724
+    ],
+    "stencil_valid": true,
+    "step": 0.016,
+    "training_sample_loop_used": false
+  },
+  "finite_difference_gate_passed": true,
+  "gpu_allocator": {
+    "current_bytes": 893184,
+    "peak_bytes": 135107584
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "model": "lgssm",
+  "nonclaims": [
+    "capacity, replay, endpoint, and optional FD diagnostic only",
+    "no NeuTra training, HMC, convergence, or posterior claim"
+  ],
+  "particle_count": 1008,
+  "passed_capacity_replay_endpoint_gate": true,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "same_process_endpoint_replay_max_absolute_error": 0.0,
+  "same_process_score_replay_max_absolute_error": 0.0,
+  "same_process_value_replay_max_absolute_error": 0.0,
+  "schema": "bayesfilter.genut_four_model_neutra_readiness_cell.v1",
+  "score": [
+    [
+      0.7394290965149095,
+      -2.5526316765971413,
+      0.1363868641289674,
+      -0.34566840057940396,
+      0.8415474427958678
+    ],
+    [
+      0.6091148151002346,
+      -2.6046144459683487,
+      0.10496305644999293,
+      -1.1911353738498132,
+      -0.31871032329314686
+    ]
+  ],
+  "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "status": {
+    "floor_count_value": [
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false
+    ],
+    "max_col_residual": [
+      1.3515353202819824e-05,
+      1.3142824172973633e-05
+    ],
+    "max_mean_residual": [
+      1.1920928955078125e-07,
+      1.1920928955078125e-07
+    ],
+    "max_row_residual": [
+      1.5029218047857285e-07,
+      1.4936085790395737e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.6687483787536621,
+      0.6695232391357422
+    ],
+    "maximum_skew_residual": [
+      0.32912755012512207,
+      0.3244209289550781
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.04593353345990181,
+      0.04662759602069855
+    ],
+    "status_code": [
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true
+    ]
+  },
+  "target_scope": "GENUT-lgssm-fixed-posterior-v1",
+  "target_signature": "f33c1f18fe35871d26d5143e8063fb92a88044431e17ff453da93f3f9628aeaa",
+  "tf32_enabled": false,
+  "value": [
+    -141.85621951558684,
+    -141.86534686519622
+  ],
+  "value_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "value_endpoint_max_absolute_error": 1.52587890625e-05,
+  "value_endpoint_max_relative_error": 1.0756517489755462e-07,
+  "wall_time_seconds": 15.58029583399184,
+  "warm_replay_seconds": 0.604850384988822
+}

@@ -1,0 +1,90 @@
+{
+  "cell_id": "PP-UKF",
+  "command": [
+    "docs/benchmarks/run_neutra_shared_procedure_20260803.py",
+    "--cell",
+    "PP-UKF",
+    "--variant",
+    "state_continuing_epsilon_repair_v1",
+    "--output-root",
+    "docs/plans/artifacts/bayesfilter-neutra-shared-procedure-20260803/pp-state-continuing-attempt01",
+    "--frozen-transport",
+    "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-phase5-20260720/campaign-01/PP-UKF/final/segments/steps-004001-005000/frozen_transport.json",
+    "--frozen-transport-sha256",
+    "b7a558db1e9a48fcd79333e65771d933342a1933e93869a8d5193ce166019221",
+    "--root-seed",
+    "20260721",
+    "9400",
+    "--initial-step-size",
+    "0.9853849721883557",
+    "--initial-epsilon-by-l",
+    "{\"3\":0.8724049589170738,\"5\":0.8426345584765329,\"9\":0.7489709357241571,\"13\":0.69086551957137,\"18\":0.6813265222611998,\"25\":0.6800917535732008}",
+    "--required-status-keys",
+    "ukf"
+  ],
+  "device": "/GPU:0",
+  "environment": "tf-gpu",
+  "frozen_transport_input": {
+    "path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-phase5-20260720/campaign-01/PP-UKF/final/segments/steps-004001-005000/frozen_transport.json",
+    "retrained": false,
+    "sha256": "b7a558db1e9a48fcd79333e65771d933342a1933e93869a8d5193ce166019221",
+    "target_signature": "d3ed745b4f755582bfce46b24992e9d626e10c1409c46b0518ca8cfc673fc2f5",
+    "training_state_hash": "sha256:70e6e49bef68672e43c2e44b4847ef105ec3b7c8ef5e22f2eead292d50ff561c"
+  },
+  "git_commit": "6a11b689295bfb0e58de6e6d2f84918671b5a685",
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "initial_step_size_role": "target_specific_warm_start_hypothesis",
+  "jit_compile": true,
+  "output_root": "docs/plans/artifacts/bayesfilter-neutra-shared-procedure-20260803/pp-state-continuing-attempt01/PP-UKF",
+  "plan_path": "docs/plans/bayesfilter-neutra-all-executable-models-end-to-end-python-plan-2026-07-18.md",
+  "private_tuning_result_path": "docs/plans/artifacts/bayesfilter-neutra-shared-procedure-20260803/pp-state-continuing-attempt01/PP-UKF/broad-grid-tuning/private_result.json",
+  "procedure_family": "shared_neutra_broad_grid",
+  "procedure_metadata": {
+    "directional_refinement_performed": false,
+    "epsilon_repair_performed": true,
+    "fresh_final_screens_performed": true,
+    "independent_primary_dual_averaging_performed": true,
+    "procedure_family": "shared_neutra_broad_grid",
+    "procedure_variant": "state_continuing_epsilon_repair_v1",
+    "same_epsilon_neighbor_guards_performed": true,
+    "state_continuation_performed": true
+  },
+  "procedure_variant": "state_continuing_epsilon_repair_v1",
+  "public_tuning_result_path": "docs/plans/artifacts/bayesfilter-neutra-shared-procedure-20260803/pp-state-continuing-attempt01/PP-UKF/broad-grid-tuning/public_result.json",
+  "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.14",
+  "required_status_keys": [
+    "status_code",
+    "valid_pre_regularized_score",
+    "floor_count_value",
+    "min_innovation_eigenvalue",
+    "innovation_condition_estimate"
+  ],
+  "result_path": "docs/plans/artifacts/bayesfilter-neutra-shared-procedure-20260803/pp-state-continuing-attempt01/PP-UKF/result.json",
+  "root_seed": [
+    20260721,
+    9400
+  ],
+  "sampling_launched": false,
+  "schema": "bayesfilter.neutra.broad_grid_tuning_manifest.v1",
+  "screen_results": 96,
+  "target_signature": "d3ed745b4f755582bfce46b24992e9d626e10c1409c46b0518ca8cfc673fc2f5",
+  "tensorflow_version": "2.19.1",
+  "tf32_execution_enabled": true,
+  "wall_time_seconds": 9873.794682875974
+}

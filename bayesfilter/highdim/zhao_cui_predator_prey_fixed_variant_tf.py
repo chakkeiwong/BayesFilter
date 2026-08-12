@@ -925,6 +925,12 @@ def _evaluate_source_order_core(
         clear_after_read=False,
         element_shape=tf.TensorShape([]),
     ).write(0, spread)
+    maximum_weight_array = tf.TensorArray(
+        dtype=dtype,
+        size=transition_count + 1,
+        clear_after_read=False,
+        element_shape=tf.TensorShape([]),
+    ).write(0, tf.reduce_max(normalized_weights))
 
     def condition(
         time_index: tf.Tensor,
@@ -945,6 +951,7 @@ def _evaluate_source_order_core(
         increment_scores: tf.TensorArray,
         ess_values: tf.TensorArray,
         spread_values: tf.TensorArray,
+        maximum_weight_values: tf.TensorArray,
     ) -> tuple[object, ...]:
         row = time_index - 1
         ancestor = tf.gather(branch.ancestors, row)
@@ -1039,6 +1046,9 @@ def _evaluate_source_order_core(
             increment_scores.write(time_index, current_increment_score),
             ess_values.write(time_index, current_ess),
             spread_values.write(time_index, current_spread),
+            maximum_weight_values.write(
+                time_index, tf.reduce_max(current_normalized_weights)
+            ),
         )
 
     (
@@ -1054,6 +1064,7 @@ def _evaluate_source_order_core(
         score_array,
         ess_array,
         spread_array,
+        maximum_weight_array,
     ) = tf.while_loop(
         condition,
         body,
@@ -1070,6 +1081,7 @@ def _evaluate_source_order_core(
             score_array,
             ess_array,
             spread_array,
+            maximum_weight_array,
         ),
         parallel_iterations=1,
     )
@@ -1082,6 +1094,7 @@ def _evaluate_source_order_core(
         "final_log_weights": final_log_weights,
         "ess_by_time": ess_array.stack(),
         "log_weight_spread_by_time": spread_array.stack(),
+        "maximum_normalized_weight_by_time": maximum_weight_array.stack(),
         "minimum_ess": minimum_ess,
         "maximum_log_weight_spread": maximum_spread,
         "finite": finite,

@@ -2,12 +2,42 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any, Mapping
 
 import tensorflow as tf
 
 from bayesfilter.testing.exact_sv_sgqf_neutra_target_tf import (
+    generate_frozen_exact_sv_dataset_tf,
     source_chart_physical_parameters,
+    source_two_probit_jacobian_value_score,
+    source_uniform_prior_value_score,
+)
+from bayesfilter.ssm import (
+    BayesianSSMProblem,
+    FilterProgram,
+    ParameterChart,
+    ParameterPrior,
+    SSMDataSignature,
+    SSMStaticShape,
+    SSMTargetContract,
+    stable_ssm_target_signature,
+)
+from bayesfilter.inference.posterior_adapter import ValueScoreCapability
+from bayesfilter.testing.ksc_gaussian_sum_ukf_scope import (
+    KSC_GAUSSIAN_SUM_UKF_COMPONENT_CAP,
+    KSC_GAUSSIAN_SUM_UKF_DATASET_ID,
+    KSC_GAUSSIAN_SUM_UKF_HORIZON,
+    KSC_GAUSSIAN_SUM_UKF_PARAMETER_NAMES,
+    KSC_GAUSSIAN_SUM_UKF_SCOPE,
+    KSC_GAUSSIAN_SUM_UKF_TARGET_SIGNATURE,
+)
+KSC_GAUSSIAN_SUM_UKF_NONCLAIMS = (
+    "KSC seven-component Gaussian-mixture transformed-SV target, not exact SV",
+    "bounded mass-preserving Gaussian-sum UKF approximation, not exact latent-state filtering",
+    "component pruning and moment merging are deterministic fixed target operations",
+    "no HMC convergence, posterior correctness, superiority, or default-readiness claim",
 )
 
 
@@ -291,6 +321,17 @@ def _ksc_gaussian_sum_value(
             minimum_premerge_mass,
             maximum_active,
         ),
+        shape_invariants=(
+            tf.TensorShape([]),
+            tf.TensorShape([None, component_cap]),
+            tf.TensorShape([None, component_cap]),
+            tf.TensorShape([None, component_cap]),
+            tf.TensorShape([None]),
+            tf.TensorShape([None]),
+            tf.TensorShape([None]),
+            tf.TensorShape([None]),
+            tf.TensorShape([None]),
+        ),
         maximum_iterations=int(observations.shape[0]),
         parallel_iterations=1,
     )
@@ -302,4 +343,252 @@ def _ksc_gaussian_sum_value(
     }
 
 
-__all__ = ["ksc_gaussian_sum_ukf_likelihood_value_score_status"]
+def _tensor_hash(value: tf.Tensor) -> str:
+    return hashlib.sha256(bytes(tf.io.serialize_tensor(value).numpy())).hexdigest()
+
+
+def _tensor_bundle_hash(*values: tf.Tensor) -> str:
+    digest = hashlib.sha256()
+    for value in values:
+        digest.update(bytes(tf.io.serialize_tensor(value).numpy()))
+    return digest.hexdigest()
+
+
+def make_ksc_gaussian_sum_ukf_target_contract(
+    *,
+    horizon: int,
+    raw_data_hash: str,
+    transformed_data_hash: str,
+    mixture_hash: str,
+    component_cap: int = KSC_GAUSSIAN_SUM_UKF_COMPONENT_CAP,
+) -> SSMTargetContract:
+    """Build the immutable scope contract for the repaired KSC route."""
+
+    if int(component_cap) != KSC_GAUSSIAN_SUM_UKF_COMPONENT_CAP:
+        raise ValueError("the admitted NeuTra scope is fixed to component cap 32")
+    shape = SSMStaticShape(
+        horizon=int(horizon), state_dim=1, observation_dim=1,
+        innovation_dim=1, parameter_dim=2,
+    )
+    model_semantics = {
+        "model_id": "zhao-cui-synthetic-sv-fixed-sigma-1-ksc-mixture",
+        "fixed_sigma": 1.0,
+        "raw_observation_hash": f"sha256:{raw_data_hash}",
+        "transformed_observation_hash": f"sha256:{transformed_data_hash}",
+        "transform": "log(y^2+1e-8)",
+        "mixture_tensor_hash": f"sha256:{mixture_hash}",
+        "mixture_component_count": 7,
+        "component_cap": int(component_cap),
+    }
+    problem = BayesianSSMProblem(
+        problem_id="ksc-transformed-sv-gaussian-sum-ukf-mass-preserving",
+        static_shape=shape,
+        data_signature=SSMDataSignature(
+            dataset_id=KSC_GAUSSIAN_SUM_UKF_DATASET_ID,
+            observation_shape=(int(horizon), 1),
+            data_hash=f"sha256:{raw_data_hash}",
+        ),
+        target_coordinate_convention="unconstrained",
+        model_manifest={
+            **model_semantics,
+            "model_hash": "sha256:" + hashlib.sha256(
+                json.dumps(model_semantics, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+        },
+    )
+    chart_semantics = {
+        "transform_id": "source-two-probit-uniform-box-chart",
+        "gamma": "0.1+0.8*Phi(theta[0])",
+        "beta": "0.1+0.8*Phi(theta[1])",
+        "parameter_order": KSC_GAUSSIAN_SUM_UKF_PARAMETER_NAMES,
+    }
+    chart = ParameterChart(
+        parameter_names=KSC_GAUSSIAN_SUM_UKF_PARAMETER_NAMES,
+        unconstrained_dim=2, constrained_shape=(2,),
+        transform_manifest={
+            **chart_semantics,
+            "transform_hash": "sha256:" + hashlib.sha256(
+                json.dumps(chart_semantics, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+        },
+        log_jacobian_convention="included_in_chart",
+    )
+    prior_semantics = {
+        "prior_id": "zhao-cui-synthetic-sv-independent-uniform-box",
+        "physical_support": ((0.1, 0.9), (0.1, 0.9)),
+        "parameter_order": ("gamma", "beta"),
+    }
+    prior = ParameterPrior(
+        prior_manifest={
+            **prior_semantics,
+            "prior_hash": "sha256:" + hashlib.sha256(
+                json.dumps(prior_semantics, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+        },
+        support_policy="enforced_by_transform", log_density_authority="graph_native",
+    )
+    filter_semantics = {
+        "filter_id": "ksc-gaussian-sum-mass-preserving-ukf-v1",
+        "observation_components": 7,
+        "component_cap": int(component_cap),
+        "pruning": "top-weight-centers-with-nearest-center-moment-merge",
+        "mass_policy": "all-normalized-component-mass-retained",
+        "time_zero": "stationary-prior-then-observation-no-process-increment",
+        "backend": "tensorflow_xla_batched_fixed_observation_while_loop",
+        "score": "tensorflow_gradient_tape_same_program",
+    }
+    filter_program = FilterProgram(
+        filter_id=str(filter_semantics["filter_id"]),
+        required_model_capabilities=(
+            "scalar_stationary_sv", "ksc_seven_component_observation_mixture",
+            "mass_preserving_gaussian_sum_component_merge",
+        ),
+        deterministic_target_policy="deterministic",
+        approximation_semantics="deterministic_approximation",
+        filter_manifest={
+            **filter_semantics,
+            "filter_hash": "sha256:" + hashlib.sha256(
+                json.dumps(filter_semantics, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+        },
+    )
+    return SSMTargetContract(problem=problem, chart=chart, prior=prior, filter_program=filter_program)
+
+
+class KSCGaussianSumUKFNeuTraAdapter:
+    """Batch-native posterior adapter for the admitted T20 cap-32 route."""
+
+    dtype = tf.float64
+    parameter_dim = 2
+    parameter_names = KSC_GAUSSIAN_SUM_UKF_PARAMETER_NAMES
+
+    def __init__(self, *, raw_observations: tf.Tensor, transformed_observations: tf.Tensor,
+                 mixture_weights: tf.Tensor, mixture_means: tf.Tensor,
+                 mixture_variances: tf.Tensor, contract: SSMTargetContract) -> None:
+        self.raw_observations = tf.convert_to_tensor(raw_observations, tf.float64)
+        self.transformed_observations = tf.convert_to_tensor(transformed_observations, tf.float64)
+        self.mixture_weights = tf.convert_to_tensor(mixture_weights, tf.float64)
+        self.mixture_means = tf.convert_to_tensor(mixture_means, tf.float64)
+        self.mixture_variances = tf.convert_to_tensor(mixture_variances, tf.float64)
+        self.contract = contract
+        self.target_scope = KSC_GAUSSIAN_SUM_UKF_SCOPE
+        self.target_signature = stable_ssm_target_signature(contract)
+        payload = {
+            "schema": "bayesfilter.testing.ksc_gaussian_sum_ukf_neutra_adapter.v1",
+            "target_signature": self.target_signature,
+            "component_cap": KSC_GAUSSIAN_SUM_UKF_COMPONENT_CAP,
+            "mixture_hash": _tensor_bundle_hash(self.mixture_weights, self.mixture_means, self.mixture_variances),
+        }
+        self._adapter_signature = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+
+    def adapter_signature(self) -> str:
+        return self._adapter_signature
+
+    def value_score_capability(self) -> ValueScoreCapability:
+        return ValueScoreCapability(
+            value_score_authority="graph_native", xla_hmc_ready=True,
+            full_chain_xla_diagnostic_ready=True,
+            runtime_backend="tensorflow_ksc_gaussian_sum_mass_preserving_ukf",
+            evidence_path="bayesfilter/testing/ksc_gaussian_sum_ukf_neutra_target_tf.py",
+            target_scope=self.target_scope, nonclaims=KSC_GAUSSIAN_SUM_UKF_NONCLAIMS,
+        )
+
+    def _posterior(self, theta: Any) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+        likelihood, score, status = ksc_gaussian_sum_ukf_likelihood_value_score_status(
+            theta, transformed_observations=self.transformed_observations,
+            mixture_weights=self.mixture_weights, mixture_means=self.mixture_means,
+            mixture_variances=self.mixture_variances,
+            component_cap=KSC_GAUSSIAN_SUM_UKF_COMPONENT_CAP,
+        )
+        prior, prior_score = source_uniform_prior_value_score(theta)
+        jacobian, jacobian_score = source_two_probit_jacobian_value_score(theta)
+        return likelihood + prior + jacobian, score + prior_score + jacobian_score, status
+
+    def log_prob(self, theta: Any) -> tf.Tensor:
+        return self._posterior(theta)[0]
+
+    def log_prob_and_grad(self, theta: Any) -> tuple[tf.Tensor, tf.Tensor]:
+        value, score, _status = self._posterior(theta)
+        return value, score
+
+    def neutra_batch_log_prob_and_grad_status(self, theta: Any):
+        likelihood_value, likelihood_score, status = (
+            ksc_gaussian_sum_ukf_likelihood_value_score_status(
+                theta,
+                transformed_observations=self.transformed_observations,
+                mixture_weights=self.mixture_weights,
+                mixture_means=self.mixture_means,
+                mixture_variances=self.mixture_variances,
+                component_cap=KSC_GAUSSIAN_SUM_UKF_COMPONENT_CAP,
+            )
+        )
+        prior_value, prior_score = source_uniform_prior_value_score(theta)
+        jacobian_value, jacobian_score = source_two_probit_jacobian_value_score(theta)
+        status = {
+            **status,
+            "floor_count_value": tf.zeros_like(status["status_code"]),
+            "min_innovation_eigenvalue": status["minimum_component_variance"],
+        }
+        return (
+            likelihood_value + prior_value + jacobian_value,
+            likelihood_score + prior_score + jacobian_score,
+            status,
+        )
+
+    def target_status_telemetry(self, theta: Any) -> Mapping[str, tf.Tensor]:
+        _value, _score, status = self._posterior(theta)
+        return {
+            **status,
+            "floor_count_value": tf.zeros_like(status["status_code"]),
+            "min_innovation_eigenvalue": status["minimum_component_variance"],
+            "innovation_condition_estimate": tf.ones_like(
+                tf.cast(status["status_code"], tf.float64)
+            ),
+        }
+
+
+def make_ksc_gaussian_sum_ukf_neutra_adapter(
+    *, raw_observations: tf.Tensor | None = None,
+) -> KSCGaussianSumUKFNeuTraAdapter:
+    """Bind the repaired route to the frozen T20 KSC admission dataset."""
+
+    if raw_observations is None:
+        _states, raw_observations = generate_frozen_exact_sv_dataset_tf(
+            horizon=KSC_GAUSSIAN_SUM_UKF_HORIZON
+        )
+    raw = tf.convert_to_tensor(raw_observations, tf.float64)
+    if raw.shape != (KSC_GAUSSIAN_SUM_UKF_HORIZON, 1):
+        raise ValueError("KSC Gaussian-sum NeuTra adapter requires raw shape [20, 1]")
+    # Freeze the serialized scope input on CPU so its hash is independent of
+    # whether the caller later initializes a GPU/XLA context.
+    with tf.device("/CPU:0"):
+        transformed = tf.math.log(
+            tf.square(raw) + tf.constant(1.0e-8, tf.float64)
+        )
+    mixture = __import__(
+        "bayesfilter.highdim.sv_mixture_cut4", fromlist=["ksc_1998_log_chi_square_mixture"]
+    ).ksc_1998_log_chi_square_mixture()
+    contract = make_ksc_gaussian_sum_ukf_target_contract(
+        horizon=KSC_GAUSSIAN_SUM_UKF_HORIZON,
+        raw_data_hash=_tensor_hash(raw), transformed_data_hash=_tensor_hash(transformed),
+        mixture_hash=_tensor_bundle_hash(mixture.weights, mixture.means, mixture.variances),
+    )
+    return KSCGaussianSumUKFNeuTraAdapter(
+        raw_observations=raw, transformed_observations=transformed,
+        mixture_weights=mixture.weights, mixture_means=mixture.means,
+        mixture_variances=mixture.variances, contract=contract,
+    )
+
+
+__all__ = [
+    "KSC_GAUSSIAN_SUM_UKF_COMPONENT_CAP",
+    "KSC_GAUSSIAN_SUM_UKF_HORIZON",
+    "KSC_GAUSSIAN_SUM_UKF_SCOPE",
+    "KSC_GAUSSIAN_SUM_UKF_TARGET_SIGNATURE",
+    "KSCGaussianSumUKFNeuTraAdapter",
+    "ksc_gaussian_sum_ukf_likelihood_value_score_status",
+    "make_ksc_gaussian_sum_ukf_neutra_adapter",
+    "make_ksc_gaussian_sum_ukf_target_contract",
+]

@@ -1,0 +1,583 @@
+\chapter[Particle, Transport, And Tensor Filters]{Particle, Transport, Tensor-Train, and Tensor-Network Filters}
+\label{ch:bf-highdim-particle-transport-tensor}
+
+\section{Three Ways To Escape A Gaussian, And How Each Fails}
+\label{sec:bf-hd-ptt-purpose}
+
+Particle filters, transport maps, and tensor decompositions are three different
+answers to the same discomfort: a single Gaussian can be the wrong object.
+Particles represent a probability law by weighted samples.  Transports move a
+reference law, forecast ensemble, or proposal toward posterior mass.  Tensor
+trains and tensor networks compress density, operator, covariance, or map
+objects.  These are not interchangeable objects, and a mixed numerical panel
+should not be asked to infer the difference from acronyms.
+
+The exact target remains the filtering law and normalizer from
+Chapter~\ref{ch:bf-highdim-nonlinear-foundations}.  The approximation is the
+finite empirical measure, fitted map/coupling, or low-rank representation.  The
+industrial role is conditional: these methods are useful only when correction,
+support, rank, mass, positivity, covariance, likelihood, and score diagnostics
+are visible.
+
+\paragraph{Running quadratic-observation cell.}
+Use again
+\[
+  x_t=\rho x_{t-1}+\eta_t,\qquad y_t=x_t^2+\epsilon_t .
+\]
+A particle filter tries to place weighted samples near both posterior lobes.
+A transport tries to move forecast or reference mass toward those lobes while
+preserving a density ratio, Jacobian, or source-supported deterministic
+analysis contract.  A tensor representation tries to store the density,
+operator, covariance, or transport map compactly.  The same scalar cell asks
+three distinct questions:
+\[
+  \text{Did samples reach both lobes?}\quad
+  \text{Did the map preserve correction and support?}\quad
+  \text{Did compression preserve probability or covariance semantics?}
+\]
+
+\begin{longtable}{@{}p{0.18\linewidth}p{0.33\linewidth}p{0.35\linewidth}@{}}
+\toprule
+Representation & Object & First semantic veto \\
+\midrule
+\endhead
+Empirical particle measure & \(\sum_i\bar w_i\delta_{x_i}\) & ESS, maximum
+weight, unique ancestors, and coverage of relevant modes. \\
+Proposal density & sampled law \(q(x)\) with computable density & target
+support not covered or density-ratio correction not finite. \\
+Transport map & map/coupling from reference or forecast law & invalid support,
+inverse, monotonicity, Jacobian, or deterministic analysis contract. \\
+TT density/operator & compressed grid/function/operator cores & mass,
+positivity, boundary residual, rank spike. \\
+TN covariance/factor & compressed covariance or square-root factor & PSD or
+factor reconstruction failure. \\
+\bottomrule
+\end{longtable}
+
+\section{Empirical Measures And Importance Weights}
+\label{sec:bf-hd-pf}
+
+The bootstrap filter of \citet{gordon1993novel} and the SIR mechanics
+summarized by \citet{arulampalam2002tutorial} approximate the filtering law by
+the empirical measure
+\begin{equation}
+  \widehat\pi_t^N(dx)=\sum_{i=1}^N \bar w_t^{(i)}\delta_{x_t^{(i)}}(dx),
+  \qquad
+  \bar w_t^{(i)}=\frac{w_t^{(i)}}{\sum_{j=1}^N w_t^{(j)}}.
+  \label{eq:bf-hd-pf-measure}
+\end{equation}
+This is a probability measure: it assigns mass \(\bar w_t^{(i)}\) to each
+simulated point \(x_t^{(i)}\).  It is not a density, not a covariance matrix,
+and not a map.
+
+Suppose a proposal samples
+\[
+  x_t^{(i)}\sim q_t(\cdot\mid x_{t-1}^{a(i)},y_t).
+\]
+Then the incremental importance weight is
+\begin{equation}
+  \alpha_t^{(i)}
+  =
+  \frac{
+  g_\theta(y_t\mid x_t^{(i)})
+  f_\theta(x_t^{(i)}\mid x_{t-1}^{a(i)})
+  }{
+  q_t(x_t^{(i)}\mid x_{t-1}^{a(i)},y_t)
+  }.
+  \label{eq:bf-hd-pf-weight}
+\end{equation}
+The bootstrap proposal sets \(q_t=f_\theta\), so
+\(\alpha_t^{(i)}=g_\theta(y_t\mid x_t^{(i)})\).  A guided proposal changes
+where particles are placed, but \eqref{eq:bf-hd-pf-weight} is the correction
+that keeps the target interpretation.
+
+\begin{algorithm}
+\caption{Sequential importance resampling filter}
+\label{alg:bf-hd-sir-filter}
+\begin{algorithmic}[1]
+\Require Particle count \(N\), transition \(f_\theta\), likelihood
+  \(g_\theta\), proposal \(q_t\), resampling threshold \(\tau\).
+\State Initialize particles and weights.
+\For{\(t=1,\ldots,T\)}
+  \State Resample ancestors if the declared resampling rule is triggered.
+  \State Draw \(x_t^{(i)}\sim q_t(\cdot\mid x_{t-1}^{a(i)},y_t)\).
+  \State Compute \(\alpha_t^{(i)}\) by \eqref{eq:bf-hd-pf-weight}.
+  \State Normalize weights and record ESS, maximum weight, and unique ancestors.
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+The effective sample size
+\begin{equation}
+  \mathrm{ESS}_t=\frac{1}{\sum_i(\bar w_t^{(i)})^2}
+  \label{eq:bf-hd-ess}
+\end{equation}
+measures concentration of normalized weights.  It does not prove posterior
+accuracy.  In the running cell, particles may all land near \(+\sqrt y\) and
+still have high ESS within that lobe; the missing \(-\sqrt y\) mode is then a
+coverage failure, not a normalization failure.
+
+\section{Weight Collapse And The HMC Boundary For Particles}
+\label{sec:bf-hd-pf-collapse}
+
+\begin{proposition}[Weight-collapse warning]
+\label{prop:bf-hd-pf-collapse}
+In the iid/high-dimensional settings analyzed by \citet{bengtsson2008curse}
+and in the log-likelihood variance framing of \citet{snyder2008obstacles},
+prior-proposal particle weights can concentrate so strongly that a small
+number of particles dominate the normalized measure unless ensemble size grows
+substantially with the effective observation dimension.
+\end{proposition}
+
+\begin{proof}[Mechanism derivation]
+Write \(W_i=\exp(L_i)\), where \(L_i\) is a log likelihood contribution.  In a
+block-observation model with approximately weakly dependent components,
+\[
+  L_i=\sum_{k=1}^{d_{\rm eff}}\ell_{ik},\qquad
+  \Var(L_i)\approx d_{\rm eff}\sigma_\ell^2=:v_d.
+\]
+The following lognormal calculation is not a substitute for the cited
+theorems, but it makes their warning visible:
+\[
+  \E[W_i]=\exp(\mu_d+v_d/2),\qquad
+  \E[W_i^2]=\exp(2\mu_d+2v_d),
+\]
+so
+\[
+  \frac{\E[W_i^2]}{\E[W_i]^2}=\exp(v_d).
+\]
+Self-normalized importance sampling must fight this second-moment ratio.  If
+\(v_d\) grows with effective dimension, fixed \(N\) cannot keep weights
+balanced.
+\end{proof}
+
+Particle-filter gradients are a separate issue.  A standard resampling
+particle filter does not give an ordinary smooth gradient for HMC.  With fixed
+random numbers, no resampling, and fixed ancestry, one may differentiate a
+branch-local algorithmic scalar.  With multinomial/systematic/residual
+resampling, ancestor identities can change discontinuously with parameters.
+Unbiased likelihood estimates support pseudo-marginal logic under the
+assumptions of particle-MCMC theory, but that is not ordinary HMC on a smooth
+potential.  Differentiable resampling belongs to the DPF implementation lane
+and is not imported here as mathematical evidence.
+
+HMC labels: bootstrap/SIR with ordinary resampling is
+\texttt{HMC\_NOT\_ADMISSIBLE\_UNTIL\_SMOOTHED}; no-resampling fixed-random-number
+diagnostics are \texttt{HMC\_BRANCH\_LOCAL\_ONLY}; particle likelihood estimators are
+\texttt{DIAGNOSTIC\_ONLY} for this monograph unless a separate pseudo-marginal or
+differentiable-particle contract is explicitly invoked.
+
+\paragraph{Reader checkpoint.}
+Object preserved: an empirical measure and possibly a likelihood estimate.
+Approximation enters at: proposal choice, finite \(N\), resampling, and
+finite-sample normalization.  Exported to synthesis: collapse diagnostics veto
+runtime comparisons before speed or ESS-per-second is meaningful.
+
+\section{Guided Proposals And Density-Ratio Correction}
+\label{sec:bf-hd-guided-proposals}
+
+A guided proposal tries to put samples where the current observation makes them
+useful.  The price is that the proposal density must be known or corrected.  If
+\(\gamma_t(x_t)\) is the unnormalized target density for the current step and
+\(q_t(x_t)\) is the proposal density, importance sampling uses
+\[
+  w(x_t)=\frac{\gamma_t(x_t)}{q_t(x_t)}.
+\]
+The numerator might be
+\[
+  \gamma_t(x_t)
+  =
+  g_\theta(y_t\mid x_t)
+  \int f_\theta(x_t\mid x_{t-1})\,\pi_{t-1}(dx_{t-1})
+\]
+or a particle approximation of this quantity.  The proposal \(q_t\) is not
+the target.  It becomes useful only through the correction.
+
+\begin{proposition}[Corrected proposal identity]
+\label{prop:bf-hd-corrected-proposal}
+If \(q(x)>0\) wherever the unnormalized target \(\gamma(x)>0\), then
+\[
+  \frac{\int \varphi(x)\gamma(x)\,dx}{\int\gamma(x)\,dx}
+  =
+  \frac{\E_q[\varphi(X)\gamma(X)/q(X)]}
+       {\E_q[\gamma(X)/q(X)]},
+\]
+whenever the displayed expectations exist.
+\end{proposition}
+
+\begin{proof}
+Substitute \(q(x)\{\gamma(x)/q(x)\}\) for \(\gamma(x)\) in both numerator and
+denominator.  The support condition prevents division by zero on target mass.
+\end{proof}
+
+In the running cell, a proposal that samples only positive \(x\) values after a
+large positive observation may look efficient if the realized data favor the
+positive lobe.  It cannot represent the symmetric negative lobe unless the
+target has genuinely ruled it out or another component covers it.  This is why
+support is a mathematical condition, not a tuning preference.
+
+\section{Transport Maps As Change-Of-Variables Objects}
+\label{sec:bf-hd-transport-change}
+
+Let \(z\sim r\) and let \(x=T_\phi(z,\theta)\) be a differentiable invertible
+map.  The induced proposal density is
+\begin{equation}
+  q_\theta(x)
+  =
+  r(z)\left|\det D_zT_\phi(z,\theta)\right|^{-1},
+  \qquad z=T_\phi^{-1}(x,\theta).
+  \label{eq:bf-hd-map-density}
+\end{equation}
+The log correction against an unnormalized target \(\gamma_\theta\) is
+\begin{equation}
+  \log w(x,\theta)=\log\gamma_\theta(x)-\log q_\theta(x).
+  \label{eq:bf-hd-transport-log-weight}
+\end{equation}
+This is the same change-of-variables logic used in transport-map MCMC and
+normalizing flows.  The inspected P1R anchor for \citet{parno2018transport} is
+the lower-triangular map proposal and adaptive proposal construction in its
+Sections 2--3 and Algorithm 1.  The normalizing-flow survey
+\citet{papamakarios2021flows} is context-only here; it is not used for a
+filtering theorem.
+
+\begin{proposition}[Transport proposal correction]
+\label{prop:bf-hd-transport-correction}
+If \(T_\phi\) is differentiable and invertible on the reference support and
+\(q_\theta>0\) wherever \(\gamma_\theta>0\), then importance weights
+\(\gamma_\theta(x)/q_\theta(x)\) correct samples from the transported proposal
+for expectations under \(\gamma_\theta/\int\gamma_\theta\).
+\end{proposition}
+
+\begin{proof}
+Equation \eqref{eq:bf-hd-map-density} is the change-of-variables formula.
+Applying Proposition~\ref{prop:bf-hd-corrected-proposal} with this \(q_\theta\)
+gives the corrected expectation identity.
+\end{proof}
+
+For transformed HMC in a latent coordinate \(z\), the potential must include
+the Jacobian:
+\begin{equation}
+  U_z(z)
+  =
+  -\log \pi_q(T_\phi(z))
+  -\log|\det D_zT_\phi(z)|.
+  \label{eq:bf-hd-transport-hmc-potential}
+\end{equation}
+The gradient is the derivative of this scalar, including the derivative of the
+log determinant and the pullback through \(T_\phi\).  A map-training loss is
+not an HMC target.  HMC label: transport-preconditioned HMC is
+\texttt{HMC\_ADMISSIBLE\_APPROXIMATE\_TARGET} only when the corrected scalar and
+Jacobian are finite and differentiable on the sampler path; otherwise support
+or Jacobian failure is a veto.
+
+\paragraph{Reader checkpoint.}
+Object preserved: corrected target expectations or a Jacobian-corrected
+transformed scalar.  Approximation enters at: map fit, finite ensemble or
+training data, support coverage, and determinant stability.  Exported to
+synthesis: transport can reduce geometry only after support, correction, and
+Jacobian checks pass.
+
+\section{Triangular And Ensemble Transport Filters}
+\label{sec:bf-hd-ensemble-transport}
+
+\citet{rosenblatt1952remarks} gives a triangular conditional-CDF
+transformation from an absolutely continuous multivariate distribution to
+independent uniforms.  Modern filtering papers often describe monotone
+triangular maps as Knothe--Rosenblatt maps; because the Knothe original remains
+outside the checked support here, this chapter uses Rosenblatt and modern
+transport-filtering sources rather than relying on an uninspected original.
+
+The checked filtering anchor is \citet{spantini2022coupling}, which formulates
+stochastic and deterministic map filters for nonlinear ensemble filtering and
+develops localization for high dimension; the inspected P1R anchors are
+Algorithms 1--3, Remarks 1--7, and localization Appendix B.  \citet{ramgraber2023ensemble}
+is cited only for its smoothing-side triangular transport recursions in
+Sections 2--3, Proposition 1, and Appendix C algorithms; it is not used as a
+foundational filtering theorem.
+
+\begin{algorithm}
+\caption{Triangular-map ensemble filtering step}
+\label{alg:bf-hd-map-filter}
+\begin{algorithmic}[1]
+\Require Forecast ensemble, observation \(y_t\), triangular map class,
+  localization graph or block policy.
+\State Fit a map or coupling using the checked source objective.
+\State Apply the stochastic or deterministic analysis update.
+\State If localized, solve local map problems and recombine by the declared
+  graph policy.
+\State Record monotonicity/Jacobian failures, map residual, localization
+  sensitivity, ensemble spread, and reference metrics where available.
+\end{algorithmic}
+\end{algorithm}
+
+A triangular map is attractive for the running cell because it can in principle
+send a simple reference law into a two-lobed or skewed distribution.  It can
+also fail in a way that is hard to see if the text only says "transport": the
+chosen triangular ordering may make the conditional map hard to fit, the
+ensemble may be too small to estimate the map, and localization may remove an
+important dependence.  The industrial question is therefore not whether a map
+can be written down; it is whether the fitted map has a source-supported
+analysis contract and passes support/Jacobian/localization checks.
+
+\section{Tensor-Train Density And PDE Filters}
+\label{sec:bf-hd-tt-pde}
+
+A tensor train is a compressed representation of a multidimensional array or
+discretized function.  For a grid tensor \(A(i_1,\ldots,i_d)\), the TT format
+of \citet{oseledets2011tt} writes
+\begin{equation}
+  A(i_1,\ldots,i_d)=G_1(i_1)G_2(i_2)\cdots G_d(i_d),
+  \label{eq:bf-hd-tt-format}
+\end{equation}
+where the \(G_k(i_k)\) are small matrices with connecting ranks.  If the mode
+size is \(M\) and ranks are bounded by \(r\), storage is \(O(dMr^2)\) instead
+of \(O(M^d)\).  The condition is rank stability: if ranks grow with the
+effective dimension, the compression disappears.  The TT-SVD and rounding
+results in \citet{oseledets2011tt} support this storage and approximation
+framework.  \citet{oseledets2010ttcross} is the checked anchor for TT-cross
+interpolation/integration of black-box tensors under low-rank assumptions.
+
+For filtering, the tensor may represent a density, a Fokker--Planck or DMZ
+operator, a likelihood multiplier, or a conditional transport map.  Those are
+different semantics.  A small TT residual for array entries does not by itself
+prove positivity, mass conservation, boundary correctness, or likelihood
+accuracy.
+
+\citet{li2019ttfiltering} is used as a direct source for TT/QTT nonlinear
+filtering through the pathwise robust DMZ/FKE route; the checked anchors are
+Propositions 4.1 and 4.3, Algorithms 1--2, Lemmas 5.3--5.6, and Theorem 5.7.
+They support source-local offline operator compression and online assimilation
+under the paper's assumptions, not general rank control.  \citet{fox2021grid}
+supports the Bayes-optimal continuous-discrete grid-filtering framing through
+Fokker--Planck/continuity equations (1)--(7), finite-volume propagation, Bayes
+update, and functional TT Section 4.  \citet{meng2026correlated} is a recent
+arXiv source for correlated-noise DMZ/Zakai SPDE and TT approximation
+conditions, especially model equations (1)--(2), Algorithm 1, and Theorems
+4.3--4.6 and 5.7; it is not used here as mature validation.
+
+\begin{algorithm}
+\caption{TT/PR-DMZ filtering pilot}
+\label{alg:bf-hd-tt-pde}
+\begin{algorithmic}[1]
+\Require Checked PDE/filtering assumptions, tensor grid or functional basis,
+  rank cap, rounding tolerance, low-dimensional reference.
+\State Form the PR-DMZ/FKE/DMZ operator specified by the cited source.
+\State Represent initial density and operators in TT/QTT/FTT format.
+\For{each observation interval}
+  \State Apply the cited offline/online or time-stepping update.
+  \State Round/truncate ranks with declared tolerance and branch label.
+  \State Renormalize only if the density semantics require it.
+  \State Record ranks, mass error, positivity error, boundary residual,
+    discretization error, and reference moment/density error.
+\EndFor
+\State Keep as diagnostic until likelihood and posterior checks pass.
+\end{algorithmic}
+\end{algorithm}
+
+For the running cell, a TT representation is unnecessary in one dimension; it
+is pedagogical.  It shows that the object being represented is a density over a
+grid or basis.  In a high-dimensional macro-finance block, TT becomes plausible
+only if economic block structure keeps the unfolding ranks small and if
+probability semantics survive rounding.
+
+HMC label: the TT/PDE material is not operational HMC support in this lane.
+It remains \texttt{DIAGNOSTIC\_ONLY} until a concrete implementation defines a
+scalar
+\[
+  \widehat\ell_T(\theta)=\sum_t\log\widehat Z_t(\theta)
+\]
+with a differentiable branch and a gradient that is the derivative of that
+same scalar.  Frozen ranks and pivots are at most
+\texttt{HMC\_BRANCH\_LOCAL\_ONLY}; rank adaptation, TT-cross pivot changes,
+clipping, hard truncation, and failed normalization are
+\texttt{HMC\_NOT\_ADMISSIBLE\_UNTIL\_SMOOTHED} for ordinary HMC.  TT compression
+residuals do not by themselves control likelihood-gradient error.
+
+\section{TT Sequential Learning And Conditional KR Transports}
+\label{sec:bf-hd-zhao-cui}
+
+\citet{zhao2024ttsequential} is the central discrete-time TT source for this
+block.  It treats sequential state and parameter learning in state-space models
+by recursively approximating posterior densities with tensor trains.  Its
+checked technical role here is direct: SSM equations (1)--(9), Algorithms
+1--5, Proposition 2, Proposition 4, Theorems 7--8, Corollary 12, and the
+conditional Knothe--Rosenblatt maps built from the TT approximation.
+
+The bridge is as follows.  A nonnegative TT approximation supplies conditional
+density factors or conditional cumulative distribution functions.  A
+triangular conditional map can then be constructed from one-dimensional
+conditional CDFs, which is the KR transport idea in operational form.  For
+BayesFilter this is attractive because it connects low-rank density
+approximation to transport preconditioning.  It remains conditional because
+normalization, monotonicity, rank error, and Jacobian stability are part of the
+method, not afterthoughts.
+
+\citet{cui2021deep} is used through the inspected anchors recorded in P1R:
+functional TT Section 2.3, Propositions 1--7, Theorems 1, 3, 4, and Algorithms
+1--4 for deep inverse Rosenblatt transports.  Its role here is to support the
+existence of a TT/KR transport construction path, not to prove that BayesFilter
+has a validated transport-HMC backend.
+
+\begin{longtable}{@{}p{0.22\linewidth}p{0.33\linewidth}p{0.33\linewidth}@{}}
+\toprule
+TT/KR object & What must be checked & HMC implication \\
+\midrule
+\endhead
+Squared-TT density & mass, nonnegativity construction, rank error & can define
+a scalar only after \(\widehat Z_t\) is declared. \\
+Conditional CDF/map & monotonicity, inverse, boundary behavior & transport is
+valid only with finite Jacobian and support coverage. \\
+Frozen branch & fixed ranks, pivots, active grids & branch-local derivative
+only. \\
+Adaptive branch & changing ranks, pivots, truncation & not ordinary HMC until
+smoothed or moved outside the sampler. \\
+\bottomrule
+\end{longtable}
+
+\section{Tensor-Network Kalman And Square-Root Caution}
+\label{sec:bf-hd-tn-kalman}
+
+\citet{batselier2016tnkf} rewrites Kalman recursions for exponentially large
+lifted Volterra-system state vectors using tensor-network cores.  This is a
+linear-Gaussian recursion over a lifted representation, not a general
+nonlinear filter over the original state.  \citet{menzen2024tnsrkf} is a
+recent preprint warning that tensor-network covariance rounding can destroy
+positive definiteness and lead to divergence, motivating a tensor-network
+square-root Kalman filter.  The robust conclusion is algebraic: covariance
+compression needs a PSD or factor gate.
+
+\begin{proposition}[Covariance compression needs a factor gate]
+\label{prop:bf-hd-factor-gate}
+Any tensor-network compression of a covariance-like object used by a Gaussian
+update must expose either a positive-semidefinite reconstruction check or a
+factor/square-root representation whose product is positive semidefinite by
+construction.
+\end{proposition}
+
+\begin{proof}
+The Gaussian update uses \(P\) and \(S\) as covariance matrices.  If rounding
+returns an indefinite approximation, the innovation solve and posterior
+covariance no longer correspond to a Gaussian law.  A square-root factor
+\(P=LL^\top\) preserves positive semidefiniteness algebraically up to factor
+rounding and reconstruction checks.
+\end{proof}
+
+The defect appears in a two-by-two example:
+\[
+  P=\begin{pmatrix}1&1\\1&1\end{pmatrix},\qquad
+  \widehat P_\epsilon=
+  \begin{pmatrix}1&1+\epsilon\\1+\epsilon&1\end{pmatrix}.
+\]
+The eigenvectors \((1,1)^\top\) and \((1,-1)^\top\) have eigenvalues
+\(2+\epsilon\) and \(-\epsilon\).  Thus an arbitrarily small unconstrained
+rounding perturbation can leave the PSD cone.  A tensor-network covariance
+filter that does not expose a PSD or factor gate is not merely approximate; it
+may stop representing a covariance.
+
+HMC label: TN covariance filters are generally \texttt{DIAGNOSTIC\_ONLY} in this lane.
+If used inside a Gaussian approximate likelihood, they inherit the Gaussian
+innovation score from Chapter~\ref{ch:bf-highdim-gaussian-quadrature} only when
+the covariance factor branch and scalar are fixed and differentiable.
+
+\section{Complexity And Diagnostics}
+\label{sec:bf-hd-ptt-complexity}
+
+\begin{longtable}{@{}p{0.18\linewidth}p{0.24\linewidth}p{0.31\linewidth}p{0.17\linewidth}@{}}
+\toprule
+Family & Scaling object & Diagnostics & Industrial role \\
+\midrule
+\endhead
+Bootstrap/SIR PF & \(O(N)\) model calls per step, \(O(Nn)\) memory & ESS, max
+weight, unique ancestors, likelihood variance, mode coverage & baseline and
+collapse warning. \\
+Guided/flow PF & proposal/map cost plus corrected weights & finite
+density-ratio, support mismatch, corrected ESS & structured proposal research. \\
+Triangular map filter & ensemble size times map-estimation cost; localization
+dependent & monotonicity, map residual, localization sensitivity & promising
+when block/local structure is real. \\
+TT/QTT PDE filter & \(O(dMr^2)\) storage plus rank-dependent operator cost &
+rank growth, mass, positivity, boundary, discretization & direct density
+research path. \\
+TT/KR transport & TT density plus conditional-CDF/map cost & normalization,
+monotonicity, logdet, propagation error & TT--transport bridge. \\
+TN Kalman/square-root & tensor-network rank dependent & PSD/factor residual,
+rounding drift & lifted Gaussian compression. \\
+\bottomrule
+\end{longtable}
+
+\section{Defects Passed To Synthesis}
+\label{sec:bf-hd-ptt-defects}
+
+Particles, transports, and tensor methods pass five defects to the synthesis
+chapter.
+
+\begin{enumerate}[label=(\arabic*)]
+  \item Particle methods expose collapse through log-weight variance, ESS,
+  maximum weight, unique ancestors, and mode-coverage diagnostics.  Runtime
+  comparisons are meaningless after collapse.
+  \item Guided and transported proposals must retain the density-ratio
+  correction or an explicitly source-supported deterministic analysis
+  contract.  Better geometry without correction is bias.
+  \item Transport maps require support, monotonicity or invertibility, and
+  finite Jacobian diagnostics before smoothing or MCMC benefits can be
+  interpreted.
+  \item TT density filters require rank, mass, positivity, boundary, and
+  likelihood/score checks.  A small storage footprint is not a probability
+  statement.
+  \item Tensor-network covariance filters require PSD or square-root/factor
+  gates.  Entrywise or corewise rounding is not closed under the PSD cone.
+\end{enumerate}
+
+\paragraph{Exported to synthesis.}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{longtable}{@{}p{0.10\linewidth}p{0.13\linewidth}p{0.12\linewidth}p{0.13\linewidth}p{0.13\linewidth}p{0.08\linewidth}p{0.11\linewidth}p{0.12\linewidth}@{}}
+\toprule
+Object & Exact target & Approximation site & Failure mode & Diagnostic/veto &
+Cost variable & Promotion gate & Anchor \\
+\midrule
+\endhead
+Particle measure & filtering law and normalizer estimate & finite \(N\),
+proposal, resampling & collapse or lost ancestors & ESS, max weight, unique
+ancestors & \(Nd\) and model calls & collapse absent or corrected &
+\citet{gordon1993novel,arulampalam2002tutorial,bengtsson2008curse,snyder2008obstacles} \\
+Corrected proposal & target expectations under correction & proposal/map fit &
+support or density-ratio failure & finite correction, ESS, support check & map
+or proposal cost & correction auditable &
+Prop.~\ref{prop:bf-hd-corrected-proposal} \\
+Transport map/filter & Jacobian-corrected law or analysis contract & fitted map
+and localization & wrong coupling or lost dependence & map residual, logdet,
+localization sensitivity & ensemble/map dimension & source contract satisfied &
+\citet{rosenblatt1952remarks,spantini2022coupling} \\
+TT density/PDE & filtering density or operator & discretization, rank,
+rounding & rank spike, negative density, mass drift & rank, mass, positivity,
+boundary & TT rank \(r\) & semantic checks stable &
+\citet{oseledets2011tt,li2019ttfiltering,fox2021grid,zhao2024ttsequential} \\
+TN covariance & PSD covariance/factor & tensor-network rounding & indefinite
+covariance & PSD/factor residual & TN rank & square-root/factor gate &
+Prop.~\ref{prop:bf-hd-factor-gate} \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\section{Methodological Boundary And Sources}
+\label{sec:bf-hd-ptt-boundary}
+
+The substantive claims in this chapter are tied to particle, transport, TT, and
+tensor-network sources where their checked constructions are used.  Savostyanov
+maxvol theory and Knothe's original rearrangement source were not inspected
+directly here; the chapter therefore uses Oseledets--Tyrtyshnikov for TT-cross
+and Rosenblatt plus modern transport-filtering papers for triangular maps.
+DPF implementation evidence and student baselines are not used as mathematical
+authority.  No source here is used to claim production readiness, NAWM
+readiness, posterior accuracy, tensor-method validation, transport-method
+validation, HMC convergence, GPU/XLA readiness, or default readiness.
+
+Exported forward: Chapter~\ref{ch:bf-highdim-hmc-research} may import only the
+declared scalar/HMC consequences of the particle, transport, TT, and TN objects
+named here, and Chapter~\ref{ch:bf-highdim-candidate-synthesis} may import only
+the defects, diagnostics, promotion gates, and source-risk boundaries stated
+here.  Neither later chapter should treat TT/KR transport existence,
+branch-local differentiability, or covariance-compression feasibility as stronger
+than these checked sources support.

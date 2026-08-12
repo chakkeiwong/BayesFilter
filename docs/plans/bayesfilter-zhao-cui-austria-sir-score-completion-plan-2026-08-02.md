@@ -2,7 +2,21 @@
 
 Date: 2026-08-02
 
-Status: `PROPOSED_PENDING_MATERIAL_PLAN_REVIEW`
+Status: `STOPPED_T3_PROPOSAL_QUALITY_CONTINUATION_VETO`
+
+Terminal result: `docs/plans/bayesfilter-zhao-cui-austria-sir-score-completion-result-2026-08-03.md`.
+T1 and T2 passed the `0.03` proposal screen. T3 failed at three
+predeclared mixed points, so T5/T10/T20 and the untouched claim were not run.
+
+Execution audit update, 2026-08-02: the pre-launch skeptical audit found that
+guide-major stateless random tensors compiled independently at each horizon did
+not guarantee literal cross-horizon prefix identity. The compiler now generates
+time-major streams and the campaign compiles one T20 frozen program, from which
+repository-owned T1/T2/T3/T5/T10 prefix views are issued. Staged tuning and
+claims must bind the parent T20 program ID. No staged evidence was launched
+before this repair. The audit also requires the outer theta sweep itself to be
+one XLA function and the artifact to retain every guide's ESS and maximum
+weight, not only the locally best guide.
 
 ## Decision
 
@@ -25,6 +39,11 @@ three-parameter likelihood-score assembly. It must be called a
 **Zhao-Cui-derived Austria finite-program score**, not a source-faithful Zhao-Cui
 Austria parameter score.
 
+The user explicitly requested thorough review and execution on 2026-08-02.
+That request accepts the target replacement disclosed below. It does not accept
+any broader physical-likelihood, source-faithfulness, HMC, posterior, default,
+or production claim.
+
 ### Target-Replacement Disclosure
 
 The selected scalar is not the current T1/T2 trained-TT normalizer
@@ -38,9 +57,17 @@ be close, but they are not equal by construction. Therefore:
 - it must issue a new route ID and a new leaderboard row label;
 - it must not call a difference from the old T1/T2 value a replay residual;
   that difference is a cross-program diagnostic; and
-- executing this plan is a material target choice for the score cell. Fable
-  review is required, and the user's later request to execute the reviewed
-  plan will constitute acceptance of this explicitly disclosed target.
+- executing this plan is a material target choice for the score cell. The
+  user's 2026-08-02 request to review and execute the plan constitutes
+  acceptance of this explicitly disclosed target.
+
+Fable review was requested through bounded read-only probes. Fable returned no
+output even for a fixed-token health probe; Sonnet returned the expected health
+token through the same wrapper and credentials. Therefore no Fable verdict is
+claimed. Under the active repository review-proportionality policy, reviewer
+unavailability is recorded but is not execution authority or a scientific
+blocker. The Codex skeptical audit and source audit are preserved in the
+companion plan-review result.
 
 If the intended deliverable is instead the derivative of the trained-TT
 normalizer itself, this plan must not execute. That alternative still requires
@@ -82,7 +109,7 @@ are a BayesFilter extension of that fixed-parameter example.
 |---|---|
 | Main question | Can a frozen Zhao-Cui-derived proposal program produce a finite, deterministic, memory-bounded `T=20` Austria observed-data likelihood scalar and its manual total score over a predeclared compact parameter-validation domain? |
 | Claimed target | The value and manual total derivative of one repository-defined frozen finite importance-filter scalar with sealed Austria observations and event order `z0 -> transition -> y1 -> ... -> transition -> y20`. |
-| Candidate mechanism | Offline scope-tuned squared-TT retained densities and exact-law conditional samplers; frozen references and ancestry; compiled normalized-weight score recursion using local analytical density scores. |
+| Candidate mechanism | Start from exact locally optimal Gaussian conditionals represented in whitened coordinates as rank-one squared-TT densities plus analytic triangular KR maps. The origin-only branch is the naive candidate. The domain repair uses persistent branches on the 3x3 kappa/nu guide grid, with one fixed log-mean-exp scalar across branch likelihoods; it does not switch guide components at each time. Freeze references and ancestry; use the compiled normalized-weight score recursion. Learned higher-rank TT fitting is a later fallback only if the analytic branch family fails a declared gate. |
 | Expected failure mode | Proposal ESS collapses with horizon or theta; a tail row lacks stable derivative algebra; the fixed branch leaves the validated domain; score carry omits a term; or XLA memory/control-flow limits are exceeded. |
 | Primary promotion criterion | On the untouched T20 claim branches, finite value and three-coordinate manual score, score additivity, fresh replay, strict source/tuning identity, and same-scalar diagnostic derivative agreement at the predeclared validation points. |
 | Promotion veto | Wrong target/event order; nonfinite value/score; omitted proposal/ancestor/Jacobian/normalizer/carry term; proposal law mismatch; score check failure; ESS/weight-degeneracy failure; graph fallback; stale tuning; source-identity failure; or memory breach. |
@@ -232,14 +259,15 @@ abs(manual - diagnostic) <= score_atol + score_rtol * max(abs(manual), abs(diagn
 ```
 
 where `score_atol` and `score_rtol` are calibrated before untouched claims from
-deterministic FP64 step-halving and backend-rounding evidence. Initial
-hypotheses are `score_atol=5e-6`, `score_rtol=5e-5`; they are not frozen
-defaults until Phase 1 calibration shows that they distinguish known
-omitted-term mutants from valid numerical drift. Tolerance calibration may
-tighten or reject the route, but may not be loosened after untouched claim
-results are read. Independent stochastic-reference comparisons use their own
-MCSE/uncertainty screen and must not be folded into this deterministic
-same-scalar tolerance.
+deterministic FP64 step-halving and backend-rounding evidence. The maximum
+allowed hypotheses are `score_atol=5e-6`, `score_rtol=5e-6`, matching the
+user-selected five-significant-digit material rule while retaining an absolute
+floor near zero. They are not frozen defaults until Phase 1 calibration shows
+that they distinguish known omitted-term mutants from valid numerical drift.
+Tolerance calibration may tighten or reject the route, but may not loosen
+either value or change the formula after untouched claim results are read.
+Independent stochastic-reference comparisons use their own MCSE/uncertainty
+screen and must not be folded into this deterministic same-scalar tolerance.
 
 Central finite differences and `GradientTape` are independent diagnostics in
 tests only. They must not appear in the runtime or issuer provenance. At each
@@ -263,6 +291,19 @@ At minimum, the validation design includes:
 - at least eight fixed mixed-coordinate interior points; and
 - untouched points drawn before final tuning is frozen.
 
+The untouched design is frozen here in normalized box coordinates and is not
+evaluated by the tuning runner:
+
+```text
+( 0.137, -0.619,  0.823)  (-0.271,  0.443, -0.733)
+( 0.881,  0.157, -0.349)  (-0.764, -0.286,  0.517)
+( 0.392,  0.914,  0.208)  (-0.553,  0.671, -0.126)
+( 0.049, -0.832, -0.461)  (-0.927,  0.358,  0.604)
+```
+
+The final coordinates equal these normalized coordinates multiplied by the
+selected half-width. These points are claim diagnostics, not tuning inputs.
+
 Passing supports only that compact validation domain. It does not establish
 arbitrary-theta correctness or an HMC prior.
 
@@ -273,8 +314,9 @@ arbitrary-theta correctness or an HMC prior.
 | Direct tiny scalar and autodiff/FD derivative | Mathematical authority at `T=1`, small `N` | Hard implementation veto only |
 | Bootstrap/fixed Gaussian frozen branch | Naive baseline for recursion and variance | Required baseline, not Zhao-Cui promotion evidence |
 | Existing T1/T2 material FD artifacts | Cross-program regression context at the origin | Explanatory only unless identical scalar/branch identity is independently proved; projected T2 tangent is not derivative authority |
-| Frozen Zhao-Cui-derived exact-law proposal branch | Plain proposed finite program | Claim candidate |
-| Scope-tuned multi-branch or enhanced proposal | Enhanced candidate only if plain route fails a declared proposal-quality gate | Must retain the same scalar and score contract |
+| Frozen origin rank-one squared-TT/analytic-KR locally optimal Gaussian branch | Naive Zhao-Cui-derived finite program | Candidate baseline; assembled route remains `extension_or_invention` |
+| Frozen persistent rank-one squared-TT/analytic-KR guide branches | Proposal repair spanning the sealed domain hypothesis | Claim candidate only if every branch is finite, every domain point has a viable local branch, and the exact log-mean-exp combination passes |
+| Scope-tuned learned higher-rank TT proposal | Enhanced candidate only if the analytic rank-one route fails a declared proposal-quality gate | Must retain the same scalar and score contract and satisfy the no-host-loop XLA gate |
 | Independent conditional/reference filter | Same-target external check with MCSE/ESS | Veto/uncertainty evidence, not exact oracle unless derived |
 | GenUT/SGQF/UKF | Existing same-model comparators | Descriptive unless uncertainty supports ranking |
 
@@ -292,6 +334,12 @@ arbitrary-theta correctness or an HMC prior.
 4. Build a source/classification test that rejects these labels:
    `source_faithful_austria_parameter_score`, `exact_autodiff`, and
    `arbitrary_theta`.
+5. Bind the existing source-order implementation
+   `bayesfilter/highdim/zhao_cui_austria_sir_fixed_variant_tf.py` and shared
+   `tf.while_loop` recursion in
+   `bayesfilter/highdim/zhao_cui_predator_prey_fixed_variant_tf.py`. Reject the
+   generic evaluator that observes its first stored state; the sealed Austria
+   event order has an initial correction with no `y0`, followed by `y1:y20`.
 
 Exit: one target manifest and one operation-classification ledger; no new
 experiment.
@@ -323,8 +371,10 @@ tolerance, sealed validation domain, and stable tail-score contract.
    batch vectorization, including time and RK4 substeps.
 2. Use XLA JIT by default. New claim-owned modules and runners must not import
    NumPy. No `PyFunc`, eager decision, Python numerical loop (including a
-   statically unrolled RK4 loop), `tf.map_fn`, or scalar fallback may influence
-   the numerical path.
+   statically unrolled RK4, optimizer, microbatch, tensor-axis, parameter, or
+   finite-difference loop), `tf.map_fn`, or scalar fallback may influence any
+   claim-owned runtime, proposal-training, proposal-compilation, tuning, or
+   selection numerical path. Use batch-native TensorFlow and `tf.while_loop`.
 3. Keep Python only at static configuration, artifact I/O, hashing, manifest,
    and reporting boundaries. Tensor materialization at those boundaries must
    not feed a numerical runtime decision.
@@ -332,6 +382,10 @@ tolerance, sealed validation domain, and stable tail-score contract.
    callbacks. Add CPU-hidden parity tests and trusted-GPU smoke tests.
 5. Configure the reviewed 6,144 MiB logical-device cap before TensorFlow GPU
    initialization and record the memory-policy exception correctly.
+6. Use FP64 for the admitted finite-score artifact. FP32/TF32 remains a
+   GPU/XLA parity and performance diagnostic only unless it independently
+   passes the same five-significant-digit score gate; it is not allowed to
+   weaken the claim tolerance.
 
 Exit: tiny and T2 XLA kernels reproduce the FP64 reference within calibrated
 tolerance and fail closed on graph fallback.
@@ -341,24 +395,53 @@ tolerance and fail closed on graph fallback.
 This phase does not differentiate or replay optimizer training. It consumes
 offline proposal artifacts.
 
-1. Reuse the passed exact interval-mass T1 retained sampler and its correctly
-   scored finite law where compatible.
-2. Build fresh proposal artifacts sequentially for `T=2,3,5,10,20`. Each
-   horizon is a distinct target-specific tuning scope under this plan and the
-   repository's scientific-default discipline; a lower-horizon setting is
-   only a warm start.
-3. Tune rank, basis, defensive mass, L1 weight, training budget, proposal
-   chart, grid/CDF controls, chunking, and branch count on disjoint
-   calibration/validation streams. The Zhao-Cui L1 policy applies.
+1. Use the exact locally optimal Gaussian conditional at `theta=0` as the naive
+   proposal. Conditional on a fixed parent, `f` has covariance `I18` and the
+   infectious-only observation has covariance `100 I9`; hence susceptible
+   conditional variance is `1`, infectious conditional variance is `100/101`,
+   and the predictive observation variance is `101`. In whitened coordinates
+   this is a rank-one squared-TT density with an analytic diagonal KR map. The
+   predictive likelihood supplies the exact auxiliary ancestor law. If the
+   origin component fails the compact-domain screen, repair with an equal-prior
+   persistent guide branches on the 3x3 kappa/nu grid, with observation-noise
+   guide fixed at zero because that coordinate changes conditional state
+   variance only from about `0.9895` to `0.9907` over the sealed domain. Each
+   branch keeps one guide for its full genealogy. Combine branch likelihoods
+   with one exact log-mean-exp scalar and combine scores with its likelihood
+   weights. Per-time component switching is rejected because its matching-path
+   mass decays as `K^-T`; scoring only the realized component is also wrong.
+   If no persistent guide is viable at any T3 domain point, reject the analytic
+   proposal route. The passed interval-mass T1 sampler remains cross-route
+   warm-start evidence only.
+2. Build one fresh sequential T20 proposal chain, with a separately tuned and
+   frozen proposal artifact for each time step `t=1,...,20`. The proposal at
+   time `t` depends only on `y1:yt`, so its T20 prefix is the same mathematical
+   object used by the T1/T2/T3/T5/T10 admission prefixes. Do not independently
+   retune the same prefix for each final horizon or allow later observations to
+   leak into an earlier proposal.
+3. The analytic rank-one candidate has no learned rank, basis, optimizer, L1,
+   defensive-mass, grid, or CDF control to tune. Calibrate only the compact
+   theta domain against frozen proposal-quality gates. If it fails before T3,
+   stop with the first-horizon proposal blocker. If it first fails after T3,
+   a learned higher-rank TT repair may use the remaining tuning budget, with
+   positive L1 arms and disjoint calibration/validation streams; that fallback
+   remains subject to the no-Python-numerical-loop XLA gate.
 4. Freeze all references, proposal maps, densities, ancestry, shifts, and
    branch-combination rule before untouched scoring.
 5. At every staged horizon require finite proposal density, normalization,
    roundtrip, correct Jacobian, branch replay, retained-marginal identity,
    static workspace, and allocator gates.
-6. Use proposal-quality vetoes based on predeclared ESS/weight-tail and
-   independent-reference evidence. The exact floor must be reviewed and
-   calibrated before claim data; do not automatically inherit the historical
-   `ESS/N >= 0.5` threshold.
+6. Freeze the proposal viability veto before untouched branches: every branch
+   must have finite normalized weights and finite proposal correction; at each
+   domain point at least one persistent guide branch must have `ESS/N >= 0.10`
+   and maximum normalized particle weight `<= 0.10`. Report all branch ESS,
+   max weights, log-likelihood combination weights, and the effective number of
+   contributing branches. A far-guide branch failing ESS is explanatory, but a
+   missing viable local branch or a nonfinite branch is a veto.
+   The `0.10` ESS floor is a source-derived warm-start hypothesis from the
+   author's `N/10` reapproximation trigger in `full_sol.m:53`; it is not a score
+   correctness theorem or evidence of superiority. Calibration may tighten
+   these thresholds, but may not loosen them after untouched results are read.
 
 Exit: a repository-issued tuning artifact and immutable frozen branch chain
 for each promoted horizon, or a precise proposal-quality/resource blocker.
@@ -387,8 +470,12 @@ terminal result.
 
 ### Phase 5: Untouched T20 Claim
 
-Run at least two predeclared frozen branches, or justify statistically why one
-branch is sufficient. The primary artifact must contain:
+Run exactly nine predeclared persistent guide branches on the 3x3 kappa/nu grid
+with a fixed log-mean-exp branch scalar. Report leave-one-guide-out and
+axis-subset sensitivity to expose branch instability, plus branch-level
+likelihood/score and combination-weight diagnostics. Nine guide branches are a
+domain proposal design, not independent replications; they do not support
+method ranking or exact-likelihood claims. The primary artifact must contain:
 
 - the exact finite scalar definition and branch-combination rule;
 - value, total score, and per-time increments for all three coordinates;
@@ -431,6 +518,7 @@ any exact-physical-likelihood or scientific-accuracy claim.
 | Choice | Provenance/status | Failure mode | Earliest diagnostic | Promotion status |
 |---|---|---|---|---|
 | Frozen proposal branch | Simplest route whose proposal derivative is exactly zero for its finite scalar | High variance or poor off-origin support | T1/T2 domain and ESS screens | Hypothesis |
+| Rank-one Gaussian squared-TT/KR proposal | Exact local `f*g` conditional at each guide theta; source-grounded KR/correction operation, project-defined assembly | Off-origin or long-horizon branch collapse despite exact guide components | Origin-only T1 screen; failed per-time mixtures retained as negative evidence; persistent 3x3 kappa/nu guide branches at T1/T2/T3 | Naive branch plus persistent-guide repair; not source-faithful assembled route |
 | Manual score recursion | Project derivation of the exact frozen scalar | Missing carry or normalization term | Tiny autodiff/FD plus mutant rejection | Candidate authority after pass |
 | Existing T1/T2 TT parents | Passed bounded artifacts | Local fits do not extrapolate to later horizons or theta | Staged horizon/domain screens | Warm starts only |
 | Exact interval-mass sampler | Passed T1 finite-law evidence | Rare prefix/tail issue at larger scope | Per-horizon normalization, roundtrip, and tail screens | Baseline sampler |
@@ -439,12 +527,12 @@ any exact-physical-likelihood or scientific-accuracy claim.
 | Initial score tolerance | Five-digit intent plus FP64 diagnostic hypothesis | Near-zero blindness or false rejection | Step-halving and omitted-term mutants | Calibration hypothesis |
 | Rank/basis/ALS/Adam/L1 | Target- and scope-dependent | Underfit, overfit, or invalid transfer | Disjoint per-horizon tuning | No inherited default |
 | 6,144 MiB cap | Existing reviewed shared-GPU policy | Candidate cannot fit | Compile/allocator preflight | Fixed resource limit |
-| FP64 reference, FP32/TF32 claim | Existing backend ladder | Claim score loses material digits | Same-branch backend parity | Reference and production-target roles respectively |
-| Two frozen branches | Minimal stochastic replication hypothesis | Understates branch uncertainty | Branch-growth diagnostic | Must be justified or increased |
+| FP64 claim, FP32/TF32 diagnostic | Five-significant-digit score requirement and GPU/XLA backend policy | FP32 score loses material digits or FP64 is too slow | Same-branch backend parity and bounded FP64 GPU preflight | FP64 claim decision; FP32/TF32 diagnostic only |
+| Nine persistent guide branches | 3x3 kappa/nu domain proposal design; observation-noise guide fixed at zero | No viable local branch or one branch dominates log-mean-exp | Per-guide ESS/max weight, branch effective count, leave-one-guide-out sensitivity | Fixed claim proposal scope; not independent replication or ranking evidence |
 
 ## Skeptical Pre-Execution Audit
 
-Verdict: `PASS_FOR_REVIEW; DO_NOT_EXECUTE_BEFORE_MATERIAL_FINDINGS_ARE_RESOLVED`.
+Verdict: `PASS_AFTER_REVISION_FOR_BOUNDED_EXECUTION`.
 
 | Required audit | Finding and repair |
 |---|---|
@@ -458,6 +546,11 @@ Verdict: `PASS_FOR_REVIEW; DO_NOT_EXECUTE_BEFORE_MATERIAL_FINDINGS_ARE_RESOLVED`
 | Non-answering artifact | A T2 origin score cannot close a T20 score cell. Phase 5 requires T20 value, score, increments, uncertainty, and full identity. |
 | False source claim | Paper Section 6.3 and author `d=0` explicitly block a source-faithful Austria parameter-score label. |
 | Derivative-of-training detour | XLA higher-order optimizer autodiff is unnecessary for the selected scalar. Removing it closes the engineering problem without changing the claim into raw-core derivative correctness. |
+| Initial-observation mismatch | The generic fixed-branch evaluator includes an observation at its first state and is wrong for `p(y1:y20)`. The existing source-order evaluator has the required no-`y0` initial correction and is now bound explicitly. |
+| Horizon retuning drift | Independent retuning by final horizon could produce different objects for the same prefix. The revised campaign trains each sequential proposal once and reuses the frozen prefix at every admission horizon. |
+| Precision mismatch | The prior FP32 claim hypothesis could not guarantee the user-selected five-significant-digit score gate. The admitted claim is now FP64; FP32/TF32 is diagnostic only. |
+| Reviewer availability | Fable produced no output for bounded review and fixed-token health probes. No verdict is inferred; the limitation is recorded under advisory review policy. |
+| Noncompliant learned warm start | The existing Austria TT fitter and retained/TTSIRT compilers contain Python optimizer, axis, time, or microbatch loops and cannot be promoted under the user's XLA requirement. The analytic rank-one squared-TT/KR proposal is the plain candidate; learned fitting is allowed only after an XLA-native repair. |
 
 ## Pre-Mortem
 
@@ -505,8 +598,10 @@ requires a revised plan; localized infrastructure repair does not.
 Phase 0 must verify and seal the current baseline environment
 `/home/chakwong/anaconda3/envs/tf-gpu`, including TensorFlow/TFP/CUDA versions.
 If it is unsuitable, changing environments is an explicit environment decision
-and package mutation remains outside this plan. Future implementation must
-provide these stable runner surfaces before any serious launch:
+and package mutation remains outside this plan. The existing bounded runner
+`scripts/run_zhao_cui_austria_sir_observed_data_score.py` is the migration
+baseline. Completion implementation must provide these stable runner surfaces
+before their corresponding serious launch:
 
 ```text
 scripts/run_zhao_cui_austria_sir_frozen_score_preflight.py
@@ -536,7 +631,7 @@ Scope-specific tuning shape:
 /home/chakwong/anaconda3/bin/conda run -p /home/chakwong/anaconda3/envs/tf-gpu \
   python scripts/run_zhao_cui_austria_sir_frozen_score_tuning.py \
   --horizon <2|3|5|10|20> \
-  --scope-config <reviewed-scope-json> \
+  --particle-count 1008 --seed 31201 \
   --output-dir docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/<fresh-attempt>/
 ```
 

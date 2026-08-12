@@ -1,0 +1,887 @@
+\chapter{Retained-Teacher Neural OT Warm Starts}
+\label{ch:bf-dpf-learned-ot}
+
+The preceding chapters fixed the entropic OT and Sinkhorn layer, together with
+its recovered custom-gradient bridge, as a fully declared teacher-side
+computational object.  The present chapter introduces the narrowest neural
+extension of that teacher: do not replace the teacher; learn how to start it
+better.
+
+This is the main implementation-bearing neural chapter of the OT block.  Its
+question is narrower than ``can a network learn transport?''  It asks instead:
+can a network predict a good internal solver state so that a retained corrective
+Sinkhorn phase needs less work while still protecting the declared teacher
+object?
+
+This narrowing is deliberate.  The monograph begins neural OT with retained-
+teacher acceleration because it is the least radical learned extension of the
+existing OT block.  The weighted cloud, the entropic teacher, and the barycentric
+output rule all remain declared in advance; only the route used to reach that
+teacher object is learned or accelerated.
+
+\section{What problem this chapter solves}
+\label{sec:bf-learned-ot-objects}
+
+Let \(X=(x_1,\ldots,x_N)^\top\in\mathbb R^{N\times d_x}\) be the weighted
+source cloud and let \(w\in\Delta_N\) be its normalized weights.  Let
+\(u=(1/N,\ldots,1/N)\) be the equal target marginal, and let
+\(C(X,Z)\in\mathbb R^{N\times N}\) be the declared transport cost matrix.  The
+previous chapter already fixed the finite entropic-OT/Sinkhorn route as the
+reference computational teacher for turning this weighted cloud into an
+equal-weight cloud.
+
+The practical question now is not whether the teacher should be changed, but
+whether its execution path can be improved.  The chapter therefore asks:
+\begin{quote}
+Can we learn a solver-relevant latent state that makes the retained corrective
+Sinkhorn solve cheaper while still returning to the same declared finite teacher
+object after correction?
+\end{quote}
+
+\paragraph{How to read the rest of this chapter.}
+The chapter has one primary lane and one secondary lane.  The primary lane is the
+warm-start story: define the teacher, define the latent state the student predicts,
+run the corrective retained solver, and judge the corrected cloud against the
+teacher.  Only after that core story is in place does the chapter widen into a
+shorter survey of broader retained-teacher families such as Nystr{\"o}m,
+positive-feature, and low-rank routes.
+
+\begin{center}
+\small
+\begin{tabular}{p{0.27\textwidth} p{0.61\textwidth}}
+\toprule
+Object & Meaning in this chapter \\
+\midrule
+exact entropic teacher \(\Pi_\varepsilon^\star\) & optimizer of the declared regularized OT problem \\
+finite numerical teacher \(\Pi_{\varepsilon,K}\) & entropic teacher after a declared finite number of Sinkhorn repairs \\
+latent warm-start target \(h_\tau\) & solver-relevant coordinate such as duals, log-scalings, or scaling vectors \\
+corrected student output \(\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}}\) & coupling produced after student initialization and retained corrective Sinkhorn steps \\
+barycentric output \(B(\Pi)\) & equal-weight cloud later code actually consumes \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Running warm-start cell}
+\label{sec:bf-learned-ot-running-cell}
+
+Keep the same three-particle setting as the previous OT chapters: a weighted
+source cloud, an equal target marginal, a declared quadratic cost, a
+regularization level \(\varepsilon\), and a finite Sinkhorn budget \(K\).  The
+next section will restate the teacher formally; for now the important point is
+that the retained finite teacher is the coupling
+\(\Pi_{\varepsilon,K}(X,w)\) produced by that declared Sinkhorn route.
+
+A warm-start learner does not try to predict the transported output cloud first.
+It tries to predict a latent teacher coordinate, such as dual variables,
+log-scalings, or scaling vectors, that initializes the corrective solve.  Write
+\begin{equation}
+\label{eq:bf-learned-ot-student-map}
+  h_\psi = S_\psi(X,w;\varepsilon,N,d_x),
+\end{equation}
+where \(h_\psi\) is later translated into the initialization of the retained
+corrective Sinkhorn solver.
+
+For a concrete exposition, it is useful to keep one canonical latent target in
+mind.  Suppose the student predicts initial log-scalings
+\begin{equation}
+\label{eq:bf-learned-ot-logscaling-student}
+  h_\psi
+  =
+  (\ell_a^{(0)},\ell_b^{(0)}),
+\end{equation}
+which are then exponentiated to give
+\begin{equation}
+\label{eq:bf-learned-ot-scaling-init}
+  a^{(0)}=\exp(\ell_a^{(0)}),
+  \qquad
+  b^{(0)}=\exp(\ell_b^{(0)}).
+\end{equation}
+The corrective retained-teacher route then performs the same balancing equations as
+before,
+\begin{equation}
+\label{eq:bf-learned-ot-corrective-updates}
+  a^{(k+1)} = w \oslash (K_\varepsilon b^{(k)}),
+  \qquad
+  b^{(k+1)} = u \oslash (K_\varepsilon^\top a^{(k+1)}),
+\end{equation}
+until the declared correction budget is exhausted.  This makes the chapter's
+teacher-preserving logic explicit: the learner may change the starting point of the
+finite Sinkhorn route, but the corrected route still returns to the same declared
+kernel, the same marginal constraints, and the same barycentric output rule.
+
+The operational contrast is then simple:
+\begin{itemize}
+  \item a naive initialization changes only how quickly the solver reaches the
+  finite teacher,
+  \item a learned initialization also changes only that execution path,
+  \item the corrected coupling and barycentric output are still judged against
+  the same declared finite teacher object.
+\end{itemize}
+
+\paragraph{Running-example walkthrough.}
+The warm-start story can now be read in one seven-step ladder:
+\begin{enumerate}[label=(\arabic*)]
+  \item start from a weighted cloud \((X,w)\), a declared cost, and the equal target
+    marginal \(u\),
+  \item define the retained finite teacher coupling \(\Pi_{\varepsilon,K}\),
+  \item choose a latent teacher coordinate to predict, such as log-scalings,
+  \item let the student predict that latent coordinate,
+  \item translate the prediction into the initialization of the retained corrective
+    Sinkhorn routine,
+  \item run the declared number of corrective updates to obtain the corrected
+    coupling \(\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}}\),
+  \item form the barycentric equal-weight cloud and compare it against the teacher
+    output through residual checks.
+\end{enumerate}
+The rest of the chapter merely fills in this ladder mathematically and then asks
+how adjacent retained-teacher families fit into the same audit posture.
+
+\paragraph{One concrete warm-start recipe.}
+To keep the chapter operational, fix one explicit reading.  Suppose the teacher
+latent target is the pair of initial log-scalings
+\((\ell_a^{(0)},\ell_b^{(0)})\), the student network predicts exactly that pair,
+and deployment uses a declared corrective budget \(K_{\mathrm{corr}}\).  Then one
+practical recipe is:
+\begin{enumerate}[label=(\roman*)]
+  \item solve the retained teacher route on training clouds and store the resulting
+    target log-scalings,
+  \item train the student to predict those log-scalings from \((X,w)\),
+  \item exponentiate the predicted pair to form \((a^{(0)},b^{(0)})\),
+  \item run \(K_{\mathrm{corr}}\) corrective Sinkhorn updates,
+  \item compare the corrected barycentric cloud and residuals against the teacher.
+\end{enumerate}
+This is only one possible retained-teacher design, but it is concrete enough that a
+first-year reader can see what is stored, what is predicted, and what is still
+protected by correction.
+
+\paragraph{Plain-language takeaway.}
+A warm-start learner is not asked to invent the transport result.  It is asked
+to guess a better place from which the retained teacher solver should begin.
+
+\paragraph{What the rest of the chapter is for.}
+A first-year reader should treat everything through the end of the residual
+hierarchy as the primary implementation story of the chapter.  The later Nystr{\"o}m,
+positive-feature, low-rank, and minibatch sections are broader retained-teacher
+family context: they are useful because they preserve the same audit posture, but
+they are not new primary objects to learn first.  If the notation starts to feel
+dense, return to the seven-step warm-start ladder above and ask how each later
+family changes only the route to the teacher rather than the teacher object itself.
+
+\section{What the teacher computes}
+\label{sec:bf-learned-ot-hierarchy}
+
+There is no single teacher unless the variant is named.  In this chapter, the
+main teacher is the retained EOT/Sinkhorn route from the previous chapter.  The
+reader therefore needs one short local recap of that teacher before any learned
+warm start is introduced.
+
+Given weighted source cloud \(X=(x_1,\ldots,x_N)^\top\), source marginal
+\(w\in\Delta_N\), equal target marginal
+\(u=(1/N,\ldots,1/N)\), declared cost matrix \(C\), and regularization
+\(\varepsilon>0\), the entropic teacher object is
+\begin{equation}
+\label{eq:bf-learned-ot-entropic-primal}
+  \Pi_\varepsilon^\star
+  =
+  \arg\min_{\Pi\in\mathcal U(w,u)}
+  \left\{
+    \langle \Pi,C\rangle
+    + \varepsilon\sum_{i,j}\Pi_{ij}(\log\Pi_{ij}-1)
+  \right\}.
+\end{equation}
+Its Gibbs/scaling form is
+\begin{equation}
+\label{eq:bf-learned-ot-gibbs-factorization}
+  \Pi_\varepsilon^\star
+  =
+  \diag(a)K_\varepsilon\diag(b),
+  \qquad
+  (K_\varepsilon)_{ij}=\exp(-C_{ij}/\varepsilon),
+\end{equation}
+with scaling vectors satisfying the balancing equations
+\begin{equation}
+\label{eq:bf-learned-ot-balancing}
+  a = w \oslash (K_\varepsilon b),
+  \qquad
+  b = u \oslash (K_\varepsilon^\top a).
+\end{equation}
+After a declared finite number \(K\) of Sinkhorn repairs, the finite numerical
+teacher is
+\begin{equation}
+\label{eq:bf-learned-ot-finite-teacher}
+  \Pi_{\varepsilon,K}
+  =
+  \diag(a^{(K)})K_\varepsilon\diag(b^{(K)}).
+\end{equation}
+The corresponding barycentric teacher output is
+\begin{equation}
+\label{eq:bf-learned-ot-barycentric-teacher}
+  Y_\tau(X,w,\varepsilon)
+  =
+  B(\Pi_\tau(X,w,\varepsilon)),
+  \qquad
+  B(\Pi)_j = \frac{1}{u_j}\sum_{i=1}^N \Pi_{ij}x_i.
+\end{equation}
+In the equal-weight case, this is
+\begin{equation}
+\label{eq:bf-learned-ot-barycentric-equal}
+  B(\Pi)_j = N\sum_{i=1}^N \Pi_{ij}x_i.
+\end{equation}
+
+These formulas identify the three most important teacher objects in this chapter:
+\begin{enumerate}[label=(\roman*)]
+  \item the exact regularized coupling \(\Pi_\varepsilon^\star\),
+  \item the finite numerical teacher \(\Pi_{\varepsilon,K}\),
+  \item the barycentric teacher output \(Y_\tau=B(\Pi_\tau)\).
+\end{enumerate}
+The chapter's neural route is only intended to accelerate the finite teacher, not
+to redefine these objects.
+
+\paragraph{Object audit.}
+The learned quantity is a latent solver state.  The corrected transport object is
+still the finite teacher-side coupling or its barycentric output.  In the
+vocabulary of the OT block, this is an execution-path approximation, not a
+transport-object change.
+
+\paragraph{Canonical reading convention.}
+For the rest of this chapter, the safest first-year reading convention is:
+\begin{itemize}
+  \item \(\Pi_\varepsilon^\star\) is the exact entropic teacher,
+  \item \(\Pi_{\varepsilon,K}\) is the retained finite numerical teacher,
+  \item \(h_\tau\) is the latent teacher coordinate the student is asked to learn,
+  \item \(\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}}\) is the corrected student
+  output,
+  \item all residuals are interpreted relative to that corrected student output
+  versus the chosen finite teacher.
+\end{itemize}
+Whenever the notation becomes crowded, return to that five-line convention rather
+than trying to remember every symbol historically.
+
+\paragraph{Teacher notation shortcut.}
+To keep the notation stable, the chapter will use the following shorthand from this
+point onward:
+\begin{itemize}
+  \item exact teacher = \(\Pi_\varepsilon^\star\),
+  \item finite teacher = \(\Pi_{\varepsilon,K}\),
+  \item generic teacher-side cloud = \(Y_\tau=B(\Pi_\tau)\), with \(\tau\) always
+  meaning the chosen retained teacher route,
+  \item corrected student output = \(\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}}\).
+\end{itemize}
+So when a later section says ``compare against the teacher,'' the default first-year
+reading should be: compare the corrected student output against the chosen finite
+retained teacher unless the exact teacher is explicitly named.
+
+\section{Algorithm: retained-teacher warm-started Sinkhorn}
+\label{sec:bf-learned-ot-teacher}
+
+\begin{algorithm}[ht]
+\caption{\texttt{train\_and\_deploy\_warmstarted\_sinkhorn}}
+\begin{algorithmic}[1]
+\Require training distribution \(\mathcal D\) over weighted particle clouds, declared cost construction, regularization schedule \(\varepsilon\), teacher Sinkhorn solver, architecture class \(S_\psi\), deployment-time corrective budget \(K_{\mathrm{corr}}\)
+\Ensure trained predictor \(S_\psi\), corrected deployment coupling \(\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}}\), barycentric output cloud \(\widetilde X_{\psi,\mathrm{corr}}\), and declared residual diagnostics
+\State Generate teacher problems by solving the retained EOT/Sinkhorn route on sampled clouds from \(\mathcal D\)
+\State Extract the latent teacher target to be predicted, e.g. dual/scaling coordinates
+\State Fit the predictor \(S_\psi\) on this teacher data using the declared loss family
+\State For a new weighted cloud \((X,w)\), compute the student prediction \(h_\psi=S_\psi(X,w;\varepsilon,N,d_x)\)
+\State Translate \(h_\psi\) into the initial state of the retained corrective Sinkhorn solver
+\State Run \(K_{\mathrm{corr}}\) corrective Sinkhorn updates to obtain \(\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}}\)
+\State Form the barycentric equal-weight output cloud \(\widetilde X_{\psi,\mathrm{corr}}=B(\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}})\)
+\State Record row/column residuals, teacher-student discrepancy, and any downstream scalar checks
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{What the student is allowed to change.}
+Only the initialization of the retained teacher solver, or another explicitly
+named latent teacher coordinate.
+
+\paragraph{What the teacher still protects.}
+The declared transport constraints, the EOT objective, and the corrected
+barycentric output after refinement.
+
+\paragraph{Why this chapter keeps log-scalings as the running latent target.}
+The chapter names duals, log-scalings, and scaling vectors because all three occur
+naturally in entropic OT implementations.  But the running exposition uses
+log-scalings because they are concrete, per-particle, and easy to translate back
+into the retained corrective solver.  A first-year reader should therefore treat the
+log-scaling example as the chapter's canonical student target unless a later section
+explicitly announces a different latent object.
+
+\section{Evidence contract for retained-teacher learning}
+\label{sec:bf-learned-ot-training-objective}
+
+Let \(h_\tau\) denote the teacher latent target and let
+\(\mathcal D(N,d_x,\varepsilon,m,\eta)\) be the training distribution over
+problem instances.  A simple supervised teacher-student fitting problem is
+\begin{equation}
+\label{eq:bf-learned-ot-training-objective}
+  \psi^\star
+  \in
+  \arg\min_\psi
+  \mathbb E_{(X,w,\varepsilon,m)\sim\mathcal D}
+  \left[
+    \mathcal L\{S_\psi(X,w;\varepsilon,N,d_x),h_\tau(X,w,\varepsilon)
+    \}
+  \right].
+\end{equation}
+In practice, the deployment claim is not about this loss alone.  It is about
+whether the corrected route preserves the teacher output well enough on held-out
+and stress-test clouds.
+
+\subsection{Permutation symmetry as a design check}
+\label{sec:bf-learned-ot-symmetry}
+
+Particle labels are arbitrary.  For a permutation matrix
+\(P\in\mathbb R^{N\times N}\), the predictor should at least satisfy a declared
+permutation symmetry.  In the output-cloud case the natural condition is
+\begin{equation}
+\label{eq:bf-learned-ot-equivariance}
+  S_\psi(PX,Pw;\varepsilon,N,d_x)
+  =
+  P\,S_\psi(X,w;\varepsilon,N,d_x)
+  \quad
+  \text{or the corresponding latent-state analogue.}
+\end{equation}
+The distinction matters because different latent targets transform differently.  If
+the student predicts a per-particle object such as initial log-scalings, then
+permutation equivariance is the natural symmetry.  If the student predicts a
+compressed global latent statistic, a weaker invariance or gauge-fixed analogue may
+be more appropriate.  In either case, the chapter's main design check is the same:
+relabeling particles should not change the mathematical content of the predicted
+teacher state.
+
+\subsection{Residual hierarchy}
+\label{sec:bf-learned-ot-residuals}
+
+A retained-teacher route should be judged by a hierarchy of residuals rather than
+by one discrepancy alone.  The first checks are the marginal feasibility residuals
+of the corrected route,
+\begin{equation}
+\label{eq:bf-learned-ot-row-col-residuals}
+  r_{\mathrm{row}}
+  =
+  \|\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}}\mathbf 1-w\|_1,
+  \qquad
+  r_{\mathrm{col}}
+  =
+  \|\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}}'\mathbf 1-u\|_1.
+\end{equation}
+These ask whether the corrected route still satisfies the declared transport
+constraints.  They do \emph{not} by themselves show that the corrected student has
+reproduced the teacher's transported cloud.
+
+The next deployment residual is the teacher-student discrepancy after correction:
+\begin{equation}
+\label{eq:bf-learned-ot-residual}
+  R_{\psi,\tau}(X,w,\varepsilon)
+  =
+  B(\widehat\Pi_{\psi,\varepsilon,K_{\mathrm{corr}}})
+  -
+  B(\Pi_\tau(X,w,\varepsilon)).
+\end{equation}
+This barycentric discrepancy measures how well the corrected student reproduces the
+chosen teacher cloud.  It still does not by itself control filtering or HMC target
+error.  For kernel-compression families such as Nystr{\"o}m or positive-feature
+Sinkhorn, one may also monitor the transported-cloud discrepancy more directly,
+\begin{equation}
+\label{eq:bf-learned-ot-transport-discrepancy}
+  \|\widetilde P X - P_\tau X\|,
+\end{equation}
+because the transport application is the actual object later code consumes.
+
+\paragraph{Mini-example of the hierarchy.}
+The logic of these residuals is easiest to remember by a simple contrast.  A route
+may satisfy the row and column sums almost exactly, so \(r_{\mathrm{row}}\) and
+\(r_{\mathrm{col}}\) look excellent, yet still move mass through a factorized or
+restricted representation whose transported cloud differs visibly from the chosen
+teacher output.  In that case feasibility has been preserved, but teacher parity
+has not.  Conversely, a corrected route might match the teacher cloud very closely
+while a downstream scalar still drifts because that scalar is more sensitive than the
+cloud discrepancy alone suggests.  This is why the residual hierarchy must be read
+in order: feasibility first, teacher-cloud parity second, downstream scalar checks
+third.
+
+A practical retained-teacher claim should therefore keep the following evidence
+contract explicit:
+\begin{enumerate}[label=(\arabic*)]
+  \item the predicted latent teacher object is named explicitly,
+  \item the corrected route satisfies the declared row/column residual contract,
+  \item any factorized kernel or coupling approximation is checked against the
+    teacher at the transported-cloud level,
+  \item the corrected cloud discrepancy remains below the declared threshold on the
+    tested envelope,
+  \item any downstream scalar or HMC-adjacent target is checked only after the
+    corrected output is formed.
+\end{enumerate}
+A useful first-year rule of thumb is: if the marginal constraints are good but the
+transported-cloud discrepancy is visibly non-small on the toy or dense reference
+problems, the warm start is not yet trustworthy no matter how fast it runs.  If the
+transported cloud is close but a downstream scalar still drifts materially, then the
+chapter's local parity checks have passed only at the cloud level and the learned
+route still should not be promoted for that scalar use case.
+
+\subsection{Where broader retained-teacher families fit}
+\label{sec:bf-learned-ot-retained-family}
+
+The chapter's core implementation story stops with the retained warm-start lane
+above.  The remaining subsections should be read as broader retained-teacher family
+context: they answer the same teacher-preservation question, but they are not new
+primary chapter threads.  Their role is to show how adjacent scalable-entropic
+families can still be interpreted through the same retained-teacher audit when the
+first test remains parity against the declared finite teacher.
+
+Warm-start predictors are the narrowest retained-teacher lane.  Other scalable
+OT families --- such as Nystrom, positive-feature, low-rank, or minibatch
+teacher-side approximations --- may still belong to the same lane only when
+their first audit question is teacher preservation rather than speed alone
+\citep{altschuler2019nystrom,scetbon2020positivefeatures,forrow2019factored,scetbon2021lowrank,scetbon2022lowrank,genevay2016stochastic,genevay2018samplecomplexity,nguyen2022bomb,nguyen2021partialminibatch}.
+Once the approximation is no longer naturally judged by teacher-preservation
+residuals, it belongs in the later target-changing chapters instead of this one.
+
+\paragraph{How to read the family context that follows.}
+If the next subsections start to feel denser than the warm-start core, the safest
+first-year reading rule is simple: treat them as alternate ways to preserve the same
+teacher-side audit posture, not as new primary chapter threads.  In other words,
+keep asking the same question: what compressed route is being proposed, and how is
+its corrected output compared back to the finite retained teacher?
+
+\subsection{Exact online and GPU Sinkhorn as the reference lane}
+\label{sec:bf-learned-ot-reference-lane}
+
+Before turning to approximate retained-teacher families, the reader should keep one
+semantics-preserving reference lane in view.  Exact online or GPU-specialized
+Sinkhorn methods preserve the same entropic teacher object while changing only how
+the kernel reductions are executed in memory or on hardware
+\citep{feydy2019geomloss,charlier2021keops,ye2026flashsinkhorn,xiao2026fastsinkhorn}.
+For squared Euclidean costs,
+\begin{equation}
+\label{eq:bf-learned-ot-reference-sqeuclidean}
+  C_{ij}
+  =
+  \|x_i-z_j\|_2^2
+  =
+  \|x_i\|_2^2+\|z_j\|_2^2-2x_i'z_j,
+\end{equation}
+and a stabilized potential update can be written schematically as a row-wise
+log-sum-exp reduction,
+\begin{equation}
+\label{eq:bf-learned-ot-reference-logupdate}
+  f_i
+  \leftarrow
+  -\varepsilon\log\sum_j
+  \exp\left((g_j-C_{ij})/\varepsilon+\log u_j\right).
+\end{equation}
+The same teacher-side barycentric output is then recovered from the resulting finite
+coupling.  This route is the reference lane because it preserves semantics while
+avoiding full dense materialization where possible.  It is not yet a new transport
+approximation class.  It also does not remove the dominant all-pairs interaction
+structure.  That is exactly why the later factorized families matter: they are not
+introduced before the reader has a semantics-preserving reference route in hand.
+
+\subsection{Nystrom kernel approximations}
+\label{sec:bf-learned-ot-nystrom}
+
+A natural retained-teacher route is to approximate the Gibbs kernel rather than
+the final transport object \citep{altschuler2019nystrom}.  For a Gaussian-like
+kernel, write
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-gibbs}
+  K_{ij}
+  =
+  k_\eta(x_i,x_j)
+  =
+  \exp(-\eta\|x_i-x_j\|^2).
+\end{equation}
+The Nystr{\"o}m idea is to choose a smaller landmark set
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-landmarks}
+  X_r=\{\tilde x_1,\ldots,\tilde x_r\}\subset X
+\end{equation}
+and define the factor matrices
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-factors}
+  V_{ij}=k_\eta(x_i,\tilde x_j),
+  \qquad
+  A_{jj'}=k_\eta(\tilde x_j,\tilde x_{j'}).
+\end{equation}
+Then the dense kernel is approximated by
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-kernel}
+  \widetilde K = V A^{-1}V'.
+\end{equation}
+This is not just a storage identity.  It changes how the expensive kernel action is
+computed.  If \(A=LL'\) is a Cholesky factorization, then a matrix-vector product
+is applied as
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-matvec}
+  \widetilde K v
+  =
+  V\left(L'^{-1}\left(L^{-1}(V'v)\right)\right),
+\end{equation}
+so the dominant kernel multiply is now factorized rather than dense.  After the
+factorization has been built, each multiply costs \(O(Nr)\) rather than
+\(O(N^2)\).
+
+Because Sinkhorn balancing uses kernel-vector products, the same factorization
+feeds directly into the retained finite teacher route.  The approximate teacher-side
+plan becomes
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-plan}
+  \widetilde P
+  =
+  D_1\widetilde K D_2
+  =
+  D_1 V A^{-1}V' D_2,
+\end{equation}
+and the barycentric transport application becomes
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-transport}
+  \widetilde P X
+  =
+  D_1 V A^{-1}V' D_2 X.
+\end{equation}
+This is the key retained-teacher ladder for the family:
+\begin{enumerate}[label=(\roman*)]
+  \item approximate the kernel action,
+  \item run the same teacher-side balancing logic on the factorized action,
+  \item compare the corrected transport output against the dense or streamed teacher.
+\end{enumerate}
+A practical Nystr{\"o}m route therefore needs more than the factorization formula
+itself.  The rank is usually increased adaptively until the approximation is judged
+good enough.  A simple entrywise diagnostic from the scalable-OT note is
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-diag-error}
+  \|K-\widetilde K\|_\infty
+  =
+  1-\min_i \widetilde K_{ii},
+\end{equation}
+which asks whether the approximate kernel still reproduces the self-similarity
+scale of the original kernel.  The deeper lesson is geometric: Nystr{\"o}m helps when
+the post-flow Gibbs kernel has low effective rank, but it can fail when the rank
+needed to represent the kernel grows quickly with ambient or intrinsic dimension,
+or when the entropic regularization is too small for low-rank structure to remain
+visible.
+
+For retained-teacher use, the decisive checks are still teacher-facing rather than
+speed-facing.  In addition to marginal residuals, one should monitor the
+transported-cloud discrepancy
+\begin{equation}
+\label{eq:bf-learned-ot-nystrom-cloud-discrepancy}
+  \|\widetilde P X-P_\tau X\|,
+\end{equation}
+because the transported cloud is the actual object later code consumes.  The
+primary diagnostics are therefore not speed alone but kernel-approximation error,
+marginal residuals after correction, and transported-cloud discrepancy against the
+chosen teacher route.
+
+\subsection{Positive-feature Sinkhorn}
+\label{sec:bf-learned-ot-positive-feature}
+
+A related route factorizes the kernel through positive features rather than through
+landmark columns \citep{scetbon2020positivefeatures}.  Choose a nonnegative
+feature map
+\begin{equation}
+\label{eq:bf-learned-ot-positive-map}
+  \phi_\theta(x)\in\mathbb R_+^r
+\end{equation}
+and define the induced kernel
+\begin{equation}
+\label{eq:bf-learned-ot-positive-kernel}
+  K_\theta(x_i,x_j)
+  =
+  \langle \phi_\theta(x_i),\phi_\theta(x_j)\rangle.
+\end{equation}
+The corresponding cost representation is then
+\begin{equation}
+\label{eq:bf-learned-ot-positive-cost}
+  c_\theta(x_i,x_j)
+  =
+  -\varepsilon\log K_\theta(x_i,x_j).
+\end{equation}
+At the matrix level, define source and target feature collections by
+\begin{align}
+\label{eq:bf-learned-ot-positive-matrices}
+  \Xi
+  &=
+  [\phi_\theta(x_1),\ldots,\phi_\theta(x_N)],\\
+  \mathrm Z
+  &=
+  [\phi_\theta(z_1),\ldots,\phi_\theta(z_N)],
+\end{align}
+so the sample kernel factorizes as
+\begin{equation}
+\label{eq:bf-learned-ot-positive-factorization}
+  K_\theta = \Xi'\,\mathrm Z.
+\end{equation}
+Balancing steps can therefore be expressed through feature-space products rather
+than through a materialized dense kernel.  After the feature matrices are formed,
+the dominant kernel-vector products scale like \(O(r(N+N))\), so the attraction is
+again execution-path efficiency rather than a new transport doctrine.
+
+The same factorization also has a useful integral reading.  One may view the kernel
+as arising from a positive feature integral
+\begin{equation}
+\label{eq:bf-learned-ot-positive-integral}
+  k(x,y)
+  =
+  \int_U \phi(x,u)'\phi(y,u)\,d\rho(u),
+\end{equation}
+and then approximate that integral by a finite feature family,
+\begin{equation}
+\label{eq:bf-learned-ot-positive-finite}
+  \phi_\theta(x)
+  =
+  \frac{1}{\sqrt r}
+  (\phi(x,u_1),\ldots,\phi(x,u_r)).
+\end{equation}
+This explains why the factorized kernel should still be read as an approximation to
+the teacher-side kernel action, not automatically as the exact original kernel.
+The corresponding factored transport
+application is
+\begin{equation}
+\label{eq:bf-learned-ot-positive-transport}
+  PX
+  =
+  \diag(u)\Xi'\,\mathrm Z\diag(v)X.
+\end{equation}
+This gives the same pedagogical ladder as Nystr{\"o}m:
+\begin{enumerate}[label=(\roman*)]
+  \item replace dense kernel application by a factorized kernel action,
+  \item run the retained balancing logic through the factors,
+  \item judge the corrected route by teacher-preservation residuals rather than by
+    runtime alone.
+\end{enumerate}
+One can also write the induced entropic dual in factorized form,
+\begin{equation}
+\label{eq:bf-learned-ot-positive-dual}
+  W_{\varepsilon,c_\theta}(\mu,\nu)
+  =
+  \max_{\alpha,\beta}
+  a'\alpha+b'\beta
+  - \varepsilon(\Xi e^{\alpha/\varepsilon})'\,\mathrm Z e^{\beta/\varepsilon}
+  + \varepsilon,
+\end{equation}
+which makes the same point from the dual side: the expensive dense interaction is
+replaced by feature-space products.  The caution is sharper than for a pure
+engineering variant.  A positive-feature route changes the effective kernel
+representation and therefore must be judged by teacher-preservation residuals,
+marginal checks, and transported-cloud parity, not by runtime alone.  It is
+retained-teacher only to the extent that the corrected route is still explicitly
+audited against the chosen teacher object.
+
+\subsection{Direct low-rank coupling approximations}
+\label{sec:bf-learned-ot-low-rank}
+
+Kernel approximations are not the only retained-family option.  One may also
+factorize the coupling itself \citep{forrow2019factored,scetbon2021lowrank,scetbon2022lowrank,scetbon2023unbalanced}.  The key conceptual distinction is:
+\begin{quote}
+Approximating the kernel asks how to preserve the same teacher-side transport from
+a compressed kernel action.  Constraining the coupling asks whether a restricted
+family of couplings is already sufficient.
+\end{quote}
+The second route is more than a fast matvec; it changes the feasible family being
+searched.
+
+A useful formal entry point is the nonnegative rank of a nonnegative matrix,
+\begin{equation}
+\label{eq:bf-learned-ot-nonnegative-rank}
+  \operatorname{rank}_{+}(M)
+  =
+  \min\left\{
+  r:\;M=\sum_{k=1}^r M_k,\;
+  \operatorname{rank}(M_k)=1,\;M_k\ge0
+  \right\}.
+\end{equation}
+The rank-constrained coupling family is then
+\begin{equation}
+\label{eq:bf-learned-ot-low-rank-polytope}
+  \Pi_{a,b}(r)
+  =
+  \{P\in\Pi(a,b):\operatorname{rank}_{+}(P)\le r\}.
+\end{equation}
+A generic factorized parameterization is
+\begin{equation}
+\label{eq:bf-learned-ot-low-rank-coupling}
+  P
+  =
+  Q\,\diag(1/g)R',
+\end{equation}
+with factor constraints
+\begin{equation}
+\label{eq:bf-learned-ot-low-rank-constraints}
+  Q\in\Pi(a,g),
+  \qquad
+  R\in\Pi(b,g),
+  \qquad
+  g\in\Delta_r.
+\end{equation}
+These constraints mean that the factors themselves carry source mass \(a\), target
+mass \(b\), and an intermediate latent mass profile \(g\).  Equivalently, one may
+speak of the factored feasible family
+\begin{equation}
+\label{eq:bf-learned-ot-low-rank-feasible-family}
+  FC_{a,b}(r)
+  =
+  \{(Q,R,g): Q\in\Pi(a,g),\;R\in\Pi(b,g),\;g\in\Delta_r\},
+\end{equation}
+so the low-rank optimization problem can be read either as a search over
+rank-constrained couplings or as a search over factored feasible triples.  In the
+same notation, the objective itself is
+\begin{equation}
+\label{eq:bf-learned-ot-low-rank-objective}
+  \min_{P\in\Pi_{a,b}(r)}\langle C,P\rangle
+  =
+  \min_{(Q,R,g)\in FC_{a,b}(r)}
+  \left\langle C,Q\diag(1/g)R'\right\rangle.
+\end{equation}
+Transport application
+then becomes
+\begin{equation}
+\label{eq:bf-learned-ot-low-rank-transport}
+  PX
+  =
+  Q\diag(1/g)R'X,
+\end{equation}
+so storage and barycentric application are both executed through the low-rank
+factors rather than through a dense coupling.
+
+A richer extension introduces a small latent transport plan \(T\) between the two
+factor families.  In schematic form, the induced coupling becomes
+\begin{equation}
+\label{eq:bf-learned-ot-low-rank-latent}
+  P
+  =
+  Q\diag(1/g_Q)
+  T
+  \diag(1/g_R)R',
+\end{equation}
+which allows mass to route through a compact latent transport instead of only
+through diagonal latent components.  A practical rank-adequacy question then
+appears: is the chosen rank large enough?  The note's stronger low-rank lines use
+reduced-gradient or dual-slack diagnostics for that purpose.  Even without carrying
+those full certificates into this chapter, the reader should keep the right lesson
+in view: low-rank coupling is not only a storage trick; it is an optimization over a
+restricted feasible family, so parity against the teacher must be checked whenever
+rank is fixed in advance.
+
+For the present chapter, the important boundary is interpretive.  If the first test
+remains teacher-preservation parity after correction, then the family can still be
+read through the retained-teacher lens.  If the prose instead starts defending the
+restricted family as a different final transport object in its own right, the
+discussion has crossed toward the changed-object lane treated more naturally in the
+next chapter.
+
+\subsection{Stochastic and minibatch cautions}
+\label{sec:bf-learned-ot-minibatch}
+
+Stochastic or minibatch transport ideas are tempting because they reduce local work
+per update \citep{genevay2016stochastic,genevay2018samplecomplexity,nguyen2022bomb,nguyen2021partialminibatch}.  But a minibatch-optimal plan is not automatically a valid full-
+ensemble deterministic resampling map.  Solving transport on sampled subclouds or
+local batches may be a useful approximation strategy, yet the first question
+remains whether the resulting corrected route preserves the declared teacher well
+enough on the full weighted ensemble.
+
+For this reason, minibatch variants belong to the retained-teacher lane only when
+a later correction stage or explicit audit shows that full-ensemble marginals,
+transported-cloud behavior, and downstream scalars still track the declared
+teacher route.  The practical validation sequence should therefore stay stricter
+than a paper-summary reading:
+\begin{enumerate}[label=(\arabic*)]
+  \item first check small dense transported-particle parity, not only scalar OT
+    values,
+  \item then check row and column marginals plus positivity/non-finite failures,
+  \item then inspect representation diagnostics such as rank, feature dimension,
+    sparsity, projection count, or block locality,
+  \item only after value parity consider gradient smoke tests and larger-
+    \(N,d_x\) runtime or memory ladders,
+  \item and only after those local checks interpret downstream filtering evidence.
+\end{enumerate}
+If the minibatch construction is instead promoted as its own randomized or local
+replacement transport, it should be read through the later structure-changing
+chapters rather than through the present retained-teacher one.
+
+\begin{center}
+\small
+\begin{tabular}{p{0.18\textwidth} p{0.22\textwidth} p{0.22\textwidth} p{0.25\textwidth}}
+\toprule
+Family & What is approximated? & What stays teacher-protected? & First residual to check \\
+\midrule
+Warm start & solver initialization or latent state & finite Sinkhorn teacher and barycentric output & corrected cloud discrepancy \\
+Nystrom / positive-feature & kernel action or feature representation & declared teacher-side transport after correction & marginal and teacher-preservation residual \\
+Low-rank coupling & feasible coupling representation & declared output object only if parity remains the first test & coupling/cloud parity under restriction \\
+Minibatch / stochastic routes & local or sampled transport work & teacher status only if full-ensemble behavior is still audited & full-ensemble marginal and cloud behavior \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{How the broader retained-teacher approximations fit here}
+\label{sec:bf-learned-ot-broader-retained}
+
+The same residual logic gives the chapter a place to classify the broader
+scalable-OT approximations from the survey.  If a Nystrom factorization, a
+positive-feature kernel, or a low-rank coupling factorization is proposed as a
+retained-teacher acceleration, then the first audit question is still teacher
+preservation: how close is the transported cloud or coupling application to the
+declared teacher route from Chapter~\ref{ch:bf-dpf-entropic-ot-sinkhorn}?
+
+For example, a kernel-factor route may replace the dense Gibbs kernel by a
+factorized approximation while still producing a coupling application of the same
+schematic form.  A low-rank coupling route may store and apply transport through
+structured factors rather than a dense matrix.  A stochastic or minibatch route
+may reduce computation by solving smaller transport subproblems.  In all such
+cases, this chapter's doctrine is the same: they are still retained-teacher
+candidates only if the approximation error is measured against the teacher object
+rather than hidden behind speedups alone.
+
+That is why the residual hierarchy should be read broadly.  The diagnostic is not
+restricted to one neural warm-start map.  It is the first reusable test for any
+approximation family that claims to accelerate the teacher without changing the
+meaning of the transported output.  Once the approximation stops being naturally
+judged by teacher-preservation residuals, it belongs in the later target-changing
+chapters instead of this retained-teacher one.
+
+\section{Filtering-loop insertion point}
+\label{sec:bf-learned-ot-loop}
+
+Inside the filtering loop, the retained-teacher neural route sits exactly where
+Chapter~\ref{ch:bf-dpf-entropic-ot-sinkhorn} placed the finite EOT/Sinkhorn
+layer:
+\begin{equation}
+\label{eq:bf-learned-ot-loop}
+  \{x_i,w_i\}_{i=1}^N
+  \xrightarrow{\mathrm{student\ warm\ start + retained\ Sinkhorn}}
+  \{\tilde x^{(j)},1/N\}_{j=1}^N.
+\end{equation}
+It accelerates the equal-weighting layer after the weighted cloud has already
+been formed.  It does not redefine the earlier particle-weighting rule itself.
+
+\section{Verification and non-claims}
+\label{sec:bf-learned-ot-verification}
+\label{sec:bf-learned-ot-boundary}
+
+A practical implementation should still check a few local quantities carefully:
+\begin{enumerate}[label=(\arabic*)]
+  \item teacher generation is declared and reproducible,
+  \item the predicted latent teacher object is named explicitly,
+  \item the corrected route satisfies the row/column residual contract,
+  \item teacher-student cloud discrepancy remains below the declared threshold on
+  the tested envelope,
+  \item the downstream scalar is checked whenever the learned route is embedded
+  in a filtering likelihood or HMC target.
+\end{enumerate}
+
+These checks are mathematical and numerical, not bureaucratic.  Their purpose is
+only to ensure that the reader can tell whether the implementation is still
+computing the declared teacher-student object or has drifted to a different one.
+
+This chapter does \emph{not} claim:
+\begin{itemize}
+  \item that the student replaces the teacher object,
+  \item that small teacher-student residuals automatically imply posterior or HMC
+  correctness,
+  \item that broader neural OT families are unimportant, only that they answer a
+  different implementation question.
+\end{itemize}
+Its role is narrower: fix one teacher-student acceleration route in a form that a
+reader can nearly implement directly.
+
+\FloatBarrier

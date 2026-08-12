@@ -697,6 +697,11 @@ def train_plain_dense_iaf(
                     status["min_innovation_eigenvalue"], tf.float64
                 )
             )
+            target_min_innovation_eigenvalue_available = tf.reduce_all(
+                tf.convert_to_tensor(
+                    status["min_innovation_eigenvalue_available"], tf.bool
+                )
+            )
             target_condition_estimate_available = tf.reduce_all(
                 tf.convert_to_tensor(
                     status["innovation_condition_estimate_available"], tf.bool
@@ -746,6 +751,7 @@ def train_plain_dense_iaf(
             target_status_nonvalid_count,
             target_floor_count_total,
             target_min_innovation_eigenvalue,
+            target_min_innovation_eigenvalue_available,
             target_condition_estimate_available,
             target_max_innovation_condition,
         )
@@ -762,6 +768,7 @@ def train_plain_dense_iaf(
         ("target_status_nonvalid_count", tf.int32),
         ("target_floor_count_total", tf.int32),
         ("target_min_innovation_eigenvalue", tf.float64),
+        ("target_min_innovation_eigenvalue_available", tf.bool),
         ("target_condition_estimate_available", tf.bool),
         ("target_max_innovation_condition_estimate", tf.float64),
     )
@@ -949,7 +956,17 @@ def train_plain_dense_iaf(
                         ]
                     )
                     if status_available
+                    and bool(
+                        diagnostic_values[
+                            "target_min_innovation_eigenvalue_available"
+                        ][index]
+                    )
                     else None
+                ),
+                "target_min_innovation_eigenvalue_available": bool(
+                    diagnostic_values[
+                        "target_min_innovation_eigenvalue_available"
+                    ][index]
                 ),
                 "target_max_innovation_condition_estimate": (
                     float(

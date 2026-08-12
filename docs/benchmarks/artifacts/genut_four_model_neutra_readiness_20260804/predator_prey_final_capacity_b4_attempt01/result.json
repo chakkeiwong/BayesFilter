@@ -1,0 +1,305 @@
+{
+  "adapter_signature": "2be34ff225c8780878291d8c366718cabd0d7edfa69cb82ee9c6a871cfda584e",
+  "batch_binding": {
+    "adapter_signature": "2be34ff225c8780878291d8c366718cabd0d7edfa69cb82ee9c6a871cfda584e",
+    "backend_id": "tensorflow_batch_native_genut_forward_jvp_fp32",
+    "callable_module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+    "callable_qualname": "GenUTNeuTraTargetAdapter.neutra_batch_log_prob_and_grad_status",
+    "callable_source_sha256": "429e5861fb0ae6eb2fd206d525408ed88ea79e06c6eab71ead108f59a3b6f09b",
+    "dependency_callable_sources": [
+      {
+        "global_name": "_posterior_value_score_status",
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "qualname": "_posterior_value_score_status",
+        "source_sha256": "4d1788e96192c168ab1e1457530255645997208a771b5d1e80c2fb353c105daf"
+      }
+    ],
+    "dependency_closure_sha256": "3a9499222a3ab39d1d2243526bbebefaa7e3467765de018e0c9042e2e5e60adf",
+    "dependency_module_sources": [
+      {
+        "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+        "source_sha256": "e4b191d420fb2180eb5730d8433589696fecbc83eba91de82e4eecbc76db28e4"
+      }
+    ],
+    "evidence_path": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+    "jit_compile_required": true,
+    "method_name": "neutra_batch_log_prob_and_grad_status",
+    "minimum_batch_size": 2,
+    "row_mapped_scalar_target_used": false,
+    "sample_axis_python_loop_used": false,
+    "scalar_fallback_used": false,
+    "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+    "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+    "status_telemetry_required": true,
+    "target_scope": "GENUT-predator_prey-fixed-posterior-v1",
+    "target_signature": "41b9b4f24d880554e222d36b465b390f4360f1efec8570b2cef6f1b06c790dbe"
+  },
+  "batch_size": 4,
+  "compile_and_first_run_seconds": 27.083322048012633,
+  "control_status": "repository_tuning_artifact_bound",
+  "controls": {
+    "balance_steps": 8,
+    "epsilon": 4.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_strength": 0.2,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8,
+    "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_tuning_attempt02/result.json",
+    "tuning_scope": "predator_prey_T20_N1008_initial_observation_first_fp32_tf32_deterministic_v2"
+  },
+  "deterministic_ops_enabled": true,
+  "dtype": "float32_filter_float64_posterior",
+  "endpoint": [
+    -109.49093037357993,
+    -109.49338272004952,
+    -109.4956092219553,
+    -109.49861695937541
+  ],
+  "endpoint_compile_and_first_run_seconds": 10.134239798004273,
+  "endpoint_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "endpoint_status": {
+    "floor_count_value": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "max_col_residual": [
+      1.6987323760986328e-06,
+      1.7024576663970947e-06,
+      1.695007085800171e-06,
+      1.6801059246063232e-06
+    ],
+    "max_mean_residual": [
+      3.0517578125e-05,
+      2.8878450393676758e-05,
+      2.4974346160888672e-05,
+      3.0517578125e-05
+    ],
+    "max_row_residual": [
+      1.1082738637924194e-07,
+      1.1117663234472275e-07,
+      1.1106021702289581e-07,
+      1.1094380170106888e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.36093950271606445,
+      0.36093950271606445,
+      0.36093950271606445,
+      0.36093950271606445
+    ],
+    "maximum_skew_residual": [
+      0.11520776152610779,
+      0.11533316969871521,
+      0.11522535979747772,
+      0.11407913267612457
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.7684387564659119,
+      0.7684387564659119,
+      0.7684387564659119,
+      0.7684387564659119
+    ],
+    "status_code": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "finite_difference": null,
+  "finite_difference_gate_passed": true,
+  "gpu_allocator": {
+    "current_bytes": 211200,
+    "peak_bytes": 268643328
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "model": "predator_prey",
+  "nonclaims": [
+    "capacity, replay, endpoint, and optional FD diagnostic only",
+    "no NeuTra training, HMC, convergence, or posterior claim"
+  ],
+  "particle_count": 1008,
+  "passed_capacity_replay_endpoint_gate": true,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "same_process_endpoint_replay_max_absolute_error": 0.0,
+  "same_process_score_replay_max_absolute_error": 0.0,
+  "same_process_value_replay_max_absolute_error": 0.0,
+  "schema": "bayesfilter.genut_four_model_neutra_readiness_cell.v1",
+  "score": [
+    [
+      -9.390063076137691,
+      7.968803500145585,
+      -0.013684687508499537,
+      0.044616689914076746,
+      -0.10896779531098938,
+      -0.12237131485888969
+    ],
+    [
+      -9.500868671770307,
+      7.903851027206203,
+      -0.01622881547052018,
+      0.06136200300022587,
+      -0.1005009377623161,
+      -0.1360545359029621
+    ],
+    [
+      -9.612194020295467,
+      7.837421009980323,
+      -0.0189850392354329,
+      0.07889974499954067,
+      -0.08711514138801811,
+      -0.15693271779641207
+    ],
+    [
+      -9.722245045463687,
+      7.771815128665865,
+      -0.02167338411384359,
+      0.09622809951866262,
+      -0.0752813526488268,
+      -0.17474750165200442
+    ]
+  ],
+  "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "status": {
+    "floor_count_value": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "innovation_condition_estimate_available": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "max_col_residual": [
+      1.6987323760986328e-06,
+      1.687556505203247e-06,
+      1.691281795501709e-06,
+      1.695007085800171e-06
+    ],
+    "max_mean_residual": [
+      3.167986869812012e-05,
+      3.314018249511719e-05,
+      2.3931264877319336e-05,
+      2.288818359375e-05
+    ],
+    "max_row_residual": [
+      1.1094380170106888e-07,
+      1.1094380170106888e-07,
+      1.1082738637924194e-07,
+      1.1106021702289581e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.36580872535705566,
+      0.36580872535705566,
+      0.36580872535705566,
+      0.36580872535705566
+    ],
+    "maximum_skew_residual": [
+      0.11451455950737,
+      0.11500218510627747,
+      0.11476792395114899,
+      0.11527292430400848
+    ],
+    "min_innovation_eigenvalue": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "min_innovation_eigenvalue_available": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.7684387564659119,
+      0.7684387564659119,
+      0.7684387564659119,
+      0.7684387564659119
+    ],
+    "status_code": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "target_scope": "GENUT-predator_prey-fixed-posterior-v1",
+  "target_signature": "41b9b4f24d880554e222d36b465b390f4360f1efec8570b2cef6f1b06c790dbe",
+  "tf32_enabled": true,
+  "value": [
+    -109.49054127445883,
+    -109.49354293733468,
+    -109.49544137527562,
+    -109.49791505507854
+  ],
+  "value_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "value_endpoint_max_absolute_error": 0.000701904296875,
+  "value_endpoint_max_relative_error": 6.410165866619214e-06,
+  "wall_time_seconds": 39.46533387998352,
+  "warm_replay_seconds": 0.2996833639917895
+}

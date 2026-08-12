@@ -9,6 +9,7 @@ from bayesfilter.highdim.sir_latent_preclip_tf import (
 )
 from bayesfilter.highdim.zhao_cui_austria_sir_fixed_variant_tf import (
     AustriaSIRLatentPreclipFP32Model,
+    AustriaSIRLatentPreclipFP64Model,
     CLAIM_PARTICLE_COUNT,
     EVENT_ORDER,
     ROUTE_CLASSIFICATION,
@@ -24,7 +25,7 @@ from bayesfilter.testing.sir_filter_neutra_target_design_tf import (
 
 
 def _direct_scalar(model, theta, branch) -> tf.Tensor:
-    log_n = tf.math.log(tf.cast(branch.particle_count, tf.float32))
+    log_n = tf.math.log(tf.cast(branch.particle_count, branch.dtype))
     current = (
         model.initial_log_density(theta, branch.states[0])
         - branch.initial_log_proposal_density
@@ -54,6 +55,57 @@ def _direct_scalar(model, theta, branch) -> tf.Tensor:
         value = value + log_sum - log_n
         previous_log_weights = current - log_sum
     return value
+
+
+def _mixed_five_digit_pass(actual: tf.Tensor, expected: tf.Tensor) -> tf.Tensor:
+    residual = tf.abs(actual - expected)
+    tolerance = tf.constant(5e-6, actual.dtype) * (
+        tf.constant(1.0, actual.dtype) + tf.abs(expected)
+    )
+    return tf.reduce_all(residual <= tolerance)
+
+
+def _omitted_carry_score(model, theta, branch) -> tf.Tensor:
+    """Deliberate mutant that drops `grad log W[t-1]` from each increment."""
+
+    log_n = tf.math.log(tf.cast(branch.particle_count, branch.dtype))
+    initial = (
+        model.initial_log_density(theta, branch.states[0])
+        - branch.initial_log_proposal_density
+    )
+    initial_log_sum = tf.reduce_logsumexp(initial)
+    previous_log_weights = initial - initial_log_sum
+    total_score = tf.zeros([3], branch.dtype)
+    for time_index in range(1, branch.transition_count + 1):
+        row = time_index - 1
+        ancestor = branch.ancestors[row]
+        parent = tf.gather(branch.states[time_index - 1], ancestor)
+        current_state = branch.states[time_index]
+        local_score = (
+            model.transition_log_density_parameter_score(
+                theta, parent, current_state, time_index
+            )
+            + model.observation_log_density_parameter_score(
+                theta, current_state, branch.observations[row], time_index
+            )
+        )
+        current = (
+            tf.gather(previous_log_weights, ancestor)
+            + model.transition_log_density(
+                theta, parent, current_state, time_index
+            )
+            + model.observation_log_density(
+                theta, current_state, branch.observations[row], time_index
+            )
+            - tf.gather(branch.auxiliary_log_probabilities[row], ancestor)
+            - branch.transition_log_proposal_density[row]
+        )
+        current_log_sum = tf.reduce_logsumexp(current)
+        weights = tf.exp(current - current_log_sum)
+        total_score += tf.reduce_sum(weights[:, tf.newaxis] * local_score, axis=0)
+        previous_log_weights = current - current_log_sum
+    del log_n
+    return total_score
 
 
 def test_exact_target_factory_binds_source_and_runtime_hashes() -> None:
@@ -125,6 +177,106 @@ def test_fp32_latent_density_and_scores_match_fp64_reference() -> None:
     )
     tf.debugging.assert_near(tf.cast(value64, tf.float32), value32, atol=2e-3)
     tf.debugging.assert_near(tf.cast(score64, tf.float32), score32, atol=2e-3)
+
+
+def test_fp64_model_matches_existing_fp64_reference_at_both_clip_events() -> None:
+    model = AustriaSIRLatentPreclipFP64Model()
+    reference = latent_preclip_zhao_cui_sir_austria_model()
+    theta = tf.constant([0.015, -0.01, 0.025], tf.float64)
+    target = make_austria_sir_observed_data_target()
+    previous = tf.stack(
+        [
+            target.source_states[0],
+            tf.tensor_scatter_nd_update(
+                target.source_states[1], [[0], [2]], [-2.0, -1.0]
+            ),
+        ]
+    )
+    for time_index in (1, 2):
+        expected_mean = reference.transition_mean(
+            theta, previous, time_index=time_index
+        )
+        actual_mean = model.transition_mean(
+            theta, previous, tf.constant(time_index, tf.int32)
+        )
+        current = expected_mean + tf.constant(0.1, tf.float64)
+        expected_score = reference.transition_log_density_parameter_score(
+            theta, previous, current, time_index
+        )
+        actual_score = model.transition_log_density_parameter_score(
+            theta, previous, current, tf.constant(time_index, tf.int32)
+        )
+        tf.debugging.assert_near(actual_mean, expected_mean, atol=2e-12, rtol=2e-12)
+        tf.debugging.assert_near(actual_score, expected_score, atol=2e-11, rtol=2e-11)
+
+
+def test_fp64_t2_manual_score_passes_five_digit_tape_fd_and_mutant_gates() -> None:
+    target = make_austria_sir_observed_data_target()
+    branch = make_bootstrap_mechanics_branch(
+        particle_count=24,
+        horizon=2,
+        proposal_seed=30801,
+        target=target,
+        dtype=tf.float64,
+    )
+    program = prepare_austria_sir_source_order_program(branch, target=target)
+    theta = tf.constant([0.03, -0.02, 0.025], tf.float64)
+    result = program.evaluate(theta)
+
+    with tf.GradientTape() as tape:
+        tape.watch(theta)
+        value = _direct_scalar(program.model, theta, branch)
+    tape_score = tape.gradient(value, theta)
+    assert bool(_mixed_five_digit_pass(result["score"], tape_score).numpy())
+
+    eye = tf.eye(3, dtype=tf.float64)
+    finite_differences = []
+    for step_value in (2.5e-4, 1.25e-4, 6.25e-5):
+        step = tf.constant(step_value, tf.float64)
+        entries = []
+        for parameter_index in range(3):
+            direction = eye[parameter_index]
+            entries.append(
+                (
+                    _direct_scalar(program.model, theta + step * direction, branch)
+                    - _direct_scalar(program.model, theta - step * direction, branch)
+                )
+                / (2.0 * step)
+            )
+        finite_differences.append(tf.stack(entries))
+    for finite_difference in finite_differences:
+        assert bool(
+            _mixed_five_digit_pass(result["score"], finite_difference).numpy()
+        )
+
+    mutant = _omitted_carry_score(program.model, theta, branch)
+    assert not bool(_mixed_five_digit_pass(mutant, tape_score).numpy())
+
+
+def test_fp64_concrete_graph_uses_while_and_has_no_host_callback() -> None:
+    branch = make_bootstrap_mechanics_branch(
+        particle_count=8,
+        horizon=2,
+        proposal_seed=30802,
+        dtype=tf.float64,
+    )
+    program = prepare_austria_sir_source_order_program(branch)
+    concrete = program.compiled(jit_compile=False).get_concrete_function()
+    graph_def = concrete.graph.as_graph_def()
+    operation_types = {
+        node.op for node in graph_def.node
+    } | {
+        node.op
+        for function in graph_def.library.function
+        for node in function.node_def
+    }
+    assert operation_types & {"While", "StatelessWhile"}
+    assert not operation_types & {
+        "PyFunc",
+        "PyFuncStateless",
+        "EagerPyFunc",
+        "MapDefun",
+    }
 
 
 def test_t2_program_matches_direct_scalar_manual_score_fd_and_tape() -> None:

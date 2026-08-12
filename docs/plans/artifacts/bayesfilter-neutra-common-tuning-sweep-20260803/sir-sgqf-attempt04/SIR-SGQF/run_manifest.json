@@ -1,0 +1,82 @@
+{
+  "cell_id": "SIR-SGQF",
+  "command": [
+    "docs/benchmarks/run_neutra_shared_procedure_20260803.py",
+    "--cell",
+    "SIR-SGQF",
+    "--output-root",
+    "docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/sir-sgqf-attempt04",
+    "--frozen-transport",
+    "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-phase5-20260720/campaign-01/SIR-SGQF/final/segments/steps-004001-005000/frozen_transport.json",
+    "--frozen-transport-sha256",
+    "26246c564faaa429a1772b5df464ffb8a7b218ff394ba4209d9a3f235942f673",
+    "--root-seed",
+    "20260804",
+    "7301"
+  ],
+  "device": "/GPU:0",
+  "environment": "tf-gpu",
+  "frozen_transport_input": {
+    "path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-phase5-20260720/campaign-01/SIR-SGQF/final/segments/steps-004001-005000/frozen_transport.json",
+    "retrained": false,
+    "sha256": "26246c564faaa429a1772b5df464ffb8a7b218ff394ba4209d9a3f235942f673",
+    "target_signature": "43968c975409021dcabe931081f0d1efaaae431b5b9245929a5786fe566e545d",
+    "training_state_hash": "sha256:6bdbcf67ed87278ee0776d822b674ca245b22c0547fba9f6850e20e8da512617"
+  },
+  "git_commit": "6a11b689295bfb0e58de6e6d2f84918671b5a685",
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "initial_step_size_role": "target_specific_warm_start_hypothesis",
+  "jit_compile": true,
+  "output_root": "docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/sir-sgqf-attempt04/SIR-SGQF",
+  "plan_path": "docs/plans/bayesfilter-neutra-all-executable-models-end-to-end-python-plan-2026-07-18.md",
+  "private_tuning_result_path": "docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/sir-sgqf-attempt04/SIR-SGQF/broad-grid-tuning/private_result.json",
+  "procedure_family": "shared_neutra_broad_grid",
+  "procedure_metadata": {
+    "directional_refinement_performed": false,
+    "epsilon_repair_performed": true,
+    "fresh_final_screens_performed": true,
+    "independent_primary_dual_averaging_performed": true,
+    "procedure_family": "shared_neutra_broad_grid",
+    "procedure_variant": "state_continuing_epsilon_repair_v1",
+    "same_epsilon_neighbor_guards_performed": true,
+    "state_continuation_performed": true
+  },
+  "procedure_variant": "state_continuing_epsilon_repair_v1",
+  "public_tuning_result_path": "docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/sir-sgqf-attempt04/SIR-SGQF/broad-grid-tuning/public_result.json",
+  "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.14",
+  "required_status_keys": [
+    "status_code",
+    "valid_pre_regularized_score",
+    "floor_count_value",
+    "min_innovation_eigenvalue",
+    "innovation_condition_estimate"
+  ],
+  "result_path": "docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/sir-sgqf-attempt04/SIR-SGQF/result.json",
+  "root_seed": [
+    20260804,
+    7301
+  ],
+  "sampling_launched": false,
+  "schema": "bayesfilter.neutra.broad_grid_tuning_manifest.v1",
+  "screen_results": 96,
+  "target_signature": "43968c975409021dcabe931081f0d1efaaae431b5b9245929a5786fe566e545d",
+  "tensorflow_version": "2.19.1",
+  "tf32_execution_enabled": true,
+  "wall_time_seconds": 9796.211166569992
+}

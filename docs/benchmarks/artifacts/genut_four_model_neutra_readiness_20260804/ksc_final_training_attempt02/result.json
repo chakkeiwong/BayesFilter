@@ -1,0 +1,192 @@
+{
+  "adapter_signature": "2f3fc0f370b87cdca069972e6724049a22d865e156b08c8fc568de0ba191042d",
+  "affine_factor_role": "narrow_mechanics_only_warm_start_hypothesis",
+  "completed_steps": 1,
+  "control_status": "repository_tuning_artifact_bound",
+  "controls": {
+    "balance_steps": 8,
+    "epsilon": 2.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_strength": 0.2,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8,
+    "tuning_artifact": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_tuning_attempt02/result.json",
+    "tuning_scope": "ksc_sv_T1000_N1008_initial_observation_first_fp32_tf32_deterministic_v2"
+  },
+  "deterministic_ops_enabled": true,
+  "gpu_allocator": {
+    "current_bytes": 4382720,
+    "peak_bytes": 37942528
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "model": "ksc_sv",
+  "nonclaims": [
+    "one optimizer update only",
+    "no training quality, transport selection, HMC, or posterior claim"
+  ],
+  "passed": true,
+  "plan": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+  "record": {
+    "clipped_gradient_norm": 1.39147003699813,
+    "gradient_was_clipped": false,
+    "learning_rate": 0.00010000000623986132,
+    "loss": 2297.5919676652584,
+    "mean_log_abs_det_jacobian": -9.210340371976182,
+    "program_elapsed_seconds": 10.817118913982995,
+    "raw_gradient_norm": 1.39147003699813,
+    "step": 1,
+    "target_condition_estimate_available": false,
+    "target_floor_count_total": 0,
+    "target_max_innovation_condition_estimate": null,
+    "target_min_innovation_eigenvalue": null,
+    "target_min_innovation_eigenvalue_available": false,
+    "target_status_all_valid": true,
+    "target_status_available": true,
+    "target_status_nonvalid_count": 0,
+    "target_values_finite": true
+  },
+  "runtime_metadata": {
+    "adam_moment_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "all_steps_hard_gates_aggregated": true,
+    "all_steps_numeric_finite": true,
+    "all_steps_target_status_nonvalid_count": 0,
+    "all_steps_target_status_valid": true,
+    "all_steps_target_values_finite": true,
+    "batch_native_target": {
+      "adapter_signature": "2f3fc0f370b87cdca069972e6724049a22d865e156b08c8fc568de0ba191042d",
+      "backend_id": "tensorflow_batch_native_genut_forward_jvp_fp32",
+      "callable_module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+      "callable_qualname": "GenUTNeuTraTargetAdapter.neutra_batch_log_prob_and_grad_status",
+      "callable_source_sha256": "429e5861fb0ae6eb2fd206d525408ed88ea79e06c6eab71ead108f59a3b6f09b",
+      "dependency_callable_sources": [
+        {
+          "global_name": "_posterior_value_score_status",
+          "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+          "qualname": "_posterior_value_score_status",
+          "source_sha256": "4d1788e96192c168ab1e1457530255645997208a771b5d1e80c2fb353c105daf"
+        }
+      ],
+      "dependency_closure_sha256": "3a9499222a3ab39d1d2243526bbebefaa7e3467765de018e0c9042e2e5e60adf",
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.highdim.cubature_genut_neutra_targets",
+          "source_sha256": "e4b191d420fb2180eb5730d8433589696fecbc83eba91de82e4eecbc76db28e4"
+        }
+      ],
+      "evidence_path": "docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md",
+      "jit_compile_required": true,
+      "method_name": "neutra_batch_log_prob_and_grad_status",
+      "minimum_batch_size": 2,
+      "row_mapped_scalar_target_used": false,
+      "sample_axis_python_loop_used": false,
+      "scalar_fallback_used": false,
+      "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+      "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+      "status_telemetry_required": true,
+      "target_scope": "GENUT-ksc_sv-fixed-posterior-v1",
+      "target_signature": "53c41570c2fde8ed3693e5044919127efd7a9cb4843a078a97a2be616fae3627"
+    },
+    "checkpoint_policy": "terminal_only_graph_native_v1",
+    "compiled_output_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "compiled_training_control_flow": "tf_while_loop",
+    "compiled_training_program_invocations": 1,
+    "graph_operation_types": [
+      "All",
+      "ConcatV2",
+      "Const",
+      "Equal",
+      "FloorMod",
+      "GatherV2",
+      "Identity",
+      "IsFinite",
+      "LogicalNot",
+      "LogicalOr",
+      "NoOp",
+      "Pack",
+      "Placeholder",
+      "Prod",
+      "Range",
+      "Reshape",
+      "Squeeze",
+      "StridedSlice",
+      "Sum",
+      "TensorListReserve",
+      "TensorListStack",
+      "Where",
+      "While"
+    ],
+    "jit_compile": true,
+    "logical_gpus": [
+      "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+    ],
+    "physical_gpus": [
+      "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+    ],
+    "program_step_count": 1,
+    "requested_device": "/GPU:0",
+    "require_gpu": true,
+    "row_mapped_scalar_target_used": false,
+    "sample_axis_python_loop_used": false,
+    "scalar_fallback_used": false,
+    "trainable_variable_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "training_batch_size": 2
+  },
+  "schema": "bayesfilter.genut_neutra_one_step.v1",
+  "target_signature": "53c41570c2fde8ed3693e5044919127efd7a9cb4843a078a97a2be616fae3627",
+  "tf32_enabled": true,
+  "training_batch_size": 2,
+  "training_latest_path": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_training_attempt02/training/training_latest.json",
+  "training_state_path": "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_training_attempt02/training/checkpoint_step_000001.json",
+  "wall_time_seconds": 17.032732255000155
+}

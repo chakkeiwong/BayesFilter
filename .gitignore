@@ -330,6 +330,85 @@ desktop.ini
 # tracked when they support a claim, gate, or promotion decision.
 .tmp_*_rewrite.tex
 
+# Reproducible point-in-time copies of authored documents are generated local
+# archives. Git history preserves the source state; the live rewrite tree and
+# claim/promotion notes remain trackable.
+docs/archive/monograph-pre-fable-rewrite-*/
+
+# Routine, failed, superseded, and intermediate benchmark attempts are local
+# generated evidence. A narrow path exception below may retain an artifact when
+# an authored result note cites that exact attempt in support of a claim, veto,
+# or promotion decision.
+docs/benchmarks/artifacts/**/smoke_attempt*/
+docs/benchmarks/artifacts/**/smoke-attempt*/
+docs/benchmarks/artifacts/**/capacity_attempt*/
+docs/benchmarks/artifacts/**/*_capacity_*/
+docs/benchmarks/artifacts/**/*_training_*/
+docs/benchmarks/artifacts/**/*_replay_*/
+docs/benchmarks/artifacts/**/*_scalar_parity_*/
+docs/benchmarks/artifacts/**/*_deterministic_*/
+docs/benchmarks/artifacts/**/*_kalman_*/
+docs/benchmarks/artifacts/**/*gross_error*/
+
+# These diagnostics are cited directly by retained result notes and therefore
+# remain claim/veto-supporting evidence despite their smoke classification.
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt03/
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt03/result.json
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt03/result.md
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt03/run_manifest.json
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt04/
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt04/result.json
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt04/result.md
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt04/run_manifest.json
+!docs/benchmarks/artifacts/genut_austria_neutra_zero_force_smoke_20260804/attempt04/
+!docs/benchmarks/artifacts/genut_austria_neutra_zero_force_smoke_20260804/attempt04/result.json
+!docs/benchmarks/artifacts/genut_austria_neutra_zero_force_smoke_20260804/attempt04/run_manifest.json
+!docs/benchmarks/artifacts/pairwise_radial_cap_diagnostic_20260806/smoke_attempt01/
+!docs/benchmarks/artifacts/pairwise_radial_cap_diagnostic_20260806/smoke_attempt01/result.json
+!docs/benchmarks/artifacts/pairwise_radial_cap_diagnostic_20260806/smoke_attempt02_isolated_4080/
+!docs/benchmarks/artifacts/pairwise_radial_cap_diagnostic_20260806/smoke_attempt02_isolated_4080/result.json
+!docs/benchmarks/artifacts/zhao_cui_bounded_reference_genut_austria_t1_t2_20260806/smoke-attempt02/
+!docs/benchmarks/artifacts/zhao_cui_bounded_reference_genut_austria_t1_t2_20260806/smoke-attempt02/result.json
+
+# The four-model readiness aggregate has an explicit fail-closed dependency
+# closure. Retain only that terminal aggregate and the exact artifacts loaded
+# by its authored aggregator; all sibling attempts are superseded run output.
+docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/*/
+docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/result.json
+docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/run_manifest.json
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/aggregate_attempt04/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/austria_final_claim_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_capacity_b4_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_claim_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_claim_attempt03/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_training_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_scalar_parity_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_tuning_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_capacity_b4_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_claim_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_claim_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_training_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_kalman_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_scalar_parity_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_tuning_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_final_capacity_b4_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_final_claim_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_final_claim_attempt03/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_final_training_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_scalar_parity_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_tuning_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/*/*.json
+
+# Retained result notes cite only the terminal diagnostic attempt in these
+# roots; earlier siblings are superseded local output.
+docs/benchmarks/artifacts/genut_austria_neutra_zero_force_smoke_20260804/attempt03/
+docs/benchmarks/artifacts/zhao_cui_genut_dual_cap_cross_model_20260807/attempt02/
+
+# Common-tuning attempts 01/03 are superseded. Attempt 04 is the terminal
+# result-bearing scope retained by the authored recovery and reset notes.
+docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/*-attempt01/
+docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/*-attempt03/
+
 # Nested third-party source snapshots should be tracked as files, not embedded
 # repositories.
 third_party/**/.git/
@@ -363,3 +442,7 @@ docs/plans/artifacts/**/archive/warmup/*.tftensor
 
 # Downloaded literature corpora are local inputs, not repository evidence.
 .localresources/papers/multimodal_hmc/
+
+# Failed literature download: this path currently contains an HTML response,
+# not the Huber paper. Track a validated source copy if one is acquired later.
+.localresources/papers/huber-1964-robust-location.pdf

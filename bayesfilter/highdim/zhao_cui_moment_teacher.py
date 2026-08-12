@@ -18,7 +18,11 @@ from typing import Mapping, Sequence
 
 import tensorflow as tf
 
-from bayesfilter.highdim.bases import LegendreBasis1D
+from bayesfilter.highdim.bases import (
+    BoundedInterval,
+    LagrangePiecewiseBasis1D,
+    LegendreBasis1D,
+)
 from bayesfilter.highdim.diagnostics import HighDimStatus, MassMeasure
 from bayesfilter.highdim.squared_tt import (
     SquaredTTDensity,
@@ -175,37 +179,79 @@ class TTParticleContractEStepJVP:
 
 
 def legendre_monomial_operator_matrix(
-    basis: LegendreBasis1D,
+    basis: object,
     power: int,
     measure: MassMeasure,
 ) -> tf.Tensor:
     """Return ``integral phi phi.T x**power dmeasure`` by exact quadrature."""
 
-    if not isinstance(basis, LegendreBasis1D):
-        raise TypeError("moment-teacher reference currently requires LegendreBasis1D")
     power = int(power)
     if power < 0:
         raise ValueError("power must be nonnegative")
     if not isinstance(measure, MassMeasure):
         raise TypeError("measure must be a MassMeasure")
-    polynomial_degree = 2 * int(basis.max_degree) + power
+    delegate = getattr(basis, "delegate", basis)
+    if isinstance(delegate, LegendreBasis1D):
+        polynomial_degree = 2 * int(delegate.max_degree) + power
+        order = max(2, (polynomial_degree + 2) // 2)
+        nodes, weights = _legendre_gauss_nodes_weights(order)
+        midpoint = 0.5 * (delegate.domain.left + delegate.domain.right)
+        half_length = 0.5 * delegate.domain.length
+        points = midpoint + half_length * nodes
+        active_weights = 0.5 * weights
+        if measure is MassMeasure.REFERENCE_LEBESGUE:
+            active_weights = active_weights * delegate.domain.length
+        elif measure is not MassMeasure.REFERENCE_MEASURE:
+            raise TypeError("unsupported mass measure")
+        values = basis.evaluate(points)
+        return tf.einsum(
+            "n,nl,nm->lm",
+            active_weights * tf.pow(points, power),
+            values,
+            values,
+        )
+    if not isinstance(delegate, LagrangePiecewiseBasis1D):
+        raise TypeError(
+            "moment-teacher reference requires Legendre or piecewise Lagrange basis"
+        )
+    # Lane B evaluates cardinal polynomials at r(u), but the declared mass
+    # measure is uniform in the bounded reference coordinate u.
+    polynomial_degree = 2 * int(delegate.order) + power
     order = max(2, (polynomial_degree + 2) // 2)
     nodes, weights = _legendre_gauss_nodes_weights(order)
-    midpoint = 0.5 * (basis.domain.left + basis.domain.right)
-    half_length = 0.5 * basis.domain.length
-    points = midpoint + half_length * nodes
-    active_weights = 0.5 * weights
-    if measure is MassMeasure.REFERENCE_LEBESGUE:
-        active_weights = active_weights * basis.domain.length
-    elif measure is not MassMeasure.REFERENCE_MEASURE:
-        raise TypeError("unsupported mass measure")
-    values = basis.evaluate(points)
-    return tf.einsum(
-        "n,nl,nm->lm",
-        active_weights * tf.pow(points, power),
-        values,
-        values,
-    )
+    element_length = tf.constant(2.0 / float(delegate.num_elems), tf.float64)
+    result = tf.zeros([basis.basis_dim, basis.basis_dim], tf.float64)
+    for element in range(int(delegate.num_elems)):
+        left = tf.constant(-1.0, tf.float64) + tf.cast(
+            element, tf.float64
+        ) * element_length
+        midpoint = left + 0.5 * element_length
+        reference_points = midpoint + 0.5 * element_length * nodes
+        points = delegate.domain.from_reference(reference_points)
+        active_weights = 0.5 * element_length * weights
+        if measure is MassMeasure.REFERENCE_MEASURE:
+            active_weights = 0.5 * active_weights
+        elif measure is not MassMeasure.REFERENCE_LEBESGUE:
+            raise TypeError("unsupported mass measure")
+        values = basis.evaluate(points)
+        result += tf.einsum(
+            "n,nl,nm->lm",
+            active_weights * tf.pow(reference_points, power),
+            values,
+            values,
+        )
+    return result
+
+
+def _constant_basis_coefficients(
+    basis: object,
+) -> tf.Tensor:
+    delegate = getattr(basis, "delegate", basis)
+    if isinstance(delegate, LegendreBasis1D):
+        return tf.one_hot(0, basis.basis_dim, dtype=tf.float64)
+    if isinstance(delegate, LagrangePiecewiseBasis1D):
+        return tf.ones([basis.basis_dim], tf.float64)
+    raise TypeError("unsupported constant-function basis representation")
 
 
 def monomial_operator_matrices(
@@ -339,10 +385,8 @@ def tensor_product_reference_monomial_moment(
             power,
             density.measure_convention.mass_measure,
         )
-        constant = tf.one_hot(
-            0,
-            density.sqrt_tt.product_basis.bases[axis].basis_dim,
-            dtype=tf.float64,
+        constant = _constant_basis_coefficients(
+            density.sqrt_tt.product_basis.bases[axis]
         )
         value = value * tf.einsum("l,lm,m->", constant, operator, constant)
     return value
@@ -1005,6 +1049,74 @@ def squared_tt_shape_targets_jvp(
     )
 
 
+def stack_squared_tt_shape_targets_jvp(
+    density: SquaredTTDensity,
+    state_offset: tf.Tensor,
+    state_matrix: tf.Tensor,
+    tangent_cores: Sequence[Sequence[tf.Tensor | TTCore]],
+    *,
+    pair_indices: Sequence[tuple[int, int]] = (),
+) -> TTShapeTargetsJVP:
+    """Assemble all parameter directions from a Lane-B-style tangent bank."""
+
+    banks = tuple(tuple(bank) for bank in tangent_cores)
+    if len(banks) != len(density.sqrt_tt.cores) or not banks:
+        raise ValueError("tangent bank must have one row per TT core")
+    parameter_count = len(banks[0])
+    if parameter_count < 1 or any(len(bank) != parameter_count for bank in banks):
+        raise ValueError("tangent bank must have a fixed positive parameter count")
+    directions = []
+    for parameter in range(parameter_count):
+        direction = tuple(
+            value if isinstance(value, TTCore) else TTCore(tf.convert_to_tensor(value, tf.float64))
+            for value in (bank[parameter] for bank in banks)
+        )
+        directions.append(
+            squared_tt_shape_targets_jvp(
+                density,
+                state_offset,
+                state_matrix,
+                direction,
+                pair_indices=pair_indices,
+            )
+        )
+    reference = directions[0]
+    for candidate in directions[1:]:
+        for name in (
+            "skew",
+            "kurtosis",
+            "pairwise_co_skew",
+            "pairwise_co_kurtosis",
+            "pairwise_co_skew_mask",
+            "pairwise_co_kurtosis_mask",
+        ):
+            tf.debugging.assert_near(
+                getattr(candidate, name),
+                getattr(reference, name),
+                atol=tf.constant(2.0e-12, tf.float64),
+                rtol=tf.constant(2.0e-12, tf.float64),
+                message=f"parameter-direction target values disagree: {name}",
+            )
+    return TTShapeTargetsJVP(
+        skew=reference.skew,
+        kurtosis=reference.kurtosis,
+        pairwise_co_skew=reference.pairwise_co_skew,
+        pairwise_co_kurtosis=reference.pairwise_co_kurtosis,
+        pairwise_co_skew_mask=reference.pairwise_co_skew_mask,
+        pairwise_co_kurtosis_mask=reference.pairwise_co_kurtosis_mask,
+        skew_tangent=tf.concat([item.skew_tangent for item in directions], axis=1),
+        kurtosis_tangent=tf.concat(
+            [item.kurtosis_tangent for item in directions], axis=1
+        ),
+        pairwise_co_skew_tangent=tf.concat(
+            [item.pairwise_co_skew_tangent for item in directions], axis=2
+        ),
+        pairwise_co_kurtosis_tangent=tf.concat(
+            [item.pairwise_co_kurtosis_tangent for item in directions], axis=2
+        ),
+    )
+
+
 def apply_tt_shape_targets_reference_jvp(
     source: tf.Tensor,
     weights: tf.Tensor,
@@ -1379,10 +1491,8 @@ def _defensive_affine_moment_jvp(
     zero_cores = tuple(TTCore(tf.zeros([1, 1, 1], tf.float64)) for _ in scalar_cores)
     scalar_operators = []
     for axis, powers in enumerate(axis_operators):
-        constant = tf.one_hot(
-            0,
-            density.sqrt_tt.product_basis.bases[axis].basis_dim,
-            dtype=tf.float64,
+        constant = _constant_basis_coefficients(
+            density.sqrt_tt.product_basis.bases[axis]
         )
         scalar_operators.append(
             tuple(
@@ -1553,6 +1663,7 @@ __all__ = [
     "squared_tt_raw_moment",
     "squared_tt_normalized_marginal_jvp",
     "squared_tt_shape_targets_jvp",
+    "stack_squared_tt_shape_targets_jvp",
     "apply_tt_shape_targets_reference_jvp",
     "tt_particle_contract_e_step_reference_jvp",
     "squared_tt_reference_moments",

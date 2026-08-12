@@ -1,0 +1,522 @@
+{
+  "command": "scripts/run_zhao_cui_austria_sir_frozen_score_preflight.py --output-dir docs/plans/artifacts/zhao-cui-austria-sir-score-completion-20260802/phase2-fp64-gpu-xla-preflight-01 --t2-particles 24 --t20-particles 1008 --seed 30811",
+  "created_at": "2026-08-02T13:04:24.154245+00:00",
+  "device": {
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "memory_policy": {
+      "aggregate_visible_gpu_limit_mib": 6144,
+      "configured_before_logical_device_initialization": true,
+      "hard_allocator_cap": true,
+      "memory_growth": false,
+      "memory_limit_mib_per_physical_device": 6144,
+      "mode": "fixed_logical_device_limit",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_limit_mib": 6144
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "unset"
+    },
+    "online_device": "/GPU:0",
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": false,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "cuda_visible_devices": "unset",
+    "python": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "tensorflow": "2.19.1",
+    "tf_force_gpu_allow_growth": "unset"
+  },
+  "git": {
+    "commit": "f3ca5aa990fa0997414359983da2e93be8bee40c",
+    "dirty": true,
+    "dirty_paths": [
+      " M bayesfilter/highdim/zhao_cui_austria_sir_fixed_variant_tf.py",
+      " M docs/plans/bayesfilter-zhao-cui-austria-sir-score-completion-plan-2026-08-02.md",
+      " M tests/highdim/test_zhao_cui_austria_sir_fixed_variant_tf.py",
+      "?? docs/plans/bayesfilter-pp-ukf-true-hmc-validation-plan-correctness-review-2026-08-02.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-score-completion-plan-review-result-2026-08-02.md",
+      "?? scripts/run_zhao_cui_austria_sir_frozen_score_preflight.py"
+    ]
+  },
+  "gpu_allocator": {
+    "current_bytes": 3648256,
+    "peak_bytes": 11931904
+  },
+  "nonclaims": [
+    "bootstrap branches are mechanics baselines, not Zhao-Cui proposal claims",
+    "no proposal-quality, T20 finite-score admission, physical-likelihood, HMC, posterior, default, or production claim"
+  ],
+  "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-score-completion-plan-2026-08-02.md",
+  "plan_sha256": "d31236a67c55cf71639d6df3fc5fa3a6fcbba71f3aac344834ce6fd7f0dd677d",
+  "primary_pass": true,
+  "review": "docs/plans/bayesfilter-zhao-cui-austria-sir-score-completion-plan-review-result-2026-08-02.md",
+  "review_sha256": "e1cd2dfd65cca21405cc3ab02cc35565a668a905c365d5501ee5ae285454959c",
+  "schema": "bayesfilter.zhao_cui_austria_sir_frozen_score_preflight.v1",
+  "score_gate": {
+    "formula": "abs(actual-reference) <= 5e-6 + 5e-6*max(abs(actual),abs(reference))",
+    "score_atol": 5e-06,
+    "score_rtol": 5e-06
+  },
+  "status": "PASS_FP64_GPU_XLA_FROZEN_SCORE_PREFLIGHT",
+  "t2": {
+    "artifact_role": "bootstrap_mechanics_not_proposal_quality_or_claim",
+    "branch": {
+      "branch_id": "a7f21d3de1cb61df563fd623f9bd293eb9205f64bd590d614bfb279e14b79e95",
+      "dtype": "float64",
+      "event_order": "x0_then_20_transition_then_observe_steps_y1_y20",
+      "fixed_genealogy": true,
+      "identity_role": "reproducibility_fingerprint_not_admission",
+      "measure_id": "full_state_lebesgue_v1",
+      "observation_dimension": 9,
+      "particle_count": 24,
+      "proposal_compiler_id": "austria_bootstrap_uniform_identity_mechanics_only_seed30811",
+      "proposal_parameter_dependence": "none",
+      "pseudo_marginal_exact_target_claimed": false,
+      "route_classification": "extension_or_invention",
+      "route_id": "zhao_cui_predator_prey_source_order_fixed_branch_extension_v1",
+      "state_dimension": 18,
+      "state_rows": 3,
+      "target_class": "deterministic_source_order_fixed_branch_approximate_likelihood",
+      "target_id": "zhao_cui_austria_sir_seed81120_latent_preclip_y1_y20_v1_prefix_t2",
+      "target_observation_sha256": "9f64bed6b50f10a0fcb4a7b754cf8ea379b9ba3839ce7544aac5010f2d0c45bc",
+      "target_seed": 81120,
+      "target_state_sha256": "24b86e8c52c925f4ce7d614c66a860771df0ac7e3efc609a16991f49ddb44ced",
+      "transition_count": 2
+    },
+    "compile_and_first_seconds": 1.0400478969677351,
+    "dtype": "float64",
+    "ess_by_time": [
+      24.000000000000007,
+      1.335811043571947,
+      1.9517970011613066
+    ],
+    "fd_mixed_five_digit_pass": true,
+    "fd_scores": [
+      [
+        -587.9242938518985,
+        117.81076177092586,
+        -7.809242328107757
+      ],
+      [
+        -587.9236209481178,
+        117.81078446790616,
+        -7.809242576456654
+      ],
+      [
+        -587.9234527290009,
+        117.81079014167517,
+        -7.809242638472824
+      ]
+    ],
+    "fd_steps": [
+      0.00025,
+      0.000125,
+      6.25e-05
+    ],
+    "finite": true,
+    "graph_audit": {
+      "forbidden_operations": [],
+      "has_host_callback": false,
+      "has_while": true,
+      "operation_type_count": 40,
+      "while_operations": [
+        "StatelessWhile"
+      ]
+    },
+    "horizon": 2,
+    "increment_scores": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -42.90387717060433,
+        13.668370202937655,
+        -5.750269158640827
+      ],
+      [
+        -545.0195194836616,
+        104.14242183073709,
+        -2.0589735006288925
+      ]
+    ],
+    "jit_compile": true,
+    "log_increments": [
+      -4.440892098500626e-16,
+      -31.306843443578227,
+      -40.997885802628396
+    ],
+    "maximum_log_weight_spread": 19.90462814767789,
+    "minimum_ess": 1.335811043571947,
+    "particle_count": 24,
+    "primary_pass": true,
+    "program": {
+      "austria_program_id": "8fdd491829d0056e3068c71ef405d3f7e13f1294ea2b7343cbea169ada907e7c",
+      "austria_route_classification": "extension_or_invention",
+      "austria_route_id": "zhao_cui_austria_sir_source_order_fixed_branch_extension_v1",
+      "branch_id": "a7f21d3de1cb61df563fd623f9bd293eb9205f64bd590d614bfb279e14b79e95",
+      "dtype": "float64",
+      "event_order": "x0_then_20_transition_then_observe_steps_y1_y20",
+      "finite_scalar": "c0_plus_sum_t1_to_T_logsumexp_importance_increment",
+      "fixed_genealogy": true,
+      "identity_role": "reproducibility_fingerprint_not_admission",
+      "initial_correction": "log_p_theta_x0_minus_log_q0_no_observation",
+      "jit_compile_default": true,
+      "measure_id": "full_state_lebesgue_v1",
+      "model": {
+        "classification": "extension_or_invention",
+        "dtype": "float64",
+        "family": "AustriaSIRLatentPreclipModel",
+        "measure_id": "full_state_lebesgue_v1",
+        "observation_covariance": "100*exp(2*theta[2])*I9",
+        "observation_dimension": 9,
+        "parameter_dimension": 3,
+        "process_covariance": "I18",
+        "rk4_step": 0.005,
+        "rk4_substeps": 4,
+        "rk4_variant": "zhao_cui_half_step_fourth_stage",
+        "runtime_autodiff": false,
+        "runtime_finite_difference": false,
+        "score_backend_id": "analytical_parameter_score_no_autodiff_v1",
+        "state_dimension": 18,
+        "target_id": "zhao_cui_austria_sir_seed81120_latent_preclip_y1_y20_v1"
+      },
+      "nonclaims": [
+        "not the exact observed-data likelihood",
+        "not a source-faithful assembly of the adaptive Zhao-Cui filter",
+        "no pseudo-marginal unbiasedness claim",
+        "no posterior or HMC readiness claim",
+        "no statistical superiority claim"
+      ],
+      "observation_dimension": 9,
+      "particle_count": 24,
+      "production_kr_closure": false,
+      "program_id": "7a7bec0eb2d3de60d2ef797f16d0fb11616cdd96c017cecf11065aeb8d1f2278",
+      "proposal_compiler_id": "austria_bootstrap_uniform_identity_mechanics_only_seed30811",
+      "proposal_parameter_dependence": "none",
+      "pseudo_marginal_exact_target_claimed": false,
+      "require_claim_scope": false,
+      "retained_grid_route": false,
+      "route_classification": "extension_or_invention",
+      "route_id": "zhao_cui_predator_prey_source_order_fixed_branch_extension_v1",
+      "runtime_autodiff": false,
+      "runtime_finite_difference": false,
+      "runtime_fp32_observation_sha256": "40c793fb374e84fcd347c66b189352b5997740cc753ea0be03441ecf32828009",
+      "score_backend_id": "analytical_parameter_score_no_autodiff_v1",
+      "score_semantics": "analytical_recursive_score_of_same_finite_scalar",
+      "sealed_predator_prey_target_required": false,
+      "source_observation_sha256": "cd794ad6e90a74f7cf6dc06b33550bff4bef6fbf66bb0917846d0691b5910f07",
+      "state_dimension": 18,
+      "state_rows": 3,
+      "target_class": "deterministic_source_order_fixed_branch_approximate_likelihood",
+      "target_id": "zhao_cui_austria_sir_seed81120_latent_preclip_y1_y20_v1_prefix_t2",
+      "target_identity": "c8c99e49385e74aeba9c2921504cf7fc82c32a78b56a0959973f64c0e723fd46",
+      "target_observation_sha256": "9f64bed6b50f10a0fcb4a7b754cf8ea379b9ba3839ce7544aac5010f2d0c45bc",
+      "target_seed": 81120,
+      "target_state_sha256": "24b86e8c52c925f4ce7d614c66a860771df0ac7e3efc609a16991f49ddb44ced",
+      "time_iteration": "tf.while_loop_graph_native",
+      "transition_count": 2
+    },
+    "replay_seconds": 0.0008926999871619046,
+    "score": [
+      -587.923396654266,
+      117.81079203367474,
+      -7.809242659269719
+    ],
+    "score_additivity_max_abs_error": 0.0,
+    "score_replay_max_abs_error": 0.0,
+    "seed": 30811,
+    "value": -72.30472924620662,
+    "value_additivity_error": 0.0,
+    "value_replay_error": 0.0
+  },
+  "t20": {
+    "artifact_role": "bootstrap_mechanics_not_proposal_quality_or_claim",
+    "branch": {
+      "branch_id": "f5fed7434604970039fa8d9f4076143f82fa54e01f99cb22c7283d36d41c9992",
+      "dtype": "float64",
+      "event_order": "x0_then_20_transition_then_observe_steps_y1_y20",
+      "fixed_genealogy": true,
+      "identity_role": "reproducibility_fingerprint_not_admission",
+      "measure_id": "full_state_lebesgue_v1",
+      "observation_dimension": 9,
+      "particle_count": 1008,
+      "proposal_compiler_id": "austria_bootstrap_uniform_identity_mechanics_only_seed30812",
+      "proposal_parameter_dependence": "none",
+      "pseudo_marginal_exact_target_claimed": false,
+      "route_classification": "extension_or_invention",
+      "route_id": "zhao_cui_predator_prey_source_order_fixed_branch_extension_v1",
+      "state_dimension": 18,
+      "state_rows": 21,
+      "target_class": "deterministic_source_order_fixed_branch_approximate_likelihood",
+      "target_id": "zhao_cui_austria_sir_seed81120_latent_preclip_y1_y20_v1",
+      "target_observation_sha256": "cd794ad6e90a74f7cf6dc06b33550bff4bef6fbf66bb0917846d0691b5910f07",
+      "target_seed": 81120,
+      "target_state_sha256": "8cd5a079f5799f0e0b769e5ac21a4bdf460475a72319f07dc27fb037eb5774e0",
+      "transition_count": 20
+    },
+    "compile_and_first_seconds": 1.0525591400219128,
+    "dtype": "float64",
+    "ess_by_time": [
+      1008.0000000000005,
+      5.105094703448417,
+      3.3644466891775426,
+      1.1013560706926717,
+      1.0010939064929165,
+      1.0352695348460894,
+      2.561466205953173,
+      1.9824536013888947,
+      1.0000043698911643,
+      1.0000000292371285,
+      1.0000000132610296,
+      1.0000000014635333,
+      1.0000000004453184,
+      1.0000000034324046,
+      1.000000001555982,
+      1.0000000020946587,
+      1.0000000011537011,
+      1.0000000017958257,
+      1.0000000040349803,
+      1.0000000017956339,
+      1.0000000038628727
+    ],
+    "fd_mixed_five_digit_pass": true,
+    "fd_scores": [],
+    "fd_steps": [],
+    "finite": true,
+    "graph_audit": {
+      "forbidden_operations": [],
+      "has_host_callback": false,
+      "has_while": true,
+      "operation_type_count": 40,
+      "while_operations": [
+        "StatelessWhile"
+      ]
+    },
+    "horizon": 20,
+    "increment_scores": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -2.1909649248096166,
+        9.96331844162523,
+        -5.173525076499263
+      ],
+      [
+        -324.63921360240363,
+        65.33673625598973,
+        -1.2291897774982852
+      ],
+      [
+        -1182.6849445540022,
+        281.97406929712946,
+        16.49688769622689
+      ],
+      [
+        -1876.903630125571,
+        619.8471623609272,
+        0.6938730229098469
+      ],
+      [
+        -2933.8814154646007,
+        896.514235767743,
+        16.899708195127502
+      ],
+      [
+        -3457.6909901711288,
+        1337.7532032636577,
+        -8.88327779348804
+      ],
+      [
+        -2526.981993307403,
+        1030.1679903108925,
+        -1.9175679982040688
+      ],
+      [
+        -1403.0973147774293,
+        1077.5810151170283,
+        4.987529994064948
+      ],
+      [
+        -557.0498766737095,
+        464.048870226592,
+        -4.049675408983648
+      ],
+      [
+        -432.59330127897823,
+        444.51547115330953,
+        -3.617777218635061
+      ],
+      [
+        -211.91293259443967,
+        261.38617852063027,
+        10.322217628923527
+      ],
+      [
+        -87.9606834125742,
+        118.87345399170054,
+        -4.031791952461372
+      ],
+      [
+        -46.36238533690215,
+        91.72704628681278,
+        7.476304414233525
+      ],
+      [
+        -13.332421603158052,
+        11.215131437198096,
+        -4.848354744142524
+      ],
+      [
+        4.33715605580576,
+        42.63972976290172,
+        3.5170548244985573
+      ],
+      [
+        -17.436791237474942,
+        27.88519223652296,
+        -3.04143183778681
+      ],
+      [
+        -8.343251679994173,
+        5.678694627478101,
+        -1.4582461224955405
+      ],
+      [
+        -4.878106175752857,
+        29.26304492434763,
+        0.823670273361696
+      ],
+      [
+        6.953151909204228,
+        -18.069090275815512,
+        6.165318097655556
+      ],
+      [
+        -3.4094642565270994,
+        -2.1898950780710336,
+        1.7744478885801038
+      ]
+    ],
+    "jit_compile": true,
+    "log_increments": [
+      0.0,
+      -31.583439215567665,
+      -36.53498222153843,
+      -53.929287617801336,
+      -61.56181979740222,
+      -94.00427434904259,
+      -88.73094094543553,
+      -78.31127686150437,
+      -56.963812431298564,
+      -39.509048341761975,
+      -43.62329718719471,
+      -44.90549616527214,
+      -33.669532016070484,
+      -38.99016957295551,
+      -30.982276917459487,
+      -35.68077022938882,
+      -32.98530827311131,
+      -33.188916200012194,
+      -34.771019049854154,
+      -36.18596845385733,
+      -34.63233510742027
+    ],
+    "maximum_log_weight_spread": 205.41190737707012,
+    "minimum_ess": 1.0000000004453184,
+    "particle_count": 1008,
+    "primary_pass": true,
+    "program": {
+      "austria_program_id": "f38b6e47477652505e6d1d1a9681d7650bf243e4bfd47b95ebfa9dd1a4bd5e74",
+      "austria_route_classification": "extension_or_invention",
+      "austria_route_id": "zhao_cui_austria_sir_source_order_fixed_branch_extension_v1",
+      "branch_id": "f5fed7434604970039fa8d9f4076143f82fa54e01f99cb22c7283d36d41c9992",
+      "dtype": "float64",
+      "event_order": "x0_then_20_transition_then_observe_steps_y1_y20",
+      "finite_scalar": "c0_plus_sum_t1_to_T_logsumexp_importance_increment",
+      "fixed_genealogy": true,
+      "identity_role": "reproducibility_fingerprint_not_admission",
+      "initial_correction": "log_p_theta_x0_minus_log_q0_no_observation",
+      "jit_compile_default": true,
+      "measure_id": "full_state_lebesgue_v1",
+      "model": {
+        "classification": "extension_or_invention",
+        "dtype": "float64",
+        "family": "AustriaSIRLatentPreclipModel",
+        "measure_id": "full_state_lebesgue_v1",
+        "observation_covariance": "100*exp(2*theta[2])*I9",
+        "observation_dimension": 9,
+        "parameter_dimension": 3,
+        "process_covariance": "I18",
+        "rk4_step": 0.005,
+        "rk4_substeps": 4,
+        "rk4_variant": "zhao_cui_half_step_fourth_stage",
+        "runtime_autodiff": false,
+        "runtime_finite_difference": false,
+        "score_backend_id": "analytical_parameter_score_no_autodiff_v1",
+        "state_dimension": 18,
+        "target_id": "zhao_cui_austria_sir_seed81120_latent_preclip_y1_y20_v1"
+      },
+      "nonclaims": [
+        "not the exact observed-data likelihood",
+        "not a source-faithful assembly of the adaptive Zhao-Cui filter",
+        "no pseudo-marginal unbiasedness claim",
+        "no posterior or HMC readiness claim",
+        "no statistical superiority claim"
+      ],
+      "observation_dimension": 9,
+      "particle_count": 1008,
+      "production_kr_closure": false,
+      "program_id": "aacb47c97ba265359c0b79c9fb2b0aa6ec71c1659b0cd2e9a86c7142cbff9c2a",
+      "proposal_compiler_id": "austria_bootstrap_uniform_identity_mechanics_only_seed30812",
+      "proposal_parameter_dependence": "none",
+      "pseudo_marginal_exact_target_claimed": false,
+      "require_claim_scope": false,
+      "retained_grid_route": false,
+      "route_classification": "extension_or_invention",
+      "route_id": "zhao_cui_predator_prey_source_order_fixed_branch_extension_v1",
+      "runtime_autodiff": false,
+      "runtime_finite_difference": false,
+      "runtime_fp32_observation_sha256": "40c793fb374e84fcd347c66b189352b5997740cc753ea0be03441ecf32828009",
+      "score_backend_id": "analytical_parameter_score_no_autodiff_v1",
+      "score_semantics": "analytical_recursive_score_of_same_finite_scalar",
+      "sealed_predator_prey_target_required": false,
+      "source_observation_sha256": "cd794ad6e90a74f7cf6dc06b33550bff4bef6fbf66bb0917846d0691b5910f07",
+      "state_dimension": 18,
+      "state_rows": 21,
+      "target_class": "deterministic_source_order_fixed_branch_approximate_likelihood",
+      "target_id": "zhao_cui_austria_sir_seed81120_latent_preclip_y1_y20_v1",
+      "target_identity": "c8c99e49385e74aeba9c2921504cf7fc82c32a78b56a0959973f64c0e723fd46",
+      "target_observation_sha256": "cd794ad6e90a74f7cf6dc06b33550bff4bef6fbf66bb0917846d0691b5910f07",
+      "target_seed": 81120,
+      "target_state_sha256": "8cd5a079f5799f0e0b769e5ac21a4bdf460475a72319f07dc27fb037eb5774e0",
+      "time_iteration": "tf.while_loop_graph_native",
+      "transition_count": 20
+    },
+    "replay_seconds": 0.0016831050161272287,
+    "score": [
+      -15080.059373211849,
+      6796.1115586286,
+      30.90617410538754
+    ],
+    "score_additivity_max_abs_error": 3.552713678800501e-15,
+    "score_replay_max_abs_error": 0.0,
+    "seed": 30812,
+    "value": -940.743970953949,
+    "value_additivity_error": 1.1368683772161603e-13,
+    "value_replay_error": 0.0
+  },
+  "wall_time_seconds": 13.982620608003344
+}

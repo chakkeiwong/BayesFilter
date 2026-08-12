@@ -8,6 +8,9 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 import docs.benchmarks.run_contract_e_tp_phase6_zhao_cui_comparator as comparator
+from bayesfilter.highdim.zhao_cui_actual_sv_batched_tt_tf import (
+    batched_fixed_tt_likelihood_value_trace,
+)
 from bayesfilter.highdim.zhao_cui_fixed_adjacent_tt_tf import (
     scalar_adjacent_state_fixed_tt_score,
     scalar_adjacent_state_fixed_tt_value,
@@ -141,7 +144,7 @@ def test_batch_permutation_and_status_are_equivariant() -> None:
     assert bool(tf.reduce_all(tf.equal(status["status_code"], 0)).numpy())
 
 
-def test_posterior_recomposition_and_binding_are_exact() -> None:
+def test_posterior_recomposition_is_exact() -> None:
     adapter = make_actual_sv_zc_neutra_adapter()
     theta = tf.stack(
         (_truth_source(), _truth_source() + tf.constant([0.02, 0.03], tf.float64))
@@ -150,14 +153,48 @@ def test_posterior_recomposition_and_binding_are_exact() -> None:
     recomposed = posterior_value_score_status(theta, **adapter.program_tensors)
     tf.debugging.assert_near(direct[0], recomposed[0])
     tf.debugging.assert_near(direct[1], recomposed[1])
+
+
+def test_binding_is_rejected_while_xla_ready_is_false() -> None:
+    adapter = make_actual_sv_zc_neutra_adapter()
     target_signature = stable_ssm_target_signature(adapter.contract)
-    binding = bind_batch_native_neutra_target(
-        adapter, target_signature=target_signature
-    )
-    assert binding.target_signature == target_signature
-    assert binding.sample_axis_python_loop_used is False
-    assert binding.scalar_fallback_used is False
-    assert binding.row_mapped_scalar_target_used is False
+    try:
+        bind_batch_native_neutra_target(adapter, target_signature=target_signature)
+    except Exception as error:
+        assert "XLA ready" in str(error)
+    else:
+        raise AssertionError("binding should fail while xla_hmc_ready is false")
+
+
+
+
+def test_batched_trace_exposes_time_local_targets_and_sweeps() -> None:
+    adapter = make_actual_sv_zc_neutra_adapter()
+    theta = tf.stack((_truth_source(), _truth_source()), axis=0)
+    trace = batched_fixed_tt_likelihood_value_trace(theta, **adapter.program_tensors)
+
+    assert len(trace.steps) == 10
+    first_step = trace.steps[0]
+    second_step = trace.steps[1]
+
+    assert first_step.target_kind == "initial_state_observation"
+    assert first_step.one_axis_fit is not None
+    assert first_step.two_axis_fit is None
+    assert first_step.previous_density is None
+    assert tuple(first_step.log_target.shape) == (2, 25)
+    assert tuple(first_step.sqrt_target.shape) == (2, 25)
+    assert tuple(first_step.one_axis_fit.condition_by_sweep.shape) == (2, 2)
+
+    assert second_step.target_kind == "adjacent_state_update"
+    assert second_step.one_axis_fit is None
+    assert second_step.two_axis_fit is not None
+    assert second_step.previous_density is not None
+    assert tuple(second_step.log_target.shape) == (2, 625)
+    assert tuple(second_step.sqrt_target.shape) == (2, 625)
+    assert tuple(second_step.previous_density.shape) == (2, 625)
+    assert tuple(second_step.two_axis_fit.condition_by_update.shape) == (2, 8)
+    assert len(second_step.two_axis_fit.sweeps) == 8
+    assert tuple(sweep.axis for sweep in second_step.two_axis_fit.sweeps[:4]) == (0, 1, 1, 0)
 
 
 def test_cpu_xla_batch_target_compiles() -> None:

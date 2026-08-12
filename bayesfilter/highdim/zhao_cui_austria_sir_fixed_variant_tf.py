@@ -45,17 +45,12 @@ SCORE_BACKEND_ID = "analytical_parameter_score_no_autodiff_v1"
 RUNTIME_FP32_OBSERVATION_SHA256 = (
     "40c793fb374e84fcd347c66b189352b5997740cc753ea0be03441ecf32828009"
 )
+RUNTIME_FP64_OBSERVATION_SHA256 = SIR_OBSERVATION_SHA256
 CLAIM_PARTICLE_COUNT = 1008
 THETA_REFERENCE = (0.0, 0.0, 0.0)
 TARGET_SCHEMA = "bayesfilter.zhao_cui_austria_sir_observed_data_target.v1"
 
-_LOG_TWO_PI = tf.constant(math.log(2.0 * math.pi), tf.float32)
-_BASE_KAPPA = tf.constant(0.1, tf.float32)
-_BASE_NU = tf.constant(18.0, tf.float32)
-_BASE_OBSERVATION_VARIANCE = tf.constant(100.0, tf.float32)
-_RK4_STEP = tf.constant(0.005, tf.float32)
 _RK4_SUBSTEPS = 4
-_PARAMETER_EYE = tf.eye(SIR_PARAMETER_DIM, dtype=tf.float32)
 
 
 def _tensor_hash(value: tf.Tensor) -> str:
@@ -129,6 +124,7 @@ def make_austria_sir_observed_data_target() -> AustriaSIRObservedDataTarget:
         "source_state_sha256": SIR_STATE_SHA256,
         "source_observation_sha256": SIR_OBSERVATION_SHA256,
         "runtime_fp32_observation_sha256": RUNTIME_FP32_OBSERVATION_SHA256,
+        "runtime_fp64_observation_sha256": RUNTIME_FP64_OBSERVATION_SHA256,
         "filtering_state": "latent_pre_clipping_gaussian_z_t",
         "physical_state": "x0=z0; susceptible coordinates clipped for t>=1",
         "measure_id": MEASURE_ID,
@@ -143,21 +139,30 @@ def make_austria_sir_observed_data_target() -> AustriaSIRObservedDataTarget:
     )
 
 
-def _rows(value: tf.Tensor, width: int, name: str) -> tf.Tensor:
-    tensor = tf.convert_to_tensor(value, tf.float32)
-    if tensor.shape.rank != 2 or tensor.shape[1] != width:
-        raise ValueError(f"{name} must have shape [batch,{width}]")
-    return tensor
+class AustriaSIRLatentPreclipModel:
+    """Graph-native density and manual-score model for a frozen branch."""
 
-
-class AustriaSIRLatentPreclipFP32Model:
-    """Graph-native FP32 density and manual-score model for a frozen branch."""
-
-    def __init__(self) -> None:
+    def __init__(self, dtype: tf.dtypes.DType) -> None:
+        dtype = tf.as_dtype(dtype)
+        if dtype not in (tf.float32, tf.float64):
+            raise TypeError("Austria SIR runtime dtype must be float32 or float64")
+        self.dtype = dtype
         source = zhao_cui_sir_austria_model()
-        self._initial_mean = tf.cast(source.initial_mean, tf.float32)
-        self._adjacency = tf.cast(source._adjacency_matrix, tf.float32)  # noqa: SLF001
+        self._initial_mean = tf.cast(source.initial_mean, dtype)
+        self._adjacency = tf.cast(source._adjacency_matrix, dtype)  # noqa: SLF001
         self._degree = tf.reduce_sum(self._adjacency, axis=1)
+        self._log_two_pi = tf.constant(math.log(2.0 * math.pi), dtype)
+        self._base_kappa = tf.constant(0.1, dtype)
+        self._base_nu = tf.constant(18.0, dtype)
+        self._base_observation_variance = tf.constant(100.0, dtype)
+        self._rk4_step = tf.constant(0.005, dtype)
+        self._parameter_eye = tf.eye(SIR_PARAMETER_DIM, dtype=dtype)
+
+    def _rows(self, value: tf.Tensor, width: int, name: str) -> tf.Tensor:
+        tensor = tf.convert_to_tensor(value, self.dtype)
+        if tensor.shape.rank != 2 or tensor.shape[1] != width:
+            raise ValueError(f"{name} must have shape [batch,{width}]")
+        return tensor
 
     def parameter_dim(self) -> int:
         return SIR_PARAMETER_DIM
@@ -176,10 +181,10 @@ class AustriaSIRLatentPreclipFP32Model:
 
     def initial_log_density(self, theta: tf.Tensor, state: tf.Tensor) -> tf.Tensor:
         del theta
-        values = _rows(state, SIR_STATE_DIM, "state")
+        values = self._rows(state, SIR_STATE_DIM, "state")
         residual = values - self._initial_mean[tf.newaxis, :]
         return -0.5 * (
-            tf.constant(float(SIR_STATE_DIM), tf.float32) * _LOG_TWO_PI
+            tf.constant(float(SIR_STATE_DIM), self.dtype) * self._log_two_pi
             + tf.reduce_sum(tf.square(residual), axis=1)
         )
 
@@ -187,8 +192,8 @@ class AustriaSIRLatentPreclipFP32Model:
         self, theta: tf.Tensor, state: tf.Tensor
     ) -> tf.Tensor:
         del theta
-        values = _rows(state, SIR_STATE_DIM, "state")
-        return tf.zeros([tf.shape(values)[0], SIR_PARAMETER_DIM], tf.float32)
+        values = self._rows(state, SIR_STATE_DIM, "state")
+        return tf.zeros([tf.shape(values)[0], SIR_PARAMETER_DIM], self.dtype)
 
     def transition_mean(
         self, theta: tf.Tensor, previous: tf.Tensor, time_index: tf.Tensor
@@ -205,11 +210,11 @@ class AustriaSIRLatentPreclipFP32Model:
         current: tf.Tensor,
         time_index: tf.Tensor,
     ) -> tf.Tensor:
-        next_values = _rows(current, SIR_STATE_DIM, "current")
+        next_values = self._rows(current, SIR_STATE_DIM, "current")
         mean = self.transition_mean(theta, previous, time_index)
         residual = next_values - mean
         return -0.5 * (
-            tf.constant(float(SIR_STATE_DIM), tf.float32) * _LOG_TWO_PI
+            tf.constant(float(SIR_STATE_DIM), self.dtype) * self._log_two_pi
             + tf.reduce_sum(tf.square(residual), axis=1)
         )
 
@@ -220,7 +225,7 @@ class AustriaSIRLatentPreclipFP32Model:
         current: tf.Tensor,
         time_index: tf.Tensor,
     ) -> tf.Tensor:
-        next_values = _rows(current, SIR_STATE_DIM, "current")
+        next_values = self._rows(current, SIR_STATE_DIM, "current")
         mean, jacobian = self._transition_mean_and_parameter_jacobian(
             theta, previous, time_index
         )
@@ -235,12 +240,16 @@ class AustriaSIRLatentPreclipFP32Model:
         time_index: tf.Tensor,
     ) -> tf.Tensor:
         del time_index
-        values = _rows(state, SIR_STATE_DIM, "state")
-        y = tf.reshape(tf.convert_to_tensor(observation, tf.float32), [SIR_OBSERVATION_DIM])
-        variance = _BASE_OBSERVATION_VARIANCE * tf.exp(2.0 * theta[2])
+        values = self._rows(state, SIR_STATE_DIM, "state")
+        y = tf.reshape(
+            tf.convert_to_tensor(observation, self.dtype), [SIR_OBSERVATION_DIM]
+        )
+        variance = self._base_observation_variance * tf.exp(2.0 * theta[2])
         residual = y[tf.newaxis, :] - values[:, 1::2]
         return -0.5 * tf.reduce_sum(
-            _LOG_TWO_PI + tf.math.log(variance) + tf.square(residual) / variance,
+            self._log_two_pi
+            + tf.math.log(variance)
+            + tf.square(residual) / variance,
             axis=1,
         )
 
@@ -252,21 +261,23 @@ class AustriaSIRLatentPreclipFP32Model:
         time_index: tf.Tensor,
     ) -> tf.Tensor:
         del time_index
-        values = _rows(state, SIR_STATE_DIM, "state")
-        y = tf.reshape(tf.convert_to_tensor(observation, tf.float32), [SIR_OBSERVATION_DIM])
-        variance = _BASE_OBSERVATION_VARIANCE * tf.exp(2.0 * theta[2])
+        values = self._rows(state, SIR_STATE_DIM, "state")
+        y = tf.reshape(
+            tf.convert_to_tensor(observation, self.dtype), [SIR_OBSERVATION_DIM]
+        )
+        variance = self._base_observation_variance * tf.exp(2.0 * theta[2])
         residual = y[tf.newaxis, :] - values[:, 1::2]
         direct = tf.reduce_sum(tf.square(residual) / variance - 1.0, axis=1)
-        return direct[:, tf.newaxis] * _PARAMETER_EYE[2][tf.newaxis, :]
+        return direct[:, tf.newaxis] * self._parameter_eye[2][tf.newaxis, :]
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
-            "family": "AustriaSIRLatentPreclipFP32Model",
+            "family": "AustriaSIRLatentPreclipModel",
             "target_id": TARGET_ID,
             "state_dimension": SIR_STATE_DIM,
             "observation_dimension": SIR_OBSERVATION_DIM,
             "parameter_dimension": SIR_PARAMETER_DIM,
-            "dtype": "float32",
+            "dtype": self.dtype.name,
             "rk4_variant": "zhao_cui_half_step_fourth_stage",
             "rk4_substeps": _RK4_SUBSTEPS,
             "rk4_step": 0.005,
@@ -282,8 +293,10 @@ class AustriaSIRLatentPreclipFP32Model:
     def _transition_mean_and_parameter_jacobian(
         self, theta: tf.Tensor, previous: tf.Tensor, time_index: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
-        parameters = tf.reshape(tf.convert_to_tensor(theta, tf.float32), [SIR_PARAMETER_DIM])
-        latent_previous = _rows(previous, SIR_STATE_DIM, "previous")
+        parameters = tf.reshape(
+            tf.convert_to_tensor(theta, self.dtype), [SIR_PARAMETER_DIM]
+        )
+        latent_previous = self._rows(previous, SIR_STATE_DIM, "previous")
         clipped = tf.reshape(
             tf.stack(
                 [
@@ -296,7 +309,7 @@ class AustriaSIRLatentPreclipFP32Model:
         )
         current = tf.where(tf.equal(time_index, 1), latent_previous, clipped)
         tangent = tf.zeros(
-            [tf.shape(current)[0], SIR_STATE_DIM, SIR_PARAMETER_DIM], tf.float32
+            [tf.shape(current)[0], SIR_STATE_DIM, SIR_PARAMETER_DIM], self.dtype
         )
 
         def body(
@@ -305,24 +318,25 @@ class AustriaSIRLatentPreclipFP32Model:
             k1, d1 = self._rhs_with_parameter_jacobian(parameters, state, state_tangent)
             k2, d2 = self._rhs_with_parameter_jacobian(
                 parameters,
-                state + 0.5 * _RK4_STEP * k1,
-                state_tangent + 0.5 * _RK4_STEP * d1,
+                state + 0.5 * self._rk4_step * k1,
+                state_tangent + 0.5 * self._rk4_step * d1,
             )
             k3, d3 = self._rhs_with_parameter_jacobian(
                 parameters,
-                state + 0.5 * _RK4_STEP * k2,
-                state_tangent + 0.5 * _RK4_STEP * d2,
+                state + 0.5 * self._rk4_step * k2,
+                state_tangent + 0.5 * self._rk4_step * d2,
             )
             k4, d4 = self._rhs_with_parameter_jacobian(
                 parameters,
-                state + 0.5 * _RK4_STEP * k3,
-                state_tangent + 0.5 * _RK4_STEP * d3,
+                state + 0.5 * self._rk4_step * k3,
+                state_tangent + 0.5 * self._rk4_step * d3,
             )
             return (
                 index + 1,
-                state + _RK4_STEP / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4),
+                state
+                + self._rk4_step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4),
                 state_tangent
-                + _RK4_STEP / 6.0 * (d1 + 2.0 * d2 + 2.0 * d3 + d4),
+                + self._rk4_step / 6.0 * (d1 + 2.0 * d2 + 2.0 * d3 + d4),
             )
 
         result = tf.while_loop(
@@ -337,8 +351,8 @@ class AustriaSIRLatentPreclipFP32Model:
     def _rhs_with_parameter_jacobian(
         self, theta: tf.Tensor, state: tf.Tensor, tangent: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
-        kappa = _BASE_KAPPA * tf.exp(theta[0])
-        nu = _BASE_NU * tf.exp(theta[1])
+        kappa = self._base_kappa * tf.exp(theta[0])
+        nu = self._base_nu * tf.exp(theta[1])
         susceptible = state[:, 0::2]
         infectious = state[:, 1::2]
         d_susceptible = tangent[:, 0::2, :]
@@ -363,7 +377,9 @@ class AustriaSIRLatentPreclipFP32Model:
         d_infection = kappa * (
             infectious[:, :, tf.newaxis] * d_susceptible
             + susceptible[:, :, tf.newaxis] * d_infectious
-        ) + infection[:, :, tf.newaxis] * _PARAMETER_EYE[0][tf.newaxis, tf.newaxis, :]
+        ) + infection[:, :, tf.newaxis] * self._parameter_eye[0][
+            tf.newaxis, tf.newaxis, :
+        ]
         rhs_susceptible = -infection + 0.5 * susceptible_neighbor
         rhs_infectious = infection - nu * infectious + 0.5 * infectious_neighbor
         d_rhs_susceptible = -d_infection + 0.5 * d_susceptible_neighbor
@@ -371,7 +387,7 @@ class AustriaSIRLatentPreclipFP32Model:
             d_infection
             - nu * d_infectious
             - (nu * infectious)[:, :, tf.newaxis]
-            * _PARAMETER_EYE[1][tf.newaxis, tf.newaxis, :]
+            * self._parameter_eye[1][tf.newaxis, tf.newaxis, :]
             + 0.5 * d_infectious_neighbor
         )
         return (
@@ -386,6 +402,20 @@ class AustriaSIRLatentPreclipFP32Model:
         )
 
 
+class AustriaSIRLatentPreclipFP32Model(AustriaSIRLatentPreclipModel):
+    """Historical FP32 runtime adapter."""
+
+    def __init__(self) -> None:
+        super().__init__(tf.float32)
+
+
+class AustriaSIRLatentPreclipFP64Model(AustriaSIRLatentPreclipModel):
+    """FP64 runtime adapter for five-significant-digit score claims."""
+
+    def __init__(self) -> None:
+        super().__init__(tf.float64)
+
+
 @dataclass(frozen=True)
 class AustriaSIRSourceOrderProgram:
     """Austria target wrapper around the shared source-order APF recursion."""
@@ -393,15 +423,16 @@ class AustriaSIRSourceOrderProgram:
     target: AustriaSIRObservedDataTarget
     branch: PreparedSourceOrderFrozenBranch
     require_claim_scope: bool = False
-    model: AustriaSIRLatentPreclipFP32Model = field(
-        default_factory=AustriaSIRLatentPreclipFP32Model
-    )
+    model: AustriaSIRLatentPreclipModel | None = None
     _delegate: SourceOrderFrozenAPFProgram = field(init=False, repr=False)
     program_id: str = field(init=False)
 
     def __post_init__(self) -> None:
         _require_austria_branch(self.target, self.branch, self.require_claim_scope)
-        delegate = prepare_source_order_frozen_apf_program(self.model, self.branch)
+        model = self.model or AustriaSIRLatentPreclipModel(self.branch.dtype)
+        if model.dtype != self.branch.dtype:
+            raise ValueError("Austria model and branch dtypes differ")
+        delegate = prepare_source_order_frozen_apf_program(model, self.branch)
         payload = {
             "route_id": ROUTE_ID,
             "route_classification": ROUTE_CLASSIFICATION,
@@ -410,6 +441,7 @@ class AustriaSIRSourceOrderProgram:
             "require_claim_scope": bool(self.require_claim_scope),
         }
         object.__setattr__(self, "_delegate", delegate)
+        object.__setattr__(self, "model", model)
         object.__setattr__(self, "program_id", _semantic_hash(payload))
 
     def evaluate(self, theta: tf.Tensor) -> Mapping[str, tf.Tensor]:
@@ -448,18 +480,26 @@ def prepare_austria_sir_source_order_branch(
 ) -> PreparedSourceOrderFrozenBranch:
     """Issue an Austria branch identity from actual tensors and target data."""
 
-    values = tf.convert_to_tensor(observations, tf.float32)
+    state_values = tf.convert_to_tensor(states)
+    if state_values.dtype not in (tf.float32, tf.float64):
+        raise TypeError("Austria states must use float32 or float64")
+    values = tf.convert_to_tensor(observations, state_values.dtype)
     if values.shape.rank != 2 or values.shape[1] != SIR_OBSERVATION_DIM:
         raise ValueError("Austria observations must have shape [T,9]")
     horizon = int(values.shape[0])
     if horizon < 1 or horizon > SIR_HORIZON:
         raise ValueError("Austria branch horizon must be in [1,20]")
-    tf.debugging.assert_equal(values, target.observations[:horizon])
+    expected_observations = (
+        target.observations
+        if state_values.dtype == tf.float32
+        else target.source_observations
+    )
+    tf.debugging.assert_equal(values, expected_observations[:horizon])
     source_state_hash = _tensor_hash(target.source_states[: horizon + 1])
     observation_hash = _tensor_hash(values)
     branch = prepare_source_order_frozen_branch(
         observations=values,
-        states=tf.convert_to_tensor(states, tf.float32),
+        states=state_values,
         initial_log_proposal_density=initial_log_proposal_density,
         ancestors=ancestors,
         auxiliary_log_probabilities=auxiliary_log_probabilities,
@@ -494,6 +534,7 @@ def make_bootstrap_mechanics_branch(
     horizon: int,
     proposal_seed: int,
     target: AustriaSIRObservedDataTarget | None = None,
+    dtype: tf.dtypes.DType = tf.float32,
 ) -> PreparedSourceOrderFrozenBranch:
     """Build a fixed bootstrap branch for parity and memory-safe mechanics only."""
 
@@ -502,15 +543,15 @@ def make_bootstrap_mechanics_branch(
     if int(horizon) < 1 or int(horizon) > SIR_HORIZON:
         raise ValueError("horizon must be in [1,20]")
     target = target or make_austria_sir_observed_data_target()
-    model = AustriaSIRLatentPreclipFP32Model()
-    theta_reference = tf.zeros([SIR_PARAMETER_DIM], tf.float32)
+    dtype = tf.as_dtype(dtype)
+    model = AustriaSIRLatentPreclipModel(dtype)
+    theta_reference = tf.zeros([SIR_PARAMETER_DIM], dtype)
     initial_noise = tf.random.stateless_normal(
         [int(particle_count), SIR_STATE_DIM],
         seed=tf.constant([int(proposal_seed), 0], tf.int32),
-        dtype=tf.float32,
+        dtype=dtype,
     )
     initial_state = model._initial_mean[tf.newaxis, :] + initial_noise  # noqa: SLF001
-    states = [initial_state]
     initial_log_q = model.initial_log_density(theta_reference, initial_state)
     ancestors = tf.tile(
         tf.range(int(particle_count), dtype=tf.int32)[tf.newaxis, :],
@@ -518,38 +559,71 @@ def make_bootstrap_mechanics_branch(
     )
     auxiliary_log = tf.fill(
         [int(horizon), int(particle_count)],
-        -tf.math.log(tf.cast(int(particle_count), tf.float32)),
+        -tf.math.log(tf.cast(int(particle_count), dtype)),
     )
-    transition_log_q = []
-    previous = initial_state
-    for time_index in range(1, int(horizon) + 1):
+    state_array = tf.TensorArray(
+        dtype=dtype,
+        size=int(horizon) + 1,
+        clear_after_read=False,
+        element_shape=tf.TensorShape([int(particle_count), SIR_STATE_DIM]),
+    ).write(0, initial_state)
+    log_q_array = tf.TensorArray(
+        dtype=dtype,
+        size=int(horizon),
+        clear_after_read=False,
+        element_shape=tf.TensorShape([int(particle_count)]),
+    )
+
+    def body(
+        time_index: tf.Tensor,
+        previous: tf.Tensor,
+        states: tf.TensorArray,
+        log_q: tf.TensorArray,
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.TensorArray, tf.TensorArray]:
         mean = model.transition_mean(
-            theta_reference, previous, tf.constant(time_index, tf.int32)
+            theta_reference, previous, time_index
         )
         noise = tf.random.stateless_normal(
             [int(particle_count), SIR_STATE_DIM],
-            seed=tf.constant([int(proposal_seed), time_index], tf.int32),
-            dtype=tf.float32,
+            seed=tf.stack([tf.constant(int(proposal_seed), tf.int32), time_index]),
+            dtype=dtype,
         )
         current = mean + noise
-        transition_log_q.append(
-            model.transition_log_density(
-                theta_reference,
-                previous,
-                current,
-                tf.constant(time_index, tf.int32),
-            )
+        current_log_q = model.transition_log_density(
+            theta_reference, previous, current, time_index
         )
-        states.append(current)
-        previous = current
+        return (
+            time_index + 1,
+            current,
+            states.write(time_index, current),
+            log_q.write(time_index - 1, current_log_q),
+        )
+
+    _, _, state_array, log_q_array = tf.while_loop(
+        lambda time_index, *_unused: time_index <= int(horizon),
+        body,
+        (
+            tf.constant(1, tf.int32),
+            initial_state,
+            state_array,
+            log_q_array,
+        ),
+        maximum_iterations=int(horizon),
+        parallel_iterations=1,
+    )
+    observations = (
+        target.observations
+        if dtype == tf.float32
+        else target.source_observations
+    )
     return prepare_austria_sir_source_order_branch(
         target=target,
-        observations=target.observations[: int(horizon)],
-        states=tf.stack(states),
+        observations=observations[: int(horizon)],
+        states=state_array.stack(),
         initial_log_proposal_density=initial_log_q,
         ancestors=ancestors,
         auxiliary_log_probabilities=auxiliary_log,
-        transition_log_proposal_density=tf.stack(transition_log_q),
+        transition_log_proposal_density=log_q_array.stack(),
         proposal_compiler_id=(
             "austria_bootstrap_uniform_identity_mechanics_only_"
             f"seed{int(proposal_seed)}"
@@ -578,7 +652,11 @@ def _require_austria_branch(
         TARGET_ID if horizon == SIR_HORIZON else f"{TARGET_ID}_prefix_t{horizon}"
     ):
         raise ValueError("Austria target id rejected")
-    expected_observations = target.observations[:horizon]
+    expected_observations = (
+        target.observations
+        if branch.dtype == tf.float32
+        else target.source_observations
+    )[:horizon]
     if branch.observations.shape != expected_observations.shape or not bool(
         tf.reduce_all(tf.equal(branch.observations, expected_observations)).numpy()
     ):
@@ -590,14 +668,21 @@ def _require_austria_branch(
     if require_claim_scope:
         if horizon != SIR_HORIZON or branch.particle_count != CLAIM_PARTICLE_COUNT:
             raise ValueError("Austria claim scope requires T=20 and N=1008")
-        if branch.target_observation_sha256 != RUNTIME_FP32_OBSERVATION_SHA256:
+        expected_hash = (
+            RUNTIME_FP32_OBSERVATION_SHA256
+            if branch.dtype == tf.float32
+            else RUNTIME_FP64_OBSERVATION_SHA256
+        )
+        if branch.target_observation_sha256 != expected_hash:
             raise ValueError("Austria claim runtime observation hash rejected")
         if "bootstrap" in branch.proposal_compiler_id:
             raise ValueError("bootstrap mechanics branch is not claim eligible")
 
 
 __all__ = [
+    "AustriaSIRLatentPreclipModel",
     "AustriaSIRLatentPreclipFP32Model",
+    "AustriaSIRLatentPreclipFP64Model",
     "AustriaSIRObservedDataTarget",
     "AustriaSIRSourceOrderProgram",
     "CLAIM_PARTICLE_COUNT",
@@ -607,6 +692,7 @@ __all__ = [
     "ROUTE_ID",
     "ROW_ID",
     "RUNTIME_FP32_OBSERVATION_SHA256",
+    "RUNTIME_FP64_OBSERVATION_SHA256",
     "SCORE_BACKEND_ID",
     "TARGET_ID",
     "make_austria_sir_observed_data_target",
