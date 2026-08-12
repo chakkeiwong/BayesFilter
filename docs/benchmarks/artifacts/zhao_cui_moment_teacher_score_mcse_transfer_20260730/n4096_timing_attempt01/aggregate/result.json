@@ -1,0 +1,73 @@
+{
+  "criterion": {
+    "minimum_time_reduction": 0.2,
+    "passed": false
+  },
+  "decision": "speed_condition_not_met",
+  "fp32_no_tf32": {
+    "gpu_allocator_peak_bytes": 1080033280,
+    "maximum_seconds": 4.255022543999075,
+    "mean_seconds": 4.0888458912028,
+    "median_seconds": 4.0318794430058915,
+    "minimum_seconds": 3.94546662200446,
+    "repetitions": 5,
+    "times_seconds": [
+      3.9645378370041726,
+      4.0318794430058915,
+      4.2473230100004,
+      4.255022543999075,
+      3.94546662200446
+    ]
+  },
+  "hmc_contract": {
+    "current_wrapper_uses_one_log_prob_and_grad_call_for_value_and_score": true,
+    "interpretation": "MH corrects proposal integration error relative to the finite target value returned by the adapter; it does not replace that value with the FP32-no-TF32 comparator.",
+    "mh_independently_recomputes_higher_precision_acceptance_energy": false
+  },
+  "identity_checks": {
+    "both_fp32": true,
+    "campaign": true,
+    "commit": true,
+    "prepared_inputs": true,
+    "scope": true,
+    "seeds": true,
+    "source_sha256": true,
+    "tf32_modes": true
+  },
+  "inputs": {
+    "reference_result": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/n4096_timing_attempt01/fp32_no_tf32/result.json",
+    "reference_sha256": "11cd03bdec871bbd2a2fb7db665bacb3f61020171d6ad388dbb33632202ae537",
+    "tf32_result": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/n4096_timing_attempt01/tf32/result.json",
+    "tf32_sha256": "4cee94e0168ae285768afae4de52fd7740e252b3b9d7c7dbe064dc0df7be0bf7"
+  },
+  "interpretable": true,
+  "median_throughput_gain": 0.12376433375998297,
+  "median_time_reduction": 0.11013370868061112,
+  "nonclaims": [
+    "no moment-teacher HMC runtime was benchmarked",
+    "no posterior-correctness or HMC-readiness conclusion",
+    "the 20% engineering threshold is not a scientific constant"
+  ],
+  "question": "Is TF32 at least 20% faster in median warm execution time?",
+  "repetition_valid": true,
+  "schema": "bayesfilter.zhao_cui_moment_teacher_tf32_performance.v1",
+  "tf32": {
+    "gpu_allocator_peak_bytes": 1080978432,
+    "maximum_seconds": 3.7345129050008836,
+    "mean_seconds": 3.610923369198281,
+    "median_seconds": 3.5878336069945362,
+    "minimum_seconds": 3.509959372000594,
+    "repetitions": 5,
+    "times_seconds": [
+      3.509959372000594,
+      3.546491522996803,
+      3.6758194389985874,
+      3.7345129050008836,
+      3.5878336069945362
+    ]
+  },
+  "validity_checks": {
+    "reference_hard_valid": true,
+    "tf32_hard_valid": true
+  }
+}

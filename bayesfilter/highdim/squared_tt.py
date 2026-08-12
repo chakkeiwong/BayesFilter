@@ -328,7 +328,18 @@ class SquaredTTDensity:
                 self.measure_convention,
                 floor=self.defensive_density.floor,
             )
-            return tf.exp(retained_reference.log_density(points))
+            values = tf.exp(retained_reference.log_density(points))
+            if self.measure_convention.mass_measure is MassMeasure.REFERENCE_LEBESGUE:
+                integrated_axes = tuple(
+                    axis
+                    for axis in range(len(self.sqrt_tt.cores))
+                    if axis not in keep_axes
+                )
+                volume = tf.constant(1.0, tf.float64)
+                for axis in integrated_axes:
+                    volume = volume * self.sqrt_tt.product_basis.bases[axis].domain.length
+                values = values * volume
+            return values
         raise NotImplementedError("source-style defensive marginal requires tensor-product reference density")
 
     def conditional_density(

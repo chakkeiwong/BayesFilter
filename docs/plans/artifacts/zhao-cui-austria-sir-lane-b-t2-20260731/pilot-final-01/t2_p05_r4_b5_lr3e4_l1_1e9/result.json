@@ -1,0 +1,346 @@
+{
+  "arm": {
+    "arm_id": "t2_p05_r4_b5_lr3e4_l1_1e9",
+    "basis_num_elems": 2,
+    "basis_order": 2,
+    "batch_size": 256,
+    "cdf_bisection_steps": 24,
+    "cdf_grid_size": 65,
+    "cdf_max_working_bytes": 536870912,
+    "covariance_jitter": 1e-05,
+    "expansion_factor": 4.0,
+    "gradient_clip_norm": 100.0,
+    "l1_weight": 1e-09,
+    "l2_weight": 1e-08,
+    "learning_rate": 0.0003,
+    "quantile_fraction": 0.01,
+    "rank": 4,
+    "tau": 1e-08,
+    "train_steps": 96,
+    "use_quantile_scale": true
+  },
+  "artifact_identity": "f51bb12bb6ab1a16cd843b350bb53a69cd449d602007278b8c5ef306a82e9f5e",
+  "artifact_manifest": "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/pilot-final-01/t2_p05_r4_b5_lr3e4_l1_1e9/artifact/manifest.json",
+  "artifact_value": -66.28380350560136,
+  "baseline_id": "zhao_cui_austria_sir_fixed_variant_training_base_t2_v1",
+  "calibration_estimate": {
+    "log_importance_weight_sha256": "8aa2f18b7718d960525afdee329a9ab83aaec2e22395c9043557581a74114c25",
+    "log_increment": -35.15475228241306,
+    "log_shifted_normalizer": 0.0,
+    "log_standard_error": 0.0621959835101852,
+    "reference_seed": 73803,
+    "role": "calibration",
+    "sample_count": 12288,
+    "shift_constant": 35.15475228241306,
+    "transition_seed": 73813,
+    "uncertainty_method": "iid_sample_mean_delta_method_v1"
+  },
+  "core_scale": 9.904679963105355,
+  "direct_mass_log_residual": 1.008082506359693e-13,
+  "gates": {
+    "fresh_artifact_reload": true,
+    "memory_under_6_gib": true,
+    "normalizer_agreement": true,
+    "shape_better_than_0p95_constant": true,
+    "viable": true
+  },
+  "gpu_allocator": {
+    "current": 24670464,
+    "peak": 91734016
+  },
+  "inference_status": {
+    "default_readiness": false,
+    "descriptive_only_differences": true,
+    "hard_veto_screen": "passed",
+    "next_evidence_needed": "all six arms then untouched selected-arm value claim",
+    "statistically_supported_ranking": false
+  },
+  "initialization": {
+    "mass_gate": true,
+    "rho_max": 1.0000730123553832,
+    "rho_min": 1.000000097976231,
+    "rho_stddev": 2.7310864791073598e-05,
+    "square_mass": 1.0000005555556444,
+    "variation_gate": true
+  },
+  "nonclaims": [
+    "no statistically supported arm ranking",
+    "no T2 value admission before untouched claim",
+    "no score, T20, HMC, production KR, or scientific claim"
+  ],
+  "parent_t1_identity": "e4b56526205eb50c3d2aa3b8a8ce6ce27539aa5ab50ad286380136db28ed2b59",
+  "pre_calibration_normalizer": 0.010193410804997508,
+  "prepared_inputs": {
+    "calibration": {
+      "joint_axis_order": [
+        "z2",
+        "z1"
+      ],
+      "joint_points_sha256": "5d6668141b7d71f506d258bf95c31fca8596a8db773008182650864795f63c99",
+      "log_importance_weight_sha256": "8aa2f18b7718d960525afdee329a9ab83aaec2e22395c9043557581a74114c25",
+      "log_likelihood_sha256": "ac3a26d25eb216b601145f4fd542854afc3fbef01d25453086143f1d9c011d7d",
+      "previous_correction_sha256": "8e126a21e73d670eeac57cf13908d17b4589b1fa49c6a6efa0f6626ddcba1218",
+      "previous_log_proposal_sha256": "563ccff8dacf7414064190183d8b358dd157e76e88b6cbb683eafde57ba06324",
+      "previous_log_target_sha256": "84dd13f35c42f2e695103f06db2b318785929df0bd8c7353d8db75a5dbae7e9a",
+      "proposal_law": "q_grid_T1(z1) f(z2|z1,theta=0)",
+      "reference_seed": 73803,
+      "reference_uniforms_sha256": "096b0be8fe029f876e84b7f83ce6b888cb2419fd6bbc4f5916c89dadf29f3095",
+      "role": "calibration",
+      "sample_count": 12288,
+      "target_law": "p1_TT(z1) f(z2|z1,theta=0) g(y2|z2,theta=0)",
+      "transition_log_density_sha256": "3504f1ca90a2a234ea10da8c58af7a98faad2f22f280a4c50cf2877e2e1f15dc",
+      "transition_seed": 73813,
+      "zero_target_count": 0,
+      "zero_target_mask_sha256": "df859d9e14b3bc6bf630d037aab7f117ba3670b57215c4f96817bfc530ed3533"
+    },
+    "training": {
+      "joint_axis_order": [
+        "z2",
+        "z1"
+      ],
+      "joint_points_sha256": "8c5d6443ddea55badd28761510873bb2448b306b8aa30cd82ef82621c0458684",
+      "log_importance_weight_sha256": "bc48cd95c86fcbf70cc58664b6857182977905bb4fe17d08847ba4ab5273572c",
+      "log_likelihood_sha256": "6182c4b907356c1d58be46196692d57dcf4a7011873234027a6548df884e8784",
+      "previous_correction_sha256": "943007a218477c55fd82f49eb4f3edfdc76c3414792a36f9958441990bc8a67c",
+      "previous_log_proposal_sha256": "7d26735bbd447c105757c725c17e88e763d504b65f79f747a9209f9c54f199eb",
+      "previous_log_target_sha256": "9ab79a0506a3a8662f5adfbb7a5eac4154ee5942517f749a3909cbe733ee57d8",
+      "proposal_law": "q_grid_T1(z1) f(z2|z1,theta=0)",
+      "reference_seed": 73801,
+      "reference_uniforms_sha256": "828aef28b44400a0a2d8a53fd13a751d6a0d5ae7f166e517336e22f039f9781a",
+      "role": "training",
+      "sample_count": 4096,
+      "target_law": "p1_TT(z1) f(z2|z1,theta=0) g(y2|z2,theta=0)",
+      "transition_log_density_sha256": "fdf9933b6dbdcdf80be121166c8c5f1154245bf5437ccb0c60d357cefafe324e",
+      "transition_seed": 73811,
+      "zero_target_count": 0,
+      "zero_target_mask_sha256": "22de911991e8358eb4bc9f099c29d70803e66ddea4721073cf5f679d399be280"
+    },
+    "validation": {
+      "joint_axis_order": [
+        "z2",
+        "z1"
+      ],
+      "joint_points_sha256": "7c0c81874772b17203ebc80a7125f2dcf7809ca5e3e938bd803e52506f6047ec",
+      "log_importance_weight_sha256": "d97b2067ff7cc03c5db159440fc572116f9dc746eeb65ba6aeb48b78bdc83465",
+      "log_likelihood_sha256": "a49a1d3ddd1325639e75b1670b1e48423c2312a180a1699fa8536289353a9044",
+      "previous_correction_sha256": "6e8f66ae174d7520d3b11049cd5516d3f0a7dfb7fa67da00bb09ecb3de67c826",
+      "previous_log_proposal_sha256": "e5ff25d580ae2b03dae44725386deed97a9f631919caaeade9645eea5e1d8f1e",
+      "previous_log_target_sha256": "7edd65aae1936d8f4a1cfd60995777be58e82d3566110406bcc0e4e91ac89d60",
+      "proposal_law": "q_grid_T1(z1) f(z2|z1,theta=0)",
+      "reference_seed": 73802,
+      "reference_uniforms_sha256": "341a4ad6e7f488e430402e240cab0528e2169ff049b641ce12bc22ea0d8e85fa",
+      "role": "validation",
+      "sample_count": 8192,
+      "target_law": "p1_TT(z1) f(z2|z1,theta=0) g(y2|z2,theta=0)",
+      "transition_log_density_sha256": "c4a8b0e44e8d4ff776230493eea1210a47c0cde0beac7a072a5764f3c6fd4875",
+      "transition_seed": 73812,
+      "zero_target_count": 1,
+      "zero_target_mask_sha256": "eac0baf56846cef60efdc9b04fa9d993e2ef710343a2f35670e17d5860c1bfbb"
+    }
+  },
+  "run_manifest": {
+    "command": [
+      "scripts/run_zhao_cui_austria_sir_lane_b_t2.py",
+      "--pilot-arm",
+      "t2_p05_r4_b5_lr3e4_l1_1e9",
+      "--parent-t1-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-02/p05_r4_b5_lr3e4_l1_1e9/artifact",
+      "--training-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/attempt-06-training-prepared-final-closure",
+      "--validation-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/attempt-07-validation-prepared-final-closure",
+      "--calibration-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/attempt-08-calibration-prepared-final-closure",
+      "--output-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/pilot-final-01/t2_p05_r4_b5_lr3e4_l1_1e9",
+      "--max-seconds",
+      "600"
+    ],
+    "device": [
+      "/device:GPU:0"
+    ],
+    "dtype": "float64_reference_training",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "execution_note": "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-pilot-execution-note-2026-07-31.md",
+    "full_cloud_update_semantics": "16_fixed_parameter_microbatches_then_one_clipped_adam_update",
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "host": "DESKTOP-RF1Q5IJ",
+    "jit_compile": true,
+    "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-plan-2026-07-31.md",
+    "prepared_result_sha256": {
+      "calibration": "469119cf6f944e7970c8fa99673dc86f73bf39578a920914d8b80b2d3833efcb",
+      "training": "074a3bd760039e5db63364c87b6ade06e39374ac94e270913541845845170ba7",
+      "validation": "dda33a460ce210c76d6881b8ffd9eedfcb128206efe3ba0bc907332e7c7cba5e"
+    },
+    "prepared_source_sha256": {
+      "bayesfilter/highdim/bases.py": "d85adcdb48d4d20cb4e7a286f50ba52d2818b6497d59a3c3f9306bad0de30542",
+      "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+      "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+      "bayesfilter/highdim/models.py": "0ff67634786a8b30dac582cf711d581c6d52af155364c314b111a119826796e6",
+      "bayesfilter/highdim/sir_latent_preclip_tf.py": "88c8adb5c245d141bb3f9e00544732dc1b0430f313642790f29fc5ad20f5277f",
+      "bayesfilter/highdim/source_route.py": "864061837818e597a6ff03cc7ee37d9c18dd718a2a5486871c47eb8e81fe6281",
+      "bayesfilter/highdim/squared_tt.py": "703846596b66eb2834ae5a00052fbb03756cc6e9c876c9669422e52419793056",
+      "bayesfilter/highdim/stochastic_density_training.py": "3bace5ef92cc180a867300105a2106099b7b3e71d46b96df334ed5b7c6b1bbc8",
+      "bayesfilter/highdim/transport.py": "ff03fac036aa8486732962373e053ff63c4a2b0b26085517be86ac9034a0949c",
+      "bayesfilter/highdim/tt.py": "cbe482ab3f595d3360bdca7e8fa7f0e24c56f99f74b531fd15694542eed6a8a8",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_artifact_compat.py": "4c7d91ce96d8ff2ca9254f8506cad722447d4d82318f26247fc3ec033d4aafb6",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_sampler_tf.py": "ce6f16a2628d234fd2ad4a9f8de2ce98437b35aa5266d0b5c965aa8704e47c4d",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_boundary_tf.py": "68821cdc4a6a61a9dffe299459c5fca15e206f505124d56c8ddbcf35b6fe8078",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_prepared_tf.py": "13829965a7260cfafd2bcbeae6c50d20b6dd0cdac6d48bff7e2e558ebd3ff201",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_tf.py": "5e724594d02b127be11c6e0d787fb70fddfd8d6f23548ba34082589eaecc04f1",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_target_tf.py": "6df70d499c04e4646235c710a558215b30236292b8eaa032f7b14b60164aa8e7",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_tf.py": "b879dbd0c2d9cc24aa91c5e12886304e44b221f54ae375538cbe474afe6d2e48",
+      "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-plan-2026-07-31.md": "9c2c13bd0e65a5c269b289748cf1bb7d72ff587adb02c2d06957cbb3d6731f85",
+      "scripts/prepare_zhao_cui_austria_sir_lane_b_t2.py": "d06bdbcaf679b418a731413f85949a683ad32e77648a4e0fb6f5e07c2a704bdc"
+    },
+    "python": "3.11.14",
+    "source_sha256": {
+      "bayesfilter/highdim/bases.py": "d85adcdb48d4d20cb4e7a286f50ba52d2818b6497d59a3c3f9306bad0de30542",
+      "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+      "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+      "bayesfilter/highdim/models.py": "0ff67634786a8b30dac582cf711d581c6d52af155364c314b111a119826796e6",
+      "bayesfilter/highdim/sir_latent_preclip_tf.py": "88c8adb5c245d141bb3f9e00544732dc1b0430f313642790f29fc5ad20f5277f",
+      "bayesfilter/highdim/source_route.py": "864061837818e597a6ff03cc7ee37d9c18dd718a2a5486871c47eb8e81fe6281",
+      "bayesfilter/highdim/squared_tt.py": "703846596b66eb2834ae5a00052fbb03756cc6e9c876c9669422e52419793056",
+      "bayesfilter/highdim/stochastic_density_training.py": "3bace5ef92cc180a867300105a2106099b7b3e71d46b96df334ed5b7c6b1bbc8",
+      "bayesfilter/highdim/transport.py": "ff03fac036aa8486732962373e053ff63c4a2b0b26085517be86ac9034a0949c",
+      "bayesfilter/highdim/tt.py": "cbe482ab3f595d3360bdca7e8fa7f0e24c56f99f74b531fd15694542eed6a8a8",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_sampler_tf.py": "ce6f16a2628d234fd2ad4a9f8de2ce98437b35aa5266d0b5c965aa8704e47c4d",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_boundary_tf.py": "68821cdc4a6a61a9dffe299459c5fca15e206f505124d56c8ddbcf35b6fe8078",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_tf.py": "5e724594d02b127be11c6e0d787fb70fddfd8d6f23548ba34082589eaecc04f1",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_target_tf.py": "6df70d499c04e4646235c710a558215b30236292b8eaa032f7b14b60164aa8e7",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_tf.py": "b879dbd0c2d9cc24aa91c5e12886304e44b221f54ae375538cbe474afe6d2e48",
+      "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-pilot-execution-note-2026-07-31.md": "c0e0a08cdabc9e91b3e8967f8933184f67c330220ef39f53ac0d862b1914e7c5",
+      "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-plan-2026-07-31.md": "9c2c13bd0e65a5c269b289748cf1bb7d72ff587adb02c2d06957cbb3d6731f85",
+      "scripts/run_zhao_cui_austria_sir_lane_b_t2.py": "587a58feac93d1c7b1b3bc075479dd75ec9f137d1349438f922e83a3d0a91f9f",
+      "scripts/select_zhao_cui_austria_sir_lane_b_t2.py": "ecc9dad4e344707b33ead77f6eece519e195c7b2f1581d90dec51a408057eeaa"
+    },
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 31.672738131004735
+  },
+  "schema_version": "bayesfilter.zhao_cui_austria_sir_lane_b_t2_pilot.v1",
+  "status": "VIABLE_T2_PILOT_ARM",
+  "training_trace": [
+    {
+      "alpha_max": 0.03446480636453917,
+      "alpha_min": 0.0,
+      "cross_entropy_before_update": -7.223681233867951e-07,
+      "full_cloud_update": 1,
+      "log_normalizer_before_update": 5.655554841676847e-07,
+      "regularization_before_update": 7.755000001000003e-06,
+      "rho_max": 1.0000007600001284,
+      "rho_min": 1e-08,
+      "total_loss_before_update": 7.598187361780893e-06,
+      "unclipped_full_cloud_gradient_norm": 10.685443446978883
+    },
+    {
+      "alpha_max": 0.03446480636453917,
+      "alpha_min": 0.0,
+      "cross_entropy_before_update": -0.1646241514721664,
+      "full_cloud_update": 16,
+      "log_normalizer_before_update": -1.4150176784011579,
+      "regularization_before_update": 7.79705548911519e-06,
+      "rho_max": 1.7375633695509685,
+      "rho_min": 1e-08,
+      "total_loss_before_update": -1.5796340328178353,
+      "unclipped_full_cloud_gradient_norm": 18.788003360971814
+    },
+    {
+      "alpha_max": 0.03446480636453917,
+      "alpha_min": 0.0,
+      "cross_entropy_before_update": -0.38995628382805675,
+      "full_cloud_update": 32,
+      "log_normalizer_before_update": -3.8749540834813305,
+      "regularization_before_update": 7.828280107897021e-06,
+      "rho_max": 3.0580279748967616,
+      "rho_min": 1e-08,
+      "total_loss_before_update": -4.264902539029279,
+      "unclipped_full_cloud_gradient_norm": 8.726150838908435
+    },
+    {
+      "alpha_max": 0.03446480636453917,
+      "alpha_min": 0.0,
+      "cross_entropy_before_update": -0.7359011662244153,
+      "full_cloud_update": 48,
+      "log_normalizer_before_update": -3.850067902218281,
+      "regularization_before_update": 7.821624035961106e-06,
+      "rho_max": 4.825401130980431,
+      "rho_min": 1e-08,
+      "total_loss_before_update": -4.58596124681866,
+      "unclipped_full_cloud_gradient_norm": 20.960503124696288
+    },
+    {
+      "alpha_max": 0.03446480636453917,
+      "alpha_min": 0.0,
+      "cross_entropy_before_update": -0.9895807277799727,
+      "full_cloud_update": 64,
+      "log_normalizer_before_update": -4.0388380532760815,
+      "regularization_before_update": 7.81098548619127e-06,
+      "rho_max": 7.042455305483928,
+      "rho_min": 1e-08,
+      "total_loss_before_update": -5.028410970070569,
+      "unclipped_full_cloud_gradient_norm": 8.997946302924374
+    },
+    {
+      "alpha_max": 0.03446480636453917,
+      "alpha_min": 0.0,
+      "cross_entropy_before_update": -1.2000400746077902,
+      "full_cloud_update": 80,
+      "log_normalizer_before_update": -4.277588468076993,
+      "regularization_before_update": 7.801642062061228e-06,
+      "rho_max": 10.024586875499022,
+      "rho_min": 1e-08,
+      "total_loss_before_update": -5.477620741042722,
+      "unclipped_full_cloud_gradient_norm": 5.89843985206125
+    },
+    {
+      "alpha_max": 0.03446480636453917,
+      "alpha_min": 0.0,
+      "cross_entropy_before_update": -1.3837013740188442,
+      "full_cloud_update": 96,
+      "log_normalizer_before_update": -4.56516868317286,
+      "regularization_before_update": 7.79336831024941e-06,
+      "rho_max": 14.182885160235807,
+      "rho_min": 1e-08,
+      "total_loss_before_update": -5.9488622638233934,
+      "unclipped_full_cloud_gradient_norm": 4.129963279654829
+    }
+  ],
+  "validation_estimate": {
+    "log_importance_weight_sha256": "d97b2067ff7cc03c5db159440fc572116f9dc746eeb65ba6aeb48b78bdc83465",
+    "log_increment": -35.09529029623677,
+    "log_shifted_normalizer": 0.05946198617628795,
+    "log_standard_error": 0.06712379647594516,
+    "reference_seed": 73802,
+    "role": "validation",
+    "sample_count": 8192,
+    "shift_constant": 35.15475228241306,
+    "transition_seed": 73812,
+    "uncertainty_method": "iid_sample_mean_delta_method_v1"
+  },
+  "validation_metrics": {
+    "centered_log_shape_rms": 3.803242689129528,
+    "constant_density_baseline_rms": 27.990150081227252,
+    "normalized_log_density_rms": 22.341208413278313,
+    "target_weight_max": 0.019377978289191914,
+    "target_weight_min": 0.0
+  }
+}

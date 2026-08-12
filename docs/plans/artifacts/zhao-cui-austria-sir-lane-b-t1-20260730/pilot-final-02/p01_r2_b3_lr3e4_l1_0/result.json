@@ -1,0 +1,226 @@
+{
+  "arm": {
+    "arm_id": "p01_r2_b3_lr3e4_l1_0",
+    "basis_num_elems": 2,
+    "basis_order": 1,
+    "batch_size": 512,
+    "cdf_bisection_steps": 24,
+    "cdf_grid_size": 65,
+    "cdf_max_working_bytes": 536870912,
+    "covariance_jitter": 1e-05,
+    "expansion_factor": 4.0,
+    "gradient_clip_norm": 100.0,
+    "l1_weight": 0.0,
+    "l2_weight": 1e-08,
+    "learning_rate": 0.0003,
+    "quantile_fraction": 0.01,
+    "rank": 2,
+    "tau": 1e-08,
+    "train_steps": 96,
+    "use_quantile_scale": true
+  },
+  "artifact_identity": "7cd4552d732477b76932a4da2275ff0148bf7577e537465a009295f6863b8364",
+  "artifact_manifest": "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-02/p01_r2_b3_lr3e4_l1_0/artifact/manifest.json",
+  "artifact_value": -31.129051223188313,
+  "baseline_id": "zhao_cui_austria_sir_fixed_variant_training_base_v1",
+  "calibration_estimate": {
+    "log_evidence": -31.129051223188295,
+    "log_likelihood_sha256": "9d2ccec5ba97a910f936e11ad15c10833cab9f4eee6a2a519429b4174ea8369b",
+    "log_shifted_normalizer": 0.0,
+    "log_standard_error": 0.0022771386991985386,
+    "role": "calibration",
+    "sample_count": 32768,
+    "seed": 73301,
+    "shift_constant": 31.129051223188295,
+    "uncertainty_method": "iid_sample_mean_delta_method_v1"
+  },
+  "core_scale": 6.136385602362253,
+  "gates": {
+    "memory_under_6_gib": true,
+    "normalizer_agreement": true,
+    "shape_better_than_0p95_constant": true,
+    "viable": true
+  },
+  "gpu_allocator": {
+    "current": 36796928,
+    "peak": 71791872
+  },
+  "inference_status": {
+    "default_readiness": false,
+    "descriptive_only_differences": true,
+    "hard_veto_screen": "passed",
+    "next_evidence_needed": "all frozen pilot arms then untouched selected-arm claim",
+    "statistically_supported_ranking": false
+  },
+  "initialization": {
+    "mass_gate": true,
+    "rho_max": 1.0000020060280108,
+    "rho_min": 1.0000007949252834,
+    "rho_stddev": 2.748248346628584e-07,
+    "square_mass": 1.0000010000003334,
+    "variation_gate": true
+  },
+  "nonclaims": [
+    "no statistically supported arm ranking",
+    "no T1 admission from pilot data",
+    "no score, T2, T20, HMC, or production claim"
+  ],
+  "pre_calibration_normalizer": 0.026556746904418997,
+  "run_manifest": {
+    "command": [
+      "scripts/run_zhao_cui_austria_sir_lane_b_t1.py",
+      "--pilot-arm",
+      "p01_r2_b3_lr3e4_l1_0",
+      "--output-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-02/p01_r2_b3_lr3e4_l1_0",
+      "--max-seconds",
+      "600"
+    ],
+    "device": [
+      "/device:GPU:0"
+    ],
+    "dtype": "float64_reference_training",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "host": "DESKTOP-RF1Q5IJ",
+    "jit_compile": true,
+    "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t1-execution-note-2026-07-30.md",
+    "python": "3.11.14",
+    "random_seeds": {
+      "frozen_references": 73501,
+      "scale_calibration": 73301,
+      "trainer_initialization": 73001,
+      "training_frame": 73101,
+      "untouched_claim": 73401,
+      "validation": 73201
+    },
+    "source_sha256": {
+      "bayesfilter/highdim/bases.py": "d85adcdb48d4d20cb4e7a286f50ba52d2818b6497d59a3c3f9306bad0de30542",
+      "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+      "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+      "bayesfilter/highdim/models.py": "0ff67634786a8b30dac582cf711d581c6d52af155364c314b111a119826796e6",
+      "bayesfilter/highdim/sir_latent_preclip_tf.py": "88c8adb5c245d141bb3f9e00544732dc1b0430f313642790f29fc5ad20f5277f",
+      "bayesfilter/highdim/source_route.py": "864061837818e597a6ff03cc7ee37d9c18dd718a2a5486871c47eb8e81fe6281",
+      "bayesfilter/highdim/squared_tt.py": "703846596b66eb2834ae5a00052fbb03756cc6e9c876c9669422e52419793056",
+      "bayesfilter/highdim/stochastic_density_training.py": "3bace5ef92cc180a867300105a2106099b7b3e71d46b96df334ed5b7c6b1bbc8",
+      "bayesfilter/highdim/transport.py": "ff03fac036aa8486732962373e053ff63c4a2b0b26085517be86ac9034a0949c",
+      "bayesfilter/highdim/tt.py": "cbe482ab3f595d3360bdca7e8fa7f0e24c56f99f74b531fd15694542eed6a8a8",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_target_tf.py": "6df70d499c04e4646235c710a558215b30236292b8eaa032f7b14b60164aa8e7",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_tf.py": "b879dbd0c2d9cc24aa91c5e12886304e44b221f54ae375538cbe474afe6d2e48",
+      "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t1-execution-note-2026-07-30.md": "311d7c19aec9e7c4155ccb8114759798ebdd2b019aa86715aa2e6c7721075719",
+      "scripts/run_zhao_cui_austria_sir_lane_b_t1.py": "f22dcedfa191906b68835aa2f2145d2e39e8d002e5b7e5f72f9036fd4e10287e"
+    },
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 31.62831171900325
+  },
+  "schema_version": "bayesfilter.zhao_cui_austria_sir_lane_b_t1_pilot.v1",
+  "status": "VIABLE_T1_PILOT_ARM",
+  "training_trace": [
+    {
+      "cross_entropy": -1.6272620393862416e-06,
+      "gradient_norm": 6.433567277718734,
+      "log_normalizer_before_update": 1.009999823317962e-06,
+      "regularization": 2.13000000000001e-06,
+      "rho_max": 1.0000020060280117,
+      "rho_min": 1.000000794925283,
+      "step": 1,
+      "total_loss": 1.5127377839317304e-06
+    },
+    {
+      "cross_entropy": -0.3980115327799134,
+      "gradient_norm": 5.991347894542517,
+      "log_normalizer_before_update": -0.004570695500760011,
+      "regularization": 2.1352685280045616e-06,
+      "rho_max": 1.6127613941793009,
+      "rho_min": 1.3501388798015719,
+      "step": 16,
+      "total_loss": -0.4025800930121454
+    },
+    {
+      "cross_entropy": -0.80924953358789,
+      "gradient_norm": 6.155743945601724,
+      "log_normalizer_before_update": -0.05452643447352345,
+      "regularization": 2.1438614271389387e-06,
+      "rho_max": 2.6459002586932985,
+      "rho_min": 1.8214615934272278,
+      "step": 32,
+      "total_loss": -0.8637738241999863
+    },
+    {
+      "cross_entropy": -1.1323639213148606,
+      "gradient_norm": 7.676768828622273,
+      "log_normalizer_before_update": -0.2756174675462817,
+      "regularization": 2.1542106107968753e-06,
+      "rho_max": 3.9868673493197093,
+      "rho_min": 2.2181247533605504,
+      "step": 48,
+      "total_loss": -1.4079792346505315
+    },
+    {
+      "cross_entropy": -1.0685971146980837,
+      "gradient_norm": 17.67448191703743,
+      "log_normalizer_before_update": -1.3126021651118451,
+      "regularization": 2.165908478118018e-06,
+      "rho_max": 4.18885833363556,
+      "rho_min": 1.7432217344855678,
+      "step": 64,
+      "total_loss": -2.3811971139014507
+    },
+    {
+      "cross_entropy": -0.4433759385166379,
+      "gradient_norm": 42.80234443429982,
+      "log_normalizer_before_update": -3.641127917891719,
+      "regularization": 2.1720954306575983e-06,
+      "rho_max": 2.677634181237319,
+      "rho_min": 0.6701263602224463,
+      "step": 80,
+      "total_loss": -4.084501684312927
+    },
+    {
+      "cross_entropy": -0.6735360033020578,
+      "gradient_norm": 22.394236153927313,
+      "log_normalizer_before_update": -3.6321328245789894,
+      "regularization": 2.169359346690352e-06,
+      "rho_max": 3.409788108770708,
+      "rho_min": 0.8456265799890487,
+      "step": 96,
+      "total_loss": -4.305666658521701
+    }
+  ],
+  "validation_estimate": {
+    "log_evidence": -31.132056562845616,
+    "log_likelihood_sha256": "1e939b99f9b90223500527b49e78fdde36eb66d6882d77c526469a17444fe2c3",
+    "log_shifted_normalizer": -0.00300533965732086,
+    "log_standard_error": 0.0032053012883290076,
+    "role": "validation",
+    "sample_count": 16384,
+    "seed": 73201,
+    "shift_constant": 31.129051223188295,
+    "uncertainty_method": "iid_sample_mean_delta_method_v1"
+  },
+  "validation_metrics": {
+    "centered_log_shape_rms": 3.3685927058630014,
+    "constant_density_baseline_rms": 27.088982586620602,
+    "normalized_log_density_rms": 22.80600035085222,
+    "target_weight_max": 0.000218911396663167,
+    "target_weight_min": 9.752147701148256e-06
+  }
+}

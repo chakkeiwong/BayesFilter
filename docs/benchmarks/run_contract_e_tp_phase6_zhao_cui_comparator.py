@@ -33,6 +33,8 @@ from bayesfilter.highdim.sv_mixture_cut4 import (
     exact_transformed_sv_observations,
     transformed_sv_observations,
 )
+from bayesfilter.highdim import ukf_initializer as p76
+from bayesfilter.highdim.ukf_scout import ukf_scout_result_from_paths
 from scripts.filtering_value_gradient_benchmark_generate_p8_datasets import (
     _generalized_sv_prior_mean_dataset,
     _sv_dataset,
@@ -154,11 +156,15 @@ def _filter_config(
     rank: int,
     seed: str,
     coordinate_half_width: float,
+    density_tau: float = 0.0,
+    initial_cores=None,
+    initialization_rule: str = "orthonormal_mode_diagonal_norm_balanced_v1",
 ) -> highdim.FixedBranchFilterConfig:
     product = _basis(dimension, degree)
     ranks = (1, 1) if dimension == 1 else (1, rank, 1)
     sweep_order = (0,) if dimension == 1 else (0, 1, 1, 0)
-    initial_cores = highdim.norm_balanced_initial_cores(product, ranks)
+    if initial_cores is None:
+        initial_cores = highdim.norm_balanced_initial_cores(product, ranks)
     row_count = order**dimension
     return highdim.FixedBranchFilterConfig(
         fit_config=highdim.FixedTTFitConfig(
@@ -174,7 +180,7 @@ def _filter_config(
             condition_number_veto=1e16,
             holdout_tolerance=1.0,
         ),
-        density_tau=0.0,
+        density_tau=density_tau,
         normalizer_floor=1e-14,
         denominator_floor=1e-14,
         retained_storage_byte_budget=10_000_000,
@@ -184,6 +190,7 @@ def _filter_config(
         product_basis=product,
         initial_cores=initial_cores,
         fit_quadrature_order=order,
+        initialization_rule=initialization_rule,
     )
 
 
@@ -195,6 +202,10 @@ def _comparator_config(
     seed: str,
     transition_before_first_observation: bool,
     coordinate_half_width: float,
+    density_tau: float = 0.0,
+    initial_cores=None,
+    adjacent_initial_cores=None,
+    initialization_rule: str = "orthonormal_mode_diagonal_norm_balanced_v1",
 ) -> highdim.ScalarAdjacentTTConfig:
     return highdim.ScalarAdjacentTTConfig(
         initial=_filter_config(
@@ -204,6 +215,9 @@ def _comparator_config(
             rank=1,
             seed=f"{seed}:initial",
             coordinate_half_width=coordinate_half_width,
+            density_tau=density_tau,
+            initial_cores=initial_cores,
+            initialization_rule=initialization_rule,
         ),
         adjacent=_filter_config(
             dimension=2,
@@ -212,10 +226,86 @@ def _comparator_config(
             rank=rank,
             seed=f"{seed}:adjacent",
             coordinate_half_width=coordinate_half_width,
+            density_tau=density_tau,
+            initial_cores=adjacent_initial_cores,
+            initialization_rule=initialization_rule,
         ),
         scalar_coordinate_map=_coordinate_map(coordinate_half_width),
         transition_before_first_observation=transition_before_first_observation,
+        initializer_id=initialization_rule,
     )
+
+
+def _ukf_initial_cores(
+    *,
+    model: object,
+    theta: tf.Tensor,
+    raw_observations: tf.Tensor,
+    degree: int,
+    order: int,
+    rank: int,
+    coordinate_half_width: float,
+) -> tuple[tuple[object, ...], tuple[object, ...], Mapping[str, object]]:
+    """Build SVX-ZC initial and adjacent cores through the existing UKF route."""
+
+    parameters = model.physical_parameters(theta)
+    ukf_result = highdim.actual_transformed_sv_independent_panel_augmented_noise_ukf_filter(
+        raw_observations,
+        gamma=parameters["gamma"],
+        beta=parameters["beta"],
+        sigma=parameters["sigma"],
+    )
+    scout = ukf_scout_result_from_paths(
+        ukf_result.mean_path,
+        ukf_result.covariance_path,
+        sigma_point_count=5,
+        source="actual_transformed_sv_augmented_noise_gaussian_closure_ukf",
+    )
+    convention = _convention()
+    initial_product = _basis(1, degree)
+    adjacent_product = _basis(2, degree)
+    projection_order = max(int(order), 2 * int(degree) + 4)
+    initial_config = p76.P76UKFInitializerConfig(
+        product_basis=initial_product,
+        ranks=(1, 1),
+        time_index=0,
+        quadrature_order=projection_order,
+    )
+    adjacent_config = p76.P76UKFInitializerConfig(
+        product_basis=adjacent_product,
+        ranks=(1, int(rank), 1),
+        time_index=1,
+        quadrature_order=projection_order,
+    )
+    del convention
+    initial_result = p76.p76_build_ukf_initializer(
+        scout,
+        initial_config,
+        reference_offset=tf.zeros([1], dtype=tf.float64),
+        reference_matrix=tf.constant([[coordinate_half_width]], dtype=tf.float64),
+    )
+    adjacent_result = p76.p76_build_ukf_initializer(
+        scout,
+        adjacent_config,
+        reference_offset=tf.zeros([2], dtype=tf.float64),
+        reference_matrix=tf.eye(2, dtype=tf.float64) * coordinate_half_width,
+    )
+    manifest = {
+        "initializer_rule": p76.P76_UKF_INITIALIZER_RULE,
+        "initializer_default": True,
+        "claim_class": p76.P52_UKF_SCOUT_CLAIM if hasattr(p76, "P52_UKF_SCOUT_CLAIM") else "scout_not_truth",
+        "ukf_source": "actual_transformed_sv_augmented_noise_gaussian_closure_ukf",
+        "ukf_target_nonclaim": "not exact transformed same-target admission",
+        "projection_order": projection_order,
+        "initial": dict(initial_result.manifest),
+        "adjacent": dict(adjacent_result.manifest),
+        "initial_core_hash": _tensor_sha256(tf.concat([core.values for core in initial_result.cores], axis=0)),
+        "adjacent_core_hash": _tensor_sha256(tf.concat([tf.reshape(core.values, [-1]) for core in adjacent_result.cores], axis=0)),
+        "ukf_mean_path": _json_value(scout.mean_path),
+        "ukf_covariance_path": _json_value(scout.covariance_path),
+        "ukf_diagnostics": dict(ukf_result.diagnostics),
+    }
+    return initial_result.cores, adjacent_result.cores, manifest
 
 
 def _row_inputs(
@@ -397,6 +487,26 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     model, theta, observations = _row_inputs(
         args.row, args.horizon, target_preparation
     )
+    raw_observations = None
+    ukf_manifest = None
+    initial_cores = None
+    adjacent_initial_cores = None
+    initialization_rule = "orthonormal_mode_diagonal_norm_balanced_v1"
+    if args.row == "actual_sv" and target_preparation is None:
+        raw_observations = tf.convert_to_tensor(_sv_dataset(81101)["observations"][: args.horizon], dtype=tf.float64)
+        initial_cores, adjacent_initial_cores, ukf_manifest = _ukf_initial_cores(
+            model=model,
+            theta=theta,
+            raw_observations=raw_observations,
+            degree=args.degree,
+            order=args.order,
+            rank=args.rank,
+            coordinate_half_width=args.coordinate_half_width,
+        )
+        initialization_rule = p76.P76_UKF_INITIALIZER_RULE
+    effective_density_tau = (
+        0.0 if args.row == "actual_sv" and target_preparation is None else args.density_tau
+    )
     config = _comparator_config(
         degree=args.degree,
         order=args.order,
@@ -406,6 +516,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             metadata["transition_before_first_observation"]
         ),
         coordinate_half_width=args.coordinate_half_width,
+        density_tau=effective_density_tau,
+        initial_cores=initial_cores,
+        adjacent_initial_cores=adjacent_initial_cores,
+        initialization_rule=initialization_rule,
     )
     started = time.perf_counter()
     result = highdim.scalar_adjacent_state_fixed_tt_score(
@@ -515,14 +629,15 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "ridge": 1e-10,
             "max_sweeps": 2,
             "axis_order": highdim.ZHAO_CUI_FIXED_ADJACENT_AXIS_ORDER,
-            "density_tau": 0.0,
-            "initializer_id": highdim.ZHAO_CUI_FIXED_ADJACENT_INITIALIZER_ID,
+            "density_tau": effective_density_tau,
+            "initializer_id": initialization_rule,
             "parameter_treatment": "theta_external_fixed_query_not_tt_coordinate",
             "coordinate_half_width": args.coordinate_half_width,
             "transition_before_first_observation": bool(
                 metadata["transition_before_first_observation"]
             ),
-            "status": "warm_start_hypothesis_not_default",
+            "status": "ukf_initializer_default" if initialization_rule == p76.P76_UKF_INITIALIZER_RULE else "historical_comparator",
+            "ukf_initializer": ukf_manifest,
         },
         "run_manifest": {
             "git_commit": _git_commit(),
@@ -580,6 +695,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--order", type=int, default=17)
     parser.add_argument("--rank", type=int, default=2)
     parser.add_argument("--coordinate-half-width", type=float, default=8.0)
+    parser.add_argument(
+        "--density-tau",
+        type=float,
+        default=0.0,
+        help="frozen defensive mass; zero is retained only for historical diagnostics",
+    )
     parser.add_argument("--seed", default="contract-e-tp-phase6-zhaocui-fixed")
     parser.add_argument("--target-preparation", type=Path)
     parser.add_argument("--output", type=Path)

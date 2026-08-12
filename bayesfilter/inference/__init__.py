@@ -247,6 +247,7 @@ __all__ = [
     "SequentialNeuTraHMCXLAQualificationReceipt",
     "qualify_sequential_neutra_hmc_xla",
     "load_sequential_neutra_hmc_xla_receipt",
+    "run_retained_neutra_hmc_continuation",
     "run_sequential_neutra_hmc",
     "validate_sequential_neutra_hmc_xla_receipt",
     "sequential_chunk_seed",

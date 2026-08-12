@@ -1,0 +1,90 @@
+{
+  "calibration": {
+    "baseline_valid": true,
+    "empirical_contract_e_objective": -136.05569458007812,
+    "empirical_contract_e_score": [
+      5.516610145568848,
+      -3.8061089515686035,
+      0.39065900444984436,
+      -1.9472037553787231,
+      4.422496795654297
+    ],
+    "finite_valid": true,
+    "maximum_covariance_residual": 5.21540641784668e-08,
+    "maximum_mean_residual": 1.1920928955078125e-07,
+    "maximum_skew_residual": 1.9739223718643188,
+    "objective": -136.0523681640625,
+    "paired_objective_difference": 0.003326416015625,
+    "paired_score_difference": [
+      0.014533042907714844,
+      1.5974044799804688e-05,
+      0.0012538433074951172,
+      -0.018463730812072754,
+      -0.021444320678710938
+    ],
+    "particle_valid": true,
+    "preparation_identity": {
+      "axis_convention": {
+        "initial_noise": "[batch, particle, state]",
+        "residual_design": "[batch, time, particle, state]",
+        "transition_noise": "[batch, time, particle, state]"
+      },
+      "balance_steps": 8,
+      "col_chunk_size": 1024,
+      "domain_tags": {
+        "initial": 101,
+        "residual": "2000 + zero_based_time",
+        "transition": "1000 + zero_based_time"
+      },
+      "final_dtype": "float32",
+      "key_dtype": "int32",
+      "key_encoding": "[root_seed, domain_tag]",
+      "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+      "maximum_row_error_tolerance": 0.01,
+      "num_particles": 1024,
+      "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+      "raw_draw_dtype": "float64",
+      "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+      "rng_algorithm": "philox",
+      "root_seeds_in_order": [
+        81900
+      ],
+      "row_chunk_size": 1024,
+      "sinkhorn_steps": 20,
+      "tensor_sha256": {
+        "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+        "fixed_reset_mask": "087bd24787cd22719ce52a7192766a38b3b3bd8dc2938c48c9622e098583edc6",
+        "initial_noise": "5d6b7dd67f1311e27150f7dec0a8453a002b39fd01277f313d7d5ce6b089be8c",
+        "observations": "f1cb3896f746e02958882c81f00fd817616fd8048906c49557c07fbf2ae559a7",
+        "prepared_ridge": "ac55f1d0dea333a71f5e5c42231afdff7a8dc5f783c83af946347d56fa3b1de5",
+        "residual_design": "0fcd65624418a2ffee9b78b76b4f85f529d5b38c65234bf986acc47a8b3173cc",
+        "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+        "transition_noise": "35c25843cd22bbb8e3e1e187d468f6b554310672481991050824acd38431b146"
+      },
+      "tensorflow_version": "2.19.1",
+      "time_steps": 50,
+      "transport_block_grid": [
+        1,
+        1
+      ],
+      "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "tv_column_tolerance": 0.0001
+    },
+    "score": [
+      5.5311431884765625,
+      -3.8060929775238037,
+      0.3919128477573395,
+      -1.965667486190796,
+      4.401052474975586
+    ],
+    "seed": 81900,
+    "shape_valid": true,
+    "teacher_valid": true,
+    "wall_seconds": 93.57259655900998
+  },
+  "candidate_index": 0,
+  "claim_seeds_evaluated": false,
+  "horizon": 50,
+  "schema": "bayesfilter.zhao_cui_moment_teacher_lgssm_horizon.v1",
+  "status": "calibration_complete"
+}

@@ -42,7 +42,9 @@ DTYPE = tf.float64
 LOG_TWO_PI = tf.constant(math.log(2.0 * math.pi), DTYPE)
 
 
-def _constant_transport(dimension: int) -> FixedTTSIRTTransport:
+def _constant_transport(
+    dimension: int, *, max_batch_working_bytes: int = 512 * 1024 * 1024
+) -> FixedTTSIRTTransport:
     convention = MeasureConvention(
         density_measure=DensityMeasure.REFERENCE_MEASURE,
         mass_measure=MassMeasure.REFERENCE_MEASURE,
@@ -85,6 +87,7 @@ def _constant_transport(dimension: int) -> FixedTTSIRTTransport:
             bracket_tolerance=1e-12,
             denominator_floor=1e-12,
             max_floor_count=0,
+            max_batch_working_bytes=max_batch_working_bytes,
         ),
     )
 
@@ -370,6 +373,24 @@ def test_source_order_ttsirt_compiler_emits_t_plus_one_branch() -> None:
     assert operations["frozen_randomness_and_settings"]["classification"] == "fixed_hmc_adaptation"
     assert operations["source_order_fixed_branch_value_and_score"]["classification"] == "extension_or_invention"
 
+    microbatched = compile_source_order_ttsirt_proposal_branch(
+        **keyword_arguments, inverse_microbatch_size=2
+    )
+    tf.debugging.assert_near(microbatched.branch.states, branch.states, atol=2e-6)
+    tf.debugging.assert_near(
+        microbatched.branch.initial_log_proposal_density,
+        branch.initial_log_proposal_density,
+        atol=2e-6,
+    )
+    tf.debugging.assert_near(
+        microbatched.branch.transition_log_proposal_density,
+        branch.transition_log_proposal_density,
+        atol=2e-6,
+    )
+    assert microbatched.manifest["inverse_microbatch_size"] == 2
+    assert microbatched.compiler_id != compilation.compiler_id
+    assert microbatched.branch.branch_id != branch.branch_id
+
     changed = dict(keyword_arguments)
     changed["initial_reference_points"] = tf.constant(
         [[0.11, 0.3, 0.6, 0.9], [0.2, 0.4, 0.7, 0.8]], DTYPE
@@ -377,6 +398,24 @@ def test_source_order_ttsirt_compiler_emits_t_plus_one_branch() -> None:
     second = compile_source_order_ttsirt_proposal_branch(**changed)
     assert second.branch.branch_id != branch.branch_id
     assert second.compiler_id != compilation.compiler_id
+
+
+def test_ttsirt_batch_working_set_gate_fails_before_grid_allocation() -> None:
+    transport = _constant_transport(4, max_batch_working_bytes=1)
+    estimate = transport.batch_working_set_estimate(axis=0, sample_count=2)
+    assert estimate["estimated_bytes"] > estimate["budget_bytes"]
+    with pytest.raises(ValueError, match="KR batch working set exceeds"):
+        transport.inverse_transport(
+            tf.constant(
+                [
+                    [0.1, 0.9],
+                    [0.2, 0.8],
+                    [0.3, 0.7],
+                    [0.4, 0.6],
+                ],
+                DTYPE,
+            )
+        )
 
 
 def _predator_prey_tiny_branch(model: PredatorPreySSM):

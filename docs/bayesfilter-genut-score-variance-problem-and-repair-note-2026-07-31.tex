@@ -1,0 +1,1262 @@
+% bayesfilter-genut-score-variance-problem-and-repair-note-2026-07-31.tex
+%
+% Standalone proposition--proof note.  Self-contained preamble; no macro
+% redefinitions (MathDevMCP parser compatibility).  Companion artifacts:
+%   docs/plans/bayesfilter-genut-score-computation-audit-result-2026-07-30.md
+%   docs/plans/bayesfilter-genut-score-estimator-options-mathematical-note-2026-07-31.md
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.05in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
+
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}[proposition]{Lemma}
+\newtheorem{corollary}[proposition]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[proposition]{Definition}
+\newtheorem{assumption}[proposition]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[proposition]{Remark}
+
+\title{The GenUT-Route Score-Variance Problem and Proposed Repairs:\\
+A Proposition--Proof Note}
+\author{BayesFilter research notes}
+\date{2026-07-31}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The staged GenUT candidate filter computes a manual recursive
+forward-sensitivity score that was audited (2026-07-30) to be the exact total
+derivative of the executed finite likelihood scalar on its fixed branch.
+Empirically that score has very large particle-seed variance on the Austria
+SIR target.  Part~I of this note isolates the mathematical mechanism: the
+carried parameter tangent obeys a linear recursion whose stage operators have
+gain bounds controlled only by ridge and damping floors
+(Propositions~\ref{prop:gsv-tangent-recursion}--\ref{prop:gsv-gn-gain}), and
+the replicated cubature residual design injects, at every reset, residuals
+whose per-axis kurtosis equals the state dimension $d$ and whose pairwise
+co-kurtosis is zero (Proposition~\ref{prop:gsv-cubature-design-moments}); at
+$d=18$ this is a large designed-in shape defect recycled through the
+recursion.  Part~II also defines a fourth, experimental repair: a frozen
+low-rank Tucker subspace in which the \emph{complete} third central moment
+and fourth cumulant are matched without materializing dense $d^3$ or $d^4$
+tensors (Section~\ref{sec:gsv-projected-cumulants}).  This construction is a
+project derivation and an \texttt{extension\_or\_invention}; Zhao and Cui's
+squared-TT recursion motivates low-rank compression but does not contain this
+moment correction.  The other three repairs are an exactly whitened fixed Gaussian
+residual design with correct first two moments and asymptotically Gaussian
+higher moments
+(Propositions~\ref{prop:gsv-whitened-design-identities}--\ref{prop:gsv-delta-method}),
+a surrogate-force Hamiltonian Monte Carlo scheme that remains exactly
+invariant for the executed finite target under an \emph{arbitrary}
+deterministic force field
+(Propositions~\ref{prop:gsv-leapfrog-volume}--\ref{cor:gsv-surrogate-force}),
+and Fisher-identity score estimators whose recursions contain no derivative
+of any transport or reset map
+(Propositions~\ref{prop:gsv-fisher-identity}--\ref{prop:gsv-backward-recursion}).
+Exactness boundaries and non-claims are stated throughout: nothing here
+asserts an exact-posterior score, unbiasedness of the finite scalar, or any
+empirical superiority.
+\end{abstract}
+
+\tableofcontents
+
+\section{Scope, executed program, and standing assumptions}
+\label{sec:gsv-scope}
+
+This note concerns the opt-in staged candidate implemented in
+\texttt{bayesfilter/highdim/cubature\_genut\_filter.py},
+\texttt{higher\_moment\_contract\_e.py}, and
+\texttt{ledh\_contract\_e\_reset\_tf.py}, documented in chapter
+\texttt{ch32c\_entropic\_ot\_sinkhorn.tex} (in particular its higher-moment
+Contract~E section and its total-score proposition, referred to below as the
+\emph{chapter score proposition}).  All mathematical objects are finite:
+$N$ particles, state dimension $d$, parameter dimension $P$, horizon $T$.
+
+\begin{definition}[Executed finite program]
+\label{def:gsv-program}
+Fix observations $y_{1:T}$, innovation rows $e_{t,i}$, an initial-noise
+matrix, a residual design $\Xi\in\mathbb{R}^{N\times d}$, and all numerical
+controls (Sinkhorn $\varepsilon$ and iteration counts, Contract-E ridge
+$\lambda>0$, correction strength $\rho\ge 0$, damping $\delta>0$, correction
+counts, pairwise controls).  Given the carried equal-weight cloud
+$X_{t-1}^{+}\in\mathbb{R}^{N\times d}$, one time step computes
+\begin{align}
+ x_{t,i}^{-} &= f_\theta\!\left(x_{t-1,i}^{+},\,e_{t,i}\right),
+ \label{eq:gsv-transition}\\
+ \ell_{t,i} &= \log g_\theta\!\left(y_t \mid x_{t,i}^{-}\right),
+ \qquad
+ \widehat\ell_t = \log\!\Big(\tfrac1N\textstyle\sum_{i=1}^N
+ e^{\ell_{t,i}}\Big),
+ \label{eq:gsv-increment}\\
+ \alpha_{t,i} &= \frac{e^{\ell_{t,i}}}{\sum_{j=1}^N e^{\ell_{t,j}}},
+ \label{eq:gsv-weights}\\
+ X_t^{+} &= R_\theta\!\left(X_t^{-},\,\alpha_t\right),
+ \label{eq:gsv-reset}
+\end{align}
+where $R_\theta$ is the composed entropic-OT row quotient, Contract-E
+Cholesky reset with design $\Xi$, and finite higher-moment correction.  The
+finite scalar and its score are
+\begin{equation}
+\label{eq:gsv-scalar}
+ \widehat L^N(\theta)=\sum_{t=1}^T \widehat\ell_t(\theta),
+ \qquad
+ \text{score} \;=\; \frac{d\,\widehat L^N}{d\theta}\in\mathbb{R}^{P}.
+\end{equation}
+\end{definition}
+
+\begin{assumption}[Fixed differentiable branch]
+\label{ass:gsv-branch}
+Throughout, $\theta$ lies in an open set on which: every Cholesky argument in
+the program is strictly positive definite; every Sinkhorn row mass exceeds its
+floor; the cost-scale maximum branch is locally constant; and no validity gate
+changes state.  On this set every stage map of
+Definition~\ref{def:gsv-program} is continuously differentiable in all of its
+inputs, and the manual recursive tangent equals the total derivative of
+\eqref{eq:gsv-scalar} (this is the chapter score proposition; it was verified
+against the implementation line-by-line in the 2026-07-30 audit and is taken
+as given here).
+\end{assumption}
+
+\begin{definition}[The two derivative objects]
+\label{def:gsv-objects}
+Object~A is the \emph{same-scalar score} $d\widehat L^N/d\theta$ of
+\eqref{eq:gsv-scalar}.  Object~B is the \emph{exact score}
+$\nabla_\theta \log p_\theta(y_{1:T})$ of the underlying state-space model.
+$\widehat L^N$ is a biased approximation of $\log p_\theta(y_{1:T})$ at
+finite $N$ (the OT/moment reset is not an unbiasedness-preserving
+resampling), so Object~A is a biased estimator of Object~B even in exact
+arithmetic.  The empirical problem addressed in this note is the
+particle-seed \emph{variance} of Object~A; its bias against Object~B is a
+separate question for which Section~\ref{sec:gsv-fisher} provides reference
+estimators.
+\end{definition}
+
+\section{Part I: the problem}
+\label{sec:gsv-problem}
+
+\subsection{The tangent recursion and its accumulation}
+
+Write $v_t=\operatorname{vec}\!\big(dX_t^{+}/d\theta_p\big)\in\mathbb{R}^{Nd}$
+for one parameter direction $\theta_p$, and let
+$\Phi_t(\cdot,\theta):\mathbb{R}^{Nd}\to\mathbb{R}^{Nd}$ denote the composed
+one-step map $X_{t-1}^{+}\mapsto X_t^{+}$ of
+\eqref{eq:gsv-transition}--\eqref{eq:gsv-reset} at fixed $e_t,y_t$.
+
+\begin{proposition}[Tangent recursion and its solution]
+\label{prop:gsv-tangent-recursion}
+Under Assumption~\ref{ass:gsv-branch}, with
+$J_t = D_X\Phi_t\big(X_{t-1}^{+},\theta\big)\in\mathbb{R}^{Nd\times Nd}$ and
+$b_t = \partial_\theta\Phi_t\big(X_{t-1}^{+},\theta\big)\in\mathbb{R}^{Nd}$
+evaluated on the executed path,
+\begin{equation}
+\label{eq:gsv-recursion}
+ v_t = J_t v_{t-1} + b_t ,
+\end{equation}
+and consequently
+\begin{equation}
+\label{eq:gsv-recursion-solution}
+ v_T=\sum_{s=1}^{T}\Big(\prod_{u=s+1}^{T}J_u\Big) b_s
+ \;+\;\Big(\prod_{u=1}^{T}J_u\Big) v_0 ,
+\end{equation}
+with the empty product equal to the identity and matrix products ordered
+$J_T J_{T-1}\cdots$.
+\end{proposition}
+
+\begin{proof}
+Equation~\eqref{eq:gsv-recursion} is the chain rule for
+$X_t^{+}=\Phi_t(X_{t-1}^{+}(\theta),\theta)$ on the fixed branch.  For
+\eqref{eq:gsv-recursion-solution}, induct on $T$: the case $T=0$ is trivial;
+if \eqref{eq:gsv-recursion-solution} holds at $T-1$, then
+$v_T=J_T v_{T-1}+b_T
+=J_T\sum_{s\le T-1}(\prod_{u=s+1}^{T-1}J_u)b_s
++J_T(\prod_{u\le T-1}J_u)v_0+b_T$,
+which regroups to \eqref{eq:gsv-recursion-solution} at $T$.
+\end{proof}
+
+\begin{proposition}[Increment tangent]
+\label{prop:gsv-increment-tangent}
+Let $\ell_i(\theta)=h\big(\theta,x_i(\theta)\big)$ be continuously
+differentiable and
+$\widehat\ell=\log\big(N^{-1}\sum_i e^{\ell_i}\big)$,
+$\alpha_i=e^{\ell_i}/\sum_j e^{\ell_j}$.  Then
+\begin{equation}
+\label{eq:gsv-increment-tangent}
+ \frac{d\widehat\ell}{d\theta_p}
+ =\sum_{i=1}^N \alpha_i\,\frac{d\ell_i}{d\theta_p},
+ \qquad
+ \frac{d\ell_i}{d\theta_p}
+ =\partial_{\theta_p} h\big(\theta,x_i\big)
+ +\nabla_x h\big(\theta,x_i\big)^{\!\top}\frac{dx_i}{d\theta_p}.
+\end{equation}
+Hence the score \eqref{eq:gsv-scalar} is a sum over $t$ of linear functionals
+of the carried tangents $v_{t-1}$ plus explicit-$\theta$ terms.
+\end{proposition}
+
+\begin{proof}
+Differentiate: $d\widehat\ell
+=\big(\sum_i e^{\ell_i}\big)^{-1}\sum_i e^{\ell_i}\,d\ell_i
+=\sum_i\alpha_i\,d\ell_i$; the second identity is the chain rule.  The final
+statement follows because $x_i=x_{t,i}^{-}$ depends on $\theta$ through
+$X_{t-1}^{+}$ (a linear functional of $v_{t-1}$ at first order) and through
+the explicit transition dependence.
+\end{proof}
+
+\begin{corollary}[Accumulation bound]
+\label{cor:gsv-accumulation}
+For any submultiplicative matrix norm,
+\begin{equation}
+\label{eq:gsv-accumulation}
+ \lVert v_T\rVert
+ \le \sum_{s=1}^{T}\Big(\prod_{u=s+1}^{T}\lVert J_u\rVert\Big)
+ \lVert b_s\rVert
+ +\Big(\prod_{u=1}^{T}\lVert J_u\rVert\Big)\lVert v_0\rVert .
+\end{equation}
+If the per-step gains satisfy $\lVert J_u\rVert\le e^{\gamma}$ with
+$\gamma>0$ on a stretch of steps, the bound on early contributions grows
+exponentially in the stretch length.  At $\gamma=0$ the geometric bound is
+generally $O(T)$, not summable; a strictly negative bound prevents exponential
+accumulation under bounded forcing.  A statement such as
+$\operatorname{Var}(\mathrm{score})=O(T)$ additionally requires suitable
+stationarity, moment, and mixing assumptions on the random stages and forcing
+terms, and is not implied by a nonpositive exponent alone.
+\end{corollary}
+
+\begin{proof}
+Apply the triangle inequality and submultiplicativity to
+\eqref{eq:gsv-recursion-solution}; the growth statements are immediate from
+the geometric factors.
+\end{proof}
+
+\begin{remark}[What is and is not established here]
+\label{rem:gsv-lyapunov}
+Corollary~\ref{cor:gsv-accumulation} is an upper bound; it identifies the
+quantity that should be measured to characterize the regime: realized
+finite-horizon directional growth
+$g_t=\lVert J_t w_t\rVert/\lVert w_t\rVert$ of propagated probe tangents
+$w_t$, with $\widehat\gamma = T^{-1}\sum_t\log g_t$.  This is not
+automatically the asymptotic top Lyapunov exponent: one probe can miss the
+dominant direction and nonnormal transients can dominate.  Use multiple fixed
+probes (or QR/subspace iteration) and treat the result as explanatory evidence,
+not a promotion criterion.  The probe has zero explicit-$\theta$ source, but
+its extra tangent columns still incur a measurable memory and tracing cost.
+\end{remark}
+
+\subsection{Stage-gain inventory}
+
+The next three propositions bound the gains of the stages that dominate
+$\lVert J_t\rVert$ in the implemented route.  Each formula below is exactly
+the differentiated map verified in the 2026-07-30 code audit.
+
+\begin{proposition}[Weight-normalization gain]
+\label{prop:gsv-weight-gain}
+Let $\alpha_i=e^{\ell_i}/\sum_j e^{\ell_j}$ and let dots denote derivatives
+in one parameter direction.  Then
+$\dot\alpha_i=\alpha_i\big(\dot\ell_i-\sum_j\alpha_j\dot\ell_j\big)$ and
+\begin{equation}
+\label{eq:gsv-weight-gain}
+ \sum_{i=1}^N\lvert\dot\alpha_i\rvert
+ \;\le\; 2\max_{i}\lvert\dot\ell_i\rvert
+ \;\le\; 2\max_i\Big(\lvert\partial_\theta \ell_i\rvert
+ +\lVert\nabla_x\ell_i\rVert_2\,\lVert\dot x_i\rVert_2\Big).
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Differentiating $\log\alpha_i=\ell_i-\log\sum_j e^{\ell_j}$ gives
+$\dot\alpha_i/\alpha_i=\dot\ell_i-\sum_j\alpha_j\dot\ell_j$.  Then
+$\lvert\dot\alpha_i\rvert\le\alpha_i\big(\lvert\dot\ell_i\rvert
++\max_j\lvert\dot\ell_j\rvert\big)\le2\alpha_i\max_j\lvert\dot\ell_j\rvert$,
+and summing over $i$ uses $\sum_i\alpha_i=1$.  The second inequality is
+Cauchy--Schwarz applied to \eqref{eq:gsv-increment-tangent}.
+Interpretation: particle tangents enter weight tangents with gain of order
+$\max_i\lVert\nabla_x\ell_i\rVert_2$, which is large exactly when the
+likelihood is informative.
+\end{proof}
+
+\begin{proposition}[Contract-E affine gain]
+\label{prop:gsv-contract-e-gain}
+Let $\widetilde P,P_w\in\mathbb{R}^{d\times d}$ be symmetric with
+$\widetilde P+\lambda I$ and $P_w+\lambda I$ positive definite for a fixed
+$\lambda>0$, and let
+$L_E L_E^{\top}=\widetilde P+\lambda I$,
+$L_w L_w^{\top}=P_w+\lambda I$ be their lower-triangular Cholesky factors;
+positive definiteness of $L_EL_E^{\top}$ makes $L_E$ nonsingular, so
+$L_E^{-1}$ exists and $A=L_w L_E^{-1}$ is well defined.  Then, for
+differentiable paths of these factors,
+\begin{equation}
+\label{eq:gsv-affine-tangent}
+ \dot A=\big(\dot L_w-A\dot L_E\big)L_E^{-1},
+\end{equation}
+\begin{equation}
+\label{eq:gsv-affine-gain}
+ \bigl\lVert L_E^{-1}\bigr\rVert_2
+ =\lambda_{\min}\!\big(\widetilde P+\lambda I\big)^{-1/2}
+ \le\lambda^{-1/2},
+ \qquad
+ \lVert\dot A\rVert_2
+ \le\big(\lVert\dot L_w\rVert_2+\lVert A\rVert_2\lVert\dot L_E\rVert_2\big)
+ \,\lambda^{-1/2}.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Differentiate $A=L_wL_E^{-1}$ with
+$d(L_E^{-1})=-L_E^{-1}\,\dot L_E\,L_E^{-1}$:
+$\dot A=\dot L_wL_E^{-1}-L_wL_E^{-1}\dot L_EL_E^{-1}
+=(\dot L_w-A\dot L_E)L_E^{-1}$, which is \eqref{eq:gsv-affine-tangent}.
+For a nonsingular square matrix $L$, the matrices $L^{\top}L$ and
+$L L^{\top}$ are similar ($L^{\top}L=L^{-1}(LL^{\top})L$), hence share
+eigenvalues, so
+$\sigma_{\min}(L_E)^2=\lambda_{\min}(L_E^{\top}L_E)
+=\lambda_{\min}(L_EL_E^{\top})
+=\lambda_{\min}(\widetilde P+\lambda I)\ge\lambda$.
+Thus $\lVert L_E^{-1}\rVert_2=\sigma_{\min}(L_E)^{-1}\le\lambda^{-1/2}$,
+and the bound on $\lVert\dot A\rVert_2$ follows from
+\eqref{eq:gsv-affine-tangent} by submultiplicativity.  At the production
+value $\lambda=10^{-5}$ the worst-case factor is
+$\lambda^{-1/2}\approx316$ per reset.
+\end{proof}
+
+\begin{proposition}[Damped Gauss--Newton coefficient gain]
+\label{prop:gsv-gn-gain}
+Let $J_a\in\mathbb{R}^{2\times2}$, $\delta>0$,
+$M_a=J_a^{\top}J_a+\delta I\succeq\delta I$, $r_a=J_a^{\top}d_a$, and
+$c_a=\rho\,M_a^{-1}r_a$ (the implemented correction coefficients); since
+$M_a\succeq\delta I$ with $\delta>0$, the matrix $M_a$ is symmetric positive
+definite, hence nonsingular, so $M_a^{-1}$ exists.  Then
+\begin{equation}
+\label{eq:gsv-gn-tangent}
+ \dot c_a=\rho\,M_a^{-1}\big(\dot r_a-\dot M_aM_a^{-1}r_a\big),
+ \qquad
+ \lVert\dot c_a\rVert_2
+ \le\frac{\rho}{\delta}\Big(\lVert\dot r_a\rVert_2
+ +\frac{1}{\delta}\lVert\dot M_a\rVert_2\lVert r_a\rVert_2\Big).
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Differentiate $M_ac_a=\rho r_a$:
+$\dot M_ac_a+M_a\dot c_a=\rho\dot r_a$, so
+$\dot c_a=M_a^{-1}(\rho\dot r_a-\dot M_ac_a)
+=\rho M_a^{-1}(\dot r_a-\dot M_aM_a^{-1}r_a)$.
+Since $M_a\succeq\delta I$ is symmetric positive definite,
+$\lVert M_a^{-1}\rVert_2\le\delta^{-1}$; apply it twice.  At the production
+value $\delta=10^{-5}$ the worst-case outer factor is $10^{5}$, attained
+only when $J_a$ degenerates; clouds near the moment-feasibility boundary
+(empirical kurtosis close to $1+\text{skewness}^2$) drive $J_a$ toward
+singularity.
+\end{proof}
+
+\subsection{The designed-in shape defect of the replicated cubature design}
+
+\begin{proposition}[Cubature residual-design moments]
+\label{prop:gsv-cubature-design-moments}
+Let $d\ge1$, $M\ge1$, $N=2dM$, and let
+$\Xi_c\in\mathbb{R}^{N\times d}$ consist of the $2d$ rows
+$\sqrt{d}\,(\pm e_a)$, $a=1,\dots,d$, each repeated $M$ times.  Then, with
+$r$ indexing rows,
+\begin{align}
+ \frac1N\sum_{r}\Xi_{ra}&=0,
+ &\frac1N\sum_{r}\Xi_{ra}\Xi_{rb}&=\delta_{ab},
+ \label{eq:gsv-cubature-first-second}\\
+ \frac1N\sum_{r}\Xi_{ra}^{3}&=0,
+ &\frac1N\sum_{r}\Xi_{ra}^{4}&=d,
+ \label{eq:gsv-cubature-fourth}\\
+ \frac1N\sum_{r}\Xi_{ra}^{2}\Xi_{rb}&=0\quad(a\neq b),
+ &\frac1N\sum_{r}\Xi_{ra}^{2}\Xi_{rb}^{2}&=0\quad(a\neq b).
+ \label{eq:gsv-cubature-cross}
+\end{align}
+The Gaussian reference values for the two fourth-order statistics are $3$
+and $1$ respectively.
+\end{proposition}
+
+\begin{proof}
+Coordinate $a$ is nonzero on exactly the $2M$ rows $\pm\sqrt d\,e_a$, taking
+values $\pm\sqrt d$ in equal numbers.  Odd powers cancel in pairs, giving the
+zero mean, zero third moment, and zero $\Xi_{ra}^2\Xi_{rb}$ (the latter also
+because every row has a single nonzero coordinate).  For the variance,
+$\tfrac1N\sum_r\Xi_{ra}^2=\tfrac{2M\cdot d}{2dM}=1$; off-diagonal second
+moments vanish because no row has two nonzero coordinates, giving
+\eqref{eq:gsv-cubature-first-second}.  For the fourth moment,
+$\tfrac1N\sum_r\Xi_{ra}^4=\tfrac{2M\cdot d^{2}}{2dM}=d$.  Finally
+$\Xi_{ra}^2\Xi_{rb}^2=0$ on every row for $a\neq b$, since at most one
+coordinate is nonzero, proving \eqref{eq:gsv-cubature-cross}.
+\end{proof}
+
+\begin{remark}[Consequence at $d=18$ and empirical anchors]
+\label{rem:gsv-defect-consequence}
+The Austria SIR route ($d=18$, $N=1008$) must use $\Xi_c$ because a positive
+replicated GenUT design is infeasible there
+(Proposition~\ref{prop:gsv-genut-positivity}).  By
+Proposition~\ref{prop:gsv-cubature-design-moments}, every reset injects
+residual rows with per-axis kurtosis $18$ (Gaussian: $3$) and pairwise
+co-kurtosis $0$ (Gaussian: $1$) into
+$\widetilde y=y^{+}+\Xi_c B^{\top}$, whenever the injected scale
+$\lVert B\rVert$ is non-negligible.  The higher-moment correction then
+removes this artifact each step using noisy empirical targets and tuned
+strengths, i.e.\ the recursion of
+Proposition~\ref{prop:gsv-tangent-recursion} repeatedly processes a
+designed-in shape error.  Empirically (descriptive, 16 fixed seeds, artifact
+\texttt{austria\_sir\_pairwise\_moment\_genut\_score\_20260730}): the
+diagonal-only score standard deviations were
+$3435.6/1272.4/302.0$ for the three parameters, reduced by factors
+$94.1/71.6/14.6$ by the pairwise co-moment correction --- consistent with the
+mechanism, but the causal attribution to the design defect is a hypothesis
+that Part~II's design swap is constructed to test.  No claim in this
+subsection is a variance theorem.
+\end{remark}
+
+\section{Part II, Repair I: a fixed whitened Gaussian residual design}
+\label{sec:gsv-design}
+
+\begin{proposition}[Exact first- and second-moment identities]
+\label{prop:gsv-whitened-design-identities}
+Let $Z\in\mathbb{R}^{N\times d}$ with $N>d$, let
+$\bar z=N^{-1}Z^{\top}\mathbf 1\in\mathbb{R}^{d}$,
+$Z_c=Z-\mathbf 1\bar z^{\top}$, and suppose
+$S=N^{-1}Z_c^{\top}Z_c$ is nonsingular with Cholesky factorization
+$S=\widehat C\widehat C^{\top}$.  Define
+$\Xi^{*}=Z_c\widehat C^{-\top}$.  Then, exactly,
+\begin{equation}
+\label{eq:gsv-whitened-identities}
+ \frac1N(\Xi^{*})^{\top}\mathbf 1=0,
+ \qquad
+ \frac1N(\Xi^{*})^{\top}\Xi^{*}=I_d .
+\end{equation}
+If $Z$ is drawn once with a fixed recorded seed and never redrawn, then
+$\Xi^{*}$ is a $\theta$-independent constant of the finite program.
+\end{proposition}
+
+\begin{proof}
+$(\Xi^{*})^{\top}\mathbf 1
+=\widehat C^{-1}Z_c^{\top}\mathbf 1
+=\widehat C^{-1}\big(Z^{\top}\mathbf 1-N\bar z\big)=0$ by the definition of
+$\bar z$.  Next,
+$N^{-1}(\Xi^{*})^{\top}\Xi^{*}
+=\widehat C^{-1}\big(N^{-1}Z_c^{\top}Z_c\big)\widehat C^{-\top}
+=\widehat C^{-1}\widehat C\widehat C^{\top}\widehat C^{-\top}=I_d$.
+The final statement holds because the construction involves no quantity that
+depends on $\theta$.
+\end{proof}
+
+\begin{corollary}[The same-scalar score property is preserved]
+\label{cor:gsv-design-tangent}
+Replacing $\Xi_c$ by $\Xi^{*}$ leaves the chapter score proposition's
+hypotheses intact: the residual design remains a fixed constant, so its
+tangent is exactly zero and the recursive forward sensitivity remains the
+total derivative of the executed scalar on the fixed branch.  Moreover the
+divisibility constraint $N\equiv0\ (\mathrm{mod}\ 2d)$ required by the
+replicated cubature construction is no longer needed.
+\end{corollary}
+
+\begin{proof}
+The chapter score proposition fixes the residual design as part of the finite
+route and differentiates all remaining dependencies; the only design property
+it uses elsewhere is \eqref{eq:gsv-whitened-identities} (zero mean, identity
+second moment), which Proposition~\ref{prop:gsv-whitened-design-identities}
+supplies exactly.  $\theta$-independence gives $d\Xi^{*}/d\theta=0$, so the
+implemented zero design-tangent is exact.  The replication argument that
+forced $2d\mid N$ is not used by the construction of $\Xi^{*}$.
+\end{proof}
+
+\begin{proposition}[Raw moments of i.i.d.\ Gaussian columns]
+\label{prop:gsv-iid-gaussian-moments}
+Let $z_1,\dots,z_N$ and $w_1,\dots,w_N$ be independent standard normal
+samples (two distinct coordinates of $Z$), and define
+\begin{equation}
+ m_2=\frac1N\sum_{r}z_r^{2},\quad
+ m_4=\frac1N\sum_{r}z_r^{4},\quad
+ m_2'=\frac1N\sum_{r}w_r^{2},\quad
+ m_{22}=\frac1N\sum_{r}z_r^{2}w_r^{2}.
+\end{equation}
+Then
+\begin{equation}
+\label{eq:gsv-iid-moments}
+\begin{aligned}
+ &\mathbb{E}m_2=1,\quad \operatorname{Var}m_2=\tfrac{2}{N},\qquad
+ \mathbb{E}m_4=3,\quad \operatorname{Var}m_4=\tfrac{96}{N},\qquad
+ \operatorname{Cov}(m_2,m_4)=\tfrac{12}{N},\\
+ &\mathbb{E}m_{22}=1,\quad \operatorname{Var}m_{22}=\tfrac{8}{N},\qquad
+ \operatorname{Cov}(m_{22},m_2)=\tfrac{2}{N},\qquad
+ \operatorname{Cov}(m_2,m_2')=0 .
+\end{aligned}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Standard normal moments: $\mathbb{E}z^{2}=1$, $\mathbb{E}z^{4}=3$,
+$\mathbb{E}z^{6}=15$, $\mathbb{E}z^{8}=105$.  For i.i.d.\ averages,
+$\operatorname{Var}(N^{-1}\sum_rY_r)=\operatorname{Var}(Y)/N$ and
+$\operatorname{Cov}$ likewise, because distinct $r$ are independent.  Thus
+$\operatorname{Var}m_2=(\mathbb{E}z^{4}-1)/N=2/N$;
+$\operatorname{Var}m_4=(\mathbb{E}z^{8}-9)/N=96/N$;
+$\operatorname{Cov}(m_2,m_4)=(\mathbb{E}z^{6}-\mathbb{E}z^{2}\mathbb{E}z^{4})/N
+=(15-3)/N=12/N$.
+With $z\perp w$:
+$\mathbb{E}m_{22}=\mathbb{E}z^{2}\mathbb{E}w^{2}=1$;
+$\operatorname{Var}m_{22}
+=(\mathbb{E}z^{4}\mathbb{E}w^{4}-1)/N=(9-1)/N=8/N$;
+$\operatorname{Cov}(m_{22},m_2)
+=(\mathbb{E}z^{4}\mathbb{E}w^{2}-1)/N=(3-1)/N=2/N$;
+and $\operatorname{Cov}(m_2,m_2')=0$ by independence of the coordinates.
+\end{proof}
+
+\begin{proposition}[Delta-method asymptotics for the studentized shape statistics]
+\label{prop:gsv-delta-method}
+In the setting of Proposition~\ref{prop:gsv-iid-gaussian-moments} define the
+studentized kurtosis and pair co-kurtosis
+\begin{equation}
+ \kappa_N=\frac{m_4}{m_2^{2}},
+ \qquad
+ c_N=\frac{m_{22}}{m_2\,m_2'} .
+\end{equation}
+Then, as $N\to\infty$,
+\begin{equation}
+\label{eq:gsv-delta}
+ \sqrt N\,(\kappa_N-3)\;\Rightarrow\;\mathcal N(0,\,24),
+ \qquad
+ \sqrt N\,(c_N-1)\;\Rightarrow\;\mathcal N(0,\,4).
+\end{equation}
+At $N=1008$ the corresponding studentized standard deviations are approximately
+$\sqrt{24/N}\approx0.154$ and $\sqrt{4/N}\approx0.063$.  The raw
+$m_{22}$ statistic has $\sqrt{8/N}$ standard deviation; that is a different
+quantity and should not be used as the whitened co-kurtosis fluctuation.
+\end{proposition}
+
+\begin{proof}
+By the multivariate CLT and \eqref{eq:gsv-iid-moments},
+$\sqrt N\big((m_4,m_2)-(3,1)\big)\Rightarrow\mathcal N(0,\Sigma_1)$ with
+$\Sigma_1=\begin{pmatrix}96&12\\12&2\end{pmatrix}$.
+For $g(m_4,m_2)=m_4/m_2^{2}$ the gradient at $(3,1)$ is
+$\nabla g=(1,\,-6)$ since $\partial g/\partial m_4=m_2^{-2}=1$ and
+$\partial g/\partial m_2=-2m_4m_2^{-3}=-6$.  The delta method gives
+asymptotic variance
+\begin{equation}
+\label{eq:gsv-delta-kurt-arithmetic}
+ \nabla g^{\top}\Sigma_1\nabla g
+ =96\cdot1-12\cdot6-6\cdot12+36\cdot2
+ =96-72-72+72=24 .
+\end{equation}
+Similarly
+$\sqrt N\big((m_{22},m_2,m_2')-(1,1,1)\big)\Rightarrow\mathcal N(0,\Sigma_2)$
+with
+$\Sigma_2=\begin{pmatrix}8&2&2\\2&2&0\\2&0&2\end{pmatrix}$,
+and for $h(m_{22},m_2,m_2')=m_{22}/(m_2m_2')$ the gradient at $(1,1,1)$ is
+$(1,\,-1,\,-1)$, giving
+\begin{equation}
+\label{eq:gsv-delta-cokurt-arithmetic}
+ \nabla h^{\top}\Sigma_2\nabla h
+ =8+2+2-2\cdot2-2\cdot2+2\cdot0=4 .
+\end{equation}
+\end{proof}
+
+\begin{remark}[Whitening versus studentization: a stated gap]
+\label{rem:gsv-whitening-gap}
+Proposition~\ref{prop:gsv-delta-method} treats per-coordinate studentization.
+The design $\Xi^{*}$ of
+Proposition~\ref{prop:gsv-whitened-design-identities} applies full
+$d$-dimensional mean-and-Cholesky whitening, which fixes \emph{all} first and
+second moments exactly, including cross terms.  The whitened fourth-order
+statistics agree with the studentized ones to first order (both are smooth
+functions of the same sample moments with the same linearization at the
+Gaussian point), so \eqref{eq:gsv-delta} is the first-order description used
+here; the $O_p(N^{-1})$ correction induced by the off-diagonal
+whitening constraints is \emph{not} derived in this note and is recorded as
+a gap, not a claim.  For the intended use --- replacing exact defects of size
+$d-3=15$ and $-1$ by fluctuations of size $\approx0.15$ and $\approx0.06$ ---
+first-order accuracy is ample.
+\end{remark}
+
+\begin{proposition}[Why a positive GenUT design cannot do this for $d\ge4$]
+\label{prop:gsv-genut-positivity}
+The Gaussian-moment GenUT axis construction with standardized skewness
+$s_a=0$ and kurtosis $k_a=3$ yields, per axis,
+$u_a=v_a=\sqrt3$ and noncentral weights $b_a=c_a=\tfrac16$, hence central
+weight
+\begin{equation}
+\label{eq:gsv-genut-central-weight}
+ w_0=1-\sum_{a=1}^{d}(b_a+c_a)=1-\frac{d}{3},
+\end{equation}
+which is negative for every $d\ge4$.  Consequently no positive equal-weight
+replication of the $2d{+}1$-point Gaussian GenUT rule exists for $d\ge4$,
+while $\Xi^{*}$ is positive (equal-weight by construction) at every $d$ and
+$N>d$.
+\end{proposition}
+
+\begin{proof}
+The axis equations of the GenUT construction with $s_a=0$, $k_a=3$ give
+$u_a=\tfrac{-s_a+\sqrt{4k_a-3s_a^{2}}}{2}=\tfrac{\sqrt{12}}{2}=\sqrt3$,
+$v_a=u_a+s_a=\sqrt3$, and
+$c_a=\frac{1}{v_a(u_a+v_a)}=\frac{1}{\sqrt3\cdot2\sqrt3}=\frac16$,
+$b_a=\frac{1}{u_a(u_a+v_a)}=\frac16$.  Summing over the $d$ axes gives
+\eqref{eq:gsv-genut-central-weight}; $1-d/3<0$ iff $d>3$.  A rule with a
+negative weight cannot be represented by nonnegative equal-weight
+replication, which requires every atom mass to be a nonnegative multiple of
+$1/N$.
+\end{proof}
+
+\section{Part II, Repair IV: frozen low-rank projected cumulant matching}
+\label{sec:gsv-projected-cumulants}
+
+\subsection{Source boundary and target quantity}
+
+This section defines a new opt-in correction.  It is motivated by the general
+low-rank principle used by tensor-train methods, but it is not the moment
+algorithm of Zhao and Cui.  Zhao and Cui approximate a sequential density by
+a TT or squared-TT representation, marginalize its cores, and construct
+conditional Knothe--Rosenblatt maps (their equations (12)--(16), Algorithms
+1--2, and Proposition~2).  Their author implementation performs the adjacent
+fit in
+\texttt{third\_party/audit/zhao\_cui\_tensor\_ssm\_p10/source/models/full\_sol.m},
+lines 21--136, and squared-TT marginal contraction in
+\texttt{third\_party/audit/zhao\_cui\_tensor\_ssm\_p10/source/deep-tensor.dev/src/@TTSIRT/marginalise.m},
+lines 25--85.  Neither inspected source defines the projected cumulant update
+below.  The classification is therefore
+\texttt{extension\_or\_invention}, not \texttt{source\_faithful}.
+
+Let $z_i\in\mathbb R^d$ denote the weighted source cloud after exact weighted
+whitening and let $q_i\in\mathbb R^d$ denote the current equal-weight reset
+cloud after exact uniform whitening and any declared diagonal correction.
+Thus
+\begin{equation}
+ \sum_i\alpha_i z_i=0,\quad
+ \sum_i\alpha_i z_i z_i^\top=I_d,\qquad
+ \frac1N\sum_iq_i=0,\quad
+ \frac1N\sum_iq_iq_i^\top=I_d.
+ \label{eq:gsv-lr-whitened-clouds}
+\end{equation}
+Fix an orthonormal matrix $U\in\mathbb R^{d\times r}$, $U^\top U=I_r$,
+selected offline and frozen for the complete execution scope.  Define
+$y_i=U^\top z_i$ and $s_i=U^\top q_i$.  The projected third central moments
+and fourth cumulants are
+\begin{align}
+ T_3^z&=\sum_i\alpha_i y_i^{\otimes3}, &
+ T_3^q&=\frac1N\sum_i s_i^{\otimes3},
+ \label{eq:gsv-lr-third}\\
+ K_4^z&=\sum_i\alpha_i y_i^{\otimes4}-\mathcal W_r, &
+ K_4^q&=\frac1N\sum_i s_i^{\otimes4}-\mathcal W_r.
+ \label{eq:gsv-lr-fourth}
+\end{align}
+where
+$(\mathcal W_r)_{abcd}=\delta_{ab}\delta_{cd}+
+\delta_{ac}\delta_{bd}+\delta_{ad}\delta_{bc}$ is the Gaussian Wick tensor.
+Because both projected covariances equal $I_r$, the Wick terms cancel in the
+residual.  Set
+\begin{equation}
+ R_3=T_3^z-T_3^q,\qquad R_4=K_4^z-K_4^q
+ =\sum_i\alpha_i y_i^{\otimes4}-\frac1N\sum_i s_i^{\otimes4}.
+ \label{eq:gsv-lr-residuals}
+\end{equation}
+Unlike the pairwise statistics $E[z_a^2z_b]$ and $E[z_a^2z_b^2]$, these are
+the complete order-three and order-four tensors inside the selected
+$r$-dimensional subspace.  They include interactions among three or four
+distinct projected coordinates.
+
+\subsection{One bounded correction step}
+
+For each current projected row $s_i$, define the residual-gradient direction
+\begin{equation}
+ (g_i)_a=
+ 3\sum_{b,c=1}^r(R_3)_{abc}(s_i)_b(s_i)_c
+ +4\sum_{b,c,e=1}^r(R_4)_{abce}(s_i)_b(s_i)_c(s_i)_e.
+ \label{eq:gsv-lr-projected-direction}
+\end{equation}
+The lifted direction is $D_i=Ug_i$ in column-vector notation.  To preserve
+the affine constraints to first order, remove its uniform mean and its
+symmetric covariance tangent:
+\begin{align}
+ \bar D&=N^{-1}\sum_iD_i,\qquad C_i=D_i-\bar D,\
+ A&=\operatorname{sym}\!\left(N^{-1}\sum_i q_iC_i^\top\right),
+ &P_i&=C_i-Aq_i .
+ \label{eq:gsv-lr-affine-projection}
+\end{align}
+With a declared floor $\delta>0$, bounded strength $\rho\ge0$, and
+\begin{equation}
+ a=\left(N^{-1}\sum_i\lVert P_i\rVert_2^2+\delta\right)^{1/2},
+ \qquad \widetilde q_i=q_i+\rho P_i/a,
+ \label{eq:gsv-lr-bounded-update}
+\end{equation}
+apply exact uniform mean/covariance restandardization to
+$\{\widetilde q_i\}$.  Repeat a fixed number of times.  Finally restore the
+weighted source mean and Cholesky covariance exactly, as in the existing
+higher-moment Contract~E composition.  Rank, basis, step count, strength, and
+floor are fixed route controls; no runtime rank selection is permitted.
+
+\begin{proposition}[Direction is the projected moment-residual gradient]
+\label{prop:gsv-lr-gradient}
+Let
+\begin{equation}
+ \mathcal J(q)=\tfrac12\lVert T_3^z-T_3^q\rVert_F^2
+ +\tfrac12\lVert K_4^z-K_4^q\rVert_F^2,
+ \label{eq:gsv-lr-objective}
+\end{equation}
+with the target tensors held fixed.  Before the affine projection and common
+positive scaling, the negative gradient of $\mathcal J$ with respect to the
+projected row $s_i$ is $N^{-1}g_i$, with $g_i$ given by
+\eqref{eq:gsv-lr-projected-direction}.
+\end{proposition}
+
+\begin{proof}
+For a perturbation $h_i\in\mathbb R^r$,
+$d(s_i^{\otimes k})[h_i]$ is the sum of the $k$ tensors obtained by replacing
+one factor $s_i$ by $h_i$.  Both $R_3$ and $R_4$ are symmetric, so contracting
+these sums with $R_k$ gives respectively
+$3\langle R_3,h_i\otimes s_i\otimes s_i\rangle/N$ and
+$4\langle R_4,h_i\otimes s_i^{\otimes3}\rangle/N$.
+Since $dR_k=-dT_k^q$, differentiating
+$\tfrac12\lVert R_k\rVert_F^2$ supplies the minus sign.  Reading off the
+coefficient of $h_i$ gives $-g_i/N$.
+\end{proof}
+
+\begin{proposition}[Exact affine restoration]
+\label{prop:gsv-lr-affine-restoration}
+Suppose the covariance of $\{\widetilde q_i\}$ in
+\eqref{eq:gsv-lr-bounded-update} is positive definite.  Uniform
+mean/Cholesky restandardization gives an output with exactly zero empirical
+mean and identity empirical covariance in exact arithmetic.  Subsequent
+restoration by the source mean and Cholesky factor gives exactly the weighted
+source mean and covariance.
+\end{proposition}
+
+\begin{proof}
+This is the same algebra as
+Proposition~\ref{prop:gsv-whitened-design-identities}: subtract the uniform
+mean and right-solve by the Cholesky factor of the uniform covariance.  The
+affine restoration then maps zero and $I_d$ to the source mean and source
+covariance.  The projection in \eqref{eq:gsv-lr-affine-projection} reduces
+the size of the restandardization but is not used to claim exactness; the
+final Cholesky operation supplies the exact identities.
+\end{proof}
+
+\subsection{Total tangent of the same finite program}
+
+The basis $U$ has zero tangent because it is learned on disjoint data and
+frozen before the claim run.  For any parameter direction, dots denote total
+derivatives.  Projected rows satisfy
+$\dot y_i=U^\top\dot z_i$ and $\dot s_i=U^\top\dot q_i$.  For $k=3,4$,
+\begin{align}
+ \dot T_k^z
+ &=\sum_i\dot\alpha_i y_i^{\otimes k}
+ +\sum_i\alpha_i\sum_{j=1}^k
+ y_i^{\otimes(j-1)}\otimes\dot y_i\otimes
+ y_i^{\otimes(k-j)},
+ \label{eq:gsv-lr-target-jvp}\\
+ \dot T_k^q
+ &=\frac1N\sum_i\sum_{j=1}^k
+ s_i^{\otimes(j-1)}\otimes\dot s_i\otimes
+ s_i^{\otimes(k-j)},
+ \\
+ \dot R_k=\dot T_k^z-\dot T_k^q .
+ \label{eq:gsv-lr-current-jvp}
+\end{align}
+Differentiating \eqref{eq:gsv-lr-projected-direction} gives, in index form,
+\begin{align}
+ (\dot g_i)_a={}&3\sum_{bc}
+ \left[(\dot R_3)_{abc}s_{ib}s_{ic}
+ +(R_3)_{abc}(\dot s_{ib}s_{ic}+s_{ib}\dot s_{ic})\right] \\
+ &+4\sum_{bce}\left[(\dot R_4)_{abce}s_{ib}s_{ic}s_{ie}
+ +(R_4)_{abce}(\dot s_{ib}s_{ic}s_{ie}
+ +s_{ib}\dot s_{ic}s_{ie}+s_{ib}s_{ic}\dot s_{ie})\right].
+ \label{eq:gsv-lr-direction-jvp}
+\end{align}
+The JVP of \eqref{eq:gsv-lr-affine-projection} uses the product rule through
+$\bar D$, $A$, and $P_i$.  The scale derivative is
+\begin{equation}
+ \dot a=\frac{N^{-1}\sum_iP_i^\top\dot P_i}{a},qquad
+ \frac{d}{d\theta}(P_i/a)=\dot P_i/a-P_i\dot a/a^2.
+ \label{eq:gsv-lr-scale-jvp}
+\end{equation}
+The existing Cholesky JVP then differentiates both restandardization and
+source affine restoration.  Equations
+\eqref{eq:gsv-lr-target-jvp}--\eqref{eq:gsv-lr-scale-jvp} contain target
+weight, target-cloud, current-cloud, projection, normalization, and
+restoration dependence.  Omitting any of these terms is a partial derivative
+and is wrong relative to the same-scalar score claim.
+
+\begin{corollary}[Same-scalar derivative on the fixed branch]
+\label{cor:gsv-lr-same-scalar}
+If $U$, $r$, and all correction controls are frozen independently of the
+claim parameter and observations, and every Cholesky/validity branch remains
+fixed, composing the JVP above with the existing total OT and Contract-E JVP
+gives the total derivative of the executed finite scalar.
+\end{corollary}
+
+\begin{proof}
+The projected correction is a finite composition of polynomial contractions,
+linear projections, positive square roots, and Cholesky solves.  Equations
+\eqref{eq:gsv-lr-target-jvp}--\eqref{eq:gsv-lr-scale-jvp} are its chain rule;
+the frozen basis contributes no omitted tangent.  Composition with the
+already total upstream JVP proves the statement.
+\end{proof}
+
+\subsection{Offline subspace construction and stability diagnostic}
+
+Whitening makes covariance PCA uninformative: every direction has unit
+second moment.  The basis must therefore be learned from higher-moment
+\emph{residuals}.  Use fixed recorded sketch directions
+$a_1,\ldots,a_S\in\mathbb R^d$ and, for each disjoint calibration cloud pair,
+form mode-one residual sketches
+\begin{align}
+ G_{3,s}&=\sum_i\alpha_i z_i(a_s^\top z_i)^2
+ -\frac1N\sum_iq_i(a_s^\top q_i)^2,\\
+ G_{4,s}&=\sum_i\alpha_i z_i(a_s^\top z_i)^3
+ -\frac1N\sum_iq_i(a_s^\top q_i)^3.
+ \label{eq:gsv-lr-sketches}
+\end{align}
+Accumulate the positive semidefinite mode score
+\begin{equation}
+ H=\sum_{\text{calibration clouds}}\sum_{s=1}^S
+ \left(G_{3,s}G_{3,s}^\top+G_{4,s}G_{4,s}^\top\right).
+ \label{eq:gsv-lr-mode-score}
+\end{equation}
+The nested rank-eight basis consists of the leading eight eigenvectors of
+$H$; ranks four and six take its first four and six columns.  The sketch seed,
+calibration observations, particle seeds, scaling between orders, and
+eigenvalue tie/sign convention are part of the issued tuning artifact.
+Fit another basis on untouched validation clouds and report principal angles,
+and report the validation explained score
+$\operatorname{tr}(U_r^\top H_{\rm val}U_r)/
+\operatorname{tr}(H_{\rm val})$.  These diagnose whether low-rank structure
+is reproducible rather than particle noise.  The validation basis is never
+used in the claim computation.
+
+\subsection{Cost, implementation contract, and non-claims}
+
+For one correction step, projection costs $O(Ndr)$, forming the complete
+projected moments costs $O(Nr^4)$, their contractions cost $O(Nr^4)$, and
+lifting/projecting the update costs $O(Ndr+Nd^2)$.  Storage is
+$O(N(d+r)+r^4)$ beyond the existing tangent arrays.  At $d=18$, ranks
+$r=4,6,8$ require respectively $4^4=256$, $6^4=1296$, and $8^4=4096$
+fourth-order entries, versus $18^4=104{,}976$ for a dense ambient tensor.
+The runtime path must use TensorFlow/XLA contractions and must never
+materialize ambient $d^3$ or $d^4$ tensors.
+
+This construction changes the finite reset map and therefore generally
+changes both value and same-scalar score.  Low residual energy does not prove
+lower likelihood or score bias.  A stable low-rank basis does not prove that
+ranks remain bounded with dimension or horizon.  Empirical value stability,
+score dispersion, tangent growth, derivative parity, and downstream HMC
+remain separate gates.  In particular, the absence of an exact nonlinear
+Austria score oracle prevents an absolute score-accuracy claim.
+
+\section{Part II, Repair II: surrogate-force HMC with the exact executed energy}
+\label{sec:gsv-hmc}
+
+Throughout this section $U:\mathbb{R}^{P}\to\mathbb{R}$ is the executed
+finite potential $U(\theta)=-\widehat L^{N}(\theta)$ with all seeds frozen
+(a deterministic function), $M\succ0$ a fixed mass matrix,
+$H(\theta,p)=U(\theta)+\tfrac12p^{\top}M^{-1}p$, and
+$F:\mathbb{R}^{P}\to\mathbb{R}^{P}$ an \emph{arbitrary} measurable
+deterministic map (``force''), not assumed to be a gradient.
+
+\begin{definition}[Force-field leapfrog]
+\label{def:gsv-leapfrog}
+For step size $\epsilon>0$, one leapfrog step
+$\Psi:(\theta_0,p_0)\mapsto(\theta_1,p_1)$ is
+\begin{equation}
+\label{eq:gsv-leapfrog}
+ p_{1/2}=p_0+\tfrac{\epsilon}{2}F(\theta_0),
+ \qquad
+ \theta_1=\theta_0+\epsilon M^{-1}p_{1/2},
+ \qquad
+ p_1=p_{1/2}+\tfrac{\epsilon}{2}F(\theta_1).
+\end{equation}
+\end{definition}
+
+\begin{proposition}[Measure preservation for any force]
+\label{prop:gsv-leapfrog-volume}
+Each substep of \eqref{eq:gsv-leapfrog}, and hence $\Psi$ and any iterate
+$\Psi^{L}$, preserves Lebesgue measure on
+$\mathbb{R}^{P}\times\mathbb{R}^{P}$, for every measurable $F$.
+\end{proposition}
+
+\begin{proof}
+The first and third substeps have the form
+$(\theta,p)\mapsto(\theta,\,p+a(\theta))$; for each fixed $\theta$ this is a
+translation of $p$, so by Fubini's theorem it preserves the product measure.
+The middle substep $(\theta,p)\mapsto(\theta+\epsilon M^{-1}p,\,p)$ is, for
+each fixed $p$, a translation of $\theta$, and preserves measure by the same
+argument.  A composition of measure-preserving bijections is
+measure-preserving.
+\end{proof}
+
+\begin{proposition}[Reversibility for any force]
+\label{prop:gsv-leapfrog-reversible}
+Let $\mathcal F(\theta,p)=(\theta,-p)$ be the momentum flip.  Then for every
+$F$ and every $L\ge1$,
+\begin{equation}
+\label{eq:gsv-involution}
+ \big(\mathcal F\circ\Psi^{L}\big)\circ\big(\mathcal F\circ\Psi^{L}\big)
+ =\mathrm{id},
+\end{equation}
+i.e.\ $S=\mathcal F\circ\Psi^{L}$ is an involution.
+\end{proposition}
+
+\begin{proof}
+First take $L=1$.  Apply $\Psi$ to $\mathcal F(\theta_1,p_1)=(\theta_1,-p_1)$
+using \eqref{eq:gsv-leapfrog}: the half-kick gives
+$-p_1+\tfrac{\epsilon}{2}F(\theta_1)
+=-\big(p_{1/2}+\tfrac{\epsilon}{2}F(\theta_1)\big)
+ +\tfrac{\epsilon}{2}F(\theta_1)=-p_{1/2}$;
+the drift gives
+$\theta_1+\epsilon M^{-1}(-p_{1/2})=\theta_0$;
+the final half-kick gives
+$-p_{1/2}+\tfrac{\epsilon}{2}F(\theta_0)
+=-\big(p_0+\tfrac{\epsilon}{2}F(\theta_0)\big)
+ +\tfrac{\epsilon}{2}F(\theta_0)=-p_0$.
+Hence $\Psi\circ\mathcal F\circ\Psi=\mathcal F$, equivalently
+$\mathcal F\circ\Psi\circ\mathcal F\circ\Psi=\mathrm{id}$ (using
+$\mathcal F\circ\mathcal F=\mathrm{id}$).  For $L>1$, iterate:
+$\Psi^{L}\circ\mathcal F\circ\Psi^{L}
+=\Psi^{L-1}\circ(\Psi\circ\mathcal F\circ\Psi)\circ\Psi^{L-1}
+=\Psi^{L-1}\circ\mathcal F\circ\Psi^{L-1}=\cdots=\mathcal F$.
+Note that no palindromic step arrangement is needed because $F$ depends only
+on $\theta$, so the same substep sequence serves both directions.
+\end{proof}
+
+\begin{proposition}[Invariance of Metropolis--Hastings with an involutive
+measure-preserving proposal]
+\label{prop:gsv-mh-invariance}
+Let $\pi$ be a probability density, positive on
+$\mathbb{R}^{P}\times\mathbb{R}^{P}$, and let $S$ be a measurable,
+Lebesgue-measure-preserving involution.  Define the kernel: at state $z$,
+propose $z'=S(z)$ and accept with probability
+$a(z)=\min\{1,\pi(S(z))/\pi(z)\}$, else stay.  Then the kernel is
+$\pi$-reversible, hence leaves $\pi$ invariant.
+\end{proposition}
+
+\begin{proof}
+Let $m(z)=\pi(z)\,a(z)=\min\{\pi(z),\pi(S(z))\}$.  Since $S$ is an
+involution, $m(S(z))=\min\{\pi(S(z)),\pi(z)\}=m(z)$.  For bounded measurable
+$f,g$, the accepted flow satisfies, by the change of variables $z=S(w)$
+(measure-preserving bijection),
+\begin{equation}
+\label{eq:gsv-detailed-balance}
+ \int f(z)\,g(S(z))\,m(z)\,dz
+ =\int f(S(w))\,g(w)\,m(S(w))\,dw
+ =\int g(w)\,f(S(w))\,m(w)\,dw ,
+\end{equation}
+which is the same expression with $f$ and $g$ interchanged.  The rejected
+flow $\int f(z)g(z)\,(\pi(z)-m(z))\,dz$ is symmetric in $(f,g)$ trivially.
+Summing gives
+$\mathbb{E}_{\pi}[f(z)g(z^{+})]=\mathbb{E}_{\pi}[g(z)f(z^{+})]$ for the
+chain step $z\to z^{+}$, i.e.\ $\pi$-reversibility.
+\end{proof}
+
+\begin{corollary}[Surrogate-force HMC targets the exact executed scalar]
+\label{cor:gsv-surrogate-force}
+Consider the algorithm: (i) refresh $p\sim\mathcal N(0,M)$; (ii) propose
+$S(\theta,p)$ with $S=\mathcal F\circ\Psi^{L}$ built from \emph{any}
+deterministic momentum-independent force $F$; (iii) accept with probability
+$\min\{1,e^{H(\theta,p)-H(S(\theta,p))}\}$ where $H$ uses the exact executed
+potential $U=-\widehat L^{N}$.  Every step leaves
+$\pi(\theta,p)\propto e^{-H(\theta,p)}$ invariant, hence the $\theta$-marginal
+$\propto e^{-U(\theta)}$ is preserved, for any quality of $F$.  The choice of
+$F$ affects only the acceptance probability and mixing.
+\end{corollary}
+
+\begin{proof}
+Step (i) is a Gibbs update of the $p$-coordinate from its exact conditional
+under $\pi$ (which is $\mathcal N(0,M)$ independent of $\theta$), hence
+$\pi$-invariant.  Steps (ii)--(iii) form the kernel of
+Proposition~\ref{prop:gsv-mh-invariance} with the involutive
+measure-preserving $S$ supplied by
+Propositions~\ref{prop:gsv-leapfrog-volume} and
+\ref{prop:gsv-leapfrog-reversible}, hence are $\pi$-reversible.  A
+composition of $\pi$-invariant kernels is $\pi$-invariant.  Since $F$ enters
+only through the proposal path, not through $\pi$ or $H$, its quality cannot
+affect invariance.
+\end{proof}
+
+\begin{remark}[Requirements, and what this buys]
+\label{rem:gsv-force-requirements}
+$F$ must be a deterministic function of $\theta$ alone: all Monte Carlo seeds
+inside $F$ must be frozen, and $F$ may not depend on momentum or on the
+trajectory's history.  Under those conditions
+Corollary~\ref{cor:gsv-surrogate-force} licenses using, as leapfrog force,
+(i) a damped or clipped variant of the recursive score (e.g.\ computed with
+larger $\lambda,\delta$ than the value program), (ii) the Fisher-identity
+estimator of Section~\ref{sec:gsv-fisher} with its own frozen seeds, or
+(iii) a deterministic teacher or sigma-point score --- while the acceptance
+step keeps the \emph{exact} same-scalar energy, so correctness never depends
+on score variance again.  The current repository HMC wrapper passes a single
+custom-gradient target (one adapter call returns value and score), so this
+scheme is an implementable proposal, not current behavior.  No claim is made
+about acceptance rates or mixing; those are empirical questions for a
+planned experiment.
+\end{remark}
+
+\section{Part II, Repair III: Fisher-identity estimators without transport
+derivatives}
+\label{sec:gsv-fisher}
+
+This section concerns Object~B of Definition~\ref{def:gsv-objects}.  Consider
+the state-space model with initial density $\mu_\theta(x_0)$, transition
+densities $f_\theta(x_t\mid x_{t-1})$, and observation densities
+$g_\theta(y_t\mid x_t)$, all positive and continuously differentiable in
+$\theta$.
+
+\begin{assumption}[Interchange]
+\label{ass:gsv-interchange}
+For $\theta$ in an open set, the joint density
+$p_\theta(x_{0:T},y_{1:T})
+=\mu_\theta(x_0)\prod_{t=1}^{T}f_\theta(x_t\mid x_{t-1})
+ \,g_\theta(y_t\mid x_t)$
+is differentiable in $\theta$ with
+$\lvert\partial_{\theta_p}p_\theta(x,y)\rvert\le G(x)$ for an integrable
+envelope $G$, locally uniformly in $\theta$, so that
+$\partial_{\theta}\!\int p_\theta\,dx=\int\partial_\theta p_\theta\,dx$.
+\end{assumption}
+
+\begin{proposition}[Fisher identity and additive decomposition]
+\label{prop:gsv-fisher-identity}
+Under Assumption~\ref{ass:gsv-interchange}, with
+$p_\theta(y_{1:T})=\int p_\theta(x_{0:T},y_{1:T})\,dx_{0:T}>0$,
+\begin{equation}
+\label{eq:gsv-fisher}
+ \nabla_\theta\log p_\theta(y_{1:T})
+ =\mathbb{E}\!\left[\nabla_\theta\log p_\theta(x_{0:T},y_{1:T})
+ \,\middle|\,y_{1:T}\right]
+ =\mathbb{E}\!\left[\sum_{t=0}^{T}s_t\,\middle|\,y_{1:T}\right],
+\end{equation}
+where $s_0=\nabla_\theta\log\mu_\theta(x_0)$ and, for $t\ge1$,
+\begin{equation}
+\label{eq:gsv-additive}
+ s_t=s_t(x_{t-1},x_t)
+ =\nabla_\theta\log f_\theta(x_t\mid x_{t-1})
+ +\nabla_\theta\log g_\theta(y_t\mid x_t).
+\end{equation}
+No derivative of any resampling, transport, or reset operation appears in
+\eqref{eq:gsv-fisher}--\eqref{eq:gsv-additive}.
+\end{proposition}
+
+\begin{proof}
+By Assumption~\ref{ass:gsv-interchange},
+$\nabla\log p(y)
+=\frac{\int\nabla p_\theta(x,y)\,dx}{p_\theta(y)}
+=\int\nabla\log p_\theta(x,y)\,
+ \frac{p_\theta(x,y)}{p_\theta(y)}\,dx
+=\mathbb{E}[\nabla\log p_\theta(x,y)\mid y]$,
+using $\nabla p=p\,\nabla\log p$ and the definition of the smoothing density
+$p_\theta(x\mid y)=p_\theta(x,y)/p_\theta(y)$.  Taking the logarithm of the
+displayed factorization of $p_\theta(x,y)$ makes
+$\nabla\log p_\theta(x,y)=\sum_{t}s_t$, which is
+\eqref{eq:gsv-additive}.  The final sentence holds because the identity is a
+property of the model densities, independent of any algorithm used to
+approximate the conditional expectation.
+\end{proof}
+
+\begin{lemma}[Backward factorization]
+\label{lem:gsv-backward-kernel}
+For $t\ge1$, with all densities positive:
+\begin{align}
+ p(x_{t-1}\mid x_t,y_{1:t})
+ &=p(x_{t-1}\mid x_t,y_{1:t-1})
+ =\frac{p(x_{t-1}\mid y_{1:t-1})\,f_\theta(x_t\mid x_{t-1})}
+        {\int p(x'\mid y_{1:t-1})\,f_\theta(x_t\mid x')\,dx'} ,
+ \label{eq:gsv-backward-kernel}\\
+ p(x_{0:t-2}\mid x_{t-1},x_t,y_{1:t})
+ &=p(x_{0:t-2}\mid x_{t-1},y_{1:t-1}).
+ \label{eq:gsv-past-independence}
+\end{align}
+\end{lemma}
+
+\begin{proof}
+For \eqref{eq:gsv-backward-kernel}: $y_t$ is conditionally independent of
+$x_{t-1}$ given $x_t$ (the observation density depends on $x_t$ only), which
+removes $y_t$ from the conditioning; then Bayes' rule with the Markov
+transition gives
+$p(x_{t-1}\mid x_t,y_{1:t-1})
+=\frac{p(x_{t-1},x_t\mid y_{1:t-1})}{p(x_t\mid y_{1:t-1})}
+=\frac{p(x_{t-1}\mid y_{1:t-1})f_\theta(x_t\mid x_{t-1})}
+       {p(x_t\mid y_{1:t-1})}$,
+whose denominator is the displayed normalizer.  For
+\eqref{eq:gsv-past-independence}: given $(x_{t-1},y_{1:t-1})$, the pair
+$(x_t,y_t)$ depends on the past only through $x_{t-1}$ by the Markov and
+observation structure, so conditioning on it does not change the law of
+$x_{0:t-2}$.
+\end{proof}
+
+\begin{proposition}[Backward recursion for the smoothed additive functional]
+\label{prop:gsv-backward-recursion}
+Define $T_t(x_t)=\mathbb{E}\big[\sum_{s=0}^{t}s_s\,\big|\,x_t,y_{1:t}\big]$
+with $T_0(x_0)=s_0(x_0)$.  Then for $t\ge1$,
+\begin{equation}
+\label{eq:gsv-backward-recursion}
+ T_t(x_t)
+ =\int p(x_{t-1}\mid x_t,y_{1:t})
+ \Big[T_{t-1}(x_{t-1})+s_t(x_{t-1},x_t)\Big]\,dx_{t-1},
+\end{equation}
+and the exact score is
+$\nabla_\theta\log p_\theta(y_{1:T})
+=\mathbb{E}\big[T_T(x_T)\,\big|\,y_{1:T}\big]$,
+an expectation under the filter marginal at time $T$.
+\end{proposition}
+
+\begin{proof}
+By the tower property, conditioning first on $(x_{t-1},x_t,y_{1:t})$:
+\[
+ T_t(x_t)
+ =\mathbb{E}\Big[\;
+ \mathbb{E}\big[\textstyle\sum_{s\le t-1}s_s\,\big|\,x_{t-1},x_t,y_{1:t}\big]
+ +s_t(x_{t-1},x_t)
+ \;\Big|\;x_t,y_{1:t}\Big].
+\]
+By \eqref{eq:gsv-past-independence} the inner conditional expectation equals
+$\mathbb{E}[\sum_{s\le t-1}s_s\mid x_{t-1},y_{1:t-1}]=T_{t-1}(x_{t-1})$, and
+the outer expectation integrates $x_{t-1}$ against
+\eqref{eq:gsv-backward-kernel}, giving
+\eqref{eq:gsv-backward-recursion}.  Finally, by the tower property again,
+$\mathbb{E}[T_T(x_T)\mid y_{1:T}]
+=\mathbb{E}[\sum_{t\le T}s_t\mid y_{1:T}]$, which is the score by
+Proposition~\ref{prop:gsv-fisher-identity}.
+\end{proof}
+
+\begin{definition}[Particle forward-smoothing estimator]
+\label{def:gsv-pds}
+Given any particle approximation
+$\sum_j\beta_{t-1,j}\,\delta_{z_{t-1,j}}$ of $p(x_{t-1}\mid y_{1:t-1})$ and
+forward particles $x_{t,i}^{-}$, plug it into
+\eqref{eq:gsv-backward-kernel}--\eqref{eq:gsv-backward-recursion}:
+\begin{equation}
+\label{eq:gsv-pds}
+ W_t(i,j)
+ =\frac{\beta_{t-1,j}\,f_\theta\!\big(x_{t,i}^{-}\mid z_{t-1,j}\big)}
+        {\sum_k\beta_{t-1,k}\,f_\theta\!\big(x_{t,i}^{-}\mid z_{t-1,k}\big)},
+ \qquad
+ \widehat T_{t,i}
+ =\sum_j W_t(i,j)\Big[\widehat T_{t-1,j}
+ +s_t\big(z_{t-1,j},x_{t,i}^{-}\big)\Big],
+\end{equation}
+and report $\widehat S_T=\sum_i\alpha_{T,i}\widehat T_{T,i}$.
+\end{definition}
+
+\begin{remark}[Cost, variance status, and route-compatibility boundary]
+\label{rem:gsv-pds-boundary}
+(i) The recursion \eqref{eq:gsv-pds} costs $O(N^{2})$ transition-density
+evaluations per step ($\approx10^{6}$ Gaussian evaluations at $N=1008$),
+batched trivially on GPU; every current model adapter has an evaluable
+additive-Gaussian transition density and closed-form
+$\nabla_\theta\log f_\theta$ reusing the existing transition tangents.
+(ii) The estimator targets Object~B; used as an HMC gradient it must go
+through Corollary~\ref{cor:gsv-surrogate-force}, never through the accept
+step.  (iii) The literature result that the variance of \eqref{eq:gsv-pds}
+grows linearly in $T$, versus quadratically for the ancestral path
+estimator, is \emph{cited, not re-proved here} (Poyiadjis, Doucet and Singh,
+Biometrika 2011); the local-copy policy requires storing and reading that
+paper before an implementation decision.  (iv) On the OT/moment-reset route
+the forward particles are propagated from a reset cloud that is a changed
+object relative to categorical resampling; \eqref{eq:gsv-pds} then inherits
+that approximation through the atom locations.  As a bias \emph{reference
+oracle} the estimator should therefore be run on a plain
+multinomial-resampling particle filter arm, where its only error is
+quantifiable Monte Carlo error.
+\end{remark}
+
+\section{A branch warning for ESS-triggered resets}
+\label{sec:gsv-branch}
+
+\begin{proposition}[Parameter-dependent reset triggers break continuity]
+\label{prop:gsv-ess-branch}
+Fix $\tau\in(0,1)$ and let the program apply the reset at time $t$ if and
+only if $\mathrm{ESS}_t(\theta)=\big(\sum_i\alpha_{t,i}^{2}\big)^{-1}<\tau N$.
+Suppose at $\theta^{*}$ some time $t^{*}$ satisfies
+$\mathrm{ESS}_{t^{*}}(\theta^{*})=\tau N$ with
+$\nabla_\theta\,\mathrm{ESS}_{t^{*}}(\theta^{*})\neq0$, and that the two
+branch programs (reset applied at $t^{*}$ versus skipped) produce different
+values of some later increment at $\theta^{*}$.  Then
+$\theta\mapsto\widehat L^{N}(\theta)$ is discontinuous at $\theta^{*}$, and
+no same-scalar derivative claim holds across the crossing.
+\end{proposition}
+
+\begin{proof}
+By the implicit function theorem the crossing set is locally a hypersurface
+separating two open regions; on one side the executed program is the
+reset-at-$t^{*}$ branch, on the other the skip branch.  Each branch value is
+continuous on its closed side, and their limits at $\theta^{*}$ are the two
+branch values at $\theta^{*}$, which differ by hypothesis (the carried
+clouds differ from $t^{*}$ on, and by assumption some later increment
+differs).  A function with unequal one-sided limits is discontinuous.  The
+final statement follows because a total derivative of $\widehat L^{N}$ at
+$\theta^{*}$ requires continuity there.  Consequently $\theta$-independent
+reset schedules are the safe policy for the repository's fixed-branch score
+contract.  Parameter-dependent branches are not mathematically impossible in
+general, but would require separately verified value and derivative matching at
+every boundary (or a smooth gate).
+\end{proof}
+
+\section{Claim ledger and non-claims}
+\label{sec:gsv-claims}
+
+\emph{Proved here:}
+Propositions~\ref{prop:gsv-tangent-recursion}--\ref{prop:gsv-gn-gain}
+(recursion, increment tangent, stage-gain bounds);
+Proposition~\ref{prop:gsv-cubature-design-moments} (design defect
+identities); Propositions~\ref{prop:gsv-whitened-design-identities},
+\ref{prop:gsv-iid-gaussian-moments}, \ref{prop:gsv-delta-method},
+\ref{prop:gsv-genut-positivity} and
+Corollary~\ref{cor:gsv-design-tangent} (design repair);
+Propositions~\ref{prop:gsv-leapfrog-volume}--\ref{prop:gsv-mh-invariance}
+and Corollary~\ref{cor:gsv-surrogate-force} (surrogate-force HMC);
+Propositions~\ref{prop:gsv-fisher-identity}--\ref{prop:gsv-backward-recursion}
+(Fisher identity and backward recursion);
+Proposition~\ref{prop:gsv-ess-branch} (branch warning).
+
+\emph{Cited, not re-verified locally:} the $O(T)$ versus $O(T^{2})$
+variance-growth rates of Remark~\ref{rem:gsv-pds-boundary}; the primary
+Poyiadjis--Doucet--Singh PDF is not yet available as a valid local copy.
+
+\emph{Hypotheses, explicitly not theorems:} a positive finite-time directional
+growth summary on the Austria diagonal-only route
+(Remark~\ref{rem:gsv-lyapunov}); the causal attribution of the observed
+score variance to the design defect
+(Remark~\ref{rem:gsv-defect-consequence}); the $O_p(N^{-1})$
+whitening-versus-studentization gap (Remark~\ref{rem:gsv-whitening-gap}).
+
+\emph{Non-claims:} nothing here establishes an exact-posterior score,
+unbiasedness of $\widehat L^{N}$, variance superiority of any repair,
+acceptance rates or mixing of surrogate-force HMC, or any default, HMC, or
+leaderboard promotion.  Every proposed run requires its own experiment plan
+with an evidence contract, fresh tuning scope, and untouched claim seeds.
+
+\section{Code and artifact anchors (non-mathematical)}
+\label{sec:gsv-anchors}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.42\textwidth}p{0.52\textwidth}@{}}
+\toprule
+Object in this note & Repository anchor \\
+\midrule
+Tangent recursion \eqref{eq:gsv-recursion} &
+\texttt{cubature\_genut\_filter.py}, \texttt{time\_body} (466--698) \\
+Increment tangent \eqref{eq:gsv-increment-tangent} &
+\texttt{cubature\_genut\_filter.py} (533--544) \\
+Affine tangent \eqref{eq:gsv-affine-tangent} &
+\texttt{ledh\_contract\_e\_reset\_tf.py} (319--328) \\
+GN coefficient tangent \eqref{eq:gsv-gn-tangent} &
+\texttt{higher\_moment\_contract\_e.py} (421--458) \\
+Cubature design of
+Prop.~\ref{prop:gsv-cubature-design-moments} &
+\texttt{cubature\_genut\_candidate.py}, \texttt{cubature\_design} (129--144) \\
+GenUT positivity boundary &
+\texttt{cubature\_genut\_candidate.py},
+\texttt{genut\_design}/\texttt{replicate\_positive\_genut} \\
+Chapter score proposition &
+\texttt{docs/chapters/ch32c\_entropic\_ot\_sinkhorn.tex} (2342--2371) \\
+Austria empirical anchors &
+\texttt{docs/plans/bayesfilter-austria-sir-pairwise-moment-genut-score-trial-result-2026-07-30.md} \\
+2026-07-30 code audit &
+\texttt{docs/plans/bayesfilter-genut-score-computation-audit-result-2026-07-30.md} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}

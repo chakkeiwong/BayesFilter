@@ -1,0 +1,591 @@
+{
+  "arm": {
+    "amplitude_scale": 1.0,
+    "learning_rate": 0.0003,
+    "perturbation_scale": 0.05,
+    "rank": 2,
+    "steps": 32
+  },
+  "audit_id": "i01_r2_amp1_pert05_lr3e4",
+  "final_metrics": {
+    "child_likelihood_score": [
+      -0.004825898492089456,
+      0.0426116497227186,
+      0.16146388534478234
+    ],
+    "child_point_score_standard_deviation": [
+      0.04370259970299169,
+      0.0425691563379085,
+      0.05424232231139757
+    ],
+    "importance_effective_sample_size": 3510.4069079228475,
+    "loss": 2.9493114755382086,
+    "normalized_score_residual_rms": [
+      0.9999697584507151,
+      0.999449064019707,
+      0.9749223180091627
+    ],
+    "score_residual_rms": [
+      73.42825118410376,
+      19.253400278706682,
+      0.7650414805986885
+    ],
+    "target_likelihood_score": [
+      -6.535266579850989,
+      2.274578225563323,
+      -4.915279225866408
+    ],
+    "target_point_score_rms": [
+      73.43047183533677,
+      19.26401351687798,
+      0.7847204505082407
+    ]
+  },
+  "gates": {
+    "coordinatewise_normalized_rms": false,
+    "finite": true,
+    "importance_ess": true,
+    "loss_reduction": false,
+    "memory_under_6_gib": true,
+    "nonconstant_score_field": false,
+    "origin_value": true,
+    "passed": false,
+    "wall_time": true
+  },
+  "gpu_allocator": {
+    "current": 5355264,
+    "peak": 72465408
+  },
+  "initial_metrics": {
+    "child_likelihood_score": [
+      0.041379772066608506,
+      0.011098631707668716,
+      0.05469494534988781
+    ],
+    "child_point_score_standard_deviation": [
+      0.05106898025743595,
+      0.03404590979535182,
+      0.031476365480460275
+    ],
+    "importance_effective_sample_size": 3510.4069079228475,
+    "loss": 2.9868945161605973,
+    "normalized_score_residual_rms": [
+      1.000091357408691,
+      0.9999404485703225,
+      0.9933936240534372
+    ],
+    "score_residual_rms": [
+      73.4371802529626,
+      19.262866317331724,
+      0.7795362921992272
+    ],
+    "target_likelihood_score": [
+      -6.535266579850989,
+      2.274578225563323,
+      -4.915279225866408
+    ],
+    "target_point_score_rms": [
+      73.43047183533677,
+      19.26401351687798,
+      0.7847204505082407
+    ]
+  },
+  "loss_ratio": 0.9874173525649983,
+  "nonclaims": [
+    "training-only initializer audit is not validation or selection evidence",
+    "no T1 score admission, T2, HMC, superiority, or production claim"
+  ],
+  "origin_child_score": [
+    -0.0048258984920932415,
+    0.042611649722714896,
+    0.16146388534478162
+  ],
+  "origin_child_value": -31.1290512231882,
+  "parent_identity": "e4b56526205eb50c3d2aa3b8a8ce6ce27539aa5ab50ad286380136db28ed2b59",
+  "parent_value": -31.1290512231882,
+  "run_manifest": {
+    "command": [
+      "scripts/run_zhao_cui_austria_sir_parameter_density_t1.py",
+      "--initializer-audit",
+      "i01_r2_amp1_pert05_lr3e4",
+      "--output-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-parameter-density-t1-20260801/initializer-audit-frozen-basis-v1/i01_r2_amp1_pert05_lr3e4",
+      "--max-seconds",
+      "480"
+    ],
+    "device": [
+      "/device:GPU:0"
+    ],
+    "dtype": "float64",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "git_status_short": [
+      "M bayesfilter/highdim/bases.py",
+      " M bayesfilter/highdim/cubature_genut_adapters.py",
+      " M bayesfilter/highdim/cubature_genut_candidate.py",
+      " M bayesfilter/highdim/cubature_genut_filter.py",
+      " M bayesfilter/highdim/filtering.py",
+      " M bayesfilter/highdim/higher_moment_contract_e.py",
+      " M bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py",
+      " M bayesfilter/highdim/ledh_contract_e_identity.py",
+      " M bayesfilter/highdim/squared_tt.py",
+      " M bayesfilter/highdim/transport.py",
+      " M bayesfilter/highdim/ukf_initializer.py",
+      " M bayesfilter/highdim/ukf_scout.py",
+      " M bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py",
+      " M bayesfilter/highdim/zhao_cui_predator_prey_fixed_variant_tf.py",
+      " M bayesfilter/inference/neutra_end_to_end.py",
+      " M bayesfilter/inference/neutra_training_legacy.py",
+      " M bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      " M bayesfilter/testing/neutra_model_registry_tf.py",
+      " M bayesfilter/testing/sir_filter_neutra_target_design_tf.py",
+      " M docs/benchmarks/run_contract_e_tp_phase6_zhao_cui_comparator.py",
+      " M docs/benchmarks/run_fixed_sir_sgqf_validation.py",
+      " M docs/benchmarks/run_multimodel_neutra_p6_sir_target_design.py",
+      " M docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py",
+      " M docs/chapters/ch32c_entropic_ot_sinkhorn.tex",
+      " M docs/plans/bayesfilter-pp-ukf-true-hmc-validation-plan-2026-07-22.md",
+      " M scripts/p76_bounded_ukf_minibatch_pilot.py",
+      " M scripts/p76_generated_corrected_metric_diagnostic.py",
+      " M scripts/p77_budgeted_corrected_metric_training.py",
+      " M tests/highdim/test_cubature_genut_adapters.py",
+      " M tests/highdim/test_cubature_genut_candidate.py",
+      " M tests/highdim/test_fixed_sir_sgqf_tf.py",
+      " M tests/highdim/test_higher_moment_contract_e.py",
+      " D tests/highdim/test_p52_ukf_scout.py",
+      " M tests/highdim/test_p57_m4_source_kr_cdf_maps.py",
+      " D tests/highdim/test_p76_bounded_ukf_minibatch_pilot.py",
+      " D tests/highdim/test_p76_generated_corrected_metric_diagnostic.py",
+      " D tests/highdim/test_p77_budgeted_corrected_metric_training.py",
+      " M tests/highdim/test_zhao_cui_predator_prey_fixed_variant_tf.py",
+      " M tests/test_exact_sv_sgqf_neutra_target.py",
+      " M tests/test_experimental_batched_svd_sigma_point_tf.py",
+      " M tests/test_neutra_all_models_end_to_end_contract.py",
+      " M tests/test_neutra_training.py",
+      " M tests/test_sir_filter_neutra_target_design.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_centered_density_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_fixed_variant_phase0.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_fixed_variant_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_artifact_compat.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_sampler_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t1_score_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_boundary_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_prepared_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_tail_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_target_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_lane_b_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_parameter_child_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_campaign_config.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_proposal_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_austria_sir_source_replica_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_moment_teacher.py",
+      "?? bayesfilter/highdim/zhao_cui_moment_teacher_als.py",
+      "?? bayesfilter/highdim/zhao_cui_moment_teacher_lgssm_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py",
+      "?? bayesfilter/highdim/zhao_cui_moment_teacher_xla.py",
+      "?? bayesfilter/inference/neutra_broad_grid.py",
+      "?? bayesfilter/testing/ksc_gaussian_sum_ukf_neutra_target_tf.py",
+      "?? bayesfilter/testing/zhao_cui_actual_sv_target_tf.py",
+      "?? docs/bayesfilter-genut-score-variance-problem-and-repair-note-2026-07-31.tex",
+      "?? docs/benchmarks/aggregate_zhao_cui_moment_teacher_lgssm_claim_shards.py",
+      "?? docs/benchmarks/aggregate_zhao_cui_moment_teacher_score_mcse_transfer.py",
+      "?? docs/benchmarks/aggregate_zhao_cui_moment_teacher_tf32_performance.py",
+      "?? docs/benchmarks/artifacts/austria_sir_pairwise_moment_genut_score_20260730/",
+      "?? docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260731/",
+      "?? docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260801_n4032/",
+      "?? docs/benchmarks/artifacts/higher_moment_genut_retuning_20260723/",
+      "?? docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/",
+      "?? docs/benchmarks/artifacts/pairwise_moment_genut_cross_model_20260730/",
+      "?? docs/benchmarks/artifacts/zhao_cui_austria_sir_observed_data_score_20260730/",
+      "?? docs/benchmarks/artifacts/zhao_cui_austria_sir_source_replica_gap_closure_20260730/",
+      "?? docs/benchmarks/artifacts/zhao_cui_moment_teacher_20260730/",
+      "?? docs/benchmarks/artifacts/zhao_cui_moment_teacher_actual_sv_20260731/",
+      "?? docs/benchmarks/artifacts/zhao_cui_moment_teacher_integration_20260730/",
+      "?? docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/",
+      "?? docs/benchmarks/plot_austria_physical_vs_particle_growth.py",
+      "?? docs/benchmarks/run_austria_sir_pairwise_moment_genut_score_trial.py",
+      "?? docs/benchmarks/run_genut_score_variance_repair_validation.py",
+      "?? docs/benchmarks/run_higher_moment_genut_retuning_trial.py",
+      "?? docs/benchmarks/run_moment_retuned_genut_whole_leaderboard.py",
+      "?? docs/benchmarks/run_neutra_ksc_gaussian_sum_ukf_admission_20260731.py",
+      "?? docs/benchmarks/run_neutra_ksc_ukf_repair_diagnostic_20260731.py",
+      "?? docs/benchmarks/run_neutra_svx_sgqf_repair_admission_20260731.py",
+      "?? docs/benchmarks/run_neutra_svx_zc_monograph_admission_20260731.py",
+      "?? docs/benchmarks/run_pairwise_moment_genut_cross_model_trial.py",
+      "?? docs/benchmarks/run_zhao_cui_moment_teacher_actual_sv.py",
+      "?? docs/benchmarks/run_zhao_cui_moment_teacher_integration_gpu_gate.py",
+      "?? docs/benchmarks/run_zhao_cui_moment_teacher_lgssm_horizon.py",
+      "?? docs/benchmarks/run_zhao_cui_moment_teacher_mechanics.py",
+      "?? docs/benchmarks/run_zhao_cui_moment_teacher_nonlinear_feasibility.py",
+      "?? docs/benchmarks/run_zhao_cui_moment_teacher_score_mcse_transfer.py",
+      "?? docs/benchmarks/run_zhao_cui_moment_teacher_xla_gpu_gate.py",
+      "?? docs/plans/artifacts/bayesfilter-neutra-four-blocked-target-repair-20260731/",
+      "?? docs/plans/artifacts/bayesfilter-neutra-remaining-models-20260730/",
+      "?? docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/",
+      "?? docs/plans/artifacts/bayesfilter-svx-zc-monograph-admission-20260731/",
+      "?? docs/plans/artifacts/zhao-cui-austria-sir-fixed-variant-baseline-recovery-20260730/",
+      "?? docs/plans/artifacts/zhao-cui-austria-sir-lane-b-b2-sampler-20260731/",
+      "?? docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/",
+      "?? docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-score-20260731/",
+      "?? docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/",
+      "?? docs/plans/artifacts/zhao-cui-austria-sir-parameter-density-t1-20260801/",
+      "?? docs/plans/bayesfilter-austria-sir-pairwise-moment-genut-score-trial-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-austria-sir-pairwise-moment-genut-score-trial-reset-memo-2026-07-30.md",
+      "?? docs/plans/bayesfilter-austria-sir-pairwise-moment-genut-score-trial-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-genut-score-audit-followup-handoff-2026-07-30.md",
+      "?? docs/plans/bayesfilter-genut-score-computation-audit-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-genut-score-estimator-options-mathematical-note-2026-07-31.md",
+      "?? docs/plans/bayesfilter-genut-score-growth-n4032-comparison-plan-2026-08-01.md",
+      "?? docs/plans/bayesfilter-genut-score-growth-n4032-comparison-result-2026-08-01.md",
+      "?? docs/plans/bayesfilter-genut-score-note-mathdevmcp-audit-ledger-2026-07-31.md",
+      "?? docs/plans/bayesfilter-genut-score-variance-repair-validation-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-genut-score-variance-repair-validation-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-higher-moment-genut-retuned-value-score-comparison-2026-07-23.md",
+      "?? docs/plans/bayesfilter-higher-moment-genut-retuning-reset-memo-2026-07-23.md",
+      "?? docs/plans/bayesfilter-higher-moment-genut-retuning-trial-plan-2026-07-23.md",
+      "?? docs/plans/bayesfilter-higher-moment-genut-retuning-trial-result-2026-07-23.md",
+      "?? docs/plans/bayesfilter-moment-retuned-genut-whole-leaderboard-plan-2026-07-23.md",
+      "?? docs/plans/bayesfilter-moment-retuned-genut-whole-leaderboard-reset-memo-2026-07-23.md",
+      "?? docs/plans/bayesfilter-moment-retuned-genut-whole-leaderboard-result-2026-07-23.md",
+      "?? docs/plans/bayesfilter-neutra-four-blocked-target-repair-and-admission-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-neutra-four-blocked-target-repair-reset-memo-2026-07-31.md",
+      "?? docs/plans/bayesfilter-neutra-four-blocked-target-repair-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-neutra-remaining-models-broad-grid-continuation-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-pairwise-moment-genut-cross-model-reset-memo-2026-07-30.md",
+      "?? docs/plans/bayesfilter-pairwise-moment-genut-lgssm-ksc-predator-prey-trial-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-pairwise-moment-genut-lgssm-ksc-predator-prey-trial-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-pp-ukf-neutra-closeout-reset-memo-2026-07-30.md",
+      "?? docs/plans/bayesfilter-sir-ukf-neutra-owner-exclusion-reset-memo-2026-07-31.md",
+      "?? docs/plans/bayesfilter-sir-ukf-neutra-target-specific-campaign-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-svx-zc-fit-residual-decomposition-diagnostic-2026-08-01.md",
+      "?? docs/plans/bayesfilter-svx-zc-monograph-fixed-branch-admission-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-svx-zc-monograph-fixed-branch-admission-reset-memo-2026-07-31.md",
+      "?? docs/plans/bayesfilter-svx-zc-monograph-fixed-branch-admission-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-svx-zc-ukf-initializer-default-admission-plan-2026-08-01.md",
+      "?? docs/plans/bayesfilter-svx-zc-ukf-initializer-default-admission-reset-memo-2026-08-01.md",
+      "?? docs/plans/bayesfilter-svx-zc-ukf-initializer-default-admission-result-2026-08-01.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-baseline-recovery-execution-note-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-baseline-recovery-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-baseline-recovery-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-parameter-extension-claude-algorithm-review-memo-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-parameter-extension-master-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-parameter-extension-reset-memo-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-phase0-execution-note-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-phase0-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-b2-sampler-admission-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-b2-sampler-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-parameter-child-zero-slice-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-parameter-child-zero-slice-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t1-execution-note-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t1-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t1-score-20260731-selection.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t1-score-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t1-score-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-pilot-execution-note-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-untouched-tail-repair-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-observed-data-score-active-implementation-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-observed-data-score-implementation-handoff-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-observed-data-score-reset-memo-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-observed-data-score-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-parameter-conditioned-density-jvp-phase1-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-parameter-conditioned-density-jvp-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-parameter-density-jvp-phase2-result-2026-08-01.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-parameter-density-t1-campaign-plan-2026-08-01.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-parameterized-source-replica-gap-closure-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-parameterized-source-replica-gap-closure-reset-memo-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-austria-sir-parameterized-source-replica-gap-closure-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-actual-sv-campaign-plan-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-actual-sv-campaign-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-integration-campaign-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-integration-campaign-result-2026-07-31.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-reset-memo-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-score-mcse-transfer-n4096-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-score-mcse-transfer-n4096-result-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-score-mcse-transfer-plan-2026-07-30.md",
+      "?? docs/plans/bayesfilter-zhao-cui-moment-teacher-tf32-performance-decision-2026-07-30.md",
+      "?? scripts/claim_zhao_cui_austria_sir_lane_b_t2.py",
+      "?? scripts/prepare_zhao_cui_austria_sir_lane_b_t2.py",
+      "?? scripts/prepare_zhao_cui_austria_sir_lane_b_t2_tail.py",
+      "?? scripts/run_zhao_cui_austria_sir_fixed_variant_phase0.py",
+      "?? scripts/run_zhao_cui_austria_sir_fixed_variant_recovery_inventory.py",
+      "?? scripts/run_zhao_cui_austria_sir_lane_b_b2_sampler.py",
+      "?? scripts/run_zhao_cui_austria_sir_lane_b_t1.py",
+      "?? scripts/run_zhao_cui_austria_sir_lane_b_t1_score.py",
+      "?? scripts/run_zhao_cui_austria_sir_lane_b_t2.py",
+      "?? scripts/run_zhao_cui_austria_sir_lane_b_t2_boundary.py",
+      "?? scripts/run_zhao_cui_austria_sir_observed_data_score.py",
+      "?? scripts/run_zhao_cui_austria_sir_parameter_density_t1.py",
+      "?? scripts/run_zhao_cui_austria_sir_source_replica_t1.py",
+      "?? scripts/select_zhao_cui_austria_sir_lane_b_t1.py",
+      "?? scripts/select_zhao_cui_austria_sir_lane_b_t2.py",
+      "?? scripts/select_zhao_cui_austria_sir_parameter_density_t1.py",
+      "?? tests/highdim/test_select_zhao_cui_austria_sir_lane_b_t1.py",
+      "?? tests/highdim/test_select_zhao_cui_austria_sir_lane_b_t2.py",
+      "?? tests/highdim/test_svx_zc_ukf_initializer.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_centered_density_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_fixed_variant_phase0.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_fixed_variant_recovery_inventory.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_fixed_variant_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_lane_b_sampler_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_lane_b_t1_score_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_lane_b_t2_boundary_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_lane_b_t2_tail_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_lane_b_t2_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_lane_b_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_parameter_child_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_parameter_density_campaign.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_proposal_tf.py",
+      "?? tests/highdim/test_zhao_cui_austria_sir_source_replica_tf.py",
+      "?? tests/highdim/test_zhao_cui_moment_teacher.py",
+      "?? tests/highdim/test_zhao_cui_moment_teacher_actual_sv.py",
+      "?? tests/highdim/test_zhao_cui_moment_teacher_als.py",
+      "?? tests/highdim/test_zhao_cui_moment_teacher_integration.py",
+      "?? tests/highdim/test_zhao_cui_moment_teacher_nonlinear.py",
+      "?? tests/highdim/test_zhao_cui_moment_teacher_xla.py",
+      "?? tests/test_ksc_gaussian_sum_ukf_neutra_target.py",
+      "?? tests/test_neutra_broad_grid.py",
+      "?? tests/test_neutra_four_blocked_target_repair.py"
+    ],
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "host": "DESKTOP-RF1Q5IJ",
+    "jit_compile": true,
+    "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-parameter-density-t1-campaign-plan-2026-08-01.md",
+    "python": "3.11.14",
+    "random_seeds": {
+      "residual_initialization": 85701,
+      "training_initial": 85201,
+      "training_transition": 85202,
+      "untouched_initial": 85501,
+      "untouched_prefix": 85601,
+      "untouched_transition": 85502,
+      "validation_initial": 85301,
+      "validation_prefix": 85401,
+      "validation_transition": 85302
+    },
+    "source_sha256": {
+      "bayesfilter/highdim/zhao_cui_austria_sir_centered_density_tf.py": "d8e0958d67bf847170d879b90d16932223bed7a5e0b59fb0a1320c849bb79da1",
+      "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_campaign_config.py": "e3873bdb36bd568aa7ceda9aad17a1b103b93b90e1cfccf94b7d38aeafdcf5ef",
+      "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py": "893a921eca12d862fa2349f9fcd6c53bff6e5fd78db00eb54eeaf434fcf39da6",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-02/p05_r4_b5_lr3e4_l1_1e9/artifact/manifest.json": "c25cf20c8fa79e31660b9d4e89c8573135727de30dcd31fa125495f4ad5367d3",
+      "docs/plans/bayesfilter-zhao-cui-austria-sir-parameter-density-t1-campaign-plan-2026-08-01.md": "9d91c3c9c1188df4c8aa8a2fb1e3dadc43e8c080064aeb5804e698eaa0b098f6",
+      "scripts/run_zhao_cui_austria_sir_parameter_density_t1.py": "ee581e72c06076e85ce795abd50f8e69b05b0c6142fdbbac612a0cc47893ba20",
+      "scripts/select_zhao_cui_austria_sir_parameter_density_t1.py": "216198ac5c9e9ba84db5c65d9b5c648b01883045a9e9749e05e49f8d34109de6"
+    },
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 30.073849337990396
+  },
+  "schema_version": "bayesfilter.zhao_cui_austria_sir_parameter_density_initializer_audit.v1",
+  "status": "REJECTED_TRAINING_ONLY_INITIALIZER",
+  "trace": [
+    {
+      "child_likelihood_score_before_update": [
+        0.04137977206661114,
+        0.011098631707668638,
+        0.05469494534988938
+      ],
+      "child_point_score_standard_deviation_before_update": [
+        0.05106898025743595,
+        0.03404590979535181,
+        0.031476365480460275
+      ],
+      "gradient_norm": 0.19334108675857825,
+      "importance_effective_sample_size": 3510.4069079228475,
+      "loss_before_update": 2.986894516160597,
+      "maximum_core_magnitude": 1.1627732794667298,
+      "normalized_score_residual_rms_before_update": [
+        1.0000913574086907,
+        0.9999404485703225,
+        0.9933936240534371
+      ],
+      "score_residual_rms_before_update": [
+        73.43718025296259,
+        19.262866317331724,
+        0.779536292199227
+      ],
+      "target_likelihood_score": [
+        -6.53526657985099,
+        2.2745782255633227,
+        -4.915279225866408
+      ],
+      "target_point_score_rms": [
+        73.43047183533677,
+        19.26401351687798,
+        0.7847204505082407
+      ],
+      "update": 1
+    },
+    {
+      "child_likelihood_score_before_update": [
+        0.025435173174269972,
+        0.017229833073371722,
+        0.07465428324832164
+      ],
+      "child_point_score_standard_deviation_before_update": [
+        0.047687812148264154,
+        0.03474678615521976,
+        0.03435640400456558
+      ],
+      "gradient_norm": 0.21548927441814258,
+      "importance_effective_sample_size": 3510.4069079228475,
+      "loss_before_update": 2.9810875685263305,
+      "maximum_core_magnitude": 1.1648734701926462,
+      "normalized_score_residual_rms_before_update": [
+        1.0000602296871164,
+        0.9998494966241028,
+        0.9905897685848621
+      ],
+      "score_residual_rms_before_update": [
+        73.43489452968022,
+        19.261114217810363,
+        0.7773360494727669
+      ],
+      "target_likelihood_score": [
+        -6.53526657985099,
+        2.2745782255633227,
+        -4.915279225866408
+      ],
+      "target_point_score_rms": [
+        73.43047183533677,
+        19.26401351687798,
+        0.7847204505082407
+      ],
+      "update": 8
+    },
+    {
+      "child_likelihood_score_before_update": [
+        0.010633534324727795,
+        0.0250544591281017,
+        0.09888987820948252
+      ],
+      "child_point_score_standard_deviation_before_update": [
+        0.04495729381275173,
+        0.03624237706601171,
+        0.03882679232126579
+      ],
+      "gradient_norm": 0.25005445312964963,
+      "importance_effective_sample_size": 3510.4069079228475,
+      "loss_before_update": 2.9733365829249543,
+      "maximum_core_magnitude": 1.1672903062995372,
+      "normalized_score_residual_rms_before_update": [
+        1.0000289597853012,
+        0.9997401026975414,
+        0.9868122362303744
+      ],
+      "score_residual_rms_before_update": [
+        73.43259836603569,
+        19.25900685173042,
+        0.7743717425817438
+      ],
+      "target_likelihood_score": [
+        -6.53526657985099,
+        2.2745782255633227,
+        -4.915279225866408
+      ],
+      "target_point_score_rms": [
+        73.43047183533677,
+        19.26401351687798,
+        0.7847204505082407
+      ],
+      "update": 16
+    },
+    {
+      "child_likelihood_score_before_update": [
+        0.0007054273403150457,
+        0.03341184016228538,
+        0.12588240062999473
+      ],
+      "child_point_score_standard_deviation_before_update": [
+        0.0436076345426889,
+        0.03865112752230601,
+        0.044897224437318396
+      ],
+      "gradient_norm": 0.29555329269022157,
+      "importance_effective_sample_size": 3510.4069079228475,
+      "loss_before_update": 2.9636664131770933,
+      "maximum_core_magnitude": 1.169767299995421,
+      "normalized_score_residual_rms_before_update": [
+        1.0000008091339163,
+        0.9996174539620534,
+        0.9820538379554495
+      ],
+      "score_residual_rms_before_update": [
+        73.43053125042204,
+        19.256644144832148,
+        0.7706377301437471
+      ],
+      "target_likelihood_score": [
+        -6.53526657985099,
+        2.2745782255633227,
+        -4.915279225866408
+      ],
+      "target_point_score_rms": [
+        73.43047183533677,
+        19.26401351687798,
+        0.7847204505082407
+      ],
+      "update": 24
+    },
+    {
+      "child_likelihood_score_before_update": [
+        -0.004481077987685262,
+        0.041629966552310924,
+        0.1571559192904223
+      ],
+      "child_point_score_standard_deviation_before_update": [
+        0.04360834158748341,
+        0.04206614911645563,
+        0.053043846807738854
+      ],
+      "gradient_norm": 0.35419697116152654,
+      "importance_effective_sample_size": 3510.4069079228475,
+      "loss_before_update": 2.9511354416747233,
+      "maximum_core_magnitude": 1.1723650105139563,
+      "normalized_score_residual_rms_before_update": [
+        0.9999732972315059,
+        0.9994699236172213,
+        0.9758323207822435
+      ],
+      "score_residual_rms_before_update": [
+        73.42851103844694,
+        19.253802118275154,
+        0.7657555783847442
+      ],
+      "target_likelihood_score": [
+        -6.53526657985099,
+        2.2745782255633227,
+        -4.915279225866408
+      ],
+      "target_point_score_rms": [
+        73.43047183533677,
+        19.26401351687798,
+        0.7847204505082407
+      ],
+      "update": 32
+    }
+  ],
+  "training_role": "training_only_initializer_audit"
+}

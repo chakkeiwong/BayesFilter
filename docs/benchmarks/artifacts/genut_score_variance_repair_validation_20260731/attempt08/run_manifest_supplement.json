@@ -1,0 +1,116 @@
+{
+  "artifact_status": "post_run_append_only_metadata_supplement",
+  "campaign_id": "genut-score-variance-repair-validation-20260731",
+  "command": {
+    "captured_exact_shell_command": null,
+    "entry_point_captured_in_original_manifest": "docs/benchmarks/run_genut_score_variance_repair_validation.py",
+    "reconstructed_invocation": "python docs/benchmarks/run_genut_score_variance_repair_validation.py --output-root docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260731/attempt08",
+    "status": "reconstructed_after_run_from_runner_cli_and_output_root_not_an_exact_contemporaneous_shell_record"
+  },
+  "controls": {
+    "austria_sir": {
+      "dimension": 18,
+      "horizon": 20,
+      "particles": 1008,
+      "particle_seeds": [98201, 98202, 98203]
+    },
+    "finite_time_directional_growth": {
+      "probe_columns": 8,
+      "role": "explanatory_diagnostic_not_asymptotic_lyapunov_estimate"
+    },
+    "lgssm": {
+      "dimension": 3,
+      "horizon": 50,
+      "particles": 1008,
+      "particle_seeds": [98201, 98202, 98203]
+    },
+    "whitening_seeds": [71001, 71002, 71003]
+  },
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "host": "DESKTOP-RF1Q5IJ",
+    "python": "3.11.14",
+    "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "tensorflow": "2.19.1"
+  },
+  "git": {
+    "commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "working_tree_status": "dirty",
+    "working_tree_warning": "The result binds the commit and listed source hashes; the run used uncommitted working-tree changes."
+  },
+  "gpu": {
+    "artifact_recorded_logical_devices": ["/device:GPU:0"],
+    "driver_version_verified_post_run": "591.86",
+    "memory_growth_verified_before_logical_device_initialization": true,
+    "memory_policy_mode": "memory_growth",
+    "model_verified_post_run": "NVIDIA GeForce RTX 4080 SUPER",
+    "tf32": true,
+    "total_memory_mib_verified_post_run": 16376,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "xla_jit_compile": true
+  },
+  "history": [
+    {
+      "attempt": "attempt01",
+      "classification": "infrastructure_harness_failure",
+      "failure": "TensorFlow triangular-solve API typo"
+    },
+    {
+      "attempt": "attempt02",
+      "classification": "implementation_failure",
+      "failure": "whitening solve orientation and shape mismatch"
+    },
+    {
+      "attempt": "attempt03",
+      "classification": "implementation_failure",
+      "failure": "probe tangent bundle passed incorrectly to ForwardAccumulator"
+    },
+    {
+      "attempt": "attempt04",
+      "classification": "artifact_harness_failure",
+      "failure": "output directory was pre-created; runner failed closed"
+    },
+    {
+      "attempt": "attempt05",
+      "classification": "successful_partial_scope",
+      "result": "D1 and whitening validation completed"
+    },
+    {
+      "attempt": "attempt06",
+      "classification": "implementation_failure",
+      "failure": "Gaussian-target probe tangent width used model parameter width"
+    },
+    {
+      "attempt": "attempt07",
+      "classification": "implementation_failure",
+      "failure": "opposite tangent-width mismatch in the main evaluator"
+    },
+    {
+      "attempt": "attempt08",
+      "classification": "successful_terminal_scope",
+      "result": "D1, whitening, and Gaussian-target isolation completed"
+    }
+  ],
+  "output": {
+    "original_manifest": "docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260731/attempt08/run_manifest.json",
+    "plan": "docs/plans/bayesfilter-genut-score-variance-repair-validation-plan-2026-07-31.md",
+    "result_json": "docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260731/attempt08/result.json",
+    "result_markdown": "docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260731/attempt08/result.md",
+    "terminal_result": "docs/plans/bayesfilter-genut-score-variance-repair-validation-result-2026-07-31.md"
+  },
+  "result": {
+    "hard_valid": true,
+    "result_json_sha256": "ebb969a4127b5738e537b9de48b9353e709aaffe0d221113247092fe3ea56925",
+    "wall_time_seconds": 771.9789358099806,
+    "whitening_identity_pass": true
+  },
+  "schema": "bayesfilter.genut_score_variance_repair_validation_manifest_supplement.v1",
+  "source_hashes": {
+    "bayesfilter/highdim/cubature_genut_filter.py": "5cca8657a08445e8c8d94ea69d279da6950b2f5e53c80e5a3a955b115162b236",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "2dee887c224a10cab112e809f2245f673ee8eff97ca73cf5f08613686fb40d4b",
+    "docs/bayesfilter-genut-score-variance-problem-and-repair-note-2026-07-31.tex": "b6065db1d8ede3cefe9d633674e33ebb510db9ebe6833d685c30ba3d2c2eec01",
+    "docs/benchmarks/run_genut_score_variance_repair_validation.py": "0b00b1cff5153f22d9cf1c8d2ba8c1e6461fc6e52cc8dd0c62738aebcc6f5ca3",
+    "docs/plans/bayesfilter-genut-score-estimator-options-mathematical-note-2026-07-31.md": "6cf166c178f9a2967dc9ef161e6a969f688dd9a18c6b1e4d4eacf0dac5091445"
+  },
+  "supplement_created_at": "2026-08-01T00:32:29+08:00"
+}

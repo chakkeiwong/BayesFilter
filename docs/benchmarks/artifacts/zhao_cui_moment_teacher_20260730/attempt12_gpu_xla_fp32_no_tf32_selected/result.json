@@ -1,0 +1,399 @@
+{
+  "candidate_kernel_executed": true,
+  "command": "docs/benchmarks/run_zhao_cui_moment_teacher_xla_gpu_gate.py --no-tf32 --output docs/benchmarks/artifacts/zhao_cui_moment_teacher_20260730/attempt12_gpu_xla_fp32_no_tf32_selected",
+  "device": {
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "conda_env": "tf-gpu",
+    "jit_compile": true,
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "tensorflow": "2.19.1",
+    "tf32": false
+  },
+  "execution_classification": "selected_moment_teacher_fp32_no_tf32_mechanics_gate",
+  "execution_route_id": "zhao_cui_moment_teacher_gpu_fp32_no_tf32_xla_v1",
+  "fp32_fp64_parity": {
+    "absolute_veto": 0.002,
+    "max_abs_error": 5.531339315467676e-07,
+    "max_rel_error": 0.001674362206361648,
+    "passed": true,
+    "relative_veto": 0.005,
+    "role": "fixture_mechanics_promotion_veto_not_model_accuracy",
+    "rows": [
+      {
+        "candidate_max_abs": 1.5580275058746338,
+        "max_abs_error": 4.541574902816592e-07,
+        "max_rel_error": 1.1389519348729347e-06,
+        "max_rel_error_element": {
+          "absolute_error": 1.2107125056670665e-07,
+          "candidate": 0.1063004583120346,
+          "flat_index": 2,
+          "reference": 0.10630057938328517
+        },
+        "output_index": 0,
+        "output_name": "final_cores",
+        "reference_max_abs": 1.558027960032124
+      },
+      {
+        "candidate_max_abs": 0.0026768462266772985,
+        "max_abs_error": 1.2936834525942992e-08,
+        "max_rel_error": 2.9613695882299937e-05,
+        "max_rel_error_element": {
+          "absolute_error": 3.319007352468677e-09,
+          "candidate": 0.0001120800880016759,
+          "flat_index": 4,
+          "reference": 0.00011207676899432344
+        },
+        "output_index": 1,
+        "output_name": "final_core_tangents",
+        "reference_max_abs": 0.0026768591635118245
+      },
+      {
+        "candidate_max_abs": 1.27855384349823,
+        "max_abs_error": 5.531339315467676e-07,
+        "max_rel_error": 6.744948315714871e-07,
+        "max_rel_error_element": {
+          "absolute_error": 5.531339315467676e-07,
+          "candidate": 0.8200708627700806,
+          "flat_index": 510,
+          "reference": 0.8200714159040121
+        },
+        "output_index": 2,
+        "output_name": "marginal_values",
+        "reference_max_abs": 1.2785536205098031
+      },
+      {
+        "candidate_max_abs": 0.07596313208341599,
+        "max_abs_error": 4.165586963561507e-08,
+        "max_rel_error": 0.001674362206361648,
+        "max_rel_error_element": {
+          "absolute_error": 5.00536563464985e-09,
+          "candidate": 2.984410912176827e-06,
+          "flat_index": 389,
+          "reference": 2.989416277811477e-06
+        },
+        "output_index": 3,
+        "output_name": "marginal_tangents",
+        "reference_max_abs": 0.07596311044292359
+      },
+      {
+        "candidate_max_abs": 2.120129108428955,
+        "max_abs_error": 1.0189093657686499e-07,
+        "max_rel_error": 6.409340430189304e-08,
+        "max_rel_error_element": {
+          "absolute_error": 9.527259159369805e-08,
+          "candidate": 1.4864647388458252,
+          "flat_index": 0,
+          "reference": 1.4864648341184168
+        },
+        "output_index": 4,
+        "output_name": "normalizers",
+        "reference_max_abs": 2.1201290065380185
+      },
+      {
+        "candidate_max_abs": 0.8470072746276855,
+        "max_abs_error": 2.6441104361563106e-07,
+        "max_rel_error": 3.4860961017554854e-07,
+        "max_rel_error_element": {
+          "absolute_error": 2.6441104361563106e-07,
+          "candidate": 0.7584734559059143,
+          "flat_index": 0,
+          "reference": 0.7584731914948707
+        },
+        "output_index": 5,
+        "output_name": "skew",
+        "reference_max_abs": 0.8470072958222505
+      },
+      {
+        "candidate_max_abs": 0.8251395225524902,
+        "max_abs_error": 3.274274188447279e-07,
+        "max_rel_error": 4.928359781260494e-07,
+        "max_rel_error_element": {
+          "absolute_error": 3.0934598549414716e-07,
+          "candidate": 0.6276857852935791,
+          "flat_index": 2,
+          "reference": 0.6276854759475936
+        },
+        "output_index": 6,
+        "output_name": "kurtosis",
+        "reference_max_abs": 0.8251394975623422
+      },
+      {
+        "candidate_max_abs": 0.04737064614892006,
+        "max_abs_error": 6.978029196136326e-09,
+        "max_rel_error": 1.4730705175758548e-07,
+        "max_rel_error_element": {
+          "absolute_error": 6.978029196136326e-09,
+          "candidate": -0.04737064614892006,
+          "flat_index": 0,
+          "reference": -0.04737063917089086
+        },
+        "output_index": 7,
+        "output_name": "co_skew",
+        "reference_max_abs": 0.04737063917089086
+      },
+      {
+        "candidate_max_abs": 1.005336880683899,
+        "max_abs_error": 1.7724006240449341e-07,
+        "max_rel_error": 1.7640954840035058e-07,
+        "max_rel_error_element": {
+          "absolute_error": 1.7724006240449341e-07,
+          "candidate": 1.0047080516815186,
+          "flat_index": 1,
+          "reference": 1.0047078744414562
+        },
+        "output_index": 8,
+        "output_name": "co_kurtosis",
+        "reference_max_abs": 1.0053369947293427
+      },
+      {
+        "candidate_max_abs": 0.07805649936199188,
+        "max_abs_error": 3.725332094195455e-08,
+        "max_rel_error": 2.1545968328964655e-05,
+        "max_rel_error_element": {
+          "absolute_error": 4.183386179053847e-09,
+          "candidate": 0.00019415678980294615,
+          "flat_index": 1,
+          "reference": 0.0001941609731891252
+        },
+        "output_index": 9,
+        "output_name": "skew_tangents",
+        "reference_max_abs": 0.07805646210867094
+      },
+      {
+        "candidate_max_abs": 0.07826568931341171,
+        "max_abs_error": 5.762397066455538e-08,
+        "max_rel_error": 4.342733192734624e-06,
+        "max_rel_error_element": {
+          "absolute_error": 3.1607194553697274e-09,
+          "candidate": -0.0007278148550540209,
+          "flat_index": 1,
+          "reference": -0.0007278180157734763
+        },
+        "output_index": 10,
+        "output_name": "kurtosis_tangents",
+        "reference_max_abs": 0.07826563168944105
+      },
+      {
+        "candidate_max_abs": 0.0025781176518648863,
+        "max_abs_error": 1.0350157276107618e-09,
+        "max_rel_error": 4.370539402554769e-06,
+        "max_rel_error_element": {
+          "absolute_error": 1.0350157276107618e-09,
+          "candidate": -0.000236815438256599,
+          "flat_index": 1,
+          "reference": -0.00023681647327232662
+        },
+        "output_index": 11,
+        "output_name": "co_skew_tangents",
+        "reference_max_abs": 0.002578117604858732
+      },
+      {
+        "candidate_max_abs": 0.00026249943766742945,
+        "max_abs_error": 1.7825226703428558e-08,
+        "max_rel_error": 6.790116012529453e-05,
+        "max_rel_error_element": {
+          "absolute_error": 1.7825226703428558e-08,
+          "candidate": -0.00026249943766742945,
+          "flat_index": 0,
+          "reference": -0.0002625172628941329
+        },
+        "output_index": 12,
+        "output_name": "co_kurtosis_tangents",
+        "reference_max_abs": 0.0002625172628941329
+      }
+    ]
+  },
+  "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+  "gpu_allocator_after": {
+    "current": 56064,
+    "peak": 684544
+  },
+  "gpu_allocator_before": {
+    "current": 37632,
+    "peak": 331776
+  },
+  "hard_vetoes": {
+    "fp32_fp64_parity": false,
+    "invalid_recursion": false,
+    "missing_while": false,
+    "nonfinite_shape": false,
+    "pyfunc": 0
+  },
+  "measured_seconds": 3.5233044819906354,
+  "nonclaims": [
+    "no nonlinear filtering result",
+    "no leaderboard result",
+    "no repository-wide default change",
+    "no HMC readiness"
+  ],
+  "output_artifact": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_20260730/attempt12_gpu_xla_fp32_no_tf32_selected",
+  "passed": true,
+  "plan": "docs/plans/bayesfilter-zhao-cui-moment-teacher-plan-2026-07-30.md",
+  "recursion_graph": {
+    "has_while": true,
+    "operation_counts": {
+      "AddV2": 148,
+      "All": 14,
+      "BroadcastTo": 12,
+      "Cast": 17,
+      "Cholesky": 3,
+      "ConcatV2": 14,
+      "Const": 1031,
+      "Einsum": 98,
+      "EnsureShape": 4,
+      "Exp": 3,
+      "ExpandDims": 16,
+      "Fill": 18,
+      "GatherNd": 6,
+      "GatherV2": 21,
+      "Greater": 6,
+      "GreaterEqual": 3,
+      "Identity": 110,
+      "IsFinite": 13,
+      "Less": 9,
+      "LessEqual": 5,
+      "Lgamma": 6,
+      "Log": 1,
+      "LogicalAnd": 23,
+      "MatMul": 31,
+      "MatrixBandPart": 1,
+      "MatrixDiagPartV3": 1,
+      "MatrixDiagV3": 3,
+      "MatrixTriangularSolve": 10,
+      "Max": 3,
+      "Maximum": 9,
+      "Min": 4,
+      "Minimum": 2,
+      "Mul": 107,
+      "Neg": 1,
+      "OneHot": 11,
+      "Pack": 198,
+      "PartitionedCall": 3,
+      "Placeholder": 30,
+      "Pow": 25,
+      "Prod": 2,
+      "Range": 7,
+      "RealDiv": 16,
+      "Reshape": 37,
+      "SelectV2": 13,
+      "SelfAdjointEigV2": 2,
+      "Sqrt": 7,
+      "Square": 8,
+      "Squeeze": 17,
+      "StatelessWhile": 10,
+      "StridedSlice": 220,
+      "Sub": 32,
+      "Sum": 8,
+      "TensorListReserve": 12,
+      "TensorListSetItem": 12,
+      "TensorListStack": 12,
+      "TensorScatterUpdate": 2,
+      "Tile": 2,
+      "Transpose": 9
+    },
+    "pyfunc_count": 0
+  },
+  "recursion_valid": true,
+  "result_note": "docs/plans/bayesfilter-zhao-cui-moment-teacher-result-2026-07-30.md",
+  "route_classification": "extension_or_invention",
+  "route_id": "zhao_cui_fixed_als_padded_xla_value_jvp_v1",
+  "schema": "bayesfilter.zhao_cui_moment_teacher_xla_gpu_gate.v1",
+  "scope": {
+    "basis": 3,
+    "data_version": "deterministic_synthetic_prepared_fixture_v1",
+    "dimension": 2,
+    "dtype": "float32",
+    "padded_rank": 2,
+    "ridge": 1e-05,
+    "rows": 256,
+    "schedule": [
+      0,
+      1,
+      0,
+      1
+    ],
+    "seeds": "N/A_no_random_draws"
+  },
+  "shape_finite": true,
+  "shape_graph": {
+    "has_while": true,
+    "operation_counts": {
+      "AddV2": 86,
+      "BroadcastTo": 4,
+      "Cast": 15,
+      "Cholesky": 1,
+      "ConcatV2": 12,
+      "Const": 633,
+      "Einsum": 48,
+      "Exp": 1,
+      "ExpandDims": 4,
+      "Fill": 11,
+      "GatherNd": 6,
+      "GatherV2": 21,
+      "GreaterEqual": 2,
+      "Identity": 40,
+      "Less": 5,
+      "LessEqual": 1,
+      "Lgamma": 6,
+      "LogicalAnd": 3,
+      "MatMul": 14,
+      "MatrixBandPart": 1,
+      "MatrixDiagPartV3": 1,
+      "MatrixDiagV3": 1,
+      "MatrixTriangularSolve": 6,
+      "Maximum": 6,
+      "Minimum": 1,
+      "Mul": 65,
+      "OneHot": 8,
+      "Pack": 127,
+      "Placeholder": 12,
+      "Pow": 17,
+      "Prod": 2,
+      "Range": 7,
+      "RealDiv": 6,
+      "Reshape": 19,
+      "SelectV2": 1,
+      "Square": 3,
+      "Squeeze": 3,
+      "StatelessWhile": 5,
+      "StridedSlice": 142,
+      "Sub": 21,
+      "Tile": 2,
+      "Transpose": 9
+    },
+    "pyfunc_count": 0
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/zhao_cui_moment_teacher_xla.py": "5df85cda0d9222a38f22ceefc90abc77f9106a549c46b51684eeccff701ed898",
+    "docs/benchmarks/run_zhao_cui_moment_teacher_xla_gpu_gate.py": "65ee7c36033e306ccf9553adcd10378c257d02ea365c6f452c63c822f03ef798",
+    "docs/chapters/ch32c_entropic_ot_sinkhorn.tex": "a7b5ea44c161f95398b4212f6fc1d2f668984a857cd43037d5c36e368bb3226b",
+    "docs/plans/bayesfilter-zhao-cui-moment-teacher-plan-2026-07-30.md": "0691fca776f05da7f2f58212041ad2c95d1b77489952470a81ebfaf5b7629836"
+  },
+  "wall_time_seconds": 10.481442406991846,
+  "warmup_seconds": 5.972090292998473
+}

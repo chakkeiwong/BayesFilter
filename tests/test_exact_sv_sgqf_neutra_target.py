@@ -14,6 +14,10 @@ import tensorflow_probability as tfp
 from docs.benchmarks.run_multimodel_neutra_p2_svx_sgqf_admission import (
     _build_audit_points,
 )
+from docs.benchmarks.run_neutra_svx_sgqf_repair_admission_20260731 import (
+    CANDIDATE_LEVELS as REPAIR_CANDIDATE_LEVELS,
+    REFERENCE_LEVEL as REPAIR_REFERENCE_LEVEL,
+)
 from bayesfilter.highdim.sv_mixture_cut4 import (
     exact_transformed_sv_independent_panel_fixed_sgqf_filter,
 )
@@ -47,6 +51,13 @@ def test_admission_audit_points_keep_truth_point_in_float64() -> None:
     truth_gamma, truth_beta = source_chart_physical_parameters(audit_points[-1:])
     tf.debugging.assert_near(truth_gamma, tf.constant([0.6], tf.float64))
     tf.debugging.assert_near(truth_beta, tf.constant([0.4], tf.float64))
+
+
+def test_repair_ladder_extends_beyond_historical_reference_without_relaxing_gates() -> None:
+    assert REPAIR_CANDIDATE_LEVELS == (10, 12, 16, 20, 24)
+    assert REPAIR_REFERENCE_LEVEL == 32
+    assert min(REPAIR_CANDIDATE_LEVELS) >= 10
+    assert max(REPAIR_CANDIDATE_LEVELS) < REPAIR_REFERENCE_LEVEL
 
 
 def test_frozen_dataset_graph_replay_matches_preserved_hashes() -> None:

@@ -14,7 +14,6 @@ from bayesfilter.testing.sir_filter_neutra_target_design_tf import (
     SIR_WRONG_TIME_ORDER_SHA256,
     generate_frozen_sir_dataset_tf,
     make_sir_sgqf_neutra_adapter,
-    make_sir_ukf_neutra_adapter,
     sir_identity_chart_jacobian_value_score,
     sir_bootstrap_pf_log_likelihood_tf,
     sir_prior_value_score,
@@ -24,7 +23,6 @@ from bayesfilter.testing.sir_filter_neutra_target_design_tf import (
     sir_sgqf_likelihood_value_score_status,
     sir_sgqf_likelihood_value_only_status,
     sir_sgqf_posterior_value_only,
-    sir_ukf_likelihood_value_score_status,
 )
 
 
@@ -171,44 +169,6 @@ def _central_value_gradient(value_fn, point: tf.Tensor, step: float = 1e-5) -> t
     return (values[:3] - values[3:]) / (2.0 * step)
 
 
-def test_sir_ukf_t3_score_matches_central_value_difference() -> None:
-    _states, observations, _all = generate_frozen_sir_dataset_tf()
-    point = tf.constant([0.05, -0.04, 0.03], tf.float64)
-
-    value, score, status = sir_ukf_likelihood_value_score_status(
-        point[None, :], observations=observations[:3]
-    )
-    finite_difference = _central_value_gradient(
-        lambda theta: sir_ukf_likelihood_value_score_status(
-            theta, observations=observations[:3]
-        )[0],
-        point,
-    )
-
-    assert bool(status["valid_pre_regularized_score"][0].numpy())
-    assert bool(tf.math.is_finite(value[0]).numpy())
-    tf.debugging.assert_near(score[0], finite_difference, atol=2e-4, rtol=2e-5)
-
-
-def test_sir_ukf_full_horizon_score_matches_same_mode_value_difference() -> None:
-    _states, observations, _all = generate_frozen_sir_dataset_tf()
-    point = tf.constant([0.0, -1.0, 0.0], tf.float64)
-
-    _value, score, status = sir_ukf_likelihood_value_score_status(
-        point[None, :], observations=observations
-    )
-    finite_difference = _central_value_gradient(
-        lambda theta: sir_ukf_likelihood_value_score_status(
-            theta, observations=observations
-        )[0],
-        point,
-        step=5.0e-5,
-    )
-
-    assert bool(status["valid_pre_regularized_score"][0].numpy())
-    tf.debugging.assert_near(score[0], finite_difference, atol=5e-3, rtol=5e-4)
-
-
 def test_sir_sgqf_t3_score_matches_central_value_difference() -> None:
     _states, observations, _all = generate_frozen_sir_dataset_tf()
     adapter = make_sir_sgqf_neutra_adapter(observations=observations)
@@ -264,26 +224,16 @@ def test_sir_sgqf_value_only_matches_complete_posterior_under_cpu_xla() -> None:
 def test_sir_posterior_adapters_add_exactly_prior_and_zero_chart_term() -> None:
     _states, observations, _all = generate_frozen_sir_dataset_tf()
     theta = tf.constant([[0.0, 0.0, 0.0], [0.1, -0.1, 0.05]], tf.float64)
-    for adapter in (
-        make_sir_ukf_neutra_adapter(observations=observations),
-        make_sir_sgqf_neutra_adapter(observations=observations),
-    ):
-        posterior_value, posterior_score = adapter.log_prob_and_grad(theta)
-        if adapter.target_scope.startswith("SIR-UKF"):
-            likelihood_value, likelihood_score, _status = (
-                sir_ukf_likelihood_value_score_status(
-                    theta, observations=observations
-                )
-            )
-        else:
-            likelihood_value, likelihood_score, _status = (
-                sir_sgqf_likelihood_value_score_status(
-                    theta,
-                    observations=observations,
-                    nodes=adapter.nodes,
-                    weights=adapter.weights,
-                )
-            )
-        prior_value, prior_score = sir_prior_value_score(theta)
-        tf.debugging.assert_near(posterior_value, likelihood_value + prior_value)
-        tf.debugging.assert_near(posterior_score, likelihood_score + prior_score)
+    adapter = make_sir_sgqf_neutra_adapter(observations=observations)
+    posterior_value, posterior_score = adapter.log_prob_and_grad(theta)
+    likelihood_value, likelihood_score, _status = (
+        sir_sgqf_likelihood_value_score_status(
+            theta,
+            observations=observations,
+            nodes=adapter.nodes,
+            weights=adapter.weights,
+        )
+    )
+    prior_value, prior_score = sir_prior_value_score(theta)
+    tf.debugging.assert_near(posterior_value, likelihood_value + prior_value)
+    tf.debugging.assert_near(posterior_score, likelihood_score + prior_score)

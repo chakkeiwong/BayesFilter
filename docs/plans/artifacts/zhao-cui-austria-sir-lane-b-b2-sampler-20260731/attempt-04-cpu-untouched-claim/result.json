@@ -1,0 +1,142 @@
+{
+  "artifact_reload_decoder_id": "lane_b_t1_v1_json_tuple_restore_exact_identity_v1",
+  "decision_table": {
+    "decision": "require_fresh_process_replay",
+    "main_uncertainty": "finite grid conditional differs from the fitted TT density and is explicitly corrected",
+    "next_justified_action": "fresh process replay of sealed reference",
+    "not_concluded": "no production KR, T2 value, score, T20, HMC, or scientific claim",
+    "primary_criterion_status": "pending_fresh_replay",
+    "veto_diagnostic_status": "passed_current_process"
+  },
+  "diagnostics": {
+    "cpu_process_cap_bytes": 12884901888,
+    "cpu_process_peak_rss_bytes": 734306304,
+    "mass_residual_tolerance": 5e-10,
+    "maximum_inverse_forward_residual": 1.249000902703301e-16,
+    "maximum_mass_diagnostic_replay_residual": 0.0,
+    "maximum_proposal_jacobian_residual": 0.0,
+    "maximum_raw_conditional_mass_residual": 2.9398705692074145e-13,
+    "memory_cap_bytes": 536870912,
+    "roundtrip_tolerance": 2e-12,
+    "static_workspace_estimate_bytes": 20673536
+  },
+  "gates": {
+    "cpu_process_peak_under_cap": true,
+    "finite_proposal_target_and_correction": true,
+    "frame_prefix_exact": true,
+    "inverse_forward_roundtrip": true,
+    "mass_diagnostics_replay": true,
+    "passed": true,
+    "proposal_equals_inversion_jacobian": true,
+    "raw_conditional_mass": true,
+    "source_identity": true,
+    "static_workspace_under_cap": true
+  },
+  "mode": "claim",
+  "run_manifest": {
+    "command": [
+      "scripts/run_zhao_cui_austria_sir_lane_b_b2_sampler.py",
+      "--mode",
+      "claim",
+      "--artifact-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-02/p05_r4_b5_lr3e4_l1_1e9/artifact",
+      "--output-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-b2-sampler-20260731/attempt-04-cpu-untouched-claim"
+    ],
+    "cuda_visible_devices": "-1",
+    "data_version": "selected_T1_artifact_and_sealed_stateless_reference_v1",
+    "device": "explicit_cpu_hidden_fp64_reference",
+    "dtype": "float64",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "gpu_memory_policy": "N/A: CUDA_VISIBLE_DEVICES=-1 before TensorFlow import",
+    "host": "DESKTOP-RF1Q5IJ",
+    "jit_compile": false,
+    "jit_exception": "bounded eager transport diagnostic_only",
+    "mode": "claim",
+    "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-b2-sampler-admission-plan-2026-07-31.md",
+    "python": "3.11.14",
+    "random_seeds": {
+      "calibration": 73702,
+      "sealed_untouched_reference": 73703
+    },
+    "result_file": "result.json",
+    "source_sha256": {
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_artifact_compat.py": "4c7d91ce96d8ff2ca9254f8506cad722447d4d82318f26247fc3ec033d4aafb6",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_sampler_tf.py": "ce6f16a2628d234fd2ad4a9f8de2ce98437b35aa5266d0b5c965aa8704e47c4d",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_boundary_tf.py": "68821cdc4a6a61a9dffe299459c5fca15e206f505124d56c8ddbcf35b6fe8078",
+      "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-b2-sampler-admission-plan-2026-07-31.md": "a54f8e7e841716c9a86e7c5a0eaa091c27aa269acc9ec986232cf87d95c370c0",
+      "scripts/run_zhao_cui_austria_sir_lane_b_b2_sampler.py": "b29a2b7dd1864226a436146902e31fc85cb47d5e7b58a13725e8c298d53d4c14"
+    },
+    "tensorflow": "2.19.1",
+    "tf32_enabled": false,
+    "wall_time_seconds": 22.62761655500799
+  },
+  "sample": {
+    "correction_effective_sample_size": 63.876166659701646,
+    "correction_log_weight_max": 0.11636193900336167,
+    "correction_log_weight_min": -0.07919093235988584,
+    "correction_log_weights_sha256": "f11e63f1d80837b6026c51d6db4eec739b321b02754d86124209c25df24e75b4",
+    "local_points_sha256": "b8300f3e664b2d94f716e3af14b8e7ee08bff7624d033f909f8497f680c79b53",
+    "maximum_raw_conditional_mass_residual": 2.9398705692074145e-13,
+    "physical_points_sha256": "eaabe44c47f44e2fa73b99b70feb4fc388cd0cee7508b9f896d1e12bdec3c8bb",
+    "proposal_log_density_sha256": "4caaef4518f38841fe781cb8a4b9ffda3497a4f707058aa11662b782b6cc2f6c",
+    "reference_uniforms_sha256": "81a426f71e16dd20b04e83efe07d478671a0c5478a5399030a0b76f37d2bf910",
+    "sample_count": 64,
+    "target_log_density_sha256": "5f183f2f4a7e3f11c1638a03588d43fce9cf28222bfc3dfbcb8aea2c001b463c"
+  },
+  "sampler": {
+    "author_source_anchors": [
+      "third_party/audit/zhao_cui_tensor_ssm_p10/source/deep-tensor.dev/src/@TTSIRT/eval_irt_reference.m:43-71",
+      "third_party/audit/zhao_cui_tensor_ssm_p10/source/deep-tensor.dev/src/@TTSIRT/marginalise.m:19-85"
+    ],
+    "cdf_semantics": "gauss3_exact_piecewise_quartic_interval_mass_piecewise_linear_cdf",
+    "classification": "extension_or_invention_finite_grid_proposal",
+    "correction_semantics": "log_normalized_tt_retained_density_minus_log_exact_grid_proposal",
+    "grid_size": 65,
+    "nonclaims": [
+      "no production KR closure",
+      "no source-faithful numerical CDF claim",
+      "no T2 value, score, T20, or HMC readiness"
+    ],
+    "paper_anchors": [
+      ".localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt:807-924"
+    ],
+    "production_kr_closure": false,
+    "proposal_density_semantics": "exact_piecewise_constant_cdf_slope_with_coordinate_jacobians",
+    "retained_axes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "sampler_id": "lane_b_retained_gauss3_interval_mass_piecewise_linear_cdf_v1",
+    "source_artifact_identity": "e4b56526205eb50c3d2aa3b8a8ce6ce27539aa5ab50ad286380136db28ed2b59"
+  },
+  "schema_version": "bayesfilter.zhao_cui_austria_sir_lane_b_b2_sampler.v1",
+  "sealed_reference_tensor": {
+    "dtype": "float64",
+    "path": "reference_uniforms.tensor",
+    "sha256": "81a426f71e16dd20b04e83efe07d478671a0c5478a5399030a0b76f37d2bf910",
+    "shape": [
+      18,
+      64
+    ]
+  },
+  "source_artifact_identity": "e4b56526205eb50c3d2aa3b8a8ce6ce27539aa5ab50ad286380136db28ed2b59",
+  "status": "PASS_B2_SAMPLER_CLAIM_PENDING_FRESH_REPLAY"
+}

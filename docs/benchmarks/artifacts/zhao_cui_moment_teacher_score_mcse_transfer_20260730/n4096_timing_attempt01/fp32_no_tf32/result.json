@@ -1,0 +1,246 @@
+{
+  "campaign_id": "zhao-cui-moment-teacher-score-mcse-transfer-20260730-n4096",
+  "classification": "complete_canonical_lgssm_score_transfer_diagnostic_only",
+  "command": "docs/benchmarks/run_zhao_cui_moment_teacher_score_mcse_transfer.py --no-tf32 --num-particles 4096 --seeds 81800,81801,81802,81803 --batch-size 4 --warm-repetitions 5 --output docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/n4096_timing_attempt01/fp32_no_tf32",
+  "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+  "moment_teacher_final_score_tested": false,
+  "nonclaims": [
+    "no Zhao-Cui moment-teacher final score was computed",
+    "no default-readiness or HMC-readiness evidence",
+    "no inference beyond this T=2 N=4096 canonical LGSSM scope"
+  ],
+  "plan": "docs/plans/bayesfilter-zhao-cui-moment-teacher-score-mcse-transfer-n4096-plan-2026-07-30.md",
+  "precision_arm": "fp32_no_tf32_reference",
+  "result": {
+    "aggregate_physical_score": [
+      3.8274202942848206,
+      -0.3828010708093643,
+      -0.09760076552629471,
+      4.46015739440918,
+      11.237411975860596
+    ],
+    "aggregate_value": -8.880241632461548,
+    "arm": "all_active_contract_e",
+    "balance_steps": 2,
+    "batch_count": 1,
+    "batches": [
+      {
+        "chart_valid": true,
+        "estimator_seeds": [
+          81800,
+          81801,
+          81802,
+          81803
+        ],
+        "finite": true,
+        "gpu_allocator_bytes": {
+          "current": 5040640,
+          "peak": 1080033280
+        },
+        "hard_valid": true,
+        "marginal_valid": true,
+        "maximum_row_error": 0.0019956231117248535,
+        "maximum_tv_column_error": 2.743525692494586e-05,
+        "reset_valid": true,
+        "timing_seconds": {
+          "compile_plus_first_execution": 13.004447485996934,
+          "trace": 6.986142654001014,
+          "warm_execution": 4.0318794430058915,
+          "warm_execution_repetitions": [
+            3.9645378370041726,
+            4.0318794430058915,
+            4.2473230100004,
+            4.255022543999075,
+            3.94546662200446
+          ]
+        },
+        "work_valid": true
+      }
+    ],
+    "bitwise_replay": true,
+    "cache_same_cloud_geometry": false,
+    "campaign_id": "zhao-cui-moment-teacher-score-mcse-transfer-20260730-n4096",
+    "chart_valid": true,
+    "device": {
+      "dtype": "float32",
+      "jit_compile": true,
+      "logical_devices": [
+        "/device:GPU:0"
+      ],
+      "memory_growth": true,
+      "memory_policy": {
+        "all_physical_devices_memory_growth": true,
+        "configured_before_logical_device_initialization": true,
+        "full_device_preallocation_disabled": true,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "memory_growth": true
+          }
+        ],
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "physical_devices": [
+        "/physical_device:GPU:0"
+      ],
+      "tf32_enabled": false,
+      "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+    },
+    "estimator_seeds": [
+      81800,
+      81801,
+      81802,
+      81803
+    ],
+    "finite": true,
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "gpu_allocator_bytes": {
+      "current": 5040640,
+      "peak": 1080033280
+    },
+    "graph": {
+      "operation_count": 473,
+      "python_horizon_unroll": false,
+      "serialized_bytes": 1606811,
+      "while_operation_types": [
+        "StatelessWhile"
+      ]
+    },
+    "hard_valid": true,
+    "marginal_valid": true,
+    "maximum_row_error": 0.0019956231117248535,
+    "maximum_tv_column_error": 2.743525692494586e-05,
+    "num_particles": 4096,
+    "per_seed_physical_score": [
+      [
+        3.884608507156372,
+        -0.3696625232696533,
+        -0.07127408683300018,
+        4.478839874267578,
+        11.150250434875488
+      ],
+      [
+        3.819498062133789,
+        -0.38046830892562866,
+        -0.08461087942123413,
+        4.404672145843506,
+        11.216087341308594
+      ],
+      [
+        3.8031792640686035,
+        -0.3981354236602783,
+        -0.14797547459602356,
+        4.512451171875,
+        11.360811233520508
+      ],
+      [
+        3.8023953437805176,
+        -0.382938027381897,
+        -0.08654262125492096,
+        4.444666385650635,
+        11.222498893737793
+      ]
+    ],
+    "per_seed_value": [
+      -8.863481521606445,
+      -8.846921920776367,
+      -8.923883438110352,
+      -8.886679649353027
+    ],
+    "plan_path": "docs/plans/bayesfilter-zhao-cui-moment-teacher-score-mcse-transfer-n4096-plan-2026-07-30.md",
+    "preparation_identity": {
+      "batch_identities": [
+        {
+          "axis_convention": {
+            "initial_noise": "[batch, particle, state]",
+            "residual_design": "[batch, time, particle, state]",
+            "transition_noise": "[batch, time, particle, state]"
+          },
+          "balance_steps": 2,
+          "col_chunk_size": 2048,
+          "domain_tags": {
+            "initial": 101,
+            "residual": "2000 + zero_based_time",
+            "transition": "1000 + zero_based_time"
+          },
+          "final_dtype": "float32",
+          "key_dtype": "int32",
+          "key_encoding": "[root_seed, domain_tag]",
+          "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+          "maximum_row_error_tolerance": 0.01,
+          "num_particles": 4096,
+          "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+          "raw_draw_dtype": "float64",
+          "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+          "rng_algorithm": "philox",
+          "root_seeds_in_order": [
+            81800,
+            81801,
+            81802,
+            81803
+          ],
+          "row_chunk_size": 2048,
+          "sinkhorn_steps": 20,
+          "tensor_sha256": {
+            "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+            "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+            "initial_noise": "5f200a98249f562763e638079f78ca60544df2e226a45e36ee06c8b6f9dd3520",
+            "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+            "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+            "residual_design": "8a211d47d6707b2ee9c9b5fc0ba26e6426d903c8d1297269b2bf861527df1a93",
+            "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+            "transition_noise": "c2e158f3547a63e9e9aa2ea4968724b0d9e64b090a1fba575f34b00f6aedbe83"
+          },
+          "tensorflow_version": "2.19.1",
+          "time_steps": 2,
+          "transport_block_grid": [
+            2,
+            2
+          ],
+          "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+          "tv_column_tolerance": 0.0001
+        }
+      ],
+      "combined_seeds": [
+        81800,
+        81801,
+        81802,
+        81803
+      ],
+      "schema": "bayesfilter.paired_batched_preparation_identity.v1"
+    },
+    "replay_checked": true,
+    "reset_valid": true,
+    "sinkhorn_steps": 20,
+    "source_sha256": {
+      "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+      "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+      "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+      "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+      "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+    },
+    "theta": [
+      0.72,
+      0.55,
+      0.35,
+      0.35,
+      0.45
+    ],
+    "time_steps": 2,
+    "work_valid": true
+  },
+  "schema": "bayesfilter.zhao_cui_moment_teacher_score_mcse_transfer_node.v1",
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+    "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+    "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py": "d81d5b918c4e38c7fb5818dd6726049f000fb7552ecb3f15e8cb97e18663d9ef",
+    "docs/benchmarks/run_zhao_cui_moment_teacher_score_mcse_transfer.py": "8d0a9088aea15de5fba479345681fd715f97b1728a00044e8790a64a38686fe6"
+  },
+  "wall_time_seconds": 42.31669506799517
+}

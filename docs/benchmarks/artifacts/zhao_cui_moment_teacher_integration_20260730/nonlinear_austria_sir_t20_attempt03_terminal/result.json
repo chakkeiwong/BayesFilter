@@ -1,0 +1,103 @@
+{
+  "calibration_seed": 82900,
+  "candidate_rows": [
+    {
+      "candidate_index": 0,
+      "error": "nonlinear teacher scale-shift freeze found an invalid fit",
+      "error_type": "ValueError",
+      "status": "infrastructure_or_tuning_hard_veto"
+    },
+    {
+      "candidate_index": 1,
+      "error": "nonlinear teacher scale-shift freeze found an invalid fit",
+      "error_type": "ValueError",
+      "status": "infrastructure_or_tuning_hard_veto"
+    }
+  ],
+  "claim_seed": 82910,
+  "claim_seed_evaluated": false,
+  "command": "docs/benchmarks/run_zhao_cui_moment_teacher_nonlinear_feasibility.py --model austria_sir --output docs/benchmarks/artifacts/zhao_cui_moment_teacher_integration_20260730/nonlinear_austria_sir_t20_attempt03_terminal",
+  "device": {
+    "jit_compile": true,
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": false,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "conda_env": "tf-gpu",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "tensorflow": "2.19.1"
+  },
+  "event_order": "x0_then_transition_then_observe",
+  "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+  "horizon": 20,
+  "model": "austria_sir",
+  "nonclaims": [
+    "tuning failed before the claim seed was evaluated",
+    "not evidence against the particle or Contract E implementation",
+    "not HMC or posterior readiness",
+    "not source-faithful Zhao-Cui filtering"
+  ],
+  "particle_count": 1024,
+  "plan": "docs/plans/bayesfilter-zhao-cui-moment-teacher-integration-campaign-plan-2026-07-30.md",
+  "schema": "bayesfilter.zhao_cui_moment_teacher_nonlinear_feasibility.v1",
+  "scope": {
+    "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+    "col_blocks": 1,
+    "col_chunk_size": 1024,
+    "control_family_id": "zhao_cui_moment_teacher_nonlinear_controls_v1",
+    "dtype": "float32",
+    "horizon": 20,
+    "jit_compile": true,
+    "model_id": "zhao_cui_austria_sir_latent_preclip_T20",
+    "parameter_count": 3,
+    "particle_count": 1024,
+    "prepared_data_id": "seed81120_source_observations_y1_y20_fp32_x0_then_transition_then_observe",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route_id": "zhao_cui_moment_teacher_contract_e_chol_austria_sir_v1",
+    "row_blocks": 1,
+    "row_chunk_size": 1024,
+    "state_dimension": 18,
+    "target_id": "seed81120_source_observations_y1_y20",
+    "tf32_enabled": false
+  },
+  "source_observation_sha256": "cd794ad6e90a74f7cf6dc06b33550bff4bef6fbf66bb0917846d0691b5910f07",
+  "source_sha256": {
+    "bayesfilter/highdim/cubature_genut_adapters.py": "96ec9c289651e151258521229461ab9922a32c78a2c58c84511ae65ee9cee72b",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "2dee887c224a10cab112e809f2245f673ee8eff97ca73cf5f08613686fb40d4b",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+    "bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py": "9b82a736ec49cdf1d169dc45189e75d989698b87f7c6596a39c5052e300d1779",
+    "bayesfilter/highdim/zhao_cui_moment_teacher_xla.py": "5df85cda0d9222a38f22ceefc90abc77f9106a549c46b51684eeccff701ed898"
+  },
+  "status": "tuning_hard_veto",
+  "theta": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "validation_seed": 82901,
+  "wall_time_seconds": 40.88095410099777
+}

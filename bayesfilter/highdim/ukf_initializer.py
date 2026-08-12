@@ -1,4 +1,4 @@
-"""Opt-in UKF-moment initializer for P76 fixed-variant density training."""
+"""UKF-moment initializer for fixed-branch density training."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ P76_NONCLAIMS = (
 
 @dataclass(frozen=True)
 class P76UKFInitializerConfig:
-    """Configuration for the opt-in P76 UKF square-root initializer."""
+    """Configuration for the P76 UKF square-root initializer."""
 
     product_basis: ProductBasis
     ranks: tuple[int, ...]
@@ -62,8 +62,8 @@ class P76UKFInitializerConfig:
             raise ValueError("P76 first implementation requires uniform internal rank")
         object.__setattr__(self, "ranks", ranks)
         object.__setattr__(self, "time_index", int(self.time_index))
-        if self.time_index < 1:
-            raise ValueError("time_index must be at least 1 for an adjacent target")
+        if self.time_index < 0:
+            raise ValueError("time_index must be nonnegative")
         for name in ("gamma", "covariance_abs_floor", "covariance_rel_floor", "seed_epsilon"):
             value = float(getattr(self, name))
             if value <= 0.0:
@@ -150,7 +150,7 @@ class P76StabilizedCovariance:
 
 @dataclass(frozen=True)
 class P76UKFInitializerResult:
-    """Result of the P76 opt-in UKF initializer."""
+    """Result of the P76 UKF initializer."""
 
     cores: tuple[TTCore, ...]
     center: tf.Tensor
@@ -243,6 +243,28 @@ def p76_adjacent_moments_from_scout(
     )
 
 
+def p76_initial_moments_from_scout(
+    scout: UKFScoutResult,
+) -> P76AdjacentUKFMoments:
+    """Return one-state UKF moments for the initial SVX-ZC fit."""
+
+    if not isinstance(scout, UKFScoutResult):
+        raise TypeError("scout must be a UKFScoutResult")
+    if scout.claim_class != P52_UKF_SCOUT_CLAIM:
+        raise ValueError("UKF initializer requires scout_not_truth claim class")
+    mean_path = tf.convert_to_tensor(scout.mean_path, dtype=tf.float64)
+    covariance_path = tf.convert_to_tensor(scout.covariance_path, dtype=tf.float64)
+    if mean_path.shape.rank != 2 or covariance_path.shape.rank != 3:
+        raise ValueError(f"scout paths: {HighDimStatus.INVALID_SHAPE.value}")
+    return P76AdjacentUKFMoments(
+        center=mean_path[0],
+        covariance=covariance_path[0],
+        time_index=0,
+        previous_time_index=-1,
+        claim_class=scout.claim_class,
+    )
+
+
 def p76_stabilize_covariance(
     covariance: tf.Tensor,
     *,
@@ -307,24 +329,61 @@ def p76_gaussian_sqrt_projection_coefficients(
     *,
     gamma: float,
     quadrature_order: int,
+    center: tf.Tensor | None = None,
+    linear_map: tf.Tensor | None = None,
+    reference_offset: tf.Tensor | None = None,
+    reference_matrix: tf.Tensor | None = None,
 ) -> tuple[tf.Tensor, ...]:
-    """Project the local UKF Gaussian square root into each 1D basis."""
+    """Project the UKF Gaussian square root into the fixed reference basis.
+
+    The guide is evaluated at physical points from the route's fixed reference
+    map and standardized with the UKF center and marginal scale. This keeps the
+    target coordinate map unchanged while making the UKF frame operational.
+    Correlations are retained in the UKF diagnostics but the product guide uses
+    its coordinatewise marginals, as required by this initializer's factorized
+    projection contract.
+    """
 
     if not isinstance(product_basis, ProductBasis):
         raise TypeError("product_basis must be a ProductBasis")
     if float(gamma) <= 0.0:
         raise ValueError("gamma must be positive")
+    dimension = product_basis.dimension
+    if center is None:
+        center = tf.zeros([dimension], dtype=tf.float64)
+    else:
+        center = tf.convert_to_tensor(center, dtype=tf.float64)
+    if linear_map is None:
+        linear_map = tf.eye(dimension, dtype=tf.float64)
+    else:
+        linear_map = tf.convert_to_tensor(linear_map, dtype=tf.float64)
+    if reference_offset is None:
+        reference_offset = tf.zeros([dimension], dtype=tf.float64)
+    else:
+        reference_offset = tf.convert_to_tensor(reference_offset, dtype=tf.float64)
+    if reference_matrix is None:
+        reference_matrix = tf.eye(dimension, dtype=tf.float64)
+    else:
+        reference_matrix = tf.convert_to_tensor(reference_matrix, dtype=tf.float64)
+    if center.shape != (dimension,) or linear_map.shape != (dimension, dimension):
+        raise ValueError("UKF frame shape does not match product basis")
+    if reference_offset.shape != (dimension,) or reference_matrix.shape != (dimension, dimension):
+        raise ValueError("reference map shape does not match product basis")
+    marginal_scale = tf.sqrt(tf.reduce_sum(tf.square(linear_map), axis=1))
+    marginal_scale = tf.maximum(marginal_scale, tf.constant(1e-15, dtype=tf.float64))
     nodes, weights = _legendre_gauss_nodes_weights(int(quadrature_order))
     coefficients = []
     for basis in product_basis.bases:
         half_length = 0.5 * basis.domain.length
         midpoint = 0.5 * (basis.domain.left + basis.domain.right)
         points = midpoint + half_length * nodes
-        basis_values = basis.evaluate(points)
+        axis = len(coefficients)
+        physical = reference_offset[axis] + reference_matrix[axis, axis] * points
+        standardized = (physical - center[axis]) / marginal_scale[axis]
         values = tf.exp(
             -0.25
             * tf.constant(float(gamma) ** 2, dtype=tf.float64)
-            * tf.square(points)
+            * tf.square(standardized)
         )
         active_weights = _active_1d_weights(
             product_basis.convention.mass_measure,
@@ -336,7 +395,7 @@ def p76_gaussian_sqrt_projection_coefficients(
             * tf.exp(
                 -0.5
                 * tf.constant(float(gamma) ** 2, dtype=tf.float64)
-                * tf.square(points)
+                * tf.square(standardized)
             )
         )
         tf.debugging.assert_positive(
@@ -344,6 +403,7 @@ def p76_gaussian_sqrt_projection_coefficients(
             message="UKF guide normalizer must be positive",
         )
         values = values / tf.sqrt(guide_normalizer)
+        basis_values = basis.evaluate(points)
         rhs = tf.reduce_sum(active_weights[:, tf.newaxis] * values[:, tf.newaxis] * basis_values, axis=0)
         mass = basis.mass_matrix(product_basis.convention.mass_measure)
         coefficient = tf.reshape(tf.linalg.solve(mass, rhs[:, tf.newaxis]), [-1])
@@ -436,17 +496,28 @@ def p76_embed_rank_one_with_seeded_channels(
 def p76_build_ukf_initializer(
     scout: UKFScoutResult,
     config: P76UKFInitializerConfig,
+    *,
+    reference_offset: tf.Tensor | None = None,
+    reference_matrix: tf.Tensor | None = None,
 ) -> P76UKFInitializerResult:
-    """Build the P76 opt-in UKF initializer cores and manifest."""
+    """Build UKF initializer cores and manifest for a fixed reference map."""
 
     if not isinstance(config, P76UKFInitializerConfig):
         raise TypeError("config must be P76UKFInitializerConfig")
-    moments = p76_adjacent_moments_from_scout(scout, time_index=config.time_index)
+    moments = (
+        p76_initial_moments_from_scout(scout)
+        if int(config.time_index) == 0
+        else p76_adjacent_moments_from_scout(scout, time_index=config.time_index)
+    )
     center, linear_map, stabilized = p76_local_frame_from_moments(moments, config)
     coefficients = p76_gaussian_sqrt_projection_coefficients(
         config.product_basis,
         gamma=config.gamma,
         quadrature_order=config.quadrature_order,
+        center=center,
+        linear_map=linear_map,
+        reference_offset=reference_offset,
+        reference_matrix=reference_matrix,
     )
     cores = p76_embed_rank_one_with_seeded_channels(
         coefficients,
@@ -581,6 +652,7 @@ __all__ = [
     "p76_build_ukf_initializer",
     "p76_embed_rank_one_with_seeded_channels",
     "p76_gaussian_sqrt_projection_coefficients",
+    "p76_initial_moments_from_scout",
     "p76_initializer_manifest_payload",
     "p76_local_frame_from_moments",
     "p76_rank_one_ukf_sqrt_cores",

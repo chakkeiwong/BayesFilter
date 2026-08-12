@@ -1,0 +1,114 @@
+{
+  "command": "docs/benchmarks/run_zhao_cui_moment_teacher_mechanics.py --output docs/benchmarks/artifacts/zhao_cui_moment_teacher_20260730/attempt03",
+  "device": {
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "conda_env": "tf-gpu",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "tensorflow": "2.19.1"
+  },
+  "git_commit": "c146f65b89a4b204ba74018fba8f6fecef41ebaf",
+  "gpu_xla_contraction": {
+    "allocator_current_bytes": 210944,
+    "allocator_peak_bytes": 303360,
+    "axis_count": 40,
+    "basis_size": 6,
+    "dtype": "float32",
+    "finite": true,
+    "graph_has_pyfunc": false,
+    "graph_has_while": true,
+    "graph_operation_types": [
+      "AddV2",
+      "Const",
+      "Identity",
+      "Mul",
+      "OneHot",
+      "Placeholder",
+      "RealDiv",
+      "Square",
+      "StatelessWhile",
+      "StridedSlice",
+      "Sub"
+    ],
+    "jit_compile": true,
+    "mean_seconds_per_call": 0.002801807399955578,
+    "normalizer": 1.0548806190490723,
+    "normalizer_tangent": 0.032047271728515625,
+    "padded_rank": 8,
+    "repetitions": 25,
+    "scope": "contraction_primitive_only_no_tt_fit_no_filter",
+    "tangent": -0.00014361529611051083,
+    "tf32": true,
+    "value": 0.006203864235430956,
+    "wall_time_seconds": 0.07004518499888945
+  },
+  "hard_vetoes": {
+    "graph_pyfunc": false,
+    "missing_graph_while": false,
+    "nonfinite": false
+  },
+  "lgssm_fitted_teacher": {
+    "basis_degree": 28,
+    "classification": "finite_fit_diagnostic_not_exact_gaussian_representation",
+    "dtype": "float64",
+    "fit_quadrature_order": 64,
+    "fit_residual": 1.4773740482046275e-07,
+    "fit_wall_time_seconds": 1.0273446509963833,
+    "kalman_log_likelihood": -0.9803760051784098,
+    "kalman_mean": 0.1834862385321101,
+    "kalman_variance": 0.08256880733944953,
+    "kurtosis_abs_error_from_wick": 1.9603501755227626e-07,
+    "mean_abs_error": 2.404277332779259e-10,
+    "scope": "scalar_lgssm_t1_fitted_density_reference_diagnostic",
+    "skew_abs_error_from_wick": 3.265228279962908e-08,
+    "state_dimension": 1,
+    "tt_mean": 0.18348623829168237,
+    "tt_rank_tuple": [
+      1,
+      1
+    ],
+    "tt_standardized_kurtosis": 2.9999998039649824,
+    "tt_standardized_skew": -3.265228279962908e-08,
+    "tt_variance": 0.08256880690316878,
+    "variance_abs_error": 4.3628074763990554e-10
+  },
+  "nonclaims": [
+    "no nonlinear filtering result",
+    "no recursive TT fit score",
+    "no HMC readiness",
+    "no default promotion",
+    "no high-dimensional rank-boundedness claim"
+  ],
+  "plan": "docs/plans/bayesfilter-zhao-cui-moment-teacher-plan-2026-07-30.md",
+  "schema": "bayesfilter.zhao_cui_moment_teacher_mechanics.v1",
+  "source_sha256": {
+    "bayesfilter/highdim/higher_moment_contract_e.py": "adf7d34391f375d382ad02caa692cc968e223d8381d524f31b3803c68f049f11",
+    "bayesfilter/highdim/zhao_cui_moment_teacher.py": "413a0ef9746278a0c3dbe6d383cb02012fa06a0021cc87317dd924d120679e8c",
+    "tests/highdim/test_zhao_cui_moment_teacher.py": "ac80fc08c0472740b6460b05dc7cd8ccf34e63a0a5c9e5ab581ca86ce4b46e71"
+  },
+  "wall_time_seconds": 3.3679256010000245
+}

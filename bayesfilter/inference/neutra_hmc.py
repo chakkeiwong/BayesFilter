@@ -40,6 +40,8 @@ DEFAULT_ENERGY_ERROR_LOG_ACCEPT_THRESHOLD = -1000.0
 ArchiveCallback = Callable[..., Mapping[str, Any]]
 TargetStatusSummaryCallback = Callable[[Any], Mapping[str, Any]]
 RetainedDiagnosticCallback = Callable[[tf.Tensor], Mapping[str, Any]]
+RetainedCheckpointCallback = Callable[[Mapping[str, Any]], None]
+StopRequestedCallback = Callable[[], bool]
 
 
 @dataclass(frozen=True)
@@ -733,6 +735,267 @@ def _run_shared_sequential_neutra_hmc(
         "private_warmup_raw": warmup_model,
         "private_retained_z": retained_latent,
         "private_retained_raw": retained_model,
+    }
+
+
+def run_retained_neutra_hmc_continuation(
+    *,
+    adapter: Any,
+    prefix_latent: Any,
+    prefix_model: Any,
+    model_transform: Callable[[tf.Tensor], Any] | None = None,
+    raw_transform: Callable[[tf.Tensor], Any] | None = None,
+    parameter_names: Sequence[str],
+    config: SequentialNeuTraHMCConfig,
+    next_chunk_index: int,
+    retained_diagnostic_fn: RetainedDiagnosticCallback,
+    archive_callback: ArchiveCallback | None = None,
+    checkpoint_callback: RetainedCheckpointCallback | None = None,
+    stop_requested_fn: StopRequestedCallback | None = None,
+    target_status_summary_fn: TargetStatusSummaryCallback | None = None,
+) -> Mapping[str, Any]:
+    """Continue retained HMC from a verified, already-discarded-warmup prefix."""
+
+    latent = tf.convert_to_tensor(prefix_latent, tf.float64)
+    model = tf.convert_to_tensor(prefix_model, tf.float64)
+    if latent.shape.rank != 3 or model.shape != latent.shape:
+        raise NeuTraHMCError(
+            "continuation prefixes must share [draw, chain, parameter] shape"
+        )
+    static_shape = latent.shape.as_list()
+    if any(value is None for value in static_shape):
+        raise NeuTraHMCError("continuation prefixes must have fully static shape")
+    prefix_count, chain_count, dimension = (int(value) for value in static_shape)
+    if prefix_count <= 0:
+        raise NeuTraHMCError("continuation prefix must contain retained draws")
+    if chain_count < config.minimum_chain_count:
+        raise NeuTraHMCError(
+            f"sequential HMC requires at least {config.minimum_chain_count} chains"
+        )
+    names = tuple(str(item) for item in parameter_names)
+    if len(names) != dimension:
+        raise NeuTraHMCError("parameter_names must match the HMC dimension")
+    if not bool(tf.reduce_all(tf.math.is_finite(latent)).numpy()) or not bool(
+        tf.reduce_all(tf.math.is_finite(model)).numpy()
+    ):
+        raise NeuTraHMCError("continuation prefixes must be finite")
+    chunk_index = int(next_chunk_index)
+    if chunk_index < 0:
+        raise NeuTraHMCError("next_chunk_index must be non-negative")
+    if prefix_count != chunk_index * config.retained_chunk_results:
+        raise NeuTraHMCError(
+            "continuation prefix count does not match the next fixed chunk index"
+        )
+    if prefix_count >= config.retained_max_results:
+        raise NeuTraHMCError("continuation prefix must be below retained_max_results")
+    if model_transform is not None and raw_transform is not None:
+        raise NeuTraHMCError("provide only one of model_transform or raw_transform")
+    transform_fn = model_transform or raw_transform or (lambda values: values)
+    if not callable(retained_diagnostic_fn):
+        raise NeuTraHMCError("retained_diagnostic_fn is required for continuation")
+
+    def transform(samples: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(transform_fn(samples), tf.float64)
+        if values.shape != samples.shape:
+            raise NeuTraHMCError(
+                "model_transform must preserve [draw, chain, parameter] shape"
+            )
+        return values
+
+    state = tf.convert_to_tensor(latent[-1], tf.float64)
+    programs: dict[int, Callable[[tf.Tensor, tf.Tensor], Any]] = {}
+    latent_chunks = [latent]
+    model_chunks = [model]
+    checks: list[Mapping[str, Any]] = []
+    archives: list[Mapping[str, Any]] = []
+    hard_vetoes: list[str] = []
+    retained_count = prefix_count
+    retained_passed = False
+    stopped_before_chunk = False
+    started = time.monotonic()
+
+    while retained_count < config.retained_max_results:
+        if stop_requested_fn is not None and bool(stop_requested_fn()):
+            stopped_before_chunk = True
+            break
+        active = min(
+            config.retained_chunk_results,
+            config.retained_max_results - retained_count,
+        )
+        if active not in programs:
+            programs[active] = _build_batched_hmc_program(
+                adapter=adapter,
+                num_results=active,
+                num_burnin_steps=0,
+                step_size=config.step_size,
+                num_leapfrog_steps=config.num_leapfrog_steps,
+                jit_compile=config.jit_compile,
+            )
+        seed = sequential_chunk_seed(config.retained_seed, chunk_index)
+        chunk_config = BatchedHMCConfig(
+            num_results=active,
+            num_burnin_steps=0,
+            step_size=config.step_size,
+            num_leapfrog_steps=config.num_leapfrog_steps,
+            seed=seed,
+            jit_compile=config.jit_compile,
+            energy_error_log_accept_threshold=(
+                config.energy_error_log_accept_threshold
+            ),
+        )
+        chunk_started = time.monotonic()
+        samples, trace = programs[active](state, tf.constant(seed, tf.int32))
+        chunk = _summarize_batched_hmc_output(
+            initial_state=state,
+            samples=samples,
+            trace=trace,
+            config=chunk_config,
+            chain_count=chain_count,
+            elapsed_seconds=time.monotonic() - chunk_started,
+            target_status_summary_fn=target_status_summary_fn,
+        )
+        latent_samples = tf.convert_to_tensor(chunk["samples"], tf.float64)
+        model_samples = transform(latent_samples)
+        model_finite = bool(tf.reduce_all(tf.math.is_finite(model_samples)).numpy())
+        state = latent_samples[-1]
+        latent_chunks.append(latent_samples)
+        model_chunks.append(model_samples)
+        retained_count += active
+        if archive_callback is not None:
+            archives.append(
+                _call_archive(
+                    archive_callback,
+                    stage="retained",
+                    chunk_index=chunk_index,
+                    latent_samples=latent_samples,
+                    model_samples=model_samples,
+                    seed=seed,
+                    cumulative=False,
+                )
+            )
+
+        diagnostic = None
+        diagnostic_vetoes: tuple[str, ...] = ()
+        if chunk["diagnostics"]["health_passed"] is not True:
+            hard_vetoes.append("retained_continuation_chunk_health_failed")
+        elif not model_finite:
+            hard_vetoes.append("retained_continuation_model_samples_nonfinite")
+        else:
+            cumulative_model = tf.concat(model_chunks, axis=0)
+            diagnostic = retained_diagnostic_fn(cumulative_model)
+            if not isinstance(diagnostic, Mapping) or not isinstance(
+                diagnostic.get("passed"), bool
+            ):
+                raise NeuTraHMCError(
+                    "retained_diagnostic_fn must return a mapping with boolean passed"
+                )
+            diagnostic_vetoes = tuple(
+                str(item) for item in diagnostic.get("hard_vetoes", ())
+            )
+            hard_vetoes.extend(diagnostic_vetoes)
+            retained_passed = bool(
+                retained_count >= config.retained_min_results
+                and diagnostic["passed"]
+                and not diagnostic_vetoes
+            )
+        check = {
+            "chunk_index": chunk_index,
+            "completed_results_per_chain": retained_count,
+            "seed": seed,
+            "health": chunk["diagnostics"],
+            "model_samples_all_finite": model_finite,
+            "diagnostic_role": "full_convergence",
+            "full_convergence": diagnostic,
+            "passed": retained_passed,
+        }
+        checks.append(check)
+        cap_hit_at_checkpoint = bool(
+            not retained_passed
+            and not hard_vetoes
+            and retained_count >= config.retained_max_results
+        )
+        if retained_passed:
+            checkpoint_status = "passed"
+            checkpoint_decision = "ADMIT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+        elif hard_vetoes:
+            checkpoint_status = "hard_veto"
+            checkpoint_decision = "REJECT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+        elif cap_hit_at_checkpoint:
+            checkpoint_status = "retained_cap_reached"
+            checkpoint_decision = "REJECT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+        else:
+            checkpoint_status = "continuation_in_progress"
+            checkpoint_decision = "INCOMPLETE_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+        checkpoint = {
+            "passed": bool(retained_passed and not hard_vetoes),
+            "decision": checkpoint_decision,
+            "completion_status": checkpoint_status,
+            "retained_passed": retained_passed,
+            "retained_cap_hit": cap_hit_at_checkpoint,
+            "retained_results_per_chain": retained_count,
+            "retained_checks": tuple(checks),
+            "hard_vetoes": tuple(dict.fromkeys(hard_vetoes)),
+            "retained_archives": tuple(archives),
+            "last_completed_chunk_index": chunk_index,
+            "elapsed_seconds": time.monotonic() - started,
+            "terminal": bool(
+                retained_passed or hard_vetoes or cap_hit_at_checkpoint
+            ),
+        }
+        if checkpoint_callback is not None:
+            checkpoint_callback(checkpoint)
+        if retained_passed or hard_vetoes:
+            break
+        chunk_index += 1
+
+    cumulative_latent = tf.concat(latent_chunks, axis=0)
+    cumulative_model = tf.concat(model_chunks, axis=0)
+    cumulative_archive = None
+    if archive_callback is not None:
+        cumulative_archive = _call_archive(
+            archive_callback,
+            stage="retained",
+            chunk_index=None,
+            latent_samples=cumulative_latent,
+            model_samples=cumulative_model,
+            seed=None,
+            cumulative=True,
+        )
+    retained_cap_hit = bool(
+        not retained_passed
+        and not hard_vetoes
+        and retained_count >= config.retained_max_results
+    )
+    passed = bool(retained_passed and not hard_vetoes)
+    if passed:
+        completion_status = "passed"
+        decision = "ADMIT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+    elif hard_vetoes:
+        completion_status = "hard_veto"
+        decision = "REJECT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+    elif retained_cap_hit:
+        completion_status = "retained_cap_reached"
+        decision = "REJECT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+    else:
+        completion_status = "stopped_before_chunk"
+        decision = "INCOMPLETE_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+    return {
+        "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+        "passed": passed,
+        "decision": decision,
+        "completion_status": completion_status,
+        "retained_passed": retained_passed,
+        "retained_cap_hit": retained_cap_hit,
+        "stopped_before_chunk": stopped_before_chunk,
+        "retained_results_per_chain": retained_count,
+        "retained_check_count": len(checks),
+        "retained_checks": tuple(checks),
+        "hard_vetoes": tuple(dict.fromkeys(hard_vetoes)),
+        "retained_archives": tuple(archives),
+        "cumulative_archive": cumulative_archive,
+        "elapsed_seconds": time.monotonic() - started,
+        "private_retained_z": cumulative_latent,
+        "private_retained_raw": cumulative_model,
     }
 
 

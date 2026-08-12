@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import tensorflow as tf
 
-from bayesfilter.highdim import ledh_contract_e_reset_tf as reset
+from bayesfilter.highdim.ledh_contract_e_reset_tf import (
+    _cholesky_jvp as _contract_e_cholesky_jvp,
+)
 
 
 def _sym(value: tf.Tensor) -> tf.Tensor:
@@ -53,7 +55,7 @@ def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
     )
     batched_tangent = tf.transpose(matrix_tangent, [2, 0, 1])
     return tf.transpose(
-        reset._cholesky_jvp(batched_chol, batched_tangent), [1, 2, 0]
+        _contract_e_cholesky_jvp(batched_chol, batched_tangent), [1, 2, 0]
     )
 
 
@@ -137,6 +139,417 @@ def _weighted_diag_moments_jvp(
         axis=0,
     )
     return skew, kurt, skew_tangent, kurt_tangent
+
+
+def _weighted_pair_moments_jvp(
+    standardized: tf.Tensor,
+    weights: tf.Tensor,
+    standardized_tangent: tf.Tensor,
+    weights_tangent: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Return ordered E[z_i^2 z_j] and symmetric E[z_i^2 z_j^2]."""
+
+    squared = tf.square(standardized)
+    squared_tangent = 2.0 * standardized[:, :, None] * standardized_tangent
+    co_skew = tf.einsum("n,ni,nj->ij", weights, squared, standardized)
+    co_skew_tangent = tf.einsum(
+        "np,ni,nj->ijp", weights_tangent, squared, standardized
+    )
+    co_skew_tangent += tf.einsum(
+        "n,nip,nj->ijp", weights, squared_tangent, standardized
+    )
+    co_skew_tangent += tf.einsum(
+        "n,ni,njp->ijp", weights, squared, standardized_tangent
+    )
+    co_kurtosis = tf.einsum("n,ni,nj->ij", weights, squared, squared)
+    co_kurtosis_tangent = tf.einsum(
+        "np,ni,nj->ijp", weights_tangent, squared, squared
+    )
+    co_kurtosis_tangent += tf.einsum(
+        "n,nip,nj->ijp", weights, squared_tangent, squared
+    )
+    co_kurtosis_tangent += tf.einsum(
+        "n,ni,njp->ijp", weights, squared, squared_tangent
+    )
+    off_diagonal = 1.0 - tf.eye(tf.shape(standardized)[1], dtype=standardized.dtype)
+    return (
+        co_skew * off_diagonal,
+        co_kurtosis * off_diagonal,
+        co_skew_tangent * off_diagonal[:, :, None],
+        co_kurtosis_tangent * off_diagonal[:, :, None],
+    )
+
+
+def _uniform_pair_moments_jvp(
+    standardized: tf.Tensor,
+    standardized_tangent: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    count = tf.cast(tf.shape(standardized)[0], standardized.dtype)
+    weights = tf.ones([tf.shape(standardized)[0]], standardized.dtype) / count
+    weights_tangent = tf.zeros(
+        [tf.shape(standardized)[0], tf.shape(standardized_tangent)[-1]],
+        standardized.dtype,
+    )
+    return _weighted_pair_moments_jvp(
+        standardized, weights, standardized_tangent, weights_tangent
+    )
+
+
+def _standardize_uniform_jvp(
+    points: tf.Tensor,
+    points_tangent: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
+        points, points_tangent
+    )
+    chol = tf.linalg.cholesky(covariance)
+    chol_tangent = _cholesky_jvp(chol, covariance_tangent)
+    centered = points - mean[None, :]
+    centered_tangent = points_tangent - mean_tangent[None, :, :]
+    return (
+        _right_solve(chol, centered),
+        _right_solve_jvp(
+            chol, chol_tangent, centered, centered_tangent
+        ),
+    )
+
+
+def _projected_moment_tensors_jvp(
+    projected: tf.Tensor,
+    weights: tf.Tensor,
+    projected_tangent: tf.Tensor,
+    weights_tangent: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Return complete projected third/fourth moments and total JVPs."""
+
+    third = tf.einsum("n,na,nb,nc->abc", weights, projected, projected, projected)
+    third_tangent = tf.einsum(
+        "np,na,nb,nc->abcp", weights_tangent, projected, projected, projected
+    )
+    third_tangent += tf.einsum(
+        "n,nap,nb,nc->abcp", weights, projected_tangent, projected, projected
+    )
+    third_tangent += tf.einsum(
+        "n,na,nbp,nc->abcp", weights, projected, projected_tangent, projected
+    )
+    third_tangent += tf.einsum(
+        "n,na,nb,ncp->abcp", weights, projected, projected, projected_tangent
+    )
+    fourth = tf.einsum(
+        "n,na,nb,nc,ne->abce", weights, projected, projected, projected, projected
+    )
+    fourth_tangent = tf.einsum(
+        "np,na,nb,nc,ne->abcep",
+        weights_tangent,
+        projected,
+        projected,
+        projected,
+        projected,
+    )
+    fourth_tangent += tf.einsum(
+        "n,nap,nb,nc,ne->abcep",
+        weights,
+        projected_tangent,
+        projected,
+        projected,
+        projected,
+    )
+    fourth_tangent += tf.einsum(
+        "n,na,nbp,nc,ne->abcep",
+        weights,
+        projected,
+        projected_tangent,
+        projected,
+        projected,
+    )
+    fourth_tangent += tf.einsum(
+        "n,na,nb,ncp,ne->abcep",
+        weights,
+        projected,
+        projected,
+        projected_tangent,
+        projected,
+    )
+    fourth_tangent += tf.einsum(
+        "n,na,nb,nc,nep->abcep",
+        weights,
+        projected,
+        projected,
+        projected,
+        projected_tangent,
+    )
+    return third, fourth, third_tangent, fourth_tangent
+
+
+def _projected_residuals_jvp(
+    source_standardized: tf.Tensor,
+    weights: tf.Tensor,
+    source_standardized_tangent: tf.Tensor,
+    weights_tangent: tf.Tensor,
+    current_standardized: tf.Tensor,
+    current_standardized_tangent: tf.Tensor,
+    basis: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    source_projected = tf.linalg.matmul(source_standardized, basis)
+    source_projected_tangent = tf.einsum(
+        "ndp,dr->nrp", source_standardized_tangent, basis
+    )
+    current_projected = tf.linalg.matmul(current_standardized, basis)
+    current_projected_tangent = tf.einsum(
+        "ndp,dr->nrp", current_standardized_tangent, basis
+    )
+    target3, target4, target3_tangent, target4_tangent = (
+        _projected_moment_tensors_jvp(
+            source_projected,
+            weights,
+            source_projected_tangent,
+            weights_tangent,
+        )
+    )
+    count = tf.cast(tf.shape(current_standardized)[0], current_standardized.dtype)
+    uniform = tf.ones([tf.shape(current_standardized)[0]], current_standardized.dtype) / count
+    uniform_tangent = tf.zeros(
+        [tf.shape(current_standardized)[0], tf.shape(current_standardized_tangent)[-1]],
+        current_standardized.dtype,
+    )
+    current3, current4, current3_tangent, current4_tangent = (
+        _projected_moment_tensors_jvp(
+            current_projected,
+            uniform,
+            current_projected_tangent,
+            uniform_tangent,
+        )
+    )
+    return (
+        target3 - current3,
+        target4 - current4,
+        target3_tangent - current3_tangent,
+        target4_tangent - current4_tangent,
+        current_projected,
+        current_projected_tangent,
+    )
+
+
+def _projected_cumulant_iteration_jvp(
+    source_standardized: tf.Tensor,
+    weights: tf.Tensor,
+    source_standardized_tangent: tf.Tensor,
+    weights_tangent: tf.Tensor,
+    current_standardized: tf.Tensor,
+    current_standardized_tangent: tf.Tensor,
+    basis: tf.Tensor,
+    *,
+    strength: float,
+    floor: float,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    residual3, residual4, residual3_tangent, residual4_tangent, projected, projected_tangent = (
+        _projected_residuals_jvp(
+            source_standardized,
+            weights,
+            source_standardized_tangent,
+            weights_tangent,
+            current_standardized,
+            current_standardized_tangent,
+            basis,
+        )
+    )
+    direction3 = 3.0 * tf.einsum("abc,nb,nc->na", residual3, projected, projected)
+    direction3_tangent = 3.0 * (
+        tf.einsum("abcp,nb,nc->nap", residual3_tangent, projected, projected)
+        + tf.einsum("abc,nbp,nc->nap", residual3, projected_tangent, projected)
+        + tf.einsum("abc,nb,ncp->nap", residual3, projected, projected_tangent)
+    )
+    direction4 = 4.0 * tf.einsum(
+        "abce,nb,nc,ne->na", residual4, projected, projected, projected
+    )
+    direction4_tangent = 4.0 * (
+        tf.einsum(
+            "abcep,nb,nc,ne->nap", residual4_tangent, projected, projected, projected
+        )
+        + tf.einsum(
+            "abce,nbp,nc,ne->nap", residual4, projected_tangent, projected, projected
+        )
+        + tf.einsum(
+            "abce,nb,ncp,ne->nap", residual4, projected, projected_tangent, projected
+        )
+        + tf.einsum(
+            "abce,nb,nc,nep->nap", residual4, projected, projected, projected_tangent
+        )
+    )
+    direction = tf.linalg.matmul(direction3 + direction4, basis, transpose_b=True)
+    direction_tangent = tf.einsum(
+        "nrp,dr->ndp", direction3_tangent + direction4_tangent, basis
+    )
+    direction_mean = tf.reduce_mean(direction, axis=0)
+    direction_mean_tangent = tf.reduce_mean(direction_tangent, axis=0)
+    centered_direction = direction - direction_mean[None, :]
+    centered_direction_tangent = direction_tangent - direction_mean_tangent[None, :, :]
+    cross = tf.reduce_mean(
+        current_standardized[:, :, None] * centered_direction[:, None, :], axis=0
+    )
+    cross_tangent = tf.reduce_mean(
+        current_standardized_tangent[:, :, None, :]
+        * centered_direction[:, None, :, None]
+        + current_standardized[:, :, None, None]
+        * centered_direction_tangent[:, None, :, :],
+        axis=0,
+    )
+    symmetric_cross = _sym(cross)
+    symmetric_cross_tangent = _sym_tangent(cross_tangent)
+    affine_projected = centered_direction - tf.linalg.matmul(
+        current_standardized, symmetric_cross
+    )
+    affine_projected_tangent = (
+        centered_direction_tangent
+        - tf.einsum(
+            "ndp,de->nep", current_standardized_tangent, symmetric_cross
+        )
+        - tf.einsum(
+            "nd,dep->nep", current_standardized, symmetric_cross_tangent
+        )
+    )
+    rms = tf.sqrt(
+        tf.reduce_mean(tf.square(affine_projected))
+        + tf.cast(floor, current_standardized.dtype)
+    )
+    rms_tangent = tf.reduce_mean(
+        affine_projected[:, :, None] * affine_projected_tangent, axis=[0, 1]
+    ) / rms
+    normalized = affine_projected / rms
+    normalized_tangent = (
+        affine_projected_tangent / rms
+        - affine_projected[:, :, None]
+        * rms_tangent[None, None, :]
+        / tf.square(rms)
+    )
+    corrected = current_standardized + tf.cast(strength, current_standardized.dtype) * normalized
+    corrected_tangent = current_standardized_tangent + tf.cast(
+        strength, current_standardized.dtype
+    ) * normalized_tangent
+    return _standardize_uniform_jvp(corrected, corrected_tangent)
+
+
+def _pairwise_shape_iteration_jvp(
+    standardized: tf.Tensor,
+    standardized_tangent: tf.Tensor,
+    target_co_skew: tf.Tensor,
+    target_co_kurtosis: tf.Tensor,
+    target_co_skew_tangent: tf.Tensor,
+    target_co_kurtosis_tangent: tf.Tensor,
+    target_co_skew_mask: tf.Tensor,
+    target_co_kurtosis_mask: tf.Tensor,
+    *,
+    strength: float,
+    floor: float,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Take one bounded residual-gradient step over all coordinate pairs."""
+
+    co_skew, co_kurtosis, co_skew_tangent, co_kurtosis_tangent = (
+        _uniform_pair_moments_jvp(standardized, standardized_tangent)
+    )
+    residual3 = target_co_skew_mask * (target_co_skew - co_skew)
+    residual4 = target_co_kurtosis_mask * (target_co_kurtosis - co_kurtosis)
+    residual3_tangent = target_co_skew_mask[:, :, None] * (
+        target_co_skew_tangent - co_skew_tangent
+    )
+    residual4_tangent = target_co_kurtosis_mask[:, :, None] * (
+        target_co_kurtosis_tangent - co_kurtosis_tangent
+    )
+
+    squared = tf.square(standardized)
+    squared_tangent = 2.0 * standardized[:, :, None] * standardized_tangent
+    row3 = tf.linalg.matmul(standardized, residual3, transpose_b=True)
+    row3_tangent = (
+        tf.einsum("nip,ji->njp", standardized_tangent, residual3)
+        + tf.einsum("ni,jip->njp", standardized, residual3_tangent)
+    )
+    column3 = tf.linalg.matmul(squared, residual3)
+    column3_tangent = (
+        tf.einsum("nip,ij->njp", squared_tangent, residual3)
+        + tf.einsum("ni,ijp->njp", squared, residual3_tangent)
+    )
+    row4 = tf.linalg.matmul(squared, residual4, transpose_b=True)
+    row4_tangent = (
+        tf.einsum("nip,ji->njp", squared_tangent, residual4)
+        + tf.einsum("ni,jip->njp", squared, residual4_tangent)
+    )
+    dimension_scale = tf.cast(
+        tf.maximum(tf.shape(standardized)[1] - 1, 1), standardized.dtype
+    )
+    direction = (
+        2.0 * standardized * row3 + column3 + 2.0 * standardized * row4
+    ) / dimension_scale
+    direction_tangent = (
+        2.0
+        * (
+            standardized_tangent * row3[:, :, None]
+            + standardized[:, :, None] * row3_tangent
+        )
+        + column3_tangent
+        + 2.0
+        * (
+            standardized_tangent * row4[:, :, None]
+            + standardized[:, :, None] * row4_tangent
+        )
+    ) / dimension_scale
+
+    direction_mean = tf.reduce_mean(direction, axis=0)
+    direction_mean_tangent = tf.reduce_mean(direction_tangent, axis=0)
+    centered_direction = direction - direction_mean[None, :]
+    centered_direction_tangent = (
+        direction_tangent - direction_mean_tangent[None, :, :]
+    )
+    cross = tf.reduce_mean(
+        standardized[:, :, None] * centered_direction[:, None, :], axis=0
+    )
+    cross_tangent = tf.reduce_mean(
+        standardized_tangent[:, :, None, :]
+        * centered_direction[:, None, :, None]
+        + standardized[:, :, None, None]
+        * centered_direction_tangent[:, None, :, :],
+        axis=0,
+    )
+    symmetric_cross = _sym(cross)
+    symmetric_cross_tangent = _sym_tangent(cross_tangent)
+    projected = centered_direction - tf.linalg.matmul(
+        standardized, symmetric_cross
+    )
+    # Avoid an XLA GEMM autotuner layout failure for the small d x d tangent
+    # projection while retaining the exact contractions over coordinate i.
+    tangent_projection = tf.reduce_sum(
+        standardized_tangent[:, :, None, :]
+        * symmetric_cross[None, :, :, None],
+        axis=1,
+    )
+    matrix_tangent_projection = tf.reduce_sum(
+        standardized[:, :, None, None]
+        * symmetric_cross_tangent[None, :, :, :],
+        axis=1,
+    )
+    projected_tangent = (
+        centered_direction_tangent
+        - tangent_projection
+        - matrix_tangent_projection
+    )
+
+    rms = tf.sqrt(
+        tf.reduce_mean(tf.square(projected))
+        + tf.cast(floor, standardized.dtype)
+    )
+    rms_tangent = tf.reduce_mean(
+        projected[:, :, None] * projected_tangent, axis=[0, 1]
+    ) / rms
+    normalized_direction = projected / rms
+    normalized_direction_tangent = (
+        projected_tangent / rms
+        - projected[:, :, None] * rms_tangent[None, None, :] / tf.square(rms)
+    )
+    corrected = standardized + tf.cast(strength, standardized.dtype) * normalized_direction
+    corrected_tangent = (
+        standardized_tangent
+        + tf.cast(strength, standardized.dtype) * normalized_direction_tangent
+    )
+    return _standardize_uniform_jvp(corrected, corrected_tangent)
 
 
 def _shape_iteration_jvp(
@@ -296,22 +709,45 @@ def higher_moment_shape_jvp(
     correction_steps: int,
     strength: float,
     floor: float,
+    pairwise_correction_steps: int = 0,
+    pairwise_strength: float = 0.0,
+    pairwise_floor: float = 1.0e-6,
+    projected_cumulant_basis: tf.Tensor | None = None,
+    projected_cumulant_correction_steps: int = 0,
+    projected_cumulant_strength: float = 0.0,
+    projected_cumulant_floor: float = 1.0e-6,
+    explicit_target_skew: tf.Tensor | None = None,
+    explicit_target_kurtosis: tf.Tensor | None = None,
+    explicit_target_skew_tangent: tf.Tensor | None = None,
+    explicit_target_kurtosis_tangent: tf.Tensor | None = None,
+    explicit_target_pairwise_co_skew: tf.Tensor | None = None,
+    explicit_target_pairwise_co_kurtosis: tf.Tensor | None = None,
+    explicit_target_pairwise_co_skew_tangent: tf.Tensor | None = None,
+    explicit_target_pairwise_co_kurtosis_tangent: tf.Tensor | None = None,
+    pairwise_target_mask: tf.Tensor | None = None,
+    pairwise_co_skew_target_mask: tf.Tensor | None = None,
+    pairwise_co_kurtosis_target_mask: tf.Tensor | None = None,
 ) -> dict[str, tf.Tensor]:
-    """Apply bounded diagonal third/fourth-moment correction and its JVP."""
-    if correction_steps < 0 or strength < 0.0 or floor <= 0.0:
+    """Apply bounded diagonal, pairwise, and projected moment corrections.
+
+    Explicit targets are an all-or-none opt-in group.  They replace only the
+    standardized shape targets; weighted particle mean and covariance remain
+    the affine restoration targets.
+    """
+    if (
+        correction_steps < 0
+        or strength < 0.0
+        or floor <= 0.0
+        or pairwise_correction_steps < 0
+        or pairwise_strength < 0.0
+        or pairwise_floor <= 0.0
+        or projected_cumulant_correction_steps < 0
+        or projected_cumulant_strength < 0.0
+        or projected_cumulant_floor <= 0.0
+    ):
         raise ValueError("invalid higher-moment correction controls")
-    if correction_steps == 0:
-        state_dim = tf.shape(source)[1]
-        return {
-            "particles": points,
-            "particles_tangent": points_tangent,
-            "target_skew": tf.zeros([state_dim], source.dtype),
-            "target_kurtosis": tf.zeros([state_dim], source.dtype),
-            "skew_residual": tf.zeros([state_dim], source.dtype),
-            "kurtosis_residual": tf.zeros([state_dim], source.dtype),
-            "valid": tf.reduce_all(tf.math.is_finite(points))
-            & tf.reduce_all(tf.math.is_finite(points_tangent)),
-        }
+    if projected_cumulant_correction_steps > 0 and projected_cumulant_basis is None:
+        raise ValueError("projected_cumulant_basis is required for nonzero projected steps")
     state_dim = tf.shape(source)[1]
     mean, covariance, mean_tangent, covariance_tangent = _weighted_moments_jvp(
         source, weights, source_tangent, weights_tangent
@@ -321,6 +757,199 @@ def higher_moment_shape_jvp(
     target_skew, target_kurt, target_skew_tangent, target_kurt_tangent = _weighted_diag_moments_jvp(
         source, weights, source_tangent, weights_tangent, mean, mean_tangent, target_chol, target_chol_tangent
     )
+    source_centered = source - mean[None, :]
+    source_centered_tangent = source_tangent - mean_tangent[None, :, :]
+    source_standardized = _right_solve(target_chol, source_centered)
+    source_standardized_tangent = _right_solve_jvp(
+        target_chol,
+        target_chol_tangent,
+        source_centered,
+        source_centered_tangent,
+    )
+    projected_basis = None
+    if projected_cumulant_basis is not None:
+        projected_basis = tf.convert_to_tensor(
+            projected_cumulant_basis, dtype=source.dtype
+        )
+        if projected_basis.shape.rank != 2:
+            raise ValueError("projected_cumulant_basis must be a matrix")
+        if (
+            source.shape[1] is not None
+            and projected_basis.shape[0] is not None
+            and source.shape[1] != projected_basis.shape[0]
+        ):
+            raise ValueError("projected_cumulant_basis has the wrong state dimension")
+        basis_gram = tf.linalg.matmul(projected_basis, projected_basis, transpose_a=True)
+        projected_basis_valid = tf.reduce_max(
+            tf.abs(
+                basis_gram
+                - tf.eye(tf.shape(projected_basis)[1], dtype=source.dtype)
+            )
+        ) <= tf.cast(2.0e-4, source.dtype)
+    else:
+        projected_basis_valid = tf.constant(True)
+    (
+        target_co_skew,
+        target_co_kurtosis,
+        target_co_skew_tangent,
+        target_co_kurtosis_tangent,
+    ) = _weighted_pair_moments_jvp(
+        source_standardized,
+        weights,
+        source_standardized_tangent,
+        weights_tangent,
+    )
+    explicit_targets = (
+        explicit_target_skew,
+        explicit_target_kurtosis,
+        explicit_target_skew_tangent,
+        explicit_target_kurtosis_tangent,
+        explicit_target_pairwise_co_skew,
+        explicit_target_pairwise_co_kurtosis,
+        explicit_target_pairwise_co_skew_tangent,
+        explicit_target_pairwise_co_kurtosis_tangent,
+    )
+    explicit_count = sum(value is not None for value in explicit_targets)
+    if explicit_count not in (0, len(explicit_targets)):
+        raise ValueError("explicit higher-moment targets must be supplied as one complete group")
+    target_source_id = tf.constant(0, tf.int32)
+    off_diagonal = 1.0 - tf.eye(tf.shape(source)[1], dtype=source.dtype)
+    target_co_skew_mask = off_diagonal
+    target_co_kurtosis_mask = off_diagonal
+    if explicit_count:
+        expected_vector = target_skew.shape
+        expected_matrix = target_co_skew.shape
+        expected_vector_tangent = target_skew_tangent.shape
+        expected_matrix_tangent = target_co_skew_tangent.shape
+        target_skew = _explicit_target(
+            explicit_target_skew, expected_vector, source.dtype, "explicit_target_skew"
+        )
+        target_kurt = _explicit_target(
+            explicit_target_kurtosis, expected_vector, source.dtype, "explicit_target_kurtosis"
+        )
+        target_skew_tangent = _explicit_target(
+            explicit_target_skew_tangent,
+            expected_vector_tangent,
+            source.dtype,
+            "explicit_target_skew_tangent",
+        )
+        target_kurt_tangent = _explicit_target(
+            explicit_target_kurtosis_tangent,
+            expected_vector_tangent,
+            source.dtype,
+            "explicit_target_kurtosis_tangent",
+        )
+        target_co_skew = _explicit_target(
+            explicit_target_pairwise_co_skew,
+            expected_matrix,
+            source.dtype,
+            "explicit_target_pairwise_co_skew",
+        )
+        target_co_kurtosis = _explicit_target(
+            explicit_target_pairwise_co_kurtosis,
+            expected_matrix,
+            source.dtype,
+            "explicit_target_pairwise_co_kurtosis",
+        )
+        target_co_skew_tangent = _explicit_target(
+            explicit_target_pairwise_co_skew_tangent,
+            expected_matrix_tangent,
+            source.dtype,
+            "explicit_target_pairwise_co_skew_tangent",
+        )
+        target_co_kurtosis_tangent = _explicit_target(
+            explicit_target_pairwise_co_kurtosis_tangent,
+            expected_matrix_tangent,
+            source.dtype,
+            "explicit_target_pairwise_co_kurtosis_tangent",
+        )
+        target_source_id = tf.constant(1, tf.int32)
+    if pairwise_target_mask is not None:
+        if (
+            pairwise_co_skew_target_mask is not None
+            or pairwise_co_kurtosis_target_mask is not None
+        ):
+            raise ValueError(
+                "pairwise_target_mask cannot be combined with moment-specific masks"
+            )
+        common_mask = _explicit_target(
+            pairwise_target_mask,
+            target_co_skew.shape,
+            source.dtype,
+            "pairwise_target_mask",
+        )
+        common_mask = tf.clip_by_value(
+            common_mask, tf.cast(0.0, source.dtype), tf.cast(1.0, source.dtype)
+        ) * off_diagonal
+        target_co_skew_mask = common_mask
+        target_co_kurtosis_mask = common_mask
+    if pairwise_co_skew_target_mask is not None:
+        target_co_skew_mask = _explicit_target(
+            pairwise_co_skew_target_mask,
+            target_co_skew.shape,
+            source.dtype,
+            "pairwise_co_skew_target_mask",
+        )
+        target_co_skew_mask = tf.clip_by_value(
+            target_co_skew_mask,
+            tf.cast(0.0, source.dtype),
+            tf.cast(1.0, source.dtype),
+        ) * off_diagonal
+    if pairwise_co_kurtosis_target_mask is not None:
+        target_co_kurtosis_mask = _explicit_target(
+            pairwise_co_kurtosis_target_mask,
+            target_co_kurtosis.shape,
+            source.dtype,
+            "pairwise_co_kurtosis_target_mask",
+        )
+        target_co_kurtosis_mask = tf.clip_by_value(
+            target_co_kurtosis_mask,
+            tf.cast(0.0, source.dtype),
+            tf.cast(1.0, source.dtype),
+        ) * off_diagonal
+
+    if (
+        correction_steps == 0
+        and pairwise_correction_steps == 0
+        and projected_cumulant_correction_steps == 0
+    ):
+        output_standardized, output_standardized_tangent = _standardize_uniform_jvp(
+            points, points_tangent
+        )
+        output_skew = tf.reduce_mean(tf.pow(output_standardized, 3.0), axis=0)
+        output_kurt = tf.reduce_mean(tf.pow(output_standardized, 4.0), axis=0)
+        output_co_skew, output_co_kurtosis, _, _ = _uniform_pair_moments_jvp(
+            output_standardized, output_standardized_tangent
+        )
+        valid = tf.reduce_all(tf.math.is_finite(points)) & tf.reduce_all(
+            tf.math.is_finite(points_tangent)
+        )
+        return {
+            "particles": points,
+            "particles_tangent": points_tangent,
+            "target_skew": target_skew,
+            "target_kurtosis": target_kurt,
+            "target_pairwise_co_skew": target_co_skew,
+            "target_pairwise_co_kurtosis": target_co_kurtosis,
+            "skew_residual": target_skew - output_skew,
+            "kurtosis_residual": target_kurt - output_kurt,
+            "pairwise_co_skew_residual": target_co_skew_mask
+            * (target_co_skew - output_co_skew),
+            "pairwise_co_kurtosis_residual": (
+                target_co_kurtosis_mask
+                * (target_co_kurtosis - output_co_kurtosis)
+            ),
+            "pairwise_target_mask": tf.maximum(
+                target_co_skew_mask, target_co_kurtosis_mask
+            ),
+            "pairwise_co_skew_target_mask": target_co_skew_mask,
+            "pairwise_co_kurtosis_target_mask": target_co_kurtosis_mask,
+            "target_source_id": target_source_id,
+            "projected_cumulant_residual_norm": tf.zeros([], source.dtype),
+            "projected_cumulant_third_residual_norm": tf.zeros([], source.dtype),
+            "projected_cumulant_fourth_residual_norm": tf.zeros([], source.dtype),
+            "valid": valid & projected_basis_valid,
+        }
 
     steps = tf.constant(correction_steps, tf.int32)
     residual3 = tf.zeros([state_dim], source.dtype)
@@ -349,22 +978,135 @@ def higher_moment_shape_jvp(
         (tf.zeros([], tf.int32), initial_standardized, initial_standardized_tangent, residual3, residual4),
         parallel_iterations=1,
     )
+    # Scalar states have no off-diagonal pair moments. Skip the loop entirely
+    # so a nonzero pairwise control is an exact structural no-op at d=1.
+    pairwise_steps = tf.where(
+        state_dim > 1,
+        tf.constant(pairwise_correction_steps, tf.int32),
+        tf.zeros([], tf.int32),
+    )
+
+    def pairwise_body(index, current, current_tangent):
+        next_points, next_tangent = _pairwise_shape_iteration_jvp(
+            current,
+            current_tangent,
+            target_co_skew,
+            target_co_kurtosis,
+            target_co_skew_tangent,
+            target_co_kurtosis_tangent,
+            target_co_skew_mask,
+            target_co_kurtosis_mask,
+            strength=pairwise_strength,
+            floor=pairwise_floor,
+        )
+        return index + 1, next_points, next_tangent
+
+    _, standardized, standardized_tangent = tf.while_loop(
+        lambda index, *_: index < pairwise_steps,
+        pairwise_body,
+        (tf.zeros([], tf.int32), standardized, standardized_tangent),
+        parallel_iterations=1,
+    )
+    projected_steps = tf.constant(projected_cumulant_correction_steps, tf.int32)
+
+    def projected_body(index, current, current_tangent):
+        next_points, next_tangent = _projected_cumulant_iteration_jvp(
+            source_standardized,
+            weights,
+            source_standardized_tangent,
+            weights_tangent,
+            current,
+            current_tangent,
+            projected_basis,
+            strength=projected_cumulant_strength,
+            floor=projected_cumulant_floor,
+        )
+        return index + 1, next_points, next_tangent
+
+    if projected_basis is not None:
+        _, standardized, standardized_tangent = tf.while_loop(
+            lambda index, *_: index < projected_steps,
+            projected_body,
+            (tf.zeros([], tf.int32), standardized, standardized_tangent),
+            parallel_iterations=1,
+        )
     output = mean[None, :] + tf.linalg.matmul(standardized, target_chol, transpose_b=True)
     output_tangent = (
         mean_tangent[None, :, :]
         + tf.einsum("nip,ji->njp", standardized_tangent, target_chol)
         + tf.einsum("ni,jip->njp", standardized, target_chol_tangent)
     )
+    output_skew = tf.reduce_mean(tf.pow(standardized, 3.0), axis=0)
+    output_kurt = tf.reduce_mean(tf.pow(standardized, 4.0), axis=0)
+    output_co_skew, output_co_kurtosis, _, _ = _uniform_pair_moments_jvp(
+        standardized, standardized_tangent
+    )
+    if projected_basis is None:
+        projected_residual3 = tf.zeros([1, 1, 1], source.dtype)
+        projected_residual4 = tf.zeros([1, 1, 1, 1], source.dtype)
+    else:
+        (
+            projected_residual3,
+            projected_residual4,
+            _,
+            _,
+            _,
+            _,
+        ) = _projected_residuals_jvp(
+            source_standardized,
+            weights,
+            source_standardized_tangent,
+            weights_tangent,
+            standardized,
+            standardized_tangent,
+            projected_basis,
+        )
     valid = tf.reduce_all(tf.math.is_finite(output)) & tf.reduce_all(tf.math.is_finite(output_tangent))
     return {
         "particles": output,
         "particles_tangent": output_tangent,
         "target_skew": target_skew,
         "target_kurtosis": target_kurt,
-        "skew_residual": residual3,
-        "kurtosis_residual": residual4,
-        "valid": valid,
+        "target_pairwise_co_skew": target_co_skew,
+        "target_pairwise_co_kurtosis": target_co_kurtosis,
+        "skew_residual": target_skew - output_skew,
+        "kurtosis_residual": target_kurt - output_kurt,
+        "pairwise_co_skew_residual": target_co_skew_mask
+        * (target_co_skew - output_co_skew),
+        "pairwise_co_kurtosis_residual": target_co_kurtosis_mask
+        * (target_co_kurtosis - output_co_kurtosis),
+        "pairwise_target_mask": tf.maximum(
+            target_co_skew_mask, target_co_kurtosis_mask
+        ),
+        "pairwise_co_skew_target_mask": target_co_skew_mask,
+        "pairwise_co_kurtosis_target_mask": target_co_kurtosis_mask,
+        "target_source_id": target_source_id,
+        "projected_cumulant_residual_norm": tf.sqrt(
+            tf.reduce_sum(tf.square(projected_residual3))
+            + tf.reduce_sum(tf.square(projected_residual4))
+        ),
+        "projected_cumulant_third_residual_norm": tf.linalg.norm(
+            projected_residual3
+        ),
+        "projected_cumulant_fourth_residual_norm": tf.linalg.norm(
+            projected_residual4
+        ),
+        "valid": valid & projected_basis_valid,
     }
+
+
+def _explicit_target(
+    value: tf.Tensor | None,
+    expected_shape: tf.TensorShape,
+    dtype: tf.DType,
+    name: str,
+) -> tf.Tensor:
+    if value is None:
+        raise ValueError(f"{name} is required")
+    tensor = tf.convert_to_tensor(value, dtype=dtype)
+    if not tensor.shape.is_compatible_with(expected_shape):
+        raise ValueError(f"{name} has shape {tensor.shape}, expected {expected_shape}")
+    return tf.ensure_shape(tensor, expected_shape)
 
 
 __all__ = ["higher_moment_shape_jvp"]

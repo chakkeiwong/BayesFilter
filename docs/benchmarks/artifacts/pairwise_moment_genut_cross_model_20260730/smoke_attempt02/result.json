@@ -1,0 +1,636 @@
+{
+  "configuration": {
+    "claim_seeds": [
+      98201
+    ],
+    "dtype": "float32",
+    "jit_compile": true,
+    "pairwise_arms": [
+      [
+        1,
+        0.005
+      ],
+      [
+        1,
+        0.01
+      ],
+      [
+        1,
+        0.02
+      ],
+      [
+        1,
+        0.05
+      ],
+      [
+        2,
+        0.005
+      ],
+      [
+        2,
+        0.01
+      ],
+      [
+        2,
+        0.02
+      ],
+      [
+        2,
+        0.05
+      ],
+      [
+        4,
+        0.005
+      ],
+      [
+        4,
+        0.01
+      ],
+      [
+        4,
+        0.02
+      ],
+      [
+        4,
+        0.05
+      ]
+    ],
+    "particle_count": 1008,
+    "score_policy": "manual recursive forward sensitivity",
+    "tf32": true,
+    "tuning_seeds": [
+      98401,
+      98402
+    ]
+  },
+  "device": {
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "git_commit": "8e13bf0306cc7d3942859a3cc1205e2294da00ba",
+  "gpu_allocator": {
+    "current": 152064,
+    "peak": 134544896
+  },
+  "hard_valid": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "models": [
+    {
+      "claim": {
+        "baseline": {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "higher_moment_correction_steps": 4,
+            "higher_moment_floor": 1e-05,
+            "higher_moment_strength": 0.2,
+            "pairwise_moment_correction_steps": 0,
+            "pairwise_moment_floor": 1e-05,
+            "pairwise_moment_strength": 0.0,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "rows": [
+            {
+              "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+              "finite": true,
+              "max_col_residual": 1.8090009689331055e-05,
+              "max_mean_residual": 5.960464477539063e-08,
+              "max_row_residual": 1.391163095831871e-07,
+              "maximum_normalized_shape_displacement": 0.1567951738834381,
+              "maximum_pairwise_co_kurtosis_residual": 1.3210382461547852,
+              "maximum_pairwise_co_skew_residual": 0.3064512610435486,
+              "mean_normalized_pairwise_shape_residual_objective": 0.8795679211616516,
+              "mean_normalized_shape_residual_objective": 0.004293953534215689,
+              "minimum_covariance_gap_eigenvalue": 0.0430302731692791,
+              "minimum_row_mass": 0.0009919244330376387,
+              "particle_seed": 98201,
+              "program_valid": true,
+              "score": [
+                6.061906814575195,
+                -4.971954822540283,
+                0.336283802986145,
+                1.3900182247161865,
+                6.409412384033203
+              ],
+              "score_increment_sum_residual": 2.384185791015625e-06,
+              "value": -136.4870147705078
+            }
+          ]
+        },
+        "candidate": {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "higher_moment_correction_steps": 4,
+            "higher_moment_floor": 1e-05,
+            "higher_moment_strength": 0.2,
+            "pairwise_moment_correction_steps": 1,
+            "pairwise_moment_floor": 1e-05,
+            "pairwise_moment_strength": 0.005,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "rows": [
+            {
+              "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+              "finite": true,
+              "max_col_residual": 1.7940998077392578e-05,
+              "max_mean_residual": 1.1920928955078125e-07,
+              "max_row_residual": 1.3923272490501404e-07,
+              "maximum_normalized_shape_displacement": 0.16063192486763,
+              "maximum_pairwise_co_kurtosis_residual": 1.3192806243896484,
+              "maximum_pairwise_co_skew_residual": 0.3027813136577606,
+              "mean_normalized_pairwise_shape_residual_objective": 0.8734964728355408,
+              "mean_normalized_shape_residual_objective": 0.004197932314127684,
+              "minimum_covariance_gap_eigenvalue": 0.04305769503116608,
+              "minimum_row_mass": 0.0009919243166223168,
+              "particle_seed": 98201,
+              "program_valid": true,
+              "score": [
+                6.061707496643066,
+                -4.9700751304626465,
+                0.33677640557289124,
+                1.3730528354644775,
+                6.404025077819824
+              ],
+              "score_increment_sum_residual": 3.814697265625e-06,
+              "value": -136.48609924316406
+            }
+          ]
+        }
+      },
+      "diagnostic_comparators": [
+        {
+          "method": "sgqf",
+          "role": "same_target_approximate_diagnostic",
+          "score": [
+            5.65544620078834,
+            -3.835056867532365,
+            0.3023618942730066,
+            -1.9171764199511037,
+            4.35427564127945
+          ],
+          "source_artifact": "docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json",
+          "value": -136.07597463460453
+        },
+        {
+          "method": "zhao_cui",
+          "role": "same_target_approximate_diagnostic",
+          "score": [
+            5.65544620078834,
+            -3.835056867532365,
+            0.3023618942730066,
+            -1.9171764199511037,
+            4.35427564127945
+          ],
+          "source_artifact": "docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json",
+          "value": -136.07597463460453
+        }
+      ],
+      "pairwise_constraint_count": {
+        "ordered_co_skewness": 6,
+        "unordered_co_kurtosis": 3
+      },
+      "reference": {
+        "kind": "exact_affine_kalman_analytical_score",
+        "score": [
+          5.65544620078834,
+          -3.835056867532365,
+          0.3023618942730066,
+          -1.9171764199511037,
+          4.35427564127945
+        ],
+        "value": -136.07597463460453
+      },
+      "row_id": "lgssm_T50",
+      "scope": {
+        "event_order": "stationary_initial_draw_then_observe_y0_then_transitions",
+        "horizon": 50,
+        "observation_dimension": 3,
+        "parameter_dimension": 5,
+        "particle_count": 1008,
+        "row_id": "lgssm_T50",
+        "runtime_fp32_observation_sha256": "3cd9494cde0899a29eb1be28c101727208adb6bdc3b63d14a83f3acfdad104e0",
+        "source_observation_sha256": "9d16f6aad48bb745feed75c749f64648b9f0df3aeb73caf266ce5097a36b5e41",
+        "state_dimension": 3,
+        "theta": [
+          0.7200000286102295,
+          0.550000011920929,
+          0.3499999940395355,
+          0.3499999940395355,
+          0.44999998807907104
+        ]
+      },
+      "tuning": {
+        "baseline_controls": {
+          "balance_steps": 8,
+          "epsilon": 2.0,
+          "higher_moment_correction_steps": 4,
+          "higher_moment_floor": 1e-05,
+          "higher_moment_strength": 0.2,
+          "pairwise_moment_correction_steps": 0,
+          "pairwise_moment_floor": 1e-05,
+          "pairwise_moment_strength": 0.0,
+          "ridge": 1e-05,
+          "sinkhorn_steps": 8
+        },
+        "claim_data_read_during_selection": false,
+        "reference_or_comparator_read_during_selection": false,
+        "scope": "lgssm_T50",
+        "selected_controls": {
+          "balance_steps": 8,
+          "epsilon": 2.0,
+          "higher_moment_correction_steps": 4,
+          "higher_moment_floor": 1e-05,
+          "higher_moment_strength": 0.2,
+          "pairwise_moment_correction_steps": 1,
+          "pairwise_moment_floor": 1e-05,
+          "pairwise_moment_strength": 0.005,
+          "ridge": 1e-05,
+          "sinkhorn_steps": 8
+        },
+        "selection_status": "SMOKE_FORCED_NONZERO_PAIRWISE_ARM"
+      }
+    },
+    {
+      "claim": {
+        "baseline": {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "higher_moment_correction_steps": 4,
+            "higher_moment_floor": 1e-05,
+            "higher_moment_strength": 0.2,
+            "pairwise_moment_correction_steps": 0,
+            "pairwise_moment_floor": 1e-05,
+            "pairwise_moment_strength": 0.0,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "rows": [
+            {
+              "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+              "finite": true,
+              "max_col_residual": 1.94646418094635e-06,
+              "max_mean_residual": 5.960464477539063e-08,
+              "max_row_residual": 1.1560041457414627e-07,
+              "maximum_normalized_shape_displacement": 0.06368010491132736,
+              "maximum_pairwise_co_kurtosis_residual": 0.0,
+              "maximum_pairwise_co_skew_residual": 0.0,
+              "mean_normalized_pairwise_shape_residual_objective": 0.0,
+              "mean_normalized_shape_residual_objective": 0.011590278707444668,
+              "minimum_covariance_gap_eigenvalue": 0.5644126534461975,
+              "minimum_row_mass": 0.0009919479489326477,
+              "particle_seed": 98201,
+              "program_valid": true,
+              "score": [
+                -0.7145034074783325,
+                0.6072423458099365
+              ],
+              "score_increment_sum_residual": 0.0,
+              "value": -19.95671272277832
+            }
+          ]
+        },
+        "candidate": {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "higher_moment_correction_steps": 4,
+            "higher_moment_floor": 1e-05,
+            "higher_moment_strength": 0.2,
+            "pairwise_moment_correction_steps": 4,
+            "pairwise_moment_floor": 1e-05,
+            "pairwise_moment_strength": 0.02,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "rows": [
+            {
+              "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+              "finite": true,
+              "max_col_residual": 1.946929842233658e-06,
+              "max_mean_residual": 5.960464477539063e-08,
+              "max_row_residual": 1.1560041457414627e-07,
+              "maximum_normalized_shape_displacement": 0.06368008255958557,
+              "maximum_pairwise_co_kurtosis_residual": 0.0,
+              "maximum_pairwise_co_skew_residual": 0.0,
+              "mean_normalized_pairwise_shape_residual_objective": 0.0,
+              "mean_normalized_shape_residual_objective": 0.011590283364057541,
+              "minimum_covariance_gap_eigenvalue": 0.5644126534461975,
+              "minimum_row_mass": 0.0009919479489326477,
+              "particle_seed": 98201,
+              "program_valid": true,
+              "score": [
+                -0.7145034074783325,
+                0.6072422862052917
+              ],
+              "score_increment_sum_residual": 0.0,
+              "value": -19.95671272277832
+            }
+          ]
+        }
+      },
+      "diagnostic_comparators": [
+        {
+          "method": "sgqf",
+          "role": "same_target_approximate_diagnostic",
+          "score": [
+            -0.6924748646961102,
+            0.6095782715450418
+          ],
+          "source_artifact": "docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json",
+          "value": -19.950941746601956
+        },
+        {
+          "method": "zhao_cui",
+          "role": "same_target_approximate_diagnostic",
+          "score": [
+            -0.7056718029203304,
+            0.6354886692801854
+          ],
+          "source_artifact": "docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json",
+          "value": -19.95628883432051
+        }
+      ],
+      "pairwise_constraint_count": {
+        "ordered_co_skewness": 0,
+        "unordered_co_kurtosis": 0
+      },
+      "reference": {
+        "kind": "omitted_in_smoke",
+        "score": null,
+        "value": null
+      },
+      "row_id": "ksc_sv_T10",
+      "scope": {
+        "event_order": "stationary_initial_draw_then_observe_y0_to_y9_before_transitions",
+        "horizon": 10,
+        "observation_dimension": 1,
+        "parameter_dimension": 2,
+        "particle_count": 1008,
+        "row_id": "ksc_sv_T10",
+        "runtime_fp32_observation_sha256": "fffea28496c975c8bab7a0b30c7625625785de11f4e3c74bebc0a80903652662",
+        "source_observation_sha256": "6555381729cac365067b50110884f0cb114ad6119cc06c882cae10f2bea583fd",
+        "state_dimension": 1,
+        "theta": [
+          0.25334709882736206,
+          -0.9162907600402832
+        ]
+      },
+      "tuning": {
+        "baseline_controls": {
+          "balance_steps": 8,
+          "epsilon": 2.0,
+          "higher_moment_correction_steps": 4,
+          "higher_moment_floor": 1e-05,
+          "higher_moment_strength": 0.2,
+          "pairwise_moment_correction_steps": 0,
+          "pairwise_moment_floor": 1e-05,
+          "pairwise_moment_strength": 0.0,
+          "ridge": 1e-05,
+          "sinkhorn_steps": 8
+        },
+        "claim_data_read_during_selection": false,
+        "reference_or_comparator_read_during_selection": false,
+        "scope": "ksc_sv_T10",
+        "selected_controls": {
+          "balance_steps": 8,
+          "epsilon": 2.0,
+          "higher_moment_correction_steps": 4,
+          "higher_moment_floor": 1e-05,
+          "higher_moment_strength": 0.2,
+          "pairwise_moment_correction_steps": 4,
+          "pairwise_moment_floor": 1e-05,
+          "pairwise_moment_strength": 0.02,
+          "ridge": 1e-05,
+          "sinkhorn_steps": 8
+        },
+        "selection_status": "STRUCTURAL_NULL_D1_NO_OFF_DIAGONAL_PAIRS"
+      }
+    },
+    {
+      "claim": {
+        "baseline": {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "higher_moment_correction_steps": 4,
+            "higher_moment_floor": 1e-05,
+            "higher_moment_strength": 0.2,
+            "pairwise_moment_correction_steps": 0,
+            "pairwise_moment_floor": 1e-05,
+            "pairwise_moment_strength": 0.0,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "rows": [
+            {
+              "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+              "finite": true,
+              "max_col_residual": 7.387250661849976e-06,
+              "max_mean_residual": 1.52587890625e-05,
+              "max_row_residual": 1.498265191912651e-07,
+              "maximum_normalized_shape_displacement": 0.12928417325019836,
+              "maximum_pairwise_co_kurtosis_residual": 1.1852400302886963,
+              "maximum_pairwise_co_skew_residual": 0.20070546865463257,
+              "mean_normalized_pairwise_shape_residual_objective": 0.8547746539115906,
+              "mean_normalized_shape_residual_objective": 0.002325687324628234,
+              "minimum_covariance_gap_eigenvalue": 1.7136940956115723,
+              "minimum_row_mass": 0.0009919137228280306,
+              "particle_seed": 98201,
+              "program_valid": true,
+              "score": [
+                -27.106290817260742,
+                0.07493239641189575,
+                -0.08738371729850769,
+                0.9781948328018188,
+                18.102622985839844,
+                -23.41949462890625
+              ],
+              "score_increment_sum_residual": 3.814697265625e-06,
+              "value": -103.13336181640625
+            }
+          ]
+        },
+        "candidate": {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "higher_moment_correction_steps": 4,
+            "higher_moment_floor": 1e-05,
+            "higher_moment_strength": 0.2,
+            "pairwise_moment_correction_steps": 1,
+            "pairwise_moment_floor": 1e-05,
+            "pairwise_moment_strength": 0.005,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "rows": [
+            {
+              "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+              "finite": true,
+              "max_col_residual": 7.405877113342285e-06,
+              "max_mean_residual": 1.52587890625e-05,
+              "max_row_residual": 1.4959368854761124e-07,
+              "maximum_normalized_shape_displacement": 0.13189631700515747,
+              "maximum_pairwise_co_kurtosis_residual": 1.1798523664474487,
+              "maximum_pairwise_co_skew_residual": 0.1975824236869812,
+              "mean_normalized_pairwise_shape_residual_objective": 0.8442999124526978,
+              "mean_normalized_shape_residual_objective": 0.002227713353931904,
+              "minimum_covariance_gap_eigenvalue": 1.7106572389602661,
+              "minimum_row_mass": 0.0009919139556586742,
+              "particle_seed": 98201,
+              "program_valid": true,
+              "score": [
+                -27.1068115234375,
+                0.075105220079422,
+                -0.087435282766819,
+                0.9764809608459473,
+                18.116378784179688,
+                -23.43663787841797
+              ],
+              "score_increment_sum_residual": 3.814697265625e-06,
+              "value": -103.13319396972656
+            }
+          ]
+        }
+      },
+      "diagnostic_comparators": [
+        {
+          "method": "sgqf",
+          "role": "same_target_approximate_diagnostic",
+          "score": [
+            -27.641142846745264,
+            0.08410678056716742,
+            -0.0841433194560576,
+            0.8556990579673749,
+            17.52559776873574,
+            -22.634978370035743
+          ],
+          "source_artifact": "docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json",
+          "value": -102.62270352134469
+        },
+        {
+          "method": "zhao_cui",
+          "role": "same_target_approximate_diagnostic",
+          "score": [
+            -22.67643303781743,
+            0.1382796511647915,
+            -0.08341679699102532,
+            0.24588743845934002,
+            17.605348980194737,
+            -22.815861809468686
+          ],
+          "source_artifact": "docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json",
+          "value": -102.41967599576537
+        }
+      ],
+      "pairwise_constraint_count": {
+        "ordered_co_skewness": 2,
+        "unordered_co_kurtosis": 1
+      },
+      "reference": null,
+      "row_id": "predator_prey_T20",
+      "scope": {
+        "event_order": "x0_then_transition_1_to_20_then_observe_y1_to_y20",
+        "horizon": 20,
+        "observation_dimension": 2,
+        "parameter_dimension": 6,
+        "particle_count": 1008,
+        "row_id": "predator_prey_T20",
+        "runtime_fp32_observation_sha256": "5c0482273e3d4f8fa7c9cf078a76ea59977d4107b09290b2b5e7e9e29c31c9a3",
+        "source_observation_sha256": "fea0681d43a4bd502d1f5a90e04f58da435c6e891e72d9da4d54f4cf0584f00a",
+        "state_dimension": 2,
+        "theta": [
+          0.6000000238418579,
+          114.0,
+          25.0,
+          0.30000001192092896,
+          0.5,
+          0.5
+        ]
+      },
+      "tuning": {
+        "baseline_controls": {
+          "balance_steps": 8,
+          "epsilon": 2.0,
+          "higher_moment_correction_steps": 4,
+          "higher_moment_floor": 1e-05,
+          "higher_moment_strength": 0.2,
+          "pairwise_moment_correction_steps": 0,
+          "pairwise_moment_floor": 1e-05,
+          "pairwise_moment_strength": 0.0,
+          "ridge": 1e-05,
+          "sinkhorn_steps": 8
+        },
+        "claim_data_read_during_selection": false,
+        "reference_or_comparator_read_during_selection": false,
+        "scope": "predator_prey_T20",
+        "selected_controls": {
+          "balance_steps": 8,
+          "epsilon": 2.0,
+          "higher_moment_correction_steps": 4,
+          "higher_moment_floor": 1e-05,
+          "higher_moment_strength": 0.2,
+          "pairwise_moment_correction_steps": 1,
+          "pairwise_moment_floor": 1e-05,
+          "pairwise_moment_strength": 0.005,
+          "ridge": 1e-05,
+          "sinkhorn_steps": 8
+        },
+        "selection_status": "SMOKE_FORCED_NONZERO_PAIRWISE_ARM"
+      }
+    }
+  ],
+  "nonclaims": [
+    "lower score variance does not by itself prove lower score bias",
+    "KSC dense finite-difference score is diagnostic reference, not runtime GenUT score",
+    "SGQF and Zhao-Cui are not nonlinear truth oracles",
+    "no default, HMC, broad superiority, or NAWM claim"
+  ],
+  "plan": "docs/plans/bayesfilter-pairwise-moment-genut-lgssm-ksc-predator-prey-trial-plan-2026-07-30.md",
+  "prior_baseline_artifact": "docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json",
+  "run_manifest": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+      "docs/benchmarks/run_pairwise_moment_genut_cross_model_trial.py",
+      "--output-root",
+      "docs/benchmarks/artifacts/pairwise_moment_genut_cross_model_20260730/smoke_attempt02",
+      "--smoke-only"
+    ],
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "host": "DESKTOP-RF1Q5IJ",
+    "python": "3.11.14",
+    "source_sha256": {
+      "bayesfilter/highdim/cubature_genut_filter.py": "6c253673205a6c24e1934533f9e42dfdf7a9a1456584dbd83a5eb4ae0d185a3f",
+      "bayesfilter/highdim/higher_moment_contract_e.py": "e3966b20ec410f0f2b628888105cc0f27d6c5915391756872dc56cca62cee821",
+      "docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json": "be7cc6b23ed7114c10de262a15f23848986bbb80553e2eeba8ffb8396c899626",
+      "docs/benchmarks/run_pairwise_moment_genut_cross_model_trial.py": "46d6f86e284a5f44148576553ca4ab6263acc478969686dc8b220b4abe650adc",
+      "docs/plans/bayesfilter-pairwise-moment-genut-lgssm-ksc-predator-prey-trial-plan-2026-07-30.md": "d71d7338338378f596e30212aee4372df6b1bcf677eeaf0b57fe4b21d97a9b9a"
+    },
+    "tensorflow": "2.19.1"
+  },
+  "schema_version": "bayesfilter.pairwise_moment_genut_cross_model_trial.v1",
+  "smoke_only": true,
+  "status": "PASS_GPU_XLA_SMOKE",
+  "wall_time_seconds": 143.69015352799943
+}

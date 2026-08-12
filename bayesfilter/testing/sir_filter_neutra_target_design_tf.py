@@ -613,7 +613,7 @@ def sir_ukf_likelihood_value_score_status(
             innovation_floor=_MIN_VARIANCE,
             spectral_gap_tolerance=tf.constant(1.0e-8, tf.float64),
             fixed_null_tolerance=tf.constant(1.0e-10, tf.float64),
-            principal_sqrt_backend="tensorflow_eigh",
+            principal_sqrt_backend="tensorflow_newton_schulz",
             jitter=tf.constant(0.0, tf.float64),
         )
     )
@@ -1291,7 +1291,9 @@ def make_sir_ukf_neutra_adapter(
         filter_kind="principal_sqrt_ukf",
         filter_payload={
             "backend": "tf_principal_sqrt_ukf",
-            "principal_sqrt_backend": "tensorflow_eigh_xla_portable",
+            "principal_sqrt_backend": (
+                "tensorflow_newton_schulz_24_xla_native_with_sylvester_eigh"
+            ),
             "score": "manual_sir_rk4_state_parameter_jacobians",
         },
     )

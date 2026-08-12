@@ -28,7 +28,16 @@ def _args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--action",
-        choices=("registry", "preflight", "validate-frozen", "cell", "campaign"),
+        choices=(
+            "registry",
+            "preflight",
+            "training-throughput",
+            "validate-frozen",
+            "broad-grid-frozen",
+            "sample-broad-grid-frozen",
+            "cell",
+            "campaign",
+        ),
         required=True,
     )
     parser.add_argument("--output-root", type=Path)
@@ -37,7 +46,10 @@ def _args() -> argparse.Namespace:
     parser.add_argument("--final-steps", type=int, default=5000)
     parser.add_argument("--final-segment-steps", type=int, default=1000)
     parser.add_argument("--screen-only", action="store_true")
+    parser.add_argument("--screen-result", type=Path)
+    parser.add_argument("--screen-result-sha256")
     parser.add_argument("--recipe")
+    parser.add_argument("--throughput-steps", type=int, default=25)
     parser.add_argument("--cells", nargs="+")
     parser.add_argument("--frozen-transport", type=Path)
     parser.add_argument("--frozen-transport-sha256")
@@ -48,6 +60,12 @@ def _args() -> argparse.Namespace:
         help="run frozen-transport public tuning without sequential HMC",
     )
     parser.add_argument("--seed-offset", type=int, default=0)
+    parser.add_argument("--broad-grid-root-seed", nargs=2, type=int)
+    parser.add_argument("--initial-step-size", type=float)
+    parser.add_argument("--broad-grid-screen-results", type=int, default=128)
+    parser.add_argument("--broad-grid-result", type=Path)
+    parser.add_argument("--broad-grid-result-sha256")
+    parser.add_argument("--hmc-chunk-results", type=int, default=65)
     return parser.parse_args()
 
 
@@ -69,6 +87,7 @@ def _spec(cell_id: str) -> Any:
 def _run_cell(args: argparse.Namespace) -> Mapping[str, Any]:
     if args.output_root is None or not args.cell:
         raise ValueError("cell action requires --output-root and --cell")
+    spec = _spec(args.cell)
     os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
     from bayesfilter.inference.neutra_end_to_end import (
         EndToEndConfig,
@@ -76,13 +95,15 @@ def _run_cell(args: argparse.Namespace) -> Mapping[str, Any]:
     )
 
     return run_neutra_end_to_end_cell(
-        spec=_spec(args.cell),
+        spec=spec,
         config=EndToEndConfig(
             output_root=args.output_root,
             screen_steps=args.screen_steps,
             final_steps=args.final_steps,
             final_segment_steps=args.final_segment_steps,
             screen_only=args.screen_only,
+            screen_result_path=args.screen_result,
+            expected_screen_result_sha256=args.screen_result_sha256,
         ),
     )
 
@@ -90,14 +111,34 @@ def _run_cell(args: argparse.Namespace) -> Mapping[str, Any]:
 def _run_preflight(args: argparse.Namespace) -> Mapping[str, Any]:
     if args.output_root is None or not args.cell or not args.recipe:
         raise ValueError("preflight requires --output-root, --cell, and --recipe")
+    spec = _spec(args.cell)
     os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
     from bayesfilter.inference.neutra_end_to_end import run_neutra_preflight_cell
 
     return run_neutra_preflight_cell(
-        spec=_spec(args.cell),
+        spec=spec,
         recipe_id=args.recipe,
         output_root=args.output_root,
         steps=args.screen_steps,
+    )
+
+
+def _run_training_throughput(args: argparse.Namespace) -> Mapping[str, Any]:
+    if args.output_root is None or not args.cell or not args.recipe:
+        raise ValueError(
+            "training-throughput requires --output-root, --cell, and --recipe"
+        )
+    spec = _spec(args.cell)
+    os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
+    from bayesfilter.inference.neutra_end_to_end import (
+        run_neutra_training_throughput_cell,
+    )
+
+    return run_neutra_training_throughput_cell(
+        spec=spec,
+        recipe_id=args.recipe,
+        output_root=args.output_root,
+        repeated_steps=args.throughput_steps,
     )
 
 
@@ -114,6 +155,7 @@ def _run_frozen_validation(args: argparse.Namespace) -> Mapping[str, Any]:
         )
     if args.tuning_only and args.admitted_kernel_replay is not None:
         raise ValueError("--tuning-only cannot use --admitted-kernel-replay")
+    spec = _spec(args.cell)
     os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
     from bayesfilter.inference.neutra_end_to_end import (
         FrozenTransportValidationConfig,
@@ -121,7 +163,7 @@ def _run_frozen_validation(args: argparse.Namespace) -> Mapping[str, Any]:
     )
 
     return run_neutra_frozen_transport_validation_cell(
-        spec=_spec(args.cell),
+        spec=spec,
         config=FrozenTransportValidationConfig(
             output_root=args.output_root,
             frozen_transport_path=args.frozen_transport,
@@ -132,6 +174,71 @@ def _run_frozen_validation(args: argparse.Namespace) -> Mapping[str, Any]:
         ),
     )
 
+
+def _run_frozen_broad_grid(args: argparse.Namespace) -> Mapping[str, Any]:
+    if (
+        args.output_root is None
+        or not args.cell
+        or args.frozen_transport is None
+        or not args.frozen_transport_sha256
+        or args.broad_grid_root_seed is None
+    ):
+        raise ValueError(
+            "broad-grid-frozen requires --output-root, --cell, "
+            "--frozen-transport, --frozen-transport-sha256, and "
+            "--broad-grid-root-seed"
+        )
+    spec = _spec(args.cell)
+    os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
+    from bayesfilter.inference.neutra_end_to_end import (
+        FrozenTransportBroadGridConfig,
+        run_neutra_frozen_transport_broad_grid_cell,
+    )
+    return run_neutra_frozen_transport_broad_grid_cell(
+        spec=spec,
+        config=FrozenTransportBroadGridConfig(
+            output_root=args.output_root,
+            frozen_transport_path=args.frozen_transport,
+            expected_frozen_transport_sha256=args.frozen_transport_sha256,
+            root_seed=tuple(args.broad_grid_root_seed),
+            initial_step_size=args.initial_step_size,
+            screen_results=args.broad_grid_screen_results,
+        ),
+    )
+
+
+def _run_broad_grid_sequential(args: argparse.Namespace) -> Mapping[str, Any]:
+    if (
+        args.output_root is None
+        or not args.cell
+        or args.frozen_transport is None
+        or not args.frozen_transport_sha256
+        or args.broad_grid_result is None
+        or not args.broad_grid_result_sha256
+    ):
+        raise ValueError(
+            "sample-broad-grid-frozen requires --output-root, --cell, "
+            "--frozen-transport, --frozen-transport-sha256, "
+            "--broad-grid-result, and --broad-grid-result-sha256"
+        )
+    spec = _spec(args.cell)
+    os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
+    from bayesfilter.inference.neutra_end_to_end import (
+        BroadGridSequentialConfig,
+        run_neutra_broad_grid_sequential_cell,
+    )
+
+    return run_neutra_broad_grid_sequential_cell(
+        spec=spec,
+        config=BroadGridSequentialConfig(
+            output_root=args.output_root,
+            frozen_transport_path=args.frozen_transport,
+            expected_frozen_transport_sha256=args.frozen_transport_sha256,
+            broad_grid_result_path=args.broad_grid_result,
+            expected_broad_grid_result_sha256=args.broad_grid_result_sha256,
+            chunk_results=args.hmc_chunk_results,
+        ),
+    )
 
 def _run_campaign(args: argparse.Namespace) -> Mapping[str, Any]:
     if args.output_root is None:
@@ -305,13 +412,26 @@ def main() -> None:
         return
     if args.action == "preflight":
         payload = _run_preflight(args)
+    elif args.action == "training-throughput":
+        payload = _run_training_throughput(args)
     elif args.action == "validate-frozen":
         payload = _run_frozen_validation(args)
+    elif args.action == "broad-grid-frozen":
+        payload = _run_frozen_broad_grid(args)
+    elif args.action == "sample-broad-grid-frozen":
+        payload = _run_broad_grid_sequential(args)
     elif args.action == "cell":
         payload = _run_cell(args)
     else:
         payload = _run_campaign(args)
-    if args.action in {"preflight", "validate-frozen", "cell"}:
+    if args.action in {
+        "preflight",
+        "training-throughput",
+        "validate-frozen",
+        "broad-grid-frozen",
+        "sample-broad-grid-frozen",
+        "cell",
+    }:
         payload = {
             "cell_id": payload.get("cell_id"),
             "passed": payload.get("passed"),

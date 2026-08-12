@@ -51,6 +51,34 @@ _REPOSITORY_ADAPTER_REGISTRY = {
             "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
         ),
     },
+    "ksc_mixture_sv_v1": {
+        "callable_dependency_ids": (
+            "bayesfilter.highdim.cubature_genut_adapters:ksc_mixture_sv_candidate_adapter",
+            "bayesfilter.highdim.cubature_genut_filter:finite_value_score",
+            "bayesfilter.highdim.higher_moment_contract_e:higher_moment_shape_jvp",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
+        ),
+    },
+    "generalized_sv_prior_mean_v1": {
+        "callable_dependency_ids": (
+            "bayesfilter.highdim.cubature_genut_adapters:generalized_sv_prior_mean_candidate_adapter",
+            "bayesfilter.highdim.cubature_genut_filter:finite_value_score",
+            "bayesfilter.highdim.higher_moment_contract_e:higher_moment_shape_jvp",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
+        ),
+    },
+    "parameterized_austria_sir_v1": {
+        "callable_dependency_ids": (
+            "bayesfilter.highdim.cubature_genut_adapters:parameterized_austria_sir_candidate_adapter",
+            "bayesfilter.highdim.cubature_genut_filter:finite_value_score",
+            "bayesfilter.highdim.higher_moment_contract_e:higher_moment_shape_jvp",
+            "bayesfilter.highdim.cubature_genut_candidate:cubature_design",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
+        ),
+    },
     "predator_prey_additive_gaussian_v1": {
         "callable_dependency_ids": (
             "bayesfilter.highdim.cubature_genut_adapters:predator_prey_candidate_adapter",
