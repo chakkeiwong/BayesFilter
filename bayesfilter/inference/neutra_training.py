@@ -49,6 +49,7 @@ SSL_LSTM_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_capacity_dense_iaf"
 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_tuned_capacity_dense_iaf"
 SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_deep_capacity_dense_iaf"
 SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_wide_capacity_dense_iaf"
+SSL_LSTM_PURE_NEUTRA_FAMILY = "ssl_lstm_pure_dense_iaf"
 COMPOSED_NEUTRA_FAMILIES = frozenset(
     (
         DSGE_PAPER_NEUTRA_FAMILY,
@@ -56,6 +57,7 @@ COMPOSED_NEUTRA_FAMILIES = frozenset(
         SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+        SSL_LSTM_PURE_NEUTRA_FAMILY,
     )
 )
 DSGE_PAPER_TRAINING_STEPS = 5000
@@ -85,10 +87,14 @@ class NeuTraTrainerConfig:
     epsilon: float = 1.0e-8
     gradient_clip_norm: float = 10.0
     gradient_clip_mode: str = "global"
+    kernel_initialization: str = "legacy_zero_output"
+    scale_transform: str = "bounded_tanh"
     stages: int = 1
     fixed_translation: tuple[float, ...] = ()
     fixed_output_scale: tuple[float, ...] = ()
     fixed_output_factor: tuple[tuple[float, ...], ...] = ()
+    initial_output_shift: tuple[float, ...] = ()
+    initial_output_scale_log: tuple[float, ...] = ()
     target_parameter_names: tuple[str, ...] = ()
     target_chart: str = "unspecified"
     chart_signature: str | None = None
@@ -129,8 +135,15 @@ class NeuTraTrainerConfig:
             "adaptive_constant",
         }:
             raise ValueError("unsupported learning_rate_schedule")
-        if self.gradient_clip_mode not in {"global", "per_variable"}:
+        if self.gradient_clip_mode not in {"global", "per_variable", "none"}:
             raise ValueError("unsupported gradient_clip_mode")
+        if self.kernel_initialization not in {
+            "legacy_zero_output",
+            "paper_variance_scaling",
+        }:
+            raise ValueError("unsupported kernel_initialization")
+        if self.scale_transform not in {"bounded_tanh", "identity"}:
+            raise ValueError("unsupported scale_transform")
         if int(self.stages) <= 0:
             raise ValueError("stages must be positive")
         translation = tuple(float(value) for value in self.fixed_translation)
@@ -138,6 +151,8 @@ class NeuTraTrainerConfig:
         factor_rows = tuple(
             tuple(float(item) for item in row) for row in self.fixed_output_factor
         )
+        initial_shift = tuple(float(value) for value in self.initial_output_shift)
+        initial_scale_log = tuple(float(value) for value in self.initial_output_scale_log)
         if any(not math.isfinite(value) for value in translation):
             raise ValueError("fixed_translation must be finite")
         if any(not math.isfinite(value) or value <= 0.0 for value in output_scale):
@@ -159,6 +174,8 @@ class NeuTraTrainerConfig:
             raise ValueError("chart_signature must be a sha256 hex digest")
         if factor_rows and self.chart_signature is None:
             raise ValueError("fixed_output_factor requires chart_signature")
+        if any(not math.isfinite(value) for value in initial_shift + initial_scale_log):
+            raise ValueError("initial output values must be finite")
         names = tuple(str(value) for value in self.target_parameter_names)
         if len(set(names)) != len(names):
             raise ValueError("target_parameter_names must be unique")
@@ -169,16 +186,17 @@ class NeuTraTrainerConfig:
                 hidden_layers = (32, 32, 32)
             elif self.family == SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY:
                 hidden_layers = (64, 64)
+            elif self.family == SSL_LSTM_PURE_NEUTRA_FAMILY:
+                hidden_layers = (32, 32)
             else:
                 hidden_layers = (32, 32)
             required = {
                 "hidden_layers": hidden_layers,
                 "activation": "elu",
-                "s_max": 1.0,
+                "s_max": 1.0 if self.family != SSL_LSTM_PURE_NEUTRA_FAMILY else float(self.s_max),
                 "epsilon": 1.0e-7,
                 "beta1": 0.9,
                 "beta2": 0.999,
-                "gradient_clip_mode": "per_variable",
                 "stages": 3,
             }
             if self.family in {
@@ -186,7 +204,23 @@ class NeuTraTrainerConfig:
                 SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
                 SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
             }:
+                required["gradient_clip_mode"] = "per_variable"
                 required["learning_rate_schedule"] = "adaptive_constant"
+            elif self.family == SSL_LSTM_PURE_NEUTRA_FAMILY:
+                if self.learning_rate_schedule == "paper_piecewise":
+                    required.update(
+                        {
+                            "initialization_scale": 0.02,
+                            "learning_rate": 0.01,
+                            "epsilon": 1.0e-8,
+                            "gradient_clip_mode": "none",
+                            "kernel_initialization": "paper_variance_scaling",
+                            "scale_transform": "identity",
+                        }
+                    )
+                else:
+                    required["learning_rate_schedule"] = "adaptive_constant"
+                    required["gradient_clip_mode"] = "per_variable"
             else:
                 required.update(
                     {
@@ -208,6 +242,8 @@ class NeuTraTrainerConfig:
                 "beta2": float(self.beta2),
                 "gradient_clip_norm": float(self.gradient_clip_norm),
                 "gradient_clip_mode": self.gradient_clip_mode,
+                "kernel_initialization": self.kernel_initialization,
+                "scale_transform": self.scale_transform,
                 "stages": int(self.stages),
                 "target_chart": self.target_chart,
             }
@@ -220,7 +256,10 @@ class NeuTraTrainerConfig:
                 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
                 SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
                 SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
-            }:
+            } or (
+                self.family == SSL_LSTM_PURE_NEUTRA_FAMILY
+                and self.learning_rate_schedule == "adaptive_constant"
+            ):
                 if not 1.0e-4 <= float(self.learning_rate) <= 2.0e-3:
                     raise ValueError("tuned capacity learning_rate outside search contract")
                 if float(self.initialization_scale) not in {0.005, 0.01, 0.02}:
@@ -232,7 +271,8 @@ class NeuTraTrainerConfig:
                         "tuned capacity gradient_clip_norm outside search contract"
                     )
             if len(translation) != int(self.dimension):
-                raise ValueError(f"{self.family} requires fixed_translation")
+                if self.family != SSL_LSTM_PURE_NEUTRA_FAMILY:
+                    raise ValueError(f"{self.family} requires fixed_translation")
             if output_scale and len(output_scale) != int(self.dimension):
                 raise ValueError(f"{self.family} fixed_output_scale length mismatch")
             if len(names) != int(self.dimension):
@@ -241,6 +281,16 @@ class NeuTraTrainerConfig:
                 value = getattr(self, field_name)
                 if value is None or len(str(value)) != 64:
                     raise ValueError(f"{self.family} requires {field_name}")
+            if self.family == SSL_LSTM_PURE_NEUTRA_FAMILY:
+                if translation or output_scale or factor_rows:
+                    raise ValueError("pure NeuTra forbids fixed affine chart fields")
+                if len(initial_shift) != int(self.dimension) or len(initial_scale_log) != int(self.dimension):
+                    raise ValueError("pure NeuTra requires initial output shift and log scale")
+                if (
+                    self.scale_transform == "bounded_tanh"
+                    and not float(self.s_max) > max(abs(value) for value in initial_scale_log)
+                ):
+                    raise ValueError("pure NeuTra s_max must exceed initial log-scale magnitude")
         else:
             if self.learning_rate_schedule != "constant":
                 raise ValueError(
@@ -260,7 +310,13 @@ class NeuTraTrainerConfig:
         payload["fixed_translation"] = list(self.fixed_translation)
         payload["fixed_output_scale"] = list(self.fixed_output_scale)
         payload["fixed_output_factor"] = [list(row) for row in self.fixed_output_factor]
+        payload["initial_output_shift"] = list(self.initial_output_shift)
+        payload["initial_output_scale_log"] = list(self.initial_output_scale_log)
         payload["target_parameter_names"] = list(self.target_parameter_names)
+        if self.kernel_initialization == "legacy_zero_output":
+            payload.pop("kernel_initialization")
+        if self.scale_transform == "bounded_tanh":
+            payload.pop("scale_transform")
         payload["schema"] = "bayesfilter.neutra.trainer_config.v1"
         return payload
 
@@ -471,6 +527,56 @@ def ssl_lstm_wide_capacity_neutra_config(
         target_parameter_names=tuple(str(value) for value in target_parameter_names),
         target_chart=str(target_chart),
         chart_signature=None if chart_signature is None else str(chart_signature),
+        target_signature=str(target_signature),
+        target_adapter_signature=str(target_adapter_signature),
+        jit_compile=bool(jit_compile),
+    )
+
+
+def ssl_lstm_pure_neutra_config(
+    *,
+    dimension: int,
+    initial_output_shift: Sequence[float],
+    initial_output_scale_log: Sequence[float],
+    target_parameter_names: Sequence[str],
+    target_signature: str,
+    target_adapter_signature: str,
+    s_max: float = 5.0,
+    learning_rate: float = 1.0e-3,
+    initialization_scale: float = 0.02,
+    gradient_clip_norm: float = 10.0,
+    learning_rate_schedule: str = "adaptive_constant",
+    gradient_clip_mode: str = "per_variable",
+    kernel_initialization: str = "legacy_zero_output",
+    scale_transform: str = "bounded_tanh",
+    epsilon: float = 1.0e-7,
+    initialization_seed: tuple[int, int] = (20260812, 9901),
+    jit_compile: bool = True,
+) -> NeuTraTrainerConfig:
+    """Return the pure three-stage IAF preset with no frozen affine component."""
+
+    return NeuTraTrainerConfig(
+        dimension=int(dimension),
+        family=SSL_LSTM_PURE_NEUTRA_FAMILY,
+        hidden_layers=(32, 32),
+        activation="elu",
+        s_max=float(s_max),
+        initialization_scale=float(initialization_scale),
+        initialization_seed=tuple(int(value) for value in initialization_seed),
+        learning_rate=float(learning_rate),
+        learning_rate_schedule=str(learning_rate_schedule),
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=float(epsilon),
+        gradient_clip_norm=float(gradient_clip_norm),
+        gradient_clip_mode=str(gradient_clip_mode),
+        kernel_initialization=str(kernel_initialization),
+        scale_transform=str(scale_transform),
+        stages=3,
+        initial_output_shift=tuple(float(value) for value in initial_output_shift),
+        initial_output_scale_log=tuple(float(value) for value in initial_output_scale_log),
+        target_parameter_names=tuple(str(value) for value in target_parameter_names),
+        target_chart="direct_physical",
         target_signature=str(target_signature),
         target_adapter_signature=str(target_adapter_signature),
         jit_compile=bool(jit_compile),
@@ -743,6 +849,7 @@ class _TrainableDenseIAF(_TrainableTransport):
         self.hidden_layers = tuple(int(width) for width in config.hidden_layers)
         self.activation = str(config.activation)
         self.s_max = float(config.s_max)
+        self.scale_transform = str(config.scale_transform)
         self.masks = _dense_iaf_masks(self.dimension, self.hidden_layers)
         layer_sizes = (self.dimension, *self.hidden_layers, 2 * self.dimension)
         weights = []
@@ -755,14 +862,28 @@ class _TrainableDenseIAF(_TrainableTransport):
             zip(layer_sizes[:-1], layer_sizes[1:])
         ):
             layer_seed = tf.random.experimental.stateless_fold_in(seed, index)
-            scale = 0.0 if index == len(layer_sizes) - 2 else float(
-                config.initialization_scale
-            )
-            initial_weight = tf.random.stateless_normal(
-                (input_width, output_width),
-                seed=layer_seed,
-                dtype=tf.float64,
-            ) * tf.cast(scale, tf.float64)
+            if config.kernel_initialization == "paper_variance_scaling":
+                # The NeuTra reference code uses TF's variance-scaling
+                # initializer with scale 0.02 for every MADE kernel. TensorFlow
+                # divides by the truncated-normal standard deviation so the
+                # realized variance remains scale / fan_in.
+                stddev = math.sqrt(float(config.initialization_scale) / input_width)
+                stddev /= 0.87962566103423978
+                initial_weight = tf.random.stateless_truncated_normal(
+                    (input_width, output_width),
+                    seed=layer_seed,
+                    stddev=tf.cast(stddev, tf.float64),
+                    dtype=tf.float64,
+                )
+            else:
+                scale = 0.0 if index == len(layer_sizes) - 2 else float(
+                    config.initialization_scale
+                )
+                initial_weight = tf.random.stateless_normal(
+                    (input_width, output_width),
+                    seed=layer_seed,
+                    dtype=tf.float64,
+                ) * tf.cast(scale, tf.float64)
             weights.append(
                 tf.Variable(
                     initial_weight,
@@ -777,6 +898,18 @@ class _TrainableDenseIAF(_TrainableTransport):
             )
         self.weights = tuple(weights)
         self.biases = tuple(biases)
+        if (
+            self.stage_index == int(config.stages) - 1
+            and config.family == SSL_LSTM_PURE_NEUTRA_FAMILY
+        ):
+            scale_log = tf.constant(config.initial_output_scale_log, tf.float64)
+            shift = tf.constant(config.initial_output_shift, tf.float64)
+            if config.scale_transform == "identity":
+                raw_scale = scale_log
+            else:
+                scaled = tf.clip_by_value(scale_log / self.s_max, -0.999999, 0.999999)
+                raw_scale = self.s_max * tf.atanh(scaled)
+            self.biases[-1].assign(tf.concat((raw_scale, shift), axis=0))
 
     @property
     def trainable_variables(self) -> tuple[tf.Variable, ...]:
@@ -819,7 +952,11 @@ class _TrainableDenseIAF(_TrainableTransport):
         raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
         scale_logits = raw[..., : self.dimension]
         shift = raw[..., self.dimension :]
-        scale_log = self.s_max * tf.math.tanh(scale_logits / self.s_max)
+        scale_log = (
+            scale_logits
+            if self.scale_transform == "identity"
+            else self.s_max * tf.math.tanh(scale_logits / self.s_max)
+        )
         max_width = max(self.hidden_layers, default=0)
         padded = [
             tf.pad(values, [[0, 0], [0, max_width - int(values.shape[-1])]])
@@ -837,7 +974,7 @@ class _TrainableDenseIAF(_TrainableTransport):
         return scale_logits, hidden
 
     def frozen_component_payload(self, *, component_id: str) -> Mapping[str, Any]:
-        return {
+        payload = {
             "component_id": component_id,
             "kind": "dense_autoregressive_iaf",
             "dim": self.dimension,
@@ -849,6 +986,9 @@ class _TrainableDenseIAF(_TrainableTransport):
             "weights": [_tensor_values(weight) for weight in self.weights],
             "biases": [_tensor_values(bias) for bias in self.biases],
         }
+        if self.scale_transform != "bounded_tanh":
+            payload["scale_transform"] = self.scale_transform
+        return payload
 
 
 class _FixedMixingReverse(_TrainableTransport):
@@ -950,13 +1090,14 @@ class _TrainableComposedIAF(_TrainableTransport):
             components.append(_TrainableDenseIAF(config, stage_index=stage))
             if stage + 1 < int(config.stages):
                 components.append(_FixedMixingReverse(config.dimension))
-        components.append(
-            _FixedTranslation(
-                config.fixed_translation,
-                config.fixed_output_scale,
-                config.fixed_output_factor,
+        if config.family != SSL_LSTM_PURE_NEUTRA_FAMILY:
+            components.append(
+                _FixedTranslation(
+                    config.fixed_translation,
+                    config.fixed_output_scale,
+                    config.fixed_output_factor,
+                )
             )
-        )
         self.components = tuple(components)
 
     @property
@@ -1064,13 +1205,9 @@ class NeuTraReverseKLTrainer:
             self.first_moments = ()
             self.second_moments = ()
             optimizer_learning_rate: Any = (
-                float(config.learning_rate)
-                if config.family in {
-                    SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
-                    SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
-                    SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
-                }
-                else dsge_paper_learning_rate(config.learning_rate)
+                dsge_paper_learning_rate(config.learning_rate)
+                if config.learning_rate_schedule == "paper_piecewise"
+                else float(config.learning_rate)
             )
             self.optimizer = tf.keras.optimizers.Adam(
                 learning_rate=optimizer_learning_rate,
@@ -1256,7 +1393,10 @@ class NeuTraReverseKLTrainer:
         for index, gradient in enumerate(gradients):
             _assert_finite(gradient, f"chunked gradient[{index}]")
         gradient_norm = tf.linalg.global_norm(gradients)
-        if self.config.gradient_clip_mode == "per_variable":
+        if self.config.gradient_clip_mode == "none":
+            clipped = gradients
+            clipping_applied = tf.constant(False)
+        elif self.config.gradient_clip_mode == "per_variable":
             clipped = tuple(
                 tf.clip_by_norm(gradient, self.config.gradient_clip_norm)
                 for gradient in gradients
@@ -1383,14 +1523,6 @@ class NeuTraReverseKLTrainer:
     def learning_rate_at(self, iteration: int) -> tf.Tensor:
         if int(iteration) < 0:
             raise ValueError("iteration must be nonnegative")
-        if self.config.family in {
-            SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
-            SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
-            SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
-        }:
-            if self.optimizer is None:
-                raise NeuTraTrainingError("tuned capacity optimizer is unavailable")
-            return tf.cast(self.optimizer.learning_rate, tf.float64)
         if self.config.learning_rate_schedule == "paper_piecewise":
             return tf.cast(
                 dsge_paper_learning_rate(self.config.learning_rate)(
@@ -1398,6 +1530,15 @@ class NeuTraReverseKLTrainer:
                 ),
                 tf.float64,
             )
+        if self.config.family in {
+            SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+            SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+            SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+            SSL_LSTM_PURE_NEUTRA_FAMILY,
+        }:
+            if self.optimizer is None:
+                raise NeuTraTrainingError("tuned capacity optimizer is unavailable")
+            return tf.cast(self.optimizer.learning_rate, tf.float64)
         if self.optimizer is None:
             return tf.identity(self._generic_learning_rate)
         return tf.constant(self.config.learning_rate, tf.float64)
@@ -1405,6 +1546,10 @@ class NeuTraReverseKLTrainer:
     def set_learning_rate(self, learning_rate: float) -> None:
         """Assign the effective LR for the tuned family without resetting Adam."""
 
+        if self.config.learning_rate_schedule == "paper_piecewise":
+            raise NeuTraTrainingError(
+                "manual learning-rate mutation is forbidden for paper_piecewise schedule"
+            )
         value = float(learning_rate)
         if not math.isfinite(value) or value <= 0.0:
             raise ValueError("learning_rate must be finite and positive")
@@ -1417,6 +1562,7 @@ class NeuTraReverseKLTrainer:
                 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
                 SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
                 SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+                SSL_LSTM_PURE_NEUTRA_FAMILY,
             }:
                 raise NeuTraTrainingError(
                     "mutable learning rate is restricted to generic or tuned capacity families"
@@ -1519,10 +1665,11 @@ class NeuTraReverseKLTrainer:
                 variable.assign(value)
         if self.optimizer is None:
             self._generic_learning_rate.assign(effective_learning_rate)
-        elif self.config.family in {
+        elif self.config.learning_rate_schedule == "adaptive_constant" and self.config.family in {
             SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
             SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
             SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+            SSL_LSTM_PURE_NEUTRA_FAMILY,
         }:
             self.optimizer.learning_rate.assign(effective_learning_rate)
         self.step.assign(step)
@@ -1576,6 +1723,9 @@ class NeuTraReverseKLTrainer:
                 SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY: (
                     "bayesfilter_ssl_lstm_wide_capacity_64x64_neutra_v1"
                 ),
+                SSL_LSTM_PURE_NEUTRA_FAMILY: (
+                    "bayesfilter_ssl_lstm_pure_32x32_neutra_v1"
+                ),
             }[self.config.family]
             raw.update(
                 {
@@ -1588,6 +1738,8 @@ class NeuTraReverseKLTrainer:
                         list(row) for row in self.config.fixed_output_factor
                     ],
                     "chart_signature": self.config.chart_signature,
+                    "initial_output_shift": list(self.config.initial_output_shift),
+                    "initial_output_scale_log": list(self.config.initial_output_scale_log),
                     "procedure": procedure,
                 }
             )
@@ -1620,7 +1772,11 @@ class NeuTraReverseKLTrainer:
             for index, gradient in enumerate(gradients):
                 _assert_finite(gradient, f"gradient[{index}]")
         loss = tf.reduce_mean(-target_value - logdet)
-        if self.config.gradient_clip_mode == "per_variable":
+        if self.config.gradient_clip_mode == "none":
+            gradient_norm = tf.linalg.global_norm(gradients)
+            clipped = gradients
+            clipping_applied = tf.constant(False)
+        elif self.config.gradient_clip_mode == "per_variable":
             clip_inputs = gradients
             gradient_norm = tf.linalg.global_norm(clip_inputs)
             clipped = tuple(
@@ -1835,7 +1991,11 @@ class NeuTraReverseKLTrainer:
             -tf.reduce_sum(target_score * tf.stop_gradient(theta), axis=-1)
             - tf.stop_gradient(logdet)
         )
-        if self.config.gradient_clip_mode == "per_variable":
+        if self.config.gradient_clip_mode == "none":
+            gradient_norm = tf.linalg.global_norm(gradients)
+            clipped = gradients
+            clipping_applied = tf.constant(False)
+        elif self.config.gradient_clip_mode == "per_variable":
             gradient_norm = tf.linalg.global_norm(gradients)
             clipped = tuple(
                 tf.clip_by_norm(gradient, self.config.gradient_clip_norm)
