@@ -1337,6 +1337,9 @@ def _principal_sqrt_sigma_point_score_with_rule(
         "placement_floor_count": max_placement_floor_count,
         "innovation_floor_count": max_innovation_floor_count,
         "factorization": "principal_square_root",
+        "backend_status": "historical_reference_only",
+        "default_backend": "direct_factor_srukf",
+        "default_backend_contract": "TFFactorSRUKFModel",
         "sigma_point_variable": "pre_transition_structural",
         "derivative_branch": "strict_spd_principal_sqrt",
         "derivative_method": "analytic_first_order_principal_sqrt_sylvester",
@@ -1485,7 +1488,8 @@ def tf_svd_ukf_score(
     """Return the historical eigenderivative SVD-UKF score.
 
     This path is retained for diagnostic comparison and bounded regression use.
-    The promoted HMC-facing strict-SPD route is `tf_principal_sqrt_ukf_score`.
+    The principal-square-root route is retained as a historical diagnostic
+    reference. The repository default is the direct-factor SR-UKF contract.
     """
 
     rule = tf_unit_sigma_point_rule(
@@ -1527,7 +1531,11 @@ def tf_principal_sqrt_ukf_score(
     jitter: tf.Tensor | float = 0.0,
     allow_fixed_null_support: bool = False,
 ) -> TFFilterDerivativeResult:
-    """Return the analytic strict-SPD principal-square-root UKF score."""
+    """Return the historical analytic principal-square-root UKF score.
+
+    This explicit API remains available for reproducibility and parity checks;
+    it is not selected by the repository SR-UKF default policy.
+    """
 
     rule = tf_unit_sigma_point_rule(
         model.partition.state_dim + model.partition.innovation_dim,

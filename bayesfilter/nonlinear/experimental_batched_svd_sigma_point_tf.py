@@ -1,7 +1,9 @@
-"""Experimental batch-native SVD sigma-point value and score kernels.
+"""Historical experimental batch-native SVD sigma-point value and score kernels.
 
 This module is intentionally not exported from ``bayesfilter.nonlinear`` while
-the batch-over-parameters contract is being tested.  The leading batch axis
+the batch-over-parameters contract is being tested. The principal-root route
+is historical/reference-only; the repository default is the direct-factor
+SR-UKF contract. The leading batch axis
 indexes independent model parameter proposals; time remains sequential.
 """
 
@@ -1769,6 +1771,9 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     )
     diagnostics = {
         "backend": tf.constant(backend_name),
+        "backend_status": tf.constant("historical_reference_only"),
+        "default_backend": tf.constant("direct_factor_srukf"),
+        "default_backend_contract": tf.constant("TFFactorSRUKFModel"),
         "rule": tf.constant(sigma_rule.name),
         "cotangent_api": tf.constant(
             "tf_batched_svd_sigma_point_value_and_output_cotangents"

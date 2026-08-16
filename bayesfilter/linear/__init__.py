@@ -78,6 +78,8 @@ __all__ = [
     "trace_factor_solve",
     "TFLinearGaussianStateSpace",
     "TFLinearGaussianStateSpaceDerivatives",
+    "batched_stack_qr_lower",
+    "batched_lower_rank_downdate",
 ]
 
 _EXPORT_MODULES = {
@@ -213,6 +215,8 @@ _EXPORT_MODULES = {
     "trace_factor_solve": "bayesfilter.linear.qr_factor_tf",
     "TFLinearGaussianStateSpace": "bayesfilter.linear.types_tf",
     "TFLinearGaussianStateSpaceDerivatives": "bayesfilter.linear.types_tf",
+    "batched_stack_qr_lower": "bayesfilter.linear.stack_qr_tf",
+    "batched_lower_rank_downdate": "bayesfilter.linear.lower_rank_downdate_tf",
 }
 
 

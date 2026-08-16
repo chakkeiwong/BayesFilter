@@ -14,6 +14,25 @@ FORBIDDEN_SRUKF_ROUTE_PATTERNS: tuple[str, ...] = (
     "strict_spd_principal_sqrt",
     "strict-SPD principal-root",
     "principal_sqrt_frechet_derivative",
+    "tf.linalg.eigh",
+    "tf.linalg.svd",
+    "cholesky",
+    "tf_principal_sqrt_ukf",
+    "principal_sqrt",
+    "tf_svd_sigma_point_filter",
+    "tf_svd_cubature",
+    "tf_svd_ukf",
+    "experimental_batched_svd_sigma_point_tf",
+    "strict_spd_principal_sqrt",
+    "covariance_to_factor",
+    "covariance_to_root",
+    "refactorize_covariance",
+)
+
+ADMITTED_DIRECT_FACTOR_SRUKF_FILES: tuple[str, ...] = (
+    "bayesfilter/linear/stack_qr_tf.py",
+    "bayesfilter/linear/lower_rank_downdate_tf.py",
+    "bayesfilter/nonlinear/factor_srukf_tf.py",
 )
 
 
@@ -32,7 +51,7 @@ def find_forbidden_srukf_routes(text: str) -> tuple[SRUKFRouteGuardViolation, ..
     violations: list[SRUKFRouteGuardViolation] = []
     for line_number, line in enumerate(str(text).splitlines(), start=1):
         for pattern in FORBIDDEN_SRUKF_ROUTE_PATTERNS:
-            if pattern in line:
+            if pattern.casefold() in line.casefold():
                 violations.append(
                     SRUKFRouteGuardViolation(
                         pattern=pattern,
@@ -52,6 +71,11 @@ def assert_no_forbidden_srukf_routes(
     for path_like in paths:
         path = Path(path_like)
         violations = find_forbidden_srukf_routes(path.read_text(encoding="utf-8"))
+        # The historical factor-prototype route is intentionally retained as
+        # a diagnostic comparator; its existing Cholesky refactorization is
+        # not part of the admitted direct-factor source boundary.
+        if path.name == "srukf_factor_tf.py":
+            violations = tuple(v for v in violations if v.pattern.casefold() != "cholesky")
         all_violations.extend(violations)
     if all_violations:
         formatted = "; ".join(
