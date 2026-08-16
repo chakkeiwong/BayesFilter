@@ -203,6 +203,24 @@ docs/plans/artifacts/**/checkpoints/
 docs/plans/artifacts/**/runs/
 docs/plans/artifacts/**/tmp/
 
+# Local literature caches and environment-specific binary backups are not
+# repository source or compact claim receipts. Re-fetch/rebuild them locally.
+.localresources/
+*.so.*
+
+# Benchmark supervisor/runtime state. Compact result/manifest/summary/decision
+# receipts remain visible through the allow-list rules above.
+docs/benchmarks/artifacts/**/*status*/
+docs/benchmarks/artifacts/**/*_status*/
+docs/benchmarks/artifacts/**/pid
+docs/benchmarks/artifacts/**/started_at
+docs/benchmarks/artifacts/**/finished_at
+docs/benchmarks/artifacts/**/exit_code
+docs/benchmarks/artifacts/**/tmux_session
+docs/benchmarks/artifacts/**/ready
+docs/benchmarks/artifacts/**/stdout
+docs/benchmarks/artifacts/**/stderr
+
 # Transient campaign locks are runtime state, never evidence. Keep dependency
 # lockfiles visible.
 docs/plans/artifacts/**/.material-run.lock
@@ -422,3 +440,12 @@ local_research/
 # Failed literature download: this path currently contains an HTML response,
 # not the Huber paper. Track a validated source copy if one is acquired later.
 .localresources/papers/huber-1964-robust-location.pdf
+
+# Generated benchmark run directories are local runtime state by default.
+# Keep only the terminal four-model receipt used by the 2026-08-16 restart
+# boundary; historical tracked evidence is unaffected by ignore rules.
+docs/benchmarks/artifacts/**
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/result.json
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/result.md
