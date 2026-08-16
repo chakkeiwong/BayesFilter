@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
@@ -107,6 +109,7 @@ class FakeHMC:
         self.calls.append(
             {
                 "state_shape": state_shape,
+                "initial_state": state.numpy().tolist(),
                 "num_results": config.num_results,
                 "num_burnin_steps": config.num_burnin_steps,
                 "num_leapfrog_steps": config.num_leapfrog_steps,
@@ -138,7 +141,7 @@ class FakeHMC:
             else tf.constant(config.tuning_policy.target_accept_prob, dtype=tf.float64),
             "num_adaptation_steps": tf.constant(config.tuning_policy.num_adaptation_steps, dtype=tf.int32),
             "trace_policy": config.trace_policy,
-            "divergence_status": "not_available",
+            "divergence_status": "available",
             "divergence_count": tf.constant(0, dtype=tf.int32),
         }
         metadata = {
@@ -220,14 +223,30 @@ class DivergentFakeHMC(FakeHMC):
         )
 
 
-class EnergyTailFakeHMC(FakeHMC):
+class UnavailableDivergenceFakeHMC(ArchiveFakeHMC):
+    def __call__(self, adapter, initial_state, config) -> FullChainHMCRunResult:
+        result = super().__call__(adapter, initial_state, config)
+        diagnostics = dict(result.diagnostics)
+        diagnostics["divergence_status"] = "not_exposed_by_kernel"
+        diagnostics["divergence_count"] = None
+        return FullChainHMCRunResult(
+            samples=result.samples,
+            trace=result.trace,
+            diagnostics=diagnostics,
+            metadata=result.metadata,
+        )
+
+
+class EnergyTailFakeHMC(ArchiveFakeHMC):
     def __call__(self, adapter, initial_state, config) -> FullChainHMCRunResult:
         result = super().__call__(adapter, initial_state, config)
         trace = dict(result.trace)
-        trace["log_accept_ratio"] = tf.fill(
-            tf.shape(trace["log_accept_ratio"]),
-            tf.constant(-1001.0, tf.float64),
-        )
+        if int(config.num_results) >= 1000:
+            trace["log_accept_ratio"] = tf.tensor_scatter_nd_update(
+                trace["log_accept_ratio"],
+                indices=((0, 0),),
+                updates=(tf.constant(-1001.0, tf.float64),),
+            )
         return FullChainHMCRunResult(
             samples=result.samples,
             trace=trace,
@@ -250,6 +269,7 @@ def _config() -> FixedTransportHMCKernelTuningConfig:
         acceptance_band=(0.60, 0.85),
         repair_band=(0.50, 0.95),
         chain_execution_mode="eager",
+        use_xla=False,
         target_scope="gaussian_fixture_fixed_transport",
     )
 
@@ -260,6 +280,23 @@ def test_fixed_transport_defaults_match_owner_acceptance_policy() -> None:
     assert config.acceptance_band == (0.65, 0.75)
     assert config.repair_band == (0.55, 0.85)
     assert config.maximum_absolute_energy_error == 1000.0
+    assert config.use_xla is True
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    (
+        {"leapfrog_grid": (1, 5)},
+        {
+            "fixed_grid_base_step_size_candidates": (0.1,),
+            "fixed_grid_scale_candidates": (1.0,),
+            "fixed_grid_num_leapfrog_steps": 1,
+        },
+    ),
+)
+def test_fixed_transport_tuning_forbids_one_leapfrog_step(overrides) -> None:
+    with pytest.raises(ValueError, match="greater than or equal to 2"):
+        FixedTransportHMCKernelTuningConfig(initial_step_size=0.1, **overrides)
 
 
 def _modern_config(**overrides) -> FixedTransportHMCKernelTuningConfig:
@@ -279,6 +316,7 @@ def _modern_config(**overrides) -> FixedTransportHMCKernelTuningConfig:
         "acceptance_band": (0.65, 0.75),
         "repair_band": (0.50, 0.95),
         "chain_execution_mode": "eager",
+        "use_xla": False,
         "target_scope": "gaussian_fixture_fixed_transport",
         "fixed_grid_base_step_size_candidates": (0.2,),
         "fixed_grid_scale_candidates": (1.0,),
@@ -328,10 +366,91 @@ def test_fixed_transport_hmc_tuner_selects_frozen_identity_z_kernel(tmp_path: Pa
     assert all(shape == (4, 2) for shape in base.shapes)
 
 
+def test_fixed_transport_hmc_tuner_uses_and_records_explicit_initial_state_bank() -> None:
+    bank = ((-1.0, 0.2), (-0.8, -0.1), (0.9, 0.3), (1.1, -0.2))
+    fake_hmc = FakeHMC()
+    config = FixedTransportHMCKernelTuningConfig(
+        **{**_config().__dict__, "initial_state_bank": bank}
+    )
+    result = tune_fixed_transport_hmc_kernel(
+        base_adapter=CountingGaussianAdapter(),
+        fixed_transport=CountingIdentityTransport(),
+        initial_position=np.asarray(bank[0]),
+        config=config,
+        run_full_chain=fake_hmc,
+    )
+
+    assert result.passed
+    assert fake_hmc.calls
+    assert all(call["initial_state"] == [list(row) for row in bank] for call in fake_hmc.calls)
+    diagnostics = result.selected_candidate.verification_diagnostics
+    assert diagnostics["initial_state_all_zero"] is False
+    assert diagnostics["initial_state_bank"] == [list(row) for row in bank]
+    assert result.identity_z_mass_artifact_payload["position"] == list(bank[0])
+
+
 def test_fixed_transport_hmc_tuner_public_imports() -> None:
     assert bayesfilter.tune_fixed_transport_hmc_kernel is tune_fixed_transport_hmc_kernel
     assert bayesfilter.FixedTransportHMCKernelTuningConfig is FixedTransportHMCKernelTuningConfig
     assert "tune_fixed_transport_hmc_kernel" in bayesfilter.__all__
+
+
+def test_fixed_transport_public_route_avoids_legacy_numpy_backed_modules() -> None:
+    command = (
+        "import sys; "
+        "import bayesfilter.inference.fixed_transport_hmc_tuning; "
+        "forbidden=('bayesfilter.inference.hmc',"
+        "'bayesfilter.inference.hmc_budget_ladder',"
+        "'bayesfilter.inference.generic_hmc_tuning',"
+        "'bayesfilter.runtime.runner'); "
+        "print(','.join(name for name in forbidden if name in sys.modules))"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", command],
+        check=True,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "CUDA_VISIBLE_DEVICES": "-1"},
+    )
+    assert completed.stdout.strip() == ""
+
+
+def test_real_tfp_xla_route_uses_shared_scalar_step_and_zero_chain_bank() -> None:
+    config = FixedTransportHMCKernelTuningConfig(
+        initial_step_size=0.1,
+        leapfrog_grid=(2,),
+        chain_count=4,
+        budget_schedule=(2,),
+        tune_num_results=2,
+        screen_num_results=4,
+        screen_num_burnin_steps=2,
+        verification_num_results=4,
+        verification_num_burnin_steps=2,
+        acceptance_band=(0.01, 0.999999),
+        repair_band=(0.001, 0.9999999),
+        fixed_grid_fallback_acceptance_max=0.9999995,
+        use_xla=True,
+        target_scope="gaussian_fixture_fixed_transport",
+    )
+    result = tune_fixed_transport_hmc_kernel(
+        base_adapter=CountingGaussianAdapter(),
+        fixed_transport=CountingIdentityTransport(),
+        initial_position=tf.zeros((2,), tf.float64),
+        config=config,
+    )
+
+    assert len(result.candidates) == 1
+    ladder = result.candidates[0].ladder_result
+    assert ladder is not None
+    assert ladder["shared_scalar_step_across_chain_bank"] is True
+    assert ladder["runtime_numerical_backend"] == "tensorflow_tfp_only"
+    tune_config = ladder["rounds"][0]["tune_config"]
+    assert tune_config["tuning_policy"]["label"] == "fixed_mass_dual_averaging"
+    assert tune_config["use_xla"] is True
+    if result.candidates[0].verification_diagnostics:
+        diagnostics = result.candidates[0].verification_diagnostics
+        assert diagnostics["initial_state_shape"] == (4, 2)
+        assert diagnostics["initial_state_all_zero"] is True
 
 
 def test_fixed_transport_hmc_tuner_forbids_gradient_tape_fallback() -> None:
@@ -380,6 +499,7 @@ def test_fixed_transport_hmc_tuner_runs_bayesfilter_fixed_grid_scale_repair() ->
         acceptance_band=(0.65, 0.75),
         repair_band=(0.50, 0.95),
         chain_execution_mode="eager",
+        use_xla=False,
         target_scope="gaussian_fixture_fixed_transport",
         fixed_grid_base_step_size_candidates=(0.05, 0.5),
         fixed_grid_scale_candidates=(0.1, 0.2, 1.0, 5.0, 9.0),
@@ -524,17 +644,40 @@ def test_native_divergence_is_a_hard_veto() -> None:
     ]
 
 
-def test_untruncated_energy_tail_is_a_hard_veto_before_promotion() -> None:
+def test_unavailable_native_divergence_is_recorded_but_not_a_veto() -> None:
     result = tune_fixed_transport_hmc_kernel(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
         config=_modern_config(),
-        run_full_chain=EnergyTailFakeHMC(acceptance=0.70),
+        run_full_chain=UnavailableDivergenceFakeHMC(),
     )
-    assert not result.passed
+
+    assert result.passed
     scale = result.fixed_grid_scale_selection_payload
     assert scale is not None
-    assert "verification_energy_error_exceeds_limit" in scale["attempts"][0][
-        "probe_hard_vetoes"
-    ]
+    assert scale["attempts"][0]["probe_hard_vetoes"] == ()
+    diagnostics = scale["attempts"][0]["probe_diagnostics"]
+    assert diagnostics["divergence_status"] == "not_exposed_by_kernel"
+    assert diagnostics["divergence_count"] is None
+    assert diagnostics["native_divergence_interpretation"] == (
+        "unavailable is not zero divergences"
+    )
+
+
+def test_finite_log_accept_energy_tail_is_explanatory_only() -> None:
+    result = tune_fixed_transport_hmc_kernel(
+        base_adapter=CountingGaussianAdapter(),
+        fixed_transport=CountingIdentityTransport(),
+        initial_position=np.zeros(2),
+        config=_modern_config(),
+        run_full_chain=EnergyTailFakeHMC(),
+    )
+    assert result.passed
+    scale = result.fixed_grid_scale_selection_payload
+    assert scale is not None
+    assert scale["attempts"][0]["probe_hard_vetoes"] == ()
+    diagnostics = result.selected_candidate.verification_diagnostics
+    assert diagnostics["max_abs_log_accept_energy_proxy"] == pytest.approx(1001.0)
+    assert diagnostics["log_accept_energy_proxy_alert"] is True
+    assert diagnostics["log_accept_energy_proxy_role"] == "explanatory_alert_only"

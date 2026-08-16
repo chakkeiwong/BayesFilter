@@ -63,7 +63,9 @@ def test_pinned_launcher_selects_one_stream_and_binds_batch4x25() -> None:
 
 def test_pinned_launcher_resume_is_joint_and_budget_charged() -> None:
     source = PINNED_SCRIPT.read_text(encoding="utf-8")
+    assert "MAX_CAMPAIGN_SECONDS = 51500.0" in source
     assert "validate_joint_training_checkpoint(checkpoint)" in source
+    assert 'canonical(progress.get("stream")) != canonical(asdict(stream))' in source
     assert 'trainer.restore_state(checkpoint["trainer_state"])' in source
     assert 'controller.restore_state(checkpoint["controller_state"])' in source
     assert "range(program_step + 1, MAX_STEPS + 1)" in source

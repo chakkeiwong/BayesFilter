@@ -121,7 +121,7 @@ def _masked_step(
     observation_covariance: tf.Tensor,
     jitter: tf.Tensor,
     state_identity: tf.Tensor,
-) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     c = _vector_at_time(transition_offset, time_index)
     T = _matrix_at_time(transition_matrix, time_index)
     Q = _matrix_at_time(transition_covariance, time_index)
@@ -151,6 +151,9 @@ def _masked_step(
         + masked_observation_noise
     )
     log_prob, chol, _, _ = _innovation_log_prob(innovation, innovation_covariance)
+    eigenvalues = tf.linalg.eigvalsh(_symmetrize(innovation_covariance))
+    min_eigenvalue = tf.reduce_min(eigenvalues)
+    condition_estimate = tf.reduce_max(eigenvalues) / tf.maximum(min_eigenvalue, tf.constant(1.0e-300, tf.float64))
 
     gain_rhs = predicted_covariance @ tf.transpose(masked_observation_matrix)
     kalman_gain = tf.transpose(tf.linalg.cholesky_solve(chol, tf.transpose(gain_rhs)))
@@ -163,7 +166,109 @@ def _masked_step(
     missing_count = tf.reduce_sum(missing_weight)
     dummy_log_norm = tf.math.log(tf.constant(2.0 * math.pi, dtype=tf.float64))
     adjusted_log_prob = log_prob + 0.5 * missing_count * dummy_log_norm
-    return filtered_mean, filtered_covariance, adjusted_log_prob
+    return filtered_mean, filtered_covariance, adjusted_log_prob, min_eigenvalue, condition_estimate
+
+
+def _checked_masked_step(
+    *,
+    time_index: tf.Tensor,
+    row: tf.Tensor,
+    row_mask: tf.Tensor,
+    mean: tf.Tensor,
+    covariance: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_covariance: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_covariance: tf.Tensor,
+    jitter: tf.Tensor,
+    state_identity: tf.Tensor,
+    active: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Advance only when the innovation covariance is positive definite.
+
+    The eigenvalue check precedes Cholesky, preventing an indefinite innovation
+    covariance from injecting NaNs into an HMC target. No ridge, floor, or
+    modified probability law is introduced. The caller must reject the whole
+    likelihood when any returned validity flag is false.
+    """
+    c = _vector_at_time(transition_offset, time_index)
+    T = _matrix_at_time(transition_matrix, time_index)
+    Q = _matrix_at_time(transition_covariance, time_index)
+    d = _vector_at_time(observation_offset, time_index)
+    Z = _matrix_at_time(observation_matrix, time_index)
+    H = _matrix_at_time(observation_covariance, time_index)
+    observation_dim = tf.shape(Z)[0]
+    obs_identity = tf.eye(observation_dim, dtype=tf.float64)
+    base_observation_noise = H + jitter * obs_identity
+
+    predicted_mean = c + tf.linalg.matvec(T, mean)
+    predicted_covariance = _symmetrize(T @ covariance @ tf.transpose(T) + Q)
+    row_weight = tf.cast(row_mask, tf.float64)
+    missing_weight = 1.0 - row_weight
+    row_outer = row_weight[:, tf.newaxis] * row_weight[tf.newaxis, :]
+    expected_observation = d + tf.linalg.matvec(Z, predicted_mean)
+    innovation = (row - expected_observation) * row_weight
+    masked_observation_matrix = Z * row_weight[:, tf.newaxis]
+    masked_observation_noise = (
+        base_observation_noise * row_outer + tf.linalg.diag(missing_weight)
+    )
+    innovation_covariance = _symmetrize(
+        masked_observation_matrix
+        @ predicted_covariance
+        @ tf.transpose(masked_observation_matrix)
+        + masked_observation_noise
+    )
+    eigenvalues = tf.linalg.eigvalsh(innovation_covariance)
+    min_eigenvalue = tf.reduce_min(eigenvalues)
+    max_eigenvalue = tf.reduce_max(eigenvalues)
+    locally_valid = (
+        tf.reduce_all(tf.math.is_finite(innovation_covariance))
+        & tf.reduce_all(tf.math.is_finite(eigenvalues))
+        & (min_eigenvalue > tf.constant(0.0, tf.float64))
+    )
+    step_valid = tf.logical_and(active, locally_valid)
+    condition_estimate = tf.cond(
+        locally_valid,
+        lambda: max_eigenvalue / min_eigenvalue,
+        lambda: tf.constant(0.0, tf.float64),
+    )
+
+    def update() -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        log_prob, chol, _, _ = _innovation_log_prob(
+            innovation, innovation_covariance
+        )
+        gain_rhs = predicted_covariance @ tf.transpose(masked_observation_matrix)
+        kalman_gain = tf.transpose(
+            tf.linalg.cholesky_solve(chol, tf.transpose(gain_rhs))
+        )
+        filtered_mean = predicted_mean + tf.linalg.matvec(kalman_gain, innovation)
+        left = state_identity - kalman_gain @ masked_observation_matrix
+        filtered_covariance = _symmetrize(
+            left @ predicted_covariance @ tf.transpose(left)
+            + kalman_gain @ masked_observation_noise @ tf.transpose(kalman_gain)
+        )
+        missing_count = tf.reduce_sum(missing_weight)
+        dummy_log_norm = tf.math.log(
+            tf.constant(2.0 * math.pi, dtype=tf.float64)
+        )
+        adjusted_log_prob = log_prob + 0.5 * missing_count * dummy_log_norm
+        return filtered_mean, filtered_covariance, adjusted_log_prob
+
+    next_mean, next_covariance, contribution = tf.cond(
+        step_valid,
+        update,
+        lambda: (mean, covariance, tf.constant(0.0, tf.float64)),
+    )
+    return (
+        next_mean,
+        next_covariance,
+        contribution,
+        min_eigenvalue,
+        condition_estimate,
+        step_valid,
+    )
 
 
 def _validate_mask_shape(observations: tf.Tensor, observation_mask: tf.Tensor) -> None:
@@ -341,7 +446,7 @@ def tf_masked_kalman_filter(
     covariances = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
 
     for t in tf.range(tf.shape(y)[0]):
-        mean, covariance, contribution = _masked_step(
+        mean, covariance, contribution, _, _ = _masked_step(
             time_index=t,
             row=y[t],
             row_mask=observation_mask[t],
@@ -364,6 +469,155 @@ def tf_masked_kalman_filter(
     filtered_means = means.stack() if return_filtered else None
     filtered_covariances = covariances.stack() if return_filtered else None
     return log_likelihood, filtered_means, filtered_covariances
+
+
+@tf.function(reduce_retracing=True)
+def tf_masked_kalman_filter_with_diagnostics(
+    observations: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_covariance: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_covariance: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_covariance: tf.Tensor,
+    observation_mask: tf.Tensor,
+    jitter: tf.Tensor | float = 0.0,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Masked covariance-form likelihood plus innovation conditioning traces.
+
+    This is the same Cholesky recursion as ``tf_masked_kalman_filter``. The
+    additional tensors are the per-period minimum innovation eigenvalue and
+    spectral condition estimate; no covariance floor or ridge is introduced.
+    """
+    y = _as_observation_matrix(observations)
+    transition_offset = tf.convert_to_tensor(transition_offset, dtype=tf.float64)
+    transition_matrix = tf.convert_to_tensor(transition_matrix, dtype=tf.float64)
+    transition_covariance = tf.convert_to_tensor(transition_covariance, dtype=tf.float64)
+    observation_offset = tf.convert_to_tensor(observation_offset, dtype=tf.float64)
+    observation_matrix = tf.convert_to_tensor(observation_matrix, dtype=tf.float64)
+    observation_covariance = tf.convert_to_tensor(observation_covariance, dtype=tf.float64)
+    mean = tf.convert_to_tensor(initial_state_mean, dtype=tf.float64)
+    covariance = _symmetrize(tf.convert_to_tensor(initial_state_covariance, dtype=tf.float64))
+    observation_mask = tf.convert_to_tensor(observation_mask, dtype=tf.bool)
+    jitter = _scalar_float64(jitter)
+    _validate_mask_shape(y, observation_mask)
+    state_identity = tf.eye(tf.shape(mean)[0], dtype=tf.float64)
+    log_likelihood = tf.constant(0.0, dtype=tf.float64)
+    min_eigenvalues = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
+    condition_estimates = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
+    for t in tf.range(tf.shape(y)[0]):
+        mean, covariance, contribution, min_eigenvalue, condition_estimate = _masked_step(
+            time_index=t, row=y[t], row_mask=observation_mask[t], mean=mean,
+            covariance=covariance, transition_offset=transition_offset,
+            transition_matrix=transition_matrix, transition_covariance=transition_covariance,
+            observation_offset=observation_offset, observation_matrix=observation_matrix,
+            observation_covariance=observation_covariance, jitter=jitter,
+            state_identity=state_identity,
+        )
+        log_likelihood += contribution
+        min_eigenvalues = min_eigenvalues.write(t, min_eigenvalue)
+        condition_estimates = condition_estimates.write(t, condition_estimate)
+    return (
+        log_likelihood,
+        min_eigenvalues.stack(),
+        condition_estimates.stack(),
+        mean,
+        covariance,
+    )
+
+
+def tf_masked_kalman_filter_checked_with_diagnostics(
+    observations: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_covariance: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_covariance: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_covariance: tf.Tensor,
+    observation_mask: tf.Tensor,
+    jitter: tf.Tensor | float = 0.0,
+) -> tuple[
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+]:
+    """Masked likelihood with a pre-Cholesky innovation validity trace.
+
+    Valid inputs use the same covariance-form recursion as
+    :func:`tf_masked_kalman_filter_with_diagnostics`. Invalid inputs return a
+    finite partial value plus false validity; callers must finite-reject the
+    complete target. No regularization is added.
+    """
+    y = _as_observation_matrix(observations)
+    transition_offset = tf.convert_to_tensor(transition_offset, dtype=tf.float64)
+    transition_matrix = tf.convert_to_tensor(transition_matrix, dtype=tf.float64)
+    transition_covariance = tf.convert_to_tensor(transition_covariance, dtype=tf.float64)
+    observation_offset = tf.convert_to_tensor(observation_offset, dtype=tf.float64)
+    observation_matrix = tf.convert_to_tensor(observation_matrix, dtype=tf.float64)
+    observation_covariance = tf.convert_to_tensor(observation_covariance, dtype=tf.float64)
+    mean = tf.convert_to_tensor(initial_state_mean, dtype=tf.float64)
+    covariance = _symmetrize(tf.convert_to_tensor(initial_state_covariance, dtype=tf.float64))
+    observation_mask = tf.convert_to_tensor(observation_mask, dtype=tf.bool)
+    jitter = _scalar_float64(jitter)
+    _validate_mask_shape(y, observation_mask)
+    state_identity = tf.eye(tf.shape(mean)[0], dtype=tf.float64)
+    time_steps = y.shape[0]
+    if time_steps is None:
+        raise ValueError(
+            "checked masked HMC recursion requires a static observation horizon"
+        )
+    log_likelihood = tf.constant(0.0, dtype=tf.float64)
+    active = tf.constant(True)
+    min_eigenvalues = []
+    condition_estimates = []
+    validity = []
+    # The horizon is part of the frozen target signature. Static unrolling
+    # avoids TensorFlow's while_grad TemporaryVariable collision, which makes
+    # a symbolically looped score fail from the third period onward.
+    for t in range(int(time_steps)):
+        (
+            mean,
+            covariance,
+            contribution,
+            min_eigenvalue,
+            condition_estimate,
+            step_valid,
+        ) = _checked_masked_step(
+            time_index=t,
+            row=y[t],
+            row_mask=observation_mask[t],
+            mean=mean,
+            covariance=covariance,
+            transition_offset=transition_offset,
+            transition_matrix=transition_matrix,
+            transition_covariance=transition_covariance,
+            observation_offset=observation_offset,
+            observation_matrix=observation_matrix,
+            observation_covariance=observation_covariance,
+            jitter=jitter,
+            state_identity=state_identity,
+            active=active,
+        )
+        log_likelihood += contribution
+        active = step_valid
+        min_eigenvalues.append(min_eigenvalue)
+        condition_estimates.append(condition_estimate)
+        validity.append(step_valid)
+    return (
+        log_likelihood,
+        tf.stack(min_eigenvalues),
+        tf.stack(condition_estimates),
+        tf.stack(validity),
+        mean,
+        covariance,
+    )
 
 
 def _metadata(

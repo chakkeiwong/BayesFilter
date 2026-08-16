@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -199,9 +199,19 @@ def reviewed_value_score_target_fn(
             score_tensor = tf.cast(tf.convert_to_tensor(score), dtype)
             _validate_value_score_shapes(theta=x, value=value_tensor, score=score_tensor)
 
-            def grad(dy: Any) -> tf.Tensor:
+            def grad(
+                dy: Any, variables: Sequence[tf.Variable] | None = None
+            ) -> Any:
                 upstream = _broadcast_upstream_gradient_to_score(dy, score_tensor)
-                return upstream * score_tensor
+                input_gradient = upstream * score_tensor
+                if variables is None:
+                    return input_gradient
+                # The adapter is frozen during HMC. TensorFlow still reports
+                # captured Variables to custom_gradient, so close that path
+                # explicitly instead of allowing an accidental transport update.
+                return input_gradient, tf.nest.map_structure(
+                    lambda variable: tf.zeros_like(variable), variables
+                )
 
             return value_tensor, grad
 
@@ -320,7 +330,10 @@ class LatentAffineBatchValueScoreAdapter:
         full_chain_ready = bool(
             self.full_chain_xla_diagnostic_ready
             and xla_ready
-            and base_capability.is_accepted_full_chain_xla_diagnostic_authority
+            # Full-chain evidence is scoped to this final transformed adapter.
+            # The base target needs accepted target-XLA authority, but it does
+            # not need a separate full-chain receipt for a different program.
+            and base_capability.is_accepted_xla_hmc_authority
         )
         nonclaims = self.nonclaims + (
             f"base value/score authority: {base_capability.value_score_authority}",
@@ -558,7 +571,10 @@ class FixedTransportValueScoreAdapter:
         full_chain_ready = bool(
             self.full_chain_xla_diagnostic_ready
             and xla_ready
-            and base_capability.is_accepted_full_chain_xla_diagnostic_authority
+            # The full-chain receipt is scoped to this final transformed
+            # adapter. The base target needs target-XLA authority, not a
+            # second receipt for a different full-chain program.
+            and base_capability.is_accepted_xla_hmc_authority
         )
         nonclaims = self.nonclaims + (
             f"base value/score authority: {base_capability.value_score_authority}",

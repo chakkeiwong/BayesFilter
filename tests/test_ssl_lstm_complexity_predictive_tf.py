@@ -74,6 +74,30 @@ def test_q2_compiled_forecast_uses_stable_cholesky_terminal_factor() -> None:
     assert bool(tf.reduce_all(tf.math.is_finite(forecast.observations)).numpy())
 
 
+def test_compiled_forecast_supports_arbitrary_positive_horizon_and_replay() -> None:
+    draw = tf.constant([[0.35, -0.08, 0.65, 0.05]], tf.float64)
+    first = forecast_complexity_conditional_moments(
+        draw, q=1, seed=(20260809, 49003), replication_count=3, horizon=20
+    )
+    second = forecast_complexity_conditional_moments(
+        draw, q=1, seed=(20260809, 49003), replication_count=3, horizon=20
+    )
+    assert first.observations.shape == (1, 3, 20)
+    assert first.horizon == 20
+    tf.debugging.assert_equal(first.observations, second.observations)
+
+
+@pytest.mark.parametrize("horizon", (0, -1, True, 1.5))
+def test_compiled_forecast_rejects_invalid_horizon(horizon: object) -> None:
+    with pytest.raises(ComplexityPredictiveError, match="horizon"):
+        forecast_complexity_conditional_moments(
+            tf.constant([[0.35, -0.08, 0.65, 0.05]], tf.float64),
+            q=1,
+            seed=(20260809, 49004),
+            horizon=horizon,  # type: ignore[arg-type]
+        )
+
+
 def test_calibration_math_is_unbiased_positive_and_seed_bound() -> None:
     first = tf.reshape(tf.cast(tf.range(40), tf.float64), (2, 2, 10))
     second = first + 1.0

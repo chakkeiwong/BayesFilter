@@ -52,6 +52,7 @@ class FrozenNeuTraArtifactManifest:
     training_state_hash: str | None
     topology_hash: str | None = None
     tensor_hash: str | None = None
+    chart_signature: str | None = None
     nonclaims: tuple[str, ...] = NEUTRA_ARTIFACT_NONCLAIMS
 
     def manifest_payload(self) -> Mapping[str, Any]:
@@ -65,6 +66,7 @@ class FrozenNeuTraArtifactManifest:
             "training_state_hash": self.training_state_hash,
             "topology_hash": self.topology_hash,
             "tensor_hash": self.tensor_hash,
+            "chart_signature": self.chart_signature,
             "nonclaims": self.nonclaims,
         }
 
@@ -289,6 +291,7 @@ class _DenseAutoregressiveIAFComponent:
         hidden_layers: tuple[int, ...],
         activation: str,
         s_max: float,
+        scale_transform: str,
         weights: tuple[tf.Tensor, ...],
         biases: tuple[tf.Tensor, ...],
     ) -> None:
@@ -296,6 +299,7 @@ class _DenseAutoregressiveIAFComponent:
         self.hidden_layers = hidden_layers
         self.activation = activation
         self.s_max = s_max
+        self.scale_transform = scale_transform
         self.weights = weights
         self.biases = biases
         self.masks = _dense_iaf_masks(dim, hidden_layers)
@@ -358,10 +362,14 @@ class _DenseAutoregressiveIAFComponent:
             h = _apply_activation(preactivation, self.activation)
         raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
         scale_logits = raw[..., : self.dim]
-        scaled_logits = scale_logits / self.s_max
-        scale_tanh = tf.math.tanh(scaled_logits)
-        scale_log = self.s_max * scale_tanh
-        scale_derivative = 1.0 - tf.square(scale_tanh)
+        if self.scale_transform == "identity":
+            scale_log = scale_logits
+            scale_derivative = tf.ones_like(scale_logits)
+        else:
+            scaled_logits = scale_logits / self.s_max
+            scale_tanh = tf.math.tanh(scaled_logits)
+            scale_log = self.s_max * scale_tanh
+            scale_derivative = 1.0 - tf.square(scale_tanh)
         return scale_log, raw[..., self.dim :], scale_derivative, tuple(preactivations)
 
     def _network_pullback(
@@ -436,7 +444,17 @@ class _AffineComponent:
             sign, log_abs_det = tf.linalg.slogdet(matrix)
             if bool(tf.equal(sign, 0.0).numpy()):
                 raise InvalidNeuTraArtifact("affine matrix must be nonsingular")
-            self.log_abs_det = tf.convert_to_tensor(log_abs_det, dtype=tf.float64)
+            lower = tf.linalg.band_part(matrix, -1, 0)
+            upper = tf.linalg.band_part(matrix, 0, -1)
+            triangular = bool(tf.reduce_all(tf.equal(matrix, lower)).numpy()) or bool(
+                tf.reduce_all(tf.equal(matrix, upper)).numpy()
+            )
+            self.log_abs_det = tf.convert_to_tensor(
+                tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(matrix))))
+                if triangular
+                else log_abs_det,
+                dtype=tf.float64,
+            )
         else:
             raise InvalidNeuTraArtifact("affine component requires scale or matrix")
 
@@ -701,6 +719,13 @@ def _load_dense_iaf_neutra_artifact(
             expected_hidden=(64, 64),
             label="SSL-LSTM wide capacity NeuTra",
         )
+    elif procedure == "bayesfilter_ssl_lstm_pure_32x32_neutra_v1":
+        _validate_pure_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(32, 32),
+            label="SSL-LSTM pure NeuTra",
+        )
     finalized = finalize_dense_iaf_neutra_artifact_payload(normalized)
     for key in ("topology_hash", "tensor_hash", "transport_hash"):
         supplied = _nonempty_text(normalized.get(key), key)
@@ -731,6 +756,7 @@ def _load_dense_iaf_neutra_artifact(
         training_state_hash=training_state_hash,
         topology_hash=finalized["topology_hash"],
         tensor_hash=finalized["tensor_hash"],
+        chart_signature=normalized.get("chart_signature"),
     )
     transport = FrozenDenseIAFTransport(manifest=manifest, components=components)
     binding = binding_type(
@@ -745,6 +771,7 @@ def _load_dense_iaf_neutra_artifact(
             "schema": _DENSE_IAF_SCHEMA,
             "topology_hash": finalized["topology_hash"],
             "tensor_hash": finalized["tensor_hash"],
+            "chart_signature": normalized.get("chart_signature"),
         },
     )
     artifact_signature = _stable_json_hash(
@@ -788,7 +815,13 @@ def _validate_composed_neutra_payload(
         _nonempty_text(component.get("component_id"), "component_id"): component
         for component in components
     }
-    if tuple(component_by_id.get(value, {}).get("kind") for value in order) != expected_kinds:
+    actual_kinds = tuple(component_by_id.get(value, {}).get("kind") for value in order)
+    dense_factor = payload.get("fixed_output_factor")
+    if actual_kinds != expected_kinds and not (
+        dense_factor
+        and actual_kinds[:-1] == expected_kinds[:-1]
+        and actual_kinds[-1] == "affine_dense"
+    ):
         raise InvalidNeuTraArtifact(f"{label} component order mismatch")
     reverse_matrix = [
         [1.0 if column == dimension - row - 1 else 0.0 for column in range(dimension)]
@@ -810,13 +843,83 @@ def _validate_composed_neutra_payload(
             translation = payload.get("fixed_translation")
             if component.get("offset") != translation:
                 raise InvalidNeuTraArtifact(f"{label} translation mismatch")
-            if component.get("scale") != [1.0] * dimension:
-                raise InvalidNeuTraArtifact(f"{label} output scale must be fixed identity")
+            if dense_factor:
+                if component.get("kind") != "affine_dense" or component.get("matrix") != dense_factor:
+                    raise InvalidNeuTraArtifact(f"{label} output factor mismatch")
+            else:
+                expected_scale = payload.get("fixed_output_scale")
+                if not expected_scale:
+                    expected_scale = [1.0] * dimension
+                if component.get("scale") != expected_scale:
+                    raise InvalidNeuTraArtifact(f"{label} output scale mismatch")
     names = payload.get("target_parameter_names")
     if not isinstance(names, (tuple, list)) or len(names) != dimension:
         raise InvalidNeuTraArtifact(f"{label} target chart names mismatch")
-    if payload.get("target_chart") != "identity":
-        raise InvalidNeuTraArtifact(f"{label} target chart mismatch")
+    target_chart = payload.get("target_chart")
+    if not isinstance(target_chart, str) or not target_chart.strip():
+        raise InvalidNeuTraArtifact(f"{label} target chart declaration missing")
+    if dense_factor:
+        chart_signature = payload.get("chart_signature")
+        if not isinstance(chart_signature, str) or not _SHA256_HEX_RE.fullmatch(chart_signature):
+            raise InvalidNeuTraArtifact(f"{label} dense chart signature missing")
+
+
+def _validate_pure_composed_neutra_payload(
+    payload: Mapping[str, Any],
+    dimension: int,
+    *,
+    expected_hidden: tuple[int, int],
+    label: str,
+) -> None:
+    """Fail closed on the pure IAF topology: no affine chart component."""
+
+    expected_kinds = (
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+    )
+    components = _component_list(payload.get("components"), "components")
+    order = tuple(
+        _nonempty_text(value, "component_order item")
+        for value in _sequence(payload.get("component_order"), "component_order")
+    )
+    component_by_id = {
+        _nonempty_text(component.get("component_id"), "component_id"): component
+        for component in components
+    }
+    actual_kinds = tuple(component_by_id.get(value, {}).get("kind") for value in order)
+    if actual_kinds != expected_kinds:
+        raise InvalidNeuTraArtifact(f"{label} component order mismatch")
+    reverse_matrix = [
+        [1.0 if column == dimension - row - 1 else 0.0 for column in range(dimension)]
+        for row in range(dimension)
+    ]
+    for index, component_id in enumerate(order):
+        component = component_by_id[component_id]
+        kind = component.get("kind")
+        if kind == "dense_autoregressive_iaf":
+            if component.get("hidden_layers") != list(expected_hidden):
+                raise InvalidNeuTraArtifact(f"{label} hidden layers mismatch")
+            if component.get("activation") != "elu":
+                raise InvalidNeuTraArtifact(f"{label} activation mismatch")
+            if float(component.get("s_max", 0.0)) <= 1.0:
+                raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
+            if component.get("scale_transform", "bounded_tanh") not in {
+                "bounded_tanh",
+                "identity",
+            }:
+                raise InvalidNeuTraArtifact(f"{label} scale transform mismatch")
+        elif kind == "mixing_linear" and component.get("matrix") != reverse_matrix:
+            raise InvalidNeuTraArtifact(f"{label} reverse mixing mismatch")
+    if payload.get("fixed_translation") or payload.get("fixed_output_scale") or payload.get("fixed_output_factor"):
+        raise InvalidNeuTraArtifact(f"{label} must not contain fixed affine chart fields")
+    names = payload.get("target_parameter_names")
+    if not isinstance(names, (tuple, list)) or len(names) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} target chart names mismatch")
+    if payload.get("target_chart") != "direct_physical":
+        raise InvalidNeuTraArtifact(f"{label} target chart declaration mismatch")
 
 
 def _parse_dense_component(payload: Mapping[str, Any], dimension: int) -> Any:
@@ -838,6 +941,9 @@ def _parse_dense_component(payload: Mapping[str, Any], dimension: int) -> Any:
         s_max = float(payload.get("s_max", 0.0))
         if s_max <= 0.0:
             raise InvalidNeuTraArtifact("s_max must be positive")
+        scale_transform = str(payload.get("scale_transform", "bounded_tanh"))
+        if scale_transform not in {"bounded_tanh", "identity"}:
+            raise InvalidNeuTraArtifact("unsupported dense IAF scale_transform")
         layer_sizes = (dimension, *hidden_layers, 2 * dimension)
         weights = _tensor_tuple(payload.get("weights"), "weights")
         biases = _tensor_tuple(payload.get("biases"), "biases")
@@ -851,6 +957,7 @@ def _parse_dense_component(payload: Mapping[str, Any], dimension: int) -> Any:
             hidden_layers=hidden_layers,
             activation=activation,
             s_max=s_max,
+            scale_transform=scale_transform,
             weights=weights,
             biases=biases,
         )
@@ -1067,6 +1174,9 @@ def _dense_iaf_top_level_hashes(payload: Mapping[str, Any]) -> Mapping[str, str]
             "target_chart": payload.get("target_chart"),
             "target_parameter_names": payload.get("target_parameter_names"),
             "fixed_translation": payload.get("fixed_translation"),
+            "fixed_output_scale": payload.get("fixed_output_scale"),
+            "fixed_output_factor": payload.get("fixed_output_factor"),
+            "chart_signature": payload.get("chart_signature"),
         }
     transport_hash = _stable_json_hash(transport_payload)
     return {
@@ -1119,6 +1229,8 @@ def _component_topology_payload(component: Mapping[str, Any]) -> Mapping[str, An
                 "bias_shapes": [_shape_of_nested(item) for item in _sequence(component.get("biases"), "biases")],
             }
         )
+        if component.get("scale_transform") is not None:
+            base["scale_transform"] = component.get("scale_transform")
     elif kind == "mixing_linear":
         base["matrix_shape"] = _shape_of_nested(component.get("matrix"))
     elif kind in {"affine", "affine_dense"}:

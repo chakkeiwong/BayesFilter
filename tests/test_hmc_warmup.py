@@ -322,7 +322,7 @@ def test_affine_warmup_batch_telemetry_preserves_invalid_chain_count(
         "target_status_telemetry_failure",
     )
     assert health["target_status_failure_count"] == 2
-    assert health["evaluated_draw_count"] == 6
+    assert health["evaluated_draw_count"] == 20
 
 
 def test_dense_metric_gate_requires_sample_adequacy() -> None:
@@ -341,6 +341,78 @@ def test_dense_metric_gate_requires_sample_adequacy() -> None:
     assert accepted.report["cross_chain_compatibility_method"] == (
         "not_applicable_single_chain"
     )
+
+
+def test_dense_metric_shrinks_correlations_and_preserves_variances() -> None:
+    rng = np.random.default_rng(20260730)
+    states = rng.normal(size=(256, 3)) @ np.array(
+        [[1.0, 0.35, -0.10], [0.0, 0.70, 0.20], [0.0, 0.0, 0.40]]
+    )
+    weight = 0.25
+
+    decision = assess_metric_covariance(states, shrinkage=weight)
+    empirical = np.cov(states, rowvar=False, ddof=1)
+    expected = (1.0 - weight) * empirical + weight * np.diag(np.diag(empirical))
+
+    assert decision.outcome == "dense_update"
+    assert decision.estimator_family == "dense_unbiased_correlation_shrinkage"
+    np.testing.assert_allclose(decision.covariance, expected, rtol=1.0e-12, atol=1.0e-14)
+    np.testing.assert_allclose(
+        np.diag(decision.covariance),
+        np.diag(empirical),
+        rtol=1.0e-12,
+        atol=1.0e-14,
+    )
+    assert np.min(np.linalg.eigvalsh(decision.covariance)) > 0.0
+    assert decision.report["adequacy_geometry_space"] == "correlation"
+    assert decision.report["absolute_regularization_applied"] is False
+    assert decision.report["eigenvalue_floor"] is None
+    assert decision.report["clipped_eigenvalue_count"] == 0
+
+
+def test_metric_assessment_is_equivariant_to_independent_unit_changes() -> None:
+    rng = np.random.default_rng(20260731)
+    states = rng.normal(size=(256, 3)) @ np.array(
+        [[1.0, 0.30, 0.05], [0.0, 0.65, -0.15], [0.0, 0.0, 0.45]]
+    )
+    unit_change = np.diag([1.0e-3, -4.0, 25.0])
+
+    base = assess_metric_covariance(states)
+    rescaled = assess_metric_covariance(states @ unit_change.T)
+
+    assert rescaled.outcome == base.outcome == "dense_update"
+    assert rescaled.estimator_family == base.estimator_family
+    assert rescaled.report["dense_checks"] == base.report["dense_checks"]
+    assert rescaled.report["diagonal_checks"] if "diagonal_checks" in rescaled.report else True
+    assert rescaled.report["standardized_numerical_rank"] == base.report[
+        "standardized_numerical_rank"
+    ]
+    assert rescaled.report["standardized_condition_number"] == pytest.approx(
+        base.report["standardized_condition_number"], rel=1.0e-12
+    )
+    assert rescaled.report["dense_relative_frobenius_discrepancy"] == pytest.approx(
+        base.report["dense_relative_frobenius_discrepancy"], rel=1.0e-12
+    )
+    np.testing.assert_allclose(
+        rescaled.covariance,
+        unit_change @ base.covariance @ unit_change.T,
+        rtol=1.0e-12,
+        atol=1.0e-13,
+    )
+
+
+def test_tiny_scale_nonconstant_states_do_not_fail_absolute_ess_cutoff() -> None:
+    rng = np.random.default_rng(20260801)
+    states = 1.0e-12 * rng.normal(size=(256, 2))
+
+    decision = assess_metric_covariance(states)
+
+    assert decision.outcome == "dense_update"
+    assert decision.report["minimum_effective_sample_size"] >= 8
+    assert decision.report["ess_positive_variance_rule"] == (
+        "finite_and_strictly_positive_scale_free"
+    )
+    assert np.min(np.linalg.eigvalsh(decision.covariance)) > 0.0
 
 
 def test_dense_metric_gate_rejects_shifted_explicit_chains() -> None:
@@ -390,6 +462,30 @@ def test_metric_gate_uses_diagonal_fallback_when_dense_rank_is_inadequate() -> N
     assert decision.report["dense_checks"]["state_count_sufficient"] is False
     assert decision.report["diagonal_fallback_used"] is True
     assert np.allclose(decision.covariance, np.diag(np.diag(decision.covariance)))
+    np.testing.assert_allclose(
+        np.diag(decision.covariance),
+        np.var(states, axis=0, ddof=1),
+        rtol=1.0e-12,
+        atol=1.0e-14,
+    )
+    assert decision.report["absolute_regularization_applied"] is False
+
+
+def test_tensorflow_covariance_kernel_matches_eager_and_tf_function() -> None:
+    rng = np.random.default_rng(20260802)
+    states = rng.normal(size=(96, 3))
+    tensor = tf.convert_to_tensor(states, dtype=tf.float64)
+
+    eager = hmc_warmup._unbiased_covariance_and_correlation(tensor)
+    compiled = tf.function(hmc_warmup._unbiased_covariance_and_correlation)(tensor)
+
+    for eager_value, compiled_value in zip(eager, compiled):
+        np.testing.assert_allclose(
+            compiled_value.numpy(),
+            eager_value.numpy(),
+            rtol=1.0e-13,
+            atol=1.0e-14,
+        )
 
 
 def test_affine_compatibility_composition_preserves_center_and_covariance() -> None:
@@ -1291,6 +1387,9 @@ def test_tiny_operational_warmup_does_not_claim_dense_metric() -> None:
     assert decisions
     assert all(decision.outcome == "no_update_insufficient_metric_evidence" for decision in decisions)
     assert result.operational_metric_update_count == 0
+    assert result.status == "passed"
+    assert result.metric_adaptation_status == "no_metric_update"
+    assert result.public_payload()["metric_adaptation_status"] == "no_metric_update"
 
 
 def test_operational_stage_callback_is_additive_public_safe_and_observation_only() -> None:

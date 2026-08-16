@@ -12,6 +12,7 @@ from bayesfilter.inference.neutra_batching import (
     InvalidNeuTraBatchTarget,
     batch_native_value_status_target_fn,
     bind_batch_native_neutra_target,
+    bound_batch_native_neutra_training_target,
     require_batch_native_neutra_target,
 )
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
@@ -117,6 +118,30 @@ class NonXLAAdapter(VectorizedAdapter):
         )
 
 
+class NamedVectorizedAdapter(VectorizedAdapter):
+    config = object()
+    parameter_dim = 3
+    parameter_names = ("a", "b", "c")
+
+    def target_signature(self):
+        return TARGET_SIGNATURE
+
+    def adapter_signature(self):
+        return "c" * 64
+
+
+class InvalidNamedVectorizedAdapter(NamedVectorizedAdapter):
+    def neutra_batch_log_prob_and_grad_status(self, theta):
+        values = tf.convert_to_tensor(theta, tf.float64)
+        leading = tf.shape(values)[:-1]
+        return -0.5 * tf.reduce_sum(tf.square(values), axis=-1), -values, {
+            "status_code": tf.ones(leading, tf.int32),
+            "valid_pre_regularized_score": tf.zeros(leading, tf.bool),
+            "floor_count_value": tf.ones(leading, tf.int32),
+            "min_innovation_eigenvalue": tf.zeros(leading, tf.float64),
+        }
+
+
 def test_repository_binding_invokes_vectorized_batch_method() -> None:
     adapter = VectorizedAdapter()
     binding = require_batch_native_neutra_target(
@@ -139,6 +164,43 @@ def test_repository_binding_invokes_vectorized_batch_method() -> None:
     assert bool(tf.reduce_all(status["valid_pre_regularized_score"]).numpy())
     assert binding.payload()["scalar_fallback_used"] is False
     assert binding.payload()["row_mapped_scalar_target_used"] is False
+
+
+def test_bound_training_target_executes_issued_callable_and_preserves_identity() -> None:
+    adapter = NamedVectorizedAdapter()
+    binding = require_batch_native_neutra_target(
+        adapter,
+        target_signature=TARGET_SIGNATURE,
+        batch_size=8,
+    )
+    target = bound_batch_native_neutra_training_target(binding)
+    values = tf.ones((8, 3), tf.float64)
+
+    result, score = target.batch_value_and_score(values)
+
+    assert adapter.call_count == 1
+    tf.debugging.assert_all_finite(result, "bound values")
+    tf.debugging.assert_all_finite(score, "bound scores")
+    assert target.config is adapter.config
+    assert target.parameter_dim == adapter.parameter_dim
+    assert target.parameter_names == adapter.parameter_names
+    assert target.target_signature() == TARGET_SIGNATURE
+    assert target.adapter_signature() == "c" * 64
+
+
+def test_bound_training_target_poisons_invalid_status() -> None:
+    adapter = InvalidNamedVectorizedAdapter()
+    binding = require_batch_native_neutra_target(
+        adapter,
+        target_signature=TARGET_SIGNATURE,
+        batch_size=8,
+    )
+    target = bound_batch_native_neutra_training_target(binding)
+
+    result, score = target.batch_value_and_score(tf.ones((8, 3), tf.float64))
+
+    assert not bool(tf.reduce_any(tf.math.is_finite(result)).numpy())
+    assert not bool(tf.reduce_any(tf.math.is_finite(score)).numpy())
 
 
 def test_optional_condition_estimate_is_normalized_with_availability() -> None:

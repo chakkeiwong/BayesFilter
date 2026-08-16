@@ -122,6 +122,80 @@ class NeuTraBatchTargetBinding:
         }
 
 
+class BoundBatchNativeNeuTraTrainingTarget:
+    """Trainer-facing target that executes one repository-issued binding."""
+
+    def __init__(self, binding: NeuTraBatchTargetBinding) -> None:
+        _validate_binding_integrity(binding)
+        owner = binding._owner
+        required = ("config", "parameter_dim", "parameter_names")
+        missing = tuple(name for name in required if not hasattr(owner, name))
+        if missing:
+            raise InvalidNeuTraBatchTarget(
+                f"bound NeuTra training target is missing identity fields: {missing}"
+            )
+        self._binding = binding
+        self.config = owner.config
+        self.parameter_dim = int(owner.parameter_dim)
+        self.parameter_names = tuple(str(name) for name in owner.parameter_names)
+        self.target_scope = binding.target_scope
+
+    def target_signature(self) -> str:
+        return self._binding.target_signature
+
+    def adapter_signature(self) -> str:
+        return self._binding.adapter_signature
+
+    def binding_payload(self) -> Mapping[str, Any]:
+        return self._binding.payload()
+
+    def batch_value_and_score(
+        self, theta: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor]:
+        value, score, status = self._binding.invoke(theta)
+        value_tensor = tf.convert_to_tensor(value, tf.float64)
+        score_tensor = tf.convert_to_tensor(score, tf.float64)
+        values = tf.convert_to_tensor(theta, tf.float64)
+        if value_tensor.shape != values.shape[:-1] or score_tensor.shape != values.shape:
+            raise InvalidNeuTraBatchTarget("bound target value/score shape mismatch")
+        valid = _hard_valid_training_status(
+            status,
+            value=value_tensor,
+            score=score_tensor,
+        )
+        invalid_value = tf.fill(
+            tf.shape(value_tensor), tf.constant(float("nan"), tf.float64)
+        )
+        invalid_score = tf.fill(
+            tf.shape(score_tensor), tf.constant(float("nan"), tf.float64)
+        )
+        return (
+            tf.where(valid, value_tensor, invalid_value),
+            tf.where(valid[..., tf.newaxis], score_tensor, invalid_score),
+        )
+
+    def batch_value_score_status(
+        self, theta: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+        value, score, status = self._binding.invoke(theta)
+        value_tensor = tf.convert_to_tensor(value, tf.float64)
+        score_tensor = tf.convert_to_tensor(score, tf.float64)
+        normalized = _normalized_training_status(
+            status,
+            value=value_tensor,
+            score=score_tensor,
+        )
+        return value_tensor, score_tensor, normalized
+
+
+def bound_batch_native_neutra_training_target(
+    binding: NeuTraBatchTargetBinding,
+) -> BoundBatchNativeNeuTraTrainingTarget:
+    """Return the only trainer-facing proxy for an issued batch binding."""
+
+    return BoundBatchNativeNeuTraTrainingTarget(binding)
+
+
 def bind_batch_native_neutra_target(
     adapter: Any,
     *,
@@ -304,6 +378,89 @@ def batch_native_value_status_target_fn(
         }
 
     return target_value_status
+
+
+def _normalized_training_status(
+    status: Mapping[str, Any],
+    *,
+    value: tf.Tensor,
+    score: tf.Tensor,
+) -> Mapping[str, tf.Tensor]:
+    if not isinstance(status, Mapping):
+        raise InvalidNeuTraBatchTarget("bound target status must be a mapping")
+    missing = tuple(name for name in REQUIRED_STATUS_FIELDS if name not in status)
+    if missing:
+        raise InvalidNeuTraBatchTarget(
+            f"bound target status is missing fields: {missing}"
+        )
+    status_code = tf.convert_to_tensor(status["status_code"], tf.int32)
+    valid_score = tf.convert_to_tensor(
+        status["valid_pre_regularized_score"], tf.bool
+    )
+    floor_count = tf.convert_to_tensor(status["floor_count_value"], tf.int32)
+    min_eigenvalue = tf.convert_to_tensor(
+        status["min_innovation_eigenvalue"], tf.float64
+    )
+    expected_shape = value.shape
+    for name, tensor in (
+        ("status_code", status_code),
+        ("valid_pre_regularized_score", valid_score),
+        ("floor_count_value", floor_count),
+        ("min_innovation_eigenvalue", min_eigenvalue),
+    ):
+        if tensor.shape != expected_shape:
+            raise InvalidNeuTraBatchTarget(f"bound target {name} shape mismatch")
+    condition_available = "innovation_condition_estimate" in status
+    condition = (
+        tf.convert_to_tensor(status["innovation_condition_estimate"], tf.float64)
+        if condition_available
+        else tf.ones_like(value, tf.float64)
+    )
+    if condition.shape != expected_shape:
+        raise InvalidNeuTraBatchTarget(
+            "bound target innovation_condition_estimate shape mismatch"
+        )
+    hard_valid = tf.logical_and(
+        tf.math.is_finite(value),
+        tf.logical_and(
+            tf.reduce_all(tf.math.is_finite(score), axis=-1),
+            tf.logical_and(
+                tf.equal(status_code, 0),
+                tf.logical_and(
+                    valid_score,
+                    tf.logical_and(
+                        tf.equal(floor_count, 0),
+                        tf.logical_and(
+                            tf.math.is_finite(min_eigenvalue),
+                            min_eigenvalue > 0.0,
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+    return {
+        "status_code": status_code,
+        "valid_pre_regularized_score": valid_score,
+        "floor_count_value": floor_count,
+        "min_innovation_eigenvalue": min_eigenvalue,
+        "innovation_condition_estimate": condition,
+        "innovation_condition_estimate_available": tf.fill(
+            tf.shape(value), tf.constant(condition_available)
+        ),
+        "hard_valid_for_training": hard_valid,
+    }
+
+
+def _hard_valid_training_status(
+    status: Mapping[str, Any],
+    *,
+    value: tf.Tensor,
+    score: tf.Tensor,
+) -> tf.Tensor:
+    return _normalized_training_status(status, value=value, score=score)[
+        "hard_valid_for_training"
+    ]
 
 
 def _validate_binding_integrity(binding: NeuTraBatchTargetBinding) -> None:

@@ -30,6 +30,7 @@ ROUTE_ID = "operational_broad_fixed_mass_l_epsilon_grid_v1"
 CLASSIFICATION_POLICY_ID = "replication_mean_t90_band_compatibility_v1"
 WORKING_INTERVAL_LEVEL = 0.90
 WORKING_T_CRITICAL_DF2 = 2.919985580355516
+WORKING_T_CRITICAL_DF4 = 2.1318467863266495
 PRIMARY_L_GRID = (3, 5, 9, 13, 18, 25)
 MIN_GUARD_L = 2
 MAX_L = 25
@@ -68,6 +69,18 @@ NONCLAIMS = (
     "no identification or scientific claim",
 )
 EXECUTION_MODES = ("serial", "process_parallel")
+STATISTICAL_EPSILON_REPAIR_POLICY_ID = (
+    "replication_mean_t90_df4_candidate_nomination_epsilon_repair_v2"
+)
+STATISTICAL_EPSILON_REPAIR_TERMINAL_DISPOSITIONS = (
+    "freeze_for_qualification",
+    "repair_epsilon",
+    "tuning_unresolved",
+    "hard_rejected",
+    "attempt_budget_exhausted",
+    "bracket_conflict",
+    "stalled_repeated_or_negligible",
+)
 
 
 def _strict_integer(value: Any, *, name: str, minimum: int | None = None) -> int:
@@ -252,6 +265,97 @@ class OperationalBroadGridPolicy:
             "repair_region": self.repair_region,
             "guard_expansion": "one_hop_nonrecursive",
             "guard_epsilon_policy": "inherit_exact_primary_epsilon_no_retuning",
+            "stochastic_ranking_performed": False,
+        }
+
+
+@dataclass(frozen=True)
+class OperationalStatisticalEpsilonRepairPolicy:
+    """Prospective CCMA epsilon-repair controls over replication means."""
+
+    tuning_root_seed: tuple[int, int]
+    qualification_root_seed: tuple[int, int]
+    tuning_num_results: int = 64
+    qualification_num_results: int = 128
+    chain_count: int = 4
+    replication_count: int = 5
+    working_interval_level: float = WORKING_INTERVAL_LEVEL
+    working_t_critical: float = WORKING_T_CRITICAL_DF4
+    practical_region: tuple[float, float] = (0.65, 0.75)
+    repair_region: tuple[float, float] = (0.55, 0.85)
+    maximum_attempts: int = 5
+    repair_factor: float = 1.25
+    minimum_relative_step_change: float = 0.01
+
+    def __post_init__(self) -> None:
+        tuning_root = _strict_seed(self.tuning_root_seed, name="tuning_root_seed")
+        qualification_root = _strict_seed(self.qualification_root_seed, name="qualification_root_seed")
+        if tuning_root == qualification_root:
+            raise ValueError("tuning and qualification root seeds must be disjoint")
+        tuning_results = _strict_integer(self.tuning_num_results, name="tuning_num_results", minimum=64)
+        qualification_results = _strict_integer(self.qualification_num_results, name="qualification_num_results", minimum=tuning_results)
+        chains = _strict_integer(self.chain_count, name="chain_count", minimum=1)
+        replications = _strict_integer(self.replication_count, name="replication_count", minimum=2)
+        if chains != 4 or replications != 5:
+            raise ValueError("statistical epsilon repair requires four chains and five replications")
+        interval_level = float(self.working_interval_level)
+        critical = float(self.working_t_critical)
+        if interval_level != WORKING_INTERVAL_LEVEL or critical != WORKING_T_CRITICAL_DF4:
+            raise ValueError("statistical epsilon repair requires the frozen 90% df=4 interval")
+        practical = tuple(float(item) for item in self.practical_region)
+        if not (len(practical) == 2 and 0.0 < practical[0] < practical[1] < 1.0):
+            raise ValueError("practical_region must be ordered inside (0, 1)")
+        repair = tuple(float(item) for item in self.repair_region)
+        if not (len(repair) == 2 and 0.0 < repair[0] < repair[1] < 1.0):
+            raise ValueError("repair_region must be ordered inside (0, 1)")
+        if not (repair[0] < practical[0] < practical[1] < repair[1]):
+            raise ValueError("repair_region must contain practical_region")
+        attempts = _strict_integer(self.maximum_attempts, name="maximum_attempts", minimum=1)
+        if attempts > 5:
+            raise ValueError("maximum_attempts must not exceed five")
+        factor = float(self.repair_factor)
+        if not math.isfinite(factor) or not 1.0 < factor <= 2.0:
+            raise ValueError("repair_factor must lie inside (1, 2]")
+        minimum_change = float(self.minimum_relative_step_change)
+        if not math.isfinite(minimum_change) or not 0.0 < minimum_change < 1.0:
+            raise ValueError("minimum_relative_step_change must lie inside (0, 1)")
+        object.__setattr__(self, "tuning_root_seed", tuning_root)
+        object.__setattr__(self, "qualification_root_seed", qualification_root)
+        object.__setattr__(self, "tuning_num_results", tuning_results)
+        object.__setattr__(self, "qualification_num_results", qualification_results)
+        object.__setattr__(self, "chain_count", chains)
+        object.__setattr__(self, "replication_count", replications)
+        object.__setattr__(self, "working_interval_level", interval_level)
+        object.__setattr__(self, "working_t_critical", critical)
+        object.__setattr__(self, "practical_region", practical)
+        object.__setattr__(self, "repair_region", repair)
+        object.__setattr__(self, "maximum_attempts", attempts)
+        object.__setattr__(self, "repair_factor", factor)
+        object.__setattr__(self, "minimum_relative_step_change", minimum_change)
+
+    @property
+    def evidence_unit_count(self) -> int:
+        return self.chain_count * self.replication_count
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "policy_id": STATISTICAL_EPSILON_REPAIR_POLICY_ID,
+            "tuning_root_seed": self.tuning_root_seed,
+            "qualification_root_seed": self.qualification_root_seed,
+            "tuning_num_results": self.tuning_num_results,
+            "qualification_num_results": self.qualification_num_results,
+            "chain_count": self.chain_count,
+            "replication_count": self.replication_count,
+            "working_interval_level": self.working_interval_level,
+            "working_t_critical": self.working_t_critical,
+            "working_interval_unit": "fresh_seeded_replication_mean_across_four_chains",
+            "practical_region": self.practical_region,
+            "repair_region": self.repair_region,
+            "maximum_attempts": self.maximum_attempts,
+            "repair_factor": self.repair_factor,
+            "minimum_relative_step_change": self.minimum_relative_step_change,
+            "tuning_evidence_role": "adaptive_diagnostic_only",
+            "qualification_evidence_role": "single_use_admission_screen",
             "stochastic_ranking_performed": False,
         }
 
@@ -488,7 +592,7 @@ def classify_operational_pair_evidence(
     policy: OperationalBroadGridPolicy,
     hard_rejection_reasons: Sequence[str] = (),
 ) -> OperationalPairEvidence:
-    """Classify whether replicated tuning evidence is compatible with the band."""
+    """Classify replicated tuning evidence without promoting partial overlap."""
 
     if not isinstance(policy, OperationalBroadGridPolicy):
         raise TypeError("policy must be OperationalBroadGridPolicy")
@@ -538,8 +642,10 @@ def classify_operational_pair_evidence(
         disposition = "needs_lower_epsilon"
     elif interval[0] > practical_high:
         disposition = "needs_higher_epsilon"
-    else:
+    elif practical_low <= interval[0] and interval[1] <= practical_high:
         disposition = "provisional_viable"
+    else:
+        disposition = "unresolved_budget"
     return OperationalPairEvidence(
         chain_run_means=values,
         replication_means=replication_means,
@@ -554,6 +660,243 @@ def classify_operational_pair_evidence(
             name="evidence_signature",
         ),
     )
+
+
+@dataclass(frozen=True)
+class OperationalStatisticalEpsilonEvidence:
+    """Five-replication working evidence for tuning or qualification."""
+
+    chain_run_means: tuple[float, ...]
+    replication_means: tuple[float, ...]
+    grand_mean: float | None
+    sample_standard_deviation: float | None
+    standard_error: float | None
+    working_interval: tuple[float, float] | None
+    disposition: str
+    hard_rejection_reasons: tuple[str, ...]
+    evidence_signature: str
+
+    @property
+    def admitted(self) -> bool:
+        return self.disposition == "candidate_nominated"
+
+    @property
+    def candidate_nominated(self) -> bool:
+        return self.disposition == "candidate_nominated"
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "chain_run_means": self.chain_run_means,
+            "replication_means": self.replication_means,
+            "grand_mean": self.grand_mean,
+            "sample_standard_deviation": self.sample_standard_deviation,
+            "standard_error": self.standard_error,
+            "working_interval": self.working_interval,
+            "disposition": self.disposition,
+            "hard_rejection_reasons": self.hard_rejection_reasons,
+            "evidence_signature": self.evidence_signature,
+            "classification_policy_id": STATISTICAL_EPSILON_REPAIR_POLICY_ID,
+            "working_interval_level": WORKING_INTERVAL_LEVEL,
+            "working_interval_unit": "fresh_seeded_replication_mean_across_four_chains",
+            "working_interval_role": "candidate_nomination_compatibility_diagnostic_not_equivalence_proof",
+            "working_interval_limitations": (
+                "five_replications_only",
+                "shared_calibrated_start",
+                "student_t_working_model",
+                "no_familywise_claim",
+                "no_convergence_claim",
+            ),
+            "retained_sampling_authorized": False,
+        }
+
+
+def classify_operational_statistical_epsilon_evidence(
+    *,
+    chain_run_means: Sequence[float],
+    evidence_signature: str,
+    policy: OperationalStatisticalEpsilonRepairPolicy,
+    hard_rejection_reasons: Sequence[str] = (),
+) -> OperationalStatisticalEpsilonEvidence:
+    """Classify five fresh replication means under the reviewed working model."""
+
+    if not isinstance(policy, OperationalStatisticalEpsilonRepairPolicy):
+        raise TypeError("policy must be OperationalStatisticalEpsilonRepairPolicy")
+    reasons = tuple(dict.fromkeys(str(item) for item in hard_rejection_reasons))
+    if any(not item for item in reasons):
+        raise ValueError("hard rejection reasons must be non-empty")
+    values = tuple(float(item) for item in chain_run_means)
+    if not values:
+        if not reasons:
+            raise ValueError("empty chain_run_means require a hard rejection reason")
+        return OperationalStatisticalEpsilonEvidence(
+            chain_run_means=(),
+            replication_means=(),
+            grand_mean=None,
+            sample_standard_deviation=None,
+            standard_error=None,
+            working_interval=None,
+            disposition="hard_rejected",
+            hard_rejection_reasons=reasons,
+            evidence_signature=_nonempty(evidence_signature, name="evidence_signature"),
+        )
+    if len(values) != policy.evidence_unit_count or any(
+        not math.isfinite(item) or not 0.0 <= item <= 1.0 for item in values
+    ):
+        raise ValueError("chain_run_means are incomplete or invalid")
+    replication_means = tuple(
+        math.fsum(values[start : start + policy.chain_count]) / policy.chain_count
+        for start in range(0, len(values), policy.chain_count)
+    )
+    mean = math.fsum(replication_means) / len(replication_means)
+    variance = math.fsum((item - mean) ** 2 for item in replication_means) / (len(replication_means) - 1)
+    standard_deviation = math.sqrt(max(0.0, variance))
+    standard_error = standard_deviation / math.sqrt(len(replication_means))
+    half_width = policy.working_t_critical * standard_error
+    interval = (max(0.0, mean - half_width), min(1.0, mean + half_width))
+    practical_low, practical_high = policy.practical_region
+    repair_low, repair_high = policy.repair_region
+    if reasons:
+        disposition = "hard_rejected"
+    elif interval[1] < practical_low:
+        disposition = "needs_lower_epsilon"
+    elif interval[0] > practical_high:
+        disposition = "needs_higher_epsilon"
+    elif repair_low <= interval[0] and interval[1] <= repair_high and (
+        interval[1] >= practical_low and interval[0] <= practical_high
+    ):
+        disposition = "candidate_nominated"
+    else:
+        disposition = "unresolved_budget"
+    return OperationalStatisticalEpsilonEvidence(
+        chain_run_means=values,
+        replication_means=replication_means,
+        grand_mean=mean,
+        sample_standard_deviation=standard_deviation,
+        standard_error=standard_error,
+        working_interval=interval,
+        disposition=disposition,
+        hard_rejection_reasons=reasons,
+        evidence_signature=_nonempty(evidence_signature, name="evidence_signature"),
+    )
+
+
+@dataclass(frozen=True)
+class OperationalStatisticalEpsilonRepairDecision:
+    """One append-only controller transition after a complete tuning attempt."""
+
+    attempt_index: int
+    current_epsilon: float
+    evidence_disposition: str
+    terminal_disposition: str
+    bracket_before: tuple[float | None, float | None]
+    bracket_after: tuple[float | None, float | None]
+    direction: str | None
+    next_epsilon: float | None
+
+    def __post_init__(self) -> None:
+        index = _strict_integer(self.attempt_index, name="attempt_index", minimum=0)
+        current = _finite_step(self.current_epsilon)
+        terminal = str(self.terminal_disposition)
+        if terminal not in STATISTICAL_EPSILON_REPAIR_TERMINAL_DISPOSITIONS:
+            raise ValueError("invalid statistical epsilon-repair disposition")
+        before = _validated_epsilon_bracket(self.bracket_before)
+        after = _validated_epsilon_bracket(self.bracket_after)
+        direction = self.direction
+        if direction is not None and direction not in {"higher_epsilon", "lower_epsilon"}:
+            raise ValueError("invalid epsilon-repair direction")
+        next_epsilon = None if self.next_epsilon is None else _finite_step(self.next_epsilon)
+        if terminal == "repair_epsilon":
+            if direction is None or next_epsilon is None:
+                raise ValueError("repair_epsilon requires direction and next epsilon")
+        elif next_epsilon is not None:
+            raise ValueError("terminal epsilon decision cannot carry a next epsilon")
+        object.__setattr__(self, "attempt_index", index)
+        object.__setattr__(self, "current_epsilon", current)
+        object.__setattr__(self, "evidence_disposition", str(self.evidence_disposition))
+        object.__setattr__(self, "terminal_disposition", terminal)
+        object.__setattr__(self, "bracket_before", before)
+        object.__setattr__(self, "bracket_after", after)
+        object.__setattr__(self, "direction", direction)
+        object.__setattr__(self, "next_epsilon", next_epsilon)
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "attempt_index": self.attempt_index,
+            "current_epsilon": self.current_epsilon,
+            "evidence_disposition": self.evidence_disposition,
+            "terminal_disposition": self.terminal_disposition,
+            "bracket_before": self.bracket_before,
+            "bracket_after": self.bracket_after,
+            "direction": self.direction,
+            "next_epsilon": self.next_epsilon,
+            "tuning_evidence_role": "adaptive_diagnostic_only",
+            "qualification_reuse_allowed": False,
+        }
+
+
+def _validated_epsilon_bracket(
+    bracket: tuple[float | None, float | None],
+) -> tuple[float | None, float | None]:
+    try:
+        lower, upper = tuple(bracket)
+    except (TypeError, ValueError) as error:
+        raise ValueError("epsilon bracket must contain two bounds") from error
+    lower = None if lower is None else _finite_step(lower)
+    upper = None if upper is None else _finite_step(upper)
+    if lower is not None and upper is not None and lower >= upper:
+        raise ValueError("epsilon bracket is inverted or empty")
+    return lower, upper
+
+
+def advance_operational_statistical_epsilon_repair(
+    *,
+    evidence: OperationalStatisticalEpsilonEvidence,
+    current_epsilon: float,
+    attempt_index: int,
+    bracket_before: tuple[float | None, float | None],
+    attempted_epsilons: Sequence[float],
+    policy: OperationalStatisticalEpsilonRepairPolicy,
+) -> OperationalStatisticalEpsilonRepairDecision:
+    """Advance a bounded tuning-only epsilon bracket from interval evidence."""
+
+    if not isinstance(evidence, OperationalStatisticalEpsilonEvidence):
+        raise TypeError("evidence must be OperationalStatisticalEpsilonEvidence")
+    if not isinstance(policy, OperationalStatisticalEpsilonRepairPolicy):
+        raise TypeError("policy must be OperationalStatisticalEpsilonRepairPolicy")
+    current = _finite_step(current_epsilon)
+    index = _strict_integer(attempt_index, name="attempt_index", minimum=0)
+    history = tuple(_finite_step(item) for item in attempted_epsilons)
+    if len(history) != index + 1 or not math.isclose(history[-1], current, rel_tol=1.0e-12, abs_tol=0.0):
+        raise ValueError("attempted_epsilons must end at the indexed current epsilon")
+    lower, upper = _validated_epsilon_bracket(bracket_before)
+    disposition = evidence.disposition
+    if disposition == "hard_rejected":
+        return OperationalStatisticalEpsilonRepairDecision(index, current, disposition, "hard_rejected", (lower, upper), (lower, upper), None, None)
+    if disposition == "unresolved_budget":
+        return OperationalStatisticalEpsilonRepairDecision(index, current, disposition, "tuning_unresolved", (lower, upper), (lower, upper), None, None)
+    if disposition == "candidate_nominated":
+        return OperationalStatisticalEpsilonRepairDecision(index, current, disposition, "freeze_for_qualification", (lower, upper), (lower, upper), None, None)
+    if disposition == "needs_higher_epsilon":
+        direction = "higher_epsilon"
+        lower = current if lower is None else max(lower, current)
+    elif disposition == "needs_lower_epsilon":
+        direction = "lower_epsilon"
+        upper = current if upper is None else min(upper, current)
+    else:
+        raise ValueError("evidence disposition cannot drive epsilon repair")
+    bracket_after = (lower, upper)
+    if lower is not None and upper is not None and lower >= upper:
+        return OperationalStatisticalEpsilonRepairDecision(index, current, disposition, "bracket_conflict", (lower, upper), (lower, upper), None, None)
+    if index + 1 >= policy.maximum_attempts:
+        return OperationalStatisticalEpsilonRepairDecision(index, current, disposition, "attempt_budget_exhausted", (lower, upper), bracket_after, direction, None)
+    proposed = math.sqrt(lower * upper) if lower is not None and upper is not None else (
+        current * policy.repair_factor if direction == "higher_epsilon" else current / policy.repair_factor
+    )
+    repeated = any(math.isclose(proposed, item, rel_tol=1.0e-12, abs_tol=0.0) for item in history)
+    negligible = abs(proposed / current - 1.0) < policy.minimum_relative_step_change
+    if repeated or negligible:
+        return OperationalStatisticalEpsilonRepairDecision(index, current, disposition, "stalled_repeated_or_negligible", (lower, upper), bracket_after, None, None)
+    return OperationalStatisticalEpsilonRepairDecision(index, current, disposition, "repair_epsilon", (lower, upper), bracket_after, direction, proposed)
 
 
 @dataclass(frozen=True)

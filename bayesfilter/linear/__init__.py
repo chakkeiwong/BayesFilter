@@ -49,6 +49,8 @@ __all__ = [
     "tf_masked_correlated_kalman_log_likelihood_batched_time_varying",
     "tf_masked_kalman_filter",
     "tf_masked_kalman_log_likelihood",
+    "tf_masked_kalman_filter_checked_with_diagnostics",
+    "tf_masked_kalman_filter_with_diagnostics",
     "tf_svd_kalman_log_likelihood",
     "tf_svd_linear_gaussian_score_first_order",
     "tf_svd_linear_gaussian_score_first_order_graph_status",
@@ -175,6 +177,8 @@ _EXPORT_MODULES = {
     ),
     "tf_masked_kalman_filter": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_log_likelihood": "bayesfilter.linear.kalman_tf",
+    "tf_masked_kalman_filter_checked_with_diagnostics": "bayesfilter.linear.kalman_tf",
+    "tf_masked_kalman_filter_with_diagnostics": "bayesfilter.linear.kalman_tf",
     "tf_svd_kalman_log_likelihood": "bayesfilter.linear.kalman_svd_tf",
     "tf_svd_linear_gaussian_score_first_order": (
         "bayesfilter.linear.kalman_svd_derivatives_tf"

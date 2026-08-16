@@ -798,6 +798,83 @@ def test_bounded_selection_uses_empirical_bracket_and_disjoint_lineage() -> None
     )
 
 
+def test_bounded_selection_refines_midas_like_mixed_directional_midpoint() -> None:
+    calls = []
+    high = _evidence(0.90, draw_count=256)
+    low = _evidence(0.40, draw_count=256)
+    neutral = _inconclusive_evidence(draw_count=256)
+
+    def selector(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return _matrix_selection(kwargs, {5: high, 10: high, 20: high})
+        if len(calls) == 2:
+            return _matrix_selection(kwargs, {5: low, 10: low, 20: low})
+        if len(calls) == 3:
+            return _matrix_selection(
+                kwargs,
+                {5: low, 10: (low, low, neutral), 20: low},
+            )
+        return _scripted_selection(kwargs, 0.70, selected=True)
+
+    runner, _runner_calls = _fake_extension_runner(inconclusive=True)
+    kwargs = _bounded_extension_kwargs(selector=selector, runner=runner)
+    kwargs["evidence_extension_checkpoints"] = ()
+    result = run_bounded_operational_fixed_trajectory_selection(**kwargs)
+
+    first = 0.1
+    doubled = 2.0 * first
+    first_midpoint = np.sqrt(first * doubled)
+    second_midpoint = np.sqrt(first * first_midpoint)
+    assert result.terminal_disposition == "representative_selected"
+    assert tuple(call["frozen_step_size"] for call in calls) == pytest.approx(
+        (first, doubled, first_midpoint, second_midpoint)
+    )
+    assert result.repair_direction_history == (
+        "higher_epsilon",
+        "lower_epsilon",
+        "lower_epsilon",
+    )
+    mixed_repair = result.attempts[2].repair
+    assert mixed_repair is not None
+    assert mixed_repair.directional_evidence_count == 8
+    assert mixed_repair.neutral_evidence_count == 1
+    assert mixed_repair.one_sided_directional_support is True
+    assert mixed_repair.bracket == pytest.approx((first, first_midpoint))
+    assert mixed_repair.repaired_step_size == pytest.approx(second_midpoint)
+
+
+def test_mixed_high_neutral_bound_retains_append_only_source_provenance() -> None:
+    calls = []
+    high = _evidence(0.90, draw_count=256)
+    low = _evidence(0.40, draw_count=256)
+    neutral = _inconclusive_evidence(draw_count=256)
+
+    def selector(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return _matrix_selection(
+                kwargs,
+                {5: high, 10: (high, high, neutral), 20: high},
+            )
+        if len(calls) == 2:
+            return _matrix_selection(kwargs, {5: low, 10: low, 20: low})
+        return _scripted_selection(kwargs, 0.70, selected=True)
+
+    runner, _runner_calls = _fake_extension_runner(inconclusive=True)
+    kwargs = _bounded_extension_kwargs(selector=selector, runner=runner)
+    kwargs["evidence_extension_checkpoints"] = ()
+    result = run_bounded_operational_fixed_trajectory_selection(**kwargs)
+
+    assert result.terminal_disposition == "representative_selected"
+    first_attempt = result.attempts[0]
+    assert first_attempt.repair is not None
+    assert first_attempt.repair.one_sided_directional_support is True
+    assert first_attempt.lower_bound_source_attempt_index_after == 0
+    assert result.attempts[1].lower_bound_source_attempt_index_before == 0
+    assert result.final_bracket == pytest.approx((0.1, 0.2))
+
+
 def test_bounded_selection_exhaustion_is_non_promoting_and_five_attempts() -> None:
     calls = []
     bank = np.arange(8, dtype=float).reshape(4, 2)
@@ -2731,7 +2808,11 @@ def test_outer_loop_rejects_bank_content_and_execution_contract_corruption() -> 
             lambda: _evidence(
                 0.90,
                 draw_count=256,
-                policy=HMCAcceptancePolicy(target=0.71),
+                policy=HMCAcceptancePolicy(
+                    target=0.71,
+                    practical_region=(0.66, 0.76),
+                    repair_region=(0.56, 0.86),
+                ),
             ),
             "changed the acceptance policy",
         ),

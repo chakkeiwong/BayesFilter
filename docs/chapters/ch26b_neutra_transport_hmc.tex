@@ -221,6 +221,27 @@ initialization, and reverse permutations let later stages model dependencies
 hidden by a single ordering.  These are tested implementation choices, not
 universal optimal defaults.
 
+BayesFilter also exposes a distinct pure-IAF family.  For that family there is
+no fixed outer $(c,L)$ component:
+\begin{equation}
+ T^{\rm pure}_\phi(z)=f_3(Pf_2(Pf_1(z))),\qquad
+ \log|\det J_{T^{\rm pure}}(z)|=
+ \sum_{k=1}^3\sum_{i=1}^d s_{k,i}.
+ \label{eq:bf-neutra-pure-stack}
+\end{equation}
+When heterogeneous physical units make identity initialization numerically
+unsuitable, the final IAF output biases may be initialized so that the stack
+has $T^{\rm pure}_\phi(0)=c_0$ and its leading diagonal scale is
+$\exp(s_0)$.  Both biases remain trainable members of $\phi$; $c_0$ and $s_0$
+are not serialized as a fixed affine chart and do not contribute an extra
+Jacobian term.  A bounded-scale recipe must strictly contain every entry of
+$s_0$; the paper-style recipe instead uses the MADE log-scale output directly,
+as in the reference implementation.  Applying this initialization at the final stage keeps the preceding
+IAFs in latent scale; putting it at the first stage would make every later
+network consume heterogeneous physical-unit activations.  This warm start
+changes the optimizer's initial state, not the change-of-variables formula or
+the target density.
+
 \section{Reverse-KL training and its gradient}
 \label{sec:bf-neutra-training}
 
@@ -260,11 +281,15 @@ but loss cannot establish posterior convergence.  HMC corrects density error
 only if finite computation actually explores all relevant latent regions.
 
 BayesFilter uses stateless Gaussian batches, one leading-batch target call,
-float64 TensorFlow/TFP, XLA, GPU memory growth, global gradient clipping, and
-Adam with bias correction and linear learning-rate decay.  The full training
-loop is TensorFlow control flow.  No NumPy or Python sample-axis loop belongs
-to the active training/HMC route.  A valid segmented resume restores weights,
-both Adam moments, completed step, seed schedule, and learning-rate schedule.
+float64 TensorFlow/TFP, XLA, GPU memory growth, and Adam with bias correction.
+Gradient clipping and learning-rate schedules are named-procedure choices:
+some procedures use global-norm clipping and linear or piecewise decay, while
+the SSL--LSTM capacity families use per-variable clipping and an explicitly
+controlled constant learning rate.  The run manifest must identify the exact
+choice; neither policy is a universal NeuTra default.  No NumPy or Python
+sample-axis loop belongs to the active training/HMC route.  A valid segmented
+resume restores weights, both Adam moments, completed step, seed schedule, and
+learning-rate schedule.
 
 \section{Geometry induced in source space}
 

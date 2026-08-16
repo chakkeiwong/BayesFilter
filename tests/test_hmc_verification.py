@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
+import bayesfilter.inference.hmc_verification as hmc_verification
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptancePolicy,
     _evaluate_retained_target_health,
@@ -315,12 +316,20 @@ def test_acceptance_policy_rejects_unsupported_interval_contracts() -> None:
         HMCAcceptancePolicy(confidence_level=0.95)
     with pytest.raises(ValueError, match="target must lie"):
         HMCAcceptancePolicy(target=0.8)
+    with pytest.raises(ValueError, match="centered on target"):
+        HMCAcceptancePolicy(target=0.69)
+    with pytest.raises(ValueError, match="centered on target"):
+        HMCAcceptancePolicy(repair_region=(0.54, 0.85))
     with pytest.raises(ValueError, match=r"inside \[0, 1\]"):
         HMCAcceptancePolicy(min_movement_rate=1.1)
     with pytest.raises(ValueError, match=r"inside \[0, 1\]"):
         HMCAcceptancePolicy(max_repeated_state_fraction=-0.1)
 
     payload = HMCAcceptancePolicy().payload()
+    assert payload["schema"] == "bayesfilter.hmc_acceptance_policy.v5"
+    assert payload["uncertainty_method"] == (
+        "two_sided_student_t_independent_chain_means"
+    )
     assert payload["min_movement_rate"] == pytest.approx(0.05)
     assert payload["max_repeated_state_fraction"] == pytest.approx(0.95)
     assert payload["min_normalized_return_displacement"] == pytest.approx(1.0e-4)
@@ -345,7 +354,7 @@ def test_acceptance_evidence_exact_directional_decisions(
     assert evidence.realized_acceptance_rate_by_chain == pytest.approx((1.0,) * 4)
 
 
-def test_acceptance_evidence_uses_chain_mean_hoeffding_interval() -> None:
+def test_acceptance_evidence_uses_chain_mean_student_t_interval() -> None:
     block_means = np.array(
         [
             [0.60, 0.70, 0.65, 0.75],
@@ -361,7 +370,7 @@ def test_acceptance_evidence_uses_chain_mean_hoeffding_interval() -> None:
 
     evidence = _evidence(probabilities)
     chain_means = np.mean(block_means, axis=1)
-    half_width = np.sqrt(np.log(2.0 / 0.10) / (2.0 * 4))
+    half_width = 2.3533634348 * np.std(chain_means, ddof=1) / np.sqrt(4.0)
     pooled = np.mean(chain_means)
 
     assert evidence.chain_mean_uncertainty_interval == pytest.approx(
@@ -369,11 +378,84 @@ def test_acceptance_evidence_uses_chain_mean_hoeffding_interval() -> None:
     )
     assert (
         evidence.chain_mean_uncertainty_method
-        == "two_sided_hoeffding_independent_chains"
+        == "two_sided_student_t_independent_chain_means"
     )
     assert evidence.chain_mean_uncertainty_level == pytest.approx(0.90)
     assert evidence.standard_error is None
     assert evidence.decision == "inconclusive_evidence"
+
+
+def test_acceptance_evidence_treats_constant_068_as_band_compatible() -> None:
+    evidence = _evidence(0.68)
+
+    assert evidence.pooled_mean == pytest.approx(0.68)
+    assert evidence.chain_mean_uncertainty_interval == pytest.approx((0.68, 0.68))
+    assert evidence.acceptance_decision == "passed"
+    assert evidence.promotion_eligible is True
+
+
+def test_acceptance_directional_rules_are_exact_target_reflections() -> None:
+    low_chain_means = np.array([0.56, 0.57, 0.58, 0.59])
+    high_chain_means = 2.0 * 0.70 - low_chain_means
+
+    low = _evidence(np.tile(low_chain_means, (64, 1)))
+    high = _evidence(np.tile(high_chain_means, (64, 1)))
+
+    assert low.acceptance_decision == "repair_step_lower"
+    assert high.acceptance_decision == "repair_step_higher"
+    assert high.chain_mean_uncertainty_interval == pytest.approx(
+        (
+            2.0 * 0.70 - low.chain_mean_uncertainty_interval[1],
+            2.0 * 0.70 - low.chain_mean_uncertainty_interval[0],
+        )
+    )
+
+
+def test_acceptance_reflection_is_safety_clipped_at_probability_boundaries() -> None:
+    low = _evidence(np.tile(np.array([0.001, 0.001, 0.001, 0.65]), (64, 1)))
+    high = _evidence(np.tile(np.array([0.75, 1.0, 1.0, 1.0]), (64, 1)))
+
+    assert low.chain_mean_uncertainty_interval[0] == pytest.approx(0.0)
+    assert high.chain_mean_uncertainty_interval[1] == pytest.approx(1.0)
+    assert low.acceptance_decision == "repair_step_lower"
+    assert high.acceptance_decision == "repair_step_higher"
+
+
+def test_acceptance_evidence_passes_contained_interval_overlapping_band() -> None:
+    chain_means = np.array([0.66, 0.68, 0.72, 0.74])
+
+    evidence = _evidence(np.tile(chain_means, (64, 1)))
+
+    assert evidence.chain_mean_uncertainty_interval[0] >= 0.55
+    assert evidence.chain_mean_uncertainty_interval[1] <= 0.85
+    assert evidence.chain_mean_uncertainty_interval[0] <= 0.75
+    assert evidence.chain_mean_uncertainty_interval[1] >= 0.65
+    assert evidence.acceptance_decision == "passed"
+
+
+def test_phase7_midpoint_is_inconclusive_from_interval_not_068_chain() -> None:
+    chain_means = np.array(
+        [0.82332348, 0.81741541, 0.79383380, 0.68103524]
+    )
+
+    evidence = _evidence(np.tile(chain_means, (64, 1)))
+
+    assert 0.65 <= chain_means[-1] <= 0.75
+    assert evidence.chain_mean_uncertainty_interval == pytest.approx(
+        (0.700680, 0.857124), abs=1.0e-6
+    )
+    assert evidence.chain_mean_uncertainty_interval[1] > 0.85
+    assert evidence.acceptance_decision == "inconclusive_evidence"
+
+
+def test_acceptance_evidence_requires_each_chain_inside_repair_region() -> None:
+    chain_means = np.array([0.54, 0.68, 0.69, 0.70])
+
+    evidence = _evidence(np.tile(chain_means, (64, 1)))
+
+    assert evidence.chain_mean_uncertainty_interval[0] >= 0.55
+    assert evidence.chain_mean_uncertainty_interval[1] <= 0.85
+    assert evidence.acceptance_decision == "inconclusive_evidence"
 
 
 def test_acceptance_evidence_detects_heterogeneous_chain_conflict() -> None:
@@ -394,6 +476,19 @@ def test_chain_conflict_precedes_sticking_trajectory_repair() -> None:
     assert evidence.acceptance_decision == "inconclusive_conflict"
     assert evidence.tuning_repair_triggers == ()
     assert "movement_gate_failed" in evidence.candidate_promotion_vetoes
+
+
+def test_temporal_conflict_precedes_band_compatible_interval() -> None:
+    block_means = np.tile(np.array([0.60, 0.80, 0.70, 0.70]), (4, 1))
+    probabilities = np.concatenate(
+        [np.repeat(block_means[:, index][None, :], 16, axis=0) for index in range(4)],
+        axis=0,
+    )
+
+    evidence = _evidence(probabilities)
+
+    assert evidence.chain_mean_uncertainty_interval == pytest.approx((0.70, 0.70))
+    assert evidence.acceptance_decision == "inconclusive_evidence"
 
 
 def test_acceptance_evidence_four_results_are_inconclusive() -> None:
@@ -895,6 +990,40 @@ def test_v3_migration_view_cannot_promote_historical_evidence() -> None:
         hmc_acceptance_evidence_from_payload(legacy)
 
 
+def test_v4_migration_view_cannot_promote_historical_evidence() -> None:
+    current = _evidence(0.70).payload()
+    legacy_half_width = np.sqrt(np.log(2.0 / 0.10) / (2.0 * 4))
+    legacy = {
+        **current,
+        "schema": "bayesfilter.hmc_acceptance_evidence.v4",
+        "chain_mean_uncertainty_interval": (
+            max(0.0, current["pooled_mean"] - legacy_half_width),
+            min(1.0, current["pooled_mean"] + legacy_half_width),
+        ),
+        "chain_mean_uncertainty_method": (
+            "two_sided_hoeffding_independent_chains"
+        ),
+        "policy": {
+            **current["policy"],
+            "schema": "bayesfilter.hmc_acceptance_policy.v4",
+            "uncertainty_method": "two_sided_hoeffding_independent_chains",
+            "tuning_decision_role": (
+                "bounded_adaptation_heuristic_not_confidence_test"
+            ),
+        },
+    }
+
+    view = hmc_verification.hmc_acceptance_evidence_v4_migration_view(legacy)
+
+    assert view["acceptance_decision"] == "recompute_required"
+    assert view["promotion_eligible"] is False
+    assert view["promotion_eligible_under_v5"] is False
+    assert view["historical_v4_acceptance_decision"] == "passed"
+    assert view["historical_v4_promotion_eligible"] is True
+    with pytest.raises(ValueError, match="schema mismatch"):
+        hmc_acceptance_evidence_from_payload(legacy)
+
+
 def test_acceptance_evidence_payload_replay_is_deterministic_and_validated() -> None:
     first = _evidence(0.70)
     second = _evidence(0.70)
@@ -974,7 +1103,7 @@ def test_acceptance_policy_rejects_noninteger_count_scalars(
         ("uncertainty_interval", "uncertainty interval is inconsistent"),
         ("uncertainty_method", "unsupported chain-mean uncertainty method"),
         ("decision", "decision is inconsistent"),
-        ("policy", "decision is inconsistent"),
+        ("policy", "centered on target"),
     ],
 )
 def test_acceptance_evidence_payload_rejects_arithmetic_and_policy_corruption(

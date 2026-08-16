@@ -18,10 +18,13 @@ from bayesfilter.inference.hmc_operational_broad_grid import (
     OperationalPairEvidence,
     OperationalPrimaryCandidate,
     OperationalPrimaryRequest,
+    OperationalStatisticalEpsilonRepairPolicy,
     SameEpsilonNeighborGuard,
     SameEpsilonNeighborGuardRequest,
     assemble_operational_broad_grid_result,
     classify_operational_pair_evidence,
+    classify_operational_statistical_epsilon_evidence,
+    advance_operational_statistical_epsilon_repair,
     expand_same_epsilon_neighbor_guards,
     operational_broad_seed,
     primary_requests,
@@ -38,6 +41,10 @@ from bayesfilter.inference.hmc_coordinates import (
 POLICY = OperationalBroadGridPolicy(
     root_seed=(20260720, 9100),
     confirmation_num_results=128,
+)
+REPAIR_POLICY = OperationalStatisticalEpsilonRepairPolicy(
+    tuning_root_seed=(20260731, 9400),
+    qualification_root_seed=(20260731, 9500),
 )
 
 
@@ -302,7 +309,7 @@ def test_precise_mean_outside_practical_band_is_directional_not_viable():
     assert below.disposition == "needs_lower_epsilon"
 
 
-def test_band_overlap_is_statistically_compatible_not_proof_of_in_band_mean():
+def test_band_crossing_is_unresolved_not_provisional_viable():
     evidence = classify_operational_pair_evidence(
         chain_run_means=(
             0.54,
@@ -324,8 +331,8 @@ def test_band_overlap_is_statistically_compatible_not_proof_of_in_band_mean():
     assert POLICY.practical_region[0] <= evidence.grand_mean <= POLICY.practical_region[1]
     assert evidence.working_interval[0] < POLICY.practical_region[0]
     assert evidence.working_interval[1] > POLICY.practical_region[1]
-    assert evidence.disposition == "provisional_viable"
-    assert evidence.viable
+    assert evidence.disposition == "unresolved_budget"
+    assert not evidence.viable
 
 
 def test_uncertainty_uses_three_replication_means_not_twelve_chain_means():
@@ -352,10 +359,175 @@ def test_uncertainty_uses_three_replication_means_not_twelve_chain_means():
     )
     assert evidence.grand_mean > POLICY.practical_region[1]
     assert evidence.working_interval[0] < POLICY.practical_region[1]
-    assert evidence.disposition == "provisional_viable"
+    assert evidence.disposition == "unresolved_budget"
     assert evidence.payload()["working_interval_unit"] == (
         "fresh_seeded_replication_mean_across_chains"
     )
+
+
+@pytest.mark.parametrize(
+    "chain_run_means",
+    (
+        (
+            0.65,
+            0.65,
+            0.65,
+            0.65,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+        ),
+        (
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.70,
+            0.75,
+            0.75,
+            0.75,
+            0.75,
+        ),
+    ),
+)
+def test_interval_that_crosses_one_practical_boundary_is_unresolved(chain_run_means):
+    evidence = classify_operational_pair_evidence(
+        chain_run_means=chain_run_means,
+        evidence_signature="one-boundary-crossing",
+        policy=POLICY,
+    )
+
+    assert evidence.disposition == "unresolved_budget"
+    assert not evidence.viable
+
+
+def test_interval_contained_in_practical_band_is_provisional_viable():
+    evidence = classify_operational_pair_evidence(
+        chain_run_means=(0.70,) * POLICY.evidence_unit_count,
+        evidence_signature="contained",
+        policy=POLICY,
+    )
+
+    assert evidence.working_interval == pytest.approx((0.70, 0.70))
+    assert evidence.disposition == "provisional_viable"
+    assert evidence.viable
+
+
+def _statistical_evidence(replication_means, *, signature="statistical"):
+    chain_means = tuple(
+        value
+        for replication_mean in replication_means
+        for value in (replication_mean,) * REPAIR_POLICY.chain_count
+    )
+    return classify_operational_statistical_epsilon_evidence(
+        chain_run_means=chain_means,
+        evidence_signature=signature,
+        policy=REPAIR_POLICY,
+    )
+
+
+def test_statistical_repair_policy_requires_disjoint_roots_and_five_units():
+    with pytest.raises(ValueError, match="root seeds must be disjoint"):
+        OperationalStatisticalEpsilonRepairPolicy(
+            tuning_root_seed=(1, 2), qualification_root_seed=(1, 2)
+        )
+    with pytest.raises(ValueError, match="five replications"):
+        OperationalStatisticalEpsilonRepairPolicy(
+            tuning_root_seed=(1, 2), qualification_root_seed=(3, 4), replication_count=3
+        )
+    assert REPAIR_POLICY.evidence_unit_count == 20
+    assert REPAIR_POLICY.working_t_critical == pytest.approx(2.1318467863266495)
+
+
+def test_statistical_evidence_uses_five_replication_means_not_twenty_chains():
+    evidence = _statistical_evidence((0.68, 0.69, 0.70, 0.71, 0.72))
+    assert evidence.replication_means == pytest.approx((0.68, 0.69, 0.70, 0.71, 0.72))
+    assert evidence.disposition == "candidate_nominated"
+    assert evidence.candidate_nominated
+    assert evidence.payload()["working_interval_limitations"] == (
+        "five_replications_only", "shared_calibrated_start", "student_t_working_model",
+        "no_familywise_claim", "no_convergence_claim",
+    )
+
+
+def test_statistical_evidence_direction_and_overlap_are_interval_based():
+    high = _statistical_evidence((0.79, 0.80, 0.81, 0.80, 0.79), signature="high")
+    low = _statistical_evidence((0.59, 0.60, 0.61, 0.60, 0.59), signature="low")
+    overlap = _statistical_evidence((0.50, 0.60, 0.70, 0.80, 0.90), signature="overlap")
+    assert high.disposition == "needs_higher_epsilon"
+    assert low.disposition == "needs_lower_epsilon"
+    assert overlap.disposition == "unresolved_budget"
+
+
+def test_statistical_controller_uses_one_sided_move_then_log_midpoint():
+    high = _statistical_evidence((0.79, 0.80, 0.81, 0.80, 0.79), signature="high")
+    first = advance_operational_statistical_epsilon_repair(
+        evidence=high, current_epsilon=0.2, attempt_index=0,
+        bracket_before=(None, None), attempted_epsilons=(0.2,), policy=REPAIR_POLICY,
+    )
+    assert first.terminal_disposition == "repair_epsilon"
+    assert first.direction == "higher_epsilon"
+    assert first.bracket_after == pytest.approx((0.2, None))
+    assert first.next_epsilon == pytest.approx(0.25)
+    low = _statistical_evidence((0.59, 0.60, 0.61, 0.60, 0.59), signature="low")
+    second = advance_operational_statistical_epsilon_repair(
+        evidence=low, current_epsilon=0.25, attempt_index=1,
+        bracket_before=first.bracket_after, attempted_epsilons=(0.2, 0.25), policy=REPAIR_POLICY,
+    )
+    assert second.direction == "lower_epsilon"
+    assert second.bracket_after == pytest.approx((0.2, 0.25))
+    assert second.next_epsilon == pytest.approx(np.sqrt(0.2 * 0.25))
+
+
+def test_statistical_controller_freezes_compatible_candidate_and_stops_unresolved():
+    admitted = _statistical_evidence((0.68, 0.69, 0.70, 0.71, 0.72))
+    freeze = advance_operational_statistical_epsilon_repair(
+        evidence=admitted, current_epsilon=0.22, attempt_index=0,
+        bracket_before=(None, None), attempted_epsilons=(0.22,), policy=REPAIR_POLICY,
+    )
+    assert freeze.terminal_disposition == "freeze_for_qualification"
+    assert freeze.next_epsilon is None
+    broad_overlap = _statistical_evidence((0.50, 0.60, 0.70, 0.80, 0.90))
+    assert broad_overlap.disposition == "unresolved_budget"
+    stop = advance_operational_statistical_epsilon_repair(
+        evidence=broad_overlap, current_epsilon=0.22, attempt_index=0,
+        bracket_before=(None, None), attempted_epsilons=(0.22,), policy=REPAIR_POLICY,
+    )
+    assert stop.terminal_disposition == "tuning_unresolved"
+    assert stop.direction is None
+
+
+def test_statistical_candidate_nomination_is_compatibility_not_equivalence():
+    evidence = _statistical_evidence((0.68, 0.69, 0.70, 0.71, 0.72))
+    assert evidence.working_interval[0] >= REPAIR_POLICY.repair_region[0]
+    assert evidence.working_interval[1] <= REPAIR_POLICY.repair_region[1]
+    assert evidence.disposition == "candidate_nominated"
+    assert evidence.payload()["working_interval_role"].endswith("not_equivalence_proof")
+
+
+def test_statistical_candidate_nomination_rejects_interval_outside_repair_region():
+    too_wide = _statistical_evidence((0.10, 0.50, 0.70, 0.90, 0.95))
+    assert too_wide.working_interval[0] < REPAIR_POLICY.repair_region[0]
+    assert too_wide.working_interval[1] > REPAIR_POLICY.repair_region[1]
+    assert too_wide.disposition == "unresolved_budget"
+
+
+def test_statistical_controller_fails_closed_at_attempt_budget():
+    high = _statistical_evidence((0.79, 0.80, 0.81, 0.80, 0.79))
+    decision = advance_operational_statistical_epsilon_repair(
+        evidence=high, current_epsilon=0.4, attempt_index=4,
+        bracket_before=(0.3, None), attempted_epsilons=(0.2, 0.25, 0.3, 0.35, 0.4), policy=REPAIR_POLICY,
+    )
+    assert decision.terminal_disposition == "attempt_budget_exhausted"
+    assert decision.next_epsilon is None
 
 
 def test_pair_local_guard_failure_does_not_erase_other_epsilon():

@@ -16,6 +16,7 @@ from bayesfilter.inference.hmc_tuning_artifacts import (
     KillableChildSpec,
     atomic_write_json,
     build_hmc_tuning_engineering_artifact,
+    canonical_sha256,
     kernel_state_summary,
     load_and_replay_hmc_tuning_artifact,
     private_start_bank_summary,
@@ -408,6 +409,16 @@ def test_v3_artifact_rejects_unexpected_top_level_payload() -> None:
         validate_hmc_tuning_engineering_artifact(payload)
 
 
+def test_v3_artifact_accepts_historical_v2_warmup_without_adaptation_status() -> None:
+    payload = json.loads(json.dumps(_artifact()))
+    payload["warmup"].pop("metric_adaptation_status")
+    payload["artifact_sha256"] = canonical_sha256(
+        {key: value for key, value in payload.items() if key != "artifact_sha256"}
+    )
+
+    validate_hmc_tuning_engineering_artifact(payload)
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [
@@ -415,6 +426,7 @@ def test_v3_artifact_rejects_unexpected_top_level_payload() -> None:
         ("stale_metric", "stale metric"),
         ("transition_gap", "transition counts"),
         ("fabricated_update_count", "metric-update count"),
+        ("fabricated_adaptation_status", "adaptation status"),
         ("final_coordinate", "final kernel lineage"),
         ("fractional_divergence", "integer scalar"),
     ],
@@ -442,6 +454,12 @@ def test_v3_artifact_recomputes_operational_warmup_claims(
         warmup["windows"][1]["transition_count_before_window"] += 1
     elif mutation == "fabricated_update_count":
         warmup["operational_metric_update_count"] += 1
+    elif mutation == "fabricated_adaptation_status":
+        warmup["metric_adaptation_status"] = (
+            "no_metric_update"
+            if warmup["operational_metric_update_count"] > 0
+            else "metric_updated"
+        )
     elif mutation == "final_coordinate":
         warmup["final_coordinate_signature"] = "stale-final"
     else:

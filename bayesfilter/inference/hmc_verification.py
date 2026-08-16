@@ -36,7 +36,13 @@ _PATH_RETURN_MAX_FRACTION = 0.95
 _PATH_RETURN_ATOL = 1.0e-12
 _PATH_RETURN_RTOL = 1.0e-10
 _TARGET_HEALTH_BATCH_DRAWS = 16
-_CHAIN_MEAN_UNCERTAINTY_METHOD = "two_sided_hoeffding_independent_chains"
+_CHAIN_MEAN_UNCERTAINTY_METHOD = (
+    "two_sided_student_t_independent_chain_means"
+)
+_LEGACY_V4_CHAIN_MEAN_UNCERTAINTY_METHOD = (
+    "two_sided_hoeffding_independent_chains"
+)
+_STUDENT_T_CRITICAL_VALUE_90_DF3 = 2.3533634348
 
 _SHARED_INVALIDITY_REASON_CODES = frozenset(
     {
@@ -473,6 +479,13 @@ class HMCAcceptancePolicy:
             raise ValueError(
                 "target must lie in practical_region and practical_region in repair_region"
             )
+        if not (
+            np.isclose(target, 0.5 * sum(practical), rtol=0.0, atol=1.0e-12)
+            and np.isclose(target, 0.5 * sum(repair), rtol=0.0, atol=1.0e-12)
+        ):
+            raise ValueError(
+                "practical_region and repair_region must be centered on target"
+            )
         chain_count = _strict_scalar_integer(self.chain_count, name="chain_count")
         block_count = _strict_scalar_integer(self.block_count, name="block_count")
         min_block_size = _strict_scalar_integer(
@@ -517,13 +530,13 @@ class HMCAcceptancePolicy:
 
     @property
     def student_critical_value(self) -> float:
-        """Deprecated v3 compatibility value; not used by v4 evidence."""
+        """Two-sided 90% Student-t critical value for four chain means."""
 
-        return 2.3533634348
+        return _STUDENT_T_CRITICAL_VALUE_90_DF3
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_acceptance_policy.v4",
+            "schema": "bayesfilter.hmc_acceptance_policy.v5",
             "target": self.target,
             "practical_region": self.practical_region,
             "repair_region": self.repair_region,
@@ -552,7 +565,9 @@ class HMCAcceptancePolicy:
             "allowed_cost_stop_reasons": self.allowed_cost_stop_reasons,
             "dependence_unit": "independently_seeded_chain_mean",
             "uncertainty_method": _CHAIN_MEAN_UNCERTAINTY_METHOD,
-            "tuning_decision_role": "bounded_adaptation_heuristic_not_confidence_test",
+            "tuning_decision_role": (
+                "working_tuning_compatibility_interval_not_convergence_or_equivalence"
+            ),
             "diagnostic_roles": {
                 "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
                 "movement": "promotion_veto_and_trajectory_repair_trigger",
@@ -655,7 +670,7 @@ class HMCAcceptanceEvidence:
         if validity != "valid" and decision != "unavailable":
             raise ValueError("invalid evidence must mark acceptance unavailable")
         if validity == "valid" and decision == "unavailable":
-            raise ValueError("finite valid v4 evidence cannot mark acceptance unavailable")
+            raise ValueError("finite valid v5 evidence cannot mark acceptance unavailable")
         allowed_invalidity = (
             _SHARED_INVALIDITY_REASON_CODES
             if validity == "shared_execution_invalid"
@@ -780,7 +795,7 @@ class HMCAcceptanceEvidence:
                 raise ValueError("invalid evidence cannot carry candidate action roles")
         else:
             _validate_valid_acceptance_summary(self, block_means)
-            _validate_v4_roles(self)
+            _validate_v5_roles(self)
         object.__setattr__(self, "evidence_validity", validity)
         object.__setattr__(self, "acceptance_decision", decision)
 
@@ -792,13 +807,13 @@ class HMCAcceptanceEvidence:
 
     @property
     def interval(self) -> tuple[float, float] | None:
-        """Deprecated alias for the explanatory v4 chain-mean interval."""
+        """Deprecated alias for the v5 working chain-mean interval."""
 
         return self.chain_mean_uncertainty_interval
 
     @property
     def standard_error(self) -> None:
-        """The v3 pseudo-standard-error has no v4 statistical meaning."""
+        """The v3 pseudo-standard-error has no v5 statistical meaning."""
 
         return None
 
@@ -823,7 +838,7 @@ class HMCAcceptanceEvidence:
 
     @property
     def passed(self) -> bool:
-        """Compatibility flag with safe v4 promotion semantics."""
+        """Compatibility flag with safe v5 promotion semantics."""
 
         return self.promotion_eligible
 
@@ -839,7 +854,7 @@ class HMCAcceptanceEvidence:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_acceptance_evidence.v4",
+            "schema": "bayesfilter.hmc_acceptance_evidence.v5",
             "evidence_validity": self.evidence_validity,
             "acceptance_decision": self.acceptance_decision,
             "decision": self.acceptance_decision,
@@ -887,11 +902,11 @@ class HMCAcceptanceEvidence:
 def hmc_acceptance_evidence_from_payload(
     payload: Mapping[str, Any],
 ) -> HMCAcceptanceEvidence:
-    """Reconstruct and fully validate one live v4 acceptance-evidence payload."""
+    """Reconstruct and fully validate one live v5 acceptance-evidence payload."""
 
     if not isinstance(payload, Mapping):
         raise TypeError("acceptance evidence payload must be a mapping")
-    if payload.get("schema") != "bayesfilter.hmc_acceptance_evidence.v4":
+    if payload.get("schema") != "bayesfilter.hmc_acceptance_evidence.v5":
         raise ValueError("acceptance evidence schema mismatch")
     expected_keys = {
         "schema",
@@ -1027,6 +1042,93 @@ def hmc_acceptance_evidence_v3_migration_view(
         "historical_v3_promotion_eligible": payload["promotion_eligible"],
         "historical_v3_interval": payload["interval"],
         "historical_v3_standard_error": payload["standard_error"],
+        "fresh_raw_trace_required": True,
+        "source_payload_mutated": False,
+    }
+
+
+def _validate_hmc_acceptance_evidence_v4_payload(
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Validate the historical v4 envelope without applying v5 semantics."""
+
+    if not isinstance(payload, Mapping):
+        raise TypeError("legacy v4 acceptance evidence must be a mapping")
+    if payload.get("schema") != "bayesfilter.hmc_acceptance_evidence.v4":
+        raise ValueError("legacy v4 acceptance evidence schema mismatch")
+    required = {
+        "acceptance_decision",
+        "decision",
+        "passed",
+        "promotion_eligible",
+        "pooled_mean",
+        "chain_mean_uncertainty_interval",
+        "chain_mean_uncertainty_method",
+        "policy",
+        "raw_traces_exposed",
+        "reports_posterior_convergence",
+    }
+    if not required.issubset(payload):
+        raise ValueError("legacy v4 acceptance evidence is incomplete")
+    decision = str(payload["acceptance_decision"])
+    if decision not in ACCEPTANCE_DECISIONS:
+        raise ValueError("legacy v4 acceptance decision is unsupported")
+    if payload.get("decision") != decision:
+        raise ValueError("legacy v4 acceptance decision alias is inconsistent")
+    if not isinstance(payload.get("passed"), (bool, np.bool_)):
+        raise ValueError("legacy v4 acceptance passed flag is malformed")
+    if not isinstance(payload.get("promotion_eligible"), (bool, np.bool_)):
+        raise ValueError("legacy v4 promotion flag is malformed")
+    if payload.get("passed") is not payload.get("promotion_eligible"):
+        raise ValueError("legacy v4 promotion flags are inconsistent")
+    policy = payload.get("policy")
+    if not isinstance(policy, Mapping):
+        raise ValueError("legacy v4 acceptance policy is incomplete")
+    if policy.get("schema") != "bayesfilter.hmc_acceptance_policy.v4":
+        raise ValueError("legacy v4 acceptance policy schema mismatch")
+    if policy.get("uncertainty_method") != _LEGACY_V4_CHAIN_MEAN_UNCERTAINTY_METHOD:
+        raise ValueError("legacy v4 uncertainty method is inconsistent")
+    interval = payload.get("chain_mean_uncertainty_interval")
+    if interval is not None:
+        values = tuple(float(item) for item in interval)
+        if len(values) != 2 or not np.all(np.isfinite(values)):
+            raise ValueError("legacy v4 uncertainty interval is malformed")
+        if values[0] > values[1] or values[0] < 0.0 or values[1] > 1.0:
+            raise ValueError("legacy v4 uncertainty interval is malformed")
+    if payload.get("chain_mean_uncertainty_method") != _LEGACY_V4_CHAIN_MEAN_UNCERTAINTY_METHOD:
+        raise ValueError("legacy v4 evidence uncertainty method is inconsistent")
+    if payload.get("raw_traces_exposed") is not False:
+        raise ValueError("legacy v4 acceptance evidence exposes raw traces")
+    if payload.get("reports_posterior_convergence") is not False:
+        raise ValueError("legacy v4 acceptance evidence claims posterior convergence")
+    return payload
+
+
+def hmc_acceptance_evidence_v4_migration_view(
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Expose v4 evidence diagnostically while forbidding v5 promotion.
+
+    v4 used a fixed Hoeffding-width summary and target-centered point gates.
+    Without raw acceptance traces, its decision cannot be recomputed under the
+    v5 Student-t interval contract; even a historically passing v4 payload is
+    therefore explicitly non-promoting.
+    """
+
+    legacy = _validate_hmc_acceptance_evidence_v4_payload(payload)
+    return {
+        "schema": "bayesfilter.hmc_acceptance_evidence_v4_migration_view.v1",
+        "source_schema": "bayesfilter.hmc_acceptance_evidence.v4",
+        "source_policy_schema": "bayesfilter.hmc_acceptance_policy.v4",
+        "acceptance_decision": "recompute_required",
+        "promotion_eligible": False,
+        "promotion_eligible_under_v5": False,
+        "historical_v4_acceptance_decision": legacy["acceptance_decision"],
+        "historical_v4_promotion_eligible": bool(legacy["promotion_eligible"]),
+        "historical_v4_interval": legacy["chain_mean_uncertainty_interval"],
+        "historical_v4_uncertainty_method": legacy[
+            "chain_mean_uncertainty_method"
+        ],
         "fresh_raw_trace_required": True,
         "source_payload_mutated": False,
     }
@@ -1286,16 +1388,16 @@ def evaluate_hmc_acceptance_evidence(
     )
     chain_means = np.mean(block_means, axis=1)
     pooled = float(np.mean(chain_means))
-    alpha = 1.0 - policy.confidence_level
-    half_width = float(
-        np.sqrt(np.log(2.0 / alpha) / (2.0 * policy.chain_count))
+    interval = _chain_mean_uncertainty_interval(
+        chain_means,
+        policy=policy,
     )
-    interval = (max(0.0, pooled - half_width), min(1.0, pooled + half_width))
     decision = _acceptance_decision_from_summary(
         policy=policy,
         pooled_mean=pooled,
         chain_means=chain_means,
         block_means=block_means,
+        uncertainty_interval=interval,
         movement=movement,
         repeated=repeated,
         normalized_return=normalized_return,
@@ -1386,6 +1488,36 @@ def _path_return_fraction_by_chain(samples: np.ndarray) -> np.ndarray:
         threshold = _PATH_RETURN_ATOL + _PATH_RETURN_RTOL * state_scale
         fractions.append(np.mean(distance <= threshold, axis=0))
     return np.max(np.stack(fractions, axis=0), axis=0)
+
+
+def _chain_mean_uncertainty_interval(
+    chain_means: np.ndarray,
+    *,
+    policy: HMCAcceptancePolicy,
+) -> tuple[float, float]:
+    """Return the v5 working interval over independent chain means.
+
+    The four seeded chains, rather than individual transitions or temporal
+    blocks, are the declared independent units.  This is a bounded tuning
+    compatibility interval; it is not a convergence or posterior interval.
+    """
+
+    values = np.asarray(chain_means, dtype=float)
+    if values.ndim != 1 or values.size != policy.chain_count:
+        raise ValueError("chain-mean interval requires exactly four chain means")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("chain means must be finite for uncertainty calculation")
+    pooled = float(np.mean(values))
+    sample_sd = float(np.std(values, ddof=1))
+    half_width = (
+        policy.student_critical_value
+        * sample_sd
+        / np.sqrt(float(values.size))
+    )
+    return (
+        max(0.0, pooled - half_width),
+        min(1.0, pooled + half_width),
+    )
 
 
 def _empty_acceptance_evidence(
@@ -1617,13 +1749,9 @@ def _validate_valid_acceptance_summary(
         raise ValueError("acceptance decision requires four-chain four-block evidence")
     expected_chain_means = np.mean(np.asarray(block_means), axis=1)
     expected_pooled = float(np.mean(expected_chain_means))
-    alpha = 1.0 - evidence.policy.confidence_level
-    half_width = float(
-        np.sqrt(np.log(2.0 / alpha) / (2.0 * evidence.policy.chain_count))
-    )
-    expected_interval = (
-        max(0.0, expected_pooled - half_width),
-        min(1.0, expected_pooled + half_width),
+    expected_interval = _chain_mean_uncertainty_interval(
+        expected_chain_means,
+        policy=evidence.policy,
     )
     if not np.allclose(evidence.chain_means, expected_chain_means, rtol=1e-12, atol=1e-12):
         raise ValueError("chain_means do not match block means")
@@ -1646,6 +1774,7 @@ def _validate_valid_acceptance_summary(
         pooled_mean=expected_pooled,
         chain_means=expected_chain_means,
         block_means=np.asarray(block_means),
+        uncertainty_interval=expected_interval,
         movement=np.asarray(evidence.movement_rate_by_chain),
         repeated=np.asarray(evidence.repeated_state_fraction_by_chain),
         normalized_return=np.asarray(evidence.normalized_return_displacement_by_chain),
@@ -1655,7 +1784,7 @@ def _validate_valid_acceptance_summary(
         raise ValueError("decision is inconsistent with acceptance policy")
 
 
-def _validate_v4_roles(evidence: HMCAcceptanceEvidence) -> None:
+def _validate_v5_roles(evidence: HMCAcceptanceEvidence) -> None:
     expected_vetoes = []
     if (
         evidence.native_divergence_status == "available"
@@ -1947,6 +2076,7 @@ def _acceptance_decision_from_summary(
     pooled_mean: float,
     chain_means: np.ndarray,
     block_means: np.ndarray,
+    uncertainty_interval: tuple[float, float],
     movement: np.ndarray,
     repeated: np.ndarray,
     normalized_return: np.ndarray,
@@ -1954,8 +2084,9 @@ def _acceptance_decision_from_summary(
 ) -> str:
     low, high = policy.practical_region
     repair_low, repair_high = policy.repair_region
-    low_supported = pooled_mean < low and bool(np.all(chain_means < policy.target))
-    high_supported = pooled_mean > high and bool(np.all(chain_means > policy.target))
+    interval_low, interval_high = (float(item) for item in uncertainty_interval)
+    low_supported = interval_high < low
+    high_supported = interval_low > high
     chain_conflict = bool(np.any(chain_means < low) and np.any(chain_means > high))
     temporal_block_conflict = bool(
         np.any(
@@ -1985,7 +2116,10 @@ def _acceptance_decision_from_summary(
     if high_supported:
         return "repair_step_higher"
     if (
-        low <= pooled_mean <= high
+        interval_low <= high
+        and interval_high >= low
+        and interval_low >= repair_low
+        and interval_high <= repair_high
         and bool(np.all((chain_means >= repair_low) & (chain_means <= repair_high)))
     ):
         return "passed"
@@ -2024,7 +2158,7 @@ def _trajectory_pathology_flags(
 def _acceptance_policy_from_payload(payload: Any) -> HMCAcceptancePolicy:
     if not isinstance(payload, Mapping):
         raise TypeError("acceptance policy payload must be a mapping")
-    if payload.get("schema") != "bayesfilter.hmc_acceptance_policy.v4":
+    if payload.get("schema") != "bayesfilter.hmc_acceptance_policy.v5":
         raise ValueError("acceptance policy schema mismatch")
     expected_keys = set(HMCAcceptancePolicy().payload())
     if set(payload) != expected_keys:

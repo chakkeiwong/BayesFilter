@@ -408,8 +408,11 @@ def test_strict_preset_and_live_target_chart_fail_closed() -> None:
         )
     with pytest.raises(NeuTraTrainingError, match="not identity-oriented"):
         NeuTraReverseKLTrainer(_ParityTarget(chart="log"), base)
-    with pytest.raises(NeuTraTrainingError, match="fixed translation mismatch"):
-        NeuTraReverseKLTrainer(_ParityTarget(center=(0.0, 0.0, 0.0, 0.0)), base)
+    shifted = _config(fixed_translation=(0.0, 0.0, 0.0, 0.0))
+    shifted_trainer = NeuTraReverseKLTrainer(
+        _ParityTarget(center=(0.0, 0.0, 0.0, 0.0)), shifted
+    )
+    assert shifted_trainer.config.fixed_translation == (0.0, 0.0, 0.0, 0.0)
 
 
 def _mutated_payload(payload, mutator):
@@ -639,6 +642,78 @@ def test_tuned_capacity_mutable_learning_rate_resume_and_label_are_exact() -> No
     )
 
 
+def test_tuned_capacity_fixed_output_scale_freezes_and_roundtrips_exactly() -> None:
+    scale = (0.5, 2.0, 1.5, 0.25)
+    config = _tuned_capacity_config(
+        fixed_output_scale=scale,
+        target_chart="prior_standardized",
+    )
+    trainer = NeuTraReverseKLTrainer(_ParityTarget(), config)
+    for variable in trainer.variables:
+        variable.assign(tf.zeros_like(variable))
+
+    z = _base_rows()
+    theta, logdet = trainer.forward_and_logdet(z)
+    expected_theta = np.asarray(TRANSLATION) + z.numpy() * np.asarray(scale)
+    expected_logdet = np.full(z.shape[0], np.sum(np.log(scale)))
+    np.testing.assert_allclose(theta.numpy(), expected_theta, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(logdet.numpy(), expected_logdet, rtol=1e-14, atol=1e-14)
+
+    payload = trainer.frozen_transport_payload(
+        transport_id="ssl-lstm-tuned-capacity-fixed-scale-fixture",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["fixed_output_scale"] == list(scale)
+    assert payload["components"][-1]["scale"] == list(scale)
+    loaded = load_frozen_neutra_artifact(
+        payload, expected_target_signature=TARGET_SIGNATURE
+    )
+    np.testing.assert_allclose(
+        loaded.transport.forward_batch(z), expected_theta, rtol=0.0, atol=0.0
+    )
+    np.testing.assert_allclose(
+        loaded.transport.log_abs_det_jacobian_batch(z),
+        expected_logdet,
+        rtol=0.0,
+        atol=0.0,
+    )
+    np.testing.assert_allclose(
+        loaded.transport.inverse_theta_to_z_batch(theta), z, rtol=0.0, atol=2e-15
+    )
+
+
+def test_tuned_capacity_fixed_output_dense_factor_freezes_and_roundtrips_exactly() -> None:
+    factor = ((0.8, 0.2, 0.0, 0.0), (0.0, 1.1, 0.3, 0.0),
+              (0.0, 0.0, 0.7, -0.1), (0.0, 0.0, 0.0, 1.4))
+    chart_signature = "3" * 64
+    config = _tuned_capacity_config(
+        fixed_translation=(0.12, -0.04, 0.2, 0.31),
+        fixed_output_factor=factor,
+        target_chart="model_dense_local_geometry",
+        chart_signature=chart_signature,
+    )
+    trainer = NeuTraReverseKLTrainer(_ParityTarget(), config)
+    for variable in trainer.variables:
+        variable.assign(tf.zeros_like(variable))
+    z = _base_rows()
+    theta, logdet = trainer.forward_and_logdet(z)
+    expected_theta = np.asarray(config.fixed_translation) + z.numpy() @ np.asarray(factor).T
+    expected_logdet = np.full(z.shape[0], np.linalg.slogdet(np.asarray(factor))[1])
+    np.testing.assert_allclose(theta.numpy(), expected_theta, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(logdet.numpy(), expected_logdet, rtol=1e-14, atol=1e-14)
+    payload = trainer.frozen_transport_payload(
+        transport_id="ssl-lstm-tuned-capacity-fixed-dense-fixture",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["components"][-1]["kind"] == "affine_dense"
+    assert payload["components"][-1]["matrix"] == [list(row) for row in factor]
+    assert payload["chart_signature"] == chart_signature
+    loaded = load_frozen_neutra_artifact(payload, expected_target_signature=TARGET_SIGNATURE)
+    np.testing.assert_allclose(loaded.transport.forward_batch(z), expected_theta, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(loaded.transport.log_abs_det_jacobian_batch(z), expected_logdet, rtol=1e-14, atol=1e-14)
+    np.testing.assert_allclose(loaded.transport.inverse_theta_to_z_batch(theta), z, rtol=0.0, atol=2e-15)
+
+
 def test_deep_capacity_has_distinct_three_layer_contract() -> None:
     target = _ParityTarget()
     config = _deep_capacity_config()
@@ -674,6 +749,9 @@ def test_wide_capacity_has_distinct_64x64_contract() -> None:
     config = _wide_capacity_config()
     assert config.family == SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY
     assert config.hidden_layers == (64, 64)
+    assert config.fixed_output_scale == ()
+    assert config.fixed_output_factor == ()
+    assert config.target_chart == "identity"
     trainer = NeuTraReverseKLTrainer(target, config)
     assert sum(int(tf.size(value)) for value in trainer.variables) == 15000
     trainer.train_step(_base_rows())
@@ -694,6 +772,47 @@ def test_wide_capacity_has_distinct_64x64_contract() -> None:
     np.testing.assert_array_equal(loaded.transport.forward_batch(_base_rows()), theta)
     np.testing.assert_array_equal(
         loaded.transport.log_abs_det_jacobian_batch(_base_rows()), logdet
+    )
+
+
+def test_wide_capacity_accepts_model_owned_dense_chart() -> None:
+    factor = (
+        (0.8, 0.1, 0.0, 0.0),
+        (0.0, 1.1, 0.2, 0.0),
+        (0.0, 0.0, 0.7, -0.1),
+        (0.0, 0.0, 0.0, 1.4),
+    )
+    config = _wide_capacity_config(
+        fixed_output_factor=factor,
+        target_chart="model_dense_local_geometry",
+        chart_signature="4" * 64,
+    )
+    assert config.hidden_layers == (64, 64)
+    assert config.fixed_output_factor == factor
+    trainer = NeuTraReverseKLTrainer(_ParityTarget(), config)
+    payload = trainer.frozen_transport_payload(
+        transport_id="ssl-lstm-wide-capacity-dense-chart-fixture",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["target_chart"] == "model_dense_local_geometry"
+    assert payload["chart_signature"] == "4" * 64
+    assert payload["components"][-1]["kind"] == "affine_dense"
+    assert payload["components"][-1]["matrix"] == [list(row) for row in factor]
+
+
+def test_restore_accepts_float32_learning_rate_roundoff() -> None:
+    config = _wide_capacity_config()
+    trainer = NeuTraReverseKLTrainer(_ParityTarget(), config)
+    state = trainer.state_payload()
+    state["effective_learning_rate"] = float(np.float32(config.learning_rate))
+    state_without_hash = dict(state)
+    state_without_hash.pop("state_hash")
+    state["state_hash"] = _stable_hash(state_without_hash)
+
+    resumed = NeuTraReverseKLTrainer(_ParityTarget(), config)
+    resumed.restore_state(state)
+    assert float(resumed.learning_rate_at(0).numpy()) == pytest.approx(
+        config.learning_rate
     )
 
 

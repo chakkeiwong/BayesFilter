@@ -721,6 +721,7 @@ def test_public_config_caps_attempts_at_ten() -> None:
 def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> None:
     config = HMCKernelTuningConfig.standard(
         target_scope="kernel_fixed_mass_step_toy_gaussian",
+        metric_update_requirement="require_operational_update",
         use_xla=True,
         public_timeout_budget_s=810.0,
         max_leapfrog_steps=40,
@@ -739,6 +740,9 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
     loop = hmc_kernel_tuning_module._public_loop_config(config)
 
     assert config.payload()["use_xla"] is True
+    assert config.payload()["metric_update_requirement"] == (
+        "require_operational_update"
+    )
     assert config.payload()["public_timeout_budget_s"] == pytest.approx(810.0)
     assert config.payload()["max_leapfrog_steps"] == 40
     assert config.payload()["step_repair_high_acceptance_directional_factor"] == (
@@ -752,7 +756,11 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
     assert bootstrap.use_xla is True
     assert bootstrap.payload()["use_xla"] is True
     assert loop.use_xla is True
+    assert loop.metric_update_requirement == "require_operational_update"
     assert loop.payload()["use_xla"] is True
+    assert loop.payload()["metric_update_requirement"] == (
+        "require_operational_update"
+    )
     assert config.payload()["terminal_phase6_repair_extra_attempts"] == 1
     assert config.payload()["handoff_screen_policy"] == "phase23_nomination_only"
     assert config.payload()["verification_chunk_max_results"] == 250
@@ -794,6 +802,10 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
     )
 
     assert windowed.use_xla is True
+    assert windowed.metric_update_requirement == "require_operational_update"
+    assert windowed.payload()["metric_update_requirement"] == (
+        "require_operational_update"
+    )
     assert fixed_step.use_xla is True
     assert fixed_step.handoff_screen_policy == "phase23_nomination_only"
     assert fixed_step.step_repair_factor == pytest.approx(2.5)

@@ -73,6 +73,8 @@ class PositionCovarianceEstimate:
     evidence_role: str = "adaptation_only_position_covariance"
 
     def __post_init__(self) -> None:
+        import tensorflow as tf
+
         center = _immutable_array(self.center, name="center", rank=1)
         covariance = _immutable_array(self.covariance, name="covariance", rank=2)
         dimension = int(center.shape[0])
@@ -80,9 +82,15 @@ class PositionCovarianceEstimate:
             raise ValueError("covariance shape must match non-empty center")
         if not np.allclose(covariance, covariance.T, rtol=1.0e-10, atol=1.0e-12):
             raise ValueError("covariance must be symmetric")
-        eigenvalues = np.linalg.eigvalsh(covariance)
-        if float(np.min(eigenvalues)) <= 0.0:
-            raise ValueError("covariance must be positive definite")
+        covariance_tensor = tf.convert_to_tensor(covariance, dtype=tf.float64)
+        try:
+            factor = tf.linalg.cholesky(covariance_tensor)
+            tf.debugging.assert_all_finite(
+                factor,
+                "covariance Cholesky factor must be finite",
+            )
+        except tf.errors.InvalidArgumentError as exc:
+            raise ValueError("covariance must be positive definite") from exc
         source_signature = str(self.source_coordinate_signature)
         estimator = str(self.estimator_family)
         role = str(self.evidence_role)
@@ -133,12 +141,19 @@ class AffineCoordinateTransform:
     coordinate_name: str = "active_whitened_latent"
 
     def __post_init__(self) -> None:
+        import tensorflow as tf
+
         center = _immutable_array(self.center, name="center", rank=1)
         factor = _immutable_array(self.factor, name="factor", rank=2)
         dimension = int(center.shape[0])
         if dimension <= 0 or factor.shape != (dimension, dimension):
             raise ValueError("factor shape must match non-empty center")
-        if np.linalg.matrix_rank(factor) != dimension:
+        factor_tensor = tf.convert_to_tensor(factor, dtype=tf.float64)
+        sign, log_abs_determinant = tf.linalg.slogdet(factor_tensor)
+        if (
+            float(sign.numpy()) == 0.0
+            or not bool(tf.math.is_finite(log_abs_determinant).numpy())
+        ):
             raise ValueError("factor must be nonsingular")
         covariance_signature = str(self.covariance_signature)
         coordinate_name = str(self.coordinate_name)
@@ -158,9 +173,20 @@ class AffineCoordinateTransform:
     ) -> "AffineCoordinateTransform":
         if not isinstance(estimate, PositionCovarianceEstimate):
             raise TypeError("estimate must be a PositionCovarianceEstimate")
+        import tensorflow as tf
+
+        covariance = tf.convert_to_tensor(estimate.covariance, dtype=tf.float64)
+        try:
+            factor = tf.linalg.cholesky(covariance)
+            tf.debugging.assert_all_finite(
+                factor,
+                "coordinate factor must be finite",
+            )
+        except tf.errors.InvalidArgumentError as exc:
+            raise ValueError("covariance must admit a finite Cholesky factor") from exc
         return cls(
             center=estimate.center,
-            factor=np.linalg.cholesky(estimate.covariance),
+            factor=factor.numpy(),
             covariance_signature=estimate.signature,
             coordinate_name=coordinate_name,
         )
@@ -171,7 +197,13 @@ class AffineCoordinateTransform:
 
     @property
     def covariance(self) -> np.ndarray:
-        covariance = np.asarray(self.factor @ self.factor.T, dtype=float)
+        import tensorflow as tf
+
+        factor = tf.convert_to_tensor(self.factor, dtype=tf.float64)
+        covariance = np.asarray(
+            tf.matmul(factor, factor, transpose_b=True).numpy(),
+            dtype=float,
+        )
         covariance.setflags(write=False)
         return covariance
 

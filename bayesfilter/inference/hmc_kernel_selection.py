@@ -1427,7 +1427,7 @@ class FixedTrajectoryEvidenceExtension:
         }
         if any(
             _signature(
-                "bayesfilter.hmc_acceptance_policy.v4",
+                "bayesfilter.hmc_acceptance_policy.v5",
                 replication.evidence.policy.payload(),
             )
             != policy_signature
@@ -1493,7 +1493,7 @@ class FixedTrajectoryEvidenceExtension:
             ):
                 raise ValueError("evidence extension execution contract is invalid")
             extended_policy_signature = _signature(
-                "bayesfilter.hmc_acceptance_policy.v4",
+                "bayesfilter.hmc_acceptance_policy.v5",
                 slot.extended_replication.evidence.policy.payload(),
             )
             if extended_policy_signature != policy_signature:
@@ -1990,7 +1990,7 @@ class FixedTrajectorySelectionRepairAttempt:
             rtol=1.0e-12,
             atol=0.0,
         )
-        if set(self.repair.source_decisions) == {"repair_step_higher"}:
+        if self.repair.one_sided_directional_support:
             if np.isclose(
                 float(next_lower),
                 self.input_step_size,
@@ -2204,7 +2204,7 @@ class BoundedFixedTrajectorySelectionResult:
                 source.lower_bound_source_attempt_index_after != source_index
                 or source.repair is None
                 or source.repair.direction != "higher_epsilon"
-                or set(source.repair.source_decisions) != {"repair_step_higher"}
+                or not source.repair.one_sided_directional_support
                 or not np.isclose(
                     float(source.bracket_after[0]),
                     float(attempt.bracket_before[0]),
@@ -3023,7 +3023,7 @@ def _validate_returned_evidence_extension(
     if not isinstance(extension, FixedTrajectoryEvidenceExtension):
         raise TypeError("evidence extender returned an invalid extension record")
     expected_policy_signature = _signature(
-        "bayesfilter.hmc_acceptance_policy.v4",
+        "bayesfilter.hmc_acceptance_policy.v5",
         acceptance_policy.payload(),
     )
     if (
@@ -3216,7 +3216,7 @@ def extend_operational_fixed_trajectory_evidence(
         frozen_step_size=frozen_step_size,
         screen_num_burnin_steps=screen_num_burnin_steps,
         acceptance_policy_signature=_signature(
-            "bayesfilter.hmc_acceptance_policy.v4",
+            "bayesfilter.hmc_acceptance_policy.v5",
             acceptance_policy.payload(),
         ),
         target_scope=target_scope,
