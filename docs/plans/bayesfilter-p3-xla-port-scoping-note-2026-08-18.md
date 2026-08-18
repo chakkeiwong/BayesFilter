@@ -39,14 +39,22 @@ or become tensor-side):
 
 ## Recommended port order (smallest-diagnostic-first)
 
-- P3.1: `jit_compile` the per-update solve kernel
-  (`_solve_scaled_augmented_ridge` core einsums + QR) with static
-  shapes; parity vs eager on frozen fixtures at 1e-12; measure
-  retrace count across a T=8 run (shapes are step-stationary after
-  t=0, so one retrace for t=0 and one for t>=1 is the target).
-- P3.2: compile design assembly + environment contractions
-  (`build_core_update_system` inner products, prefix/suffix Gram
-  chains).
+- P3.1: DONE (2026-08-18): `jit_compile` solve-kernel parity probe
+  (`docs/benchmarks/run_p31_xla_solve_parity_20260818.py`, log
+  `/tmp/p31_xla_parity.log`): worst rel vs `_solve_scaled_augmented_ridge`
+  1.5e-14 over 6 fixtures incl. column-scale 1e-6..1e-8 arms; eager and
+  XLA kernels agree at the same level; 0 retraces over 5 same-shape
+  calls. Gate 1e-12 PASS with two orders of margin — the QR-lowering
+  risk did not materialize at the solution-vector level.
+- P3.2: DONE (2026-08-18): design assembly + Gram chains compile AS-IS
+  (`docs/benchmarks/run_p32_xla_design_gram_parity_20260818.py`, log
+  `/tmp/p32_xla_parity.log`): `FixedTTFitter._build_design_matrix` on the
+  mixed transition basis (incl. the discrete branch axis) at core
+  indices {first, branch, last}: worst XLA rel 9.4e-16;
+  prefix/suffix Gram chains ~1.5e-16. Gate 1e-12 PASS; no compile
+  failures — the repo's compute kernels need no rewrite, so P3.3
+  reduces to hoisting the inventoried host syncs out of the compiled
+  step.
 - P3.3: whole-step compiled fit (fit + retention tensors), Python
   filter loop retained; value parity 1e-12 vs eager on n in {1,2}
   fixtures + one ladder cell.
