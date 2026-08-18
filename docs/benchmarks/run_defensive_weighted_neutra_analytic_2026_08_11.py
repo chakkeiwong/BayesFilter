@@ -20,6 +20,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 PLAN = "docs/plans/bayesfilter-defensive-weighted-neutra-validation-plan-2026-08-11.md"
+POSITIVE_CONTROL_PLAN = (
+    "docs/plans/"
+    "bayesfilter-weighted-forward-kl-positive-control-regression-plan-2026-08-12.md"
+)
 DEFAULT_ROOT = Path(
     "docs/plans/artifacts/defensive-weighted-neutra-validation-2026-08-11"
 )
@@ -30,7 +34,9 @@ SEED_ROOT = 20260811
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mode", required=True, choices=("gaussian-canary", "two-mode-canary")
+        "--mode",
+        required=True,
+        choices=("gaussian-canary", "two-mode-canary", "three-mode-canary"),
     )
     parser.add_argument("--output-root", required=True, type=Path)
     parser.add_argument("--updates", type=int, default=500)
@@ -40,6 +46,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--replication", type=int, default=0)
     parser.add_argument("--hidden-width", type=int, default=32)
     parser.add_argument("--stages", type=int, default=3)
+    parser.add_argument("--plan-file", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -47,6 +54,13 @@ def main() -> int:
     args = parse_args()
     _validate_args(args)
     seed_root = SEED_ROOT + 100_000 * int(args.replication)
+    active_plan = (
+        args.plan_file.resolve()
+        if args.plan_file is not None
+        else (ROOT / (POSITIVE_CONTROL_PLAN if args.mode == "three-mode-canary" else PLAN))
+    )
+    if not active_plan.is_file():
+        raise FileNotFoundError(f"active plan is missing: {active_plan}")
     output_root = args.output_root.resolve()
     if output_root.exists():
         raise FileExistsError(f"output root must be fresh: {output_root}")
@@ -84,8 +98,9 @@ def main() -> int:
 
     dtype = tf.float64
     target = _target(args.mode, tf, dtype)
+    dimension = int(target["means"].shape[1])
     config = WeightedNeuTraConfig(
-        dimension=4,
+        dimension=dimension,
         hidden_layers=(int(args.hidden_width), int(args.hidden_width)),
         stages=int(args.stages),
         activation="tanh",
@@ -161,7 +176,7 @@ def main() -> int:
         weighted_step = weighted.train_step(train_rows, train_log_weights)
 
         latent = tf.random.stateless_normal(
-            (int(args.batch_size), 4),
+            (int(args.batch_size), dimension),
             seed=(seed_root, 30_000 + update),
             dtype=dtype,
         )
@@ -243,7 +258,7 @@ def main() -> int:
     if args.mode == "gaussian-canary":
         decision = _gaussian_canary_decision(audit)
     else:
-        decision = _two_mode_canary_decision(
+        decision = _mixture_canary_decision(
             tf,
             weighted,
             reverse,
@@ -258,10 +273,18 @@ def main() -> int:
     manifest = {
         "schema": "bayesfilter.defensive_weighted_neutra_analytic_manifest.v1",
         "git_commit": subprocess.run(
-            ("git", "rev-parse", "HEAD"), check=True, capture_output=True, text=True
+            ("git", "rev-parse", "HEAD"),
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip(),
         "git_status_short": subprocess.run(
-            ("git", "status", "--short"), check=True, capture_output=True, text=True
+            ("git", "status", "--short"),
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.splitlines(),
         "command": " ".join(sys.argv),
         "environment": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
@@ -293,6 +316,7 @@ def main() -> int:
         "started_at_utc": started_at.isoformat(),
         "wall_time_seconds": wall_time,
         "plan_file": PLAN,
+        "active_plan_file": active_plan.as_posix(),
         "result_file": str(output_root / "result.json"),
         "output_root": str(output_root),
         "mode": args.mode,
@@ -420,24 +444,45 @@ def _target(mode: str, tf: Any, dtype: Any) -> Mapping[str, Any]:
             "true_mean": mean[0],
             "true_covariance": covariance,
         }
-    means = tf.constant(
-        ((-4.0, -0.5, 0.75, -0.25), (4.0, 0.5, -0.75, 0.25)), dtype
-    )
-    left_factor = tf.constant(
-        ((0.8, 0.0, 0.0, 0.0), (0.2, 0.6, 0.0, 0.0), (0.0, 0.1, 0.5, 0.0), (0.1, 0.0, 0.15, 0.4)),
-        dtype,
-    )
-    right_factor = tf.constant(
-        ((0.5, 0.0, 0.0, 0.0), (-0.1, 0.9, 0.0, 0.0), (0.05, -0.2, 0.7, 0.0), (0.0, 0.1, -0.1, 0.55)),
-        dtype,
-    )
-    covariances = tf.stack(
-        (
-            tf.matmul(left_factor, left_factor, transpose_b=True),
-            tf.matmul(right_factor, right_factor, transpose_b=True),
+    if mode == "two-mode-canary":
+        means = tf.constant(
+            ((-4.0, -0.5, 0.75, -0.25), (4.0, 0.5, -0.75, 0.25)), dtype
         )
-    )
-    target_probabilities = tf.constant((0.8, 0.2), dtype)
+        factors = tf.constant(
+            (
+                ((0.8, 0.0, 0.0, 0.0), (0.2, 0.6, 0.0, 0.0), (0.0, 0.1, 0.5, 0.0), (0.1, 0.0, 0.15, 0.4)),
+                ((0.5, 0.0, 0.0, 0.0), (-0.1, 0.9, 0.0, 0.0), (0.05, -0.2, 0.7, 0.0), (0.0, 0.1, -0.1, 0.55)),
+            ),
+            dtype,
+        )
+        target_probabilities = tf.constant((0.8, 0.2), dtype)
+        proposal_probabilities = tf.constant((0.5, 0.5), dtype)
+        identity = "separated_two_mode_unequal_weight_d4_v1"
+        proposal_scale = 1.0
+    elif mode == "three-mode-canary":
+        means = tf.constant(
+            (
+                (-4.5, -1.0, 0.8, -0.4),
+                (4.0, -1.8, -0.7, 0.5),
+                (0.5, 4.8, 0.2, -0.6),
+            ),
+            dtype,
+        )
+        factors = tf.constant(
+            (
+                ((0.75, 0.0, 0.0, 0.0), (0.18, 0.55, 0.0, 0.0), (0.05, 0.10, 0.45, 0.0), (0.08, -0.03, 0.12, 0.38)),
+                ((0.48, 0.0, 0.0, 0.0), (-0.16, 0.88, 0.0, 0.0), (0.08, -0.22, 0.68, 0.0), (0.02, 0.14, -0.09, 0.52)),
+                ((0.62, 0.0, 0.0, 0.0), (0.28, 0.58, 0.0, 0.0), (-0.12, 0.16, 0.82, 0.0), (0.10, 0.04, 0.20, 0.44)),
+            ),
+            dtype,
+        )
+        target_probabilities = tf.constant((0.5, 0.3, 0.2), dtype)
+        proposal_probabilities = tf.constant((1.0 / 3.0,) * 3, dtype)
+        identity = "separated_three_mode_unequal_weight_d4_v1"
+        proposal_scale = 1.5
+    else:
+        raise ValueError(f"unsupported mode: {mode}")
+    covariances = tf.matmul(factors, factors, transpose_b=True)
     true_mean = tf.reduce_sum(target_probabilities[:, tf.newaxis] * means, axis=0)
     centered = means - true_mean
     true_covariance = tf.reduce_sum(
@@ -446,13 +491,14 @@ def _target(mode: str, tf: Any, dtype: Any) -> Mapping[str, Any]:
         axis=0,
     )
     return {
-        "identity": "separated_two_mode_unequal_weight_d4_v1",
+        "identity": identity,
         "target_probabilities": target_probabilities,
         "means": means,
         "covariances": covariances,
-        "proposal_probabilities": tf.constant((0.5, 0.5), dtype),
+        "proposal_probabilities": proposal_probabilities,
         "proposal_means": means,
-        "proposal_covariances": covariances,
+        "proposal_covariances": proposal_scale * covariances,
+        "proposal_scale_hypothesis": proposal_scale,
         "true_mean": true_mean,
         "true_covariance": true_covariance,
     }
@@ -488,12 +534,16 @@ def _checkpoint(
         "weighted_heldout_nll": float(weighted_nll.numpy()),
         "weighted_latent_mean_norm": float(tf.linalg.norm(weighted_mean).numpy()),
         "weighted_latent_covariance_error": float(
-            tf.linalg.norm(weighted_covariance - tf.eye(4, dtype=tf.float64)).numpy()
+            tf.linalg.norm(
+                weighted_covariance - tf.eye(int(rows.shape[1]), dtype=tf.float64)
+            ).numpy()
         ),
         "reverse_heldout_nll": float(reverse_nll.numpy()),
         "reverse_latent_mean_norm": float(tf.linalg.norm(reverse_mean).numpy()),
         "reverse_latent_covariance_error": float(
-            tf.linalg.norm(reverse_covariance - tf.eye(4, dtype=tf.float64)).numpy()
+            tf.linalg.norm(
+                reverse_covariance - tf.eye(int(rows.shape[1]), dtype=tf.float64)
+            ).numpy()
         ),
     }
 
@@ -508,6 +558,7 @@ def _transport_audit(
     base_seed: tuple[int, int],
 ) -> Mapping[str, Any]:
     normalized = tf.nn.softmax(log_weights)
+    dimension = int(rows.shape[1])
     nll = -trainer.log_prob(rows)
     latent, _ = trainer.transport.inverse_and_forward_logdet(rows)
     latent_mean = tf.reduce_sum(normalized[:, tf.newaxis] * latent, axis=0)
@@ -518,7 +569,7 @@ def _transport_audit(
         transpose_a=True,
     )
     base = tf.random.stateless_normal(
-        (int(rows.shape[0]), 4), seed=base_seed, dtype=tf.float64
+        (int(rows.shape[0]), dimension), seed=base_seed, dtype=tf.float64
     )
     physical, _ = trainer.forward_and_logdet(base)
     physical_mean = tf.reduce_mean(physical, axis=0)
@@ -534,7 +585,9 @@ def _transport_audit(
         "latent_weighted_mean_norm": float(tf.linalg.norm(latent_mean).numpy()),
         "latent_weighted_covariance": latent_covariance.numpy().tolist(),
         "latent_covariance_error_frobenius": float(
-            tf.linalg.norm(latent_covariance - tf.eye(4, dtype=tf.float64)).numpy()
+            tf.linalg.norm(
+                latent_covariance - tf.eye(dimension, dtype=tf.float64)
+            ).numpy()
         ),
         "base_pushforward_mean": physical_mean.numpy().tolist(),
         "base_pushforward_mean_error": float(
@@ -589,7 +642,7 @@ def _gaussian_canary_decision(audit: Mapping[str, Any]) -> Mapping[str, Any]:
     }
 
 
-def _two_mode_canary_decision(
+def _mixture_canary_decision(
     tf: Any,
     weighted: Any,
     reverse: Any,
@@ -602,11 +655,15 @@ def _two_mode_canary_decision(
         gaussian_mixture_log_prob_responsibilities_score,
     )
 
+    component_count = int(target["means"].shape[0])
+    dimension = int(target["means"].shape[1])
     coverage = {}
     gates = {}
     for index, (name, trainer) in enumerate((('weighted', weighted), ('reverse_kl', reverse))):
         base = tf.random.stateless_normal(
-            (int(audit_size), 4), seed=(seed_root, 60_001 + index), dtype=tf.float64
+            (int(audit_size), dimension),
+            seed=(seed_root, 60_001 + index),
+            dtype=tf.float64,
         )
         physical, _ = trainer.forward_and_logdet(base)
         _value, responsibilities, _score = gaussian_mixture_log_prob_responsibilities_score(
@@ -617,26 +674,36 @@ def _two_mode_canary_decision(
         )
         assigned = tf.argmax(responsibilities, axis=1, output_type=tf.int32)
         probabilities = tf.stack(
-            [tf.reduce_mean(tf.cast(assigned == component, tf.float64)) for component in range(2)]
+            [
+                tf.reduce_mean(tf.cast(assigned == component, tf.float64))
+                for component in range(component_count)
+            ]
         )
+        all_components_observed = bool(tf.reduce_all(probabilities > 0.0).numpy())
         coverage[name] = {
             "hard_assignment_component_probabilities": probabilities.numpy().tolist(),
             "soft_responsibility_component_probabilities": tf.reduce_mean(
                 responsibilities, axis=0
             ).numpy().tolist(),
-            "both_components_observed": bool(tf.reduce_all(probabilities > 0.0).numpy()),
+            "all_components_observed": all_components_observed,
             "all_finite": bool(
                 tf.reduce_all(tf.math.is_finite(responsibilities)).numpy()
             ),
         }
+        if component_count == 2:
+            coverage[name]["both_components_observed"] = all_components_observed
     weighted_probabilities = coverage["weighted"]["soft_responsibility_component_probabilities"]
     gates["finite"] = bool(
         coverage["weighted"]["all_finite"] and coverage["reverse_kl"]["all_finite"]
     )
-    gates["both_components_observed"] = bool(coverage["weighted"]["both_components_observed"])
+    gates["all_components_observed"] = bool(
+        coverage["weighted"]["all_components_observed"]
+    )
+    if component_count == 2:
+        gates["both_components_observed"] = gates["all_components_observed"]
     maximum_error = max(
         abs(float(weighted_probabilities[i]) - float(target["target_probabilities"][i].numpy()))
-        for i in range(2)
+        for i in range(component_count)
     )
     gates["component_probability_max_error_below_0p05"] = maximum_error < 0.05
     return {

@@ -33,6 +33,7 @@ from bayesfilter.inference.hmc_convergence import (
     rank_normalized_split_rhat_summary,
 )
 from bayesfilter.inference.posterior_adapter import value_score_capability
+from bayesfilter.inference.tuning_contract import require_active_hmc_tuning_route
 
 
 FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS: tuple[str, ...] = (
@@ -358,6 +359,7 @@ def tune_fixed_transport_hmc_kernel(
 ) -> FixedTransportHMCKernelTuningResult:
     """Tune fixed-length TFP HMC and verify a frozen identity-`z` kernel."""
 
+    require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
     cfg = config or FixedTransportHMCKernelTuningConfig(initial_step_size=0.1)
     if not isinstance(cfg, FixedTransportHMCKernelTuningConfig):
         raise TypeError("config must be FixedTransportHMCKernelTuningConfig")

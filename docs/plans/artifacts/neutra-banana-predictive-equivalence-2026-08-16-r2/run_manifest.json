@@ -1,0 +1,69 @@
+{
+  "bandwidths": [
+    2.0,
+    4.0,
+    8.0
+  ],
+  "bootstrap_count": 256,
+  "calibration_count": 32,
+  "candidate_confirmation_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-banana-hmc-l10-confirmation-2026-08-16-r1",
+  "chain_count": 4,
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "docs/benchmarks/run_neutra_banana_predictive_equivalence_2026_08_16.py",
+    "--output-root",
+    "docs/plans/artifacts/neutra-banana-predictive-equivalence-2026-08-16-r2",
+    "--draw-count",
+    "1024",
+    "--bootstrap-count",
+    "256",
+    "--calibration-count",
+    "32",
+    "--offsets",
+    "0",
+    "1024",
+    "--time-cap",
+    "1800",
+    "--device",
+    "0"
+  ],
+  "cuda_visible_devices": "0",
+  "curvature": 0.35,
+  "dimension": 16,
+  "draw_count": 1024,
+  "dtype": "float64",
+  "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "no formal equality p-value",
+    "no posterior correctness proof",
+    "no default or production readiness",
+    "no SSL-LSTM transfer"
+  ],
+  "offsets": [
+    0,
+    1024
+  ],
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-banana-predictive-equivalence-plan-2026-08-16.md",
+  "plan_sha256": "45e5047622b8f9e874ed034904ee8f329f7b0b31399ea706bee09e8f32e49479",
+  "runner_sha256": "035b507930cb6279fdcb32f58d700899569c8fb901c7333bff57219606010879",
+  "schema": "bayesfilter.neutra.banana_predictive_equivalence_manifest.v1",
+  "tf32_enabled": false,
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+}

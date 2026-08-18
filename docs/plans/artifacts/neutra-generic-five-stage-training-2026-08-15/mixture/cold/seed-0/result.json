@@ -1,0 +1,363 @@
+{
+  "decision": {
+    "known_law_gate_passed": false,
+    "no_hmc": true,
+    "nonclaims": [
+      "no universal training-procedure claim",
+      "no SSL-LSTM transfer claim",
+      "no HMC or posterior-correctness claim"
+    ],
+    "promotion": false,
+    "status": "known_law_gate_failed"
+  },
+  "manifest": {
+    "allocator_bytes": {
+      "current": 2582272,
+      "peak": 115821568
+    },
+    "batch_size": 4096,
+    "command": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_neutra_generic_five_stage_model_2026_08_15.py --output-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-generic-five-stage-training-2026-08-15/mixture/cold/seed-0 --target mixture --route cold --device 0 --seed-index 0 --batch-size 4096 --learning-rates 2e-4,5e-4,1e-3 --affine-updates 100 --simple-updates 300 --progressive-updates 100 --joint-updates 300 --cold-updates 1000 --checkpoint-every 100 --proposal-audit-count 131072",
+    "config": {
+      "activation": "elu",
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "dimension": 4,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "hidden_layers": [
+        32,
+        32
+      ],
+      "initialization_scale": 0.02,
+      "initialization_seed": [
+        20260815,
+        40001
+      ],
+      "jit_compile": true,
+      "learning_rate": 0.001,
+      "permutation_policy": "full_reverse",
+      "s_max": 1.0,
+      "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+      "stage_s_max": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "stage_scale_linear_skip": [],
+      "stage_unbounded_scale_linear": [
+        true,
+        false,
+        false
+      ],
+      "stages": 3
+    },
+    "cuda_visible_devices": "0",
+    "dtype": "float64",
+    "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+    "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+    "jit_compile": true,
+    "learning_rates": [
+      0.0002,
+      0.0005,
+      0.001
+    ],
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-generic-five-stage-training-plan-2026-08-15.md",
+    "proposal_audit_count": 131072,
+    "route": "cold",
+    "sample_wise_loop_or_scalar_fallback": false,
+    "schema": "bayesfilter.neutra.generic_five_stage_manifest.v1",
+    "seed_index": 0,
+    "target": {
+      "covariances": [
+        [
+          [
+            0.5625,
+            0.135,
+            0.037500000000000006,
+            0.06
+          ],
+          [
+            0.135,
+            0.33490000000000003,
+            0.064,
+            -0.002100000000000001
+          ],
+          [
+            0.037500000000000006,
+            0.064,
+            0.21500000000000002,
+            0.055
+          ],
+          [
+            0.06,
+            -0.002100000000000001,
+            0.055,
+            0.1661
+          ]
+        ],
+        [
+          [
+            0.2304,
+            -0.0768,
+            0.0384,
+            0.0096
+          ],
+          [
+            -0.0768,
+            0.7999999999999999,
+            -0.2064,
+            0.12000000000000002
+          ],
+          [
+            0.0384,
+            -0.2064,
+            0.5172000000000001,
+            -0.09040000000000001
+          ],
+          [
+            0.0096,
+            0.12000000000000002,
+            -0.09040000000000001,
+            0.29850000000000004
+          ]
+        ],
+        [
+          [
+            0.3844,
+            0.1736,
+            -0.0744,
+            0.062
+          ],
+          [
+            0.1736,
+            0.4148,
+            0.05919999999999999,
+            0.0512
+          ],
+          [
+            -0.0744,
+            0.05919999999999999,
+            0.7123999999999999,
+            0.1584
+          ],
+          [
+            0.062,
+            0.0512,
+            0.1584,
+            0.2452
+          ]
+        ]
+      ],
+      "dtype": "float64",
+      "identity": "separated_three_mode_unequal_weight_d4_v1",
+      "means": [
+        [
+          -4.5,
+          -1.0,
+          0.8,
+          -0.4
+        ],
+        [
+          4.0,
+          -1.8,
+          -0.7,
+          0.5
+        ],
+        [
+          0.5,
+          4.8,
+          0.2,
+          -0.6
+        ]
+      ],
+      "probabilities": [
+        0.5,
+        0.3,
+        0.2
+      ],
+      "schema": "bayesfilter.analytic_gaussian_mixture_target.v1"
+    },
+    "target_name": "mixture",
+    "tensorflow_version": "2.20.0",
+    "tf32_enabled": false,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "updates": {
+      "affine": 100,
+      "cold": 1000,
+      "joint": 300,
+      "progressive_each": 100,
+      "simple": 300
+    }
+  },
+  "schema": "bayesfilter.neutra.generic_five_stage_result.v1",
+  "training": {
+    "candidates": [
+      {
+        "clipped_updates": 195,
+        "learning_rate": 0.0002,
+        "selected_loss": 10.457688978416893,
+        "selected_update": 1000,
+        "terminal_loss": 10.457688978416893
+      },
+      {
+        "clipped_updates": 89,
+        "learning_rate": 0.0005,
+        "selected_loss": 7.2944774666024355,
+        "selected_update": 1000,
+        "terminal_loss": 7.2944774666024355
+      },
+      {
+        "clipped_updates": 50,
+        "learning_rate": 0.001,
+        "selected_loss": 7.291603159448785,
+        "selected_update": 1000,
+        "terminal_loss": 7.291603159448785
+      }
+    ],
+    "selected": {
+      "clipped_updates": 50,
+      "learning_rate": 0.001,
+      "selected_loss": 7.291603159448785,
+      "selected_update": 1000,
+      "terminal_loss": 7.291603159448785
+    }
+  },
+  "validation": {
+    "importance_ess_fraction": 0.9933890464395811,
+    "interval_level": 0.999,
+    "log_target_to_proposal_ratio_stddev": 0.09288678895699357,
+    "maximum_normalized_importance_weight": 2.4742172649635858e-05,
+    "passed": false,
+    "sample_count": 131072,
+    "screens": {
+      "component_responsibility_mass": {
+        "all_passed": false,
+        "estimate": [
+          2.2919453458312547e-07,
+          7.3674277109460595e-06,
+          0.9999924033777545
+        ],
+        "exact": [
+          0.5,
+          0.3,
+          0.2
+        ],
+        "lower": [
+          -4.4388090416653576e-07,
+          -1.687237011071677e-05,
+          0.9999681542427183
+        ],
+        "passed": [
+          false,
+          false,
+          false
+        ],
+        "standard_error": [
+          2.0454945170571178e-07,
+          7.3665403139492196e-06,
+          7.36937791875534e-06
+        ],
+        "upper": [
+          9.022699733327867e-07,
+          3.160722553260889e-05,
+          1.0000166525127907
+        ]
+      },
+      "coordinate_mean": {
+        "all_passed": false,
+        "estimate": [
+          0.49928186891815446,
+          4.803614960065026,
+          0.2005652294041883,
+          -0.6001311182994654
+        ],
+        "exact": [
+          -0.9500000000000001,
+          -0.08000000000000007,
+          0.23000000000000004,
+          -0.17
+        ],
+        "lower": [
+          0.4936398604573321,
+          4.797790324900148,
+          0.19292065385834636,
+          -0.604626402848817
+        ],
+        "passed": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "standard_error": [
+          0.0017146216764706978,
+          0.0017701224272496476,
+          0.0023232072460252877,
+          0.0013661291690262132
+        ],
+        "upper": [
+          0.5049238773789768,
+          4.809439595229905,
+          0.20820980495003025,
+          -0.5956358337501139
+        ]
+      },
+      "coordinate_second_moment": {
+        "all_passed": false,
+        "estimate": [
+          0.6346216211208755,
+          23.48540582760869,
+          0.7476548589173782,
+          0.6047763338305429
+        ],
+        "exact": [
+          15.402249999999999,
+          6.57041,
+          0.88014,
+          0.44864
+        ],
+        "lower": [
+          0.6270754962412763,
+          23.429362089929075,
+          0.7380486406954967,
+          0.5986101923186985
+        ],
+        "passed": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "standard_error": [
+          0.0022932878214843703,
+          0.017031843912176596,
+          0.0029193557766740924,
+          0.0018739071325060087
+        ],
+        "upper": [
+          0.6421677460004747,
+          23.541449565288307,
+          0.7572610771392596,
+          0.6109424753423872
+        ]
+      }
+    }
+  },
+  "wall_seconds": 24.41578884399496
+}

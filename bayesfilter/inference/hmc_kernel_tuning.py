@@ -72,6 +72,7 @@ from bayesfilter.inference.hmc import (
     write_sequential_rhat_boundary_handoff_checkpoint,
     write_sequential_rhat_pre_verification_handoff_checkpoint,
 )
+from bayesfilter.inference.hmc_artifact_identity import mass_artifact_signature
 from bayesfilter.inference.hmc_diagnostics import screen_hmc_diagnostics
 from bayesfilter.inference.hmc_budget_ladder import (
     FixedMassHMCTuningBudgetCallbackResult,
@@ -120,6 +121,7 @@ from bayesfilter.inference.posterior_adapter import (
     ValueScoreCapability,
     value_score_capability,
 )
+from bayesfilter.inference.tuning_contract import require_active_hmc_tuning_route
 from bayesfilter.runtime import stable_config_hash
 
 
@@ -151,6 +153,9 @@ _OPERATIONAL_EVIDENCE_POLICIES = {
 _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT = "strict"
 _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_MIXED = (
     "mixed_evidence_requires_fresh_verification"
+)
+_OPERATIONAL_CANDIDATE_HANDOFF_POLICY_CANDIDATE_LOCAL_MIXED = (
+    "candidate_local_mixed_evidence_requires_fresh_verification"
 )
 _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_SCHEMA = (
     "bayesfilter.hmc_operational_candidate_handoff_policy.v1"
@@ -1758,6 +1763,7 @@ class HMCBootstrapScreenConfig:
     target_accept_prob: float = 0.70
     acceptance_band: tuple[float, float] = (0.65, 0.75)
     repair_band: tuple[float, float] = (0.55, 0.85)
+    step_repair_factor: float = 2.0
     max_leapfrog_steps: int = _GEOMETRY_MAX_LEAPFROG
     max_repairs: int = 5
     screen_num_results: int = 16
@@ -1780,6 +1786,14 @@ class HMCBootstrapScreenConfig:
             raise ValueError("repair_band must contain acceptance_band")
         object.__setattr__(self, "acceptance_band", acceptance_band)
         object.__setattr__(self, "repair_band", repair_band)
+        object.__setattr__(
+            self,
+            "step_repair_factor",
+            _validate_step_repair_multiplier(
+                self.step_repair_factor,
+                name="step_repair_factor",
+            ),
+        )
         object.__setattr__(
             self,
             "max_leapfrog_steps",
@@ -1823,6 +1837,7 @@ class HMCBootstrapScreenConfig:
             "target_accept_prob": self.target_accept_prob,
             "acceptance_band": self.acceptance_band,
             "repair_band": self.repair_band,
+            "step_repair_factor": self.step_repair_factor,
             "max_leapfrog_steps": self.max_leapfrog_steps,
             "max_repairs": self.max_repairs,
             "screen_num_results": self.screen_num_results,
@@ -8075,6 +8090,11 @@ def _operational_windowed_mass_capture(
         final_transform=operational_result.final_kernel_state.transform,
         adapter_signature=hmc_adapter_signature,
     )
+    authoritative_mass = (
+        stage_mass_artifact
+        if effective_config.mass_policy == "fixed_identity"
+        else compatibility_mass
+    )
     canonical_draws = np.concatenate(
         [
             np.asarray(window.adaptation_canonical_states, dtype=float).reshape(
@@ -8137,13 +8157,13 @@ def _operational_windowed_mass_capture(
         windowed_result = dataclasses.replace(
             legacy_result,
             mass_updates=projected_updates,
-            final_mass_artifact_payload=compatibility_mass.signature_payload(),
-            final_mass_artifact_signature=_mass_artifact_signature(compatibility_mass),
+            final_mass_artifact_payload=authoritative_mass.signature_payload(),
+            final_mass_artifact_signature=_mass_artifact_signature(authoritative_mass),
             step_size_trace=tuple(
                 float(operational_result.final_kernel_state.epsilon)
                 for _ in legacy_result.step_size_trace
             ),
-            final_mass_artifact=compatibility_mass,
+            final_mass_artifact=authoritative_mass,
         )
         compatibility_status = {
             "status": "available",
@@ -8228,7 +8248,7 @@ def _operational_windowed_mass_capture(
             "trace_unavailability": {},
         },
     }
-    return operational_result, windowed_result, capture, None, compatibility_mass
+    return operational_result, windowed_result, capture, None, authoritative_mass
 
 
 def run_hmc_windowed_mass_stage(
@@ -11795,7 +11815,7 @@ def run_hmc_tune_verify_repair_loop(
     return result
 
 
-def tune_hmc_kernel(
+def _run_canonical_hmc_tuning(
     *,
     adapter: Any,
     initial_position: Any,
@@ -12582,6 +12602,34 @@ def tune_hmc_kernel(
     return result
 
 
+def tune_hmc_kernel(
+    *,
+    adapter: Any,
+    initial_position: Any,
+    config: HMCKernelTuningConfig | None = None,
+    output_dir: str | Path | None = None,
+    negative_hessian: Any | None = None,
+    initial_covariance: Any | None = None,
+    parameter_scales: Any | None = None,
+    diagnostic_callback: FixedMassScreenCallback | None = None,
+    verification_checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
+) -> HMCKernelTuningResult:
+    """Run BayesFilter's sole active ordinary-HMC tuning interface."""
+
+    require_active_hmc_tuning_route("tune_hmc_kernel")
+    return _run_canonical_hmc_tuning(
+        adapter=adapter,
+        initial_position=initial_position,
+        config=config,
+        output_dir=output_dir,
+        negative_hessian=negative_hessian,
+        initial_covariance=initial_covariance,
+        parameter_scales=parameter_scales,
+        diagnostic_callback=diagnostic_callback,
+        verification_checkpoint_writer_config=verification_checkpoint_writer_config,
+    )
+
+
 @dataclass(frozen=True)
 class _GeometryHint:
     kind: str
@@ -12888,14 +12936,7 @@ def _derive_seed(root_seed: tuple[int, int], *, stage_index: int) -> tuple[int, 
 
 
 def _mass_artifact_signature(mass_artifact: PrecomputedMassArtifact) -> str:
-    return stable_config_hash(
-        {
-            "signature_payload": mass_artifact.signature_payload(),
-            "position": np.asarray(mass_artifact.position, dtype=float),
-            "covariance": np.asarray(mass_artifact.covariance, dtype=float),
-            "factor": np.asarray(mass_artifact.factor, dtype=float),
-        }
-    )
+    return mass_artifact_signature(mass_artifact)
 
 
 class _BootstrapFixedMassLatentValueScoreAdapter:
@@ -13451,6 +13492,7 @@ def _public_bootstrap_config(
         target_accept_prob=config.target_accept_prob,
         acceptance_band=config.acceptance_band,
         repair_band=config.repair_band,
+        step_repair_factor=config.step_repair_factor,
         max_leapfrog_steps=config.max_leapfrog_steps,
         max_repairs=config.bootstrap_max_repairs,
         screen_num_results=screen_num_results,
@@ -13637,6 +13679,19 @@ def _public_budget_policy_factory(
                 _PUBLIC_TERMINAL_PHASE6_REPAIR_SCREEN_MAX_RESULTS,
             )
         verification_results = max(verification_floor, _ceil_div(budget, 2))
+        # The operational candidate selector uses the reviewed R0-R8
+        # acceptance policy: four chains, four blocks, and at least sixteen
+        # decisions per block.  Keep the small public diagnostic budgets above
+        # as mechanics-only evidence, but never let their derived operational
+        # fields produce an under-sized acceptance screen.
+        operational_screen_results = max(64, phase5_screen)
+        operational_screen_burnin = max(16, _ceil_div(operational_screen_results, 4))
+        operational_tune_steps = max(64, budget)
+        operational_verification_results = max(64, verification_results)
+        operational_verification_burnin = max(
+            16,
+            _ceil_div(operational_verification_results, 4),
+        )
         return _HMCAttemptBudgetPolicy(
             target_dimension=dimension,
             attempt_index=index,
@@ -13656,6 +13711,11 @@ def _public_budget_policy_factory(
                 burnin_floor,
                 _ceil_div(verification_results, 4),
             ),
+            operational_screen_num_results=operational_screen_results,
+            operational_screen_num_burnin_steps=operational_screen_burnin,
+            operational_exact_l_tune_adaptation_steps=operational_tune_steps,
+            operational_verification_num_results=operational_verification_results,
+            operational_verification_num_burnin_steps=operational_verification_burnin,
             operational_budget_policy_id=config.operational_budget_policy_id,
             serious_policy=False,
             public_budget_class=budget_class,
@@ -13673,6 +13733,8 @@ def _public_budget_policy_factory(
                 "screen_floor": screen_floor,
                 "verification_floor": verification_floor,
                 "burnin_floor": burnin_floor,
+                "operational_acceptance_screen_floor": 64,
+                "operational_acceptance_burnin_floor": 16,
                 "non_promoting_diagnostic": True,
             },
             geometry_budget_summary=_geometry_scaled_budget_timing_policy().geometry_summary(
@@ -20601,6 +20663,64 @@ def _phase7_verification_initial_state(
     }
 
 
+def build_operational_fixed_mass_hmc_adapter(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    target_scope: str,
+) -> Mapping[str, Any]:
+    """Return the exact frozen-mass adapter and post-warmup start bank.
+
+    This is the public handoff boundary for callers that need to run a custom
+    fixed-kernel qualification after BayesFilter geometry and windowed-mass
+    preparation.  The nested Phase-4/final adapter signatures and the
+    operational four-chain start bank are reconstructed by BayesFilter's
+    lineage checks; callers must not rebuild either layer from a mass payload.
+    No transitions are executed and no samples are retained by this helper.
+    """
+
+    if not isinstance(geometry, HMCGeometryInitializationResult):
+        raise TypeError("geometry must be HMCGeometryInitializationResult")
+    if not isinstance(windowed_stage, HMCWindowedMassStageResult):
+        raise TypeError("windowed_stage must be HMCWindowedMassStageResult")
+    scope = str(target_scope)
+    if not scope:
+        raise ValueError("target_scope must be non-empty")
+    (
+        adapted_mass,
+        mass_signature,
+        phase4_adapter,
+        final_adapter,
+        final_signature,
+    ) = _phase7_verification_runtime_context(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        target_scope=scope,
+    )
+    starts, start_lineage = _phase7_verification_initial_state(
+        windowed_stage=windowed_stage,
+        phase4_adapter=phase4_adapter,
+        verification_adapter=final_adapter,
+        verification_hmc_signature=final_signature,
+    )
+    if not start_lineage.get("frozen_post_warmup_bank_consumed"):
+        raise ValueError("operational fixed-mass handoff requires the post-warmup start bank")
+    return {
+        "adapted_mass_artifact": adapted_mass,
+        "adapted_mass_artifact_signature": mass_signature,
+        "phase4_adapter": phase4_adapter,
+        "final_adapter": final_adapter,
+        "final_adapter_signature": final_signature,
+        "initial_position": starts,
+        "start_lineage": start_lineage,
+        "target_scope": scope,
+        "hmc_or_tuning_invoked": False,
+        "raw_samples_retained": False,
+    }
+
+
 def _phase7_historical_verification_input(
     *,
     adapter: Any,
@@ -25915,7 +26035,11 @@ def _repair_step_size(
             0.5 * (np.log(float(low_acceptance_step)) + np.log(float(high_acceptance_step)))
         ))
     else:
-        factor = 0.5 if float(acceptance) < config.acceptance_band[0] else 2.0
+        factor = (
+            1.0 / config.step_repair_factor
+            if float(acceptance) < config.acceptance_band[0]
+            else config.step_repair_factor
+        )
         repaired = float(current_step) * factor
     if not np.isfinite(repaired) or repaired <= 0.0:
         raise ValueError("repaired bootstrap step size must be positive and finite")
