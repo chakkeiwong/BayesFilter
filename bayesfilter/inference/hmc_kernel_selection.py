@@ -185,10 +185,14 @@ _CANDIDATE_HANDOFF_POLICY_STRICT = "strict"
 _CANDIDATE_HANDOFF_POLICY_MIXED = (
     "mixed_evidence_requires_fresh_verification"
 )
+_CANDIDATE_HANDOFF_POLICY_CANDIDATE_LOCAL_MIXED = (
+    "candidate_local_mixed_evidence_requires_fresh_verification"
+)
 _CANDIDATE_HANDOFF_POLICIES = frozenset(
     {
         _CANDIDATE_HANDOFF_POLICY_STRICT,
         _CANDIDATE_HANDOFF_POLICY_MIXED,
+        _CANDIDATE_HANDOFF_POLICY_CANDIDATE_LOCAL_MIXED,
     }
 )
 _CANDIDATE_HANDOFF_POLICY_SCHEMA = (
@@ -230,13 +234,23 @@ def candidate_handoff_policy_payload(policy: Any) -> Mapping[str, Any]:
         "schema": _CANDIDATE_HANDOFF_POLICY_SCHEMA,
         "policy": normalized,
         "strict_default": normalized == _CANDIDATE_HANDOFF_POLICY_STRICT,
-        "terminal_extension_only": normalized == _CANDIDATE_HANDOFF_POLICY_MIXED,
-        "whole_matrix_veto_precedence": True,
+        "terminal_extension_only": normalized != _CANDIDATE_HANDOFF_POLICY_STRICT,
+        "whole_matrix_veto_precedence": (
+            normalized != _CANDIDATE_HANDOFF_POLICY_CANDIDATE_LOCAL_MIXED
+        ),
         "at_least_one_passed_replication_is_reviewed_design_gate": True,
         "exact_l_retune_required": True,
         "fresh_independent_verification_required": True,
         "stochastic_ranking_performed": False,
     }
+    if normalized == _CANDIDATE_HANDOFF_POLICY_CANDIDATE_LOCAL_MIXED:
+        payload.update(
+            {
+                "shared_execution_invalidity_veto_precedence": True,
+                "candidate_specific_sibling_veto_precedence": False,
+                "at_least_one_inconclusive_replication_required": True,
+            }
+        )
     return {
         **payload,
         "policy_hash": _signature(_CANDIDATE_HANDOFF_POLICY_SCHEMA, payload),
@@ -259,6 +273,7 @@ _RETUNE_SHARED_FAILURE_REASONS = frozenset(
         "shared_callback_invalid",
         "required_target_status_telemetry_missing",
         "target_value_score_shape_invalid",
+        "retune_runtime_error",
     }
 )
 
@@ -861,15 +876,60 @@ def _ordered_mixed_evidence_candidate_results(
     )
 
 
+def _ordered_candidate_local_mixed_evidence_results(
+    results: Sequence[FixedTrajectoryCandidateResult],
+    *,
+    anchor_l: int,
+) -> tuple[FixedTrajectoryCandidateResult, ...]:
+    """Return locally clean nominees while preserving shared-invalidity vetoes."""
+
+    completed = tuple(results)
+    if any(result.shared_invalidity for result in completed):
+        return ()
+    return tuple(
+        sorted(
+            (
+                result
+                for result in completed
+                if all(
+                    replication.evidence.evidence_validity == "valid"
+                    and not replication.evidence.candidate_promotion_vetoes
+                    and not replication.evidence.cost_stop_reasons
+                    and replication.evidence.acceptance_decision
+                    in {"passed", "inconclusive_evidence"}
+                    for replication in result.replications
+                )
+                and "passed" in result.decisions
+                and "inconclusive_evidence" in result.decisions
+            ),
+            key=lambda item: (
+                abs(item.candidate.num_leapfrog_steps - anchor_l),
+                item.candidate.num_leapfrog_steps,
+                item.signature,
+            ),
+        )
+    )
+
+
 def _mixed_evidence_nominee(
     results: Sequence[FixedTrajectoryCandidateResult],
     *,
     anchor_l: int,
+    candidate_handoff_policy: str = _CANDIDATE_HANDOFF_POLICY_MIXED,
 ) -> FixedTrajectoryCandidateResult | None:
-    candidates = _ordered_mixed_evidence_candidate_results(
-        results,
-        anchor_l=anchor_l,
-    )
+    policy = _candidate_handoff_policy(candidate_handoff_policy)
+    if policy == _CANDIDATE_HANDOFF_POLICY_MIXED:
+        candidates = _ordered_mixed_evidence_candidate_results(
+            results,
+            anchor_l=anchor_l,
+        )
+    elif policy == _CANDIDATE_HANDOFF_POLICY_CANDIDATE_LOCAL_MIXED:
+        candidates = _ordered_candidate_local_mixed_evidence_results(
+            results,
+            anchor_l=anchor_l,
+        )
+    else:
+        raise ValueError("strict handoff policy cannot nominate mixed evidence")
     return None if not candidates else candidates[0]
 
 
@@ -908,7 +968,7 @@ class FixedTrajectorySelection:
             "not_exercised",
         }:
             raise ValueError("strict candidate handoff cannot carry mixed disposition")
-        if handoff_policy == _CANDIDATE_HANDOFF_POLICY_MIXED and handoff_disposition == "strict_matrix":
+        if handoff_policy != _CANDIDATE_HANDOFF_POLICY_STRICT and handoff_disposition == "strict_matrix":
             raise ValueError("mixed candidate handoff cannot carry strict disposition")
         results = tuple(sorted(self.candidate_results, key=lambda item: item.signature))
         if anchor <= 0 or not results:
@@ -933,7 +993,11 @@ class FixedTrajectorySelection:
         viable = _ordered_viable_candidate_results(results, anchor_l=anchor)
         mixed_candidate = None
         if handoff_disposition == "mixed_evidence_provisional_nomination":
-            mixed_candidate = _mixed_evidence_nominee(results, anchor_l=anchor)
+            mixed_candidate = _mixed_evidence_nominee(
+                results,
+                anchor_l=anchor,
+                candidate_handoff_policy=handoff_policy,
+            )
             if mixed_candidate is None:
                 raise ValueError("mixed provisional handoff is not matrix-eligible")
         nomination_candidates = (
@@ -1164,7 +1228,10 @@ def select_fixed_trajectory_representative(
     """Aggregate a completed candidate batch without using descriptive ranking."""
 
     handoff_policy = _candidate_handoff_policy(candidate_handoff_policy)
-    if terminal_candidate_handoff and handoff_policy == _CANDIDATE_HANDOFF_POLICY_MIXED:
+    if (
+        terminal_candidate_handoff
+        and handoff_policy != _CANDIDATE_HANDOFF_POLICY_STRICT
+    ):
         strict = select_fixed_trajectory_representative(
             results,
             anchor_l=anchor_l,
@@ -1173,6 +1240,7 @@ def select_fixed_trajectory_representative(
             _mixed_evidence_nominee(
                 strict.candidate_results,
                 anchor_l=strict.anchor_l,
+                candidate_handoff_policy=handoff_policy,
             )
             if strict.disposition == "inconclusive_evidence"
             else None
@@ -1521,11 +1589,18 @@ class FixedTrajectoryEvidenceExtension:
             raise ValueError("evidence extension matrix is not an exact slot replacement")
         if matrix.disposition == "representative_nominated":
             representative = finalized.representative
-            if (
-                finalized.disposition != "representative_selected"
-                or representative is None
-                or representative.exact_l_retuned_step_size is None
-            ):
+            selected = (
+                finalized.disposition == "representative_selected"
+                and representative is not None
+                and representative.exact_l_retuned_step_size is not None
+            )
+            shared_retune_runtime_error = (
+                finalized.disposition == "shared_invalidity"
+                and finalized.retune_failure_scope == "shared_execution_invalid"
+                and finalized.retune_failure_reasons == ("retune_runtime_error",)
+                and finalized.retune_candidate_signature is not None
+            )
+            if not (selected or shared_retune_runtime_error):
                 raise ValueError("evidence extension lost exact-final-L retuning")
             matrix_replications = {
                 item.candidate.signature: tuple(rep.signature for rep in item.replications)
@@ -1624,7 +1699,7 @@ class FixedTrajectoryCandidateHandoffLineage:
             minimum=1,
         )
         disposition = _candidate_handoff_disposition(self.disposition)
-        if policy != _CANDIDATE_HANDOFF_POLICY_MIXED:
+        if policy == _CANDIDATE_HANDOFF_POLICY_STRICT:
             raise ValueError("terminal candidate handoff requires the mixed policy")
         if disposition not in {
             "mixed_evidence_provisional_nomination",
@@ -1650,6 +1725,7 @@ class FixedTrajectoryCandidateHandoffLineage:
             if _mixed_evidence_nominee(
                 source.candidate_results,
                 anchor_l=source.anchor_l,
+                candidate_handoff_policy=policy,
             ) is not None:
                 raise ValueError("eligible mixed matrix cannot be recorded as rejected")
         else:
@@ -1658,6 +1734,7 @@ class FixedTrajectoryCandidateHandoffLineage:
             nominee = _mixed_evidence_nominee(
                 source.candidate_results,
                 anchor_l=source.anchor_l,
+                candidate_handoff_policy=policy,
             )
             if (
                 nominee is None
@@ -1724,7 +1801,9 @@ class FixedTrajectoryCandidateHandoffLineage:
             "finalized_disposition": self.finalized_selection.disposition,
             "disposition": self.disposition,
             "terminal_extension_checkpoint": True,
-            "whole_matrix_veto_precedence": True,
+            "whole_matrix_veto_precedence": policy_payload[
+                "whole_matrix_veto_precedence"
+            ],
             "exact_l_retune_required_for_selection": True,
             "fresh_independent_verification_still_required": True,
             "private_handoff_only": True,
@@ -2153,7 +2232,7 @@ class BoundedFixedTrajectorySelectionResult:
         )
         if handoff_policy == _CANDIDATE_HANDOFF_POLICY_STRICT and handoff_attempts:
             raise ValueError("strict bounded selection cannot carry mixed handoff")
-        if handoff_policy == _CANDIDATE_HANDOFF_POLICY_MIXED:
+        if handoff_policy != _CANDIDATE_HANDOFF_POLICY_STRICT:
             if len(handoff_attempts) > 1 or (
                 handoff_attempts and handoff_attempts[0] is not attempts[-1]
             ):
@@ -2709,7 +2788,7 @@ def run_bounded_operational_fixed_trajectory_selection(
                 ):
                     break
         if (
-            handoff_policy == _CANDIDATE_HANDOFF_POLICY_MIXED
+            handoff_policy != _CANDIDATE_HANDOFF_POLICY_STRICT
             and extension_checkpoints
             and extensions
             and tuple(item.checkpoint for item in extensions) == extension_checkpoints
@@ -3651,6 +3730,21 @@ def _finalize_operational_selection_nomination(
                 candidate_retune_failures=tuple(failures),
                 retune_failure_scope="shared_execution_invalid",
                 retune_failure_reasons=exc.reasons,
+                retune_candidate_signature=representative.candidate.signature,
+                candidate_handoff_policy=selection.candidate_handoff_policy,
+                candidate_handoff_disposition=(
+                    selection.candidate_handoff_disposition
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - preserve matrix, fail closed.
+            return FixedTrajectorySelection(
+                anchor_l=selection.anchor_l,
+                candidate_results=selection.candidate_results,
+                representative_signature=None,
+                disposition="shared_invalidity",
+                candidate_retune_failures=tuple(failures),
+                retune_failure_scope="shared_execution_invalid",
+                retune_failure_reasons=("retune_runtime_error",),
                 retune_candidate_signature=representative.candidate.signature,
                 candidate_handoff_policy=selection.candidate_handoff_policy,
                 candidate_handoff_disposition=(

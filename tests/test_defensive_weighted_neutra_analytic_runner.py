@@ -57,6 +57,65 @@ def test_two_mode_target_analytic_moments_match_direct_mixture_formula() -> None
     )
 
 
+def test_three_mode_target_is_noncollinear_and_has_exact_moments() -> None:
+    target = RUNNER._target("three-mode-canary", tf, tf.float64)
+    assert target["identity"] == "separated_three_mode_unequal_weight_d4_v1"
+    tf.debugging.assert_near(
+        target["target_probabilities"],
+        tf.constant((0.5, 0.3, 0.2), tf.float64),
+        atol=1.0e-15,
+    )
+    edges = target["means"][1:, :2] - target["means"][:1, :2]
+    assert abs(float(tf.linalg.det(edges).numpy())) > 1.0
+    expected_mean = tf.reduce_sum(
+        target["target_probabilities"][:, tf.newaxis] * target["means"], axis=0
+    )
+    centered = target["means"] - expected_mean
+    expected_covariance = tf.reduce_sum(
+        target["target_probabilities"][:, tf.newaxis, tf.newaxis]
+        * (
+            target["covariances"]
+            + centered[:, :, tf.newaxis] * centered[:, tf.newaxis, :]
+        ),
+        axis=0,
+    )
+    tf.debugging.assert_near(target["true_mean"], expected_mean, atol=1.0e-14)
+    tf.debugging.assert_near(
+        target["true_covariance"], expected_covariance, atol=1.0e-14
+    )
+
+
+def test_runner_accepts_an_explicit_plan_binding() -> None:
+    source = SCRIPT.read_text(encoding="utf-8")
+    assert 'parser.add_argument("--plan-file", type=Path, default=None)' in source
+    assert 'raise FileNotFoundError(f"active plan is missing: {active_plan}")' in source
+    assert '"active_plan_file": active_plan.as_posix()' in source
+    assert source.count("cwd=ROOT,") >= 2
+
+
+def test_two_mode_coverage_keeps_historical_alias() -> None:
+    target = RUNNER._target("two-mode-canary", tf, tf.float64)
+    config = WeightedNeuTraConfig(
+        dimension=4,
+        hidden_layers=(4,),
+        stages=1,
+        initialization_seed=(20260812, 12100),
+        jit_compile=False,
+    )
+    weighted = WeightedForwardKLNeuTraTrainer(config)
+    reverse = WeightedForwardKLNeuTraTrainer(config)
+    decision = RUNNER._mixture_canary_decision(
+        tf,
+        weighted,
+        reverse,
+        target,
+        256,
+        seed_root=20260812,
+    )
+    coverage = decision["base_component_coverage"]["weighted"]
+    assert coverage["both_components_observed"] == coverage["all_components_observed"]
+
+
 def test_snapshot_restores_transport_optimizer_and_step() -> None:
     config = WeightedNeuTraConfig(
         dimension=2,

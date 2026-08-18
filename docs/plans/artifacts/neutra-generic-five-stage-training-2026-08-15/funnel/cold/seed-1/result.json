@@ -1,0 +1,208 @@
+{
+  "decision": {
+    "known_law_gate_passed": false,
+    "no_hmc": true,
+    "nonclaims": [
+      "no universal training-procedure claim",
+      "no SSL-LSTM transfer claim",
+      "no HMC or posterior-correctness claim"
+    ],
+    "promotion": false,
+    "status": "known_law_gate_failed"
+  },
+  "manifest": {
+    "allocator_bytes": {
+      "current": 65671424,
+      "peak": 1030423296
+    },
+    "batch_size": 4096,
+    "command": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_neutra_generic_five_stage_model_2026_08_15.py --output-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-generic-five-stage-training-2026-08-15/funnel/cold/seed-1 --target funnel --route cold --device 0 --seed-index 1 --batch-size 4096 --learning-rates 2e-4,5e-4,1e-3 --affine-updates 250 --simple-updates 2000 --progressive-updates 500 --joint-updates 1250 --cold-updates 5000 --checkpoint-every 250 --proposal-audit-count 131072",
+    "config": {
+      "activation": "elu",
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "dimension": 100,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "hidden_layers": [
+        100,
+        100
+      ],
+      "initialization_scale": 0.02,
+      "initialization_seed": [
+        20260815,
+        40101
+      ],
+      "jit_compile": true,
+      "learning_rate": 0.001,
+      "permutation_policy": "full_reverse",
+      "s_max": 1.0,
+      "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+      "stage_s_max": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "stage_scale_linear_skip": [],
+      "stage_unbounded_scale_linear": [
+        true,
+        false,
+        false
+      ],
+      "stages": 3
+    },
+    "cuda_visible_devices": "0",
+    "dtype": "float64",
+    "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+    "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+    "jit_compile": true,
+    "learning_rates": [
+      0.0002,
+      0.0005,
+      0.001
+    ],
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-generic-five-stage-training-plan-2026-08-15.md",
+    "proposal_audit_count": 131072,
+    "route": "cold",
+    "sample_wise_loop_or_scalar_fallback": false,
+    "schema": "bayesfilter.neutra.generic_five_stage_manifest.v1",
+    "seed_index": 1,
+    "target": {
+      "candidate_backend": "tensorflow_float64_batch_native",
+      "conditional_standard_deviation": "exp(y)",
+      "constants_hash": null,
+      "constants_path": null,
+      "constants_sha256": null,
+      "dimension": 100,
+      "exact_sampler": true,
+      "name": "paper_funnel",
+      "schema": "bayesfilter.neutra.paper_d100_target.v1",
+      "source_formula": "y~Normal(0,1); x_i|y~Normal(0,exp(2y)) variance",
+      "source_path": null,
+      "source_sha256": null
+    },
+    "target_name": "funnel",
+    "tensorflow_version": "2.20.0",
+    "tf32_enabled": false,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "updates": {
+      "affine": 250,
+      "cold": 5000,
+      "joint": 1250,
+      "progressive_each": 500,
+      "simple": 2000
+    }
+  },
+  "schema": "bayesfilter.neutra.generic_five_stage_result.v1",
+  "training": {
+    "candidates": [
+      {
+        "clipped_updates": 313,
+        "learning_rate": 0.0002,
+        "selected_loss": 50.000734237665455,
+        "selected_update": 5000,
+        "terminal_loss": 50.000734237665455
+      },
+      {
+        "clipped_updates": 295,
+        "learning_rate": 0.0005,
+        "selected_loss": 49.97769326709262,
+        "selected_update": 5000,
+        "terminal_loss": 49.97769326709262
+      },
+      {
+        "clipped_updates": 146,
+        "learning_rate": 0.001,
+        "selected_loss": 49.96977941136235,
+        "selected_update": 5000,
+        "terminal_loss": 49.96977941136235
+      }
+    ],
+    "selected": {
+      "clipped_updates": 146,
+      "learning_rate": 0.001,
+      "selected_loss": 49.96977941136235,
+      "selected_update": 5000,
+      "terminal_loss": 49.96977941136235
+    }
+  },
+  "validation": {
+    "importance_ess_fraction": 0.9485020504961291,
+    "interval_level": 0.999,
+    "log_target_to_proposal_ratio_stddev": 0.1617054490511709,
+    "maximum_normalized_importance_weight": 0.00018335339537783922,
+    "passed": false,
+    "sample_count": 131072,
+    "screens": {
+      "residual_mean": {
+        "all_passed": true,
+        "estimate": 7.814356089565683e-05,
+        "exact": 0.0,
+        "lower": -0.0008386028659029662,
+        "passed": true,
+        "standard_error": 0.00027860172598657783,
+        "upper": 0.0009948899876942798
+      },
+      "residual_second_moment": {
+        "all_passed": true,
+        "estimate": 1.0005646203570837,
+        "exact": 1.0,
+        "lower": 0.9992769980115268,
+        "passed": true,
+        "standard_error": 0.0003913119237822069,
+        "upper": 1.0018522427026406
+      },
+      "y_mean": {
+        "all_passed": false,
+        "estimate": 0.012111958237500421,
+        "exact": 0.0,
+        "lower": 0.0033310508132186473,
+        "passed": false,
+        "standard_error": 0.002668541586440937,
+        "upper": 0.020892865661782195
+      },
+      "y_second_moment": {
+        "all_passed": false,
+        "estimate": 0.9335182586524224,
+        "exact": 1.0,
+        "lower": 0.922650003670669,
+        "passed": false,
+        "standard_error": 0.0033028921715599776,
+        "upper": 0.9443865136341759
+      }
+    },
+    "tails": {
+      "above_plus2": {
+        "estimate": 0.01619720458984375,
+        "exact": 0.02275013194817921,
+        "lower": 0.015089198872268509,
+        "passed": false,
+        "upper": 0.017385135449073583
+      },
+      "below_minus2": {
+        "estimate": 0.0152587890625,
+        "exact": 0.02275013194817921,
+        "lower": 0.014184036943298482,
+        "passed": false,
+        "upper": 0.016413621351385434
+      }
+    }
+  },
+  "wall_seconds": 191.3577238750877
+}

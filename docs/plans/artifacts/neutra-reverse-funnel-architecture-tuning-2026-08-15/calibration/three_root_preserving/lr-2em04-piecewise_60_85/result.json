@@ -1,0 +1,321 @@
+{
+  "audit_exact_forward_nll": null,
+  "audit_reverse_kl": 50.35274971693715,
+  "checkpoints": [
+    {
+      "clipping_applied": true,
+      "gradient_norm": 33.72277280167469,
+      "learning_rate": 0.0002,
+      "selection_loss": 54.44682594343642,
+      "training_loss": 54.436109429849104,
+      "update": 250
+    },
+    {
+      "clipping_applied": false,
+      "gradient_norm": 4.053134534692197,
+      "learning_rate": 0.0002,
+      "selection_loss": 50.56242314799729,
+      "training_loss": 50.388212491700145,
+      "update": 500
+    },
+    {
+      "clipping_applied": false,
+      "gradient_norm": 2.6770694625060747,
+      "learning_rate": 2e-05,
+      "selection_loss": 50.38431944805747,
+      "training_loss": 50.370351357349996,
+      "update": 750
+    },
+    {
+      "clipping_applied": false,
+      "gradient_norm": 2.6468852652568993,
+      "learning_rate": 2.0000000000000003e-06,
+      "selection_loss": 50.37128493531975,
+      "training_loss": 50.44668994024838,
+      "update": 1000
+    }
+  ],
+  "clipped_updates": 357,
+  "decision": {
+    "diagnostic_roles": {
+      "nonfinite_training": "hard_veto",
+      "proposal_exact_law": "promotion_criterion",
+      "scale_saturation": "explanatory_only",
+      "training_loss": "explanatory_only"
+    },
+    "eligible_for_hmc_nomination": false,
+    "nonclaims": [
+      "no HMC validity claim",
+      "no objective ranking",
+      "no SSL-LSTM transfer claim"
+    ],
+    "promotion": false,
+    "proposal_gate_passed": false,
+    "status": "calibration_complete"
+  },
+  "last_step": {
+    "clipped_gradient_norm": 2.6468852652568993,
+    "clipping_applied": false,
+    "effective_sample_size": 4096.0,
+    "effective_sample_size_fraction": 1.0,
+    "gradient_norm": 2.6468852652568993,
+    "loss": 50.44668994024838,
+    "maximum_normalized_weight": 0.000244140625,
+    "step": 1000
+  },
+  "manifest": {
+    "adapter_signature": "b089c37daa42db9389d316b9ec4b0e962c11204618d70ec5204e56ab1a8b9862",
+    "allocator_bytes": {
+      "current": 142126080,
+      "peak": 586324480
+    },
+    "architecture_id": "three_root_preserving",
+    "audit_size": 65536,
+    "checkpoint_every": 250,
+    "command": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_neutra_reverse_funnel_capacity_2026_08_14.py --output-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-reverse-funnel-architecture-tuning-2026-08-15/calibration/three_root_preserving/lr-2em04-piecewise_60_85 --replay-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-replay-r1 --plan /home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-reverse-funnel-architecture-tuning-plan-2026-08-15.md --architecture-id three_root_preserving --run-mode calibration --device 0 --stages 3 --hidden-width 100 --permutation-policy root_preserving_reverse --stage-s-max 4,0.5,0.5 --first-stage-unbounded-scale-linear --updates 1000 --batch-size 4096 --checkpoint-every 250 --learning-rate 0.0002 --learning-rate-schedule piecewise_60_85 --seed-index 0 --selection-count 65536 --proposal-audit-count 32768",
+    "config": {
+      "activation": "elu",
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "dimension": 100,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "hidden_layers": [
+        100,
+        100
+      ],
+      "initialization_scale": 0.02,
+      "initialization_seed": [
+        20260815,
+        20001
+      ],
+      "jit_compile": true,
+      "learning_rate": 0.0002,
+      "permutation_policy": "root_preserving_reverse",
+      "s_max": 1.0,
+      "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+      "stage_s_max": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "stage_scale_linear_skip": [
+        false,
+        false,
+        false
+      ],
+      "stage_unbounded_scale_linear": [
+        true,
+        false,
+        false
+      ],
+      "stages": 3
+    },
+    "cuda_visible_devices": "0",
+    "dtype": "float64",
+    "first_stage_scale_linear_skip": false,
+    "first_stage_unbounded_scale_linear": true,
+    "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+    "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+    "jit_compile": true,
+    "learning_rate": 0.0002,
+    "learning_rate_schedule": "piecewise_60_85",
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "objective": "reverse_kl",
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-reverse-funnel-architecture-tuning-plan-2026-08-15.md",
+    "proposal_audit_count": 32768,
+    "resolved_stage_s_max": [
+      4.0,
+      0.5,
+      0.5
+    ],
+    "resolved_stage_scale_linear_skip": [
+      false,
+      false,
+      false
+    ],
+    "resolved_stage_unbounded_scale_linear": [
+      true,
+      false,
+      false
+    ],
+    "run_mode": "calibration",
+    "sample_wise_loop_or_scalar_fallback": false,
+    "schema": "bayesfilter.neutra.reverse_funnel_capacity_manifest.v1",
+    "seeds": {
+      "audit": [
+        20260815,
+        20004
+      ],
+      "initialization": [
+        20260815,
+        20001
+      ],
+      "proposal_audit": [
+        20260815,
+        21001
+      ],
+      "selection": [
+        20260815,
+        20002
+      ],
+      "training_root": [
+        20260815,
+        20003
+      ]
+    },
+    "selection_size": 65536,
+    "target": {
+      "candidate_backend": "tensorflow_float64_batch_native",
+      "conditional_standard_deviation": "exp(y)",
+      "constants_hash": null,
+      "constants_path": null,
+      "constants_sha256": null,
+      "dimension": 100,
+      "exact_sampler": true,
+      "name": "paper_funnel",
+      "schema": "bayesfilter.neutra.paper_d100_target.v1",
+      "source_formula": "y~Normal(0,1); x_i|y~Normal(0,exp(2y)) variance",
+      "source_path": null,
+      "source_sha256": null
+    },
+    "tensorflow_version": "2.20.0",
+    "tf32_enabled": false,
+    "training_batch_size": 4096,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "updates": 1000
+  },
+  "proposal_audit": {
+    "all_individual_intervals_passed": false,
+    "authority": "calibration_explanatory_exact_iid_funnel_proposal_law",
+    "importance_ess_fraction": 0.10014631978256212,
+    "interval_level": 0.999,
+    "log_target_to_proposal_ratio_stddev": 1.2971076844972722,
+    "maximum_normalized_importance_weight": 0.011587177495378364,
+    "mean_screens": {
+      "residual_mean": {
+        "estimate": -0.00029043575103987316,
+        "exact": 0.0,
+        "lower": -0.002109657702116589,
+        "passed": true,
+        "standard_error": 0.0005528664859841087,
+        "upper": 0.0015287862000368424
+      },
+      "residual_second_moment": {
+        "estimate": 0.9975752995449986,
+        "exact": 1.0,
+        "lower": 0.9945329655912016,
+        "passed": true,
+        "standard_error": 0.0009245735415793164,
+        "upper": 1.0006176334987955
+      },
+      "y_mean": {
+        "estimate": 0.04673422990776792,
+        "exact": 0.0,
+        "lower": 0.03320231022649962,
+        "passed": false,
+        "standard_error": 0.004112387099536772,
+        "upper": 0.060266149589036214
+      },
+      "y_second_moment": {
+        "estimate": 0.556330668363526,
+        "exact": 1.0,
+        "lower": 0.5420313113540723,
+        "passed": false,
+        "standard_error": 0.004345613385419988,
+        "upper": 0.5706300253729796
+      }
+    },
+    "nonclaims": [
+      "proposal draws are not posterior draws",
+      "separate 99.9% diagnostics; no omnibus p-value",
+      "proposal-law pass does not establish HMC validity"
+    ],
+    "sample_count": 32768,
+    "scale_diagnostics": {
+      "stages": [
+        {
+          "bounded_residual_maximum": 2.0989936394386772,
+          "bounded_residual_minimum": -2.0963036609106567,
+          "cap": 4.0,
+          "fraction_abs_ge_0.999_cap": 0.0,
+          "fraction_abs_ge_0.99_cap": 0.0,
+          "maximum": 2.3044755539746573,
+          "mean": 0.006529665758733494,
+          "minimum": -2.295793131213325,
+          "stage": 0,
+          "unbounded_linear_maximum": 0.7117917613074415,
+          "unbounded_linear_mean": -0.00018017618699232044,
+          "unbounded_linear_minimum": -0.7054930509194671
+        },
+        {
+          "bounded_residual_maximum": 0.4999999652866988,
+          "bounded_residual_minimum": -0.4999075316980666,
+          "cap": 0.5,
+          "fraction_abs_ge_0.999_cap": 0.000362548828125,
+          "fraction_abs_ge_0.99_cap": 0.0023858642578125,
+          "maximum": 0.4999999652866988,
+          "mean": 0.015800857722377784,
+          "minimum": -0.4999075316980666,
+          "stage": 1,
+          "unbounded_linear_maximum": 0.0,
+          "unbounded_linear_mean": 0.0,
+          "unbounded_linear_minimum": 0.0
+        },
+        {
+          "bounded_residual_maximum": 0.45627542483694006,
+          "bounded_residual_minimum": -0.4365414920305303,
+          "cap": 0.5,
+          "fraction_abs_ge_0.999_cap": 0.0,
+          "fraction_abs_ge_0.99_cap": 0.0,
+          "maximum": 0.45627542483694006,
+          "mean": 0.017531320201974513,
+          "minimum": -0.4365414920305303,
+          "stage": 2,
+          "unbounded_linear_maximum": 0.0,
+          "unbounded_linear_mean": 0.0,
+          "unbounded_linear_minimum": 0.0
+        }
+      ]
+    },
+    "tail_screens": {
+      "probability_above_plus2": {
+        "count": 32768,
+        "estimate": 0.0045166015625,
+        "exact": 0.02275013194817921,
+        "lower": 0.0034506439467529423,
+        "passed": false,
+        "successes": 148,
+        "upper": 0.005909897260868644
+      },
+      "probability_below_minus2": {
+        "count": 32768,
+        "estimate": 0.00262451171875,
+        "exact": 0.02275013194817921,
+        "lower": 0.0018445329821763223,
+        "passed": false,
+        "successes": 86,
+        "upper": 0.0037330785355507434
+      }
+    }
+  },
+  "schema": "bayesfilter.neutra.reverse_funnel_capacity_result.v1",
+  "selected_loss": 50.37128493531975,
+  "selected_update": 1000,
+  "wall_seconds": 19.94420469691977
+}

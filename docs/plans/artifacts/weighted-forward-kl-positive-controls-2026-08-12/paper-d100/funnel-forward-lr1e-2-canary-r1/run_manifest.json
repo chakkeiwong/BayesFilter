@@ -1,0 +1,127 @@
+{
+  "adapter_signature": "b089c37daa42db9389d316b9ec4b0e962c11204618d70ec5204e56ab1a8b9862",
+  "allocator_bytes": {
+    "current": 950914560,
+    "peak": 5864476928
+  },
+  "audit_opened_after_checkpoint_freeze": true,
+  "audit_size": 65536,
+  "batch_native_target_backend": "tensorflow_exact_paper_d100",
+  "checkpoint_every": 50,
+  "command": "docs/benchmarks/run_neutra_paper_d100_training_2026_08_13.py --output-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-forward-lr1e-2-canary-r1 --replay-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-replay-r1 --gaussian-constants docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json --target paper_funnel --objective forward_kl --device 1 --updates 200 --batch-size 4096 --checkpoint-every 50 --hidden-width 100 --stages 3 --learning-rate 1e-2 --learning-rate-schedule paper_piecewise --initialization-seed-offset 411",
+  "config": {
+    "activation": "elu",
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "dimension": 100,
+    "epsilon": 1e-07,
+    "gradient_clip_norm": 10.0,
+    "hidden_layers": [
+      100,
+      100
+    ],
+    "initialization_scale": 0.02,
+    "initialization_seed": [
+      20260813,
+      53412
+    ],
+    "jit_compile": true,
+    "learning_rate": 0.01,
+    "s_max": 1.0,
+    "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+    "stages": 3
+  },
+  "cuda_visible_devices": "1",
+  "dtype": "float64",
+  "external_exact_sample_generation_cpu_only": true,
+  "git_commit": "34c19935fd34e45f0e818a97a5569f8750bc8e30",
+  "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+  "jit_compile": true,
+  "learning_rate_schedule": "paper_piecewise",
+  "learning_rate_schedule_semantics": "base through update 1000; 0.1*base updates 1001-4000; 0.01*base after update 4000",
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "objective": "forward_kl",
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-weighted-forward-kl-paper-d100-fresh-baseline-plan-2026-08-13.md",
+  "replay_manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-replay-r1/replay_manifest.json",
+  "replay_manifest_sha256": "db495a5d1e81ca14f7b987eebc179f62373e862460b11695ecdd10d56004ee78",
+  "replay_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-replay-r1",
+  "sample_wise_loop_or_scalar_fallback": false,
+  "schema": "bayesfilter.neutra.paper_d100_training_manifest.v1",
+  "seeds": {
+    "exact_replay": {
+      "audit_rows": [
+        20260813,
+        52003
+      ],
+      "calibration_rows": [
+        20260813,
+        52004
+      ],
+      "initial_rows": [
+        20260813,
+        52005
+      ],
+      "selection_rows": [
+        20260813,
+        52002
+      ],
+      "training_rows": [
+        20260813,
+        52001
+      ]
+    },
+    "initialization": [
+      20260813,
+      53412
+    ],
+    "reverse_audit": [
+      20260813,
+      53415
+    ],
+    "reverse_selection": [
+      20260813,
+      53413
+    ],
+    "reverse_training_root": [
+      20260813,
+      53414
+    ]
+  },
+  "selection_audit_disjoint": true,
+  "selection_size": 65536,
+  "target": {
+    "candidate_backend": "tensorflow_float64_batch_native",
+    "conditional_standard_deviation": "exp(y)",
+    "constants_hash": null,
+    "constants_path": null,
+    "constants_sha256": null,
+    "dimension": 100,
+    "exact_sampler": true,
+    "name": "paper_funnel",
+    "schema": "bayesfilter.neutra.paper_d100_target.v1",
+    "source_formula": "y~Normal(0,1); x_i|y~Normal(0,exp(2y)) variance",
+    "source_path": null,
+    "source_sha256": null
+  },
+  "tensorflow_version": "2.20.0",
+  "tf32_enabled": false,
+  "training_batch_size": 4096,
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "updates": 200,
+  "wall_seconds": 276.70462587696966
+}

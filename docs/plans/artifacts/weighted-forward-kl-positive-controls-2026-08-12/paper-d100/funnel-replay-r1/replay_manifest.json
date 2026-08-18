@@ -1,0 +1,107 @@
+{
+  "command": "docs/benchmarks/generate_neutra_paper_d100_exact_replay_2026_08_13.py --output-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-replay-r1 --target paper_funnel --gaussian-constants docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json --training-size 1048576 --selection-size 65536 --audit-size 65536 --calibration-size 65536 --initial-size 4",
+  "cpu_only": true,
+  "cuda_visible_devices": "-1",
+  "external_exact_sample_generation": true,
+  "gaussian_constants_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json",
+  "gaussian_constants_sha256": "0e2e2863b14947c8eef8251f00d1b46b7b3d83278c31b619d273c0076d1fa672",
+  "optimizer_update_performed": false,
+  "partitions_disjoint_by_stateless_seed": true,
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-weighted-forward-kl-paper-d100-fresh-baseline-plan-2026-08-13.md",
+  "receipts": {
+    "audit_rows": {
+      "dtype": "float64",
+      "path": "audit_rows.tftensor",
+      "sha256": "0ba8884b0289ddf55bfaf97bb82092603f52086e3df556546ce194468fc7940e",
+      "shape": [
+        65536,
+        100
+      ]
+    },
+    "calibration_rows": {
+      "dtype": "float64",
+      "path": "calibration_rows.tftensor",
+      "sha256": "31b2edde831984021c9bdda36e39959e0415a4499f17f74ac0f89ebe97c59b77",
+      "shape": [
+        65536,
+        100
+      ]
+    },
+    "initial_rows": {
+      "dtype": "float64",
+      "path": "initial_rows.tftensor",
+      "sha256": "afc5bce608789e215b33b0c7a580d037351a9835c411a15edf1f81d8b39322b0",
+      "shape": [
+        4,
+        100
+      ]
+    },
+    "selection_rows": {
+      "dtype": "float64",
+      "path": "selection_rows.tftensor",
+      "sha256": "d282d207130ec1180e545f8a400501343de2a21e7ccbcdaafa6decc9fea7b0c0",
+      "shape": [
+        65536,
+        100
+      ]
+    },
+    "training_rows": {
+      "dtype": "float64",
+      "path": "training_rows.tftensor",
+      "sha256": "1167724adedd08d11b36dca1eb8107547950d57d4e599f6fb3587509d6efc3e7",
+      "shape": [
+        1048576,
+        100
+      ]
+    }
+  },
+  "sample_wise_loop_or_scalar_fallback": false,
+  "schema": "bayesfilter.neutra.paper_d100_exact_replay.v1",
+  "seeds": {
+    "audit_rows": [
+      20260813,
+      52003
+    ],
+    "calibration_rows": [
+      20260813,
+      52004
+    ],
+    "initial_rows": [
+      20260813,
+      52005
+    ],
+    "selection_rows": [
+      20260813,
+      52002
+    ],
+    "training_rows": [
+      20260813,
+      52001
+    ]
+  },
+  "smoke_diagnostics": {
+    "all_finite": true,
+    "row_mean": 6.243567184739153e-07,
+    "row_second_moment": 7.239913797029894,
+    "standardized_residual_mean": 2.044019913644714e-05,
+    "standardized_residual_second_moment": 1.0000412978916853,
+    "y_mean": -0.00013663344204237947,
+    "y_second_moment": 0.999590988472479
+  },
+  "target": {
+    "candidate_backend": "tensorflow_float64_batch_native",
+    "conditional_standard_deviation": "exp(y)",
+    "constants_hash": null,
+    "constants_path": null,
+    "constants_sha256": null,
+    "dimension": 100,
+    "exact_sampler": true,
+    "name": "paper_funnel",
+    "schema": "bayesfilter.neutra.paper_d100_target.v1",
+    "source_formula": "y~Normal(0,1); x_i|y~Normal(0,exp(2y)) variance",
+    "source_path": null,
+    "source_sha256": null
+  },
+  "tensorflow_version": "2.20.0",
+  "wall_seconds": 9.604673447902314
+}

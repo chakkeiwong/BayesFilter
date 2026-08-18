@@ -1,0 +1,1173 @@
+{
+  "archive_label": "weighted-three-mode",
+  "native_divergence_status": "not_exposed_by_kernel",
+  "nonclaims": [
+    "native divergence unavailability is not zero divergences",
+    "finite-sample operational screen only",
+    "no posterior correctness or stationarity proof"
+  ],
+  "physical_coordinate_role": "explanatory_only",
+  "policy": {
+    "acceptance_max": 0.95,
+    "acceptance_min": 0.35,
+    "bulk_ess_min": 400.0,
+    "chain_count": 4,
+    "delta_h_abs_max": 1000.0,
+    "num_leapfrog_steps": 10,
+    "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+    "retained_check_interval_results": 1000,
+    "retained_chunk_size": 500,
+    "retained_ess_required": true,
+    "retained_max_results": 10000,
+    "retained_min_results": 1000,
+    "retained_rhat_max": 1.01,
+    "seed": [
+      20260812,
+      14001
+    ],
+    "step_size": 0.14383638963069842,
+    "tail_ess_min": 400.0,
+    "target_status_required": true,
+    "use_xla": true,
+    "warmup_chunk_size": 500,
+    "warmup_max_results": 10000,
+    "warmup_min_results": 2000,
+    "warmup_rhat_max": 1.05,
+    "warmup_window_results": 1000,
+    "xla_qualification_required": false
+  },
+  "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+  "retained_chunks": [
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7255573120562877,
+        0.6895416904715596,
+        0.6962006115008491,
+        0.6857109402297428
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 0,
+      "chunk_seconds": 6.241721246042289,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 1.4142268646590458e+17,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-receipt.json",
+        "sha256": "bb06ce8a7591e946d07f5ca6b6d3097705dc4fc6cd19eaf51e081126b58856f6"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-samples.tftensor",
+        "sha256": "2d965f2c29b40ede166fc465b481698894985a5328f06904833bf71c1e77a4fa",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1015013
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-delta_h.tftensor",
+          "sha256": "63a8f20f813ca53d7dd939fd709827ff7a5027587b1631d45e26b2e725c66e23",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-is_accepted.tftensor",
+          "sha256": "d650599caed07a1cc2b6dfcb3eaa7c5c01d4d4eb425f9dcee6064d4e683c27be",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-log_accept_ratio.tftensor",
+          "sha256": "4e7568648e24233a46cc1e0a8a432f64912815bc7bcfb2dbff3bb6a74a6f2771",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-proposed_target_log_prob.tftensor",
+          "sha256": "942a8ac14aa33efbc752f4ab4057e823134ddbbf97390b427af39ee6e26ddae3",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-target_log_prob.tftensor",
+          "sha256": "e13fd46f84b52a4d876d29ebaa88de208c50c0228eae8a47c217a004fa84aaf2",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-target_score.tftensor",
+          "sha256": "ff7d14d86054091bfa654674e0da05061879d3637540670112c27bcc23974fc9",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-000-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7012564959230869,
+        0.6872334700011272,
+        0.6727869685277592,
+        0.7033006277229238
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            1663.6330570754824,
+            1208.0721209611986,
+            1697.3291658339435,
+            1474.0825375067745
+          ],
+          "max_rhat": 1.0024206510539455,
+          "min_bulk_ess": 1208.0721209611986,
+          "min_tail_ess": 1554.6100981862069,
+          "rhat_by_parameter": [
+            1.0024206510539455,
+            1.0021944794698798,
+            1.0011105806250244,
+            1.0014487723666303
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            1998.6936205415402,
+            1634.8515166744073,
+            1752.066242504511,
+            1554.6100981862069
+          ]
+        },
+        "max_rhat": 1.0039539088871339,
+        "min_bulk_ess": 1059.0468393387753,
+        "min_tail_ess": 1381.7656960258978,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            1059.0468393387753,
+            1061.0820964065804,
+            1394.2560922265081,
+            1307.6131523342845
+          ],
+          "max_rhat": 1.0039539088871339,
+          "min_bulk_ess": 1059.0468393387753,
+          "min_tail_ess": 1381.7656960258978,
+          "rhat_by_parameter": [
+            1.0039539088871339,
+            1.0033169193116196,
+            1.0017767571094502,
+            1.001526300252133
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            1381.7656960258978,
+            1594.63411991389,
+            1529.3736115356805,
+            1599.2470286015202
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.01
+      },
+      "chunk_index": 1,
+      "chunk_seconds": 6.251464448985644,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 2.9695190757643644e+23,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-receipt.json",
+        "sha256": "3970b8b81006e9e9e754e4195155f4daf2c2a0b9cc1673079e25f1fc1aa8fdb4"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-samples.tftensor",
+        "sha256": "0d74fb89c7a67f2286bb1dc1ce3d36378917e9f4ad0e52de7b30d780c9ebdf1c",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1016022
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-delta_h.tftensor",
+          "sha256": "91b514d60664d79e72ed0c96ce938ef88133a889b519e3baa1de19d8af6afa42",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-is_accepted.tftensor",
+          "sha256": "4869501605d9650b6c8b1d20c8983aa5e932000fc69336c1a574c158222ff6d2",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-log_accept_ratio.tftensor",
+          "sha256": "f57a93a64e3280f6e0fce9d7ab27a92bcfda7daa4dfc9734d6d5324188d7409f",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-proposed_target_log_prob.tftensor",
+          "sha256": "7d7a476b53cb887030dbd652bb39a61d65cbbf0844d19af29ef6f1ab6275144d",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-target_log_prob.tftensor",
+          "sha256": "97c4bf91ac9b0fd6caae0173eb23914922b400f4ba21da3495bb48de7961ba69",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-target_score.tftensor",
+          "sha256": "0f3b38e1a367d4f5d8df4f563bea539e449a3226098ccd199e851e0346d19fc9",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/retained/weighted-three-mode-retained-001-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    }
+  ],
+  "retained_ess_role": "promotion_veto",
+  "runner_programs": [
+    {
+      "num_results": 500,
+      "program_signature": "d1a9d37bab88a2d1ebcbf4bd2fa0ab779c8bac98cd553e02d7bc01f69faf12d1",
+      "tracing_count": 1
+    }
+  ],
+  "schema": "bayesfilter.neutra.sequential_hmc_result.v1",
+  "warmup_chunks": [
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.6746909312799725,
+        0.696432551921703,
+        0.6583724730505878,
+        0.6628257355995829
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 0,
+      "chunk_seconds": 19.10921167791821,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 2.1378548263462e+20,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-receipt.json",
+        "sha256": "45a2fcdd46717e57dc1f0c886ead31fb86f7355097832c66e7081b63d318f529"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-samples.tftensor",
+        "sha256": "9bb9cb36d2d55b088918f767a25d184ae4b408af3045576585e74405c42788ea",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        15010
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-delta_h.tftensor",
+          "sha256": "004d4d7b14f1ef35e826afd26986902623a3911dd34d477b9d365fdfe5098554",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-is_accepted.tftensor",
+          "sha256": "1b286e8d49fef17bfaf2a0f1fc399fdd9c5f128d99cbc427330dfe8561d60c0a",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-log_accept_ratio.tftensor",
+          "sha256": "ed0e0ee33bf180d406b45e511496985fcc1c6884b4fa3d217634b2d925c79e88",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-proposed_target_log_prob.tftensor",
+          "sha256": "23ffee9cca536b10855407e7c43c003eae7434b69996fb5c3b32bbfc182323ff",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-target_log_prob.tftensor",
+          "sha256": "d84f8fc99599bf391d4f9171fed5dd1c19c6de13b8ad35cfa63e037c1a6b7ef6",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-target_score.tftensor",
+          "sha256": "0057a1d7cfed064c0088e6222e0920333104cd100ddf97912357273d06a11036",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-000-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.6903370833842298,
+        0.7235526574588639,
+        0.7096374171445835,
+        0.703945768264222
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 1,
+      "chunk_seconds": 6.266912624007091,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 1.678817273933752e+16,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-receipt.json",
+        "sha256": "4def6ee6953aab5fbe590606811da6791b1a30f1cc81ffbb140444e63bfedcb7"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-samples.tftensor",
+        "sha256": "2f3e8f2d6911e3e5557e7bf723ed0da7088fc0198c79d98bde15847b2fde4cd9",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        16019
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-delta_h.tftensor",
+          "sha256": "dacdb3dea7a63836cdf91e56dcc742f89cdabeedf36fa11336b9c6b075059474",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-is_accepted.tftensor",
+          "sha256": "3253d2fb168af7c46d36dce4d4ef6753f7401d1357ba60a50738dca91127ce8e",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-log_accept_ratio.tftensor",
+          "sha256": "06a012cd45792e148c109a490abd278e8cc6019032a4998dfd4178a60ef28f12",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-proposed_target_log_prob.tftensor",
+          "sha256": "0ea2988f5841b22433e98eb92142786e10ef17647dc3303a0dc97f14998f78fb",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-target_log_prob.tftensor",
+          "sha256": "9827f52f8db73a84a82413d2c48908961a961563a043ee639637267401d0e2ef",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-target_score.tftensor",
+          "sha256": "fc7da0256b0ac35176283b619cd06f1b9367e5af891ca14abaefd64b6f7b2d76",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-001-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7143334703239447,
+        0.6858141350834085,
+        0.7155705874125995,
+        0.6786719914064562
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 2,
+      "chunk_seconds": 6.237947006011382,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 1.3516200702207318e+17,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-receipt.json",
+        "sha256": "9813ebecc2337655774ce29d65b9b7b01249c5697b39bd5646721cede91472ef"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-samples.tftensor",
+        "sha256": "c1e044d84a0d8a79b8b977d26be2d5ce05afc3205b01c8cdcef23f8c16585158",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        17028
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-delta_h.tftensor",
+          "sha256": "80feebdb935b4b02abcb03b4f807385c69c5362f061f5aa019c64f568d790193",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-is_accepted.tftensor",
+          "sha256": "f69787598d497286bcc633356c7a77194e67df953a5709c7ee52037aa957156e",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-log_accept_ratio.tftensor",
+          "sha256": "1ba30679030bf2f3e5d558248f53d4505b9fe92ca8141dfb8234244783d34cec",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-proposed_target_log_prob.tftensor",
+          "sha256": "f0fd9a098c7eeb2bcf17feba9caee384bb9279ad9a572fce35b95c1db40d2cad",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-target_log_prob.tftensor",
+          "sha256": "b3bea3f817e2995d72cfd326566b537c44eb07091c8a1f43de5f544937aa58b1",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-target_score.tftensor",
+          "sha256": "e09139cdcab6d472746d0ba66de3d9c088610ce3564fd30af37e2a7750f7f798",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-002-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7032358348528194,
+        0.7050641601698134,
+        0.656971163344303,
+        0.6745212975481456
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            1178.9057357693196,
+            1102.1547894949617,
+            1368.9772285450224,
+            1542.272735721756
+          ],
+          "max_rhat": 1.0021358302832117,
+          "min_bulk_ess": 1102.1547894949617,
+          "min_tail_ess": 884.7664844097892,
+          "rhat_by_parameter": [
+            1.0021358302832117,
+            1.0015150331098903,
+            1.0002138712052915,
+            1.0006484696415552
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            1241.8070977215543,
+            884.7664844097892,
+            1393.3984548184878,
+            1969.706518870164
+          ]
+        },
+        "max_rhat": 1.004068238099613,
+        "min_bulk_ess": 1029.6110806983133,
+        "min_tail_ess": 884.7664844097892,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            1117.0739712610466,
+            1029.6110806983133,
+            1216.7968507802523,
+            1264.1065518705009
+          ],
+          "max_rhat": 1.004068238099613,
+          "min_bulk_ess": 1029.6110806983133,
+          "min_tail_ess": 1052.0003311355938,
+          "rhat_by_parameter": [
+            1.0007292268100025,
+            1.0027106498948335,
+            1.004068238099613,
+            1.0024221220338378
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            1480.3554036717958,
+            1484.4590131974821,
+            1052.0003311355938,
+            1365.260376553689
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.05
+      },
+      "chunk_index": 3,
+      "chunk_seconds": 6.279007446952164,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 5.139786157282509e+23,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-receipt.json",
+        "sha256": "c29d6e0c50e76a7f0b398e1041769ce42cabe98bd6067aba47adebcd4fd833ad"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-samples.tftensor",
+        "sha256": "ed51254a08d2429ddecd5edf0c185bb71d4c33570d5d0c3e689686aa2796d37b",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        18037
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-delta_h.tftensor",
+          "sha256": "ca9ba029ca75d62144d71aa909bfde1ec6d0ea85351dabc16759dc9f3005308e",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-is_accepted.tftensor",
+          "sha256": "c9bec63687a7b380ea962dd581900585d19848799ee952745b882b382ecb4169",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-log_accept_ratio.tftensor",
+          "sha256": "80a1aca6a4d70a0f815dad9d1a7c64e1a84eb0ac01d452a2b30e87adb59ea4d1",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-proposed_target_log_prob.tftensor",
+          "sha256": "7b40f95d15b6cdf60493da406751f9074f837cf7278c52a5d7685385e64d54ff",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-target_log_prob.tftensor",
+          "sha256": "0a6c715c79671208d62dd311d62d315b04109b4244910cfc6dc5fcae812abf3a",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-target_score.tftensor",
+          "sha256": "d60951df8c7d63020a6c55a21e453888dd9844ea2256310013a96f53d351f301",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/hmc-width128-depth6-r1/archive/warmup/weighted-three-mode-warmup-003-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    }
+  ],
+  "warmup_excluded_from_posterior": true
+}

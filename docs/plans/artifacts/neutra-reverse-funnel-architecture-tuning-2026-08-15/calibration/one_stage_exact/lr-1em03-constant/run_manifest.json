@@ -1,0 +1,125 @@
+{
+  "adapter_signature": "b089c37daa42db9389d316b9ec4b0e962c11204618d70ec5204e56ab1a8b9862",
+  "allocator_bytes": {
+    "current": 139128064,
+    "peak": 581613824
+  },
+  "architecture_id": "one_stage_exact",
+  "audit_size": 65536,
+  "checkpoint_every": 250,
+  "command": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_neutra_reverse_funnel_capacity_2026_08_14.py --output-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-reverse-funnel-architecture-tuning-2026-08-15/calibration/one_stage_exact/lr-1em03-constant --replay-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-replay-r1 --plan /home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-reverse-funnel-architecture-tuning-plan-2026-08-15.md --architecture-id one_stage_exact --run-mode calibration --device 0 --stages 1 --hidden-width 100 --permutation-policy full_reverse --stage-s-max 4 --first-stage-unbounded-scale-linear --updates 1000 --batch-size 4096 --checkpoint-every 250 --learning-rate 0.001 --learning-rate-schedule constant --seed-index 0 --selection-count 65536 --proposal-audit-count 32768",
+  "config": {
+    "activation": "elu",
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "dimension": 100,
+    "epsilon": 1e-07,
+    "gradient_clip_norm": 10.0,
+    "hidden_layers": [
+      100,
+      100
+    ],
+    "initialization_scale": 0.02,
+    "initialization_seed": [
+      20260815,
+      20001
+    ],
+    "jit_compile": true,
+    "learning_rate": 0.001,
+    "permutation_policy": "full_reverse",
+    "s_max": 1.0,
+    "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+    "stage_s_max": [
+      4.0
+    ],
+    "stage_scale_linear_skip": [
+      false
+    ],
+    "stage_unbounded_scale_linear": [
+      true
+    ],
+    "stages": 1
+  },
+  "cuda_visible_devices": "0",
+  "dtype": "float64",
+  "first_stage_scale_linear_skip": false,
+  "first_stage_unbounded_scale_linear": true,
+  "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+  "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+  "jit_compile": true,
+  "learning_rate": 0.001,
+  "learning_rate_schedule": "constant",
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "objective": "reverse_kl",
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-reverse-funnel-architecture-tuning-plan-2026-08-15.md",
+  "proposal_audit_count": 32768,
+  "resolved_stage_s_max": [
+    4.0
+  ],
+  "resolved_stage_scale_linear_skip": [
+    false
+  ],
+  "resolved_stage_unbounded_scale_linear": [
+    true
+  ],
+  "run_mode": "calibration",
+  "sample_wise_loop_or_scalar_fallback": false,
+  "schema": "bayesfilter.neutra.reverse_funnel_capacity_manifest.v1",
+  "seeds": {
+    "audit": [
+      20260815,
+      20004
+    ],
+    "initialization": [
+      20260815,
+      20001
+    ],
+    "proposal_audit": [
+      20260815,
+      21001
+    ],
+    "selection": [
+      20260815,
+      20002
+    ],
+    "training_root": [
+      20260815,
+      20003
+    ]
+  },
+  "selection_size": 65536,
+  "target": {
+    "candidate_backend": "tensorflow_float64_batch_native",
+    "conditional_standard_deviation": "exp(y)",
+    "constants_hash": null,
+    "constants_path": null,
+    "constants_sha256": null,
+    "dimension": 100,
+    "exact_sampler": true,
+    "name": "paper_funnel",
+    "schema": "bayesfilter.neutra.paper_d100_target.v1",
+    "source_formula": "y~Normal(0,1); x_i|y~Normal(0,exp(2y)) variance",
+    "source_path": null,
+    "source_sha256": null
+  },
+  "tensorflow_version": "2.20.0",
+  "tf32_enabled": false,
+  "training_batch_size": 4096,
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "updates": 1000
+}

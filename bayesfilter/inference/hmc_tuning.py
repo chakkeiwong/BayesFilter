@@ -14,6 +14,7 @@ from bayesfilter.inference.hmc_diagnostics import (
     HMCScreenResult,
     classify_hmc_screen,
 )
+from bayesfilter.inference.hmc_artifact_identity import mass_artifact_signature
 
 
 HMC_TUNING_POLICY_LABELS = (
@@ -1838,13 +1839,8 @@ def _mass_artifact_payload(mass_artifact: Any) -> Mapping[str, Any]:
 
 
 def _mass_artifact_signature(mass_artifact: Any) -> str:
-    payload = {
-        "signature_payload": _mass_artifact_payload(mass_artifact),
-        "position": np.asarray(mass_artifact.position, dtype=float),
-        "covariance": np.asarray(mass_artifact.covariance, dtype=float),
-        "factor": np.asarray(mass_artifact.factor, dtype=float),
-    }
-    return _stable_payload_signature(payload)
+    _mass_artifact_payload(mass_artifact)
+    return mass_artifact_signature(mass_artifact)
 
 
 def _adapt_windowed_step_size(

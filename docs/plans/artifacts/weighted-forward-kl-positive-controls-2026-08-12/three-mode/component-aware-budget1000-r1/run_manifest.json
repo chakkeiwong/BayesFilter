@@ -1,0 +1,97 @@
+{
+  "active_plan_file": "docs/plans/bayesfilter-weighted-forward-kl-positive-control-regression-plan-2026-08-12.md",
+  "allocator_bytes": {
+    "current": 11076096,
+    "peak": 140468736
+  },
+  "audit_size": 65536,
+  "batch_native_target_backend": "tensorflow_full_batch_gaussian_mixture",
+  "capacity_arm": {
+    "hidden_layers": 2,
+    "hidden_width": 64,
+    "stages": 3
+  },
+  "command": "docs/benchmarks/run_defensive_weighted_neutra_analytic_2026_08_11.py --mode three-mode-canary --output-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/component-aware-budget1000-r1 --updates 1000 --batch-size 4096 --audit-size 65536 --checkpoint-every 250 --replication 0 --hidden-width 64 --stages 3",
+  "cuda_visible_devices": "0",
+  "device": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+  "dtype": "float64",
+  "environment": "tfgpu",
+  "git_commit": "34c19935fd34e45f0e818a97a5569f8750bc8e30",
+  "git_status_short": [
+    " M bayesfilter/inference/neutra_artifacts.py",
+    " M bayesfilter/inference/neutra_training.py",
+    " M docs/benchmarks/run_defensive_weighted_neutra_analytic_2026_08_11.py",
+    " M docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/artifact_hashes.json",
+    " M tests/test_defensive_weighted_neutra_analytic_runner.py",
+    " M tests/test_neutra_reverse_kl_training.py",
+    "?? bayesfilter/testing/gaussian_mixture_diagnostics_tf.py",
+    "?? docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/summary.md",
+    "?? docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/terminal_manifest.json",
+    "?? docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/",
+    "?? docs/plans/bayesfilter-defensive-weighted-neutra-analytic-hmc-replication-reset-memo-2026-08-12.md",
+    "?? docs/plans/bayesfilter-defensive-weighted-neutra-analytic-hmc-replication-result-2026-08-12.md",
+    "?? docs/plans/bayesfilter-weighted-forward-kl-positive-control-regression-plan-2026-08-12.md",
+    "?? tests/test_gaussian_mixture_diagnostics_tf.py"
+  ],
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "mode": "three-mode-canary",
+  "output_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/component-aware-budget1000-r1",
+  "plan_file": "docs/plans/bayesfilter-defensive-weighted-neutra-validation-plan-2026-08-11.md",
+  "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+  "replication": 0,
+  "result_file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/three-mode/component-aware-budget1000-r1/result.json",
+  "sample_wise_loop_or_scalar_fallback": false,
+  "schema": "bayesfilter.defensive_weighted_neutra_analytic_manifest.v1",
+  "seed_domains": {
+    "audit": [
+      20260811,
+      40001
+    ],
+    "base_audit": [
+      [
+        20260811,
+        50001
+      ],
+      [
+        20260811,
+        50002
+      ]
+    ],
+    "initialization": [
+      20260811,
+      11001
+    ],
+    "selection": [
+      20260811,
+      12001
+    ],
+    "training_reverse": "[20260811, 30001:31000]",
+    "training_weighted": "[20260811, 20001:21000]"
+  },
+  "selection_size": 65536,
+  "started_at_utc": "2026-08-12T13:56:53.256151+00:00",
+  "target_density_evaluations_per_arm": 4096000,
+  "tensorflow_probability_version": "0.25.0",
+  "tensorflow_version": "2.20.0",
+  "tf32_enabled": false,
+  "training_batch_size": 4096,
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "updates_per_arm": 1000,
+  "wall_time_seconds": 45.213701503002085
+}

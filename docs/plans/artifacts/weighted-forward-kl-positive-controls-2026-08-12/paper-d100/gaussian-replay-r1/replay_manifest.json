@@ -1,0 +1,105 @@
+{
+  "command": "docs/benchmarks/generate_neutra_paper_d100_exact_replay_2026_08_13.py --output-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-replay-r1 --target paper_ill_cond_gaussian --gaussian-constants docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json --training-size 1048576 --selection-size 65536 --audit-size 65536 --calibration-size 65536 --initial-size 4",
+  "cpu_only": true,
+  "cuda_visible_devices": "-1",
+  "external_exact_sample_generation": true,
+  "gaussian_constants_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json",
+  "gaussian_constants_sha256": "0e2e2863b14947c8eef8251f00d1b46b7b3d83278c31b619d273c0076d1fa672",
+  "optimizer_update_performed": false,
+  "partitions_disjoint_by_stateless_seed": true,
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-weighted-forward-kl-paper-d100-fresh-baseline-plan-2026-08-13.md",
+  "receipts": {
+    "audit_rows": {
+      "dtype": "float64",
+      "path": "audit_rows.tftensor",
+      "sha256": "2808af2b8d9bfc293e4dc00ad6f02f672a70cbca57f527e77514c33f2193bbd5",
+      "shape": [
+        65536,
+        100
+      ]
+    },
+    "calibration_rows": {
+      "dtype": "float64",
+      "path": "calibration_rows.tftensor",
+      "sha256": "9d98e0531b1cd3914629098d4d5e4e3a6cb9037f05a3a2dbaf274d6945b9b2c7",
+      "shape": [
+        65536,
+        100
+      ]
+    },
+    "initial_rows": {
+      "dtype": "float64",
+      "path": "initial_rows.tftensor",
+      "sha256": "12c02bf3164ac1b31a7f48a9c4f56a821ff36671154b928679d232aff4380d80",
+      "shape": [
+        4,
+        100
+      ]
+    },
+    "selection_rows": {
+      "dtype": "float64",
+      "path": "selection_rows.tftensor",
+      "sha256": "7cef9e2aaa519dbd51613a00624ce9352d2ab3f6d767c1535c5027f0437fa5a1",
+      "shape": [
+        65536,
+        100
+      ]
+    },
+    "training_rows": {
+      "dtype": "float64",
+      "path": "training_rows.tftensor",
+      "sha256": "1c3ffea19cb381752df56dfef40d9cb355cfa495d6a1ff0dcf04633d6200a232",
+      "shape": [
+        1048576,
+        100
+      ]
+    }
+  },
+  "sample_wise_loop_or_scalar_fallback": false,
+  "schema": "bayesfilter.neutra.paper_d100_exact_replay.v1",
+  "seeds": {
+    "audit_rows": [
+      20260813,
+      52003
+    ],
+    "calibration_rows": [
+      20260813,
+      52004
+    ],
+    "initial_rows": [
+      20260813,
+      52005
+    ],
+    "selection_rows": [
+      20260813,
+      52002
+    ],
+    "training_rows": [
+      20260813,
+      52001
+    ]
+  },
+  "smoke_diagnostics": {
+    "all_finite": true,
+    "row_mean": -1.3946599198457279e-05,
+    "row_second_moment": 19.098476768731366,
+    "whitened_mean": 1.7168016837522844e-05,
+    "whitened_second_moment": 0.9998916434973733
+  },
+  "target": {
+    "candidate_backend": "tensorflow_float64_batch_native",
+    "constants_hash": "e7421d0837176190bbd82479fb099adc321ce6ca262efccf6911ec1f59c33875",
+    "constants_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json",
+    "constants_sha256": "0e2e2863b14947c8eef8251f00d1b46b7b3d83278c31b619d273c0076d1fa672",
+    "dimension": 100,
+    "exact_sampler": true,
+    "matrix_constants_embedded_in_runtime_spec": true,
+    "name": "paper_ill_cond_gaussian",
+    "schema": "bayesfilter.neutra.paper_d100_target.v1",
+    "source_formula": "RandomState(10) Gamma(0.8,1) precision spectrum, QR rotation, covariance inverse spectrum",
+    "source_path": "/home/ubuntu/python/dsge_hmc/src/dsge_hmc/benchmarks/neutra_paper_targets.py",
+    "source_sha256": "40f8b3b835e6df8462b171ef3efb6ce4f7bcf1474194c80038459283ac5299d9"
+  },
+  "tensorflow_version": "2.20.0",
+  "wall_seconds": 9.730252874083817
+}

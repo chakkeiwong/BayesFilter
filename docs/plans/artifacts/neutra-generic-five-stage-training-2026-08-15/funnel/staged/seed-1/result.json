@@ -1,0 +1,498 @@
+{
+  "decision": {
+    "known_law_gate_passed": true,
+    "no_hmc": true,
+    "nonclaims": [
+      "no universal training-procedure claim",
+      "no SSL-LSTM transfer claim",
+      "no HMC or posterior-correctness claim"
+    ],
+    "promotion": false,
+    "status": "known_law_gate_passed"
+  },
+  "manifest": {
+    "allocator_bytes": {
+      "current": 88885504,
+      "peak": 1113431040
+    },
+    "batch_size": 4096,
+    "command": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_neutra_generic_five_stage_model_2026_08_15.py --output-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-generic-five-stage-training-2026-08-15/funnel/staged/seed-1 --target funnel --route staged --device 0 --seed-index 1 --batch-size 4096 --learning-rates 2e-4,5e-4,1e-3 --affine-updates 250 --simple-updates 2000 --progressive-updates 500 --joint-updates 1250 --cold-updates 5000 --checkpoint-every 250 --proposal-audit-count 131072",
+    "config": {
+      "activation": "elu",
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "dimension": 100,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "hidden_layers": [
+        100,
+        100
+      ],
+      "initialization_scale": 0.02,
+      "initialization_seed": [
+        20260815,
+        40101
+      ],
+      "jit_compile": true,
+      "learning_rate": 0.001,
+      "permutation_policy": "full_reverse",
+      "s_max": 1.0,
+      "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+      "stage_s_max": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "stage_scale_linear_skip": [],
+      "stage_unbounded_scale_linear": [
+        true,
+        false,
+        false
+      ],
+      "stages": 3
+    },
+    "cuda_visible_devices": "0",
+    "dtype": "float64",
+    "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+    "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+    "jit_compile": true,
+    "learning_rates": [
+      0.0002,
+      0.0005,
+      0.001
+    ],
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-generic-five-stage-training-plan-2026-08-15.md",
+    "proposal_audit_count": 131072,
+    "route": "staged",
+    "sample_wise_loop_or_scalar_fallback": false,
+    "schema": "bayesfilter.neutra.generic_five_stage_manifest.v1",
+    "seed_index": 1,
+    "target": {
+      "candidate_backend": "tensorflow_float64_batch_native",
+      "conditional_standard_deviation": "exp(y)",
+      "constants_hash": null,
+      "constants_path": null,
+      "constants_sha256": null,
+      "dimension": 100,
+      "exact_sampler": true,
+      "name": "paper_funnel",
+      "schema": "bayesfilter.neutra.paper_d100_target.v1",
+      "source_formula": "y~Normal(0,1); x_i|y~Normal(0,exp(2y)) variance",
+      "source_path": null,
+      "source_sha256": null
+    },
+    "target_name": "funnel",
+    "tensorflow_version": "2.20.0",
+    "tf32_enabled": false,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "updates": {
+      "affine": 250,
+      "cold": 5000,
+      "joint": 1250,
+      "progressive_each": 500,
+      "simple": 2000
+    }
+  },
+  "schema": "bayesfilter.neutra.generic_five_stage_result.v1",
+  "training": {
+    "nonclaims": [
+      "held-out loss selects tuning candidates but does not establish correctness",
+      "stage-five validation performs no optimizer update",
+      "model-specific validation is required for any scientific claim",
+      "no HMC, posterior-correctness, or default-readiness claim"
+    ],
+    "route": "generic_five_stage",
+    "selected_path_updates": 4000,
+    "stages": [
+      {
+        "active_groups": [
+          "affine_location"
+        ],
+        "candidates": [
+          {
+            "clipped_updates": 250,
+            "gradient_norm": 587.7162379744772,
+            "learning_rate": 0.0002,
+            "selected_loss": 344.54447463277654,
+            "selected_update": 250,
+            "terminal_loss": 344.54447463277654
+          },
+          {
+            "clipped_updates": 250,
+            "gradient_norm": 526.4529011682588,
+            "learning_rate": 0.0005,
+            "selected_loss": 318.78344178823033,
+            "selected_update": 250,
+            "terminal_loss": 318.78344178823033
+          },
+          {
+            "clipped_updates": 250,
+            "gradient_norm": 436.2122543830243,
+            "learning_rate": 0.001,
+            "selected_loss": 281.75757245192926,
+            "selected_update": 250,
+            "terminal_loss": 281.75757245192926
+          }
+        ],
+        "incoming_loss": 363.3578291215607,
+        "name": "affine_location",
+        "selected_learning_rate": 0.001,
+        "selected_loss": 281.75757245192926,
+        "selected_update": 250,
+        "stage": 1,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_bias_2:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale"
+        ],
+        "candidates": [
+          {
+            "clipped_updates": 2000,
+            "gradient_norm": 37.969393976505586,
+            "learning_rate": 0.0002,
+            "selected_loss": 103.01237238443218,
+            "selected_update": 2000,
+            "terminal_loss": 103.01237238443218
+          },
+          {
+            "clipped_updates": 1293,
+            "gradient_norm": 8.97201785818916,
+            "learning_rate": 0.0005,
+            "selected_loss": 57.865516437619775,
+            "selected_update": 2000,
+            "terminal_loss": 57.865516437619775
+          },
+          {
+            "clipped_updates": 618,
+            "gradient_norm": 1.6381627540686374,
+            "learning_rate": 0.001,
+            "selected_loss": 49.97145405462156,
+            "selected_update": 2000,
+            "terminal_loss": 49.97145405462156
+          }
+        ],
+        "incoming_loss": 281.75757245192926,
+        "name": "simple_linear_scale",
+        "selected_learning_rate": 0.001,
+        "selected_loss": 49.97145405462156,
+        "selected_update": 2000,
+        "stage": 2,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale",
+          "stage_0_residual"
+        ],
+        "candidates": [
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.6452581186309432,
+            "learning_rate": 0.0002,
+            "selected_loss": 49.95872362522105,
+            "selected_update": 500,
+            "terminal_loss": 49.95872362522105
+          },
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.6433036203163855,
+            "learning_rate": 0.0005,
+            "selected_loss": 49.96030750918405,
+            "selected_update": 500,
+            "terminal_loss": 49.96030750918405
+          },
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.6450079539962463,
+            "learning_rate": 0.001,
+            "selected_loss": 49.959871160569854,
+            "selected_update": 500,
+            "terminal_loss": 49.959871160569854
+          }
+        ],
+        "incoming_loss": 49.97145405462156,
+        "name": "progressive_stage_0",
+        "selected_learning_rate": 0.0002,
+        "selected_loss": 49.95872362522105,
+        "selected_update": 500,
+        "stage": 3,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_weight_0:0",
+          "weighted_neutra_stage_0_bias_0:0",
+          "weighted_neutra_stage_0_weight_1:0",
+          "weighted_neutra_stage_0_bias_1:0",
+          "weighted_neutra_stage_0_weight_2:0",
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale",
+          "stage_0_residual",
+          "stage_1"
+        ],
+        "candidates": [
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.7832709193803595,
+            "learning_rate": 0.0002,
+            "selected_loss": 49.95872362522105,
+            "selected_update": 0,
+            "terminal_loss": 49.958759466505185
+          },
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.7889370898500192,
+            "learning_rate": 0.0005,
+            "selected_loss": 49.95872362522105,
+            "selected_update": 0,
+            "terminal_loss": 49.95999527697279
+          },
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.7988798440766767,
+            "learning_rate": 0.001,
+            "selected_loss": 49.95872362522105,
+            "selected_update": 0,
+            "terminal_loss": 49.95925651923471
+          }
+        ],
+        "incoming_loss": 49.95872362522105,
+        "name": "progressive_stage_1",
+        "selected_learning_rate": 0.0002,
+        "selected_loss": 49.95872362522105,
+        "selected_update": 0,
+        "stage": 3,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_weight_0:0",
+          "weighted_neutra_stage_0_bias_0:0",
+          "weighted_neutra_stage_0_weight_1:0",
+          "weighted_neutra_stage_0_bias_1:0",
+          "weighted_neutra_stage_0_weight_2:0",
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0",
+          "weighted_neutra_stage_1_weight_0:0",
+          "weighted_neutra_stage_1_bias_0:0",
+          "weighted_neutra_stage_1_weight_1:0",
+          "weighted_neutra_stage_1_bias_1:0",
+          "weighted_neutra_stage_1_weight_2:0",
+          "weighted_neutra_stage_1_bias_2:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale",
+          "stage_0_residual",
+          "stage_1",
+          "stage_2"
+        ],
+        "candidates": [
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.7629396429937185,
+            "learning_rate": 0.0002,
+            "selected_loss": 49.95872362522105,
+            "selected_update": 0,
+            "terminal_loss": 49.95885335007645
+          },
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.7628726751970631,
+            "learning_rate": 0.0005,
+            "selected_loss": 49.95872362522105,
+            "selected_update": 0,
+            "terminal_loss": 49.96050935515858
+          },
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 1.762159034904165,
+            "learning_rate": 0.001,
+            "selected_loss": 49.95872362522105,
+            "selected_update": 0,
+            "terminal_loss": 49.96006364081728
+          }
+        ],
+        "incoming_loss": 49.95872362522105,
+        "name": "progressive_stage_2",
+        "selected_learning_rate": 0.0002,
+        "selected_loss": 49.95872362522105,
+        "selected_update": 0,
+        "stage": 3,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_weight_0:0",
+          "weighted_neutra_stage_0_bias_0:0",
+          "weighted_neutra_stage_0_weight_1:0",
+          "weighted_neutra_stage_0_bias_1:0",
+          "weighted_neutra_stage_0_weight_2:0",
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0",
+          "weighted_neutra_stage_1_weight_0:0",
+          "weighted_neutra_stage_1_bias_0:0",
+          "weighted_neutra_stage_1_weight_1:0",
+          "weighted_neutra_stage_1_bias_1:0",
+          "weighted_neutra_stage_1_weight_2:0",
+          "weighted_neutra_stage_1_bias_2:0",
+          "weighted_neutra_stage_2_weight_0:0",
+          "weighted_neutra_stage_2_bias_0:0",
+          "weighted_neutra_stage_2_weight_1:0",
+          "weighted_neutra_stage_2_bias_1:0",
+          "weighted_neutra_stage_2_weight_2:0",
+          "weighted_neutra_stage_2_bias_2:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale",
+          "stage_0_residual",
+          "stage_1",
+          "stage_2"
+        ],
+        "candidates": [
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 2.109086516005,
+            "learning_rate": 0.0002,
+            "selected_loss": 49.95670592165136,
+            "selected_update": 1250,
+            "terminal_loss": 49.95670592165136
+          },
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 2.1062650568399897,
+            "learning_rate": 0.0005,
+            "selected_loss": 49.95628017055549,
+            "selected_update": 1250,
+            "terminal_loss": 49.95628017055549
+          },
+          {
+            "clipped_updates": 0,
+            "gradient_norm": 2.1071536537067863,
+            "learning_rate": 0.001,
+            "selected_loss": 49.956813409866065,
+            "selected_update": 1250,
+            "terminal_loss": 49.956813409866065
+          }
+        ],
+        "incoming_loss": 49.95872362522105,
+        "name": "joint_fine_tune",
+        "selected_learning_rate": 0.0005,
+        "selected_loss": 49.95628017055549,
+        "selected_update": 1250,
+        "stage": 4,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_weight_0:0",
+          "weighted_neutra_stage_0_bias_0:0",
+          "weighted_neutra_stage_0_weight_1:0",
+          "weighted_neutra_stage_0_bias_1:0",
+          "weighted_neutra_stage_0_weight_2:0",
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0",
+          "weighted_neutra_stage_1_weight_0:0",
+          "weighted_neutra_stage_1_bias_0:0",
+          "weighted_neutra_stage_1_weight_1:0",
+          "weighted_neutra_stage_1_bias_1:0",
+          "weighted_neutra_stage_1_weight_2:0",
+          "weighted_neutra_stage_1_bias_2:0",
+          "weighted_neutra_stage_2_weight_0:0",
+          "weighted_neutra_stage_2_bias_0:0",
+          "weighted_neutra_stage_2_weight_1:0",
+          "weighted_neutra_stage_2_bias_1:0",
+          "weighted_neutra_stage_2_weight_2:0",
+          "weighted_neutra_stage_2_bias_2:0"
+        ]
+      }
+    ],
+    "tuning_optimizer_updates": 15000
+  },
+  "validation": {
+    "importance_ess_fraction": 0.995849808344485,
+    "interval_level": 0.999,
+    "log_target_to_proposal_ratio_stddev": 0.06426078342751203,
+    "maximum_normalized_importance_weight": 1.331829488593475e-05,
+    "passed": true,
+    "sample_count": 131072,
+    "screens": {
+      "residual_mean": {
+        "all_passed": true,
+        "estimate": 0.00014135932257457092,
+        "exact": 0.0,
+        "lower": -0.0007754881382574148,
+        "passed": true,
+        "standard_error": 0.0002786324305033945,
+        "upper": 0.0010582067834065568
+      },
+      "residual_second_moment": {
+        "all_passed": true,
+        "estimate": 1.0006245007537458,
+        "exact": 1.0,
+        "lower": 0.9993331649137853,
+        "passed": true,
+        "standard_error": 0.0003924404648051481,
+        "upper": 1.0019158365937062
+      },
+      "y_mean": {
+        "all_passed": true,
+        "estimate": -0.00013573191865439847,
+        "exact": 0.0,
+        "lower": -0.009176736334435621,
+        "passed": true,
+        "standard_error": 0.002747585767729663,
+        "upper": 0.008905272497126823
+      },
+      "y_second_moment": {
+        "all_passed": true,
+        "estimate": 0.9894848227642857,
+        "exact": 1.0,
+        "lower": 0.9767531552015272,
+        "passed": true,
+        "standard_error": 0.0038691883098564087,
+        "upper": 1.0022164903270443
+      }
+    },
+    "tails": {
+      "above_plus2": {
+        "estimate": 0.02220916748046875,
+        "exact": 0.02275013194817921,
+        "lower": 0.02090874046570871,
+        "passed": true,
+        "upper": 0.02358852644918332
+      },
+      "below_minus2": {
+        "estimate": 0.02256011962890625,
+        "exact": 0.02275013194817921,
+        "lower": 0.021249370664129363,
+        "passed": true,
+        "upper": 0.023949742569675487
+      }
+    }
+  },
+  "wall_seconds": 181.35638228198513
+}

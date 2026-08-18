@@ -411,6 +411,31 @@ def test_fixed_identity_windowed_diagnostic_makes_no_mass_updates() -> None:
     assert result.semantic_checks()["fixed_identity_signature_unchanged"] is True
 
 
+def test_operational_fixed_identity_mass_artifact_signature_is_preserved() -> None:
+    """The operational compatibility projection must not rewrite fixed mass identity."""
+
+    adapter, geometry, bootstrap = _operational_inputs()
+    result = hmc_kernel_tuning.run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=hmc_kernel_tuning.HMCWindowedMassStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260730, 810),
+            chain_execution_mode="eager",
+            use_xla=False,
+            target_scope="kernel_windowed_mass_toy_gaussian",
+            mass_policy="fixed_identity",
+        ),
+        _attempt_budget_policy=_operational_budget(),
+    )
+
+    assert result.passed is True
+    assert result.operational_mass_artifact is not None
+    assert result.windowed_mass_result is not None
+    assert result.adapted_mass_artifact_signature == result.initial_mass_artifact_signature
+
+
 def test_public_windowed_stage_propagates_fixed_identity_to_internal_config() -> None:
     internal = hmc_kernel_tuning._windowed_mass_stage_internal_config(
         mass_policy="fixed_identity",

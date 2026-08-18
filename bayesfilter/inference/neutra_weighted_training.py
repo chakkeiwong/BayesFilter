@@ -38,6 +38,10 @@ class WeightedNeuTraConfig:
     stages: int = 3
     activation: str = "elu"
     s_max: float = 2.0
+    stage_s_max: tuple[float, ...] = ()
+    stage_scale_linear_skip: tuple[bool, ...] = ()
+    stage_unbounded_scale_linear: tuple[bool, ...] = ()
+    permutation_policy: str = "full_reverse"
     initialization_scale: float = 0.02
     initialization_seed: tuple[int, int] = (20260811, 9101)
     learning_rate: float = 1.0e-3
@@ -56,6 +60,8 @@ class WeightedNeuTraConfig:
             raise ValueError("stages must be positive")
         if self.activation not in {"elu", "tanh", "relu"}:
             raise ValueError("unsupported activation")
+        if self.permutation_policy not in {"full_reverse", "root_preserving_reverse"}:
+            raise ValueError("unsupported permutation_policy")
         for name in (
             "s_max",
             "learning_rate",
@@ -65,6 +71,38 @@ class WeightedNeuTraConfig:
             value = float(getattr(self, name))
             if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be finite and positive")
+        stage_s_max = tuple(float(value) for value in self.stage_s_max)
+        if stage_s_max:
+            if len(stage_s_max) != int(self.stages):
+                raise ValueError("stage_s_max must be empty or match stages")
+            if any(not math.isfinite(value) or value <= 0.0 for value in stage_s_max):
+                raise ValueError("stage_s_max values must be finite and positive")
+        object.__setattr__(self, "stage_s_max", stage_s_max)
+        stage_scale_linear_skip = tuple(self.stage_scale_linear_skip)
+        if stage_scale_linear_skip:
+            if len(stage_scale_linear_skip) != int(self.stages):
+                raise ValueError("stage_scale_linear_skip must be empty or match stages")
+            if any(not isinstance(value, bool) for value in stage_scale_linear_skip):
+                raise ValueError("stage_scale_linear_skip values must be booleans")
+        object.__setattr__(self, "stage_scale_linear_skip", stage_scale_linear_skip)
+        stage_unbounded_scale_linear = tuple(self.stage_unbounded_scale_linear)
+        if stage_unbounded_scale_linear:
+            if len(stage_unbounded_scale_linear) != int(self.stages):
+                raise ValueError("stage_unbounded_scale_linear must be empty or match stages")
+            if any(not isinstance(value, bool) for value in stage_unbounded_scale_linear):
+                raise ValueError("stage_unbounded_scale_linear values must be booleans")
+        object.__setattr__(
+            self, "stage_unbounded_scale_linear", stage_unbounded_scale_linear
+        )
+        if stage_scale_linear_skip and stage_unbounded_scale_linear and any(
+            pre_cap and unbounded
+            for pre_cap, unbounded in zip(
+                stage_scale_linear_skip, stage_unbounded_scale_linear, strict=True
+            )
+        ):
+            raise ValueError(
+                "pre-cap and unbounded scale-linear paths are mutually exclusive per stage"
+            )
         if not math.isfinite(float(self.initialization_scale)) or self.initialization_scale < 0.0:
             raise ValueError("initialization_scale must be finite and nonnegative")
         if len(self.initialization_seed) != 2:
@@ -78,8 +116,40 @@ class WeightedNeuTraConfig:
         payload = asdict(self)
         payload["hidden_layers"] = list(self.hidden_layers)
         payload["initialization_seed"] = list(self.initialization_seed)
+        payload["stage_s_max"] = list(self.stage_s_max)
+        payload["stage_scale_linear_skip"] = list(self.stage_scale_linear_skip)
+        payload["stage_unbounded_scale_linear"] = list(
+            self.stage_unbounded_scale_linear
+        )
         payload["schema"] = "bayesfilter.neutra.weighted_forward_kl_config.v1"
         return payload
+
+    def scale_cap_for_stage(self, stage: int) -> float:
+        if not 0 <= int(stage) < int(self.stages):
+            raise ValueError("stage index is out of range")
+        return (
+            float(self.stage_s_max[int(stage)])
+            if self.stage_s_max
+            else float(self.s_max)
+        )
+
+    def scale_linear_skip_for_stage(self, stage: int) -> bool:
+        if not 0 <= int(stage) < int(self.stages):
+            raise ValueError("stage index is out of range")
+        return (
+            bool(self.stage_scale_linear_skip[int(stage)])
+            if self.stage_scale_linear_skip
+            else False
+        )
+
+    def unbounded_scale_linear_for_stage(self, stage: int) -> bool:
+        if not 0 <= int(stage) < int(self.stages):
+            raise ValueError("stage index is out of range")
+        return (
+            bool(self.stage_unbounded_scale_linear[int(stage)])
+            if self.stage_unbounded_scale_linear
+            else False
+        )
 
 
 @dataclass(frozen=True)
@@ -146,12 +216,25 @@ def _dense_masks(dimension: int, hidden_layers: tuple[int, ...]) -> tuple[tf.Ten
     return tuple(masks)
 
 
+def _strict_autoregressive_mask(dimension: int) -> tf.Tensor:
+    return tf.constant(
+        [
+            [1.0 if source < target else 0.0 for target in range(int(dimension))]
+            for source in range(int(dimension))
+        ],
+        tf.float64,
+    )
+
+
 class _DenseAutoregressiveStage:
     def __init__(self, config: WeightedNeuTraConfig, stage: int) -> None:
         self.dimension = int(config.dimension)
         self.activation = str(config.activation)
-        self.s_max = float(config.s_max)
+        self.s_max = config.scale_cap_for_stage(stage)
+        self.scale_linear_skip_enabled = config.scale_linear_skip_for_stage(stage)
+        self.unbounded_scale_linear_enabled = config.unbounded_scale_linear_for_stage(stage)
         self.masks = _dense_masks(self.dimension, tuple(config.hidden_layers))
+        self.scale_linear_skip_mask = _strict_autoregressive_mask(self.dimension)
         sizes = (self.dimension, *config.hidden_layers, 2 * self.dimension)
         root = tf.random.experimental.stateless_fold_in(
             tf.constant(config.initialization_seed, tf.int32), int(stage)
@@ -180,13 +263,56 @@ class _DenseAutoregressiveStage:
             )
         self.weights = tuple(weights)
         self.biases = tuple(biases)
+        self.scale_linear_skip_weight = (
+            tf.Variable(
+                tf.zeros((self.dimension, self.dimension), tf.float64),
+                name=f"weighted_neutra_stage_{stage}_scale_linear_skip_weight",
+            )
+            if self.scale_linear_skip_enabled
+            else None
+        )
+        self.unbounded_scale_linear_weight = (
+            tf.Variable(
+                tf.zeros((self.dimension, self.dimension), tf.float64),
+                name=f"weighted_neutra_stage_{stage}_unbounded_scale_linear_weight",
+            )
+            if self.unbounded_scale_linear_enabled
+            else None
+        )
 
     @property
     def trainable_variables(self) -> tuple[tf.Variable, ...]:
         output = []
         for weight, bias in zip(self.weights, self.biases):
             output.extend((weight, bias))
+        if self.scale_linear_skip_weight is not None:
+            output.append(self.scale_linear_skip_weight)
+        if self.unbounded_scale_linear_weight is not None:
+            output.append(self.unbounded_scale_linear_weight)
         return tuple(output)
+
+    def _scale_linear_skip(self, values: tf.Tensor) -> tf.Tensor:
+        if self.scale_linear_skip_weight is None:
+            return tf.zeros_like(values)
+        return tf.matmul(
+            values, self.scale_linear_skip_weight * self.scale_linear_skip_mask
+        )
+
+    def _unbounded_scale_linear(self, values: tf.Tensor) -> tf.Tensor:
+        if self.unbounded_scale_linear_weight is None:
+            return tf.zeros_like(values)
+        return tf.matmul(
+            values, self.unbounded_scale_linear_weight * self.scale_linear_skip_mask
+        )
+
+    def _unbounded_scale_linear_pullback(self, cotangent: tf.Tensor) -> tf.Tensor:
+        if self.unbounded_scale_linear_weight is None:
+            return tf.zeros_like(cotangent)
+        return tf.matmul(
+            cotangent,
+            self.unbounded_scale_linear_weight * self.scale_linear_skip_mask,
+            transpose_b=True,
+        )
 
     def _network(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         hidden = values
@@ -195,8 +321,11 @@ class _DenseAutoregressiveStage:
         ):
             hidden = _activation(tf.matmul(hidden, weight * mask) + bias, self.activation)
         raw = tf.matmul(hidden, self.weights[-1] * self.masks[-1]) + self.biases[-1]
-        scale_logits = raw[..., : self.dimension]
-        scale_log = self.s_max * tf.math.tanh(scale_logits / self.s_max)
+        scale_logits = raw[..., : self.dimension] + self._scale_linear_skip(values)
+        scale_log = (
+            self.s_max * tf.math.tanh(scale_logits / self.s_max)
+            + self._unbounded_scale_linear(values)
+        )
         return scale_log, raw[..., self.dimension :]
 
     def forward_and_logdet(self, latent: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
@@ -231,11 +360,11 @@ class _DenseAutoregressiveStage:
             preactivations.append(preactivation)
             hidden = _activation(preactivation, self.activation)
         raw = tf.matmul(hidden, self.weights[-1] * self.masks[-1]) + self.biases[-1]
-        scale_logits = raw[..., : self.dimension]
+        scale_logits = raw[..., : self.dimension] + self._scale_linear_skip(values)
         scaled = scale_logits / self.s_max
         tanh_scaled = tf.math.tanh(scaled)
         return (
-            self.s_max * tanh_scaled,
+            self.s_max * tanh_scaled + self._unbounded_scale_linear(values),
             raw[..., self.dimension :],
             1.0 - tf.square(tanh_scaled),
             tuple(preactivations),
@@ -252,7 +381,7 @@ class _DenseAutoregressiveStage:
         for layer_index in reversed(range(len(preactivations))):
             values = preactivations[layer_index]
             if self.activation == "elu":
-                derivative = tf.where(values > 0.0, 1.0, tf.exp(values))
+                derivative = tf.where(values > tf.constant(0.0, values.dtype), tf.ones_like(values), tf.exp(values))
             elif self.activation == "tanh":
                 derivative = 1.0 - tf.square(tf.math.tanh(values))
             elif self.activation == "relu":
@@ -267,6 +396,12 @@ class _DenseAutoregressiveStage:
                 self.weights[layer_index] * self.masks[layer_index],
                 transpose_b=True,
             )
+        if self.scale_linear_skip_weight is not None:
+            cotangent = cotangent + tf.matmul(
+                raw_cotangent[..., : self.dimension],
+                self.scale_linear_skip_weight * self.scale_linear_skip_mask,
+                transpose_b=True,
+            )
         return cotangent
 
     def pullback_score(
@@ -278,14 +413,20 @@ class _DenseAutoregressiveStage:
         raw_cotangent = tf.concat(
             (scale_cotangent * scale_derivative, output_score), axis=-1
         )
-        return direct + self._network_pullback(raw_cotangent, cache)
+        return (
+            direct
+            + self._network_pullback(raw_cotangent, cache)
+            + self._unbounded_scale_linear_pullback(scale_cotangent)
+        )
 
     def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
         _scale_log, _shift, scale_derivative, cache = self._network_with_cache(values)
         raw_cotangent = tf.concat(
             (scale_derivative, tf.zeros_like(scale_derivative)), axis=-1
         )
-        return self._network_pullback(raw_cotangent, cache)
+        return self._network_pullback(
+            raw_cotangent, cache
+        ) + self._unbounded_scale_linear_pullback(tf.ones_like(scale_derivative))
 
 
 class WeightedDenseIAFTransport:
@@ -297,6 +438,13 @@ class WeightedDenseIAFTransport:
         self.stages = tuple(
             _DenseAutoregressiveStage(config, stage)
             for stage in range(int(config.stages))
+        )
+
+    def _between_stage_permutation(self, values: tf.Tensor) -> tf.Tensor:
+        if self.config.permutation_policy == "full_reverse":
+            return tf.reverse(values, axis=(-1,))
+        return tf.concat(
+            (values[..., :1], tf.reverse(values[..., 1:], axis=(-1,))), axis=-1
         )
 
     @property
@@ -312,7 +460,7 @@ class WeightedDenseIAFTransport:
             values, increment = stage.forward_and_logdet(values)
             logdet = logdet + increment
             if index + 1 < len(self.stages):
-                values = tf.reverse(values, axis=(-1,))
+                values = self._between_stage_permutation(values)
         return values, logdet
 
     @property
@@ -333,6 +481,19 @@ class WeightedDenseIAFTransport:
             "hidden_layers": list(self.config.hidden_layers),
             "activation": self.config.activation,
             "s_max": float(self.config.s_max),
+            "stage_s_max": list(self.config.stage_s_max),
+            "resolved_stage_s_max": [stage.s_max for stage in self.stages],
+            "stage_scale_linear_skip": list(self.config.stage_scale_linear_skip),
+            "resolved_stage_scale_linear_skip": [
+                stage.scale_linear_skip_enabled for stage in self.stages
+            ],
+            "stage_unbounded_scale_linear": list(
+                self.config.stage_unbounded_scale_linear
+            ),
+            "resolved_stage_unbounded_scale_linear": [
+                stage.unbounded_scale_linear_enabled for stage in self.stages
+            ],
+            "permutation_policy": self.config.permutation_policy,
             "frozen_identity": dict(self._frozen_identity),
         }
 
@@ -390,11 +551,11 @@ class WeightedDenseIAFTransport:
             inputs.append(current)
             current, _ = stage.forward_and_logdet(current)
             if index + 1 < len(self.stages):
-                current = tf.reverse(current, axis=(-1,))
+                current = self._between_stage_permutation(current)
         for index in reversed(range(len(self.stages))):
             score = self.stages[index].pullback_score(inputs[index], score)
             if index > 0:
-                score = tf.reverse(score, axis=(-1,))
+                score = self._between_stage_permutation(score)
         return score
 
     def log_abs_det_jacobian_score(self, latent: Any) -> tf.Tensor:
@@ -411,13 +572,13 @@ class WeightedDenseIAFTransport:
             inputs.append(current)
             current, _ = stage.forward_and_logdet(current)
             if index + 1 < len(self.stages):
-                current = tf.reverse(current, axis=(-1,))
+                current = self._between_stage_permutation(current)
         score = tf.zeros_like(current)
         for index in reversed(range(len(self.stages))):
             score = self.stages[index].pullback_score(inputs[index], score)
             score = score + self.stages[index].logdet_score(inputs[index])
             if index > 0:
-                score = tf.reverse(score, axis=(-1,))
+                score = self._between_stage_permutation(score)
         return score
 
     def inverse_and_forward_logdet(self, physical: Any) -> tuple[tf.Tensor, tf.Tensor]:
@@ -427,7 +588,7 @@ class WeightedDenseIAFTransport:
             values, increment = self.stages[index].inverse_and_forward_logdet(values)
             logdet = logdet + increment
             if index > 0:
-                values = tf.reverse(values, axis=(-1,))
+                values = self._between_stage_permutation(values)
         return values, logdet
 
     def log_prob(self, physical: Any) -> tf.Tensor:
@@ -556,8 +717,16 @@ class WeightedForwardKLNeuTraTrainer:
         self, physical: tf.Tensor, log_weights: tf.Tensor
     ) -> tuple[tf.Tensor, ...]:
         normalized_weights = tf.exp(tf.nn.log_softmax(log_weights))
-        negative_log_prob = -self.transport.log_prob(physical)
-        latent, _ = self.transport.inverse_and_forward_logdet(physical)
+        # Reuse the inverse solve for both q_phi(theta) and latent diagnostics.
+        latent, forward_logdet = self.transport.inverse_and_forward_logdet(physical)
+        dimension = tf.cast(self.config.dimension, tf.float64)
+        negative_log_prob = (
+            tf.constant(0.5, tf.float64) * tf.reduce_sum(tf.square(latent), axis=-1)
+            + tf.constant(0.5, tf.float64)
+            * dimension
+            * tf.math.log(tf.constant(2.0 * math.pi, tf.float64))
+            + forward_logdet
+        )
         mean = tf.reduce_sum(normalized_weights[:, tf.newaxis] * latent, axis=0)
         centered = latent - mean
         covariance = tf.matmul(

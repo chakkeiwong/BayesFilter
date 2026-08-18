@@ -1,0 +1,293 @@
+{
+  "audit_exact_forward_nll": 142.6860831658842,
+  "audit_reverse_kl": 50.32164801788914,
+  "checkpoints": [
+    {
+      "clipping_applied": false,
+      "gradient_norm": 5.092195459674608,
+      "learning_rate": 0.001,
+      "selection_loss": 50.26097432508439,
+      "training_loss": 50.44178212615178,
+      "update": 250
+    }
+  ],
+  "clipped_updates": 66,
+  "decision": {
+    "diagnostic_roles": {
+      "nonfinite_training": "hard_veto",
+      "proposal_exact_law": "promotion_criterion",
+      "scale_saturation": "explanatory_only",
+      "training_loss": "explanatory_only"
+    },
+    "eligible_for_hmc_nomination": false,
+    "nonclaims": [
+      "no HMC validity claim",
+      "no objective ranking",
+      "no SSL-LSTM transfer claim"
+    ],
+    "promotion": false,
+    "proposal_gate_passed": false,
+    "status": "proposal_gate_failed"
+  },
+  "last_step": {
+    "clipped_gradient_norm": 5.092195459674608,
+    "clipping_applied": false,
+    "effective_sample_size": 4096.0,
+    "effective_sample_size_fraction": 1.0,
+    "gradient_norm": 5.092195459674608,
+    "loss": 50.44178212615178,
+    "maximum_normalized_weight": 0.000244140625,
+    "step": 250
+  },
+  "manifest": {
+    "adapter_signature": "b089c37daa42db9389d316b9ec4b0e962c11204618d70ec5204e56ab1a8b9862",
+    "allocator_bytes": {
+      "current": 196153600,
+      "peak": 848214528
+    },
+    "audit_size": 65536,
+    "checkpoint_every": 250,
+    "command": "docs/benchmarks/run_neutra_reverse_funnel_capacity_2026_08_14.py --output-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/reverse-funnel-capacity-r3/canary-cap4-unbounded-linear --replay-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-replay-r1 --device 1 --stage-s-max 4,0.5,0.5 --first-stage-unbounded-scale-linear --updates 250 --batch-size 4096 --checkpoint-every 250 --learning-rate 1e-3 --proposal-audit-count 32768",
+    "config": {
+      "activation": "elu",
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "dimension": 100,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "hidden_layers": [
+        100,
+        100
+      ],
+      "initialization_scale": 0.02,
+      "initialization_seed": [
+        20260814,
+        70001
+      ],
+      "jit_compile": true,
+      "learning_rate": 0.001,
+      "s_max": 1.0,
+      "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+      "stage_s_max": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "stage_scale_linear_skip": [
+        false,
+        false,
+        false
+      ],
+      "stage_unbounded_scale_linear": [
+        true,
+        false,
+        false
+      ],
+      "stages": 3
+    },
+    "cuda_visible_devices": "1",
+    "dtype": "float64",
+    "first_stage_scale_linear_skip": false,
+    "first_stage_unbounded_scale_linear": true,
+    "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+    "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+    "jit_compile": true,
+    "learning_rate": 0.001,
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "objective": "reverse_kl",
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-reverse-funnel-capacity-repair-plan-2026-08-14.md",
+    "proposal_audit_count": 32768,
+    "resolved_stage_s_max": [
+      4.0,
+      0.5,
+      0.5
+    ],
+    "resolved_stage_scale_linear_skip": [
+      false,
+      false,
+      false
+    ],
+    "resolved_stage_unbounded_scale_linear": [
+      true,
+      false,
+      false
+    ],
+    "sample_wise_loop_or_scalar_fallback": false,
+    "schema": "bayesfilter.neutra.reverse_funnel_capacity_manifest.v1",
+    "seeds": {
+      "audit": [
+        20260814,
+        70004
+      ],
+      "initialization": [
+        20260814,
+        70001
+      ],
+      "proposal_audit": [
+        20260814,
+        71001
+      ],
+      "selection": [
+        20260814,
+        70002
+      ],
+      "training_root": [
+        20260814,
+        70003
+      ]
+    },
+    "selection_size": 65536,
+    "target": {
+      "candidate_backend": "tensorflow_float64_batch_native",
+      "conditional_standard_deviation": "exp(y)",
+      "constants_hash": null,
+      "constants_path": null,
+      "constants_sha256": null,
+      "dimension": 100,
+      "exact_sampler": true,
+      "name": "paper_funnel",
+      "schema": "bayesfilter.neutra.paper_d100_target.v1",
+      "source_formula": "y~Normal(0,1); x_i|y~Normal(0,exp(2y)) variance",
+      "source_path": null,
+      "source_sha256": null
+    },
+    "tensorflow_version": "2.20.0",
+    "tf32_enabled": false,
+    "training_batch_size": 4096,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "updates": 250
+  },
+  "proposal_audit": {
+    "all_individual_intervals_passed": false,
+    "authority": "exact_iid_funnel_proposal_law",
+    "importance_ess_fraction": 0.004572093754512079,
+    "interval_level": 0.999,
+    "log_target_to_proposal_ratio_stddev": 0.564167421666648,
+    "maximum_normalized_importance_weight": 0.06708116253943082,
+    "mean_screens": {
+      "residual_mean": {
+        "estimate": -0.0013158546472418122,
+        "exact": 0.0,
+        "lower": -0.003131149926386253,
+        "passed": true,
+        "standard_error": 0.0005516731597319026,
+        "upper": 0.0004994406319026284
+      },
+      "residual_second_moment": {
+        "estimate": 0.9981540550203121,
+        "exact": 1.0,
+        "lower": 0.9955175276762773,
+        "passed": true,
+        "standard_error": 0.000801247812030196,
+        "upper": 1.0007905823643468
+      },
+      "y_mean": {
+        "estimate": -0.05628668167526253,
+        "exact": 0.0,
+        "lower": -0.06741170413037438,
+        "passed": false,
+        "standard_error": 0.0033809245032535447,
+        "upper": -0.04516165922015068
+      },
+      "y_second_moment": {
+        "estimate": 0.37771631535938865,
+        "exact": 1.0,
+        "lower": 0.3689534417794151,
+        "passed": false,
+        "standard_error": 0.0026630610522347838,
+        "upper": 0.38647918893936223
+      }
+    },
+    "nonclaims": [
+      "proposal draws are not posterior draws",
+      "separate 99.9% diagnostics; no omnibus p-value",
+      "proposal-law pass does not establish HMC validity"
+    ],
+    "sample_count": 32768,
+    "scale_diagnostics": {
+      "stages": [
+        {
+          "bounded_residual_maximum": 1.5540540586778633,
+          "bounded_residual_minimum": -1.6691567975434265,
+          "cap": 4.0,
+          "fraction_abs_ge_0.999_cap": 0.0,
+          "fraction_abs_ge_0.99_cap": 0.0,
+          "maximum": 1.8115482750029086,
+          "mean": -0.05460208295803939,
+          "minimum": -1.9693360364606545,
+          "stage": 0,
+          "unbounded_linear_maximum": 0.9476433444219587,
+          "unbounded_linear_mean": -0.0004287039242761852,
+          "unbounded_linear_minimum": -0.9085643913846538
+        },
+        {
+          "bounded_residual_maximum": 0.4960748475342066,
+          "bounded_residual_minimum": -0.49869099008105133,
+          "cap": 0.5,
+          "fraction_abs_ge_0.999_cap": 0.0,
+          "fraction_abs_ge_0.99_cap": 9.1552734375e-07,
+          "maximum": 0.4960748475342066,
+          "mean": 0.007477481820934257,
+          "minimum": -0.49869099008105133,
+          "stage": 1,
+          "unbounded_linear_maximum": 0.0,
+          "unbounded_linear_mean": 0.0,
+          "unbounded_linear_minimum": 0.0
+        },
+        {
+          "bounded_residual_maximum": 0.4471275892835761,
+          "bounded_residual_minimum": -0.423996076972733,
+          "cap": 0.5,
+          "fraction_abs_ge_0.999_cap": 0.0,
+          "fraction_abs_ge_0.99_cap": 0.0,
+          "maximum": 0.4471275892835761,
+          "mean": -0.01575250139792551,
+          "minimum": -0.423996076972733,
+          "stage": 2,
+          "unbounded_linear_maximum": 0.0,
+          "unbounded_linear_mean": 0.0,
+          "unbounded_linear_minimum": 0.0
+        }
+      ]
+    },
+    "tail_screens": {
+      "probability_above_plus2": {
+        "count": 32768,
+        "estimate": 0.00018310546875,
+        "exact": 0.02275013194817921,
+        "lower": 5.201201561802352e-05,
+        "passed": false,
+        "successes": 6,
+        "upper": 0.0006443999022451427
+      },
+      "probability_below_minus2": {
+        "count": 32768,
+        "estimate": 0.000152587890625,
+        "exact": 0.02275013194817921,
+        "lower": 3.9028515190786984e-05,
+        "passed": false,
+        "successes": 5,
+        "upper": 0.0005963684076740806
+      }
+    }
+  },
+  "schema": "bayesfilter.neutra.reverse_funnel_capacity_result.v1",
+  "selected_loss": 50.26097432508439,
+  "selected_update": 250,
+  "wall_seconds": 14.878363425959833
+}

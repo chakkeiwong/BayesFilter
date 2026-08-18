@@ -1,0 +1,165 @@
+{
+  "audit_exact_forward_nll": 1040.8030343335317,
+  "audit_reverse_kl": 32.840905400385154,
+  "candidate_passed": true,
+  "candidate_status": "training_candidate_only",
+  "checkpoints": [
+    {
+      "clipping_applied": false,
+      "gradient_norm": 6.11018457623884,
+      "learning_rate": 0.001,
+      "selection_loss": 32.81015221381213,
+      "selection_metric": "heldout_reverse_kl",
+      "training_loss": 33.07372671540157,
+      "update": 1
+    }
+  ],
+  "clipped_updates": 0,
+  "last_step": {
+    "clipped_gradient_norm": 6.11018457623884,
+    "clipping_applied": false,
+    "effective_sample_size": 4096.0,
+    "effective_sample_size_fraction": 1.0,
+    "gradient_norm": 6.11018457623884,
+    "loss": 33.07372671540157,
+    "maximum_normalized_weight": 0.000244140625,
+    "step": 1
+  },
+  "manifest": {
+    "adapter_signature": "e431fd75d09f0bee4a40865b2cd520750f88f938498d85b7491d46b20914856a",
+    "allocator_bytes": {
+      "current": 169325568,
+      "peak": 693104384
+    },
+    "audit_opened_after_checkpoint_freeze": true,
+    "audit_size": 65536,
+    "batch_native_target_backend": "tensorflow_exact_paper_d100",
+    "checkpoint_every": 1,
+    "command": "docs/benchmarks/run_neutra_paper_d100_training_2026_08_13.py --output-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-reverse-canary-r2 --replay-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-replay-r1 --gaussian-constants docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json --target paper_ill_cond_gaussian --objective reverse_kl --device 1 --updates 1 --batch-size 4096 --checkpoint-every 1 --hidden-width 100 --stages 3 --learning-rate 1e-3 --learning-rate-schedule constant",
+    "config": {
+      "activation": "elu",
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "dimension": 100,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "hidden_layers": [
+        100,
+        100
+      ],
+      "initialization_scale": 0.02,
+      "initialization_seed": [
+        20260813,
+        53001
+      ],
+      "jit_compile": true,
+      "learning_rate": 0.001,
+      "s_max": 1.0,
+      "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+      "stages": 3
+    },
+    "cuda_visible_devices": "1",
+    "dtype": "float64",
+    "external_exact_sample_generation_cpu_only": true,
+    "git_commit": "34c19935fd34e45f0e818a97a5569f8750bc8e30",
+    "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+    "jit_compile": true,
+    "learning_rate_schedule": "constant",
+    "learning_rate_schedule_semantics": "constant",
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "objective": "reverse_kl",
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-weighted-forward-kl-paper-d100-fresh-baseline-plan-2026-08-13.md",
+    "replay_manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-replay-r1/replay_manifest.json",
+    "replay_manifest_sha256": "921b6bbbc2ffcb2b4acee014cf93424ea468ec6c8a84f19f813225b3e5a94ee3",
+    "replay_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-replay-r1",
+    "sample_wise_loop_or_scalar_fallback": false,
+    "schema": "bayesfilter.neutra.paper_d100_training_manifest.v1",
+    "seeds": {
+      "exact_replay": {
+        "audit_rows": [
+          20260813,
+          52003
+        ],
+        "calibration_rows": [
+          20260813,
+          52004
+        ],
+        "initial_rows": [
+          20260813,
+          52005
+        ],
+        "selection_rows": [
+          20260813,
+          52002
+        ],
+        "training_rows": [
+          20260813,
+          52001
+        ]
+      },
+      "initialization": [
+        20260813,
+        53001
+      ],
+      "reverse_audit": [
+        20260813,
+        53004
+      ],
+      "reverse_selection": [
+        20260813,
+        53002
+      ],
+      "reverse_training_root": [
+        20260813,
+        53003
+      ]
+    },
+    "selection_audit_disjoint": true,
+    "selection_size": 65536,
+    "target": {
+      "candidate_backend": "tensorflow_float64_batch_native",
+      "constants_hash": "e7421d0837176190bbd82479fb099adc321ce6ca262efccf6911ec1f59c33875",
+      "constants_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json",
+      "constants_sha256": "0e2e2863b14947c8eef8251f00d1b46b7b3d83278c31b619d273c0076d1fa672",
+      "dimension": 100,
+      "exact_sampler": true,
+      "matrix_constants_embedded_in_runtime_spec": true,
+      "name": "paper_ill_cond_gaussian",
+      "schema": "bayesfilter.neutra.paper_d100_target.v1",
+      "source_formula": "RandomState(10) Gamma(0.8,1) precision spectrum, QR rotation, covariance inverse spectrum",
+      "source_path": "/home/ubuntu/python/dsge_hmc/src/dsge_hmc/benchmarks/neutra_paper_targets.py",
+      "source_sha256": "40f8b3b835e6df8462b171ef3efb6ce4f7bcf1474194c80038459283ac5299d9"
+    },
+    "tensorflow_version": "2.20.0",
+    "tf32_enabled": false,
+    "training_batch_size": 4096,
+    "updates": 1,
+    "wall_seconds": 16.70469312707428
+  },
+  "nonclaims": [
+    "finite selected training checkpoint only",
+    "training and audit loss do not establish posterior quality",
+    "no HMC, objective ranking, paper replication, or default promotion"
+  ],
+  "objective": "reverse_kl",
+  "schema": "bayesfilter.neutra.paper_d100_training_result.v1",
+  "selected_update": 1,
+  "selection_loss": 32.81015221381213,
+  "selection_metric": "heldout_reverse_kl",
+  "target": "paper_ill_cond_gaussian"
+}
