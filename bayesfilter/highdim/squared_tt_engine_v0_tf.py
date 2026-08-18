@@ -67,6 +67,8 @@ class EngineConfig:
     seed: int
     condition_number_veto: float = 1e14
     quadrature_order: int | None = None  # tensor GL rows for small-n rungs
+    branch_gram_floor: float = 1e-12  # declared PSD floor (relative) for the branch factor
+    row_design: str = "mc"  # frozen scattered rows: "mc" | "sobol" (randomized QMC)
 
 
 def _product_basis(dimension: int, degree: int) -> ProductBasis:
@@ -90,6 +92,34 @@ def _frozen_rows(count: int, dimension: int, seed: tuple[int, int]) -> tf.Tensor
     return tf.random.stateless_uniform(
         [count, dimension], tf.constant(seed, tf.int32), minval=-1.0, maxval=1.0, dtype=DTYPE
     )
+
+
+def _frozen_sobol_rows(count: int, dimension: int, seed: tuple[int, int]) -> tf.Tensor:
+    """Frozen randomized-QMC rows: Sobol + Cranley-Patterson rotation.
+
+    Fully determined by (count, dimension, seed) — a frozen scattered
+    design per V2, uniform-weighted like the MC rows (equal weights under
+    the reference measure). Selected by `EngineConfig.row_design="sobol"`
+    (P1B attempt02 diagnosis 2026-08-18: MC row-sampling bias dominated
+    the ladder; rotated Sobol reached the quadrature-resolution floor at
+    4x fewer rows on the n=2 r=6 fixture).
+    """
+
+    base = tf.math.sobol_sample(dimension, count, dtype=DTYPE)
+    shift = tf.random.stateless_uniform(
+        [1, dimension], tf.constant(seed, tf.int32), dtype=DTYPE
+    )
+    return 2.0 * tf.math.floormod(base + shift, 1.0) - 1.0
+
+
+def _design_rows(
+    config: "EngineConfig", count: int, dimension: int, seed: tuple[int, int]
+) -> tf.Tensor:
+    if config.row_design == "mc":
+        return _frozen_rows(count, dimension, seed)
+    if config.row_design == "sobol":
+        return _frozen_sobol_rows(count, dimension, seed)
+    raise ValueError(f"unknown row_design {config.row_design!r}")
 
 
 def _gauss_rows(dimension: int, order: int) -> tuple[tf.Tensor, tf.Tensor]:
@@ -174,6 +204,67 @@ def _fixed_als_fit(
     return current, {"worst_condition": worst_condition, "weighted_fit_rms": rms}
 
 
+def _fixed_als_fit_traced(
+    product_basis: ProductBasis,
+    points: tf.Tensor,
+    sqrt_target: tf.Tensor,
+    weights: tf.Tensor,
+    cores: tuple[TTCore, ...],
+    config: EngineConfig,
+) -> tuple[tuple[TTCore, ...], list[dict]]:
+    """Value ALS identical to `_fixed_als_fit`, recording per-update
+    checkpoints for the manual adjoint reverse sweep (UB-1 Addendum A.3)."""
+
+    fitter = FixedTTFitter()
+    fit_config = FixedTTFitConfig(
+        ranks=tuple([1] + [config.rank] * (len(cores) - 1) + [1])[: len(cores) + 1],
+        ridge=config.ridge,
+        max_sweeps=config.sweeps,
+        sweep_order=tuple(range(len(cores))),
+        row_budget=int(points.shape[0]),
+        column_budget=4096,
+        dense_matrix_byte_budget=1 << 30,
+        normal_matrix_byte_budget=1 << 30,
+        condition_number_warning=1e12,
+        condition_number_veto=config.condition_number_veto,
+        holdout_tolerance=1e30,
+    )
+    updates: list[dict] = []
+    current = cores
+    for _sweep in range(config.sweeps):
+        for core_index in range(len(current)):
+            system = fitter.build_core_update_system(
+                product_basis, points, sqrt_target, weights, current, core_index, fit_config
+            )
+            solve = _solve_scaled_augmented_ridge(
+                design=system.design_matrix,
+                target_values=sqrt_target,
+                weights=weights,
+                ridge=config.ridge,
+            )
+            if float(solve.scaled_augmented_condition_number) > config.condition_number_veto:
+                raise ValueError("condition number veto in fixed ALS fit")
+            updates.append(
+                {
+                    "core_index": core_index,
+                    "design": system.design_matrix,
+                    "previous_core": current[core_index],
+                    "solution": solve.solution,
+                    "target": sqrt_target,
+                    "weights": weights,
+                    "rows": points,
+                    "basis": product_basis,
+                    "ridge": config.ridge,
+                }
+            )
+            updated = list(current)
+            updated[core_index] = TTCore(
+                tf.reshape(solve.solution, current[core_index].values.shape)
+            )
+            current = tuple(updated)
+    return current, updates
+
+
 @dataclass(frozen=True)
 class EngineStepResult:
     log_increment: tf.Tensor
@@ -230,9 +321,10 @@ def run_value_filter(
                 + conversion
             )
             fit_basis, split = joint_basis, n
-        shift = tf.reduce_max(log_f)
-        sorted_f = tf.sort(log_f, direction="DESCENDING")
-        tie_flag = bool(((sorted_f[0] - sorted_f[1]) < 1e-12).numpy())
+        shift = tf.reduce_logsumexp(log_f) - tf.math.log(
+            tf.cast(tf.shape(log_f)[0], DTYPE)
+        )
+        tie_flag = False  # smooth shift (v0.3): no branch, no ties
         sqrt_target = tf.exp(0.5 * (log_f - shift))
         weights = tf.fill([int(rows.shape[0])], tf.constant(1.0 / int(rows.shape[0]), DTYPE))
         dimension = int(rows.shape[1])
@@ -348,7 +440,7 @@ def run_value_filter_branch_axis(
             if config.quadrature_order is not None:
                 rows, weights = _gauss_rows(n, config.quadrature_order)
             else:
-                rows = _frozen_rows(config.row_count, n, (config.seed, 17))
+                rows = _design_rows(config, config.row_count, n, (config.seed, 17))
                 weights = tf.fill(
                     [int(rows.shape[0])], tf.constant(1.0 / int(rows.shape[0]), DTYPE)
                 )
@@ -358,7 +450,7 @@ def run_value_filter_branch_axis(
                 + adapter.observation_log_density(x_current, observations[t])
                 + conversion
             )
-            shift = tf.reduce_max(log_f)
+            shift = tf.reduce_logsumexp(log_f) - tf.math.log(tf.cast(tf.shape(log_f)[0], DTYPE))
             sqrt_target = tf.exp(0.5 * (log_f - shift))
             cores0 = _initial_tt_cores(n, basis_dim, config.rank)
             cores, fit_diag = _fixed_als_fit(current_basis, rows, sqrt_target, weights, cores0, config)
@@ -366,28 +458,43 @@ def run_value_filter_branch_axis(
             suffix_core = tf.tensor_scatter_nd_update(suffix_core, [[0, 0, 0]], [1.0])
             extended = tuple(cores) + (TTCore(suffix_core),)
             extended_basis = _product_basis(n + 1, config.basis_degree)
-            retained_new = retained_quadratic_form_from_squared_tt(
-                extended, extended_basis, split_index=n, tau=float(config.tau),
+            base = retained_quadratic_form_from_squared_tt(
+                extended, extended_basis, split_index=n, tau=0.0,
                 prefix_basis=current_basis, coordinate_map=current_map,
+            )
+            z_h_new = base.z_complete_ref
+            retained_new = RetainedQuadraticForm(
+                prefix_cores=base.prefix_cores,
+                suffix_gram=base.suffix_gram,
+                tau=tau * z_h_new,
+                z_complete_ref=(1.0 + tau) * z_h_new,
+                prefix_basis=base.prefix_basis,
+                coordinate_map=base.coordinate_map,
             )
             log_increment = shift + tf.math.log(retained_new.z_complete_ref)
             tie_flag = False
         else:
             gram = retained.suffix_gram
-            eigenvalues, eigenvectors = tf.linalg.eigh(gram)
+            eigenvalues = tf.linalg.eigvalsh(gram)
             gram_condition = float(
                 (eigenvalues[-1] / tf.maximum(eigenvalues[0], tf.constant(1e-300, DTYPE))).numpy()
             )
-            # Near-singular E is expected for near-Gaussian retained laws and
-            # is benign for the VALUE path (any factor L with L L' = E gives
-            # the exact branch sum). The smoothness guard (Cholesky + hard
-            # conditioning veto) is a SCORE-path claim gate, applied at P2.
-            chol = eigenvectors * tf.sqrt(tf.maximum(eigenvalues, 0.0))[None, :]
+            # ONE declared program for value and score (same-scalar rule V5):
+            # Cholesky of E + declared floor. The floor is a frozen program
+            # constant (like ridge), recorded in config; smoothness guard
+            # (conditioning veto) remains the SCORE-path claim gate at P2.
+            floor_scale = tf.linalg.trace(gram) / tf.cast(tf.shape(gram)[0], DTYPE)
+            chol = tf.linalg.cholesky(
+                gram
+                + tf.constant(config.branch_gram_floor, DTYPE)
+                * floor_scale
+                * tf.eye(tf.shape(gram)[0], dtype=DTYPE)
+            )
             branch_count = retained.boundary_rank + 1  # + tau branch
             if config.quadrature_order is not None:
                 z_rows, z_weights = _gauss_rows(2 * n, config.quadrature_order)
             else:
-                z_rows = _frozen_rows(config.row_count, 2 * n, (config.seed, 100 + t))
+                z_rows = _design_rows(config, config.row_count, 2 * n, (config.seed, 100 + t))
                 z_weights = tf.fill(
                     [int(z_rows.shape[0])],
                     tf.constant(1.0 / int(z_rows.shape[0]), DTYPE),
@@ -405,14 +512,20 @@ def run_value_filter_branch_axis(
                 _prefix_rows_for(retained, z_previous),
                 chol,
             )  # [N, r_c] signed branch amplitudes u_g
-            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + tau
+            # relative defensive mass (v0.2): tau_abs = tau * Z_h_prev keeps
+            # the defensive FRACTION shift-invariant, restoring C0/piecewise
+            # smoothness at max-shift branch switches (2026-08-17 repair).
+            tau_abs = tau * (retained.z_complete_ref / (1.0 + tau))
+            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + tau_abs
             log_f_row = tf.math.log(sum_sq) + log_g_kernel  # = log f + log Zc_prev
-            shift = tf.reduce_max(log_f_row)
-            sorted_f = tf.sort(log_f_row, direction="DESCENDING")
-            tie_flag = bool(((sorted_f[0] - sorted_f[1]) < 1e-12).numpy())
+            shift = tf.reduce_logsumexp(log_f_row) - tf.math.log(
+                tf.cast(tf.shape(log_f_row)[0], DTYPE)
+            )
+            tie_flag = False  # smooth shift (v0.3)
             sqrt_g_shifted = tf.exp(0.5 * (log_g_kernel - shift))
             amplitudes = tf.concat(
-                [v_prev, tf.fill([int(z_rows.shape[0]), 1], tf.sqrt(tau))], axis=1
+                [v_prev, tf.fill([int(z_rows.shape[0]), 1], tf.constant(1.0, DTYPE))
+                 * tf.sqrt(tau_abs)], axis=1
             )  # [N, B]
             targets = amplitudes * sqrt_g_shifted[:, None]  # [N, B] smooth signed
             n_rows_total = int(z_rows.shape[0]) * branch_count
@@ -457,13 +570,19 @@ def run_value_filter_branch_axis(
             cores, fit_diag = _fixed_als_fit(
                 mixed_basis, full_rows, sqrt_target, weights, cores0, config
             )
-            retained_new = retained_quadratic_form_from_squared_tt(
-                cores, mixed_basis, split_index=n, tau=float(config.tau),
+            base = retained_quadratic_form_from_squared_tt(
+                cores, mixed_basis, split_index=n, tau=0.0,
                 prefix_basis=current_basis, coordinate_map=current_map,
             )
-            # increment: log int f = shift + log Z_h_new - log Zc_prev; the
-            # engine's declared increment additionally carries the new tau
-            # mass inside z_complete_ref, matching the v0 program semantics.
+            z_h_new = base.z_complete_ref
+            retained_new = RetainedQuadraticForm(
+                prefix_cores=base.prefix_cores,
+                suffix_gram=base.suffix_gram,
+                tau=tau * z_h_new,
+                z_complete_ref=(1.0 + tau) * z_h_new,
+                prefix_basis=base.prefix_basis,
+                coordinate_map=base.coordinate_map,
+            )
             log_increment = (
                 shift
                 + tf.math.log(retained_new.z_complete_ref)

@@ -1,0 +1,107 @@
+{
+  "schema": "bayesfilter.genut_austria_endpoint_route_identity.v1",
+  "created_at": "2026-08-17T23:15:00+08:00",
+  "plan": "docs/plans/bayesfilter-austria-genut-neutra-root-cause-hypotheses-fable-handoff-2026-08-17.md",
+  "review": "docs/plans/bayesfilter-austria-genut-neutra-root-cause-hypotheses-fable-second-review-reply-2026-08-17.md",
+  "skeptical_plan_audit": {
+    "status": "PASS",
+    "reason": "The exact tangent-free endpoint is the comparator, exact shared-primal identity is the primary criterion, conditioning is explanatory only, frozen inputs are hash-bound, and no stale tuning artifact is eligible for admission or promotion."
+  },
+  "git": {
+    "commit": "dae37183bf4421682b2ad991e2dc0d0f3c53f260",
+    "branch": "main",
+    "worktree": "dirty_with_unrelated_multi_agent_changes_preserved"
+  },
+  "environment": {
+    "hostname": "DESKTOP-RF1Q5IJ",
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "dtype": "float32",
+    "tf32_enabled": true,
+    "deterministic_ops_required_for_numerical_attempts": true,
+    "xla_scope": "endpoint_only",
+    "phase0_gpu_initialization": "deferred_by_review_boundary"
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/cubature_genut_batch_tf.py": "7e1a6a28e32f014e8a21bad33036f9e90eaadccf61111df52df0318a9e348be7",
+    "bayesfilter/highdim/cubature_genut_neutra_targets.py": "a2885cad32b4e0b7de50c6bb32e108e7939700490141947d81c93fa5e6c07793",
+    "bayesfilter/highdim/cubature_genut_batch_adapters.py": "69537f61d8caead9b01fd20d276c30179f4b589d6aca72d1fdc3125492d05dcc",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "88337f82c3ff3e7ade9b5b9e356d7d29c4ac4dcebf79c5ffd6f992f6960d19bf",
+    "bayesfilter/highdim/cubature_genut_filter.py": "5440f470efdd1cb18dc7f864e5f516a8d5d3f1ad6b00bb703f0d7617709572d1"
+  },
+  "target": {
+    "model": "austria_sir",
+    "target_signature": "4845e7322685e19650024e5886e47d89c8b9c4b70c5d36a639c9b1218d39b5c3",
+    "adapter_signature": "6a56c7a9cb9f488f2f2a44cf86316d4ad80be45ab86b74d33b019f720fd0fee6",
+    "observations_sha256": "40c793fb374e84fcd347c66b189352b5997740cc753ea0be03441ecf32828009",
+    "initial_noise_sha256": "21b49995edf6c72188de0870e1282348178b8ae1be1a63812933be3d30827e82",
+    "process_noise_sha256": "98e6cf19066e5e3a480d41b5073d3224751a9031bfe793eac4acabf2ef9b526e",
+    "design_sha256": "d8ad7e0b986cc7c90b6f55b3aaf1f582f7040b77b8cfa5ec7f5f48875f950edd",
+    "shapes": {
+      "observations": [20, 9],
+      "initial_noise": [1008, 18],
+      "process_noise": [20, 1008, 18],
+      "design": [1008, 18]
+    },
+    "controls": {
+      "epsilon": 8.0,
+      "sinkhorn_steps": 8,
+      "balance_steps": 8,
+      "ridge": 1e-05,
+      "higher_moment_correction_steps": 4,
+      "higher_moment_strength": 0.2,
+      "higher_moment_floor": 1e-05,
+      "higher_moment_lm_damping": 0.0,
+      "higher_moment_lm_scale_floor": 1e-06,
+      "higher_moment_trust_radius": 0.0
+    }
+  },
+  "route_classification": "batch_diagonal_candidate",
+  "stage_ledger": [
+    {
+      "stage": "batch_native_model_value_and_tangent",
+      "callable": "parameterized_austria_sir_batch_adapter",
+      "present": true
+    },
+    {
+      "stage": "sinkhorn_barycentric_transport",
+      "callable": "_sinkhorn_barycentric_batch_value/_jvp",
+      "present": true
+    },
+    {
+      "stage": "contract_e_chol_reset",
+      "callable": "_restore_cloud_batch_value/_jvp -> _contract_e_chol_cloud_forward_core",
+      "present": true
+    },
+    {
+      "stage": "diagonal_third_fourth_moment_correction",
+      "callable": "_higher_moment_batch_value/_jvp",
+      "present": true
+    },
+    {
+      "stage": "pairwise_coskew_cokurtosis_correction",
+      "callable": null,
+      "present": false
+    },
+    {
+      "stage": "pairwise_row_rms_radial_cap_2",
+      "callable": null,
+      "present": false
+    },
+    {
+      "stage": "standardized_coordinate_cap_b098_p8",
+      "callable": null,
+      "present": false
+    },
+    {
+      "stage": "final_affine_mean_covariance_restoration",
+      "callable": "_higher_moment_batch_value/_jvp output map",
+      "present": true
+    }
+  ],
+  "tuning_status": {
+    "historical_artifact": "docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/tuning_attempt01/result.json",
+    "eligibility_after_repair": "stale_ineligible_requires_fresh_scope_specific_tuning"
+  },
+  "execution_boundary": "Diagnostic harness and intervention arms only. No production repair, NeuTra training, HMC, admission, default change, or dual-cap claim is authorized by this artifact."
+}

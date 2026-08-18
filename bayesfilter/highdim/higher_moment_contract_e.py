@@ -9,6 +9,11 @@ from __future__ import annotations
 
 import tensorflow as tf
 
+from bayesfilter.highdim.genut_shape_lm_tf import (
+    necessary_marginal_feasibility,
+    scaled_lm_coefficients_jvp,
+    smooth_rms_cap_jvp,
+)
 from bayesfilter.highdim.ledh_contract_e_reset_tf import (
     _cholesky_jvp as _contract_e_cholesky_jvp,
 )
@@ -714,7 +719,18 @@ def _shape_iteration_jvp(
     *,
     strength: float,
     floor: float,
-) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    lm_damping: float,
+    lm_scale_floor: float,
+    trust_radius: float,
+) -> tuple[
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+]:
     mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
         points, points_tangent
     )
@@ -787,53 +803,89 @@ def _shape_iteration_jvp(
     )
     residual = tf.stack([d3, d4], axis=-1)
     residual_tangent = tf.stack([d3_tangent, d4_tangent], axis=-2)
-    normal = tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
-    normal += tf.cast(floor, points.dtype) * tf.eye(
-        2, batch_shape=[tf.shape(points)[1]], dtype=points.dtype
-    )
-    rhs = tf.linalg.matvec(jacobian, residual, transpose_a=True)
-    coefficient = tf.cast(strength, points.dtype) * tf.linalg.solve(
-        normal, rhs[:, :, None]
-    )[:, :, 0]
-
-    normal_tangent = (
-        tf.einsum("daip,daj->dijp", jacobian_tangent, jacobian)
-        + tf.einsum("dai,dajp->dijp", jacobian, jacobian_tangent)
-    )
-    rhs_tangent = (
-        tf.einsum("daip,da->dip", jacobian_tangent, residual)
-        + tf.einsum("dai,dap->dip", jacobian, residual_tangent)
-    )
-    coefficient_rhs_tangent = rhs_tangent - tf.einsum(
-        "dijp,dj->dip", normal_tangent, coefficient / tf.cast(strength, points.dtype)
-    ) if strength > 0.0 else tf.zeros_like(rhs_tangent)
-    parameter_count = tf.shape(points_tangent)[-1]
-    normal_batch = tf.broadcast_to(
-        normal[None, :, :, :],
-        [parameter_count, tf.shape(normal)[0], 2, 2],
-    )
-    coefficient_tangent = tf.cast(strength, points.dtype) * tf.transpose(
-        tf.linalg.solve(
-            normal_batch,
-            tf.transpose(coefficient_rhs_tangent, [2, 0, 1])[:, :, :, None],
-        )[:, :, :, 0],
-        [1, 2, 0],
-    )
+    if lm_damping > 0.0:
+        lm = scaled_lm_coefficients_jvp(
+            jacobian,
+            residual,
+            jacobian_tangent,
+            residual_tangent,
+            strength=strength,
+            damping=lm_damping,
+            scale_floor=lm_scale_floor,
+        )
+        coefficient = lm["coefficient"]
+        coefficient_tangent = lm["coefficient_tangent"]
+        maximum_scaled_system_condition = tf.reduce_max(
+            lm["scaled_system_condition"]
+        )
+    else:
+        normal = tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
+        normal += tf.cast(floor, points.dtype) * tf.eye(
+            2, batch_shape=[tf.shape(points)[1]], dtype=points.dtype
+        )
+        rhs = tf.linalg.matvec(jacobian, residual, transpose_a=True)
+        coefficient = tf.cast(strength, points.dtype) * tf.linalg.solve(
+            normal, rhs[:, :, None]
+        )[:, :, 0]
+        normal_tangent = (
+            tf.einsum("daip,daj->dijp", jacobian_tangent, jacobian)
+            + tf.einsum("dai,dajp->dijp", jacobian, jacobian_tangent)
+        )
+        rhs_tangent = (
+            tf.einsum("daip,da->dip", jacobian_tangent, residual)
+            + tf.einsum("dai,dap->dip", jacobian, residual_tangent)
+        )
+        coefficient_rhs_tangent = (
+            rhs_tangent
+            - tf.einsum(
+                "dijp,dj->dip",
+                normal_tangent,
+                coefficient / tf.cast(strength, points.dtype),
+            )
+            if strength > 0.0
+            else tf.zeros_like(rhs_tangent)
+        )
+        parameter_count = tf.shape(points_tangent)[-1]
+        normal_batch = tf.broadcast_to(
+            normal[None, :, :, :],
+            [parameter_count, tf.shape(normal)[0], 2, 2],
+        )
+        coefficient_tangent = tf.cast(strength, points.dtype) * tf.transpose(
+            tf.linalg.solve(
+                normal_batch,
+                tf.transpose(coefficient_rhs_tangent, [2, 0, 1])[:, :, :, None],
+            )[:, :, :, 0],
+            [1, 2, 0],
+        )
+        maximum_scaled_system_condition = tf.zeros([], points.dtype)
     coefficient3 = coefficient[:, 0]
     coefficient4 = coefficient[:, 1]
     coefficient3_tangent = coefficient_tangent[:, 0, :]
     coefficient4_tangent = coefficient_tangent[:, 1, :]
-    corrected = (
-        u
-        + direction3 * coefficient3[None, :]
+    displacement = (
+        direction3 * coefficient3[None, :]
         + direction4 * coefficient4[None, :]
     )
-    corrected_tangent = (
-        u_tangent
-        + direction3_tangent * coefficient3[None, :, None]
+    displacement_tangent = (
+        direction3_tangent * coefficient3[None, :, None]
         + direction3[:, :, None] * coefficient3_tangent[None, :, :]
         + direction4_tangent * coefficient4[None, :, None]
         + direction4[:, :, None] * coefficient4_tangent[None, :, :]
+    )
+    pre_cap_rms = tf.sqrt(tf.reduce_mean(tf.square(displacement), axis=1))
+    if trust_radius > 0.0:
+        capped = smooth_rms_cap_jvp(
+            displacement, displacement_tangent, radius=trust_radius
+        )
+        displacement = capped["displacement"]
+        displacement_tangent = capped["displacement_tangent"]
+        post_cap_rms = capped["post_rms"]
+    else:
+        post_cap_rms = pre_cap_rms
+    corrected = u + displacement
+    corrected_tangent = (
+        u_tangent
+        + displacement_tangent
     )
     corrected_mean, corrected_cov, corrected_mean_tangent, corrected_cov_tangent = _uniform_moments_jvp(
         corrected, corrected_tangent
@@ -847,7 +899,15 @@ def _shape_iteration_jvp(
         corrected - corrected_mean[None, :],
         corrected_tangent - corrected_mean_tangent[None, :, :],
     )
-    return output, output_tangent, target_skew - tf.reduce_mean(tf.pow(output, 3.0), axis=0), target_kurt - tf.reduce_mean(tf.pow(output, 4.0), axis=0)
+    return (
+        output,
+        output_tangent,
+        target_skew - tf.reduce_mean(tf.pow(output, 3.0), axis=0),
+        target_kurt - tf.reduce_mean(tf.pow(output, 4.0), axis=0),
+        maximum_scaled_system_condition,
+        tf.reduce_max(pre_cap_rms),
+        tf.reduce_max(post_cap_rms),
+    )
 
 
 def higher_moment_shape_jvp(
@@ -861,6 +921,9 @@ def higher_moment_shape_jvp(
     correction_steps: int,
     strength: float,
     floor: float,
+    diagonal_lm_damping: float = 0.0,
+    diagonal_lm_scale_floor: float = 1.0e-6,
+    diagonal_trust_radius: float = 0.0,
     pairwise_correction_steps: int = 0,
     pairwise_strength: float = 0.0,
     pairwise_floor: float = 1.0e-6,
@@ -895,6 +958,9 @@ def higher_moment_shape_jvp(
         correction_steps < 0
         or strength < 0.0
         or floor <= 0.0
+        or diagonal_lm_damping < 0.0
+        or diagonal_lm_scale_floor <= 0.0
+        or diagonal_trust_radius < 0.0
         or pairwise_correction_steps < 0
         or pairwise_strength < 0.0
         or pairwise_floor <= 0.0
@@ -926,6 +992,9 @@ def higher_moment_shape_jvp(
     target_chol_tangent = _cholesky_jvp(target_chol, covariance_tangent)
     target_skew, target_kurt, target_skew_tangent, target_kurt_tangent = _weighted_diag_moments_jvp(
         source, weights, source_tangent, weights_tangent, mean, mean_tangent, target_chol, target_chol_tangent
+    )
+    feasibility = necessary_marginal_feasibility(
+        target_skew, target_kurt, tf.shape(source)[0]
     )
     source_centered = source - mean[None, :]
     source_centered_tangent = source_tangent - mean_tangent[None, :, :]
@@ -1131,19 +1200,52 @@ def higher_moment_shape_jvp(
             "mean_coordinatewise_cap_displacement": tf.zeros([], source.dtype),
             "fraction_coordinatewise_cap_active": tf.zeros([], source.dtype),
             "minimum_coordinatewise_cap_derivative": tf.ones([], source.dtype),
+            "minimum_pearson_feasibility_margin": tf.reduce_min(
+                feasibility["pearson_margin"]
+            ),
+            "minimum_finite_particle_upper_margin": tf.reduce_min(
+                feasibility["finite_particle_upper_margin"]
+            ),
+            "maximum_diagonal_scaled_system_condition": tf.zeros([], source.dtype),
+            "maximum_diagonal_pre_cap_particle_rms": tf.zeros([], source.dtype),
+            "maximum_diagonal_post_cap_particle_rms": tf.zeros([], source.dtype),
         }
 
     steps = tf.constant(correction_steps, tf.int32)
     residual3 = tf.zeros([state_dim], source.dtype)
     residual4 = tf.zeros([state_dim], source.dtype)
+    maximum_diagonal_condition = tf.zeros([], source.dtype)
+    maximum_diagonal_pre_cap_rms = tf.zeros([], source.dtype)
+    maximum_diagonal_post_cap_rms = tf.zeros([], source.dtype)
 
-    def body(index, current, current_tangent, _r3, _r4):
-        next_points, next_tangent, next_r3, next_r4 = _shape_iteration_jvp(
+    def body(index, current, current_tangent, _r3, _r4, max_condition, max_pre, max_post):
+        (
+            next_points,
+            next_tangent,
+            next_r3,
+            next_r4,
+            next_condition,
+            next_pre,
+            next_post,
+        ) = _shape_iteration_jvp(
             current, current_tangent, target_skew, target_kurt,
             target_skew_tangent, target_kurt_tangent,
-            strength=strength, floor=floor
+            strength=strength,
+            floor=floor,
+            lm_damping=diagonal_lm_damping,
+            lm_scale_floor=diagonal_lm_scale_floor,
+            trust_radius=diagonal_trust_radius,
         )
-        return index + 1, next_points, next_tangent, next_r3, next_r4
+        return (
+            index + 1,
+            next_points,
+            next_tangent,
+            next_r3,
+            next_r4,
+            tf.maximum(max_condition, next_condition),
+            tf.maximum(max_pre, next_pre),
+            tf.maximum(max_post, next_post),
+        )
 
     # Initialize the loop state with a standardization of the input cloud.
     initial_mean, initial_cov, initial_mean_tangent, initial_cov_tangent = _uniform_moments_jvp(points, points_tangent)
@@ -1154,10 +1256,28 @@ def higher_moment_shape_jvp(
         initial_chol, initial_chol_tangent, points - initial_mean[None, :], points_tangent - initial_mean_tangent[None, :, :]
     )
 
-    _, standardized, standardized_tangent, residual3, residual4 = tf.while_loop(
+    (
+        _,
+        standardized,
+        standardized_tangent,
+        residual3,
+        residual4,
+        maximum_diagonal_condition,
+        maximum_diagonal_pre_cap_rms,
+        maximum_diagonal_post_cap_rms,
+    ) = tf.while_loop(
         lambda index, *_: index < steps,
         body,
-        (tf.zeros([], tf.int32), initial_standardized, initial_standardized_tangent, residual3, residual4),
+        (
+            tf.zeros([], tf.int32),
+            initial_standardized,
+            initial_standardized_tangent,
+            residual3,
+            residual4,
+            maximum_diagonal_condition,
+            maximum_diagonal_pre_cap_rms,
+            maximum_diagonal_post_cap_rms,
+        ),
         parallel_iterations=1,
     )
     # Scalar states have no off-diagonal pair moments. Skip the loop entirely
@@ -1425,6 +1545,21 @@ def higher_moment_shape_jvp(
         ),
         "projected_cumulant_fourth_residual_norm": tf.linalg.norm(
             projected_residual4
+        ),
+        "minimum_pearson_feasibility_margin": tf.reduce_min(
+            feasibility["pearson_margin"]
+        ),
+        "minimum_finite_particle_upper_margin": tf.reduce_min(
+            feasibility["finite_particle_upper_margin"]
+        ),
+        "maximum_diagonal_scaled_system_condition": (
+            maximum_diagonal_condition
+        ),
+        "maximum_diagonal_pre_cap_particle_rms": (
+            maximum_diagonal_pre_cap_rms
+        ),
+        "maximum_diagonal_post_cap_particle_rms": (
+            maximum_diagonal_post_cap_rms
         ),
         "valid": valid & projected_basis_valid,
     }

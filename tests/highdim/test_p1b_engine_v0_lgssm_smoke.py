@@ -107,8 +107,25 @@ def _lgssm_case(n: int, horizon: int, seed: int):
     return adapter, tf.constant(ys, DTYPE), exact
 
 
+def test_p1b_smoke_n1_matches_kalman_branch_axis() -> None:
+    """Branch-axis route (design note 2026-08-16) at the DECLARED 5e-3 gate."""
+    from bayesfilter.highdim.squared_tt_engine_v0_tf import run_value_filter_branch_axis
+
+    adapter, ys, exact = _lgssm_case(1, 8, 41)
+    config = EngineConfig(
+        basis_degree=16, rank=4, row_count=0, sweeps=3, ridge=1e-10,
+        tau=1e-6, coordinate_half_width=4.0, seed=90011, quadrature_order=24,
+    )
+    value, diags = run_value_filter_branch_axis(adapter, ys, config)
+    gap = abs(float(value.numpy()) - exact)
+    assert np.isfinite(float(value.numpy()))
+    assert not any(d["tie_flag"] for d in diags)
+    assert gap <= 5e-3, f"n=1 gap {gap} vs declared smoke tolerance 5e-3 (exact {exact})"
+
+
 @pytest.mark.xfail(reason=_XFAIL_REASON, strict=True)
-def test_p1b_smoke_n1_matches_kalman() -> None:
+def test_p1b_smoke_n1_naive_route_rejected() -> None:
+    """Historical record: the naive sqrt-refit route fails its declared gate."""
     adapter, ys, exact = _lgssm_case(1, 8, 41)
     config = EngineConfig(
         basis_degree=8, rank=3, row_count=512, sweeps=2, ridge=1e-10,
@@ -121,14 +138,20 @@ def test_p1b_smoke_n1_matches_kalman() -> None:
     assert gap <= 5e-3, f"n=1 gap {gap} vs declared smoke tolerance 5e-3 (exact {exact})"
 
 
-@pytest.mark.xfail(reason=_XFAIL_REASON, strict=True)
-def test_p1b_smoke_n2_matches_kalman() -> None:
+def test_p1b_smoke_n2_matches_kalman_branch_axis() -> None:
+    """Branch-axis route at the DECLARED 2e-2 gate (r=6 rung).
+
+    Diagnostic-scale note: tensor-product quadrature rows are affordable at
+    n=2 only; the P1B ladder uses scattered frozen rows (V2 discipline).
+    """
+    from bayesfilter.highdim.squared_tt_engine_v0_tf import run_value_filter_branch_axis
+
     adapter, ys, exact = _lgssm_case(2, 8, 42)
     config = EngineConfig(
-        basis_degree=8, rank=3, row_count=512, sweeps=2, ridge=1e-10,
-        tau=0.0, coordinate_half_width=8.0, seed=90012,
+        basis_degree=12, rank=6, row_count=0, sweeps=3, ridge=1e-10,
+        tau=1e-6, coordinate_half_width=3.0, seed=90012, quadrature_order=14,
     )
-    value, _diags = run_value_filter(adapter, ys, config)
+    value, _diags = run_value_filter_branch_axis(adapter, ys, config)
     gap = abs(float(value.numpy()) - exact)
     assert np.isfinite(float(value.numpy()))
     assert gap <= 2e-2, f"n=2 gap {gap} vs declared smoke tolerance 2e-2 (exact {exact})"

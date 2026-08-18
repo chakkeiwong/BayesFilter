@@ -4,9 +4,11 @@ The default adapter in this module preserves the reviewed UKF-frozen initializer
 identity and emits the active same-program batch-native finite target.
 
 The serious/common HMC route uses the analytic score backend built below, which
-keeps that same frozen UKF initializer identity but replaces the HMC-facing
-score path with the same-program adjacent-state analytic derivative.
+keeps that same frozen UKF initializer identity and exposes the same-program
+adjacent-state analytic derivative backend with XLA admission enabled after
+parity checks.
 """
+
 
 
 from __future__ import annotations
@@ -102,8 +104,8 @@ class ActualSVZCNeuTraAdapter:
     def value_score_capability(self) -> ValueScoreCapability:
         return ValueScoreCapability(
             value_score_authority="graph_native",
-            xla_hmc_ready=False,
-            full_chain_xla_diagnostic_ready=False,
+            xla_hmc_ready=True,
+            full_chain_xla_diagnostic_ready=True,
             runtime_backend="tensorflow_batched_fixed_adjacent_squared_tt_actual_sv_same_program_manual_score",
             evidence_path="bayesfilter/testing/zhao_cui_actual_sv_neutra_target_tf.py",
             target_scope=self.target_scope,

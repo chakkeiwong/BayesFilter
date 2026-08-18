@@ -22,7 +22,7 @@ def _probe() -> list[dict[str, object]]:
     output = subprocess.run(
         [
             "nvidia-smi",
-            "--query-gpu=index,uuid,name,utilization.gpu,memory.free,memory.total",
+            "--query-gpu=index,uuid,name,pci.bus_id,utilization.gpu,memory.used,memory.free,memory.total",
             "--format=csv,noheader,nounits",
         ],
         check=True,
@@ -33,7 +33,7 @@ def _probe() -> list[dict[str, object]]:
     for line in output.splitlines():
         if not line.strip():
             continue
-        index, uuid, name, utilization, free_mib, total_mib = (
+        index, uuid, name, pci_bus_id, utilization, used_mib, free_mib, total_mib = (
             part.strip() for part in line.split(",")
         )
         rows.append(
@@ -41,10 +41,11 @@ def _probe() -> list[dict[str, object]]:
                 "index": int(index),
                 "uuid": uuid,
                 "name": name,
+                "pci_bus_id": pci_bus_id,
                 "utilization_gpu_pct": float(utilization),
+                "memory_used_mb": float(used_mib),
                 "memory_free_mb": float(free_mib),
                 "memory_total_mb": float(total_mib),
-                "memory_used_mb": float(total_mib) - float(free_mib),
             }
         )
     return rows
@@ -86,8 +87,11 @@ def main() -> None:
                 str(row["index"]),
                 str(row["uuid"]),
                 str(row["name"]),
+                str(row["pci_bus_id"]),
                 f"{float(row['utilization_gpu_pct']):g}",
+                f"{float(row['memory_used_mb']):g}",
                 f"{float(row['memory_free_mb']):g}",
+                f"{float(row['memory_total_mb']):g}",
                 selection.reason,
             )
         )

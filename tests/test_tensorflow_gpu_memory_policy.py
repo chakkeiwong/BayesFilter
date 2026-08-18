@@ -30,6 +30,9 @@ class _ExperimentalConfig:
     def get_memory_growth(self, device) -> bool:
         return bool(self.growth.get(device.name, False))
 
+    def get_device_details(self, device):
+        return {"device_name": f"Test {device.name}", "compute_capability": (8, 9)}
+
 
 class _Config:
     def __init__(self, devices, experimental) -> None:
@@ -75,6 +78,10 @@ def test_memory_growth_is_enabled_verified_and_described(monkeypatch) -> None:
         "/physical_device:GPU:0",
         "/physical_device:GPU:1",
     )
+    assert policy["physical_devices"][0]["device_details"] == {
+        "device_name": "Test /physical_device:GPU:0",
+        "compute_capability": [8, 9],
+    }
 
 
 def test_memory_growth_fails_closed_after_runtime_initialization() -> None:

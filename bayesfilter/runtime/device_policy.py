@@ -77,6 +77,7 @@ def select_preferred_gpu(
     gpu_snapshot: dict[str, Any] | None = None,
     busy_memory_fraction: float = 0.50,
     busy_utilization_pct: float = 10.0,
+    minimum_free_memory_mb: float | None = None,
 ) -> GPUSelection:
     """Pure metadata selector: prefer GPU1 and fallback only on trusted evidence."""
 
@@ -87,6 +88,7 @@ def select_preferred_gpu(
         gpu_snapshot,
         busy_memory_fraction=busy_memory_fraction,
         busy_utilization_pct=busy_utilization_pct,
+        minimum_free_memory_mb=minimum_free_memory_mb,
     )
     veto_reasons: list[str] = []
     if gpu_snapshot is not None and not _snapshot_trusted(gpu_snapshot):
@@ -102,6 +104,17 @@ def select_preferred_gpu(
     visible = set(available)
 
     if available and preferred not in visible:
+        if trusted and fallback in visible and fallback not in set(busy):
+            return GPUSelection(
+                fallback,
+                "preferred_gpu_not_visible_fallback_selected",
+                available,
+                busy,
+                trusted,
+                True,
+                None,
+                tuple(veto_reasons),
+            )
         veto_reasons.append("preferred_gpu_not_visible")
         return GPUSelection(
             None,
@@ -183,6 +196,7 @@ def _snapshot_devices(
     *,
     busy_memory_fraction: float,
     busy_utilization_pct: float,
+    minimum_free_memory_mb: float | None,
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     if not isinstance(snapshot, dict):
         return (), ()
@@ -205,12 +219,19 @@ def _snapshot_devices(
             continue
         memory_fraction = _memory_fraction(row)
         utilization = _utilization_pct(row)
+        free_memory = _free_memory_mb(row)
         if (
             memory_fraction is not None
             and memory_fraction >= float(busy_memory_fraction)
         ) or (
             utilization is not None
             and utilization >= float(busy_utilization_pct)
+        ) or (
+            minimum_free_memory_mb is not None
+            and (
+                free_memory is None
+                or free_memory <= float(minimum_free_memory_mb)
+            )
         ):
             busy.append(device)
     return _normalize_ids(available), _normalize_ids(busy)
@@ -248,6 +269,16 @@ def _utilization_pct(row: dict[str, Any]) -> float | None:
     value = row.get("utilization_gpu_pct", row.get("utilization.gpu"))
     if value is None:
         value = row.get("gpu_utilization_pct")
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _free_memory_mb(row: dict[str, Any]) -> float | None:
+    value = row.get("memory_free_mb", row.get("memory.free"))
+    if value is None:
+        value = row.get("free_memory_mb")
     try:
         return float(value)
     except (TypeError, ValueError):

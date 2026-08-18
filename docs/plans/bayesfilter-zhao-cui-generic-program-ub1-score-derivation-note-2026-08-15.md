@@ -350,3 +350,115 @@ sufficiency (P1B), approximation quality vs the true likelihood
 design for innovation-pushforward transitions (open item A16 — this note
 covers `density_kernel` mode only; the pushforward mode requires its own
 retention derivation before any structural-row score claim).
+
+---
+
+## Addendum A (2026-08-17): Manual adjoint (reverse) sweep — the P2 score mode
+
+Trigger: P2A measurement (result note
+`bayesfilter-p2a-cost-prototype-result-2026-08-17.md`) disqualified
+forward tangent replay at p=300 (ratio ~326x vs the <=6x gate; the
+per-parameter dot_A construction is O(p N c^2) as audit F3 warned). Per
+Section 4's provision, the adjoint derivation extends this note before
+implementation. This remains a MANUAL derivation (Method A discipline):
+every adjoint map below is the explicit transpose of a forward-linear map
+already derived in Sections 2-3; no autodiff is invoked anywhere.
+
+### A.1 Setup
+
+The value program is a finite composition. Write its state after update
+step u (a (sweep, core) pair in the frozen order, plus per-step assembly,
+normalizer, and retention nodes) as s_u, with s_0 = frozen inputs and the
+final node emitting the scalar log Lhat. Sections 2-3 derived, for every
+node, the forward-linear tangent map ds_{u+1} = F_u[ds_u; dtheta_u],
+where dtheta_u collects the direct theta-dependence entering at node u
+(model-density JVP rows, dot s_t shift branch, dot L from dot E, etc.).
+
+The gradient is assembled by one reverse sweep: initialize the adjoint of
+the final scalar at 1 and propagate
+
+    bar s_u = F_u^T [bar s_{u+1}],
+    grad_theta += (direct-dependence maps at node u)^T [bar s_{u+1}],
+
+i.e. each parameter receives contributions ONLY through the adapter
+JVP-transposes (VJPs) at the nodes where theta enters directly. Cost:
+one forward value pass (with checkpoints) + one reverse pass whose per-
+node cost matches the forward node cost — O(1) x value in flops,
+independent of p except for the final cheap VJP accumulations.
+
+### A.2 Node-by-node adjoints (transposes of Sections 2-3)
+
+1. **Core solve** (forward: N dot_c = dot_b - dot_N c with
+   N = A'WA + rho I):
+   given bar_c, solve the TRANSPOSED system lambda = N^{-T} bar_c
+   (N symmetric -> same LU/Cholesky factors reused, one extra solve).
+   Then pairing <bar_c, dot_c> = <lambda, dot_b - dot_N c> with
+   dot_b = dot_A' W g + A' W dot_g and
+   dot_N c = dot_A' W (A c) + A' W (dot_A c):
+
+       <bar_c, dot_c> = <lambda, dot_A' W (g - A c)>
+                        + <lambda, A' W dot_g>
+                        - <lambda, A' W dot_A c>
+       hence
+       bar_g = W A lambda
+       bar_A = W (g - A c) lambda'  -  (W A lambda) c'      (an N x cdim matrix)
+   Both terms use quantities already present (residual g - A c, lambda,
+   c); no p-dependence.
+2. **Design assembly** (forward: dot_A from environment tangents,
+   Sec. 3.2(1)): the adjoint distributes bar_A onto the core adjoints
+   bar_G_m of every OTHER core through the transposed left/right
+   environment recursions — one backward and one forward accumulation
+   pass mirroring `_left_and_dot_environments` /
+   `_right_and_dot_environments` with cotangents. Same einsum shapes
+   transposed.
+3. **Sqrt target** (forward: dot_g = 0.5 g (dot log f - dot s)):
+       bar_logf += 0.5 g bar_g;   bar_s -= sum(0.5 g bar_g);
+   with the argmax-gathered branch routing bar_s to row j* (Sec. 5 tie
+   contract unchanged).
+4. **Target assembly** (forward: dot log f = dot log p_ret_ref
+   + adapter JVP terms): bar_logf splits into
+   (a) retained-evaluator cotangent -> A.2.5;
+   (b) adapter VJPs: the adapter contract gains
+       `transition_log_density_vjp(x_c, x_p, cotangent) -> bar_theta`
+       (and observation/initial analogues) — the transpose of the JVP
+       obligation already in the contract; for TF-defined model densities
+       these VJPs are closed-form or per-model manual, recorded per
+       adapter as before.
+5. **Retained evaluator** (forward: Sec. 2 dot log p_ret_ref):
+   bar over (q + tau) rows distributes to
+       bar_v = 2 (bar_row / (q+tau)) (v E)        [prefix evaluation adjoint]
+       bar_E += (bar_row / (q+tau)) v' v          [Gram adjoint, symmetric]
+       bar_Zc -= sum(bar_row) / Zc
+   and bar_v propagates through the transposed prefix TT contraction to
+   bar_prefix cores (transpose of `prefix_row_vectors_tangent`).
+6. **Branch factor** (forward: dot L from dot E by Cholesky JVP): the
+   adjoint is the Cholesky VJP (Phi-operator transpose), closed form,
+   donor pattern `higher_moment_contract_e.py:55` transposed; P2
+   smoothness guard (PD + conditioning veto) unchanged.
+7. **Normalizer chain** (forward: dot Z_h = 2 <h, dot h>): adjoint
+   bar_h += 2 bar_Z h through the transposed Gram chain (replace one
+   core by cotangent in the same transfer-matrix pattern).
+8. **Retention split** (forward: (dot_prefix, dot_E, dot_Zh) from
+   dot cores): adjoints of the suffix/prefix Gram chains, same
+   transposed-transfer pattern as 7; emits bar over the fitted cores of
+   step t, which feed 1-2 of step t's reverse sweep, closing the
+   time recursion in reverse order t = T..1.
+
+### A.3 Checkpointing contract (the T=120 stress object)
+
+Stored per update: design row-set id (frozen seed), LU/Cholesky factors
+OR the recompute seed, solution c, residual g - A c, shift branch index,
+and per-step (E, L, Zc, prefix cores). Recompute-from-seed is admissible
+(deterministic program); the store-vs-recompute trade is measured by the
+P2A full-horizon stress ON THIS MODE. All status/veto semantics (ties,
+floors, condition, PD-Gram) bind identically to the forward chain.
+
+### A.4 Obligations bound by this addendum
+
+| Identity | Test |
+|---|---|
+| adjoint gradient == forward-replay gradient at p=3 (both manual) | I-P2-4 (new; FD-independent cross-check) |
+| adjoint gradient vs FD at multiple theta points | I-P2-1 (unchanged) |
+| per-node adjoint vs forward-tangent inner-product identity <bar_out, F[din]> == <F^T[bar_out], din> on random cotangents (each node class) | U-ADJ-NODE-1 (new) |
+| solve-node adjoint vs FD through `_solve_scaled_augmented_ridge` | U-ADJ-SOLVE-1 (new) |
+| <=6x gate at p=300 measured on the adjoint implementation | P2A gate (carried) |

@@ -18,8 +18,8 @@ def test_svx_same_program_adapter_exposes_non_autodiff_backend_metadata() -> Non
         capability.runtime_backend
         == "tensorflow_batched_fixed_adjacent_squared_tt_actual_sv_same_program_manual_score"
     )
-    assert capability.xla_hmc_ready is False
-    assert capability.full_chain_xla_diagnostic_ready is False
+    assert capability.xla_hmc_ready is True
+    assert capability.full_chain_xla_diagnostic_ready is True
 
 
 def test_svx_same_program_adapter_batch_wiring_is_finite_and_has_required_status() -> None:

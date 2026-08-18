@@ -1,7 +1,9 @@
-# Master Program Plan: Generic Zhao-Cui-Family Squared-TT Filtering with Analytical Score (Revision 3)
+# Master Program Plan: Generic Zhao-Cui-Family Squared-TT Filtering with Analytical Score (Revision 4)
 
-Date: 2026-08-15 (revision 3: owner decisions on tau policy and structural
-scope incorporated; revision 2 was the post-Codex-audit correction)
+Date: 2026-08-15 (revision 4 on 2026-08-17: program v0.2/v0.3 semantics
+and the rank-conditioning tuning gate folded in from the execution-log
+Addenda; revision 3: owner decisions on tau policy and structural scope
+incorporated; revision 2 was the post-Codex-audit correction)
 Status: `REVISED_AWAITING_FOCUSED_REAUDIT`
 Audit chain:
 - request: `bayesfilter-zhao-cui-generic-program-codex-audit-request-2026-08-15.md`
@@ -122,19 +124,39 @@ rank/conditioning of E_right.
 
 ### 3.2 One filter step
 
+**Program version note (revision 4).** The declared finite program is
+v0.3, incorporating two in-execution repairs diagnosed FD-quality-first
+(execution log Addenda 3-4). Both apply to BOTH engines (same-scalar, V5):
+
+- **v0.2 relative defensive mass**: the engine-level defensive term is
+  `tau_abs,t = tau * Z_h,t-1` (defensive FRACTION, shift-invariant), not
+  absolute tau. The retained-object API (P1A) keeps its absolute-tau
+  field; the ENGINE computes the relative form when assembling step t.
+  Rationale: absolute tau made the value jump ~2e-5 under 1e-6
+  theta-perturbations at shift-branch switches (C0 violation).
+- **v0.3 smooth shift**: `s_t = logsumexp(log f_ref) - log N_rows`
+  replaces the argmax max-shift. Rationale: argmax switches are generic
+  along theta at fit resolution and each causes an O(fit-error) value
+  jump, making FD invalid almost everywhere. With the smooth shift the
+  program has NO shift-branch structure and needs no tie machinery
+  (strengthens F6; the A15 tie/status contract is retired for these
+  engines).
+
 (a) Target on frozen designs, assembled by the ENGINE in reference measure
 (A14):
 
     log f_ref = log p_ret,t-1 + log p_theta(x_t|x_t-1) + log p_theta(y_t|x_t)
                 + log|det DR| - log omega
-    g_t = exp((log f_ref - s_t)/2),  s_t = max over grid (deterministic
-    branch at ties, status telemetry; A15)
+    g_t = exp((log f_ref - s_t)/2),
+    s_t = logsumexp over grid of log f_ref - log N_rows   (v0.3 smooth
+    shift; the argmax max-shift and its tie telemetry are retired)
 
 (b) Frozen-schedule ALS over the 2n-core adjacent TT: per core,
 `c = (A'WA + rho I)^{-1} A'W g_t` where A contains the moving environments
 (A11). Discrete branch frozen; operator theta-dependent.
 
-(c) Increment: `log Zhat_t = s_t + log(Z_h,t + tau Z_0)` (A13).
+(c) Increment: `log Zhat_t = s_t + log(Z_h,t + tau_abs,t Z_0)` with the
+v0.2 relative defensive mass (A13).
 
 (d) Retention: build `RetainedQuadraticForm` for x_t by exact suffix
 contraction (A10).
@@ -159,15 +181,25 @@ the P2A measurement, not assumed (A12).
 
 ### 3.4 Differentiability status
 
-The frozen-branch program is piecewise smooth (unique-maximizer regions;
-floors flagged); its tangent is the ordered total derivative above. The
-analytic score is exact for the declared finite program, not for the
-adaptive author algorithm (excluded, V1) and not for the true likelihood
-(same-target gates measure that separately). Existing Method A FD evidence
-covers those declared per-model routes only — it does NOT validate the new
-retained type, the multi-sweep total-derivative replay, the batched
-all-parameter engine, or NAWM-scale cost (audit "existing evidence
-boundary" adopted).
+The v0.3 program is smooth in theta away from declared floors (the
+argmax branch structure is removed by the smooth shift; the branch
+factor uses a PD Cholesky with a DECLARED relative Gram floor,
+`branch_gram_floor = 1e-12`, the same factor in both engines per V5).
+Its tangent is the ordered total derivative above. Derivative solves
+(forward dot_c and adjoint lambda) must route through the SAME scaled
+augmented factorization as the value solves (`scaled_normal_solve`;
+conditioning repair, Addenda 4-5): raw normal-equation derivative solves
+lose digits at ill-conditioned fits and are a diagnosed defect, not an
+implementation choice. The analytic score is exact for the declared
+finite program, not for the adaptive author algorithm (excluded, V1) and
+not for the true likelihood (same-target gates measure that separately).
+Existing Method A FD evidence covers those declared per-model routes
+only — it does NOT validate the new retained type, the multi-sweep
+total-derivative replay, the batched all-parameter engine, or NAWM-scale
+cost (audit "existing evidence boundary" adopted). Verified P2 state
+(Addendum 5): adjoint vs forward-JVP (I-P2-4, FD-independent) at
+1e-12 for n in {1,2}; FD gate green at n in {1,2} in well-conditioned,
+quadrature-resolved regimes.
 
 ## 3.5 Tau policy (owner decision D1; re-audit Finding 4 incorporated)
 
@@ -336,10 +368,14 @@ V13 (revised per re-audit) structural adapters must declare GLOBAL
   one focused review per the audit's re-audit scope.
 - UB-2 **Source-classification route ledger**: LANDED 2026-08-15 —
   `bayesfilter-zhao-cui-generic-program-source-route-ledger-2026-08-15.md`.
-- UB-3 **Structural substitution derivation note** (new, D2): the Section
-  3.6 recursion pushed through the UB-1 score chain. Required before the
-  structural phase P2S implements; NOT required for P1A/P1B/P2A/P2 on
-  density_kernel models.
+- UB-3 **Structural substitution derivation note** (new, D2): LANDED
+  2026-08-17 —
+  `bayesfilter-zhao-cui-generic-program-ub3-structural-substitution-derivation-2026-08-17.md`
+  (substitution recursion in branch-axis form; moving-point retained
+  tangent incl. spatial gradient, R^{-1}(S) propagation, dot log J;
+  binds U-STRUCT-SPATIAL/MOVING/J tests). Required before P2S
+  implementation; NOT required for P1A/P1B/P2A/P2 on density_kernel
+  models. Awaiting its focused review at the P2S boundary.
 
 ### P0 — Contract + skeleton (may proceed now, records revised semantics)
 - Engine/adapter contract with: RetainedQuadraticForm type, two transition
@@ -498,6 +534,18 @@ two-step stability rule.
 
 Scout -> resolution ladder -> rank/sweep selection -> **T-tau defensive-mass
 selection (D1)** -> score admission -> scope binding, now with:
+- **rank-conditioning gate (revision 4, from Addenda 4-5)**: rank
+  selection must keep the retained suffix Gram numerically
+  well-conditioned for score-bearing scopes — a rank above the retained
+  law's effective rank produces a rank-degenerate Gram whose near-null
+  Cholesky column rotates erratically with theta, injecting O(fit-error)
+  value wiggles that invalidate FD and degrade the score path (diagnosed
+  at n=2 rank 3: lambda3/lambda1 ~ 1e-13). The score engine's Gram
+  conditioning veto (default 1e12) is the fail-closed backstop; tuning
+  must select ranks that clear it with margin. Resolution selection must
+  also keep the per-core ALS design full column rank (quadrature/rows
+  per axis >= basis functions per axis; the qo=8-vs-deg-10 defect of
+  Addendum 5 is the recorded counterexample);
 - three disjoint partitions (calibration / validation / untouched claim),
   disjoint seeds and data paths; final claims only from the untouched
   partition after controls freeze;
