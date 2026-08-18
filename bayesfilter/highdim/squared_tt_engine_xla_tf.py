@@ -22,6 +22,8 @@ each step.
 
 from __future__ import annotations
 
+import weakref
+
 import tensorflow as tf
 
 from bayesfilter.highdim.bases import ProductBasis
@@ -48,6 +50,11 @@ from bayesfilter.highdim.tt import TTCore
 
 DTYPE = tf.float64
 
+# compiled-step cache: adapter (weak) -> {config: {"init": fn, branch_count: fn}}.
+# Adapter closures are baked into traced graphs, so the cache must not
+# outlive the adapter object; EngineConfig is a frozen dataclass (hashable).
+_STEP_CACHE: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+
 
 def _solve_scaled_qr(design, weights, target, ridge):
     """Scaled augmented ridge solve by QR + SVD condition (XLA-lowerable).
@@ -68,7 +75,10 @@ def _solve_scaled_qr(design, weights, target, ridge):
     q, r_factor = tf.linalg.qr(augmented)
     y = tf.linalg.matvec(q, rhs, transpose_a=True)
     z = tf.linalg.triangular_solve(r_factor, y[:, None], lower=False)[:, 0]
-    singular = tf.linalg.svd(augmented, compute_uv=False)
+    # condition of the augmented matrix == condition of its R factor
+    # (same singular values); the tall-matrix SVD OOMs under XLA
+    # (measured 62 GB at [62252, 44]), the [cols, cols] SVD is cheap.
+    singular = tf.linalg.svd(r_factor, compute_uv=False)
     condition = singular[0] / tf.maximum(singular[-1], tf.constant(1e-300, DTYPE))
     return z / scales, condition
 
@@ -114,6 +124,8 @@ def run_value_filter_branch_axis_xla(
     # bases are static program objects; construct OUTSIDE traced scope
     # (BoundedInterval validation host-syncs and cannot trace).
     extended_basis = _product_basis(n + 1, config.basis_degree)
+    per_adapter = _STEP_CACHE.setdefault(adapter, {})
+    step_cache = per_adapter.setdefault(config, {})
 
     @tf.function(jit_compile=True)
     def init_step(rows, weights, y0, core0_values):
@@ -224,7 +236,6 @@ def run_value_filter_branch_axis_xla(
     prefix_values = None
     gram = None
     zc = None
-    step_cache: dict[int, object] = {}
 
     for t in range(horizon):
         if t == 0:
@@ -236,7 +247,8 @@ def run_value_filter_branch_axis_xla(
                     [int(rows.shape[0])], tf.constant(1.0 / int(rows.shape[0]), DTYPE)
                 )
             cores0 = _initial_tt_cores(n, basis_dim, config.rank)
-            prefix_values, gram, zc, log_increment, worst, rms = init_step(
+            init_fn = step_cache.setdefault("init", init_step)
+            prefix_values, gram, zc, log_increment, worst, rms = init_fn(
                 rows, weights, observations[t], [c.values for c in cores0]
             )
             gram_condition = None

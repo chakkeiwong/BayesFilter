@@ -4,13 +4,25 @@ Original reset memo: 2026-08-18 18:46 HKT
 
 Claude Code handoff update: 2026-08-18 19:57 HKT
 
+Claude Code execution update: 2026-08-19 03:20 HKT (see terminal section)
+
 Repository: `/home/chakwong/BayesFilter`
 
-Git HEAD: `dae37183bf4421682b2ad991e2dc0d0f3c53f260`
+Git HEAD: `dae37183bf4421682b2ad991e2dc0d0f3c53f260` (at handoff; execution ran
+at `a13c481b` with all nine in-scope hashes verified identical)
 
 Environment: `/home/chakwong/anaconda3/envs/tftwogpu`
 
-Status: `HANDOFF_READY__NVIDIA_VISIBLE__TF_GPU_PROBE_BLOCKED_BEFORE_PROCESS_CREATION`
+Status: `EXECUTED_2026-08-19__N1008_PARITY_EXACT_PASS__N4032_PARITY_FAIL__N16128_NOT_LAUNCHED__AWAITING_OWNER_DIRECTION`
+
+> 2026-08-19 terminal note: the ladder below was executed by Claude Code. The
+> mandated GPU probe, focused suite, and both fresh pairs completed. `N=1008`
+> passed with bit-exact equality; `N=4032` failed the frozen parity gate while
+> passing every validity screen; `N=16128` was therefore not launched. Full
+> evidence, diagnostics, budget accounting, and owner options are in the
+> 2026-08-19 section of
+> `docs/plans/bayesfilter-genut-sqmc-streaming-n16128-result-2026-08-18.md`.
+> The historical sections below are preserved unchanged for provenance.
 
 ## Claude Code Executive Handoff
 
