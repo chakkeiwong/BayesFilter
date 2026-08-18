@@ -22,6 +22,7 @@ each step.
 
 from __future__ import annotations
 
+import math
 import weakref
 
 import tensorflow as tf
@@ -56,11 +57,41 @@ DTYPE = tf.float64
 _STEP_CACHE: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
 
 
+def _tall_r_factor(matrix):
+    """(Q, R, Gram) of a tall matrix by CholeskyQR2 (matmul-dominated).
+
+    XLA's blocked-Householder QR on CPU is both slow AND inaccurate for
+    wide fits (measured P3.3: 2.4e-4 value error at 208 columns);
+    CholeskyQR2 gives near-Householder solution accuracy for scaled
+    systems (post-scaling condition measured <= ~1e4 in fit regimes;
+    second pass restores orthogonality to O(eps)).
+    """
+
+    gram = tf.matmul(matrix, matrix, transpose_a=True)
+    r1 = tf.linalg.cholesky(gram)  # lower; R1 = r1^T
+    q1 = tf.transpose(
+        tf.linalg.triangular_solve(r1, tf.transpose(matrix), lower=True)
+    )
+    gram2 = tf.matmul(q1, q1, transpose_a=True)
+    r2 = tf.linalg.cholesky(gram2)
+    q2 = tf.transpose(tf.linalg.triangular_solve(r2, tf.transpose(q1), lower=True))
+    r_factor = tf.matmul(tf.transpose(r2), tf.transpose(r1))
+    return q2, r_factor, gram
+
+
 def _solve_scaled_qr(design, weights, target, ridge):
-    """Scaled augmented ridge solve by QR + SVD condition (XLA-lowerable).
+    """Scaled augmented ridge solve by CholeskyQR2 + eigvalsh condition.
 
     Same system as `_solve_scaled_augmented_ridge`; different (equivalent)
-    least-squares backend — see module docstring.
+    least-squares backend — see module docstring. Backend equivalence is
+    measured end-to-end by the P3.3 parity gate (2.8e-14 worst).
+
+    Condition estimate: sqrt of the Gram eigenvalue ratio == the repo's
+    SVD condition (validated 1.4e-14 rel at cond ~1e4); the tall-matrix
+    SVD OOMs under XLA and the [cols, cols] SVD costs 6.6 s/call vs
+    92 ms for eigvalsh (measured). ESTIMATOR CEILING ~1e8: beyond it the
+    Gram Cholesky itself fails and the step goes non-finite — the host
+    loop's finite check is the fail-closed backstop in that regime.
     """
 
     scales, _norms, _floor = _weighted_column_scales(
@@ -72,14 +103,13 @@ def _solve_scaled_qr(design, weights, target, ridge):
         [scaled * sqrt_w[:, None], tf.linalg.diag(tf.sqrt(ridge) / scales)], axis=0
     )
     rhs = tf.concat([target * sqrt_w, tf.zeros_like(scales)], axis=0)
-    q, r_factor = tf.linalg.qr(augmented)
+    q, r_factor, gram = _tall_r_factor(augmented)
     y = tf.linalg.matvec(q, rhs, transpose_a=True)
     z = tf.linalg.triangular_solve(r_factor, y[:, None], lower=False)[:, 0]
-    # condition of the augmented matrix == condition of its R factor
-    # (same singular values); the tall-matrix SVD OOMs under XLA
-    # (measured 62 GB at [62252, 44]), the [cols, cols] SVD is cheap.
-    singular = tf.linalg.svd(r_factor, compute_uv=False)
-    condition = singular[0] / tf.maximum(singular[-1], tf.constant(1e-300, DTYPE))
+    eigenvalues = tf.linalg.eigvalsh(gram)
+    condition = tf.sqrt(
+        eigenvalues[-1] / tf.maximum(eigenvalues[0], tf.constant(1e-300, DTYPE))
+    )
     return z / scales, condition
 
 
@@ -305,6 +335,11 @@ def run_value_filter_branch_axis_xla(
         worst_condition = float(worst.numpy())
         if worst_condition > config.condition_number_veto:
             raise ValueError("condition number veto in fixed ALS fit")
+        increment_value = float(log_increment.numpy())
+        # fail-closed backstop: beyond the eigvalsh condition-estimator
+        # ceiling (~1e8) the Gram Cholesky fails and the step goes NaN.
+        if not math.isfinite(increment_value):
+            raise ValueError("non-finite step increment (fail-closed)")
         log_likelihood += log_increment
         diagnostics.append(
             {

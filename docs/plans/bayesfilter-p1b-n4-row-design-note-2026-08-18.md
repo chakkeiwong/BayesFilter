@@ -77,3 +77,24 @@ path.
 
 No r*(4) or r*(8) statement exists yet; r=6 at n=4 is a warm-start
 hypothesis only; single-seed diagnostics nominate, they do not promote.
+
+## 5. Post-P3.3 feasibility update and mechanism arms (2026-08-19)
+
+XLA value engine (P3.3, parity-gated 2.8e-14): the n=4 Sobol-8192 r=6
+cell runs in 603 s including compile, 522 s warm, vs 1386 s eager
+(`/tmp/p33_n4_xla_wall.log`; XLA reruns bit-identical). Projected from
+cost scaling (~rows * cols^2, cols ~ rank^2 * basis_dim): r=8 cells
+~27 min, deg-16 cells ~15 min — INSIDE the 45-min budget. The deferral
+decision of Section 3 is lifted for BOUNDED single-seed mechanism arms.
+
+Declared arms (one variable at a time vs the Section 3 baseline
+per_step 2.209 at r=6/deg12/hw3.0/sobol8192; single seed, descriptive,
+XLA engine):
+- ARM-R: rank 8 (r*(2)=6 may not transfer; tests rank-boundness).
+- ARM-D: basis degree 16 (tests marginal resolution).
+- ARM-H: half-width 4.0 (tests support truncation at n=4 excursions).
+Decision rule: an arm that moves per_step by >= 5x nominates its
+variable as the binding constraint and justifies a follow-up ladder
+plan; all arms flat (< 2x) escalates to a structural suspects review
+(branch/boundary-rank growth, target assembly at n=4) before any
+further compute. No arm result is promotion evidence.

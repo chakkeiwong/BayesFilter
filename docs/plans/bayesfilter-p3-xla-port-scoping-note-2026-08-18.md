@@ -55,9 +55,31 @@ or become tensor-side):
   failures — the repo's compute kernels need no rewrite, so P3.3
   reduces to hoisting the inventoried host syncs out of the compiled
   step.
-- P3.3: whole-step compiled fit (fit + retention tensors), Python
-  filter loop retained; value parity 1e-12 vs eager on n in {1,2}
-  fixtures + one ladder cell.
+- P3.3: DONE (2026-08-18/19): compiled-step value engine
+  (`bayesfilter/highdim/squared_tt_engine_xla_tf.py`,
+  `run_value_filter_branch_axis_xla`): host filter loop, one jit
+  function per step signature (init / per-branch-count transition),
+  weak per-(adapter, config) trace cache, vetoes preserved fail-closed
+  (per-update condition host-checked; non-finite backstop; retained
+  Gram condition kept diagnostic-only for value parity with eager).
+  THREE XLA-CPU defects found and fixed by measurement
+  (`run_p33_xla_value_parity_20260818.py`, logs /tmp/p33_xla_parity*.log):
+  (1) tall-matrix SVD OOMs (62 GB at [62252,44]); (2) jitted
+  Householder QR is INACCURATE at wide fits (2.4e-4 value error at 208
+  columns — eager-mode probes do not see this; equivalence probes must
+  run under the claim path's compilation mode); (3) per-update SVD
+  costs 6.6 s/call vs 92 ms eigvalsh. Final backend: CholeskyQR2 solve
+  + eigvalsh-on-Gram condition (== SVD condition at 1.4e-14; estimator
+  ceiling ~1e8 documented with non-finite fail-closed backstop).
+  GATE: parity worst 2.8e-14 (n1-quad 1.3e-15, n2-quad 6.1e-15,
+  n2-sobol-cell 2.8e-14) — 1e-12 PASS; walls: n2-quad <1 s vs 4 s
+  eager, sobol cell 11 s vs 32 s eager (warm; compile 31 s).
+  Regression test: tests/highdim/test_p3_xla_value_parity.py (green).
+- P3.3 caveat (declared): in loose-fit regimes the filter recursion
+  amplifies solver-level perturbations (the pre-fix 2.4e-4 was a real
+  backend defect, but equivalent-solver noise still bounds achievable
+  parity there); the 1e-12 parity claim is for the verified resolved
+  regimes, which is where claims live anyway.
 - P3.4: adjoint node kernels (same order as the reverse sweep);
   score parity 1e-12 via I-P2-4-style cross-check under XLA.
 - Wall/RSS measured per rung on the SAME fixture as the T=120 stress
