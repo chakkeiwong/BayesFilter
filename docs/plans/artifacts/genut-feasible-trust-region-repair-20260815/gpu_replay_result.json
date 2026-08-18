@@ -1,0 +1,105 @@
+{
+  "command": "docs/benchmarks/run_genut_feasible_trust_region_gpu_replay.py",
+  "controls": {
+    "balance_steps": 2,
+    "epsilon": 2.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_lm_damping": 0.01,
+    "higher_moment_lm_scale_floor": 0.0001,
+    "higher_moment_solver_id": "genut_column_scaled_lm_smooth_rms_trust_v1",
+    "higher_moment_strength": 0.2,
+    "higher_moment_trust_radius": 0.5,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 2,
+    "tuning_artifact": "local_repair_diagnostic_not_admission",
+    "tuning_scope": "lgssm_T10_N1008_repair_replay"
+  },
+  "diagnostics": {
+    "max_col_residual": [
+      3.7671998143196106e-07,
+      4.3725594878196716e-07,
+      3.4086406230926514e-07,
+      3.6600977182388306e-07
+    ],
+    "max_mean_residual": [
+      1.0609626770019531e-05,
+      1.138448715209961e-05,
+      1.0468065738677979e-05,
+      8.687376976013184e-06
+    ],
+    "max_row_residual": [
+      1.0069925338029861e-07,
+      1.0093208402395248e-07,
+      9.93022695183754e-08,
+      1.0116491466760635e-07
+    ],
+    "maximum_kurtosis_residual": [
+      0.09165024757385254,
+      0.09916210174560547,
+      0.10328984260559082,
+      0.09475922584533691
+    ],
+    "maximum_skew_residual": [
+      0.058836743235588074,
+      0.06262460350990295,
+      0.05858512222766876,
+      0.055499933660030365
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.33658504486083984,
+      0.303121954202652,
+      0.3821653723716736,
+      0.3472409248352051
+    ],
+    "program_valid": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "git_commit": "18cfe60984252a9656d1d818c29a2fa86dbc8118",
+  "horizon": 10,
+  "input_hashes": {
+    "design": "a1405124bd6fdc830a378e152c69c42ed6ed846ba7268176ea82f63cae6fbb82",
+    "initial_noise": "8a7e5aa6bf0b0a67337f31353f203a5e3876a79e2ffbcc6197a43078771c2889",
+    "observations": "336e01a2532bd4ee9cfd8cced2f47b81262a81a1f46102f3c2185aee159c4c8b",
+    "process_noise": "1ab6f2577bc4229daeb71c4fa33b1c61843034e0e4eccd39b8e282966b5a4866",
+    "theta": "ad297de781c2bae3c6f3c0424cb447b26cd45fd6926fc58773589d971880b1f9"
+  },
+  "memory_growth": [
+    {
+      "device": "/physical_device:GPU:0",
+      "memory_growth": true
+    }
+  ],
+  "noise_seed": 140000,
+  "particle_count": 1008,
+  "plan": "docs/plans/bayesfilter-genut-feasible-trust-region-repair-plan-2026-08-15.md",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "schema": "bayesfilter.genut_feasible_trust_region_gpu_replay.v1",
+  "scientific_claim": "none",
+  "score_max_abs": [
+    10.559950828552246,
+    10.315685272216797,
+    10.011849403381348,
+    11.451022148132324
+  ],
+  "status": "PASS_FINITE",
+  "target": "LGSSM T=10 finite value/JVP replay",
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "tf32_enabled": true,
+  "value": [
+    -43.49395751953125,
+    -42.6517219543457,
+    -45.1219482421875,
+    -43.4949836730957
+  ],
+  "visible_gpus": [
+    "/physical_device:GPU:0"
+  ],
+  "wall_time_seconds": 10.260169982910156,
+  "xla": true
+}

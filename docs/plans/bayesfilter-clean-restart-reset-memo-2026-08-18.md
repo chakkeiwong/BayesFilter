@@ -15,6 +15,7 @@ promote any unresolved lane.
 
 The worktree batch includes the HMC artifact/geometry/mass/tuning contracts,
 weighted NeuTra training and target routes, Gaussian-mixture diagnostics, and
+the newly merged high-dimensional GenUT/independent-score source routes, plus
 the corresponding focused tests and benchmark entry points. These are source
 changes and are tracked as implementation state, not run output.
 
@@ -58,6 +59,13 @@ silently left unclassified: it is ignored by the repository policy.
    failed its screen. Recreate missing private handoffs and run fresh,
    scope-specific repairs under the active full-validation plan.
 
+4. **High-dimensional/GenUT and independent-score lanes:** the merged source
+   routes and focused mechanics suites are restart-ready engineering state.
+   Their authored plans and compact terminal receipts remain evidence inputs;
+   do not promote a finite smoke, path-count diagnostic, or one-seed result to
+   source-faithful, leaderboard, default, or scientific status without the
+   route-specific paper/source anchors and declared validation gates.
+
 ## Binding Invariants
 
 - Contract E--Chol (`contract_e_chol_v1`) is the only canonical LEDH reset
@@ -74,6 +82,24 @@ silently left unclassified: it is ignored by the repository policy.
   `L >= 2`, and applies the declared modern R-hat/ESS and finite-state vetoes.
 - NumPy remains diagnostic/reference-only and cannot enter an admitted runtime,
   training, inference, tuning, or artifact-construction path.
+
+## Verification At Restart
+
+- HMC/tuning contract subset: `353 passed, 1 skipped`.
+- Batched value/score and weighted NeuTra subset: `65 passed`.
+- Compileall across `bayesfilter`, `tests`, `docs/benchmarks`, and `scripts`:
+  passed.
+- Newly merged high-dimensional/independent-score subset: `71 passed, 2
+  xfailed, 3 failed`. Two failures are GenUT shape-repair API drift
+  (`diagonal_lm_damping`/`lm_damping` kwargs); one benchmark-script test binds
+  an unavailable `/home/chakwong/.../python` interpreter path.
+- Broader `tests/highdim` collection additionally stops on the pre-existing
+  missing `_active_log_weight` import from the Austria SIR lane-B module.
+
+The four merged-lane failures are engineering blockers to a green repository
+suite. They do not invalidate the passing HMC/NeuTra checks, and they cannot be
+used as evidence for or against a scientific candidate until repaired and
+rerun.
 
 ## Nonclaims
 
