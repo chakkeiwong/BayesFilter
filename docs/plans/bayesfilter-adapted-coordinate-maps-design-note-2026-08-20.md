@@ -124,3 +124,36 @@ non-Gaussian-family targets (the paper's 5.3 tempering exists precisely
 because it often does not); no n=8 claim (coverage decay may need the
 nonlinear instance there); M1's model-free current-block inflation is a
 hypothesis until arm M1 measures it.
+
+## 7. Probe arm M1 RESULTS (2026-08-20) — contract decision
+
+Rung 1 (moment lemma) GREEN: `retained_moments_tf.py` +
+U-MAP-MOM-1 (chain vs dense quadrature, 1e-10, 2/2 passed).
+
+Rung 2 (`/tmp/rowdesign_v2_probe.log`, t=1 step, n=4):
+
+| arm | moments | err | ESS | clip |
+|---|---|---|---|---|
+| affine-k3 | exact Kalman | -0.298 | 174 | 3.4% |
+| m1-k3-infl1.5 | retained + inflate 1.5 | -0.876 | 31 | 2.7% |
+| m1-k3-infl2.0 | retained + inflate 2.0 | -2.051 | 6 | 2.7% |
+
+READING: M1's PREVIOUS-block moments are sound (clip 2.7%), but the
+model-free CURRENT-block heuristic (same center, inflated) is the
+binding defect: the true current-block target center is shifted by the
+dynamics and pulled toward y_t, which "same center + inflation" cannot
+express — inflation only dilutes (ESS 31 -> 6, err back to uniform
+levels at 2.0). M1-as-drafted is 3x worse than exact moments though
+still 2x better than uniform.
+
+DECISION (measured, per Section 3): M2 `adapter_hint` is PROMOTED to
+the v1 default for the CURRENT block (a cheap companion-filter
+predictive moment — the paper's own 5.2 route); M1 `retained_exact`
+remains the v1 default for the PREVIOUS block (measured sound, and the
+retained object is the authoritative source there). The all-M1 route
+is retained as a fallback labeled with this measured caveat. The
+moment-source scope field becomes per-block:
+`map_moment_source = {prev: retained_exact | fixed, curr: adapter_hint | fixed}`.
+
+Next: engine implementation per Sections 1-2 with this per-block
+contract; validation ladder rungs 3-5 unchanged.
