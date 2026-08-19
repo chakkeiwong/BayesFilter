@@ -130,3 +130,47 @@ in priority order:
    still unbuilt and would now discriminate cheaply at XLA speed.
 The review is analysis-first (read the diagnostics telemetry per step,
 build the holdout-mass instrument), not another sweep.
+
+## 6. Structural review result: ROW COVERAGE COLLAPSE (2026-08-19)
+
+Instrument 1 — per-step localization
+(`docs/benchmarks/run_n4_step_localization_20260819.py`,
+`/tmp/n4_step_localization.log`): at n=4 the error enters at EVERY
+transition step (t=0 marginal is fine: -0.003) as a per-step bias of
+-1.7..-3.4 nats, roughly constant, not compounding; n=2 shows the same
+shape at -0.001..-0.013. TT increments are consistently BELOW Kalman
+(mass lost, not gained). Gram conditioning is benign at both n
+(<= 5.7e3), and fit rms is misleadingly GOOD at n=4 — killing the
+boundary-rank-growth and assembly-conditioning suspects.
+
+Instrument 2 — row-coverage ESS at the t=1 target (self-contained
+probe, log in session record): with uniform-box Sobol rows at hw 3.0,
+the transition-step target (concentrated near the x_c ~ A x_p,
+x_c ~ y_t manifold) has
+
+    n=2: ESS 219 / 8192 rows  (2.7%)
+    n=4: ESS 11 / 8192 rows   (0.14%)
+
+VERDICT: the n=4 plateau is a ROW-DESIGN COVERAGE failure, not a
+rank/resolution/engine defect. The uniform-box design's overlap with
+the concentrated 2n-dim step target shrinks exponentially with n; at
+n=4 the ALS fit determines ~208 columns from ~11 effective rows, so
+the fitted h^2 misses target mass and every step's normalizer
+under-counts (matching the uniform negative bias). This RETROACTIVELY
+EXPLAINS all Section 3/5 arms: more rows raises ESS only linearly
+(flat), rank/degree cannot add mass the rows never see (flat), and
+hw 4.0 DILUTES coverage further (worse, with better in-sample rms on
+the easy off-manifold bulk). The n=2 ladder passed because ESS ~200 is
+marginally sufficient there.
+
+REPAIR DIRECTION (next design artifact, before any further n>=4
+compute): importance/target-adapted frozen row design — e.g. rows
+drawn once from a declared proposal concentrated near the transition
+manifold (prior-predictive or Kalman-proposal family), frozen by seed
+(V2-compliant: still a fixed scattered design), with the mu-weights
+carrying the proposal correction. This must be a reviewed design note
+(it touches the declared program's row-design contract and the
+measure/weight bookkeeping), not an ad-hoc patch.
+
+Non-claims: single seed, one fixture family; ESS is a coverage
+diagnostic, not a validity proof of the proposed repair.
