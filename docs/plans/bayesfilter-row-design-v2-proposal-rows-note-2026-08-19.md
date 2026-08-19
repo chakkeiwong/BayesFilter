@@ -143,3 +143,44 @@ NEXT ARTIFACT: a paper-grounded design note for adapted/composed maps
 code first, per the literature discipline) — NOT more row-design
 sweeps. Status of THIS note: `REFUTED_REDIRECTED` (kept as the
 evidence record for why importance rows alone are a dead end).
+
+## 3b. Affine-preconditioning arm (2026-08-20): DIRECTION VALIDATED
+
+Paper anchor read before the arm (literature discipline): Zhao-Cui
+JMLR 2024 Section 5 (local copy .localresources/papers/), Eqs. 30-31 —
+bridging density rho_t + KR change of coordinates, TT fits the ratio
+q_t/rho_t in transformed coordinates; Section 5.2 linear/Gaussian
+bridging is exactly a per-step affine map from estimated moments;
+Fig. 2 shows the intended rank collapse.
+
+Arm (probe `--affine`): block-diagonal per-step affine maps from
+Kalman-filtered moments (x_c: t=1 filtered; x_p: t=0 filtered), rows
+UNIFORM in the new box, log-Jacobian carried in the target (A14
+machinery with non-identity maps). Known probe impurities: previous
+retained object evaluated at CLIPPED old-box coordinates outside its
+box (clip fraction reported); cross-block correlation left to rank.
+
+| arm | incr err | fit rms | target ESS | clip |
+|---|---|---|---|---|
+| uniform (reference) | -1.711 | 4.7e-3 | 11 | - |
+| affine kappa=3 | **-0.298** | 1.8e-1 | 174 | 3.4% |
+| affine kappa=4 | -1.304 | 8.4e-2 | 45 | 16.8% |
+
+READING (single seed, one step, descriptive): the affine map improves
+the step error 5.7x and coverage 16x where EVERY other lever (rows,
+rank, degree, half-width, importance rows) was flat or worse — the
+first lever that moves the n=4 error at all. kappa=4 degrades (box
+dilution + 5x clip impurity), consistent with the coverage mechanism.
+Residual -0.30 is NOT at tolerance; candidate contributors: the clip
+impurity, block-diagonal-only maps, r=6, and the probe's crude
+moment source. These are implementation questions for the engine-level
+version (which carries each retained object's OWN map, removing the
+clip impurity entirely).
+
+STATUS: `REFUTED_REDIRECTED` -> redirect VALIDATED in direction.
+Next artifact: adapted-coordinate-map design note (contract: per-step
+frozen affine maps from already-computed state; retained-object map
+propagation; moment source options incl. the paper's 5.2
+particle-estimate route and the exactly-sampleable retained TT;
+scope-identity fields) followed by engine implementation behind a
+config flag with the n=2 regression as the parity guard.

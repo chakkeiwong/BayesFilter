@@ -226,3 +226,75 @@ if "--alpha-sweep" in sys.argv:
         zS = draw_mixture(N)
         wS = 1.0 / (N * mixture_mu_density(zS))
         run_t1(zS, wS, f"ISLS-alpha{alpha_s:.2f}")
+
+# Affine-preconditioning arm (Zhao-Cui Section 5.1-5.2, linear/Gaussian
+# bridging): block-diagonal per-step affine maps x_c = m1f + k*L1f z_c,
+# x_p = m_f + k*Lf z_p (block-diagonal preserves the retention split;
+# cross-block correlation is left to TT rank per the paper's Fig. 2).
+# Rows UNIFORM in the new box; exact Kalman moments used as the
+# diagnostic bridging estimate (paper 5.2 uses a particle estimate).
+if "--affine" in sys.argv:
+    from bayesfilter.highdim.retained_quadratic_form_tf import (
+        prefix_row_vectors as _prv,
+    )
+    m1f_ = mean1 + (cov1 @ np.linalg.inv(S1)) @ innov1
+    P1f_ = cov1 - (cov1 @ np.linalg.inv(S1)) @ cov1
+    for kappa in (3.0, 4.0):
+        Lc = np.linalg.cholesky(P1f_) * kappa
+        Lp = np.linalg.cholesky(P_f) * kappa
+        z_rows_np = _design_rows(config, N, 2 * n, (config.seed, 101)).numpy()
+        xc_np = m1f_[None, :] + z_rows_np[:, :n] @ Lc.T
+        xp_np = m_f[None, :] + z_rows_np[:, n:] @ Lp.T
+        z_old_p = xp_np / hw
+        clip_frac = float((np.abs(z_old_p) > 1.0).any(axis=1).mean())
+        # conversion: log|det Mc| + log|det Mp| + n log 2 - n log hw
+        conv = (np.linalg.slogdet(Lc)[1] + np.linalg.slogdet(Lp)[1]
+                + n * np.log(2.0) - n * np.log(hw))
+        z_rows = tf.constant(z_rows_np, DTYPE)
+        z_w = tf.constant(np.full(N, 1.0 / N), DTYPE)
+        gram = retained.suffix_gram
+        floor_scale = tf.linalg.trace(gram) / tf.cast(tf.shape(gram)[0], DTYPE)
+        chol = tf.linalg.cholesky(gram + tf.constant(config.branch_gram_floor, DTYPE)
+                                  * floor_scale * tf.eye(tf.shape(gram)[0], dtype=DTYPE))
+        branch_count = retained.boundary_rank + 1
+        x_c = tf.constant(xc_np, DTYPE); x_p = tf.constant(xp_np, DTYPE)
+        log_g = (adapter.transition_log_density(x_c, x_p)
+                 + adapter.observation_log_density(x_c, ys[1])
+                 + tf.constant(conv, DTYPE))
+        z_p_old = tf.constant(np.clip(z_old_p, -1.0, 1.0), DTYPE)
+        v = tf.einsum("na,ab->nb", _prv(retained.prefix_cores, retained.prefix_basis, z_p_old), chol)
+        tau_abs = tau * (retained.z_complete_ref / (1.0 + tau))
+        sum_sq = tf.reduce_sum(tf.square(v), axis=1) + tau_abs
+        log_f = tf.math.log(sum_sq) + log_g
+        shift = tf.reduce_logsumexp(tf.math.log(z_w) + log_f)
+        sqrt_g = tf.exp(0.5 * (log_g - shift))
+        amps = tf.concat([v, tf.ones([N, 1], DTYPE) * tf.sqrt(tau_abs)], axis=1)
+        targets = amps * sqrt_g[:, None]
+        g_codes = tf.tile(tf.range(branch_count, dtype=DTYPE)[None, :], [N, 1])
+        full_rows = tf.concat([tf.repeat(z_rows[:, :n], branch_count, axis=0),
+                               tf.reshape(g_codes, [-1, 1]),
+                               tf.repeat(z_rows[:, n:], branch_count, axis=0)], axis=1)
+        sqrt_target = tf.reshape(targets, [-1])
+        wts = tf.reshape(tf.repeat(z_w, branch_count, axis=0), [-1])
+        current_basis = _product_basis(n, deg)
+        basis_dim = int(current_basis.bases[0].basis_dim)
+        mixed = ProductBasis(list(current_basis.bases) + [DiscreteIndicatorBasis1D(branch_count)]
+                             + list(current_basis.bases), current_basis.convention)
+        mixed_dims = [basis_dim] * n + [branch_count] + [basis_dim] * n
+        config = EngineConfig(basis_degree=deg, rank=rank, row_count=N, sweeps=3,
+            ridge=1e-10, tau=1e-6, coordinate_half_width=hw, seed=91046, row_design="sobol")
+        c0 = tuple(TTCore(0.3 * tf.random.stateless_normal(
+            [1 if a == 0 else rank, mixed_dims[a], 1 if a == 2 * n else rank],
+            tf.constant((config.seed, 7031 + a), tf.int32), dtype=DTYPE)) for a in range(2 * n + 1))
+        t0 = time.time()
+        cores, fdiag = _fixed_als_fit(mixed, full_rows, sqrt_target, wts, c0, config)
+        b2 = retained_quadratic_form_from_squared_tt(
+            tuple(cores), mixed, split_index=n, tau=0.0,
+            prefix_basis=current_basis, coordinate_map=current_map)
+        zc_new = (1.0 + tau) * b2.z_complete_ref
+        incr = float((shift + tf.math.log(zc_new) - tf.math.log(retained.z_complete_ref)).numpy())
+        logg_np = log_g.numpy(); wq = np.full(N, 1.0 / N) * np.exp(logg_np - logg_np.max())
+        ess = wq.sum() ** 2 / (wq ** 2).sum()
+        print(f"affine-k{kappa:.0f}: incr={incr:.6f} kalman={kalman_incr1:.6f} "
+              f"err={incr - kalman_incr1:+.4f} fit_rms={fdiag['weighted_fit_rms']:.2e} "
+              f"target_ESS={ess:.0f} clip_frac={clip_frac:.3f} wall={time.time()-t0:.0f}s", flush=True)
