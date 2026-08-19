@@ -98,3 +98,35 @@ variable as the binding constraint and justifies a follow-up ladder
 plan; all arms flat (< 2x) escalates to a structural suspects review
 (branch/boundary-rank growth, target assembly at n=4) before any
 further compute. No arm result is promotion evidence.
+
+### Section 5 results (2026-08-19, XLA engine, single seed, descriptive)
+
+| arm | per-step gap | vs baseline 2.209 | max fit rms | wall |
+|---|---|---|---|---|
+| ARM-R rank 8 | 2.480 | +12% (flat) | 6.1e-2 | 2325 s |
+| ARM-D deg 16 | 1.952 | -12% (flat) | 5.6e-2 | 941 s |
+| ARM-H hw 4.0 | 4.656 | +110% (worse) | 2.9e-2 | 512 s |
+
+(ARM-H's first attempt died in XLA's LLVM compile after two prior
+large compilations in the same process — infrastructure failure,
+rerun clean in a fresh process; not a veto.)
+
+DECISION (per the declared rule): no arm improved >= 5x; ARM-R and
+ARM-D are flat; ARM-H made things WORSE while its in-sample rms
+IMPROVED — support truncation is not the binding constraint, and
+in-sample rms is confirmed (again) as a misleading proxy for value
+error at n=4. The rule's all-flat branch fires: STOP compute, run the
+structural-suspects review before any further n=4 cells. Suspects,
+in priority order:
+1. branch/boundary-rank growth: at n=4 the retained boundary rank
+   (hence branch count and fit column count) is larger, and the
+   branch-axis target must be jointly fit across all branches — the
+   per-branch effective resolution shrinks with n even at fixed
+   rank/degree;
+2. target-assembly conditioning at 2n+1 = 9 axes (frozen-core
+   environments at random init may be poorly scaled at this depth);
+3. normalizer error-mass mechanism (Section: Mechanism hypothesis of
+   the attempt02 note) — its holdout-mass diagnostic instrument is
+   still unbuilt and would now discriminate cheaply at XLA speed.
+The review is analysis-first (read the diagnostics telemetry per step,
+build the holdout-mass instrument), not another sweep.
