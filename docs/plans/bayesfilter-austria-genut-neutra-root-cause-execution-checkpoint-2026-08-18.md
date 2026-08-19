@@ -2,9 +2,12 @@
 
 Date: 2026-08-18
 
-Status: `GPU_EAGER_PASS_GPU_GRAPH_WITHIN_MODE_IDENTITY_FAIL_XLA_AND_INVARIANTS_NOT_RUN`
+Status: `XLA_T20_NAN_LOCALIZED_TF32_SEEDED_STAGE_D_BLOWUP_GUARD_CORRECT_TF32OFF_XLA_FINITE`
+(see "XLA NaN Localization Campaign, 2026-08-19/20" below)
 
-Superseded former status (preserved):
+Superseded former statuses (preserved):
+`GRAPH_INEQUALITY_GRAPPLER_CONSISTENT_METAOFF_BITWISE_RESTORED_XLA_T20_NONFINITE_INVALID_HARD_VETO`
+`GPU_EAGER_PASS_GPU_GRAPH_WITHIN_MODE_IDENTITY_FAIL_XLA_AND_INVARIANTS_NOT_RUN`
 `CPU_REPAIR_AND_DERIVATIVE_AUTHORITY_COMPLETE_GPU_CONFIRMATION_BLOCKED_BY_APPROVAL_502`
 
 Plan:
@@ -55,6 +58,15 @@ public value and independent forward-autodiff value agree exactly at
 focused graph/XLA and existing batch tests pass. The only remaining gate is a
 trusted RTX 5080 endpoint run; the launch was rejected before process creation
 because the approval service returned HTTP 502.
+
+> **Correction 2026-08-19:** the "only remaining gate" statement above was
+> true when written and is now stale. The RTX 5080 endpoint runs were executed
+> on 2026-08-18/19: eager PASSED, graph FAILED within-mode identity, and XLA
+> returned nonfinite/invalid output at `T=20` (hard veto). See the status line
+> at the top of this file and
+> `docs/plans/bayesfilter-austria-genut-graph-mode-divergence-localization-result-2026-08-19.md`.
+> The remaining gates are now the XLA nonfiniteness localization (problem #1)
+> and the graph-mode scope decision (problem #2), not a single endpoint run.
 
 ## Frozen Identity
 
@@ -251,6 +263,10 @@ Explanatory observations (no tolerance created):
   value/score-value identity itself fails in graph mode on the current source.
 - Graph T=1 zero-correction control is bitwise mode-stable, localizing the
   divergence to the four-step higher-moment correction under graph tracing.
+  *(Correction 2026-08-19: this localization is wrong relative to that claim —
+  the inequality also reproduces at `T=3, steps=0` with no correction; the
+  `T=1` control was too weak. See the "Graph-Mode Localization Campaign,
+  2026-08-19" section below and the localization result note.)*
 
 Classification: compiler-mode confirmation failure (current source). Not a
 research-direction rejection; not evidence against the exact CPU derivative
@@ -266,3 +282,87 @@ correction-step bisection 0→4 at the endpoint level, then first-unequal-tensor
 localization inside the traced shared correction core), plus a decision on the
 graph-arm wall-time budget. XLA, invariants, cross-model, tuning, NeuTra, HMC,
 dual-cap, and default phases remain blocked.
+
+## Graph-Mode Localization Campaign, 2026-08-19 (Claude Code)
+
+Executed under
+`docs/plans/bayesfilter-austria-genut-graph-mode-divergence-localization-plan-2026-08-18.md`
+after a skeptical pre-run audit (recorded in the plan). Full result:
+`docs/plans/bayesfilter-austria-genut-graph-mode-divergence-localization-result-2026-08-19.md`.
+
+Status update:
+`GRAPH_INEQUALITY_GRAPPLER_CONSISTENT_METAOFF_BITWISE_RESTORED_XLA_T20_NONFINITE_INVALID_HARD_VETO`
+
+Key findings, frozen scope and current source (`ae8cbf...`) throughout:
+
+1. The non-XLA graph within-mode inequality reproduces at `T=2, steps=1` and
+   at `T=3, steps=0` — i.e. WITHOUT any higher-moment correction. The earlier
+   statement that the divergence "localizes to the four-step higher-moment
+   correction" is wrong relative to that claim; the `T=1` control was too
+   weak. Both the horizon recursion and the correction loop are affected;
+   the gap grows with horizon/steps (34 ULP at `(3,0)` to 9209 ULP at
+   `(20,4)`).
+2. Setting `disable_meta_optimizer=True` before tracing restores exact
+   bitwise within-mode identity in 4/4 probed failing cases, spanning both
+   lanes. Classification: consistent with grappler graph rewrites
+   transforming the value-only and JVP-carrying graphs differently; not
+   consistent with ForwardAccumulator emitting a different primal op
+   sequence. Per-pass isolation not run.
+3. The XLA arm (memo step-6 command, `repair_validation_attempt09/`)
+   COMPLETEd but `T=20` returned nonfinite value AND score with
+   `program_valid=[false]` on both endpoints (fail-closed coherent;
+   `finite_pattern_equal=true`). `T=1` was exact and bitwise equal to
+   eager/graph. HARD VETO for XLA at the frozen claim scope on current
+   source. The stale attempt06 XLA value was finite, so this is
+   current-source/current-XLA-specific; cause not checked. Score-graph XLA
+   compile took >40 min with register-spill warnings; wall 69.5 min.
+
+Budget: 4 processes, ~83 min total wall, within the plan's 3.5 h ceiling; no
+launch failures; no artifact overwritten; no tolerance created; nothing
+promoted.
+
+Open human decisions before further execution: (a) whether non-XLA graph mode
+remains a claim-bearing confirmation arm (given eager passes and meta_off
+restores identity); (b) scope and budget for XLA nonfiniteness localization,
+which now blocks the repository-default execution target at the frozen scope.
+NeuTra, HMC, tuning, cross-model, dual-cap, and default phases remain blocked.
+
+## XLA NaN Localization Campaign, 2026-08-19/20 (Claude Code)
+
+Executed under
+`docs/plans/bayesfilter-austria-genut-xla-nan-localization-plan-2026-08-19.md`
+(skeptical audit recorded there). Terminal result:
+`docs/plans/bayesfilter-austria-genut-xla-nan-localization-result-2026-08-20.md`.
+
+Status update:
+`XLA_T20_NAN_LOCALIZED_TF32_SEEDED_STAGE_D_BLOWUP_GUARD_CORRECT_TF32OFF_XLA_FINITE`
+
+Key findings (frozen scope, current source `ae8cbf...`):
+
+1. Reproduction boundary: XLA+TF32 NaN occurs ONLY at `T=20, steps=4`.
+   `(20,0)`, `(10,4)`, and all smaller scopes pass valid/finite under XLA.
+   The failure is the correction-loop x late-horizon interaction.
+2. Failing stage directly identified from serialized endpoint diagnostics:
+   all Stage A/B/C aggregates finite and healthy in the failing run; all
+   four Stage D (higher-moment correction) aggregates NaN. Candidate raw-NaN
+   sites: unridged Choleskys (`cubature_genut_batch_tf.py:1273,:1288,:746`)
+   and the 2x2 normal-equation solve (`:705-714`; LM branch inactive).
+3. TF32 is the seed: with `enable_tensor_float_32_execution(False)` and
+   everything else identical, XLA `T=20, steps=4` is FINITE and VALID on
+   both endpoints (value `-680.6786`, Stage D diagnostics healthy). XLA
+   miscompilation is refuted; the fail-closed guard system worked correctly.
+4. Explanatory, TF32-independent: XLA also shows the within-mode value/JVP
+   `exact_equal=false` program-split (like non-XLA graph mode), including
+   TF32-off. Separate issue; not fixed by any TF32 decision.
+
+The campaign changed no source, no tolerance, no default. Open owner
+decision recorded in the result note: harden Stage D numerically (only
+option addressing the mechanism; edits production source), vs TF32-off for
+claim-bearing Austria XLA (contradicts the repo TF32 default directive), vs
+scope exclusion. This decision, plus the standing graph-mode scope decision,
+are the two human gates before the three-mode confirmation contract can be
+revisited. NeuTra, HMC, tuning, cross-model, dual-cap remain blocked.
+
+Infrastructure note: ~14 launch rejections from a harness permission-
+classifier outage preceded P0; no process or budget consumed; same class as
+historical approval 502/404 failures.

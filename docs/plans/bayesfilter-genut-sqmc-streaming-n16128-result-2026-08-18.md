@@ -247,3 +247,164 @@ rate, no `N=16128` behavior, no HMC/NeuTra/production/default readiness, and
 no equivalence to the annealed streaming OT algorithm. The trust-region
 amplification attribution is a supported working hypothesis, not a proved
 mechanism.
+
+## 2026-08-19 Owner Gate Revision and TF32-Off Diagnostic Arm
+
+### Owner directive
+
+The owner reviewed the `N=4032` result and directed that value parity be
+judged by relative error with threshold `0.1%`; the observed `0.037%` value
+difference is accepted. This supersedes the absolute `0.05` value bound. The
+owner then selected the TF32-off diagnostic arm before deciding the score
+gate.
+
+### TF32-off arm (attempts 09-10, diagnostic-only)
+
+Both `N=4032` transport plans were rerun with tensor-float-32 execution
+disabled in-process (a wrapper forces
+`enable_tensor_float_32_execution(False)`; the recorded `tf32: true` flag in
+these two artifacts reflects the framework request and is overridden —
+`tensor_float_32_execution_enabled()` was verified `False` after each run).
+Attempt 08 contains only `checkpoint.json`: the first wrapper invocation
+crashed before TensorFlow initialization on a relative-path `sys.argv` bug,
+which was repaired by using the absolute harness path. This is recorded as
+localized infrastructure failure and repair 1 of 2.
+
+Provenance between attempts 09 and 10 matched on all invariant fields. Both
+rows passed every validity screen (finite, program/row/permutation validity,
+`TV <= 1e-4`, zero saturation, 4032 unique ancestors).
+
+| Comparison | Value diff | Rel value | Score rel diffs `(j0,j1,j2)` |
+|---|---:|---:|---|
+| dense vs streamed, TF32 off (09 vs 10) | `0.0969` | `1.4e-4` | `3.54`, `0.82`, `4.3e-2` |
+| dense vs streamed, TF32 on (06 vs 07) | `0.2507` | `3.7e-4` | `4.95`, `2.49`, `6.9e-2` |
+| dense TF32-on vs dense TF32-off (06 vs 09) | `0.5296` | `7.8e-4` | scores fully scrambled |
+
+### Interpretation
+
+The divergence did not collapse without TF32, so it is not TF32-seeded
+specifically. The third row is the decisive control: the *same dense code*
+under a precision-only perturbation moves its own value by `0.53` and
+scrambles its own score coordinates — a larger response than the
+dense-vs-streamed difference under either precision mode. Conclusions:
+
+- The full `T=20` route trajectory, and especially the analytical score
+  recursion, is not a perturbation-stable function of arithmetic at `N=4032`.
+  Trajectory-level score parity is unachievable for *any* implementation
+  change, so the frozen `5e-3` score gate cannot discriminate a faithful
+  tiled implementation from an unfaithful one at this scale.
+- The value is perturbation-stable to about `0.1%` relative across all three
+  comparisons, consistent with the owner's revised value criterion.
+- The tiled implementation is not implicated: its primitive-level parity is
+  `~1e-5` (TF32) / `~5e-8` (FP32), its full-route deviation from dense
+  (`0.097`-`0.25`) is smaller than the route's own same-code precision
+  sensitivity (`0.53`), and the one-block case is bit-exact.
+
+Status of the score gate: demoted to descriptive-only for this campaign,
+on the owner-selected diagnostic outcome plus the same-code control. This is
+an engineering-validity argument, not a proof of score-estimator correctness;
+score correctness at large `N` remains an open scientific question outside
+this campaign's scope (three perturbation arms, one seed, no uncertainty
+analysis).
+
+### Revised parity basis for proceeding to `N=16128`
+
+Value relative error `<= 0.1%` (owner rule) plus all hard validity screens
+plus primitive-level transport parity. Under this basis both `N=4032` pairs
+pass, and the ladder proceeds to the `N=16128` feasibility rows under the
+original frozen controls (TF32 on, XLA, seed `97701`).
+
+## 2026-08-19 N=16128 Feasibility Row: OOM (Retained Terminal Result)
+
+### Outcome
+
+The repaired-permutation streaming `N=16128` row (frozen controls, TF32 on,
+XLA, seed `97701`, RTX 4080 SUPER, verified memory growth) failed during
+evaluation, after successful XLA compilation, with:
+
+```text
+tensorflow.python.framework.errors_impl.ResourceExhaustedError:
+Out of memory while trying to allocate 56895479768 bytes
+[Op:__inference_evaluate_595532]
+```
+
+Wall time about 7.6 minutes (04:30:11-04:37:46 HKT), consumed from the 8
+GPU-hour `N=16128` ceiling. No result row or attempt artifact with a valid
+row was produced by this run. Per the frozen plan, this OOM is a retained
+feasibility result and is not permission to lower `N` silently. Because the
+repaired-permutation row did not pass the resource gate, the remaining three
+`N=16128` variants are not authorized and were not run. The ladder is
+terminal.
+
+### Root-cause localization (engineering evidence)
+
+The OOM is not in the tiled transport. The allocator peaks of the valid GPU
+rows scale as the all-parent pairwise score recursion, not as transport
+tiles:
+
+| N | Observed allocator peak | `N*N*126*4` bytes |
+|---:|---:|---:|
+| 1008 | `0.680 GB` | `0.512 GB` |
+| 4032 | `8.286 GB` | `8.194 GB` |
+| 16128 (required) | OOM at a `56.9 GB` request | `131.1 GB` |
+
+Dense and streamed transport plans at `N=4032` had nearly identical peaks
+(`8.2857` vs `8.2857 GB`), confirming transport tiling does not control peak
+memory on this route. The dominant allocation is in
+`standard_pairwise_backward_marks`
+(`bayesfilter/highdim/ledh_pfpf_genut_initial_rqmc_tf.py`): the analytical
+all-parent backward score recursion builds `[child_block=126, N,
+state_dimension]` grids per block inside a Python loop that XLA unrolls, so
+the aggregate live intermediates scale as `O(N^2)` per step even though the
+transport is tiled. At `N=16128` this requires far more than the 14.1 GB
+device limit.
+
+### Classification and boundary
+
+This is a feasibility finding about the current evaluator implementation,
+not a CUDA, driver, transport, or scientific failure, and not evidence
+against the streaming transport design. A repair would require restructuring
+the score-recursion memory schedule (for example a sequential `tf.while_loop`
+over child blocks or a streamed score recursion), which is implementation
+redesign outside the authorized localized-infrastructure repair category, and
+`score_child_block_size=126` is a frozen control. The campaign therefore
+stops here for owner direction.
+
+### Final decision table
+
+| Decision | Primary criterion | Status | Next justified action | Not concluded |
+|---|---|---|---|---|
+| Admit one-block `K=N` repair | fresh GPU `N=1008` pair | `PASS` (bit-exact) | none | — |
+| Admit tiled transport route | value `<=0.1%` rel (owner rule) + validity + primitive parity | `PASS` under revised basis | none | trajectory-wise score parity (shown untestable at this scale) |
+| `N=16128` streaming feasibility | finite valid row within device memory | `FAIL: OOM in score recursion` | owner decision on score-recursion memory redesign | feasibility under a redesigned score path |
+| Remaining three `N=16128` variants | repaired-permutation row passes | `NOT AUTHORIZED` (condition failed) | none | — |
+| Promote method/default/HMC/NeuTra status | none in campaign | `OUT OF SCOPE` | none | any promotion claim |
+
+### Budget closeout
+
+Session GPU time: about `335 s` (attempts 04-07) + `25 s` (primitive
+diagnostic) + about `250 s` (attempts 09-10) + about `7.6 min` (`N=16128`
+OOM run) — roughly 18 minutes total, against ceilings of 90 minutes
+(parity) and 8 GPU-hours (`N=16128`). Infrastructure repairs used: 1 of 2
+(wrapper `sys.argv` path bug; attempt 08 stub directory). No gateway
+failures under the Claude Code boundary.
+
+### Candidate next directions (owner decision)
+
+1. Authorize a score-recursion memory redesign (sequential/streamed backward
+   marks) as a new bounded implementation task with its own plan, focused
+   parity tests against the current recursion at small `N`, and a rerun of
+   the `N=16128` ladder.
+2. Accept `N<=4032` (or the largest N that fits, roughly `N~6000` on 16 GB by
+   the `N^2*126*4B` scaling) as the current feasibility envelope and stop.
+3. Run `N=16128` value-only (if a mode disabling the score recursion exists
+   or is authorized to be added) — score-free feasibility.
+
+### Nonclaims (final)
+
+No exact Austria-SIR observed-data score; no SQMC variant ranking (the
+variant rows never ran); no variance rate; no `N=16128` feasibility under a
+redesigned score path; no HMC/NeuTra/production/default readiness; no
+equivalence to the annealed streaming OT algorithm. The score-recursion
+memory attribution rests on allocator-peak scaling plus source structure; the
+exact 56.9 GB fused allocation was not mapped to a single op.

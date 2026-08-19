@@ -2,6 +2,15 @@
 
 Date: 2026-08-04
 
+> **Superseded 2026-08-19** by
+> `docs/plans/bayesfilter-austria-genut-neutra-root-cause-execution-result-2026-08-18.md`
+> and its checkpoint for the Austria repair-lane instructions: the value
+> mismatch was localized and repaired (shared primal, forward-autodiff public
+> score, exact CPU authority at `T=1,2,20`). Austria's current blockers are
+> the graph-mode within-mode identity failure and the XLA `T=20`
+> nonfinite/invalid hard veto. The pairwise-comparator guidance below predates
+> that repair and is warm-start context only.
+
 ## Current State
 
 - Serious target-specific NeuTra training is admitted for LGSSM, KSC-SV, and

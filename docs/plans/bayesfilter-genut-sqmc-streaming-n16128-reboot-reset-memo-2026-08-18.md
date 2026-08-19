@@ -13,7 +13,19 @@ at `a13c481b` with all nine in-scope hashes verified identical)
 
 Environment: `/home/chakwong/anaconda3/envs/tftwogpu`
 
-Status: `EXECUTED_2026-08-19__N1008_PARITY_EXACT_PASS__N4032_PARITY_FAIL__N16128_NOT_LAUNCHED__AWAITING_OWNER_DIRECTION`
+Status: `TERMINAL_2026-08-19__PARITY_PASS_UNDER_OWNER_REVISED_BASIS__N16128_OOM_IN_SCORE_RECURSION__LADDER_CLOSED_AWAITING_OWNER_DIRECTION`
+
+> 2026-08-19 terminal note (final): after the owner revised the value gate to
+> `<=0.1%` relative and selected the TF32-off diagnostic, the tiled route was
+> admitted under the revised basis (scores demoted to descriptive; the
+> same-code TF32-on/off control showed trajectory-wise score parity is
+> untestable at this scale). The `N=16128` feasibility row then failed with a
+> 56.9 GB OOM in the all-parent backward score recursion
+> (`standard_pairwise_backward_marks`), whose allocator footprint scales as
+> `O(N^2)` regardless of transport plan. The remaining variants were not
+> authorized. Full evidence, root-cause localization, budget closeout, and
+> owner options are in the 2026-08-19 sections of
+> `docs/plans/bayesfilter-genut-sqmc-streaming-n16128-result-2026-08-18.md`.
 
 > 2026-08-19 terminal note: the ladder below was executed by Claude Code. The
 > mandated GPU probe, focused suite, and both fresh pairs completed. `N=1008`

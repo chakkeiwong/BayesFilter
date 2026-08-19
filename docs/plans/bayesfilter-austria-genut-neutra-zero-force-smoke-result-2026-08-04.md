@@ -2,6 +2,15 @@
 
 Date: 2026-08-04
 
+> **Superseded 2026-08-19** by
+> `docs/plans/bayesfilter-austria-genut-neutra-root-cause-execution-result-2026-08-18.md`
+> for the endpoint-reproducibility and score-route claims: the endpoint
+> program analyzed here was replaced by the shared-primal repair, and the
+> cross-process value irreproducibility recorded here belongs to the
+> pre-repair source. The behavioral score-free proposal observation is
+> preserved smoke evidence only and has not been re-evaluated on the repaired
+> route.
+
 Plan:
 `docs/plans/bayesfilter-austria-genut-neutra-value-surrogate-strategy-2026-08-03.md`
 

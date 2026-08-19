@@ -2,6 +2,17 @@
 
 Date: 2026-08-04
 
+> **Superseded 2026-08-19** by
+> `docs/plans/bayesfilter-austria-genut-neutra-root-cause-execution-result-2026-08-18.md`
+> and the execution checkpoint for the Austria-blocked-reason claims: the
+> tangent-free/tangent-carrying mismatch described here was root-caused
+> (redundant JVP iteration-start standardization) and repaired via a shared
+> primal with forward autodiff; CPU value/score now match independent forward
+> autodiff exactly at `T=1,2,20`. Austria remains blocked, but by the GPU
+> graph-mode identity failure and the XLA `T=20` nonfinite hard veto, not by
+> the mismatch recorded here. The three-model admission and HMC nonclaims are
+> unaffected.
+
 Plan: `docs/plans/bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md`
 
 Aggregate: `docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/aggregate_attempt04/result.json`

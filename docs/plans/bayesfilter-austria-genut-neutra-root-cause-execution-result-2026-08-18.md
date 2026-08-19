@@ -192,6 +192,17 @@ was overwritten.
 
 ### Classification
 
+> **Correction 2026-08-19:** the localization statement below ("the
+> divergence is in the higher-moment correction ... not the upstream
+> recursion") is wrong relative to that claim. The follow-up bisection
+> campaign reproduced the within-mode inequality at `T=3` with ZERO
+> correction steps; the `T=1` control was too weak to detect the
+> recursion-lane divergence. See
+> `docs/plans/bayesfilter-austria-genut-graph-mode-divergence-localization-result-2026-08-19.md`,
+> which also records that `disable_meta_optimizer=True` restores bitwise
+> identity (grappler-rewrite classification) and that the XLA arm is
+> nonfinite/invalid at `T=20` on the current source (hard veto).
+
 Compiler-mode confirmation failure, current source. The failure is localized
 to graph-mode tracing of the `T=20` four-correction route: the value program
 and the ForwardAccumulator-carrying value program compile to different primal

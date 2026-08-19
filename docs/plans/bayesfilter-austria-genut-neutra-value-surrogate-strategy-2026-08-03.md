@@ -2,6 +2,15 @@
 
 Date: 2026-08-03
 
+> **Partially superseded 2026-08-19** by
+> `docs/plans/bayesfilter-austria-genut-neutra-root-cause-execution-result-2026-08-18.md`
+> for the score-instability premise: the "unstable GenUT score" motivating
+> this strategy was the manual recursive score, later found wrong relative to
+> the complete finite value program and replaced by forward autodiff of a
+> shared primal (exact CPU authority at `T=1,2,20`). The score-free
+> proposal-force mathematics below is unaffected as mathematics; whether the
+> strategy is still needed on the repaired route is not checked.
+
 Status: `RECORDED_STRATEGY_WITH_SCORE_FREE_RETAINED_HMC_CANARY`
 
 ## Direct conclusion

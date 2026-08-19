@@ -194,9 +194,24 @@ def standard_pairwise_backward_marks(
     if particle_count % block_size != 0:
         raise ValueError("child_block_size must divide the particle count")
 
-    inherited_blocks = []
-    for start in range(0, particle_count, block_size):
-        child_block = children[start : start + block_size]
+    block_count = particle_count // block_size
+    block_step = tf.constant(block_size, tf.int32)
+    parameter_count = callbacks.parameter_count
+
+    def _block_slice(value: Tensor, start: Tensor) -> Tensor:
+        width = value.shape[1:]
+        begin = tf.concat([[start], tf.zeros([len(width)], tf.int32)], axis=0)
+        extent = tf.constant(
+            [block_size, *[int(item) for item in width]], tf.int32
+        )
+        result = tf.slice(value, begin, extent)
+        return tf.ensure_shape(result, [block_size, *width])
+
+    def _block_body(
+        block_index: Tensor, blocks: tf.TensorArray
+    ) -> tuple[Tensor, tf.TensorArray]:
+        start = block_index * block_step
+        child_block = _block_slice(children, start)
         parent_grid = tf.broadcast_to(
             parents[None, :, :], [block_size, particle_count, state_dimension]
         )
@@ -224,21 +239,38 @@ def standard_pairwise_backward_marks(
         transition_score = tf.cast(
             tf.reshape(
                 transition_score,
-                [block_size, particle_count, callbacks.parameter_count],
+                [block_size, particle_count, parameter_count],
             ),
             theta.dtype,
         )
         backward = tf.nn.softmax(
             transition_log + parent_log_weights[None, :], axis=1
         )
-        inherited_blocks.append(
-            tf.einsum(
-                "ki,kip->kp",
-                backward,
-                parent_marks[None, :, :] + transition_score,
-            )
+        block_marks = tf.einsum(
+            "ki,kip->kp",
+            backward,
+            parent_marks[None, :, :] + transition_score,
         )
-    inherited = tf.concat(inherited_blocks, axis=0)
+        return block_index + 1, blocks.write(block_index, block_marks)
+
+    # Sequential XLA While region: one child block's O(block x N)
+    # intermediates live at a time. An unrolled Python loop here lets XLA
+    # keep all blocks co-live, which is O(N^2) peak memory and OOMs at
+    # large N (see the 2026-08-19 result note).
+    inherited_blocks = tf.TensorArray(
+        theta.dtype,
+        size=block_count,
+        element_shape=tf.TensorShape([block_size, parameter_count]),
+    )
+    _, inherited_blocks = tf.while_loop(
+        lambda block_index, _blocks: block_index < block_count,
+        _block_body,
+        (tf.zeros([], tf.int32), inherited_blocks),
+        parallel_iterations=1,
+    )
+    inherited = tf.reshape(
+        inherited_blocks.stack(), [particle_count, parameter_count]
+    )
     observation_score = callbacks.model.observation_log_density_parameter_score(
         theta64,
         tf.cast(children, tf.float64),

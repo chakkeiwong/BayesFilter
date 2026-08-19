@@ -2,6 +2,16 @@
 
 Date: 2026-08-05
 
+> **Superseded 2026-08-19** by
+> `docs/plans/bayesfilter-austria-genut-neutra-root-cause-reset-memo-2026-08-18.md`
+> and the execution result for the score-route premise: the score-dispersion
+> evidence here was measured on the manual recursive score, which was later
+> found wrong relative to the complete finite value program and replaced by
+> forward autodiff of a shared primal (old paths survive under diagnostic
+> names only). The pairwise-stabilization verdict is warm-start evidence for
+> the current route, not current-route evidence. The currently tested Austria
+> callable is `batch_diagonal_candidate` without pairwise correction.
+
 Prior result:
 `docs/plans/bayesfilter-austria-sir-pairwise-moment-genut-score-trial-result-2026-07-30.md`
 
