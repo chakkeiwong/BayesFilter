@@ -207,3 +207,17 @@ and the standing 3-consecutive-launch-failure stop.
   (b) same float32-constant bug class as P1 in log(2*pi) — 3.1e-8 constant
   offset caught by the 1e-8 density identity gate. R-E note: neither fix
   loosened a declared tolerance.
+
+- 2026-08-21 (ledger): P3 CLOSED (LGSSM slice) — `ledh_canonical_filter_tf.py`:
+  full canonical per-step assembly, value path. Gates: S-1 Kalman exactness
+  (three seeds, N=4096, rel err 4.6e-2 -> after weight fix within 5e-3),
+  ESS mandatory output, C-8 control routing, C-10 provenance rejection,
+  S-4 fail-closed. Two gate-caught defects: (a) PF-PF weight used the
+  flow's predicted-covariance proposal density where Li(17) requires the
+  TRANSITION density of the pre-flow sample — caught by a 1D exact-marginal
+  probe, the precise error class ch19c's weight-formula warning names;
+  (b) Contract-E eigvalsh raises on poisoned input rather than NaN-masking,
+  so fail-closed sanitization with validity recording was added before the
+  reset. Remaining P3 scope (Austria + four more models' callbacks) rolls
+  into the model-onboarding track of P5/P6; LGSSM is the gating fixture per
+  the plan's six-model sequencing rule.
