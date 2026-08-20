@@ -181,3 +181,13 @@ the deletion phase is the only overlap point and is last). The wall-clock
 dominant costs are P5/P6 GPU ladders; budget: this execution proceeds until
 blocked or complete per owner instruction, with per-process caps of 100 min
 and the standing 3-consecutive-launch-failure stop.
+
+- 2026-08-21 (ledger): Worktree `ledh-canonical-rebuild` created from HEAD
+  2f70a055. All required source parts present and tracked. NOTE: this branch
+  intentionally lacks the main worktree's UNCOMMITTED 2026-08-20 edits to
+  `cubature_genut_batch_tf.py` (Class B guards + value-side dual-cap port).
+  Acceptable under the isolation rule: the rebuild builds NEW
+  `ledh_canonical_*` modules and does not modify the legacy batch lane; the
+  legacy lane is deleted at P7 regardless. The guard/port work's durable
+  value (parity-oracle methodology, guard patterns) is re-instantiated
+  natively in the canonical modules. P0 begins.
