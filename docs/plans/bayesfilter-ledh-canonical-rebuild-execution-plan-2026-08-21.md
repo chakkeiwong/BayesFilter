@@ -191,3 +191,19 @@ and the standing 3-consecutive-launch-failure stop.
   legacy lane is deleted at P7 regardless. The guard/port work's durable
   value (parity-oracle methodology, guard patterns) is re-instantiated
   natively in the canonical modules. P0 begins.
+
+- 2026-08-21 (ledger): P1 CLOSED — `ledh_ukf_lifecycle_tf.py`, gates
+  C-1/C-6/C-7 + Kalman fixture green (4 passed; failed-first verified).
+  Bug caught by gate: tf.fill materialized float32-truncated unscented
+  weights; fixed with dtype-explicit constants.
+- 2026-08-21 (ledger): P2 CLOSED — `ledh_flow_perparticle_tf.py`: faithful
+  dual-state pseudo-time Algorithm 1 flow (per-particle A/b, theta-product),
+  superseding the one-shot closed-form map of the experiments-tree core
+  (fidelity note recorded in module docstring). Gates C-2/C-3/C-4(x2)/C-5
+  green (5 passed). Two gate-driven corrections: (a) C-4 refinement test
+  corrected to the EDH pooled-linearization limit (per-particle LEDH
+  linearization does not converge to the single pooled Kalman mean — that
+  expectation was the test's error, documented in the test docstring);
+  (b) same float32-constant bug class as P1 in log(2*pi) — 3.1e-8 constant
+  offset caught by the 1e-8 density identity gate. R-E note: neither fix
+  loosened a declared tolerance.
