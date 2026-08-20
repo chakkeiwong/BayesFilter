@@ -41,7 +41,7 @@ def test_s3_flow_parameter_tangent_matches_oracle():
     theta0 = tf.constant([1.0], DTYPE)
 
     def summary_fn(theta):
-        value, _tangent = flow_value_and_parameter_tangent_lgssm(
+        value, _tangent, _ld, _dld = flow_value_and_parameter_tangent_lgssm(
             theta,
             f0,
             q,
@@ -58,7 +58,7 @@ def test_s3_flow_parameter_tangent_matches_oracle():
 
     oracle = oracle_forward_autodiff_score(summary_fn, theta0)
 
-    value, tangent = flow_value_and_parameter_tangent_lgssm(
+    value, tangent, _ld2, _dld2 = flow_value_and_parameter_tangent_lgssm(
         theta0,
         f0,
         q,
