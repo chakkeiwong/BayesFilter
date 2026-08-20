@@ -2,10 +2,11 @@
 
 Date: 2026-08-18
 
-Status: `XLA_T20_NAN_LOCALIZED_TF32_SEEDED_STAGE_D_BLOWUP_GUARD_CORRECT_TF32OFF_XLA_FINITE`
-(see "XLA NaN Localization Campaign, 2026-08-19/20" below)
+Status: `TRUST_CONTROLS_REMOVE_XLA_NAN_CLASS_B_GUARDS_LANDED_GENERAL_ROUTE_PORTED_VALUE_SIDE_CALIBRATION_PENDING`
+(see "Rectification Campaign R0-R6, 2026-08-20" below)
 
 Superseded former statuses (preserved):
+`XLA_T20_NAN_LOCALIZED_TF32_SEEDED_STAGE_D_BLOWUP_GUARD_CORRECT_TF32OFF_XLA_FINITE`
 `GRAPH_INEQUALITY_GRAPPLER_CONSISTENT_METAOFF_BITWISE_RESTORED_XLA_T20_NONFINITE_INVALID_HARD_VETO`
 `GPU_EAGER_PASS_GPU_GRAPH_WITHIN_MODE_IDENTITY_FAIL_XLA_AND_INVARIANTS_NOT_RUN`
 `CPU_REPAIR_AND_DERIVATIVE_AUTHORITY_COMPLETE_GPU_CONFIRMATION_BLOCKED_BY_APPROVAL_502`
@@ -366,3 +367,41 @@ revisited. NeuTra, HMC, tuning, cross-model, dual-cap remain blocked.
 Infrastructure note: ~14 launch rejections from a harness permission-
 classifier outage preceded P0; no process or budget consumed; same class as
 historical approval 502/404 failures.
+
+## Rectification Campaign R0-R6, 2026-08-20 (Claude Code)
+
+Master plan (with all phase annotations):
+`docs/plans/bayesfilter-guardrail-general-route-rectification-plan-2026-08-20.md`
+
+Status update:
+`TRUST_CONTROLS_REMOVE_XLA_NAN_CLASS_B_GUARDS_LANDED_GENERAL_ROUTE_PORTED_VALUE_SIDE_CALIBRATION_PENDING`
+
+Headline results:
+
+1. R2 (pre-edit frozen source): warm-start trust controls (damping 1e-2,
+   radius 0.5) REMOVE the XLA TF32 NaN — `trust_eval_attempt02` is COMPLETE,
+   finite, valid, exact within-mode identity under XLA. Eager arm valid and
+   exact, value shift 0.329 (cap binds 51.3->0.5: NO healthy regime at the
+   frozen scope; the uncapped default's outputs are artifacts of an
+   uncontrolled iteration). Controls remain UNJUSTIFIED warm starts.
+2. R3: Class B Cholesky guards (finiteness + positive diagonal + new
+   `minimum_higher_moment_cholesky_diagonal` diagnostic) in the batch route;
+   check-only; 9 focused CPU tests pass.
+3. R4/R5: batch-native port of the general pairwise + coordinate-cap
+   capability (default-off) with a 3-seed parity oracle vs
+   `higher_moment_shape_jvp`, bitwise default-off inertness, and a
+   fork-regrowth signature guard (`test_genut_batch_general_route_parity.py`,
+   3 passed). LIMITATION: value route only; the batch JVP remains
+   diagonal-only — pairwise/coordinate controls must NOT be enabled on
+   claim-bearing runs until the JVP side is ported (R7).
+4. R1: claudecodex policy extended (Class C justification incl. zero/off;
+   call-chain audit rule; lane forks are prohibited forks), pushed, installed.
+5. R6: calibration protocol defined per control; execution is its own
+   campaign. R7 (wiring switch + full ladder) and R8 (owner decisions:
+   graph-mode scope, TF32 posture, interim-reference acceptability) remain
+   open.
+
+Source state: `cubature_genut_batch_tf.py` edited (R3+R4). All pre-edit
+artifacts remain valid for the pre-edit hashes recorded in their manifests;
+R2 ran BEFORE the edits for comparability. Austria tuning was already
+invalidated by the earlier score repair; nothing here changes that.
