@@ -221,3 +221,16 @@ and the standing 3-consecutive-launch-failure stop.
   reset. Remaining P3 scope (Austria + four more models' callbacks) rolls
   into the model-onboarding track of P5/P6; LGSSM is the gating fixture per
   the plan's six-model sequencing rule.
+
+- 2026-08-21 (ledger): P4 OPENED — derivation note + stage ledger created;
+  autodiff oracle module (C-9-compliant namespace) + governance gates C-9/G-1
+  landed (17 suite total green). S3 — the flow-map parameter tangent, the
+  stage flagged as the dominant research cost — DERIVED and GREEN against
+  the oracle on the LGSSM slice (substep chain rule, dK/dA/db product rules;
+  rtol 1e-4 float64; `ledh_canonical_score_scaffold_tf.py`, expiry G-2).
+  Remaining P4 stages: S1/S5 unscented differentials, S4 weight assembly,
+  S6 reset tangent wiring (pattern exists), S7 wiring (tangents exist),
+  S8 mark accumulation (pattern exists), then nonlinear-model
+  generalization of S3. Remaining phases: P5 batch port + compiled-mode
+  gates, P6 calibration + ladders, P7 deletion + rebind, Part 4 leaderboard
+  plan + execution, Part 5 historical-battery rerun.
