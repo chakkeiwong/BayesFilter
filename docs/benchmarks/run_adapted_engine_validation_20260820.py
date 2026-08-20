@@ -33,12 +33,12 @@ HORIZON = 8
 
 
 def kalman_hint_factory(n, seed):
-    """Companion Kalman filter: predictive-moment hints (m_t|y_1:t-ish).
+    """Companion Kalman filter supplying M2-JOINT hints (v2 triangular).
 
-    Uses the FILTERED moment at t (the paper's 5.2 estimates moments of
-    q_t itself; the filtered moment is the tightest available already-
-    computed proxy the benchmark owns). Model matrices duplicated from
-    case_with_steps' fixture family.
+    Returns the joint filtered moments of (x_t, x_{t-1}) | y_{1:t} in
+    (current, previous) order, including the lag-one cross-covariance
+    (paper 5.2's joint bridging object; exact for the LGSSM fixture).
+    Model matrices duplicated from case_with_steps' fixture family.
     """
 
     rng = np.random.default_rng(seed)
@@ -49,14 +49,23 @@ def kalman_hint_factory(n, seed):
     def hint(t, y_t):
         # advance the companion filter to time t (called once per step, in order)
         assert t == state["t"] + 1, "hints must be requested in step order"
-        mean = A @ state["mean"]; cov = A @ state["cov"] @ A.T + Q
+        m_prev, P_prev = state["mean"], state["cov"]
+        mean = A @ m_prev; cov = A @ P_prev @ A.T + Q
+        cross_pred = P_prev @ A.T          # Cov(x_{t-1}, x_t | y_{1:t-1})
         S = H @ cov @ H.T + R
         K = cov @ H.T @ np.linalg.inv(S)
         y = np.asarray(y_t)
         f_mean = mean + K @ (y - H @ mean)
         f_cov = cov - K @ S @ K.T
+        # joint update: x_{t-1} block conditions on y_t through the cross term
+        J = cross_pred @ H.T @ np.linalg.inv(S)     # gain onto x_{t-1}
+        p_mean = m_prev + J @ (y - H @ mean)
+        p_cov = P_prev - J @ S @ J.T
+        cross_f = cross_pred - J @ S @ K.T          # Cov(x_{t-1}, x_t | y_{1:t})
+        joint_mean = np.concatenate([f_mean, p_mean])
+        joint_cov = np.block([[f_cov, cross_f.T], [cross_f, p_cov]])
         state["mean"], state["cov"], state["t"] = f_mean, f_cov, t
-        return tf.constant(f_mean, DTYPE), tf.constant(f_cov, DTYPE)
+        return tf.constant(joint_mean, DTYPE), tf.constant(joint_cov, DTYPE)
 
     def observe_t0(y0):
         S = state["cov"] + R

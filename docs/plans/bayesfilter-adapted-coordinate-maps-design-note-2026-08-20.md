@@ -269,3 +269,138 @@ Scope-identity: map_form in {blockdiag_affine, triangular_affine};
 kappa fields as before. Non-claims: single-seed evidence chain
 unchanged; no claim triangular suffices at n=8 (5.3 nonlinear remains
 the next rung of the paper's hierarchy).
+
+## 10. v2 triangular results (2026-08-21): fits SOLVED, containment truncation now the binding defect
+
+Rung 3 (n=2): per-step 1.10e-2 — worse than block-diagonal's 4.2e-3 —
+but with fit rms COLLAPSED 40x (1.9e-4..6.9e-4 vs 1.4e-2..3.7e-2): the
+triangular coordinates essentially solve the representation problem at
+n=2. Decisive telemetry: the 32768-row and 8192-row cells give the
+IDENTICAL total gap (8.763e-2 to four digits) — the residual error is
+ROW-INDEPENDENT, i.e. a deterministic bias, not sampling/fit error.
+Shrink 0.84..0.96 (the L_pc row-sums now trigger containment even at
+n=2, where block-diagonal had shrink 1.0).
+
+Rung 4 (n=4): 0.61/step (vs 0.70 block-diagonal floor); step 1 reaches
+-0.12 (near the bar) but steps 2+ sit at -0.5..-0.96 with shrink
+0.65..0.90 and fit rms still 0.16..0.21.
+
+MECHANISM (now isolated): the containment shrink truncates the
+integration box below the target's support; the mass outside the
+shrunken kappa-sigma polytope is lost DETERMINISTICALLY from every
+increment (hence row-independence). The chained-box constraint is the
+driver: each step's previous-block box must fit inside the LAST step's
+current-block box, so shrink compounds pressure backward.
+
+WHY THIS IS GOOD NEWS: under triangular coordinates, box width and
+target coverage are DECOUPLED (the conditional is tracked by L_pc; a
+wider box costs only polynomial resolution, which the 40x fit-rms
+collapse shows is now cheap). The obvious next arm — impossible under
+block-diagonal, natural now — is WIDER kappas: kappa_c large enough
+that next-step containment never binds, kappa_p wide enough to cover
+the tails. Predicted signature if correct: shrink -> 1.0, the
+deterministic bias -> Gaussian tail mass of the un-shrunk box
+(~1e-3-scale at kappa 4), fits stay resolved.
+
+Next arm: triangular kappa sweep (kc, kp) in {(5,4), (6,4), (6,5)} at
+n=4 plus one n=2 cell — if shrink releases and the row-independent bias
+collapses, rung 3 AND rung 4 both close with tuned-wide kappas.
+
+## 11. Wide-kappa arm REFUTED: the chained-box fixed point (2026-08-21)
+
+| kc / kp (triangular, n=4) | per-step | min shrink | EFFECTIVE kp (shrink*kp) |
+|---|---|---|---|
+| 3.0 / 3.0 | 0.61 | ~0.72 | 2.2 |
+| 5.0 / 4.0 | 0.87 | 0.500 | 2.0 |
+| 6.0 / 4.0 | 1.23 | 0.466 | 1.9 |
+| 6.0 / 5.0 | 1.38 | 0.406 | 2.0 |
+
+Section 10's prediction is REFUTED, and the telemetry shows a FIXED
+POINT: the effective previous-block width shrink*kappa_p is pinned at
+~2.0-2.2 sigma REGARDLESS of the requested kappas, while wider kappa_c
+only dilutes fit resolution (errors rise monotonically with kc).
+
+Mechanism: the containment cap is relative — the p-box must fit inside
+the OLD current-box, and the L1 row-sum bound over the 2n-column
+transfer L_old^{-1}[L_pc | L_pp] costs an O(sqrt(2n))-conservative
+factor plus the genuine corner spread; since L_old itself scales with
+kappa_c, requested widths cancel and the cap is invariant. A ~2-sigma
+effective box truncates real tail mass every step (the row-independent
+deterministic bias of Section 10).
+
+CANDIDATE REPAIRS (design fork):
+(a) Row-exact containment: shrink to the ACTUAL frozen rows' z_old
+    max, not the worst-case corner bound (rows are frozen and known at
+    map-construction time — still deterministic and fail-closed).
+    Expected gain modest (Sobol rows do approach corners).
+(b) Truncation-mass correction: the retained object is exactly
+    integrable; compute the retained mass NOT covered by the new box
+    image and correct the increment. Stays in the bounded-Legendre
+    program; new derivation needed for the correction term's place in
+    the declared program.
+(c) Gaussian-reference program variant: the SOURCE construction
+    (Section 5 reference eta on R^m) never chains boxes at all — the
+    bounded-box chaining is OUR program's artifact, not the paper's.
+    Faithful but a major program change (bases, mass matrices, Gram
+    chains are all bounded-Legendre today).
+
+## 12. Truncation-mass correction (owner-selected fork; derivation v1)
+
+The uncorrected increment computes the predictive mass restricted to
+the new box image: M_in = exp(shift) Zc_new / Zc_prev-normalization.
+The deterministic bias of Sections 10-11 is exactly the mass of the
+step integrand outside that image. That missed mass is a SCALAR (it
+enters only the likelihood increment, never the retained object), so
+it needs no TT fit — plain frozen quadrature suffices, and its Monte
+Carlo error is benign because the correction is small relative to M_in.
+
+Estimator (v1, frozen Sobol, seed-deterministic):
+- sample z ~ uniform([-1,1]^2n); map x_c = m_c + L_cc z_1 (new c-box),
+  x_p = map_old(z_2) (FULL old p-box);
+- keep only points OUTSIDE the new box image: z_p_new =
+  L_pp^{-1}(x_p - m_p - L_pc z_1) with |z_p_new|_inf > 1;
+- integrand: p_ret_phys(x_p) * exp(log_trans + log_obs) using the
+  retained object's own physical evaluator (normalization consistent
+  with the increment's telescoping);
+- M_out = (V_phys / N_shell) * sum(kept integrand),
+  V_phys = 2^n |det L_cc| * 2^n |det L_old|;
+- corrected increment = logaddexp(increment_uncorrected, log M_out).
+
+Declared residuals (v1 non-claims): x_c outside the new c-box is NOT
+captured (bounded by observation-likelihood tail mass at kappa_c
+sigma); the RETAINED law remains box-conditioned (the correction fixes
+likelihood mass only — posterior-shape truncation is second-order in
+the tail mass and stays a recorded approximation). Both effects shrink
+as kappas widen, which the correction now makes affordable.
+
+## 13. Truncation correction results (2026-08-21): n=2 SOLVED; n=4 residual isolated to fit quality
+
+Rung 3 (n=2): PASS at 5.4e-5/step (bar 2.5e-3; 46x margin) at the
+ladder budget, 8.6e-5 at the cheap 8192-row budget. The correction
+paid back the Section 10 deterministic bias exactly; combined with the
+triangular map's fit-rms collapse, the adapted engine at n=2 is ~40x
+more accurate than the fixed engine's best at 4x fewer rows. The
+n=2 program is comprehensively solved.
+
+Rung 4 (n=4): 0.45/step (from 0.61). Step 1 now +0.06 (INSIDE the
+bar); steps 2+ sit at -0.44..-0.83 with fit rms 0.16..0.22. The
+correction removed ~0.15/step (its share of the bias); the remaining
+error correlates with fit rms, NOT with shrink/coverage telemetry:
+step 1 (fit rms 0.19, but old box = wide global box so the retained
+law entering it is exact) is fine, while steps 2+ inherit RETAINED
+OBJECTS fitted at rms ~0.2 — the truncation correction integrates the
+retained DENSITY, which is itself off.
+
+ISOLATION: at n=4/r=6/deg12 the TRANSITION-STEP fit in triangular
+coordinates still has rms ~0.2 (vs ~4e-4 at n=2): the 9-axis branch
+target is under-resolved in RANK or DEGREE — but now in coordinates
+where those are the real and only lever. This is exactly the question
+the P1B ladder exists to answer (r*(4) under a valid design), no
+longer masked by coverage/truncation defects.
+
+STATUS: rung 4's 0.1 bar is NOT met at r=6/deg12, and the evidence
+says it is a resolution bar, not a design defect. The design-note
+ladder therefore hands over to the ladder campaign: attempt04 with
+map_form=triangular_affine + truncation correction, rank ladder
+r in {6, 8, 10} (+ degree arm if rank saturates), n in {2, 4},
+three seeds — the program's first valid r*(4) measurement.

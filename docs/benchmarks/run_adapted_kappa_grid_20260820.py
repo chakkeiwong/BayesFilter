@@ -27,8 +27,8 @@ from bayesfilter.highdim.squared_tt_engine_adapted_tf import (
 )
 
 HORIZON = 8
-n = 4
-for kc, kp in ((3.0, 2.5), (3.5, 2.5), (3.5, 3.0), (3.0, 3.0)):
+n = int(os.environ.get("GRID_N", "4"))
+for kc, kp in ((5.0, 4.0), (6.0, 4.0), (6.0, 5.0)):
     adapter, ys, kalman_steps = case_with_steps(n, 42 + n)
     hint, observe_t0 = kalman_hint_factory(n, 42 + n)
     observe_t0(ys[0].numpy())
