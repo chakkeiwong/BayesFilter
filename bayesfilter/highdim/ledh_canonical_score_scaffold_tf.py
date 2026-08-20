@@ -332,10 +332,250 @@ def multi_step_value_and_score_lgssm(
     return total, None
 
 
+def _cholesky_forward_differential(
+    chol: Tensor, d_matrix: Tensor
+) -> Tensor:
+    """dL for L L^T = Sigma: dL = L Phi(L^{-1} dSigma L^{-T}).
+
+    Phi = lower triangle with halved diagonal (standard forward-mode
+    Cholesky differential; same identity as the repo's `_cholesky_jvp`).
+    Batched over the leading axis.
+    """
+
+    inv_d = tf.linalg.triangular_solve(chol, d_matrix)
+    inv_d_inv_t = tf.linalg.matrix_transpose(
+        tf.linalg.triangular_solve(
+            chol, tf.linalg.matrix_transpose(inv_d)
+        )
+    )
+    lower = tf.linalg.band_part(inv_d_inv_t, -1, 0)
+    phi = lower - 0.5 * tf.linalg.diag(tf.linalg.diag_part(inv_d_inv_t))
+    return tf.linalg.matmul(chol, phi)
+
+
+def _sigma_points_with_tangent(
+    means: Tensor,
+    covariances: Tensor,
+    d_means: Tensor,
+    d_covariances: Tensor,
+    scale: float,
+    jitter: float,
+) -> tuple[Tensor, Tensor]:
+    """Sigma points and their analytical tangents (Cholesky differential)."""
+
+    dim = tf.shape(means)[1]
+    dtype = means.dtype
+    eye = tf.eye(dim, dtype=dtype)
+    stabilized = 0.5 * (
+        covariances + tf.linalg.matrix_transpose(covariances)
+    ) + tf.constant(jitter, dtype=dtype) * eye
+    d_stabilized = 0.5 * (
+        d_covariances + tf.linalg.matrix_transpose(d_covariances)
+    )
+    scale_c = tf.constant(scale, dtype=dtype)
+    chol = tf.linalg.cholesky(scale_c * stabilized)
+    d_chol = _cholesky_forward_differential(chol, scale_c * d_stabilized)
+    offsets = tf.linalg.matrix_transpose(chol)
+    d_offsets = tf.linalg.matrix_transpose(d_chol)
+    points = tf.concat(
+        [
+            means[:, None, :],
+            means[:, None, :] + offsets,
+            means[:, None, :] - offsets,
+        ],
+        axis=1,
+    )
+    d_points = tf.concat(
+        [
+            d_means[:, None, :],
+            d_means[:, None, :] + d_offsets,
+            d_means[:, None, :] - d_offsets,
+        ],
+        axis=1,
+    )
+    return points, d_points
+
+
+def ukf_predict_with_parameter_tangent(
+    states: Tensor,
+    covariances: Tensor,
+    d_states: Tensor,
+    d_covariances: Tensor,
+    transition_mean_fn,
+    transition_mean_tangent_fn,
+    process_noise_covariance: Tensor,
+    *,
+    d_process_noise_covariance: Tensor | None = None,
+    alpha: float = 1.0,
+    beta: float = 2.0,
+    kappa: float = 0.0,
+    jitter: float = 1.0e-12,
+) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    """S1: unscented prediction with analytical parameter tangent.
+
+    ``transition_mean_tangent_fn(points, d_points)`` must return the TOTAL
+    tangent of the dynamics at ``points`` (partial-theta term plus Jacobian
+    times ``d_points``) — the same contract as the repo's model tangent
+    callbacks.
+    """
+
+    from bayesfilter.highdim.ledh_ukf_lifecycle_tf import _unscented_weights
+
+    dtype = states.dtype
+    dim = int(states.shape[1])
+    count = tf.shape(states)[0]
+    mean_w, cov_w, scale = _unscented_weights(
+        dim, dtype, alpha=alpha, beta=beta, kappa=kappa
+    )
+    points, d_points = _sigma_points_with_tangent(
+        states, covariances, d_states, d_covariances, scale, jitter
+    )
+    flat = tf.reshape(points, [-1, dim])
+    d_flat = tf.reshape(d_points, [-1, dim])
+    pushed = tf.reshape(
+        transition_mean_fn(flat), [count, 2 * dim + 1, dim]
+    )
+    d_pushed = tf.reshape(
+        transition_mean_tangent_fn(flat, d_flat),
+        [count, 2 * dim + 1, dim],
+    )
+    predicted_means = tf.einsum("s,nsd->nd", mean_w, pushed)
+    d_predicted_means = tf.einsum("s,nsd->nd", mean_w, d_pushed)
+    centered = pushed - predicted_means[:, None, :]
+    d_centered = d_pushed - d_predicted_means[:, None, :]
+    predicted_covs = 0.5 * (
+        lambda m: m + tf.linalg.matrix_transpose(m)
+    )(
+        tf.einsum("s,nsi,nsj->nij", cov_w, centered, centered)
+    ) + tf.cast(process_noise_covariance, dtype)[None]
+    d_predicted_covs = tf.einsum(
+        "s,nsi,nsj->nij", cov_w, d_centered, centered
+    ) + tf.einsum("s,nsi,nsj->nij", cov_w, centered, d_centered)
+    d_predicted_covs = 0.5 * (
+        d_predicted_covs + tf.linalg.matrix_transpose(d_predicted_covs)
+    )
+    if d_process_noise_covariance is not None:
+        d_predicted_covs += tf.cast(d_process_noise_covariance, dtype)[None]
+    return predicted_means, predicted_covs, d_predicted_means, d_predicted_covs
+
+
+def ukf_update_with_parameter_tangent(
+    predicted_means: Tensor,
+    predicted_covariances: Tensor,
+    d_predicted_means: Tensor,
+    d_predicted_covariances: Tensor,
+    observation_mean_fn,
+    observation_mean_tangent_fn,
+    observation_covariance: Tensor,
+    observation: Tensor,
+    *,
+    d_observation_covariance: Tensor | None = None,
+    alpha: float = 1.0,
+    beta: float = 2.0,
+    kappa: float = 0.0,
+    jitter: float = 1.0e-12,
+) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    """S5: unscented update with analytical parameter tangent."""
+
+    from bayesfilter.highdim.ledh_ukf_lifecycle_tf import _unscented_weights
+
+    dtype = predicted_means.dtype
+    dim = int(predicted_means.shape[1])
+    obs_dim = int(observation.shape[-1])
+    count = tf.shape(predicted_means)[0]
+    mean_w, cov_w, scale = _unscented_weights(
+        dim, dtype, alpha=alpha, beta=beta, kappa=kappa
+    )
+    points, d_points = _sigma_points_with_tangent(
+        predicted_means,
+        predicted_covariances,
+        d_predicted_means,
+        d_predicted_covariances,
+        scale,
+        jitter,
+    )
+    flat = tf.reshape(points, [-1, dim])
+    d_flat = tf.reshape(d_points, [-1, dim])
+    observed = tf.reshape(
+        observation_mean_fn(flat), [count, 2 * dim + 1, obs_dim]
+    )
+    d_observed = tf.reshape(
+        observation_mean_tangent_fn(flat, d_flat),
+        [count, 2 * dim + 1, obs_dim],
+    )
+    observed_means = tf.einsum("s,nso->no", mean_w, observed)
+    d_observed_means = tf.einsum("s,nso->no", mean_w, d_observed)
+    centered_x = points - predicted_means[:, None, :]
+    d_centered_x = d_points - d_predicted_means[:, None, :]
+    centered_y = observed - observed_means[:, None, :]
+    d_centered_y = d_observed - d_observed_means[:, None, :]
+    innovation_cov = tf.einsum(
+        "s,nsi,nsj->nij", cov_w, centered_y, centered_y
+    ) + tf.cast(observation_covariance, dtype)[None]
+    innovation_cov = 0.5 * (
+        innovation_cov + tf.linalg.matrix_transpose(innovation_cov)
+    )
+    d_innovation_cov = tf.einsum(
+        "s,nsi,nsj->nij", cov_w, d_centered_y, centered_y
+    ) + tf.einsum("s,nsi,nsj->nij", cov_w, centered_y, d_centered_y)
+    d_innovation_cov = 0.5 * (
+        d_innovation_cov + tf.linalg.matrix_transpose(d_innovation_cov)
+    )
+    if d_observation_covariance is not None:
+        d_innovation_cov += tf.cast(d_observation_covariance, dtype)[None]
+    cross_cov = tf.einsum(
+        "s,nsi,nsj->nij", cov_w, centered_x, centered_y
+    )
+    d_cross_cov = tf.einsum(
+        "s,nsi,nsj->nij", cov_w, d_centered_x, centered_y
+    ) + tf.einsum("s,nsi,nsj->nij", cov_w, centered_x, d_centered_y)
+    chol = tf.linalg.cholesky(
+        innovation_cov
+        + tf.constant(jitter, dtype=dtype) * tf.eye(obs_dim, dtype=dtype)
+    )
+    gain = tf.linalg.matrix_transpose(
+        tf.linalg.cholesky_solve(chol, tf.linalg.matrix_transpose(cross_cov))
+    )
+    # dK = (dC - K dS) S^{-1}
+    residual_matrix = d_cross_cov - tf.einsum(
+        "nio,nop->nip", gain, d_innovation_cov
+    )
+    d_gain = tf.linalg.matrix_transpose(
+        tf.linalg.cholesky_solve(
+            chol, tf.linalg.matrix_transpose(residual_matrix)
+        )
+    )
+    innovation = observation[None, :] - observed_means
+    d_innovation = -d_observed_means
+    post_means = predicted_means + tf.einsum("nio,no->ni", gain, innovation)
+    d_post_means = (
+        d_predicted_means
+        + tf.einsum("nio,no->ni", d_gain, innovation)
+        + tf.einsum("nio,no->ni", gain, d_innovation)
+    )
+    ksk = tf.einsum("nio,nop,njp->nij", gain, innovation_cov, gain)
+    d_ksk = (
+        tf.einsum("nio,nop,njp->nij", d_gain, innovation_cov, gain)
+        + tf.einsum("nio,nop,njp->nij", gain, d_innovation_cov, gain)
+        + tf.einsum("nio,nop,njp->nij", gain, innovation_cov, d_gain)
+    )
+    post_covs = 0.5 * (
+        (predicted_covariances - ksk)
+        + tf.linalg.matrix_transpose(predicted_covariances - ksk)
+    )
+    d_post_covs = 0.5 * (
+        (d_predicted_covariances - d_ksk)
+        + tf.linalg.matrix_transpose(d_predicted_covariances - d_ksk)
+    )
+    return post_means, post_covs, d_post_means, d_post_covs
+
+
 __all__ = [
     "flow_value_and_parameter_tangent_lgssm",
     "one_step_increment_and_parameter_tangent_lgssm",
     "multi_step_value_and_score_lgssm",
+    "ukf_predict_with_parameter_tangent",
+    "ukf_update_with_parameter_tangent",
 ]
 
 

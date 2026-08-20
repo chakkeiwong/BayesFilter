@@ -234,3 +234,19 @@ and the standing 3-consecutive-launch-failure stop.
   generalization of S3. Remaining phases: P5 batch port + compiled-mode
   gates, P6 calibration + ladders, P7 deletion + rebind, Part 4 leaderboard
   plan + execution, Part 5 historical-battery rerun.
+
+- 2026-08-21 (ledger): P4 stages S1/S2/S3/S4/S5/S8 ALL DERIVED AND
+  ORACLE-GREEN. S1/S5 (unscented predict/update tangents with the Cholesky
+  Phi-operator differential and gain differential) gated on a NONLINEAR
+  fixture with chained state+parameter tangents. Multi-step recursion gate
+  green (4-step LGSSM, state-tangent chaining, log-det trace tangent).
+  Debugging note for the record: the S1/S5 first failure was in the TEST's
+  oracle usage (watched theta0[0] slice inside the closure carried its own
+  accumulator tangent, cancelling the shift path) — verified against
+  central FD before any change; the analytical implementations were correct
+  as first derived. Remaining P4: S6 reset tangent wiring (hand-derived
+  pattern exists in `_restore_cloud_batch_jvp`), S7 wiring (tangents exist
+  in `higher_moment_shape_jvp`), covariance-recursion chaining across steps
+  (S1->S5->S1 composition), nonlinear per-model transition tangents (exist
+  per model). All remaining items are wiring/composition of gated or
+  pre-existing hand-derived parts — no open derivations.
