@@ -1,0 +1,97 @@
+{
+  "budget": {
+    "campaign_wall_cap_seconds": 28800.0,
+    "canary_wall_seconds": 790.2904549430023,
+    "closeout_reserve_seconds": 180.0,
+    "derived_hmc_remainder_seconds": 23503.589557993997,
+    "external_hmc_cap_seconds": 23503,
+    "internal_hmc_cap_seconds": 23323.0,
+    "predictive_reserve_seconds": 3600.0,
+    "preflight_wall_seconds": 3.2075341370000388,
+    "prior_gpu_wall_seconds": 1696.410442006003,
+    "training_wall_seconds": 902.9124529260007
+  },
+  "command": [
+    "docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_hmc_2026_08_19.py",
+    "--device",
+    "1",
+    "--campaign-wall-cap-seconds",
+    "28800",
+    "--predictive-reserve-seconds",
+    "3600",
+    "--time-cap-seconds",
+    "23323",
+    "--training-root",
+    "docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen",
+    "--output-root",
+    "docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc"
+  ],
+  "cwd": "/home/ubuntu/python/BayesFilter",
+  "dtype": "float64",
+  "environment": "tfgpu",
+  "git": {
+    "commit": "5699dafec23de9549a8092bec638997e7973593c",
+    "dirty": true
+  },
+  "jit_compile": true,
+  "managed_session_trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "output_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc",
+  "plan": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+    "sha256": "309340acaf5a0702ffd0f8999f062aceba4c4e87bd595d34ac28e4cc11e2f81c"
+  },
+  "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+  "python_version": "3.13.13",
+  "requested_physical_device_selector": "1",
+  "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc/result.json",
+  "route_policy": {
+    "canonical_policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "classified_route_count": 40,
+    "current_route": {
+      "active_entry_points": [
+        "_execute"
+      ],
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "path": "docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_hmc_2026_08_19.py",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Current SSL-LSTM q=20 common-kernel campaign with canonical sequential admission and anti-pooling diagnostics.",
+      "required_symbols": [
+        "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
+        "run_sequential_neutra_hmc"
+      ]
+    },
+    "discovered_route_count": 40,
+    "ledger_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/c0/route_ledger.json",
+    "ledger_sha256": "5f8c8cd81935d4c4662c36b6dc4e10ada1e9b531e00151207530d817426c1e83",
+    "passed": true
+  },
+  "runner": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_hmc_2026_08_19.py",
+    "sha256": "c7356ab715a334cecb60b41f4b55ad1bcd8a92d694dfad2b15fa7dfb519f2ba7"
+  },
+  "schema": "bayesfilter.ssl_lstm.q20_neutra_global_mixing_hmc_manifest.v1",
+  "status": "UNDER_BUDGETED_HMC",
+  "tf32_enabled": false,
+  "timestamp_completed_utc": "2026-08-19T15:34:03.125258+00:00",
+  "visible_logical_gpus": [
+    "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+  ],
+  "wall_seconds": 10782.834346452008
+}

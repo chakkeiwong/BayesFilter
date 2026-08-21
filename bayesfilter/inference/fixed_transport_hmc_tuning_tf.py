@@ -356,13 +356,27 @@ def tune_fixed_transport_hmc_kernel(
     config: FixedTransportHMCKernelTuningConfig | None = None,
     output_dir: str | Path | None = None,
     run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
+    passthrough_exceptions: tuple[type[Exception], ...] = (),
 ) -> FixedTransportHMCKernelTuningResult:
-    """Tune fixed-length TFP HMC and verify a frozen identity-`z` kernel."""
+    """Tune fixed-length TFP HMC and verify a frozen identity-`z` kernel.
+
+    Campaign-owned resource exceptions may be passed through so a caller can
+    close out as under-budgeted instead of recording a synthetic numerical
+    tuning veto. All other runtime exceptions retain the fail-closed artifact
+    behavior.
+    """
 
     require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
     cfg = config or FixedTransportHMCKernelTuningConfig(initial_step_size=0.1)
     if not isinstance(cfg, FixedTransportHMCKernelTuningConfig):
         raise TypeError("config must be FixedTransportHMCKernelTuningConfig")
+    passthrough = tuple(passthrough_exceptions)
+    if any(
+        not isinstance(exception_type, type)
+        or not issubclass(exception_type, Exception)
+        for exception_type in passthrough
+    ):
+        raise TypeError("passthrough_exceptions must contain Exception subclasses")
     capability = value_score_capability(base_adapter)
     if capability.value_score_authority in _FORBIDDEN_BASE_AUTHORITIES:
         raise ValueError("fixed-transport HMC tuning forbids gradient_tape_fallback")
@@ -387,7 +401,11 @@ def tune_fixed_transport_hmc_kernel(
     mass_payload = _identity_mass_payload(z0, transformed_signature)
     mass_signature = _stable_hash(mass_payload)
     candidates, scale_payload = _candidate_attempts(
-        cfg, adapter=adapter, z0=z0, run_full_chain=run_full_chain
+        cfg,
+        adapter=adapter,
+        z0=z0,
+        run_full_chain=run_full_chain,
+        passthrough_exceptions=passthrough,
     )
     selected = _select_candidate(candidates, cfg)
     selected_candidate = None if selected is None else candidates[selected]
@@ -460,10 +478,15 @@ def _candidate_attempts(
     adapter: FixedTransportValueScoreAdapter,
     z0: tf.Tensor,
     run_full_chain: RunFullChainFn,
+    passthrough_exceptions: tuple[type[Exception], ...],
 ) -> tuple[list[FixedTransportHMCCandidateResult], Mapping[str, Any] | None]:
     if config.fixed_grid_base_step_size_candidates:
         return _fixed_grid_attempts(
-            config, adapter=adapter, z0=z0, run_full_chain=run_full_chain
+            config,
+            adapter=adapter,
+            z0=z0,
+            run_full_chain=run_full_chain,
+            passthrough_exceptions=passthrough_exceptions,
         )
     return [
         _dual_averaging_candidate(
@@ -473,6 +496,7 @@ def _candidate_attempts(
             candidate_index=index,
             leapfrog=leapfrog,
             run_full_chain=run_full_chain,
+            passthrough_exceptions=passthrough_exceptions,
         )
         for index, leapfrog in enumerate(config.leapfrog_grid)
     ], None
@@ -486,6 +510,7 @@ def _dual_averaging_candidate(
     candidate_index: int,
     leapfrog: int,
     run_full_chain: RunFullChainFn,
+    passthrough_exceptions: tuple[type[Exception], ...],
 ) -> FixedTransportHMCCandidateResult:
     state = _initial_state(config, adapter.parameter_dim)
     step = config.initial_step_size
@@ -510,6 +535,8 @@ def _dual_averaging_candidate(
             )
             tuned_step = _scalar_or_none(tune_result.diagnostics.get("final_step_size"))
         except Exception as exc:  # noqa: BLE001 - produce a fail-closed artifact.
+            if isinstance(exc, passthrough_exceptions):
+                raise
             tune_diagnostics = _error_diagnostics(exc)
             tuned_step = None
         tune_vetoes = _basic_hard_vetoes(tune_diagnostics, prefix="tune")
@@ -528,6 +555,7 @@ def _dual_averaging_candidate(
                 candidate_index=candidate_index * 100 + round_index,
                 run_full_chain=run_full_chain,
                 probe_only=True,
+                passthrough_exceptions=passthrough_exceptions,
             )
             screen_diagnostics = screen["diagnostics"]
             screen_vetoes = screen["hard_vetoes"]
@@ -597,6 +625,7 @@ def _dual_averaging_candidate(
         candidate_index=candidate_index,
         run_full_chain=run_full_chain,
         probe_only=False,
+        passthrough_exceptions=passthrough_exceptions,
     )
     return FixedTransportHMCCandidateResult(
         candidate_index,
@@ -617,6 +646,7 @@ def _fixed_grid_attempts(
     adapter: FixedTransportValueScoreAdapter,
     z0: tf.Tensor,
     run_full_chain: RunFullChainFn,
+    passthrough_exceptions: tuple[type[Exception], ...],
 ) -> tuple[list[FixedTransportHMCCandidateResult], Mapping[str, Any]]:
     leapfrog = config.fixed_grid_num_leapfrog_steps or max(config.leapfrog_grid)
     base = max(config.fixed_grid_base_step_size_candidates)
@@ -635,6 +665,7 @@ def _fixed_grid_attempts(
             candidate_index=10_000 + index,
             run_full_chain=run_full_chain,
             probe_only=True,
+            passthrough_exceptions=passthrough_exceptions,
         )
         acceptance = _scalar_or_none(probe["diagnostics"].get("acceptance_rate"))
         acceptance_class = _acceptance_class(acceptance, config)
@@ -675,6 +706,7 @@ def _fixed_grid_attempts(
         candidate_index=0,
         run_full_chain=run_full_chain,
         probe_only=False,
+        passthrough_exceptions=passthrough_exceptions,
     )
     candidate = FixedTransportHMCCandidateResult(
         0,
@@ -701,6 +733,7 @@ def _run_verification(
     candidate_index: int,
     run_full_chain: RunFullChainFn,
     probe_only: bool,
+    passthrough_exceptions: tuple[type[Exception], ...],
 ) -> Mapping[str, Any]:
     chain_config = _chain_config(
         config,
@@ -729,6 +762,8 @@ def _run_verification(
             require_modern=(config.require_modern_rank_normalized_verification and not probe_only),
         )
     except Exception as exc:  # noqa: BLE001 - verification fails closed.
+        if isinstance(exc, passthrough_exceptions):
+            raise
         error = exc
         diagnostics = _error_diagnostics(exc)
     diagnostics = dict(diagnostics)

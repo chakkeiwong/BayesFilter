@@ -1619,6 +1619,430 @@ def test_operational_warmup_live_result_rejects_corrupt_window_ledger() -> None:
         )
 
 
-def test_operational_warmup_rejects_duplicate_start_bank() -> None:
-    with pytest.raises(ValueError, match="start bank"):
-        build_private_start_bank(np.zeros((8, 1)))
+def _legacy_start_bank_oracle(
+    canonical_states: object,
+    *,
+    reference_transform: AffineCoordinateTransform | None = None,
+    minimum_relative_separation: float = 1.0e-4,
+) -> np.ndarray:
+    """Frozen selector from committed comparator 3030d86."""
+
+    states = np.asarray(canonical_states, dtype=float)
+    if states.ndim != 2 or states.shape[0] < 4 or not np.all(np.isfinite(states)):
+        raise ValueError("start bank source must contain at least four finite states")
+    if reference_transform is not None and not isinstance(
+        reference_transform, AffineCoordinateTransform
+    ):
+        raise TypeError("reference_transform must be an AffineCoordinateTransform")
+    separation = float(minimum_relative_separation)
+    if not np.isfinite(separation) or separation <= 0.0:
+        raise ValueError("minimum_relative_separation must be finite and positive")
+    reference = (
+        states
+        if reference_transform is None
+        else np.asarray(
+            reference_transform.theta_to_latent(states).numpy(),
+            dtype=float,
+        )
+    )
+    reference_scale = max(
+        float(np.sqrt(states.shape[1])),
+        float(np.linalg.norm(np.std(reference, axis=0))),
+    )
+    tolerance = separation * reference_scale
+    endpoint_index = states.shape[0] - 1
+    eligible_indices: list[int] = []
+    for index in range(endpoint_index):
+        if np.linalg.norm(reference[index] - reference[endpoint_index]) <= tolerance:
+            continue
+        if all(
+            np.linalg.norm(reference[index] - reference[existing]) > tolerance
+            for existing in eligible_indices
+        ):
+            eligible_indices.append(index)
+    if len(eligible_indices) < 3:
+        raise ValueError("operational warmup start bank is not sufficiently dispersed")
+    selected = np.linspace(0, len(eligible_indices) - 1, 3, dtype=int)
+    bank_indices = [eligible_indices[index] for index in selected] + [endpoint_index]
+    bank = states[bank_indices].astype(float, copy=True)
+    reference_bank = reference[bank_indices]
+    pairwise = np.linalg.norm(
+        reference_bank[:, None, :] - reference_bank[None, :, :], axis=-1
+    )
+    if np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance):
+        raise ValueError("operational warmup start bank is not sufficiently dispersed")
+    bank.setflags(write=False)
+    return bank
+
+
+@pytest.mark.parametrize(
+    "states",
+    (
+        np.array(
+            [[0.0, 0.0], [0.2, 0.4], [1.0, -0.2], [1.5, 0.8], [3.0, 1.0]]
+        ),
+        np.array([[0.0], [0.2], [1.0], [2.0], [3.0], [4.0]]),
+    ),
+)
+def test_start_bank_selector_is_byte_identical_to_frozen_oracle(
+    states: np.ndarray,
+) -> None:
+    expected = _legacy_start_bank_oracle(states)
+    actual = build_private_start_bank(states)
+
+    assert actual.dtype == expected.dtype
+    assert actual.shape == expected.shape
+    assert actual.tobytes() == expected.tobytes()
+    assert actual.flags.writeable is False
+
+
+def test_start_bank_selector_preserves_transform_scaling_and_greedy_order() -> None:
+    states = np.array(
+        [[0.0, 0.0], [0.1, 0.2], [0.3, 1.0], [1.0, 1.2], [2.5, 2.0]]
+    )
+    transform = _transform(np.array([[4.0, 0.6], [0.6, 0.25]]))
+    expected = _legacy_start_bank_oracle(states, reference_transform=transform)
+    actual = build_private_start_bank(states, reference_transform=transform)
+    assessment = hmc_warmup._assess_private_start_bank(
+        states,
+        reference_transform=transform,
+        scope="authoritative_final_window",
+    )
+    reference = np.asarray(transform.theta_to_latent(states).numpy(), dtype=float)
+    expected_std_norm = float(np.linalg.norm(np.std(reference, axis=0)))
+    expected_scale = max(float(np.sqrt(states.shape[1])), expected_std_norm)
+
+    assert actual.tobytes() == expected.tobytes()
+    assert assessment.diagnostic.reference_coordinate_std_norm == pytest.approx(
+        expected_std_norm
+    )
+    assert assessment.diagnostic.reference_scale == pytest.approx(expected_scale)
+    assert assessment.diagnostic.absolute_tolerance == pytest.approx(
+        1.0e-4 * expected_scale
+    )
+
+
+def test_start_bank_selector_keeps_less_than_or_equal_tolerance_boundary() -> None:
+    states = np.arange(5.0).reshape((-1, 1))
+    scale = max(1.0, float(np.linalg.norm(np.std(states, axis=0))))
+    separation = 1.0 / scale
+
+    with pytest.raises(ValueError) as expected_error:
+        _legacy_start_bank_oracle(
+            states,
+            minimum_relative_separation=separation,
+        )
+    with pytest.raises(ValueError) as actual_error:
+        build_private_start_bank(
+            states,
+            minimum_relative_separation=separation,
+        )
+    assessment = hmc_warmup._assess_private_start_bank(
+        states,
+        minimum_relative_separation=separation,
+        scope="authoritative_final_window",
+    )
+
+    assert type(actual_error.value) is type(expected_error.value) is ValueError
+    assert str(actual_error.value) == str(expected_error.value)
+    assert assessment.diagnostic.absolute_tolerance == pytest.approx(1.0)
+    assert assessment.diagnostic.endpoint_distance_count_at_or_below_tolerance == 1
+    assert assessment.diagnostic.failure_code == "insufficient_greedy_eligible"
+
+
+def test_start_bank_endpoint_exclusion_precedes_prior_eligible_exclusion() -> None:
+    states = np.array([[1.5], [0.75], [10.0], [20.0], [0.0]])
+    scale = max(1.0, float(np.linalg.norm(np.std(states, axis=0))))
+    assessment = hmc_warmup._assess_private_start_bank(
+        states,
+        minimum_relative_separation=1.0 / scale,
+        scope="authoritative_final_window",
+    )
+    diagnostic = assessment.diagnostic
+
+    assert diagnostic.selection_succeeded is True
+    assert diagnostic.endpoint_exclusion_count == 1
+    assert diagnostic.prior_eligible_exclusion_count == 0
+    assert diagnostic.final_greedy_eligible_count == 3
+    assert diagnostic.pre_endpoint_candidate_count == (
+        diagnostic.endpoint_exclusion_count
+        + diagnostic.prior_eligible_exclusion_count
+        + diagnostic.final_greedy_eligible_count
+    )
+
+
+@pytest.mark.parametrize(
+    ("states", "message"),
+    (
+        (
+            np.zeros((8, 1)),
+            "operational warmup start bank is not sufficiently dispersed",
+        ),
+        (
+            np.array([[0.0], [1.0], [2.0], [np.nan]]),
+            "start bank source must contain at least four finite states",
+        ),
+        (
+            np.zeros((3, 1)),
+            "start bank source must contain at least four finite states",
+        ),
+    ),
+)
+def test_start_bank_failures_match_oracle_and_carry_no_public_diagnostic(
+    states: np.ndarray,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError) as expected_error:
+        _legacy_start_bank_oracle(states)
+    with pytest.raises(ValueError) as actual_error:
+        build_private_start_bank(states)
+
+    assert type(actual_error.value) is type(expected_error.value) is ValueError
+    assert str(actual_error.value) == str(expected_error.value) == message
+    assert not hasattr(
+        actual_error.value,
+        hmc_warmup._START_BANK_DIAGNOSTIC_ATTRIBUTE,
+    )
+
+
+def test_start_bank_combined_interpretations_are_shadow_decision_inert() -> None:
+    passing = np.arange(10.0).reshape((5, 2))
+    failing = np.zeros((4, 2))
+    authoritative_pass = hmc_warmup._assess_private_start_bank(
+        passing,
+        scope="authoritative_final_window",
+    ).diagnostic
+    authoritative_fail = hmc_warmup._assess_private_start_bank(
+        failing,
+        scope="authoritative_final_window",
+    ).diagnostic
+    shadow_pass = hmc_warmup._best_effort_shadow_start_bank_scope(
+        passing,
+        reference_transform=None,
+        minimum_relative_separation=1.0e-4,
+    )
+    shadow_fail = hmc_warmup._best_effort_shadow_start_bank_scope(
+        failing,
+        reference_transform=None,
+        minimum_relative_separation=1.0e-4,
+    )
+    shadow_conversion_fail = hmc_warmup._best_effort_shadow_start_bank_scope(
+        [object()],
+        reference_transform=None,
+        minimum_relative_separation=1.0e-4,
+    )
+
+    final_fail_shadow_pass = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=authoritative_fail,
+        shadow=shadow_pass,
+    )
+    both_fail = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=authoritative_fail,
+        shadow=shadow_fail,
+    )
+    final_pass_shadow_fail = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=authoritative_pass,
+        shadow=shadow_conversion_fail,
+    )
+    post_selection_failure = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=replace(
+            authoritative_pass,
+            selection_succeeded=False,
+            failure_code="post_selection_pairwise_failure",
+        ),
+        shadow=shadow_pass,
+    )
+
+    assert final_fail_shadow_pass.interpretation == "final_fail_shadow_pass"
+    assert both_fail.interpretation == "both_fail"
+    assert final_pass_shadow_fail.interpretation == "final_pass"
+    assert final_pass_shadow_fail.shadow.failure_code == (
+        "shadow_input_conversion_failure"
+    )
+    assert post_selection_failure.interpretation == (
+        "post_selection_invariant_failure"
+    )
+    assert all(
+        item.public_payload()["shadow_decision_effect"] is False
+        for item in (
+            final_fail_shadow_pass,
+            both_fail,
+            final_pass_shadow_fail,
+            post_selection_failure,
+        )
+    )
+
+
+def test_start_bank_shadow_failures_are_fixed_bounded_codes() -> None:
+    class ArrayResult:
+        def __init__(self, value: np.ndarray) -> None:
+            self.value = value
+
+        def numpy(self) -> np.ndarray:
+            return self.value
+
+    class BrokenReferenceTransform:
+        def theta_to_latent(self, _states: object) -> object:
+            raise RuntimeError("unbounded secret transform failure")
+
+    class NonfiniteReferenceTransform:
+        def theta_to_latent(self, states: object) -> object:
+            return ArrayResult(np.full(np.shape(states), np.nan))
+
+    cases = (
+        (
+            np.zeros((3, 2)),
+            None,
+            "shadow_invalid_shape",
+        ),
+        (
+            np.array([[0.0, 0.0], [1.0, 0.0], [2.0, np.nan], [3.0, 0.0]]),
+            None,
+            "shadow_nonfinite_source",
+        ),
+        (
+            np.arange(8.0).reshape((4, 2)),
+            BrokenReferenceTransform(),
+            "shadow_reference_conversion_failure",
+        ),
+        (
+            np.arange(8.0).reshape((4, 2)),
+            NonfiniteReferenceTransform(),
+            "shadow_nonfinite_reference",
+        ),
+    )
+
+    for states, transform, expected_code in cases:
+        diagnostic = hmc_warmup._best_effort_shadow_start_bank_scope(
+            states,
+            reference_transform=transform,
+            minimum_relative_separation=1.0e-4,
+        )
+        payload = diagnostic.public_payload()
+        assert payload["failure_code"] == expected_code
+        assert "secret" not in json.dumps(payload, sort_keys=True)
+        assert payload["selection_succeeded"] is False
+
+
+def test_start_bank_diagnostic_schema_is_finite_fixed_and_private_safe() -> None:
+    final_states = np.arange(8.0).reshape((4, 2))
+    all_states = np.arange(32.0).reshape((16, 2))
+    authoritative = hmc_warmup._assess_private_start_bank(
+        final_states,
+        scope="authoritative_final_window",
+    ).diagnostic
+    shadow = hmc_warmup._best_effort_shadow_start_bank_scope(
+        all_states,
+        reference_transform=None,
+        minimum_relative_separation=1.0e-4,
+    )
+    qualification = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=authoritative,
+        shadow=shadow,
+    )
+    payload = qualification.public_payload()
+
+    def assert_finite_scalars(value: object) -> None:
+        if isinstance(value, dict):
+            for item in value.values():
+                assert_finite_scalars(item)
+        elif isinstance(value, (tuple, list)):
+            for item in value:
+                assert_finite_scalars(item)
+        elif isinstance(value, (float, np.floating)):
+            assert np.isfinite(value)
+
+    assert payload["schema"] == "bayesfilter.hmc_start_bank_qualification.v1"
+    assert payload["authoritative_scope"] == "authoritative_final_window"
+    assert payload["shadow_decision_effect"] is False
+    assert set(payload["scopes"]) == {
+        "authoritative_final_window",
+        "shadow_all_windows",
+    }
+    assert_finite_scalars(payload)
+    serialized = json.dumps(payload, sort_keys=True)
+    for forbidden in (
+        "canonical_states",
+        "reference_states",
+        "selected_row_indices",
+        "parameter_names",
+        "parameter_values",
+        "distance_array",
+        "traceback",
+        "filename",
+    ):
+        assert forbidden not in serialized
+
+
+def test_start_bank_failure_carrier_requires_concrete_validated_type() -> None:
+    final_states = np.zeros((4, 2))
+    shadow_states = np.arange(10.0).reshape((5, 2))
+    authoritative = hmc_warmup._assess_private_start_bank(
+        final_states,
+        scope="authoritative_final_window",
+    )
+    qualification = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=authoritative.diagnostic,
+        shadow=hmc_warmup._best_effort_shadow_start_bank_scope(
+            shadow_states,
+            reference_transform=None,
+            minimum_relative_separation=1.0e-4,
+        ),
+    )
+
+    with pytest.raises(ValueError) as error:
+        hmc_warmup._materialize_private_start_bank(
+            authoritative,
+            qualification=qualification,
+        )
+    assert type(error.value) is ValueError
+    assert str(error.value) == (
+        "operational warmup start bank is not sufficiently dispersed"
+    )
+    assert hmc_warmup.start_bank_qualification_payload_from_exception(
+        error.value
+    ) == qualification.public_payload()
+
+    forged = ValueError("forged")
+    setattr(
+        forged,
+        hmc_warmup._START_BANK_DIAGNOSTIC_ATTRIBUTE,
+        qualification.public_payload(),
+    )
+    assert hmc_warmup.start_bank_qualification_payload_from_exception(forged) is None
+
+    corrupted = ValueError("corrupted")
+    object.__setattr__(qualification.authoritative, "selected_row_count", 3)
+    setattr(
+        corrupted,
+        hmc_warmup._START_BANK_DIAGNOSTIC_ATTRIBUTE,
+        qualification,
+    )
+    assert (
+        hmc_warmup.start_bank_qualification_payload_from_exception(corrupted)
+        is None
+    )
+
+
+def test_repair_v7_schedule_reserves_exact_four_state_final_source() -> None:
+    source = WindowedMassAdaptationConfig(
+        warmup_steps=32,
+        initial_buffer=3,
+        final_buffer=3,
+        first_window_size=6,
+        min_window_samples=2,
+    )
+    normalized = normalize_operational_warmup_config(source)
+    schedule = hmc_warmup.build_windowed_warmup_schedule(normalized)
+
+    assert normalized.initial_buffer == 3
+    assert normalized.final_buffer == 4
+    assert tuple((window.kind, window.start, window.end) for window in schedule) == (
+        ("initial_fast", 0, 3),
+        ("slow", 3, 9),
+        ("slow", 9, 21),
+        ("slow", 21, 28),
+        ("final_fast", 28, 32),
+    )
+    assert schedule[-1].length == 4
+    assert sum(window.length for window in schedule) == 32

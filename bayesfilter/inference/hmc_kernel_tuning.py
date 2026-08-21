@@ -18,6 +18,7 @@ policy.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import inspect
 import json
 import math
@@ -98,6 +99,8 @@ from bayesfilter.inference.hmc_warmup import (
     compose_base_transform_with_nested_artifact,
     compose_operational_transform_in_base_coordinates,
     run_operational_windowed_warmup,
+    start_bank_qualification_payload_from_exception,
+    _validate_start_bank_qualification_payload,
 )
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptanceEvidence,
@@ -314,6 +317,20 @@ HMC_KERNEL_TUNING_PUBLIC_NONCLAIMS = (
     "no external-client scientific claim",
     "no GPU readiness claim",
     "XLA execution, when requested, is runtime selection only",
+)
+
+HMC_START_BANK_DIAGNOSTIC_NONCLAIMS = (
+    "discarded start-bank diagnostic only",
+    "qualification scalars are explanatory only",
+    "no mass-matrix handoff claim",
+    "no fixed-mass step tuning claim",
+    "no trajectory tuning claim",
+    "no final-kernel claim",
+    "no retained-sampling claim",
+    "no posterior convergence claim",
+    "no sampler superiority claim",
+    "no default-readiness claim",
+    "no GPU or XLA readiness claim",
 )
 
 STAGED_TIMEOUT_POLICY_STAGE_NAMES = (
@@ -6457,6 +6474,208 @@ class HMCKernelTuningResult:
 
 
 @dataclass(frozen=True)
+class HMCStartBankDiagnosticResult:
+    """Bounded stop-at-start-bank result; never a kernel handoff."""
+
+    config: HMCKernelTuningConfig
+    adapter_signature: str
+    target_dimension: int
+    geometry_artifact_hash: str | None
+    bootstrap_artifact_hash: str | None
+    bootstrap_final_status: str | None
+    bootstrap_screen_count: int
+    attempt_budget_summary: Mapping[str, Any] | None
+    windowed_stage_config_payload: Mapping[str, Any] | None
+    start_bank_qualification: Mapping[str, Any] | None
+    start_bank_qualification_sha256: str | None
+    final_status: str
+    diagnostic_role: str
+    hard_vetoes: tuple[str, ...]
+    repair_triggers: tuple[str, ...]
+    private_event_count: int
+    private_event_hash: str | None
+    artifact_path: str
+    failure_diagnostics: Mapping[str, Any] | None = None
+    nonclaims: tuple[str, ...] = HMC_START_BANK_DIAGNOSTIC_NONCLAIMS
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.config, HMCKernelTuningConfig):
+            raise TypeError("config must be HMCKernelTuningConfig")
+        if self.config.preset != "diagnostic":
+            raise ValueError("start-bank diagnostic requires preset='diagnostic'")
+        signature = str(self.adapter_signature)
+        if not signature:
+            raise ValueError("adapter_signature must be non-empty")
+        object.__setattr__(self, "adapter_signature", signature)
+        dimension = int(self.target_dimension)
+        if dimension <= 0:
+            raise ValueError("target_dimension must be positive")
+        object.__setattr__(self, "target_dimension", dimension)
+        for name in ("geometry_artifact_hash", "bootstrap_artifact_hash"):
+            value = getattr(self, name)
+            if value is not None:
+                normalized = str(value)
+                if not normalized:
+                    raise ValueError(f"{name} must be non-empty when present")
+                object.__setattr__(self, name, normalized)
+        bootstrap_status = (
+            None
+            if self.bootstrap_final_status is None
+            else str(self.bootstrap_final_status)
+        )
+        if bootstrap_status == "":
+            raise ValueError("bootstrap_final_status must be non-empty when present")
+        object.__setattr__(self, "bootstrap_final_status", bootstrap_status)
+        screen_count = int(self.bootstrap_screen_count)
+        if screen_count < 0:
+            raise ValueError("bootstrap_screen_count must be non-negative")
+        object.__setattr__(self, "bootstrap_screen_count", screen_count)
+        object.__setattr__(
+            self,
+            "attempt_budget_summary",
+            None
+            if self.attempt_budget_summary is None
+            else dict(self.attempt_budget_summary),
+        )
+        object.__setattr__(
+            self,
+            "windowed_stage_config_payload",
+            None
+            if self.windowed_stage_config_payload is None
+            else dict(self.windowed_stage_config_payload),
+        )
+        qualification = self.start_bank_qualification
+        qualification_hash = self.start_bank_qualification_sha256
+        if qualification is None:
+            if qualification_hash is not None:
+                raise ValueError("missing qualification cannot have a SHA256")
+            normalized_qualification = None
+        else:
+            normalized_qualification, expected_hash = (
+                _canonical_start_bank_qualification(qualification)
+            )
+            if str(qualification_hash) != expected_hash:
+                raise ValueError("start-bank qualification SHA256 mismatch")
+            for scope in normalized_qualification["scopes"].values():
+                if int(scope["dimension"]) != dimension:
+                    raise ValueError("start-bank qualification dimension mismatch")
+            qualification_hash = expected_hash
+        object.__setattr__(
+            self,
+            "start_bank_qualification",
+            normalized_qualification,
+        )
+        object.__setattr__(
+            self,
+            "start_bank_qualification_sha256",
+            qualification_hash,
+        )
+        status = str(self.final_status)
+        role = str(self.diagnostic_role)
+        if not status or not role:
+            raise ValueError("final_status and diagnostic_role must be non-empty")
+        object.__setattr__(self, "final_status", status)
+        object.__setattr__(self, "diagnostic_role", role)
+        object.__setattr__(self, "hard_vetoes", _string_tuple(self.hard_vetoes))
+        object.__setattr__(
+            self,
+            "repair_triggers",
+            _string_tuple(self.repair_triggers),
+        )
+        event_count = int(self.private_event_count)
+        if event_count not in {0, 1}:
+            raise ValueError("private_event_count must be zero or one")
+        event_hash = (
+            None if self.private_event_hash is None else str(self.private_event_hash)
+        )
+        boundary_observed = normalized_qualification is not None
+        if boundary_observed != (event_count == 1 and bool(event_hash)):
+            raise ValueError(
+                "qualification and private start-bank event must coexist exactly"
+            )
+        if status == "diagnostic_boundary_reached":
+            if not boundary_observed or self.hard_vetoes:
+                raise ValueError(
+                    "valid start-bank boundary requires one qualification and no veto"
+                )
+            shadow_failure = normalized_qualification["scopes"][
+                "shadow_all_windows"
+            ]["failure_code"]
+            if str(shadow_failure).startswith("shadow_"):
+                raise ValueError("valid boundary result cannot contain shadow failure")
+        object.__setattr__(self, "private_event_count", event_count)
+        object.__setattr__(self, "private_event_hash", event_hash)
+        artifact_path = str(self.artifact_path)
+        if not artifact_path:
+            raise ValueError("artifact_path must be non-empty")
+        object.__setattr__(self, "artifact_path", artifact_path)
+        object.__setattr__(
+            self,
+            "failure_diagnostics",
+            None
+            if self.failure_diagnostics is None
+            else dict(self.failure_diagnostics),
+        )
+        nonclaims = tuple(str(item) for item in self.nonclaims)
+        if not nonclaims:
+            raise ValueError("nonclaims must be non-empty")
+        object.__setattr__(self, "nonclaims", nonclaims)
+
+    @property
+    def diagnostic_valid(self) -> bool:
+        return self.final_status == "diagnostic_boundary_reached"
+
+    @property
+    def artifact_hash(self) -> str:
+        return stable_config_hash(self.payload())
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_start_bank_diagnostic_result.v1",
+            "config": self.config.payload(),
+            "config_hash": stable_config_hash(self.config.payload()),
+            "adapter_signature": self.adapter_signature,
+            "target_dimension": self.target_dimension,
+            "geometry_artifact_hash": self.geometry_artifact_hash,
+            "bootstrap_artifact_hash": self.bootstrap_artifact_hash,
+            "bootstrap_final_status": self.bootstrap_final_status,
+            "bootstrap_screen_count": self.bootstrap_screen_count,
+            "attempt_index": 0,
+            "attempt_budget_summary": self.attempt_budget_summary,
+            "windowed_stage_config_payload": self.windowed_stage_config_payload,
+            "start_bank_qualification": self.start_bank_qualification,
+            "start_bank_qualification_sha256": (
+                self.start_bank_qualification_sha256
+            ),
+            "final_status": self.final_status,
+            "diagnostic_role": self.diagnostic_role,
+            "hard_vetoes": self.hard_vetoes,
+            "repair_triggers": self.repair_triggers,
+            "private_event_count": self.private_event_count,
+            "private_event_hash": self.private_event_hash,
+            "artifact_path": self.artifact_path,
+            "failure_diagnostics": self.failure_diagnostics,
+            "diagnostic_valid": self.diagnostic_valid,
+            "post_boundary_stage_counts": {
+                "semantic_mass_diagnostic": 0,
+                "fixed_mass_step": 0,
+                "trajectory_selection": 0,
+                "fresh_verification": 0,
+                "final_kernel_construction": 0,
+                "retained_sampling": 0,
+            },
+            "final_kernel_payload": None,
+            "final_kernel_hash": None,
+            "retained_samples_written": False,
+            "reports_posterior_convergence": False,
+            "reports_sampler_superiority": False,
+            "reports_default_readiness": False,
+            "reports_gpu_or_xla_readiness": False,
+            "nonclaims": self.nonclaims,
+        }
+
+
+@dataclass(frozen=True)
 class RetainedFrozenKernelAdapterReplayResult:
     """BayesFilter-owned replay of a verified retained fixed-kernel adapter.
 
@@ -8219,6 +8438,9 @@ def _operational_windowed_mass_capture(
             "consumed_num_leapfrog_steps": int(
                 mass_window_seed_kernel["num_leapfrog_steps"]
             ),
+            "start_bank_qualification": (
+                operational_result.start_bank_qualification.public_payload()
+            ),
         },
         "runtime_metadata": {
             "runtime": "tfp.mcmc.operational_interleaved_windowed_warmup",
@@ -8648,6 +8870,27 @@ def run_hmc_windowed_mass_stage(
         except Exception as exc:  # noqa: BLE001 - return fail-closed artifact.
             run_error = exc
             capture = _windowed_stage_error_capture(exc)
+    start_bank_qualification = capture.get("raw_diagnostics", {}).get(
+        "start_bank_qualification"
+    )
+    if _private_diagnostic_callback is not None and isinstance(
+        start_bank_qualification,
+        Mapping,
+    ):
+        _private_diagnostic_callback(
+            "start_bank_qualification",
+            {
+                "stage": "windowed_mass_start_bank_boundary",
+                "attempt_index": progress_attempt_index,
+                "start_bank_qualification": _json_ready(
+                    start_bank_qualification
+                ),
+                "private_hmc_mechanics": False,
+                "reports_posterior_convergence": False,
+                "reports_sampler_superiority": False,
+                "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
+            },
+        )
     hard_vetoes = list(
         _classify_windowed_stage_capture(
             capture,
@@ -12600,6 +12843,376 @@ def _run_canonical_hmc_tuning(
         },
     )
     return result
+
+
+class _HMCStartBankDiagnosticBoundaryReached(Exception):
+    """Private control signal raised only after the bounded event is durable."""
+
+    def __init__(
+        self,
+        *,
+        qualification: Mapping[str, Any],
+        qualification_sha256: str,
+        private_event_hash: str,
+    ) -> None:
+        super().__init__("start-bank diagnostic boundary reached")
+        self.qualification = qualification
+        self.qualification_sha256 = str(qualification_sha256)
+        self.private_event_hash = str(private_event_hash)
+
+
+def _canonical_start_bank_qualification(
+    payload: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], str]:
+    validated = _validate_start_bank_qualification_payload(_json_ready(payload))
+    blob = json.dumps(
+        _json_ready(validated),
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    normalized = json.loads(blob)
+    return normalized, hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _start_bank_diagnostic_budget_summary(
+    policy: "_HMCAttemptBudgetPolicy",
+) -> Mapping[str, Any]:
+    return {
+        "schema": "bayesfilter.hmc_start_bank_diagnostic_budget_summary.v1",
+        "attempt_index": int(policy.attempt_index),
+        "budget": int(policy.budget),
+        "phase4_warmup_steps": int(policy.phase4_warmup_steps),
+        "public_budget_class": str(policy.public_budget_class),
+        "public_diagnostic_preset": str(policy.public_diagnostic_preset),
+        "full_policy_hash": stable_config_hash(policy.payload()),
+        "later_stage_budgets_executed": False,
+    }
+
+
+def _write_start_bank_diagnostic_result(
+    result: HMCStartBankDiagnosticResult,
+    path: Path,
+) -> None:
+    payload = _json_ready(result.payload())
+    artifact = {**payload, "result_hash": stable_config_hash(payload)}
+    blob = json.dumps(artifact, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(
+        f".{path.name}.{os.getpid()}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp"
+    )
+    with temporary.open("x", encoding="utf-8") as handle:
+        handle.write(blob)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
+    observed = json.loads(path.read_text(encoding="utf-8"))
+    if observed != artifact:
+        raise RuntimeError("start-bank diagnostic result readback mismatch")
+
+
+def run_hmc_start_bank_diagnostic(
+    *,
+    adapter: Any,
+    initial_position: Any,
+    config: HMCKernelTuningConfig,
+    output_dir: str | Path,
+    negative_hessian: Any | None = None,
+    initial_covariance: Any | None = None,
+    parameter_scales: Any | None = None,
+) -> HMCStartBankDiagnosticResult:
+    """Run through the real start-bank callback and stop before later tuning.
+
+    All HMC draws are discarded adaptation diagnostics. The returned object is
+    not a kernel handoff and cannot authorize retained sampling.
+    """
+
+    if not isinstance(config, HMCKernelTuningConfig):
+        raise TypeError("config must be HMCKernelTuningConfig")
+    if config.preset != "diagnostic":
+        raise ValueError("start-bank diagnostic requires preset='diagnostic'")
+    position = _validate_position(initial_position)
+    adapter_signature = stable_adapter_signature(adapter)
+    target_dimension = int(position.shape[0])
+    require_hmc_algorithm_route(
+        algorithm_id=config.algorithm_id,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        runtime_backend="tensorflow",
+        chain_execution_mode=config.chain_execution_mode,
+        use_xla=config.use_xla,
+        timeout_enabled=config.public_timeout_budget_s is not None,
+        heartbeat_enabled=config.incall_progress_heartbeat_s is not None,
+        output_path_enabled=True,
+        checkpointing_enabled=False,
+    )
+
+    root = Path(output_dir)
+    if root.exists():
+        raise FileExistsError(f"start-bank diagnostic output already exists: {root}")
+    root.parent.mkdir(parents=True, exist_ok=True)
+    root.mkdir(exist_ok=False)
+    artifact_path = root / "hmc_start_bank_diagnostic_result.json"
+    private_events_path = (
+        root / "private_diagnostics" / "hmc_start_bank_diagnostic_events.jsonl"
+    )
+    geometry: HMCGeometryInitializationResult | None = None
+    bootstrap: HMCBootstrapScreenResult | None = None
+    attempt_budget_summary: Mapping[str, Any] | None = None
+    windowed_config_payload: Mapping[str, Any] | None = None
+
+    def finalize(
+        *,
+        final_status: str,
+        diagnostic_role: str,
+        hard_vetoes: tuple[str, ...],
+        repair_triggers: tuple[str, ...] = (),
+        qualification: Mapping[str, Any] | None = None,
+        qualification_sha256: str | None = None,
+        private_event_hash: str | None = None,
+        failure_diagnostics: Mapping[str, Any] | None = None,
+    ) -> HMCStartBankDiagnosticResult:
+        result = HMCStartBankDiagnosticResult(
+            config=config,
+            adapter_signature=adapter_signature,
+            target_dimension=target_dimension,
+            geometry_artifact_hash=(
+                None if geometry is None else geometry.artifact_hash
+            ),
+            bootstrap_artifact_hash=(
+                None if bootstrap is None else bootstrap.artifact_hash
+            ),
+            bootstrap_final_status=(
+                None if bootstrap is None else bootstrap.final_status
+            ),
+            bootstrap_screen_count=(
+                0 if bootstrap is None else len(bootstrap.rounds)
+            ),
+            attempt_budget_summary=attempt_budget_summary,
+            windowed_stage_config_payload=windowed_config_payload,
+            start_bank_qualification=qualification,
+            start_bank_qualification_sha256=qualification_sha256,
+            final_status=final_status,
+            diagnostic_role=diagnostic_role,
+            hard_vetoes=hard_vetoes,
+            repair_triggers=repair_triggers,
+            private_event_count=0 if qualification is None else 1,
+            private_event_hash=private_event_hash,
+            artifact_path=str(artifact_path),
+            failure_diagnostics=failure_diagnostics,
+        )
+        _write_start_bank_diagnostic_result(result, artifact_path)
+        return result
+
+    try:
+        geometry = initialize_hmc_kernel_geometry(
+            adapter=adapter,
+            initial_position=position,
+            config=_public_geometry_config(config),
+            negative_hessian=negative_hessian,
+            initial_covariance=initial_covariance,
+            parameter_scales=parameter_scales,
+        )
+    except Exception as exc:  # noqa: BLE001 - return a bounded failure artifact.
+        return finalize(
+            final_status="invalid_before_start_bank_boundary",
+            diagnostic_role="geometry_initialization_error",
+            hard_vetoes=("geometry_initialization_error",),
+            failure_diagnostics={
+                "stage": "geometry",
+                "error_type": type(exc).__name__,
+                "arbitrary_error_message_retained": False,
+            },
+        )
+
+    try:
+        bootstrap = run_hmc_bootstrap_screen(
+            adapter=adapter,
+            geometry=geometry,
+            config=_public_bootstrap_config(config, geometry=geometry),
+        )
+    except Exception as exc:  # noqa: BLE001 - return a bounded failure artifact.
+        return finalize(
+            final_status="invalid_before_start_bank_boundary",
+            diagnostic_role="bootstrap_screen_error",
+            hard_vetoes=("bootstrap_screen_error",),
+            failure_diagnostics={
+                "stage": "bootstrap",
+                "error_type": type(exc).__name__,
+                "arbitrary_error_message_retained": False,
+            },
+        )
+
+    bootstrap_hard_vetoes = _bootstrap_hard_vetoes(bootstrap)
+    if bootstrap_hard_vetoes:
+        return finalize(
+            final_status="invalid_before_start_bank_boundary",
+            diagnostic_role="bootstrap_screen_hard_veto",
+            hard_vetoes=bootstrap_hard_vetoes,
+            repair_triggers=_bootstrap_repair_triggers(bootstrap),
+            failure_diagnostics={
+                "stage": "bootstrap",
+                "bootstrap_final_status": bootstrap.final_status,
+                "start_bank_boundary_reached": False,
+            },
+        )
+
+    public_timeout_started = (
+        time.perf_counter()
+        if config.public_timeout_budget_s is not None
+        else None
+    )
+    loop_config = _public_loop_config(
+        config,
+        public_timeout_started_perf_counter_s=public_timeout_started,
+    )
+    policy_factory = _public_budget_policy_factory(config, geometry=geometry)
+    if policy_factory is None:
+        return finalize(
+            final_status="invalid_before_start_bank_boundary",
+            diagnostic_role="attempt_budget_policy_missing",
+            hard_vetoes=("attempt_budget_policy_missing",),
+        )
+    try:
+        attempt_budget_policy = policy_factory(target_dimension, 0)
+        if not isinstance(attempt_budget_policy, _HMCAttemptBudgetPolicy):
+            raise TypeError("attempt budget factory returned an invalid policy")
+        attempt_budget_summary = _start_bank_diagnostic_budget_summary(
+            attempt_budget_policy
+        )
+        windowed_config = _phase7_windowed_stage_config(
+            loop_config,
+            attempt_index=0,
+        )
+        windowed_config_payload = windowed_config.payload()
+    except Exception as exc:  # noqa: BLE001 - return a bounded failure artifact.
+        return finalize(
+            final_status="invalid_before_start_bank_boundary",
+            diagnostic_role="windowed_stage_configuration_error",
+            hard_vetoes=("windowed_stage_configuration_error",),
+            failure_diagnostics={
+                "stage": "windowed_stage_configuration",
+                "error_type": type(exc).__name__,
+                "arbitrary_error_message_retained": False,
+            },
+        )
+
+    def stop_at_start_bank(
+        event_type: str,
+        payload: Mapping[str, Any],
+    ) -> None:
+        if event_type != "start_bank_qualification":
+            raise ValueError("unexpected diagnostic event before start-bank stop")
+        if payload.get("stage") != "windowed_mass_start_bank_boundary":
+            raise ValueError("start-bank diagnostic event stage mismatch")
+        candidate = payload.get("start_bank_qualification")
+        if not isinstance(candidate, Mapping):
+            raise ValueError("start-bank diagnostic event lacks qualification")
+        qualification, qualification_hash = _canonical_start_bank_qualification(
+            candidate
+        )
+        scopes = qualification["scopes"]
+        authoritative = scopes["authoritative_final_window"]
+        shadow = scopes["shadow_all_windows"]
+        if (
+            int(authoritative["dimension"]) != target_dimension
+            or int(shadow["dimension"]) != target_dimension
+        ):
+            raise ValueError("start-bank diagnostic dimension mismatch")
+        if int(authoritative["source_row_count"]) != 4:
+            raise ValueError("authoritative start-bank source must contain four rows")
+        if int(shadow["source_row_count"]) != int(
+            attempt_budget_policy.phase4_warmup_steps
+        ):
+            raise ValueError("shadow start-bank source does not cover full warmup")
+        if (
+            authoritative["minimum_relative_separation"]
+            != shadow["minimum_relative_separation"]
+        ):
+            raise ValueError("start-bank scopes use different separation policies")
+        event = _write_private_tuning_event(
+            private_events_path,
+            event_type="start_bank_qualification",
+            stage="windowed_mass_start_bank_boundary",
+            payload={
+                "attempt_index": 0,
+                "start_bank_qualification": qualification,
+                "start_bank_qualification_sha256": qualification_hash,
+                "private_hmc_mechanics": False,
+                "raw_state_included": False,
+                "reports_posterior_convergence": False,
+                "nonclaims": HMC_START_BANK_DIAGNOSTIC_NONCLAIMS,
+            },
+        )
+        if event is None or event.get("start_bank_qualification") != qualification:
+            raise RuntimeError("start-bank private event write/readback mismatch")
+        if event.get("start_bank_qualification_sha256") != qualification_hash:
+            raise RuntimeError("start-bank private event SHA256 mismatch")
+        raise _HMCStartBankDiagnosticBoundaryReached(
+            qualification=qualification,
+            qualification_sha256=qualification_hash,
+            private_event_hash=str(event["event_hash"]),
+        )
+
+    try:
+        returned_stage = run_hmc_windowed_mass_stage(
+            adapter=adapter,
+            geometry=geometry,
+            bootstrap=bootstrap,
+            config=windowed_config,
+            _attempt_budget_policy=attempt_budget_policy,
+            _attempt_state=None,
+            _attempt_index=0,
+            _private_diagnostic_callback=stop_at_start_bank,
+        )
+    except _HMCStartBankDiagnosticBoundaryReached as boundary:
+        shadow_failure = boundary.qualification["scopes"]["shadow_all_windows"][
+            "failure_code"
+        ]
+        if str(shadow_failure).startswith("shadow_"):
+            return finalize(
+                final_status="diagnostic_incomplete_shadow_failure",
+                diagnostic_role="shadow_start_bank_diagnostic_failure",
+                hard_vetoes=("shadow_start_bank_diagnostic_failure",),
+                qualification=boundary.qualification,
+                qualification_sha256=boundary.qualification_sha256,
+                private_event_hash=boundary.private_event_hash,
+                failure_diagnostics={
+                    "stage": "start_bank_boundary",
+                    "shadow_failure_code": str(shadow_failure),
+                },
+            )
+        return finalize(
+            final_status="diagnostic_boundary_reached",
+            diagnostic_role="start_bank_qualification_explanatory_only",
+            hard_vetoes=(),
+            qualification=boundary.qualification,
+            qualification_sha256=boundary.qualification_sha256,
+            private_event_hash=boundary.private_event_hash,
+        )
+    except Exception as exc:  # noqa: BLE001 - return a bounded failure artifact.
+        return finalize(
+            final_status="invalid_before_start_bank_boundary",
+            diagnostic_role="windowed_stage_or_boundary_writer_error",
+            hard_vetoes=("windowed_stage_or_boundary_writer_error",),
+            failure_diagnostics={
+                "stage": "windowed_mass_or_boundary_writer",
+                "error_type": type(exc).__name__,
+                "arbitrary_error_message_retained": False,
+            },
+        )
+
+    return finalize(
+        final_status="invalid_before_start_bank_boundary",
+        diagnostic_role="start_bank_boundary_not_observed",
+        hard_vetoes=("start_bank_boundary_not_observed",),
+        repair_triggers=tuple(returned_stage.repair_triggers),
+        failure_diagnostics={
+            "stage": "windowed_mass",
+            "windowed_stage_final_status": returned_stage.final_status,
+            "windowed_stage_artifact_hash": returned_stage.artifact_hash,
+            "start_bank_boundary_reached": False,
+        },
+    )
 
 
 def tune_hmc_kernel(
@@ -25229,7 +25842,14 @@ def _windowed_stage_public_timeout_capture(
         "trace_summary": {"trace_keys": (), "trace_unavailability": {}},
     }
 
+
 def _windowed_stage_error_capture(exc: Exception) -> Mapping[str, Any]:
+    start_bank_qualification = start_bank_qualification_payload_from_exception(exc)
+    raw_diagnostics = (
+        {}
+        if start_bank_qualification is None
+        else {"start_bank_qualification": start_bank_qualification}
+    )
     return {
         "error_type": type(exc).__name__,
         "error_message": str(exc),
@@ -25247,7 +25867,7 @@ def _windowed_stage_error_capture(exc: Exception) -> Mapping[str, Any]:
         "target_dimension": None,
         "finite_sample_count": None,
         "nonfinite_sample_count": None,
-        "raw_diagnostics": {},
+        "raw_diagnostics": raw_diagnostics,
         "runtime_metadata": {},
         "runtime_evidence": "error",
         "fixture_or_synthetic": False,
