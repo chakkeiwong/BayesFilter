@@ -183,6 +183,13 @@ ENTRY_POINTS: tuple[EntryPoint, ...] = (
         notes="parity judge only; never claim-bearing",
     ),
     EntryPoint(
+        lane="batch_fused",
+        role="canonical",
+        module="bayesfilter.highdim.ledh_canonical_batch_fused_tf",
+        callable_name="canonical_batch_fused_value_score",
+        notes="NeuTra-eligible fused lane; parity-gated vs single-cloud authority",
+    ),
+    EntryPoint(
         lane="models",
         role="canonical",
         module="bayesfilter.highdim.ledh_canonical_models_tf",
