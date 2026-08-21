@@ -358,3 +358,21 @@ model onboardings, then the GPU phases.
   registered. 30/30 canonical gates green. Remaining: four model
   onboardings, fused batch lane, S6/S7 tangent wiring, P6 calibration +
   GPU ladders, P7 deletion/rebind, Part 4 leaderboard, Part 5 battery.
+
+- 2026-08-22 (ledger): Part 4 slice 1 EXECUTED (LGSSM + Austria, CPU
+  float64, artifact `ledh_canonical_leaderboard_2026-08/slice1_result.json`).
+  LGSSM value vs exact Kalman (3 model seeds x 3 particle seeds, N=4096):
+  abs errors 0.116/0.113/0.060 nats with per-seed spread 0.005-0.020 —
+  small spread + consistent negative sign = SYSTEMATIC bias, descriptively
+  attributed to the OT-reset transport approximation + logsumexp Jensen
+  bias (both expected; the reset is the production design's known
+  approximation). Score self-consistency vs oracle: rel err 3.8e-16.
+  Austria canonical vs bootstrap on the tight-init synthetic fixture:
+  values statistically indistinguishable (deltas 0.06-0.29 nats, spread
+  overlapping); bootstrap min-ESS descriptively HIGHER (133/141/92 vs
+  98/75/73) — honest finding: on this easy diffuse-noise fixture the
+  flow's machinery does not beat bootstrap; the flow's regime is sharp
+  likelihoods/poor initialization (where bootstrap historically collapsed
+  to ESS 23/1008 on the REAL frozen target). No superiority claim either
+  direction per the statistical policy. Full six-model leaderboard remains
+  gated on the four model onboardings + frozen-target integration + P6.
