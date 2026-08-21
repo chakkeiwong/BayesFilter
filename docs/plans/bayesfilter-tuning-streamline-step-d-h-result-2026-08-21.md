@@ -163,12 +163,28 @@ Failure classification (from live triage before log loss):
    campaign's focused gates; with the per-test lists lost, they are
    recorded as uncharacterized pre-existing full-suite debt pending
    re-run if the owner wants a census with failure identities.
-4. dsge_hmc segfaults: 6 chunks died rc=139 during execution (not at
-   collection — per-file collection probes of the DS_026 range found no
-   import-time crash). The known `tests/archive` segfault class evidently
-   has siblings in `tests/contracts` (BGS oracle/pydsge families) and
-   `tests/extended`/`tests/integration`. Isolating the exact
-   file(s) per chunk requires bisection runs (~120 candidate files).
+4. dsge_hmc segfaults: RESOLVED TO FILE LEVEL by per-file bisection
+   (2026-08-22, probe log
+   `/tmp/bf-release-census/ds_segfault_bisect.txt`). Six files
+   segfault (rc=139) when run alone, execution-time not import-time:
+   - `tests/contracts/test_bgs_public_integration.py`
+   - `tests/contracts/test_bgs_synthetic_generator.py`
+   - `tests/extended/test_svd_lgssm_hmc_recovery.py`
+   - `tests/extended/test_svd_nonlinear_ssm_hmc_recovery.py`
+   - `tests/integration/test_bgs_d296_likelihood_gradient.py`
+   - `tests/integration/test_bgs_d296_state_space.py`
+   Two families: BGS synthetic/public-integration + d296 likelihood/state
+   space, and the SVD-SSM HMC-recovery pair. Six additional files exceeded
+   the 300 s single-file probe budget (rc=124) and are long-runners, not
+   crashers: `test_convergence_medium.py`, `test_neural_solver_overnight.py`,
+   `test_nk_convergence_audit.py`, `test_nk_typical_hessian_variation.py`,
+   `test_overnight_diagnostics.py` (all `tests/extended`), and
+   `tests/integration/test_bgs_bayesfilter_posterior.py`. The remaining
+   ~108 files in the six chunk ranges pass or fail normally without
+   crashing. Release action: extend the exclusion policy to name these six
+   segfault files explicitly (mirroring the `tests/archive` precedent) and
+   mark the six long-runners with the repo's `slow`/`overnight` markers so
+   default runs skip them.
 
 ## 6. GPU Provenance (Step G)
 
