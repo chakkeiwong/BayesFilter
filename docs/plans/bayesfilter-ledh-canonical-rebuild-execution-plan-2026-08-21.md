@@ -376,3 +376,27 @@ model onboardings, then the GPU phases.
   to ESS 23/1008 on the REAL frozen target). No superiority claim either
   direction per the statistical policy. Full six-model leaderboard remains
   gated on the four model onboardings + frozen-target integration + P6.
+
+- 2026-08-22 (ledger): FROZEN-TARGET HARD-REGIME PROBES (artifacts
+  `frozen_austria_probe.json`, `frozen_austria_full.json`). Findings:
+  (1) Harness fidelity confirmed — bootstrap on the frozen tensors
+  reproduces the historical collapse exactly (min ESS 20.9 vs recorded
+  ~23/1008), at the same steps (2 and 4, epidemic takeoff).
+  (2) The canonical flow lane collapses HARDER at exactly those steps
+  (ESS 1.0-2.1) while beating bootstrap at most other steps (e.g. late
+  steps 610-965 vs 191-828), and temper staging improves monotonically
+  (values -956/-754/-695 for stages 1/2/4, reset-less probe).
+  (3) With the Contract-E reset active (full pipeline), temper=4 stays
+  program-valid over all 20 steps with the same takeoff-step collapse;
+  temper=1 goes fail-closed-invalid at step 3 — the reset is a necessary
+  stabilizer but not sufficient at takeoff.
+  (4) Mechanism (consistent across all probes): at chaos-takeoff steps the
+  per-particle UKF predicted covariances explode (faithful reporting of
+  epidemic-growth uncertainty), the flow migrates accordingly, and the
+  PF-PF weight's transition-density numerator (spread Q=I) punishes the
+  migration — a STRUCTURAL algorithm-model interaction of Li(17)-style
+  flows at chaotic takeoff, now cleanly measured. Candidate P6 levers
+  (each needs a reviewed contract; further ad hoc tuning here would be
+  local optimization drift): flow-prior covariance capping toward Q;
+  ESS-triggered adaptive tempering; both. NO lane is promoted; the
+  frozen-scope claim comparison remains gated on P6 calibration.
