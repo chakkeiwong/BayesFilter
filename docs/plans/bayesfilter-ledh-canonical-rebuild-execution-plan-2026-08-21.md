@@ -461,3 +461,23 @@ model onboardings, then the GPU phases.
 - Nonclaims: unbiasedness holds by construction on the extended space,
   but NO claim about variance/accuracy vs alternatives without the P6
   full protocol; no promotion.
+
+- 2026-08-22 (ledger): WITHIN-STEP ANNEALED SMC — CONTRACT PASSED
+  (artifact `annealed_smc_probe.json`). Against the PRE-DECLARED >10%
+  takeoff criterion: k=4 achieves min-stage-ESS 590/636 of 1008 at the
+  takeoff steps (59%/63%); k=8 achieves 856/888 (85%/88%) with WORST-STEP
+  min-stage-ESS 856 across all 20 steps. Values -682.96/-683.13,
+  consistent with the bootstrap/capped-flow range. The across-ancestor
+  spread floor identified by the lever ladder is broken by inter-stage
+  systematic resampling of (particle, ancestor) pairs, exactly as the
+  mechanism analysis predicted. On the REAL frozen Austria tensors, the
+  canonical stack (UKF + capped tempered flow + within-step annealed SMC
+  + triple discipline) maintains 59-88% ESS at the steps where the
+  historical bootstrap lane recorded ~2%. NONCLAIMS: single seed,
+  descriptive; unbiasedness by construction on the extended space but no
+  variance/accuracy ranking; promotion into the canonical filter proper
+  requires wiring + new conformance gates (stage-weight identity,
+  in-filter triple resampling) + the P6 full protocol + analytical-score
+  extension through the annealing stages (S4 addendum: stage-weight
+  tangents — mechanical, same Gaussian-density machinery). This is the
+  program's central proposal-quality result to date.
