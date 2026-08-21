@@ -303,3 +303,39 @@ and the standing 3-consecutive-launch-failure stop.
   regime); (d) substep ladder. The gate stays RED and blocking for
   Austria claim-bearing status; LGSSM gates unaffected (matched
   covariances there). This is the campaign's next scientific task.
+
+- 2026-08-21 (ledger, ESS diagnosis refinement): step-0 flow verified
+  CORRECT — displacement RMS 0.34 matching the analytic Kalman-gain scale
+  (~0.02 gain x residual ~20), correctly concentrated on observed
+  coordinates, transition/proposal penalty spreads identical (2.69/2.68 —
+  cancelling as the weight formula intends). The collapse is CROSS-STEP:
+  SIR chaos (state scale ~492, RK4 epidemic dynamics) amplifies reset-cloud
+  diversity into large per-ancestor anchor divergence, exploding the
+  transition-density spread (std 20 by t=2) regardless of proposal
+  quality. Classification: NOT a flow wiring bug — an inherently hard
+  chaotic-dynamics regime where single-shot weighting degrades any
+  proposal; the canonical remedies are the P6 calibration levers
+  (flow-strength/substep tuning, initial-covariance fidelity, and the
+  tempering/ESS-floor mechanism already identified in the 2026-08-20
+  degeneracy analysis). The S-3 gate threshold and fixture will be
+  re-derived in P6 with an evidence contract (current fixture uses a
+  synthetic 3-step scope with unit initial covariance — both choices now
+  KNOWN to be material and unjustified). Austria remains non-claim-bearing
+  until then; nothing about the invalidation ruling changes.
+
+## SESSION HANDOFF STATE (2026-08-21, context boundary)
+
+Complete and green (30 gates): P0 contract; P1 UKF lifecycle; P2 dual-state
+flow; P3 canonical assembly w/ Kalman exactness; P4 analytical score —
+all six core stages derived and oracle-green including full chained
+nonlinear recursion; P5 core batch lane (row-mapped, parity-gated, NeuTra
+limitation recorded); Austria analytical RK4 tangent; C-9/C-10/G-1
+governance gates. RED (recorded, blocking Austria only): S-3 ESS
+discriminator, diagnosis above. NOT STARTED: fused batch implementation,
+S6/S7 reset/dual-cap tangent wiring, remaining four model onboardings, P6
+calibration + GPU ladders, P7 deletion/rebind, Part 4 leaderboard, Part 5
+historical battery. Resume rule R-G: read this ledger, continue at the
+first unchecked item — next action is the P6-style evidence-contract
+evaluation of the ESS repair arms (initial covariance fidelity, tempering
+lever, substep/strength ladder) on the Austria scope, then the remaining
+model onboardings, then the GPU phases.
