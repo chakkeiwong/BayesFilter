@@ -264,3 +264,15 @@ and the standing 3-consecutive-launch-failure stop.
   machinery lives (`_restore_cloud_batch_jvp`, `higher_moment_shape_jvp`
   are the wired sources); the single-cloud score gates use the
   reset='none' slice, honestly documented in the gate docstrings.
+
+- 2026-08-21 (ledger): P5 CORE CLOSED — `ledh_canonical_batch_tf.py`:
+  batch entry point mapping the single-cloud canonical program per row
+  (one semantic authority; batch-size-1 parity BY CONSTRUCTION and gated:
+  P-1 value+score parity, row independence, P-2 surface, P-3 within-mode
+  identity under tf.function). HONEST LIMITATION recorded in-module: the
+  row loop is parity/reference only — NOT NeuTra-training-eligible under
+  the batch-native rule; a fused batch-tensor implementation gated by the
+  same parity suite is required before the P7 NeuTra rebind. 28 canonical
+  gates green total. Remaining before P7: fused batch implementation,
+  S6/S7 tangent wiring into the score path, per-model callbacks (Austria +
+  4), P6 calibration + GPU ladders, then deletion/rebind and Parts 4-5.
