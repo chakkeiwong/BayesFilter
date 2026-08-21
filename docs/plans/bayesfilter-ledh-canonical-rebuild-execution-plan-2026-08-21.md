@@ -419,3 +419,24 @@ model onboardings, then the GPU phases.
   calibration, not approximation introduction.
 - Nonclaims: no default promotion (calibrated constants remain scoped to
   this probe until the P6 full protocol); no posterior/leaderboard claim.
+
+- 2026-08-22 (ledger): TAKEOFF-LEVER LADDER COMPLETE (artifact
+  `takeoff_levers.json`). Verdict against the PRE-DECLARED >10% takeoff
+  threshold: ALL EIGHT CELLS FAIL. Response surface: tight capping (c=2)
+  restores takeoff ESS exactly to bootstrap levels (28.1/22.9 vs
+  bootstrap 29.4/20.9; value -683.43 vs -683.71) — i.e. the cap fixes the
+  flow's SELF-INFLICTED collapse by making the flow nearly inert at
+  takeoff; looser caps trade takeoff ESS for slightly better values
+  (best value -682.24 at c=32/stages=4 but ESS 2.5 there, unreliable).
+  CLASSIFICATION per the research-question guardian: candidate failure,
+  NOT direction failure. Structural insight from the failure: per-ancestor
+  proposal design (any flow, any cap) cannot beat the ACROSS-ancestor
+  spread of p(z|ancestor) at takeoff — the measured floor (~bootstrap
+  ESS) IS that across-ancestor spread. The mechanism class that addresses
+  it is within-step annealed SMC: REWEIGHTING/RESAMPLING interLEAVED
+  between temper stages (my staging composed maps without inter-stage
+  reweighting — that was the gap), with the OT reset as the inter-stage
+  resampler. This is a per-step algorithm-structure change requiring its
+  own reviewed contract and its own conformance additions (weight
+  identity per stage); queued as the next P6 item. No lever promoted;
+  bootstrap-parity capping (c=2) recorded as a safe floor configuration.
