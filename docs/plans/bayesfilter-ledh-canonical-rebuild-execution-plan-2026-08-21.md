@@ -400,3 +400,22 @@ model onboardings, then the GPU phases.
   local optimization drift): flow-prior covariance capping toward Q;
   ESS-triggered adaptive tempering; both. NO lane is promoted; the
   frozen-scope claim comparison remains gated on P6 calibration.
+
+## P6 Takeoff-Lever Contract (declared BEFORE execution, 2026-08-22)
+
+- Question: do (A) spectral capping of the flow-prior covariance at c*Q
+  and/or (B) deeper temper staging lift the takeoff-step ESS on the frozen
+  Austria probe scope without breaking validity?
+- Ladder: cap c in {2, 8, 32, uncapped} x stages in {4, 8}; probe scope
+  identical to `frozen_austria_probe.json` (reset-less lane for speed,
+  plus one full-pipeline confirmation of the best cell).
+- Primary criterion: ESS fraction at the takeoff steps (2 and 4); success
+  threshold declared NOW: > 10% (i.e. > ~101/1008) at BOTH takeoff steps —
+  a qualitative improvement over bootstrap (2.1-2.9%) and baseline flow
+  (~0.1%). Veto: program_valid false or nonfinite value in the
+  full-pipeline confirmation. Explanatory: value, full ESS profile.
+- Both levers are EXACT (the flow prior is a proposal-design choice; any
+  invertible map is corrected by the PF-PF identity) — this is efficiency
+  calibration, not approximation introduction.
+- Nonclaims: no default promotion (calibrated constants remain scoped to
+  this probe until the P6 full protocol); no posterior/leaderboard claim.
