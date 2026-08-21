@@ -1,8 +1,8 @@
 """Direct-factor, batched square-root unscented Kalman filter.
 
-This module is the admitted factor route.  It carries lower factors through
-time, uses QR on residual stacks, and uses sequential rank-one downdates for
-the filtered factor.
+This module is the admitted factor route. It carries lower factors through
+time, uses direct residual-stack QR for prediction, and block conditional QR
+for the filtered factor.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from typing import Callable, Mapping
 
 import tensorflow as tf
 
-from bayesfilter.linear.lower_rank_downdate_tf import batched_lower_rank_downdate
+from bayesfilter.linear.block_qr_conditional_tf import batched_block_qr_conditional
 from bayesfilter.linear.stack_qr_tf import batched_stack_qr_lower
 from bayesfilter.nonlinear.srukf_backend_policy import (
     DEFAULT_SRUKF_BACKEND,
@@ -27,6 +27,32 @@ TransitionJacobianFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 TransitionParameterDerivativeFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 ObservationJacobianFn = Callable[[tf.Tensor], tf.Tensor]
 ObservationParameterDerivativeFn = Callable[[tf.Tensor], tf.Tensor]
+ObservationMeanFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
+ObservationMeanDerivativeFn = Callable[[tf.Tensor, tf.Tensor, tf.Tensor], tf.Tensor]
+ObservationResidualFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
+ObservationResidualDerivativeFn = Callable[
+    [tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor], tf.Tensor
+]
+ObservationBranchMarginFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
+ObservationMeanBranchMarginFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
+
+
+@dataclass(frozen=True)
+class TFFactorSRUKFObservationGeometry:
+    """Non-Euclidean observation operations on a fixed differentiable branch."""
+
+    mean_fn: ObservationMeanFn
+    mean_derivative_fn: ObservationMeanDerivativeFn
+    residual_fn: ObservationResidualFn
+    residual_derivative_fn: ObservationResidualDerivativeFn
+    residual_branch_margin_fn: ObservationBranchMarginFn
+    mean_branch_margin_fn: ObservationMeanBranchMarginFn
+    branch_margin_floor: float = 1.0e-8
+    name: str = "custom_observation_geometry"
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.branch_margin_floor) or self.branch_margin_floor <= 0.0:
+            raise ValueError("branch_margin_floor must be finite and positive")
 
 
 @dataclass(frozen=True)
@@ -38,6 +64,7 @@ class TFFactorSRUKFModel:
     transition_fn: TransitionFn
     observation_fn: ObservationFn
     name: str = DEFAULT_SRUKF_BACKEND
+    observation_geometry: TFFactorSRUKFObservationGeometry | None = None
 
     def __post_init__(self) -> None:
         for field in ("initial_mean", "initial_factor", "process_factor", "observation_factor"):
@@ -55,6 +82,10 @@ class TFFactorSRUKFModel:
             raise ValueError("factor dimensions must be static")
         if self.process_factor.shape.as_list() != [b, q, q] or self.observation_factor.shape.as_list() != [b, m, m]:
             raise ValueError("process/observation factor shape mismatch")
+        if self.observation_geometry is not None and not isinstance(
+            self.observation_geometry, TFFactorSRUKFObservationGeometry
+        ):
+            raise TypeError("observation_geometry must be TFFactorSRUKFObservationGeometry")
 
     @property
     def batch_dim(self) -> int:
@@ -226,58 +257,133 @@ def _one_step(
     d_predicted_mean = _weighted_derivative(d_predicted_points, mean_weights)
     state_stack = _stack(predicted_points, predicted_mean, covariance_weights)
     d_state_stack = tf.transpose((d_predicted_points - d_predicted_mean[:, :, None, :]) * tf.sqrt(covariance_weights)[None, None, :, None], [0, 1, 3, 2])
-    predicted_factor, d_predicted_factor, qr_diag = batched_stack_qr_lower(state_stack, d_state_stack)
+    predicted_factor, d_predicted_factor, qr_diag = batched_stack_qr_lower(
+        state_stack, d_state_stack, compute_covariance_diagnostics=False
+    )
 
     observation_points = tf.convert_to_tensor(model.observation_fn(predicted_points), tf.float64)
     observation_state_j = tf.convert_to_tensor(derivatives.observation_state_jacobian_fn(predicted_points), tf.float64)
     d_observation_direct = tf.convert_to_tensor(derivatives.d_observation_fn(predicted_points), tf.float64)
     d_observation_points = tf.einsum("brij,bprj->bpri", observation_state_j, d_predicted_points) + d_observation_direct
-    predicted_observation = _weighted_mean(observation_points, mean_weights)
-    d_predicted_observation = _weighted_derivative(d_observation_points, mean_weights)
-    y_stack = _stack(observation_points, predicted_observation, covariance_weights)
-    dy_stack = tf.transpose((d_observation_points - d_predicted_observation[:, :, None, :]) * tf.sqrt(covariance_weights)[None, None, :, None], [0, 1, 3, 2])
+    geometry = model.observation_geometry
+    if geometry is None:
+        predicted_observation = _weighted_mean(observation_points, mean_weights)
+        d_predicted_observation = _weighted_derivative(d_observation_points, mean_weights)
+        observation_residuals = observation_points - predicted_observation[:, None, :]
+        d_observation_residuals = (
+            d_observation_points - d_predicted_observation[:, :, None, :]
+        )
+        innovation = observation - predicted_observation
+        d_innovation = -d_predicted_observation
+        geometry_margin = tf.fill([b], tf.constant(float("inf"), tf.float64))
+    else:
+        predicted_observation = tf.convert_to_tensor(
+            geometry.mean_fn(observation_points, mean_weights), tf.float64
+        )
+        d_predicted_observation = tf.convert_to_tensor(
+            geometry.mean_derivative_fn(
+                observation_points, d_observation_points, mean_weights
+            ),
+            tf.float64,
+        )
+        predicted_points_mean = predicted_observation[:, None, :]
+        d_predicted_points_mean = d_predicted_observation[:, :, None, :]
+        observation_residuals = tf.convert_to_tensor(
+            geometry.residual_fn(predicted_points_mean, observation_points), tf.float64
+        )
+        d_observation_residuals = tf.convert_to_tensor(
+            geometry.residual_derivative_fn(
+                predicted_points_mean,
+                observation_points,
+                d_predicted_points_mean,
+                d_observation_points,
+            ),
+            tf.float64,
+        )
+        innovation = tf.convert_to_tensor(
+            geometry.residual_fn(predicted_observation, observation), tf.float64
+        )
+        d_innovation = tf.convert_to_tensor(
+            geometry.residual_derivative_fn(
+                predicted_observation,
+                observation,
+                d_predicted_observation,
+                tf.zeros_like(d_predicted_observation),
+            ),
+            tf.float64,
+        )
+        residual_margin = tf.reduce_min(
+            tf.convert_to_tensor(
+                geometry.residual_branch_margin_fn(
+                    predicted_points_mean, observation_points
+                ),
+                tf.float64,
+            ),
+            axis=1,
+        )
+        innovation_margin = tf.convert_to_tensor(
+            geometry.residual_branch_margin_fn(predicted_observation, observation),
+            tf.float64,
+        )
+        mean_margin = tf.convert_to_tensor(
+            geometry.mean_branch_margin_fn(observation_points, mean_weights),
+            tf.float64,
+        )
+        geometry_margin = tf.minimum(
+            mean_margin, tf.minimum(residual_margin, innovation_margin)
+        )
+    y_stack = tf.transpose(
+        observation_residuals * tf.sqrt(covariance_weights)[None, :, None],
+        [0, 2, 1],
+    )
+    dy_stack = tf.transpose(
+        d_observation_residuals
+        * tf.sqrt(covariance_weights)[None, None, :, None],
+        [0, 1, 3, 2],
+    )
     observation_stack = tf.concat([y_stack, model.observation_factor], axis=2)
     d_observation_stack = tf.concat([dy_stack, derivatives.d_observation_factor], axis=3)
-    innovation_factor, d_innovation_factor, innovation_qr_diag = batched_stack_qr_lower(observation_stack, d_observation_stack)
-    centered_x = predicted_points - predicted_mean[:, None, :]
-    centered_y = observation_points - predicted_observation[:, None, :]
-    d_centered_x = d_predicted_points - d_predicted_mean[:, :, None, :]
-    d_centered_y = d_observation_points - d_predicted_observation[:, :, None, :]
-    cross = tf.einsum("r,brn,brm->bnm", covariance_weights, centered_x, centered_y)
-    d_cross = tf.einsum("r,bprn,brm->bpnm", covariance_weights, d_centered_x, centered_y) + tf.einsum("r,brn,bprm->bpnm", covariance_weights, centered_x, d_centered_y)
-    innovation = observation - predicted_observation
+    state_joint_stack = tf.concat(
+        [state_stack, tf.zeros([b, n, m], tf.float64)], axis=2
+    )
+    d_state_joint_stack = tf.concat(
+        [d_state_stack, tf.zeros([b, p, n, m], tf.float64)], axis=3
+    )
+    innovation_factor, gain, filtered_factor, d_innovation_factor, d_gain, d_filtered_factor, block_diag = batched_block_qr_conditional(
+        observation_stack,
+        state_joint_stack,
+        d_observation_stack,
+        d_state_joint_stack,
+        compute_covariance_diagnostics=False,
+    )
     z = tf.linalg.triangular_solve(innovation_factor, innovation[:, :, None], lower=True)[:, :, 0]
-    dz_rhs = -d_predicted_observation - tf.einsum("bpij,bj->bpi", d_innovation_factor, z)
+    dz_rhs = d_innovation - tf.einsum("bpij,bj->bpi", d_innovation_factor, z)
     dz = _triangular_solve_batch(innovation_factor, dz_rhs[..., None], lower=True)[..., 0]
     log_likelihood = -0.5 * (m * math.log(2.0 * math.pi) + 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(innovation_factor)), 1) + tf.reduce_sum(z * z, 1))
-    score = -tf.reduce_sum(d_innovation_factor[:, :, :, :] * 0.0, axis=[2, 3])
     score = -0.5 * (2.0 * tf.reduce_sum(tf.linalg.diag_part(d_innovation_factor) / tf.linalg.diag_part(innovation_factor)[:, None, :], axis=2) + 2.0 * tf.reduce_sum(z[:, None, :] * dz, axis=2))
-    u_t = _triangular_solve_batch(innovation_factor, tf.linalg.matrix_transpose(cross), lower=True)
-    u = tf.linalg.matrix_transpose(u_t)
-    gain = _right_solve(innovation_factor, u)
-    d_u_rhs = tf.linalg.matrix_transpose(d_cross) - tf.einsum("bpij,bjn->bpin", d_innovation_factor, tf.linalg.matrix_transpose(u))
-    d_u = tf.linalg.matrix_transpose(_triangular_solve_batch(innovation_factor, d_u_rhs, lower=True))
-    d_gain = _right_solve_batch(innovation_factor, d_u)
-    d_gain = d_gain - tf.stack(
-        [
-            _right_solve(innovation_factor, tf.einsum("bnm,bml->bnl", gain, d_innovation_factor[:, i]))
-            for i in range(p)
-        ],
-        axis=1,
+    geometry_valid = geometry_margin > tf.constant(
+        geometry.branch_margin_floor if geometry is not None else 0.0, tf.float64
+    )
+    score = tf.where(
+        geometry_valid[:, None],
+        score,
+        tf.fill(tf.shape(score), tf.constant(float("nan"), tf.float64)),
     )
     filtered_mean = predicted_mean + tf.einsum("bnm,bm->bn", gain, innovation)
-    d_filtered_mean = d_predicted_mean + tf.einsum("bpnm,bm->bpn", d_gain, innovation) - tf.einsum("bnm,bpm->bpn", gain, d_predicted_observation)
-    filtered_factor, d_filtered_factor, down_diag = batched_lower_rank_downdate(predicted_factor, u, d_predicted_factor, d_u)
+    d_filtered_mean = d_predicted_mean + tf.einsum("bpnm,bm->bpn", d_gain, innovation) + tf.einsum("bnm,bpm->bpn", gain, d_innovation)
     diagnostics = dict(qr_diag)
-    diagnostics.update({"innovation_" + k: v for k, v in innovation_qr_diag.items()})
+    diagnostics.update({"innovation_" + k: v for k, v in block_diag.items()})
     diagnostics.update({
-        "minimum_downdate_margin": down_diag["minimum_downdate_margin"],
-        "relative_downdate_margin": down_diag["relative_downdate_margin"],
+        "minimum_downdate_margin": block_diag["minimum_conditional_pivot"],
+        "relative_downdate_margin": block_diag["minimum_conditional_pivot"],
+        "downdate_diagnostics_status": tf.constant("deprecated_conditional_pivot_alias"),
         "backend": tf.constant(DEFAULT_SRUKF_BACKEND),
         "backend_status": tf.constant("default"),
         "backend_contract": tf.constant("TFFactorSRUKFModel"),
-        "factorization": tf.constant("direct_qr_and_lower_rank_downdate"),
+        "factorization": tf.constant("direct_qr_block_conditional"),
         "rule": tf.constant("dz5_unscented_alpha1_beta2_kappa0"),
+        "observation_geometry_branch_margin": geometry_margin,
+        "observation_geometry_score_valid": geometry_valid,
     })
     return log_likelihood, score, filtered_mean, filtered_factor, d_filtered_mean, d_filtered_factor, diagnostics
 
@@ -313,7 +419,7 @@ def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUK
         inf = tf.fill([model.batch_dim], tf.constant(float("inf"), tf.float64))
         zero = tf.zeros([model.batch_dim], tf.float64)
 
-        def body(t, mean, factor, d_mean, d_factor, value, score, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual):
+        def body(t, mean, factor, d_mean, d_factor, value, score, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin):
             inc, inc_score, new_mean, new_factor, new_d_mean, new_d_factor, diagnostics = _one_step(
                 obs[:, t, :], mean, factor, d_mean, d_factor, model, derivatives
             )
@@ -337,20 +443,24 @@ def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUK
                         tf.reduce_max(diagnostics["innovation_factor_derivative_reconstruction_residual"], axis=1),
                     ),
                 ),
+                tf.minimum(
+                    min_geometry_margin,
+                    diagnostics["observation_geometry_branch_margin"],
+                ),
             )
 
-        _, mean, factor, d_mean, d_factor, value, score, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual = tf.while_loop(
+        _, mean, factor, d_mean, d_factor, value, score, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin = tf.while_loop(
             lambda t, *_: t < t_count,
             body,
-            (tf.constant(0), mean, factor, d_mean, d_factor, value, score, inf, inf, inf, inf, zero, zero),
+            (tf.constant(0), mean, factor, d_mean, d_factor, value, score, inf, inf, inf, inf, zero, zero, inf),
             parallel_iterations=1,
         )
-        return value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual
+        return value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin
 
     if jit_compile:
-        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual = tf.function(run, jit_compile=True)(observations)
+        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin = tf.function(run, jit_compile=True)(observations)
     else:
-        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual = run(observations)
+        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin = run(observations)
     return TFFactorSRUKFResult(
         value,
         score,
@@ -370,6 +480,14 @@ def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUK
             "relative_downdate_margin": rel_down_margin,
             "maximum_factor_reconstruction_residual": max_factor_residual,
             "maximum_derivative_reconstruction_residual": max_derivative_residual,
+            "minimum_observation_geometry_branch_margin": min_geometry_margin,
+            "observation_geometry_score_valid": min_geometry_margin
+            > tf.constant(
+                model.observation_geometry.branch_margin_floor
+                if model.observation_geometry is not None
+                else 0.0,
+                tf.float64,
+            ),
         },
     )
 
@@ -407,6 +525,7 @@ def tf_default_srukf_value_and_score(
 
 __all__ = [
     "TFFactorSRUKFModel",
+    "TFFactorSRUKFObservationGeometry",
     "TFFactorSRUKFDerivatives",
     "TFFactorSRUKFResult",
     "tf_factor_srukf_dz5_rule",

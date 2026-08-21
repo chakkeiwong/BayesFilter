@@ -1,0 +1,82 @@
+{
+  "adapter_signature": "a91537bf016dbc4294621e7c638fd8d9432b1d9f6d70502e22167963015a312b",
+  "current_capability": {
+    "full_chain_xla_diagnostic_ready": false,
+    "runtime_backend": "tensorflow_batched_fixed_adjacent_squared_tt_actual_sv_same_program_manual_score",
+    "value_score_authority": "graph_native",
+    "xla_hmc_ready": false
+  },
+  "decision": "PASS_CURRENT_SVX_ZC_GPU_XLA_GATE",
+  "gates": {
+    "cpu_gpu_score_max_abs": 7.105427357601002e-15,
+    "cpu_gpu_value_max_abs": 7.105427357601002e-15,
+    "finite": true,
+    "permutation_score_max_abs": 0.0,
+    "permutation_status_equal": true,
+    "permutation_value_max_abs": 0.0,
+    "same_program_fd_max_abs": 4.619599369704019e-09,
+    "score_valid": true,
+    "status_all_zero": true,
+    "status_fields_present": true
+  },
+  "gpu_allocator_bytes": {
+    "current": 138240,
+    "peak": 67246848
+  },
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "current target GPU/XLA mechanics only",
+    "does not establish exact filtering or exact posterior correctness",
+    "does not by itself rewrite repository capability or registry status"
+  ],
+  "passed": true,
+  "run_manifest": {
+    "command": [
+      "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+      "scripts/run_svx_zc_gpu_xla_gate_20260817.py",
+      "--output-root",
+      "docs/plans/artifacts/direct-factor-srukf-remaining-gaps-hypotheses-20260817/svx-zc-gpu3"
+    ],
+    "cuda_visible_devices": "3",
+    "device": "/GPU:0 mapped from CUDA_VISIBLE_DEVICES",
+    "dtype": "float64",
+    "finished_at": "2026-08-17T12:51:34.563170+00:00",
+    "git_commit": "58292a6a491ce3bbf7befeacb89f1ffd0ad6a02b",
+    "jit_compile": true,
+    "output_root": "docs/plans/artifacts/direct-factor-srukf-remaining-gaps-hypotheses-20260817/svx-zc-gpu3",
+    "platform": "Linux-6.8.0-40-generic-x86_64-with-glibc2.35",
+    "python": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+    "started_at": "2026-08-17T12:50:35.467717+00:00",
+    "tensorflow": "2.19.1",
+    "tf32_execution_enabled": true,
+    "tf_force_gpu_allow_growth": "true",
+    "wall_time_seconds": 59.095459850970656
+  },
+  "runtime_autodiff_for_hmc": false,
+  "schema": "bayesfilter.svx_zc.current_gpu_xla_gate.v1",
+  "score_backend_id": "svx_zc_same_program_scaled_adjacent_state_manual_v1",
+  "target_scope": "SVX-ZC-T10-d10-r2-o25-center-frozen-ukf-v1",
+  "target_signature": "deccdda78028706d0987322d30b9798f0f4d8b518c6773451338e83bf14d1cab",
+  "thresholds": {
+    "cpu_gpu_score_max_abs": 1e-09,
+    "cpu_gpu_value_max_abs": 1e-10,
+    "permutation_score_max_abs": 1e-12,
+    "permutation_value_max_abs": 1e-12,
+    "same_program_fd_max_abs": 2e-06
+  }
+}

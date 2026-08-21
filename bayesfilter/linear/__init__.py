@@ -49,6 +49,7 @@ __all__ = [
     "tf_masked_correlated_kalman_log_likelihood_batched_time_varying",
     "tf_masked_kalman_filter",
     "tf_masked_kalman_log_likelihood",
+    "tf_masked_kalman_filter_checked_value",
     "tf_masked_kalman_filter_checked_with_diagnostics",
     "tf_masked_kalman_filter_with_diagnostics",
     "tf_svd_kalman_log_likelihood",
@@ -80,6 +81,14 @@ __all__ = [
     "TFLinearGaussianStateSpaceDerivatives",
     "batched_stack_qr_lower",
     "batched_lower_rank_downdate",
+    "batched_block_qr_conditional",
+    "batched_fixed_pivot_rectangular_qr",
+    "batched_direct_stack_svd_factor",
+    "batched_support_gaussian_log_likelihood",
+    "batched_direct_support_conditional",
+    "batched_fixed_support_qr_likelihood",
+    "batched_fixed_support_qr_conditional",
+    "batched_fixed_support_qr_update",
 ]
 
 _EXPORT_MODULES = {
@@ -179,6 +188,7 @@ _EXPORT_MODULES = {
     ),
     "tf_masked_kalman_filter": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_log_likelihood": "bayesfilter.linear.kalman_tf",
+    "tf_masked_kalman_filter_checked_value": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_filter_checked_with_diagnostics": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_filter_with_diagnostics": "bayesfilter.linear.kalman_tf",
     "tf_svd_kalman_log_likelihood": "bayesfilter.linear.kalman_svd_tf",
@@ -217,6 +227,14 @@ _EXPORT_MODULES = {
     "TFLinearGaussianStateSpaceDerivatives": "bayesfilter.linear.types_tf",
     "batched_stack_qr_lower": "bayesfilter.linear.stack_qr_tf",
     "batched_lower_rank_downdate": "bayesfilter.linear.lower_rank_downdate_tf",
+    "batched_block_qr_conditional": "bayesfilter.linear.block_qr_conditional_tf",
+    "batched_fixed_pivot_rectangular_qr": "bayesfilter.linear.rectangular_factor_tf",
+    "batched_direct_stack_svd_factor": "bayesfilter.linear.rectangular_factor_tf",
+    "batched_support_gaussian_log_likelihood": "bayesfilter.linear.rectangular_factor_tf",
+    "batched_direct_support_conditional": "bayesfilter.linear.rectangular_factor_tf",
+    "batched_fixed_support_qr_likelihood": "bayesfilter.linear.rectangular_factor_tf",
+    "batched_fixed_support_qr_conditional": "bayesfilter.linear.rectangular_factor_tf",
+    "batched_fixed_support_qr_update": "bayesfilter.linear.rectangular_factor_tf",
 }
 
 

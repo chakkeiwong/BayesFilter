@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PYTHON=/home/chakwong/anaconda3/envs/tf-gpu/bin/python
+PYTHON="${TFGPU_PYTHON:-${CONDA_PREFIX:-/home/ubuntu/miniforge3/envs/tf-gpu}/bin/python}"
 OUTER_TERM_DEADLINE_SECONDS=28740
 export OUTER_TERM_DEADLINE_SECONDS
 

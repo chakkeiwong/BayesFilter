@@ -286,3 +286,75 @@ These gates prevent a common mistake: a numerically stable factor can make the
 likelihood finite while silently changing the derivative target.  The factor
 chapter therefore supplies the algebraic contracts that the validation chapter
 turns into executable tests.
+
+\section{Fixed-Rank Rectangular QR Charts}
+\label{sec:bf-fixed-rank-rectangular-qr}
+
+The default full-rank recursion uses a square lower factor, but exact singular
+laws require a rectangular factor.  Let
+\(A\in\mathbb R^{n\times k}\) have constant rank \(r\leq\min(n,k)\), set
+\(B=A^\top\), and let a rank-discovery preflight freeze a row permutation
+\(\Pi\) such that
+\[
+  B\Pi=[B_1\ B_2],\qquad B_1\in\mathbb R^{k\times r}
+\]
+has full column rank.  On this fixed chart, use the positive-diagonal thin QR
+and projection
+\begin{equation}
+\label{eq:bf-rectangular-fixed-chart}
+  B_1=QR_{11},\qquad R_{12}=Q^\top B_2,
+  \qquad
+  G=\Pi
+  \begin{bmatrix}R_{11}\\R_{12}\end{bmatrix}^{\!\top}.
+\end{equation}
+The chart residual is \(E_2=(I-QQ^\top)B_2\).  When \(E_2=0\),
+\(A=GQ^\top\) and hence \(AA^\top=GG^\top\), without forming either
+covariance.  In finite arithmetic the implementation requires
+\[
+ \|E_2\|_F\leq \tau_{\rm chart}\max(1,\|A\|_F),\qquad
+ \min_j |(R_{11})_{jj}|>
+ \tau_{\rm pivot}\max(\|A\|_F,10^{-300}).
+\]
+The repository float64 defaults are
+\(\tau_{\rm chart}=10^{-10}\) and
+\(\tau_{\rm pivot}=10^{-12}\).  They are numerical admission thresholds, not
+changes to the statistical model.
+
+For a parameter derivative, differentiate the same positive-diagonal QR
+branch.  If \(C=Q^\top\dot B_1R_{11}^{-1}\), choose the skew matrix
+\(\Omega\) from the strictly lower part of \(C\) so that
+\begin{equation}
+\label{eq:bf-rectangular-fixed-chart-derivative}
+  \dot Q=(I-QQ^\top)\dot B_1R_{11}^{-1}+Q\Omega,
+  \qquad
+  \dot R_{11}=(C-\Omega)R_{11},
+\end{equation}
+and then
+\[
+  \dot R_{12}=\dot Q^\top B_2+Q^\top\dot B_2.
+\]
+These equations define a smooth local chart; they do not define a derivative
+through a rank or pivot change.
+
+\section{Affine-Support Gaussian Likelihood and Derivative}
+\label{sec:bf-affine-support-likelihood}
+
+Let \(G\in\mathbb R^{n\times r}\) have full column rank and let
+\(G=UR\) be its positive-diagonal thin QR.  For an innovation \(e\) in
+\({\cal R}(G)\), define \(z=R^{-1}U^\top e\).  The density with respect to
+the \(r\)-dimensional affine-support measure is
+\begin{equation}
+\label{eq:bf-affine-support-log-density}
+ \ell_{\rm supp}
+ =-\frac12\left[r\log(2\pi)+2\sum_{j=1}^r\log R_{jj}+z^\top z\right].
+\end{equation}
+It is \(-\infty\) off support.  On a fixed support and QR branch,
+\begin{equation}
+\label{eq:bf-affine-support-score}
+ \dot\ell_{\rm supp}
+ =-\sum_j\frac{\dot R_{jj}}{R_{jj}}-z^\top\dot z,
+ \qquad
+ \dot z=R^{-1}(\dot U^\top e+U^\top\dot e-\dot Rz).
+\end{equation}
+The derivative includes motion of the support basis and the innovation.  A
+log-determinant-only derivative is incomplete.

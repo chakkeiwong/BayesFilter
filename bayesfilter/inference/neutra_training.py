@@ -45,6 +45,7 @@ NEUTRA_TRAINING_NONCLAIMS = (
 )
 
 DSGE_PAPER_NEUTRA_FAMILY = "dsge_paper_dense_iaf"
+PURE_PAPER_NEUTRA_FAMILY = "pure_paper_dense_iaf"
 SSL_LSTM_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_capacity_dense_iaf"
 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_tuned_capacity_dense_iaf"
 SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_deep_capacity_dense_iaf"
@@ -53,12 +54,16 @@ SSL_LSTM_PURE_NEUTRA_FAMILY = "ssl_lstm_pure_dense_iaf"
 COMPOSED_NEUTRA_FAMILIES = frozenset(
     (
         DSGE_PAPER_NEUTRA_FAMILY,
+        PURE_PAPER_NEUTRA_FAMILY,
         SSL_LSTM_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_PURE_NEUTRA_FAMILY,
     )
+)
+PURE_NEUTRA_FAMILIES = frozenset(
+    (PURE_PAPER_NEUTRA_FAMILY, SSL_LSTM_PURE_NEUTRA_FAMILY)
 )
 DSGE_PAPER_TRAINING_STEPS = 5000
 DSGE_PAPER_TRAINING_BATCH_SIZE = 480
@@ -180,7 +185,7 @@ class NeuTraTrainerConfig:
         if len(set(names)) != len(names):
             raise ValueError("target_parameter_names must be unique")
         if self.family in COMPOSED_NEUTRA_FAMILIES:
-            if self.family == DSGE_PAPER_NEUTRA_FAMILY:
+            if self.family in {DSGE_PAPER_NEUTRA_FAMILY, PURE_PAPER_NEUTRA_FAMILY}:
                 hidden_layers = (int(self.dimension), int(self.dimension))
             elif self.family == SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY:
                 hidden_layers = (32, 32, 32)
@@ -193,7 +198,7 @@ class NeuTraTrainerConfig:
             required = {
                 "hidden_layers": hidden_layers,
                 "activation": "elu",
-                "s_max": 1.0 if self.family != SSL_LSTM_PURE_NEUTRA_FAMILY else float(self.s_max),
+                "s_max": 1.0 if self.family not in PURE_NEUTRA_FAMILIES else float(self.s_max),
                 "epsilon": 1.0e-7,
                 "beta1": 0.9,
                 "beta2": 0.999,
@@ -206,6 +211,20 @@ class NeuTraTrainerConfig:
             }:
                 required["gradient_clip_mode"] = "per_variable"
                 required["learning_rate_schedule"] = "adaptive_constant"
+            elif self.family == PURE_PAPER_NEUTRA_FAMILY:
+                required.update(
+                    {
+                        "initialization_scale": 0.02,
+                        "learning_rate": 0.01,
+                        "learning_rate_schedule": "paper_piecewise",
+                        "epsilon": 1.0e-8,
+                        "gradient_clip_norm": 10.0,
+                        "gradient_clip_mode": "none",
+                        "kernel_initialization": "paper_variance_scaling",
+                        "scale_transform": "identity",
+                        "target_chart": "direct_physical",
+                    }
+                )
             elif self.family == SSL_LSTM_PURE_NEUTRA_FAMILY:
                 if self.learning_rate_schedule == "paper_piecewise":
                     required.update(
@@ -216,11 +235,13 @@ class NeuTraTrainerConfig:
                             "gradient_clip_mode": "none",
                             "kernel_initialization": "paper_variance_scaling",
                             "scale_transform": "identity",
+                            "target_chart": "direct_physical",
                         }
                     )
                 else:
                     required["learning_rate_schedule"] = "adaptive_constant"
                     required["gradient_clip_mode"] = "per_variable"
+                    required["target_chart"] = "direct_physical"
             else:
                 required.update(
                     {
@@ -257,7 +278,7 @@ class NeuTraTrainerConfig:
                 SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
                 SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
             } or (
-                self.family == SSL_LSTM_PURE_NEUTRA_FAMILY
+                self.family in PURE_NEUTRA_FAMILIES
                 and self.learning_rate_schedule == "adaptive_constant"
             ):
                 if not 1.0e-4 <= float(self.learning_rate) <= 2.0e-3:
@@ -271,7 +292,7 @@ class NeuTraTrainerConfig:
                         "tuned capacity gradient_clip_norm outside search contract"
                     )
             if len(translation) != int(self.dimension):
-                if self.family != SSL_LSTM_PURE_NEUTRA_FAMILY:
+                if self.family not in PURE_NEUTRA_FAMILIES:
                     raise ValueError(f"{self.family} requires fixed_translation")
             if output_scale and len(output_scale) != int(self.dimension):
                 raise ValueError(f"{self.family} fixed_output_scale length mismatch")
@@ -281,7 +302,7 @@ class NeuTraTrainerConfig:
                 value = getattr(self, field_name)
                 if value is None or len(str(value)) != 64:
                     raise ValueError(f"{self.family} requires {field_name}")
-            if self.family == SSL_LSTM_PURE_NEUTRA_FAMILY:
+            if self.family in PURE_NEUTRA_FAMILIES:
                 if translation or output_scale or factor_rows:
                     raise ValueError("pure NeuTra forbids fixed affine chart fields")
                 if len(initial_shift) != int(self.dimension) or len(initial_scale_log) != int(self.dimension):
@@ -575,6 +596,56 @@ def ssl_lstm_pure_neutra_config(
         stages=3,
         initial_output_shift=tuple(float(value) for value in initial_output_shift),
         initial_output_scale_log=tuple(float(value) for value in initial_output_scale_log),
+        target_parameter_names=tuple(str(value) for value in target_parameter_names),
+        target_chart="direct_physical",
+        target_signature=str(target_signature),
+        target_adapter_signature=str(target_adapter_signature),
+        jit_compile=bool(jit_compile),
+    )
+
+
+def pure_paper_neutra_config(
+    *,
+    dimension: int,
+    initial_output_shift: Sequence[float],
+    initial_output_scale_log: Sequence[float],
+    target_parameter_names: Sequence[str],
+    target_signature: str,
+    target_adapter_signature: str,
+    initialization_seed: tuple[int, int] = (20260820, 1903),
+    jit_compile: bool = True,
+) -> NeuTraTrainerConfig:
+    """Return the no-affine, dimension-width NeuTra paper recipe.
+
+    The standard-normal base maps directly into the target coordinates through
+    three trainable dense IAF stages and two reverse permutations. Initial
+    shift and log scale seed the final trainable MADE bias; they are not a
+    fixed outer chart.
+    """
+
+    active_dimension = int(dimension)
+    return NeuTraTrainerConfig(
+        dimension=active_dimension,
+        family=PURE_PAPER_NEUTRA_FAMILY,
+        hidden_layers=(active_dimension, active_dimension),
+        activation="elu",
+        s_max=1.0,
+        initialization_scale=0.02,
+        initialization_seed=tuple(int(value) for value in initialization_seed),
+        learning_rate=0.01,
+        learning_rate_schedule="paper_piecewise",
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=1.0e-8,
+        gradient_clip_norm=10.0,
+        gradient_clip_mode="none",
+        kernel_initialization="paper_variance_scaling",
+        scale_transform="identity",
+        stages=3,
+        initial_output_shift=tuple(float(value) for value in initial_output_shift),
+        initial_output_scale_log=tuple(
+            float(value) for value in initial_output_scale_log
+        ),
         target_parameter_names=tuple(str(value) for value in target_parameter_names),
         target_chart="direct_physical",
         target_signature=str(target_signature),
@@ -900,7 +971,7 @@ class _TrainableDenseIAF(_TrainableTransport):
         self.biases = tuple(biases)
         if (
             self.stage_index == int(config.stages) - 1
-            and config.family == SSL_LSTM_PURE_NEUTRA_FAMILY
+            and config.family in PURE_NEUTRA_FAMILIES
         ):
             scale_log = tf.constant(config.initial_output_scale_log, tf.float64)
             shift = tf.constant(config.initial_output_shift, tf.float64)
@@ -1090,7 +1161,7 @@ class _TrainableComposedIAF(_TrainableTransport):
             components.append(_TrainableDenseIAF(config, stage_index=stage))
             if stage + 1 < int(config.stages):
                 components.append(_FixedMixingReverse(config.dimension))
-        if config.family != SSL_LSTM_PURE_NEUTRA_FAMILY:
+        if config.family not in PURE_NEUTRA_FAMILIES:
             components.append(
                 _FixedTranslation(
                     config.fixed_translation,
@@ -1711,6 +1782,7 @@ class NeuTraReverseKLTrainer:
         if self.config.family in COMPOSED_NEUTRA_FAMILIES:
             procedure = {
                 DSGE_PAPER_NEUTRA_FAMILY: "dsge_hmc_rotemberg_sgu_plain_neutra_v1",
+                PURE_PAPER_NEUTRA_FAMILY: "bayesfilter_pure_paper_dense_iaf_v1",
                 SSL_LSTM_CAPACITY_NEUTRA_FAMILY: (
                     "bayesfilter_ssl_lstm_capacity_32x32_neutra_v1"
                 ),

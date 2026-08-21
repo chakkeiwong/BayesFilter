@@ -1,0 +1,82 @@
+{
+  "counts": {
+    "blocked_contract": 3,
+    "falsified_or_value_only": 2,
+    "scoped_gpu_pass": 2
+  },
+  "results": {
+    "H1_KSC": {
+      "cpu_evidence": "docs/plans/artifacts/direct-factor-srukf-remaining-gaps-hypotheses-20260817/ksc-gaussian-sum/result.json",
+      "gpu_cpu_score_max_abs": 2.220446049250313e-15,
+      "gpu_cpu_value_max_abs": 7.105427357601002e-15,
+      "gpu_evidence": "docs/plans/artifacts/direct-factor-srukf-remaining-gaps-hypotheses-20260817/ksc-gaussian-sum-gpu3/result.json",
+      "nonclaim": "KSC Gaussian-sum surrogate only; not direct-factor SR-UKF, exact SV, HMC, or posterior evidence",
+      "passed_component_caps": [
+        7,
+        16,
+        32,
+        64,
+        128,
+        256
+      ],
+      "status": "gpu_canary_passed_surrogate_only"
+    },
+    "H2_SVX_SGQF": {
+      "blocked_cell": "no frozen SGQF level passed filter admission",
+      "decision": "KEEP_SVX_SGQF_TARGET_BLOCKED_NO_LEVEL_PASSED",
+      "evidence": "docs/plans/artifacts/direct-factor-srukf-remaining-gaps-hypotheses-20260817/svx-sgqf-gpu3/result.json",
+      "minimum_prefix_dense_value_gap_per_observation": 0.003386955353813903,
+      "reason": "no tested level passed the dense-prefix value gate; this is a scientific negative result, not an environment blocker",
+      "reference_level": 32,
+      "status": "falsified_tested_sgqf_ladder",
+      "tested_levels": [
+        10,
+        12,
+        16,
+        20,
+        24
+      ],
+      "threshold_prefix_dense_value_gap_per_observation": 0.001
+    },
+    "H3_PP_ZC": {
+      "reason": "no source-anchored batch-native PP-ZC posterior adapter and frozen chart/Jacobian contract is registered",
+      "status": "blocked_contract_missing"
+    },
+    "H4_STR_ZC": {
+      "reason": "no STR-ZC target program exists; structural UKF initializer cannot stand in for target identity",
+      "status": "blocked_extension_target_absent"
+    },
+    "H5_SIR_ZC": {
+      "reason": "available SIR teacher/latent/proposal scores are not the observed-data target score required for admission",
+      "status": "blocked_observed_data_score_missing"
+    },
+    "H6_SVX_ZC": {
+      "adapter_signature": "a91537bf016dbc4294621e7c638fd8d9432b1d9f6d70502e22167963015a312b",
+      "cpu_xla_max_abs_parity_gap": 7.105427357601002e-15,
+      "cpu_xla_status": "passed",
+      "finite_difference_max_abs_gap": 3.3821571099323933e-09,
+      "finite_value_score": true,
+      "full_chain_xla_diagnostic_ready": true,
+      "gpu_cpu_score_max_abs": 7.105427357601002e-15,
+      "gpu_cpu_value_max_abs": 7.105427357601002e-15,
+      "gpu_decision": "PASS_CURRENT_SVX_ZC_GPU_XLA_GATE",
+      "gpu_evidence": "docs/plans/artifacts/direct-factor-srukf-remaining-gaps-hypotheses-20260817/svx-zc-gpu3/result.json",
+      "gpu_same_program_fd_max_abs": 4.619599369704019e-09,
+      "nonclaim": "admission is restricted to the frozen T10 target; no exact-filter, broad-posterior, superiority, or default-readiness claim",
+      "runtime_autodiff_for_hmc": false,
+      "score_backend_id": "svx_zc_same_program_scaled_adjacent_state_manual_v1",
+      "status": "gpu_xla_hmc_capability_admitted_scoped",
+      "status_code_all_zero": true,
+      "target_signature": "deccdda78028706d0987322d30b9798f0f4d8b518c6773451338e83bf14d1cab",
+      "terminal_hmc_evidence": "docs/plans/artifacts/bayesfilter-svx-zc-value-validation-neutra-hmc-20260802/sequential-hmc-attempt01/SVX-ZC/result.json",
+      "xla_hmc_ready": true
+    },
+    "H7_global_singular_score": {
+      "rank_branch_status": "value_only_rank_discovery",
+      "reason": "rank-changing/singular support is intentionally value-only; no globally valid analytical score chart was established",
+      "status": "falsified_global_score_hypothesis_value_only_preserved",
+      "value_only": true
+    }
+  },
+  "schema": "bayesfilter.direct_factor_srukf_remaining_gaps_summary.v1"
+}

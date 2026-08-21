@@ -139,6 +139,16 @@ def _broadcast_upstream_gradient_to_score(dy: Any, score: tf.Tensor) -> tf.Tenso
                 )
         if upstream_shape.rank == score_shape.rank:
             return upstream
+        # Prefer a fully static broadcast when the score shape is known. The
+        # dynamic shape-concatenation reshape below is valid in graph/eager
+        # mode, but XLA can reject it inside TFP's scalar-chain gradient map.
+        if score_shape.is_fully_defined():
+            trailing_ones = (1,) * (score_shape.rank - upstream_shape.rank)
+            reshaped = tf.reshape(
+                upstream,
+                upstream_shape.as_list() + list(trailing_ones),
+            )
+            return tf.broadcast_to(reshaped, score_shape)
         return tf.reshape(
             upstream,
             tf.concat(

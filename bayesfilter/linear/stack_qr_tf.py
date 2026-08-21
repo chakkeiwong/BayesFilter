@@ -11,6 +11,9 @@ from typing import Any
 import tensorflow as tf
 
 
+DEFAULT_RELATIVE_PIVOT_TOLERANCE = 1.0e-12
+
+
 def _as_float(value: Any, name: str) -> tf.Tensor:
     tensor = tf.convert_to_tensor(value, dtype=tf.float64, name=name)
     return tensor
@@ -53,6 +56,9 @@ def _relative_pivots(stack: tf.Tensor, pivots: tf.Tensor) -> tf.Tensor:
 def batched_stack_qr_lower(
     stack: tf.Tensor,
     d_stack: tf.Tensor | None = None,
+    *,
+    compute_covariance_diagnostics: bool = True,
+    relative_pivot_tolerance: float = DEFAULT_RELATIVE_PIVOT_TOLERANCE,
 ) -> tuple[tf.Tensor, tf.Tensor | None, dict[str, tf.Tensor]]:
     """Factor a batched horizontal stack and optionally its first derivatives.
 
@@ -72,8 +78,17 @@ def batched_stack_qr_lower(
         raise ValueError("stack dimensions must be statically known")
     if columns < dimension:
         raise ValueError("stack must have at least as many columns as rows")
+    if relative_pivot_tolerance < 0.0:
+        raise ValueError("relative_pivot_tolerance must be nonnegative")
     q, r, pivots = _positive_qr(_batched_transpose(stack))
     factor = _batched_transpose(r)
+    scale = tf.maximum(tf.linalg.norm(stack, axis=[-2, -1]), tf.constant(1.0e-300, tf.float64))
+    relative_min_pivot = tf.reduce_min(pivots, axis=-1) / scale
+    tf.debugging.assert_greater_equal(
+        relative_min_pivot,
+        tf.cast(relative_pivot_tolerance, tf.float64),
+        message="qr_relative_pivot_below_tolerance",
+    )
     d_factor = None
 
     if d_stack is not None:
@@ -104,27 +119,59 @@ def batched_stack_qr_lower(
         d_factor = tf.linalg.matrix_transpose(d_r)
         tf.debugging.assert_all_finite(d_factor, "QR derivative contains NaN or Inf")
 
+    # This residual is valid without constructing a covariance and is the
+    # runtime diagnostic used by the admitted SR-UKF route.
+    stack_reconstructed = tf.einsum("bki,bij->bkj", q, r)
     diagnostics = {
         "minimum_qr_pivot": tf.reduce_min(pivots, axis=-1),
-        "relative_qr_pivot": _relative_pivots(stack, pivots),
+        "relative_qr_pivot": relative_min_pivot,
         "factor_diagonal": tf.linalg.diag_part(factor),
-        "factor_reconstruction_residual": tf.linalg.norm(
-            factor @ tf.linalg.matrix_transpose(factor) - stack @ tf.linalg.matrix_transpose(stack),
-            axis=[-2, -1],
+        "stack_reconstruction_residual": tf.linalg.norm(
+            tf.linalg.matrix_transpose(stack) - stack_reconstructed, axis=[-2, -1]
+        ),
+        "factor_reconstruction_metric": tf.constant(
+            "direct_stack_qr_residual" if not compute_covariance_diagnostics
+            else "covariance_reconstruction_residual"
         ),
     }
-    if d_factor is not None:
-        reconstructed = tf.einsum("bpij,bkj->bpik", d_factor, factor) + tf.einsum(
-            "bij,bpkj->bpik", factor, d_factor
-        )
-        d_covariance = tf.einsum("bpik,bkj->bpij", d_stack, tf.linalg.matrix_transpose(stack)) + tf.einsum(
-            "bik,bpkj->bpij", stack, tf.linalg.matrix_transpose(d_stack)
-        )
-        diagnostics["factor_derivative_reconstruction_residual"] = tf.linalg.norm(
-            reconstructed - d_covariance,
+    if compute_covariance_diagnostics:
+        diagnostics["factor_reconstruction_residual"] = tf.linalg.norm(
+            factor @ tf.linalg.matrix_transpose(factor)
+            - stack @ tf.linalg.matrix_transpose(stack),
             axis=[-2, -1],
         )
+    else:
+        # Keep the legacy key available to callers that aggregate diagnostics,
+        # while making its runtime meaning explicit in the metric field.
+        diagnostics["factor_reconstruction_residual"] = diagnostics["stack_reconstruction_residual"]
+    if d_factor is not None:
+        d_matrix = tf.linalg.matrix_transpose(d_stack)
+        d_r = tf.linalg.matrix_transpose(d_factor)
+        residual = d_matrix - tf.einsum("bki,bpij->bpkj", q, d_r)
+        dp = d_stack.shape[1]
+        flat_r = tf.repeat(tf.linalg.matrix_transpose(r), dp, axis=0)
+        flat_rhs = tf.reshape(tf.linalg.matrix_transpose(residual), [batch * dp, dimension, columns])
+        flat_dq = tf.linalg.triangular_solve(flat_r, flat_rhs, lower=True)
+        d_q = tf.reshape(tf.linalg.matrix_transpose(flat_dq), [batch, dp, columns, dimension])
+        d_qr = tf.einsum("bpki,bij->bpkj", d_q, r) + tf.einsum("bki,bpij->bpkj", q, d_r)
+        diagnostics["qr_derivative_reconstruction_residual"] = tf.linalg.norm(
+            d_matrix - d_qr, axis=[-2, -1]
+        )
+        if compute_covariance_diagnostics:
+            reconstructed = tf.einsum("bpij,bkj->bpik", d_factor, factor) + tf.einsum(
+                "bij,bpkj->bpik", factor, d_factor
+            )
+            d_covariance = tf.einsum("bpik,bkj->bpij", d_stack, tf.linalg.matrix_transpose(stack)) + tf.einsum(
+                "bik,bpkj->bpij", stack, tf.linalg.matrix_transpose(d_stack)
+            )
+            diagnostics["factor_derivative_reconstruction_residual"] = tf.linalg.norm(
+                reconstructed - d_covariance, axis=[-2, -1]
+            )
+        else:
+            diagnostics["factor_derivative_reconstruction_residual"] = diagnostics[
+                "qr_derivative_reconstruction_residual"
+            ]
     return factor, d_factor, diagnostics
 
 
-__all__ = ["batched_stack_qr_lower"]
+__all__ = ["DEFAULT_RELATIVE_PIVOT_TOLERANCE", "batched_stack_qr_lower"]

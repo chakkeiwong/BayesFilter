@@ -163,6 +163,38 @@ audit can still be valuable: it identifies which guards, shapes, or
 noncommutative matrix steps need manual proof before a formula is promoted to
 peer-review-ready status.
 
+\section{Singular-Support SR-UKF Validation Matrix}
+\label{sec:bf-singular-srukf-validation}
+
+The fixed-rank rectangular route requires tests that distinguish small scale
+from poor conditioning.  Uniformly scaling every factor tests homogeneity, but
+does not change the condition number.  The validation matrix therefore also
+uses anisotropic families with retained singular scales ranging from
+\(1\) to \(10^{-14}\), and it requires deterministic rejection once the fixed
+chart pivot is below the declared relative threshold.
+
+On accepted branches, centered finite differences cover the rectangular
+factor, affine-support log likelihood, score, conditional gain, posterior
+factor, filtered mean, and multi-period accumulated score.  The same fixture
+is run eagerly and with XLA.  Separate branch tests deliberately move an
+observation off support or cross a rank, pivot, or chart boundary; the value is
+then the declared support rejection and the analytical score is invalid rather
+than silently continued.
+
+For the nugget experiment \(P_\varepsilon=GG^\top+\varepsilon I_n\), tests
+must not compare the raw ambient likelihood with a finite support likelihood.
+For \(e\in{\cal R}(G)\), rank \(r\), the valid numerical limit is
+\begin{equation}
+\label{eq:bf-validation-renormalized-epsilon-limit}
+ \ell_{\rm supp}
+ =\lim_{\varepsilon\downarrow0}
+ \left\{\ell_\varepsilon+
+ \frac{n-r}{2}\log(2\pi\varepsilon)\right\}.
+\end{equation}
+Off support, the null-space quadratic sends the raw and renormalized ambient
+values to \(-\infty\).  Tests cover both cases and use multiple values of
+\(\varepsilon\) to verify convergence.
+
 For the analytic-derivative chapter set, the current audit record is:
 \begin{itemize}
   \item the score, Hessian, structural-provider, Cholesky, and QR chapters are

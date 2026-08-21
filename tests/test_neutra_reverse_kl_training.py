@@ -11,13 +11,22 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
+from bayesfilter.inference import (
+    PURE_PAPER_NEUTRA_FAMILY,
+    pure_paper_neutra_config as public_pure_paper_neutra_config,
+)
+from bayesfilter.inference.neutra_artifacts import (
+    InvalidNeuTraArtifact,
+    finalize_dense_iaf_neutra_artifact_payload,
+    load_frozen_neutra_artifact,
+)
 from bayesfilter.inference.neutra_training import (
     NEUTRA_TRAINING_NONCLAIMS,
     NeuTraReverseKLTrainer,
     NeuTraTrainerConfig,
     NeuTraTrainingError,
     preflight_neutra_affine_chart,
+    pure_paper_neutra_config,
     ssl_lstm_pure_neutra_config,
 )
 
@@ -691,3 +700,117 @@ def test_pure_paper_recipe_uses_piecewise_lr_no_clipping_and_all_kernel_init() -
     )
     with pytest.raises(NeuTraTrainingError, match="paper_piecewise"):
         restored.set_learning_rate(1.0e-3)
+
+
+def test_generic_pure_paper_family_uses_dimension_width_and_no_affine() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: "2" * 64
+        config = type(
+            "Config",
+            (),
+            {
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                }
+            },
+        )()
+
+    config = pure_paper_neutra_config(
+        dimension=2,
+        initial_output_shift=(0.3, -0.2),
+        initial_output_scale_log=(-1.2, -0.8),
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature="2" * 64,
+        jit_compile=False,
+    )
+    assert public_pure_paper_neutra_config is pure_paper_neutra_config
+    assert config.family == PURE_PAPER_NEUTRA_FAMILY
+    trainer = NeuTraReverseKLTrainer(Target(), config)
+    assert config.hidden_layers == (2, 2)
+    assert config.gradient_clip_mode == "none"
+    assert config.scale_transform == "identity"
+    assert float(trainer.learning_rate_at(0).numpy()) == pytest.approx(1.0e-2)
+    with pytest.raises(ValueError, match="preset mismatch"):
+        NeuTraTrainerConfig(
+            **{
+                **config.__dict__,
+                "learning_rate_schedule": "adaptive_constant",
+                "learning_rate": 1.0e-3,
+                "gradient_clip_mode": "per_variable",
+                "kernel_initialization": "legacy_zero_output",
+                "scale_transform": "bounded_tanh",
+            }
+        )
+    payload = trainer.frozen_transport_payload(
+        transport_id="generic-pure-paper-test",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["procedure"] == "bayesfilter_pure_paper_dense_iaf_v1"
+    assert [component["kind"] for component in payload["components"]] == [
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+    ]
+    assert not payload["fixed_translation"]
+    assert not payload["fixed_output_scale"]
+    assert not payload["fixed_output_factor"]
+    for field, value in (
+        ("fixed_translation", [0.0, 0.0]),
+        ("fixed_output_scale", [1.0, 1.0]),
+        ("fixed_output_factor", [[1.0, 0.0], [0.0, 1.0]]),
+    ):
+        tampered = dict(payload)
+        tampered[field] = value
+        tampered = finalize_dense_iaf_neutra_artifact_payload(tampered)
+        with pytest.raises(InvalidNeuTraArtifact, match="must not contain fixed affine"):
+            load_frozen_neutra_artifact(
+                tampered,
+                expected_target_signature=TARGET_SIGNATURE,
+            )
+
+    bounded_scale = copy.deepcopy(payload)
+    dense_component = next(
+        component
+        for component in bounded_scale["components"]
+        if component["kind"] == "dense_autoregressive_iaf"
+    )
+    dense_component["scale_transform"] = "bounded_tanh"
+    dense_component["s_max"] = 5.0
+    bounded_scale = finalize_dense_iaf_neutra_artifact_payload(bounded_scale)
+    with pytest.raises(InvalidNeuTraArtifact, match="scale transform mismatch"):
+        load_frozen_neutra_artifact(
+            bounded_scale,
+            expected_target_signature=TARGET_SIGNATURE,
+        )
+
+    before = tuple(variable.numpy().copy() for variable in trainer.variables)
+    initial_final_bias = before[-1].copy()
+    trainer.train_step(_base_rows())
+    assert all(variable.trainable for variable in trainer.variables)
+    assert any(
+        not np.array_equal(old, variable.numpy())
+        for old, variable in zip(before, trainer.variables)
+    )
+    assert not np.array_equal(initial_final_bias, trainer.variables[-1].numpy())
+    loaded = load_frozen_neutra_artifact(
+        payload,
+        expected_target_signature=TARGET_SIGNATURE,
+    )
+    z = tf.constant([[0.2, -0.4], [1.0, -1.0]], tf.float64)
+    np.testing.assert_allclose(
+        loaded.transport.inverse_theta_to_z_batch(
+            loaded.transport.forward_z_to_theta_batch(z)
+        ).numpy(),
+        z.numpy(),
+        rtol=0.0,
+        atol=2e-12,
+    )

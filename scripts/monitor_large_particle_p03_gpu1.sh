@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/home/ubuntu/python/BayesFilter"
-PYTHON="/home/ubuntu/anaconda3/envs/tfgpu/bin/python"
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON="${TFGPU_PYTHON:-${CONDA_PREFIX:-/home/ubuntu/miniforge3/envs/tf-gpu}/bin/python}"
 CHECK_INTERVAL_SECONDS="${CHECK_INTERVAL_SECONDS:-300}"
 SELECTED_GPU_INDEX="${SELECTED_GPU_INDEX:-1}"
 GPU_MEMORY_LIMIT_MIB="${GPU_MEMORY_LIMIT_MIB:-2048}"

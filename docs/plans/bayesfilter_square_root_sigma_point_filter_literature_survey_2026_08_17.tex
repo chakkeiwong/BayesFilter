@@ -1,0 +1,1060 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,longtable,array}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\range}{\operatorname{range}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\pinv}{^{\dagger}}
+\newcommand{\norm}[1]{\lVert #1\rVert}
+\newcommand{\transpose}{^{\mathsf T}}
+
+\title{\textbf{A Literature Survey and Design Recommendation for\
+Robust Direct-Factor Square-Root Sigma-Point Filtering}}
+\author{BayesFilter research note}
+\date{17 August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note surveys square-root Kalman, unscented, cubature, rank-revealing, and
+matrix-differentiation methods relevant to a sigma-point filter that must remain
+usable for ill-conditioned or structurally singular covariance matrices and must
+not form a covariance followed by an eigendecomposition or singular value
+decomposition at every step.  The conclusion is deliberately narrower than the
+phrase ``SVD is more stable.''  Classical square-root filtering does exactly the
+right arithmetic operation: it factors weighted residual stacks directly and
+uses triangular solves.  The most useful construction for the present problem is
+a rectangular loading-factor filter with a fixed-rank, fixed-pivot QR branch for
+value-and-score computation.  A rank-revealing QR or SVD is retained as a
+diagnostic and as a value-only support/rank-selection operation.  For a
+singular innovation, the likelihood must be a density on its affine support,
+with a pseudodeterminant and a range-consistency test; an ordinary full-space
+Gaussian likelihood is not defined.  A block QR of a joint residual stack gives
+the conditional filtered factor directly and removes the need for covariance
+subtraction or sequential downdates.  This construction is source-faithful to
+the square-root filtering literature where stated, and is identified as an
+extension where the literature does not supply the exact singular,
+score-bearing sigma-point algorithm.
+\end{abstract}
+
+\tableofcontents
+
+\section{Question, scope, and short answer}
+
+The question is whether the current direct-factor square-root unscented Kalman
+filter (SR--UKF) idea is anchored in the literature, and which method should be
+chosen when covariance matrices are badly conditioned or singular.  Four cases
+must be kept separate:
+\begin{enumerate}[label=(\roman*)]
+  \item a positive-definite covariance with a large condition number;
+  \item a positive-semidefinite covariance with a known structural rank defect;
+  \item a singular innovation covariance, which changes the probability measure
+        and therefore the likelihood formula; and
+  \item a parameter path on which rank, a pivot pattern, or a spectral
+        multiplicity changes, which is a nonsmooth algorithmic branch for score
+        computation.
+\end{enumerate}
+
+The answer is not to replace every QR operation by an SVD.  The literature gives
+the following division of labour.
+
+\begin{itemize}
+  \item Classical square-root filters propagate a factor and obtain it from
+        orthogonal triangularization of a residual stack, avoiding the explicit
+        formation and square-rooting of a covariance matrix
+        \cite{kaminski1971, bierman1977, maybeck1979, vandermerwewan2001,
+        arasaratnamhaykin2008}.
+  \item An SVD is an excellent rank and conditioning diagnostic, and a robust
+        value-only factorization when the active rank is allowed to change.  It
+        is not a globally smooth coordinate system: repeated singular values
+        make singular vectors nonunique, and rank changes make the truncated
+        factor discontinuous as a map of the input matrix
+        \cite{stewartsun1990, golubvanloan2013, ionescu2015}.
+  \item Fixed-order or fixed-pivot QR has a locally differentiable triangular
+        gauge whenever the selected stack has fixed rank and nonzero pivots.
+        Pivot changes and zero pivots are branch events, not details that can be
+        differentiated through silently \cite{magnusneudecker1999,
+        golubvanloan2013, chan1987, gu1996}.
+  \item The proposed robust design therefore carries a rectangular factor
+        directly, uses QR for the admitted differentiable branch, and calls
+        RRQR/SVD only to detect or report a rank/support change.  A singular
+        innovation is handled in its support coordinates, not by adding an
+        unreported nugget.
+\end{itemize}
+
+The block-QR conditional update derived in Section~\ref{sec:conditional} is a
+particularly useful refinement.  It is a direct factor update, not a covariance
+subtraction disguised as a factorization.
+
+\section{Filtering problem and numerical requirements}
+
+Consider the additive-noise state-space model
+\begin{equation}
+ x_t=f_t(x_{t-1},q_t;\theta),\qquad q_t\sim N(0,Q_t),
+ \qquad y_t=h_t(x_t;\theta)+r_t,\qquad r_t\sim N(0,R_t).
+ \label{eq:model}
+\end{equation}
+The exact nonlinear filter is generally intractable.  The UKF of Julier and
+Uhlmann~\cite{julieruhlmann1997} and the broader sigma-point treatment of van
+der Merwe~\cite{vandermerwe2004} replace Gaussian moment integrals by a finite
+weighted point rule.  The rule is an approximation to moments; square-root
+bookkeeping does not make the resulting likelihood exact.
+
+The numerical requirements here are stronger than merely returning a finite
+number.  A candidate implementation should:
+\begin{enumerate}
+  \item carry a factor $G_t\in\R^{n\times r}$ with
+        $P_t=G_tG_t\transpose$ and allow $r<n$;
+  \item form factors from residual/loadings directly, never by first forming
+        $P_t$ and calling $\operatorname{chol}(P_t)$, $\operatorname{eigh}(P_t)$,
+        or $\operatorname{svd}(P_t)$ at each time step;
+  \item use solves rather than explicit inverses;
+  \item distinguish an exact positive-definite branch, a rank-truncated
+        positive-semidefinite branch, and a failed/unsupported branch; and
+  \item expose enough pivots, singular values, support residuals, and
+        reconstruction residuals to audit a long run.
+\end{enumerate}
+
+The first item is important.  A square factor is not required by the probability
+law: if $G$ is rectangular, then $GG\transpose$ is still a valid covariance,
+and a factor is nonunique under right orthogonal transformations.  The filter
+must therefore specify a factor gauge (triangular, fixed QR, or a fixed support
+chart) as part of its algorithm identity.
+
+\section{What the classical literature actually establishes}
+
+\subsection{Linear square-root filtering}
+
+The early square-root filtering literature was motivated by two familiar
+failure modes of covariance-form recursions: roundoff destroys symmetry and
+positive semidefiniteness, and subtracting two nearly equal positive matrices
+loses significant digits.  Kaminski, Bryson, and Schmidt's survey
+\cite{kaminski1971} and Bierman's factorization treatment
+\cite{bierman1977} establish the central pattern: maintain a factor, use
+orthogonal transformations or rank-one updates, and perform measurement solves
+in factor coordinates.  Maybeck~\cite{maybeck1979} gives the standard
+state-space estimation context.  These are numerical representations of the
+same Kalman algebra, not different statistical models.
+
+For a linear prediction $x^-=Fx^++w$ with factors
+$P^+=G^+G^{+\transpose}$ and $Q=G_QG_Q\transpose$, the direct stack is
+\begin{equation}
+ A^-=[\,FG^+\ \ G_Q\,].
+ \label{eq:linear-pred-stack}
+\end{equation}
+If $A^{-\transpose}=QR$, with a positive diagonal convention, then
+$G^-=R\transpose$ and
+$G^-G^{-\transpose}=A^-A^{-\transpose}$.  No covariance is constructed.
+The measurement stack is analogous.  This is exactly the operation that the
+present problem needs.
+
+\subsection{Sigma-point filters and the SR--UKF}
+
+Julier and Uhlmann~\cite{julieruhlmann1997,julieruhlmann2004} introduced the
+unscented transformation and its filtering use.  Van der Merwe and Wan's
+ICASSP paper~\cite{vandermerwewan2001} explicitly describes the square-root
+UKF: the factor is propagated using QR decomposition, Cholesky updates, and
+pivot-based least-squares solves.  Their thesis gives the wider sigma-point
+family and implementation context~\cite{vandermerwe2004}.  Thus a direct
+factor SR--UKF is not an invention without precedent.
+
+There is, however, a qualification that matters for robust rank-deficient work.
+Many scaled UKF parameterizations assign a negative covariance weight to the
+central point.  A positive residual stack then represents only the positive
+part, and the negative part requires a downdate.  A downdate can fail when the
+result is not positive definite.  This is why a ``pseudo square-root UKF'' is
+not automatically robust for arbitrary UKF weights.  The present DZ5 rule with
+$\alpha=1$, $\beta=2$, $\kappa=0$ has
+\begin{equation}
+ w_0^{(m)}=0,\qquad w_0^{(c)}=2,\qquad
+ w_i^{(m)}=w_i^{(c)}=\frac{1}{2d},\quad i=1,\ldots,2d,
+ \label{eq:dz5-weights}
+\end{equation}
+so all covariance weights are nonnegative.  That special choice permits a
+pure residual-stack QR implementation.  It must not be silently generalized to
+negative-weight UKF rules.
+
+\subsection{Square-root cubature filtering}
+
+Arasaratnam and Haykin's CKF paper~\cite{arasaratnamhaykin2009} derives a
+third-degree cubature filter and a square-root CKF.  Their square-root section
+explicitly identifies matrix square-rooting, inversion, squared-form roundoff,
+and covariance subtraction as sensitive operations; it replaces them by
+triangularization, least-squares solves, and factor updates.  The square-root
+CKF is therefore a particularly clear precedent for direct residual-stack
+factorization.  Their 2008 square-root CKF paper~\cite{arasaratnamhaykin2008}
+also gives the compact algorithmic form.
+
+The CKF and UKF use different point rules.  The numerical lesson transfers, but
+one should not claim that the CKF derivation proves a singular SR--UKF theorem.
+It proves that the direct-factor architecture is an established square-root
+filtering pattern.
+
+\subsection{Adjacent robust-filter literature}
+
+There is a second meaning of ``robust UKF'' in the filtering literature.  Yang,
+Shi, and Chen~\cite{yang2019robust} use generalized maximum-likelihood
+M-estimation to downweight functional-model and measurement outliers.  Tseng,
+Lin, and Jwo~\cite{tseng2017robust} similarly combine Huber M-estimation with
+the CKF for contaminated GPS observations.  These are useful references for an
+outlier-robust observation model, but they do not solve the numerical problem
+studied here: neither paper establishes a direct rectangular factor recursion
+through a rank-deficient covariance, a support-density likelihood, or a smooth
+derivative through a rank transition.  Their residual reweighting can be
+composed with the proposed filter only as a declared change to the statistical
+model.  It must not be presented as evidence that SVD resolves singular
+square-root filtering.
+
+Koch and Yang's rank-deficient-observation Kalman filter~\cite{kochyang1998}
+is a closer statistical neighbour.  It shows that a rank-deficient observation
+model can be treated as a real estimation problem rather than automatically
+repaired by an arbitrary positive diagonal.  It does not, however, supply the
+nonlinear sigma-point, direct residual-stack, or differentiable support-chart
+construction proposed here.
+
+For BayesFilter, the locally verified primary sources are the Julier--Uhlmann
+paper in \path{.local_sources/highdim_nonlinear_filtering/}, the van der Merwe
+thesis PDF under \path{docs/}, and the Arasaratnam--Haykin CKF PDF in the same
+local source directory.  The repository's existing derivations in
+\path{docs/fable-rewrite/monograph/chapters/ch17_square_root_sigma_point.tex},
+\path{ch18_svd_sigma_point.tex}, and \path{ch12_factor_derivatives.tex} were
+used as implementation cross-checks, not as substitutes for the external
+literature.
+
+\begin{table}[ht]
+\centering
+\caption{Literature status of the main ingredients.}
+\label{tab:literature-status}
+\begin{tabular}{p{0.28\linewidth}p{0.30\linewidth}p{0.31\linewidth}}
+\toprule
+Ingredient & What is established & Boundary for this project \\
+\midrule
+Sigma-point moments & UKF/UT and sigma-point filtering
+  \cite{julieruhlmann1997,julieruhlmann2004,vandermerwe2004} & Moment approximation,
+  not exact nonlinear likelihood \\
+Square-root recursion & QR/orthogonal triangularization and factor solves
+  \cite{kaminski1971,bierman1977,vandermerwewan2001,arasaratnamhaykin2009} & Usually
+  assumes a regular positive factor or treats downdates separately \\
+Rank revelation & RRQR and SVD identify numerical rank
+  \cite{chan1987,gu1996,golubvanloan2013} & Rank selection is a discrete branch \\
+Matrix derivatives & Fixed-rank QR and matrix perturbation calculus
+  \cite{magnusneudecker1999,stewartsun1990,ionescu2015} & No globally smooth factor gauge at
+  rank changes or repeated singular values \\
+Degenerate Gaussian likelihood & Support/range and generalized-inverse
+  formulations are standard measure-theoretic linear algebra
+  \cite{bogachev1998,benisraelgreville2003} & Must be implemented explicitly; an ordinary
+  ambient Gaussian density is invalid \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Direct residual-stack factors}
+
+Let $X=[x_1-\bar x,\ldots,x_m-\bar x]$ be a centered state residual stack and
+let $w_j\geq0$ be covariance weights.  Include additive noise loadings as
+columns of $G_Q$.  Define
+\begin{equation}
+ A_x=[\,\sqrt{w_1}(x_1-\bar x)\ \cdots\ \sqrt{w_m}(x_m-\bar x)\ \ G_Q\,].
+ \label{eq:state-stack}
+\end{equation}
+Then the covariance represented by the point rule is exactly
+$P_x=A_xA_x\transpose$.  Apply a thin QR to $A_x\transpose$:
+\begin{equation}
+ A_x\transpose=Q_xR_x,\qquad G_x=R_x\transpose,
+ \qquad G_xG_x\transpose=A_xA_x\transpose.
+ \label{eq:prediction-qr}
+\end{equation}
+The factor is generated from the stack, not from its Gram matrix.  The same
+construction applies to the innovation stack
+\begin{equation}
+ A_y=[\,\sqrt{w_j}(y_j-\bar y)\ \cdots\ \ G_R\,].
+ \label{eq:innovation-stack}
+\end{equation}
+Parameter-dependent observation noise must be differentiated as a loading
+column, not reconstructed from a differentiated covariance.
+
+For a rectangular prior factor $G_a\in\R^{n_a\times r_a}$, use latent offsets
+$\xi_j\in\R^{r_a}$ and points
+\begin{equation}
+ a_j=\mu_a+G_a\xi_j.
+ \label{eq:rectangular-sigma-points}
+\end{equation}
+This is the natural reduced-rank generalization of sigma points.  It preserves
+the represented law and never asks for a square root of $G_aG_a\transpose$.
+The point rule must state whether its offsets are defined in factor coordinates
+or after an additional orthogonal rotation; the two choices can produce
+different nonlinear moment approximations even though they have the same
+covariance.
+
+\section{The conditional block-QR update}
+\label{sec:conditional}
+
+The usual covariance-form update is
+\begin{equation}
+ P_f=P^- - P_{xy}S^{-1}P_{yx},\qquad K=P_{xy}S^{-1}.
+ \label{eq:cov-update}
+\end{equation}
+Computing the subtraction and refactorizing it is precisely what a direct
+square-root implementation should avoid.  There is a direct alternative.
+
+Build one joint residual/loading stack, with observation rows first.  If
+$\widetilde Y$ and $\widetilde X$ are the weighted point residual columns,
+the observation-noise loading is padded with a zero state block:
+\begin{equation}
+ A=\left[
+ \begin{array}{c|c}
+ \widetilde Y & G_R\\
+ \widetilde X & 0
+ \end{array}\right]
+ =\begin{bmatrix}Y\\X\end{bmatrix},
+ \qquad A\transpose=Q
+ \begin{bmatrix}R_{yy}&R_{yx}\\0&R_{xx}\end{bmatrix},
+ \label{eq:block-qr}
+\end{equation}
+where the block QR is taken with a fixed row/column ordering and a positive
+diagonal convention.  Since $A A\transpose=R\transpose R$,
+\begin{align}
+ S&=R_{yy}\transpose R_{yy},\\
+ P_{xy}&=R_{yx}\transpose R_{yy},\\
+ P^-&=R_{yx}\transpose R_{yx}+R_{xx}\transpose R_{xx}.
+ \label{eq:block-covariance-identities}
+\end{align}
+Consequently,
+\begin{equation}
+ G_f=R_{xx}\transpose,
+ \qquad G_fG_f\transpose=P^- - P_{xy}S^{-1}P_{yx},
+ \label{eq:conditional-factor}
+\end{equation}
+and, without forming an inverse,
+\begin{equation}
+ K=R_{yx}\transpose R_{yy}^{-\transpose}.
+ \label{eq:block-gain}
+\end{equation}
+The lower-right block is the conditional residual factor.  This is a Schur
+complement computed by orthogonal elimination, not a covariance subtraction
+followed by a new square root.  It is the recommended filtered-factor update
+for nonnegative covariance weights and a full-rank innovation block.
+
+The process-noise loading $G_Q$ appears in the prediction stack
+~\eqref{eq:state-stack}; it is not appended a second time here.  The state
+residual columns $\widetilde X$ already represent the predicted state law.
+
+The equivalence follows from the block Gram identity.  It is also a useful unit
+test: compare the reconstructed covariance only at the test boundary, while
+the runtime carries $R_{xx}\transpose$ and never constructs $P_f$.
+
+For negative sigma-point weights, put positive columns and negative columns in
+separate stacks.  The difference of their Gram matrices is not itself a single
+ordinary residual stack.  Classical SR--UKF implementations use ordered
+Cholesky updates/downdates for this case~\cite{vandermerwewan2001}.  The block
+QR formula is therefore the primary route for the nonnegative DZ5 rule; a
+general signed-weight route needs a separately audited hyperbolic or downdate
+factorization and must fail closed when the result leaves the PSD cone.
+
+\section{QR, Cholesky, RRQR, and SVD: a precise comparison}
+
+\subsection{Full-rank ill-conditioning}
+
+For a known full-rank stack, QR applies orthogonal transformations and avoids
+forming the normal equations $A A\transpose$.  This is the relevant stability
+advantage.  A Cholesky factorization of $A A\transpose$ squares the condition
+number before factoring; this is exactly the operation the square-root
+literature seeks to avoid.  A QR factor is triangular and therefore convenient
+for solves and fixed-branch differentiation.
+
+SVD is also backward stable and gives singular values explicitly.  It is often
+the best way to measure a condition number and to decide whether a pivot is
+numerically negligible.  But if the only input to SVD is the already formed
+covariance $P=A A\transpose$, the algorithm has lost the main square-root
+benefit: the Gram matrix has already squared the conditioning and may already
+have lost small directions.  An SVD of the residual stack $A$ is a legitimate
+direct square-root operation; an SVD of $P$ is not the desired architecture.
+
+\subsection{Rank deficiency and rank revelation}
+
+Ordinary unpivoted QR assumes the selected columns are independent.  If a
+stack is rank deficient, a triangular diagonal is zero and the factor gauge is
+not unique.  Column-pivoted QR and strong RRQR~\cite{chan1987,gu1996} expose a
+numerical rank while retaining orthogonal transformations.  A direct SVD of the
+stack $A$ gives
+\begin{equation}
+ A=U_r\Sigma_rV_r\transpose,
+ \qquad G=U_r\Sigma_r,
+ \qquad GG\transpose=A A\transpose,
+ \label{eq:svd-stack}
+\end{equation}
+on a fixed retained rank $r$.  This is mathematically valid and does not form
+$A A\transpose$.
+
+The price is a branch.  The retained rank depends on a tolerance, and the
+singular vectors are nonunique under repeated singular values.  The factor
+$U_r\Sigma_r$ can rotate discontinuously even when the covariance changes
+smoothly.  A value-only filter can accept this and record the rank and spectrum.
+An analytical score cannot claim one smooth derivative across the event.
+
+The recommended implementation consequently has two explicit modes:
+\begin{description}
+  \item[Fixed-rank score mode.] Use a fixed-order QR or a fixed pivot pattern
+    established before the differentiated run.  Require positive pivots above
+    a scale-aware threshold and fail closed otherwise.
+  \item[Rank-revealing value mode.] Apply RRQR or SVD directly to each residual
+    stack, retain a declared rank, and emit the truncation tolerance, spectrum,
+    support basis, and discarded-tail norm.  This mode is not a smooth score
+    route unless a separate fixed-support derivative contract is proved.
+\end{description}
+
+\subsection{A fixed-pivot rectangular QR chart}
+
+The fixed-rank score mode can be made constructive without an SVD at every
+step.  Let $B=A\transpose\in\R^{k\times n}$ have exact rank $r<n$.  A
+rank-revealing preflight chooses a fixed state-coordinate permutation $\Pi$ so
+that
+\begin{equation}
+ B\Pi=[\,B_1\ \ B_2\,],\qquad B_1\in\R^{k\times r}
+ \label{eq:pivot-partition}
+\end{equation}
+has full column rank.  On this fixed chart, compute only the ordinary thin QR
+\begin{equation}
+ B_1=Q_1R_{11},\qquad R_{12}=Q_1\transpose B_2,
+ \qquad \widehat R=[\,R_{11}\ \ R_{12}\,].
+ \label{eq:rectangular-qr-chart}
+\end{equation}
+If $B_2\in\range(B_1)$, then $B\Pi=Q_1\widehat R$ exactly.  The rectangular
+covariance factor is
+\begin{equation}
+ G=\Pi\widehat R\transpose\in\R^{n\times r},
+ \qquad GG\transpose=A A\transpose.
+ \label{eq:rectangular-qr-factor}
+\end{equation}
+No zero diagonal is passed to a square QR derivative and no singular vectors
+are selected.  The only differentiated QR is the full-column-rank matrix
+$B_1$.  In particular,
+\begin{equation}
+ \dot R_{12}=\dot Q_1\transpose B_2+Q_1\transpose\dot B_2,
+ \qquad
+ \dot G=\Pi[\,\dot R_{11}\ \ \dot R_{12}\,]\transpose,
+ \label{eq:rectangular-qr-derivative}
+\end{equation}
+where $(\dot Q_1,\dot R_{11})$ follow the ordinary QR formulas in
+Section~\ref{sec:qr-derivative}.
+
+In finite precision, record the chart residual
+\begin{equation}
+ E_2=(I-Q_1Q_1\transpose)B_2.
+ \label{eq:chart-residual}
+\end{equation}
+If $E_2$ is nonzero above tolerance, the factor reconstructs the projected
+stack, not the requested stack.  Score mode must fail closed; value mode may
+repivot or invoke direct-stack SVD and report a rank change.  This construction
+is a direct application of rank-revealing QR ideas~\cite{chan1987,gu1996}; the
+particular factor/derivative contract in
+equations~\eqref{eq:pivot-partition}--\eqref{eq:chart-residual} is the proposed
+BayesFilter specialization.
+
+\begin{table}[ht]
+\centering
+\caption{Choosing a factorization for the proposed filter.}
+\begin{tabular}{p{0.21\linewidth}p{0.26\linewidth}p{0.25\linewidth}p{0.20\linewidth}}
+\toprule
+Method & Strength & Failure/branch event & Recommended role \\
+\midrule
+Cholesky of $P$ & Simple triangular solves & Forms Gram matrix; fails at PSD boundary &
+  Strict-SPD reference only \\
+Unpivoted QR of $A\transpose$ & Direct stack factor; local smooth triangular gauge &
+  Zero pivot or rank loss & Fixed-rank score branch \\
+Pivoted/RRQR of $A\transpose$ & Rank estimate without Gram matrix & Pivot pattern/rank changes &
+  Value route and diagnostics \\
+SVD of $A$ & Best spectrum/support diagnostic; rectangular factor & Repeated values,
+  rank threshold, vector gauge & Value route and independent comparator \\
+SVD of $P$ & Spectral solve for an existing covariance & Has already formed $P$ and
+  squares conditioning & Historical/diagnostic covariance backend \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Singular innovations are a measure-theoretic change}
+
+Suppose the innovation covariance has rank $r_y<n_y$ and a thin support factor
+$G_y=U_y\Sigma_y$, where $U_y\transpose U_y=I_{r_y}$ and $\Sigma_y$ is positive
+diagonal.  The Gaussian law is concentrated on
+$\bar y+\range(U_y)$.  Let $e=y-\bar y$.  The correct support checks are
+\begin{equation}
+ e_\perp=(I-U_yU_y\transpose)e,
+ \qquad \norm{e_\perp}\leq\tau_{\rm support}\,\max(1,\norm e).
+ \label{eq:support-check}
+\end{equation}
+If the check fails, the observation has zero probability under the degenerate
+law.  If it passes, define $z=\Sigma_y^{-1}U_y\transpose e$ and use the
+support density
+\begin{equation}
+ \ell=-\frac12\left[r_y\log(2\pi)+2\sum_{j=1}^{r_y}\log\Sigma_{y,jj}
+ +z\transpose z\right].
+ \label{eq:singular-likelihood}
+\end{equation}
+Equivalently, this uses the pseudodeterminant and Moore--Penrose inverse on the
+support.  It is not the $n_y$-dimensional Lebesgue density with a zero
+eigenvalue.  Degenerate Gaussian measures and generalized inverses are treated
+in this form in the probability and linear-algebra literature
+\cite{bogachev1998,benisraelgreville2003}.
+
+This distinction is essential for robust filtering.  Adding $\varepsilon I$ can
+be a declared model regularization, but it changes the likelihood and its
+derivative.  It must not be presented as a numerically invisible fix for
+singularity.  A support-aware route should record rank, smallest retained
+singular value, support residual, pseudodeterminant, and whether the observation
+was rejected.
+
+\section{Analytical derivatives and the equal-singular-value problem}
+
+\subsection{Fixed-branch QR differentiation}
+\label{sec:qr-derivative}
+
+Let $B(\theta)=Q(\theta)R(\theta)$ be a thin QR with full column rank and
+$R_{jj}>0$.  For a perturbation $\dot B$, set
+\begin{equation}
+ E=Q\transpose\dot B R^{-1},
+ \qquad \Omega=\operatorname{sl}(E)-\operatorname{sl}(E)\transpose,
+ \label{eq:qr-derivative-def}
+\end{equation}
+where $\operatorname{sl}$ retains the strict lower triangle.  Then
+\begin{align}
+ \dot R&=(E-\Omega)R,\\
+ \dot Q&=Q\Omega+(I-QQ\transpose)\dot B R^{-1}.
+ \label{eq:qr-derivative}
+\end{align}
+The positive diagonal fixes the sign gauge locally.  The equations follow by
+differentiating $B=QR$ and $Q\transpose Q=I$; they are standard matrix
+calculus, not a heuristic finite difference~\cite{magnusneudecker1999,
+stewartsun1990}.  The derivatives reconstruct
+\begin{equation}
+ \dot B=\dot Q R+Q\dot R,
+ \qquad
+ \dot G G\transpose+G\dot G\transpose=\dot B\transpose B+B\transpose\dot B
+ \label{eq:qr-reconstruction}
+\end{equation}
+for $G=R\transpose$.
+
+The assumptions matter.  If a pivot reaches zero, or if a pivoting policy
+selects a different column, equations~\eqref{eq:qr-derivative} describe a
+different local chart.  A score-bearing implementation should report a branch
+failure rather than differentiating through a hidden pivot or sign change.
+
+\subsection{Why SVD derivatives are not a universal escape}
+
+For $B=U\Sigma V\transpose$, simple, separated singular values permit local
+perturbation formulas.  At a repeated singular value, however, the associated
+singular subspace is defined but its individual vectors are not.  Any rotation
+inside that subspace is an equally valid SVD.  At a rank threshold, the retained
+subspace itself changes.  Thus a derivative of $U\Sigma$ requires a selected
+gauge and a spectral-gap assumption.  This is the ``equal eigenvalue'' problem
+in SVD clothing.  Matrix backpropagation surveys and perturbation theory make
+the same point~\cite{stewartsun1990,ionescu2015}.
+
+The physical covariance $BB\transpose$ may have a perfectly meaningful
+directional derivative even when a particular SVD factor does not.  That does
+not rescue a score route whose sigma points depend on the chosen factor: a
+rotated factor produces a different nonlinear point cloud.  The clean policy is
+therefore:
+\begin{itemize}
+  \item do not use an SVD factor derivative across a repeated-value or rank
+        transition;
+  \item use fixed-rank QR for the differentiable branch; and
+  \item use SVD/RRQR to detect a branch event and to provide an independent
+        value-level rank diagnostic.
+\end{itemize}
+
+\section{Literature-grounded proposed algorithm}
+\label{sec:algorithm}
+
+The following algorithm is the recommended target for BayesFilter.  It is
+source-faithful to the classical square-root and SR--UKF operations, while the
+rectangular singular-support and block-conditional pieces are explicitly
+identified as a construction from those ingredients.
+
+\subsection{State representation and points}
+
+Carry $(\mu_t,G_t)$ with $G_t\in\R^{n_x\times r_t}$ and
+$P_t=G_tG_t\transpose$.  For fixed standardized offsets $\xi_j\in\R^{r_t}$,
+place points by equation~\eqref{eq:rectangular-sigma-points}.  For additive
+process noise, either augment the latent factor with $G_Q$ or append its loading
+columns to the prediction residual stack, exactly once.  The choice must be
+fixed by the route identity; appending noise twice is an implementation error.
+
+Propagate points through $f_t$ and $h_t$.  Compute means and centered residual
+stacks in TensorFlow, preserving batch and derivative axes.  The value path uses
+equations~\eqref{eq:state-stack}--\eqref{eq:prediction-qr}; it never creates
+$P^-$.  In score mode, use the fixed QR derivative equations and check the
+factor reconstruction residual.
+
+\subsection{Prediction and innovation}
+
+Form the observation stack with observation-noise loadings.  For a full-rank
+innovation, use the block arrangement in equation~\eqref{eq:block-qr}.  The
+lower-right block supplies the filtered factor directly, and the off-diagonal
+block supplies the gain.  The log likelihood uses triangular solves and the
+diagonal of $R_{yy}$.
+
+For a rank-deficient innovation, run a rank-revealing factorization on the
+observation stack itself.  Freeze the selected rank and support chart for a
+value-and-score window only after checking a spectral/pivot gap.  If the chart
+is not fixed, use the value-only support likelihood or fail closed for the
+analytical score.  A possible implementation is:
+\begin{enumerate}
+  \item compute a direct SVD $A_y=U_y\Sigma_yV_y\transpose$ (an RRQR of the
+        stack may be used as a cheaper rank diagnostic) to obtain the support
+        basis $U_y$, retained singular values, and $r_y$;
+  \item support consistency test~\eqref{eq:support-check};
+  \item support-coordinate solve and pseudodeterminant likelihood
+        ~\eqref{eq:singular-likelihood};
+  \item block elimination on the support coordinates to obtain the conditional
+        state factor; and
+  \item telemetry for rank, gap, discarded tail, and support residual.
+\end{enumerate}
+
+\subsection{Branch policy}
+
+The branch identity must bind: point offsets and weights, factor orientation,
+QR pivot policy, positive-diagonal convention, retained rank, support basis,
+regularization policy, and likelihood measure.  A pivot sign correction,
+rank change, active floor, support rejection, or downdate failure is recorded
+as a branch event.  It is not silently repaired by adding jitter and then
+reported as the derivative of the original model.
+
+\begin{table}[ht]
+\centering
+\caption{Recommended route boundaries.}
+\begin{tabular}{p{0.28\linewidth}p{0.29\linewidth}p{0.32\linewidth}}
+\toprule
+Situation & Admitted operation & Status \\
+\midrule
+Full-rank, well-separated stack & Fixed QR and block conditional QR & Value and
+  analytical score \\
+Full-rank but badly conditioned & Direct QR plus pivot/growth diagnostics; RRQR
+  preflight & Score only while fixed branch remains valid \\
+Known structural rank defect & Rectangular factor; fixed support chart & Value;
+  score only with support-chart derivative certificate \\
+Unknown or changing rank & Direct RRQR/SVD of residual stack & Value-only or
+  fail closed \\
+Singular innovation & Support likelihood and support-coordinate block QR & Value;
+  score conditional on fixed support \\
+Negative covariance weights & Ordered signed updates/downdates or hyperbolic QR &
+  Separate audited branch; not covered by nonnegative block QR \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Testing and evidence requirements}
+
+The following tests are necessary to distinguish an actual square-root filter
+from a covariance-form filter with a different name.
+
+\subsection{Unit tests for algebraic primitives}
+
+For random full-rank stacks, verify QR reconstruction, positive diagonal, solve
+residuals, and the derivative identities in equations~\eqref{eq:qr-reconstruction}.
+Use diagonal scales spanning many orders of magnitude and compare against an
+independent high-precision or SVD diagnostic.  Test zero columns, duplicate
+columns, and rank-one stacks as explicit rank events, not as ordinary passing
+cases.
+
+For block QR, verify all three identities in equation~\eqref{eq:block-covariance-identities}
+and verify that $R_{xx}\transpose$ agrees with an independent Schur-complement
+reference on benign positive-definite fixtures.  The production kernel must not
+assemble that reference covariance.
+
+For rectangular factors, test invariance under a fixed orthogonal rotation only
+in the linear case.  In a nonlinear sigma-point transform, document and test
+that changing the factor gauge can change the approximation; this is a feature
+of sigma-point rules, not a numerical bug.
+
+\subsection{Degeneracy and likelihood tests}
+
+Construct exact rank-deficient process, state, and innovation fixtures.  Check
+that the value route emits finite support likelihoods when observations lie on
+the support, rejects off-support observations, and reports the correct retained
+rank and pseudodeterminant.  Compare with a small independent generalized-
+inverse calculation.  Test near-singular families on both sides of the rank
+threshold and verify that score admission stops at the declared branch event.
+
+\subsection{Filter-level parity tests}
+
+On affine linear models, compare the direct-factor filter with a conventional
+Kalman implementation for means, innovation likelihoods, gains, and covariance
+reconstructions.  Compare the direct residual-stack route with an independent
+SVD-of-stack value route, not only with an SVD-of-covariance route.  For regular
+nonlinear fixtures, compare old and new sigma-point values and scores under a
+predeclared tolerance and seed.  Long-run tests should monitor minimum QR pivot,
+relative pivot, support residual, retained rank, factor reconstruction residual,
+and solve residual.
+
+\subsection{Derivative tests}
+
+For a fixed-rank, fixed-pivot window, compare analytical scores with centered
+finite differences of the same finite value program.  Also compare the
+differentiated factor reconstruction with a covariance derivative assembled
+only at the test boundary.  Repeat with parameter-dependent process and
+observation loadings.  Deliberately cross a pivot or rank threshold and assert
+that the score route fails closed rather than returning an apparently smooth
+number.
+
+\section{What is novel, what is not, and recommended decision}
+
+The following classification prevents overclaiming.
+
+\begin{description}
+  \item[Source-faithful.] Sigma-point moment construction; QR residual-stack
+    square-root propagation; triangular least-squares solves; Cholesky update or
+    downdate for signed weights; and the numerical motivation for avoiding
+    covariance square-rooting, all supported by
+    \cite{vandermerwewan2001,arasaratnamhaykin2008,arasaratnamhaykin2009,
+    kaminski1971,bierman1977}.
+  \item[Compositional extension.] Rectangular factor coordinates combined with
+    a direct residual-stack UKF and a support-aware degenerate innovation
+    likelihood.  These follow directly from the factor and generalized-inverse
+    mathematics, but the cited papers do not provide this exact end-to-end
+    algorithm.
+  \item[New implementation proposal.] The block-QR conditional factor in
+    equation~\eqref{eq:conditional-factor}, used as the primary update so that the
+    filtered factor is obtained by orthogonal elimination rather than
+    covariance subtraction or sequential downdates.  It is a Schur-complement
+    identity, not a claim that a particular paper published this exact API.
+\end{description}
+
+The recommendation is therefore:
+\begin{enumerate}
+  \item retain the current direct QR route as the differentiable default only
+        for a declared fixed-rank, positive-pivot branch;
+  \item replace its covariance-subtraction/downdate measurement update with the
+        block conditional QR route where the nonnegative DZ5 weights apply;
+  \item add a rectangular-factor and support-aware value route for structural
+        singularity;
+  \item use direct-stack RRQR/SVD as an independent rank/conditioning monitor
+        and value-only fallback, never as an unqualified smooth score backend;
+        and
+  \item admit analytical scores only when rank, pivot pattern, sign convention,
+        support chart, and likelihood measure remain fixed over the differentiated
+        neighborhood.
+\end{enumerate}
+
+This is robust in the sense the square-root literature supports: it avoids Gram
+matrix formation, preserves PSD factors by construction on the active branch,
+uses stable orthogonal transformations and solves, and makes degeneracy visible.
+It is not a promise that a single algorithm is smooth through arbitrary rank
+changes.  No QR-versus-SVD choice can remove that mathematical fact.
+
+\section{Repository model inventory and empirical coverage}
+\label{sec:empirical-coverage}
+
+The repository-wide coverage campaign was executed from the versioned artifact
+root \texttt{docs/plans/artifacts/direct-factor-srukf-model-coverage-20260817/}.
+The inventory contains 24 rows: every Common V2 model, every active and blocked
+NeuTra registry cell, the explicit SSL--LSTM exclusion, the legacy actual-SV
+route, and the generic MacroFinance adapter. Classification is a contract
+classification, not a claim that every model is an SR--UKF problem. A
+principal-root UKF, SGQF, multiplicative stochastic-volatility,
+domain-clipped SIR, or covariance-form provider is not silently converted into
+direct-factor evidence.
+
+\begin{longtable}{p{0.29\linewidth}p{0.18\linewidth}p{0.45\linewidth}}
+\caption{Generated inventory classification. The complete source anchors,
+checksums, and dimensions are in \texttt{model\_inventory.json}.}\label{tab:inventory}\\
+\toprule
+Model or registry cell & Status & Contract boundary or reason \\
+\midrule
+\endfirsthead
+\toprule
+Model or registry cell & Status & Contract boundary or reason \\
+\midrule
+\endhead
+\texttt{model\_a\_affine} & eligible\_score & Existing affine \texttt{TFFactorSRUKFModel} fixture. \\
+\texttt{model\_b\_nonlinear\_accumulation} & eligible\_score & Existing nonlinear direct-factor fixture. \\
+\texttt{model\_c\_nonlinear\_growth} & eligible\_score & Existing nonlinear direct-factor fixture. \\
+\texttt{structural\_ar1\_quadratic\_h16} & eligible\_value\_only & Deterministic completion creates structural support; no score claim. \\
+\texttt{lgssm\_2d\_h25\_rich} & eligible\_score & Common V2 affine factor adapter; exact SVD/Kalman authority. \\
+\texttt{range\_bearing\_4d\_h20\_rich} & eligible\_score & Circular mean/residual adapter on a fixed branch. \\
+\texttt{predator\_prey\_rk4} & eligible\_score & Common V2 physical-$r$ RK4 adapter; horizon $T=3$. \\
+\texttt{PP-UKF}, \texttt{STR-UKF} & eligible\_score & One-time pre-trace factor adapters; temporal route is direct block-QR. \\
+\texttt{LGSSM-EXACT} & eligible\_score & Full raw-18 likelihood and score tied to exact SVD authority. \\
+\texttt{sv\_1d\_h18\_rich} & not\_applicable\_contract & Multiplicative observation $y=\exp(h/2)e$. \\
+\texttt{spatial\_sir\_j3\_rk4} & not\_applicable\_contract & Domain-constrained epidemiological contract. \\
+\texttt{PP-SGQF}, \texttt{SIR-SGQF} & not\_applicable\_contract & Different sparse-grid quadrature contract. \\
+\texttt{SVX-ZC} & not\_applicable\_contract & Active frozen T10 Zhao--Cui TT target; GPU/XLA/HMC capable, but not direct-factor SR--UKF. \\
+\texttt{macrofinance\_lgssm\_adapter} & not\_applicable\_contract & Generic external covariance-form provider. \\
+\texttt{SVX-SGQF}, \texttt{KSC-UKF}, \texttt{PP-ZC}, \texttt{STR-ZC}, \texttt{SIR-ZC} & blocked & Current registry blockers preserved. \\
+\texttt{actual\_sv\_independent\_panel} & historical\_only & Legacy manual factor route, not admitted block-QR contract. \\
+\texttt{SIR-UKF}, \texttt{SSL-LSTM} & owner\_excluded & Explicit owner/user exclusions. \\
+\bottomrule
+\end{longtable}
+
+Six direct-factor campaign rows were executable under the frozen contract
+gate. The five score-bearing rows were run in eager and host-XLA modes, compared with the
+historical principal-root implementation, and checked with direct QR pivot and
+factor/derivative reconstruction diagnostics. PP-UKF and STR-UKF factor their
+initial/noise covariance contracts once before tracing; no covariance is
+factored inside their temporal recursions. The structural row was run by
+the rectangular direct-stack SVD support route; it was deliberately not given
+an analytical score.
+
+\begin{table}[ht]
+\centering
+\caption{Generated direct block-QR score-bearing parity results. Errors compare
+the new route with the historical principal-root route; nonlinear differences
+depend on factor gauge and sigma-point orientation.}
+\label{tab:score-parity}
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & $T$ & $|\Delta \ell|_{\max}$ & $|\Delta s|_{\max}$ & min pivot & factor residual & XLA \\
+\midrule
+\texttt{model\_a\_affine} & 5 & $0.0$ & $2.22\times10^{-16}$ & $1.27\times10^{-1}$ & $1.51\times10^{-16}$ & pass \\
+\texttt{model\_b\_nonlinear\_accumulation} & 3 & $1.69\times10^{-4}$ & $8.42\times10^{-4}$ & $7.05\times10^{-2}$ & $1.15\times10^{-16}$ & pass \\
+\texttt{model\_c\_nonlinear\_growth} & 2 & $3.00\times10^{-2}$ & $2.47\times10^{-2}$ & $2.80\times10^{-1}$ & $2.40\times10^{-15}$ & pass \\
+\texttt{PP-UKF} & 20 & $2.22\times10^{-6}$ & $7.78\times10^{-6}$ & $1.44$ & $1.63\times10^{-15}$ & pass \\
+\texttt{STR-UKF} & 100 & $1.66\times10^{-1}$ & $1.58$ & $2.21\times10^{-1}$ & $6.95\times10^{-16}$ & pass \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The affine row agrees to floating-point precision. The nonlinear rows are
+finite and internally differentiated, but their historical-route deltas are
+not a claim of exact equality: the old and new filters use different factor
+gauges, and nonlinear sigma-point transforms are gauge-sensitive. The score
+also agrees with centered finite differences of the same direct-factor value
+program in the existing parity tests. For the two registry adapters, maximum
+same-program score/finite-difference errors are $2.15\times10^{-9}$ (PP-UKF)
+and $1.62\times10^{-8}$ (STR-UKF). The larger STR-UKF historical delta is
+retained as factor-gauge-sensitive comparison evidence, not hidden as parity.
+
+\begin{table}[ht]
+\centering
+\caption{Generated singular and ill-conditioned diagnostics.}
+\label{tab:singular-robustness}
+\begin{tabular}{lllrr}
+\toprule
+Case & Route & Result & Rank & Reconstruction residual \\
+\midrule
+Scales $1$ through $10^{-15}$ & direct QR & finite, positive-pivot branch & 2 & $0$ \\
+Exact rank zero & direct-stack SVD & finite, value-only & 0 & $0$ \\
+Exact rank one & direct-stack SVD & finite, value-only & 1 & $0$ \\
+Repeated singular values & direct-stack SVD & finite, value-only & 2 & $0$ \\
+Structural temporal fixture & rectangular support & on-support, XLA parity & 1 & $0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The SVD rows are rank-discovery and support diagnostics only. Repeated
+singular values, cutoff crossings, and support changes do not carry an
+analytical score. The rectangular temporal fixture returned
+$\ell=-1.4250004806894907$, minimum observation rank one, zero support
+residual, and an eager/XLA absolute difference of
+$8.88\times10^{-16}$.
+
+\subsection{Empirical limitations and provenance}
+
+These results establish a bounded numerical and model-contract campaign, not
+exact nonlinear Bayesian inference, broad posterior correctness, HMC
+readiness, or GPU production readiness. The six Common V2 rows and the full
+NeuTra registry are classified. A superseding closure campaign certified the
+four previously adapter-required rows under frozen full-rank/fixed-branch
+contracts. No score is admitted for a singular or rank-changing branch. The
+original campaign was generated by
+\texttt{scripts/run\_direct\_factor\_srukf\_model\_coverage\_20260817.py}; its
+manifest records the source revision, TensorFlow version, CPU/XLA diagnostic
+lane, command lines, and artifact paths. Tables in this section were frozen
+from \texttt{latex\_table\_payload.json}, with detailed values in the JSON
+result files.
+
+\subsection{Remaining-adapter closure campaign}
+\label{sec:remaining-adapter-closure}
+
+The four rows previously classified as \texttt{adapter\_required} were
+certified by
+\texttt{scripts/run\_direct\_factor\_srukf\_remaining\_adapter\_closure\_20260817.py}.
+The final strict evidence root is
+\texttt{docs/plans/artifacts/direct-factor-srukf-remaining-adapter-closure-20260817-r4/};
+the earlier attempt roots are preserved as superseded harness provenance. The
+superseding inventory contains nine \texttt{eligible\_score} rows, one
+\texttt{eligible\_value\_only} row, and zero
+\texttt{adapter\_required} rows. A later managed-GPU correction moved
+\texttt{SVX-ZC} from the registry-blocked set to executable status for its
+frozen T10 target. Within this direct-factor inventory it remains
+\texttt{not\_applicable\_contract}, because a Zhao--Cui TT target is not an
+SR--UKF contract.
+
+\begin{table}[ht]
+\centering
+\caption{Remaining-adapter closure evidence. Authority deltas use an
+independent linear-Gaussian SVD authority where applicable; FD is the same
+finite direct-factor program's centered difference at $h=5\times10^{-6}$.}
+\label{tab:remaining-adapter-closure}
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & $T$ & $|\Delta \ell|$ & $|\Delta s|$ & FD error & min pivot & XLA score \\
+\midrule
+\texttt{lgssm\_2d\_h25\_rich} & 25 & $0$ & $8.88\times10^{-16}$ & $1.03\times10^{-9}$ & $2.84\times10^{-1}$ & $1.78\times10^{-15}$ \\
+\texttt{range\_bearing\_4d\_h20\_rich} & 20 & N/A & N/A & $5.68\times10^{-6}$ & $4.88\times10^{-2}$ & $4.83\times10^{-13}$ \\
+\texttt{predator\_prey\_rk4} & 3 & N/A & N/A & $5.44\times10^{-9}$ & $1.45$ & $5.33\times10^{-14}$ \\
+\texttt{LGSSM-EXACT} & 120 & $3.73\times10^{-14}$ & $7.46\times10^{-14}$ & $5.29\times10^{-9}$ & $8.06\times10^{-2}$ & $4.26\times10^{-14}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The Common V2 LGSSM and LGSSM-EXACT rows agree with independent
+linear-Gaussian authorities to floating-point precision. LGSSM-EXACT compares
+likelihood first and adds the identical persisted Gaussian prior only
+afterward. Predator-prey uses the Common V2 physical coordinate $r$ and its
+three-observation fixture, not the separate PP-UKF probit fixture.
+Range/bearing uses a circular bearing mean, wrapped sigma deviations, and
+wrapped innovation. Its nominal minimum angular/resultant branch margin was
+$0.988$. The centered-difference error decreased from
+$2.27\times10^{-5}$ at $h=10^{-5}$ to $5.68\times10^{-6}$ at
+$h=5\times10^{-6}$, the expected second-order convergence.
+
+These closures do not change the singular/rank-changing policy. The direct
+factor analytical score remains a fixed-positive-pivot and, where applicable,
+fixed-angular-branch claim. Exact rank loss, pivot changes, and angular-cut
+crossings remain value-only or score-blocked diagnostics.
+
+\section{References}
+
+\section{Remaining-gap campaign disposition}
+
+The 17 August 2026 bounded campaign tested the outstanding repository cells
+without conflating their target families. The KSC Gaussian-sum repair passed
+the frozen T20 dense-value, score, mass-preservation, and permutation gates for
+component caps $7,16,32,64,128,256$. Its GPU~3 XLA canary agreed with CPU to
+$7.11\times10^{-15}$ in value and $2.22\times10^{-15}$ in score. This remains
+a KSC surrogate result, not direct-factor SR--UKF, exact-SV, or HMC evidence.
+
+The exact-SV SGQF ladder ran on GPU~3 at levels $10,12,16,20,24$, with level
+$32$ as reference. No level passed: the smallest dense-prefix value error was
+$3.38696\times10^{-3}$ per observation against the declared $10^{-3}$ gate.
+This is a scientific negative result rather than an environment blocker.
+PP--ZC and STR--ZC remain blocked until a source-anchored batch-native target
+contract exists, and SIR--ZC remains blocked until an observed-data
+parameter-score program is supplied.
+
+The current frozen T10 SVX--ZC route passed GPU/CPU value and score parity at
+$7.11\times10^{-15}$, same-program finite differences at
+$4.62\times10^{-9}$, permutation invariance, status gates, XLA JIT, and the
+memory-growth policy. Its target signature matches the prior terminal
+sequential-HMC artifact and its current adapter signature matches the training
+artifacts. The repository therefore restores
+\texttt{xla\_hmc\_ready=true} and
+\texttt{full\_chain\_xla\_diagnostic\_ready=true} for this frozen scope.
+The score remains a manual same-program derivative, so
+\texttt{runtime\_autodiff\_for\_hmc=false}; no exact-filter, broad-posterior,
+superiority, or default-readiness claim follows.
+
+These results reinforce the mathematical boundary of the direct-factor
+construction.  A rectangular factor and support-density value can remain
+well-defined at exact rank loss, but a single globally valid analytical score
+cannot be asserted through rank changes, QR pivot/sign changes, repeated
+singular values, or a zero circular resultant.  The implemented policy is
+therefore value-only (or score-invalid) at those events, with fixed-rank,
+fixed-pivot, fixed-branch charts required for score claims.  Full machine-
+readable evidence is in
+\path{docs/plans/artifacts/direct-factor-srukf-remaining-gaps-hypotheses-20260817/}.
+
+\begin{thebibliography}{99}
+
+\bibitem{arasaratnamhaykin2008}
+I.~Arasaratnam and S.~Haykin, ``Square-root quadrature Kalman filtering,''
+\emph{IEEE Transactions on Signal Processing}, vol.~56, no.~6, pp.~2589--2593,
+2008.
+
+\bibitem{arasaratnamhaykin2009}
+I.~Arasaratnam and S.~Haykin, ``Cubature Kalman filters,''
+\emph{IEEE Transactions on Automatic Control}, vol.~54, no.~6, pp.~1254--1269,
+2009, doi:10.1109/TAC.2009.2019800.
+
+\bibitem{benisraelgreville2003}
+A.~Ben-Israel and T.~N.~E. Greville, \emph{Generalized Inverses: Theory and
+Applications}, 2nd ed., Springer, 2003.
+
+\bibitem{bierman1977}
+G.~J. Bierman, \emph{Factorization Methods for Discrete Sequential Estimation},
+Academic Press, 1977.
+
+\bibitem{bogachev1998}
+V.~I. Bogachev, \emph{Gaussian Measures}, American Mathematical Society, 1998.
+
+\bibitem{chan1987}
+T.~F. Chan, ``Rank revealing QR factorizations,'' \emph{Linear Algebra and its
+Applications}, vols.~88--89, pp.~67--82, 1987.
+
+\bibitem{golubvanloan2013}
+G.~H. Golub and C.~F. Van Loan, \emph{Matrix Computations}, 4th ed., Johns
+Hopkins University Press, 2013.
+
+\bibitem{gu1996}
+M.~Gu and S.~C. Eisenstat, ``Efficient algorithms for computing a strong
+rank-revealing QR factorization,'' \emph{SIAM Journal on Scientific Computing},
+vol.~17, no.~4, pp.~848--869, 1996.
+
+\bibitem{ionescu2015}
+C.~Ionescu, O.~Vantzos, and C.~Sminchisescu, ``Training deep networks with
+structured layers by matrix backpropagation,'' arXiv:1509.07838, 2015.
+
+\bibitem{julieruhlmann1997}
+S.~J. Julier and J.~K. Uhlmann, ``A new extension of the Kalman filter to
+nonlinear systems,'' in \emph{Proceedings of AeroSense}, 1997.
+
+\bibitem{julieruhlmann2004}
+S.~J. Julier and J.~K. Uhlmann, ``Unscented filtering and nonlinear estimation,''
+\emph{Proceedings of the IEEE}, vol.~92, no.~3, pp.~401--422, 2004.
+
+\bibitem{kochyang1998}
+K.~R. Koch and Y.~Yang, ``Robust Kalman filter for rank deficient observation
+models,'' \emph{Journal of Geodesy}, vol.~72, no.~7, pp.~436--441, 1998.
+
+\bibitem{kaminski1971}
+P.~G. Kaminski, A.~E. Bryson, and S.~Schmidt, ``Discrete square root filtering:
+A survey of current techniques,'' \emph{IEEE Transactions on Automatic Control},
+vol.~AC-16, no.~6, pp.~727--736, 1971.
+
+\bibitem{magnusneudecker1999}
+J.~R. Magnus and H.~Neudecker, \emph{Matrix Differential Calculus with
+Applications in Statistics and Econometrics}, 2nd ed., Wiley, 1999.
+
+\bibitem{maybeck1979}
+P.~S. Maybeck, \emph{Stochastic Models, Estimation, and Control}, vol.~1,
+Academic Press, 1979.
+
+\bibitem{stewartsun1990}
+G.~W. Stewart and J.-G. Sun, \emph{Matrix Perturbation Theory}, Academic Press,
+1990.
+
+\bibitem{vandermerwewan2001}
+R.~van der Merwe and E.~A. Wan, ``The square-root unscented Kalman filter for
+state and parameter estimation,'' in \emph{Proceedings of ICASSP}, vol.~6,
+pp.~3461--3464, 2001.
+
+\bibitem{vandermerwe2004}
+R.~van der Merwe, \emph{Sigma-Point Kalman Filters for Probabilistic Inference
+in Dynamic State-Space Models}, Ph.D. dissertation, OGI School of Science and
+Engineering, Oregon Health and Science University, 2004.
+
+\bibitem{yang2019robust}
+C.~Yang, W.~Shi, and W.~Chen, ``Robust M-M unscented Kalman filtering for
+GPS/IMU navigation,'' accepted manuscript, 2019, doi:
+10.1007/s00190-018-01227-5.  The local source is a pre-publication version; the
+journal, volume, and page metadata were not inferred from it.
+
+\bibitem{tseng2017robust}
+C.-H. Tseng, S.-F. Lin, and D.-J. Jwo, ``Robust Huber-based cubature Kalman
+filter for GPS navigation processing,'' \emph{Journal of Navigation}, vol.~70,
+pp.~527--546, 2017, doi:10.1017/S0373463316000692.
+
+\end{thebibliography}
+
+\end{document}

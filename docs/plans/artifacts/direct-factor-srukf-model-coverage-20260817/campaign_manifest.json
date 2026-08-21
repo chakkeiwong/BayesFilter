@@ -1,0 +1,22 @@
+{
+  "backend": "TensorFlow/TFP",
+  "campaign_id": "direct-factor-srukf-model-coverage-20260817",
+  "commands": [
+    "CUDA_VISIBLE_DEVICES=-1 python scripts/run_direct_factor_srukf_model_coverage_20260817.py",
+    "CUDA_VISIBLE_DEVICES=-1 python -m pytest -q tests/test_block_qr_conditional_tf.py tests/test_rectangular_factor_tf.py tests/test_rectangular_srukf_tf.py tests/test_factor_srukf_tf.py tests/test_factor_srukf_model_parity.py tests/test_factor_srukf_route_guard.py tests/test_srukf_backend_policy.py"
+  ],
+  "device_policy": "CPU diagnostic/reference lane; no GPU claim",
+  "dtype": "float64",
+  "inventory_path": "/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/direct-factor-srukf-model-coverage-20260817/model_inventory.json",
+  "jit_policy": "eager plus XLA attempt; XLA failures retained",
+  "nonclaims": [
+    "not every repository model is mathematically an SR-UKF contract",
+    "no singular analytical-score claim",
+    "no HMC or posterior correctness claim"
+  ],
+  "schema": "bayesfilter.direct_factor_srukf_model_coverage.v1",
+  "scientific_target": "direct block-QR full-rank score branch and rectangular value-only singular branch",
+  "seed_policy": "frozen seeds embedded in source fixtures",
+  "source_revision": "58292a6a491ce3bbf7befeacb89f1ffd0ad6a02b",
+  "status": "EXECUTED_WITH_EXPLICIT_CLASSIFICATION_BOUNDARIES"
+}

@@ -695,6 +695,14 @@ def _load_dense_iaf_neutra_artifact(
             expected_hidden=(dimension, dimension),
             label="dsge paper NeuTra",
         )
+    elif procedure == "bayesfilter_pure_paper_dense_iaf_v1":
+        _validate_pure_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(dimension, dimension),
+            expected_scale_transform="identity",
+            label="pure paper NeuTra",
+        )
     elif procedure in {
         "bayesfilter_ssl_lstm_capacity_32x32_neutra_v1",
         "bayesfilter_ssl_lstm_tuned_capacity_32x32_neutra_v1",
@@ -724,6 +732,7 @@ def _load_dense_iaf_neutra_artifact(
             normalized,
             dimension,
             expected_hidden=(32, 32),
+            expected_scale_transform=None,
             label="SSL-LSTM pure NeuTra",
         )
     finalized = finalize_dense_iaf_neutra_artifact_payload(normalized)
@@ -869,6 +878,7 @@ def _validate_pure_composed_neutra_payload(
     dimension: int,
     *,
     expected_hidden: tuple[int, int],
+    expected_scale_transform: str | None,
     label: str,
 ) -> None:
     """Fail closed on the pure IAF topology: no affine chart component."""
@@ -904,13 +914,22 @@ def _validate_pure_composed_neutra_payload(
                 raise InvalidNeuTraArtifact(f"{label} hidden layers mismatch")
             if component.get("activation") != "elu":
                 raise InvalidNeuTraArtifact(f"{label} activation mismatch")
-            if float(component.get("s_max", 0.0)) <= 1.0:
-                raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
-            if component.get("scale_transform", "bounded_tanh") not in {
+            scale_transform = component.get("scale_transform", "bounded_tanh")
+            if (
+                expected_scale_transform is not None
+                and scale_transform != expected_scale_transform
+            ):
+                raise InvalidNeuTraArtifact(f"{label} scale transform mismatch")
+            if scale_transform not in {
                 "bounded_tanh",
                 "identity",
             }:
                 raise InvalidNeuTraArtifact(f"{label} scale transform mismatch")
+            s_max = float(component.get("s_max", 0.0))
+            if not math.isfinite(s_max) or s_max <= 0.0:
+                raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
+            if scale_transform == "bounded_tanh" and s_max <= 1.0:
+                raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
         elif kind == "mixing_linear" and component.get("matrix") != reverse_matrix:
             raise InvalidNeuTraArtifact(f"{label} reverse mixing mismatch")
     if payload.get("fixed_translation") or payload.get("fixed_output_scale") or payload.get("fixed_output_factor"):

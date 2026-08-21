@@ -26,3 +26,25 @@ This policy is not a mathematical trick to make an invalid model valid. The exac
 Every HMC target should state its policy for prior support, parameter
 transforms, stationarity or determinacy restrictions, covariance pivots, solve
 residuals, non-finite likelihoods, and non-finite gradients.
+
+\section{Rank, Chart, and Affine-Support Boundaries}
+\label{sec:bf-rank-chart-support-boundaries}
+
+A singular Gaussian score is a smooth local object only on a fixed-rank,
+fixed-chart, fixed-support stratum.  Rank changes, pivot changes, QR sign
+changes, support changes, and signed-weight PSD boundaries are not ordinary
+interior points of that score program.  BayesFilter therefore distinguishes:
+\begin{itemize}
+  \item an on-support fixed branch, which returns the affine-support value and
+    its analytical derivative;
+  \item an off-support observation, which has exact value \(-\infty\) under the
+    singular law and no admitted classical score; and
+  \item a rank or chart crossing, which invalidates the frozen score branch and
+    requires a new value-only preflight before another differentiated run.
+\end{itemize}
+The implementation reports these events instead of adding an undeclared nugget
+or differentiating through SVD rank discovery.  Consequently, the fixed-rank
+score is suitable only for HMC targets whose trajectories remain inside a
+predeclared stratum or whose outer target logic handles boundary rejection.
+This is a bounded differentiability claim, not a claim of a globally smooth
+singular-covariance posterior.

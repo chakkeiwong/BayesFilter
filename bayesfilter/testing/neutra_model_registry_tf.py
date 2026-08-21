@@ -456,6 +456,37 @@ EXECUTABLE_CELLS: tuple[CellSpec, ...] = (
         initial_step_size=0.025,
         leapfrog_grid=(8, 12),
     ),
+    CellSpec(
+        cell_id="SVX-ZC",
+        parameter_dim=2,
+        parameter_names=("gamma_source_probit", "beta_source_probit"),
+        target_signature=SVX_ZC_SIGNATURE,
+        adapter_factory=_sv_zc_adapter,
+        geometry_factory=lambda tf: _identity_geometry(tf, 2),
+        physical_transform=_sv_zc_physical,
+        truth_factory=lambda tf: _constant_truth(tf, (0.6, 0.4)),
+        recipes=(
+            RecipeSpec("svx_zc_narrow_lr1e3", (8, 8), 1.0e-3),
+            RecipeSpec("svx_zc_narrow_lr5e3", (8, 8), 5.0e-3),
+            RecipeSpec("svx_zc_wide_lr1e3", (16, 16), 1.0e-3),
+            RecipeSpec("svx_zc_wide_lr5e3", (16, 16), 5.0e-3),
+        ),
+        initial_seed=(20260802, 1861),
+        target_description=(
+            "frozen T10 degree-10 rank-2 order-25 adjacent-state squared-TT "
+            "actual-SV posterior"
+        ),
+        preferred_recipe_id="svx_zc_narrow_lr1e3",
+        initial_step_size=0.1,
+        leapfrog_grid=(3, 5, 9, 13, 18, 25),
+        common_tuning_status_keys=(
+            "status_code",
+            "valid_pre_regularized_score",
+            "floor_count_value",
+            "min_innovation_eigenvalue",
+            "innovation_condition_estimate",
+        ),
+    ),
 )
 
 
@@ -470,12 +501,6 @@ BLOCKED_CELLS: tuple[BlockedCellSpec, ...] = (
     ),
     BlockedCellSpec("STR-ZC", "TARGET_BLOCKED_EXTENSION_ROUTE_NOT_DESIGNED", "extension target is absent", "extension-target design"),
     BlockedCellSpec("SIR-ZC", "TARGET_BLOCKED_MISSING_OBSERVED_DATA_SCORE_ROUTE", "observed-data parameter-score closure is absent", "observed-data score route"),
-    BlockedCellSpec(
-        "SVX-ZC",
-        "TARGET_BLOCKED_XLA_HMC_ADMISSION",
-        "same-program manual score exists, but the adapter is not admitted as XLA/HMC ready",
-        "same-program XLA parity and finite-difference gates, explicit capability admission, then fresh scope-specific tuning",
-    ),
 )
 
 

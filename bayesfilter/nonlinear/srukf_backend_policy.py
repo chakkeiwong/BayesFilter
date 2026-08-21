@@ -62,7 +62,7 @@ def srukf_backend_metadata(backend: str) -> dict[str, str]:
             "backend": resolved,
             "backend_status": status,
             "backend_contract": "TFFactorSRUKFModel",
-            "factorization": "direct_qr_and_lower_rank_downdate",
+            "factorization": "direct_qr_block_conditional",
         }
     return {
         "backend": resolved,

@@ -90,6 +90,8 @@ class FixedTransportFullChainConfig:
 
 
 RunFullChainFn = Callable[[Any, Any, FixedTransportFullChainConfig], Any]
+FullChainRunHook = Callable[[Any, Any, FixedTransportFullChainConfig], None]
+FullChainResultHook = Callable[[Any, Any, FixedTransportFullChainConfig, Any], None]
 
 
 def fixed_transport_shared_scalar_step_size(value: Any, *, label: str) -> tf.Tensor:
@@ -316,6 +318,144 @@ def build_fixed_transport_reusable_runner(
     """Build one reusable dynamic-epsilon/dynamic-``L`` runner."""
 
     return FixedTransportReusableRunner(adapter, initial_state_template, config)
+
+
+class FixedTransportReusableRunnerPool:
+    """Cache compiled runners by the genuinely static full-chain contract.
+
+    A tuning campaign varies the current state, stateless seed, step size, and
+    leapfrog count repeatedly. Rebuilding ``tf.function`` for those values
+    recompiles an otherwise identical HMC graph. This pool keeps those four
+    values as tensor inputs and creates a new runner only when a static loop
+    budget, adaptation policy, trace schema, XLA mode, or target changes.
+
+    One pool is deliberately bound to one adapter object and one state shape.
+    Matching signatures are not enough to reuse a traced closure across two
+    independently constructed targets.
+    """
+
+    def __init__(
+        self,
+        *,
+        before_run: FullChainRunHook | None = None,
+        after_run: FullChainResultHook | None = None,
+    ) -> None:
+        self._before_run = before_run
+        self._after_run = after_run
+        self._adapter: Any | None = None
+        self._adapter_signature: str | None = None
+        self._state_shape: tuple[int, int] | None = None
+        self._runners: dict[str, FixedTransportReusableRunner] = {}
+
+    @staticmethod
+    def _static_config_payload(
+        config: FixedTransportFullChainConfig,
+    ) -> Mapping[str, Any]:
+        payload = dict(config.signature_payload())
+        for dynamic_name in ("step_size", "num_leapfrog_steps", "seed"):
+            payload.pop(dynamic_name, None)
+        return payload
+
+    def _bind_campaign(self, adapter: Any, state: tf.Tensor) -> None:
+        shape = tuple(int(dim) for dim in state.shape)
+        if len(shape) != 2:
+            raise ValueError("reusable runner pool requires rank-2 state")
+        signature = fixed_transport_base_adapter_signature(adapter)
+        if self._adapter is None:
+            self._adapter = adapter
+            self._adapter_signature = signature
+            self._state_shape = shape
+            return
+        if adapter is not self._adapter:
+            raise ValueError(
+                "reusable runner pool cannot cross adapter object boundaries"
+            )
+        if signature != self._adapter_signature:
+            raise ValueError("reusable runner pool adapter signature changed")
+        if shape != self._state_shape:
+            raise ValueError("reusable runner pool state shape changed")
+
+    def __call__(
+        self,
+        adapter: Any,
+        initial_state: Any,
+        config: FixedTransportFullChainConfig,
+    ) -> Any:
+        if not isinstance(config, FixedTransportFullChainConfig):
+            raise TypeError("config must be FixedTransportFullChainConfig")
+        if config.chain_execution_mode != "tf_function":
+            raise ValueError(
+                "reusable runner pool requires chain_execution_mode='tf_function'"
+            )
+        state = tf.cast(tf.convert_to_tensor(initial_state), tf.float64)
+        self._bind_campaign(adapter, state)
+        adapter_scope = getattr(adapter, "target_scope", None)
+        if adapter_scope is not None and str(adapter_scope) != config.target_scope:
+            raise ValueError("reusable runner pool target_scope mismatch")
+        if self._before_run is not None:
+            self._before_run(adapter, state, config)
+        static_payload = self._static_config_payload(config)
+        static_signature = fixed_transport_stable_hash(static_payload)
+        runner = self._runners.get(static_signature)
+        if runner is None:
+            runner = build_fixed_transport_reusable_runner(adapter, state, config)
+            self._runners[static_signature] = runner
+        elif runner.program_signature != fixed_transport_stable_hash(
+            {
+                "schema": "bayesfilter.fixed_transport_reusable_runner.v1",
+                "adapter_signature": self._adapter_signature,
+                "state_shape": self._state_shape,
+                "state_dtype": "float64",
+                "static_config": static_payload,
+                "dynamic_inputs": (
+                    "current_state",
+                    "seed",
+                    "step_size",
+                    "num_leapfrog_steps",
+                ),
+            }
+        ):
+            raise RuntimeError("reusable runner pool program signature mismatch")
+        result = runner.run(
+            current_state=state,
+            seed=config.seed,
+            step_size=config.step_size,
+            num_leapfrog_steps=config.num_leapfrog_steps,
+        )
+        if self._after_run is not None:
+            self._after_run(adapter, state, config, result)
+        return result
+
+    def evidence(self) -> Mapping[str, Any]:
+        """Return auditable call and trace counts for every static graph."""
+
+        runners = tuple(
+            {
+                "static_config_signature": static_signature,
+                "program_signature": runner.program_signature,
+                "call_count": runner.call_count,
+                "tracing_count": runner.tracing_count,
+                "static_config": self._static_config_payload(runner.config),
+            }
+            for static_signature, runner in sorted(self._runners.items())
+        )
+        tracing_counts = tuple(row["tracing_count"] for row in runners)
+        return {
+            "schema": "bayesfilter.fixed_transport_reusable_runner_pool.v1",
+            "adapter_signature": self._adapter_signature,
+            "state_shape": self._state_shape,
+            "runner_count": len(runners),
+            "total_call_count": sum(int(row["call_count"]) for row in runners),
+            "all_runners_traced_exactly_once": bool(runners)
+            and all(count == 1 for count in tracing_counts),
+            "dynamic_inputs": (
+                "current_state",
+                "seed",
+                "step_size",
+                "num_leapfrog_steps",
+            ),
+            "runners": runners,
+        }
 
 
 def fixed_transport_base_adapter_signature(adapter: Any) -> str:
@@ -651,6 +791,9 @@ def run_fixed_transport_full_chain_tfp_hmc(
 __all__ = [
     "FixedTransportFullChainConfig",
     "FixedTransportHMCPolicy",
+    "FixedTransportReusableRunnerPool",
+    "FullChainResultHook",
+    "FullChainRunHook",
     "RunFullChainFn",
     "build_fixed_transport_value_score_adapter",
     "fixed_transport_base_adapter_signature",

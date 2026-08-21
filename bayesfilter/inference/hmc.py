@@ -2574,6 +2574,98 @@ def _sequential_rhat_divergence_summary(chunk_summary: Mapping[str, Any]) -> Map
     }
 
 
+def _static_hmc_state_template(
+    initial_state_template: Any,
+    *,
+    runner_label: str,
+) -> tuple[Any, tuple[int, ...]]:
+    """Normalize one runner template while preserving its public error label."""
+
+    import tensorflow as tf
+
+    template = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
+    if template.shape.rank is None:
+        raise ValueError(f"{runner_label} requires static state rank")
+    if any(dim is None for dim in template.shape):
+        raise ValueError(f"{runner_label} requires fully static state shape")
+    return template, tuple(int(dim) for dim in template.shape)
+
+
+def _validated_hmc_runtime_inputs(
+    *,
+    initial_state_template: Any,
+    current_state: Any | None,
+    config_seed: tuple[int, int],
+    seed: tuple[int, int] | Any | None,
+    config_step_size: float,
+    step_size: float | Any | None,
+    state_shape: tuple[int, ...],
+    state_dtype: Any,
+    state_shape_error: str,
+) -> tuple[Any, Any, Any]:
+    """Normalize the three runtime tensors shared by fixed-contract runners."""
+
+    import tensorflow as tf
+
+    state = initial_state_template if current_state is None else current_state
+    state_tensor = tf.convert_to_tensor(state, dtype=state_dtype)
+    if tuple(state_tensor.shape.as_list()) != state_shape:
+        raise ValueError(state_shape_error)
+    seed_value = config_seed if seed is None else seed
+    seed_tensor = tf.convert_to_tensor(seed_value, dtype=tf.int32)
+    if tuple(seed_tensor.shape.as_list()) != (2,):
+        raise ValueError("seed must have static shape (2,)")
+    step_value = config_step_size if step_size is None else step_size
+    step_tensor = tf.convert_to_tensor(step_value, dtype=state_dtype)
+    if step_tensor.shape.rank != 0:
+        raise ValueError("step_size must be a scalar")
+    return state_tensor, seed_tensor, step_tensor
+
+
+def _fixed_hmc_kernel(
+    *,
+    target_log_prob_fn: Callable[[Any], Any],
+    step_size: Any,
+    num_leapfrog_steps: Any,
+) -> Any:
+    """Build the unadapted TFP kernel shared by fixed-contract runners."""
+
+    import tensorflow_probability as tfp
+
+    return tfp.mcmc.HamiltonianMonteCarlo(
+        target_log_prob_fn=target_log_prob_fn,
+        step_size=step_size,
+        num_leapfrog_steps=num_leapfrog_steps,
+    )
+
+
+def _compile_fixed_hmc_callable(
+    function: Callable[..., Any],
+    *,
+    input_signature: list[Any],
+    chain_execution_mode: str,
+    use_xla: bool,
+) -> Callable[..., Any]:
+    """Apply the common eager/TF/XLA wrapper to a fixed-signature runner."""
+
+    if chain_execution_mode == "eager":
+        return function
+    import tensorflow as tf
+
+    if use_xla:
+        return tf.function(
+            function,
+            input_signature=input_signature,
+            jit_compile=True,
+            reduce_retracing=True,
+        )
+    return tf.function(
+        function,
+        input_signature=input_signature,
+        reduce_retracing=True,
+    )
+
+
 class ReusableFullChainHMCRunner:
     """Reusable compiled TFP HMC runner for a fixed static HMC contract.
 
@@ -2605,14 +2697,10 @@ class ReusableFullChainHMCRunner:
         self.dynamic_num_leapfrog_steps = bool(dynamic_num_leapfrog_steps)
         self.capability = _validate_full_chain_hmc_authority(adapter, config)
 
-        import tensorflow as tf
-
-        template = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
-        if template.shape.rank is None:
-            raise ValueError("reusable HMC runner requires static state rank")
-        if any(dim is None for dim in template.shape):
-            raise ValueError("reusable HMC runner requires fully static state shape")
-        self._state_shape = tuple(int(dim) for dim in template.shape)
+        template, self._state_shape = _static_hmc_state_template(
+            initial_state_template,
+            runner_label="reusable HMC runner",
+        )
         self._state_dtype = template.dtype
         self._initial_state_template = template
         self._target_log_prob = _make_tfp_target_log_prob_fn(
@@ -2647,18 +2735,19 @@ class ReusableFullChainHMCRunner:
 
         import tensorflow as tf
 
-        state = self._initial_state_template if current_state is None else current_state
-        state_tensor = tf.convert_to_tensor(state, dtype=self._state_dtype)
-        if tuple(state_tensor.shape.as_list()) != self._state_shape:
-            raise ValueError("current_state shape must match reusable runner template")
-        seed_value = self.config.seed if seed is None else seed
-        seed_tensor = tf.convert_to_tensor(seed_value, dtype=tf.int32)
-        if tuple(seed_tensor.shape.as_list()) != (2,):
-            raise ValueError("seed must have static shape (2,)")
-        step_value = self.config.step_size if step_size is None else step_size
-        step_tensor = tf.convert_to_tensor(step_value, dtype=self._state_dtype)
-        if step_tensor.shape.rank != 0:
-            raise ValueError("step_size must be a scalar")
+        state_tensor, seed_tensor, step_tensor = _validated_hmc_runtime_inputs(
+            initial_state_template=self._initial_state_template,
+            current_state=current_state,
+            config_seed=self.config.seed,
+            seed=seed,
+            config_step_size=self.config.step_size,
+            step_size=step_size,
+            state_shape=self._state_shape,
+            state_dtype=self._state_dtype,
+            state_shape_error=(
+                "current_state shape must match reusable runner template"
+            ),
+        )
         leapfrog_value = (
             self.config.num_leapfrog_steps
             if num_leapfrog_steps is None
@@ -2736,7 +2825,7 @@ class ReusableFullChainHMCRunner:
                 if num_leapfrog_steps is None
                 else num_leapfrog_steps
             )
-            kernel = tfm.HamiltonianMonteCarlo(
+            kernel = _fixed_hmc_kernel(
                 target_log_prob_fn=target_log_prob,
                 step_size=step_size,
                 num_leapfrog_steps=leapfrog_count,
@@ -2759,8 +2848,6 @@ class ReusableFullChainHMCRunner:
                 seed=seed,
             )
 
-        if config.chain_execution_mode == "eager":
-            return run_chain
         input_signature = [
             tf.TensorSpec(shape=self._state_shape, dtype=self._state_dtype),
             tf.TensorSpec(shape=(2,), dtype=tf.int32),
@@ -2768,17 +2855,11 @@ class ReusableFullChainHMCRunner:
         ]
         if self.dynamic_num_leapfrog_steps:
             input_signature.append(tf.TensorSpec(shape=(), dtype=tf.int32))
-        if config.use_xla:
-            return tf.function(
-                run_chain,
-                input_signature=input_signature,
-                jit_compile=True,
-                reduce_retracing=True,
-            )
-        return tf.function(
+        return _compile_fixed_hmc_callable(
             run_chain,
             input_signature=input_signature,
-            reduce_retracing=True,
+            chain_execution_mode=config.chain_execution_mode,
+            use_xla=config.use_xla,
         )
 
     def _metadata(
@@ -3119,16 +3200,10 @@ class FixedSizeHMCChunkRunner:
         self.config = config
         self.capability = _validate_full_chain_hmc_authority(adapter, config)
 
-        import tensorflow as tf
-
-        template = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
-        if template.shape.rank is None:
-            raise ValueError("fixed-size HMC chunk runner requires static state rank")
-        if any(dim is None for dim in template.shape):
-            raise ValueError(
-                "fixed-size HMC chunk runner requires fully static state shape"
-            )
-        self._state_shape = tuple(int(dim) for dim in template.shape)
+        template, self._state_shape = _static_hmc_state_template(
+            initial_state_template,
+            runner_label="fixed-size HMC chunk runner",
+        )
         self._state_dtype = template.dtype
         self._initial_state_template = template
         self._target_log_prob = _make_tfp_target_log_prob_fn(
@@ -3162,18 +3237,19 @@ class FixedSizeHMCChunkRunner:
 
         import tensorflow as tf
 
-        state = self._initial_state_template if current_state is None else current_state
-        state_tensor = tf.convert_to_tensor(state, dtype=self._state_dtype)
-        if tuple(state_tensor.shape.as_list()) != self._state_shape:
-            raise ValueError("current_state shape must match fixed-size runner template")
-        seed_value = self.config.seed if seed is None else seed
-        seed_tensor = tf.convert_to_tensor(seed_value, dtype=tf.int32)
-        if tuple(seed_tensor.shape.as_list()) != (2,):
-            raise ValueError("seed must have static shape (2,)")
-        step_value = self.config.step_size if step_size is None else step_size
-        step_tensor = tf.convert_to_tensor(step_value, dtype=self._state_dtype)
-        if step_tensor.shape.rank != 0:
-            raise ValueError("step_size must be a scalar")
+        state_tensor, seed_tensor, step_tensor = _validated_hmc_runtime_inputs(
+            initial_state_template=self._initial_state_template,
+            current_state=current_state,
+            config_seed=self.config.seed,
+            seed=seed,
+            config_step_size=self.config.step_size,
+            step_size=step_size,
+            state_shape=self._state_shape,
+            state_dtype=self._state_dtype,
+            state_shape_error=(
+                "current_state shape must match fixed-size runner template"
+            ),
+        )
         active_tensor = tf.convert_to_tensor(active_results, dtype=tf.int32)
         if active_tensor.shape.rank != 0:
             raise ValueError("active_results must be a scalar")
@@ -3224,9 +3300,7 @@ class FixedSizeHMCChunkRunner:
 
     def _build_runner(self) -> Callable[[Any, Any, Any, Any], tuple[Any, Any, Any, Mapping[str, Any]]]:
         import tensorflow as tf
-        import tensorflow_probability as tfp
 
-        tfm = tfp.mcmc
         config = self.config
         target_log_prob = self._target_log_prob
         state_shape = self._state_shape
@@ -3254,7 +3328,7 @@ class FixedSizeHMCChunkRunner:
             ):
                 active_results = tf.identity(active_results)
 
-            kernel = tfm.HamiltonianMonteCarlo(
+            kernel = _fixed_hmc_kernel(
                 target_log_prob_fn=target_log_prob,
                 step_size=step_size,
                 num_leapfrog_steps=config.num_leapfrog_steps,
@@ -3611,25 +3685,17 @@ class FixedSizeHMCChunkRunner:
                 )
             return samples, valid_mask, final_state, trace
 
-        if config.chain_execution_mode == "eager":
-            return run_chunk
         input_signature = [
             tf.TensorSpec(shape=self._state_shape, dtype=self._state_dtype),
             tf.TensorSpec(shape=(2,), dtype=tf.int32),
             tf.TensorSpec(shape=(), dtype=self._state_dtype),
             tf.TensorSpec(shape=(), dtype=tf.int32),
         ]
-        if config.use_xla:
-            return tf.function(
-                run_chunk,
-                input_signature=input_signature,
-                jit_compile=True,
-                reduce_retracing=True,
-            )
-        return tf.function(
+        return _compile_fixed_hmc_callable(
             run_chunk,
             input_signature=input_signature,
-            reduce_retracing=True,
+            chain_execution_mode=config.chain_execution_mode,
+            use_xla=config.use_xla,
         )
 
     def _metadata(
@@ -3993,14 +4059,10 @@ class InternalSegmentHMCRunner:
         self.config = config
         self.capability = _validate_full_chain_hmc_authority(adapter, config)
 
-        import tensorflow as tf
-
-        template = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
-        if template.shape.rank is None:
-            raise ValueError("internal-segment HMC runner requires static state rank")
-        if any(dim is None for dim in template.shape):
-            raise ValueError("internal-segment HMC runner requires fully static state shape")
-        self._state_shape = tuple(int(dim) for dim in template.shape)
+        template, self._state_shape = _static_hmc_state_template(
+            initial_state_template,
+            runner_label="internal-segment HMC runner",
+        )
         self._state_dtype = template.dtype
         self._initial_state_template = template
         self._target_log_prob = _make_tfp_target_log_prob_fn(
@@ -4031,20 +4093,19 @@ class InternalSegmentHMCRunner:
     ) -> InternalSegmentHMCRunResult:
         """Run one internally segmented HMC call."""
 
-        import tensorflow as tf
-
-        state = self._initial_state_template if current_state is None else current_state
-        state_tensor = tf.convert_to_tensor(state, dtype=self._state_dtype)
-        if tuple(state_tensor.shape.as_list()) != self._state_shape:
-            raise ValueError("current_state shape must match internal-segment runner template")
-        seed_value = self.config.seed if seed is None else seed
-        seed_tensor = tf.convert_to_tensor(seed_value, dtype=tf.int32)
-        if tuple(seed_tensor.shape.as_list()) != (2,):
-            raise ValueError("seed must have static shape (2,)")
-        step_value = self.config.step_size if step_size is None else step_size
-        step_tensor = tf.convert_to_tensor(step_value, dtype=self._state_dtype)
-        if step_tensor.shape.rank != 0:
-            raise ValueError("step_size must be a scalar")
+        state_tensor, seed_tensor, step_tensor = _validated_hmc_runtime_inputs(
+            initial_state_template=self._initial_state_template,
+            current_state=current_state,
+            config_seed=self.config.seed,
+            seed=seed,
+            config_step_size=self.config.step_size,
+            step_size=step_size,
+            state_shape=self._state_shape,
+            state_dtype=self._state_dtype,
+            state_shape_error=(
+                "current_state shape must match internal-segment runner template"
+            ),
+        )
 
         call_start = time.perf_counter()
         (
@@ -4088,14 +4149,12 @@ class InternalSegmentHMCRunner:
 
     def _build_runner(self) -> Callable[[Any, Any, Any], tuple[Any, Any, Any, Any, Any, Any]]:
         import tensorflow as tf
-        import tensorflow_probability as tfp
 
-        tfm = tfp.mcmc
         config = self.config
         target_log_prob = self._target_log_prob
 
         def run_segments(current_state: Any, seed: Any, step_size: Any) -> tuple[Any, Any, Any, Any, Any, Any]:
-            kernel = tfm.HamiltonianMonteCarlo(
+            kernel = _fixed_hmc_kernel(
                 target_log_prob_fn=target_log_prob,
                 step_size=step_size,
                 num_leapfrog_steps=config.num_leapfrog_steps,
@@ -4227,24 +4286,16 @@ class InternalSegmentHMCRunner:
                 final_segment_target_log_prob,
             )
 
-        if config.chain_execution_mode == "eager":
-            return run_segments
         input_signature = [
             tf.TensorSpec(shape=self._state_shape, dtype=self._state_dtype),
             tf.TensorSpec(shape=(2,), dtype=tf.int32),
             tf.TensorSpec(shape=(), dtype=self._state_dtype),
         ]
-        if config.use_xla:
-            return tf.function(
-                run_segments,
-                input_signature=input_signature,
-                jit_compile=True,
-                reduce_retracing=True,
-            )
-        return tf.function(
+        return _compile_fixed_hmc_callable(
             run_segments,
             input_signature=input_signature,
-            reduce_retracing=True,
+            chain_execution_mode=config.chain_execution_mode,
+            use_xla=config.use_xla,
         )
 
     def _metadata(self, *, call_s: float) -> Mapping[str, Any]:
@@ -4350,18 +4401,10 @@ class RetainedSampleHMCArchiveRunner:
         self.config = config
         self.capability = _validate_full_chain_hmc_authority(adapter, config)
 
-        import tensorflow as tf
-
-        template = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
-        if template.shape.rank is None:
-            raise ValueError(
-                "retained-sample HMC archive runner requires static state rank"
-            )
-        if any(dim is None for dim in template.shape):
-            raise ValueError(
-                "retained-sample HMC archive runner requires fully static state shape"
-            )
-        self._state_shape = tuple(int(dim) for dim in template.shape)
+        template, self._state_shape = _static_hmc_state_template(
+            initial_state_template,
+            runner_label="retained-sample HMC archive runner",
+        )
         self._state_dtype = template.dtype
         self._initial_state_template = template
         self._target_log_prob = _make_tfp_target_log_prob_fn(
@@ -4396,25 +4439,22 @@ class RetainedSampleHMCArchiveRunner:
     ) -> RetainedSampleHMCArchiveRunResult:
         """Execute one retained HMC call and write one private sample shard."""
 
-        import tensorflow as tf
-
         label = str(archive_label).strip()
         if not label:
             raise ValueError("archive_label must be non-empty")
-        state = self._initial_state_template if current_state is None else current_state
-        state_tensor = tf.convert_to_tensor(state, dtype=self._state_dtype)
-        if tuple(state_tensor.shape.as_list()) != self._state_shape:
-            raise ValueError(
+        state_tensor, seed_tensor, step_tensor = _validated_hmc_runtime_inputs(
+            initial_state_template=self._initial_state_template,
+            current_state=current_state,
+            config_seed=self.config.seed,
+            seed=seed,
+            config_step_size=self.config.step_size,
+            step_size=step_size,
+            state_shape=self._state_shape,
+            state_dtype=self._state_dtype,
+            state_shape_error=(
                 "current_state shape must match retained-sample archive runner template"
-            )
-        seed_value = self.config.seed if seed is None else seed
-        seed_tensor = tf.convert_to_tensor(seed_value, dtype=tf.int32)
-        if tuple(seed_tensor.shape.as_list()) != (2,):
-            raise ValueError("seed must have static shape (2,)")
-        step_value = self.config.step_size if step_size is None else step_size
-        step_tensor = tf.convert_to_tensor(step_value, dtype=self._state_dtype)
-        if step_tensor.shape.rank != 0:
-            raise ValueError("step_size must be a scalar")
+            ),
+        )
 
         call_start = time.perf_counter()
         (
@@ -4473,9 +4513,7 @@ class RetainedSampleHMCArchiveRunner:
 
     def _build_runner(self) -> Callable[[Any, Any, Any], tuple[Any, Any, Any, Any, Any]]:
         import tensorflow as tf
-        import tensorflow_probability as tfp
 
-        tfm = tfp.mcmc
         config = self.config
         target_log_prob = self._target_log_prob
         state_shape = self._state_shape
@@ -4485,7 +4523,7 @@ class RetainedSampleHMCArchiveRunner:
             seed: Any,
             step_size: Any,
         ) -> tuple[Any, Any, Any, Any, Any]:
-            kernel = tfm.HamiltonianMonteCarlo(
+            kernel = _fixed_hmc_kernel(
                 target_log_prob_fn=target_log_prob,
                 step_size=step_size,
                 num_leapfrog_steps=config.num_leapfrog_steps,
@@ -4767,24 +4805,16 @@ class RetainedSampleHMCArchiveRunner:
                 sampler_telemetry,
             )
 
-        if config.chain_execution_mode == "eager":
-            return run_retained_archive
         input_signature = [
             tf.TensorSpec(shape=self._state_shape, dtype=self._state_dtype),
             tf.TensorSpec(shape=(2,), dtype=tf.int32),
             tf.TensorSpec(shape=(), dtype=self._state_dtype),
         ]
-        if config.use_xla:
-            return tf.function(
-                run_retained_archive,
-                input_signature=input_signature,
-                jit_compile=True,
-                reduce_retracing=True,
-            )
-        return tf.function(
+        return _compile_fixed_hmc_callable(
             run_retained_archive,
             input_signature=input_signature,
-            reduce_retracing=True,
+            chain_execution_mode=config.chain_execution_mode,
+            use_xla=config.use_xla,
         )
 
     def _metadata(self, *, call_s: float) -> Mapping[str, Any]:

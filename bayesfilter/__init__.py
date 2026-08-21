@@ -3,6 +3,15 @@
 from __future__ import annotations
 
 from importlib import import_module
+import os
+
+# TensorFlow 2.21 can lose an XLA registration when this library is first
+# loaded after another compiled graph has been traced.  The BayesFilter test
+# bootstrap opts into loading it at package import time; normal installs
+# remain lazy so non-op portions do not require a local build.
+if os.environ.get("BAYESFILTER_PRELOAD_CUSTOM_OP") == "1":
+    from bayesfilter.ops import symmetric_principal_sqrt as _preloaded_principal_sqrt
+    del _preloaded_principal_sqrt
 
 __all__ = [
     "BGSBatchPosteriorAdapter",
@@ -113,6 +122,7 @@ __all__ = [
     "FixedTransportHMCGridPolicySpec",
     "FixedTransportHMCKernelTuningConfig",
     "FixedTransportHMCKernelTuningResult",
+    "VerifiedFixedTransportHMCHandoff",
     "FixedTransportHMCXLAQualificationConfig",
     "FixedTransportHMCXLAQualificationReceipt",
     "FixedTransportHMCCandidateDiscoveryConfig",
@@ -309,6 +319,9 @@ __all__ = [
     "run_hmc_windowed_mass_stage",
     "tune_hmc_kernel",
     "tune_fixed_transport_hmc_kernel",
+    "build_verified_fixed_transport_hmc_handoff_from_tuning_result",
+    "run_fixed_transport_full_chain_tfp_hmc",
+    "FixedTransportReusableRunnerPool",
     "active_hmc_tuning_routes",
     "hmc_tuning_route_record",
     "hmc_tuning_route_registry_payload",
@@ -349,6 +362,7 @@ __all__ = [
     "tf_linear_gaussian_log_likelihood",
     "tf_masked_kalman_filter",
     "tf_masked_kalman_log_likelihood",
+    "tf_masked_kalman_filter_checked_value",
     "tf_masked_kalman_filter_checked_with_diagnostics",
     "tf_masked_kalman_filter_with_diagnostics",
     "tf_qr_linear_gaussian_log_likelihood",
@@ -378,9 +392,16 @@ __all__ = [
     "TFFactorSRUKFModel",
     "TFFactorSRUKFDerivatives",
     "TFFactorSRUKFResult",
+    "TFRectangularSRUKFModel",
+    "TFRectangularSRUKFDerivatives",
+    "TFRectangularSRUKFFixedBranch",
+    "TFRectangularSRUKFResult",
+    "TFRectangularSRUKFScoreResult",
     "tf_factor_srukf_dz5_rule",
     "tf_factor_srukf_value_and_score",
     "tf_default_srukf_value_and_score",
+    "tf_rectangular_srukf_value",
+    "tf_rectangular_srukf_value_and_score",
     "DEFAULT_SRUKF_BACKEND",
     "HISTORICAL_PRINCIPAL_SQRT_SRUKF_BACKEND",
     "HISTORICAL_EIGENDERIVATIVE_SRUKF_BACKEND",
@@ -525,6 +546,7 @@ _EXPORT_MODULES = {
     "FixedTransportHMCGridPolicySpec": "bayesfilter.inference",
     "FixedTransportHMCKernelTuningConfig": "bayesfilter.inference",
     "FixedTransportHMCKernelTuningResult": "bayesfilter.inference",
+    "VerifiedFixedTransportHMCHandoff": "bayesfilter.inference",
     "FIXED_TRANSPORT_HMC_ADAPTIVE_JOINT_PREPARED_GRID_NONCLAIMS": "bayesfilter.inference",
     "FIXED_TRANSPORT_HMC_GRID_POLICY_NONCLAIMS": "bayesfilter.inference",
     "FIXED_TRANSPORT_HMC_JOINT_PREPARED_GRID_NONCLAIMS": "bayesfilter.inference",
@@ -722,6 +744,9 @@ _EXPORT_MODULES = {
     "select_hmc_fixed_grid_scale": "bayesfilter.inference",
     "tune_hmc_kernel": "bayesfilter.inference",
     "tune_fixed_transport_hmc_kernel": "bayesfilter.inference",
+    "build_verified_fixed_transport_hmc_handoff_from_tuning_result": "bayesfilter.inference",
+    "run_fixed_transport_full_chain_tfp_hmc": "bayesfilter.inference",
+    "FixedTransportReusableRunnerPool": "bayesfilter.inference",
     "active_hmc_tuning_routes": "bayesfilter.inference",
     "hmc_tuning_route_record": "bayesfilter.inference",
     "hmc_tuning_route_registry_payload": "bayesfilter.inference",
@@ -784,6 +809,7 @@ _EXPORT_MODULES = {
     "tf_linear_gaussian_log_likelihood": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_filter": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_log_likelihood": "bayesfilter.linear.kalman_tf",
+    "tf_masked_kalman_filter_checked_value": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_filter_checked_with_diagnostics": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_filter_with_diagnostics": "bayesfilter.linear.kalman_tf",
     "tf_qr_linear_gaussian_log_likelihood": "bayesfilter.linear.kalman_qr_tf",
@@ -839,9 +865,16 @@ _EXPORT_MODULES = {
     "TFFactorSRUKFModel": "bayesfilter.nonlinear.factor_srukf_tf",
     "TFFactorSRUKFDerivatives": "bayesfilter.nonlinear.factor_srukf_tf",
     "TFFactorSRUKFResult": "bayesfilter.nonlinear.factor_srukf_tf",
+    "TFRectangularSRUKFModel": "bayesfilter.nonlinear.rectangular_srukf_tf",
+    "TFRectangularSRUKFDerivatives": "bayesfilter.nonlinear.rectangular_srukf_tf",
+    "TFRectangularSRUKFFixedBranch": "bayesfilter.nonlinear.rectangular_srukf_tf",
+    "TFRectangularSRUKFResult": "bayesfilter.nonlinear.rectangular_srukf_tf",
+    "TFRectangularSRUKFScoreResult": "bayesfilter.nonlinear.rectangular_srukf_tf",
     "tf_factor_srukf_dz5_rule": "bayesfilter.nonlinear.factor_srukf_tf",
     "tf_factor_srukf_value_and_score": "bayesfilter.nonlinear.factor_srukf_tf",
     "tf_default_srukf_value_and_score": "bayesfilter.nonlinear.factor_srukf_tf",
+    "tf_rectangular_srukf_value": "bayesfilter.nonlinear.rectangular_srukf_tf",
+    "tf_rectangular_srukf_value_and_score": "bayesfilter.nonlinear.rectangular_srukf_tf",
     "DEFAULT_SRUKF_BACKEND": "bayesfilter.nonlinear.srukf_backend_policy",
     "HISTORICAL_PRINCIPAL_SQRT_SRUKF_BACKEND": "bayesfilter.nonlinear.srukf_backend_policy",
     "HISTORICAL_EIGENDERIVATIVE_SRUKF_BACKEND": "bayesfilter.nonlinear.srukf_backend_policy",

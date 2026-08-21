@@ -31,6 +31,7 @@ FORBIDDEN_SRUKF_ROUTE_PATTERNS: tuple[str, ...] = (
 
 ADMITTED_DIRECT_FACTOR_SRUKF_FILES: tuple[str, ...] = (
     "bayesfilter/linear/stack_qr_tf.py",
+    "bayesfilter/linear/block_qr_conditional_tf.py",
     "bayesfilter/linear/lower_rank_downdate_tf.py",
     "bayesfilter/nonlinear/factor_srukf_tf.py",
 )
