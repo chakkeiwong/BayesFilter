@@ -276,3 +276,30 @@ and the standing 3-consecutive-launch-failure stop.
   gates green total. Remaining before P7: fused batch implementation,
   S6/S7 tangent wiring into the score path, per-model callbacks (Austria +
   4), P6 calibration + GPU ladders, then deletion/rebind and Parts 4-5.
+
+- 2026-08-21 (ledger): P5 model track — Austria onboarding: analytical RK4
+  parameter tangent GREEN vs oracle (direction 0, 2-step scope). The S-3
+  ESS discriminator gate FAILED and the failure is a RESULT, not a fixture
+  artifact: canonical-lane ESS 73 -> 4.9 -> 1.06 of 256 across three
+  steps, while a bootstrap comparator on the IDENTICAL fixture holds
+  176/128/73. Component diagnosis (probe, recorded): transition-density
+  spread explodes (std 20 by t=2) because post-flow particles land far
+  from their anchors in the 18-dim transition metric; per-particle log-det
+  spread ~0 (A matrices near-identical and small: flow translating the
+  cloud en masse rather than bending per-particle); post-flow cloud spread
+  ~230 on the SIR state scale. Leading hypothesis: prior/proposal metric
+  mismatch — the flow migrates under the WIDE UKF-predicted covariance
+  (F P F^T + Q, inflated further by the wide smoke initial covariance)
+  while the weight's transition/proposal densities are unit-Q; the
+  mismatch penalizes exactly the flow's own displacement. Candidate
+  repairs to evaluate systematically (P5-ESS subphase, evidence-contract
+  discipline): (a) initial covariance from the model's actual initial
+  spread rather than I; (b) verify the UKF-update is contracting P^i in
+  the loop (wired in the filter but the probe skipped it — rerun the
+  probe THROUGH the filter's own loop with diagnostics); (c) audit the
+  weight formula's density pairing against ch19c eq. alg1-weight for the
+  UKF-predicted vs sampling covariance roles (the P3 1D gate passed with
+  MATCHED covariances — Austria is the first mismatched-covariance
+  regime); (d) substep ladder. The gate stays RED and blocking for
+  Austria claim-bearing status; LGSSM gates unaffected (matched
+  covariances there). This is the campaign's next scientific task.
