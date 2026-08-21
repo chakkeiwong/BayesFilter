@@ -105,9 +105,17 @@ Unrelated dirty files in all three repos stay uncommitted and untouched.
 2. §6a contract-gap direction (fixed-transport reformulation vs. canonical
    collapse for the next C2/CCMA campaign) — or explicitly defer with the
    frozen-campaign classification standing.
-3. Environment policy: promote `tfgpu-full` (pandas 3.0.5, torch
-   2.13.0+cpu, gymnasium 1.3.0) as the pinned test environment, or keep
-   `tfgpu` canonical with the census recorded as clone-only evidence.
+3. Environment policy: RESOLVED by owner, 2026-08-22 — Option A. `tfgpu`
+   remains the sole canonical environment for all claim-bearing evidence.
+   `tfgpu-full` (clone + pandas 3.0.5, torch 2.13.0+cpu, gymnasium 1.3.0,
+   pip-resolved 2026-08-21) is retained locally as a census/diagnostic
+   tool only: its results are engineering evidence, never claim-bearing,
+   and any manifest citing it must say so. The dependency-gated test
+   families (pandas/torch/gymnasium) therefore cannot produce
+   claim-bearing evidence until the owner schedules a reviewed
+   environment change; the owner explicitly deferred that. The
+   pandas-3.x-vs-2.x version question is recorded as unreviewed and open
+   for whenever promotion is revisited.
 4. dsge_hmc segfault exclusion list + slow-marker patch: authorize me to
    apply it, or hand to the Rotemberg/BGS owner (files belong to that
    workstream).
