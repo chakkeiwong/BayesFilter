@@ -174,3 +174,75 @@ def test_austria_flow_lane_ess_beats_bootstrap_floor():
         f"canonical-lane min ESS fraction {fraction:.3f} does not beat the "
         f"bootstrap degeneracy floor (per-step ESS: {ess.round(1)})"
     )
+
+
+def test_austria_annealed_mode_holds_takeoff_ess():
+    """Annealed-SMC mode in the canonical filter (P6 contract PASSED at
+    probe level, 2026-08-22: takeoff stage-ESS 59-88% on frozen Austria).
+    Gate: on the synthetic scope, annealed mode's min per-step stage-ESS
+    must exceed 30% of N — between the probe's frozen-target result and
+    the plain-mode measurement, robust to fixture differences."""
+
+    from bayesfilter.highdim.ledh_canonical_filter_tf import (
+        CanonicalModelCallbacks,
+        canonical_value_and_diagnostics,
+    )
+
+    model, _sd, theta0, initial, covs, noises, observations = (
+        _austria_fixture(83, n=256, horizon=3)
+    )
+
+    def transition_log_density_fn(points, ancestors, _t):
+        mean = model.transition_mean_fn(theta0, ancestors)
+        residual = points - mean
+        return -0.5 * (
+            tf.reduce_sum(tf.square(residual), axis=1)
+            + 18.0 * tf.constant(np.log(2.0 * np.pi), DTYPE)
+        )
+
+    def observation_log_density_fn(points, observation, _t):
+        observed = model.observation_fn(points)
+        residual = observation[None, :] - observed
+        variance = 100.0 * tf.exp(2.0 * theta0[2])
+        return -0.5 * (
+            tf.reduce_sum(tf.square(residual), axis=1) / variance
+            + 9.0
+            * (
+                tf.math.log(variance)
+                + tf.constant(np.log(2.0 * np.pi), DTYPE)
+            )
+        )
+
+    callbacks = CanonicalModelCallbacks(
+        model_id="austria_sir_annealed_smoke",
+        state_dim=18,
+        observation_dim=9,
+        transition_mean_fn=lambda p, t: model.transition_mean_fn(theta0, p),
+        transition_log_density_fn=transition_log_density_fn,
+        process_noise_covariance=model.process_covariance,
+        process_noise_covariance_provenance="model_exact",
+        observation_fn=lambda p, t: model.observation_fn(p),
+        observation_jacobian_fn=lambda p, t: model.observation_jacobian_fn(p),
+        observation_covariance=model.observation_covariance,
+        observation_log_density_fn=observation_log_density_fn,
+        initial_mean=tf.reduce_mean(initial, axis=0),
+        initial_covariance=0.01 * tf.eye(18, dtype=DTYPE),
+        initial_covariance_provenance="model_exact",
+    )
+    result = canonical_value_and_diagnostics(
+        callbacks,
+        observations,
+        particle_count=256,
+        seed=7,
+        flow_substeps=12,
+        temper_stages=4,
+        annealed_resampling=True,
+        flow_prior_cap=8.0,
+    )
+    assert bool(result["program_valid"].numpy())
+    assert np.isfinite(float(result["value"].numpy()))
+    ess = result["per_step_ess"].numpy()
+    assert ess.min() / 256.0 > 0.30, (
+        f"annealed-mode min stage-ESS fraction {ess.min()/256.0:.3f} "
+        f"(per-step: {ess.round(1)})"
+    )

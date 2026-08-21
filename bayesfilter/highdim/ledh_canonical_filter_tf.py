@@ -20,6 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+import numpy as np
 import tensorflow as tf
 
 from bayesfilter.highdim.genut_guided_proposal_tf import _restore_cloud_primal
@@ -69,6 +70,9 @@ def canonical_value_and_diagnostics(
     seed: int,
     flow_substeps: int = 24,
     temper_stages: int = 1,
+    annealed_resampling: bool = False,
+    flow_prior_cap: float = float("inf"),
+    resample_seed: int = 1,
     epsilon: float = 2.0,
     sinkhorn_steps: int = 8,
     balance_steps: int = 8,
@@ -158,57 +162,166 @@ def canonical_value_and_diagnostics(
         # model-faithful initial covariance it restored Austria-scope ESS
         # from 1/256 to 98/256 at the final step.
         stage_count = max(1, int(temper_stages))
-        current = pre_flow
-        total_log_det = tf.zeros([particle_count], dtype)
-        for _stage in range(stage_count):
-            flow = ledh_flow_per_particle(
-                anchor_states=anchors,
-                pre_flow_states=current,
-                predicted_covariances=predicted_covs
-                / tf.cast(stage_count, dtype),
-                observation=observation,
-                observation_fn=lambda p, _t=time_index: callbacks.observation_fn(p, _t),
-                observation_jacobian_fn=lambda p, _t=time_index: callbacks.observation_jacobian_fn(p, _t),
-                observation_covariance=tf.convert_to_tensor(
-                    callbacks.observation_covariance, dtype
-                )
-                * tf.cast(stage_count, dtype),
-                prior_means=anchors,
-                substeps=flow_substeps,
+        if np.isfinite(flow_prior_cap):
+            cap_eigenvalues, cap_vectors = tf.linalg.eigh(predicted_covs)
+            flow_prior = tf.einsum(
+                "nij,nj,nkj->nik",
+                cap_vectors,
+                tf.minimum(
+                    cap_eigenvalues, tf.cast(flow_prior_cap, dtype)
+                ),
+                cap_vectors,
             )
-            current = flow["post_flow_states"]
-            total_log_det += flow["forward_log_det"]
-        children = current
+        else:
+            flow_prior = predicted_covs
 
-        transition_log = callbacks.transition_log_density_fn(
-            children, states, time_index
-        )
-        observation_log = callbacks.observation_log_density_fn(
-            children, observation, time_index
-        )
-        # Li(17) eq. bf-pfpf-alg1-weight: the denominator is the TRANSITION
-        # density of the pre-flow sample, p(eta_0 | ancestor) — NOT the
-        # density under the UKF-predicted covariance (which the flow module
-        # reports for diagnostics). Verified against the exact 1D marginal
-        # in the P3 gate debugging (2026-08-21).
-        proposal_log = callbacks.transition_log_density_fn(
-            pre_flow, states, time_index
-        )
-        logits = (
-            tf.math.log(weights)
-            + transition_log
-            + observation_log
-            + total_log_det
-            - proposal_log
-        )
-        increment = tf.reduce_logsumexp(logits)
-        step_weights = tf.exp(logits - increment)
+        if annealed_resampling:
+            # Within-step annealed SMC (P6 contract PASSED 2026-08-22,
+            # artifact annealed_smc_probe.json): tempered flow moves with
+            # SYSTEMATIC RESAMPLING of the (particle, ancestor, covariance)
+            # triple between stages; increment = SMC-sampler normalizer
+            # telescope, unbiased on the extended space. On frozen Austria
+            # this held takeoff-step stage-ESS at 59-88% vs ~2% historical.
+            stage_rng = np.random.default_rng(resample_seed + time_index)
+            current = pre_flow
+            stage_anchors = anchors
+            stage_states = states
+            stage_prior = flow_prior
+            stage_pm, stage_pc = predicted_means, predicted_covs
+            increment = tf.zeros([], dtype)
+            min_stage_ess = tf.cast(particle_count, dtype)
+            prev_obs_log = callbacks.observation_log_density_fn(
+                current, observation, time_index
+            )
+            prev_trans_log = callbacks.transition_log_density_fn(
+                current, stage_states, time_index
+            )
+            for stage in range(1, stage_count + 1):
+                flow = ledh_flow_per_particle(
+                    anchor_states=stage_anchors,
+                    pre_flow_states=current,
+                    predicted_covariances=stage_prior
+                    / tf.cast(stage_count, dtype),
+                    observation=observation,
+                    observation_fn=lambda p, _t=time_index: callbacks.observation_fn(p, _t),
+                    observation_jacobian_fn=lambda p, _t=time_index: callbacks.observation_jacobian_fn(p, _t),
+                    observation_covariance=tf.convert_to_tensor(
+                        callbacks.observation_covariance, dtype
+                    )
+                    * tf.cast(stage_count, dtype),
+                    prior_means=stage_anchors,
+                    substeps=flow_substeps,
+                )
+                moved = flow["post_flow_states"]
+                new_obs_log = callbacks.observation_log_density_fn(
+                    moved, observation, time_index
+                )
+                new_trans_log = callbacks.transition_log_density_fn(
+                    moved, stage_states, time_index
+                )
+                fraction = tf.cast(stage / stage_count, dtype)
+                prev_fraction = tf.cast((stage - 1) / stage_count, dtype)
+                stage_logits = (
+                    new_trans_log
+                    + fraction * new_obs_log
+                    + flow["forward_log_det"]
+                    - prev_trans_log
+                    - prev_fraction * prev_obs_log
+                )
+                increment += tf.reduce_logsumexp(
+                    stage_logits
+                    - tf.math.log(tf.cast(particle_count, dtype))
+                )
+                stage_w = tf.exp(
+                    stage_logits - tf.reduce_logsumexp(stage_logits)
+                )
+                min_stage_ess = tf.minimum(
+                    min_stage_ess,
+                    1.0 / tf.reduce_sum(tf.square(stage_w)),
+                )
+                positions = (
+                    stage_rng.uniform() + np.arange(particle_count)
+                ) / particle_count
+                cumulative = np.cumsum(stage_w.numpy())
+                cumulative[-1] = 1.0
+                idx = tf.constant(
+                    np.searchsorted(cumulative, positions).astype(np.int64),
+                    tf.int32,
+                )
+                # Triple discipline: everything ancestry-linked gathers
+                current = tf.gather(moved, idx)
+                stage_anchors = tf.gather(stage_anchors, idx)
+                stage_states = tf.gather(stage_states, idx)
+                stage_prior = tf.gather(stage_prior, idx)
+                stage_pm = tf.gather(stage_pm, idx)
+                stage_pc = tf.gather(stage_pc, idx)
+                prev_obs_log = callbacks.observation_log_density_fn(
+                    current, observation, time_index
+                )
+                prev_trans_log = callbacks.transition_log_density_fn(
+                    current, stage_states, time_index
+                )
+            children = current
+            predicted_means, predicted_covs = stage_pm, stage_pc
+            states = stage_states
+            step_weights = tf.fill(
+                [particle_count], tf.cast(1.0 / particle_count, dtype)
+            )
+            ess_proxy = min_stage_ess
+        else:
+            current = pre_flow
+            total_log_det = tf.zeros([particle_count], dtype)
+            for _stage in range(stage_count):
+                flow = ledh_flow_per_particle(
+                    anchor_states=anchors,
+                    pre_flow_states=current,
+                    predicted_covariances=flow_prior
+                    / tf.cast(stage_count, dtype),
+                    observation=observation,
+                    observation_fn=lambda p, _t=time_index: callbacks.observation_fn(p, _t),
+                    observation_jacobian_fn=lambda p, _t=time_index: callbacks.observation_jacobian_fn(p, _t),
+                    observation_covariance=tf.convert_to_tensor(
+                        callbacks.observation_covariance, dtype
+                    )
+                    * tf.cast(stage_count, dtype),
+                    prior_means=anchors,
+                    substeps=flow_substeps,
+                )
+                current = flow["post_flow_states"]
+                total_log_det += flow["forward_log_det"]
+            children = current
+
+            transition_log = callbacks.transition_log_density_fn(
+                children, states, time_index
+            )
+            observation_log = callbacks.observation_log_density_fn(
+                children, observation, time_index
+            )
+            # Li(17) eq. bf-pfpf-alg1-weight: the denominator is the
+            # TRANSITION density of the pre-flow sample, p(eta_0|ancestor).
+            proposal_log = callbacks.transition_log_density_fn(
+                pre_flow, states, time_index
+            )
+            logits = (
+                tf.math.log(weights)
+                + transition_log
+                + observation_log
+                + total_log_det
+                - proposal_log
+            )
+            increment = tf.reduce_logsumexp(logits)
+            step_weights = tf.exp(logits - increment)
+            ess_proxy = None
         step_valid = (
             tf.reduce_all(tf.math.is_finite(children))
             & tf.math.is_finite(increment)
             & tf.reduce_all(tf.math.is_finite(step_weights))
         )
-        ess = 1.0 / tf.reduce_sum(tf.square(step_weights))
+        ess = (
+            ess_proxy
+            if ess_proxy is not None
+            else 1.0 / tf.reduce_sum(tf.square(step_weights))
+        )
         ess_history.append(ess)
 
         # Fail-closed gate BEFORE the reset: Contract-E's eigvalsh raises on
