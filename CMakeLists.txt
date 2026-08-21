@@ -21,6 +21,12 @@ cmake_path(GET _py_bin_dir PARENT_PATH PY_ENV_PREFIX)
 set(HAS_CUDA OFF)
 set(CUDA_CONDA_INCLUDE "")
 set(CUDA_CONDA_LIB "")
+set(PYTHON_SITE_SUFFIX
+    "python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
+set(CUDA_PYTHON_INCLUDE
+    "${PY_ENV_PREFIX}/lib/${PYTHON_SITE_SUFFIX}/nvidia/cuda_runtime/include")
+set(CUDA_PYTHON_LIB
+    "${PY_ENV_PREFIX}/lib/${PYTHON_SITE_SUFFIX}/nvidia/cuda_runtime/lib")
 if(EXISTS "${PY_ENV_PREFIX}/targets/x86_64-linux/include/cuda_runtime_api.h")
     set(CUDA_CONDA_INCLUDE "${PY_ENV_PREFIX}/targets/x86_64-linux/include")
     set(CUDA_CONDA_LIB "${PY_ENV_PREFIX}/targets/x86_64-linux/lib")
@@ -30,13 +36,13 @@ elseif(EXISTS "${PY_ENV_PREFIX}/include/cuda_runtime_api.h")
 endif()
 set(TF_CUDA_INCLUDE "${TF_get_include}/third_party/gpus/cuda/include")
 find_path(CUDA_INCLUDE NAMES cuda_runtime_api.h
-    PATHS "${CUDA_CONDA_INCLUDE}" "${TF_CUDA_INCLUDE}" "/usr/local/cuda/include"
+    PATHS "${CUDA_CONDA_INCLUDE}" "${CUDA_PYTHON_INCLUDE}" "${TF_CUDA_INCLUDE}" "/usr/local/cuda/include"
     NO_DEFAULT_PATH)
 find_library(CUDART_LIB NAMES cudart
-    PATHS "${CUDA_CONDA_LIB}" "${PY_ENV_PREFIX}/lib" "/usr/local/cuda/lib64"
+    PATHS "${CUDA_CONDA_LIB}" "${CUDA_PYTHON_LIB}" "${PY_ENV_PREFIX}/lib" "/usr/local/cuda/lib64"
     NO_DEFAULT_PATH)
 if(NOT CUDART_LIB)
-    foreach(_dir "${CUDA_CONDA_LIB}" "${PY_ENV_PREFIX}/lib" "/usr/local/cuda/lib64")
+    foreach(_dir "${CUDA_CONDA_LIB}" "${CUDA_PYTHON_LIB}" "${PY_ENV_PREFIX}/lib" "/usr/local/cuda/lib64")
         if(EXISTS "${_dir}/libcudart.so.12")
             set(CUDART_LIB "${_dir}/libcudart.so.12" CACHE FILEPATH "cudart versioned" FORCE)
             break()

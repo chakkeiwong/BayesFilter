@@ -372,6 +372,118 @@ to justify a heuristic defect warning about log-weight dispersion, not to claim 
 full theorem of exponential particle collapse for every proposal/model pair.
 \end{proof}
 
+\section[Row-Coverage Collapse]{Defect 2: Fixed-Box Row Designs Collapse Against Concentrated Step Targets}
+\label{sec:bf-hd-defect-row-coverage}
+
+The second defect was measured, not anticipated: it was diagnosed on the
+squared-TT value ladder of Chapter~\ref{ch:bf-highdim-squared-tt-fixed-branch-likelihoods}
+(execution artifacts 2026-08-17 through 2026-08-20) and is recorded here
+because its \emph{signature} --- an error plateau that ignores every
+resolution knob while in-sample residuals improve --- is exactly the kind of
+misleading evidence this chapter's ledgers exist to catch.
+
+\subsection{The mechanism}
+
+The fixed least-squares step fits \(h\) so that \(h^2\) tracks the step
+target \(f_t\) on the reference box \(B=[-1,1]^{2n}\), from \(N\) frozen
+rows \(z_i\) with weights \(w_i\), while the likelihood increment uses the
+\emph{exact} Gram normalizer \(Z_h=\int_B h^2\,d\mu\).  Two structural facts
+collide as \(n\) grows.
+
+First, the transition-step target concentrates on the intersection of two
+kernel manifolds, \(x_t\approx A x_{t-1}\) (transition) and
+\(x_t\approx y_t\) (observation), whose thickness is set by the noise scales
+and does \emph{not} grow with the box.  For a uniform-in-\(\mu\) row design
+the effective sample size against the target,
+\begin{equation}
+  \operatorname{ESS}_f
+  =\frac{\bigl(\sum_i w_i f_t(z_i)\bigr)^2}{\sum_i w_i^2 f_t(z_i)^2},
+  \label{eq:bf-hd-rowcov-ess}
+\end{equation}
+therefore decays like the volume ratio of a correlated
+\(O(\sigma/\text{halfwidth})^{2n}\) slab: geometrically in \(n\).  Measured
+on the linear-Gaussian ladder fixture at \(N=8192\) rotated-Sobol rows and
+halfwidth \(3\): \(\operatorname{ESS}_f\approx 219\) at \(n=2\) but
+\(\approx 11\) at \(n=4\) --- the fit determines
+\({\sim}208\) core columns from \({\sim}11\) informative rows.
+
+Second, the exact normalizer converts \emph{unseen} target mass directly
+into likelihood bias.  Writing the fitted square as
+\(h^2=f_t+e\), the increment carries
+\(\log\int_B h^2\,d\mu=\log\bigl(\int_B f_t\,d\mu+\int_B e\,d\mu\bigr)\),
+and rows that never visit the mass-bearing manifold produce a fit whose
+error term \(e\) removes exactly the mass the rows never saw.  The measured
+signature at \(n=4\): a per-step under-count of \(2\)--\(3\) nats at
+\emph{every} transition step (the \(t=0\) marginal, whose target is not
+concentrated, was exact to \(3\times10^{-3}\)), essentially constant in
+rank (\(r=2\ldots8\)), basis degree (\(12\ldots16\)), and row budget
+(\(8192\ldots32768\) bought \(21\%\)), while the in-sample weighted residual
+\emph{improved} monotonically.  In-sample residuals are computed under the
+same defective row measure and are therefore structurally blind to this
+defect: they are an explanatory diagnostic only, never a promotion
+criterion.
+
+\subsection{Why importance rows make it worse}
+
+The textbook repair --- draw rows from a proposal \(q\) concentrated near
+the manifold and reweight by \(1/q\) --- was implemented and \emph{refuted}
+at the step level.  With conjugate (exact) Gaussian proposals, defensive
+uniform mixtures from \(10\%\) to \(75\%\), and both weighted-\(L^2(\mu)\)
+and \(L^2(q\mu)\) fit objectives, the increment error flipped from a
+\(-1.7\)-nat under-count to \(+7\) to \(+62\)-nat over-counts, degrading
+\emph{monotonically} with basis degree.  The mechanism is a representation
+constraint, not a sampling one: once rows resolve the manifold, the
+square-root target carries the target's full dynamic range across the fixed
+box (relative amplitudes \(e^{10+}\) after the smooth shift), a moderate-rank
+polynomial TT cannot represent that spike, its off-manifold oscillation is
+unconstrained precisely where rows are sparse, and the exact
+\(Z_h=\int h^2\) integrates the oscillation into spurious mass.  The uniform
+design had merely \emph{hidden} the spike.  No row design can repair this:
+the defect lives in the coordinates, not in the quadrature.
+
+\subsection{The repair: bridged coordinates, not better rows}
+
+The source construction already contains the answer.
+\citet{zhao2024ttsequential} (their Section~5) precondition the step: a
+bridging density \(\rho_t\) built from already-computed state defines a
+Knothe--Rosenblatt change of coordinates \(T_t\) with
+\((T_t)_\sharp\rho_t\propto\eta\) for a tensor-product reference \(\eta\),
+and the TT fits the \emph{ratio} pushforward
+\begin{equation}
+  q_{\sharp,t}(u)\;=\;
+  \frac{q_t\bigl(T_t^{-1}(u)\bigr)}{\rho_t\bigl(T_t^{-1}(u)\bigr)}\,
+  \eta(u),
+  \label{eq:bf-hd-rowcov-precond}
+\end{equation}
+which is \(\eta\) perturbed by the (far less concentrated) ratio
+\(q_t/\rho_t\).  Their linear instance (their Section~5.2) takes
+\(\rho_t\) Gaussian from estimated moments, so \(T_t\) is a per-step affine
+map --- recentring and rescaling the box around where the filter actually
+is.  A step-level probe of the affine instance on the \(n=4\) fixture
+(block-diagonal maps from filtered moments at \(\kappa=3\) standard
+deviations, rows uniform in the new box, Jacobian carried in the target)
+moved the step error from \(-1.71\) to \(-0.30\) nats and the coverage
+\eqref{eq:bf-hd-rowcov-ess} from \(11\) to \(174\) --- the only lever, among
+rows, rank, degree, halfwidth, and importance weighting, that moved the
+error at all.  The over-widened \(\kappa=4\) variant degraded again, as the
+coverage mechanism predicts.
+
+\subsection{Ledger consequences}
+
+Three rules join the promotion calculus.  (i) A row-design scope must
+record a target-coverage diagnostic of the form
+\eqref{eq:bf-hd-rowcov-ess}; a fit with collapsed \(\operatorname{ESS}_f\)
+is invalid as evidence regardless of its residual.  (ii) In-sample weighted
+residuals never gate promotion for scattered-row fits; only same-target
+references or resolved-quadrature cross-checks do.  (iii) Fixed-box scopes
+do not extrapolate in \(n\): coverage decays geometrically, so each
+dimension rung requires either a re-validated coverage diagnostic or the
+preconditioned coordinates of \eqref{eq:bf-hd-rowcov-precond}.  Status at
+the time of writing: the affine-bridging repair is validated as a
+\emph{direction} at a single step and seed; its engine-level form (per-step
+frozen maps propagated through the retained object, value and score paths
+alike) is design work in progress, and no \(n\ge4\) rank claim exists.
+
 \section{Validation Benchmarks And Promotion Logic}
 \label{sec:bf-hd-validation-benchmarks}
 

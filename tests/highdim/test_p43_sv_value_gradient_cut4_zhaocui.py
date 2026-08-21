@@ -434,7 +434,8 @@ def test_p43_ksc_ukf_single_component_time0_score_matches_centered_finite_differ
     )
 
     tf.debugging.assert_near(analytic.score, finite_difference, atol=2e-6, rtol=2e-6)
-    assert analytic.diagnostics["wrapper_score_contract"] == "principal_sqrt_analytic_component_score_logsumexp_aggregation"
+    assert analytic.diagnostics.backend == "tf_principal_sqrt_ukf_score"
+    assert analytic.diagnostics.as_dict()["derivative_method"] == "analytic_first_order_principal_sqrt_sylvester"
 
 
 def test_p43_ksc_ukf_time0_wrapper_score_matches_centered_finite_difference() -> None:

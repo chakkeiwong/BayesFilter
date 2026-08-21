@@ -56,10 +56,10 @@ _STD_NORMAL = tfp.distributions.Normal(
 )
 
 NONCLAIMS = (
-    "tiny deterministic comparison harness only",
+    "simulation-driven comparison harness only",
     "not a production timing benchmark",
     "not HMC convergence evidence",
-    "Lane A and Lane B are different declared scalars",
+    "Routes are compared only after exact transformation correction and within-target validation",
     "KSC surrogate rows are reported separately from actual-SV rows",
 )
 
@@ -90,15 +90,16 @@ def _parse_dims(value: str) -> list[int]:
     return dims
 
 
-def _observations(dim: int) -> tf.Tensor:
-    values = tf.constant(
-        [
-            [0.12, -0.08, 0.05],
-            [-0.07, 0.11, -0.04],
-        ],
-        dtype=tf.float64,
-    )
-    return values[:, : int(dim)]
+def _observations(dim: int, seed: int = 83120, horizon: int = 20) -> tf.Tensor:
+    from bayesfilter.testing.exact_sv_sgqf_neutra_target_tf import generate_frozen_exact_sv_dataset_tf
+
+    columns = []
+    for axis in range(int(dim)):
+        _states, observations = generate_frozen_exact_sv_dataset_tf(
+            seed=seed + 1000 * axis, horizon=horizon
+        )
+        columns.append(observations[:, 0])
+    return tf.stack(columns, axis=1)
 
 
 def _physical_parameters(dim: int) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
@@ -181,7 +182,7 @@ def _ksc_kalman_value(theta: tf.Tensor, observations: tf.Tensor, sigma: tf.Tenso
 def _collect_actual_sv_rows(args: argparse.Namespace, dims: list[int]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for dim in dims:
-        observations = _observations(dim)
+        observations = _observations(dim, seed=83120 + dim, horizon=20)
         gamma, beta, sigma = _physical_parameters(dim)
         theta = _theta_from_physical(gamma, beta)
 
@@ -307,6 +308,12 @@ def _collect_actual_sv_rows(args: argparse.Namespace, dims: list[int]) -> list[d
                 },
                 "cross_lane": {
                     "dense_value_gap": float(abs((lane_b_dense.log_likelihood - lane_a_dense.log_likelihood).numpy())),
+                },
+                "simulation": {
+                    "seed": 83120 + dim,
+                    "horizon": 20,
+                    "fixture_kind": "simulated_exact_actual_sv_path",
+                    "sample_count": int(observations.shape[0]),
                 },
             }
         )

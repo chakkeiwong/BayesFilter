@@ -1,0 +1,61 @@
+{
+  "batch_size": 4096,
+  "clipping_applied": false,
+  "command": "docs/benchmarks/profile_neutra_paper_d100_reverse_funnel_training_2026_08_14.py --output-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/reverse-funnel-profile-r3 --training-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-reverse-r1 --device 1",
+  "cuda_visible_devices": "1",
+  "dtype": "float64",
+  "effective_learning_rate": 0.0001,
+  "execution_target": "gpu_xla_diagnostic_only",
+  "final_training_seed": [
+    1944259339,
+    5000
+  ],
+  "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+  "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+  "gradient_norm": 1.0483430200216952,
+  "heldout_eval_wall_seconds": 0.04897021607030183,
+  "heldout_reverse_kl_after_profiled_update": 50.09516436174604,
+  "heldout_reverse_kl_before_profiled_update": 50.09316433332812,
+  "heldout_rows_profiled": 65536,
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "no training objective change",
+    "no HMC or scientific validity claim",
+    "runtime profile only",
+    "optimizer moments were not stored by the training artifact; update timing uses zero Adam slots"
+  ],
+  "objective": "reverse_kl",
+  "optimizer_state_provenance": "fresh_zero_slots_restored_after_compile_warmup",
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-weighted-forward-kl-paper-d100-reverse-funnel-profile-plan-2026-08-14.md",
+  "profile_directory": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/reverse-funnel-profile-r3/tensorflow_profile",
+  "profile_directory_exists": true,
+  "schema": "bayesfilter.neutra.paper_d100_reverse_funnel_profile_result.v1",
+  "selected_update": 5000,
+  "selection_seed": [
+    20260813,
+    53313
+  ],
+  "target": "paper_funnel",
+  "tf32_enabled": false,
+  "training_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/funnel-reverse-r1",
+  "training_state_sha256": "7a81839687bd7ddacdb9b16a766858b81eccdc53d3dd07d21aa8d6803903ebdb",
+  "update_loss": 49.989371031047625,
+  "update_wall_seconds": 0.012430344009771943,
+  "wall_seconds": 6.004074141965248
+}

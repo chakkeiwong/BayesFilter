@@ -1091,6 +1091,76 @@ def test_gpu_selection_snapshot_requires_trusted_busy_evidence():
     assert selected.reason == "preferred_gpu_busy_fallback_selected"
 
 
+def test_gpu_selection_applies_strict_utilization_and_free_memory_rule():
+    snapshot = build_trusted_gpu_snapshot(
+        [
+            {
+                "index": 0,
+                "utilization_gpu_pct": 49,
+                "memory_free_mb": 8193,
+            },
+            {
+                "index": 1,
+                "utilization_gpu_pct": 50,
+                "memory_free_mb": 16000,
+            },
+        ],
+        trusted_or_escalated=True,
+        source="synthetic-test",
+    )
+    selected = select_preferred_gpu(
+        (),
+        gpu_snapshot=snapshot,
+        busy_memory_fraction=1.0,
+        busy_utilization_pct=50,
+        minimum_free_memory_mb=8192,
+    )
+
+    assert selected.selected_gpu == 0
+    assert selected.reason == "preferred_gpu_busy_fallback_selected"
+
+    snapshot["gpus"][1]["utilization_gpu_pct"] = 49
+    snapshot["gpus"][1]["memory_free_mb"] = 8192
+    selected = select_preferred_gpu(
+        (),
+        gpu_snapshot=snapshot,
+        busy_memory_fraction=1.0,
+        busy_utilization_pct=50,
+        minimum_free_memory_mb=8192,
+    )
+    assert selected.selected_gpu == 0
+
+    snapshot["gpus"][1]["memory_free_mb"] = 8193
+    selected = select_preferred_gpu(
+        (),
+        gpu_snapshot=snapshot,
+        busy_memory_fraction=1.0,
+        busy_utilization_pct=50,
+        minimum_free_memory_mb=8192,
+    )
+    assert selected.selected_gpu == 1
+    assert selected.reason == "preferred_gpu_selected_trusted"
+
+
+def test_gpu_selection_uses_trusted_fallback_when_gpu1_is_not_visible():
+    snapshot = build_trusted_gpu_snapshot(
+        [{"index": 0, "utilization_gpu_pct": 0, "memory_free_mb": 16000}],
+        trusted_or_escalated=True,
+        source="synthetic-test",
+    )
+    selected = select_preferred_gpu(
+        (),
+        gpu_snapshot=snapshot,
+        busy_memory_fraction=1.0,
+        busy_utilization_pct=50,
+        minimum_free_memory_mb=8192,
+    )
+
+    assert selected.selected_gpu == 0
+    assert selected.reason == "preferred_gpu_not_visible_fallback_selected"
+    assert selected.fallback_used is True
+
+
 def _evidence_manifest_payload(run_scope: str = "no_hmc_parity") -> dict[str, object]:
     return {
         "run_scope": run_scope,

@@ -15,8 +15,10 @@ import tensorflow as tf
 import bayesfilter.nonlinear.experimental_batched_svd_sigma_point_tf as svd_tf
 from bayesfilter.nonlinear.experimental_batched_svd_sigma_point_tf import (
     TFBatchedStructuralFirstDerivatives,
+    TFBatchedStructuralLinearizations,
     TFBatchedStructuralStateSpace,
     _checked_batched_principal_sqrt_factor_first_derivatives,
+    tf_batched_svd_sigma_point_value_and_output_cotangents,
     tf_batched_svd_sigma_point_value_and_score,
 )
 from docs.benchmarks.benchmark_experimental_batched_svd_sigma_point_cpu_gpu import (
@@ -388,6 +390,63 @@ def _lagged_value_score(
         jitter=tf.constant(0.0, dtype=tf.float64),
     )
     return value, score, dict(diagnostics)
+
+
+def _lagged_score_from_output_cotangents(
+    derivatives: TFBatchedStructuralFirstDerivatives,
+    cotangents,
+) -> tf.Tensor:
+    score = tf.einsum(
+        "bi,bpi->bp",
+        cotangents.initial_mean_cotangent,
+        derivatives.d_initial_mean,
+    )
+    score = score + tf.einsum(
+        "bij,bpij->bp",
+        cotangents.initial_covariance_cotangent,
+        derivatives.d_initial_covariance,
+    )
+    score = score + tf.einsum(
+        "bij,bpij->bp",
+        cotangents.innovation_covariance_cotangent,
+        derivatives.d_innovation_covariance,
+    )
+    score = score + tf.einsum(
+        "bij,bpij->bp",
+        cotangents.observation_covariance_cotangent,
+        derivatives.d_observation_covariance,
+    )
+    transition_terms = tf.map_fn(
+        lambda args: tf.einsum(
+            "bro,bpro->bp",
+            args[2],
+            derivatives.d_transition_fn(args[0], args[1]),
+        ),
+        (
+            cotangents.transition_previous_points,
+            cotangents.transition_innovation_points,
+            cotangents.transition_output_cotangent,
+        ),
+        fn_output_signature=tf.TensorSpec(score.shape, dtype=tf.float64),
+    )
+    observation_terms = tf.map_fn(
+        lambda args: tf.einsum(
+            "brm,bprm->bp",
+            args[3],
+            derivatives.d_lagged_observation_fn(args[0], args[1], args[2]),
+        ),
+        (
+            cotangents.transition_previous_points,
+            cotangents.transition_innovation_points,
+            cotangents.observation_state_points,
+            cotangents.observation_output_cotangent,
+        ),
+        fn_output_signature=tf.TensorSpec(score.shape, dtype=tf.float64),
+    )
+    return score + tf.reduce_sum(transition_terms, axis=0) + tf.reduce_sum(
+        observation_terms,
+        axis=0,
+    )
 
 
 def _scalar_rows(
@@ -1299,6 +1358,83 @@ def test_lagged_observation_contract_score_matches_finite_difference() -> None:
         rtol=5.0e-5,
         atol=5.0e-6,
     )
+
+
+def test_lagged_output_cotangents_reconstruct_forward_score() -> None:
+    theta = tf.constant([[0.04]], dtype=tf.float64)
+    observations, model, derivatives = _lagged_linear_model_and_derivatives(theta)
+    linearizations = TFBatchedStructuralLinearizations(
+        transition_state_jacobian_fn=derivatives.transition_state_jacobian_fn,
+        transition_innovation_jacobian_fn=(
+            derivatives.transition_innovation_jacobian_fn
+        ),
+        observation_state_jacobian_fn=derivatives.observation_state_jacobian_fn,
+        lagged_observation_previous_jacobian_fn=(
+            derivatives.lagged_observation_previous_jacobian_fn
+        ),
+        lagged_observation_innovation_jacobian_fn=(
+            derivatives.lagged_observation_innovation_jacobian_fn
+        ),
+        lagged_observation_next_jacobian_fn=(
+            derivatives.lagged_observation_next_jacobian_fn
+        ),
+    )
+    cotangents = tf_batched_svd_sigma_point_value_and_output_cotangents(
+        observations,
+        model,
+        linearizations,
+        backend="tf_principal_sqrt_ukf",
+    )
+    expected_value, expected_score, _diagnostics = (
+        tf_batched_svd_sigma_point_value_and_score(
+            observations,
+            model,
+            derivatives,
+            backend="tf_principal_sqrt_ukf",
+            spectral_gap_tolerance=tf.constant(1.0e-10, dtype=tf.float64),
+        )
+    )
+    actual_score = _lagged_score_from_output_cotangents(
+        derivatives,
+        cotangents,
+    )
+
+    np.testing.assert_allclose(cotangents.value.numpy(), expected_value.numpy(), atol=1e-8)
+    np.testing.assert_allclose(
+        actual_score.numpy(),
+        expected_score.numpy(),
+        rtol=1.0e-7,
+        atol=1.0e-7,
+    )
+    assert cotangents.diagnostics["observation_contract"].numpy() == (
+        b"lagged_previous_innovation_predicted"
+    )
+
+
+def test_lagged_output_cotangents_require_all_observation_jacobians() -> None:
+    theta = tf.constant([[0.04]], dtype=tf.float64)
+    observations, model, derivatives = _lagged_linear_model_and_derivatives(theta)
+    linearizations = TFBatchedStructuralLinearizations(
+        transition_state_jacobian_fn=derivatives.transition_state_jacobian_fn,
+        transition_innovation_jacobian_fn=(
+            derivatives.transition_innovation_jacobian_fn
+        ),
+        observation_state_jacobian_fn=derivatives.observation_state_jacobian_fn,
+        lagged_observation_previous_jacobian_fn=(
+            derivatives.lagged_observation_previous_jacobian_fn
+        ),
+        lagged_observation_next_jacobian_fn=(
+            derivatives.lagged_observation_next_jacobian_fn
+        ),
+    )
+
+    with pytest.raises(ValueError, match="lagged output cotangents require"):
+        tf_batched_svd_sigma_point_value_and_output_cotangents(
+            observations,
+            model,
+            linearizations,
+            backend="tf_principal_sqrt_ukf",
+        )
 
 
 def test_lagged_observation_contract_cpu_xla_smoke() -> None:

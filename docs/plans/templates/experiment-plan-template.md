@@ -1,5 +1,8 @@
 # Experiment plan: <name>
 
+Date: YYYY-MM-DD
+Status: `SHORT_MACHINE_READABLE_STATUS`
+
 ## Question
 What decision will this experiment inform?
 

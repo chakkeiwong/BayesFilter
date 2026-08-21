@@ -23,6 +23,7 @@ from bayesfilter.highdim.cubature_genut_batch_tf import (
     batch_finite_value,
     batch_finite_value_score,
 )
+from bayesfilter.highdim.genut_shape_lm_tf import GENUT_SHAPE_SOLVER_ID
 from bayesfilter.highdim.cubature_genut_candidate import cubature_design
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
 
@@ -52,11 +53,14 @@ class GenUTControls:
     higher_moment_correction_steps: int = 4
     higher_moment_strength: float = 0.2
     higher_moment_floor: float = 1.0e-5
+    higher_moment_lm_damping: float = 0.0
+    higher_moment_lm_scale_floor: float = 1.0e-6
+    higher_moment_trust_radius: float = 0.0
     tuning_scope: str = "unreviewed"
     tuning_artifact: str = "unreviewed"
 
     def payload(self) -> Mapping[str, Any]:
-        return {
+        payload = {
             "epsilon": float(self.epsilon),
             "sinkhorn_steps": int(self.sinkhorn_steps),
             "balance_steps": int(self.balance_steps),
@@ -69,6 +73,22 @@ class GenUTControls:
             "tuning_scope": self.tuning_scope,
             "tuning_artifact": self.tuning_artifact,
         }
+        if self.higher_moment_lm_damping > 0.0:
+            payload.update(
+                {
+                    "higher_moment_solver_id": GENUT_SHAPE_SOLVER_ID,
+                    "higher_moment_lm_damping": float(
+                        self.higher_moment_lm_damping
+                    ),
+                    "higher_moment_lm_scale_floor": float(
+                        self.higher_moment_lm_scale_floor
+                    ),
+                    "higher_moment_trust_radius": float(
+                        self.higher_moment_trust_radius
+                    ),
+                }
+            )
+        return payload
 
 
 _WARM_START_CONTROLS = GenUTControls(
@@ -307,6 +327,9 @@ def _core_kwargs(target: GenUTNeuTraTargetAdapter) -> Mapping[str, Any]:
         ),
         "higher_moment_strength": controls.higher_moment_strength,
         "higher_moment_floor": controls.higher_moment_floor,
+        "higher_moment_lm_damping": controls.higher_moment_lm_damping,
+        "higher_moment_lm_scale_floor": controls.higher_moment_lm_scale_floor,
+        "higher_moment_trust_radius": controls.higher_moment_trust_radius,
     }
 
 
@@ -336,6 +359,21 @@ def _normalized_status(
         ),
         "maximum_kurtosis_residual": tf.cast(
             diagnostics["maximum_kurtosis_residual"], tf.float64
+        ),
+        "minimum_pearson_feasibility_margin": tf.cast(
+            diagnostics["minimum_pearson_feasibility_margin"], tf.float64
+        ),
+        "minimum_finite_particle_upper_margin": tf.cast(
+            diagnostics["minimum_finite_particle_upper_margin"], tf.float64
+        ),
+        "maximum_diagonal_scaled_system_condition": tf.cast(
+            diagnostics["maximum_diagonal_scaled_system_condition"], tf.float64
+        ),
+        "maximum_diagonal_pre_cap_particle_rms": tf.cast(
+            diagnostics["maximum_diagonal_pre_cap_particle_rms"], tf.float64
+        ),
+        "maximum_diagonal_post_cap_particle_rms": tf.cast(
+            diagnostics["maximum_diagonal_post_cap_particle_rms"], tf.float64
         ),
     }
 
@@ -596,6 +634,15 @@ def make_admitted_genut_neutra_target(model: str) -> GenUTNeuTraTargetAdapter:
         ),
         higher_moment_strength=float(controls_payload["higher_moment_strength"]),
         higher_moment_floor=float(controls_payload["higher_moment_floor"]),
+        higher_moment_lm_damping=float(
+            controls_payload.get("higher_moment_lm_damping", 0.0)
+        ),
+        higher_moment_lm_scale_floor=float(
+            controls_payload.get("higher_moment_lm_scale_floor", 1.0e-6)
+        ),
+        higher_moment_trust_radius=float(
+            controls_payload.get("higher_moment_trust_radius", 0.0)
+        ),
         tuning_scope=str(controls_payload["tuning_scope"]),
         tuning_artifact=str(controls_payload["tuning_artifact"]),
     )

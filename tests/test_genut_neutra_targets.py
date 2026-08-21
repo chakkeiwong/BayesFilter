@@ -13,6 +13,7 @@ from bayesfilter.highdim.cubature_genut_neutra_targets import (
     make_admitted_genut_neutra_target,
     make_genut_neutra_target,
 )
+from bayesfilter.highdim.genut_shape_lm_tf import GENUT_SHAPE_SOLVER_ID
 from bayesfilter.inference.neutra_batching import bind_batch_native_neutra_target
 from bayesfilter.inference.neutra_batching import batch_native_value_status_target_fn
 
@@ -102,3 +103,21 @@ def test_admitted_factory_requires_bound_arithmetic_scope() -> None:
     tf.config.experimental.enable_tensor_float_32_execution(True)
     with pytest.raises(RuntimeError, match="tf32_enabled=False"):
         make_admitted_genut_neutra_target("lgssm")
+
+
+def test_repaired_controls_bind_solver_identity_and_scope() -> None:
+    controls = GenUTControls(
+        epsilon=2.0,
+        sinkhorn_steps=2,
+        balance_steps=2,
+        ridge=1.0e-5,
+        higher_moment_lm_damping=1.0e-2,
+        higher_moment_lm_scale_floor=1.0e-4,
+        higher_moment_trust_radius=0.5,
+        tuning_scope="lgssm_T10_N1008_repair_replay",
+        tuning_artifact="local_repair_diagnostic_not_admission",
+    )
+    payload = dict(controls.payload())
+    assert payload["higher_moment_solver_id"] == GENUT_SHAPE_SOLVER_ID
+    assert payload["tuning_scope"] == "lgssm_T10_N1008_repair_replay"
+    assert payload["tuning_artifact"] == "local_repair_diagnostic_not_admission"

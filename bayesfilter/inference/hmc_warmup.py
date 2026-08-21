@@ -55,6 +55,37 @@ OPERATIONAL_WARMUP_NONCLAIMS = (
     "no GPU or XLA readiness claim",
 )
 
+_START_BANK_SCOPE_SCHEMA = "bayesfilter.hmc_start_bank_scope_assessment.v1"
+_START_BANK_QUALIFICATION_SCHEMA = "bayesfilter.hmc_start_bank_qualification.v1"
+_START_BANK_POLICY_ID = "bayesfilter.greedy_four_start_bank.v1"
+_START_BANK_DIAGNOSTIC_ATTRIBUTE = (
+    "_bayesfilter_start_bank_qualification_diagnostic_v1"
+)
+_START_BANK_SCOPE_NAMES = frozenset(
+    {"authoritative_final_window", "shadow_all_windows"}
+)
+_START_BANK_FAILURE_CODES = frozenset(
+    {
+        "none",
+        "insufficient_greedy_eligible",
+        "post_selection_pairwise_failure",
+        "shadow_input_conversion_failure",
+        "shadow_invalid_shape",
+        "shadow_nonfinite_source",
+        "shadow_nonfinite_reference",
+        "shadow_reference_conversion_failure",
+        "shadow_assessment_failure",
+    }
+)
+_START_BANK_INTERPRETATIONS = frozenset(
+    {
+        "final_pass",
+        "final_fail_shadow_pass",
+        "both_fail",
+        "post_selection_invariant_failure",
+    }
+)
+
 
 def _stable_hash(label: str, payload: Mapping[str, Any]) -> str:
     normalized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -1526,6 +1557,419 @@ class OperationalWarmupWindowResult:
         }
 
 
+def _start_bank_optional_nonnegative_float(
+    value: Any,
+    *,
+    name: str,
+) -> float | None:
+    if value is None:
+        return None
+    result = float(value)
+    if not np.isfinite(result) or result < 0.0:
+        raise ValueError(f"{name} must be finite and nonnegative when present")
+    return result
+
+
+def _start_bank_optional_count(value: Any, *, name: str) -> int | None:
+    if value is None:
+        return None
+    return _strict_integer(value, name=name, minimum=0)
+
+
+@dataclass(frozen=True)
+class _StartBankScopeDiagnostic:
+    """Bounded scalar evidence from one execution of the existing selector."""
+
+    scope: str
+    source_row_count: int
+    dimension: int
+    minimum_relative_separation: float
+    sqrt_dimension_scale_component: float | None
+    reference_coordinate_std_norm: float | None
+    reference_scale: float | None
+    absolute_tolerance: float | None
+    finite_status: bool
+    pre_endpoint_candidate_count: int | None
+    endpoint_exclusion_count: int | None
+    prior_eligible_exclusion_count: int | None
+    final_greedy_eligible_count: int | None
+    endpoint_distance_minimum: float | None
+    endpoint_distance_maximum: float | None
+    endpoint_distance_count_at_or_below_tolerance: int | None
+    all_pair_distance_minimum: float | None
+    all_pair_distance_maximum: float | None
+    all_pair_distance_count_at_or_below_tolerance: int | None
+    selection_attempted: bool
+    selection_succeeded: bool
+    selected_row_count: int
+    failure_code: str
+
+    def __post_init__(self) -> None:
+        scope = str(self.scope)
+        if scope not in _START_BANK_SCOPE_NAMES:
+            raise ValueError("unsupported start-bank diagnostic scope")
+        rows = _strict_integer(
+            self.source_row_count,
+            name="start-bank source_row_count",
+            minimum=0,
+        )
+        dimension = _strict_integer(
+            self.dimension,
+            name="start-bank dimension",
+            minimum=0,
+        )
+        separation = float(self.minimum_relative_separation)
+        if not np.isfinite(separation) or separation <= 0.0:
+            raise ValueError(
+                "start-bank minimum_relative_separation must be finite and positive"
+            )
+        optional_float_names = (
+            "sqrt_dimension_scale_component",
+            "reference_coordinate_std_norm",
+            "reference_scale",
+            "absolute_tolerance",
+            "endpoint_distance_minimum",
+            "endpoint_distance_maximum",
+            "all_pair_distance_minimum",
+            "all_pair_distance_maximum",
+        )
+        optional_count_names = (
+            "pre_endpoint_candidate_count",
+            "endpoint_exclusion_count",
+            "prior_eligible_exclusion_count",
+            "final_greedy_eligible_count",
+            "endpoint_distance_count_at_or_below_tolerance",
+            "all_pair_distance_count_at_or_below_tolerance",
+        )
+        for name in optional_float_names:
+            object.__setattr__(
+                self,
+                name,
+                _start_bank_optional_nonnegative_float(
+                    getattr(self, name),
+                    name=f"start-bank {name}",
+                ),
+            )
+        for name in optional_count_names:
+            object.__setattr__(
+                self,
+                name,
+                _start_bank_optional_count(
+                    getattr(self, name),
+                    name=f"start-bank {name}",
+                ),
+            )
+        if not isinstance(self.finite_status, (bool, np.bool_)):
+            raise TypeError("start-bank finite_status must be boolean")
+        if not isinstance(self.selection_attempted, (bool, np.bool_)):
+            raise TypeError("start-bank selection_attempted must be boolean")
+        if not isinstance(self.selection_succeeded, (bool, np.bool_)):
+            raise TypeError("start-bank selection_succeeded must be boolean")
+        selected_count = _strict_integer(
+            self.selected_row_count,
+            name="start-bank selected_row_count",
+            minimum=0,
+        )
+        failure_code = str(self.failure_code)
+        if failure_code not in _START_BANK_FAILURE_CODES:
+            raise ValueError("unsupported start-bank failure code")
+        counts = (
+            self.pre_endpoint_candidate_count,
+            self.endpoint_exclusion_count,
+            self.prior_eligible_exclusion_count,
+            self.final_greedy_eligible_count,
+        )
+        if all(value is not None for value in counts) and counts[0] != sum(
+            counts[1:]
+        ):
+            raise ValueError("start-bank greedy exclusion counts are inconsistent")
+        for lower_name, upper_name in (
+            ("endpoint_distance_minimum", "endpoint_distance_maximum"),
+            ("all_pair_distance_minimum", "all_pair_distance_maximum"),
+        ):
+            lower = getattr(self, lower_name)
+            upper = getattr(self, upper_name)
+            if (lower is None) != (upper is None) or (
+                lower is not None and upper is not None and lower > upper
+            ):
+                raise ValueError("start-bank distance summary is inconsistent")
+        attempted = bool(self.selection_attempted)
+        succeeded = bool(self.selection_succeeded)
+        if succeeded and (
+            not attempted or selected_count != 4 or failure_code != "none"
+        ):
+            raise ValueError("successful start-bank selection evidence is inconsistent")
+        if failure_code == "none" and not succeeded:
+            raise ValueError("failure-free start-bank evidence must report success")
+        if failure_code == "insufficient_greedy_eligible" and (
+            attempted or selected_count != 0
+        ):
+            raise ValueError("insufficient start-bank evidence cannot report selection")
+        if failure_code == "post_selection_pairwise_failure" and (
+            not attempted or succeeded or selected_count != 4
+        ):
+            raise ValueError("post-selection start-bank evidence is inconsistent")
+        if failure_code.startswith("shadow_") and (
+            scope != "shadow_all_windows"
+            or attempted
+            or succeeded
+            or selected_count != 0
+        ):
+            raise ValueError("shadow assessment failure evidence is inconsistent")
+        object.__setattr__(self, "scope", scope)
+        object.__setattr__(self, "source_row_count", rows)
+        object.__setattr__(self, "dimension", dimension)
+        object.__setattr__(self, "minimum_relative_separation", separation)
+        object.__setattr__(self, "finite_status", bool(self.finite_status))
+        object.__setattr__(self, "selection_attempted", attempted)
+        object.__setattr__(self, "selection_succeeded", succeeded)
+        object.__setattr__(self, "selected_row_count", selected_count)
+        object.__setattr__(self, "failure_code", failure_code)
+
+    def public_payload(self) -> Mapping[str, Any]:
+        payload = {
+            "schema": _START_BANK_SCOPE_SCHEMA,
+            "policy_id": _START_BANK_POLICY_ID,
+            "scope": self.scope,
+            "source_row_count": self.source_row_count,
+            "dimension": self.dimension,
+            "minimum_relative_separation": self.minimum_relative_separation,
+            "sqrt_dimension_scale_component": self.sqrt_dimension_scale_component,
+            "reference_coordinate_std_norm": self.reference_coordinate_std_norm,
+            "reference_scale": self.reference_scale,
+            "absolute_tolerance": self.absolute_tolerance,
+            "finite_status": self.finite_status,
+            "pre_endpoint_candidate_count": self.pre_endpoint_candidate_count,
+            "endpoint_exclusion_count": self.endpoint_exclusion_count,
+            "prior_eligible_exclusion_count": self.prior_eligible_exclusion_count,
+            "final_greedy_eligible_count": self.final_greedy_eligible_count,
+            "endpoint_distance_minimum": self.endpoint_distance_minimum,
+            "endpoint_distance_maximum": self.endpoint_distance_maximum,
+            "endpoint_distance_count_at_or_below_tolerance": (
+                self.endpoint_distance_count_at_or_below_tolerance
+            ),
+            "all_pair_distance_minimum": self.all_pair_distance_minimum,
+            "all_pair_distance_maximum": self.all_pair_distance_maximum,
+            "all_pair_distance_count_at_or_below_tolerance": (
+                self.all_pair_distance_count_at_or_below_tolerance
+            ),
+            "selection_attempted": self.selection_attempted,
+            "selection_succeeded": self.selection_succeeded,
+            "selected_row_count": self.selected_row_count,
+            "failure_code": self.failure_code,
+        }
+        return _validate_start_bank_scope_payload(payload)
+
+
+_START_BANK_SCOPE_PAYLOAD_KEYS = frozenset(
+    {
+        "schema",
+        "policy_id",
+        "scope",
+        "source_row_count",
+        "dimension",
+        "minimum_relative_separation",
+        "sqrt_dimension_scale_component",
+        "reference_coordinate_std_norm",
+        "reference_scale",
+        "absolute_tolerance",
+        "finite_status",
+        "pre_endpoint_candidate_count",
+        "endpoint_exclusion_count",
+        "prior_eligible_exclusion_count",
+        "final_greedy_eligible_count",
+        "endpoint_distance_minimum",
+        "endpoint_distance_maximum",
+        "endpoint_distance_count_at_or_below_tolerance",
+        "all_pair_distance_minimum",
+        "all_pair_distance_maximum",
+        "all_pair_distance_count_at_or_below_tolerance",
+        "selection_attempted",
+        "selection_succeeded",
+        "selected_row_count",
+        "failure_code",
+    }
+)
+
+
+def _validate_start_bank_scope_payload(payload: Any) -> Mapping[str, Any]:
+    if (
+        not isinstance(payload, Mapping)
+        or frozenset(payload) != _START_BANK_SCOPE_PAYLOAD_KEYS
+    ):
+        raise ValueError("start-bank scope diagnostic schema mismatch")
+    if (
+        payload.get("schema") != _START_BANK_SCOPE_SCHEMA
+        or payload.get("policy_id") != _START_BANK_POLICY_ID
+        or payload.get("scope") not in _START_BANK_SCOPE_NAMES
+        or payload.get("failure_code") not in _START_BANK_FAILURE_CODES
+    ):
+        raise ValueError("start-bank scope diagnostic identity mismatch")
+    field_names = tuple(_StartBankScopeDiagnostic.__dataclass_fields__)
+    validated = _StartBankScopeDiagnostic(
+        **{name: payload[name] for name in field_names}
+    )
+    return {
+        "schema": _START_BANK_SCOPE_SCHEMA,
+        "policy_id": _START_BANK_POLICY_ID,
+        **{name: getattr(validated, name) for name in field_names},
+    }
+
+
+@dataclass(frozen=True)
+class _StartBankAssessment:
+    """Ephemeral selector state; serialized output is scalar-only."""
+
+    canonical_states: Any
+    reference_states: Any
+    selected_row_indices: tuple[int, ...]
+    diagnostic: _StartBankScopeDiagnostic
+
+    def __post_init__(self) -> None:
+        if type(self.diagnostic) is not _StartBankScopeDiagnostic:
+            raise TypeError(
+                "diagnostic must be a concrete start-bank scope diagnostic"
+            )
+        states = np.asarray(self.canonical_states, dtype=float).copy()
+        reference = np.asarray(self.reference_states, dtype=float).copy()
+        if states.ndim != 2 or reference.shape != states.shape:
+            raise ValueError(
+                "start-bank assessment arrays must be aligned rank-2 matrices"
+            )
+        indices = tuple(
+            _strict_integer(index, name="start-bank selected row index", minimum=0)
+            for index in self.selected_row_indices
+        )
+        if any(index >= states.shape[0] for index in indices):
+            raise ValueError("start-bank assessment selected row index is out of range")
+        if len(indices) != self.diagnostic.selected_row_count:
+            raise ValueError("start-bank assessment selected row count is inconsistent")
+        states.setflags(write=False)
+        reference.setflags(write=False)
+        object.__setattr__(self, "canonical_states", states)
+        object.__setattr__(self, "reference_states", reference)
+        object.__setattr__(self, "selected_row_indices", indices)
+
+    def public_payload(self) -> Mapping[str, Any]:
+        return self.diagnostic.public_payload()
+
+
+@dataclass(frozen=True)
+class _StartBankQualificationDiagnostic:
+    """Validated scalar-only carrier shared by result and exception paths."""
+
+    authoritative: _StartBankScopeDiagnostic
+    shadow: _StartBankScopeDiagnostic
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.authoritative) is not _StartBankScopeDiagnostic
+            or type(self.shadow) is not _StartBankScopeDiagnostic
+        ):
+            raise TypeError(
+                "start-bank qualification scopes must use the concrete type"
+            )
+        if (
+            self.authoritative.scope != "authoritative_final_window"
+            or self.shadow.scope != "shadow_all_windows"
+        ):
+            raise ValueError("start-bank qualification scope roles are invalid")
+        if self.interpretation not in _START_BANK_INTERPRETATIONS:
+            raise ValueError("unsupported start-bank qualification interpretation")
+
+    @property
+    def interpretation(self) -> str:
+        if self.authoritative.selection_succeeded:
+            return "final_pass"
+        if self.authoritative.failure_code == "post_selection_pairwise_failure":
+            return "post_selection_invariant_failure"
+        if self.shadow.selection_succeeded:
+            return "final_fail_shadow_pass"
+        return "both_fail"
+
+    def public_payload(self) -> Mapping[str, Any]:
+        payload = {
+            "schema": _START_BANK_QUALIFICATION_SCHEMA,
+            "policy_id": _START_BANK_POLICY_ID,
+            "authoritative_scope": "authoritative_final_window",
+            "shadow_decision_effect": False,
+            "interpretation": self.interpretation,
+            "scopes": {
+                "authoritative_final_window": self.authoritative.public_payload(),
+                "shadow_all_windows": self.shadow.public_payload(),
+            },
+        }
+        return _validate_start_bank_qualification_payload(payload)
+
+
+_START_BANK_QUALIFICATION_PAYLOAD_KEYS = frozenset(
+    {
+        "schema",
+        "policy_id",
+        "authoritative_scope",
+        "shadow_decision_effect",
+        "interpretation",
+        "scopes",
+    }
+)
+
+
+def _validate_start_bank_qualification_payload(payload: Any) -> Mapping[str, Any]:
+    if (
+        not isinstance(payload, Mapping)
+        or frozenset(payload) != _START_BANK_QUALIFICATION_PAYLOAD_KEYS
+        or payload.get("schema") != _START_BANK_QUALIFICATION_SCHEMA
+        or payload.get("policy_id") != _START_BANK_POLICY_ID
+        or payload.get("authoritative_scope") != "authoritative_final_window"
+        or payload.get("shadow_decision_effect") is not False
+        or payload.get("interpretation") not in _START_BANK_INTERPRETATIONS
+    ):
+        raise ValueError("start-bank qualification diagnostic schema mismatch")
+    scopes = payload.get("scopes")
+    if (
+        not isinstance(scopes, Mapping)
+        or frozenset(scopes) != _START_BANK_SCOPE_NAMES
+    ):
+        raise ValueError("start-bank qualification scope mapping is invalid")
+    validated_scopes = {
+        name: _validate_start_bank_scope_payload(scopes[name])
+        for name in sorted(_START_BANK_SCOPE_NAMES)
+    }
+    if any(validated_scopes[name]["scope"] != name for name in validated_scopes):
+        raise ValueError("start-bank qualification nested scope identity mismatch")
+    field_names = tuple(_StartBankScopeDiagnostic.__dataclass_fields__)
+    reconstructed = {
+        name: _StartBankScopeDiagnostic(
+            **{field: validated_scopes[name][field] for field in field_names}
+        )
+        for name in validated_scopes
+    }
+    expected_interpretation = _StartBankQualificationDiagnostic(
+        authoritative=reconstructed["authoritative_final_window"],
+        shadow=reconstructed["shadow_all_windows"],
+    ).interpretation
+    if payload.get("interpretation") != expected_interpretation:
+        raise ValueError("start-bank qualification interpretation is inconsistent")
+    return {**dict(payload), "scopes": validated_scopes}
+
+
+def start_bank_qualification_payload_from_exception(
+    exc: BaseException,
+) -> Mapping[str, Any] | None:
+    """Return only a concrete, schema-valid bounded selector diagnostic."""
+
+    try:
+        candidate = getattr(exc, _START_BANK_DIAGNOSTIC_ATTRIBUTE, None)
+    except Exception:  # noqa: BLE001 - invalid carriers must remain ignorable.
+        return None
+    if type(candidate) is not _StartBankQualificationDiagnostic:
+        return None
+    try:
+        return candidate.public_payload()
+    except Exception:  # noqa: BLE001 - schema validation is fail-closed.
+        return None
+
+
 @dataclass(frozen=True)
 class OperationalWindowedWarmupResult:
     config: WindowedMassAdaptationConfig
@@ -1534,6 +1978,7 @@ class OperationalWindowedWarmupResult:
     reasonable_epsilon: ReasonableEpsilonResult
     windows: tuple[OperationalWarmupWindowResult, ...]
     private_start_bank_theta: Any
+    start_bank_qualification: _StartBankQualificationDiagnostic
     seed_root: tuple[int, int]
     target_scope: str
     target_status_trace_policy: str
@@ -1606,6 +2051,15 @@ class OperationalWindowedWarmupResult:
             raise ValueError("private start bank dimension mismatch")
         if not np.all(np.isfinite(bank)):
             raise ValueError("private start bank must be finite")
+        qualification = self.start_bank_qualification
+        if (
+            type(qualification) is not _StartBankQualificationDiagnostic
+            or not qualification.authoritative.selection_succeeded
+        ):
+            raise ValueError(
+                "operational warmup requires a successful start-bank qualification"
+            )
+        qualification.public_payload()
         final_state = self.final_kernel_state
         if self.config.mass_policy == "fixed_identity" and (
             final_state.transform.signature != initial_signature
@@ -1672,6 +2126,7 @@ class OperationalWindowedWarmupResult:
         object.__setattr__(self, "initial_coordinate_signature", initial_signature)
         object.__setattr__(self, "windows", windows)
         object.__setattr__(self, "private_start_bank_theta", bank)
+        object.__setattr__(self, "start_bank_qualification", qualification)
         object.__setattr__(self, "seed_root", seed_root)
         object.__setattr__(self, "target_scope", target_scope)
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
@@ -2744,9 +3199,25 @@ def run_operational_windowed_warmup(
     history = np.asarray(results[-1].adaptation_canonical_states, dtype=float).reshape(
         (-1, initial_transform.dimension)
     )
-    bank = build_private_start_bank(
+    authoritative_assessment = _assess_private_start_bank(
         history,
         reference_transform=kernel_state.transform,
+        scope="authoritative_final_window",
+    )
+    shadow_diagnostic = _best_effort_shadow_start_bank_scope(
+        canonical_history,
+        reference_transform=kernel_state.transform,
+        minimum_relative_separation=(
+            authoritative_assessment.diagnostic.minimum_relative_separation
+        ),
+    )
+    start_bank_qualification = _StartBankQualificationDiagnostic(
+        authoritative=authoritative_assessment.diagnostic,
+        shadow=shadow_diagnostic,
+    )
+    bank = _materialize_private_start_bank(
+        authoritative_assessment,
+        qualification=start_bank_qualification,
     )
     result = OperationalWindowedWarmupResult(
         config=config,
@@ -2755,6 +3226,7 @@ def run_operational_windowed_warmup(
         reasonable_epsilon=reasonable,
         windows=tuple(results),
         private_start_bank_theta=bank,
+        start_bank_qualification=start_bank_qualification,
         seed_root=normalized_seed,
         target_scope=str(target_scope),
         target_status_trace_policy=target_status_policy,
@@ -2773,6 +3245,24 @@ def build_private_start_bank(
 ) -> np.ndarray:
     """Select canonical starts with material separation in reference geometry."""
 
+    assessment = _assess_private_start_bank(
+        canonical_states,
+        reference_transform=reference_transform,
+        minimum_relative_separation=minimum_relative_separation,
+        scope="authoritative_final_window",
+    )
+    return _materialize_private_start_bank(assessment)
+
+
+def _assess_private_start_bank(
+    canonical_states: Any,
+    *,
+    reference_transform: AffineCoordinateTransform | None = None,
+    minimum_relative_separation: float = 1.0e-4,
+    scope: str,
+) -> _StartBankAssessment:
+    """Run the existing selector calculation without materializing its bank."""
+
     states = np.asarray(canonical_states, dtype=float)
     if states.ndim != 2 or states.shape[0] < 4 or not np.all(np.isfinite(states)):
         raise ValueError("start bank source must contain at least four finite states")
@@ -2786,34 +3276,283 @@ def build_private_start_bank(
     reference = (
         states
         if reference_transform is None
-        else np.asarray(reference_transform.theta_to_latent(states).numpy(), dtype=float)
+        else np.asarray(
+            reference_transform.theta_to_latent(states).numpy(),
+            dtype=float,
+        )
     )
+    return _assess_prepared_start_bank(
+        states,
+        reference,
+        minimum_relative_separation=separation,
+        scope=scope,
+    )
+
+
+def _finite_nonnegative_or_none(value: Any) -> float | None:
+    result = float(value)
+    return result if np.isfinite(result) and result >= 0.0 else None
+
+
+def _start_bank_distance_summary(
+    distances: Any,
+    *,
+    tolerance: float,
+) -> tuple[float | None, float | None, int]:
+    values = np.asarray(distances, dtype=float).reshape(-1)
+    count = int(np.sum(values <= tolerance))
+    if values.size == 0 or not np.all(np.isfinite(values)):
+        return None, None, count
+    return float(np.min(values)), float(np.max(values)), count
+
+
+def _assess_prepared_start_bank(
+    states: np.ndarray,
+    reference: np.ndarray,
+    *,
+    minimum_relative_separation: float,
+    scope: str,
+) -> _StartBankAssessment:
+    """Preserve the selector's endpoint-first chronological greedy ordering."""
+
+    sqrt_dimension = float(np.sqrt(states.shape[1]))
+    reference_std_norm = float(np.linalg.norm(np.std(reference, axis=0)))
     reference_scale = max(
-        float(np.sqrt(states.shape[1])),
-        float(np.linalg.norm(np.std(reference, axis=0))),
+        sqrt_dimension,
+        reference_std_norm,
     )
-    tolerance = separation * reference_scale
+    tolerance = minimum_relative_separation * reference_scale
     endpoint_index = states.shape[0] - 1
     eligible_indices: list[int] = []
+    endpoint_exclusion_count = 0
+    prior_eligible_exclusion_count = 0
     for index in range(endpoint_index):
         if np.linalg.norm(reference[index] - reference[endpoint_index]) <= tolerance:
+            endpoint_exclusion_count += 1
             continue
         if all(
             np.linalg.norm(reference[index] - reference[existing]) > tolerance
             for existing in eligible_indices
         ):
             eligible_indices.append(index)
-    if len(eligible_indices) < 3:
-        raise ValueError("operational warmup start bank is not sufficiently dispersed")
-    selected = np.linspace(0, len(eligible_indices) - 1, 3, dtype=int)
-    bank_indices = [eligible_indices[index] for index in selected] + [endpoint_index]
-    bank = states[bank_indices].astype(float, copy=True)
-    reference_bank = reference[bank_indices]
-    pairwise = np.linalg.norm(
-        reference_bank[:, None, :] - reference_bank[None, :, :], axis=-1
+        else:
+            prior_eligible_exclusion_count += 1
+
+    endpoint_distances = np.linalg.norm(
+        reference[:endpoint_index] - reference[endpoint_index],
+        axis=-1,
     )
-    if np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance):
-        raise ValueError("operational warmup start bank is not sufficiently dispersed")
+    endpoint_minimum, endpoint_maximum, endpoint_close_count = (
+        _start_bank_distance_summary(endpoint_distances, tolerance=tolerance)
+    )
+    all_pair_matrix = np.linalg.norm(
+        reference[:, None, :] - reference[None, :, :],
+        axis=-1,
+    )
+    all_pair_distances = all_pair_matrix[
+        np.triu_indices(states.shape[0], k=1)
+    ]
+    all_pair_minimum, all_pair_maximum, all_pair_close_count = (
+        _start_bank_distance_summary(all_pair_distances, tolerance=tolerance)
+    )
+
+    bank_indices: list[int] = []
+    selection_attempted = len(eligible_indices) >= 3
+    selection_succeeded = False
+    failure_code = "insufficient_greedy_eligible"
+    if selection_attempted:
+        selected = np.linspace(0, len(eligible_indices) - 1, 3, dtype=int)
+        bank_indices = [eligible_indices[index] for index in selected] + [
+            endpoint_index
+        ]
+        reference_bank = reference[bank_indices]
+        pairwise = np.linalg.norm(
+            reference_bank[:, None, :] - reference_bank[None, :, :], axis=-1
+        )
+        if np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance):
+            failure_code = "post_selection_pairwise_failure"
+        else:
+            selection_succeeded = True
+            failure_code = "none"
+
+    diagnostic = _StartBankScopeDiagnostic(
+        scope=scope,
+        source_row_count=int(states.shape[0]),
+        dimension=int(states.shape[1]),
+        minimum_relative_separation=minimum_relative_separation,
+        sqrt_dimension_scale_component=_finite_nonnegative_or_none(sqrt_dimension),
+        reference_coordinate_std_norm=_finite_nonnegative_or_none(reference_std_norm),
+        reference_scale=_finite_nonnegative_or_none(reference_scale),
+        absolute_tolerance=_finite_nonnegative_or_none(tolerance),
+        finite_status=bool(
+            np.all(np.isfinite(states)) and np.all(np.isfinite(reference))
+        ),
+        pre_endpoint_candidate_count=endpoint_index,
+        endpoint_exclusion_count=endpoint_exclusion_count,
+        prior_eligible_exclusion_count=prior_eligible_exclusion_count,
+        final_greedy_eligible_count=len(eligible_indices),
+        endpoint_distance_minimum=endpoint_minimum,
+        endpoint_distance_maximum=endpoint_maximum,
+        endpoint_distance_count_at_or_below_tolerance=endpoint_close_count,
+        all_pair_distance_minimum=all_pair_minimum,
+        all_pair_distance_maximum=all_pair_maximum,
+        all_pair_distance_count_at_or_below_tolerance=all_pair_close_count,
+        selection_attempted=selection_attempted,
+        selection_succeeded=selection_succeeded,
+        selected_row_count=len(bank_indices),
+        failure_code=failure_code,
+    )
+    return _StartBankAssessment(
+        canonical_states=states,
+        reference_states=reference,
+        selected_row_indices=tuple(bank_indices),
+        diagnostic=diagnostic,
+    )
+
+
+def _shadow_start_bank_failure_diagnostic(
+    states: np.ndarray | None,
+    *,
+    minimum_relative_separation: float,
+    failure_code: str,
+    finite_status_override: bool | None = None,
+) -> _StartBankScopeDiagnostic:
+    rows = 0
+    dimension = 0
+    finite_status = False
+    sqrt_dimension: float | None = None
+    if states is not None:
+        finite_status = bool(np.all(np.isfinite(states)))
+        if states.ndim >= 1:
+            rows = int(states.shape[0])
+        if states.ndim == 2:
+            dimension = int(states.shape[1])
+            sqrt_dimension = float(np.sqrt(dimension))
+    if finite_status_override is not None:
+        finite_status = bool(finite_status_override)
+    return _StartBankScopeDiagnostic(
+        scope="shadow_all_windows",
+        source_row_count=rows,
+        dimension=dimension,
+        minimum_relative_separation=minimum_relative_separation,
+        sqrt_dimension_scale_component=sqrt_dimension,
+        reference_coordinate_std_norm=None,
+        reference_scale=None,
+        absolute_tolerance=None,
+        finite_status=finite_status,
+        pre_endpoint_candidate_count=None,
+        endpoint_exclusion_count=None,
+        prior_eligible_exclusion_count=None,
+        final_greedy_eligible_count=None,
+        endpoint_distance_minimum=None,
+        endpoint_distance_maximum=None,
+        endpoint_distance_count_at_or_below_tolerance=None,
+        all_pair_distance_minimum=None,
+        all_pair_distance_maximum=None,
+        all_pair_distance_count_at_or_below_tolerance=None,
+        selection_attempted=False,
+        selection_succeeded=False,
+        selected_row_count=0,
+        failure_code=failure_code,
+    )
+
+
+def _best_effort_shadow_start_bank_scope(
+    canonical_states: Any,
+    *,
+    reference_transform: AffineCoordinateTransform | None,
+    minimum_relative_separation: float,
+) -> _StartBankScopeDiagnostic:
+    """Assess accumulated history without allowing shadow errors to escape."""
+
+    separation = float(minimum_relative_separation)
+    try:
+        states = np.asarray(canonical_states, dtype=float)
+    except Exception:  # noqa: BLE001 - fixed bounded shadow failure code.
+        return _shadow_start_bank_failure_diagnostic(
+            None,
+            minimum_relative_separation=separation,
+            failure_code="shadow_input_conversion_failure",
+        )
+    if states.ndim != 2 or states.shape[0] < 4:
+        return _shadow_start_bank_failure_diagnostic(
+            states,
+            minimum_relative_separation=separation,
+            failure_code="shadow_invalid_shape",
+        )
+    if not np.all(np.isfinite(states)):
+        return _shadow_start_bank_failure_diagnostic(
+            states,
+            minimum_relative_separation=separation,
+            failure_code="shadow_nonfinite_source",
+        )
+    try:
+        reference = (
+            states
+            if reference_transform is None
+            else np.asarray(
+                reference_transform.theta_to_latent(states).numpy(),
+                dtype=float,
+            )
+        )
+    except Exception:  # noqa: BLE001 - fixed bounded shadow failure code.
+        return _shadow_start_bank_failure_diagnostic(
+            states,
+            minimum_relative_separation=separation,
+            failure_code="shadow_reference_conversion_failure",
+            finite_status_override=False,
+        )
+    if reference.shape != states.shape:
+        return _shadow_start_bank_failure_diagnostic(
+            states,
+            minimum_relative_separation=separation,
+            failure_code="shadow_reference_conversion_failure",
+            finite_status_override=False,
+        )
+    if not np.all(np.isfinite(reference)):
+        return _shadow_start_bank_failure_diagnostic(
+            states,
+            minimum_relative_separation=separation,
+            failure_code="shadow_nonfinite_reference",
+            finite_status_override=False,
+        )
+    try:
+        return _assess_prepared_start_bank(
+            states,
+            reference,
+            minimum_relative_separation=separation,
+            scope="shadow_all_windows",
+        ).diagnostic
+    except Exception:  # noqa: BLE001 - shadow assessment is decision-inert.
+        return _shadow_start_bank_failure_diagnostic(
+            states,
+            minimum_relative_separation=separation,
+            failure_code="shadow_assessment_failure",
+        )
+
+
+def _materialize_private_start_bank(
+    assessment: _StartBankAssessment,
+    *,
+    qualification: _StartBankQualificationDiagnostic | None = None,
+) -> np.ndarray:
+    if type(assessment) is not _StartBankAssessment:
+        raise TypeError("assessment must be a concrete start-bank assessment")
+    if (
+        qualification is not None
+        and type(qualification) is not _StartBankQualificationDiagnostic
+    ):
+        raise TypeError("qualification must be a concrete start-bank diagnostic")
+    if not assessment.diagnostic.selection_succeeded:
+        error = ValueError(
+            "operational warmup start bank is not sufficiently dispersed"
+        )
+        if qualification is not None:
+            setattr(error, _START_BANK_DIAGNOSTIC_ATTRIBUTE, qualification)
+        raise error
+    bank = assessment.canonical_states[
+        list(assessment.selected_row_indices)
+    ].astype(float, copy=True)
     bank.setflags(write=False)
     return bank
 

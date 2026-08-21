@@ -1,0 +1,97 @@
+{
+  "budget": {
+    "campaign_wall_cap_seconds": 28800.0,
+    "canary_wall_seconds": 790.2904549430023,
+    "closeout_reserve_seconds": 180.0,
+    "derived_hmc_remainder_seconds": 23503.589557993997,
+    "external_hmc_cap_seconds": 23503,
+    "internal_hmc_cap_seconds": 23323.0,
+    "predictive_reserve_seconds": 3600.0,
+    "preflight_wall_seconds": 3.2075341370000388,
+    "prior_gpu_wall_seconds": 1696.410442006003,
+    "training_wall_seconds": 902.9124529260007
+  },
+  "decision": "STOP_UNDER_BUDGETED_WITHOUT_CANDIDATE_REJECTION",
+  "dtype": "float64",
+  "error_type": "HMCBudgetExhausted",
+  "failure_classification": "resource_budget_exhaustion_not_sampler_failure",
+  "git": {
+    "commit": "5699dafec23de9549a8092bec638997e7973593c",
+    "dirty": true
+  },
+  "hmc_phase_wall_seconds": 10782.834346452008,
+  "jit_compile": true,
+  "managed_session_trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "no HMC candidate, posterior, predictive, scientific, or default-readiness admission",
+    "unrun kernels and transport candidates are not rejected",
+    "budget exhaustion is not a convergence failure"
+  ],
+  "partial_artifacts": {
+    "candidate-seed-2/tuning/L-03/attempt-receipt.json": "1a839eba03ff51a08df5f1acc9feac8ea33aa145a399a64b0b18ee6e34201470",
+    "candidate-seed-2/tuning/L-03/tuning-result.json": "03895b609929c2e0d7504b1211262c373b0be38d5d4e6434cb0b4766a4fa4db8",
+    "candidate-seed-2/tuning/L-05/attempt-receipt.json": "ba407b868d3e0a7ee0b48bb71a3b8d43499bd31986a8c187fa370b02da9963d6",
+    "candidate-seed-2/tuning/L-05/tuning-result.json": "158e1b867fb0133cf8b564622a742441a17a0180b30a89c65cccdda93310ceb9",
+    "candidate-seed-2/tuning/tuning-progress-01.json": "04a2876498153132afee8fa2fecbad9092b7c2df5865aa7fb23ea9014ee8ec4e",
+    "candidate-seed-2/tuning/tuning-progress-02.json": "cac961efa21d11bdb88f44456398f2cef6c8ecaedfd1c6d3f73edf62abc91a6c",
+    "launch.json": "61824e8aa77d1deb9bee0cc714ccf8753b12f82efdb0eff40ff343f9f8fde8f2"
+  },
+  "passed": false,
+  "plan": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+    "sha256": "309340acaf5a0702ffd0f8999f062aceba4c4e87bd595d34ac28e4cc11e2f81c"
+  },
+  "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+  "reason": "canary-anchored forecast refused a fixed-HMC tuning call",
+  "requested_physical_device_selector": "1",
+  "route_policy": {
+    "canonical_policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "classified_route_count": 40,
+    "current_route": {
+      "active_entry_points": [
+        "_execute"
+      ],
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "path": "docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_hmc_2026_08_19.py",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Current SSL-LSTM q=20 common-kernel campaign with canonical sequential admission and anti-pooling diagnostics.",
+      "required_symbols": [
+        "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
+        "run_sequential_neutra_hmc"
+      ]
+    },
+    "discovered_route_count": 40,
+    "ledger_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/c0/route_ledger.json",
+    "ledger_sha256": "5f8c8cd81935d4c4662c36b6dc4e10ada1e9b531e00151207530d817426c1e83",
+    "passed": true
+  },
+  "runner": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_hmc_2026_08_19.py",
+    "sha256": "c7356ab715a334cecb60b41f4b55ad1bcd8a92d694dfad2b15fa7dfb519f2ba7"
+  },
+  "schema": "bayesfilter.ssl_lstm.q20_neutra_global_mixing_hmc.v1",
+  "status": "UNDER_BUDGETED_HMC",
+  "tf32_enabled": false,
+  "timestamp_completed_utc": "2026-08-19T15:34:03.125258+00:00",
+  "traceback": null,
+  "visible_logical_gpus": [
+    "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+  ]
+}

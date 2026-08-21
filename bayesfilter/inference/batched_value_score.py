@@ -194,9 +194,13 @@ def reviewed_value_score_target_fn(
 
         @tf.custom_gradient
         def value_with_reviewed_score(x: tf.Tensor) -> tuple[tf.Tensor, Callable[[Any], tf.Tensor]]:
-            value, score = adapter.log_prob_and_grad(x)
-            value_tensor = tf.cast(tf.convert_to_tensor(value), dtype)
-            score_tensor = tf.cast(tf.convert_to_tensor(score), dtype)
+            value, score = adapter.log_prob_and_grad(tf.stop_gradient(x))
+            value_tensor = tf.stop_gradient(
+                tf.cast(tf.convert_to_tensor(value), dtype)
+            )
+            score_tensor = tf.stop_gradient(
+                tf.cast(tf.convert_to_tensor(score), dtype)
+            )
             _validate_value_score_shapes(theta=x, value=value_tensor, score=score_tensor)
 
             def grad(

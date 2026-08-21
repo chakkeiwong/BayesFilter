@@ -26,6 +26,7 @@ from bayesfilter.inference.neutra_batching import (
 )
 from bayesfilter.inference.neutra_hmc import (
     BatchedHMCConfig,
+    NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
     SequentialNeuTraHMCConfig,
     run_batched_hmc,
     run_sequential_neutra_hmc,

@@ -74,6 +74,39 @@ class Float32OutputBatchedQuadraticAdapter(BatchedQuadraticAdapter):
         return -0.5 * tf.reduce_sum(tf.square(values), axis=-1), -values
 
 
+class FirstOrderOnlyAdapter:
+    """Fixture whose supplied score cannot be differentiated a second time."""
+
+    parameter_dim = 2
+
+    @staticmethod
+    @tf.function(
+        input_signature=[tf.TensorSpec([2], tf.float64)],
+        autograph=False,
+    )
+    def _solver(theta: tf.Tensor) -> tf.Tensor:
+        @tf.custom_gradient
+        def first_order_only(values: tf.Tensor):
+            def grad(dy: tf.Tensor) -> tf.Tensor:
+                blocked_score = tf.raw_ops.PreventGradient(
+                    input=values,
+                    message="fixture score does not define a second derivative",
+                )
+                return dy * blocked_score
+
+            return values, grad
+
+        return first_order_only(theta)
+
+    def log_prob_and_grad(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        values = tf.convert_to_tensor(theta, dtype=tf.float64)
+        with tf.GradientTape() as tape:
+            tape.watch(values)
+            solved = self._solver(values)
+            value = tf.reduce_sum(solved)
+        return value, tape.gradient(value, values)
+
+
 class AffineFixedTransport:
     parameter_dim = 3
 
@@ -223,6 +256,33 @@ def test_reviewed_value_score_target_casts_adapter_outputs_to_hmc_dtype() -> Non
     expected_value = -0.5 * np.sum(np.square(theta.numpy().astype(np.float32)), axis=-1)
     np.testing.assert_allclose(value.numpy(), expected_value, rtol=1.0e-6, atol=1.0e-6)
     np.testing.assert_allclose(gradient.numpy(), -theta.numpy(), rtol=1.0e-6, atol=1.0e-6)
+
+
+@pytest.mark.parametrize("execution_mode", ("eager", "tf_function"))
+def test_reviewed_value_score_target_does_not_request_score_second_derivative(
+    execution_mode: str,
+) -> None:
+    target = reviewed_value_score_target_fn(FirstOrderOnlyAdapter())
+
+    def value_and_gradient(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        with tf.GradientTape() as tape:
+            tape.watch(theta)
+            value = target(theta)
+        return value, tape.gradient(value, theta)
+
+    evaluate = value_and_gradient
+    if execution_mode == "tf_function":
+        evaluate = tf.function(
+            value_and_gradient,
+            input_signature=[tf.TensorSpec([2], tf.float64)],
+            autograph=False,
+        )
+
+    theta = tf.constant([0.2, -0.3], tf.float64)
+    value, gradient = evaluate(theta)
+
+    np.testing.assert_allclose(value.numpy(), -0.1)
+    np.testing.assert_allclose(gradient.numpy(), theta.numpy())
 
 
 def test_batch_native_rowwise_parity_against_scalar_fixture() -> None:

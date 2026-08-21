@@ -366,6 +366,45 @@ def test_fixed_transport_hmc_tuner_selects_frozen_identity_z_kernel(tmp_path: Pa
     assert all(shape == (4, 2) for shape in base.shapes)
 
 
+def test_fixed_transport_hmc_tuner_passes_through_declared_resource_stop(
+    tmp_path: Path,
+) -> None:
+    class CampaignResourceStop(RuntimeError):
+        pass
+
+    def resource_stop(_adapter, _initial_state, _config):
+        raise CampaignResourceStop("fixture resource refusal")
+
+    with pytest.raises(CampaignResourceStop, match="fixture resource refusal"):
+        tune_fixed_transport_hmc_kernel(
+            base_adapter=CountingGaussianAdapter(),
+            fixed_transport=CountingIdentityTransport(),
+            initial_position=np.zeros(2),
+            config=_config(),
+            output_dir=tmp_path,
+            run_full_chain=resource_stop,
+            passthrough_exceptions=(CampaignResourceStop,),
+        )
+
+    assert not (tmp_path / _config().output_filename).exists()
+
+
+def test_fixed_transport_hmc_tuner_still_converts_undeclared_runtime_error() -> None:
+    def runtime_error(_adapter, _initial_state, _config):
+        raise RuntimeError("fixture numerical runtime error")
+
+    result = tune_fixed_transport_hmc_kernel(
+        base_adapter=CountingGaussianAdapter(),
+        fixed_transport=CountingIdentityTransport(),
+        initial_position=np.zeros(2),
+        config=_config(),
+        run_full_chain=runtime_error,
+    )
+
+    assert result.passed is False
+    assert "tune_samples_nonfinite_or_missing" in result.hard_vetoes
+
+
 def test_fixed_transport_hmc_tuner_uses_and_records_explicit_initial_state_bank() -> None:
     bank = ((-1.0, 0.2), (-0.8, -0.1), (0.9, 0.3), (1.1, -0.2))
     fake_hmc = FakeHMC()

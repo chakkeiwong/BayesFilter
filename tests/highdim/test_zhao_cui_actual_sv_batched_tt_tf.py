@@ -9,6 +9,7 @@ import tensorflow_probability as tfp
 
 import docs.benchmarks.run_contract_e_tp_phase6_zhao_cui_comparator as comparator
 from bayesfilter.highdim.zhao_cui_actual_sv_batched_tt_tf import (
+    batched_fixed_tt_likelihood_analytic_score_status,
     batched_fixed_tt_likelihood_value_trace,
 )
 from bayesfilter.highdim.zhao_cui_fixed_adjacent_tt_tf import (
@@ -144,7 +145,7 @@ def test_batch_permutation_and_status_are_equivariant() -> None:
     assert bool(tf.reduce_all(tf.equal(status["status_code"], 0)).numpy())
 
 
-def test_posterior_recomposition_is_exact() -> None:
+def test_posterior_recomposition_and_binding_are_exact() -> None:
     adapter = make_actual_sv_zc_neutra_adapter()
     theta = tf.stack(
         (_truth_source(), _truth_source() + tf.constant([0.02, 0.03], tf.float64))
@@ -153,17 +154,14 @@ def test_posterior_recomposition_is_exact() -> None:
     recomposed = posterior_value_score_status(theta, **adapter.program_tensors)
     tf.debugging.assert_near(direct[0], recomposed[0])
     tf.debugging.assert_near(direct[1], recomposed[1])
-
-
-def test_binding_is_rejected_while_xla_ready_is_false() -> None:
-    adapter = make_actual_sv_zc_neutra_adapter()
     target_signature = stable_ssm_target_signature(adapter.contract)
-    try:
-        bind_batch_native_neutra_target(adapter, target_signature=target_signature)
-    except Exception as error:
-        assert "XLA ready" in str(error)
-    else:
-        raise AssertionError("binding should fail while xla_hmc_ready is false")
+    binding = bind_batch_native_neutra_target(
+        adapter, target_signature=target_signature
+    )
+    assert binding.target_signature == target_signature
+    assert binding.sample_axis_python_loop_used is False
+    assert binding.scalar_fallback_used is False
+    assert binding.row_mapped_scalar_target_used is False
 
 
 
@@ -197,18 +195,21 @@ def test_batched_trace_exposes_time_local_targets_and_sweeps() -> None:
     assert tuple(sweep.axis for sweep in second_step.two_axis_fit.sweeps[:4]) == (0, 1, 1, 0)
 
 
-def test_cpu_xla_batch_target_compiles() -> None:
+def test_xla_compiled_analytic_score_matches_eager_and_status() -> None:
     adapter = make_actual_sv_zc_neutra_adapter()
-
-    @tf.function(
-        input_signature=[tf.TensorSpec([None, 2], tf.float64)],
-        jit_compile=True,
-    )
-    def compiled(theta):
-        return adapter.neutra_batch_log_prob_and_grad_status(theta)
-
     theta = tf.stack((_truth_source(), _truth_source()), axis=0)
-    value, score, status = compiled(theta)
-    tf.debugging.assert_all_finite(value, "XLA value must be finite")
-    tf.debugging.assert_all_finite(score, "XLA score must be finite")
-    assert bool(tf.reduce_all(status["valid_pre_regularized_score"]).numpy())
+
+    @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)], jit_compile=True, reduce_retracing=True)
+    def compiled(value):
+        return batched_fixed_tt_likelihood_analytic_score_status(value, **adapter.program_tensors)
+
+    value_x, score_x, status_x = compiled(theta)
+    value_e, score_e, status_e = batched_fixed_tt_likelihood_analytic_score_status(
+        theta, **adapter.program_tensors
+    )
+    tf.debugging.assert_all_finite(value_x, "XLA value must be finite")
+    tf.debugging.assert_all_finite(score_x, "XLA score must be finite")
+    tf.debugging.assert_near(value_x, value_e, atol=1e-12, rtol=1e-12)
+    tf.debugging.assert_near(score_x, score_e, atol=1e-12, rtol=1e-12)
+    tf.debugging.assert_equal(status_x["status_code"], status_e["status_code"])
+    assert bool(tf.reduce_all(status_x["valid_pre_regularized_score"]).numpy())

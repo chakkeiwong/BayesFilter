@@ -450,6 +450,7 @@ def _run_shared_sequential_neutra_hmc(
     retained_diagnostic_fn: RetainedDiagnosticCallback | None = None,
     archive_callback: ArchiveCallback | None = None,
     target_status_summary_fn: TargetStatusSummaryCallback | None = None,
+    budget_check: Callable[[int], bool | None] | None = None,
 ) -> Mapping[str, Any]:
     """Retain warm-up and sample cumulatively until declared gates or caps."""
 
@@ -522,6 +523,11 @@ def _run_shared_sequential_neutra_hmc(
         active = min(
             config.warmup_chunk_results, config.warmup_max_results - warmup_count
         )
+        if budget_check is not None:
+            budget_allowed = budget_check(active * config.num_leapfrog_steps)
+            if budget_allowed is False:
+                hard_vetoes.append("campaign_resource_cap")
+                break
         seed = _shared_sequential_chunk_seed(config.warmup_seed, warmup_index)
         chunk = run_chunk(active, seed)
         latent_samples = tf.convert_to_tensor(chunk["samples"], tf.float64)
@@ -595,6 +601,11 @@ def _run_shared_sequential_neutra_hmc(
             config.retained_chunk_results,
             config.retained_max_results - retained_count,
         )
+        if budget_check is not None:
+            budget_allowed = budget_check(active * config.num_leapfrog_steps)
+            if budget_allowed is False:
+                hard_vetoes.append("campaign_resource_cap")
+                break
         seed = _shared_sequential_chunk_seed(config.retained_seed, retained_index)
         chunk = run_chunk(active, seed)
         latent_samples = tf.convert_to_tensor(chunk["samples"], tf.float64)
@@ -658,9 +669,17 @@ def _run_shared_sequential_neutra_hmc(
         if retained_passed:
             break
 
-    warmup_latent = tf.concat(warmup_latent_chunks, axis=0)
-    warmup_model = tf.concat(warmup_model_chunks, axis=0)
     empty = tf.zeros((0, chain_count, dimension), tf.float64)
+    warmup_latent = (
+        tf.concat(warmup_latent_chunks, axis=0)
+        if warmup_latent_chunks
+        else empty
+    )
+    warmup_model = (
+        tf.concat(warmup_model_chunks, axis=0)
+        if warmup_model_chunks
+        else empty
+    )
     retained_latent = (
         tf.concat(retained_latent_chunks, axis=0)
         if retained_latent_chunks
@@ -673,8 +692,9 @@ def _run_shared_sequential_neutra_hmc(
     )
     cumulative_archives = None
     if archive_callback is not None:
-        cumulative_archives = {
-            "warmup": _call_archive(
+        cumulative: dict[str, Mapping[str, Any]] = {}
+        if warmup_count:
+            cumulative["warmup"] = _call_archive(
                 archive_callback,
                 stage="warmup",
                 chunk_index=None,
@@ -683,20 +703,17 @@ def _run_shared_sequential_neutra_hmc(
                 seed=None,
                 cumulative=True,
             )
-        }
         if retained_count:
-            cumulative_archives = {
-                **cumulative_archives,
-                "retained": _call_archive(
-                    archive_callback,
-                    stage="retained",
-                    chunk_index=None,
-                    latent_samples=retained_latent,
-                    model_samples=retained_model,
-                    seed=None,
-                    cumulative=True,
-                ),
-            }
+            cumulative["retained"] = _call_archive(
+                archive_callback,
+                stage="retained",
+                chunk_index=None,
+                latent_samples=retained_latent,
+                model_samples=retained_model,
+                seed=None,
+                cumulative=True,
+            )
+        cumulative_archives = cumulative or None
 
     passed = bool(warmup_passed and retained_passed and not hard_vetoes)
     return {

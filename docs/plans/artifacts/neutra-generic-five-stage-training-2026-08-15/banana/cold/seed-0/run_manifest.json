@@ -1,0 +1,91 @@
+{
+  "allocator_bytes": {
+    "current": 9224192,
+    "peak": 179193344
+  },
+  "batch_size": 4096,
+  "command": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_neutra_generic_five_stage_model_2026_08_15.py --output-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-generic-five-stage-training-2026-08-15/banana/cold/seed-0 --target banana --route cold --device 0 --seed-index 0 --batch-size 4096 --learning-rates 2e-4,5e-4,1e-3 --affine-updates 100 --simple-updates 300 --progressive-updates 100 --joint-updates 300 --cold-updates 1000 --checkpoint-every 100 --proposal-audit-count 131072",
+  "config": {
+    "activation": "elu",
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "dimension": 16,
+    "epsilon": 1e-07,
+    "gradient_clip_norm": 10.0,
+    "hidden_layers": [
+      32,
+      32
+    ],
+    "initialization_scale": 0.02,
+    "initialization_seed": [
+      20260815,
+      40001
+    ],
+    "jit_compile": true,
+    "learning_rate": 0.001,
+    "permutation_policy": "full_reverse",
+    "s_max": 1.0,
+    "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+    "stage_s_max": [
+      4.0,
+      0.5,
+      0.5
+    ],
+    "stage_scale_linear_skip": [],
+    "stage_unbounded_scale_linear": [
+      true,
+      false,
+      false
+    ],
+    "stages": 3
+  },
+  "cuda_visible_devices": "0",
+  "dtype": "float64",
+  "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+  "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+  "jit_compile": true,
+  "learning_rates": [
+    0.0002,
+    0.0005,
+    0.001
+  ],
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-generic-five-stage-training-plan-2026-08-15.md",
+  "proposal_audit_count": 131072,
+  "route": "cold",
+  "sample_wise_loop_or_scalar_fallback": false,
+  "schema": "bayesfilter.neutra.generic_five_stage_manifest.v1",
+  "seed_index": 0,
+  "target": {
+    "curvature": 0.35,
+    "dimension": 16,
+    "schema": "bayesfilter.neutra.generic_control.banana.v1",
+    "unit_jacobian": true
+  },
+  "target_name": "banana",
+  "tensorflow_version": "2.20.0",
+  "tf32_enabled": false,
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "updates": {
+    "affine": 100,
+    "cold": 1000,
+    "joint": 300,
+    "progressive_each": 100,
+    "simple": 300
+  }
+}

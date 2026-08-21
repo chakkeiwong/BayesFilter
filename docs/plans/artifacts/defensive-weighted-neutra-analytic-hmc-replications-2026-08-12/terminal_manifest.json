@@ -1,0 +1,131 @@
+{
+  "schema": "bayesfilter.defensive_weighted_neutra_analytic_hmc_replication_terminal_manifest.v1",
+  "scientific_question": "Does the admitted fixed-length HMC kernel remain operationally and analytically compatible when only the independent root seed changes?",
+  "decision": "all_four_frozen_root_seed_replications_passed",
+  "plan_file": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-defensive-weighted-neutra-analytic-hmc-replication-plan-2026-08-12.md",
+  "result_file": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-defensive-weighted-neutra-analytic-hmc-replication-result-2026-08-12.md",
+  "reset_memo": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-defensive-weighted-neutra-analytic-hmc-replication-reset-memo-2026-08-12.md",
+  "artifact_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12",
+  "environment": {
+    "conda_env": "tfgpu",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tensorflow_probability": "0.25.0",
+    "platform": "Linux ubuntu-MZ72-HB2-00 6.8.0-136-generic x86_64",
+    "dtype": "float64",
+    "jit_compile": true,
+    "tf32_enabled": false,
+    "gpu_memory_policy": "memory_growth_verified_before_logical_device_initialization",
+    "tf_force_gpu_allow_growth": "true",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "hardware": {
+    "physical_gpu_count_used": 2,
+    "gpu_model": "NVIDIA GeForce RTX 4080 SUPER",
+    "process_layout": "two_independent_processes_per_physical_gpu",
+    "replication_to_cuda_visible_device": {
+      "0": "0",
+      "1": "1",
+      "2": "0",
+      "3": "1"
+    }
+  },
+  "frozen_inputs": {
+    "data_version": "analytic_target_separated_two_mode_unequal_weight_d4_v1",
+    "checkpoint_sha256": "af961871dcc3b626216d7500e695534f147ecfd9ba4fe0f9907f59018d40e8e5",
+    "tuning_artifact_sha256": "6dfe2b8145040a18831a08032bfd61854189f2651e76c70842e59d4e4e12eb4f",
+    "num_leapfrog_steps": 20,
+    "step_size": 0.14091138276334744,
+    "mass_policy": "fixed_identity_z",
+    "sequential_policy": "bayesfilter_neutra_sequential_hmc_v1",
+    "chain_count": 4
+  },
+  "random_seeds": {
+    "canary": [20260812, 97001],
+    "replication_0": [20260812, 91011],
+    "replication_1": [20260812, 91012],
+    "replication_2": [20260812, 91013],
+    "replication_3": [20260812, 91014]
+  },
+  "commands": {
+    "canary": "TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_defensive_weighted_neutra_analytic_hmc_replication_2026_08_12.py --mode canary --replication 0 --seed-second 91011 --output-root docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12-canary-v3 --device 1 --cap-seconds 600",
+    "replication_0": "TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_defensive_weighted_neutra_analytic_hmc_replication_2026_08_12.py --mode run --replication 0 --seed-second 91011 --output-root docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-0 --device 0 --cap-seconds 3600",
+    "replication_1": "TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_defensive_weighted_neutra_analytic_hmc_replication_2026_08_12.py --mode run --replication 1 --seed-second 91012 --output-root docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-1 --device 1 --cap-seconds 3600",
+    "replication_2": "TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_defensive_weighted_neutra_analytic_hmc_replication_2026_08_12.py --mode run --replication 2 --seed-second 91013 --output-root docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-2 --device 0 --cap-seconds 3600",
+    "replication_3": "TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_defensive_weighted_neutra_analytic_hmc_replication_2026_08_12.py --mode run --replication 3 --seed-second 91014 --output-root docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12/replication-3 --device 1 --cap-seconds 3600",
+    "consolidation": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/summarize_defensive_weighted_neutra_analytic_hmc_replications_2026_08_12.py --campaign-root docs/plans/artifacts/defensive-weighted-neutra-analytic-hmc-replications-2026-08-12",
+    "final_tests": "CUDA_VISIBLE_DEVICES=-1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q tests/test_defensive_weighted_neutra_analytic_hmc_replication_runner.py tests/test_defensive_weighted_neutra_hmc_tf.py tests/test_neutra_sequential_hmc.py"
+  },
+  "replications": [
+    {
+      "replication": 0,
+      "warmup_results_per_chain": 2000,
+      "retained_results_per_chain": 3000,
+      "wall_seconds": 241.67637368000578,
+      "result_sha256": "3a5a5e81217e10e28e9fde0d5e5cc30139fa30538a942b250cd6482165576b84",
+      "archive_manifest_sha256": "79e86e8b334b1a9676a2007c29e5b255790568ac96fb59f9ce9347dd183959e3"
+    },
+    {
+      "replication": 1,
+      "warmup_results_per_chain": 2500,
+      "retained_results_per_chain": 2000,
+      "wall_seconds": 203.76773901900742,
+      "result_sha256": "2dae3336b4a704e1626e22a8d09f3972c502a88966045bb9aba3466c254b16f4",
+      "archive_manifest_sha256": "04a81cb3eb382c1de76bb1b77e86ef33ac0522c494386778cbe232a180e07c43"
+    },
+    {
+      "replication": 2,
+      "warmup_results_per_chain": 2000,
+      "retained_results_per_chain": 5000,
+      "wall_seconds": 284.7299858479528,
+      "result_sha256": "9a32e0ffaf705a9ccbbe524ac9a2d5bc183abe584c309b5705653bedb3ce84f7",
+      "archive_manifest_sha256": "85baf290c7131de1ccdebb6ed45a06bcbd79aab8134030ef7a8469f3becbb1e5"
+    },
+    {
+      "replication": 3,
+      "warmup_results_per_chain": 2000,
+      "retained_results_per_chain": 2000,
+      "wall_seconds": 194.03643158695195,
+      "result_sha256": "b56d24716b8f971f6efd24db6cda01231c0966f9fe67eb599c57872985530afe",
+      "archive_manifest_sha256": "7d499a531e4188079fab47ed3b9e1147c0f5bf2b9ab97b79e692092e5dbb2de2"
+    }
+  ],
+  "aggregate": {
+    "replication_count": 4,
+    "all_passed": true,
+    "verified_receipt_count": 492,
+    "total_warmup_draws_all_chains": 34000,
+    "total_retained_draws_all_chains": 48000,
+    "sum_process_wall_seconds": 924.2105301339179,
+    "focused_tests_passed": 30,
+    "native_divergence_status": "not_exposed_by_kernel",
+    "native_divergence_interpretation": "unavailable_is_not_zero"
+  },
+  "provenance_epochs": {
+    "scientific_run_git_commit": "9ebaecc59f792f49bf7b946342ea512e71f5b3e4",
+    "scientific_run_worktree_dirty": true,
+    "terminal_documentation_git_commit": "34c19935fd34e45f0e818a97a5569f8750bc8e30",
+    "terminal_documentation_pre_manifest_worktree_dirty": true,
+    "terminal_documentation_pre_manifest_status_line_count": 5,
+    "note": "The run-time manifests bind the scientific execution state. A later multi-agent merge committed the preserved lane before terminal documentation was written. Unrelated dirty files were not inspected or modified."
+  },
+  "source_hashes": {
+    "plan": "023067d2a8619f4bfc5934eacad5f7e318c47dcedef79e2f9756aa05ad534a07",
+    "runner": "da811f8d402a440b55eaa256d8deb985bcd1eaad5aafc9dead425256e4deab4f",
+    "summarizer": "50e1adafa64ade1fd8b6eec65385ab98675941bbcf8e28655cd1d0a14fc82721",
+    "focused_tests": "cb612cd1ec179fa9539a72983ec91fbf04ccb17c60904faeb4ace41a3c533dca",
+    "summary_json": "33f5b59b831dea76818a88e9c161c19e02cb3a0e3405de3b036221494b0211e8",
+    "summary_markdown": "a2742322353a6550293dd306486bee81a2813c05dc4c5d9960d2c70c612c05cc",
+    "result_note": "d7996f222bf2d89cbc79289d54d3320786470747d31dfb273df8e105841831a3",
+    "reset_memo": "70f47ddfb3c942ec3bdad12cf43f5dc5510caef46f40a626e4e67e630b1d9082",
+    "canary_result": "b18a1492bf24f04c8e15a82814477cc7ce8bb8c3d9cf61ce95d12643a779e27c",
+    "canary_manifest": "2632850c7259711317faa5f6bdb8a6dab47c4f8d8fb0ca0c449a634ea090b7b4"
+  },
+  "nonclaims": [
+    "no proof of stationarity or distributional equality",
+    "no statistically supported sampler or seed ranking",
+    "no cross-transport-training-seed robustness claim",
+    "no cross-target, SSL-LSTM, general NeuTra, or default-readiness claim",
+    "native divergence unavailability is not zero divergences"
+  ]
+}

@@ -753,6 +753,7 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
     )
     assert geometry.max_leapfrog_steps == 40
     assert bootstrap.max_leapfrog_steps == 40
+    assert bootstrap.step_repair_factor == pytest.approx(2.5)
     assert bootstrap.use_xla is True
     assert bootstrap.payload()["use_xla"] is True
     assert loop.use_xla is True

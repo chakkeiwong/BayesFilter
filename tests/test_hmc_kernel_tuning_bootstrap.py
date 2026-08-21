@@ -336,6 +336,22 @@ def test_bootstrap_default_tf_function_route_uses_reusable_runner(
     assert payload_route["active_route"] == "bootstrap_scoped_reusable_runner"
 
 
+def test_bootstrap_uses_configured_step_repair_factor() -> None:
+    run, calls = _scripted_runner([0.90, 0.70])
+    geometry = _geometry()
+    result = run_hmc_bootstrap_screen(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        config=_config(max_repairs=1, step_repair_factor=1.25),
+        run_full_chain=run,
+    )
+
+    assert result.passed is True
+    assert result.config.payload()["step_repair_factor"] == pytest.approx(1.25)
+    assert calls[0][0] == pytest.approx(geometry.initial_step_size)
+    assert calls[1][0] == pytest.approx(geometry.initial_step_size * 1.25)
+
+
 def test_bootstrap_injected_tf_function_runner_does_not_use_reusable_route(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

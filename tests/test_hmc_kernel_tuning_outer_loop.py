@@ -871,6 +871,11 @@ def test_public_diagnostic_budget_policy_is_bounded_and_non_serious() -> None:
     assert policy0.phase6_screen_burnin_steps == 2
     assert policy0.verification_num_results == 16
     assert policy0.verification_num_burnin_steps == 4
+    assert policy0.operational_screen_num_results == 64
+    assert policy0.operational_screen_num_burnin_steps == 16
+    assert policy0.operational_exact_l_tune_adaptation_steps == 64
+    assert policy0.operational_verification_num_results == 64
+    assert policy0.operational_verification_num_burnin_steps == 16
     assert payload0["serious_policy"] is False
     assert payload0["public_budget_class"] == "bounded_public_diagnostic"
     assert payload0["public_budget_cap"] == 64
@@ -915,6 +920,12 @@ def test_public_diagnostic_plus_budget_policy_is_bounded_and_non_serious() -> No
     assert policy1.phase6_screen_num_results == 64
     assert policy0.verification_num_results == 64
     assert policy1.verification_num_results == 128
+    assert policy0.operational_screen_num_results == 64
+    assert policy1.operational_screen_num_results == 64
+    assert policy0.operational_exact_l_tune_adaptation_steps == 128
+    assert policy1.operational_exact_l_tune_adaptation_steps == 256
+    assert policy0.operational_verification_num_results == 64
+    assert policy1.operational_verification_num_results == 128
     assert payload0["serious_policy"] is False
     assert payload0["public_budget_class"] == "bounded_public_diagnostic_plus"
     assert payload0["public_budget_cap"] == 256

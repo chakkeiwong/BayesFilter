@@ -1,0 +1,135 @@
+{
+  "command": "docs/benchmarks/run_genut_feasible_trust_region_gpu_replay.py --output docs/benchmarks/artifacts/genut-score-validation-readiness-20260817/phase4_lm_trust_region",
+  "controls": {
+    "balance_steps": 2,
+    "epsilon": 2.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_lm_damping": 0.01,
+    "higher_moment_lm_scale_floor": 0.0001,
+    "higher_moment_solver_id": "genut_column_scaled_lm_smooth_rms_trust_v1",
+    "higher_moment_strength": 0.2,
+    "higher_moment_trust_radius": 0.5,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 2,
+    "tuning_artifact": "local_repair_diagnostic_not_admission",
+    "tuning_scope": "lgssm_T10_N1008_repair_replay"
+  },
+  "diagnostics": {
+    "max_col_residual": [
+      3.7671998143196106e-07,
+      4.3725594878196716e-07,
+      3.3993273973464966e-07,
+      3.6600977182388306e-07
+    ],
+    "max_mean_residual": [
+      1.0669231414794922e-05,
+      1.138448715209961e-05,
+      1.0758638381958008e-05,
+      9.268522262573242e-06
+    ],
+    "max_row_residual": [
+      1.0069925338029861e-07,
+      1.0093208402395248e-07,
+      9.918585419654846e-08,
+      1.0116491466760635e-07
+    ],
+    "maximum_diagonal_post_cap_particle_rms": [
+      0.06961280852556229,
+      0.07852611690759659,
+      0.06961441040039062,
+      0.07085409760475159
+    ],
+    "maximum_diagonal_pre_cap_particle_rms": [
+      0.07029744982719421,
+      0.07951285690069199,
+      0.07029911130666733,
+      0.07157640904188156
+    ],
+    "maximum_diagonal_scaled_system_condition": [
+      2.0370428562164307,
+      2.3757102489471436,
+      2.2544260025024414,
+      1.7915582656860352
+    ],
+    "maximum_kurtosis_residual": [
+      0.09159278869628906,
+      0.09914207458496094,
+      0.10326647758483887,
+      0.09470033645629883
+    ],
+    "maximum_skew_residual": [
+      0.05883702635765076,
+      0.06262579560279846,
+      0.05858498066663742,
+      0.055500328540802
+    ],
+    "minimum_covariance_gap_eigenvalue": [
+      0.3365820348262787,
+      0.303119033575058,
+      0.3821614980697632,
+      0.3472385108470917
+    ],
+    "minimum_finite_particle_upper_margin": [
+      1003.7761840820312,
+      1003.7693481445312,
+      1003.7894897460938,
+      1003.7525024414062
+    ],
+    "minimum_pearson_feasibility_margin": [
+      1.7931153774261475,
+      1.774139642715454,
+      1.7583057880401611,
+      1.8306169509887695
+    ],
+    "program_valid": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "git_commit": "dae37183bf4421682b2ad991e2dc0d0f3c53f260",
+  "horizon": 10,
+  "input_hashes": {
+    "design": "a1405124bd6fdc830a378e152c69c42ed6ed846ba7268176ea82f63cae6fbb82",
+    "initial_noise": "8a7e5aa6bf0b0a67337f31353f203a5e3876a79e2ffbcc6197a43078771c2889",
+    "observations": "336e01a2532bd4ee9cfd8cced2f47b81262a81a1f46102f3c2185aee159c4c8b",
+    "process_noise": "1ab6f2577bc4229daeb71c4fa33b1c61843034e0e4eccd39b8e282966b5a4866",
+    "theta": "ad297de781c2bae3c6f3c0424cb447b26cd45fd6926fc58773589d971880b1f9"
+  },
+  "memory_growth": [
+    {
+      "device": "/physical_device:GPU:0",
+      "memory_growth": true
+    }
+  ],
+  "noise_seed": 140000,
+  "particle_count": 1008,
+  "plan": "docs/plans/bayesfilter-genut-feasible-trust-region-repair-plan-2026-08-15.md",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "schema": "bayesfilter.genut_feasible_trust_region_gpu_replay.v1",
+  "scientific_claim": "none",
+  "score_max_abs": [
+    10.559950828552246,
+    10.315686225891113,
+    10.011842727661133,
+    11.451021194458008
+  ],
+  "status": "PASS_FINITE",
+  "target": "LGSSM T=10 finite value/JVP replay",
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "tf32_enabled": true,
+  "value": [
+    -43.49395751953125,
+    -42.6517219543457,
+    -45.1219482421875,
+    -43.49497604370117
+  ],
+  "visible_gpus": [
+    "/physical_device:GPU:0"
+  ],
+  "wall_time_seconds": 13.073513984680176,
+  "xla": true
+}

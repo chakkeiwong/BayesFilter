@@ -181,6 +181,32 @@ def test_sequential_controller_health_veto_stops_before_retained(monkeypatch) ->
     assert result["retained_results_per_chain"] == 0
 
 
+def test_shared_sequential_budget_refusal_occurs_before_chunk(monkeypatch) -> None:
+    builds, calls = _fake_programs(monkeypatch)
+    requested_work = []
+
+    def budget_check(work: int) -> bool:
+        requested_work.append(work)
+        return False
+
+    result = neutra_hmc.run_sequential_neutra_hmc(
+        adapter=object(),
+        initial_state=tf.zeros((4, 2), tf.float64),
+        parameter_names=("x", "y"),
+        config=_config(),
+        budget_check=budget_check,
+    )
+
+    assert requested_work == [8]
+    assert builds == []
+    assert calls == []
+    assert result["passed"] is False
+    assert result["hard_vetoes"] == ("campaign_resource_cap",)
+    assert result["warmup_results_per_chain"] == 0
+    assert result["private_warmup_z"].shape == (0, 4, 2)
+    assert result["cumulative_archives"] is None
+
+
 def test_retained_continuation_uses_real_chunk_config_and_checkpoints(
     monkeypatch,
 ) -> None:

@@ -1,0 +1,810 @@
+{
+  "artifact_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc/candidate-seed-2/tuning/L-03/tuning-result.json",
+  "base_adapter_signature": "a8be6c212eb2a74ef926ccb9279871805949cae6e00c312a12525141638166f3",
+  "candidates": [
+    {
+      "candidate_index": 0,
+      "diagnostic_role": "hard_veto",
+      "final_status": "hard_veto",
+      "fixed_kernel_step_size": null,
+      "handoff_source": "fixed_mass_dual_averaging_ladder",
+      "hard_vetoes": [
+        "verification_modern_rank_folded_rhat_failed"
+      ],
+      "ladder": {
+        "passed": true,
+        "rounds": [
+          {
+            "budget": 32,
+            "hard_vetoes": [
+              "verification_acceptance_outside_pass_band"
+            ],
+            "initial_step_size": 0.05,
+            "repair_triggers": [
+              "screen_acceptance_above_pass_band"
+            ],
+            "round_index": 0,
+            "screen_diagnostics": {
+              "acceptance_probability_by_chain": [
+                0.928107180566949,
+                0.940704196627273,
+                0.9412632561643658,
+                0.907520861250392
+              ],
+              "acceptance_rate": 0.9293988736522448,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_by_chain": [
+                0.9375,
+                0.953125,
+                0.921875,
+                0.921875
+              ],
+              "binary_acceptance_rate": 0.93359375,
+              "diagnostic_context": "fixed_transport_scale_selection_probe",
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "initial_state_all_zero": false,
+              "initial_state_bank": [
+                [
+                  -0.05628257571016518,
+                  0.14813908245519603,
+                  0.5638212412773446,
+                  -0.2459585615244469
+                ],
+                [
+                  -0.26536103463762595,
+                  -0.4551266249285027,
+                  -0.6641565561574118,
+                  -0.42935152601335774
+                ],
+                [
+                  -0.006282575710165175,
+                  0.14813908245519603,
+                  0.5638212412773446,
+                  -0.2459585615244469
+                ],
+                [
+                  -0.31536103463762594,
+                  -0.4551266249285027,
+                  -0.6641565561574118,
+                  -0.42935152601335774
+                ]
+              ],
+              "initial_state_shape": [
+                4,
+                4
+              ],
+              "log_accept_energy_proxy_alert": false,
+              "log_accept_energy_proxy_role": "explanatory_alert_only",
+              "log_accept_ratio_finite": true,
+              "max_abs_log_accept_energy_proxy": 308.1149241704725,
+              "max_abs_log_accept_ratio": 308.1149241704725,
+              "modern_rank_normalized_verification": null,
+              "modern_verification_coordinate_system": null,
+              "native_divergence_interpretation": "unavailable is not zero divergences",
+              "nonclaims": [
+                "fixed trained transport HMC tuning only",
+                "transport is not trained or adapted by this tuner",
+                "identity z-mass policy only",
+                "no windowed mass adaptation claim",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default-readiness claim",
+                "no external-client scientific claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "probe_only": true,
+              "proposed_target_log_prob_finite": true,
+              "rank2_chain_batched_initial_state": true,
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "initial_state_shape": [
+                  4,
+                  4
+                ],
+                "jit_compile": true,
+                "runtime": "tfp.mcmc.sample_chain",
+                "runtime_numerical_backend": "tensorflow_tfp_only",
+                "sample_chain_call_s": 361.9736556840071,
+                "shared_mechanics_route": "bayesfilter.inference.fixed_transport_hmc_mechanics_tf",
+                "shared_scalar_step_across_chain_bank": true,
+                "tuning_policy": {
+                  "adaptation_policy": "fixed_kernel_no_adaptation",
+                  "label": "fixed_kernel_screen",
+                  "num_adaptation_steps": 0,
+                  "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+                  "target_accept_prob": null
+                },
+                "use_xla": true
+              },
+              "sample_shape": [
+                64,
+                4,
+                4
+              ],
+              "samples_all_finite": true,
+              "target_log_prob_finite": true,
+              "target_score_finite": true,
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false
+              }
+            },
+            "tune_config": {
+              "adaptation_policy": "dual_averaging_step_size",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 32,
+              "num_leapfrog_steps": 3,
+              "num_results": 16,
+              "seed": [
+                20260819,
+                32000
+              ],
+              "step_size": 0.05,
+              "target_scope": "ssl_lstm_q20_neutra_global_mixing:seed-2:L-3",
+              "target_status_trace_policy": "per_chain_step",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "dual_averaging_step_size",
+                "label": "fixed_mass_dual_averaging",
+                "num_adaptation_steps": 32,
+                "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+                "target_accept_prob": 0.7
+              },
+              "use_xla": true
+            },
+            "tune_diagnostics": {
+              "acceptance_probability_by_chain": [
+                0.9417664699264292,
+                0.8860575424505308,
+                0.9481976762778096,
+                0.8579585173449975
+              ],
+              "acceptance_rate": 0.9084950514999418,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_by_chain": [
+                0.9375,
+                0.875,
+                1.0,
+                0.875
+              ],
+              "binary_acceptance_rate": 0.921875,
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "log_accept_energy_proxy_alert": false,
+              "log_accept_energy_proxy_role": "explanatory_alert_only",
+              "log_accept_ratio_finite": true,
+              "max_abs_log_accept_energy_proxy": 21.311690016886374,
+              "max_abs_log_accept_ratio": 21.311690016886374,
+              "modern_rank_normalized_verification": null,
+              "modern_verification_coordinate_system": null,
+              "native_divergence_interpretation": "unavailable is not zero divergences",
+              "proposed_target_log_prob_finite": true,
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "initial_state_shape": [
+                  4,
+                  4
+                ],
+                "jit_compile": true,
+                "runtime": "tfp.mcmc.sample_chain",
+                "runtime_numerical_backend": "tensorflow_tfp_only",
+                "sample_chain_call_s": 200.0653268599999,
+                "shared_mechanics_route": "bayesfilter.inference.fixed_transport_hmc_mechanics_tf",
+                "shared_scalar_step_across_chain_bank": true,
+                "tuning_policy": {
+                  "adaptation_policy": "dual_averaging_step_size",
+                  "label": "fixed_mass_dual_averaging",
+                  "num_adaptation_steps": 32,
+                  "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+                  "target_accept_prob": 0.7
+                },
+                "use_xla": true
+              },
+              "sample_shape": [
+                16,
+                4,
+                4
+              ],
+              "samples_all_finite": true,
+              "target_log_prob_finite": true,
+              "target_score_finite": true,
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false
+              }
+            },
+            "tuned_step_size": 0.1744634379906966
+          },
+          {
+            "budget": 64,
+            "hard_vetoes": [],
+            "initial_step_size": 0.3489268759813932,
+            "repair_triggers": [],
+            "round_index": 1,
+            "screen_diagnostics": {
+              "acceptance_probability_by_chain": [
+                0.8562757160302503,
+                0.7174148812267166,
+                0.8014482193625141,
+                0.8596498254041363
+              ],
+              "acceptance_rate": 0.8086971605059042,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_by_chain": [
+                0.8125,
+                0.734375,
+                0.84375,
+                0.875
+              ],
+              "binary_acceptance_rate": 0.81640625,
+              "diagnostic_context": "fixed_transport_scale_selection_probe",
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "initial_state_all_zero": false,
+              "initial_state_bank": [
+                [
+                  -0.05628257571016518,
+                  0.14813908245519603,
+                  0.5638212412773446,
+                  -0.2459585615244469
+                ],
+                [
+                  -0.26536103463762595,
+                  -0.4551266249285027,
+                  -0.6641565561574118,
+                  -0.42935152601335774
+                ],
+                [
+                  -0.006282575710165175,
+                  0.14813908245519603,
+                  0.5638212412773446,
+                  -0.2459585615244469
+                ],
+                [
+                  -0.31536103463762594,
+                  -0.4551266249285027,
+                  -0.6641565561574118,
+                  -0.42935152601335774
+                ]
+              ],
+              "initial_state_shape": [
+                4,
+                4
+              ],
+              "log_accept_energy_proxy_alert": false,
+              "log_accept_energy_proxy_role": "explanatory_alert_only",
+              "log_accept_ratio_finite": true,
+              "max_abs_log_accept_energy_proxy": 60.09463510138848,
+              "max_abs_log_accept_ratio": 60.09463510138848,
+              "modern_rank_normalized_verification": null,
+              "modern_verification_coordinate_system": null,
+              "native_divergence_interpretation": "unavailable is not zero divergences",
+              "nonclaims": [
+                "fixed trained transport HMC tuning only",
+                "transport is not trained or adapted by this tuner",
+                "identity z-mass policy only",
+                "no windowed mass adaptation claim",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default-readiness claim",
+                "no external-client scientific claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "probe_only": true,
+              "proposed_target_log_prob_finite": true,
+              "rank2_chain_batched_initial_state": true,
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "initial_state_shape": [
+                  4,
+                  4
+                ],
+                "jit_compile": true,
+                "runtime": "tfp.mcmc.sample_chain",
+                "runtime_numerical_backend": "tensorflow_tfp_only",
+                "sample_chain_call_s": 359.8010596899985,
+                "shared_mechanics_route": "bayesfilter.inference.fixed_transport_hmc_mechanics_tf",
+                "shared_scalar_step_across_chain_bank": true,
+                "tuning_policy": {
+                  "adaptation_policy": "fixed_kernel_no_adaptation",
+                  "label": "fixed_kernel_screen",
+                  "num_adaptation_steps": 0,
+                  "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+                  "target_accept_prob": null
+                },
+                "use_xla": true
+              },
+              "sample_shape": [
+                64,
+                4,
+                4
+              ],
+              "samples_all_finite": true,
+              "target_log_prob_finite": true,
+              "target_score_finite": true,
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false
+              }
+            },
+            "tune_config": {
+              "adaptation_policy": "dual_averaging_step_size",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 64,
+              "num_leapfrog_steps": 3,
+              "num_results": 16,
+              "seed": [
+                20260819,
+                32001
+              ],
+              "step_size": 0.3489268759813932,
+              "target_scope": "ssl_lstm_q20_neutra_global_mixing:seed-2:L-3",
+              "target_status_trace_policy": "per_chain_step",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "dual_averaging_step_size",
+                "label": "fixed_mass_dual_averaging",
+                "num_adaptation_steps": 64,
+                "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+                "target_accept_prob": 0.7
+              },
+              "use_xla": true
+            },
+            "tune_diagnostics": {
+              "acceptance_probability_by_chain": [
+                0.8452321854643494,
+                0.8901226339556902,
+                0.9065735839290141,
+                0.922962518816399
+              ],
+              "acceptance_rate": 0.8912227305413633,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_by_chain": [
+                0.875,
+                0.875,
+                0.9375,
+                0.9375
+              ],
+              "binary_acceptance_rate": 0.90625,
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "log_accept_energy_proxy_alert": false,
+              "log_accept_energy_proxy_role": "explanatory_alert_only",
+              "log_accept_ratio_finite": true,
+              "max_abs_log_accept_energy_proxy": 13.32573078918914,
+              "max_abs_log_accept_ratio": 13.32573078918914,
+              "modern_rank_normalized_verification": null,
+              "modern_verification_coordinate_system": null,
+              "native_divergence_interpretation": "unavailable is not zero divergences",
+              "proposed_target_log_prob_finite": true,
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "initial_state_shape": [
+                  4,
+                  4
+                ],
+                "jit_compile": true,
+                "runtime": "tfp.mcmc.sample_chain",
+                "runtime_numerical_backend": "tensorflow_tfp_only",
+                "sample_chain_call_s": 306.58487349499774,
+                "shared_mechanics_route": "bayesfilter.inference.fixed_transport_hmc_mechanics_tf",
+                "shared_scalar_step_across_chain_bank": true,
+                "tuning_policy": {
+                  "adaptation_policy": "dual_averaging_step_size",
+                  "label": "fixed_mass_dual_averaging",
+                  "num_adaptation_steps": 64,
+                  "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+                  "target_accept_prob": 0.7
+                },
+                "use_xla": true
+              },
+              "sample_shape": [
+                16,
+                4,
+                4
+              ],
+              "samples_all_finite": true,
+              "target_log_prob_finite": true,
+              "target_score_finite": true,
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false
+              }
+            },
+            "tuned_step_size": 0.25246281161211975
+          }
+        ],
+        "runtime_numerical_backend": "tensorflow_tfp_only",
+        "schema": "bayesfilter.fixed_transport_hmc_tf_ladder.v1",
+        "selected_step_size": 0.25246281161211975,
+        "shared_scalar_step_across_chain_bank": true
+      },
+      "ladder_artifact_hash": "b86202ce5bee768a9451dfc6dc28ae772fd78855750255afd57d6acfa4857e93",
+      "num_leapfrog_steps": 3,
+      "passed": false,
+      "repair_triggers": [
+        "screen_acceptance_above_pass_band"
+      ],
+      "reports_posterior_convergence": false,
+      "selected_step_size": 0.25246281161211975,
+      "verification_config_payload": {
+        "adaptation_policy": "fixed_kernel_no_adaptation",
+        "chain_execution_mode": "tf_function",
+        "num_burnin_steps": 64,
+        "num_leapfrog_steps": 3,
+        "num_results": 2000,
+        "seed": [
+          20260819,
+          52000
+        ],
+        "step_size": 0.25246281161211975,
+        "target_scope": "ssl_lstm_q20_neutra_global_mixing:seed-2:L-3",
+        "target_status_trace_policy": "per_chain_step",
+        "trace_policy": "standard",
+        "tuning_policy": {
+          "adaptation_policy": "fixed_kernel_no_adaptation",
+          "label": "fixed_kernel_screen",
+          "num_adaptation_steps": 0,
+          "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+          "target_accept_prob": null
+        },
+        "use_xla": true
+      },
+      "verification_diagnostics": {
+        "acceptance_probability_by_chain": [
+          0.7909530870044762,
+          0.809174832332127,
+          0.7934394198750699,
+          0.7916830051433044
+        ],
+        "acceptance_rate": 0.7963125860887444,
+        "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+        "binary_acceptance_by_chain": [
+          0.792,
+          0.807,
+          0.788,
+          0.7885
+        ],
+        "binary_acceptance_rate": 0.793875,
+        "diagnostic_context": "fixed_transport_fresh_verification",
+        "divergence_count": null,
+        "divergence_status": "not_exposed_by_kernel",
+        "initial_state_all_zero": false,
+        "initial_state_bank": [
+          [
+            -0.05628257571016518,
+            0.14813908245519603,
+            0.5638212412773446,
+            -0.2459585615244469
+          ],
+          [
+            -0.26536103463762595,
+            -0.4551266249285027,
+            -0.6641565561574118,
+            -0.42935152601335774
+          ],
+          [
+            -0.006282575710165175,
+            0.14813908245519603,
+            0.5638212412773446,
+            -0.2459585615244469
+          ],
+          [
+            -0.31536103463762594,
+            -0.4551266249285027,
+            -0.6641565561574118,
+            -0.42935152601335774
+          ]
+        ],
+        "initial_state_shape": [
+          4,
+          4
+        ],
+        "log_accept_energy_proxy_alert": true,
+        "log_accept_energy_proxy_role": "explanatory_alert_only",
+        "log_accept_ratio_finite": true,
+        "max_abs_log_accept_energy_proxy": 1e+100,
+        "max_abs_log_accept_ratio": 1e+100,
+        "modern_rank_normalized_verification": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 2000,
+          "finite_rhat_count": 4,
+          "folded_rank_normalized_split_rhat": [
+            1.005794164653484,
+            1.0035917102783531,
+            1.1292645916687571,
+            1.0032230137091127
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.1346783489527914,
+          "max_folded_rank_normalized_split_rhat": 1.1292645916687571,
+          "max_rank_normalized_split_rhat": 1.1346783489527914,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 4,
+          "passed": false,
+          "rank_normalized_split_rhat": [
+            1.0032857489086993,
+            1.0079374128512542,
+            1.1346783489527914,
+            1.0250688428352097
+          ],
+          "rhat": [
+            1.005794164653484,
+            1.0079374128512542,
+            1.1346783489527914,
+            1.0250688428352097
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.01,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 1000
+        },
+        "modern_verification_coordinate_system": "raw_target_coordinates",
+        "native_divergence_interpretation": "unavailable is not zero divergences",
+        "nonclaims": [
+          "fixed trained transport HMC tuning only",
+          "transport is not trained or adapted by this tuner",
+          "identity z-mass policy only",
+          "no windowed mass adaptation claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim",
+          "no external-client scientific claim",
+          "native divergence unavailability is not zero divergences"
+        ],
+        "probe_only": false,
+        "proposed_target_log_prob_finite": true,
+        "rank2_chain_batched_initial_state": true,
+        "runtime_metadata": {
+          "chain_execution_mode": "tf_function",
+          "initial_state_shape": [
+            4,
+            4
+          ],
+          "jit_compile": true,
+          "runtime": "tfp.mcmc.sample_chain",
+          "runtime_numerical_backend": "tensorflow_tfp_only",
+          "sample_chain_call_s": 8737.768948776997,
+          "shared_mechanics_route": "bayesfilter.inference.fixed_transport_hmc_mechanics_tf",
+          "shared_scalar_step_across_chain_bank": true,
+          "tuning_policy": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "label": "fixed_kernel_screen",
+            "num_adaptation_steps": 0,
+            "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+            "target_accept_prob": null
+          },
+          "use_xla": true
+        },
+        "sample_shape": [
+          2000,
+          4,
+          4
+        ],
+        "samples_all_finite": true,
+        "target_log_prob_finite": true,
+        "target_score_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "status_nonvalid_count": 0,
+          "telemetry_failure_veto": false
+        }
+      }
+    }
+  ],
+  "config": {
+    "acceptance_band": [
+      0.55,
+      0.9
+    ],
+    "budget_schedule": [
+      32,
+      64,
+      128
+    ],
+    "chain_count": 4,
+    "chain_execution_mode": "tf_function",
+    "fixed_grid_base_step_size_candidates": [],
+    "fixed_grid_fallback_acceptance_max": 0.95,
+    "fixed_grid_max_attempts": 5,
+    "fixed_grid_num_leapfrog_steps": null,
+    "fixed_grid_scale_candidates": [],
+    "initial_state_bank": [
+      [
+        -0.05628257571016518,
+        0.14813908245519603,
+        0.5638212412773446,
+        -0.2459585615244469
+      ],
+      [
+        -0.26536103463762595,
+        -0.4551266249285027,
+        -0.6641565561574118,
+        -0.42935152601335774
+      ],
+      [
+        -0.006282575710165175,
+        0.14813908245519603,
+        0.5638212412773446,
+        -0.2459585615244469
+      ],
+      [
+        -0.31536103463762594,
+        -0.4551266249285027,
+        -0.6641565561574118,
+        -0.42935152601335774
+      ]
+    ],
+    "initial_step_size": 0.05,
+    "leapfrog_grid": [
+      3
+    ],
+    "maximum_absolute_energy_error": 1000.0,
+    "maximum_absolute_energy_error_role": "explanatory_alert_only",
+    "output_filename": "tuning-result.json",
+    "proposal_dynamics_identity": "exact_transformed_gradient",
+    "repair_band": [
+      0.4,
+      0.95
+    ],
+    "require_modern_rank_normalized_verification": true,
+    "runtime_numerical_backend": "tensorflow_tfp_only",
+    "screen_num_burnin_steps": 16,
+    "screen_num_results": 64,
+    "screen_seed_base": [
+      20260819,
+      42000
+    ],
+    "shared_scalar_step_across_chain_bank": true,
+    "source": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+    "step_repair_factor": 2.0,
+    "step_repair_min_directional_factor": 1.25,
+    "target_accept_prob": 0.7,
+    "target_scope": "ssl_lstm_q20_neutra_global_mixing:seed-2:L-3",
+    "target_status_trace_policy": "per_chain_step",
+    "tune_num_results": 16,
+    "tune_seed_base": [
+      20260819,
+      32000
+    ],
+    "use_xla": true,
+    "verification_coordinate_system": "raw_target_coordinates",
+    "verification_min_retained_results_per_chain": 2000,
+    "verification_num_burnin_steps": 64,
+    "verification_num_results": 2000,
+    "verification_rhat_max": 1.01,
+    "verification_seed_base": [
+      20260819,
+      52000
+    ]
+  },
+  "diagnostic_roles": {
+    "acceptance": "promotion_screen_and_repair_trigger",
+    "base_value_score_authority": "hard_veto_if_gradient_tape_fallback",
+    "candidate_ladder": "step_tuning_screen",
+    "fixed_transport_manifest_hash": "artifact_identity",
+    "fresh_verification": "handoff_promotion_screen",
+    "identity_z_mass_policy": "hard_boundary",
+    "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+    "modern_rank_folded_rhat": "required_when_configured_handoff_promotion_screen",
+    "native_divergence": "hard_veto_only_when_available_and_positive",
+    "native_divergence_unavailable": "recorded_nonclaim_not_veto_not_zero",
+    "runtime": "explanatory_diagnostic"
+  },
+  "final_kernel_hash": null,
+  "final_kernel_payload": null,
+  "final_status": "no_viable_candidate",
+  "fixed_grid_scale_selection": null,
+  "fixed_transport_manifest_hash": "4d4878b9c35e73af6c8003bda207f872584705cd61e216bf3d7c125d9aea03a9",
+  "hard_vetoes": [
+    "verification_modern_rank_folded_rhat_failed"
+  ],
+  "identity_z_mass_artifact_payload": {
+    "adapter_signature": "cba56c3f8c326431b311bb1cca6019fb3efc3cf6111d1d87e7805116d85a3c50",
+    "artifact_type": "bayesfilter_precomputed_mass_artifact",
+    "covariance": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "covariance_source": "fixed_identity_z",
+    "dimension": 4,
+    "factor": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "factor_orientation": "row_right_transpose",
+    "include_arrays": true,
+    "matrix_used_for_square_root": "identity_z",
+    "nonclaims": [
+      "fixed identity mass in trained-transport z coordinates",
+      "no residual mass adaptation claim"
+    ],
+    "position": [
+      -0.05628257571016518,
+      0.14813908245519603,
+      0.5638212412773446,
+      -0.2459585615244469
+    ],
+    "position_role": "fixed_neutra_initial_z",
+    "regularization_report": {
+      "regularization_applied": false
+    },
+    "schema_version": 2,
+    "source": "bayesfilter.fixed_transport_hmc_tuning.identity_z_mass"
+  },
+  "identity_z_mass_artifact_signature": "8a76b9a7202fd920a2c89a817dacc2cfc06f544624b572a4d8134fbf507bdb7d",
+  "nonclaims": [
+    "fixed trained transport HMC tuning only",
+    "transport is not trained or adapted by this tuner",
+    "identity z-mass policy only",
+    "no windowed mass adaptation claim",
+    "no posterior convergence claim",
+    "no sampler superiority claim",
+    "no default-readiness claim",
+    "no external-client scientific claim",
+    "native divergence unavailability is not zero divergences"
+  ],
+  "passed": false,
+  "repair_triggers": [
+    "screen_acceptance_above_pass_band"
+  ],
+  "reports_default_readiness": false,
+  "reports_posterior_convergence": false,
+  "reports_sampler_superiority": false,
+  "schema": "bayesfilter.fixed_transport_hmc_kernel_tuning_result.v2",
+  "selected_candidate_index": null,
+  "target_dimension": 4,
+  "transformed_adapter_signature": "cba56c3f8c326431b311bb1cca6019fb3efc3cf6111d1d87e7805116d85a3c50"
+}

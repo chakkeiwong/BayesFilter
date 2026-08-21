@@ -2174,6 +2174,26 @@ filtering likelihood.
 
 \subsection{Finite higher-moment correction}
 
+The construction below is deliberately narrower than two established
+higher-order sigma-point rules.  Ebeigbe et al.'s GenUT uses \(2d+1\) weighted
+points to match the mean, covariance, and selected diagonal third and fourth
+moments when its moment and positivity conditions hold
+\citep[Secs.~III--V, Algorithms~1--2]{ebeigbe2025genut}.  Under state
+constraints, their Algorithm~2 preserves the lower-order construction but
+explicitly accepts that exact diagonal kurtosis matching can be lost.  The
+higher-order unscented transform (HOUT) of
+\citet[Definition~4.1, Theorem~4.2, Algorithm~4.1]{easley2021higherorder}
+instead decomposes the full third- and fourth-order tensors into rank-one terms
+and builds a variable-size signed-weight quadrature rule.  It has controlled
+moment error, but Remark~4.4 shows that its absolute quadrature condition
+number can grow like the reciprocal requested tolerance.  Neither method is a
+drop-in positive equal-weight map of the existing \(N\)-particle Contract~E
+cloud.  We therefore retain the weighted source moments as a least-squares
+target and borrow the established principles that constraints can preclude
+exact higher-moment matching and that the numerical correction must be damped.
+The exact finite composition below is a BayesFilter candidate, not a theorem
+claimed by either source.
+
 Assume now that the un-ridged weighted covariance is strictly positive
 definite and write \(C_wC_w^\top=P_w\).  With row-vector notation, define
 \begin{equation}
@@ -2187,6 +2207,51 @@ definite and write \(C_wC_w^\top=P_w\).  With row-vector notation, define
 These are the selected standardized diagonal moments motivated by the GenUT
 axis rule of Proposition~\ref{prop:bf-eot-genut-axis}.  Mixed third- and
 fourth-order tensors are deliberately not formed.
+
+Before attempting a correction, the implementation records necessary
+one-dimensional realizability diagnostics.  For any standardized scalar
+random variable, Pearson's moment inequality gives
+\begin{equation}
+ k_a\geq s_a^2+1.
+ \label{eq:bf-eot-hm-pearson-bound}
+\end{equation}
+For an equal-weight standardized cloud of exactly \(N>1\) rows, a convenient
+self-contained necessary upper bound is
+\begin{equation}
+ k_a\leq N-1.
+ \label{eq:bf-eot-hm-finite-n-kurtosis-bound}
+\end{equation}
+Bounds on the corresponding sample skewness and kurtosis are classical
+\citep{johnson1979bounds}; that source gives sharper joint bounds, but the
+closed primary text was not available for technical inspection in this audit,
+so the implementation uses only the following directly proved inequality.  A
+short derivation of
+\eqref{eq:bf-eot-hm-finite-n-kurtosis-bound} uses the zero-sum constraint.
+Fix \(u_1=x\).  Among the remaining \(N-1\) rows with sum \(-x\),
+Cauchy--Schwarz implies
+\(
+ \sum_{i=2}^N u_i^2\geq x^2/(N-1)
+\).
+Since \(\sum_i u_i^2=N\), this gives
+\(
+ x^2\leq N-1
+\).  The same argument applies to every row, hence
+\(u_i^2\leq N-1\) and
+\[
+ \frac1N\sum_i u_i^4
+ \leq \frac1N (N-1)\sum_i u_i^2
+ =N-1.
+\]
+This bound is conservative rather than sharp, which is appropriate for a
+necessary-feasibility diagnostic.
+
+Equations~\eqref{eq:bf-eot-hm-pearson-bound} and
+\eqref{eq:bf-eot-hm-finite-n-kurtosis-bound} are necessary marginal conditions,
+not sufficient conditions for a jointly realizable \(d\)-dimensional cloud.
+The repair does not clip \(s_a\) or \(k_a\), because doing so would silently
+change the empirical moment teacher and hence the finite value program.  An
+infeasible target remains the declared least-squares target, but exact matching
+is forbidden as a claim and every finite displacement is bounded below.
 
 At one correction iteration, standardize the current equal-weight rows to
 \(u_{ia}\) so that \(N^{-1}\sum_i u_i=0\) and
@@ -2213,16 +2278,59 @@ The \(2\times2\) local moment Jacobian is
  \end{bmatrix}.
  \label{eq:bf-eot-hm-jacobian}
 \end{equation}
-For damping \(\delta>0\) and strength \(\rho\geq0\), the finite update is
+The historical update used unscaled normal equations with an absolute ridge.
+That is unsafe when one column of \(J_a\) is many orders of magnitude larger
+than another: forming \(J_a^\top J_a\) squares the scale disparity and a fixed
+ridge can become numerically irrelevant.  Define instead
 \begin{align}
- c_a&=\rho(J_a^\top J_a+\delta I_2)^{-1}J_a^\top d_a,
+ h_{a,j}&=\sqrt{\lVert J_{a,:,j}\rVert_2^2+\varepsilon_s^2},
+ &H_a&=\operatorname{diag}(h_{a,1},h_{a,2}),\\
+ A_a&=J_aH_a^{-1},
+ &M_a&=A_a^\top A_a+\lambda I_2,
+ \label{eq:bf-eot-hm-scaled-lm-system}
+\end{align}
+where \(\varepsilon_s>0\) is a column-scale floor and \(\lambda>0\) is a
+relative Levenberg--Marquardt damping parameter.  The scaled finite coefficient
+is
+\begin{align}
+ y_a&=M_a^{-1}A_a^\top d_a,
+ &c_a&=\rho H_a^{-1}y_a,
  \label{eq:bf-eot-hm-coefficients}\\
- v_{ia}&=u_{ia}+c_{a,1}q_{3,ia}+c_{a,2}q_{4,ia}.
+ \Delta_{ia}&=c_{a,1}q_{3,ia}+c_{a,2}q_{4,ia}.
  \label{eq:bf-eot-hm-correction}
 \end{align}
-The corrected \(v_i\) are re-centered and re-whitened before the next finite
-iteration.  After the declared number \(S\) of iterations, the standardized
-rows \(u_i^H\) are mapped back by
+This is a column-scaled Levenberg--Marquardt step for the local nonlinear
+least-squares problem \citep{marquardt1963algorithm}.  Column scaling is not
+an ad hoc addition: \citet[Sec.~3, steps (iii) and Note (ii)]{osborne1976levenberg}
+recommends scaling the Jacobian columns to unit length so that the terms added
+to the normal matrix are comparable to its original elements.  If
+\(\varepsilon_s=0\) and both columns are nonzero, the columns of \(A_a\) have
+unit norm.  Therefore \(\operatorname{tr}(A_a^\top A_a)=2\), its eigenvalues
+lie in \([0,2]\), and
+\begin{equation}
+ \kappa_2(M_a)\leq\frac{2+\lambda}{\lambda}.
+ \label{eq:bf-eot-hm-scaled-lm-condition-bound}
+\end{equation}
+With a positive scale floor the column norms are at most one, so the same upper
+bound remains valid.  This bound concerns the scaled two-by-two solve; it does
+not prove the nonlinear moment problem is feasible.
+
+To bound the actual cloud move, let the RMS standardized displacement of row
+\(i\) be
+\begin{equation}
+ r_i=\sqrt{d^{-1}\sum_a\Delta_{ia}^2},
+ \qquad
+ g_i=\left(1+\frac{r_i^2}{\tau^2}\right)^{-1/2},
+ \qquad
+ v_{ia}=u_{ia}+g_i\Delta_{ia},
+ \label{eq:bf-eot-hm-smooth-trust-cap}
+\end{equation}
+for trust radius \(\tau>0\).  The map is smooth for finite inputs and its
+post-cap RMS is \(r_i/\sqrt{1+r_i^2/\tau^2}<\tau\).  Thus even an infeasible
+residual or a large local coefficient cannot move any row farther than the
+declared radius in one iteration.  The corrected \(v_i\) are re-centered and
+re-whitened before the next finite iteration.  After the declared number \(S\)
+of iterations, the standardized rows \(u_i^H\) are mapped back by
 \begin{equation}
  x_i^H=\mu_w+u_i^H C_w^\top.
  \label{eq:bf-eot-hm-map-back}
@@ -2279,11 +2387,14 @@ The affine map in \eqref{eq:bf-eot-hm-map-back} therefore has covariance
 \(C_wI_dC_w^\top=P_w\), and its centered rows sum to zero.
 \end{proof}
 
-The update \eqref{eq:bf-eot-hm-coefficients} is a damped local
-Gauss--Newton step, not an exact projection.  Rewhitening can change the third
-and fourth moments, and the nonlinear moment-feasibility problem can be
-infeasible or have multiple solutions.  The implementation therefore reports
-the post-rewhitening residuals and makes no exact higher-moment matching claim.
+The update \eqref{eq:bf-eot-hm-coefficients} is a scaled damped local
+Gauss--Newton/Levenberg--Marquardt step, not an exact projection.  The smooth
+cap \eqref{eq:bf-eot-hm-smooth-trust-cap} bounds the executed move but can
+reduce moment progress.  Rewhitening can change the third and fourth moments,
+and the nonlinear moment-feasibility problem can be infeasible or have multiple
+solutions.  The implementation therefore reports the necessary-feasibility
+diagnostics, pre/post-cap displacement, and post-rewhitening residuals, and
+makes no exact higher-moment matching claim.
 
 \subsection{Complete algorithm and score statement}
 
@@ -2298,7 +2409,7 @@ One time step of the candidate is the following fixed composition:
  \item apply the residual injection \eqref{eq:bf-eot-hm-residual} and the
        Contract~E affine restoration \eqref{eq:bf-eot-hm-contract-e};
  \item if \(S>0\), compute \eqref{eq:bf-eot-hm-target-moments}, apply
-       \eqref{eq:bf-eot-hm-coefficients}--\eqref{eq:bf-eot-hm-correction}
+       \eqref{eq:bf-eot-hm-scaled-lm-system}--\eqref{eq:bf-eot-hm-smooth-trust-cap}
        exactly \(S\) times with rewhitening after each iteration, then map back
        by \eqref{eq:bf-eot-hm-map-back};
  \item carry \(x_i^H\), or \(x_i^E\) when \(S=0\), with uniform weights to
@@ -2313,7 +2424,8 @@ particle rows and uses \(O(Nd+d^2)\) storage beyond the OT workspace.
 \begin{proposition}[Finite-route total-score correctness]
 \label{prop:bf-eot-hm-score}
 Fix the innovation rows and ordering, residual design, finite Sinkhorn and
-balance counts, \(\epsilon\), \(\lambda\), \(\rho\), \(\delta\), and \(S\).
+balance counts, \(\epsilon\), OT ridge, \(\rho\), LM damping \(\lambda\),
+column-scale floor \(\varepsilon_s\), trust radius \(\tau\), and \(S\).
 Assume every required covariance is strictly positive definite, every row mass
 is positive, the maximum branch in the cost scale is fixed locally, and every
 validity condition holds.  If the recursive tangent includes every operation
@@ -2326,12 +2438,13 @@ program.
 \begin{proof}
 On the stated branch, the transition and likelihood adapters, normalization,
 finite Sinkhorn recurrences, row quotient, moment maps, matrix products,
-Cholesky factors, triangular solves, \(2\times2\) damped solves, and finite
-rewhitening maps are differentiable.  The ordinary chain rule therefore
+Cholesky factors, triangular solves, column scales, \(2\times2\) damped solves,
+smooth trust caps, and finite rewhitening maps are differentiable.  The ordinary chain rule therefore
 applies to their finite composition.  The implemented tangent includes the
 dependence of the normalized weights, OT kernel and scalings, target moments,
-directions \(q_3,q_4\), Jacobians \(J_a\), damped coefficients \(c_a\), and
-both standardization maps.  Induction over time then shows that the carried
+directions \(q_3,q_4\), Jacobians \(J_a\), column scales \(H_a\), scaled
+systems \(M_a\), damped coefficients \(c_a\), row cap factors \(g_i\), and both
+standardization maps.  Induction over time then shows that the carried
 particle tangent is the derivative of the carried particle value and that the
 sum of increment tangents is \(d\widehat L^N/d\theta\).
 

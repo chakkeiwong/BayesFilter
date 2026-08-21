@@ -1,0 +1,48 @@
+{
+  "batch_size": 4096,
+  "clipping_applied": true,
+  "command": "docs/benchmarks/profile_neutra_paper_d100_forward_training_2026_08_14.py --output-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/forward-profile-r2 --training-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-forward-r1 --replay-root docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-replay-r1 --gaussian-constants docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json --device 1",
+  "cuda_visible_devices": "1",
+  "dtype": "float64",
+  "execution_target": "gpu_xla_diagnostic_only",
+  "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+  "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+  "heldout_eval_wall_seconds": 1.764721377985552,
+  "heldout_rows_profiled": 65536,
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "no training objective change",
+    "no HMC or scientific validity claim",
+    "runtime profile only"
+  ],
+  "objective": "forward_kl",
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-weighted-forward-kl-paper-d100-repair-plan-2026-08-14.md",
+  "profile_directory": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/forward-profile-r2/tensorflow_profile",
+  "profile_directory_exists": true,
+  "replay_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-replay-r1",
+  "schema": "bayesfilter.neutra.paper_d100_forward_profile_result.v1",
+  "selected_eval_loss": 233.0202374854373,
+  "selected_update_loss": 271.44548233603444,
+  "target": "paper_ill_cond_gaussian",
+  "tf32_enabled": false,
+  "training_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/paper-d100/gaussian-forward-r1",
+  "training_state_sha256": "c255ca53bac69919023272236a162e6d762575637d82bcc874a8cff55b6b67ab",
+  "update_wall_seconds": 0.929562067030929,
+  "wall_seconds": 129.28952867200132
+}

@@ -1,0 +1,1423 @@
+{
+  "decision": {
+    "known_law_gate_passed": false,
+    "no_hmc": true,
+    "nonclaims": [
+      "no universal training-procedure claim",
+      "no multimodal or SSL-LSTM transfer claim",
+      "no HMC or posterior-correctness claim",
+      "no runtime-efficiency claim from unequal tuning work"
+    ],
+    "promotion": false,
+    "status": "known_law_gate_failed"
+  },
+  "manifest": {
+    "adaptive_configuration": {
+      "learning_rate_reduction_factor": 0.5,
+      "maximum_learning_rate_reductions": 3,
+      "minimum_improvement": 1e-05,
+      "minimum_updates": 400,
+      "patience_checkpoints": 4
+    },
+    "allocator_bytes": {
+      "current": 10705152,
+      "peak": 181564928
+    },
+    "batch_size": 4096,
+    "command": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_neutra_generic_adaptive_five_stage_model_2026_08_15.py --output-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-generic-adaptive-five-stage-repair-2026-08-15/banana/adaptive_carry/seed-1 --target banana --route adaptive_carry --device 0 --seed-index 1 --batch-size 4096 --learning-rates 2e-4,5e-4,1e-3 --affine-updates 100 --simple-updates 300 --progressive-updates 100 --joint-updates 2300 --cold-updates 3000 --checkpoint-every 100 --adaptive-minimum-updates 400 --adaptive-patience-checkpoints 4 --adaptive-minimum-improvement 1e-5 --adaptive-lr-reduction-factor 0.5 --adaptive-maximum-lr-reductions 3 --proposal-audit-count 131072",
+    "config": {
+      "activation": "elu",
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "dimension": 16,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "hidden_layers": [
+        32,
+        32
+      ],
+      "initialization_scale": 0.02,
+      "initialization_seed": [
+        20260815,
+        40101
+      ],
+      "jit_compile": true,
+      "learning_rate": 0.001,
+      "permutation_policy": "full_reverse",
+      "s_max": 1.0,
+      "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+      "stage_s_max": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "stage_scale_linear_skip": [],
+      "stage_unbounded_scale_linear": [
+        true,
+        false,
+        false
+      ],
+      "stages": 3
+    },
+    "cuda_visible_devices": "0",
+    "dtype": "float64",
+    "git_commit": "3030d86df9cb00346df82c7c19f015c09c7c6e1f",
+    "gpu": "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+    "jit_compile": true,
+    "learning_rates": [
+      0.0002,
+      0.0005,
+      0.001
+    ],
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-neutra-generic-adaptive-five-stage-repair-plan-2026-08-15.md",
+    "proposal_audit_count": 131072,
+    "route": "adaptive_carry",
+    "sample_wise_loop_or_scalar_fallback": false,
+    "schema": "bayesfilter.neutra.generic_adaptive_five_stage_manifest.v1",
+    "seed_index": 1,
+    "target": {
+      "curvature": 0.35,
+      "dimension": 16,
+      "schema": "bayesfilter.neutra.generic_control.banana.v1",
+      "unit_jacobian": true
+    },
+    "target_name": "banana",
+    "tensorflow_version": "2.20.0",
+    "tf32_enabled": false,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "updates": {
+      "affine": 100,
+      "cold_ceiling": 3000,
+      "joint_ceiling": 2300,
+      "matched_selected_path_ceiling": 3000,
+      "progressive_each": 100,
+      "simple": 300
+    }
+  },
+  "schema": "bayesfilter.neutra.generic_adaptive_five_stage_result.v1",
+  "training": {
+    "nonclaims": [
+      "held-out loss selects tuning candidates but does not establish correctness",
+      "stage-five validation performs no optimizer update",
+      "model-specific validation is required for any scientific claim",
+      "no HMC, posterior-correctness, or default-readiness claim"
+    ],
+    "optimizer_state_policy": "carry_selected",
+    "route": "adaptive_carry",
+    "selected_path_updates": 2600,
+    "stages": [
+      {
+        "active_groups": [
+          "affine_location"
+        ],
+        "candidates": [
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.12407180067953,
+                2.0000000000000003e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.05724927293507211,
+            "learning_rate": 0.0002,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.12406083315122,
+            "selected_update": 0,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.12407180067953
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.124105722477516,
+                5e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.05720668592035203,
+            "learning_rate": 0.0005,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.12406083315122,
+            "selected_update": 0,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.124105722477516
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.124145616919972,
+                1e-05,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.05729509589618688,
+            "learning_rate": 0.001,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.12406083315122,
+            "selected_update": 0,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.124145616919972
+          }
+        ],
+        "incoming_loss": 8.12406083315122,
+        "incoming_optimizer_iterations": 0,
+        "name": "affine_location",
+        "optimizer_state_policy": "carry_selected",
+        "selected_learning_rate": 0.0002,
+        "selected_loss": 8.12406083315122,
+        "selected_optimizer_iterations": 0,
+        "selected_update": 0,
+        "stage": 1,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_bias_2:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale"
+        ],
+        "candidates": [
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.12418856574929,
+                0.0002,
+                0
+              ],
+              [
+                200,
+                8.124213450181927,
+                2e-05,
+                0
+              ],
+              [
+                300,
+                8.124191206188534,
+                2.0000000000000003e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 300,
+            "gradient_norm": 0.2510817916875877,
+            "learning_rate": 0.0002,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.12406083315122,
+            "selected_update": 0,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.124191206188534
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.12442623472792,
+                0.0005,
+                0
+              ],
+              [
+                200,
+                8.124389342837539,
+                5e-05,
+                0
+              ],
+              [
+                300,
+                8.124278871000701,
+                5e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 300,
+            "gradient_norm": 0.25216058106666095,
+            "learning_rate": 0.0005,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.12406083315122,
+            "selected_update": 0,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.124278871000701
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.124823651485586,
+                0.001,
+                0
+              ],
+              [
+                200,
+                8.124777847694471,
+                0.0001,
+                0
+              ],
+              [
+                300,
+                8.124389111366337,
+                1e-05,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 300,
+            "gradient_norm": 0.25141731565307207,
+            "learning_rate": 0.001,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.12406083315122,
+            "selected_update": 0,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.124389111366337
+          }
+        ],
+        "incoming_loss": 8.12406083315122,
+        "incoming_optimizer_iterations": 0,
+        "name": "simple_linear_scale",
+        "optimizer_state_policy": "carry_selected",
+        "selected_learning_rate": 0.0002,
+        "selected_loss": 8.12406083315122,
+        "selected_optimizer_iterations": 0,
+        "selected_update": 0,
+        "stage": 2,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale",
+          "stage_0_residual"
+        ],
+        "candidates": [
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.118656751452441,
+                2.0000000000000003e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.5857328037542937,
+            "learning_rate": 0.0002,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.118656751452441,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.118656751452441
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.11172317757676,
+                5e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.5238581844284377,
+            "learning_rate": 0.0005,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.11172317757676,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.11172317757676
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.10301231742342,
+                1e-05,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.44249234124823145,
+            "learning_rate": 0.001,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.10301231742342,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.10301231742342
+          }
+        ],
+        "incoming_loss": 8.12406083315122,
+        "incoming_optimizer_iterations": 0,
+        "name": "progressive_stage_0",
+        "optimizer_state_policy": "carry_selected",
+        "selected_learning_rate": 0.001,
+        "selected_loss": 8.10301231742342,
+        "selected_optimizer_iterations": 100,
+        "selected_update": 100,
+        "stage": 3,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_weight_0:0",
+          "weighted_neutra_stage_0_bias_0:0",
+          "weighted_neutra_stage_0_weight_1:0",
+          "weighted_neutra_stage_0_bias_1:0",
+          "weighted_neutra_stage_0_weight_2:0",
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale",
+          "stage_0_residual",
+          "stage_1"
+        ],
+        "candidates": [
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.091660948521623,
+                2.0000000000000003e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.31885959635787275,
+            "learning_rate": 0.0002,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.091660948521623,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.091660948521623
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.08919243325778,
+                5e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.2718796323110488,
+            "learning_rate": 0.0005,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.08919243325778,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.08919243325778
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.085003013989818,
+                1e-05,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.2756566051404894,
+            "learning_rate": 0.001,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.085003013989818,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.085003013989818
+          }
+        ],
+        "incoming_loss": 8.10301231742342,
+        "incoming_optimizer_iterations": 100,
+        "name": "progressive_stage_1",
+        "optimizer_state_policy": "carry_selected",
+        "selected_learning_rate": 0.001,
+        "selected_loss": 8.085003013989818,
+        "selected_optimizer_iterations": 200,
+        "selected_update": 100,
+        "stage": 3,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_weight_0:0",
+          "weighted_neutra_stage_0_bias_0:0",
+          "weighted_neutra_stage_0_weight_1:0",
+          "weighted_neutra_stage_0_bias_1:0",
+          "weighted_neutra_stage_0_weight_2:0",
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0",
+          "weighted_neutra_stage_1_weight_0:0",
+          "weighted_neutra_stage_1_bias_0:0",
+          "weighted_neutra_stage_1_weight_1:0",
+          "weighted_neutra_stage_1_bias_1:0",
+          "weighted_neutra_stage_1_weight_2:0",
+          "weighted_neutra_stage_1_bias_2:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale",
+          "stage_0_residual",
+          "stage_1",
+          "stage_2"
+        ],
+        "candidates": [
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.08193911917413,
+                2.0000000000000003e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.31279806887615413,
+            "learning_rate": 0.0002,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.08193911917413,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.08193911917413
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.075901329338695,
+                5e-06,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.32338826447747265,
+            "learning_rate": 0.0005,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.075901329338695,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.075901329338695
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.05968235743859,
+                1e-05,
+                0
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 100,
+            "gradient_norm": 0.3217493358480224,
+            "learning_rate": 0.001,
+            "learning_rate_reductions": 0,
+            "selected_loss": 8.05968235743859,
+            "selected_update": 100,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.05968235743859
+          }
+        ],
+        "incoming_loss": 8.085003013989818,
+        "incoming_optimizer_iterations": 200,
+        "name": "progressive_stage_2",
+        "optimizer_state_policy": "carry_selected",
+        "selected_learning_rate": 0.001,
+        "selected_loss": 8.05968235743859,
+        "selected_optimizer_iterations": 300,
+        "selected_update": 100,
+        "stage": 3,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_weight_0:0",
+          "weighted_neutra_stage_0_bias_0:0",
+          "weighted_neutra_stage_0_weight_1:0",
+          "weighted_neutra_stage_0_bias_1:0",
+          "weighted_neutra_stage_0_weight_2:0",
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0",
+          "weighted_neutra_stage_1_weight_0:0",
+          "weighted_neutra_stage_1_bias_0:0",
+          "weighted_neutra_stage_1_weight_1:0",
+          "weighted_neutra_stage_1_bias_1:0",
+          "weighted_neutra_stage_1_weight_2:0",
+          "weighted_neutra_stage_1_bias_2:0",
+          "weighted_neutra_stage_2_weight_0:0",
+          "weighted_neutra_stage_2_bias_0:0",
+          "weighted_neutra_stage_2_weight_1:0",
+          "weighted_neutra_stage_2_bias_1:0",
+          "weighted_neutra_stage_2_weight_2:0",
+          "weighted_neutra_stage_2_bias_2:0"
+        ]
+      },
+      {
+        "active_groups": [
+          "affine_location",
+          "simple_linear_scale",
+          "stage_0_residual",
+          "stage_1",
+          "stage_2"
+        ],
+        "candidates": [
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.05141359926304,
+                0.0002,
+                0
+              ],
+              [
+                200,
+                8.045723614234863,
+                0.0002,
+                0
+              ],
+              [
+                300,
+                8.042288094484185,
+                0.0002,
+                0
+              ],
+              [
+                400,
+                8.040452108445848,
+                0.0002,
+                0
+              ],
+              [
+                500,
+                8.03971632306802,
+                0.0002,
+                0
+              ],
+              [
+                600,
+                8.039416602388973,
+                0.0002,
+                0
+              ],
+              [
+                700,
+                8.039197994782915,
+                0.0002,
+                0
+              ],
+              [
+                800,
+                8.03928648573221,
+                0.0002,
+                0
+              ],
+              [
+                900,
+                8.03921605250934,
+                0.0002,
+                0
+              ],
+              [
+                1000,
+                8.039063789870319,
+                0.0002,
+                0
+              ],
+              [
+                1100,
+                8.038952395974633,
+                0.0002,
+                0
+              ],
+              [
+                1200,
+                8.038953813345685,
+                0.0002,
+                0
+              ],
+              [
+                1300,
+                8.03904517284828,
+                0.0002,
+                0
+              ],
+              [
+                1400,
+                8.038934373167116,
+                0.0002,
+                0
+              ],
+              [
+                1500,
+                8.038926199855108,
+                0.0002,
+                0
+              ],
+              [
+                1600,
+                8.038869354218145,
+                0.0002,
+                0
+              ],
+              [
+                1700,
+                8.03876838180096,
+                0.0002,
+                0
+              ],
+              [
+                1800,
+                8.038877316541317,
+                0.0002,
+                0
+              ],
+              [
+                1900,
+                8.03893298332992,
+                0.0002,
+                0
+              ],
+              [
+                2000,
+                8.038809944241278,
+                0.0002,
+                0
+              ],
+              [
+                2100,
+                8.038858559800264,
+                0.0002,
+                1
+              ],
+              [
+                2200,
+                8.03868602528009,
+                0.0001,
+                1
+              ],
+              [
+                2300,
+                8.038679455351932,
+                0.0001,
+                1
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 2300,
+            "gradient_norm": 0.3351164422116663,
+            "learning_rate": 0.0002,
+            "learning_rate_reductions": 1,
+            "selected_loss": 8.038679455351932,
+            "selected_update": 2300,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.038679455351932
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.04345816213609,
+                0.0005,
+                0
+              ],
+              [
+                200,
+                8.03988466031635,
+                0.0005,
+                0
+              ],
+              [
+                300,
+                8.039576941095067,
+                0.0005,
+                0
+              ],
+              [
+                400,
+                8.039420160206511,
+                0.0005,
+                0
+              ],
+              [
+                500,
+                8.039299467039442,
+                0.0005,
+                0
+              ],
+              [
+                600,
+                8.039528910043254,
+                0.0005,
+                0
+              ],
+              [
+                700,
+                8.039043235324517,
+                0.0005,
+                0
+              ],
+              [
+                800,
+                8.039338179781097,
+                0.0005,
+                0
+              ],
+              [
+                900,
+                8.039233095497515,
+                0.0005,
+                0
+              ],
+              [
+                1000,
+                8.039005511243142,
+                0.0005,
+                0
+              ],
+              [
+                1100,
+                8.039102679491485,
+                0.0005,
+                0
+              ],
+              [
+                1200,
+                8.038835919977895,
+                0.0005,
+                0
+              ],
+              [
+                1300,
+                8.039082424505448,
+                0.0005,
+                0
+              ],
+              [
+                1400,
+                8.039014393289499,
+                0.0005,
+                0
+              ],
+              [
+                1500,
+                8.0389758162882,
+                0.0005,
+                0
+              ],
+              [
+                1600,
+                8.03872738544613,
+                0.0005,
+                0
+              ],
+              [
+                1700,
+                8.038707268975479,
+                0.0005,
+                0
+              ],
+              [
+                1800,
+                8.03889634201166,
+                0.0005,
+                0
+              ],
+              [
+                1900,
+                8.039010487776636,
+                0.0005,
+                0
+              ],
+              [
+                2000,
+                8.03883648472845,
+                0.0005,
+                0
+              ],
+              [
+                2100,
+                8.039018060805066,
+                0.0005,
+                1
+              ],
+              [
+                2200,
+                8.038578239055772,
+                0.00025,
+                1
+              ],
+              [
+                2300,
+                8.038551932591403,
+                0.00025,
+                1
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 2300,
+            "gradient_norm": 0.33662303444996583,
+            "learning_rate": 0.0005,
+            "learning_rate_reductions": 1,
+            "selected_loss": 8.038551932591403,
+            "selected_update": 2300,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.038551932591403
+          },
+          {
+            "checkpoint_history": [
+              [
+                100,
+                8.040847183760441,
+                0.001,
+                0
+              ],
+              [
+                200,
+                8.040076161155643,
+                0.001,
+                0
+              ],
+              [
+                300,
+                8.040046730870397,
+                0.001,
+                0
+              ],
+              [
+                400,
+                8.039790602301089,
+                0.001,
+                0
+              ],
+              [
+                500,
+                8.03943402400302,
+                0.001,
+                0
+              ],
+              [
+                600,
+                8.04000757022552,
+                0.001,
+                0
+              ],
+              [
+                700,
+                8.039604286990603,
+                0.001,
+                0
+              ],
+              [
+                800,
+                8.03952906186673,
+                0.001,
+                0
+              ],
+              [
+                900,
+                8.039448688237961,
+                0.001,
+                1
+              ],
+              [
+                1000,
+                8.038887847677628,
+                0.0005,
+                1
+              ],
+              [
+                1100,
+                8.038975221456676,
+                0.0005,
+                1
+              ],
+              [
+                1200,
+                8.038723455387938,
+                0.0005,
+                1
+              ],
+              [
+                1300,
+                8.038967159560086,
+                0.0005,
+                1
+              ],
+              [
+                1400,
+                8.038902200068694,
+                0.0005,
+                1
+              ],
+              [
+                1500,
+                8.038869730976518,
+                0.0005,
+                1
+              ],
+              [
+                1600,
+                8.038620057161578,
+                0.0005,
+                1
+              ],
+              [
+                1700,
+                8.038612264354642,
+                0.0005,
+                1
+              ],
+              [
+                1800,
+                8.038776840394632,
+                0.0005,
+                1
+              ],
+              [
+                1900,
+                8.038922069074708,
+                0.0005,
+                1
+              ],
+              [
+                2000,
+                8.038735899391256,
+                0.0005,
+                2
+              ],
+              [
+                2100,
+                8.038562345797372,
+                0.00025,
+                2
+              ],
+              [
+                2200,
+                8.038488370939938,
+                0.00025,
+                2
+              ],
+              [
+                2300,
+                8.038471543369837,
+                0.00025,
+                2
+              ]
+            ],
+            "clipped_updates": 0,
+            "executed_updates": 2300,
+            "gradient_norm": 0.3385842599215487,
+            "learning_rate": 0.001,
+            "learning_rate_reductions": 2,
+            "selected_loss": 8.038471543369837,
+            "selected_update": 2300,
+            "stop_reason": "update_cap",
+            "terminal_loss": 8.038471543369837
+          }
+        ],
+        "incoming_loss": 8.05968235743859,
+        "incoming_optimizer_iterations": 300,
+        "name": "joint_fine_tune",
+        "optimizer_state_policy": "carry_selected",
+        "selected_learning_rate": 0.001,
+        "selected_loss": 8.038471543369837,
+        "selected_optimizer_iterations": 2600,
+        "selected_update": 2300,
+        "stage": 4,
+        "trainable_variables": [
+          "weighted_neutra_stage_0_weight_0:0",
+          "weighted_neutra_stage_0_bias_0:0",
+          "weighted_neutra_stage_0_weight_1:0",
+          "weighted_neutra_stage_0_bias_1:0",
+          "weighted_neutra_stage_0_weight_2:0",
+          "weighted_neutra_stage_0_bias_2:0",
+          "weighted_neutra_stage_0_unbounded_scale_linear_weight:0",
+          "weighted_neutra_stage_1_weight_0:0",
+          "weighted_neutra_stage_1_bias_0:0",
+          "weighted_neutra_stage_1_weight_1:0",
+          "weighted_neutra_stage_1_bias_1:0",
+          "weighted_neutra_stage_1_weight_2:0",
+          "weighted_neutra_stage_1_bias_2:0",
+          "weighted_neutra_stage_2_weight_0:0",
+          "weighted_neutra_stage_2_bias_0:0",
+          "weighted_neutra_stage_2_weight_1:0",
+          "weighted_neutra_stage_2_bias_1:0",
+          "weighted_neutra_stage_2_weight_2:0",
+          "weighted_neutra_stage_2_bias_2:0"
+        ]
+      }
+    ],
+    "tuning_optimizer_updates": 9000
+  },
+  "validation": {
+    "importance_ess_fraction": 0.880340942722282,
+    "interval_level": 0.999,
+    "log_target_to_proposal_ratio_stddev": 0.3024662879862716,
+    "maximum_normalized_importance_weight": 0.00020845651481319114,
+    "passed": false,
+    "sample_count": 131072,
+    "screens": {
+      "adjacent_cross_moment": {
+        "all_passed": true,
+        "estimate": [
+          0.0007846873043160004,
+          0.0006357511073402074,
+          0.0030197858262988194,
+          0.0026874349183735264,
+          -0.0016260347087453477,
+          0.0013972812460543063,
+          0.0019579747869828707,
+          0.0041485175498696646,
+          -0.001735565868956504,
+          -0.0020345431430422657,
+          0.0044887332703876,
+          -9.755513682668002e-05,
+          0.00036200548195817485,
+          -0.0014876681894544388,
+          0.000473440460599125
+        ],
+        "exact": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lower": [
+          -0.008627477283513691,
+          -0.008816735506449264,
+          -0.006067530599600331,
+          -0.0064095585144145805,
+          -0.010680676223624543,
+          -0.007701883486892574,
+          -0.007186727988078803,
+          -0.004919988656377123,
+          -0.010838376195800933,
+          -0.011115913747634824,
+          -0.00462075594565639,
+          -0.009182551619520883,
+          -0.00864948838295625,
+          -0.01056243407264582,
+          -0.008559486305407918
+        ],
+        "passed": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "standard_error": [
+          0.0028603823508712885,
+          0.0028726363239431007,
+          0.0027616601132363265,
+          0.002764600981880955,
+          0.0027517301191392596,
+          0.00276526084588935,
+          0.0027790999804202967,
+          0.002755943636456989,
+          0.002766368751764315,
+          0.0027598531620118653,
+          0.002768398484310062,
+          0.0027609550762029713,
+          0.0027386174312671856,
+          0.002757845969261244,
+          0.002745130948050834
+        ],
+        "upper": [
+          0.010196851892145692,
+          0.01008823772112968,
+          0.01210710225219797,
+          0.011784428351161634,
+          0.007428606806133848,
+          0.010496445979001186,
+          0.011102677562044545,
+          0.013217023756116452,
+          0.007367244457887926,
+          0.007046827461550293,
+          0.01359822248643159,
+          0.008987441345867524,
+          0.0093734993468726,
+          0.007587097693736942,
+          0.009506367226606168
+        ]
+      },
+      "coordinate_mean": {
+        "all_passed": true,
+        "estimate": [
+          -0.0049078512356990865,
+          0.004330441687704294,
+          0.000874488205508139,
+          0.003910386584478396,
+          0.0008356162656887673,
+          0.006302386031693484,
+          -0.0030900947131364057,
+          0.002006512524709096,
+          0.0018119554391484473,
+          -0.006780848233371376,
+          0.005942833981887047,
+          0.006356794723793673,
+          0.004505209595383508,
+          0.0011663366730072146,
+          0.003449574589272966,
+          -0.006874415929851472
+        ],
+        "exact": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lower": [
+          -0.013092206034955998,
+          -0.005112529129753598,
+          -0.008215619311338452,
+          -0.005168993762081575,
+          -0.00824378465036181,
+          -0.002769550067675499,
+          -0.01220150465129721,
+          -0.007072725526057002,
+          -0.00728206797192207,
+          -0.015873642459628756,
+          -0.003145317012339461,
+          -0.002752350585928206,
+          -0.00456181913206859,
+          -0.007918724898187327,
+          -0.005623414131368902,
+          -0.015960627950581015
+        ],
+        "passed": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "standard_error": [
+          0.002487247625411669,
+          0.002869744447624179,
+          0.0027625083333467208,
+          0.002759248317196736,
+          0.0027592545683207304,
+          0.002756985990281187,
+          0.0027689821969717563,
+          0.002759205073118968,
+          0.0027636983842241223,
+          0.002763324831624967,
+          0.002761913740814966,
+          0.002768293970245849,
+          0.002755494626643287,
+          0.0027609748567747915,
+          0.0027573058847414904,
+          0.002761324481509333
+        ],
+        "upper": [
+          0.0032765035635578255,
+          0.013773412505162185,
+          0.009964595722354731,
+          0.012989766931038368,
+          0.009915017181739344,
+          0.015374322131062466,
+          0.0060213152250243995,
+          0.011085750575475194,
+          0.010905978850218965,
+          0.0023119459928860027,
+          0.015030984976113555,
+          0.015465940033515552,
+          0.013572238322835606,
+          0.010251398244201756,
+          0.012522563309914834,
+          0.002211796090878071
+        ]
+      },
+      "coordinate_second_moment": {
+        "all_passed": false,
+        "estimate": [
+          0.8108818197222041,
+          1.0794452169837767,
+          1.00026284806946,
+          0.9979179633136781,
+          0.9979078919810577,
+          0.9963066883934681,
+          1.0049652996524392,
+          0.997875419443468,
+          1.0011273506485558,
+          1.0008994337404893,
+          0.9998668612020973,
+          1.004496661142703,
+          0.9952097157160215,
+          0.9991532550008546,
+          0.996510076008468,
+          0.9994522152856666
+        ],
+        "exact": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "lower": [
+          0.7992094197771897,
+          1.0651417706436799,
+          0.9873810267092477,
+          0.9850540471949474,
+          0.9850891944283791,
+          0.9835762233440438,
+          0.9920640074302347,
+          0.9849791454990914,
+          0.9882132363462212,
+          0.9880205812324581,
+          0.987015855088008,
+          0.9915714954994769,
+          0.9823813424523854,
+          0.9863337705406442,
+          0.9837429038016613,
+          0.986571750400817
+        ],
+        "passed": [
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "standard_error": [
+          0.003547274007320412,
+          0.004346856144095686,
+          0.003914820456228798,
+          0.003909379004770521,
+          0.0038956369598816807,
+          0.003868822862792042,
+          0.003920737704007351,
+          0.003919212635762261,
+          0.003924634368941736,
+          0.003913918213997295,
+          0.00390545561933868,
+          0.003927992901417934,
+          0.003898577434689196,
+          0.0038958761032152553,
+          0.0038799782674970155,
+          0.003914408219686355
+        ],
+        "upper": [
+          0.8225542196672184,
+          1.0937486633238735,
+          1.0131446694296722,
+          1.0107818794324088,
+          1.0107265895337363,
+          1.0090371534428926,
+          1.0178665918746437,
+          1.0107716933878446,
+          1.0140414649508906,
+          1.0137782862485205,
+          1.0127178673161865,
+          1.0174218267859294,
+          1.0080380889796574,
+          1.011972739461065,
+          1.0092772482152745,
+          1.0123326801705164
+        ]
+      }
+    }
+  },
+  "wall_seconds": 65.19930789398495
+}

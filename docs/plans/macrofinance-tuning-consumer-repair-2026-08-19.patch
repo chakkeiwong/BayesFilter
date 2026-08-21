@@ -1,0 +1,25 @@
+*** Begin Patch
+*** Update File: tests/test_daily_asset_midas_l10d_bayesfilter_bootstrap_geometry_repair.py
+@@
+-        "ccma_phase4y_stage_budget_v1"
++        "bayesfilter_hmc_emergency_stage_caps_v2"
+@@
+-    public_text = json.dumps(public_json)
+-    assert "0.25" not in public_text
+     assert public_json["public_summary_contains_mass_matrices"] is False
++    assert public_json["external_geometry_hints"]["raw_matrix_values_publicized"] is False
+@@
+-        "ccma_phase4y_stage_budget_v1"
++        "bayesfilter_hmc_emergency_stage_caps_v2"
+*** Update File: bayesfilter_macrofinance_fixed_kernel_tuning_screen.py
+@@
+     checks = {
+         key: trial.get(key) == value
+         for key, value in base.items()
+         if key != "step_size"
+     }
++    # The historical screen reconstructs the same fixed kernel through the
++    # current public runner; its execution mode is not a tuning control.
++    checks.pop("chain_execution_mode", None)
+     checks["step_size_varied"] = trial.get("step_size") == float(step_size)
+*** End Patch

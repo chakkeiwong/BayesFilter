@@ -264,6 +264,15 @@ class TFBatchedStructuralLinearizations:
     transition_innovation_jacobian_fn: TFBatchedTransitionInnovationJacobianFn
     observation_state_jacobian_fn: TFBatchedObservationStateJacobianFn
     name: str = "tf_batched_structural_linearizations"
+    lagged_observation_previous_jacobian_fn: (
+        TFBatchedLaggedObservationStateJacobianFn | None
+    ) = None
+    lagged_observation_innovation_jacobian_fn: (
+        TFBatchedLaggedObservationInnovationJacobianFn | None
+    ) = None
+    lagged_observation_next_jacobian_fn: (
+        TFBatchedLaggedObservationStateJacobianFn | None
+    ) = None
 
 
 @dataclass(frozen=True)
@@ -1201,8 +1210,21 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         raise ValueError(
             "output-cotangent API currently requires backend='tf_principal_sqrt_ukf'"
         )
-    if model.has_lagged_observation_contract():
-        raise ValueError("output-cotangent API does not yet support lagged observations")
+    lagged_observation_contract = model.has_lagged_observation_contract()
+    if lagged_observation_contract and (
+        linearizations.lagged_observation_previous_jacobian_fn is None
+        or linearizations.lagged_observation_innovation_jacobian_fn is None
+        or linearizations.lagged_observation_next_jacobian_fn is None
+    ):
+        raise ValueError(
+            "lagged output cotangents require previous, innovation, and next "
+            "observation Jacobians"
+        )
+    observation_contract = (
+        "lagged_previous_innovation_predicted"
+        if lagged_observation_contract
+        else "current_predicted_state"
+    )
 
     batch_dim = model.batch_dim
     state_dim = model.state_dim
@@ -1249,6 +1271,14 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     max_innovation_classified_invalid_count = tf.zeros([batch_dim], dtype=tf.int32)
     max_placement_roundoff_repair_count = tf.zeros([batch_dim], dtype=tf.int32)
     max_innovation_roundoff_repair_count = tf.zeros([batch_dim], dtype=tf.int32)
+    max_placement_floor_count = tf.zeros([batch_dim], dtype=tf.int32)
+    max_innovation_floor_count = tf.zeros([batch_dim], dtype=tf.int32)
+    min_placement_eigenvalue = tf.fill(
+        [batch_dim], tf.constant(float("inf"), dtype=tf.float64)
+    )
+    min_innovation_eigenvalue = tf.fill(
+        [batch_dim], tf.constant(float("inf"), dtype=tf.float64)
+    )
 
     previous_ta = tf.TensorArray(
         dtype=tf.float64,
@@ -1295,6 +1325,10 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         max_innovation_classified_invalid_count,
         max_placement_roundoff_repair_count,
         max_innovation_roundoff_repair_count,
+        max_placement_floor_count,
+        max_innovation_floor_count,
+        min_placement_eigenvalue,
+        min_innovation_eigenvalue,
         previous_ta,
         innovation_ta,
         predicted_ta,
@@ -1340,7 +1374,11 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         innovation_points = aug_points[:, :, state_dim:]
 
         predicted_points = model.transition(previous_points, innovation_points)
-        observation_points = model.observe(predicted_points)
+        observation_points = model.observe_structural(
+            previous_points,
+            innovation_points,
+            predicted_points,
+        )
 
         predicted_mean = tf.einsum(
             "r,brn->bn",
@@ -1426,6 +1464,10 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
                 max_innovation_roundoff_repair_count,
                 innovation_factor.roundoff_repair_count,
             ),
+            tf.maximum(max_placement_floor_count, placement.floor_count),
+            tf.maximum(max_innovation_floor_count, innovation_factor.floor_count),
+            tf.minimum(min_placement_eigenvalue, placement.min_eigenvalue),
+            tf.minimum(min_innovation_eigenvalue, innovation_factor.min_eigenvalue),
             previous_ta.write(t, previous_points),
             innovation_ta.write(t, innovation_points),
             predicted_ta.write(t, predicted_points),
@@ -1446,6 +1488,10 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         max_innovation_classified_invalid_count,
         max_placement_roundoff_repair_count,
         max_innovation_roundoff_repair_count,
+        max_placement_floor_count,
+        max_innovation_floor_count,
+        min_placement_eigenvalue,
+        min_innovation_eigenvalue,
         previous_ta,
         innovation_ta,
         predicted_ta,
@@ -1464,6 +1510,10 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             max_innovation_classified_invalid_count,
             max_placement_roundoff_repair_count,
             max_innovation_roundoff_repair_count,
+            max_placement_floor_count,
+            max_innovation_floor_count,
+            min_placement_eigenvalue,
+            min_innovation_eigenvalue,
             previous_ta,
             innovation_ta,
             predicted_ta,
@@ -1632,19 +1682,74 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             predicted_mean_cotangent,
         )
 
-        observation_state_jacobian = linearizations.observation_state_jacobian_fn(
-            predicted_points,
-        )
-        _validate_static_shape(
-            observation_state_jacobian,
-            (batch_dim, point_count, observation_dim, state_dim),
-            "observation_state_jacobian",
-        )
-        predicted_points_cotangent = predicted_points_cotangent + tf.einsum(
-            "brom,bro->brm",
-            observation_state_jacobian,
-            observation_points_cotangent,
-        )
+        if lagged_observation_contract:
+            lagged_previous_jacobian = (
+                linearizations.lagged_observation_previous_jacobian_fn(
+                    previous_points,
+                    innovation_points,
+                    predicted_points,
+                )
+            )
+            lagged_innovation_jacobian = (
+                linearizations.lagged_observation_innovation_jacobian_fn(
+                    previous_points,
+                    innovation_points,
+                    predicted_points,
+                )
+            )
+            lagged_next_jacobian = (
+                linearizations.lagged_observation_next_jacobian_fn(
+                    previous_points,
+                    innovation_points,
+                    predicted_points,
+                )
+            )
+            _validate_static_shape(
+                lagged_previous_jacobian,
+                (batch_dim, point_count, observation_dim, state_dim),
+                "lagged_observation_previous_jacobian",
+            )
+            _validate_static_shape(
+                lagged_innovation_jacobian,
+                (batch_dim, point_count, observation_dim, innovation_dim),
+                "lagged_observation_innovation_jacobian",
+            )
+            _validate_static_shape(
+                lagged_next_jacobian,
+                (batch_dim, point_count, observation_dim, state_dim),
+                "lagged_observation_next_jacobian",
+            )
+            observation_previous_cotangent = tf.einsum(
+                "broi,bro->bri",
+                lagged_previous_jacobian,
+                observation_points_cotangent,
+            )
+            observation_innovation_cotangent = tf.einsum(
+                "broa,bro->bra",
+                lagged_innovation_jacobian,
+                observation_points_cotangent,
+            )
+            predicted_points_cotangent = predicted_points_cotangent + tf.einsum(
+                "broi,bro->bri",
+                lagged_next_jacobian,
+                observation_points_cotangent,
+            )
+        else:
+            observation_state_jacobian = (
+                linearizations.observation_state_jacobian_fn(predicted_points)
+            )
+            _validate_static_shape(
+                observation_state_jacobian,
+                (batch_dim, point_count, observation_dim, state_dim),
+                "observation_state_jacobian",
+            )
+            predicted_points_cotangent = predicted_points_cotangent + tf.einsum(
+                "brom,bro->brm",
+                observation_state_jacobian,
+                observation_points_cotangent,
+            )
+            observation_previous_cotangent = tf.zeros_like(previous_points)
+            observation_innovation_cotangent = tf.zeros_like(innovation_points)
 
         transition_state_jacobian = linearizations.transition_state_jacobian_fn(
             previous_points,
@@ -1670,12 +1775,12 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             "broi,bro->bri",
             transition_state_jacobian,
             predicted_points_cotangent,
-        )
+        ) + observation_previous_cotangent
         innovation_points_cotangent = tf.einsum(
             "broa,bro->bra",
             transition_innovation_jacobian,
             predicted_points_cotangent,
-        )
+        ) + observation_innovation_cotangent
         aug_points_cotangent = tf.concat(
             [previous_points_cotangent, innovation_points_cotangent],
             axis=2,
@@ -1782,7 +1887,12 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             "manual_reverse_principal_sqrt_sigma_point"
         ),
         "time_recursion": tf.constant("tf.while_loop_forward_and_reverse"),
-        "observation_contract": tf.constant("current_predicted_state"),
+        "observation_contract": tf.constant(observation_contract),
+        "observation_contract_runtime_selected": tf.constant(True),
+        "placement_floor_count": max_placement_floor_count,
+        "innovation_floor_count": max_innovation_floor_count,
+        "min_placement_eigenvalue": min_placement_eigenvalue,
+        "min_innovation_eigenvalue": min_innovation_eigenvalue,
         "placement_roundoff_repair_count": max_placement_roundoff_repair_count,
         "innovation_roundoff_repair_count": max_innovation_roundoff_repair_count,
         "principal_sqrt_target_classified_invalid_count": classified_invalid_count,

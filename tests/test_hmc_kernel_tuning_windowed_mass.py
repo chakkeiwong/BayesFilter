@@ -5,6 +5,7 @@ import json
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
@@ -14,6 +15,7 @@ import pytest
 import tensorflow as tf
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
+import bayesfilter.inference.hmc_warmup as hmc_warmup
 from bayesfilter.inference.hmc_tuning import build_windowed_warmup_schedule
 from bayesfilter.hmc_route_contract import (
     LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
@@ -23,12 +25,15 @@ from bayesfilter.hmc_route_contract import (
 from bayesfilter.inference import (
     HMCBootstrapScreenResult,
     HMCGeometryInitializationConfig,
+    HMCKernelTuningConfig,
+    HMCStartBankDiagnosticResult,
     HMCWindowedMassStageConfig,
     HMCWindowedMassStageResult,
     PrecomputedMassArtifact,
     ValueScoreCapability,
     initialize_hmc_kernel_geometry,
     run_hmc_bootstrap_screen,
+    run_hmc_start_bank_diagnostic,
     run_hmc_windowed_mass_stage,
 )
 from bayesfilter.inference.hmc_coordinates import transform_from_precomputed_mass_artifact
@@ -409,6 +414,31 @@ def test_fixed_identity_windowed_diagnostic_makes_no_mass_updates() -> None:
     assert result.mass_updates == ()
     assert result.final_mass_artifact_signature == result.initial_mass_artifact_signature
     assert result.semantic_checks()["fixed_identity_signature_unchanged"] is True
+
+
+def test_operational_fixed_identity_mass_artifact_signature_is_preserved() -> None:
+    """The operational compatibility projection must not rewrite fixed mass identity."""
+
+    adapter, geometry, bootstrap = _operational_inputs()
+    result = hmc_kernel_tuning.run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=hmc_kernel_tuning.HMCWindowedMassStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260730, 810),
+            chain_execution_mode="eager",
+            use_xla=False,
+            target_scope="kernel_windowed_mass_toy_gaussian",
+            mass_policy="fixed_identity",
+        ),
+        _attempt_budget_policy=_operational_budget(),
+    )
+
+    assert result.passed is True
+    assert result.operational_mass_artifact is not None
+    assert result.windowed_mass_result is not None
+    assert result.adapted_mass_artifact_signature == result.initial_mass_artifact_signature
 
 
 def test_public_windowed_stage_propagates_fixed_identity_to_internal_config() -> None:
@@ -1550,6 +1580,21 @@ def test_real_default_route_emits_operational_v2_and_exact_compatibility() -> No
     )
     public_text = json.dumps(operational.public_payload(), sort_keys=True)
     assert "private_start_bank_theta" not in public_text
+    qualification = operational.start_bank_qualification.public_payload()
+    assert qualification["shadow_decision_effect"] is False
+    assert qualification["interpretation"] == "final_pass"
+    assert result.diagnostics["raw_diagnostics"][
+        "start_bank_qualification"
+    ] == qualification
+    assert qualification["scopes"]["authoritative_final_window"][
+        "source_row_count"
+    ] == operational.windows[-1].adaptation_canonical_states.shape[0]
+    assert qualification["scopes"]["shadow_all_windows"][
+        "source_row_count"
+    ] == sum(
+        window.adaptation_canonical_states.shape[0]
+        for window in operational.windows
+    )
 
 
 def test_real_operational_route_with_generous_timeout_never_uses_legacy() -> None:
@@ -1736,7 +1781,13 @@ def test_operational_route_runtime_error_is_fail_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def fail(**_kwargs: Any) -> Any:
-        raise RuntimeError("operational failure sentinel collision")
+        error = RuntimeError("operational failure sentinel collision")
+        setattr(
+            error,
+            hmc_warmup._START_BANK_DIAGNOSTIC_ATTRIBUTE,
+            {"schema": "forged.start_bank.v1"},
+        )
+        raise error
 
     monkeypatch.setattr(hmc_kernel_tuning, "run_operational_windowed_warmup", fail)
 
@@ -1755,3 +1806,448 @@ def test_operational_route_runtime_error_is_fail_closed(
     assert result.diagnostics["hmc_error_type"] == "RuntimeError"
     assert "sentinel collision" in result.diagnostics["hmc_error_message"]
     assert result.diagnostics["runtime_metadata"] == {}
+    assert "start_bank_qualification" not in result.diagnostics["raw_diagnostics"]
+
+
+def _raise_validated_start_bank_failure() -> None:
+    authoritative = hmc_warmup._assess_private_start_bank(
+        np.zeros((4, 2)),
+        scope="authoritative_final_window",
+    )
+    shadow = hmc_warmup._best_effort_shadow_start_bank_scope(
+        np.arange(12.0).reshape((6, 2)),
+        reference_transform=None,
+        minimum_relative_separation=1.0e-4,
+    )
+    qualification = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=authoritative.diagnostic,
+        shadow=shadow,
+    )
+    hmc_warmup._materialize_private_start_bank(
+        authoritative,
+        qualification=qualification,
+    )
+
+
+def test_operational_start_bank_failure_survives_real_windowed_stage_catch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[tuple[str, Mapping[str, Any]]] = []
+
+    def fail(**_kwargs: Any) -> Any:
+        _raise_validated_start_bank_failure()
+
+    def callback(event: str, payload: Mapping[str, Any]) -> None:
+        events.append((event, json.loads(json.dumps(payload))))
+        payload["start_bank_qualification"]["interpretation"] = "mutated"
+
+    monkeypatch.setattr(hmc_kernel_tuning, "run_operational_windowed_warmup", fail)
+    result = run_hmc_windowed_mass_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        config=_stage_config(
+            algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+            chain_execution_mode="tf_function",
+        ),
+        _private_diagnostic_callback=callback,
+    )
+
+    assert result.passed is False
+    assert result.diagnostics["hmc_error_type"] == "ValueError"
+    assert result.diagnostics["hmc_error_message"] == (
+        "operational warmup start bank is not sufficiently dispersed"
+    )
+    qualification = result.diagnostics["raw_diagnostics"][
+        "start_bank_qualification"
+    ]
+    assert qualification["interpretation"] == "final_fail_shadow_pass"
+    assert qualification["shadow_decision_effect"] is False
+    assert [event for event, _payload in events] == ["start_bank_qualification"]
+    assert events[0][1]["start_bank_qualification"] == qualification
+    assert events[0][1]["private_hmc_mechanics"] is False
+    serialized = json.dumps(events[0][1], sort_keys=True)
+    assert "canonical_states" not in serialized
+    assert "selected_row_indices" not in serialized
+
+
+def test_start_bank_diagnostic_callback_failure_remains_fatal_after_decision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(**_kwargs: Any) -> Any:
+        _raise_validated_start_bank_failure()
+
+    def callback(_event: str, _payload: Mapping[str, Any]) -> None:
+        raise RuntimeError("diagnostic writer failed")
+
+    monkeypatch.setattr(hmc_kernel_tuning, "run_operational_windowed_warmup", fail)
+    with pytest.raises(RuntimeError, match="diagnostic writer failed"):
+        run_hmc_windowed_mass_stage(
+            adapter=_ToyGaussianAdapter(),
+            geometry=_geometry(),
+            bootstrap=_bootstrap(),
+            config=_stage_config(
+                algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+                chain_execution_mode="tf_function",
+            ),
+            _private_diagnostic_callback=callback,
+        )
+
+
+def _diagnostic_qualification(
+    interpretation: str,
+    *,
+    shadow_rows: int = 16,
+) -> Mapping[str, Any]:
+    separated_authoritative = np.arange(8.0).reshape((4, 2))
+    collapsed_authoritative = np.zeros((4, 2))
+    separated_shadow = np.arange(float(shadow_rows * 2)).reshape((shadow_rows, 2))
+    collapsed_shadow = np.zeros((shadow_rows, 2))
+
+    if interpretation == "final_pass":
+        authoritative = hmc_warmup._assess_private_start_bank(
+            separated_authoritative,
+            scope="authoritative_final_window",
+        ).diagnostic
+        shadow = hmc_warmup._assess_private_start_bank(
+            separated_shadow,
+            scope="shadow_all_windows",
+        ).diagnostic
+    elif interpretation == "final_fail_shadow_pass":
+        authoritative = hmc_warmup._assess_private_start_bank(
+            collapsed_authoritative,
+            scope="authoritative_final_window",
+        ).diagnostic
+        shadow = hmc_warmup._assess_private_start_bank(
+            separated_shadow,
+            scope="shadow_all_windows",
+        ).diagnostic
+    elif interpretation == "both_fail":
+        authoritative = hmc_warmup._assess_private_start_bank(
+            collapsed_authoritative,
+            scope="authoritative_final_window",
+        ).diagnostic
+        shadow = hmc_warmup._assess_private_start_bank(
+            collapsed_shadow,
+            scope="shadow_all_windows",
+        ).diagnostic
+    elif interpretation == "post_selection_invariant_failure":
+        successful = hmc_warmup._assess_private_start_bank(
+            separated_authoritative,
+            scope="authoritative_final_window",
+        ).diagnostic
+        authoritative = replace(
+            successful,
+            selection_succeeded=False,
+            failure_code="post_selection_pairwise_failure",
+        )
+        shadow = hmc_warmup._assess_private_start_bank(
+            separated_shadow,
+            scope="shadow_all_windows",
+        ).diagnostic
+    else:
+        raise ValueError(f"unsupported test interpretation: {interpretation}")
+
+    qualification = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=authoritative,
+        shadow=shadow,
+    ).public_payload()
+    assert qualification["interpretation"] == interpretation
+    return qualification
+
+
+def _diagnostic_fixture_config() -> HMCKernelTuningConfig:
+    return HMCKernelTuningConfig.diagnostic(
+        target_scope="kernel_windowed_mass_toy_gaussian",
+        seed=(20260818, 1401),
+        chain_execution_mode="tf_function",
+        use_xla=False,
+        source="tests.start_bank_diagnostic",
+    )
+
+
+def _patch_diagnostic_prerun(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    geometry = _geometry()
+    bootstrap = _bootstrap()
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "initialize_hmc_kernel_geometry",
+        lambda **_kwargs: geometry,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_hmc_bootstrap_screen",
+        lambda **_kwargs: bootstrap,
+    )
+
+
+@pytest.mark.parametrize(
+    "interpretation",
+    (
+        "final_pass",
+        "final_fail_shadow_pass",
+        "both_fail",
+        "post_selection_invariant_failure",
+    ),
+)
+def test_diagnostic_entry_point_stops_at_callback_for_all_interpretations(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    interpretation: str,
+) -> None:
+    _patch_diagnostic_prerun(monkeypatch)
+    qualification = _diagnostic_qualification(interpretation)
+    after_callback_count = 0
+
+    def windowed(**kwargs: Any) -> Any:
+        nonlocal after_callback_count
+        policy = kwargs["_attempt_budget_policy"]
+        assert policy.attempt_index == 0
+        assert policy.phase4_warmup_steps == 16
+        kwargs["_private_diagnostic_callback"](
+            "start_bank_qualification",
+            {
+                "stage": "windowed_mass_start_bank_boundary",
+                "attempt_index": 0,
+                "start_bank_qualification": qualification,
+            },
+        )
+        after_callback_count += 1
+        raise AssertionError("post-boundary sentinel was reached")
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_hmc_windowed_mass_stage",
+        windowed,
+    )
+
+    def forbidden_later_stage(**_kwargs: Any) -> Any:
+        raise AssertionError("a post-boundary tuning stage was called")
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_hmc_fixed_mass_step_stage",
+        forbidden_later_stage,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_hmc_frozen_step_trajectory_stage",
+        forbidden_later_stage,
+    )
+
+    output = tmp_path / f"diagnostic-{interpretation}"
+    result = run_hmc_start_bank_diagnostic(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=np.zeros(2),
+        config=_diagnostic_fixture_config(),
+        output_dir=output,
+        parameter_scales=np.ones(2),
+    )
+
+    assert isinstance(result, HMCStartBankDiagnosticResult)
+    assert result.diagnostic_valid is True
+    assert result.start_bank_qualification == qualification
+    assert result.start_bank_qualification_sha256 is not None
+    assert after_callback_count == 0
+    assert result.payload()["post_boundary_stage_counts"] == {
+        "semantic_mass_diagnostic": 0,
+        "fixed_mass_step": 0,
+        "trajectory_selection": 0,
+        "fresh_verification": 0,
+        "final_kernel_construction": 0,
+        "retained_sampling": 0,
+    }
+
+    result_path = output / "hmc_start_bank_diagnostic_result.json"
+    event_path = (
+        output
+        / "private_diagnostics"
+        / "hmc_start_bank_diagnostic_events.jsonl"
+    )
+    artifact = json.loads(result_path.read_text(encoding="utf-8"))
+    event_rows = [
+        json.loads(line)
+        for line in event_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(event_rows) == 1
+    assert artifact["start_bank_qualification"] == event_rows[0][
+        "start_bank_qualification"
+    ]
+    assert artifact["start_bank_qualification_sha256"] == event_rows[0][
+        "start_bank_qualification_sha256"
+    ]
+    serialized = json.dumps({"artifact": artifact, "event": event_rows[0]})
+    for forbidden in (
+        "canonical_states",
+        "reference_states",
+        "selected_row_indices",
+        "pairwise_distances",
+        "traceback",
+    ):
+        assert forbidden not in serialized
+
+
+def test_diagnostic_entry_point_marks_shadow_failure_incomplete(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_diagnostic_prerun(monkeypatch)
+    authoritative = hmc_warmup._assess_private_start_bank(
+        np.arange(8.0).reshape((4, 2)),
+        scope="authoritative_final_window",
+    ).diagnostic
+    shadow = hmc_warmup._shadow_start_bank_failure_diagnostic(
+        np.zeros((16, 2)),
+        minimum_relative_separation=1.0e-4,
+        failure_code="shadow_assessment_failure",
+    )
+    qualification = hmc_warmup._StartBankQualificationDiagnostic(
+        authoritative=authoritative,
+        shadow=shadow,
+    ).public_payload()
+
+    def windowed(**kwargs: Any) -> Any:
+        kwargs["_private_diagnostic_callback"](
+            "start_bank_qualification",
+            {
+                "stage": "windowed_mass_start_bank_boundary",
+                "start_bank_qualification": qualification,
+            },
+        )
+        raise AssertionError("post-boundary sentinel was reached")
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_hmc_windowed_mass_stage",
+        windowed,
+    )
+    result = run_hmc_start_bank_diagnostic(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=np.zeros(2),
+        config=_diagnostic_fixture_config(),
+        output_dir=tmp_path / "shadow-failure",
+        parameter_scales=np.ones(2),
+    )
+
+    assert result.diagnostic_valid is False
+    assert result.final_status == "diagnostic_incomplete_shadow_failure"
+    assert result.hard_vetoes == ("shadow_start_bank_diagnostic_failure",)
+    assert result.private_event_count == 1
+
+
+def test_diagnostic_entry_point_preserves_bounded_preboundary_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_diagnostic_prerun(monkeypatch)
+
+    def fail_before_boundary(**_kwargs: Any) -> Any:
+        raise RuntimeError("secret state at /private/location")
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_hmc_windowed_mass_stage",
+        fail_before_boundary,
+    )
+    output = tmp_path / "preboundary-failure"
+    result = run_hmc_start_bank_diagnostic(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=np.zeros(2),
+        config=_diagnostic_fixture_config(),
+        output_dir=output,
+        parameter_scales=np.ones(2),
+    )
+
+    assert result.final_status == "invalid_before_start_bank_boundary"
+    assert result.start_bank_qualification is None
+    assert result.private_event_count == 0
+    assert not (
+        output
+        / "private_diagnostics"
+        / "hmc_start_bank_diagnostic_events.jsonl"
+    ).exists()
+    serialized = (
+        output / "hmc_start_bank_diagnostic_result.json"
+    ).read_text(encoding="utf-8")
+    assert "secret state" not in serialized
+    assert "/private/location" not in serialized
+    assert "RuntimeError" in serialized
+
+
+def test_diagnostic_entry_point_rejects_invalid_payload_before_event_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_diagnostic_prerun(monkeypatch)
+
+    def invalid_payload(**kwargs: Any) -> Any:
+        kwargs["_private_diagnostic_callback"](
+            "start_bank_qualification",
+            {
+                "stage": "windowed_mass_start_bank_boundary",
+                "start_bank_qualification": {
+                    "schema": "forged.start_bank.v1",
+                    "raw_states": [[1.0, 2.0]],
+                },
+            },
+        )
+        raise AssertionError("post-boundary sentinel was reached")
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_hmc_windowed_mass_stage",
+        invalid_payload,
+    )
+    output = tmp_path / "invalid-payload"
+    result = run_hmc_start_bank_diagnostic(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=np.zeros(2),
+        config=_diagnostic_fixture_config(),
+        output_dir=output,
+        parameter_scales=np.ones(2),
+    )
+
+    assert result.final_status == "invalid_before_start_bank_boundary"
+    assert result.start_bank_qualification is None
+    assert result.private_event_count == 0
+    assert not (
+        output
+        / "private_diagnostics"
+        / "hmc_start_bank_diagnostic_events.jsonl"
+    ).exists()
+    serialized = (
+        output / "hmc_start_bank_diagnostic_result.json"
+    ).read_text(encoding="utf-8")
+    assert "raw_states" not in serialized
+
+
+def test_diagnostic_entry_point_refuses_existing_output_before_prerun(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def forbidden_geometry(**_kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        raise AssertionError("geometry should not run after collision")
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "initialize_hmc_kernel_geometry",
+        forbidden_geometry,
+    )
+    output = tmp_path / "existing-output"
+    output.mkdir()
+
+    with pytest.raises(FileExistsError, match="output already exists"):
+        run_hmc_start_bank_diagnostic(
+            adapter=_ToyGaussianAdapter(),
+            initial_position=np.zeros(2),
+            config=_diagnostic_fixture_config(),
+            output_dir=output,
+            parameter_scales=np.ones(2),
+        )
+    assert calls == 0

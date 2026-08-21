@@ -203,6 +203,24 @@ docs/plans/artifacts/**/checkpoints/
 docs/plans/artifacts/**/runs/
 docs/plans/artifacts/**/tmp/
 
+# Local literature caches and environment-specific binary backups are not
+# repository source or compact claim receipts. Re-fetch/rebuild them locally.
+.localresources/
+*.so.*
+
+# Benchmark supervisor/runtime state. Compact result/manifest/summary/decision
+# receipts remain visible through the allow-list rules above.
+docs/benchmarks/artifacts/**/*status*/
+docs/benchmarks/artifacts/**/*_status*/
+docs/benchmarks/artifacts/**/pid
+docs/benchmarks/artifacts/**/started_at
+docs/benchmarks/artifacts/**/finished_at
+docs/benchmarks/artifacts/**/exit_code
+docs/benchmarks/artifacts/**/tmux_session
+docs/benchmarks/artifacts/**/ready
+docs/benchmarks/artifacts/**/stdout
+docs/benchmarks/artifacts/**/stderr
+
 # Transient campaign locks are runtime state, never evidence. Keep dependency
 # lockfiles visible.
 docs/plans/artifacts/**/.material-run.lock
@@ -440,9 +458,105 @@ docs/plans/artifacts/**/archive/warmup/
 docs/plans/artifacts/**/archive/retained/*.tftensor
 docs/plans/artifacts/**/archive/warmup/*.tftensor
 
+# TensorFlow profiler traces are generated performance diagnostics. They are
+# not compact promotion or claim receipts; retain the authored profiling
+# harness and any cited summary instead.
+docs/plans/artifacts/**/tensorflow_profile/
+docs/benchmarks/**/tensorflow_profile/
+
 # Downloaded literature corpora are local inputs, not repository evidence.
 .localresources/papers/multimodal_hmc/
 
 # Failed literature download: this path currently contains an HTML response,
 # not the Huber paper. Track a validated source copy if one is acquired later.
 .localresources/papers/huber-1964-robust-location.pdf
+
+# Generated benchmark run directories are local runtime state by default.
+# Keep only the terminal four-model receipt used by the 2026-08-16 restart
+# boundary; historical tracked evidence is unaffected by ignore rules.
+docs/benchmarks/artifacts/**
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/result.json
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/result.md
+
+# Compact 2026-08-17/18 receipts cited by retained plans and result/reset notes.
+# Checkpoints, raw states, smoke-only rows, and sibling attempts remain ignored.
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/four_model_regression/
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/four_model_regression/result.json
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/lgssm_oracle_regression/
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/lgssm_oracle_regression/result.json
+!docs/benchmarks/artifacts/genut-sir-ad-root-cause-20260817/
+!docs/benchmarks/artifacts/genut-sir-ad-root-cause-20260817/attempt07_terminal_cpu_reference/
+!docs/benchmarks/artifacts/genut-sir-ad-root-cause-20260817/attempt07_terminal_cpu_reference/result.json
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/claim_attempt01/
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/claim_attempt01/result.json
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/claim_attempt02/
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/claim_attempt02/result.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/attempt01/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/attempt01/route_identity.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/attempt04/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/attempt04/derivative_cpu.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt07/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt07/endpoint_gpu0_eager.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt08/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt08/endpoint_gpu0_graph.json
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt01/
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt01/result.json
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt02/
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt02/result.json
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt03/
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt03/result.json
+!docs/benchmarks/artifacts/p2a_cost_prototype_20260817/
+!docs/benchmarks/artifacts/p2a_cost_prototype_20260817/attempt01/
+!docs/benchmarks/artifacts/p2a_cost_prototype_20260817/attempt01/result.json
+
+# Generated docs/plans indexes are regenerable local navigation aids, not
+# promotion or claim evidence. Rebuild with:
+#   python docs/plans/generate_plans_index.py
+docs/plans/INDEX.md
+docs/plans/INDEX-FULL.md
+
+# Claim/veto-supporting receipts of the 2026-08-19/20 Austria GenUT
+# compiler-mode campaigns. Cited by the graph-mode divergence localization
+# result (2026-08-19) and the XLA NaN localization result (2026-08-20):
+# graph bisection ladder, meta-optimizer probe, XLA hard-veto endpoint, and
+# the XLA NaN reproduction/diagnostic/TF32-off arms.
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt01/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt01/ladder_t2_t5_graph.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt02/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt02/bisect_t3_t4_steps.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt03/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt03/grappler_meta_off.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt09/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt09/endpoint_gpu0_xla.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt01/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt01/eager_margin_audit.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt02/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt02/xla_small_ladder.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt03/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt03/xla_t10_t20_ladder.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt04/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt04/xla_t20_s4_diagnostics.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt05/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt05/xla_t20_s4_tf32off.json
+
+# Compact evidence retained for the q=20 NeuTra global-mixing campaign.  Keep
+# mutable progress, launch state, checkpoints, trained states, and raw tensor
+# payloads ignored; these receipts directly support the authored engineering,
+# admission, integrity, and terminal non-admission claims.
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/gpu-preflight.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc/artifact-hashes.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/artifact-hashes.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/audits/*.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r2/hmc/artifact-hashes.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r2/hmc/candidate-admission-*.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/artifact-hashes.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/checkpoint-diagnostics.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/raw-archive.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/replay-tieout.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/resource-admission.json

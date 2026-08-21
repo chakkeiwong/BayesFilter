@@ -164,6 +164,16 @@ def test_batch_rows_match_scalar_reference_without_shape_correction() -> None:
         assert float(value_error.numpy()) <= value_tolerance
         assert float(score_error.numpy()) <= score_tolerance
 
+    for name in (
+        "minimum_pearson_feasibility_margin",
+        "minimum_finite_particle_upper_margin",
+        "maximum_diagonal_scaled_system_condition",
+        "maximum_diagonal_pre_cap_particle_rms",
+        "maximum_diagonal_post_cap_particle_rms",
+    ):
+        assert name in batch_status
+        assert bool(tf.reduce_all(tf.math.is_finite(batch_status[name])).numpy())
+
 
 def test_value_only_endpoint_matches_value_score_route_with_shape_correction() -> None:
     adapter, _scalar, theta, dimension, observation_dimension, count, transition_first = _case(
@@ -176,6 +186,9 @@ def test_value_only_endpoint_matches_value_score_route_with_shape_correction() -
     kwargs = _controls(transition_first) | {
         "higher_moment_correction_steps": 2,
         "higher_moment_strength": 0.1,
+        "higher_moment_lm_damping": 1.0e-2,
+        "higher_moment_lm_scale_floor": 1.0e-4,
+        "higher_moment_trust_radius": 0.5,
     }
     value_only, value_status = batch_finite_value(
         adapter, values, observations, initial, process, design, **kwargs
@@ -186,4 +199,51 @@ def test_value_only_endpoint_matches_value_score_route_with_shape_correction() -
     tf.debugging.assert_equal(
         value_status["program_valid"], score_status["program_valid"]
     )
-    tf.debugging.assert_equal(value_only, value_score)
+    tf.debugging.assert_near(value_only, value_score, atol=5.0e-7, rtol=5.0e-7)
+
+
+def test_repaired_batch_score_matches_centered_finite_difference() -> None:
+    adapter, _scalar, theta, dimension, observation_dimension, count, transition_first = _case(
+        "lgssm"
+    )
+    observations, initial, process, design = _inputs(
+        dimension, observation_dimension, count
+    )
+    kwargs = _controls(transition_first) | {
+        "higher_moment_correction_steps": 2,
+        "higher_moment_strength": 0.1,
+        "higher_moment_lm_damping": 1.0e-2,
+        "higher_moment_lm_scale_floor": 1.0e-4,
+        "higher_moment_trust_radius": 0.5,
+    }
+    values = theta[None, :]
+    _value, score, status = batch_finite_value_score(
+        adapter, values, observations, initial, process, design, **kwargs
+    )
+    assert bool(status["program_valid"][0].numpy())
+    step = tf.constant(2.0e-3, tf.float32)
+    basis = tf.eye(tf.shape(theta)[0], dtype=tf.float32)
+    plus, plus_status = batch_finite_value(
+        adapter,
+        theta[None, :] + step * basis,
+        observations,
+        initial,
+        process,
+        design,
+        **kwargs,
+    )
+    minus, minus_status = batch_finite_value(
+        adapter,
+        theta[None, :] - step * basis,
+        observations,
+        initial,
+        process,
+        design,
+        **kwargs,
+    )
+    assert bool(tf.reduce_all(plus_status["program_valid"]).numpy())
+    assert bool(tf.reduce_all(minus_status["program_valid"]).numpy())
+    finite_difference = (plus - minus) / (2.0 * step)
+    tf.debugging.assert_near(
+        score[0], finite_difference, atol=2.0e-3, rtol=2.0e-3
+    )

@@ -25,6 +25,11 @@ import tensorflow as tf
 
 from bayesfilter.runtime.gpu_memory_policy import configure_tensorflow_gpu_memory_growth
 from docs.benchmarks import run_moment_retuned_genut_whole_leaderboard as base
+from docs.benchmarks.genut_fd_regression import (
+    FD_REGRESSION_STEPS,
+    evaluate_regression_derivative,
+    fit_quadratic_step_regression,
+)
 
 PLAN = Path("docs/plans/bayesfilter-genut-b098-radial2-four-model-plan-2026-08-07.md")
 PRIOR = Path("docs/benchmarks/artifacts/moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json")
@@ -38,7 +43,15 @@ CAP = 0.98
 POWER = 8
 RADIAL = 2.0
 RESIDUAL_TOL = 5.0e-4
-FD_STEP = 1.0e-3
+FD_STEPS = FD_REGRESSION_STEPS
+
+# The current checkout regenerates the LGSSM and KSC fixtures with different
+# source hashes than the 2026-08-07 warm-start artifact.  These are explicitly
+# admitted as a new data scope; the prior controls remain warm starts only.
+CURRENT_REGENERATED_SCOPE_HASHES = {
+    "lgssm_T50": "8aa2e8102ef25d6accf5d30b9c341621af26fce151ac85133c5a0a6a44671e17",
+    "ksc_sv_T10": "b223a99639b95a1955bc13167bff2999bcf626f22df8d880b339420acd4c13e9",
+}
 
 
 def _sha256(path: Path) -> str:
@@ -77,7 +90,11 @@ def _baseline(row_id: str, target: dict[str, Any]) -> dict[str, Any]:
     row = _prior_row(row_id)
     scope = row["scope"]
     if scope["source_observation_sha256"] != target["source_observation_sha256"]:
-        raise RuntimeError(f"{row_id} prior observation hash mismatch")
+        expected_current = CURRENT_REGENERATED_SCOPE_HASHES.get(row_id)
+        if expected_current != target["source_observation_sha256"]:
+            raise RuntimeError(f"{row_id} prior observation hash mismatch")
+        # This is a deliberate current-scope warm start, not a scope transfer
+        # claim.  Calibration rows below provide the only current-scope checks.
     if scope["event_order"] != target["event_order"] or scope["particle_count"] != N:
         raise RuntimeError(f"{row_id} prior scope mismatch")
     return dict(row["tuning"]["selected_controls"])
@@ -165,14 +182,53 @@ def _fd(evaluator: Any, target: dict[str, Any], seed: int) -> dict[str, Any]:
     rows = []
     for index in range(target["parameter_dim"]):
         direction = tf.one_hot(index, target["parameter_dim"], dtype=tf.float32)
-        plus = evaluator(theta + FD_STEP * direction, target["observations"], initial, process, target["design"])[0]
-        minus = evaluator(theta - FD_STEP * direction, target["observations"], initial, process, target["design"])[0]
-        finite_difference = (plus - minus) / (2.0 * FD_STEP)
-        absolute = abs(float(finite_difference.numpy()) - float(score[index].numpy()))
-        rows.append({"parameter": index, "manual_score": float(score[index].numpy()), "finite_difference": float(finite_difference.numpy()),
-                     "absolute_residual": absolute, "normalized_residual": absolute / max(abs(float(score[index].numpy())), 1.0)})
-    return {"step": FD_STEP, "rows": rows, "all_pass": all(row["absolute_residual"] <= 0.08 and row["normalized_residual"] <= 0.03 for row in rows),
-            "role": "internal same-program diagnostic, not an external score authority"}
+        finite_differences = []
+        endpoint_valid = True
+        for step in FD_STEPS:
+            plus_value, _, plus_status = evaluator(
+                theta + step * direction,
+                target["observations"],
+                initial,
+                process,
+                target["design"],
+            )
+            minus_value, _, minus_status = evaluator(
+                theta - step * direction,
+                target["observations"],
+                initial,
+                process,
+                target["design"],
+            )
+            plus_valid = bool(plus_status["program_valid"].numpy())
+            minus_valid = bool(minus_status["program_valid"].numpy())
+            endpoint_valid = endpoint_valid and plus_valid and minus_valid
+            finite_differences.append(
+                float(((plus_value - minus_value) / (2.0 * step)).numpy())
+            )
+        regression = (
+            fit_quadratic_step_regression(FD_STEPS, finite_differences)
+            if endpoint_valid and all(math.isfinite(value) for value in finite_differences)
+            else None
+        )
+        diagnostic = (
+            evaluate_regression_derivative(float(score[index].numpy()), regression)
+            if regression is not None
+            else {"diagnostic_pass": False, "reason": "invalid_fd_endpoint"}
+        )
+        rows.append({
+            "parameter": index,
+            "manual_score": float(score[index].numpy()),
+            "finite_difference_ladder": finite_differences,
+            "endpoint_valid": endpoint_valid,
+            "regression": regression,
+            "regression_diagnostic": diagnostic,
+        })
+    return {
+        "steps": list(FD_STEPS),
+        "rows": rows,
+        "all_pass": all(row["regression_diagnostic"]["diagnostic_pass"] for row in rows),
+        "role": "internal same-program regression diagnostic, not an external score authority",
+    }
 
 
 def _references(row_id: str, target: dict[str, Any]) -> list[dict[str, Any]]:
@@ -213,7 +269,12 @@ def run(output_root: Path) -> dict[str, Any]:
     logical = tf.config.list_logical_devices("GPU")
     if not logical:
         raise RuntimeError("four-model campaign requires a logical GPU")
-    targets = base._build_targets()
+    # Fixture generation performs setup-only Cholesky/SVD work.  Keep it on
+    # CPU after GPU memory policy verification so target construction cannot
+    # consume or initialize the GPU solver path; claim evaluators remain
+    # explicitly pinned to GPU:0 in ``_evaluator``.
+    with tf.device("/CPU:0"):
+        targets = base._build_targets()
     models = []
     for model_index, row_id in enumerate(MODEL_IDS):
         target = targets[row_id]

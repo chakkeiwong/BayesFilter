@@ -13,6 +13,11 @@ from typing import Callable
 import tensorflow as tf
 
 from bayesfilter.highdim import ledh_contract_e_reset_tf as reset
+from bayesfilter.highdim.genut_shape_lm_tf import (
+    necessary_marginal_feasibility,
+    scaled_lm_coefficients_value,
+    smooth_rms_cap_value,
+)
 
 
 Tensor = tf.Tensor
@@ -235,6 +240,7 @@ def _sinkhorn_barycentric_batch_jvp(
         body,
         (tf.zeros([], tf.int32), left, right, left_tangent, right_tangent),
         parallel_iterations=1,
+        maximum_iterations=sinkhorn_steps + balance_steps,
     )
     coupling = left[:, :, None] * kernel * right[:, None, :]
     coupling_tangent = (
@@ -319,12 +325,9 @@ def _sinkhorn_barycentric_batch_value(
         )
         return index + 1, left_new, right_new
 
-    _, left, right = tf.while_loop(
-        lambda index, *_: index < tf.cast(sinkhorn_steps + balance_steps, tf.int32),
-        body,
-        (tf.zeros([], tf.int32), left, right),
-        parallel_iterations=1,
-    )
+    total_iterations = sinkhorn_steps + balance_steps
+    for _ in range(total_iterations):
+        _, left, right = body(tf.constant(0, tf.int32), left, right)
     coupling = left[:, :, None] * kernel * right[:, None, :]
     row_mass = tf.reduce_sum(coupling, axis=2)
     barycentric = tf.einsum("bij,bjd->bid", coupling, particles) / row_mass[:, :, None]
@@ -420,7 +423,7 @@ def _restore_cloud_batch_value(
     }
 
 
-def _restore_cloud_batch_jvp(
+def _restore_cloud_batch_manual_jvp_diagnostic(
     particles: Tensor,
     weights: Tensor,
     particle_tangent: Tensor,
@@ -584,6 +587,237 @@ def _restore_cloud_batch_jvp(
     }
 
 
+def _restore_cloud_batch_jvp(
+    particles: Tensor,
+    weights: Tensor,
+    particle_tangent: Tensor,
+    weight_tangent: Tensor,
+    design: Tensor,
+    *,
+    epsilon: float,
+    sinkhorn_steps: int,
+    balance_steps: int,
+    ridge: float,
+) -> dict[str, Tensor]:
+    """Differentiate the exact bounded-loop value reset at fixed batch shape."""
+
+    parameter_count = particle_tangent.shape[-1]
+    if parameter_count is None:
+        raise ValueError("reset JVP requires static parameter count")
+    value = _restore_cloud_batch_value(
+        particles,
+        weights,
+        design,
+        epsilon=epsilon,
+        sinkhorn_steps=sinkhorn_steps,
+        balance_steps=balance_steps,
+        ridge=ridge,
+    )
+    tangent_directions = []
+    for parameter in range(int(parameter_count)):
+        with tf.autodiff.ForwardAccumulator(
+            (particles, weights),
+            (
+                particle_tangent[..., parameter],
+                weight_tangent[..., parameter],
+            ),
+        ) as accumulator:
+            direction_particles = _restore_cloud_batch_value(
+                particles,
+                weights,
+                design,
+                epsilon=epsilon,
+                sinkhorn_steps=sinkhorn_steps,
+                balance_steps=balance_steps,
+                ridge=ridge,
+            )["particles"]
+        tangent_directions.append(accumulator.jvp(direction_particles))
+    restored_tangent = tf.stack(tangent_directions, axis=-1)
+    reset_valid = value["valid"] & tf.reduce_all(
+        tf.math.is_finite(restored_tangent), axis=[1, 2, 3]
+    )
+    return {
+        **value,
+        "particles_tangent": restored_tangent,
+        "valid": reset_valid,
+    }
+
+
+def _shape_iteration_batch_primal(
+    standardized: Tensor,
+    target_skew: Tensor,
+    target_kurtosis: Tensor,
+    *,
+    strength: float,
+    floor: float,
+    lm_damping: float,
+    lm_scale_floor: float,
+    trust_radius: float,
+) -> dict[str, Tensor]:
+    """Execute one canonical value-order diagonal correction step."""
+
+    m3 = tf.reduce_mean(tf.pow(standardized, 3.0), axis=1)
+    m4 = tf.reduce_mean(tf.pow(standardized, 4.0), axis=1)
+    residual3 = target_skew - m3
+    residual4 = target_kurtosis - m4
+    direction3 = tf.square(standardized) - 1.0 - m3[:, None, :] * standardized
+    direction4 = (
+        tf.pow(standardized, 3.0)
+        - m3[:, None, :]
+        - m4[:, None, :] * standardized
+    )
+    j33 = tf.reduce_mean(3.0 * tf.square(standardized) * direction3, axis=1)
+    j34 = tf.reduce_mean(3.0 * tf.square(standardized) * direction4, axis=1)
+    j43 = tf.reduce_mean(4.0 * tf.pow(standardized, 3.0) * direction3, axis=1)
+    j44 = tf.reduce_mean(4.0 * tf.pow(standardized, 3.0) * direction4, axis=1)
+    jacobian = tf.stack(
+        [tf.stack([j33, j34], axis=-1), tf.stack([j43, j44], axis=-1)],
+        axis=-2,
+    )
+    residual = tf.stack([residual3, residual4], axis=-1)
+    result = {
+        "m3": m3,
+        "m4": m4,
+        "direction3": direction3,
+        "direction4": direction4,
+        "jacobian": jacobian,
+        "residual": residual,
+    }
+    if lm_damping > 0.0:
+        lm = scaled_lm_coefficients_value(
+            jacobian,
+            residual,
+            strength=strength,
+            damping=lm_damping,
+            scale_floor=lm_scale_floor,
+        )
+        coefficient = lm["coefficient"]
+        maximum_condition = tf.reduce_max(
+            lm["scaled_system_condition"], axis=1
+        )
+        result.update(
+            {
+                "column_scale": lm["column_scale"],
+                "scaled_system": lm["scaled_system"],
+            }
+        )
+    else:
+        normal = tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
+        normal += tf.cast(floor, standardized.dtype) * tf.eye(
+            2,
+            batch_shape=[tf.shape(standardized)[0], tf.shape(standardized)[2]],
+            dtype=standardized.dtype,
+        )
+        rhs = tf.linalg.matvec(jacobian, residual, transpose_a=True)
+        coefficient = tf.cast(strength, standardized.dtype) * tf.linalg.solve(
+            normal, rhs[:, :, :, None]
+        )[:, :, :, 0]
+        maximum_condition = tf.zeros(
+            [tf.shape(standardized)[0]], standardized.dtype
+        )
+        result["normal"] = normal
+    raw_displacement = (
+        direction3 * coefficient[:, None, :, 0]
+        + direction4 * coefficient[:, None, :, 1]
+    )
+    pre_cap_rms = tf.sqrt(
+        tf.reduce_mean(tf.square(raw_displacement), axis=2)
+    )
+    if trust_radius > 0.0:
+        capped = smooth_rms_cap_value(
+            raw_displacement, radius=trust_radius
+        )
+        displacement = capped["displacement"]
+        cap_scale = capped["scale"]
+        post_cap_rms = capped["post_rms"]
+    else:
+        displacement = raw_displacement
+        cap_scale = tf.ones_like(pre_cap_rms)
+        post_cap_rms = pre_cap_rms
+    corrected = standardized + displacement
+    corrected_mean = tf.reduce_mean(corrected, axis=1)
+    centered_corrected = corrected - corrected_mean[:, None, :]
+    corrected_covariance = _sym(
+        tf.einsum(
+            "bni,bnj->bij", centered_corrected, centered_corrected
+        )
+        / tf.cast(tf.shape(corrected)[1], corrected.dtype)
+    )
+    corrected_chol = tf.linalg.cholesky(corrected_covariance)
+    next_standardized = _right_solve(
+        corrected_chol, centered_corrected
+    )
+    result.update(
+        {
+            "coefficient": coefficient,
+            "raw_displacement": raw_displacement,
+            "displacement": displacement,
+            "cap_scale": cap_scale,
+            "corrected": corrected,
+            "corrected_mean": corrected_mean,
+            "centered_corrected": centered_corrected,
+            "corrected_chol": corrected_chol,
+            "standardized": next_standardized,
+            "maximum_condition": maximum_condition,
+            "maximum_pre_cap_rms": tf.reduce_max(pre_cap_rms, axis=1),
+            "maximum_post_cap_rms": tf.reduce_max(post_cap_rms, axis=1),
+        }
+    )
+    return result
+
+
+def _scaled_lm_coefficient_tangent_from_primal(
+    primal: dict[str, Tensor],
+    jacobian_tangent: Tensor,
+    residual_tangent: Tensor,
+    *,
+    strength: float,
+) -> Tensor:
+    jacobian = primal["jacobian"]
+    residual = primal["residual"]
+    column_scale = primal["column_scale"]
+    scaled_jacobian = jacobian / column_scale[..., None, :]
+    column_scale_tangent = tf.reduce_sum(
+        jacobian[..., :, :, None] * jacobian_tangent, axis=-3
+    ) / column_scale[..., :, None]
+    scaled_jacobian_tangent = (
+        jacobian_tangent / column_scale[..., None, :, None]
+        - jacobian[..., :, :, None]
+        * column_scale_tangent[..., None, :, :]
+        / tf.square(column_scale)[..., None, :, None]
+    )
+    system_tangent = tf.einsum(
+        "...kip,...kj->...ijp", scaled_jacobian_tangent, scaled_jacobian
+    ) + tf.einsum(
+        "...ki,...kjp->...ijp", scaled_jacobian, scaled_jacobian_tangent
+    )
+    rhs_tangent = tf.einsum(
+        "...kip,...k->...ip", scaled_jacobian_tangent, residual
+    ) + tf.einsum(
+        "...ki,...kp->...ip", scaled_jacobian, residual_tangent
+    )
+    if strength > 0.0:
+        scaled_coefficient = (
+            primal["coefficient"]
+            * column_scale
+            / tf.cast(strength, jacobian.dtype)
+        )
+    else:
+        scaled_coefficient = tf.zeros_like(primal["coefficient"])
+    solve_rhs = rhs_tangent - tf.einsum(
+        "...ijp,...j->...ip", system_tangent, scaled_coefficient
+    )
+    scaled_coefficient_tangent = tf.linalg.solve(
+        primal["scaled_system"], solve_rhs
+    )
+    return tf.cast(strength, jacobian.dtype) * (
+        scaled_coefficient_tangent / column_scale[..., :, None]
+        - scaled_coefficient[..., :, None]
+        * column_scale_tangent
+        / tf.square(column_scale)[..., :, None]
+    )
+
+
 def _shape_iteration_batch_jvp(
     points: Tensor,
     points_tangent: Tensor,
@@ -594,20 +828,24 @@ def _shape_iteration_batch_jvp(
     *,
     strength: float,
     floor: float,
-) -> tuple[Tensor, Tensor]:
-    mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
-        points, points_tangent
+    lm_damping: float,
+    lm_scale_floor: float,
+    trust_radius: float,
+) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    primal = _shape_iteration_batch_primal(
+        points,
+        target_skew,
+        target_kurtosis,
+        strength=strength,
+        floor=floor,
+        lm_damping=lm_damping,
+        lm_scale_floor=lm_scale_floor,
+        trust_radius=trust_radius,
     )
-    chol = tf.linalg.cholesky(covariance)
-    chol_tangent = _cholesky_jvp(chol, covariance_tangent)
-    centered = points - mean[:, None, :]
-    centered_tangent = points_tangent - mean_tangent[:, None, :, :]
-    standardized = _right_solve(chol, centered)
-    standardized_tangent = _right_solve_jvp(
-        chol, chol_tangent, centered, centered_tangent
-    )
-    m3 = tf.reduce_mean(tf.pow(standardized, 3.0), axis=1)
-    m4 = tf.reduce_mean(tf.pow(standardized, 4.0), axis=1)
+    standardized = points
+    standardized_tangent = points_tangent
+    m3 = primal["m3"]
+    m4 = primal["m4"]
     m3_tangent = tf.reduce_mean(
         3.0 * tf.pow(standardized[:, :, :, None], 2.0) * standardized_tangent,
         axis=1,
@@ -616,16 +854,10 @@ def _shape_iteration_batch_jvp(
         4.0 * tf.pow(standardized[:, :, :, None], 3.0) * standardized_tangent,
         axis=1,
     )
-    residual3 = target_skew - m3
-    residual4 = target_kurtosis - m4
     residual3_tangent = target_skew_tangent - m3_tangent
     residual4_tangent = target_kurtosis_tangent - m4_tangent
-    direction3 = tf.square(standardized) - 1.0 - m3[:, None, :] * standardized
-    direction4 = (
-        tf.pow(standardized, 3.0)
-        - m3[:, None, :]
-        - m4[:, None, :] * standardized
-    )
+    direction3 = primal["direction3"]
+    direction4 = primal["direction4"]
     direction3_tangent = (
         2.0 * standardized[:, :, :, None] * standardized_tangent
         - m3_tangent[:, None, :, :] * standardized[:, :, :, None]
@@ -637,10 +869,6 @@ def _shape_iteration_batch_jvp(
         - m4_tangent[:, None, :, :] * standardized[:, :, :, None]
         - m4[:, None, :, None] * standardized_tangent
     )
-    j33 = tf.reduce_mean(3.0 * tf.square(standardized) * direction3, axis=1)
-    j34 = tf.reduce_mean(3.0 * tf.square(standardized) * direction4, axis=1)
-    j43 = tf.reduce_mean(4.0 * tf.pow(standardized, 3.0) * direction3, axis=1)
-    j44 = tf.reduce_mean(4.0 * tf.pow(standardized, 3.0) * direction4, axis=1)
     j33_tangent = tf.reduce_mean(
         6.0 * standardized[:, :, :, None] * standardized_tangent * direction3[:, :, :, None]
         + 3.0 * tf.square(standardized)[:, :, :, None] * direction3_tangent,
@@ -661,10 +889,6 @@ def _shape_iteration_batch_jvp(
         + 4.0 * tf.pow(standardized, 3.0)[:, :, :, None] * direction4_tangent,
         axis=1,
     )
-    jacobian = tf.stack(
-        [tf.stack([j33, j34], axis=-1), tf.stack([j43, j44], axis=-1)],
-        axis=-2,
-    )
     jacobian_tangent = tf.stack(
         [
             tf.stack([j33_tangent, j34_tangent], axis=-2),
@@ -672,83 +896,123 @@ def _shape_iteration_batch_jvp(
         ],
         axis=-3,
     )
-    residual = tf.stack([residual3, residual4], axis=-1)
     residual_tangent = tf.stack(
         [residual3_tangent, residual4_tangent], axis=-2
     )
-    normal = tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
-    normal += tf.cast(floor, points.dtype) * tf.eye(
-        2, batch_shape=[tf.shape(points)[0], tf.shape(points)[2]], dtype=points.dtype
-    )
-    rhs = tf.linalg.matvec(jacobian, residual, transpose_a=True)
-    coefficient = tf.cast(strength, points.dtype) * tf.linalg.solve(
-        normal, rhs[:, :, :, None]
-    )[:, :, :, 0]
-    normal_tangent = (
-        tf.einsum("bdaip,bdaj->bdijp", jacobian_tangent, jacobian)
-        + tf.einsum("bdai,bdajp->bdijp", jacobian, jacobian_tangent)
-    )
-    rhs_tangent = (
-        tf.einsum("bdaip,bda->bdip", jacobian_tangent, residual)
-        + tf.einsum("bdai,bdap->bdip", jacobian, residual_tangent)
-    )
-    if strength > 0.0:
-        solve_rhs = rhs_tangent - tf.einsum(
-            "bdijp,bdj->bdip",
-            normal_tangent,
-            coefficient / tf.cast(strength, points.dtype),
+    if lm_damping > 0.0:
+        coefficient_tangent = _scaled_lm_coefficient_tangent_from_primal(
+            primal,
+            jacobian_tangent,
+            residual_tangent,
+            strength=strength,
         )
     else:
-        solve_rhs = tf.zeros_like(rhs_tangent)
-    batch_size = tf.shape(points)[0]
-    dimension = tf.shape(points)[2]
-    parameter_count = tf.shape(points_tangent)[-1]
-    normal_flat = tf.reshape(
-        tf.broadcast_to(
-            normal[:, :, None, :, :],
-            [batch_size, dimension, parameter_count, 2, 2],
-        ),
-        [-1, 2, 2],
-    )
-    rhs_flat = tf.reshape(
-        tf.transpose(solve_rhs, [0, 1, 3, 2]), [-1, 2, 1]
-    )
-    coefficient_tangent = tf.cast(strength, points.dtype) * tf.transpose(
-        tf.reshape(
-            tf.linalg.solve(normal_flat, rhs_flat)[:, :, 0],
-            [batch_size, dimension, parameter_count, 2],
-        ),
-        [0, 1, 3, 2],
-    )
-    corrected = (
-        standardized
-        + direction3 * coefficient[:, None, :, 0]
-        + direction4 * coefficient[:, None, :, 1]
-    )
-    corrected_tangent = (
-        standardized_tangent
-        + direction3_tangent * coefficient[:, None, :, 0, None]
+        jacobian = primal["jacobian"]
+        residual = primal["residual"]
+        normal = primal["normal"]
+        coefficient = primal["coefficient"]
+        normal_tangent = (
+            tf.einsum("bdaip,bdaj->bdijp", jacobian_tangent, jacobian)
+            + tf.einsum("bdai,bdajp->bdijp", jacobian, jacobian_tangent)
+        )
+        rhs_tangent = (
+            tf.einsum("bdaip,bda->bdip", jacobian_tangent, residual)
+            + tf.einsum("bdai,bdap->bdip", jacobian, residual_tangent)
+        )
+        if strength > 0.0:
+            solve_rhs = rhs_tangent - tf.einsum(
+                "bdijp,bdj->bdip",
+                normal_tangent,
+                coefficient / tf.cast(strength, points.dtype),
+            )
+        else:
+            solve_rhs = tf.zeros_like(rhs_tangent)
+        batch_size = tf.shape(points)[0]
+        dimension = tf.shape(points)[2]
+        parameter_count = tf.shape(points_tangent)[-1]
+        normal_flat = tf.reshape(
+            tf.broadcast_to(
+                normal[:, :, None, :, :],
+                [batch_size, dimension, parameter_count, 2, 2],
+            ),
+            [-1, 2, 2],
+        )
+        rhs_flat = tf.reshape(
+            tf.transpose(solve_rhs, [0, 1, 3, 2]), [-1, 2, 1]
+        )
+        coefficient_tangent = tf.cast(strength, points.dtype) * tf.transpose(
+            tf.reshape(
+                tf.linalg.solve(normal_flat, rhs_flat)[:, :, 0],
+                [batch_size, dimension, parameter_count, 2],
+            ),
+            [0, 1, 3, 2],
+        )
+    coefficient = primal["coefficient"]
+    raw_displacement = primal["raw_displacement"]
+    raw_displacement_tangent = (
+        direction3_tangent * coefficient[:, None, :, 0, None]
         + direction3[:, :, :, None] * coefficient_tangent[:, None, :, 0, :]
         + direction4_tangent * coefficient[:, None, :, 1, None]
         + direction4[:, :, :, None] * coefficient_tangent[:, None, :, 1, :]
     )
-    new_mean, new_covariance, new_mean_tangent, new_covariance_tangent = (
-        _uniform_moments_jvp(corrected, corrected_tangent)
+    if trust_radius > 0.0:
+        mean_square_tangent = 2.0 * tf.reduce_mean(
+            raw_displacement[:, :, :, None] * raw_displacement_tangent,
+            axis=2,
+        )
+        radius_tensor = tf.cast(trust_radius, points.dtype)
+        base = 1.0 + tf.reduce_mean(
+            tf.square(raw_displacement), axis=2
+        ) / tf.square(radius_tensor)
+        cap_scale_tangent = (
+            -0.5
+            * tf.pow(base[:, :, None], -1.5)
+            * mean_square_tangent
+            / tf.square(radius_tensor)
+        )
+        displacement_tangent = (
+            raw_displacement_tangent
+            * primal["cap_scale"][:, :, None, None]
+            + raw_displacement[:, :, :, None]
+            * cap_scale_tangent[:, :, None, :]
+        )
+    else:
+        displacement_tangent = raw_displacement_tangent
+    corrected_tangent = standardized_tangent + displacement_tangent
+    new_mean_tangent = tf.reduce_mean(corrected_tangent, axis=1)
+    centered_tangent = corrected_tangent - new_mean_tangent[:, None, :, :]
+    count = tf.cast(tf.shape(points)[1], points.dtype)
+    new_covariance_tangent = (
+        tf.einsum(
+            "bnip,bnj->bijp",
+            centered_tangent,
+            primal["centered_corrected"],
+        )
+        + tf.einsum(
+            "bni,bnjp->bijp",
+            primal["centered_corrected"],
+            centered_tangent,
+        )
+    ) / count
+    new_covariance_tangent = _sym_tangent(new_covariance_tangent)
+    new_chol_tangent = _cholesky_jvp(
+        primal["corrected_chol"], new_covariance_tangent
     )
-    new_chol = tf.linalg.cholesky(new_covariance)
-    new_chol_tangent = _cholesky_jvp(new_chol, new_covariance_tangent)
     return (
-        _right_solve(new_chol, corrected - new_mean[:, None, :]),
+        primal["standardized"],
         _right_solve_jvp(
-            new_chol,
+            primal["corrected_chol"],
             new_chol_tangent,
-            corrected - new_mean[:, None, :],
+            primal["centered_corrected"],
             corrected_tangent - new_mean_tangent[:, None, :, :],
         ),
+        primal["maximum_condition"],
+        primal["maximum_pre_cap_rms"],
+        primal["maximum_post_cap_rms"],
     )
 
 
-def _higher_moment_batch_jvp(
+def _higher_moment_batch_manual_jvp_diagnostic(
     source: Tensor,
     weights: Tensor,
     source_tangent: Tensor,
@@ -759,8 +1023,18 @@ def _higher_moment_batch_jvp(
     correction_steps: int,
     strength: float,
     floor: float,
+    lm_damping: float,
+    lm_scale_floor: float,
+    trust_radius: float,
 ) -> dict[str, Tensor]:
-    if correction_steps < 0 or strength < 0.0 or floor <= 0.0:
+    if (
+        correction_steps < 0
+        or strength < 0.0
+        or floor <= 0.0
+        or lm_damping < 0.0
+        or lm_scale_floor <= 0.0
+        or trust_radius < 0.0
+    ):
         raise ValueError("invalid higher-moment correction controls")
     mean, covariance, mean_tangent, covariance_tangent = _weighted_moments_jvp(
         source, weights, source_tangent, weights_tangent
@@ -797,6 +1071,9 @@ def _higher_moment_batch_jvp(
         * standardized_source_tangent,
         axis=1,
     )
+    feasibility = necessary_marginal_feasibility(
+        target_skew, target_kurtosis, tf.shape(source)[1]
+    )
     current_mean, current_covariance, current_mean_tangent, current_covariance_tangent = (
         _uniform_moments_jvp(points, points_tangent)
     )
@@ -813,8 +1090,17 @@ def _higher_moment_batch_jvp(
         points - current_mean[:, None, :],
         points_tangent - current_mean_tangent[:, None, :, :],
     )
+    maximum_condition = tf.zeros([tf.shape(source)[0]], source.dtype)
+    maximum_pre_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
+    maximum_post_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
     for _ in range(correction_steps):
-        standardized, standardized_tangent = _shape_iteration_batch_jvp(
+        (
+            standardized,
+            standardized_tangent,
+            iteration_condition,
+            iteration_pre_cap_rms,
+            iteration_post_cap_rms,
+        ) = _shape_iteration_batch_jvp(
             standardized,
             standardized_tangent,
             target_skew,
@@ -823,6 +1109,16 @@ def _higher_moment_batch_jvp(
             target_kurtosis_tangent,
             strength=strength,
             floor=floor,
+            lm_damping=lm_damping,
+            lm_scale_floor=lm_scale_floor,
+            trust_radius=trust_radius,
+        )
+        maximum_condition = tf.maximum(maximum_condition, iteration_condition)
+        maximum_pre_cap_rms = tf.maximum(
+            maximum_pre_cap_rms, iteration_pre_cap_rms
+        )
+        maximum_post_cap_rms = tf.maximum(
+            maximum_post_cap_rms, iteration_post_cap_rms
         )
     output = mean[:, None, :] + tf.linalg.matmul(
         standardized, target_chol, transpose_b=True
@@ -846,8 +1142,87 @@ def _higher_moment_batch_jvp(
         "particles_tangent": output_tangent,
         "skew_residual": skew_residual,
         "kurtosis_residual": kurtosis_residual,
+        "minimum_pearson_feasibility_margin": tf.reduce_min(
+            feasibility["pearson_margin"], axis=1
+        ),
+        "minimum_finite_particle_upper_margin": tf.reduce_min(
+            feasibility["finite_particle_upper_margin"], axis=1
+        ),
+        "maximum_diagonal_scaled_system_condition": maximum_condition,
+        "maximum_diagonal_pre_cap_particle_rms": maximum_pre_cap_rms,
+        "maximum_diagonal_post_cap_particle_rms": maximum_post_cap_rms,
         "valid": valid,
     }
+
+
+def _higher_moment_batch_jvp(
+    source: Tensor,
+    weights: Tensor,
+    source_tangent: Tensor,
+    weights_tangent: Tensor,
+    points: Tensor,
+    points_tangent: Tensor,
+    *,
+    correction_steps: int,
+    strength: float,
+    floor: float,
+    lm_damping: float,
+    lm_scale_floor: float,
+    trust_radius: float,
+) -> dict[str, Tensor]:
+    """Differentiate the shared value core over all parameter directions."""
+
+    if (
+        correction_steps < 0
+        or strength < 0.0
+        or floor <= 0.0
+        or lm_damping < 0.0
+        or lm_scale_floor <= 0.0
+        or trust_radius < 0.0
+    ):
+        raise ValueError("invalid higher-moment correction controls")
+    parameter_count = source_tangent.shape[-1]
+    if parameter_count is None:
+        raise ValueError("higher-moment JVP requires static parameter count")
+    result = _higher_moment_batch_value(
+        source,
+        weights,
+        points,
+        correction_steps=correction_steps,
+        strength=strength,
+        floor=floor,
+        lm_damping=lm_damping,
+        lm_scale_floor=lm_scale_floor,
+        trust_radius=trust_radius,
+    )
+    tangent_directions = []
+    for parameter in range(int(parameter_count)):
+        with tf.autodiff.ForwardAccumulator(
+            (source, weights, points),
+            (
+                source_tangent[..., parameter],
+                weights_tangent[..., parameter],
+                points_tangent[..., parameter],
+            ),
+        ) as accumulator:
+            direction_particles = _higher_moment_batch_value(
+                source,
+                weights,
+                points,
+                correction_steps=correction_steps,
+                strength=strength,
+                floor=floor,
+                lm_damping=lm_damping,
+                lm_scale_floor=lm_scale_floor,
+                trust_radius=trust_radius,
+            )["particles"]
+        tangent_directions.append(accumulator.jvp(direction_particles))
+    particles_tangent = tf.stack(tangent_directions, axis=-1)
+    result["particles_tangent"] = particles_tangent
+    result["valid"] &= tf.reduce_all(
+        tf.math.is_finite(particles_tangent), axis=[1, 2, 3]
+    )
+    return result
 
 
 def _higher_moment_batch_value(
@@ -858,10 +1233,20 @@ def _higher_moment_batch_value(
     correction_steps: int,
     strength: float,
     floor: float,
+    lm_damping: float,
+    lm_scale_floor: float,
+    trust_radius: float,
 ) -> dict[str, Tensor]:
     """Selected diagonal shape correction without derivative tensors."""
 
-    if correction_steps < 0 or strength < 0.0 or floor <= 0.0:
+    if (
+        correction_steps < 0
+        or strength < 0.0
+        or floor <= 0.0
+        or lm_damping < 0.0
+        or lm_scale_floor <= 0.0
+        or trust_radius < 0.0
+    ):
         raise ValueError("invalid higher-moment correction controls")
 
     def moments(values, values_weights=None):
@@ -895,49 +1280,36 @@ def _higher_moment_batch_value(
     target_kurtosis = tf.reduce_sum(
         weights[:, :, None] * tf.pow(source_standardized, 4.0), axis=1
     )
+    feasibility = necessary_marginal_feasibility(
+        target_skew, target_kurtosis, tf.shape(source)[1]
+    )
     point_mean, point_covariance = moments(points)
     standardized = _right_solve(
         tf.linalg.cholesky(point_covariance), points - point_mean[:, None, :]
     )
+    maximum_condition = tf.zeros([tf.shape(source)[0]], source.dtype)
+    maximum_pre_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
+    maximum_post_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
     for _ in range(correction_steps):
-        m3 = tf.reduce_mean(tf.pow(standardized, 3.0), axis=1)
-        m4 = tf.reduce_mean(tf.pow(standardized, 4.0), axis=1)
-        residual3 = target_skew - m3
-        residual4 = target_kurtosis - m4
-        direction3 = tf.square(standardized) - 1.0 - m3[:, None, :] * standardized
-        direction4 = (
-            tf.pow(standardized, 3.0)
-            - m3[:, None, :]
-            - m4[:, None, :] * standardized
+        iteration = _shape_iteration_batch_primal(
+            standardized,
+            target_skew,
+            target_kurtosis,
+            strength=strength,
+            floor=floor,
+            lm_damping=lm_damping,
+            lm_scale_floor=lm_scale_floor,
+            trust_radius=trust_radius,
         )
-        j33 = tf.reduce_mean(3.0 * tf.square(standardized) * direction3, axis=1)
-        j34 = tf.reduce_mean(3.0 * tf.square(standardized) * direction4, axis=1)
-        j43 = tf.reduce_mean(4.0 * tf.pow(standardized, 3.0) * direction3, axis=1)
-        j44 = tf.reduce_mean(4.0 * tf.pow(standardized, 3.0) * direction4, axis=1)
-        jacobian = tf.stack(
-            [tf.stack([j33, j34], axis=-1), tf.stack([j43, j44], axis=-1)],
-            axis=-2,
+        standardized = iteration["standardized"]
+        maximum_condition = tf.maximum(
+            maximum_condition, iteration["maximum_condition"]
         )
-        residual = tf.stack([residual3, residual4], axis=-1)
-        normal = tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
-        normal += tf.cast(floor, points.dtype) * tf.eye(
-            2,
-            batch_shape=[tf.shape(points)[0], tf.shape(points)[2]],
-            dtype=points.dtype,
+        maximum_pre_cap_rms = tf.maximum(
+            maximum_pre_cap_rms, iteration["maximum_pre_cap_rms"]
         )
-        rhs = tf.linalg.matvec(jacobian, residual, transpose_a=True)
-        coefficient = tf.cast(strength, points.dtype) * tf.linalg.solve(
-            normal, rhs[:, :, :, None]
-        )[:, :, :, 0]
-        corrected = (
-            standardized
-            + direction3 * coefficient[:, None, :, 0]
-            + direction4 * coefficient[:, None, :, 1]
-        )
-        corrected_mean, corrected_covariance = moments(corrected)
-        standardized = _right_solve(
-            tf.linalg.cholesky(corrected_covariance),
-            corrected - corrected_mean[:, None, :],
+        maximum_post_cap_rms = tf.maximum(
+            maximum_post_cap_rms, iteration["maximum_post_cap_rms"]
         )
     output = mean[:, None, :] + tf.linalg.matmul(
         standardized, target_chol, transpose_b=True
@@ -952,6 +1324,15 @@ def _higher_moment_batch_value(
         "particles": output,
         "skew_residual": skew_residual,
         "kurtosis_residual": kurtosis_residual,
+        "minimum_pearson_feasibility_margin": tf.reduce_min(
+            feasibility["pearson_margin"], axis=1
+        ),
+        "minimum_finite_particle_upper_margin": tf.reduce_min(
+            feasibility["finite_particle_upper_margin"], axis=1
+        ),
+        "maximum_diagonal_scaled_system_condition": maximum_condition,
+        "maximum_diagonal_pre_cap_particle_rms": maximum_pre_cap_rms,
+        "maximum_diagonal_post_cap_particle_rms": maximum_post_cap_rms,
         "valid": tf.reduce_all(tf.math.is_finite(output), axis=[1, 2]),
     }
 
@@ -972,6 +1353,9 @@ def batch_finite_value(
     higher_moment_correction_steps: int = 0,
     higher_moment_strength: float = 0.0,
     higher_moment_floor: float = 1.0e-6,
+    higher_moment_lm_damping: float = 0.0,
+    higher_moment_lm_scale_floor: float = 1.0e-6,
+    higher_moment_trust_radius: float = 0.0,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Evaluate only the finite GenUT scalar for a leading posterior batch."""
 
@@ -982,11 +1366,13 @@ def batch_finite_value(
     particle_static = initial_noise.shape[0]
     if batch_static is None or particle_static is None:
         raise ValueError("batch GenUT XLA core requires static batch and particle counts")
+    batch_static = int(batch_static)
+    particle_static = int(particle_static)
     observations = tf.convert_to_tensor(observations, dtype=theta.dtype)
     particles = adapter.initial_value(theta, initial_noise)
     particles = tf.ensure_shape(
         particles,
-        [batch_static, particle_static, adapter.state_dimension],
+        [batch_static, particle_static, int(adapter.state_dimension)],
     )
     process_noise = tf.convert_to_tensor(process_noise, dtype=theta.dtype)
     design = tf.convert_to_tensor(design, dtype=theta.dtype)
@@ -1004,6 +1390,15 @@ def batch_finite_value(
     min_gap = tf.fill([batch_static], tf.constant(float("inf"), theta.dtype))
     max_skew = tf.zeros([batch_static], theta.dtype)
     max_kurtosis = tf.zeros([batch_static], theta.dtype)
+    min_pearson = tf.fill(
+        [batch_static], tf.constant(float("inf"), theta.dtype)
+    )
+    min_finite_upper = tf.fill(
+        [batch_static], tf.constant(float("inf"), theta.dtype)
+    )
+    max_condition = tf.zeros([batch_static], theta.dtype)
+    max_pre_cap_rms = tf.zeros([batch_static], theta.dtype)
+    max_post_cap_rms = tf.zeros([batch_static], theta.dtype)
     horizon = tf.shape(observations)[0]
 
     def body(
@@ -1018,18 +1413,28 @@ def batch_finite_value(
         min_gap_value,
         max_skew_value,
         max_kurtosis_value,
+        min_pearson_value,
+        min_finite_upper_value,
+        max_condition_value,
+        max_pre_cap_rms_value,
+        max_post_cap_rms_value,
     ):
         transition = tf.logical_or(
             tf.constant(transition_before_first_observation),
             tf.not_equal(time_index, tf.constant(0, tf.int32)),
         )
-        next_particles = tf.cond(
-            transition,
-            lambda: adapter.transition_value(
+        if transition_before_first_observation:
+            next_particles = adapter.transition_value(
                 theta, particles_value, process_noise[time_index], time_index
-            ),
-            lambda: particles_value,
-        )
+            )
+        else:
+            next_particles = tf.cond(
+                transition,
+                lambda: adapter.transition_value(
+                    theta, particles_value, process_noise[time_index], time_index
+                ),
+                lambda: particles_value,
+            )
         log_likelihood = adapter.observation_value(
             theta, next_particles, observations[time_index], time_index
         )
@@ -1060,11 +1465,11 @@ def batch_finite_value(
             correction_steps=higher_moment_correction_steps,
             strength=higher_moment_strength,
             floor=higher_moment_floor,
+            lm_damping=higher_moment_lm_damping,
+            lm_scale_floor=higher_moment_lm_scale_floor,
+            trust_radius=higher_moment_trust_radius,
         )
-        higher_particles = tf.ensure_shape(
-            higher["particles"],
-            [batch_static, particle_static, adapter.state_dimension],
-        )
+        higher_particles = higher["particles"]
         step_valid = stage_valid & restored["valid"] & higher["valid"]
         uniform_weights = tf.fill(
             [batch_static, particle_static],
@@ -1082,8 +1487,44 @@ def batch_finite_value(
             tf.minimum(min_gap_value, restored["minimum_gap_eigenvalue"]),
             tf.maximum(max_skew_value, tf.reduce_max(tf.abs(higher["skew_residual"]), axis=1)),
             tf.maximum(max_kurtosis_value, tf.reduce_max(tf.abs(higher["kurtosis_residual"]), axis=1)),
+            tf.minimum(min_pearson_value, higher["minimum_pearson_feasibility_margin"]),
+            tf.minimum(min_finite_upper_value, higher["minimum_finite_particle_upper_margin"]),
+            tf.maximum(max_condition_value, higher["maximum_diagonal_scaled_system_condition"]),
+            tf.maximum(max_pre_cap_rms_value, higher["maximum_diagonal_pre_cap_particle_rms"]),
+            tf.maximum(max_post_cap_rms_value, higher["maximum_diagonal_post_cap_particle_rms"]),
         )
 
+    initial_loop_state = (
+        tf.zeros([], tf.int32),
+        particles,
+        weights,
+        total,
+        valid,
+        max_mean,
+        max_row,
+        max_column,
+        min_gap,
+        max_skew,
+        max_kurtosis,
+        min_pearson,
+        min_finite_upper,
+        max_condition,
+        max_pre_cap_rms,
+        max_post_cap_rms,
+    )
+    horizon_static = observations.shape[0]
+    if horizon_static is not None:
+        loop_state = initial_loop_state
+        for _ in range(int(horizon_static)):
+            loop_state = body(*loop_state)
+    else:
+        loop_state = tf.while_loop(
+            lambda time_index, *_: time_index < horizon,
+            body,
+            initial_loop_state,
+            parallel_iterations=1,
+            maximum_iterations=horizon,
+        )
     (
         _,
         _particles,
@@ -1096,24 +1537,12 @@ def batch_finite_value(
         min_gap,
         max_skew,
         max_kurtosis,
-    ) = tf.while_loop(
-        lambda time_index, *_: time_index < horizon,
-        body,
-        (
-            tf.zeros([], tf.int32),
-            particles,
-            weights,
-            total,
-            valid,
-            max_mean,
-            max_row,
-            max_column,
-            min_gap,
-            max_skew,
-            max_kurtosis,
-        ),
-        parallel_iterations=1,
-    )
+        min_pearson,
+        min_finite_upper,
+        max_condition,
+        max_pre_cap_rms,
+        max_post_cap_rms,
+    ) = loop_state
     diagnostics = {
         "program_valid": valid,
         "max_mean_residual": max_mean,
@@ -1122,11 +1551,16 @@ def batch_finite_value(
         "minimum_covariance_gap_eigenvalue": min_gap,
         "maximum_skew_residual": max_skew,
         "maximum_kurtosis_residual": max_kurtosis,
+        "minimum_pearson_feasibility_margin": min_pearson,
+        "minimum_finite_particle_upper_margin": min_finite_upper,
+        "maximum_diagonal_scaled_system_condition": max_condition,
+        "maximum_diagonal_pre_cap_particle_rms": max_pre_cap_rms,
+        "maximum_diagonal_post_cap_particle_rms": max_post_cap_rms,
     }
     return tf.where(valid, total, tf.constant(float("nan"), theta.dtype)), diagnostics
 
 
-def batch_finite_value_score(
+def batch_finite_value_score_manual_jvp_diagnostic(
     adapter: BatchCandidateModelAdapter,
     theta: Tensor,
     observations: Tensor,
@@ -1142,6 +1576,9 @@ def batch_finite_value_score(
     higher_moment_correction_steps: int = 0,
     higher_moment_strength: float = 0.0,
     higher_moment_floor: float = 1.0e-6,
+    higher_moment_lm_damping: float = 0.0,
+    higher_moment_lm_scale_floor: float = 1.0e-6,
+    higher_moment_trust_radius: float = 0.0,
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
     """Evaluate a genuine leading-batch finite GenUT value and total score."""
 
@@ -1159,7 +1596,7 @@ def batch_finite_value_score(
     particles = adapter.initial_value(theta, initial_noise)
     particles = tf.ensure_shape(
         particles,
-        [batch_static, particle_static, adapter.state_dimension],
+        [batch_static, particle_static, int(adapter.state_dimension)],
     )
     particle_tangent = adapter.initial_tangent(theta, initial_noise)
     particle_tangent = tf.ensure_shape(
@@ -1192,6 +1629,21 @@ def batch_finite_value_score(
     )
     maximum_skew_residual = tf.zeros([batch_static], theta.dtype)
     maximum_kurtosis_residual = tf.zeros([batch_static], theta.dtype)
+    minimum_pearson_feasibility_margin = tf.fill(
+        [batch_static], tf.constant(float("inf"), theta.dtype)
+    )
+    minimum_finite_particle_upper_margin = tf.fill(
+        [batch_static], tf.constant(float("inf"), theta.dtype)
+    )
+    maximum_diagonal_scaled_system_condition = tf.zeros(
+        [batch_static], theta.dtype
+    )
+    maximum_diagonal_pre_cap_particle_rms = tf.zeros(
+        [batch_static], theta.dtype
+    )
+    maximum_diagonal_post_cap_particle_rms = tf.zeros(
+        [batch_static], theta.dtype
+    )
     horizon = tf.shape(observations)[0]
 
     def body(
@@ -1209,26 +1661,39 @@ def batch_finite_value_score(
         min_gap,
         max_skew,
         max_kurtosis,
+        min_pearson,
+        min_finite_upper,
+        max_condition,
+        max_pre_cap_rms,
+        max_post_cap_rms,
     ):
         transition = tf.logical_or(
             tf.constant(transition_before_first_observation),
             tf.not_equal(time_index, tf.constant(0, tf.int32)),
         )
         noise = process_noise[time_index]
-        next_particles = tf.cond(
-            transition,
-            lambda: adapter.transition_value(
+        if transition_before_first_observation:
+            next_particles = adapter.transition_value(
                 theta, particles_value, noise, time_index
-            ),
-            lambda: particles_value,
-        )
-        next_tangent = tf.cond(
-            transition,
-            lambda: adapter.transition_tangent(
+            )
+            next_tangent = adapter.transition_tangent(
                 theta, particles_value, noise, particles_jvp, time_index
-            ),
-            lambda: particles_jvp,
-        )
+            )
+        else:
+            next_particles = tf.cond(
+                transition,
+                lambda: adapter.transition_value(
+                    theta, particles_value, noise, time_index
+                ),
+                lambda: particles_value,
+            )
+            next_tangent = tf.cond(
+                transition,
+                lambda: adapter.transition_tangent(
+                    theta, particles_value, noise, particles_jvp, time_index
+                ),
+                lambda: particles_jvp,
+            )
         observation = observations[time_index]
         log_likelihood = adapter.observation_value(
             theta, next_particles, observation, time_index
@@ -1282,20 +1747,12 @@ def batch_finite_value_score(
             correction_steps=higher_moment_correction_steps,
             strength=higher_moment_strength,
             floor=higher_moment_floor,
+            lm_damping=higher_moment_lm_damping,
+            lm_scale_floor=higher_moment_lm_scale_floor,
+            trust_radius=higher_moment_trust_radius,
         )
-        higher_particles = tf.ensure_shape(
-            higher["particles"],
-            [batch_static, particle_static, adapter.state_dimension],
-        )
-        higher_tangent = tf.ensure_shape(
-            higher["particles_tangent"],
-            [
-                batch_static,
-                particle_static,
-                adapter.state_dimension,
-                parameter_count,
-            ],
-        )
+        higher_particles = higher["particles"]
+        higher_tangent = higher["particles_tangent"]
         step_valid = stage_valid & restored["valid"] & higher["valid"]
         uniform_weights = tf.fill(
             [batch_static, particle_static],
@@ -1325,8 +1782,62 @@ def batch_finite_value_score(
                 max_kurtosis,
                 tf.reduce_max(tf.abs(higher["kurtosis_residual"]), axis=1),
             ),
+            tf.minimum(
+                min_pearson,
+                higher["minimum_pearson_feasibility_margin"],
+            ),
+            tf.minimum(
+                min_finite_upper,
+                higher["minimum_finite_particle_upper_margin"],
+            ),
+            tf.maximum(
+                max_condition,
+                higher["maximum_diagonal_scaled_system_condition"],
+            ),
+            tf.maximum(
+                max_pre_cap_rms,
+                higher["maximum_diagonal_pre_cap_particle_rms"],
+            ),
+            tf.maximum(
+                max_post_cap_rms,
+                higher["maximum_diagonal_post_cap_particle_rms"],
+            ),
         )
 
+    initial_loop_state = (
+        tf.zeros([], tf.int32),
+        particles,
+        particle_tangent,
+        weights,
+        weight_tangent,
+        total,
+        score,
+        valid,
+        maximum_mean_residual,
+        maximum_row_residual,
+        maximum_column_residual,
+        minimum_gap_eigenvalue,
+        maximum_skew_residual,
+        maximum_kurtosis_residual,
+        minimum_pearson_feasibility_margin,
+        minimum_finite_particle_upper_margin,
+        maximum_diagonal_scaled_system_condition,
+        maximum_diagonal_pre_cap_particle_rms,
+        maximum_diagonal_post_cap_particle_rms,
+    )
+    horizon_static = observations.shape[0]
+    if horizon_static is not None:
+        loop_state = initial_loop_state
+        for _ in range(int(horizon_static)):
+            loop_state = body(*loop_state)
+    else:
+        loop_state = tf.while_loop(
+            lambda time_index, *_: time_index < horizon,
+            body,
+            initial_loop_state,
+            parallel_iterations=1,
+            maximum_iterations=horizon,
+        )
     (
         _,
         _particles,
@@ -1342,27 +1853,12 @@ def batch_finite_value_score(
         minimum_gap_eigenvalue,
         maximum_skew_residual,
         maximum_kurtosis_residual,
-    ) = tf.while_loop(
-        lambda time_index, *_: time_index < horizon,
-        body,
-        (
-            tf.zeros([], tf.int32),
-            particles,
-            particle_tangent,
-            weights,
-            weight_tangent,
-            total,
-            score,
-            valid,
-            maximum_mean_residual,
-            maximum_row_residual,
-            maximum_column_residual,
-            minimum_gap_eigenvalue,
-            maximum_skew_residual,
-            maximum_kurtosis_residual,
-        ),
-        parallel_iterations=1,
-    )
+        minimum_pearson_feasibility_margin,
+        minimum_finite_particle_upper_margin,
+        maximum_diagonal_scaled_system_condition,
+        maximum_diagonal_pre_cap_particle_rms,
+        maximum_diagonal_post_cap_particle_rms,
+    ) = loop_state
     nan = tf.constant(float("nan"), theta.dtype)
     diagnostics = {
         "program_valid": valid,
@@ -1372,6 +1868,11 @@ def batch_finite_value_score(
         "minimum_covariance_gap_eigenvalue": minimum_gap_eigenvalue,
         "maximum_skew_residual": maximum_skew_residual,
         "maximum_kurtosis_residual": maximum_kurtosis_residual,
+        "minimum_pearson_feasibility_margin": minimum_pearson_feasibility_margin,
+        "minimum_finite_particle_upper_margin": minimum_finite_particle_upper_margin,
+        "maximum_diagonal_scaled_system_condition": maximum_diagonal_scaled_system_condition,
+        "maximum_diagonal_pre_cap_particle_rms": maximum_diagonal_pre_cap_particle_rms,
+        "maximum_diagonal_post_cap_particle_rms": maximum_diagonal_post_cap_particle_rms,
     }
     return (
         tf.where(valid, total, nan),
@@ -1380,8 +1881,93 @@ def batch_finite_value_score(
     )
 
 
+def batch_finite_value_score(
+    adapter: BatchCandidateModelAdapter,
+    theta: Tensor,
+    observations: Tensor,
+    initial_noise: Tensor,
+    process_noise: Tensor,
+    design: Tensor,
+    *,
+    epsilon: float = 2.0,
+    sinkhorn_steps: int = 8,
+    balance_steps: int = 8,
+    ridge: float = 1.0e-5,
+    transition_before_first_observation: bool = True,
+    higher_moment_correction_steps: int = 0,
+    higher_moment_strength: float = 0.0,
+    higher_moment_floor: float = 1.0e-6,
+    higher_moment_lm_damping: float = 0.0,
+    higher_moment_lm_scale_floor: float = 1.0e-6,
+    higher_moment_trust_radius: float = 0.0,
+) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
+    """Return the value and the derivative of that exact value program."""
+
+    theta = tf.convert_to_tensor(theta, dtype=initial_noise.dtype)
+    if theta.shape.rank != 2:
+        raise ValueError("batch GenUT theta must have shape [batch, parameter]")
+    parameter_count = theta.shape[-1]
+    if parameter_count is None:
+        raise ValueError("batch GenUT score requires static parameter count")
+    parameter_count = int(parameter_count)
+    kwargs = {
+        "epsilon": epsilon,
+        "sinkhorn_steps": sinkhorn_steps,
+        "balance_steps": balance_steps,
+        "ridge": ridge,
+        "transition_before_first_observation": transition_before_first_observation,
+        "higher_moment_correction_steps": higher_moment_correction_steps,
+        "higher_moment_strength": higher_moment_strength,
+        "higher_moment_floor": higher_moment_floor,
+        "higher_moment_lm_damping": higher_moment_lm_damping,
+        "higher_moment_lm_scale_floor": higher_moment_lm_scale_floor,
+        "higher_moment_trust_radius": higher_moment_trust_radius,
+    }
+    value, diagnostics = batch_finite_value(
+        adapter,
+        theta,
+        observations,
+        initial_noise,
+        process_noise,
+        design,
+        **kwargs,
+    )
+    initial_tangent = adapter.initial_tangent(theta, initial_noise)
+    tangent_input_valid = tf.reduce_all(
+        tf.math.is_finite(initial_tangent), axis=[1, 2, 3]
+    )
+    score_directions = []
+    for parameter in range(int(parameter_count)):
+        direction = tf.one_hot(
+            parameter, int(parameter_count), dtype=theta.dtype
+        )[None, :]
+        direction = tf.broadcast_to(direction, tf.shape(theta))
+        with tf.autodiff.ForwardAccumulator(theta, direction) as accumulator:
+            direction_value, _direction_diagnostics = batch_finite_value(
+                adapter,
+                theta,
+                observations,
+                initial_noise,
+                process_noise,
+                design,
+                **kwargs,
+            )
+        score_directions.append(accumulator.jvp(direction_value))
+    score = tf.stack(score_directions, axis=1)
+    valid = diagnostics["program_valid"] & tangent_input_valid & tf.reduce_all(
+        tf.math.is_finite(score), axis=1
+    )
+    nan = tf.constant(float("nan"), theta.dtype)
+    diagnostics = dict(diagnostics)
+    diagnostics["program_valid"] = valid
+    return tf.where(valid, value, nan), tf.where(
+        valid[:, None], score, tf.fill(tf.shape(score), nan)
+    ), diagnostics
+
+
 __all__ = [
     "BatchCandidateModelAdapter",
     "batch_finite_value",
     "batch_finite_value_score",
+    "batch_finite_value_score_manual_jvp_diagnostic",
 ]

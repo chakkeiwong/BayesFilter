@@ -4,6 +4,7 @@ import json
 
 import numpy as np
 import pytest
+import tensorflow as tf
 
 from bayesfilter.inference.hmc import PrecomputedMassArtifact
 from bayesfilter.inference.mass_matrix import (
@@ -70,7 +71,24 @@ def test_hessian_mass_builder_records_symmetry_projection_metadata():
     assert result.regularization_report["input_asymmetry_max_abs"] == pytest.approx(
         0.25
     )
-    np.testing.assert_allclose(result.regularized_precision, result.regularized_precision.T)
+    np.testing.assert_allclose(
+        result.regularized_precision,
+        tf.linalg.matrix_transpose(result.regularized_precision),
+    )
+
+
+def test_mass_matrix_runtime_module_is_tensorflow_only() -> None:
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "bayesfilter"
+        / "inference"
+        / "mass_matrix.py"
+    ).read_text(encoding="utf-8")
+
+    assert "import numpy" not in source
+    assert "import tensorflow as tf" in source
 
 
 def test_hessian_mass_builder_fails_closed_on_nonfinite_precision():

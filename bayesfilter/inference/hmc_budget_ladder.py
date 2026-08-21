@@ -19,6 +19,7 @@ from typing import Any
 import numpy as np
 
 from bayesfilter.inference.batched_value_score import LatentAffineBatchValueScoreAdapter
+from bayesfilter.inference.hmc_artifact_identity import mass_artifact_signature
 from bayesfilter.inference.hmc import (
     FullChainHMCConfig,
     FullChainHMCRunResult,
@@ -1521,6 +1522,28 @@ def _build_fixed_mass_hmc_adapter(
     )
 
 
+def build_fixed_mass_hmc_adapter(
+    *,
+    adapter: Any,
+    mass_artifact: PrecomputedMassArtifact,
+    target_scope: str,
+) -> Any:
+    """Build BayesFilter's canonical latent adapter for a frozen mass."""
+
+    if not isinstance(mass_artifact, PrecomputedMassArtifact):
+        raise TypeError("mass_artifact must be PrecomputedMassArtifact")
+    scope = str(target_scope)
+    if not scope:
+        raise ValueError("target_scope must be non-empty")
+    mass_artifact.validate_for_adapter(adapter)
+    return _build_fixed_mass_hmc_adapter(
+        adapter=adapter,
+        mass_artifact=mass_artifact,
+        mass_signature=_mass_artifact_signature(mass_artifact),
+        target_scope=scope,
+    )
+
+
 def _tune_config(
     config: FixedMassHMCTuningBudgetLadderConfig,
     *,
@@ -2606,14 +2629,7 @@ def _coerce_callback_result(raw: Any) -> FixedMassHMCTuningBudgetCallbackResult:
 
 
 def _mass_artifact_signature(mass_artifact: PrecomputedMassArtifact) -> str:
-    return program_signature(
-        {
-            "signature_payload": mass_artifact.signature_payload(),
-            "position": np.asarray(mass_artifact.position, dtype=float),
-            "covariance": np.asarray(mass_artifact.covariance, dtype=float),
-            "factor": np.asarray(mass_artifact.factor, dtype=float),
-        }
-    )
+    return mass_artifact_signature(mass_artifact)
 
 
 def _error_diagnostics(exc: Exception) -> Mapping[str, Any]:

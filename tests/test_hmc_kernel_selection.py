@@ -1371,6 +1371,76 @@ def test_exact_l_retune_shared_invalidity_stops_fallback_immediately() -> None:
     assert selection.retune_candidate_signature == candidate_l5.signature
 
 
+def test_evidence_extension_preserves_matrix_when_exact_l_runner_raises() -> None:
+    """An exact-L exception is a typed shared veto, not a lost extension ledger."""
+
+    bank = np.arange(8, dtype=float).reshape(4, 2)
+    policy = HMCAcceptancePolicy()
+
+    def runner(_adapter, initial_state, config):
+        if config.tuning_policy.uses_dual_averaging:
+            raise RuntimeError("synthetic exact-L runner failure")
+        draws = np.arange(config.num_results, dtype=float)[:, None, None]
+        probability = np.full((config.num_results, 4), 0.60)
+        if config.num_results > 64:
+            probability.fill(0.70)
+        return SimpleNamespace(
+            samples=draws + np.asarray(initial_state)[None, :, :],
+            trace={
+                "log_accept_ratio": np.log(probability),
+                "is_accepted": np.ones_like(probability, dtype=bool),
+                "target_log_prob": np.zeros_like(probability),
+            },
+            diagnostics={},
+        )
+
+    common = {
+        "coordinate_signature": "coordinate",
+        "metric_signature": "metric",
+        "private_start_bank_signature": _bank_signature(bank),
+        "root_seed": (20260813, 901),
+        "frozen_step_size": 0.1,
+        "screen_num_results": 64,
+        "screen_num_burnin_steps": 16,
+        "final_tune_adaptation_steps": 64,
+        "target_scope": "test",
+        "acceptance_policy": policy,
+        "chain_execution_mode": "tf_function",
+        "use_xla": False,
+    }
+    initial = _matrix_selection(
+        common,
+        {5: _inconclusive_evidence(), 10: _inconclusive_evidence(), 20: _inconclusive_evidence()},
+    )
+    assert initial.disposition == "inconclusive_evidence"
+
+    finalized, extension = extend_operational_fixed_trajectory_evidence(
+        selection=initial,
+        adapter=_FiniteTargetAdapter(),
+        private_start_bank=bank,
+        private_start_bank_signature=common["private_start_bank_signature"],
+        coordinate_signature=common["coordinate_signature"],
+        metric_signature=common["metric_signature"],
+        frozen_step_size=common["frozen_step_size"],
+        root_seed=common["root_seed"],
+        target_scope=common["target_scope"],
+        acceptance_policy=policy,
+        checkpoint=128,
+        extension_round_index=0,
+        screen_num_burnin_steps=common["screen_num_burnin_steps"],
+        final_tune_adaptation_steps=common["final_tune_adaptation_steps"],
+        run_full_chain=runner,
+    )
+
+    assert extension.matrix_disposition == "representative_nominated"
+    assert extension.finalized_disposition == "shared_invalidity"
+    assert len(extension.slots) == 9
+    assert finalized.disposition == "shared_invalidity"
+    assert finalized.retune_failure_scope == "shared_execution_invalid"
+    assert finalized.retune_failure_reasons == ("retune_runtime_error",)
+    assert finalized.retune_candidate_signature is not None
+
+
 def test_exact_l_retune_fallback_is_invariant_to_candidate_permutation() -> None:
     bank = np.arange(8, dtype=float).reshape(4, 2)
     candidate_results = tuple(_result(leapfrog, retuned=False) for leapfrog in (5, 10, 20))

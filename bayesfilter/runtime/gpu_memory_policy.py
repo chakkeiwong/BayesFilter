@@ -14,6 +14,24 @@ class TensorFlowGPUMemoryPolicyError(RuntimeError):
     """Raised when the required TensorFlow GPU memory policy cannot be applied."""
 
 
+def _jsonable_device_details(tf: Any, device: Any) -> Mapping[str, Any]:
+    """Return TensorFlow's physical-device details in JSON-safe Python types."""
+
+    try:
+        details = tf.config.experimental.get_device_details(device)
+    except (AttributeError, RuntimeError, ValueError):
+        return {}
+    result = {}
+    for key, value in dict(details).items():
+        if isinstance(value, tuple):
+            result[str(key)] = list(value)
+        elif isinstance(value, (str, int, float, bool)) or value is None:
+            result[str(key)] = value
+        else:
+            result[str(key)] = str(value)
+    return result
+
+
 def configure_tensorflow_gpu_memory_growth(
     tf: Any,
     *,
@@ -47,7 +65,13 @@ def configure_tensorflow_gpu_memory_growth(
             raise TensorFlowGPUMemoryPolicyError(
                 f"TensorFlow GPU memory growth was not enabled: {name}"
             )
-        rows.append({"device": name, "memory_growth": True})
+        rows.append(
+            {
+                "device": name,
+                "device_details": _jsonable_device_details(tf, device),
+                "memory_growth": True,
+            }
+        )
 
     return {
         "schema": TF_GPU_MEMORY_POLICY_SCHEMA,

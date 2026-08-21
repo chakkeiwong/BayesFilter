@@ -1,0 +1,1957 @@
+{
+  "archive_label": "weighted-analytic",
+  "native_divergence_status": "not_exposed_by_kernel",
+  "nonclaims": [
+    "native divergence unavailability is not zero divergences",
+    "finite-sample operational screen only",
+    "no posterior correctness or stationarity proof"
+  ],
+  "physical_coordinate_role": "explanatory_only",
+  "policy": {
+    "acceptance_max": 0.95,
+    "acceptance_min": 0.35,
+    "bulk_ess_min": 400.0,
+    "chain_count": 4,
+    "delta_h_abs_max": 1000.0,
+    "num_leapfrog_steps": 20,
+    "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+    "retained_check_interval_results": 1000,
+    "retained_chunk_size": 500,
+    "retained_ess_required": true,
+    "retained_max_results": 10000,
+    "retained_min_results": 1000,
+    "retained_rhat_max": 1.01,
+    "seed": [
+      20260812,
+      91001
+    ],
+    "step_size": 0.14091138276334744,
+    "tail_ess_min": 400.0,
+    "target_status_required": true,
+    "use_xla": true,
+    "warmup_chunk_size": 500,
+    "warmup_max_results": 10000,
+    "warmup_min_results": 2000,
+    "warmup_rhat_max": 1.05,
+    "warmup_window_results": 1000,
+    "xla_qualification_required": false
+  },
+  "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+  "retained_chunks": [
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7355608440962592,
+        0.7199691615294648,
+        0.7477590962255432,
+        0.7430270458022171
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 0,
+      "chunk_seconds": 10.657679245108739,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 11976272126908.623,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-receipt.json",
+        "sha256": "3571dd9a48f43965f5e252378114e76d12f7946142267654309bae00882d1a09"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-samples.tftensor",
+        "sha256": "962667981e0ebca1bc08d6310a275c554595867b0edb816edafc79ef39316bb6",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1092013
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-delta_h.tftensor",
+          "sha256": "27c965ee51df42424eb2798d58129f07ab86f17c4183810b27f9ff802653b780",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-is_accepted.tftensor",
+          "sha256": "5831da035368c0c345342595e1e64ccecf1c036d777702dc1dba9f8dd76712d9",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-log_accept_ratio.tftensor",
+          "sha256": "e63c845c2213f101ac45b01a38684802f6eb78e046be1b7a7669b6a37b894877",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-proposed_target_log_prob.tftensor",
+          "sha256": "49ea9d2c761b6d6c523c646d52c8dad607df01d3ed3fbe2875a6064bcaf0fb90",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-target_log_prob.tftensor",
+          "sha256": "c14a68ca71a24694b7031aa9daddda94db841df4d97a4cba2375bf91be706e1f",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-target_score.tftensor",
+          "sha256": "05004090e08ab60f9154eed055af5ce92a6194cf86d0454be635509e526cd7b5",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-000-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7585385204335349,
+        0.7195457902016369,
+        0.7297699973301436,
+        0.7146703595455913
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            7820.601807722354,
+            5165.638944430659,
+            9052.535566971805,
+            8361.259728424784
+          ],
+          "max_rhat": 1.0184982573733048,
+          "min_bulk_ess": 5165.638944430659,
+          "min_tail_ess": 315.2176577827639,
+          "rhat_by_parameter": [
+            1.0184982573733048,
+            1.00734822264555,
+            1.0170221481349495,
+            1.0138704490039596
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            461.7238229085421,
+            694.3527445826596,
+            627.9850095458079,
+            315.2176577827639
+          ]
+        },
+        "max_rhat": 1.0184982573733048,
+        "min_bulk_ess": 1986.7927226785769,
+        "min_tail_ess": 315.2176577827639,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            1986.7927226785769,
+            2946.5724096468657,
+            3168.8726156951725,
+            3626.5686972392245
+          ],
+          "max_rhat": 1.0119531633257788,
+          "min_bulk_ess": 1986.7927226785769,
+          "min_tail_ess": 377.6540537142584,
+          "rhat_by_parameter": [
+            1.008112562725528,
+            1.0046020100981532,
+            1.0091223965336196,
+            1.0119531633257788
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            377.6540537142584,
+            650.9679997733049,
+            594.4624998804126,
+            434.5097365082571
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.01
+      },
+      "chunk_index": 1,
+      "chunk_seconds": 10.693227249896154,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 3429194448513005.0,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-receipt.json",
+        "sha256": "ee20b23234186079d6ef9f246c8a9543db5a86027b1a81932479cfdc50f41ea5"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-samples.tftensor",
+        "sha256": "df25459fcf3803c2559b7b03e9befd91ef4ffbcacb2f2d57841c57fb99ab1594",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1093022
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-delta_h.tftensor",
+          "sha256": "75ee3f9bd4399b970359e928c5e6cc1078de2ca6fc34d5dc22946247482f3118",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-is_accepted.tftensor",
+          "sha256": "d0d46adc87e327ef2613d67d7b383f1efa28a7545ee1bf1cd8e88fd461184aac",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-log_accept_ratio.tftensor",
+          "sha256": "78126e2a35ff58e775b4d729eb95df3008c94a2f76d88da7d89e516f80208a94",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-proposed_target_log_prob.tftensor",
+          "sha256": "496c85146f9cc580668cc6207ee722880eb316f6ee5dc88f88809f1547bd3f21",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-target_log_prob.tftensor",
+          "sha256": "f81770ce35a51b3925c307242cc089c9dedce2debf99528be3fa1f8482da7091",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-target_score.tftensor",
+          "sha256": "df9650a2e483961686ad151e75e2c5f3616ff240a932760fc97863cabd113473",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-001-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.717978195295144,
+        0.7593563647103853,
+        0.7231291426743817,
+        0.7671843778790067
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 2,
+      "chunk_seconds": 10.671362952096388,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 110304371367103.45,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-receipt.json",
+        "sha256": "9db96011ad3feb3280d35c13b34640f2d07d0058c465c34b0812902df4b0de99"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-samples.tftensor",
+        "sha256": "b11aa98ad565755d1f37dbe8da0aa2ad1c7e720a73546c7262af177d8447e4ac",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1094031
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-delta_h.tftensor",
+          "sha256": "45775e3240ff49f316331094b202fbf657c9a613eb54bb0e4659dbfb17968122",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-is_accepted.tftensor",
+          "sha256": "e0374f24aad86e3dc3c0f9fb7f8429019f6a7dc64a99e066d19ed9c5497f2289",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-log_accept_ratio.tftensor",
+          "sha256": "4b98dfeb524cd40e500ae3f086ca49951f88ab771a0dd1cec583b24806b9ec22",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-proposed_target_log_prob.tftensor",
+          "sha256": "b63bc57434c17d370f25e6f5aa4dde0710138a13b7e89ed155b69fcfe4e8cfbf",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-target_log_prob.tftensor",
+          "sha256": "44f0a5331567a1b3846fc2f9d5adf3e84453fe4b4f8b88cb2b127e2f0194e374",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-target_score.tftensor",
+          "sha256": "98839e91bfae420f6143d35f5c9d6c8b43dca5c019494f5166486c03678c3e3c",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-002-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7423342655362853,
+        0.7769608649285961,
+        0.7114920322302363,
+        0.7573759207402279
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            17149.484834965435,
+            10894.100133905662,
+            16933.57660190812,
+            17540.250070490038
+          ],
+          "max_rhat": 1.0126378355336,
+          "min_bulk_ess": 10894.100133905662,
+          "min_tail_ess": 632.5988206424732,
+          "rhat_by_parameter": [
+            1.0126378355336,
+            1.005421344540737,
+            1.0052988797045805,
+            1.0040055561317043
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            1021.194177661632,
+            1406.9135258413064,
+            1310.8066664135677,
+            632.5988206424732
+          ]
+        },
+        "max_rhat": 1.0126378355336,
+        "min_bulk_ess": 4537.455988455532,
+        "min_tail_ess": 632.5988206424732,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            4537.455988455532,
+            5050.691968988043,
+            7138.691479371213,
+            7138.2049188619785
+          ],
+          "max_rhat": 1.0108450180438395,
+          "min_bulk_ess": 4537.455988455532,
+          "min_tail_ess": 928.8954999277805,
+          "rhat_by_parameter": [
+            1.0069623215954813,
+            1.002204756559781,
+            1.005425731024675,
+            1.0108450180438395
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            947.7910028351753,
+            1448.2591953705257,
+            1362.5575058134675,
+            928.8954999277805
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.01
+      },
+      "chunk_index": 3,
+      "chunk_seconds": 10.655693249078467,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 691761265116.0183,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-receipt.json",
+        "sha256": "349b2b656d1bcb79f46d3c07c6b29c9769b2126f35ed262bb3dbc5f6622f17bf"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-samples.tftensor",
+        "sha256": "64faa76465d136660b1d67a62886b4dfa4add1b4df75b7a48a3506ab694896a8",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1095040
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-delta_h.tftensor",
+          "sha256": "f3103f92674f879265ad4529a698fdcbbe862ca9e9a762b1469e35396ff6bf3b",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-is_accepted.tftensor",
+          "sha256": "0ccb699f284478a3cc854261a3fcd473fa4e0b2c0565ec448aff2dbec77ce9fe",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-log_accept_ratio.tftensor",
+          "sha256": "50eac5b44381fbca7ae00827f9e3d127bd3989ea279438f323c059ad78a76ba5",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-proposed_target_log_prob.tftensor",
+          "sha256": "34c80f054e3edccce5f55ee3d8c928632e5e4dc5bd30c584460061e4b396050e",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-target_log_prob.tftensor",
+          "sha256": "075088ecdcb38ed484288bbbb5fdb21f8618f855150defe93394b39be1ac8a5d",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-target_score.tftensor",
+          "sha256": "fad87fce1f43acedfe62fb7a1afd80691ab0acea89e5683860778d4015243e31",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-003-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7220947479577846,
+        0.7006377884020638,
+        0.7618021376755709,
+        0.7483028038748948
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 4,
+      "chunk_seconds": 10.65840812609531,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 5110652741993479.0,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-receipt.json",
+        "sha256": "f4068749abab66edc236a912d77f55af9e8497d8472ed6d55b0099b747c77df6"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-samples.tftensor",
+        "sha256": "dc124eb549fe7c0245c9e6b673547dc7aa6e230fcba47904b935b4edc8e27d6b",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1096049
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-delta_h.tftensor",
+          "sha256": "7963d81e6411cea6f8ca3b90edda6d5b974405e493fd846d069cec7cc1e07deb",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-is_accepted.tftensor",
+          "sha256": "3a951ce8573debab2c341a05798c7cd6cce5866ba030e84c42689e2f034adae2",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-log_accept_ratio.tftensor",
+          "sha256": "026bd7a7534ce351806ad2cfcc01a1bd7b5441e8005ef557f9bad29a5f03defa",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-proposed_target_log_prob.tftensor",
+          "sha256": "7754022c21330db2358dc7b0756949925edfd787139fef698e440805dfa3325c",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-target_log_prob.tftensor",
+          "sha256": "d0b7f5304d11376ada8089ef74c1ed8f7ad1633428d5f7300fb27fc787b586c0",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-target_score.tftensor",
+          "sha256": "da05dc44a3f4c15f86eacaee5c4ce51e3e06d51ffe71dabffb92419776c025f0",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-004-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7586565910790535,
+        0.7715427019162819,
+        0.7630592193638427,
+        0.756837262096418
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            24982.43631509798,
+            16665.54817697687,
+            27497.496659309363,
+            27230.07025439512
+          ],
+          "max_rhat": 1.0055079097808548,
+          "min_bulk_ess": 16665.54817697687,
+          "min_tail_ess": 982.8040815673354,
+          "rhat_by_parameter": [
+            1.004712987134199,
+            1.0017391098645678,
+            1.0055079097808548,
+            1.0051641769834083
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            1606.6036836378935,
+            2262.489519743067,
+            2052.2591062854044,
+            982.8040815673354
+          ]
+        },
+        "max_rhat": 1.0055079097808548,
+        "min_bulk_ess": 6948.04457306584,
+        "min_tail_ess": 982.8040815673354,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            6948.04457306584,
+            7287.895127004046,
+            9723.144546763007,
+            11965.290573215962
+          ],
+          "max_rhat": 1.0051194983779859,
+          "min_bulk_ess": 6948.04457306584,
+          "min_tail_ess": 1441.9877263624314,
+          "rhat_by_parameter": [
+            1.002571279470978,
+            1.003603240611213,
+            1.002222425538468,
+            1.0051194983779859
+          ],
+          "rhat_threshold": 1.01,
+          "tail_ess_by_parameter": [
+            1493.2577177222652,
+            1854.8956300802815,
+            2056.657406489576,
+            1441.9877263624314
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.01
+      },
+      "chunk_index": 5,
+      "chunk_seconds": 10.663604191038758,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 1438043413.2969515,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "retained",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-receipt.json",
+        "sha256": "c9f3b89228c4bf3730dbfe777368abcd53c953765b231457cb3384374a60ce35"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-samples.tftensor",
+        "sha256": "fc86fa9b7183dfd1b4857328a8b279d23cea5d260c82199e05e87c2b5185bf64",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        1097058
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-delta_h.tftensor",
+          "sha256": "feaa071998228f19bea0a23fdd6fdbf22877e589c640fef26ec1e46362c3b00a",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-is_accepted.tftensor",
+          "sha256": "dd4b4b4728b536e77a1f775bcb543bdcaf97a0b4a80238708a5584b8d0dc0114",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-log_accept_ratio.tftensor",
+          "sha256": "8aad8f84571d2161c2926153e6ba3e6010d435c9e1595fb9c29062944b5cf227",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-proposed_target_log_prob.tftensor",
+          "sha256": "73c9b9286b44aaee8924df7dcab26bc01e4b9a7f6eaaabae881d8d1b6a53c2d0",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-target_log_prob.tftensor",
+          "sha256": "600b08af3a633c23bc0740ef24dc1fe80b667e42ff4f1ee49b3d54292b42f700",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-target_score.tftensor",
+          "sha256": "70dcf5e17116053d31cc117719bc8f5e164d079253aa157d9217b7a4a2c49081",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/retained/weighted-analytic-retained-005-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    }
+  ],
+  "retained_ess_role": "promotion_veto",
+  "runner_programs": [
+    {
+      "num_results": 500,
+      "program_signature": "448928a2b092cf0297a1bae0a288f7c8304bda12ac699ce8afd87729b7b7a475",
+      "tracing_count": 1
+    }
+  ],
+  "schema": "bayesfilter.neutra.sequential_hmc_result.v1",
+  "warmup_chunks": [
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.723970509401759,
+        0.7244342256220907,
+        0.7433055696085562,
+        0.7350436497428932
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 0,
+      "chunk_seconds": 21.997553433990106,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 15546308080.467503,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-receipt.json",
+        "sha256": "0f5adcd7dbe9a5672a810e9d320fdf9e79e16ffa0850cfda8aed2406f3ece16d"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-samples.tftensor",
+        "sha256": "9b2e7d9928fac1e04466ea7a7fad0e01d0df5aacac163663f322a9d0992f84f5",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        92010
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-delta_h.tftensor",
+          "sha256": "cd3ddb958fe51b089ad874dc3d63827d36e768c0965e79cbc2b97058e0891ec9",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-is_accepted.tftensor",
+          "sha256": "56d9777d813eccc71f4cc2e91b7c451eded9664d9f364145ec63b20409facb71",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-log_accept_ratio.tftensor",
+          "sha256": "8f44004793950bd9e93d9bd8ea41065009d64b9efb5d46c42750c9dc2f55eb37",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-proposed_target_log_prob.tftensor",
+          "sha256": "be6231ea1744a6cc7ba5556fabb73157a194afd317ee0d2e163657f577e5455f",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-target_log_prob.tftensor",
+          "sha256": "9f8a57559443f6f1079dadb0f888ad1f1eb50bf284444af7a9d4349b7fba2d3e",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-target_score.tftensor",
+          "sha256": "bab2c742f9dd2f2fde898ca7c039bd9be7b66bd966a87104e6a89c22fca086de",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-000-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.6865037928670088,
+        0.6946426802277956,
+        0.6947903266132319,
+        0.7322558704199589
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 1,
+      "chunk_seconds": 10.729640492005274,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 603515409153.9861,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-receipt.json",
+        "sha256": "47f55ba56fe1ae023f20bd22bdc18d63320b40240159aadb1c92134c3c7951b8"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-samples.tftensor",
+        "sha256": "7804750a922bab5e4a520b2347bafed22d0d661aecd9479092d07908b44a7f40",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        93019
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-delta_h.tftensor",
+          "sha256": "1d3aacb6f27015b3086f72701de3b7e2947ae352a81171d9d8052d84e525babb",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-is_accepted.tftensor",
+          "sha256": "8c78bdb42d45e84e91244884de3b2f764e74c3dd7e68e14a91a7a1b5a5e91333",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-log_accept_ratio.tftensor",
+          "sha256": "910cf1a9ad5493b82ef04df83c65eec6821e90afbada65421c03a698739b6066",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-proposed_target_log_prob.tftensor",
+          "sha256": "9adf70a77ce96adbbb7dc7d8676fe657b737dd293f5be2a175ffc87878734429",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-target_log_prob.tftensor",
+          "sha256": "6bbdfd1c7c87dc6cce2194c0d99de8def415e97a2b2cad4ced73e1b2b2f7f1dd",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-target_score.tftensor",
+          "sha256": "230c8d844957a71b13139cfdde06f4e156b2150aad79a732c797aadd556d7ca2",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-001-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.7470661930127341,
+        0.6303162044861998,
+        0.7124511436031133,
+        0.7208423322066326
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {},
+      "chunk_index": 2,
+      "chunk_seconds": 10.716573982965201,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 6.22493427282427e+16,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-receipt.json",
+        "sha256": "fe3bfb5e276ab0d64b1fde47380d264c6929ab9deb1a7c3eaf3d1b9eb984f295"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-samples.tftensor",
+        "sha256": "d86390b0570feb95fb8c21785afea4e730782bacf24144e7b78bb3f9e58bc043",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        94028
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-delta_h.tftensor",
+          "sha256": "4e7e98c119804f3e20908d02d534eadd3b6d459dea4626b98f615be07f15396f",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-is_accepted.tftensor",
+          "sha256": "8940b0f7cbd25ac7362f6716c31079c1ff0ca9bf31fd743b4d4e363482827e21",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-log_accept_ratio.tftensor",
+          "sha256": "66757b04f5f5c2eb7ebf3bfa0faa503f9e2a2d399da04a0955fb5233916201de",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-proposed_target_log_prob.tftensor",
+          "sha256": "38e53a82ccc352a82f27aef72fde30bb7ebcd3d0fcf8ca13fefcdd9b90606c6f",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-target_log_prob.tftensor",
+          "sha256": "464ef84a69b9e4c814a9841a5eb4305654cc1e8f22f786002751ddfb46e4493d",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-target_score.tftensor",
+          "sha256": "ee5c9cb312b9db343e0562e0a9251b03dc15ee14d4af66deeaebfeb508731a06",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-002-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "acceptance_bounds": [
+        0.35,
+        0.95
+      ],
+      "acceptance_probability_by_chain": [
+        0.754753754897573,
+        0.7312336567004747,
+        0.7012009029880897,
+        0.7012358628709258
+      ],
+      "acceptance_role": "explanatory_only_not_a_convergence_veto",
+      "chain_moved": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "chain_movement_role": "hard_validity_veto",
+      "checkpoint_diagnostics": {
+        "all_finite": true,
+        "hmc_coordinates": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            7654.279655245266,
+            4535.504962818766,
+            2228.530445260577,
+            6181.697313504195
+          ],
+          "max_rhat": 1.0360675505582073,
+          "min_bulk_ess": 2228.530445260577,
+          "min_tail_ess": 190.45158813400155,
+          "rhat_by_parameter": [
+            1.0360675505582073,
+            1.0042625853935552,
+            1.0221961967272672,
+            1.0303273419255634
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            190.45158813400155,
+            697.0446281891244,
+            433.52583865707743,
+            429.28146753441644
+          ]
+        },
+        "max_rhat": 1.0429909035497082,
+        "min_bulk_ess": 1268.3098285936444,
+        "min_tail_ess": 190.45158813400155,
+        "model_parameters": {
+          "all_finite": true,
+          "bulk_ess_by_parameter": [
+            1652.956393194545,
+            1268.3098285936444,
+            1588.7492991671618,
+            2447.2314671148683
+          ],
+          "max_rhat": 1.0429909035497082,
+          "min_bulk_ess": 1268.3098285936444,
+          "min_tail_ess": 216.54085635803295,
+          "rhat_by_parameter": [
+            1.0091040431840885,
+            1.0104157220058958,
+            1.0040033301326625,
+            1.0429909035497082
+          ],
+          "rhat_threshold": 1.05,
+          "tail_ess_by_parameter": [
+            569.0728018871592,
+            572.445327325142,
+            781.0429120666682,
+            216.54085635803295
+          ]
+        },
+        "physical_coordinate_role": "explanatory_only",
+        "primary_diagnostic_coordinate": "maximum_over_z_and_model",
+        "rhat_threshold": 1.05
+      },
+      "chunk_index": 3,
+      "chunk_seconds": 10.67183131002821,
+      "energy_error": {
+        "all_finite": true,
+        "finite_tail_alert_threshold": 1000.0,
+        "finite_tail_role": "explanatory_alert_only",
+        "identity": "delta_h_equals_negative_log_accept_ratio",
+        "maximum_absolute_delta_h": 29601697089.64318,
+        "within_alert_threshold": false
+      },
+      "hard_vetoes": [],
+      "native_divergence_count": null,
+      "native_divergence_interpretation": "unavailable is not zero divergences",
+      "native_divergence_status": "not_exposed_by_kernel",
+      "phase": "warmup",
+      "receipt": {
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-receipt.json",
+        "sha256": "7d4db1694ac4759b16487cdfd26731ed058dbb5b91d1a6fe45cae77cb1bc6a99"
+      },
+      "sample_receipt": {
+        "bytes": 64021,
+        "dtype": "float64",
+        "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-samples.tftensor",
+        "sha256": "6ce643afc8eca895b4798d94e3cc7be249956adcd295dd4ee39448755a114d2a",
+        "shape": [
+          500,
+          4,
+          4
+        ]
+      },
+      "seed": [
+        20260812,
+        95037
+      ],
+      "target_status": {
+        "audited_state_count": 2000,
+        "floor_count_total": 0,
+        "minimum_innovation_eigenvalue": 1.0,
+        "passed": true,
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": 0,
+        "target_value_score_all_finite": null
+      },
+      "trace_receipts": {
+        "delta_h": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-delta_h.tftensor",
+          "sha256": "4d1b8d8af2187dc461ea71907de4398b7f8d495cfee3b742a038eb38e8a50b25",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "is_accepted": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-is_accepted.tftensor",
+          "sha256": "9bc1162e057fa3259e3a6d2bf51464502566bbd856886c3b70fc4ad3e9820d55",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "log_accept_ratio": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-log_accept_ratio.tftensor",
+          "sha256": "722f722aab78102d985ef79573dd0123c93e4597549fda354f7ecf4389b42a05",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "proposed_target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-proposed_target_log_prob.tftensor",
+          "sha256": "e630b8ddea290cba383c2c6755d9501c6399523751f44341c9166a74a768c84a",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_floor_count_value": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-target_floor_count_value.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_log_prob": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-target_log_prob.tftensor",
+          "sha256": "7af17a5a35b382af300d4fb64c40a9e9056e30668ffda23758e00b0b1af38c7a",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_min_innovation_eigenvalue": {
+          "bytes": 16016,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-target_min_innovation_eigenvalue.tftensor",
+          "sha256": "18fe96b6981b02f9aaf2904c346ef5999b8a8cc08879e5a9e3595dd8b2ee2745",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_score": {
+          "bytes": 64021,
+          "dtype": "float64",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-target_score.tftensor",
+          "sha256": "26619c6ba79ae0521cc605d8826079cd2ad60a21a885167a02e72ebc338ec436",
+          "shape": [
+            500,
+            4,
+            4
+          ]
+        },
+        "target_status_code": {
+          "bytes": 8016,
+          "dtype": "int32",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-target_status_code.tftensor",
+          "sha256": "51b8f6a4d0b358ca047e74d55bb1aa0e9c1c977ed4afc07a79bf76283bdf6302",
+          "shape": [
+            500,
+            4
+          ]
+        },
+        "target_valid_pre_regularized_score": {
+          "bytes": 2016,
+          "dtype": "bool",
+          "path": "docs/plans/artifacts/neutra-full-validation-2026-08-17-r1/two-mode-full/archive/warmup/weighted-analytic-warmup-003-target_valid_pre_regularized_score.tftensor",
+          "sha256": "1a373a96cf90d4ff0e86dd180d33bd01dcb177a6682b91644b3ed2a25d3d7f8b",
+          "shape": [
+            500,
+            4
+          ]
+        }
+      }
+    }
+  ],
+  "warmup_excluded_from_posterior": true
+}
