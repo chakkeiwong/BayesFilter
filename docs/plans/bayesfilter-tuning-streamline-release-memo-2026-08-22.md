@@ -101,6 +101,14 @@ Unrelated dirty files in all three repos stay uncommitted and untouched.
 
 ## 6. Remaining Owner Decisions Before Tagging a Release
 
+Status 2026-08-22: items 1 and 3 are resolved (commits pushed; environment
+policy Option A). The owner explicitly deferred items 2, 4, and 5 — the
+release candidate stands as published, with the §6a direction, the dsge_hmc
+segfault exclusion patch, and the known-issues disposition to be handled
+later. Until then: frozen-campaign classifications remain authoritative for
+§6a, the six segfault files remain unexcluded (full-suite runs must expect
+rc=139 in those chunks), and the known-issues ledger is informational.
+
 1. Approve the commit packaging above (and decide branch/PR flow).
 2. §6a contract-gap direction (fixed-transport reformulation vs. canonical
    collapse for the next C2/CCMA campaign) — or explicitly defer with the
