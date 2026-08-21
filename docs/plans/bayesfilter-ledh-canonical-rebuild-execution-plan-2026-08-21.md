@@ -440,3 +440,24 @@ model onboardings, then the GPU phases.
   own reviewed contract and its own conformance additions (weight
   identity per stage); queued as the next P6 item. No lever promoted;
   bootstrap-parity capping (c=2) recorded as a safe floor configuration.
+
+## P6 Within-Step Annealed-SMC Contract (declared BEFORE execution)
+
+- Mechanism: per filtering step, anneal the likelihood in k stages with
+  the tempered flow as the move kernel and SYSTEMATIC RESAMPLING of the
+  (particle, ancestor) PAIRS between stages (triple discipline: states,
+  ancestors, weights move together). Stage weights on the extended space:
+  lw_s = [log p(x_s|anc) + (s/k) log p(z|x_s) + logdet_s]
+       - [log p(x_{s-1}|anc) + ((s-1)/k) log p(z|x_{s-1})].
+  Step increment = sum over stages of log E_w[exp(lw_s)] — the standard
+  SMC-sampler normalizer telescope; unbiased on the extended space.
+- Rationale from the ladder failure: inter-stage resampling drops bad
+  ancestors MID-step — the only mechanism class that attacks the measured
+  across-ancestor-spread floor.
+- Primary criterion (declared now): per-stage ESS at the takeoff steps
+  (2 and 4) all > 10% of N, AND final-step values finite. Explanatory:
+  step values, full profiles. k in {4, 8}; flow-prior cap c=8 (mid-ladder,
+  avoids the self-inflicted collapse without going inert).
+- Nonclaims: unbiasedness holds by construction on the extended space,
+  but NO claim about variance/accuracy vs alternatives without the P6
+  full protocol; no promotion.
