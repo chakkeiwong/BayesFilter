@@ -246,3 +246,86 @@ def test_austria_annealed_mode_holds_takeoff_ess():
         f"annealed-mode min stage-ESS fraction {ess.min()/256.0:.3f} "
         f"(per-step: {ess.round(1)})"
     )
+
+
+def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, seed=201, direction_index=0, obs_noise=1.0):
+    """Shared onboarding gate: analytical score vs oracle on a short scope."""
+    from bayesfilter.highdim.ledh_canonical_score_tf import (
+        canonical_value_and_analytical_score,
+    )
+
+    rng = np.random.default_rng(seed)
+    initial = tf.constant(rng.standard_normal((n, dim)), DTYPE)
+    covs = tf.constant(np.stack([np.eye(dim)] * n), DTYPE)
+    noises = tf.constant(rng.standard_normal((horizon, n, dim)), DTYPE)
+    obs_dim = int(model.observation_covariance.shape[0])
+    observations = tf.constant(
+        obs_noise * rng.standard_normal((horizon, obs_dim)), DTYPE
+    )
+    p_count = int(theta0.shape[0])
+    one_hot = np.zeros(p_count)
+    one_hot[direction_index] = 1.0
+    set_direction(tf.constant(one_hot, DTYPE))
+
+    def value_fn_1p(theta_1):
+        parts = [theta0[i] for i in range(p_count)]
+        parts[direction_index] = theta_1[0]
+        theta = tf.stack(parts)
+        value, _ = canonical_value_and_analytical_score(
+            model, theta, initial, covs, noises, observations,
+            substeps=8, with_score=False,
+        )
+        return value
+
+    oracle = oracle_forward_autodiff_score(
+        value_fn_1p, theta0[direction_index][None]
+    )
+    value, score = canonical_value_and_analytical_score(
+        model, theta0, initial, covs, noises, observations,
+        substeps=8, with_score=True,
+    )
+    assert np.isfinite(float(value.numpy()))
+    err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
+    scale = max(abs(float(oracle[0].numpy())), 1.0)
+    assert err < 1.0e-4 * scale, (
+        f"analytical {float(score[0].numpy())} vs oracle "
+        f"{float(oracle[0].numpy())}"
+    )
+
+
+def test_predator_prey_onboarding_score_gate():
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        predator_prey_canonical_model,
+    )
+
+    theta0 = tf.constant([0.8, 90.0, 25.0, 0.5, 0.4, 0.3], DTYPE)
+    model, set_direction = predator_prey_canonical_model(theta0)
+    _score_gate_for_model(
+        model, set_direction, theta0, dim=2, seed=211, direction_index=0,
+        obs_noise=2.0,
+    )
+
+
+def test_diagonal_lgssm_onboarding_score_gate():
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        diagonal_lgssm_canonical_model,
+    )
+
+    theta0 = tf.constant([0.9, 0.8, 0.7, 0.6, 0.8], DTYPE)
+    model, set_direction = diagonal_lgssm_canonical_model(theta0)
+    _score_gate_for_model(
+        model, set_direction, theta0, dim=3, seed=221, direction_index=0,
+    )
+
+
+def test_ksc_sv_onboarding_score_gate():
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        ksc_sv_canonical_model,
+    )
+
+    theta0 = tf.constant([0.5, 0.1], DTYPE)
+    model, set_direction = ksc_sv_canonical_model(theta0)
+    _score_gate_for_model(
+        model, set_direction, theta0, dim=2, seed=231, direction_index=0,
+        obs_noise=2.0,
+    )
