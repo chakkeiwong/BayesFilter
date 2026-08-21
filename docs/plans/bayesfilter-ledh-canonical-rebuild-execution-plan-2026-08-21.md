@@ -250,3 +250,17 @@ and the standing 3-consecutive-launch-failure stop.
   (S1->S5->S1 composition), nonlinear per-model transition tangents (exist
   per model). All remaining items are wiring/composition of gated or
   pre-existing hand-derived parts — no open derivations.
+
+- 2026-08-21 (ledger): P4 CLOSED (core). `ledh_canonical_score_tf.py` —
+  the registered claim-bearing analytical score entry point — assembles all
+  gated stage tangents with the covariance recursion CHAINED
+  (S1->S3->S4->S5->next-step-S1, dP^i propagating). Full-recursion gate
+  green on a NONLINEAR dynamics fixture (x + theta*sin x), 3 steps, rtol
+  1e-4 vs oracle. C-9/G-1 governance extended to the score modules (25
+  canonical gates total). Recorded assumption: linear/affine observation H
+  per model (true for the six-model set); a curvature-H extension would add
+  d(H) terms, flagged in-module. S6/S7 (reset + dual-cap tangent wiring
+  into the score path) remain for the batch phase where the reset JVP
+  machinery lives (`_restore_cloud_batch_jvp`, `higher_moment_shape_jvp`
+  are the wired sources); the single-cloud score gates use the
+  reset='none' slice, honestly documented in the gate docstrings.

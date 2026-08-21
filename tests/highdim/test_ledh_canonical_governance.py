@@ -14,6 +14,8 @@ CANONICAL_MODULES = (
     "bayesfilter/highdim/ledh_canonical_filter_tf.py",
     "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py",
     "bayesfilter/highdim/ledh_flow_perparticle_tf.py",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py",
+    "bayesfilter/highdim/ledh_canonical_score_scaffold_tf.py",
 )
 
 AUTODIFF_PATTERN = re.compile(
@@ -48,6 +50,7 @@ def test_g1_ledh_lane_discovery():
     registered_modules = {e.module.split(".")[-1] + ".py" for e in ENTRY_POINTS}
     known_support = {
         "ledh_alg1_contract.py",
+        "ledh_canonical_score_scaffold_tf.py",
         "ledh_ukf_lifecycle_tf.py",
         "ledh_flow_perparticle_tf.py",
     }
