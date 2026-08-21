@@ -182,6 +182,13 @@ ENTRY_POINTS: tuple[EntryPoint, ...] = (
         callable_name="oracle_forward_autodiff_score",
         notes="parity judge only; never claim-bearing",
     ),
+    EntryPoint(
+        lane="models",
+        role="canonical",
+        module="bayesfilter.highdim.ledh_canonical_models_tf",
+        callable_name="austria_sir_canonical_model",
+        notes="model adapters with C-10 covariance provenance",
+    ),
 )
 
 

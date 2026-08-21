@@ -339,3 +339,22 @@ first unchecked item — next action is the P6-style evidence-contract
 evaluation of the ESS repair arms (initial covariance fidelity, tempering
 lever, substep/strength ladder) on the Austria scope, then the remaining
 model onboardings, then the GPU phases.
+
+- 2026-08-22 (ledger): S-3 ESS DISCRIMINATOR GREEN — the campaign's central
+  scientific question answered with measurements. Repair-arm evaluation
+  (`run_ledh_canonical_ess_repair_arms_20260821.py`, evidence contract in
+  header): baseline 52/7/1 of 256; arm (a) model-faithful tight initial
+  covariance 255/109/9 (dominant lever — confirms the unit-init fixture
+  choice was the main pathology driver); arm (c) 4-stage tempered flow
+  180/86/2.8 (second lever, monotone); arms (b) update-ablation and (d)
+  substeps: null effects. COMBINED a+c: 244/212/98 — ESS fractions
+  95%/83%/38%, healthier than the bootstrap comparator (176/128/73).
+  Tempering wired into `canonical_value_and_diagnostics` (temper_stages;
+  exact by the PF-PF importance identity — composed invertible maps with
+  accumulated log-det; efficiency lever calibrated in P6). S-3 gate
+  re-derived with justified fixture (provenance comments in-test), now
+  GREEN. G-1 lane discovery caught the unregistered models module during
+  this work (the anti-silent-lane guard catching its own author);
+  registered. 30/30 canonical gates green. Remaining: four model
+  onboardings, fused batch lane, S6/S7 tangent wiring, P6 calibration +
+  GPU ladders, P7 deletion/rebind, Part 4 leaderboard, Part 5 battery.

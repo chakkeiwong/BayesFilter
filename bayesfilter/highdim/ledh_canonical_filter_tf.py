@@ -68,6 +68,7 @@ def canonical_value_and_diagnostics(
     particle_count: int,
     seed: int,
     flow_substeps: int = 24,
+    temper_stages: int = 1,
     epsilon: float = 2.0,
     sinkhorn_steps: int = 8,
     balance_steps: int = 8,
@@ -148,20 +149,36 @@ def canonical_value_and_diagnostics(
             process_noise,
         )
 
-        flow = ledh_flow_per_particle(
-            anchor_states=anchors,
-            pre_flow_states=pre_flow,
-            predicted_covariances=predicted_covs,
-            observation=observation,
-            observation_fn=lambda p, _t=time_index: callbacks.observation_fn(p, _t),
-            observation_jacobian_fn=lambda p, _t=time_index: callbacks.observation_jacobian_fn(p, _t),
-            observation_covariance=tf.convert_to_tensor(
-                callbacks.observation_covariance, dtype
-            ),
-            prior_means=anchors,
-            substeps=flow_substeps,
-        )
-        children = flow["post_flow_states"]
+        # Staged (tempered) flow: the homotopy is split into temper_stages
+        # invertible sub-flows with likelihood tempering (P/k, R*k per
+        # stage). Exactness is guaranteed by the PF-PF importance identity
+        # for ANY invertible composed map (total forward log-det
+        # accumulated); staging is an efficiency lever calibrated in P6.
+        # Evidence: 2026-08-21/22 repair-arm evaluation — combined with a
+        # model-faithful initial covariance it restored Austria-scope ESS
+        # from 1/256 to 98/256 at the final step.
+        stage_count = max(1, int(temper_stages))
+        current = pre_flow
+        total_log_det = tf.zeros([particle_count], dtype)
+        for _stage in range(stage_count):
+            flow = ledh_flow_per_particle(
+                anchor_states=anchors,
+                pre_flow_states=current,
+                predicted_covariances=predicted_covs
+                / tf.cast(stage_count, dtype),
+                observation=observation,
+                observation_fn=lambda p, _t=time_index: callbacks.observation_fn(p, _t),
+                observation_jacobian_fn=lambda p, _t=time_index: callbacks.observation_jacobian_fn(p, _t),
+                observation_covariance=tf.convert_to_tensor(
+                    callbacks.observation_covariance, dtype
+                )
+                * tf.cast(stage_count, dtype),
+                prior_means=anchors,
+                substeps=flow_substeps,
+            )
+            current = flow["post_flow_states"]
+            total_log_det += flow["forward_log_det"]
+        children = current
 
         transition_log = callbacks.transition_log_density_fn(
             children, states, time_index
@@ -181,7 +198,7 @@ def canonical_value_and_diagnostics(
             tf.math.log(weights)
             + transition_log
             + observation_log
-            + flow["forward_log_det"]
+            + total_log_det
             - proposal_log
         )
         increment = tf.reduce_logsumexp(logits)
