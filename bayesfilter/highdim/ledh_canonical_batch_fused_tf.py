@@ -289,11 +289,20 @@ def canonical_batch_fused_value_score(
             )
             actual, auxiliary = new_actual, new_aux
             step_matrix = eye[None] + eps * a_matrix
-            log_det += tf.math.log(tf.abs(tf.linalg.det(step_matrix)))
-            step_inv = tf.linalg.inv(step_matrix)
-            d_log_det += eps * tf.linalg.trace(
-                tf.einsum("mij,mjk->mik", step_inv, d_a_matrix)
+            # XLA-compatible det/inverse-trace: MatrixDeterminant and
+            # MatrixInverse lack tf2xla kernels; QR (supported HLO) gives
+            # log|det M| = sum log|diag R| and the trace term via
+            # triangular solve: tr(M^{-1} dA) = tr(R^{-1} Q^T dA).
+            q_factor, r_factor = tf.linalg.qr(step_matrix)
+            log_det += tf.reduce_sum(
+                tf.math.log(tf.abs(tf.linalg.diag_part(r_factor))),
+                axis=1,
             )
+            qt_da = tf.einsum("mji,mjk->mik", q_factor, d_a_matrix)
+            solved_da = tf.linalg.triangular_solve(
+                r_factor, qt_da, lower=False
+            )
+            d_log_det += eps * tf.linalg.trace(solved_da)
         children, d_children = actual, d_actual
 
         # --- S4 weight assembly + S8 per-row reduction
