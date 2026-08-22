@@ -33,6 +33,49 @@ from bayesfilter.highdim.squared_tt_engine_adapted_xla_tf import (
     run_value_filter_branch_axis_adapted_xla,
 )
 
+
+ROWS_FILE = "/tmp/attempt04_rows.jsonl"
+
+
+def run_one_cell(n: int, r: int, seed: int) -> dict:
+    adapter, ys, kalman_steps = case_with_steps(n, seed + n)
+    hint, observe_t0 = kalman_hint_factory(n, seed + n)
+    observe_t0(ys[0].numpy())
+    config = EngineConfig(
+        basis_degree=12, rank=r, row_count=ROWS, sweeps=3,
+        ridge=1e-10, tau=1e-6, coordinate_half_width=3.0,
+        seed=91000 + 10 * n + r, row_design="sobol",
+    )
+    cell_start = time.time()
+    try:
+        value, diags = run_value_filter_branch_axis_adapted_xla(
+            adapter, ys, config, predictive_moment_hint=hint,
+            map_kappa_prev=KAPPA_P, map_kappa_current=KAPPA_C,
+        )
+        gap = abs(float(value.numpy()) - sum(kalman_steps))
+        status = "ok"
+        max_ratio = max(d.get("truncation_mass_ratio", 0.0) for d in diags[1:])
+        if max_ratio > 0.5:
+            status = "flagged:correction_dominates"
+    except Exception as error:
+        gap, diags, status, max_ratio = float("nan"), [], f"veto:{error}", None
+    wall = time.time() - cell_start
+    return {
+        "n": n, "rank": r, "seed": seed, "gap": gap,
+        "per_step_gap": gap / HORIZON if np.isfinite(gap) else None,
+        "passes_declared": bool(
+            np.isfinite(gap) and gap / HORIZON <= PER_STEP_TOLERANCE and status == "ok"
+        ),
+        "wall_seconds": wall, "status": status,
+        "max_truncation_ratio": max_ratio,
+        "max_fit_rms": (max(d["weighted_fit_rms"] for d in diags) if diags else None),
+        "min_map_shrink": (
+            min((d.get("map_shrink", 1.0) for d in diags[1:]), default=None)
+            if diags else None
+        ),
+    }
+
+
 PLAN = "docs/plans/bayesfilter-p1b-attempt04-plan-2026-08-21.md"
 PER_STEP_TOLERANCE = 2.5e-3
 HORIZON = 8
@@ -44,63 +87,75 @@ KAPPA_C, KAPPA_P = 4.0, 3.0
 
 
 def main() -> None:
+    if "--cell" in sys.argv:
+        i = sys.argv.index("--cell")
+        n, r, seed = int(sys.argv[i + 1]), int(sys.argv[i + 2]), int(sys.argv[i + 3])
+        row = run_one_cell(n, r, seed)
+        with open(ROWS_FILE, "a") as fh:
+            fh.write(json.dumps(row) + "\n")
+        print(json.dumps(row), flush=True)
+        return
+
     started = time.time()
-    rows_list = []
+    done = {}
+    if os.path.exists(ROWS_FILE):
+        for line in open(ROWS_FILE):
+            row = json.loads(line)
+            done[(row["n"], row["rank"], row["seed"])] = row
+    stop_reasons: list[str] = []
     stop_reason = None
     for n in (2, 4):
         for r in RANKS:
+            # r*(n) is the SMALLEST passing rank: once some smaller rank
+            # passed all seeds, higher ranks at this n add nothing to the
+            # declared question — skip them (recorded plan refinement
+            # 2026-08-22; avoids the n=2 r=10 compile-blowup timeout).
+            established = any(
+                all(done.get((n, rr, sd), {}).get("passes_declared") for sd in SEEDS)
+                for rr in RANKS if rr < r
+            )
+            if established:
+                continue
             for seed in SEEDS:
-                adapter, ys, kalman_steps = case_with_steps(n, seed + n)
-                hint, observe_t0 = kalman_hint_factory(n, seed + n)
-                observe_t0(ys[0].numpy())
-                config = EngineConfig(
-                    basis_degree=12, rank=r, row_count=ROWS, sweeps=3,
-                    ridge=1e-10, tau=1e-6, coordinate_half_width=3.0,
-                    seed=91000 + 10 * n + r, row_design="sobol",
-                )
-                cell_start = time.time()
+                key = (n, r, seed)
+                if key in done:
+                    continue
+                # fresh process per cell: XLA/LLVM compile state must not
+                # accumulate (in-process battery died at cell 7 with
+                # "LLVM ERROR: Unable to allocate section memory")
                 try:
-                    value, diags = run_value_filter_branch_axis_adapted_xla(
-                        adapter, ys, config, predictive_moment_hint=hint,
-                        map_kappa_prev=KAPPA_P, map_kappa_current=KAPPA_C,
-                    )
-                    gap = abs(float(value.numpy()) - sum(kalman_steps))
-                    status = "ok"
-                    max_ratio = max(
-                        d.get("truncation_mass_ratio", 0.0) for d in diags[1:]
-                    )
-                    if max_ratio > 0.5:
-                        status = "flagged:correction_dominates"
-                except Exception as error:
-                    gap, diags, status, max_ratio = float("nan"), [], f"veto:{error}", None
-                wall = time.time() - cell_start
-                row = {
-                    "n": n, "rank": r, "seed": seed, "gap": gap,
-                    "per_step_gap": gap / HORIZON if np.isfinite(gap) else None,
-                    "passes_declared": bool(
-                        np.isfinite(gap)
-                        and gap / HORIZON <= PER_STEP_TOLERANCE
-                        and status == "ok"
-                    ),
-                    "wall_seconds": wall, "status": status,
-                    "max_truncation_ratio": max_ratio,
-                    "max_fit_rms": (
-                        max(d["weighted_fit_rms"] for d in diags) if diags else None
-                    ),
-                    "min_map_shrink": (
-                        min((d.get("map_shrink", 1.0) for d in diags[1:]), default=None)
-                        if diags else None
-                    ),
-                }
-                rows_list.append(row)
-                print(json.dumps(row), flush=True)
-                if wall > STOP_WALL_SECONDS:
-                    stop_reason = f"resource bound at n={n} r={r} ({wall:.0f}s)"
+                    proc_rc = subprocess.run(
+                        [sys.executable, os.path.abspath(__file__),
+                         "--cell", str(n), str(r), str(seed)],
+                        capture_output=True, text=True,
+                        timeout=STOP_WALL_SECONDS + 900,
+                    ).returncode
+                except subprocess.TimeoutExpired:
+                    proc_rc = "timeout"
+                for line in open(ROWS_FILE):
+                    row = json.loads(line)
+                    done[(row["n"], row["rank"], row["seed"])] = row
+                if key not in done:
+                    done[key] = {"n": n, "rank": r, "seed": seed, "gap": float("nan"),
+                                 "per_step_gap": None, "passes_declared": False,
+                                 "wall_seconds": None,
+                                 "status": f"crash:rc={proc_rc}",
+                                 "max_truncation_ratio": None, "max_fit_rms": None,
+                                 "min_map_shrink": None}
+                    with open(ROWS_FILE, "a") as fh:
+                        fh.write(json.dumps(done[key]) + "\n")
+                print(json.dumps(done[key]), flush=True)
+                wall = done[key].get("wall_seconds") or 0
+                if wall > STOP_WALL_SECONDS or proc_rc == "timeout":
+                    # per-n resource rule (plan refinement): abandon higher
+                    # ranks for THIS n, keep the other n's arm alive.
+                    stop_reason = f"resource bound at n={n} r={r}"
+                    stop_reasons.append(stop_reason)
                     break
             if stop_reason:
                 break
-        if stop_reason:
-            break
+        stop_reason = None
+    rows_list = [done[k] for k in sorted(done)]
 
     r_star = {}
     for n in (2, 4):
@@ -123,7 +178,7 @@ def main() -> None:
         "truncation_correction": True,
         "row_design": "sobol", "rows": ROWS, "ranks_run": list(RANKS),
         "per_step_tolerance": PER_STEP_TOLERANCE, "horizon": HORIZON,
-        "cells": rows_list, "r_star": r_star, "stop_reason": stop_reason,
+        "cells": rows_list, "r_star": r_star, "stop_reason": "; ".join(stop_reasons) or None,
         "wall_time_seconds": time.time() - started,
         "timestamp_utc": _dt.datetime.now(tz=_dt.timezone.utc).isoformat(),
         "host": platform.node(),
