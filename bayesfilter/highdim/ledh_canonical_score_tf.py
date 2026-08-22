@@ -22,7 +22,7 @@ from typing import Callable
 
 import tensorflow as tf
 
-from bayesfilter.highdim.ledh_canonical_score_scaffold_tf import (
+from bayesfilter.highdim.ledh_canonical_score_stages_tf import (
     _gaussian_log_density_and_tangent,
     ukf_predict_with_parameter_tangent,
     ukf_update_with_parameter_tangent,

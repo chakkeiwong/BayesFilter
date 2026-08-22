@@ -1,7 +1,8 @@
-"""P4 scaffold: flow value + analytical parameter tangent, LGSSM slice.
+"""Canonical score stage library (graduated from P4 scaffold 2026-08-23).
 
-Scaffold naming per rule R-D (expiry: absorbed into
-``ledh_canonical_score_tf`` when all stages land; G-2 enforces).
+Houses the oracle-gated stage tangents consumed by
+``ledh_canonical_score_tf`` plus the LGSSM-slice reference functions the
+stage gates exercise. Scaffold expiry rule G-2 discharged by graduation.
 
 Derivation (note S3, LGSSM slice, theta scalar scaling F = theta*F0):
 

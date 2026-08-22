@@ -18,7 +18,7 @@ import tensorflow as tf
 from bayesfilter.highdim.ledh_canonical_autodiff_oracle_tf import (
     oracle_forward_autodiff_score,
 )
-from bayesfilter.highdim.ledh_canonical_score_scaffold_tf import (
+from bayesfilter.highdim.ledh_canonical_score_stages_tf import (
     flow_value_and_parameter_tangent_lgssm,
 )
 
