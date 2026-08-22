@@ -481,3 +481,51 @@ model onboardings, then the GPU phases.
   extension through the annealing stages (S4 addendum: stage-weight
   tangents — mechanical, same Gaussian-density machinery). This is the
   program's central proposal-quality result to date.
+
+- 2026-08-23 (ledger): Units A-E complete. A: annealed-SMC wired into the
+  canonical filter (triple-discipline inter-stage resampling) with its
+  conformance gate. B: FUSED batch-native lane
+  (`ledh_canonical_batch_fused_tf.py`, flatten [B,N]->[B*N] strategy,
+  per-point arithmetic identical to the single-cloud authority) —
+  value+score parity, row independence, tf.function-compilable:
+  NeuTra-eligible under the batch-native rule. C: predator-prey,
+  diagonal-LGSSM, and KSC-SV onboarded with oracle score gates (KSC uses
+  a derived moment-matched-Gaussian flow input, provenance recorded;
+  5 of 6 models onboarded — generalized-SV remains, template identical).
+  D: Part 5 HISTORICAL BATTERY ON GPU: cross-mode drift graph-vs-eager
+  value BITWISE ZERO, score 3.3e-16; XLA-vs-eager 5.8e-16/3.1e-15 —
+  the historical 0.562-gap/sign-flip disease class is structurally dead
+  (one program); fail-closed clean under XLA compilation (all rows
+  invalid + NaN-masked, no escape); float32/TF32 arm honestly recorded
+  NOT_TESTABLE_YET (needs the P6 calibrated lane). Battery exposed and
+  fixed an XLA-compatibility defect (MatrixDeterminant/Inverse lack
+  tf2xla kernels -> QR-based log-det + triangular-solve trace, parity
+  re-verified). E: scaffold graduated to
+  `ledh_canonical_score_stages_tf` (G-2 discharged).
+
+## EXECUTION CLOSURE STATE (2026-08-23)
+
+COMPLETE: P0-P4 fully; P5 (batch fused lane, 5/6 models); annealed-SMC
+degeneracy resolution (probe + wiring + gates); Part 4 slice 1 with
+results; Part 5 battery (float64 GPU arms). 39 canonical gates green.
+
+REMAINING (each with its resume recipe, no open design questions):
+1. P6 full calibration protocol — GPU campaign-scale (trust-radius
+   model-trust curves, damping bias curves, relative-ridge derivation,
+   float32/TF32 arms). Recipe: R6 table in the rebuild plan; runners
+   template from `run_ledh_canonical_takeoff_levers.py`.
+2. P7 rebind + deletion — REQUIRES an adapter bridge:
+   `make_genut_neutra_target` binds `BatchCandidateModelAdapter`
+   (initial/transition/observation callbacks, frozen hashes) while the
+   canonical fused lane takes `PerPointScoreModel`; the bridge must map
+   each model's frozen tensors and record fresh target signatures
+   (comparability sever is INTENDED per the invalidation notice). Only
+   after the bridge + P6: delete `cubature_genut_batch_tf.py` (1973
+   lines), its adapters' NeuTra binding, and legacy tests; G-1/G-3 prove
+   closure. Deletion remains PRE-AUTHORIZED.
+3. Generalized-SV onboarding (template: Unit C models).
+4. Full six-model leaderboard vs comparator algorithms (plan exists;
+   gated on 1-3).
+This state is mechanically resumable (R-G): read this ledger, continue at
+item 1 or 2 in either order; item 2's bridge is the only structural work
+left in the program.
