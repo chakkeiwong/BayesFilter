@@ -111,6 +111,16 @@ second half), then item 4 diagnostics, then attempt05.
 
 ## Environment notes
 
+- OWNER DIRECTIVE (2026-08-24): engine/test/benchmark runs use the
+  `tftwogpu` conda env
+  (`/home/chakwong/anaconda3/envs/tftwogpu/bin/python`,
+  TF 2.20.0-dev self-built). Two GPUs: prefer the RTX 4080 SUPER
+  (`CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1`, probe-verified
+  mapping), fall back to the RTX 5080 (`CUDA_VISIBLE_DEVICES=0`) when
+  the 4080 is unavailable. Memory growth mandatory before GPU init
+  (fail closed, record in manifests). Supersedes earlier `tf-gpu`
+  references. U-HERM-1 re-verified green under tftwogpu (6/6, CPU-only
+  diagnostic mode).
 - latexmk absent; build with `pdflatex; bibtex; pdflatex x2` in docs/.
 - MathDevMCP CLI at PYTHONPATH=/home/chakwong/MathDevMCP/src, ~3 min per
   label audit; summary-only output still includes full obligation JSON.
