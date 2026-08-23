@@ -631,3 +631,27 @@ review.
   (per-step density equality vs the reference adapters on shared inputs)
   for the other onboarded models — same gate class, queued before the
   full leaderboard campaign.
+
+- 2026-08-24 (ledger): FIDELITY AUDIT COMPLETE (owner question: "other
+  similar issues?"). Systematic audit of all onboardings against
+  independent reference definitions found TWO more confirmed
+  infidelities of the KSC class: (1) diagonal-LGSSM used eye(3) where
+  the frozen target's `_LGSSM_MATRIX` is a specific non-identity matrix
+  — FIXED with reference constants; (2) generalized-SV used fixed
+  observation variance 1 where the reference (`NativeGeneralizedSVSSM`)
+  is heteroskedastic N(beta*s, exp(h)) — FIXED via a new optional
+  non-Gaussian observation-density surface in `NonlinearScoreModel`
+  (density + analytical tangent; the Gaussian remains the flow's
+  proposal input). Austria and predator-prey audited faithful
+  (constants verified by new gates). CRITICAL METHOD LESSON recorded:
+  slice-2's bootstrap/UKF comparators consumed MY model objects, so
+  cross-algorithm agreement CANNOT detect shared model infidelity —
+  only independent-reference density-equality gates can. New gate class
+  `test_ledh_canonical_model_fidelity.py` (4 gates: gen-SV densities vs
+  native reference at 1e-10, LGSSM matrix constants, Austria
+  variance/extraction structure, predator-prey noise scales). A stale
+  duplicate function definition (Python last-definition-wins) briefly
+  masked the gen-SV fix — caught by the new fidelity gate itself on
+  first run. Corrected slice-2 cells: dLGSSM -14.72/-13.57/-14.54,
+  KSC -6.75/-6.90/-6.82, gen-SV -4.62/-4.64/-4.58; all scores
+  self-consistent at 1e-11..1e-12. 46 canonical gates green.

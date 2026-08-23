@@ -325,7 +325,11 @@ def diagonal_lgssm_canonical_model(theta_fixed: Tensor):
     Kalman on this model, giving an exact-reference lane)."""
 
     theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
-    obs_matrix = tf.eye(3, dtype=DTYPE)
+    # Reference observation matrix (frozen target `_LGSSM_MATRIX`;
+    # previously WRONGLY eye(3) — fidelity defect fixed 2026-08-23):
+    obs_matrix = tf.constant(
+        [[1.0, 0.25, -0.15], [0.2, 1.1, 0.3], [-0.1, 0.35, 0.9]], DTYPE
+    )
     phi = theta_fixed[:3]
     q_scale = theta_fixed[3]
     r_scale = theta_fixed[4]
@@ -439,23 +443,22 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
 
 
 def generalized_sv_canonical_model(theta_fixed: Tensor):
-    """Native generalized SV (rho_s, rho_h, log sigma_s, log sigma_h,
-    log beta): 2-state diagonal-AR dynamics s' = rho_s s, h' = rho_h h
-    with process scales (sigma_s, sigma_h) — model_exact. Observation
-    y = beta*s + exp(h/2)*noise is state-dependent-variance; the flow's
-    Gaussian input uses the linearization at the anchor (H = [beta,
-    beta*s*..] approximated by the mean-map jacobian [beta, 0], variance
-    exp(h_anchor)) — provenance: derived linearization, corrected by the
-    PF-PF weight exactly as for KSC. The moment-matched observation
-    covariance for the flow uses exp(h)~1 reference scale; recorded as a
-    proposal-design choice."""
+    """Native generalized SV — CORRECTED 2026-08-23.
+
+    Reference (`NativeGeneralizedSVSSM`): 2-state AR(1) pair
+    (s' = rho_s s + sigma_s eta, h' = rho_h h + sigma_h eta) and
+    HETEROSKEDASTIC observation y ~ N(beta*s, exp(h)). The previous
+    onboarding used fixed observation variance 1 — wrong relative to the
+    reference (same fidelity class as the KSC defect). The weight/value
+    path now uses the exact heteroskedastic density with its analytical
+    tangent; the Gaussian (H=[beta,0], R=1) remains the FLOW's
+    proposal-design input only.
+    """
 
     theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
-    rho_s = tf.tanh(theta_fixed[0])
-    rho_h = tf.tanh(theta_fixed[1])
     sigma_s = tf.exp(theta_fixed[2])
     sigma_h = tf.exp(theta_fixed[3])
-    beta = tf.exp(theta_fixed[4])
+    beta_ref = tf.exp(theta_fixed[4])
 
     def transition_mean_fn(theta, points):
         r_s = tf.tanh(theta[0])
@@ -483,7 +486,34 @@ def generalized_sv_canonical_model(theta_fixed: Tensor):
             axis=1,
         )
 
-    h_matrix = tf.stack([beta, tf.constant(0.0, DTYPE)])[None, :]
+    def observation_log_density_fn(theta, points, observation):
+        beta = tf.exp(theta[4])
+        s = points[:, 0]
+        h = points[:, 1]
+        residual = observation[0] - beta * s
+        return -0.5 * (
+            tf.square(residual) * tf.exp(-h)
+            + h
+            + tf.constant(np.log(2.0 * np.pi), DTYPE)
+        )
+
+    def observation_log_density_tangent_fn(theta, points, observation, d_points):
+        d_theta = _direction[0]
+        beta = tf.exp(theta[4])
+        d_beta = beta * d_theta[4]
+        s = points[:, 0]
+        h = points[:, 1]
+        d_s = d_points[:, 0]
+        d_h = d_points[:, 1]
+        residual = observation[0] - beta * s
+        d_residual = -(d_beta * s + beta * d_s)
+        exp_neg_h = tf.exp(-h)
+        return (
+            -residual * d_residual * exp_neg_h
+            + 0.5 * d_h * (tf.square(residual) * exp_neg_h - 1.0)
+        )
+
+    h_matrix = tf.stack([beta_ref, tf.constant(0.0, DTYPE)])[None, :]
 
     model = NonlinearScoreModel(
         transition_mean_fn=transition_mean_fn,
@@ -501,6 +531,244 @@ def generalized_sv_canonical_model(theta_fixed: Tensor):
             tf.stack([tf.square(sigma_s), tf.square(sigma_h)])
         ),
         observation_covariance=tf.ones([1, 1], DTYPE),
+        observation_log_density_fn=observation_log_density_fn,
+        observation_log_density_tangent_fn=observation_log_density_tangent_fn,
+    )
+    return model, set_score_direction
+
+
+__all__ = ["austria_sir_canonical_model"]
+
+
+def predator_prey_canonical_model(theta_fixed: Tensor):
+    """Six-parameter predator-prey; RK4 dynamics (20 x dt=0.1), process
+    noise scale 2 (model_exact), direct-state observation with R = 4*I_2
+    (model_exact). Ported from the verified batch adapter; tangent is the
+    total derivative through the RK4 stages for the direction set via the
+    returned setter (same convention as Austria)."""
+
+    theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
+    step = tf.constant(0.1, DTYPE)
+
+    def rhs(theta, state):
+        r, capacity, half_sat, s_rate, u_rate, v_rate = tf.unstack(theta)
+        prey, predator = state[:, 0], state[:, 1]
+        denominator = half_sat + prey
+        interaction = prey * predator / denominator
+        logistic = prey * (1.0 - prey / capacity)
+        return tf.stack(
+            [
+                r * logistic - s_rate * interaction,
+                u_rate * interaction - v_rate * predator,
+            ],
+            axis=1,
+        )
+
+    def rhs_tangent(theta, state, d_state, d_theta):
+        r, capacity, half_sat, s_rate, u_rate, v_rate = tf.unstack(theta)
+        dr, dcap, dhalf, ds_r, du_r, dv_r = tf.unstack(d_theta)
+        prey, predator = state[:, 0], state[:, 1]
+        d_prey, d_predator = d_state[:, 0], d_state[:, 1]
+        denominator = half_sat + prey
+        interaction = prey * predator / denominator
+        d_interaction = (
+            predator * half_sat / tf.square(denominator) * d_prey
+            + prey / denominator * d_predator
+            - prey * predator / tf.square(denominator) * dhalf
+        )
+        logistic = prey * (1.0 - prey / capacity)
+        d_logistic = (
+            (1.0 - 2.0 * prey / capacity) * d_prey
+            + tf.square(prey) / tf.square(capacity) * dcap
+        )
+        return tf.stack(
+            [
+                dr * logistic
+                + r * d_logistic
+                - ds_r * interaction
+                - s_rate * d_interaction,
+                du_r * interaction
+                + u_rate * d_interaction
+                - dv_r * predator
+                - v_rate * d_predator,
+            ],
+            axis=1,
+        )
+
+    def transition_mean_fn(theta, points):
+        current = points
+        for _ in range(20):
+            k1 = rhs(theta, current)
+            k2 = rhs(theta, current + 0.5 * step * k1)
+            k3 = rhs(theta, current + 0.5 * step * k2)
+            k4 = rhs(theta, current + step * k3)
+            current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return current
+
+    _direction = [tf.zeros([6], DTYPE)]
+
+    def set_score_direction(direction: Tensor) -> None:
+        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
+
+    def transition_mean_tangent_fn(theta, points, d_points):
+        d_theta = _direction[0]
+        current, d_current = points, d_points
+        for _ in range(20):
+            k1 = rhs(theta, current)
+            d1 = rhs_tangent(theta, current, d_current, d_theta)
+            k2 = rhs(theta, current + 0.5 * step * k1)
+            d2 = rhs_tangent(
+                theta, current + 0.5 * step * k1,
+                d_current + 0.5 * step * d1, d_theta,
+            )
+            k3 = rhs(theta, current + 0.5 * step * k2)
+            d3 = rhs_tangent(
+                theta, current + 0.5 * step * k2,
+                d_current + 0.5 * step * d2, d_theta,
+            )
+            k4 = rhs(theta, current + step * k3)
+            d4 = rhs_tangent(
+                theta, current + step * k3,
+                d_current + step * d3, d_theta,
+            )
+            current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+            d_current = d_current + step / 6.0 * (d1 + 2.0 * d2 + 2.0 * d3 + d4)
+        return d_current
+
+    model = NonlinearScoreModel(
+        transition_mean_fn=transition_mean_fn,
+        transition_mean_tangent_fn=transition_mean_tangent_fn,
+        observation_fn=lambda points: points,
+        observation_jacobian_fn=lambda points: tf.broadcast_to(
+            tf.eye(2, dtype=DTYPE), [tf.shape(points)[0], 2, 2]
+        ),
+        observation_tangent_fn=lambda points, d_points: d_points,
+        # process noise scale 2 => covariance 4*I (adapter adds 2*noise)
+        process_covariance=4.0 * tf.eye(2, dtype=DTYPE),
+        observation_covariance=4.0 * tf.eye(2, dtype=DTYPE),
+    )
+    return model, set_score_direction
+
+
+def diagonal_lgssm_canonical_model(theta_fixed: Tensor):
+    """Five-parameter diagonal LGSSM (phi_1..3, q_scale, obs_scale) with a
+    3x3 observation matrix; everything model_exact and linear (UKF ==
+    Kalman on this model, giving an exact-reference lane)."""
+
+    theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
+    # Reference observation matrix (frozen target `_LGSSM_MATRIX`;
+    # previously WRONGLY eye(3) — fidelity defect fixed 2026-08-23):
+    obs_matrix = tf.constant(
+        [[1.0, 0.25, -0.15], [0.2, 1.1, 0.3], [-0.1, 0.35, 0.9]], DTYPE
+    )
+    phi = theta_fixed[:3]
+    q_scale = theta_fixed[3]
+    r_scale = theta_fixed[4]
+
+    def transition_mean_fn(theta, points):
+        return points * theta[:3][None, :]
+
+    _direction = [tf.zeros([5], DTYPE)]
+
+    def set_score_direction(direction: Tensor) -> None:
+        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
+
+    def transition_mean_tangent_fn(theta, points, d_points):
+        d_theta = _direction[0]
+        return d_points * theta[:3][None, :] + points * d_theta[:3][None, :]
+
+    model = NonlinearScoreModel(
+        transition_mean_fn=transition_mean_fn,
+        transition_mean_tangent_fn=transition_mean_tangent_fn,
+        observation_fn=lambda points: tf.einsum(
+            "od,nd->no", obs_matrix, points
+        ),
+        observation_jacobian_fn=lambda points: tf.broadcast_to(
+            obs_matrix, [tf.shape(points)[0], 3, 3]
+        ),
+        observation_tangent_fn=lambda points, d_points: tf.einsum(
+            "od,nd->no", obs_matrix, d_points
+        ),
+        process_covariance=tf.square(q_scale) * tf.eye(3, dtype=DTYPE),
+        observation_covariance=tf.square(r_scale) * tf.eye(3, dtype=DTYPE),
+    )
+    return model, set_score_direction
+
+
+def ksc_sv_canonical_model(theta_fixed: Tensor):
+    """KSC mixture SV — CORRECTED 2026-08-23.
+
+    STATE IS 1-DIMENSIONAL: the log-volatility AR(1) h' = gamma*h + eta,
+    matching the reference adapter (`dimension=1` in the frozen target).
+    `log_beta` is a PARAMETER (theta[1]), entering the observation offset
+    as 2*log_beta — the previous onboarding wrongly promoted it to a
+    second state with a fabricated near-deterministic transition
+    (Q22=1e-8), which made the transition density price the flow's
+    legitimate displacement at 1/1e-8 and produced the wrong -19283 value
+    (registry note: onboarding error, not an algorithm property).
+
+    Flow input: moment-matched Gaussian of the KSC log-chi-square mixture
+    (derived constants); the observed quantity is h + 2*log_beta +
+    mixture_noise, so H = [1] and the mixture mean enters the offset.
+    Equivalence gate: KSC value/score must match actual-SV up to the
+    theta-independent observation-transform Jacobian (constant value
+    offset, ZERO score difference).
+    """
+
+    theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
+    weights = tf.constant(
+        [0.00730, 0.10556, 0.00002, 0.04395, 0.34001, 0.24566, 0.25750],
+        DTYPE,
+    )
+    means = tf.constant(
+        [-10.12999, -3.97281, -8.56686, 2.77786, 0.61942, 1.79518, -1.08819],
+        DTYPE,
+    ) - tf.constant(1.2704, DTYPE)
+    variances = tf.constant(
+        [5.79596, 2.61369, 5.17950, 0.16735, 0.64009, 0.34023, 1.26261],
+        DTYPE,
+    )
+    mixture_mean = tf.reduce_sum(weights * means)
+    mixture_var = tf.reduce_sum(
+        weights * (variances + tf.square(means))
+    ) - tf.square(mixture_mean)
+
+    def gamma_of(theta):
+        return 0.5 * (
+            1.0 + tf.math.erf(theta[0] / tf.sqrt(tf.constant(2.0, DTYPE)))
+        )
+
+    def transition_mean_fn(theta, points):
+        return gamma_of(theta) * points
+
+    _direction = [tf.zeros([2], DTYPE)]
+
+    def set_score_direction(direction: Tensor) -> None:
+        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
+
+    def transition_mean_tangent_fn(theta, points, d_points):
+        d_theta = _direction[0]
+        gamma = gamma_of(theta)
+        normalizer = tf.constant(1.0 / np.sqrt(2.0 * np.pi), DTYPE)
+        dgamma = normalizer * tf.exp(-0.5 * tf.square(theta[0])) * d_theta[0]
+        return dgamma * points + gamma * d_points
+
+    # Observation: y_transformed = h + 2*log_beta + mixture noise.
+    # log_beta = theta[1] contributes a THETA-DEPENDENT offset; for the
+    # linear-H flow input the offset enters through observation_fn and its
+    # theta-derivative through the weight densities (score assembly).
+    two_log_beta = 2.0 * theta_fixed[1]
+
+    model = NonlinearScoreModel(
+        transition_mean_fn=transition_mean_fn,
+        transition_mean_tangent_fn=transition_mean_tangent_fn,
+        observation_fn=lambda points: points + mixture_mean + two_log_beta,
+        observation_jacobian_fn=lambda points: tf.ones(
+            [tf.shape(points)[0], 1, 1], DTYPE
+        ),
+        observation_tangent_fn=lambda points, d_points: d_points,
+        process_covariance=tf.ones([1, 1], DTYPE),
+        observation_covariance=mixture_var[None, None],
     )
     return model, set_score_direction
 

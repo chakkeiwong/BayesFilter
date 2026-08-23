@@ -40,6 +40,15 @@ class NonlinearScoreModel:
     observation_tangent_fn: Callable[[Tensor, Tensor], Tensor]
     process_covariance: Tensor
     observation_covariance: Tensor
+    # Optional NON-GAUSSIAN observation density for the WEIGHT/VALUE path
+    # (the Gaussian observation_fn/covariance above remain the FLOW's
+    # proposal-design inputs, corrected by the PF-PF identity). When set,
+    # the tangent callback must return the TOTAL parameter tangent
+    # (closure carries the score direction, same convention as the
+    # transition tangent). Added 2026-08-23 after the KSC/generalized-SV
+    # fidelity defects: heteroskedastic and mixture observation families.
+    observation_log_density_fn: Callable[[Tensor, Tensor, Tensor], Tensor] | None = None
+    observation_log_density_tangent_fn: Callable[[Tensor, Tensor, Tensor, Tensor], Tensor] | None = None
 
 
 def canonical_value_and_analytical_score(
@@ -221,14 +230,24 @@ def canonical_value_and_analytical_score(
         transition_log, d_transition_log = _gaussian_log_density_and_tangent(
             children, d_children, anchors, d_anchors, process_chol
         )
-        observed = model.observation_fn(children)
-        d_observed = model.observation_tangent_fn(children, d_children)
-        obs_target = tf.broadcast_to(
-            observation[None, :], tf.shape(observed)
-        )
-        observation_log, d_observation_log = _gaussian_log_density_and_tangent(
-            obs_target, None, observed, d_observed, obs_chol
-        )
+        if model.observation_log_density_fn is not None:
+            observation_log = model.observation_log_density_fn(
+                theta, children, observation
+            )
+            d_observation_log = model.observation_log_density_tangent_fn(
+                theta, children, observation, d_children
+            )
+        else:
+            observed = model.observation_fn(children)
+            d_observed = model.observation_tangent_fn(children, d_children)
+            obs_target = tf.broadcast_to(
+                observation[None, :], tf.shape(observed)
+            )
+            observation_log, d_observation_log = (
+                _gaussian_log_density_and_tangent(
+                    obs_target, None, observed, d_observed, obs_chol
+                )
+            )
         proposal_log, d_proposal_log = _gaussian_log_density_and_tangent(
             pre_flow, d_pre_flow, anchors, d_anchors, process_chol
         )
