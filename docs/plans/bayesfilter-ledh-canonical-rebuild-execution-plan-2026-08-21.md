@@ -735,3 +735,15 @@ review.
   anomaly: predator-prey bootstrap NaN (negative-state RK4 blowup, a
   bootstrap fragility on positivity-constrained models; canonical lane
   finite). Artifact annotated.
+
+- 2026-08-24 (ledger): PART-5 BATTERY COMPLETE — the final float32/TF32
+  arm executed on GPU (`battery_f32_tf32.json`). All four historical
+  disease classes re-tested at historical precision: (1) value/score
+  program split — structurally dead (one analytical program; TF32-on
+  graph value BITWISE vs eager); (2) cross-mode drift — <=8.1e-4 at
+  float32/XLA (op-order class, declared), 0..1e-7 graph; (3) TF32
+  arithmetic effect — 3.6e-5 on-vs-off (guarded factorizations, no
+  unbounded correction step); (4) NaN escape — the exact historical combo
+  (poisoned obs + float32 + TF32 + XLA) fails CLOSED: invalid, masked, no
+  exception. The owner's item-5 question ("do we still have these
+  issues") is now answered by measurement across every arm: NO.
