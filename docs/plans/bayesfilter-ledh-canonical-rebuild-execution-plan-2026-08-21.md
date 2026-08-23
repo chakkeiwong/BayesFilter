@@ -697,3 +697,14 @@ review.
   Fidelity tally: 4 infidelities found, 4 fixed, each by a different gate
   class — value-scale cell (KSC), independent-density (gen-SV), constants
   (LGSSM matrix), vendored-differential (Austria half-step).
+
+- 2026-08-24 (ledger): ARTIFACT REFRESH under corrected (half-step-
+  faithful) Austria dynamics; probes migrated off the deleted bootstrap
+  factory onto `make_canonical_neutra_target` (same frozen data/seeds).
+  Corrected results STRENGTHEN all conclusions: bootstrap reproduces the
+  historical collapse exactly (min ESS 23.3 vs recorded ~23 — closer than
+  the pre-fix 20.9, as expected since the historical lane carried the
+  half-step quirk); annealed-SMC k=4: takeoff 616/664, k=8: 864/918 of
+  1008 (worst-step 864), values -682.3/-683.4 bracketing bootstrap
+  -683.4. Flow-only ladder unchanged qualitatively (collapse at takeoff,
+  temper monotonicity). All frozen-Austria artifacts now faithful.

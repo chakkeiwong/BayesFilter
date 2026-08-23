@@ -34,8 +34,8 @@ def systematic_indices(weights: np.ndarray, count: int, offset: float) -> np.nda
 
 def main() -> None:
     started = time.time()
-    from bayesfilter.highdim.cubature_genut_neutra_targets import (
-        make_genut_neutra_target,
+    from bayesfilter.highdim.ledh_canonical_neutra_targets_tf import (
+        make_canonical_neutra_target,
     )
     from bayesfilter.highdim.ledh_canonical_models_tf import (
         austria_sir_canonical_model,
@@ -50,18 +50,16 @@ def main() -> None:
     from bayesfilter.highdim.models import zhao_cui_sir_austria_model
 
     with tf.device("/CPU:0"):
-        target = make_genut_neutra_target(
+        target = make_canonical_neutra_target(
             "austria_sir", particle_count=1008
         )
     n = 1008
     horizon = int(target.observations.shape[0])
     theta0 = tf.constant([0.0, 0.0, 0.0], DTYPE)
     model, _sd = austria_sir_canonical_model(theta0)
-    observations = tf.cast(target.observations, DTYPE)
-    initial_noise = tf.cast(target.initial_noise, DTYPE)
-    process_noise = tf.cast(target.process_noise, DTYPE)
-    initial_mean = tf.cast(zhao_cui_sir_austria_model().initial_mean, DTYPE)
-    initial = initial_mean[None, :] + initial_noise
+    observations = target.observations
+    process_noise = target.noises
+    initial = target.initial_states
     variance = 100.0
     obs_norm = 4.5 * np.log(2.0 * np.pi * variance)
     cap_c = 8.0
