@@ -330,3 +330,56 @@ VERDICT: DISAGREE — blocking findings F1 (SV domination sketch wrong
 relative to the stated gate) and F2 (τ-coupling reaches τ = 0 with no
 clamp or justification). Both are repairable by small edits to §3 and
 the D3 paragraph; items 1 and 3, the load-bearing derivations, stand.
+
+## Re-verification of repairs (2026-08-24, commit 37d94faa)
+
+Checked the full diff 90cd98c5 → 37d94faa against each finding.
+
+- **F1 discharged.** §3 now states the gate against the whitened
+  reference, carries the tail-variance derivation correctly (σ_f² tail
+  vs s² ≤ σ_f² whitening, strictness via log-concavity/Brascamp–Lieb;
+  the log F display matches this review's), declares the λ ≡ 1
+  pre-check expected-to-fail for SV, promotes the Student-t escalation
+  to the expected SV configuration, marks the hint-variance-floor
+  alternative as requiring its own audit, and assigns the
+  retained-floor coverage question to attempt05.
+- **F2 discharged as a safety design.** τ_t = clamp(ε̂_t², 1e-6, 1e-4)
+  removes the reachable-zero endpoint; the Class-C justification is in
+  the acceptable form (inherited measured no-harm evidence plus an
+  explicit bound — the cited 46× n=2 margin figure is not independently
+  re-checked here, but the sub-τ_min mixture bound τ/(1+τ) ≤ 1e-6 is
+  exact algebra independent of it, and declining the Lemma-1 √2 claim
+  in that regime is correct: the hypothesis τ ≤ ε_true² can fail there
+  while the mixture bound cannot). τ_max = bar/25 now has value and
+  provenance.
+- **F3, F4, F5, F6 discharged.** Relative-residual definition with the
+  τ_abs = τ_rel·Z_h transfer ✓; overestimate direction bounded via
+  ‖√q̄ − √q‖² ≤ ε_true² + τ_abs with no ε_true guarantee claimed ✓;
+  y ≠ 0 qualifier with the y = 0 growth behavior and transition-factor
+  control ✓; e^{−c_t} restored so Ẑ_t = ∫q̄_t dμ holds as displayed,
+  η dimension clause added ✓.
+
+**New finding F7 (moderate, blocking until reconciled), introduced by
+the F2 repair.** The clamp makes ladder item 4 arithmetically
+unsatisfiable as written. At the oracle (exact fit, ℓ = 1) ε̂² ≈ 0, so
+the clamp binds: τ_t = τ_min = 1e-6 at every step. The increment is
+Ẑ_t = e^{−c_t}(1 + τ_t)Z_{h,t}, and the program's documented
+likelihood convention includes the defensive mass (the selection note's
+O2 budgets T·τ ≈ 1.2e-4 as a real bias of the reported likelihood).
+Hence the T = 120 accumulated log-likelihood carries
+Σ_t log(1 + τ_min) = 120·log(1 + 10⁻⁶) ≈ 1.2×10⁻⁴, which exceeds the
+declared 1e-8 gate by four orders — a single step's 10⁻⁶ already does.
+The pre-repair coupling gave τ = 0 at the oracle, so this
+inconsistency did not exist before. One-sentence repair, in order of
+preference: (i) declare the oracle comparison as
+Σ_t (log Ẑ_t − log(1 + τ_t)) — exact closed-form algebra, tests the
+h-chain at machine precision while exercising the production clamp
+path; or (ii) declare the gate's τ configuration a named
+smoke/reference exception (weaker: the gate then never exercises the
+clamp). Until §2.4 says which, the note's declared correctness oracle
+cannot pass under the note's declared default policy — wrong relative
+to the stated target, internal to the note.
+
+VERDICT: DISAGREE (after repairs, 2026-08-24) — F1–F6 discharged; F7
+alone blocks, and a one-sentence reconciliation of ladder item 4 with
+the τ_min clamp discharges it.

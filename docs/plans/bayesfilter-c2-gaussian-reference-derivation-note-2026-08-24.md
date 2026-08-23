@@ -156,12 +156,23 @@ under the new basis before any score claim.
 3. Conversion-term closure: single-step re-expression identity on a
    Gaussian fixture (the quadratic-cancellation check above), value and
    score.
-4. **LGSSM oracle gate** (D2): under exact hints the whitened step
-   target is Gaussian and F ≡ const, so the full T = 120 filter must
-   reproduce the Kalman log-likelihood to float64 accumulation error
-   (gate 1e-8 total, expected far better) at ℓ = 1, r = 1 — and,
+4. **LGSSM oracle gate** (D2; gate definition per review finding F7):
+   under exact hints the whitened step target is Gaussian and
+   F ≡ const, so the full T = 120 filter must reproduce the Kalman
+   log-likelihood to float64 accumulation error at ℓ = 1, r = 1 — and,
    run again at ℓ = 13, r = 6, must not degrade (fit-of-constant
-   conditioning check). This gate is a *correctness oracle*, not rank
+   conditioning check). Because the clamp of D3 binds τ_t = τ_min at
+   the oracle (ε̂ ≈ 0), the raw likelihood carries the defensive mass
+   Σ_t log(1+τ_t) ≈ 1.2e-4 over T = 120, which would swamp a 1e-8
+   gate; the defensive mass is exactly known (∫λ dμ = 1), so the gate
+   compares the defensive-corrected sum:
+
+       | Σ_t ( log Ẑ_t − log(1+τ_t) ) − log p_Kalman(y_{1:T}) | ≤ 1e-8.
+
+   This tests the fit/Gram/conversion machinery beneath the τ blanket
+   while exercising the production clamp path itself — preferable to a
+   τ = 0 smoke exception, which would certify a configuration the
+   program never runs. This gate is a *correctness oracle*, not rank
    evidence: ch38 §40.9 records why r*(LGSSM) is trivial by
    construction under C2.
 5. Hermite conditioning diagnostic at n ∈ {4, 8}: design-matrix
