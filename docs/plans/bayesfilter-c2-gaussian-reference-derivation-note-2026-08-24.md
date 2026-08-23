@@ -1,8 +1,12 @@
 # C2 Gaussian-Reference Program — Derivation Note — 2026-08-24
 
-Status: `DRAFT_FOR_REVIEW` (material review required before engine work;
-this review is also the human certification step the MathDevMCP ch38
-audits defer to). Implements owner decisions D1–D3 of
+Status: `REVIEWED` — material review complete
+(`bayesfilter-c2-derivation-note-review-2026-08-24.md`: initial verdict
+DISAGREE with findings F1–F6, repaired; re-verification surfaced F7,
+repaired; final "VERDICT: AGREE (after repairs, 2026-08-24)"). This
+review also discharges the human certification step the MathDevMCP ch38
+audits defer to. Engine work is unblocked against this note as the
+specification. Implements owner decisions D1–D3 of
 `bayesfilter-squared-tt-program-reset-memo-2026-08-24.md`. Selection
 basis: monograph ch38 §40.8–40.9 (commit `347c5fd5`) and
 `bayesfilter-reference-domain-selection-derivation-note-2026-08-23.md`.

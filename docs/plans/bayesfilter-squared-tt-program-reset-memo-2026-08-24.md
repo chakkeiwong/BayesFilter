@@ -71,6 +71,19 @@ question is now answered — the suspect was the domain).
 
 ## Continuation queue (in order)
 
+UPDATE (later 2026-08-24): items 1-3's reading/writing/review halves are
+DONE — papers read (caveat disposition: both Hermite objections are
+sampling-side CDF inversion or the O7 domination condition; CD22 Prop 2
+anchors retention with M_k = I), C2 derivation note written and
+MATERIALLY REVIEWED to "VERDICT: AGREE (after repairs)" through three
+rounds (F1: SV domination corrected — Student-t floor is the EXPECTED SV
+configuration, tail variance sigma_f^2 vs whitened s^2 < sigma_f^2; F2:
+tau = clamp(eps_rel^2, 1e-6, 1e-4) with provenance; F3-F6 minors; F7:
+oracle gate compares the defensive-corrected sum
+sum_t(log Z_t - log(1+tau_t)) vs Kalman). Commits 90cd98c5, 37d94faa,
+3e88f959. NEXT: engine implementation against the reviewed note (item 3
+second half), then item 4 diagnostics, then attempt05.
+
 1. READ (postdoc standard, not skim) the two fetched papers' technical
    sections: Cui-Dolgov 2022 — squared-IRT construction, weighted bases,
    error propagation; Cui-Dolgov-Zahm 2023 — self-reinforced

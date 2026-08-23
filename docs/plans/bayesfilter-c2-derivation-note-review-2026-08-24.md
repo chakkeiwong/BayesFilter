@@ -383,3 +383,15 @@ to the stated target, internal to the note.
 VERDICT: DISAGREE (after repairs, 2026-08-24) — F1–F6 discharged; F7
 alone blocks, and a one-sentence reconciliation of ladder item 4 with
 the τ_min clamp discharges it.
+
+## F7 discharge (2026-08-24, commit 3e88f959)
+
+Ladder item 4 now gates on
+|Σ_t(log Ẑ_t − log(1+τ_t)) − log p_Kalman| ≤ 1e-8. Checked: the
+correction is exact closed-form algebra
+(log Ẑ_t − log(1+τ_t) = −c_t + log Z_{h,t}, defensive mass removed
+identically since ∫λ dμ = 1), the production clamp path is exercised,
+and the τ = 0 smoke exception is rejected with the correct reason. The
+ℓ = 13, r = 6 rerun inherits the same corrected gate. F7 discharged.
+
+VERDICT: AGREE (after repairs, 2026-08-24)
