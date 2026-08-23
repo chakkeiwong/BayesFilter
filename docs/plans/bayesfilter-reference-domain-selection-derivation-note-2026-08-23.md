@@ -141,7 +141,7 @@ bound, consistent with the measured shrink factors 0.4–0.7. The geometric
 growth in n is the derivation-level statement of "dimension-lethal".
 C2/C3: dom = R^n ⇒ ε_trunc ≡ 0 identically.
 
-### O2 — bias floor: C1 nonzero and irreducible; C2, C3 zero
+### O2 — bias floor: C1 nonzero and irreducible; C2, C3 O(τ), vanishing under the paper's τ coupling
 
 C1: at zero fit error the retained object is exactly the box-conditioned
 marginal, which differs from the true marginal by the ε_trunc(n) mass and its
@@ -150,8 +150,25 @@ per-step conditionings is not the conditioning of the composition), so the
 deficiency compounds. Removing it requires κ → ∞, which R2's containment
 fixed point forbids. Hence b(n) > 0 and increasing in n: **no rank or degree
 repairs it** — this is the theorem-shaped content behind the attempt04 flag.
-C2/C3: at zero fit error the retained object equals the true marginal
-(full-support recursion, exact Gram-chain marginalization): b ≡ 0.
+C2/C3: the defensive term itself injects a mixture bias — at zero fit
+error the retained μ-density is (q_μ + τ Z_h λ)/((1+τ) Z_h), so
+
+    TV(retained, true) = (τ/(2(1+τ))) ∫ |λ − q_μ/Z| dμ ≤ τ/(1+τ),
+
+**dimension-free** (the mixture weight does not grow with n), and
+controlled two ways: under the paper's own coupling
+τ_t ≤ ‖φ_t − √q_t‖²_{L²} (Lemma 1 / Prop. 11 hypothesis, txt:570-575 and
+1445-1450; the engine's relative-τ convention rescales the absolute
+constant by Z_{h,t}) the bias is second-order in the fit error, so b → 0
+in the fit→0 limit and the limit statement survives; under the program's
+current fixed-τ policy (τ = 1e-6, P1B plan) it is a constant ≤ 1e-6 with
+worst-case T·τ ≈ 1.2e-4 over T = 120, well under the 2.5e-3 bar. The
+fixed-τ-vs-paper-coupled choice is hereby flagged as an unexamined
+default for the C2 derivation note's default audit. C1 carries the same
+O(τ) term PLUS the truncation part, which is the binding defect:
+irreducible, dimension-growing, κ-uncorrectable. (First draft wrote
+b ≡ 0 unconditionally for C2/C3 — corrected 2026-08-23, second owner
+catch.)
 
 ### O3 — per-axis cardinality: C2 ≪ C1 < C3 on the near-Gaussian family
 
@@ -206,29 +223,52 @@ candidate-independent). Mass matrices are θ-independent constants in all
 three. The adjoint machinery differentiates target values at rows — same
 nodes, different basis evaluations.
 
-### O7 — defensive floor: C1 fails with its domain; C2 vs C3 differ in tail order
+### O7 — defensive floor: the paper's domination hypothesis; C1 fails it intrinsically; λ is free in C2/C3
 
-All candidates take λ_t := 1 w.r.t. μ_t per block (the reference density
-itself, matching the paper's eq. (16) product form), so the represented
-μ-density is floored at τ_t Z_h uniformly in reference coordinates. Where
-that floor exists physically differs:
+The paper defines λ generically — "some reference tensor-product
+probability density λ(x) such that sup_x π(x)/λ(x) < ∞" (txt:553-556,
+eq. (13)) — and its guard theorem is exactly the ratio bound
 
-- **C1: FAIL (inherits the domain defect).** supp(λ) = the box. Off the
-  box the represented density is not floored — it is undefined. The
-  paper's own safety term is structurally inoperative in exactly the tail
-  region where R2/O1 fail; compounding, not independent.
-- **C2: pass, Gaussian tail order.** Floor ∝ τ η(u): full support; the
-  target-to-floor ratio is bounded for sub-Gaussian whitened targets and
-  degrades for heavier tails — the paper's own escalation for that regime
-  is the §5.3 tempering/DIRT layer.
-- **C3: pass, polynomial tail order (strongest).** The pullback of the
-  per-axis uniform reference through u = sz/√(1−z²) has density
-  (1/2)|dz/du| = (s²/2)(s²+u²)^{−3/2}: full support with t₂-like tails —
-  the heaviest floor of the three, hence the strongest ratio bound for
-  heavy-tailed targets. This is the one derived sub-property where C3 is
-  strictly stronger than C2. It bears on the non-Gaussian arm (SV), not
-  on the declared near-Gaussian calibration family, where both floors are
-  adequate.
+    sup_x p(x)/p̂(x) < (ẑ/(τ z)) · sup_x π(x)/λ(x),
+
+i.e. the floor performs its declared function (absolute continuity,
+CLT-valid weights, bounded log-ratios) **iff λ dominates the target's
+tails**. Lemma 1 / Proposition 11 price the floor's L² cost at a factor
+√2 under τ_t ≤ ‖φ_t − √q_t‖². Consequences:
+
+- **C1: intrinsic FAIL.** Any λ supported on the box gives
+  sup q/λ = ∞ for an unbounded-support target: the paper's own
+  hypothesis is violated by construction, so the guard cannot perform its
+  declared function in exactly the region R2/O1 indict. Third independent
+  elimination ground.
+- **C2 and C3: λ's tail order is a free design choice, so O7 does not
+  discriminate between them.** Both admit tensor-product λ of any tail
+  order with the closed-form algebra intact: ∫ λ dμ = 1, per-axis product
+  marginals in retention, θ-independence in the adjoint. λ := reference
+  density (Gaussian for C2; compactified-uniform, i.e. t₂-like, for C3)
+  is merely the default; a heavier-tailed product λ (Student-t family)
+  restores domination for any declared target tail class in either
+  candidate (log-space evaluation of λ = t/η keeps C2 float-safe). The
+  first amendment credited C3 a strict O7 advantage; that was an artifact
+  of freezing λ := reference — withdrawn.
+
+The floor splits the tail requirements into two channels, which the first
+draft conflated:
+
+1. **Increment accuracy — NOT relaxed by the floor.** The floor's mass is
+   λ-shaped, not target-shaped; Lemma 1's √2 factor shows it only adds L²
+   error. Un-fitted tail mass still biases Ẑ_t one-for-one. The O3
+   measured ℓ(ε) numbers stand unchanged as increment-accuracy
+   statements; what governs missed tail mass is preconditioning quality
+   (whether the whitened target's mass sits where rows sit) —
+   candidate-independent.
+2. **Recursion stability — what the floor regularizes.** With domination,
+   log q̄ is floored at log(τ Z_h λ) and the represented-to-true ratio is
+   bounded by the display above, so fit zeros and missed tails produce
+   bounded, tail-mass-weighted errors at later rows instead of -inf
+   log-targets or unbounded weights. This is the "regularizes the
+   unboundedness of the fit" effect, and it is available to C2 and C3
+   equally through the λ choice.
 
 ## 3. Evaluation table
 
@@ -242,7 +282,7 @@ that floor exists physically differs:
 | O4 rank | invalidated via O2 | empirical | empirical |
 | O5 conditioning/cost | mild (moot) | tail factor ≤ ~26 (recorded) | ℓ² and compile-channel inflation |
 | O6 θ-adjoint | PASS | PASS | PASS |
-| O7 defensive floor | **FAIL** (compact support) | pass (Gaussian tails) | pass (polynomial tails, strongest) |
+| O7 defensive floor (λ domination, eq. (13)) | **FAIL** intrinsic (sup q/λ = ∞ off-box) | pass (λ tail order free) | pass (λ tail order free) |
 
 ## 4. Engineering re-derivation surface (budget input, not an objective)
 
@@ -262,16 +302,16 @@ that floor exists physically differs:
    dimension-growing irreducible bias floor. This is not a preference and is
    not revisitable by tuning (κ-invariance is measured; the ε_trunc bound is
    an identity given κ*).
-2. **C2 dominates C3 on the derived objectives for the declared
-   near-Gaussian family** (O3 decisively, O5's cost channel; ties
-   elsewhere, O7 included — both floors adequate there). The 2026-08-23
-   defensive-term amendment adds one derived exception: on heavy-tailed
-   targets C3's floor has strictly stronger tail order (O7). For the
-   declared family the mathematics selects **C2**; the C2-vs-C3 comparison
-   on the non-Gaussian arm (SV) is two-sided — O3/O5 favor C2, O7 favors
-   C3 — and is settled by the named empirical questions plus the paper's
-   §5.3 escalation design, not by preference. C3's re-derivation-cost edge
-   remains a budget input, not an objective.
+2. **C2 dominates C3 on the derived objectives** (O3 decisively on the
+   calibration family, O5's cost channel; ties elsewhere). The first
+   amendment briefly credited C3 a heavy-tail O7 advantage; the second
+   round withdraws it: per the paper's own eq. (13) hypothesis, λ's tail
+   order is a free closed-form design choice in both C2 and C3, so O7
+   discriminates only against C1. Heavy-tail risk decomposes into
+   increment accuracy (governed by preconditioning quality;
+   candidate-independent) and recursion stability (governed by λ
+   domination; free in both). The mathematics selects **C2**. C3's
+   re-derivation-cost edge remains a budget input, not an objective.
 3. **What remains genuinely empirical** (named, not decided): rank demand
    r(ε) under C2 on non-Gaussian targets (SV); the Hermite tail-conditioning
    constant in practice at n ≥ 8; XLA behavior of Hermite kernels.
@@ -316,3 +356,26 @@ amended — O7 favors C3 in the heavy-tail regime. Also now recorded as a
 non-claim: C2's O3 efficiency statement does not extend to
 heavier-than-Gaussian whitened tails, where the Hermite rate degrades and
 the paper's own answer is the §5.3 nonlinear layer.
+
+Second amendment 2026-08-23 (owner challenge: "the safety term
+regularizes the unboundedness of the fit — does the tail analysis
+change?"): yes, in two places, and the corrections strengthen the verdict
+rather than weakening it. (i) O2's "b ≡ 0" for C2/C3 was unconditional
+and wrong as written: the floor injects a τ/(1+τ) mixture bias —
+dimension-free, second-order under the paper's τ_t ≤ ε_t² coupling
+(Prop. 11), ≤ 1e-6 under the program's fixed-τ policy; corrected in
+place, and the fixed-vs-coupled τ policy is flagged as an unexamined
+default for the C2 derivation note's audit. (ii) O7 was restructured
+around the paper's own domination hypothesis sup q/λ < ∞ (eq. (13)):
+C1 violates it intrinsically for unbounded-support targets — a third
+independent elimination ground — while for C2/C3 the λ tail order is a
+free closed-form design choice, so the first amendment's "C3 strictly
+stronger on O7" is withdrawn. The tail analysis is now split into
+increment accuracy (the floor does not relax it; the O3 measured numbers
+stand) and recursion stability (the floor controls it via domination;
+candidate-independent). The preceding paragraph's heavy-tail non-claim is
+re-scoped accordingly: the Hermite rate concern belongs to the bulk
+increment-accuracy channel when heavy tails carry real mass — a
+preconditioning-quality question — while the stability risk is handled by
+the λ choice in either candidate. O1/O3/O5 derivations and all measured
+numbers are unchanged by this amendment.
