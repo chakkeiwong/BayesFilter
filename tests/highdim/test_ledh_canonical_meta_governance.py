@@ -57,28 +57,20 @@ PENDING = "PENDING:"
 MODEL_GATE_REGISTRY = {
     "austria_sir": {
         "oracle_score": "test_austria_analytical_score_direction0_matches_oracle",
-        "independent_fidelity": (
-            PENDING + " structural constants gated "
-            "(test_austria_observation_variance_matches_reference_form); "
-            "full density equality vs the float64 teacher model queued "
-            "pre-leaderboard"
-        ),
+        "independent_fidelity": "test_austria_dynamics_match_vendored_reference_adapter",
         "invariance_or_reduction": (
             PENDING + " reduction slice (kappa->0 diffusion limit) queued"
         ),
         "statistical_identity": (
-            PENDING + " Fisher-identity gate queued (template: gen-SV)"
+            PENDING + " Fisher gate queued with the P6 GPU campaign "
+            "(18-dim UKF replication cost)"
         ),
     },
     "predator_prey": {
         "oracle_score": "test_predator_prey_onboarding_score_gate",
-        "independent_fidelity": (
-            PENDING + " noise-scale constants gated "
-            "(test_predator_prey_noise_scales_match_reference); full "
-            "density equality queued"
-        ),
+        "independent_fidelity": "test_predator_prey_dynamics_match_vendored_reference_adapter",
         "invariance_or_reduction": PENDING + " trivial-dynamics slice queued",
-        "statistical_identity": PENDING + " queued",
+        "statistical_identity": "test_predator_prey_fisher_identity",
     },
     "diagonal_lgssm": {
         "oracle_score": "test_diagonal_lgssm_onboarding_score_gate",
@@ -86,23 +78,18 @@ MODEL_GATE_REGISTRY = {
         "invariance_or_reduction": (
             "test_s1_lgssm_kalman_exactness"  # exact-math referent
         ),
-        "statistical_identity": PENDING + " queued",
+        "statistical_identity": "test_diagonal_lgssm_fisher_identity",
     },
     "ksc_sv": {
         "oracle_score": "test_ksc_sv_onboarding_score_gate",
-        "independent_fidelity": (
-            PENDING + " mixture-constant gate vs reference tables queued; "
-            "constants currently transcribed with in-source citation"
-        ),
+        "independent_fidelity": "test_ksc_mixture_density_matches_vendored_reference",
         "invariance_or_reduction": "test_ksc_equals_actual_sv_up_to_constant",
-        "statistical_identity": PENDING + " queued",
+        "statistical_identity": "test_ksc_sv_fisher_identity",
     },
     "generalized_sv": {
         "oracle_score": "test_generalized_sv_onboarding_score_gate",
         "independent_fidelity": "test_generalized_sv_densities_match_native_reference",
-        "invariance_or_reduction": (
-            PENDING + " sigma_h->0 linear-Gaussian reduction queued"
-        ),
+        "invariance_or_reduction": "test_generalized_sv_reduction_slice_matches_kalman",
         "statistical_identity": "test_generalized_sv_fisher_identity",
     },
 }

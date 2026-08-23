@@ -708,3 +708,20 @@ review.
   1008 (worst-step 864), values -682.3/-683.4 bracketing bootstrap
   -683.4. Flow-only ladder unchanged qualitatively (collapse at takeoff,
   temper monotonicity). All frozen-Austria artifacts now faithful.
+
+- 2026-08-24 (ledger): REGISTRY-PENDING SWEEP EXECUTED. (1) INFIDELITY #5
+  found via the registry's own honest PENDING cell: corrected KSC still
+  used the moment-matched GAUSSIAN weight where the reference adapter
+  specifies the 7-component MIXTURE logsumexp — fixed via the
+  density-callback path with the analytic responsibility-weighted tangent
+  (sign derivation in-source); vendored differential gate added and
+  green; KSC oracle score gate now exercises the mixture tangent. (2)
+  gen-SV reduction slice added (exact-math referent): sigma_h->0 collapses
+  to 1-D linear-Gaussian, canonical pipeline matches Kalman within 0.05
+  declared tolerance. (3) Fisher-identity gates added for KSC (mixture
+  simulator), diagonal-LGSSM (variance directions 3/4), predator-prey
+  (directions 0/3, independent numpy RK4 simulator) — all green. Registry
+  now 16/20 cells test-covered; 4 explicit pendings with cost reasons
+  (Austria reduction + Fisher ride with P6 GPU; PP trivial-slice; none
+  silent). Fidelity tally: 5 infidelities found, 5 fixed, five distinct
+  gate classes did the finding.

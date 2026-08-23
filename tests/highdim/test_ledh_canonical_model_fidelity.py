@@ -244,3 +244,105 @@ def test_predator_prey_dynamics_match_vendored_reference_adapter():
     assert rel_obs < 1.0e-4, (
         f"predator-prey observation-density infidelity: rel {rel_obs}"
     )
+
+
+def test_ksc_mixture_density_matches_vendored_reference():
+    """KSC weight density must equal the vendored original adapter's
+    mixture logsumexp on shared inputs (class-2 referent; float32
+    reference => rtol 1e-4). Closes the KSC independent-fidelity cell —
+    the previous moment-matched-Gaussian weight was a residual
+    infidelity flagged PENDING in the registry."""
+
+    import vendored_reference_batch_adapters as reference
+
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        ksc_sv_canonical_model,
+    )
+
+    theta_np = [0.5, 0.1]
+    theta64 = tf.constant(theta_np, DTYPE)
+    model, _sd = ksc_sv_canonical_model(theta64)
+    adapter = reference.ksc_mixture_sv_batch_adapter()
+    rng = np.random.default_rng(521)
+    h_np = rng.standard_normal(16)
+    observation_np = np.float32(0.9)
+    theta32 = tf.constant([theta_np], tf.float32)
+    # reference adapter state layout: [B, N, 1]
+    particles32 = tf.constant(
+        h_np[None, :, None].astype(np.float32), tf.float32
+    )
+    reference_density = adapter.observation_value(
+        theta32, particles32, tf.constant([observation_np]), 0
+    )[0].numpy()
+    mine = model.observation_log_density_fn(
+        theta64,
+        tf.constant(h_np[:, None], DTYPE),
+        tf.constant([float(observation_np)], DTYPE),
+    ).numpy()
+    rel = np.max(np.abs(mine - reference_density) / np.maximum(np.abs(reference_density), 1.0))
+    assert rel < 1.0e-4, f"KSC mixture density infidelity: rel {rel}"
+
+
+def test_generalized_sv_reduction_slice_matches_kalman():
+    """Reduction-slice gate (exact-math referent): at sigma_h -> 0 with
+    initial h = 0 the model is linear-Gaussian in s (y = beta*s + N(0,1)),
+    so the canonical pipeline value must match the 1-D Kalman likelihood
+    within MC tolerance (declared: 0.05 abs, 2 seeds mean, N=4096)."""
+
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        generalized_sv_canonical_model,
+    )
+    from bayesfilter.highdim.ledh_canonical_score_tf import (
+        canonical_value_and_analytical_score,
+    )
+
+    rho_s, sigma_s, beta = 0.7, 0.9, 1.2
+    theta_np = [
+        float(np.arctanh(rho_s)),
+        float(np.arctanh(0.5)),
+        float(np.log(sigma_s)),
+        float(np.log(1.0e-5)),  # sigma_h -> 0
+        float(np.log(beta)),
+    ]
+    theta = tf.constant(theta_np, DTYPE)
+    model, _sd = generalized_sv_canonical_model(theta)
+    horizon, n = 3, 4096
+    rng = np.random.default_rng(531)
+    observations_np = rng.normal(0.0, 1.5, (horizon, 1))
+
+    # 1-D Kalman on s: F=rho_s, Q=sigma_s^2, H=beta, R=exp(0)=1
+    mean, var = 0.0, 1.0  # matches the particle initial cloud below
+    kalman = 0.0
+    for t in range(horizon):
+        mean, var = rho_s * mean, rho_s**2 * var + sigma_s**2
+        innovation_var = beta**2 * var + 1.0
+        resid = observations_np[t, 0] - beta * mean
+        kalman += -0.5 * (
+            resid**2 / innovation_var + np.log(2.0 * np.pi * innovation_var)
+        )
+        gain = var * beta / innovation_var
+        mean = mean + gain * resid
+        var = (1.0 - gain * beta) * var
+
+    values = []
+    for seed in (0, 1):
+        rng_p = np.random.default_rng(600 + seed)
+        s0 = rng_p.standard_normal(n)
+        initial = tf.constant(
+            np.stack([s0, np.zeros(n)], axis=1), DTYPE
+        )  # h = 0 exactly
+        covs = tf.constant(
+            np.stack([np.diag([1.0, 1.0e-10])] * n), DTYPE
+        )
+        noises = tf.constant(rng_p.standard_normal((horizon, n, 2)), DTYPE)
+        value, _ = canonical_value_and_analytical_score(
+            model, theta, initial, covs, noises,
+            tf.constant(observations_np, DTYPE),
+            substeps=8, with_score=False,
+        )
+        values.append(float(value.numpy()))
+    err = abs(float(np.mean(values)) - kalman)
+    assert err < 0.05, (
+        f"reduction slice: canonical {np.mean(values):.4f} vs Kalman "
+        f"{kalman:.4f} (err {err:.4f}, per-seed {values})"
+    )

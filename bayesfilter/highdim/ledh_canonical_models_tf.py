@@ -536,6 +536,42 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
     # theta-derivative through the weight densities (score assembly).
     two_log_beta = 2.0 * theta_fixed[1]
 
+    def observation_log_density_fn(theta, points, observation):
+        # REFERENCE mixture density (7-component KSC logsumexp), matching
+        # the vendored adapter's observation_value. w = y - 2*log_beta - h.
+        w = observation[0] - 2.0 * theta[1] - points[:, 0]
+        terms = (
+            tf.math.log(weights)[None, :]
+            - 0.5
+            * (
+                tf.square(w[:, None] - means[None, :]) / variances[None, :]
+                + tf.math.log(variances)[None, :]
+                + tf.constant(np.log(2.0 * np.pi), DTYPE)
+            )
+        )
+        return tf.reduce_logsumexp(terms, axis=1)
+
+    def observation_log_density_tangent_fn(theta, points, observation, d_points):
+        d_theta = _direction[0]
+        w = observation[0] - 2.0 * theta[1] - points[:, 0]
+        terms = (
+            tf.math.log(weights)[None, :]
+            - 0.5
+            * (
+                tf.square(w[:, None] - means[None, :]) / variances[None, :]
+                + tf.math.log(variances)[None, :]
+                + tf.constant(np.log(2.0 * np.pi), DTYPE)
+            )
+        )
+        responsibilities = tf.nn.softmax(terms, axis=1)
+        location_score = tf.reduce_sum(
+            responsibilities * (w[:, None] - means[None, :]) / variances[None, :],
+            axis=1,
+        )
+        d_w = -d_points[:, 0] - 2.0 * d_theta[1]
+        # d logp / dw = -sum_k resp_k (w - m_k)/v_k = -location_score
+        return -location_score * d_w
+
     model = NonlinearScoreModel(
         transition_mean_fn=transition_mean_fn,
         transition_mean_tangent_fn=transition_mean_tangent_fn,
@@ -546,6 +582,8 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
         observation_tangent_fn=lambda points, d_points: d_points,
         process_covariance=tf.ones([1, 1], DTYPE),
         observation_covariance=mixture_var[None, None],
+        observation_log_density_fn=observation_log_density_fn,
+        observation_log_density_tangent_fn=observation_log_density_tangent_fn,
     )
     return model, set_score_direction
 
