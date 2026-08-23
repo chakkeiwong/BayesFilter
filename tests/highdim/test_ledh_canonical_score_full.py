@@ -142,3 +142,87 @@ def test_full_program_score_with_reset_and_dualcap_matches_oracle():
         f"full-program analytical {float(score[0].numpy())} vs oracle "
         f"{float(oracle[0].numpy())}"
     )
+
+
+def test_annealed_telescope_score_matches_oracle():
+    """Q1.2 gate: annealed-mode analytical score vs the autodiff oracle.
+    Three tempered stages with systematic resampling between them on the
+    nonlinear fixture; the telescope increment, tempered-flow tangents
+    (P/k, R*k), and fixed-realized-index resampling tangents are all
+    live. rtol 1e-4 declared."""
+
+    rng = np.random.default_rng(83)
+    n, dim, horizon = 8, 2, 2
+    initial = tf.constant(rng.standard_normal((n, dim)), DTYPE)
+    covs = tf.constant(np.stack([np.eye(dim)] * n), DTYPE)
+    noises = tf.constant(rng.standard_normal((horizon, n, dim)), DTYPE)
+    observations = tf.constant(rng.standard_normal((horizon, dim)), DTYPE)
+    theta0 = tf.constant([0.6], DTYPE)
+    model = _model()
+    kwargs = dict(substeps=8, annealed_stages=3, annealed_seed=17)
+
+    def value_fn(theta):
+        value, _ = canonical_value_and_analytical_score(
+            model, theta, initial, covs, noises, observations,
+            with_score=False, **kwargs,
+        )
+        return value
+
+    oracle = oracle_forward_autodiff_score(value_fn, theta0)
+    value, score = canonical_value_and_analytical_score(
+        model, theta0, initial, covs, noises, observations,
+        with_score=True, **kwargs,
+    )
+    assert np.isfinite(float(value.numpy()))
+    err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
+    scale = max(abs(float(oracle[0].numpy())), 1.0)
+    assert err < 1.0e-4 * scale, (
+        f"annealed analytical {float(score[0].numpy())} vs oracle "
+        f"{float(oracle[0].numpy())}"
+    )
+
+
+def test_annealed_telescope_with_reset_score_matches_oracle():
+    """Q1.2 composition gate: annealed telescope followed by the S6/S7
+    reset program (uniform post-resampling weights, zero weight tangent)
+    still matches the oracle end to end."""
+
+    rng = np.random.default_rng(97)
+    n, dim, horizon = 16, 2, 2
+    initial = tf.constant(rng.standard_normal((n, dim)), DTYPE)
+    covs = tf.constant(np.stack([np.eye(dim)] * n), DTYPE)
+    noises = tf.constant(rng.standard_normal((horizon, n, dim)), DTYPE)
+    observations = tf.constant(rng.standard_normal((horizon, dim)), DTYPE)
+    theta0 = tf.constant([0.6], DTYPE)
+    model = _model()
+    base = np.concatenate([np.eye(dim), -np.eye(dim)], axis=0)
+    design = tf.constant(np.tile(base, (n // (2 * dim), 1)), DTYPE)
+    kwargs = dict(
+        substeps=8,
+        annealed_stages=2,
+        annealed_seed=29,
+        reset_policy="contract_e",
+        reset_design=design,
+        reset_sinkhorn_steps=4,
+        reset_balance_steps=2,
+    )
+
+    def value_fn(theta):
+        value, _ = canonical_value_and_analytical_score(
+            model, theta, initial, covs, noises, observations,
+            with_score=False, **kwargs,
+        )
+        return value
+
+    oracle = oracle_forward_autodiff_score(value_fn, theta0)
+    value, score = canonical_value_and_analytical_score(
+        model, theta0, initial, covs, noises, observations,
+        with_score=True, **kwargs,
+    )
+    assert np.isfinite(float(value.numpy()))
+    err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
+    scale = max(abs(float(oracle[0].numpy())), 1.0)
+    assert err < 1.0e-4 * scale, (
+        f"annealed+reset analytical {float(score[0].numpy())} vs oracle "
+        f"{float(oracle[0].numpy())}"
+    )

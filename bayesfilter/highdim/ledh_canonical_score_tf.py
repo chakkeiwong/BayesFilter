@@ -81,6 +81,8 @@ def canonical_value_and_analytical_score(
     pairwise_strength: float = 0.02,
     pairwise_rms_cap: float = 2.0,
     coordinate_cap: float = 0.0,
+    annealed_stages: int = 1,
+    annealed_seed: int = 0,
 ) -> tuple[Tensor, Tensor | None]:
     """T-step canonical value and analytical score (single parameter dir).
 
@@ -88,6 +90,15 @@ def canonical_value_and_analytical_score(
     + Contract-E reset with analytical tangent; S7: optional dual-cap
     trust-region correction via the general implementation's hand-derived
     JVPs). reset_policy="none" is the historical gated slice.
+
+    annealed_stages > 1 selects the within-step annealed telescope (Q1.2):
+    tempered flow stages (P/k, R*k) with systematic resampling between
+    stages and the SMC normalizer telescope as the step increment; stage
+    tangents are analytical, and realized resampling indices are held
+    fixed in the tangent (the same convention the oracle differentiates).
+    The score-lane annealed mode uses the uncapped flow prior; the value
+    lane's eigenvalue cap (`flow_prior_cap`) is an efficiency lever not
+    wired here.
 
     Multi-parameter models call this per direction; the per-direction
     tangent callbacks close over the direction (same convention as the
@@ -171,179 +182,204 @@ def canonical_value_and_analytical_score(
                 "ij,nj->ni", d_process_chol, noise
             )
 
-        # S3: flow with per-particle predicted covariance AND its tangent.
-        # H is evaluated along the auxiliary path; its state dependence
-        # enters through the model jacobian at the moving anchor.
-        r_inv_z = tf.linalg.matvec(r_inv, observation)
-        actual, d_actual = pre_flow, d_pre_flow
-        auxiliary, d_auxiliary = anchors, d_anchors
-        log_det = tf.zeros([count], dtype)
-        d_log_det = tf.zeros([count], dtype)
-        for step_index in range(substeps):
-            lam = tf.constant((step_index + 1) / substeps, dtype=dtype)
-            h_jac = model.observation_jacobian_fn(auxiliary)
-            # For state-independent H (linear observation), d(H)=0; models
-            # with state-dependent H supply the jacobian's tangent through
-            # observation_tangent_fn acting on the auxiliary tangent. The
-            # canonical six-model set all have linear/affine observation
-            # maps (recorded assumption; conformance C-8 fixtures cover
-            # linear H; a curvature-H model extension would add d_h_jac).
-            php = tf.einsum("noi,nij,npj->nop", h_jac, predicted_covs, h_jac)
-            d_php = tf.einsum(
-                "noi,nij,npj->nop", h_jac, d_predicted_covs, h_jac
-            )
-            innovation_chol = tf.linalg.cholesky(
-                lam * php + model.observation_covariance[None]
-            )
-            ph_t = tf.einsum("nij,noj->nio", predicted_covs, h_jac)
-            d_ph_t = tf.einsum("nij,noj->nio", d_predicted_covs, h_jac)
-            k_lam = tf.linalg.matrix_transpose(
-                tf.linalg.cholesky_solve(
-                    innovation_chol, tf.linalg.matrix_transpose(ph_t)
+        # Per-step density evaluators shared by S4 and the annealed
+        # telescope (model callback path or Gaussian fallback).
+        def _transition_density(points, d_points, means, d_means):
+            if model.transition_log_density_fn is not None:
+                return (
+                    model.transition_log_density_fn(theta, points, means),
+                    model.transition_log_density_tangent_fn(
+                        theta, points, means, d_points, d_means
+                    ),
                 )
-            )
-            d_s = lam * d_php
-            if d_r is not None:
-                d_s = d_s + d_r[None]
-            term_one = tf.linalg.matrix_transpose(
-                tf.linalg.cholesky_solve(
-                    innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
-                )
-            )
-            k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
-            term_two = tf.linalg.matrix_transpose(
-                tf.linalg.cholesky_solve(
-                    innovation_chol, tf.linalg.matrix_transpose(k_ds)
-                )
-            )
-            d_k_lam = term_one - term_two
-            a_matrix = -0.5 * tf.einsum("nio,noj->nij", k_lam, h_jac)
-            d_a_matrix = -0.5 * tf.einsum("nio,noj->nij", d_k_lam, h_jac)
-
-            h_val = model.observation_fn(auxiliary)
-            d_h_val = model.observation_tangent_fn(auxiliary, d_auxiliary)
-            residual_e = h_val - tf.einsum("noi,ni->no", h_jac, auxiliary)
-            d_residual_e = d_h_val - tf.einsum(
-                "noi,ni->no", h_jac, d_auxiliary
-            )
-            z_eff = observation[None, :] - residual_e
-            d_z_eff = -d_residual_e
-            r_inv_z_eff = tf.einsum("op,np->no", r_inv, z_eff)
-            d_r_inv_z_eff = tf.einsum("op,np->no", r_inv, d_z_eff)
-            if d_r_inv is not None:
-                d_r_inv_z_eff = d_r_inv_z_eff + tf.einsum(
-                    "op,np->no", d_r_inv, z_eff
-                )
-            phrz = tf.einsum("nio,no->ni", ph_t, r_inv_z_eff)
-            d_phrz = tf.einsum("nio,no->ni", d_ph_t, r_inv_z_eff) + tf.einsum(
-                "nio,no->ni", ph_t, d_r_inv_z_eff
-            )
-            a_phrz = tf.einsum("nij,nj->ni", a_matrix, phrz)
-            d_a_phrz = tf.einsum(
-                "nij,nj->ni", d_a_matrix, phrz
-            ) + tf.einsum("nij,nj->ni", a_matrix, d_phrz)
-            a_mean = tf.einsum("nij,nj->ni", a_matrix, anchors)
-            d_a_mean = tf.einsum(
-                "nij,nj->ni", d_a_matrix, anchors
-            ) + tf.einsum("nij,nj->ni", a_matrix, d_anchors)
-            inner = phrz + lam * a_phrz + a_mean
-            d_inner = d_phrz + lam * d_a_phrz + d_a_mean
-            a_inner = tf.einsum("nij,nj->ni", a_matrix, inner)
-            d_a_inner = tf.einsum(
-                "nij,nj->ni", d_a_matrix, inner
-            ) + tf.einsum("nij,nj->ni", a_matrix, d_inner)
-            b_vector = inner + 2.0 * lam * a_inner
-            d_b_vector = d_inner + 2.0 * lam * d_a_inner
-
-            new_actual = actual + eps * (
-                tf.einsum("nij,nj->ni", a_matrix, actual) + b_vector
-            )
-            d_actual = d_actual + eps * (
-                tf.einsum("nij,nj->ni", d_a_matrix, actual)
-                + tf.einsum("nij,nj->ni", a_matrix, d_actual)
-                + d_b_vector
-            )
-            new_auxiliary = auxiliary + eps * (
-                tf.einsum("nij,nj->ni", a_matrix, auxiliary) + b_vector
-            )
-            d_auxiliary = d_auxiliary + eps * (
-                tf.einsum("nij,nj->ni", d_a_matrix, auxiliary)
-                + tf.einsum("nij,nj->ni", a_matrix, d_auxiliary)
-                + d_b_vector
-            )
-            actual, auxiliary = new_actual, new_auxiliary
-            step_matrix = eye[None] + eps * a_matrix
-            log_det += tf.math.log(tf.abs(tf.linalg.det(step_matrix)))
-            step_inv = tf.linalg.inv(step_matrix)
-            d_log_det += eps * tf.linalg.trace(
-                tf.einsum("nij,njk->nik", step_inv, d_a_matrix)
+            return _gaussian_log_density_and_tangent(
+                points, d_points, means, d_means, process_chol
             )
 
-        children, d_children = actual, d_actual
-
-        # S4: weight assembly (transition density tangent needs the total
-        # tangent of the transition mean AT the ancestor: d_anchors).
-        if model.transition_log_density_fn is not None:
-            transition_log = model.transition_log_density_fn(
-                theta, children, anchors
-            )
-            d_transition_log = model.transition_log_density_tangent_fn(
-                theta, children, anchors, d_children, d_anchors
-            )
-        else:
-            transition_log, d_transition_log = (
-                _gaussian_log_density_and_tangent(
-                    children, d_children, anchors, d_anchors, process_chol
+        def _observation_density(points, d_points):
+            if model.observation_log_density_fn is not None:
+                return (
+                    model.observation_log_density_fn(
+                        theta, points, observation
+                    ),
+                    model.observation_log_density_tangent_fn(
+                        theta, points, observation, d_points
+                    ),
                 )
-            )
-        if model.observation_log_density_fn is not None:
-            observation_log = model.observation_log_density_fn(
-                theta, children, observation
-            )
-            d_observation_log = model.observation_log_density_tangent_fn(
-                theta, children, observation, d_children
-            )
-        else:
-            observed = model.observation_fn(children)
-            d_observed = model.observation_tangent_fn(children, d_children)
+            observed = model.observation_fn(points)
+            d_observed = model.observation_tangent_fn(points, d_points)
             obs_target = tf.broadcast_to(
                 observation[None, :], tf.shape(observed)
             )
-            observation_log, d_observation_log = (
-                _gaussian_log_density_and_tangent(
-                    obs_target, None, observed, d_observed, obs_chol
+            return _gaussian_log_density_and_tangent(
+                obs_target, None, observed, d_observed, obs_chol
+            )
+
+        if annealed_stages > 1:
+            # Q1.2: within-step annealed telescope with analytical stage
+            # tangents. Structure mirrors the value lane: tempered flow
+            # (P/k, R*k) per stage, systematic resampling of the ancestry
+            # triple between stages, increment = SMC normalizer telescope.
+            # Tangent convention: realized resampling indices are FIXED
+            # (piecewise-constant in theta almost everywhere) — the same
+            # function the forward-autodiff oracle differentiates, since
+            # index selection passes through non-differentiable searches.
+            k_f = tf.cast(annealed_stages, dtype)
+            current, d_current = pre_flow, d_pre_flow
+            stage_anchors, d_stage_anchors = anchors, d_anchors
+            stage_pm, d_stage_pm = predicted_means, d_predicted_means
+            stage_pc, d_stage_pc = predicted_covs, d_predicted_covs
+            prev_trans, d_prev_trans = _transition_density(
+                current, d_current, stage_anchors, d_stage_anchors
+            )
+            prev_obs, d_prev_obs = _observation_density(current, d_current)
+            for stage in range(1, annealed_stages + 1):
+                moved, d_moved, stage_log_det, d_stage_log_det = (
+                    _flow_substeps_with_tangent(
+                        model,
+                        current,
+                        d_current,
+                        stage_anchors,
+                        d_stage_anchors,
+                        stage_pc / k_f,
+                        d_stage_pc / k_f,
+                        observation,
+                        model.observation_covariance * k_f,
+                        None if d_r is None else d_r * k_f,
+                        r_inv / k_f,
+                        None if d_r_inv is None else d_r_inv / k_f,
+                        substeps=substeps,
+                        eye=eye,
+                    )
                 )
-            )
-        if model.transition_log_density_fn is not None:
-            proposal_log = model.transition_log_density_fn(
-                theta, pre_flow, anchors
-            )
-            d_proposal_log = model.transition_log_density_tangent_fn(
-                theta, pre_flow, anchors, d_pre_flow, d_anchors
-            )
+                new_trans, d_new_trans = _transition_density(
+                    moved, d_moved, stage_anchors, d_stage_anchors
+                )
+                new_obs, d_new_obs = _observation_density(moved, d_moved)
+                fraction = tf.cast(stage / annealed_stages, dtype)
+                prev_fraction = tf.cast(
+                    (stage - 1) / annealed_stages, dtype
+                )
+                stage_logits = (
+                    new_trans
+                    + fraction * new_obs
+                    + stage_log_det
+                    - prev_trans
+                    - prev_fraction * prev_obs
+                )
+                d_stage_logits = (
+                    d_new_trans
+                    + fraction * d_new_obs
+                    + d_stage_log_det
+                    - d_prev_trans
+                    - prev_fraction * d_prev_obs
+                )
+                stage_norm = tf.reduce_logsumexp(stage_logits)
+                stage_soft = tf.exp(stage_logits - stage_norm)
+                total += stage_norm - tf.math.log(tf.cast(count, dtype))
+                d_total += tf.reduce_sum(stage_soft * d_stage_logits)
+                # Systematic resampling, all-TF (backend rule): stateless
+                # seed keyed on (step, stage) so the oracle and analytic
+                # calls realize the SAME indices.
+                offset = tf.random.stateless_uniform(
+                    [],
+                    seed=tf.constant(
+                        [
+                            annealed_seed,
+                            time_index * annealed_stages + stage,
+                        ],
+                        tf.int32,
+                    ),
+                    dtype=dtype,
+                )
+                positions = (
+                    offset + tf.cast(tf.range(count), dtype)
+                ) / tf.cast(count, dtype)
+                cumulative = tf.cumsum(stage_soft)
+                idx = tf.minimum(
+                    tf.searchsorted(cumulative, positions), count - 1
+                )
+                current, d_current = (
+                    tf.gather(moved, idx),
+                    tf.gather(d_moved, idx),
+                )
+                stage_anchors, d_stage_anchors = (
+                    tf.gather(stage_anchors, idx),
+                    tf.gather(d_stage_anchors, idx),
+                )
+                stage_pm, d_stage_pm = (
+                    tf.gather(stage_pm, idx),
+                    tf.gather(d_stage_pm, idx),
+                )
+                stage_pc, d_stage_pc = (
+                    tf.gather(stage_pc, idx),
+                    tf.gather(d_stage_pc, idx),
+                )
+                prev_trans, d_prev_trans = _transition_density(
+                    current, d_current, stage_anchors, d_stage_anchors
+                )
+                prev_obs, d_prev_obs = _observation_density(
+                    current, d_current
+                )
+            children, d_children = current, d_current
+            predicted_means, d_predicted_means = stage_pm, d_stage_pm
+            predicted_covs, d_predicted_covs = stage_pc, d_stage_pc
+            # Post-resampling weights are uniform with zero tangent (the
+            # reset branch consumes softmax / d_logits).
+            softmax = tf.ones([count], dtype) / tf.cast(count, dtype)
+            d_logits = tf.zeros([count], dtype)
         else:
-            proposal_log, d_proposal_log = (
-                _gaussian_log_density_and_tangent(
-                    pre_flow, d_pre_flow, anchors, d_anchors, process_chol
+            # S3: flow with per-particle predicted covariance AND its
+            # tangent (shared helper), then S4: weight assembly (the
+            # transition density tangent needs the total tangent of the
+            # transition mean AT the ancestor: d_anchors).
+            children, d_children, log_det, d_log_det = (
+                _flow_substeps_with_tangent(
+                    model,
+                    pre_flow,
+                    d_pre_flow,
+                    anchors,
+                    d_anchors,
+                    predicted_covs,
+                    d_predicted_covs,
+                    observation,
+                    model.observation_covariance,
+                    d_r,
+                    r_inv,
+                    d_r_inv,
+                    substeps=substeps,
+                    eye=eye,
                 )
             )
-        weights_log = -tf.math.log(tf.cast(count, dtype)) * tf.ones(
-            [count], dtype
-        )
-        logits = (
-            weights_log
-            + transition_log
-            + observation_log
-            + log_det
-            - proposal_log
-        )
-        d_logits = (
-            d_transition_log + d_observation_log + d_log_det - d_proposal_log
-        )
-        increment = tf.reduce_logsumexp(logits)
-        softmax = tf.exp(logits - increment)
-        total += increment
-        d_total += tf.reduce_sum(softmax * d_logits)
+            transition_log, d_transition_log = _transition_density(
+                children, d_children, anchors, d_anchors
+            )
+            observation_log, d_observation_log = _observation_density(
+                children, d_children
+            )
+            proposal_log, d_proposal_log = _transition_density(
+                pre_flow, d_pre_flow, anchors, d_anchors
+            )
+            weights_log = -tf.math.log(tf.cast(count, dtype)) * tf.ones(
+                [count], dtype
+            )
+            logits = (
+                weights_log
+                + transition_log
+                + observation_log
+                + log_det
+                - proposal_log
+            )
+            d_logits = (
+                d_transition_log
+                + d_observation_log
+                + d_log_det
+                - d_proposal_log
+            )
+            increment = tf.reduce_logsumexp(logits)
+            softmax = tf.exp(logits - increment)
+            total += increment
+            d_total += tf.reduce_sum(softmax * d_logits)
 
         # S5: UKF update with chained tangent -> next step's covariances
         (
@@ -420,6 +456,138 @@ def canonical_value_and_analytical_score(
     if with_score:
         return total, d_total[None]
     return total, None
+
+
+def _flow_substeps_with_tangent(
+    model: NonlinearScoreModel,
+    actual: Tensor,
+    d_actual: Tensor,
+    prior_means: Tensor,
+    d_prior_means: Tensor,
+    predicted_covs: Tensor,
+    d_predicted_covs: Tensor,
+    observation: Tensor,
+    observation_covariance: Tensor,
+    d_observation_covariance: Tensor | None,
+    r_inv: Tensor,
+    d_r_inv: Tensor | None,
+    *,
+    substeps: int,
+    eye: Tensor,
+) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    """S3 substep loop with analytical tangent, shared by the base path
+    and the annealed telescope's tempered stages (which pass P/k, R*k and
+    the correspondingly scaled tangents/inverse). H is evaluated along
+    the auxiliary path; its state dependence enters through the model
+    jacobian at the moving anchor. Returns (post_flow, tangent, log_det,
+    d_log_det)."""
+
+    dtype = actual.dtype
+    count = tf.shape(actual)[0]
+    eps = tf.constant(1.0 / substeps, dtype=dtype)
+    auxiliary, d_auxiliary = prior_means, d_prior_means
+    log_det = tf.zeros([count], dtype)
+    d_log_det = tf.zeros([count], dtype)
+    for step_index in range(substeps):
+        lam = tf.constant((step_index + 1) / substeps, dtype=dtype)
+        h_jac = model.observation_jacobian_fn(auxiliary)
+        # For state-independent H (linear observation), d(H)=0; models
+        # with state-dependent H supply the jacobian's tangent through
+        # observation_tangent_fn acting on the auxiliary tangent. The
+        # canonical six-model set all have linear/affine observation
+        # maps (recorded assumption; conformance C-8 fixtures cover
+        # linear H; a curvature-H model extension would add d_h_jac).
+        php = tf.einsum("noi,nij,npj->nop", h_jac, predicted_covs, h_jac)
+        d_php = tf.einsum(
+            "noi,nij,npj->nop", h_jac, d_predicted_covs, h_jac
+        )
+        innovation_chol = tf.linalg.cholesky(
+            lam * php + observation_covariance[None]
+        )
+        ph_t = tf.einsum("nij,noj->nio", predicted_covs, h_jac)
+        d_ph_t = tf.einsum("nij,noj->nio", d_predicted_covs, h_jac)
+        k_lam = tf.linalg.matrix_transpose(
+            tf.linalg.cholesky_solve(
+                innovation_chol, tf.linalg.matrix_transpose(ph_t)
+            )
+        )
+        d_s = lam * d_php
+        if d_observation_covariance is not None:
+            d_s = d_s + d_observation_covariance[None]
+        term_one = tf.linalg.matrix_transpose(
+            tf.linalg.cholesky_solve(
+                innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
+            )
+        )
+        k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
+        term_two = tf.linalg.matrix_transpose(
+            tf.linalg.cholesky_solve(
+                innovation_chol, tf.linalg.matrix_transpose(k_ds)
+            )
+        )
+        d_k_lam = term_one - term_two
+        a_matrix = -0.5 * tf.einsum("nio,noj->nij", k_lam, h_jac)
+        d_a_matrix = -0.5 * tf.einsum("nio,noj->nij", d_k_lam, h_jac)
+
+        h_val = model.observation_fn(auxiliary)
+        d_h_val = model.observation_tangent_fn(auxiliary, d_auxiliary)
+        residual_e = h_val - tf.einsum("noi,ni->no", h_jac, auxiliary)
+        d_residual_e = d_h_val - tf.einsum(
+            "noi,ni->no", h_jac, d_auxiliary
+        )
+        z_eff = observation[None, :] - residual_e
+        d_z_eff = -d_residual_e
+        r_inv_z_eff = tf.einsum("op,np->no", r_inv, z_eff)
+        d_r_inv_z_eff = tf.einsum("op,np->no", r_inv, d_z_eff)
+        if d_r_inv is not None:
+            d_r_inv_z_eff = d_r_inv_z_eff + tf.einsum(
+                "op,np->no", d_r_inv, z_eff
+            )
+        phrz = tf.einsum("nio,no->ni", ph_t, r_inv_z_eff)
+        d_phrz = tf.einsum("nio,no->ni", d_ph_t, r_inv_z_eff) + tf.einsum(
+            "nio,no->ni", ph_t, d_r_inv_z_eff
+        )
+        a_phrz = tf.einsum("nij,nj->ni", a_matrix, phrz)
+        d_a_phrz = tf.einsum(
+            "nij,nj->ni", d_a_matrix, phrz
+        ) + tf.einsum("nij,nj->ni", a_matrix, d_phrz)
+        a_mean = tf.einsum("nij,nj->ni", a_matrix, prior_means)
+        d_a_mean = tf.einsum(
+            "nij,nj->ni", d_a_matrix, prior_means
+        ) + tf.einsum("nij,nj->ni", a_matrix, d_prior_means)
+        inner = phrz + lam * a_phrz + a_mean
+        d_inner = d_phrz + lam * d_a_phrz + d_a_mean
+        a_inner = tf.einsum("nij,nj->ni", a_matrix, inner)
+        d_a_inner = tf.einsum(
+            "nij,nj->ni", d_a_matrix, inner
+        ) + tf.einsum("nij,nj->ni", a_matrix, d_inner)
+        b_vector = inner + 2.0 * lam * a_inner
+        d_b_vector = d_inner + 2.0 * lam * d_a_inner
+
+        new_actual = actual + eps * (
+            tf.einsum("nij,nj->ni", a_matrix, actual) + b_vector
+        )
+        d_actual = d_actual + eps * (
+            tf.einsum("nij,nj->ni", d_a_matrix, actual)
+            + tf.einsum("nij,nj->ni", a_matrix, d_actual)
+            + d_b_vector
+        )
+        new_auxiliary = auxiliary + eps * (
+            tf.einsum("nij,nj->ni", a_matrix, auxiliary) + b_vector
+        )
+        d_auxiliary = d_auxiliary + eps * (
+            tf.einsum("nij,nj->ni", d_a_matrix, auxiliary)
+            + tf.einsum("nij,nj->ni", a_matrix, d_auxiliary)
+            + d_b_vector
+        )
+        actual, auxiliary = new_actual, new_auxiliary
+        step_matrix = eye[None] + eps * a_matrix
+        log_det += tf.math.log(tf.abs(tf.linalg.det(step_matrix)))
+        step_inv = tf.linalg.inv(step_matrix)
+        d_log_det += eps * tf.linalg.trace(
+            tf.einsum("nij,njk->nik", step_inv, d_a_matrix)
+        )
+    return actual, d_actual, log_det, d_log_det
 
 
 def _cholesky_forward_diff_local(chol: Tensor, d_matrix: Tensor) -> Tensor:

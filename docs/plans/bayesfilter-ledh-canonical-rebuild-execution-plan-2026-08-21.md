@@ -804,3 +804,27 @@ review.
   in any tested direction is a hard failure). Full affected battery
   (models, Fisher, fidelity, full-program score, governance, meta):
   30 passed.
+
+- 2026-08-24 (ledger): Q1.2 CLOSED — Q1 COMPLETE. Annealed-mode score
+  extension: the S3 substep loop was extracted into
+  `_flow_substeps_with_tangent` (pure code motion for the base path;
+  base gates re-verified green) and the score entry point gained
+  `annealed_stages`/`annealed_seed`. The annealed branch mirrors the
+  value lane's telescope: tempered stage flows (P/k, R*k with scaled
+  tangents d_P/k, k*d_R, d_R^-1/k), stage logits new_trans +
+  frac*new_obs + stage_log_det - prev_trans - prev_frac*prev_obs with
+  fully analytical tangents via the shared density evaluators, telescope
+  increment logsumexp tangent, and all-TF systematic resampling
+  (stateless seed keyed on step/stage; NO NumPy in the runtime path per
+  the backend rule — the value lane's np.searchsorted is prior migration
+  debt, not copied). Tangent convention: realized resampling indices
+  FIXED (piecewise-constant a.e.), identical to what the oracle
+  differentiates. Score-lane annealed mode uses the uncapped flow prior;
+  the value lane's eigenvalue cap is an efficiency lever not wired here
+  (documented in the docstring). Gates, all first-run green: nonlinear
+  3-stage telescope vs oracle; 2-stage telescope composed with the full
+  S6/S7 reset program vs oracle; dlgssm q/r directions under the
+  telescope vs rebuilt-model oracle (exercises every tempered covariance
+  tangent channel). Full battery 33 passed. Q1 exit criteria met: the
+  score entry point covers the complete canonical per-step program
+  including annealed mode; no autodiff ships (C-9 standing).

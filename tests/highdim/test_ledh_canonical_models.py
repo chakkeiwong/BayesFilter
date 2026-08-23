@@ -248,7 +248,7 @@ def test_austria_annealed_mode_holds_takeoff_ess():
     )
 
 
-def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, seed=201, direction_index=0, obs_noise=1.0, model_builder=None):
+def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, seed=201, direction_index=0, obs_noise=1.0, model_builder=None, **score_kwargs):
     """Shared onboarding gate: analytical score vs oracle on a short scope.
 
     ``model_builder`` is REQUIRED for any direction whose parameter enters
@@ -285,7 +285,7 @@ def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, se
         )
         value, _ = canonical_value_and_analytical_score(
             eval_model, theta, initial, covs, noises, observations,
-            substeps=8, with_score=False,
+            substeps=8, with_score=False, **score_kwargs,
         )
         return value
 
@@ -294,7 +294,7 @@ def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, se
     )
     value, score = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, observations,
-        substeps=8, with_score=True,
+        substeps=8, with_score=True, **score_kwargs,
     )
     assert np.isfinite(float(value.numpy()))
     err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
@@ -444,4 +444,26 @@ def test_diagonal_lgssm_qr_direction_scores_match_oracle():
             model, set_direction, theta0, dim=3, seed=225,
             direction_index=direction_index,
             model_builder=diagonal_lgssm_canonical_model,
+        )
+
+
+def test_diagonal_lgssm_annealed_qr_direction_scores_match_oracle():
+    """Q1.2 x Q1.3 gate: q/r-direction scores under the annealed
+    telescope (2 stages) vs the oracle with a rebuilt-model value_fn.
+    Exercises the tempered covariance tangent channels (d_R*k into the
+    stage innovation, d_R^-1/k into the stage flow drift, dQ through the
+    stage prior P/k) plus the fixed-index resampling tangents."""
+
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        diagonal_lgssm_canonical_model,
+    )
+
+    theta0 = tf.constant([0.9, 0.8, 0.7, 0.6, 0.8], DTYPE)
+    model, set_direction = diagonal_lgssm_canonical_model(theta0)
+    for direction_index in (3, 4):
+        _score_gate_for_model(
+            model, set_direction, theta0, dim=3, seed=229,
+            direction_index=direction_index,
+            model_builder=diagonal_lgssm_canonical_model,
+            annealed_stages=2, annealed_seed=41,
         )
