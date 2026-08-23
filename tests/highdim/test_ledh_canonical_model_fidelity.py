@@ -128,3 +128,119 @@ def test_predator_prey_noise_scales_match_reference():
     assert np.allclose(
         model.observation_covariance.numpy(), 4.0 * np.eye(2), atol=1e-12
     )
+
+
+def test_austria_dynamics_match_vendored_reference_adapter():
+    """Differential gate vs the ORIGINAL author's adapter (vendored from
+    git at 43de3cb6^): transition mean (zero-noise RK4 push) and the
+    observation quadratic form must agree on shared inputs. float32
+    reference => rtol 1e-5."""
+
+    import vendored_reference_batch_adapters as reference
+
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        austria_sir_canonical_model,
+    )
+
+    theta_np = [0.1, -0.2, 0.15]
+    theta64 = tf.constant(theta_np, DTYPE)
+    model, _sd = austria_sir_canonical_model(theta64)
+    adapter = reference.parameterized_austria_sir_batch_adapter()
+    rng = np.random.default_rng(501)
+    from bayesfilter.highdim.models import zhao_cui_sir_austria_model
+
+    initial_mean = zhao_cui_sir_austria_model().initial_mean.numpy()
+    particles_np = initial_mean[None, :] + 0.5 * rng.standard_normal((12, 18))
+    theta32 = tf.constant([theta_np], tf.float32)
+    particles32 = tf.constant(particles_np[None, :, :], tf.float32)
+    zero_noise = tf.zeros([12, 18], tf.float32)
+    reference_push = adapter.transition_value(
+        theta32, particles32, zero_noise, 0
+    )[0].numpy()
+    mine_push = model.transition_mean_fn(
+        theta64, tf.constant(particles_np, DTYPE)
+    ).numpy()
+    rel = np.max(
+        np.abs(mine_push - reference_push)
+        / np.maximum(np.abs(reference_push), 1.0)
+    )
+    assert rel < 1.0e-5, f"Austria transition-mean infidelity: rel {rel}"
+
+    observation_np = rng.standard_normal(9).astype(np.float32)
+    reference_obs = adapter.observation_value(
+        theta32, particles32, tf.constant(observation_np), 0
+    )[0].numpy()
+    observed = model.observation_fn(tf.constant(particles_np, DTYPE)).numpy()
+    variance = 100.0 * np.exp(2.0 * theta_np[2])
+    mine_obs = -0.5 * (
+        np.sum(
+            (observation_np[None, :].astype(np.float64) - observed) ** 2,
+            axis=1,
+        )
+        / variance
+        + 9.0 * np.log(2.0 * np.pi * variance)
+    )
+    rel_obs = np.max(
+        np.abs(mine_obs - reference_obs)
+        / np.maximum(np.abs(reference_obs), 1.0)
+    )
+    assert rel_obs < 1.0e-4, (
+        f"Austria observation-density infidelity: rel {rel_obs}"
+    )
+
+
+def test_predator_prey_dynamics_match_vendored_reference_adapter():
+    """Differential gate vs the vendored original adapter: RK4 push and
+    observation density on shared inputs (float32 reference)."""
+
+    import vendored_reference_batch_adapters as reference
+
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        predator_prey_canonical_model,
+    )
+
+    theta_np = [0.8, 90.0, 25.0, 0.5, 0.4, 0.3]
+    theta64 = tf.constant(theta_np, DTYPE)
+    model, _sd = predator_prey_canonical_model(theta64)
+    adapter = reference.predator_prey_batch_adapter()
+    rng = np.random.default_rng(503)
+    particles_np = np.abs(
+        np.array([50.0, 5.0])[None, :] + 2.0 * rng.standard_normal((12, 2))
+    )
+    theta32 = tf.constant([theta_np], tf.float32)
+    particles32 = tf.constant(particles_np[None, :, :], tf.float32)
+    zero_noise = tf.zeros([12, 2], tf.float32)
+    reference_push = adapter.transition_value(
+        theta32, particles32, zero_noise, 0
+    )[0].numpy()
+    mine_push = model.transition_mean_fn(
+        theta64, tf.constant(particles_np, DTYPE)
+    ).numpy()
+    rel = np.max(
+        np.abs(mine_push - reference_push)
+        / np.maximum(np.abs(reference_push), 1.0)
+    )
+    assert rel < 1.0e-4, f"predator-prey transition infidelity: rel {rel}"
+
+    observation_np = rng.standard_normal(2).astype(np.float32) + np.array(
+        [50.0, 5.0], np.float32
+    )
+    reference_obs = adapter.observation_value(
+        theta32, particles32, tf.constant(observation_np), 0
+    )[0].numpy()
+    mine_obs = -0.5 * (
+        np.sum(
+            (observation_np[None, :].astype(np.float64) - particles_np) ** 2,
+            axis=1,
+        )
+        / 4.0
+        + 2.0 * np.log(4.0)
+        + 2.0 * np.log(2.0 * np.pi)
+    )
+    rel_obs = np.max(
+        np.abs(mine_obs - reference_obs)
+        / np.maximum(np.abs(reference_obs), 1.0)
+    )
+    assert rel_obs < 1.0e-4, (
+        f"predator-prey observation-density infidelity: rel {rel_obs}"
+    )

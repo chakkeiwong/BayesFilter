@@ -121,7 +121,9 @@ def austria_sir_canonical_model(theta_fixed: Tensor) -> NonlinearScoreModel:
             k1 = rhs(theta, current)
             k2 = rhs(theta, current + 0.5 * step * k1)
             k3 = rhs(theta, current + 0.5 * step * k2)
-            k4 = rhs(theta, current + step * k3)
+            # SOURCE HALF-STEP k4 (reference adapter quirk, see
+            # vendored gate 2026-08-24): k4 at 0.5*step, not step.
+            k4 = rhs(theta, current + 0.5 * step * k3)
             current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
         return current
 
@@ -150,11 +152,13 @@ def austria_sir_canonical_model(theta_fixed: Tensor) -> NonlinearScoreModel:
                 d_current + 0.5 * step * d2,
                 d_theta,
             )
-            k4 = rhs(theta, current + step * k3)
+            # SOURCE HALF-STEP k4 (reference adapter quirk, see
+            # vendored gate 2026-08-24): k4 at 0.5*step, not step.
+            k4 = rhs(theta, current + 0.5 * step * k3)
             d4 = rhs_tangent(
                 theta,
-                current + step * k3,
-                d_current + step * d3,
+                current + 0.5 * step * k3,
+                d_current + 0.5 * step * d3,
                 d_theta,
             )
             current = current + step / 6.0 * (

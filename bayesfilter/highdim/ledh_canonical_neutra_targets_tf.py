@@ -238,7 +238,8 @@ def _austria_fused_model() -> PerPointScoreModel:
             k1 = rhs(theta_rows, current)
             k2 = rhs(theta_rows, current + 0.5 * step * k1)
             k3 = rhs(theta_rows, current + 0.5 * step * k2)
-            k4 = rhs(theta_rows, current + step * k3)
+            # SOURCE HALF-STEP k4 (reference adapter quirk)
+            k4 = rhs(theta_rows, current + 0.5 * step * k3)
             current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
         return current
 
@@ -257,10 +258,11 @@ def _austria_fused_model() -> PerPointScoreModel:
                 theta_rows, current + 0.5 * step * k2,
                 d_current + 0.5 * step * d2, d_theta_rows,
             )
-            k4 = rhs(theta_rows, current + step * k3)
+            # SOURCE HALF-STEP k4 (reference adapter quirk)
+            k4 = rhs(theta_rows, current + 0.5 * step * k3)
             d4 = rhs_tangent(
-                theta_rows, current + step * k3,
-                d_current + step * d3, d_theta_rows,
+                theta_rows, current + 0.5 * step * k3,
+                d_current + 0.5 * step * d3, d_theta_rows,
             )
             current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
             d_current = d_current + step / 6.0 * (d1 + 2.0 * d2 + 2.0 * d3 + d4)

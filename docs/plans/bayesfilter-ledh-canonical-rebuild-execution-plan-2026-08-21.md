@@ -678,3 +678,22 @@ review.
   internal-oracle > self-consistency; every claim needs a test whose
   referent is at least as strong as the claim; cross-algorithm agreement
   is self-consistency in disguise when algorithms share model objects.
+
+- 2026-08-24 (ledger): INFIDELITY #4 FOUND AND FIXED — the vendored-
+  reference differential gate (built this session from the git history of
+  the deleted adapter, provenance 43de3cb6^) caught on FIRST RUN that the
+  reference Austria RK4 uses a SOURCE HALF-STEP k4 stage (documented
+  quirk: "with the source half-step RK4 stage") while my canonical port
+  used textbook full-step k4 — 1.2% relative dynamics deviation. Fixed in
+  both Austria ports (single-cloud model + fused NeuTra bridge); the fix
+  initially leaked into predator-prey's correctly-full-step RK4 via an
+  over-broad replacement and was caught IMMEDIATELY by the predator-prey
+  gates (the gate lattice catching the fixer again), then scoped
+  correctly. 21 gates green: Austria differential fidelity now PASSES
+  including the quirk; predator-prey restored; oracle score gates confirm
+  tangents; rebind/meta/Fisher all green. Session note: a permission-mode
+  interruption paused execution mid-fix; owner re-enabled auto-edit and
+  execution resumed with no state loss (ledger + clean commits).
+  Fidelity tally: 4 infidelities found, 4 fixed, each by a different gate
+  class — value-scale cell (KSC), independent-density (gen-SV), constants
+  (LGSSM matrix), vendored-differential (Austria half-step).
