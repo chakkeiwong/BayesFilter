@@ -438,9 +438,80 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
     return model, set_score_direction
 
 
+
+
+
+def generalized_sv_canonical_model(theta_fixed: Tensor):
+    """Native generalized SV (rho_s, rho_h, log sigma_s, log sigma_h,
+    log beta): 2-state diagonal-AR dynamics s' = rho_s s, h' = rho_h h
+    with process scales (sigma_s, sigma_h) — model_exact. Observation
+    y = beta*s + exp(h/2)*noise is state-dependent-variance; the flow's
+    Gaussian input uses the linearization at the anchor (H = [beta,
+    beta*s*..] approximated by the mean-map jacobian [beta, 0], variance
+    exp(h_anchor)) — provenance: derived linearization, corrected by the
+    PF-PF weight exactly as for KSC. The moment-matched observation
+    covariance for the flow uses exp(h)~1 reference scale; recorded as a
+    proposal-design choice."""
+
+    theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
+    rho_s = tf.tanh(theta_fixed[0])
+    rho_h = tf.tanh(theta_fixed[1])
+    sigma_s = tf.exp(theta_fixed[2])
+    sigma_h = tf.exp(theta_fixed[3])
+    beta = tf.exp(theta_fixed[4])
+
+    def transition_mean_fn(theta, points):
+        r_s = tf.tanh(theta[0])
+        r_h = tf.tanh(theta[1])
+        return tf.stack(
+            [r_s * points[:, 0], r_h * points[:, 1]], axis=1
+        )
+
+    _direction = [tf.zeros([5], DTYPE)]
+
+    def set_score_direction(direction: Tensor) -> None:
+        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
+
+    def transition_mean_tangent_fn(theta, points, d_points):
+        d_theta = _direction[0]
+        r_s = tf.tanh(theta[0])
+        r_h = tf.tanh(theta[1])
+        dr_s = (1.0 - tf.square(r_s)) * d_theta[0]
+        dr_h = (1.0 - tf.square(r_h)) * d_theta[1]
+        return tf.stack(
+            [
+                dr_s * points[:, 0] + r_s * d_points[:, 0],
+                dr_h * points[:, 1] + r_h * d_points[:, 1],
+            ],
+            axis=1,
+        )
+
+    h_matrix = tf.stack([beta, tf.constant(0.0, DTYPE)])[None, :]
+
+    model = NonlinearScoreModel(
+        transition_mean_fn=transition_mean_fn,
+        transition_mean_tangent_fn=transition_mean_tangent_fn,
+        observation_fn=lambda points: tf.einsum(
+            "od,nd->no", h_matrix, points
+        ),
+        observation_jacobian_fn=lambda points: tf.broadcast_to(
+            h_matrix, [tf.shape(points)[0], 1, 2]
+        ),
+        observation_tangent_fn=lambda points, d_points: tf.einsum(
+            "od,nd->no", h_matrix, d_points
+        ),
+        process_covariance=tf.linalg.diag(
+            tf.stack([tf.square(sigma_s), tf.square(sigma_h)])
+        ),
+        observation_covariance=tf.ones([1, 1], DTYPE),
+    )
+    return model, set_score_direction
+
+
 __all__ = [
     "austria_sir_canonical_model",
     "predator_prey_canonical_model",
     "diagonal_lgssm_canonical_model",
     "ksc_sv_canonical_model",
+    "generalized_sv_canonical_model",
 ]

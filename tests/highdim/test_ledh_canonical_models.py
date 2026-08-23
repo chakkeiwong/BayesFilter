@@ -329,3 +329,21 @@ def test_ksc_sv_onboarding_score_gate():
         model, set_direction, theta0, dim=2, seed=231, direction_index=0,
         obs_noise=2.0,
     )
+
+
+def test_generalized_sv_onboarding_score_gate():
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        generalized_sv_canonical_model,
+    )
+
+    theta0 = tf.constant([0.9, 0.8, -0.5, -0.7, 0.2], DTYPE)
+    theta0_unconstrained = tf.constant(
+        [np.arctanh(0.9), np.arctanh(0.8), -0.5, -0.7, 0.2], DTYPE
+    )
+    model, set_direction = generalized_sv_canonical_model(
+        theta0_unconstrained
+    )
+    _score_gate_for_model(
+        model, set_direction, theta0_unconstrained, dim=2, seed=241,
+        direction_index=0, obs_noise=1.0,
+    )

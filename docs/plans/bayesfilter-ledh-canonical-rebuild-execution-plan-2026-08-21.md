@@ -551,3 +551,38 @@ left in the program.
   leaderboard. The owner directive "no other version should exist" is now
   TRUE in bayesfilter/: one algorithm, canonical lanes only, enforced by
   G-1 discovery and the conformance suite.
+
+- 2026-08-23 (ledger): SIX-MODEL SET COMPLETE — generalized-SV onboarded
+  (diagonal-AR dynamics with tanh/exp parameter maps, derived-linearization
+  flow input recorded as proposal-design choice) with its oracle score
+  gate; 7/7 model gates green. 41 canonical gates green total.
+
+## FINAL EXECUTION STATE (2026-08-23)
+
+The owner's five-item directive (2026-08-21) is discharged to the boundary
+of GPU-campaign-scale work:
+1. Continuous-execution plan: written, audited, executed via ledger. DONE.
+2. Anti-drift review: mechanisms exercised and effective (test-first gates
+   caught 6 real defects; two pre-declared contracts returned one honest
+   FAIL and one decisive PASS; G-1 caught unregistered modules twice). DONE.
+3. Plan executed + tests run: P0-P7 ALL EXECUTED including the
+   pre-authorized deletion — bayesfilter/ now contains ONE algorithm
+   (canonical LEDH-PF-PF OT + UKF + dual-cap trust surface + analytical
+   score), 41 gates green, bootstrap lane deleted, NeuTra rebound to the
+   canonical stack with fresh signatures. DONE.
+4. Leaderboard: rerun plan written; slice 1 executed with results (LGSSM
+   vs exact Kalman: ~0.1-nat systematic reset bias measured, spread
+   0.005-0.020; score self-consistency 3.8e-16; Austria canonical-vs-
+   bootstrap: indistinguishable values, ESS profiles reported). FULL
+   six-model comparator campaign remains: it is a GPU-day of compute,
+   gated ONLY on the P6 calibration (contract R6, runners templated). OPEN.
+5. Historical battery: EXECUTED on GPU float64 — value/score split
+   structurally dead (bitwise/3e-16), XLA drift 6e-16, fail-closed clean
+   under XLA; float32/TF32 arm honestly NOT_TESTABLE_YET pending the P6
+   calibrated float32 lane. Substantially DONE; TF32 arm rides with P6.
+
+Open work is exactly two GPU campaigns (P6 calibration; full leaderboard)
+plus remaining canonical-NeuTra model bridges (template proven by
+Austria). No structural, derivational, or design work remains. Branch
+`worktree-ledh-canonical-rebuild`, 29 commits, ready for owner merge
+review.
