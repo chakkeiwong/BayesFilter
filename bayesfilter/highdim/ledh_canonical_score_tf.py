@@ -61,8 +61,27 @@ def canonical_value_and_analytical_score(
     *,
     substeps: int,
     with_score: bool,
+    reset_policy: str = "none",
+    reset_design: Tensor | None = None,
+    reset_epsilon: float = 2.0,
+    reset_sinkhorn_steps: int = 8,
+    reset_balance_steps: int = 8,
+    reset_ridge: float = 1.0e-5,
+    correction_steps: int = 0,
+    correction_strength: float = 0.2,
+    correction_lm_damping: float = 1.0e-2,
+    correction_trust_radius: float = 0.5,
+    pairwise_steps: int = 0,
+    pairwise_strength: float = 0.02,
+    pairwise_rms_cap: float = 2.0,
+    coordinate_cap: float = 0.0,
 ) -> tuple[Tensor, Tensor | None]:
     """T-step canonical value and analytical score (single parameter dir).
+
+    reset_policy="contract_e" runs the FULL per-step program (S6: Sinkhorn
+    + Contract-E reset with analytical tangent; S7: optional dual-cap
+    trust-region correction via the general implementation's hand-derived
+    JVPs). reset_policy="none" is the historical gated slice.
 
     Multi-parameter models call this per direction; the per-direction
     tangent callbacks close over the direction (same convention as the
@@ -286,7 +305,58 @@ def canonical_value_and_analytical_score(
             observation,
         )
 
-        states, d_states = children, d_children
+        if reset_policy == "contract_e":
+            from bayesfilter.highdim.ledh_canonical_reset_score_tf import (
+                sinkhorn_contract_e_reset_with_tangent,
+            )
+
+            step_weights = softmax
+            d_step_weights = softmax * (
+                d_logits - tf.reduce_sum(softmax * d_logits)
+            )
+            reset_states, d_reset_states = (
+                sinkhorn_contract_e_reset_with_tangent(
+                    children,
+                    d_children,
+                    step_weights,
+                    d_step_weights,
+                    reset_design,
+                    epsilon=reset_epsilon,
+                    sinkhorn_steps=reset_sinkhorn_steps,
+                    balance_steps=reset_balance_steps,
+                    ridge=reset_ridge,
+                )
+            )
+            if correction_steps > 0 or pairwise_steps > 0:
+                from bayesfilter.highdim.higher_moment_contract_e import (
+                    higher_moment_shape_jvp,
+                )
+
+                corrected = higher_moment_shape_jvp(
+                    children,
+                    step_weights,
+                    d_children[:, :, None],
+                    d_step_weights[:, None],
+                    reset_states,
+                    d_reset_states[:, :, None],
+                    correction_steps=correction_steps,
+                    strength=correction_strength,
+                    floor=1.0e-5,
+                    diagonal_lm_damping=correction_lm_damping,
+                    diagonal_lm_scale_floor=1.0e-4,
+                    diagonal_trust_radius=correction_trust_radius,
+                    pairwise_correction_steps=pairwise_steps,
+                    pairwise_strength=pairwise_strength,
+                    pairwise_floor=1.0e-5,
+                    pairwise_particle_rms_cap=pairwise_rms_cap,
+                    coordinatewise_standardized_cap=coordinate_cap,
+                    coordinatewise_standardized_cap_power=8,
+                )
+                reset_states = corrected["particles"]
+                d_reset_states = corrected["particles_tangent"][:, :, 0]
+            states, d_states = reset_states, d_reset_states
+        else:
+            states, d_states = children, d_children
         covariances, d_covariances = post_covs, d_post_covs
 
     if with_score:

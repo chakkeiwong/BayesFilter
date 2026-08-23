@@ -762,3 +762,19 @@ review.
   noise scales as flow/weight inputs (phi directions carry the score);
   q/r-direction scores need density-callback threading of the scale
   parameters — same mechanical pattern, queued.
+
+- 2026-08-24 (ledger): Q1.1 CLOSED — S6+S7 GREEN. New module
+  `ledh_canonical_reset_score_tf.py`: single-cloud float64 Sinkhorn +
+  Contract-E reset with hand-derived analytical tangent (Sinkhorn
+  iteration product rules per the git-recovered historical JVP as
+  derivation reference; Contract-E via Phi-operator Cholesky and
+  adjoint-solve differentials). S7 wired through
+  `higher_moment_shape_jvp`'s existing hand-derived tangents (dual-cap
+  trust-region, pairwise, coordinate clamp). The full-program oracle gate
+  (flow + weight + reset + dual-cap correction, nonlinear fixture) passed
+  FIRST RUN at rtol 1e-4. The analytical score now covers the COMPLETE
+  canonical algorithm — the derivation note's stage ledger is fully
+  green; no autodiff anywhere (C-9 verified by the standing scanner).
+  Score-lane validity note recorded: gap-eigenvalue check is a
+  value-lane validity diagnostic (eigvalsh, no forward tangent); the
+  score lane records finiteness-based validity.

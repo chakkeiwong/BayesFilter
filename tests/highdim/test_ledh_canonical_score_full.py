@@ -90,3 +90,55 @@ def test_full_chained_score_matches_oracle_nonlinear():
         f"full chained analytical {float(score[0].numpy())} vs oracle "
         f"{float(oracle[0].numpy())}"
     )
+
+
+def test_full_program_score_with_reset_and_dualcap_matches_oracle():
+    """Q1.1 gate (S6+S7): the COMPLETE per-step program — flow, weight,
+    Sinkhorn+Contract-E reset, dual-cap trust-region correction — with the
+    analytical score, vs the autodiff oracle. Nonlinear fixture, small
+    scope for CPU speed; rtol 1e-4 declared."""
+
+    rng = np.random.default_rng(71)
+    n, dim, horizon = 16, 2, 2
+    initial = tf.constant(rng.standard_normal((n, dim)), DTYPE)
+    covs = tf.constant(np.stack([np.eye(dim)] * n), DTYPE)
+    noises = tf.constant(rng.standard_normal((horizon, n, dim)), DTYPE)
+    observations = tf.constant(rng.standard_normal((horizon, dim)), DTYPE)
+    theta0 = tf.constant([0.6], DTYPE)
+    model = _model()
+    # deterministic +/- unit design rows, N divisible by 2*dim
+    base = np.concatenate([np.eye(dim), -np.eye(dim)], axis=0)
+    design = tf.constant(
+        np.tile(base, (n // (2 * dim), 1)), DTYPE
+    )
+
+    kwargs = dict(
+        substeps=8,
+        reset_policy="contract_e",
+        reset_design=design,
+        reset_sinkhorn_steps=4,
+        reset_balance_steps=2,
+        correction_steps=2,
+        pairwise_steps=1,
+        coordinate_cap=0.98,
+    )
+
+    def value_fn(theta):
+        value, _ = canonical_value_and_analytical_score(
+            model, theta, initial, covs, noises, observations,
+            with_score=False, **kwargs,
+        )
+        return value
+
+    oracle = oracle_forward_autodiff_score(value_fn, theta0)
+    value, score = canonical_value_and_analytical_score(
+        model, theta0, initial, covs, noises, observations,
+        with_score=True, **kwargs,
+    )
+    assert np.isfinite(float(value.numpy()))
+    err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
+    scale = max(abs(float(oracle[0].numpy())), 1.0)
+    assert err < 1.0e-4 * scale, (
+        f"full-program analytical {float(score[0].numpy())} vs oracle "
+        f"{float(oracle[0].numpy())}"
+    )
