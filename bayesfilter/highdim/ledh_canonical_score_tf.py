@@ -49,6 +49,12 @@ class NonlinearScoreModel:
     # fidelity defects: heteroskedastic and mixture observation families.
     observation_log_density_fn: Callable[[Tensor, Tensor, Tensor], Tensor] | None = None
     observation_log_density_tangent_fn: Callable[[Tensor, Tensor, Tensor, Tensor], Tensor] | None = None
+    # Q(theta)/R(theta) support (Q1.3): direction-tangents of the noise
+    # covariances (closure carries the score direction; None => constant).
+    process_covariance_tangent_fn: Callable[[Tensor], Tensor] | None = None
+    observation_covariance_tangent_fn: Callable[[Tensor], Tensor] | None = None
+    transition_log_density_fn: Callable[[Tensor, Tensor, Tensor], Tensor] | None = None
+    transition_log_density_tangent_fn: Callable[[Tensor, Tensor, Tensor, Tensor, Tensor], Tensor] | None = None
 
 
 def canonical_value_and_analytical_score(
@@ -101,6 +107,26 @@ def canonical_value_and_analytical_score(
         obs_chol, tf.eye(obs_dim, dtype=dtype)
     )
 
+    d_q = (
+        model.process_covariance_tangent_fn(theta)
+        if model.process_covariance_tangent_fn is not None
+        else None
+    )
+    d_r = (
+        model.observation_covariance_tangent_fn(theta)
+        if model.observation_covariance_tangent_fn is not None
+        else None
+    )
+    d_process_chol = (
+        _cholesky_forward_diff_local(process_chol, d_q)
+        if d_q is not None
+        else None
+    )
+    d_r_inv = (
+        -tf.linalg.matmul(tf.linalg.matmul(r_inv, d_r), r_inv)
+        if d_r is not None
+        else None
+    )
     states = initial_states
     d_states = tf.zeros_like(states)
     covariances = initial_covariances
@@ -132,6 +158,7 @@ def canonical_value_and_analytical_score(
             mean_fn,
             mean_tangent_fn,
             model.process_covariance,
+            d_process_noise_covariance=d_q,
         )
 
         # S2: anchor + pre-flow (total tangent via model callback)
@@ -139,6 +166,10 @@ def canonical_value_and_analytical_score(
         d_anchors = mean_tangent_fn(states, d_states)
         pre_flow = anchors + tf.einsum("ij,nj->ni", process_chol, noise)
         d_pre_flow = d_anchors
+        if d_process_chol is not None:
+            d_pre_flow = d_pre_flow + tf.einsum(
+                "ij,nj->ni", d_process_chol, noise
+            )
 
         # S3: flow with per-particle predicted covariance AND its tangent.
         # H is evaluated along the auxiliary path; its state dependence
@@ -172,6 +203,8 @@ def canonical_value_and_analytical_score(
                 )
             )
             d_s = lam * d_php
+            if d_r is not None:
+                d_s = d_s + d_r[None]
             term_one = tf.linalg.matrix_transpose(
                 tf.linalg.cholesky_solve(
                     innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
@@ -197,6 +230,10 @@ def canonical_value_and_analytical_score(
             d_z_eff = -d_residual_e
             r_inv_z_eff = tf.einsum("op,np->no", r_inv, z_eff)
             d_r_inv_z_eff = tf.einsum("op,np->no", r_inv, d_z_eff)
+            if d_r_inv is not None:
+                d_r_inv_z_eff = d_r_inv_z_eff + tf.einsum(
+                    "op,np->no", d_r_inv, z_eff
+                )
             phrz = tf.einsum("nio,no->ni", ph_t, r_inv_z_eff)
             d_phrz = tf.einsum("nio,no->ni", d_ph_t, r_inv_z_eff) + tf.einsum(
                 "nio,no->ni", ph_t, d_r_inv_z_eff
@@ -246,9 +283,19 @@ def canonical_value_and_analytical_score(
 
         # S4: weight assembly (transition density tangent needs the total
         # tangent of the transition mean AT the ancestor: d_anchors).
-        transition_log, d_transition_log = _gaussian_log_density_and_tangent(
-            children, d_children, anchors, d_anchors, process_chol
-        )
+        if model.transition_log_density_fn is not None:
+            transition_log = model.transition_log_density_fn(
+                theta, children, anchors
+            )
+            d_transition_log = model.transition_log_density_tangent_fn(
+                theta, children, anchors, d_children, d_anchors
+            )
+        else:
+            transition_log, d_transition_log = (
+                _gaussian_log_density_and_tangent(
+                    children, d_children, anchors, d_anchors, process_chol
+                )
+            )
         if model.observation_log_density_fn is not None:
             observation_log = model.observation_log_density_fn(
                 theta, children, observation
@@ -267,9 +314,19 @@ def canonical_value_and_analytical_score(
                     obs_target, None, observed, d_observed, obs_chol
                 )
             )
-        proposal_log, d_proposal_log = _gaussian_log_density_and_tangent(
-            pre_flow, d_pre_flow, anchors, d_anchors, process_chol
-        )
+        if model.transition_log_density_fn is not None:
+            proposal_log = model.transition_log_density_fn(
+                theta, pre_flow, anchors
+            )
+            d_proposal_log = model.transition_log_density_tangent_fn(
+                theta, pre_flow, anchors, d_pre_flow, d_anchors
+            )
+        else:
+            proposal_log, d_proposal_log = (
+                _gaussian_log_density_and_tangent(
+                    pre_flow, d_pre_flow, anchors, d_anchors, process_chol
+                )
+            )
         weights_log = -tf.math.log(tf.cast(count, dtype)) * tf.ones(
             [count], dtype
         )
@@ -303,6 +360,7 @@ def canonical_value_and_analytical_score(
             model.observation_tangent_fn,
             model.observation_covariance,
             observation,
+            d_observation_covariance=d_r,
         )
 
         if reset_policy == "contract_e":
@@ -362,6 +420,16 @@ def canonical_value_and_analytical_score(
     if with_score:
         return total, d_total[None]
     return total, None
+
+
+def _cholesky_forward_diff_local(chol: Tensor, d_matrix: Tensor) -> Tensor:
+    inv_d = tf.linalg.triangular_solve(chol, d_matrix)
+    inv_d_inv_t = tf.linalg.matrix_transpose(
+        tf.linalg.triangular_solve(chol, tf.linalg.matrix_transpose(inv_d))
+    )
+    lower = tf.linalg.band_part(inv_d_inv_t, -1, 0)
+    phi = lower - 0.5 * tf.linalg.diag(tf.linalg.diag_part(inv_d_inv_t))
+    return tf.linalg.matmul(chol, phi)
 
 
 __all__ = [

@@ -778,3 +778,29 @@ review.
   Score-lane validity note recorded: gap-eigenvalue check is a
   value-lane validity diagnostic (eigvalsh, no forward tangent); the
   score lane records finiteness-based validity.
+
+- 2026-08-24 (ledger): Q1.3 + Q1.4 CLOSED (session resumed after an
+  API-error interruption mid-Q1.3; state recovered from the worktree's
+  uncommitted diff). Q1.4: Austria reduction slice green — theta_0=-20
+  drives kappa to ~2e-10, the RK4 dynamics verified LINEAR and
+  homogeneous by basis-vector extraction, and the canonical pipeline
+  value matched exact 18-dim Kalman within the declared 0.1 over 2
+  seeds, first run. Q1.3: Q(theta)/R(theta) score threading (sampling
+  chol tangent, UKF predict dQ / update dR, flow innovation dS = lam
+  d(HPH^T) + dR and d(R^-1) = -R^-1 dR R^-1, dlgssm scaled-Gaussian
+  density tangents for q/r directions) — the q/r oracle gate FAILED on
+  first run (analytical 0.394 vs oracle -2.877). Root cause was in the
+  HARNESS, wrong relative to its stated target: the oracle's value_fn
+  reused the theta0-built model, whose process/observation covariances
+  are baked constants, so forward autodiff scored ONLY the density
+  callbacks — a partial derivative where the analytical lane computes
+  the total derivative. The analytical threading was verified correct by
+  inspection of every dQ/dR channel and then by the repaired gate:
+  `_score_gate_for_model` now takes `model_builder`, rebuilding the
+  model at the traced theta inside the ForwardAccumulator so all
+  covariance channels carry the JVP (autodiff remains oracle-only;
+  C-9 unaffected). Repaired gate green for directions 3 and 4; Fisher
+  identity now guarded against vacuous passes (identically-zero score
+  in any tested direction is a hard failure). Full affected battery
+  (models, Fisher, fidelity, full-program score, governance, meta):
+  30 passed.

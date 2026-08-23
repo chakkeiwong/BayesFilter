@@ -454,6 +454,57 @@ def diagonal_lgssm_canonical_model(theta_fixed: Tensor):
         d_theta = _direction[0]
         return d_points * theta[:3][None, :] + points * d_theta[:3][None, :]
 
+    log_two_pi = tf.constant(np.log(2.0 * np.pi), DTYPE)
+
+    def _scaled_gaussian(points, means, scale):
+        residual = points - means
+        return -0.5 * (
+            tf.reduce_sum(tf.square(residual), axis=1) / tf.square(scale)
+            + 3.0 * (log_two_pi + 2.0 * tf.math.log(scale))
+        )
+
+    def _scaled_gaussian_tangent(points, means, d_points, d_means, scale, d_scale):
+        residual = points - means
+        d_residual = d_points - d_means
+        quad = tf.reduce_sum(tf.square(residual), axis=1)
+        return (
+            -tf.reduce_sum(residual * d_residual, axis=1) / tf.square(scale)
+            + quad / tf.pow(scale, 3) * d_scale
+            - 3.0 / scale * d_scale
+        )
+
+    def transition_log_density_fn(theta, points, ancestors_mean):
+        return _scaled_gaussian(points, ancestors_mean, theta[3])
+
+    def transition_log_density_tangent_fn(theta, points, ancestors_mean, d_points, d_means):
+        d_theta = _direction[0]
+        return _scaled_gaussian_tangent(
+            points, ancestors_mean, d_points, d_means, theta[3], d_theta[3]
+        )
+
+    def observation_log_density_fn(theta, points, observation):
+        observed = tf.einsum("od,nd->no", obs_matrix, points)
+        target = tf.broadcast_to(observation[None, :], tf.shape(observed))
+        return _scaled_gaussian(target, observed, theta[4])
+
+    def observation_log_density_tangent_fn(theta, points, observation, d_points):
+        d_theta = _direction[0]
+        observed = tf.einsum("od,nd->no", obs_matrix, points)
+        d_observed = tf.einsum("od,nd->no", obs_matrix, d_points)
+        target = tf.broadcast_to(observation[None, :], tf.shape(observed))
+        return _scaled_gaussian_tangent(
+            target, observed, tf.zeros_like(target), d_observed,
+            theta[4], d_theta[4],
+        )
+
+    def process_covariance_tangent_fn(theta):
+        d_theta = _direction[0]
+        return 2.0 * theta[3] * d_theta[3] * tf.eye(3, dtype=DTYPE)
+
+    def observation_covariance_tangent_fn(theta):
+        d_theta = _direction[0]
+        return 2.0 * theta[4] * d_theta[4] * tf.eye(3, dtype=DTYPE)
+
     model = NonlinearScoreModel(
         transition_mean_fn=transition_mean_fn,
         transition_mean_tangent_fn=transition_mean_tangent_fn,
@@ -468,6 +519,12 @@ def diagonal_lgssm_canonical_model(theta_fixed: Tensor):
         ),
         process_covariance=tf.square(q_scale) * tf.eye(3, dtype=DTYPE),
         observation_covariance=tf.square(r_scale) * tf.eye(3, dtype=DTYPE),
+        observation_log_density_fn=observation_log_density_fn,
+        observation_log_density_tangent_fn=observation_log_density_tangent_fn,
+        process_covariance_tangent_fn=process_covariance_tangent_fn,
+        observation_covariance_tangent_fn=observation_covariance_tangent_fn,
+        transition_log_density_fn=transition_log_density_fn,
+        transition_log_density_tangent_fn=transition_log_density_tangent_fn,
     )
     return model, set_score_direction
 

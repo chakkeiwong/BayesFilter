@@ -346,3 +346,117 @@ def test_generalized_sv_reduction_slice_matches_kalman():
         f"reduction slice: canonical {np.mean(values):.4f} vs Kalman "
         f"{kalman:.4f} (err {err:.4f}, per-seed {values})"
     )
+
+
+def test_austria_reduction_slice_matches_kalman():
+    """Q1.4 reduction-slice gate (exact-math referent): theta_0 = -20
+    makes kappa ~ 2e-10, the infection term vanishes, and the RK4
+    dynamics become LINEAR (diffusion + nu decay). The propagator is
+    extracted by pushing basis vectors through the model's own
+    transition_mean_fn; exact 18-dim Kalman then anchors the canonical
+    pipeline value. Declared: |mean over 2 seeds - Kalman| < 0.1."""
+
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        austria_sir_canonical_model,
+    )
+    from bayesfilter.highdim.ledh_canonical_filter_tf import (
+        CanonicalModelCallbacks,
+        canonical_value_and_diagnostics,
+    )
+    from bayesfilter.highdim.models import zhao_cui_sir_austria_model
+
+    theta = tf.constant([-20.0, 0.0, 0.0], DTYPE)
+    model, _sd = austria_sir_canonical_model(theta)
+
+    # linearity check + propagator extraction
+    basis = tf.constant(np.eye(18), DTYPE)
+    pushed_basis = model.transition_mean_fn(theta, basis).numpy()
+    pushed_zero = model.transition_mean_fn(
+        theta, tf.zeros([1, 18], DTYPE)
+    ).numpy()
+    assert np.max(np.abs(pushed_zero)) < 1e-8, "dynamics not homogeneous"
+    transition = pushed_basis.T  # F e_j = column j
+    probe = np.array([0.3, -0.2] * 9)
+    linear_err = np.max(
+        np.abs(
+            model.transition_mean_fn(
+                theta, tf.constant(probe[None, :], DTYPE)
+            ).numpy()[0]
+            - transition @ probe
+        )
+    )
+    assert linear_err < 1e-8, f"dynamics not linear at kappa=0: {linear_err}"
+
+    obs_matrix = np.zeros((9, 18))
+    for o in range(9):
+        obs_matrix[o, 2 * o + 1] = 1.0
+    variance = 100.0
+    horizon = 2
+    rng = np.random.default_rng(541)
+    initial_mean_np = zhao_cui_sir_austria_model().initial_mean.numpy()
+    observations_np = (
+        obs_matrix @ initial_mean_np
+    )[None, :] + 5.0 * rng.standard_normal((horizon, 9))
+
+    # exact Kalman
+    mean, cov = initial_mean_np.copy(), np.eye(18)
+    kalman = 0.0
+    for t in range(horizon):
+        mean = transition @ mean
+        cov = transition @ cov @ transition.T + np.eye(18)
+        s = obs_matrix @ cov @ obs_matrix.T + variance * np.eye(9)
+        resid = observations_np[t] - obs_matrix @ mean
+        sign, logdet = np.linalg.slogdet(2.0 * np.pi * s)
+        kalman += -0.5 * (resid @ np.linalg.solve(s, resid) + logdet)
+        gain = cov @ obs_matrix.T @ np.linalg.inv(s)
+        mean = mean + gain @ resid
+        cov = (np.eye(18) - gain @ obs_matrix) @ cov
+
+    def transition_log_density_fn(points, ancestors, _t):
+        m = model.transition_mean_fn(theta, ancestors)
+        r = points - m
+        return -0.5 * (
+            tf.reduce_sum(tf.square(r), axis=1)
+            + 18.0 * tf.constant(np.log(2.0 * np.pi), DTYPE)
+        )
+
+    def observation_log_density_fn(points, observation, _t):
+        observed = model.observation_fn(points)
+        r = observation[None, :] - observed
+        return -0.5 * (
+            tf.reduce_sum(tf.square(r), axis=1) / variance
+            + 9.0 * tf.constant(np.log(2.0 * np.pi * variance), DTYPE)
+        )
+
+    callbacks = CanonicalModelCallbacks(
+        model_id="austria_reduction_slice",
+        state_dim=18,
+        observation_dim=9,
+        transition_mean_fn=lambda p, t: model.transition_mean_fn(theta, p),
+        transition_log_density_fn=transition_log_density_fn,
+        process_noise_covariance=tf.eye(18, dtype=DTYPE),
+        process_noise_covariance_provenance="model_exact",
+        observation_fn=lambda p, t: model.observation_fn(p),
+        observation_jacobian_fn=lambda p, t: model.observation_jacobian_fn(p),
+        observation_covariance=100.0 * tf.eye(9, dtype=DTYPE),
+        observation_log_density_fn=observation_log_density_fn,
+        initial_mean=tf.constant(initial_mean_np, DTYPE),
+        initial_covariance=tf.eye(18, dtype=DTYPE),
+        initial_covariance_provenance="model_exact",
+    )
+    values = []
+    for seed in (0, 1):
+        result = canonical_value_and_diagnostics(
+            callbacks,
+            tf.constant(observations_np, DTYPE),
+            particle_count=4096,
+            seed=seed,
+            flow_substeps=12,
+        )
+        assert bool(result["program_valid"].numpy())
+        values.append(float(result["value"].numpy()))
+    err = abs(float(np.mean(values)) - kalman)
+    assert err < 0.1, (
+        f"Austria reduction: canonical {np.mean(values):.4f} vs Kalman "
+        f"{kalman:.4f} (err {err:.4f}, per-seed {values})"
+    )

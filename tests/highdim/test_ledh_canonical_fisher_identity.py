@@ -153,6 +153,11 @@ def _fisher_gate(model, set_direction, theta, simulate_fn, initial_sampler,
             )
             scores.append(float(score[0].numpy()))
         scores = np.array(scores)
+        assert float(np.std(scores)) > 1.0e-12, (
+            f"VACUOUS Fisher gate in direction {direction_index}: score "
+            "is identically zero — the direction's sensitivity is not "
+            "implemented (harness non-vacuity check, added 2026-08-24)"
+        )
         mean = float(np.mean(scores))
         se = float(np.std(scores, ddof=1) / np.sqrt(replications))
         assert abs(mean) < 3.0 * se + bias_slack, (

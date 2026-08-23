@@ -248,8 +248,17 @@ def test_austria_annealed_mode_holds_takeoff_ess():
     )
 
 
-def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, seed=201, direction_index=0, obs_noise=1.0):
-    """Shared onboarding gate: analytical score vs oracle on a short scope."""
+def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, seed=201, direction_index=0, obs_noise=1.0, model_builder=None):
+    """Shared onboarding gate: analytical score vs oracle on a short scope.
+
+    ``model_builder`` is REQUIRED for any direction whose parameter enters
+    the model's process/observation covariance (q/r-type directions): the
+    default path reuses ``model`` built at theta0, whose covariances are
+    constants the oracle cannot differentiate — the oracle would then score
+    only the density callbacks, a DIFFERENT function than the analytical
+    lane's total derivative. With a builder, the oracle rebuilds the model
+    at the traced theta so every covariance channel (sampling chol, UKF
+    predict/update, flow innovation and R^-1) carries the JVP."""
     from bayesfilter.highdim.ledh_canonical_score_tf import (
         canonical_value_and_analytical_score,
     )
@@ -271,8 +280,11 @@ def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, se
         parts = [theta0[i] for i in range(p_count)]
         parts[direction_index] = theta_1[0]
         theta = tf.stack(parts)
+        eval_model = (
+            model_builder(theta)[0] if model_builder is not None else model
+        )
         value, _ = canonical_value_and_analytical_score(
-            model, theta, initial, covs, noises, observations,
+            eval_model, theta, initial, covs, noises, observations,
             substeps=8, with_score=False,
         )
         return value
@@ -412,3 +424,24 @@ def test_generalized_sv_onboarding_score_gate():
         model, set_direction, theta0_unconstrained, dim=2, seed=241,
         direction_index=0, obs_noise=1.0,
     )
+
+
+def test_diagonal_lgssm_qr_direction_scores_match_oracle():
+    """Q1.3 gate: q/r-direction scores (directions 3 and 4) vs oracle —
+    the directions the earlier implementation dropped (Fisher passed
+    vacuously with identically-zero scores; harness now asserts
+    non-vacuity). Covers Q(theta)/R(theta) threading: sampling chol,
+    UKF predict/update covariances, flow coefficients, densities."""
+
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        diagonal_lgssm_canonical_model,
+    )
+
+    theta0 = tf.constant([0.9, 0.8, 0.7, 0.6, 0.8], DTYPE)
+    model, set_direction = diagonal_lgssm_canonical_model(theta0)
+    for direction_index in (3, 4):
+        _score_gate_for_model(
+            model, set_direction, theta0, dim=3, seed=225,
+            direction_index=direction_index,
+            model_builder=diagonal_lgssm_canonical_model,
+        )
