@@ -725,3 +725,13 @@ review.
   (Austria reduction + Fisher ride with P6 GPU; PP trivial-slice; none
   silent). Fidelity tally: 5 infidelities found, 5 fixed, five distinct
   gate classes did the finding.
+
+- 2026-08-24 (ledger): SLICE-2 REFRESHED under fidelity fixes 1-5 with a
+  DENSITY-AWARE bootstrap comparator (closing the shared-Gaussianization
+  blindness). Highlights: UKF cell equals exact Kalman on the linear
+  fixture (sanity anchor); KSC shows the expected family split (canonical
+  -6.19 / bootstrap -6.53 under the mixture vs Gaussianized UKF -6.82);
+  all analytical scores FD-self-consistent at 1e-9..1e-12. Recorded
+  anomaly: predator-prey bootstrap NaN (negative-state RK4 blowup, a
+  bootstrap fragility on positivity-constrained models; canonical lane
+  finite). Artifact annotated.

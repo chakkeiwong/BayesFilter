@@ -117,6 +117,14 @@ def bootstrap_value(model, theta, initial, noises, observations, obs_log_fn):
 
 
 def default_obs_log(model, points, obs):
+    # Density-aware (2026-08-24): when the model declares a non-Gaussian
+    # observation density (mixture, heteroskedastic), ALL particle
+    # comparators must use it — shared-Gaussianization was the
+    # cross-algorithm blindness that masked infidelities #2 and #5.
+    density_fn = getattr(model, "observation_log_density_fn", None)
+    if density_fn is not None:
+        theta_attr = getattr(model, "_slice2_theta", None)
+        return density_fn(theta_attr, points, obs)
     observed = model.observation_fn(points)
     r = model.observation_covariance.numpy()
     residual = obs.numpy()[None, :] - observed.numpy()
@@ -247,6 +255,7 @@ def build_cells() -> dict:
         observations = tf.constant(
             obs_noise * rng.standard_normal((horizon, obs_dim)), DTYPE
         )
+        object.__setattr__(model, "_slice2_theta", theta0)
         c_val = canonical_value(
             model, theta0, initial, covs, noises, observations
         )
