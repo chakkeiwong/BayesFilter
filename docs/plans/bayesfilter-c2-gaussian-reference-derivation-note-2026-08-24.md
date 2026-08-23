@@ -63,8 +63,8 @@ program. Rows: u_i = Φ^{-1}(Sobol) (owen-scrambled, reusing
 the fit is least-squares in L²(μ) with unweighted rows.
 
 Represented object and increment (unchanged in form):
-q̄_t = h_t² + τ_t Z_{h,t} λ_t as μ-density;
-Ẑ_t = e^{−c_t}(1+τ_t) Z_{h,t}; with B = I, Z_{h,t} is the plain
+q̄_t = e^{−c_t}(h_t² + τ_t Z_{h,t} λ_t) as μ-density;
+Ẑ_t = ∫ q̄_t dμ = e^{−c_t}(1+τ_t) Z_{h,t}; with B = I, Z_{h,t} is the plain
 Frobenius contraction of the core chain — every mass-matrix
 multiplication in the bounded engine's Gram chain drops out.
 
@@ -85,7 +85,9 @@ coordinates; entering step t+1's fit target in u_new coordinates:
       + log p_ret(u_old) + log η(u_old) − log|det L_{c,t}|
       + log|det L_{t+1}| − log η(u_new),
 
-where u_old is affine in u_new (composition of frozen affine maps).
+where η denotes the standard normal density at its argument's dimension
+(η_n(u_old), η_{2n}(u_new)) and u_old is affine in u_new (composition of
+frozen affine maps).
 Two structural differences from the bounded program, both exact:
 (a) the reference-density ratio η(u_old)/η(u_new) is **row-dependent**
 (exp of a quadratic in u_new), not a row constant — it joins the target
@@ -96,18 +98,44 @@ cancels against f, g, and the constant retained factor to make
 F_{t+1} ≡ const (ch38 degree-collapse proposition) — a sign error here
 breaks the oracle gate, which is the point of the gate.
 
-Defensive term (D3). Default λ ≡ 1 as μ-density (physical floor
-τZ_h·η: Gaussian tails). Coupling τ_t = min(τ_max, ε̂_t²) with ε̂_t the
-fit's weighted residual on the fitted rows. Honesty note: in-sample ε̂
-typically underestimates the true L²(μ) error (Defect 2 lesson), but
-the asymmetry is safe in the direction that matters — the Lemma-1/Prop.
-11 bias bound needs τ ≤ ε_true², and ε̂² ≤ ε_true² preserves it; an
-underestimate only weakens the floor's stabilization margin, never the
-bias order. Escalation: if a declared target family fails the
-domination check sup q/λ < ∞ in whitened coordinates, replace λ by a
-Student-t product per axis (log-space evaluation; closed-form product
-marginals; θ-free) — CDZ23 (2.11) is the same condition, and their
-mapped-weight (3.11) is the fallback shape.
+Defensive term (D3; revised per review findings F2–F4). Default λ ≡ 1
+as μ-density (physical floor ∝ η: Gaussian tails). Coupling with a
+two-sided clamp:
+
+    τ_t = clamp(ε̂_t², τ_min, τ_max),   τ_min = 1e-6,   τ_max = 1e-4,
+
+where ε̂_t² is the **Z_h-normalized (relative)** weighted row residual,
+ε̂_t² = Σ_i w_i (h(u_i) − √F_t(u_i))² / Z_{h,t}, so the engine's
+relative-τ convention matches Lemma 1's absolute hypothesis
+(τ_abs = τ_rel·Z_h ≤ ‖h − √q‖²_abs). Regimes, each with its bound:
+
+- ε̂² ∈ [τ_min, τ_max]: Lemma-1 regime — mixture bias second order in
+  the measured residual. Direction honesty (F4): in-sample ε̂ typically
+  underestimates the true L²(μ) error (Defect-2 optimism), which only
+  shrinks the bias; when it overestimates, the L² inflation bound holds
+  with ε̂ in place of ε_true (‖√q̄ − √q‖² ≤ ε_true² + τ_abs), still
+  second order in the measured quantity. Neither direction is a
+  guarantee about ε_true; both directions are bounded.
+- τ_min = 1e-6 (Class-C zero-protection justification, F2): the floor
+  never drops below the fixed value used by every validated
+  bounded-program run, inheriting that campaign's measured no-harm
+  evidence (n=2 pass at 46× margin with τ = 1e-6), and the guard's
+  declared function — absolute continuity and a finite ratio bound —
+  survives every reachable ε̂, including ε̂ = 0 (interpolating fits;
+  exactly-representable targets; the Defect-2 optimism scenario). An
+  unclamped coupling turns the floor off precisely in the scenario the
+  floor exists for. In the sub-τ_min regime the explicit mixture-bias
+  bound τ_min/(1+τ_min) ≤ 1e-6 governs (three orders under the bar);
+  the Lemma-1 √2 factor is simply not claimed there.
+- τ_max = 1e-4 := bar/25: caps the per-step mixture bias at 4% of the
+  declared 2.5e-3 per-step bar under arbitrarily rough fits.
+
+Escalation: if a declared target family fails the domination check
+sup q/λ < ∞ in whitened coordinates, replace λ by a Student-t product
+per axis (log-space evaluation; closed-form product marginals; θ-free)
+— CDZ23 (2.11) is the same condition, and their mapped-weight (3.11) is
+the fallback shape. Per review finding F1, this escalation is the
+**expected configuration for the SV arm**, not a contingency — see §3.
 
 Score path. Node inventory relative to the certified bounded adjoint:
 mass-matrix contraction nodes drop (B = I); basis and basis-derivative
@@ -150,13 +178,32 @@ Question: r*(n) — smallest TT rank meeting 2.5e-3 nats/step against a
 resolved reference — on the stochastic-volatility family under C2, in
 the paper's own log-volatility coordinates (ZC24 transforms SV to
 unbounded coordinates for exactly this reason, txt:2156).
-Domination pre-check (gate before any run): in whitened log-vol
-coordinates the SV step target's tails are Gaussian-dominated — the
-transition/prior factor is Gaussian; the observation factor
-N(y; 0, e^x) decays like e^{−x/2} as x → +∞ and double-exponentially as
-x → −∞, so the product is dominated by the Gaussian prior tails; the
-formal statement and its verification belong to the attempt05 plan, and
-failing it triggers the λ escalation of D3, not a program change.
+Domination pre-check (gate before any run; corrected per review finding
+F1 — the first draft compared against the wrong reference and predicted
+the wrong outcome). The gate is sup_u F/λ_μ < ∞ against the **whitened
+reference**, not against a prior-variance Gaussian. Asymptotics (F5
+fixed): log N(y; 0, e^{x_c}) = −x_c/2 − y²e^{−x_c}/2 − const, so the
+observation density decays like e^{−x_c/2} as x_c → +∞, and
+double-exponentially as x_c → −∞ **for y ≠ 0 only** (at y = 0 it grows
+like e^{|x_c|/2} and the left tail is controlled by the transition
+factor instead). Consequence: the target's +x_c tail is Gaussian with
+exactly the transition variance σ_f² (the observation term is
+asymptotically log-linear and cannot narrow it), while exact-moment
+hints whiten by the step target's conditional variance s² ≤ σ_f²,
+strict where y is informative (the observation factor is log-concave in
+x_c; Brascamp–Lieb). Hence
+
+    log F = (1/s² − 1/σ_f²) · x_c²/2 + O(x_c) → +∞,
+
+and with the default λ ≡ 1 the pre-check is **expected to fail** for SV
+under exact or near-exact hints. Both repairs are closed-form: (i) the
+D3 Student-t escalation dominates any Gaussian tail and is the expected
+SV configuration; (ii) the recorded alternative — a hint tail-variance
+floor at σ_f² along x_c (predict-variance hints), which restores
+domination at a degree-collapse cost — requires its own audit before
+use. The attempt05 formal statement must also cover the retained floor
+term's old-reference factor inside q_{t+1} (conditional screening
+suggests the previous-block direction is benign; not settled here).
 Reference ladder: exact-moment oracle unavailable (non-Gaussian), so
 the comparator is the resolved-quadrature / long-particle reference per
 ch38's Defect-2 ledger rules. Not concluded here: any rank prediction.
