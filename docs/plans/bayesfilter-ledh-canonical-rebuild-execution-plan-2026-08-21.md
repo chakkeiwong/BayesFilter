@@ -747,3 +747,18 @@ review.
   (poisoned obs + float32 + TF32 + XLA) fails CLOSED: invalid, masked, no
   exception. The owner's item-5 question ("do we still have these
   issues") is now answered by measurement across every arm: NO.
+
+- 2026-08-24 (ledger): NEUTRA BRIDGES COMPLETE for the historical model
+  set. Fused lane extended with non-Gaussian observation-density support
+  (per-point mirror of the single-cloud extension). Bridges added:
+  predator-prey (frozen T=20 dataset), diagonal-LGSSM (frozen T=50
+  seed-81100 dataset, verbatim generator semantics recovered from the
+  deleted factory via git), KSC (frozen T=1000 exact-SV-transformed
+  dataset, per-point 7-component mixture density + responsibility
+  tangent). Gates green including a full-T=1000 KSC finite/valid smoke.
+  The canonical NeuTra factory now covers the complete historical NeuTra
+  model set {austria, predator_prey, lgssm, ksc} on the canonical stack.
+  Recorded refinement debt (explicit): dlgssm bridge pins frozen-scope
+  noise scales as flow/weight inputs (phi directions carry the score);
+  q/r-direction scores need density-callback threading of the scale
+  parameters — same mechanical pattern, queued.

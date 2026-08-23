@@ -72,3 +72,37 @@ def test_austria_canonical_score_direction_routes():
     assert abs(
         float(score_d0[0].numpy()) - float(score_d1[0].numpy())
     ) > 1e-8, "direction routing inert"
+
+
+def test_predator_prey_and_lgssm_bridges_value_score_finite():
+    for name, p_count in (("predator_prey", 6), ("lgssm", 5)):
+        target = make_canonical_neutra_target(
+            name, particle_count=126, substeps=6
+        )
+        if name == "predator_prey":
+            theta = tf.constant([[0.8, 90.0, 25.0, 0.5, 0.4, 0.3]], DTYPE)
+        else:
+            theta = tf.constant([[0.72, 0.55, 0.35, 0.35, 0.45]], DTYPE)
+        directions = tf.constant([[1.0] + [0.0] * (p_count - 1)], DTYPE)
+        value, score, diagnostics = target.batch_value_score(
+            theta, directions
+        )
+        assert bool(diagnostics["program_valid"][0].numpy()), name
+        assert bool(tf.math.is_finite(value[0]).numpy()), name
+        assert bool(tf.math.is_finite(score[0]).numpy()), name
+
+
+def test_ksc_bridge_value_score_finite_smoke():
+    """KSC frozen scope is T=1000; the bridge gate runs a reduced particle
+    count as a finite/valid smoke (claim-scale runs belong to campaigns)."""
+
+    target = make_canonical_neutra_target(
+        "ksc", particle_count=48, substeps=3
+    )
+    assert int(target.observations.shape[0]) == 1000
+    theta = tf.constant([[0.5, 0.1]], DTYPE)
+    directions = tf.constant([[1.0, 0.0]], DTYPE)
+    value, score, diagnostics = target.batch_value_score(theta, directions)
+    assert bool(diagnostics["program_valid"][0].numpy())
+    assert bool(tf.math.is_finite(value[0]).numpy())
+    assert bool(tf.math.is_finite(score[0]).numpy())
