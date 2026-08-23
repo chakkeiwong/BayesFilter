@@ -529,3 +529,25 @@ REMAINING (each with its resume recipe, no open design questions):
 This state is mechanically resumable (R-G): read this ledger, continue at
 item 1 or 2 in either order; item 2's bridge is the only structural work
 left in the program.
+
+- 2026-08-23 (ledger): P7 EXECUTED (pre-authorized). Rebind:
+  `ledh_canonical_neutra_targets_tf.make_canonical_neutra_target` — NeuTra
+  targets on the canonical stack (fused batch lane, frozen Austria
+  datasets reused, FRESH target signatures, algorithm_id
+  `ledh_canonical_pfpf_ot_ukf_analytical_v1`); rebind gates green
+  (finite batched value/score on frozen data, signature fresh vs the
+  invalidated bootstrap constant `4845e7...`, direction routing).
+  DELETION: `cubature_genut_batch_tf.py` (1973 lines, bootstrap lane),
+  `cubature_genut_neutra_targets.py` (bootstrap NeuTra factory),
+  `cubature_genut_batch_adapters.py`, and their tests removed via git rm;
+  zero residual imports in bayesfilter/ verified by grep + import smoke;
+  40 canonical gates green post-deletion. Legacy docs/benchmarks runners
+  referencing deleted modules are HISTORICAL DIAGNOSTIC scripts of the
+  invalidated lane — left in place as provenance per the invalidation
+  notice (they fail to import by construction, which is correct: the lane
+  they measured no longer exists). Remaining program items: generalized-SV
+  bridging + remaining model bridges in the canonical NeuTra factory
+  (template proven), P6 GPU calibration campaign, full six-model
+  leaderboard. The owner directive "no other version should exist" is now
+  TRUE in bayesfilter/: one algorithm, canonical lanes only, enforced by
+  G-1 discovery and the conformance suite.

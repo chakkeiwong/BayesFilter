@@ -190,6 +190,13 @@ ENTRY_POINTS: tuple[EntryPoint, ...] = (
         notes="NeuTra-eligible fused lane; parity-gated vs single-cloud authority",
     ),
     EntryPoint(
+        lane="neutra_target",
+        role="canonical",
+        module="bayesfilter.highdim.ledh_canonical_neutra_targets_tf",
+        callable_name="make_canonical_neutra_target",
+        notes="P7 rebind: NeuTra targets on the canonical stack; fresh signatures",
+    ),
+    EntryPoint(
         lane="models",
         role="canonical",
         module="bayesfilter.highdim.ledh_canonical_models_tf",
