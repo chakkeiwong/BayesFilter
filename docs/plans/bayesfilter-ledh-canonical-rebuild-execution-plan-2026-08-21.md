@@ -655,3 +655,26 @@ review.
   first run. Corrected slice-2 cells: dLGSSM -14.72/-13.57/-14.54,
   KSC -6.75/-6.90/-6.82, gen-SV -4.62/-4.64/-4.58; all scores
   self-consistent at 1e-11..1e-12. 46 canonical gates green.
+
+- 2026-08-24 (ledger): TEST-METHODOLOGY UPGRADE (answer to the owner's
+  "how do we cover this better"). New gate classes, all green (16 in the
+  new set):
+  (1) REFERENT-COVERAGE REGISTRY meta-test: every onboarded model must
+  declare a status for every gate class (oracle / independent-fidelity /
+  invariance-or-reduction / statistical-identity); pending cells must be
+  EXPLICIT — silence fails CI. Registry rows encode the honest current
+  state (Austria/PP full density-equality and reduction slices queued).
+  (2) FISHER-IDENTITY gate (template: gen-SV): E[analytical score]=0 at
+  the data-generating theta over 40 simulated datasets, directions 3 and
+  4 (the variance-bearing ones the historical wrong-density defect
+  corrupts) — tests density fidelity + score correctness jointly against
+  ONLY the model's own simulator (independent simple code path); PASSED.
+  (3) DUPLICATE-DEFINITION scanner — and it immediately caught THREE more
+  stale duplicates my fidelity-fix edits had left (predator_prey, ksc,
+  diagonal_lgssm — Python silently keeps the last def; the live ones were
+  verified correct, dead copies removed). The gate class proved itself on
+  its first run.
+  Referent taxonomy recorded: exact-math > independent-reference >
+  internal-oracle > self-consistency; every claim needs a test whose
+  referent is at least as strong as the claim; cross-algorithm agreement
+  is self-consistency in disguise when algorithms share model objects.
