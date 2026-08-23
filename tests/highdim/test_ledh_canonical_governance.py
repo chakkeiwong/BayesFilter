@@ -52,6 +52,7 @@ def test_g1_ledh_lane_discovery():
         "ledh_alg1_contract.py",
         "ledh_canonical_score_stages_tf.py",
         "ledh_canonical_neutra_targets_tf.py",
+        "ledh_canonical_reset_score_tf.py",
         "ledh_ukf_lifecycle_tf.py",
         "ledh_flow_perparticle_tf.py",
     }

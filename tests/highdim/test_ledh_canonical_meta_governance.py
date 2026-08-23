@@ -21,6 +21,7 @@ CANONICAL_MODULES = [
     "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
     "bayesfilter/highdim/ledh_canonical_models_tf.py",
     "bayesfilter/highdim/ledh_canonical_neutra_targets_tf.py",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py",
     "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py",
     "bayesfilter/highdim/ledh_flow_perparticle_tf.py",
     "bayesfilter/highdim/ledh_alg1_contract.py",
