@@ -306,7 +306,7 @@ def build_cells() -> dict:
     results["ksc_sv_T3"] = onboarded(
         "ksc",
         ksc_sv_canonical_model,
-        [0.5, 0.1], 2, 0, 231, 2.0,
+        [0.5, 0.1], 1, 0, 231, 2.0,
     )
     results["generalized_sv_T3"] = onboarded(
         "gsv",

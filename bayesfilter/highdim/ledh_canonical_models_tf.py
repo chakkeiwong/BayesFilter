@@ -361,13 +361,23 @@ def diagonal_lgssm_canonical_model(theta_fixed: Tensor):
 
 
 def ksc_sv_canonical_model(theta_fixed: Tensor):
-    """KSC mixture SV in (z_gamma, log_beta) coordinates, 2-state.
+    """KSC mixture SV — CORRECTED 2026-08-23.
 
-    Flow linearization uses the MOMENT-MATCHED GAUSSIAN of the KSC
-    log-chi-square mixture (provenance: derived — mixture mean/variance
-    are analytic constants); the WEIGHT should use the true mixture
-    density where the caller requires exactness (the Gaussian here is the
-    flow's proposal-design input, which the PF-PF identity corrects).
+    STATE IS 1-DIMENSIONAL: the log-volatility AR(1) h' = gamma*h + eta,
+    matching the reference adapter (`dimension=1` in the frozen target).
+    `log_beta` is a PARAMETER (theta[1]), entering the observation offset
+    as 2*log_beta — the previous onboarding wrongly promoted it to a
+    second state with a fabricated near-deterministic transition
+    (Q22=1e-8), which made the transition density price the flow's
+    legitimate displacement at 1/1e-8 and produced the wrong -19283 value
+    (registry note: onboarding error, not an algorithm property).
+
+    Flow input: moment-matched Gaussian of the KSC log-chi-square mixture
+    (derived constants); the observed quantity is h + 2*log_beta +
+    mixture_noise, so H = [1] and the mixture mean enters the offset.
+    Equivalence gate: KSC value/score must match actual-SV up to the
+    theta-independent observation-transform Jacobian (constant value
+    offset, ZERO score difference).
     """
 
     theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
@@ -394,10 +404,7 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
         )
 
     def transition_mean_fn(theta, points):
-        gamma = gamma_of(theta)
-        first = gamma * points[:, 0]
-        second = points[:, 1]
-        return tf.stack([first, second], axis=1)
+        return gamma_of(theta) * points
 
     _direction = [tf.zeros([2], DTYPE)]
 
@@ -407,38 +414,28 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
     def transition_mean_tangent_fn(theta, points, d_points):
         d_theta = _direction[0]
         gamma = gamma_of(theta)
-        normalizer = tf.constant(
-            1.0 / np.sqrt(2.0 * np.pi), DTYPE
-        )
+        normalizer = tf.constant(1.0 / np.sqrt(2.0 * np.pi), DTYPE)
         dgamma = normalizer * tf.exp(-0.5 * tf.square(theta[0])) * d_theta[0]
-        first = dgamma * points[:, 0] + gamma * d_points[:, 0]
-        second = d_points[:, 1]
-        return tf.stack([first, second], axis=1)
+        return dgamma * points + gamma * d_points
 
-    # Observation (moment-matched Gaussian of the mixture): the observed
-    # quantity is h + 2*log_beta + mixture_noise; linear map [1, 2].
-    h_matrix = tf.constant([[1.0, 2.0]], DTYPE)
+    # Observation: y_transformed = h + 2*log_beta + mixture noise.
+    # log_beta = theta[1] contributes a THETA-DEPENDENT offset; for the
+    # linear-H flow input the offset enters through observation_fn and its
+    # theta-derivative through the weight densities (score assembly).
+    two_log_beta = 2.0 * theta_fixed[1]
 
     model = NonlinearScoreModel(
         transition_mean_fn=transition_mean_fn,
         transition_mean_tangent_fn=transition_mean_tangent_fn,
-        observation_fn=lambda points: tf.einsum(
-            "od,nd->no", h_matrix, points
-        )
-        + mixture_mean,
-        observation_jacobian_fn=lambda points: tf.broadcast_to(
-            h_matrix, [tf.shape(points)[0], 1, 2]
+        observation_fn=lambda points: points + mixture_mean + two_log_beta,
+        observation_jacobian_fn=lambda points: tf.ones(
+            [tf.shape(points)[0], 1, 1], DTYPE
         ),
-        observation_tangent_fn=lambda points, d_points: tf.einsum(
-            "od,nd->no", h_matrix, d_points
-        ),
-        process_covariance=tf.constant([[1.0, 0.0], [0.0, 1.0e-8]], DTYPE),
+        observation_tangent_fn=lambda points, d_points: d_points,
+        process_covariance=tf.ones([1, 1], DTYPE),
         observation_covariance=mixture_var[None, None],
     )
     return model, set_score_direction
-
-
-
 
 
 def generalized_sv_canonical_model(theta_fixed: Tensor):

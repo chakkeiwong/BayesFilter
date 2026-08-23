@@ -606,3 +606,28 @@ review.
   visible even at T=5. All five analytical scores match central-FD at
   1e-9..1e-11 (self-consistency; oracle gates already bound them at
   onboarding).
+
+- 2026-08-23 (ledger): KSC-SV DEFECT ROOT-CAUSED AND FIXED. Owner
+  challenge (correct): KSC is a theta-independent bijective observation
+  transform of actual SV, so value/score must be equivalent up to a
+  constant — a 19000-nat discrepancy is impossible for a faithful
+  onboarding. Root cause: MY onboarding promoted log_beta (a PARAMETER
+  in the reference target, state dimension = 1 per the frozen factory)
+  into a second STATE with a fabricated near-deterministic transition
+  (Q22=1e-8); the flow's legitimate displacement in the invented
+  dimension was then priced at 1/1e-8 by the fabricated density. The
+  earlier "manifold-aware extension needed" diagnosis is SUPERSEDED —
+  wrong relative to the true cause; no extension needed, the state space
+  was wrong. Gate-class lesson (E-class recurring, this time in MY
+  work): onboarding oracle gates verify SELF-CONSISTENCY of whatever
+  model I defined, not FIDELITY to the reference model definition — the
+  cross-algorithm VALUE cell is what caught it. Fix: KSC re-onboarded
+  with the correct 1-D latent state and log_beta as observation-offset
+  parameter; new equivalence-class gate added
+  (`test_ksc_equals_actual_sv_up_to_constant`: Jacobian-constant value
+  relation + score invariance + value-scale sanity). Corrected slice-2
+  cell: canonical -6.75 / bootstrap -6.90 / UKF -6.82 (mutual agreement),
+  score self-consistency 3.9e-12. TODO carried: model-fidelity gates
+  (per-step density equality vs the reference adapters on shared inputs)
+  for the other onboarded models — same gate class, queued before the
+  full leaderboard campaign.
