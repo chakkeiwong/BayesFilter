@@ -19,9 +19,29 @@ Step target (unnormalized), joint over current/previous blocks, x ∈ R^{2n}:
 
     q_t(x_c, x_p) = f(x_c | x_p, θ) · g(y_t | x_c, θ) · π̂_{t-1}(x_p).
 
-The program approximates q_t ≈ h_t² (+ τ_t λ_t) w.r.t. a reference measure
-μ_t, computes the increment Ẑ_t = ∫ h_t² dμ_t exactly (Gram chain), and
-retains the marginal over x_p. All candidates keep the per-step frozen affine
+The declared represented object is NOT the bare square. Per the Aug-6
+derivation note and the paper's own construction (txt:556-569: the
+defensive term ensures the target is absolutely continuous w.r.t. the
+approximation, i.e. bounded target/approximation ratio; txt:712 eq. (16):
+per-block product λ(x_t)λ(θ)λ(x_{t-1}); txt:1428-1445: the error analysis
+carries τ_t explicitly):
+
+    q̄_t = e^{-c_t} ( h_t² + τ_t Z_{h,t} λ_t ),    q_t ≈ q̄_t  w.r.t. μ_t,
+
+where c_t is the frozen row-constant log-shift, λ_t is a probability
+density w.r.t. μ_t, and the engine uses the relative-τ convention
+(defensive mass proportional to the fitted mass Z_{h,t} = ⟨h_t, h_t⟩_μ;
+`squared_tt_engine_adapted_tf.py:307-315,371`). The increment is
+
+    Ẑ_t = ∫ q̄_t dμ_t = e^{-c_t} (1 + τ_t) Z_{h,t},
+
+exact (Gram chain plus defensive mass), and retention carries the
+defensive marginal in closed form (Aug-6 note, a_t formula). The
+defensive term is a safety component of the declared program — it floors
+the retained density so that zeros of the fitted polynomial cannot become
+-inf log-targets or unbounded ratios at later rows — and is therefore
+scored as its own objective (O7). The first draft of this note
+abbreviated it away; corrected 2026-08-23 (owner catch). All candidates keep the per-step frozen affine
 (triangular) preconditioner T_t built from deterministic moment hints — the
 validated Aug-20/21 machinery. The candidates differ ONLY in (μ_t, basis,
 domain):
@@ -69,6 +89,11 @@ Objectives (quantitative):
   channels: design matrix width ℓr², mass-matrix work ℓ², XLA graph size.
 - **O6 (θ-derivative compatibility).** The exact score of the declared
   program (maps frozen) must exist with closed-form adjoint nodes.
+- **O7 (defensive floor support and tail order).** supp(λ_t) must cover
+  the recursion's evaluation set (a floor with compact support is
+  inoperative exactly where the risk lives), and the tail order of λ_t's
+  physical-space pullback bounds the target-to-floor ratio at
+  re-expression points.
 
 Engineering re-derivation cost is recorded separately (§4) — it is a budget
 input, not a mathematical objective, and must not be allowed to masquerade
@@ -181,6 +206,30 @@ candidate-independent). Mass matrices are θ-independent constants in all
 three. The adjoint machinery differentiates target values at rows — same
 nodes, different basis evaluations.
 
+### O7 — defensive floor: C1 fails with its domain; C2 vs C3 differ in tail order
+
+All candidates take λ_t := 1 w.r.t. μ_t per block (the reference density
+itself, matching the paper's eq. (16) product form), so the represented
+μ-density is floored at τ_t Z_h uniformly in reference coordinates. Where
+that floor exists physically differs:
+
+- **C1: FAIL (inherits the domain defect).** supp(λ) = the box. Off the
+  box the represented density is not floored — it is undefined. The
+  paper's own safety term is structurally inoperative in exactly the tail
+  region where R2/O1 fail; compounding, not independent.
+- **C2: pass, Gaussian tail order.** Floor ∝ τ η(u): full support; the
+  target-to-floor ratio is bounded for sub-Gaussian whitened targets and
+  degrades for heavier tails — the paper's own escalation for that regime
+  is the §5.3 tempering/DIRT layer.
+- **C3: pass, polynomial tail order (strongest).** The pullback of the
+  per-axis uniform reference through u = sz/√(1−z²) has density
+  (1/2)|dz/du| = (s²/2)(s²+u²)^{−3/2}: full support with t₂-like tails —
+  the heaviest floor of the three, hence the strongest ratio bound for
+  heavy-tailed targets. This is the one derived sub-property where C3 is
+  strictly stronger than C2. It bears on the non-Gaussian arm (SV), not
+  on the declared near-Gaussian calibration family, where both floors are
+  adequate.
+
 ## 3. Evaluation table
 
 | Property | C1 box (incumbent) | C2 Gaussian/Hermite | C3 compactified |
@@ -193,6 +242,7 @@ nodes, different basis evaluations.
 | O4 rank | invalidated via O2 | empirical | empirical |
 | O5 conditioning/cost | mild (moot) | tail factor ≤ ~26 (recorded) | ℓ² and compile-channel inflation |
 | O6 θ-adjoint | PASS | PASS | PASS |
+| O7 defensive floor | **FAIL** (compact support) | pass (Gaussian tails) | pass (polynomial tails, strongest) |
 
 ## 4. Engineering re-derivation surface (budget input, not an objective)
 
@@ -212,10 +262,16 @@ nodes, different basis evaluations.
    dimension-growing irreducible bias floor. This is not a preference and is
    not revisitable by tuning (κ-invariance is measured; the ε_trunc bound is
    an identity given κ*).
-2. **C2 dominates C3 on every derived objective** (O3 decisively, O5's cost
-   channel) and ties on R1/R2/O1/O2/O6. C3's only advantage is re-derivation
-   cost — a one-time budget item vs C2's per-run ℓ tax. On the declared
-   objectives the mathematics selects **C2**.
+2. **C2 dominates C3 on the derived objectives for the declared
+   near-Gaussian family** (O3 decisively, O5's cost channel; ties
+   elsewhere, O7 included — both floors adequate there). The 2026-08-23
+   defensive-term amendment adds one derived exception: on heavy-tailed
+   targets C3's floor has strictly stronger tail order (O7). For the
+   declared family the mathematics selects **C2**; the C2-vs-C3 comparison
+   on the non-Gaussian arm (SV) is two-sided — O3/O5 favor C2, O7 favors
+   C3 — and is settled by the named empirical questions plus the paper's
+   §5.3 escalation design, not by preference. C3's re-derivation-cost edge
+   remains a budget input, not an objective.
 3. **What remains genuinely empirical** (named, not decided): rank demand
    r(ε) under C2 on non-Gaussian targets (SV); the Hermite tail-conditioning
    constant in practice at n ≥ 8; XLA behavior of Hermite kernels.
@@ -246,3 +302,17 @@ rank-driven; a degree-driven probe would discriminate cheaply if C2's
 derivation stalls. Weakest evidence: the Cui & Dolgov weighted approximation
 theory is cited-but-not-yet-inspected; fetching and reading it is a
 prerequisite for the C2 derivation note, per the literature discipline.
+
+Amendment 2026-08-23 (owner catch): the first draft scored the candidates
+against a program with the defensive term abbreviated away. The term is a
+declared safety component (paper txt:556-569 and eq. (16); Aug-6 derivation
+note q̄_t = e^{-c_t}(φ_t² + τ_t λ_t); engine
+`squared_tt_engine_adapted_tf.py:307-315,371`) and is now carried in §0,
+O7, the table, and the verdict. Effect of the correction: no conclusion
+reverses for the declared family; the C1 elimination is strengthened (its
+floor shares the box's support, so the guard is inoperative off-box); the
+"dominates on every derived objective" sentence was too strong and is
+amended — O7 favors C3 in the heavy-tail regime. Also now recorded as a
+non-claim: C2's O3 efficiency statement does not extend to
+heavier-than-Gaussian whitened tails, where the Hermite rate degrades and
+the paper's own answer is the §5.3 nonlinear layer.
