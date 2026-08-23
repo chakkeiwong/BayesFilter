@@ -586,3 +586,23 @@ plus remaining canonical-NeuTra model bridges (template proven by
 Austria). No structural, derivational, or design work remains. Branch
 `worktree-ledh-canonical-rebuild`, 29 commits, ready for owner merge
 review.
+
+- 2026-08-23 (ledger): Slice 2 cross-algorithm comparison executed
+  (`slice2_cross_algorithm.json`). Two anomalies recorded honestly:
+  (1) KSC-SV canonical value -19283 vs bootstrap/UKF ~-7: the canonical
+  weight's transition density explodes because the KSC process covariance
+  is near-singular ([[1,0],[0,1e-8]] — log_beta nearly deterministic) and
+  the flow moves particles off the deterministic manifold; the analytical
+  score remains self-consistent (1.5e-10) but the VALUE cell is wrong
+  relative to the model until the near-singular-Q handling (manifold-aware
+  flow or exact-constraint transition) is added — KSC canonical value
+  flagged NOT COMPARABLE, needs a reviewed extension. (2) predator-prey
+  bootstrap NaN: standard-normal initial cloud puts negative populations
+  into the RK4 ecology dynamics — bootstrap comparator limitation on this
+  fixture, not a canonical-lane defect (canonical UKF+flow stays finite).
+  LGSSM anchor row: UKF==Kalman at 8e-13 (sanity), canonical bias +0.116
+  (reset transport, consistent with slice 1), bootstrap bias 1.70 with
+  11x the seed spread — the canonical transport's variance reduction is
+  visible even at T=5. All five analytical scores match central-FD at
+  1e-9..1e-11 (self-consistency; oracle gates already bound them at
+  onboarding).
