@@ -225,12 +225,6 @@ def run_value_filter_branch_axis_gaussian(
     log_likelihood = tf.constant(0.0, DTYPE)
     retained: RetainedQuadraticForm | None = None
     diagnostics: list[dict] = []
-    # ALS continuation: warm-start each mixed fit from the previous
-    # step's fitted cores when shapes match (the successive subproblems
-    # share their dominant structure; measured 2026-08-24: random init at
-    # 3 sweeps floors at ~1e-4 rms on an exactly representable target,
-    # a pure ALS-convergence artifact). Deterministic and frozen.
-    warm_cores: tuple[TTCore, ...] | None = None
 
     for t in range(horizon):
         if t == 0:
@@ -364,39 +358,24 @@ def run_value_filter_branch_axis_gaussian(
                 current_basis.convention,
             )
             mixed_dims = [basis_dim] * n + [branch_count] + [basis_dim] * n
-            required_shapes = [
-                (
-                    1 if axis == 0 else config.rank,
-                    mixed_dims[axis],
-                    1 if axis == 2 * n else config.rank,
+            cores0 = tuple(
+                TTCore(
+                    0.3
+                    * tf.random.stateless_normal(
+                        [
+                            1 if axis == 0 else config.rank,
+                            mixed_dims[axis],
+                            1 if axis == 2 * n else config.rank,
+                        ],
+                        tf.constant((config.seed, 7000 + 31 * t + axis), tf.int32),
+                        dtype=DTYPE,
+                    )
                 )
                 for axis in range(2 * n + 1)
-            ]
-            if warm_cores is not None and [
-                tuple(core.values.shape.as_list()) for core in warm_cores
-            ] == required_shapes:
-                cores0 = warm_cores
-                warm_started = True
-            else:
-                cores0 = tuple(
-                    TTCore(
-                        0.3
-                        * tf.random.stateless_normal(
-                            list(shape),
-                            tf.constant(
-                                (config.seed, 7000 + 31 * t + axis), tf.int32
-                            ),
-                            dtype=DTYPE,
-                        )
-                    )
-                    for axis, shape in enumerate(required_shapes)
-                )
-                warm_started = False
+            )
             cores, fit_diag = _fixed_als_fit(
                 mixed_basis, full_rows, sqrt_target, weights, cores0, config
             )
-            warm_cores = tuple(cores)
-            fit_diag = {**fit_diag, "warm_started": warm_started}
             base = retained_quadratic_form_from_squared_tt(
                 tuple(cores), mixed_basis, split_index=n, tau=0.0,
                 prefix_basis=current_basis, coordinate_map=map_c,
