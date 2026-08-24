@@ -153,3 +153,38 @@ Decision table:
 - Next justified action: Curves 2-5 (trust-radius, LM damping, ridge,
   dual-cap constants) under their to-be-finalized contracts; Curve 6
   gains the cross-lane anchor row from this curve.
+
+## Curve 5 — RESULT (2026-08-24): owner rationale located and attached
+
+The dual-cap constants (pairwise_particle_rms_cap=2.0,
+coordinatewise_standardized_cap=0.98, cap power 8, pairwise steps 4) are
+recorded in `bayesfilter-genut-dual-cap-monograph-ready-spec-2026-08-07.md`
+as an owner-directed algorithm/default family policy: "the strongest
+single maintenance compromise across the tested LGSSM, KSC SV,
+predator-prey, and Austria SIR scopes", explicitly NOT a claim of
+universal statistical superiority, with scope-specific tuning still
+required for pairwise strength and route controls. Under the Class-C
+justification rule this is a recorded owner rationale with cross-scope
+evaluation provenance — the justification form the registry's C4 entry
+required. Residual (recorded, not blocking): the value-level ladder
+(e.g. 0.98 vs alternatives) has no dedicated calibration curve; if a
+future failure implicates these constants, the Curve-2 non-harm
+protocol applies to them at that scope. Registry C4's dual-cap row can
+be marked closed-by-provenance.
+
+## Curve 6 — RESULT (2026-08-24): production-lane decision note
+
+Decision: the production target lane for the canonical LEDH annealed
+program on the frozen Austria scope is float32 + TF32 on GPU, with the
+spectral flow-prior cap MANDATORY on this lane (c=8 calibrated, Curve
+1). Evidence consolidated: (i) owner directive (repo CLAUDE.md default
+execution target); (ii) Part-5 battery — f32/TF32 arm green across the
+historical disease classes and fail-closed under the exact historical
+NaN-escape combo; (iii) Curve-1 cross-lane anchor: f32/TF32 k=4/c=8
+stage-ESS (0.444-0.510) agrees with f64 CPU (0.454) at the anchor cell;
+(iv) Curve-1 veto classification: the f32/TF32 lane NaNs without the
+cap where f64 degrades but survives — so the lane decision and the cap
+requirement are coupled, and the cap is part of the lane definition,
+not an optional extra. f64 CPU remains the reference/anchor lane.
+Not concluded: posterior correctness, HMC readiness, cross-scope
+transfer (per-scope tuning rule stands).
