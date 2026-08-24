@@ -703,6 +703,16 @@ def _load_dense_iaf_neutra_artifact(
             expected_scale_transform="identity",
             label="pure paper NeuTra",
         )
+    elif procedure == "bayesfilter_pure_bounded_dense_iaf_v1":
+        _validate_pure_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(dimension, dimension),
+            expected_scale_transform="bounded_tanh",
+            require_explicit_scale_transform=True,
+            require_bounded_initialization=True,
+            label="pure bounded NeuTra",
+        )
     elif procedure in {
         "bayesfilter_ssl_lstm_capacity_32x32_neutra_v1",
         "bayesfilter_ssl_lstm_tuned_capacity_32x32_neutra_v1",
@@ -879,6 +889,8 @@ def _validate_pure_composed_neutra_payload(
     *,
     expected_hidden: tuple[int, int],
     expected_scale_transform: str | None,
+    require_explicit_scale_transform: bool = False,
+    require_bounded_initialization: bool = False,
     label: str,
 ) -> None:
     """Fail closed on the pure IAF topology: no affine chart component."""
@@ -914,6 +926,8 @@ def _validate_pure_composed_neutra_payload(
                 raise InvalidNeuTraArtifact(f"{label} hidden layers mismatch")
             if component.get("activation") != "elu":
                 raise InvalidNeuTraArtifact(f"{label} activation mismatch")
+            if require_explicit_scale_transform and "scale_transform" not in component:
+                raise InvalidNeuTraArtifact(f"{label} scale transform declaration missing")
             scale_transform = component.get("scale_transform", "bounded_tanh")
             if (
                 expected_scale_transform is not None
@@ -930,6 +944,20 @@ def _validate_pure_composed_neutra_payload(
                 raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
             if scale_transform == "bounded_tanh" and s_max <= 1.0:
                 raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
+            if require_bounded_initialization:
+                initial_scale_log = payload.get("initial_output_scale_log")
+                if not isinstance(initial_scale_log, (tuple, list)) or len(
+                    initial_scale_log
+                ) != dimension:
+                    raise InvalidNeuTraArtifact(
+                        f"{label} initial log-scale declaration mismatch"
+                    )
+                if any(
+                    not math.isfinite(float(value)) for value in initial_scale_log
+                ) or not s_max > max(abs(float(value)) for value in initial_scale_log):
+                    raise InvalidNeuTraArtifact(
+                        f"{label} scale bound does not represent initialization"
+                    )
         elif kind == "mixing_linear" and component.get("matrix") != reverse_matrix:
             raise InvalidNeuTraArtifact(f"{label} reverse mixing mismatch")
     if payload.get("fixed_translation") or payload.get("fixed_output_scale") or payload.get("fixed_output_factor"):
