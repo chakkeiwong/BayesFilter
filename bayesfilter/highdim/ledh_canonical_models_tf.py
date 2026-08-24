@@ -25,7 +25,7 @@ Tensor = tf.Tensor
 DTYPE = tf.float64
 
 
-def austria_sir_canonical_model(theta_fixed: Tensor) -> NonlinearScoreModel:
+def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) -> NonlinearScoreModel:
     """Austria SIR with real (non-placeholder) Gaussian inputs.
 
     theta enters the RK4 dynamics (kappa, nu) and the observation
@@ -46,12 +46,12 @@ def austria_sir_canonical_model(theta_fixed: Tensor) -> NonlinearScoreModel:
     from bayesfilter.highdim.models import zhao_cui_sir_austria_model
 
     base = zhao_cui_sir_austria_model()
-    adjacency = tf.cast(base._adjacency_matrix, DTYPE)  # noqa: SLF001
+    adjacency = tf.cast(base._adjacency_matrix, dtype)  # noqa: SLF001
     degree = tf.reduce_sum(adjacency, axis=1)
-    step = tf.constant(0.005, DTYPE)
+    step = tf.constant(0.005, dtype)
     infectious_matrix = tf.stack(
         [
-            tf.one_hot(2 * index + 1, 18, dtype=DTYPE)
+            tf.one_hot(2 * index + 1, 18, dtype=dtype)
             for index in range(9)
         ],
         axis=0,
@@ -169,10 +169,10 @@ def austria_sir_canonical_model(theta_fixed: Tensor) -> NonlinearScoreModel:
             )
         return d_current
 
-    _current_direction = [tf.constant([1.0, 0.0, 0.0], DTYPE)]
+    _current_direction = [tf.constant([1.0, 0.0, 0.0], dtype)]
 
     def set_score_direction(direction: Tensor) -> None:
-        _current_direction[0] = tf.convert_to_tensor(direction, DTYPE)
+        _current_direction[0] = tf.convert_to_tensor(direction, dtype)
 
     def observation_fn(points):
         return tf.einsum("oi,ni->no", infectious_matrix, points)
@@ -185,9 +185,9 @@ def austria_sir_canonical_model(theta_fixed: Tensor) -> NonlinearScoreModel:
     def observation_tangent_fn(points, d_points):
         return tf.einsum("oi,ni->no", infectious_matrix, d_points)
 
-    theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
+    theta_fixed = tf.convert_to_tensor(theta_fixed, dtype)
     observation_covariance = (
-        100.0 * tf.exp(2.0 * theta_fixed[2]) * tf.eye(9, dtype=DTYPE)
+        100.0 * tf.exp(2.0 * theta_fixed[2]) * tf.eye(9, dtype=dtype)
     )
 
     model = NonlinearScoreModel(
@@ -196,7 +196,7 @@ def austria_sir_canonical_model(theta_fixed: Tensor) -> NonlinearScoreModel:
         observation_fn=observation_fn,
         observation_jacobian_fn=observation_jacobian_fn,
         observation_tangent_fn=observation_tangent_fn,
-        process_covariance=tf.eye(18, dtype=DTYPE),
+        process_covariance=tf.eye(18, dtype=dtype),
         # ^ PROVENANCE: model_exact, NOT a placeholder. The frozen Austria
         # target adds process noise at unit scale (batch adapter line 254:
         # `rk4(...) + noise`), i.e. Q = I_18 by model definition. The
