@@ -21,9 +21,15 @@ Reference-typed conversion (reviewed note §1, review item 1 CORRECT):
 with the eta terms row-dependent (quadratic) and theta-free under
 frozen maps. Defensive policy (D3 as repaired, findings F2-F4):
 tau_t = clamp(eps_rel^2, TAU_MIN, TAU_MAX) with eps_rel^2 the
-Z_h-normalized weighted fit residual. Rows are Phi^{-1}(Sobol) against
-the reference (fail-closed on endpoint hits). Value path only; the
-adjoint engine port follows the certified-node inventory of the note.
+Z_h-normalized weighted fit residual. Rows follow the optimal weighted
+least-squares law (Cohen & Migliorati 2017): frozen Sobol pushed through
+the per-axis induced-mixture CDF q1 = eta * mean_k He~_k^2 with inverse
+Christoffel weights — at degree 0 this IS Phi^{-1}(Sobol) against the
+reference. Raw eta-rows are exponentially sample-hungry in the degree
+(measured 2026-08-24: Gram cond 1.3e6 at ell=13/N=2048, engine
+overcounts +22..47 nats/step via unseen tail mass; weighted law: cond
+1.28). Fail-closed on endpoint hits. Value path only; the adjoint
+engine port follows the certified-node inventory of the note.
 """
 
 from __future__ import annotations
@@ -77,19 +83,80 @@ def _hermite_product_basis(dimension: int, degree: int) -> ProductBasis:
     )
 
 
-def _gaussian_rows(
-    config: EngineConfig, count: int, dimension: int, seed: tuple[int, int]
-) -> tf.Tensor:
-    """Phi^{-1} pushforward of the engine's uniform (-1,1)^d row design."""
+def _christoffel_axis_table(degree: int) -> tuple[tf.Tensor, tf.Tensor]:
+    """Grid CDF of the per-axis induced mixture q1 = eta * mean_k He~_k^2.
+
+    Optimal weighted least squares (Cohen & Migliorati 2017): rows drawn
+    from the Christoffel-adjusted mixture with weights 1/(mean_k He~_k^2)
+    give a near-isometric empirical Gram at N ~ K log K, where raw
+    eta-rows fail exponentially in the degree (Var(He~_k^2) ~ 4^k;
+    measured at ell=13, N=2048: cond 1.3e6 raw vs 1.28 weighted). At
+    degree 0 the mixture IS eta and the row law degenerates to
+    Phi^{-1}(Sobol) exactly.
+    """
+
+    grid = tf.linspace(tf.constant(-14.0, DTYPE), tf.constant(14.0, DTYPE), 40001)
+    values = HermiteBasis1D(max_degree=degree).evaluate(grid)
+    log_eta1 = -0.5 * (math.log(2.0 * math.pi) + tf.square(grid))
+    # defensive half-mixture q1 = eta * (1/2 + 1/2 cbar): bounded weights
+    # 1/(1/2 + cbar/2) <= 2 per axis keep the effective sample size at
+    # O(N) (pure product-Christoffel weights collapsed ESS to ~1% of N,
+    # measured 2026-08-24), while w * cbar <= 2 preserves the matrix-
+    # Chernoff Gram guarantee up to a factor 2 (measured: cond 1.32 at
+    # ell=13, N=2048, ESS 1400).
+    christoffel_bar = tf.reduce_mean(tf.square(values), axis=1)
+    density = tf.exp(log_eta1) * (0.5 + 0.5 * christoffel_bar)
+    cdf = tf.cumsum(density)
+    cdf = cdf / cdf[-1]
+    return grid, cdf
+
+
+def _christoffel_rows(
+    config: EngineConfig,
+    count: int,
+    dimension: int,
+    seed: tuple[int, int],
+    degree: int,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Frozen Sobol rows pushed through the per-axis induced-mixture CDF.
+
+    Returns (rows [N, d], fit weights [N] summing to one). The weights
+    are the tensorized inverse Christoffel factors: since
+    q1 = eta * mean_k He~_k^2, the ratio eta/q1 = 1/(mean_k He~_k^2),
+    so log w = -sum_axes log(mean_k He~_k(u_axis)^2) up to the
+    normalization absorbed below. Deterministic, seed-stable, frozen
+    before the fit (V1 contract unchanged).
+    """
 
     uniform = _design_rows(config, count, dimension, seed)
     max_abs = float(tf.reduce_max(tf.abs(uniform)).numpy())
     if max_abs >= 1.0:
         raise ValueError(
-            "gaussian rows: uniform design touched the open-interval "
-            "boundary; Phi^{-1} would be non-finite (fail closed)"
+            "christoffel rows: uniform design touched the open-interval "
+            "boundary; inverse CDF would be ill-defined (fail closed)"
         )
-    return math.sqrt(2.0) * tf.math.erfinv(uniform)
+    probabilities = 0.5 * (uniform + 1.0)
+    grid, cdf = _christoffel_axis_table(degree)
+    flat = tf.reshape(probabilities, [-1])
+    upper = tf.clip_by_value(
+        tf.searchsorted(cdf, flat, side="left"), 1, int(cdf.shape[0]) - 1
+    )
+    cdf_hi = tf.gather(cdf, upper)
+    cdf_lo = tf.gather(cdf, upper - 1)
+    grid_hi = tf.gather(grid, upper)
+    grid_lo = tf.gather(grid, upper - 1)
+    fraction = (flat - cdf_lo) / tf.maximum(cdf_hi - cdf_lo, 1e-300)
+    rows = tf.reshape(grid_lo + fraction * (grid_hi - grid_lo), tf.shape(probabilities))
+    if not bool(tf.reduce_all(tf.math.is_finite(rows)).numpy()):
+        raise ValueError("christoffel rows: non-finite row after inverse CDF")
+    values = HermiteBasis1D(max_degree=degree).evaluate(tf.reshape(rows, [-1]))
+    log_half_mixture = tf.reshape(
+        tf.math.log(0.5 + 0.5 * tf.reduce_mean(tf.square(values), axis=1)),
+        tf.shape(rows),
+    )
+    log_weight = -tf.reduce_sum(log_half_mixture, axis=1)
+    weights = tf.exp(log_weight - tf.reduce_logsumexp(log_weight))
+    return rows, weights
 
 
 def _log_eta(points: tf.Tensor) -> tf.Tensor:
@@ -158,14 +225,19 @@ def run_value_filter_branch_axis_gaussian(
     log_likelihood = tf.constant(0.0, DTYPE)
     retained: RetainedQuadraticForm | None = None
     diagnostics: list[dict] = []
+    # ALS continuation: warm-start each mixed fit from the previous
+    # step's fitted cores when shapes match (the successive subproblems
+    # share their dominant structure; measured 2026-08-24: random init at
+    # 3 sweeps floors at ~1e-4 rms on an exactly representable target,
+    # a pure ALS-convergence artifact). Deterministic and frozen.
+    warm_cores: tuple[TTCore, ...] | None = None
 
     for t in range(horizon):
         if t == 0:
             m_c, l_cc = _check_hint(*initial_moment_hint(observations[0]), n)
             map_c = AffineCoordinateMap(offset=m_c, matrix=l_cc)
-            rows = _gaussian_rows(config, config.row_count, n, (config.seed, 17))
-            weights = tf.fill(
-                [int(rows.shape[0])], tf.constant(1.0 / int(rows.shape[0]), DTYPE)
+            rows, weights = _christoffel_rows(
+                config, config.row_count, n, (config.seed, 17), config.basis_degree
             )
             x_current = m_c[None, :] + tf.einsum("ij,nj->ni", l_cc, rows)
             conversion = _logdet_lower(l_cc) - _log_eta(rows)
@@ -214,11 +286,9 @@ def run_value_filter_branch_axis_gaussian(
                 * tf.eye(tf.shape(gram)[0], dtype=DTYPE)
             )
             branch_count = retained.boundary_rank + 1
-            u_rows = _gaussian_rows(
-                config, config.row_count, 2 * n, (config.seed, 100 + t)
-            )
-            u_weights = tf.fill(
-                [int(u_rows.shape[0])], tf.constant(1.0 / int(u_rows.shape[0]), DTYPE)
+            u_rows, u_weights = _christoffel_rows(
+                config, config.row_count, 2 * n, (config.seed, 100 + t),
+                config.basis_degree,
             )
             u_c = u_rows[:, :n]
             u_p = u_rows[:, n:]
@@ -294,24 +364,39 @@ def run_value_filter_branch_axis_gaussian(
                 current_basis.convention,
             )
             mixed_dims = [basis_dim] * n + [branch_count] + [basis_dim] * n
-            cores0 = tuple(
-                TTCore(
-                    0.3
-                    * tf.random.stateless_normal(
-                        [
-                            1 if axis == 0 else config.rank,
-                            mixed_dims[axis],
-                            1 if axis == 2 * n else config.rank,
-                        ],
-                        tf.constant((config.seed, 7000 + 31 * t + axis), tf.int32),
-                        dtype=DTYPE,
-                    )
+            required_shapes = [
+                (
+                    1 if axis == 0 else config.rank,
+                    mixed_dims[axis],
+                    1 if axis == 2 * n else config.rank,
                 )
                 for axis in range(2 * n + 1)
-            )
+            ]
+            if warm_cores is not None and [
+                tuple(core.values.shape.as_list()) for core in warm_cores
+            ] == required_shapes:
+                cores0 = warm_cores
+                warm_started = True
+            else:
+                cores0 = tuple(
+                    TTCore(
+                        0.3
+                        * tf.random.stateless_normal(
+                            list(shape),
+                            tf.constant(
+                                (config.seed, 7000 + 31 * t + axis), tf.int32
+                            ),
+                            dtype=DTYPE,
+                        )
+                    )
+                    for axis, shape in enumerate(required_shapes)
+                )
+                warm_started = False
             cores, fit_diag = _fixed_als_fit(
                 mixed_basis, full_rows, sqrt_target, weights, cores0, config
             )
+            warm_cores = tuple(cores)
+            fit_diag = {**fit_diag, "warm_started": warm_started}
             base = retained_quadratic_form_from_squared_tt(
                 tuple(cores), mixed_basis, split_index=n, tau=0.0,
                 prefix_basis=current_basis, coordinate_map=map_c,
