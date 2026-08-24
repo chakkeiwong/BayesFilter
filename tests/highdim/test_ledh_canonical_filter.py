@@ -236,3 +236,26 @@ def test_s4_fail_closed_on_poisoned_observation():
     result = _run(model, n_particles=128)
     assert not bool(result["program_valid"].numpy())
     assert not np.isfinite(float(result["value"].numpy()))
+
+
+def test_replication_seed_streams_are_independent():
+    """Fidelity item #7 gate (2026-08-25): consecutive replication seeds
+    must NOT produce shifted-duplicate noise streams. The raw
+    `tf.random.Generator.from_seed(s)` fails this (from_seed(s+1) is the
+    same Philox stream offset by one row), which made every
+    consecutive-seed multi-seed filter run a pseudo-replication."""
+
+    from bayesfilter.highdim.ledh_canonical_filter_tf import (
+        _replication_generator,
+    )
+
+    a = _replication_generator(0).normal([16, 2], dtype=DTYPE).numpy()
+    b = _replication_generator(1).normal([16, 2], dtype=DTYPE).numpy()
+    # no row-shifted overlap in either direction, and no equality
+    for shift in range(0, 8):
+        assert not np.allclose(a[shift:], b[: 16 - shift]), (
+            f"streams overlap at shift {shift}"
+        )
+        assert not np.allclose(b[shift:], a[: 16 - shift]), (
+            f"streams overlap at shift -{shift}"
+        )

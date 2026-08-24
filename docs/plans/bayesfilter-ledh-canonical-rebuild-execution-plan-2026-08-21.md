@@ -863,3 +863,29 @@ review.
   downstream evidence the annealed telescope is load-bearing for score
   estimation. Q3 (six-model leaderboard) is unblocked; Q4 remains
   owner-gated.
+
+- 2026-08-25 (ledger): FIDELITY ITEM #7 — pseudo-replication in every
+  consecutive-seed multi-seed filter run. Root-caused from the Q3
+  linear-anchor row: the canonical value showed a "systematic" +1.05-nat
+  deviation at N=1008 with seed spread 0.012; a probe chain (N-scan ->
+  reset-internals hook -> weight-structure dump) found ONE particle
+  carrying weight 0.47 at the SAME position across seeds, and the direct
+  cause: `tf.random.Generator.from_seed(s)` and `from_seed(s+1)` are
+  the SAME Philox stream shifted by one row, so consecutive replication
+  seeds shared almost the whole cloud. The "deviation" was a single
+  heavy-tail weight event replicated 16 times, not estimator bias
+  (independent seeds: err 0.07, honest spread 0.23 at N=1008). Repair:
+  `_replication_generator` (SeedSequence-hashed seeding) in the
+  canonical filter + a shifted-stream independence gate (the class that
+  should have caught it). Full battery green post-fix (42 passed);
+  Q2 Curve-1 decision cells re-confirmed under independent seeding
+  (k=2: 0.086-0.109 still below the 0.30 bar; k=4: 0.457-0.525 still
+  above) — the k=4/c=8 calibration stands. Interpretation notes: all
+  PRE-fix multi-seed runs shared initial/process-noise draws across
+  seeds (annealed-mode runs diverged via the independent np-rng
+  resampling, which is why Curve 2/3 fixtures and stage-ESS still
+  varied); NaN vetoes and threshold screens are mechanism-driven and
+  unaffected; seed-spread columns from pre-fix runs UNDERSTATE Monte
+  Carlo variance and must not be quoted as uncertainty. Repo-wide
+  `from_seed(int(seed))` uses outside the canonical lane (models.py,
+  source_route.py) are flagged as same-class migration debt for Q4.

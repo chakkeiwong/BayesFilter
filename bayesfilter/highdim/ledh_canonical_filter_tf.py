@@ -53,6 +53,26 @@ class CanonicalModelCallbacks:
     initial_covariance_provenance: str
 
 
+def _replication_generator(seed: int) -> tf.random.Generator:
+    """Independent per-seed stream for replication runs.
+
+    `tf.random.Generator.from_seed(s)` and `from_seed(s+1)` are the SAME
+    Philox stream shifted by one draw row, so consecutive-seed
+    "replications" share almost the entire particle cloud (fidelity item
+    #7, found 2026-08-25 via a seed-invariant heavy-weight event on the
+    linear leaderboard anchor). SeedSequence hashing spreads seeds far
+    apart, making stream overlap between any two replication seeds
+    negligible while staying deterministic per seed.
+    """
+
+    material = np.random.SeedSequence(int(seed)).generate_state(
+        2, dtype=np.uint32
+    )
+    return tf.random.Generator.from_seed(
+        (int(material[0]) << 31) ^ int(material[1])
+    )
+
+
 def _require_provenance(kind: str, field: str) -> None:
     if kind not in COVARIANCE_PROVENANCE_KINDS:
         raise ValueError(
@@ -96,7 +116,7 @@ def canonical_value_and_diagnostics(
     observations = tf.convert_to_tensor(observations, dtype)
     horizon = int(observations.shape[0])
     dim = callbacks.state_dim
-    generator = tf.random.Generator.from_seed(seed)
+    generator = _replication_generator(seed)
 
     initial_chol = tf.linalg.cholesky(
         tf.convert_to_tensor(callbacks.initial_covariance, dtype)
