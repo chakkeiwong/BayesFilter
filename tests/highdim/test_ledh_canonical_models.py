@@ -507,3 +507,37 @@ def test_austria_r_direction_score_matches_oracle():
         f"Austria theta_2 analytical {float(score[0].numpy())} vs oracle "
         f"{float(oracle[0].numpy())}"
     )
+
+
+def test_austria_nu_direction_score_matches_oracle():
+    """Curve-7 discriminator (2026-08-24): direction 1 (nu) was never
+    oracle-gated; the Fisher N-ladder shows a dir-1 plateau. This gate
+    decides score-derivative defect vs estimator bias."""
+
+    model, set_direction, theta0, initial, covs, noises, observations = (
+        _austria_fixture(91, n=24, horizon=2)
+    )
+    set_direction(tf.constant([0.0, 1.0, 0.0], DTYPE))
+
+    def value_fn_1p(theta_1):
+        theta = tf.stack([theta0[0], theta_1[0], theta0[2]])
+        value, _ = canonical_value_and_analytical_score(
+            model, theta, initial, covs, noises, observations,
+            substeps=8, with_score=False,
+        )
+        return value
+
+    oracle = oracle_forward_autodiff_score(
+        value_fn_1p, tf.constant([0.0], DTYPE)
+    )
+    value, score = canonical_value_and_analytical_score(
+        model, theta0, initial, covs, noises, observations,
+        substeps=8, with_score=True,
+    )
+    assert np.isfinite(float(value.numpy()))
+    err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
+    scale = max(abs(float(oracle[0].numpy())), 1.0)
+    assert err < 1.0e-4 * scale, (
+        f"Austria nu-direction analytical {float(score[0].numpy())} vs "
+        f"oracle {float(oracle[0].numpy())}"
+    )
