@@ -398,3 +398,53 @@ def test_default_refinement_policy_remains_unconstrained() -> None:
     config = LowRankSPDQuadraticGeometryConfig()
     assert config.constrain_center_refinement_to_trust_region is False
     assert config.payload()["constrain_center_refinement_to_trust_region"] is False
+
+
+def test_geometry_retains_best_exact_design_row(monkeypatch: pytest.MonkeyPatch) -> None:
+    from bayesfilter.inference import quadratic_geometry
+
+    design = np.array(
+        [
+            [0.4, 0.0],
+            [-0.4, 0.0],
+            [0.0, 0.4],
+            [0.0, -0.4],
+            [0.3, 0.2],
+            [-0.3, -0.2],
+            [0.2, -0.3],
+            [-0.2, 0.3],
+        ],
+        dtype=float,
+    )
+
+    def fixed_design(sample_count, dim, *, radius, rng):
+        assert sample_count == design.shape[0]
+        assert dim == design.shape[1]
+        return design.copy()
+
+    monkeypatch.setattr(quadratic_geometry, "_sample_trust_ball", fixed_design)
+    mode = np.array([0.4, 0.0])
+    result = fit_low_rank_spd_quadratic_geometry(
+        _quadratic_target(np.eye(2), mode=mode),
+        np.zeros(2),
+        config=LowRankSPDQuadraticGeometryConfig(
+            rank=1,
+            sample_count=8,
+            min_samples_per_parameter=1,
+            pilot_direction_count=8,
+            trust_radius=1.0,
+            eigenvalue_floor=0.1,
+            max_condition_number=100.0,
+            holdout_fraction=0.0,
+            holdout_rmse_abs_tolerance=1.0,
+            holdout_rmse_rel_tolerance=1.0,
+            seed=(31, 32),
+        ),
+    )
+
+    assert result.accepted is True
+    np.testing.assert_allclose(result.best_evaluated_position, mode, atol=1.0e-12)
+    np.testing.assert_allclose(result.best_evaluated_score, np.zeros(2), atol=1.0e-12)
+    assert result.best_evaluated_value == pytest.approx(0.0)
+    assert result.best_evaluated_source == "design"
+    assert result.exact_evaluation_count >= 1 + 2 * 8 + 8 + 1
