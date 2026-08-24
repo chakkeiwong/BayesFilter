@@ -849,3 +849,17 @@ review.
   needs its harness/derivation written under the campaign plan's
   contract-before-run rule. Budget spent: ~10 GPU-minutes of the
   ~1-GPU-day budget.
+
+- 2026-08-24 (ledger): Q2 COMPLETE (all seven curves; see campaign plan
+  results). Headline findings: annealed k=4/c=8 calibrated with the
+  spectral cap's off-state measured harmful; trust-radius rho-threshold
+  promotion criterion failed honestly (seed-heterogeneous takeoff
+  clouds; 0.5 stays warm-start with failure mode on file); LM damping
+  1e-2 justified; absolute ridge 1e-5 measured nominal-only on the TF32
+  lane with the relative replacement derived and gated; Austria theta_2
+  R(theta) and nu directions oracle-gated (new gates); Austria Fisher
+  identity GREEN at annealed k=8 with the plain-mode deviation
+  classified as 1/ESS estimator bias via a five-arm ladder — independent
+  downstream evidence the annealed telescope is load-bearing for score
+  estimation. Q3 (six-model leaderboard) is unblocked; Q4 remains
+  owner-gated.

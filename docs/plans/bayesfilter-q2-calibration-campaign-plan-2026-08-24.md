@@ -345,3 +345,49 @@ is theta-dependent through C(theta)) land only under a dedicated
 Class-C non-harm contract with the healthy/pathological fixture pair.
 The registry C4 ridge row moves from "unjustified" to "measured
 inadequacy on file, replacement derived, change gated".
+
+## Curve 7 — RESULT (2026-08-24): GREEN at annealed k=8; bias mechanism quantified
+
+Artifacts: `docs/benchmarks/q2_calibration_20260824/austria_fisher_gpu_*/result.json`
+(five arms). Mean score (should be 0) per direction across the ladder:
+
+| arm                  | dir 0 (kappa) | dir 1 (nu) | dir 2 (obs scale) |
+|----------------------|---------------|------------|-------------------|
+| plain N=64 (40 rep)  | -230 +- 51    | 88 +- 22   | 103 +- 9          |
+| plain N=256 (20 rep) | -104 +- 65    | 93 +- 31   | 80 +- 13          |
+| plain N=1024 (20 rep)| -212 +- 65    | 67 +- 31   | 76 +- 11          |
+| annealed k=4, N=256  | -17 +- 12     | 14 +- 5    | 8.3 +- 2.2        |
+| annealed k=8, N=256  | -6.3 +- 8.4   | 7.4 +- 4.1 | 3.1 +- 1.7 PASS   |
+
+Classification (all pre-declared discriminators executed): the plain-mode
+failure is NOT a score-derivative defect — all three directions are
+oracle-gated (dir 0 pre-existing; dir 1 and dir 2 gates added
+2026-08-24, both green, dir 2 with the rebuilt-model oracle). It is NOT
+a density/simulation-law mismatch — the deviation does not persist at
+fixed law when the effective sample grows. It IS 1/ESS estimator bias:
+plain-mode Austria collapses to ~1% stage-ESS at takeoff regardless of
+N (which is why the N-ladder alone plateaued — effective sample grew
+only from ~1 to ~10), while the annealed telescope at the Curve-1
+calibrated defaults reduces |mean score| by 6-10x at fixed N, and k=8
+passes the identity in every direction (gate |mean| < 3*SE + 0.05).
+
+Decision: Curve 7 CLOSED GREEN on the annealed lane (k=8, N=256,
+float64 GPU). Two findings ride along: (i) independent downstream
+evidence that the annealed telescope is load-bearing for score
+estimation, not only for ESS cosmetics — the Fisher identity is a
+downstream-computation criterion, exactly the evidence class the
+program's contracts prefer; (ii) plain-mode score estimates on
+degenerate scopes carry O(1/ESS) bias large enough to invalidate
+score-based inference — recorded as a standing caution for Q3/Q5
+(score cells must state their ESS regime). Not concluded: posterior
+correctness, HMC readiness (Q5 scope).
+
+## Q2 CAMPAIGN COMPLETE (2026-08-24)
+
+All seven curves executed or closed: 1 (k=4/c=8 calibrated), 2
+(promotion criterion failed honestly; 0.5 warm start with measured
+failure mode), 3 (1e-2 justified, 0 viable), 4 (relative form derived,
+absolute 1e-5 measured nominal-only, change gated), 5 (owner-rationale
+provenance), 6 (f32/TF32 + mandatory cap lane decision), 7 (Fisher
+green at annealed k=8 with quantified bias mechanism). GPU budget
+spent: ~2 GPU-hours of the ~1-GPU-day budget. Q3 is unblocked.

@@ -49,6 +49,7 @@ def main() -> None:
     parser.add_argument("--particles", type=int, default=64)
     parser.add_argument("--horizon", type=int, default=3)
     parser.add_argument("--bias-slack", type=float, default=0.05)
+    parser.add_argument("--annealed-stages", type=int, default=1)
     args = parser.parse_args()
     started = time.time()
 
@@ -123,6 +124,8 @@ def main() -> None:
                     observations_tf,
                     substeps=8,
                     with_score=True,
+                    annealed_stages=args.annealed_stages,
+                    annealed_seed=13,
                 )
                 if not np.isfinite(float(value.numpy())):
                     veto = True
@@ -169,6 +172,7 @@ def main() -> None:
             "particles": n,
             "horizon": horizon,
             "replications": args.replications,
+            "annealed_stages": args.annealed_stages,
             "sim_seed": 3001,
             "wall_seconds": round(time.time() - started, 1),
         },
