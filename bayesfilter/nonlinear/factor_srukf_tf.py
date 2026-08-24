@@ -37,6 +37,15 @@ ObservationBranchMarginFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 ObservationMeanBranchMarginFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 
 
+DIRECT_FACTOR_STATUS_SCHEMA = "bayesfilter.direct_factor_srukf.status.v1"
+DIRECT_FACTOR_STATUS_CLASSIFIER = "geometry_transition_and_output_finiteness_v1"
+DIRECT_FACTOR_ROUNDOFF_REPAIR_POLICY = "none_direct_factor_fail_closed"
+DIRECT_FACTOR_ROW_CLASS_VALID = 0
+DIRECT_FACTOR_ROW_CLASS_REPAIRED = 1
+DIRECT_FACTOR_ROW_CLASS_INVALID = 2
+DIRECT_FACTOR_ROW_CLASS_LEGEND = "0=valid,1=roundoff_repaired,2=classified_invalid"
+
+
 @dataclass(frozen=True)
 class TFFactorSRUKFObservationGeometry:
     """Non-Euclidean observation operations on a fixed differentiable branch."""
@@ -418,8 +427,9 @@ def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUK
         score = tf.zeros([model.batch_dim, p], tf.float64)
         inf = tf.fill([model.batch_dim], tf.constant(float("inf"), tf.float64))
         zero = tf.zeros([model.batch_dim], tf.float64)
+        zero_count = tf.zeros([model.batch_dim], tf.int32)
 
-        def body(t, mean, factor, d_mean, d_factor, value, score, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin):
+        def body(t, mean, factor, d_mean, d_factor, value, score, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count):
             inc, inc_score, new_mean, new_factor, new_d_mean, new_d_factor, diagnostics = _one_step(
                 obs[:, t, :], mean, factor, d_mean, d_factor, model, derivatives
             )
@@ -447,20 +457,56 @@ def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUK
                     min_geometry_margin,
                     diagnostics["observation_geometry_branch_margin"],
                 ),
+                invalid_transition_count
+                + tf.cast(
+                    tf.logical_not(
+                        diagnostics["observation_geometry_score_valid"]
+                    ),
+                    tf.int32,
+                ),
             )
 
-        _, mean, factor, d_mean, d_factor, value, score, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin = tf.while_loop(
+        _, mean, factor, d_mean, d_factor, value, score, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count = tf.while_loop(
             lambda t, *_: t < t_count,
             body,
-            (tf.constant(0), mean, factor, d_mean, d_factor, value, score, inf, inf, inf, inf, zero, zero, inf),
+            (tf.constant(0), mean, factor, d_mean, d_factor, value, score, inf, inf, inf, inf, zero, zero, inf, zero_count),
             parallel_iterations=1,
         )
-        return value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin
+        return value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count
 
     if jit_compile:
-        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin = tf.function(run, jit_compile=True)(observations)
+        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count = tf.function(run, jit_compile=True)(observations)
     else:
-        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin = run(observations)
+        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count = run(observations)
+
+    # The direct-factor route has no nugget, eigenvalue-floor, or repair
+    # branch. Its only classifiable invalid event is an already-computed
+    # geometry-branch failure or a completed row with nonfinite output. QR and
+    # block-conditional assertion failures remain hard backend errors and do
+    # not reach this classifier.
+    output_finite = tf.logical_and(
+        tf.math.is_finite(value), tf.reduce_all(tf.math.is_finite(score), axis=1)
+    )
+    nonfinite_output = tf.logical_not(output_finite)
+    classified_invalid = tf.logical_or(
+        invalid_transition_count > 0, nonfinite_output
+    )
+    classified_invalid_count = tf.cast(classified_invalid, tf.int32)
+    roundoff_repair_count = tf.zeros_like(classified_invalid_count)
+    row_class_code = tf.where(
+        classified_invalid,
+        tf.fill(
+            tf.shape(classified_invalid_count),
+            tf.constant(DIRECT_FACTOR_ROW_CLASS_INVALID, tf.int32),
+        ),
+        tf.fill(
+            tf.shape(classified_invalid_count),
+            tf.constant(DIRECT_FACTOR_ROW_CLASS_VALID, tf.int32),
+        ),
+    )
+    valid_pre_regularized_score = tf.equal(
+        row_class_code, tf.constant(DIRECT_FACTOR_ROW_CLASS_VALID, tf.int32)
+    )
     return TFFactorSRUKFResult(
         value,
         score,
@@ -481,13 +527,24 @@ def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUK
             "maximum_factor_reconstruction_residual": max_factor_residual,
             "maximum_derivative_reconstruction_residual": max_derivative_residual,
             "minimum_observation_geometry_branch_margin": min_geometry_margin,
-            "observation_geometry_score_valid": min_geometry_margin
-            > tf.constant(
-                model.observation_geometry.branch_margin_floor
-                if model.observation_geometry is not None
-                else 0.0,
-                tf.float64,
+            "observation_geometry_score_valid": tf.equal(
+                invalid_transition_count, tf.zeros_like(invalid_transition_count)
             ),
+            "status_schema": tf.constant(DIRECT_FACTOR_STATUS_SCHEMA),
+            "status_classifier": tf.constant(DIRECT_FACTOR_STATUS_CLASSIFIER),
+            "roundoff_repair_policy": tf.constant(
+                DIRECT_FACTOR_ROUNDOFF_REPAIR_POLICY
+            ),
+            "row_class_legend": tf.constant(DIRECT_FACTOR_ROW_CLASS_LEGEND),
+            "invalid_transition_count": invalid_transition_count,
+            "classified_invalid_count": classified_invalid_count,
+            "invalid_count": classified_invalid_count,
+            "roundoff_repair_count": roundoff_repair_count,
+            "row_class_code": row_class_code,
+            "status_code": row_class_code,
+            "valid_pre_regularized_score": valid_pre_regularized_score,
+            "output_finite": output_finite,
+            "nonfinite_output": nonfinite_output,
         },
     )
 
@@ -524,6 +581,13 @@ def tf_default_srukf_value_and_score(
 
 
 __all__ = [
+    "DIRECT_FACTOR_ROUNDOFF_REPAIR_POLICY",
+    "DIRECT_FACTOR_ROW_CLASS_INVALID",
+    "DIRECT_FACTOR_ROW_CLASS_LEGEND",
+    "DIRECT_FACTOR_ROW_CLASS_REPAIRED",
+    "DIRECT_FACTOR_ROW_CLASS_VALID",
+    "DIRECT_FACTOR_STATUS_CLASSIFIER",
+    "DIRECT_FACTOR_STATUS_SCHEMA",
     "TFFactorSRUKFModel",
     "TFFactorSRUKFObservationGeometry",
     "TFFactorSRUKFDerivatives",

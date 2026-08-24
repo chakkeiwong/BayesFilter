@@ -12,7 +12,9 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.inference import (
+    PURE_BOUNDED_NEUTRA_FAMILY,
     PURE_PAPER_NEUTRA_FAMILY,
+    pure_bounded_neutra_config,
     pure_paper_neutra_config as public_pure_paper_neutra_config,
 )
 from bayesfilter.inference.neutra_artifacts import (
@@ -814,3 +816,137 @@ def test_generic_pure_paper_family_uses_dimension_width_and_no_affine() -> None:
         rtol=0.0,
         atol=2e-12,
     )
+
+
+def test_pure_bounded_family_contract_and_scale_envelope() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: "2" * 64
+        config = type(
+            "Config",
+            (),
+            {
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                }
+            },
+        )()
+
+    initial_scale = (math.log(0.002), math.log(0.004))
+    config = pure_bounded_neutra_config(
+        dimension=2,
+        initial_output_shift=(0.3, -0.2),
+        initial_output_scale_log=initial_scale,
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature="2" * 64,
+        s_max=6.5,
+        jit_compile=False,
+    )
+    assert config.family == PURE_BOUNDED_NEUTRA_FAMILY
+    assert config.hidden_layers == (2, 2)
+    assert config.scale_transform == "bounded_tanh"
+    assert config.manifest_payload()["scale_transform"] == "bounded_tanh"
+    with pytest.raises(ValueError, match="s_max must exceed"):
+        pure_bounded_neutra_config(
+            dimension=2,
+            initial_output_shift=(0.3, -0.2),
+            initial_output_scale_log=initial_scale,
+            target_parameter_names=("x", "y"),
+            target_signature=TARGET_SIGNATURE,
+            target_adapter_signature="2" * 64,
+            s_max=6.0,
+            jit_compile=False,
+        )
+
+    trainer = NeuTraReverseKLTrainer(Target(), config)
+    z = tf.constant(
+        [[-100.0, 100.0], [-10.0, 10.0], [0.0, 0.0], [10.0, -10.0]],
+        tf.float64,
+    )
+    scale_log = trainer.transport.scale_log(z)
+    assert bool(tf.reduce_all(tf.math.is_finite(scale_log)).numpy())
+    assert float(tf.reduce_max(tf.abs(scale_log)).numpy()) <= config.s_max + 2.0e-12
+    assert bool(tf.reduce_all(tf.math.is_finite(tf.exp(scale_log))).numpy())
+    theta, logdet = trainer.forward_and_logdet(z)
+    assert bool(tf.reduce_all(tf.math.is_finite(theta)).numpy())
+    assert bool(tf.reduce_all(tf.math.is_finite(logdet)).numpy())
+
+    @tf.function(jit_compile=True)
+    def compiled(values):
+        output, output_logdet = trainer.forward_and_logdet(values)
+        return output, output_logdet, trainer.transport.scale_log(values)
+
+    try:
+        compiled_theta, compiled_logdet, compiled_scale_log = compiled(z)
+    except (tf.errors.InvalidArgumentError, tf.errors.UnimplementedError) as exc:
+        pytest.fail(f"bounded pure NeuTra XLA contract failed: {exc}")
+    np.testing.assert_allclose(compiled_theta.numpy(), theta.numpy(), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(compiled_logdet.numpy(), logdet.numpy(), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(
+        compiled_scale_log.numpy(), scale_log.numpy(), rtol=1e-10, atol=1e-10
+    )
+
+    payload = trainer.frozen_transport_payload(
+        transport_id="pure-bounded-contract-test",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["procedure"] == "bayesfilter_pure_bounded_dense_iaf_v1"
+    dense_components = [
+        component
+        for component in payload["components"]
+        if component["kind"] == "dense_autoregressive_iaf"
+    ]
+    assert len(dense_components) == 3
+    assert all(component["scale_transform"] == "bounded_tanh" for component in dense_components)
+    assert all(component["s_max"] == pytest.approx(6.5) for component in dense_components)
+    assert all(component["kind"] not in {"affine", "affine_dense"} for component in payload["components"])
+    loaded = load_frozen_neutra_artifact(payload, expected_target_signature=TARGET_SIGNATURE)
+    np.testing.assert_allclose(
+        loaded.transport.inverse_theta_to_z_batch(
+            loaded.transport.forward_z_to_theta_batch(z)
+        ).numpy(),
+        z.numpy(),
+        rtol=0.0,
+        atol=3.0e-10,
+    )
+    target_score = -theta
+    expected_score = loaded.transport.pullback_score_batch(z, target_score)
+    expected_score += loaded.transport.log_abs_det_jacobian_score_batch(z)
+    with tf.GradientTape() as tape:
+        tape.watch(z)
+        tape_theta, tape_logdet = loaded.transport.forward_z_to_theta_batch(z), loaded.transport.log_abs_det_jacobian_batch(z)
+        transformed = -0.5 * tf.reduce_sum(tf.square(tape_theta), axis=-1) + tape_logdet
+    direct_score = tape.gradient(transformed, z, output_gradients=tf.ones_like(transformed))
+    np.testing.assert_allclose(expected_score.numpy(), direct_score.numpy(), rtol=2e-9, atol=2e-9)
+
+    missing_scale_transform = copy.deepcopy(payload)
+    for component in missing_scale_transform["components"]:
+        if component["kind"] == "dense_autoregressive_iaf":
+            component.pop("scale_transform", None)
+    missing_scale_transform = finalize_dense_iaf_neutra_artifact_payload(missing_scale_transform)
+    with pytest.raises(InvalidNeuTraArtifact, match="declaration missing"):
+        load_frozen_neutra_artifact(
+            missing_scale_transform,
+            expected_target_signature=TARGET_SIGNATURE,
+        )
+
+    bad_initialization = copy.deepcopy(payload)
+    bad_initialization["initial_output_scale_log"] = [-7.0, -7.0]
+    bad_initialization = finalize_dense_iaf_neutra_artifact_payload(bad_initialization)
+    with pytest.raises(InvalidNeuTraArtifact, match="represent initialization"):
+        load_frozen_neutra_artifact(
+            bad_initialization,
+            expected_target_signature=TARGET_SIGNATURE,
+        )
+
+    affine_tamper = copy.deepcopy(payload)
+    affine_tamper["fixed_translation"] = [0.0, 0.0]
+    affine_tamper = finalize_dense_iaf_neutra_artifact_payload(affine_tamper)
+    with pytest.raises(InvalidNeuTraArtifact, match="must not contain fixed affine"):
+        load_frozen_neutra_artifact(affine_tamper, expected_target_signature=TARGET_SIGNATURE)

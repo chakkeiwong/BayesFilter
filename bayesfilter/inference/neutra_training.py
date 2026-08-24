@@ -46,6 +46,7 @@ NEUTRA_TRAINING_NONCLAIMS = (
 
 DSGE_PAPER_NEUTRA_FAMILY = "dsge_paper_dense_iaf"
 PURE_PAPER_NEUTRA_FAMILY = "pure_paper_dense_iaf"
+PURE_BOUNDED_NEUTRA_FAMILY = "pure_bounded_dense_iaf"
 SSL_LSTM_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_capacity_dense_iaf"
 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_tuned_capacity_dense_iaf"
 SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_deep_capacity_dense_iaf"
@@ -55,6 +56,7 @@ COMPOSED_NEUTRA_FAMILIES = frozenset(
     (
         DSGE_PAPER_NEUTRA_FAMILY,
         PURE_PAPER_NEUTRA_FAMILY,
+        PURE_BOUNDED_NEUTRA_FAMILY,
         SSL_LSTM_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
@@ -63,7 +65,11 @@ COMPOSED_NEUTRA_FAMILIES = frozenset(
     )
 )
 PURE_NEUTRA_FAMILIES = frozenset(
-    (PURE_PAPER_NEUTRA_FAMILY, SSL_LSTM_PURE_NEUTRA_FAMILY)
+    (
+        PURE_PAPER_NEUTRA_FAMILY,
+        PURE_BOUNDED_NEUTRA_FAMILY,
+        SSL_LSTM_PURE_NEUTRA_FAMILY,
+    )
 )
 DSGE_PAPER_TRAINING_STEPS = 5000
 DSGE_PAPER_TRAINING_BATCH_SIZE = 480
@@ -185,7 +191,11 @@ class NeuTraTrainerConfig:
         if len(set(names)) != len(names):
             raise ValueError("target_parameter_names must be unique")
         if self.family in COMPOSED_NEUTRA_FAMILIES:
-            if self.family in {DSGE_PAPER_NEUTRA_FAMILY, PURE_PAPER_NEUTRA_FAMILY}:
+            if self.family in {
+                DSGE_PAPER_NEUTRA_FAMILY,
+                PURE_PAPER_NEUTRA_FAMILY,
+                PURE_BOUNDED_NEUTRA_FAMILY,
+            }:
                 hidden_layers = (int(self.dimension), int(self.dimension))
             elif self.family == SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY:
                 hidden_layers = (32, 32, 32)
@@ -222,6 +232,20 @@ class NeuTraTrainerConfig:
                         "gradient_clip_mode": "none",
                         "kernel_initialization": "paper_variance_scaling",
                         "scale_transform": "identity",
+                        "target_chart": "direct_physical",
+                    }
+                )
+            elif self.family == PURE_BOUNDED_NEUTRA_FAMILY:
+                required.update(
+                    {
+                        "initialization_scale": 0.02,
+                        "learning_rate": 0.01,
+                        "learning_rate_schedule": "paper_piecewise",
+                        "epsilon": 1.0e-8,
+                        "gradient_clip_norm": 10.0,
+                        "gradient_clip_mode": "none",
+                        "kernel_initialization": "paper_variance_scaling",
+                        "scale_transform": "bounded_tanh",
                         "target_chart": "direct_physical",
                     }
                 )
@@ -336,7 +360,9 @@ class NeuTraTrainerConfig:
         payload["target_parameter_names"] = list(self.target_parameter_names)
         if self.kernel_initialization == "legacy_zero_output":
             payload.pop("kernel_initialization")
-        if self.scale_transform == "bounded_tanh":
+        # The bounded pure family carries the transform explicitly so a
+        # serialized artifact cannot silently fall back to the loader default.
+        if self.scale_transform == "bounded_tanh" and self.family != PURE_BOUNDED_NEUTRA_FAMILY:
             payload.pop("scale_transform")
         payload["schema"] = "bayesfilter.neutra.trainer_config.v1"
         return payload
@@ -654,6 +680,56 @@ def pure_paper_neutra_config(
     )
 
 
+def pure_bounded_neutra_config(
+    *,
+    dimension: int,
+    initial_output_shift: Sequence[float],
+    initial_output_scale_log: Sequence[float],
+    target_parameter_names: Sequence[str],
+    target_signature: str,
+    target_adapter_signature: str,
+    s_max: float,
+    initialization_seed: tuple[int, int] = (20260824, 2401),
+    jit_compile: bool = True,
+) -> NeuTraTrainerConfig:
+    """Return the reviewed pure `(d,d)` IAF with a bounded scale output.
+
+    This is deliberately a distinct method from ``pure_paper_neutra_config``:
+    it keeps the paper topology and schedule but uses
+    ``s_max * tanh(raw / s_max)`` for every dense IAF scale.
+    """
+
+    active_dimension = int(dimension)
+    return NeuTraTrainerConfig(
+        dimension=active_dimension,
+        family=PURE_BOUNDED_NEUTRA_FAMILY,
+        hidden_layers=(active_dimension, active_dimension),
+        activation="elu",
+        s_max=float(s_max),
+        initialization_scale=0.02,
+        initialization_seed=tuple(int(value) for value in initialization_seed),
+        learning_rate=0.01,
+        learning_rate_schedule="paper_piecewise",
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=1.0e-8,
+        gradient_clip_norm=10.0,
+        gradient_clip_mode="none",
+        kernel_initialization="paper_variance_scaling",
+        scale_transform="bounded_tanh",
+        stages=3,
+        initial_output_shift=tuple(float(value) for value in initial_output_shift),
+        initial_output_scale_log=tuple(
+            float(value) for value in initial_output_scale_log
+        ),
+        target_parameter_names=tuple(str(value) for value in target_parameter_names),
+        target_chart="direct_physical",
+        target_signature=str(target_signature),
+        target_adapter_signature=str(target_adapter_signature),
+        jit_compile=bool(jit_compile),
+    )
+
+
 def dsge_paper_learning_rate(
     learning_rate: float = 0.01,
 ) -> tf.keras.optimizers.schedules.PiecewiseConstantDecay:
@@ -917,6 +993,7 @@ class _TrainableDenseIAF(_TrainableTransport):
     def __init__(self, config: NeuTraTrainerConfig, *, stage_index: int = 0) -> None:
         self.dimension = int(config.dimension)
         self.stage_index = int(stage_index)
+        self.family = str(config.family)
         self.hidden_layers = tuple(int(width) for width in config.hidden_layers)
         self.activation = str(config.activation)
         self.s_max = float(config.s_max)
@@ -1057,7 +1134,10 @@ class _TrainableDenseIAF(_TrainableTransport):
             "weights": [_tensor_values(weight) for weight in self.weights],
             "biases": [_tensor_values(bias) for bias in self.biases],
         }
-        if self.scale_transform != "bounded_tanh":
+        if (
+            self.scale_transform != "bounded_tanh"
+            or self.family == PURE_BOUNDED_NEUTRA_FAMILY
+        ):
             payload["scale_transform"] = self.scale_transform
         return payload
 
@@ -1783,6 +1863,9 @@ class NeuTraReverseKLTrainer:
             procedure = {
                 DSGE_PAPER_NEUTRA_FAMILY: "dsge_hmc_rotemberg_sgu_plain_neutra_v1",
                 PURE_PAPER_NEUTRA_FAMILY: "bayesfilter_pure_paper_dense_iaf_v1",
+                PURE_BOUNDED_NEUTRA_FAMILY: (
+                    "bayesfilter_pure_bounded_dense_iaf_v1"
+                ),
                 SSL_LSTM_CAPACITY_NEUTRA_FAMILY: (
                     "bayesfilter_ssl_lstm_capacity_32x32_neutra_v1"
                 ),

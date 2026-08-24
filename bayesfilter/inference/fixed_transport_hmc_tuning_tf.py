@@ -70,6 +70,7 @@ class FixedTransportHMCKernelTuningConfig:
     """Policy for fixed-NeuTra HMC kernel tuning in transport coordinates."""
 
     initial_step_size: float
+    maximum_candidate_step_size: float | None = None
     leapfrog_grid: tuple[int, ...] = (5, 10, 15, 20, 25)
     chain_count: int = 4
     initial_state_bank: tuple[tuple[float, ...], ...] = ()
@@ -115,6 +116,10 @@ class FixedTransportHMCKernelTuningConfig:
     def __post_init__(self) -> None:
         step = _positive_float(self.initial_step_size, name="initial_step_size")
         object.__setattr__(self, "initial_step_size", step)
+        cap = self.maximum_candidate_step_size
+        if cap is not None:
+            cap = _positive_float(cap, name="maximum_candidate_step_size")
+        object.__setattr__(self, "maximum_candidate_step_size", cap)
         leapfrogs = tuple(dict.fromkeys(int(value) for value in self.leapfrog_grid))
         if not leapfrogs or any(value < 2 for value in leapfrogs):
             raise ValueError("leapfrog_grid must contain integers greater than or equal to 2")
@@ -272,6 +277,11 @@ class FixedTransportHMCKernelTuningConfig:
         payload["maximum_absolute_energy_error_role"] = "explanatory_alert_only"
         payload["shared_scalar_step_across_chain_bank"] = True
         payload["runtime_numerical_backend"] = "tensorflow_tfp_only"
+        payload["maximum_candidate_step_size_role"] = (
+            "bayesfilter_mechanics_hard_upper_bound"
+            if self.maximum_candidate_step_size is not None
+            else "not_configured"
+        )
         payload["tuning_branch"] = (
             "fixed_grid" if self.fixed_grid_base_step_size_candidates else "dual_averaging"
         )
@@ -535,7 +545,16 @@ def build_verified_fixed_transport_hmc_handoff_from_tuning_result(
     ):
         if kernel.get(name) != checks[name][1]:
             raise ValueError(f"final kernel {name} mismatch")
+    if kernel.get("maximum_candidate_step_size") != cfg.maximum_candidate_step_size:
+        raise ValueError("final kernel maximum_candidate_step_size mismatch")
     step = _positive_float(kernel.get("step_size"), name="final kernel step_size")
+    if (
+        cfg.maximum_candidate_step_size is not None
+        and step > cfg.maximum_candidate_step_size
+    ):
+        raise ValueError(
+            "final kernel step_size exceeds maximum_candidate_step_size"
+        )
     leapfrog = int(kernel.get("num_leapfrog_steps"))
     if (
         step != selected.selected_step_size
@@ -649,6 +668,7 @@ def build_verified_fixed_transport_hmc_handoff_from_tuning_result(
         "candidate_selection_hash": _stable_hash(selection),
         "heldout_verification_hash": kernel.get("heldout_verification_hash"),
         "step_size": step,
+        "maximum_candidate_step_size": cfg.maximum_candidate_step_size,
         "num_leapfrog_steps": leapfrog,
         "mass_policy": "fixed_identity_z",
         "base_adapter_signature": tuning_result.base_adapter_signature,
@@ -746,6 +766,7 @@ def tune_fixed_transport_hmc_kernel(
         dtype="float64",
         xla_enabled=cfg.use_xla,
         chain_execution_mode=cfg.chain_execution_mode,
+        maximum_candidate_step_size=cfg.maximum_candidate_step_size,
     )
     source_closure = _tuning_source_dependency_closure()
     mass_payload = _identity_mass_payload(z0, transformed_signature)
@@ -799,6 +820,7 @@ def tune_fixed_transport_hmc_kernel(
             "runtime": "bayesfilter.inference.tune_fixed_transport_hmc_kernel",
             "runtime_numerical_backend": "tensorflow_tfp_only",
             "step_size": selected_candidate.selected_step_size,
+            "maximum_candidate_step_size": cfg.maximum_candidate_step_size,
             "num_leapfrog_steps": selected_candidate.num_leapfrog_steps,
             "mass_policy": "fixed_identity_z",
             "identity_z_mass_artifact_payload": mass_payload,
@@ -947,6 +969,35 @@ def _dual_averaging_candidate(
     screen_failure_vetoes: list[str] = []
     for round_index, budget in enumerate(config.budget_schedule):
         round_initial_step = step
+        if (
+            config.maximum_candidate_step_size is not None
+            and step > config.maximum_candidate_step_size
+        ):
+            # Stop before constructing a reusable graph for an impossible
+            # candidate.  This keeps the runner evidence honest: a graph that
+            # was never eligible to run must not be reported as an untraced
+            # compile failure or converted into a generic campaign exception.
+            cap_veto = "tune_initial_step_size_exceeds_configured_cap"
+            rounds.append(
+                {
+                    "round_index": round_index,
+                    "budget": budget,
+                    "initial_step_size": round_initial_step,
+                    "tuned_step_size": None,
+                    "tune_config": None,
+                    "tune_diagnostics": {
+                        "maximum_candidate_step_size": config.maximum_candidate_step_size,
+                        "step_size_cap_telemetry_complete": True,
+                        "step_size_cap_within_bound": False,
+                    },
+                    "screen_config": None,
+                    "screen_diagnostics": {},
+                    "hard_vetoes": (cap_veto,),
+                    "repair_triggers": (),
+                }
+            )
+            hard_vetoes.append(cap_veto)
+            break
         tune_config = _chain_config(
             config,
             num_results=config.tune_num_results,
@@ -976,7 +1027,11 @@ def _dual_averaging_candidate(
                 raise
             tune_diagnostics = _error_diagnostics(exc)
             tuned_step = None
-        tune_vetoes = _basic_hard_vetoes(tune_diagnostics, prefix="tune")
+        tune_vetoes = _basic_hard_vetoes(
+            tune_diagnostics,
+            prefix="tune",
+            maximum_candidate_step_size=config.maximum_candidate_step_size,
+        )
         if tuned_step is None or not math.isfinite(tuned_step) or tuned_step <= 0.0:
             tune_vetoes.append("tune_step_missing_or_nonfinite")
         screen_diagnostics: Mapping[str, Any] = {}
@@ -1524,6 +1579,24 @@ def _verification_diagnostics(
         payload["target_status_telemetry"] = _json_ready(
             run_diagnostics["target_status_telemetry"]
         )
+    for key in (
+        "maximum_candidate_step_size",
+        "step_size_cap_telemetry_complete",
+        "step_size_cap_within_bound",
+        "step_size_cap_applied",
+        "requested_step_size_max",
+        "applied_step_size_max",
+        "applied_step_size_min",
+        "applied_step_size_all_finite",
+        "requested_step_size_all_finite",
+    ):
+        if key in run_diagnostics:
+            payload[key] = _json_ready(run_diagnostics[key])
+    if config.maximum_candidate_step_size is not None:
+        payload.setdefault(
+            "configured_maximum_candidate_step_size",
+            config.maximum_candidate_step_size,
+        )
     maximum = _scalar_or_none(payload.get("max_abs_log_accept_energy_proxy"))
     payload["log_accept_energy_proxy_alert"] = bool(
         maximum is not None
@@ -1636,6 +1709,7 @@ def _classify_verification(
         _basic_hard_vetoes(
             diagnostics,
             prefix="verification",
+            maximum_candidate_step_size=config.maximum_candidate_step_size,
             require_complete_transition_telemetry=(
                 require_complete_transition_telemetry
             ),
@@ -1683,6 +1757,7 @@ def _basic_hard_vetoes(
     diagnostics: Mapping[str, Any],
     *,
     prefix: str,
+    maximum_candidate_step_size: float | None = None,
     require_complete_transition_telemetry: bool = False,
 ) -> list[str]:
     hard = []
@@ -1702,6 +1777,17 @@ def _basic_hard_vetoes(
             hard.append(f"{prefix}_{reason}_nonfinite")
         elif require_complete_transition_telemetry and status is not True:
             hard.append(f"{prefix}_{reason}_missing")
+    if maximum_candidate_step_size is not None:
+        configured = _scalar_or_none(diagnostics.get("maximum_candidate_step_size"))
+        if configured is None or configured != float(maximum_candidate_step_size):
+            hard.append(f"{prefix}_step_size_cap_telemetry_missing_or_mismatched")
+        if diagnostics.get("step_size_cap_telemetry_complete") is not True:
+            hard.append(f"{prefix}_step_size_cap_telemetry_incomplete")
+        if diagnostics.get("step_size_cap_within_bound") is not True:
+            hard.append(f"{prefix}_step_size_cap_exceeded_or_unverified")
+        applied_max = _scalar_or_none(diagnostics.get("applied_step_size_max"))
+        if applied_max is None or not math.isfinite(applied_max):
+            hard.append(f"{prefix}_applied_step_size_missing_or_nonfinite")
     return hard
 
 
@@ -1736,6 +1822,7 @@ def _chain_config(
         tuning_policy=policy,
         target_scope=str(config.target_scope or "fixed_transport_target"),
         chain_execution_mode=config.chain_execution_mode,
+        maximum_candidate_step_size=config.maximum_candidate_step_size,
     )
 
 

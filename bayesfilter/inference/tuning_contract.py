@@ -7,6 +7,7 @@ interfaces merely because compatibility modules re-export them.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -31,6 +32,7 @@ class HMCTuningScope:
     xla_enabled: bool
     chain_execution_mode: str
     transport_signature: str | None = None
+    maximum_candidate_step_size: float | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -55,6 +57,11 @@ class HMCTuningScope:
             if not signature:
                 raise ValueError("transport_signature must be non-empty when provided")
             object.__setattr__(self, "transport_signature", signature)
+        if self.maximum_candidate_step_size is not None:
+            cap = float(self.maximum_candidate_step_size)
+            if not math.isfinite(cap) or cap <= 0.0:
+                raise ValueError("maximum_candidate_step_size must be finite and positive")
+            object.__setattr__(self, "maximum_candidate_step_size", cap)
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -63,6 +70,7 @@ class HMCTuningScope:
             "adapter_signature": self.adapter_signature,
             "coordinate_signature": self.coordinate_signature,
             "transport_signature": self.transport_signature,
+            "maximum_candidate_step_size": self.maximum_candidate_step_size,
             "parameter_dimension": self.parameter_dimension,
             "backend": self.backend,
             "dtype": self.dtype,

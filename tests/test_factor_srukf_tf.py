@@ -5,6 +5,9 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.nonlinear.factor_srukf_tf import (
+    DIRECT_FACTOR_ROUNDOFF_REPAIR_POLICY,
+    DIRECT_FACTOR_ROW_CLASS_VALID,
+    DIRECT_FACTOR_STATUS_SCHEMA,
     TFFactorSRUKFDerivatives,
     TFFactorSRUKFModel,
     tf_factor_srukf_value_and_score,
@@ -43,8 +46,38 @@ def test_factor_filter_batch_and_modes_are_finite() -> None:
     for result in (eager, graph):
         for value in (result.log_likelihood, result.score, result.filtered_mean, result.filtered_factor, result.d_filtered_mean, result.d_filtered_factor):
             assert bool(tf.reduce_all(tf.math.is_finite(value)))
+        tf.debugging.assert_equal(result.diagnostics["invalid_transition_count"], [0, 0])
+        tf.debugging.assert_equal(result.diagnostics["classified_invalid_count"], [0, 0])
+        tf.debugging.assert_equal(result.diagnostics["invalid_count"], [0, 0])
+        tf.debugging.assert_equal(result.diagnostics["roundoff_repair_count"], [0, 0])
+        tf.debugging.assert_equal(
+            result.diagnostics["row_class_code"],
+            [DIRECT_FACTOR_ROW_CLASS_VALID, DIRECT_FACTOR_ROW_CLASS_VALID],
+        )
+        tf.debugging.assert_equal(
+            result.diagnostics["valid_pre_regularized_score"], [True, True]
+        )
+        tf.debugging.assert_equal(result.diagnostics["output_finite"], [True, True])
+        tf.debugging.assert_equal(result.diagnostics["nonfinite_output"], [False, False])
+        assert result.diagnostics["status_schema"].numpy().decode() == DIRECT_FACTOR_STATUS_SCHEMA
+        assert (
+            result.diagnostics["roundoff_repair_policy"].numpy().decode()
+            == DIRECT_FACTOR_ROUNDOFF_REPAIR_POLICY
+        )
     np.testing.assert_allclose(eager.log_likelihood, graph.log_likelihood, rtol=1e-10, atol=1e-11)
     np.testing.assert_allclose(eager.score, graph.score, rtol=1e-10, atol=1e-11)
+    for field in (
+        "invalid_transition_count",
+        "classified_invalid_count",
+        "invalid_count",
+        "roundoff_repair_count",
+        "row_class_code",
+        "status_code",
+        "valid_pre_regularized_score",
+        "output_finite",
+        "nonfinite_output",
+    ):
+        tf.debugging.assert_equal(eager.diagnostics[field], graph.diagnostics[field])
     duplicated_model, duplicated_derivatives = _model(batch=2)
     duplicated_model = TFFactorSRUKFModel(
         tf.repeat(duplicated_model.initial_mean[:1], 2, axis=0),
@@ -68,6 +101,15 @@ def test_factor_filter_batch_and_modes_are_finite() -> None:
     duplicate_obs = tf.repeat(observations[:1], 2, axis=0)
     duplicate = tf_factor_srukf_value_and_score(duplicate_obs, duplicated_model, duplicated_derivatives, jit_compile=False)
     np.testing.assert_allclose(duplicate.log_likelihood[0], duplicate.log_likelihood[1], rtol=1e-12, atol=1e-12)
+    for field in (
+        "invalid_transition_count",
+        "classified_invalid_count",
+        "roundoff_repair_count",
+        "row_class_code",
+        "valid_pre_regularized_score",
+        "output_finite",
+    ):
+        tf.debugging.assert_equal(duplicate.diagnostics[field][0], duplicate.diagnostics[field][1])
 
 
 def test_factor_filter_rejects_nonfinite_observations() -> None:

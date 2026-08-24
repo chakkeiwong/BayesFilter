@@ -232,10 +232,40 @@ def _near_cut_toy_model():
 def test_near_angle_cut_preserves_value_but_rejects_score() -> None:
     model, derivatives = _near_cut_toy_model()
     observation = tf.constant([[[0.0, 3.141592653589793 - 1.0e-10]]], DTYPE)
-    result = tf_factor_srukf_value_and_score(observation, model, derivatives, jit_compile=False)
-    tf.debugging.assert_all_finite(result.log_likelihood, "fixed value")
-    assert bool(tf.reduce_any(tf.math.is_nan(result.score)).numpy())
-    tf.debugging.assert_equal(result.diagnostics["observation_geometry_score_valid"], [False])
+    eager = tf_factor_srukf_value_and_score(
+        observation, model, derivatives, jit_compile=False
+    )
+    xla = tf_factor_srukf_value_and_score(
+        observation, model, derivatives, jit_compile=True
+    )
+    for result in (eager, xla):
+        tf.debugging.assert_all_finite(result.log_likelihood, "fixed value")
+        assert bool(tf.reduce_any(tf.math.is_nan(result.score)).numpy())
+        tf.debugging.assert_equal(
+            result.diagnostics["observation_geometry_score_valid"], [False]
+        )
+        tf.debugging.assert_equal(result.diagnostics["invalid_transition_count"], [1])
+        tf.debugging.assert_equal(result.diagnostics["classified_invalid_count"], [1])
+        tf.debugging.assert_equal(result.diagnostics["invalid_count"], [1])
+        tf.debugging.assert_equal(result.diagnostics["roundoff_repair_count"], [0])
+        tf.debugging.assert_equal(result.diagnostics["row_class_code"], [2])
+        tf.debugging.assert_equal(result.diagnostics["status_code"], [2])
+        tf.debugging.assert_equal(
+            result.diagnostics["valid_pre_regularized_score"], [False]
+        )
+        tf.debugging.assert_equal(result.diagnostics["output_finite"], [False])
+        tf.debugging.assert_equal(result.diagnostics["nonfinite_output"], [True])
+    tf.debugging.assert_near(eager.log_likelihood, xla.log_likelihood)
+    for field in (
+        "invalid_transition_count",
+        "classified_invalid_count",
+        "roundoff_repair_count",
+        "row_class_code",
+        "valid_pre_regularized_score",
+        "output_finite",
+        "nonfinite_output",
+    ):
+        tf.debugging.assert_equal(eager.diagnostics[field], xla.diagnostics[field])
 
 
 def test_range_bearing_score_finite_difference_step_halving_and_xla() -> None:
