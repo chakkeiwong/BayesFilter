@@ -292,3 +292,98 @@ diagnostic/replicate floor/estimator definition), CF5 (ν
 selection criterion under-determined: domination alone holds for every
 finite ν). Repair and re-review of the diff suffices; no re-derivation
 of the underlying program is required.
+
+## Re-verification of repairs (2026-08-24, commit 431689c8)
+
+Checked the committed plan text (`git show 431689c8`, whole file), the
+engine diff, the A1 artifact, the fetched paper, and re-ran the
+affected tests. Not narrated from the commit message.
+
+- **CF1 discharged.** §2 preamble declares the working bar 2.5e-3
+  nats/step with reviewed provenance (C2 note §3 + attempt04) AND the
+  aggregation (total defensive-corrected gap over the horizon / T);
+  Phase C sizes against it; the D1 bar-change rule explicitly re-opens
+  τ_max = bar/25 and C3 sizing; Gate D reworded ("NOT D1's to
+  invent"); the τ-clamp audit row is now conditional on the declared
+  bar.
+- **CF2 discharged.** Phase A3 reinstates ladder item 5 in
+  post-F-ENG-1 form: n=4 stress config (degree 12, rank 6, 8 axes plus
+  branch — the attempt04 compile-blowup regime) on the ported lane,
+  one artifact carrying parity ≤ 1e-12, compile time, per-fit Gram
+  condition, per-fit row ESS, and the defensive-corrected gap vs the
+  exact Kalman oracle; ESS gate ≥ 5× the widest ALS design width with
+  the declared repair (raise N per axis count) — at n=4 this floor
+  (≈ 5×468) exceeds the n=2 heritage N=2048, so the rung forces the
+  sizing decision fail-closed rather than letting starvation surface
+  inside attempt05. Audit table gains the "fit row count N per axis
+  count" row with the (ESS₁/N)^d failure mode; the pre-mortem now
+  names row-law starvation as a third infeasibility masquerade.
+  Engine change verified in the diff: `_christoffel_rows` returns
+  row_ess = 1/Σw̄² over the already-normalized weights (correct ESS
+  formula given `weights` sums to 1 at :158–159), emitted into the
+  per-step diagnostics; both call sites updated and grep confirms no
+  other caller of the changed signature. Re-ran
+  `test_c2_gaussian_engine_oracle.py -k "degree0 or u_ret"` under
+  tftwogpu with `CUDA_VISIBLE_DEVICES=-1` (deliberate CPU-only
+  diagnostic): 3 passed in 14.4 s (U-RET-1, closure n=1, degree-0
+  n=2 T=120 oracle) — the "re-verified green" claim checks.
+- **CF3 discharged.** Phase C5: eager-vs-XLA parity ≤ 1e-12 plus
+  fresh-process compile battery on an SV + Student-t + SV-hints
+  configuration; Gate C requires "C5 parity green". The call-chain
+  requirement is now met by an executable gate on the claim-bearing
+  configuration.
+- **CF4 discharged.** C3 defines the estimator (one PF log-likelihood
+  per replicate; reference = mean over R ≥ 10 independent replicates;
+  MC error = SE of that mean), adds the particle-degeneracy screen
+  (min per-step ESS recorded; a degenerate replicate invalidates the
+  cell's reference — Class B) as part of validity, states the bias
+  posture correctly (CLT-regime E[log Ẑ] − log Z ≈ −Var/2, negligible
+  under the SE gate; the argument fails under weight degeneracy, which
+  the screen exists to catch; the n=1 anchor certifies implementation,
+  not the n=4 regime), gives bar/5 its own provenance (new rule of
+  this plan, no longer "attempt04 style"), adds the n=2 dense-grid
+  cross-check, fixes the reference backend (independent NumPy f64
+  under the diagnostic-reference exception), and the audit table gains
+  the replicate-count/estimator row with the heavy-tail failure mode.
+- **CF5 discharged.** The C2 criterion is now two-sided and
+  well-posed: since log M(ν, α) is monotone increasing in ν, "the
+  LARGEST ν with log M(ν, α_max) ≤ the declared cap" exists and
+  simultaneously optimizes the bulk-dilution side (lightest admissible
+  tails), so no separate bulk floor is needed; the criterion is
+  parametric in the hint whitening over the declared hint class with
+  D1 instantiating actual hints (resolves the C2→C4 ordering); the
+  cap is tied to its consumer (ratio guard at τ ≥ τ_min) and Gate C
+  gates on the criterion being SATISFIED at declared cap values, not
+  on "derivation written"; the LGSSM no-fire check is the non-harm
+  side; §1's failure-mode framing now matches F1 (Student-t as the
+  expected SV configuration, ν recomputation as the within-scope
+  repair, never on claim data).
+- **CF6 discharged.** Audit row relabeled "measured repair, NOT yet a
+  reviewed default" with single-axis evidence and variant status
+  stated; C1 is fetch AND read + reconcile with deltas recorded as
+  findings; the fetch is verified on disk
+  (`.localresources/papers/cohen-migliorati-2017-optimal-weighted-ls`
+  .pdf/.txt; arXiv 1608.00512 is the correct paper).
+- **CF7–CF11 discharged.** Continuation veto now names value-side
+  parity fixtures only, with the adjoint failure explicitly descoped
+  to Phase B's deliverable (CF7); the domination pre-check's dual role
+  is declared per the guardian rule (CF8); C3 pins the SV
+  parameterization now and Gate C carries the re-open rule for D1
+  parameter changes (CF9); reference-compute sizing is in C3 and the
+  pre-mortem (CF10); Gate A requires memory-growth policy in A1/A2 GPU
+  manifests (CF11).
+
+Residual notes, non-blocking (both covered by gates that now exist):
+(i) the committed A1 proxy artifact (`phase_a1/kernel_timings.jsonl`)
+is honestly labeled a proxy in the audit table ("measured-proxy →
+confirmed at Gate A", failure mode stated) and its numbers match the
+table, but the jsonl itself lacks self-describing manifest fields
+(kernel/shape, commit, escalation, memory-growth policy) — acceptable
+only because the device policy is declared at Gate A on the real
+kernel, where the CF11 manifest requirement binds; Gate A must not
+repeat the omission. (ii) The C3 degeneracy screen records min
+per-step ESS but its numeric invalidation threshold is left to the C3
+artifact — analogous to the declared-at-C3 particle-N sizing;
+declare it there before first use.
+
+VERDICT: AGREE (after repairs, 2026-08-24)

@@ -1,8 +1,13 @@
 # C2 Completion Campaign — Execution Plan — 2026-08-24
 
-Status: `DRAFT_FOR_REVIEW` (skeptical self-audit recorded in §8; one
-independent material review before execution begins; attempt05's own
-plan gets a separate audit at D1 per the two-stage structure below).
+Status: `REVIEWED — EXECUTABLE` (skeptical self-audit §8; independent
+material review `bayesfilter-c2-completion-campaign-plan-review-2026-08-24.md`:
+initial DISAGREE with CF1–CF11, all repaired in `431689c8`,
+re-verified "VERDICT: AGREE (after repairs, 2026-08-24)". Two carried
+non-blocking obligations: Gate A artifacts must carry the memory-growth
+manifest fields the A1 proxy jsonl lacks; C3's artifact must declare
+its degeneracy threshold. attempt05's own plan gets a separate audit at
+D1 per the two-stage structure below).
 
 Governs the remaining program from the oracle-certified C2 value engine
 (`d9a5481f`, suite 10/10) to the campaign goal: a valid r*(n) feasibility
