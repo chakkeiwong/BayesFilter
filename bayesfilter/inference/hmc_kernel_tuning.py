@@ -94,14 +94,34 @@ from bayesfilter.inference.hmc_coordinates import (
     transform_from_precomputed_mass_artifact,
 )
 from bayesfilter.inference.hmc_warmup import (
+    G2PreboundarySeedUseRegistry,
     OperationalWindowedWarmupCloseout,
     OperationalWindowedWarmupResult,
+<<<<<<< HEAD
     compose_base_transform_with_nested_artifact,
     compose_operational_transform_in_base_coordinates,
+=======
+    PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+    Phase7EngineeringProbeBankConfig,
+    _G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS_CONTRACT,
+    _G2P4BoundaryActionTracker,
+    _G2SeedRegistryError,
+    _G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE,
+    _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT,
+    _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
+    _compose_base_transform_with_nested_estimate,
+    _phase7_engineering_probe_target_signature,
+    compose_operational_transform_in_base_coordinates,
+    engineering_probe_bank_qualification_payload_from_exception,
+    g2_preboundary_shared_invalidity_exception,
+    g2_preboundary_shared_invalidity_payload_from_exception,
+    g2_seed_private_evidence_from_exception,
+>>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
     run_operational_windowed_warmup,
     start_bank_qualification_payload_from_exception,
     _validate_start_bank_qualification_payload,
 )
+
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptanceEvidence,
     HMCAcceptancePolicy,
@@ -126,6 +146,26 @@ from bayesfilter.inference.posterior_adapter import (
 )
 from bayesfilter.inference.tuning_contract import require_active_hmc_tuning_route
 from bayesfilter.runtime import stable_config_hash
+
+
+_G2_BOOTSTRAP_ROUND_SEED_DERIVATION_SITE_ID = (
+    "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_derivation.v1"
+)
+_G2_BOOTSTRAP_ROUND_SEED_GATE_SITE_ID = (
+    "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_gate.v1"
+)
+_G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS = (
+    _G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS_CONTRACT
+)
+_G2_WINDOWED_STAGE_SEED_DERIVATION_SITE_ID = (
+    "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.stage_seed_derivation.v1"
+)
+_G2_WINDOWED_STAGE_SEED_GATE_SITE_ID = (
+    "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.stage_seed_gate.v1"
+)
+_G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS = (
+    _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT
+)
 
 
 _OPERATIONAL_WARMUP_DEFAULT_REUSABLE_RUNNER_BUILDER = (
@@ -2397,6 +2437,65 @@ class HMCWindowedMassStageResult:
                 raise ValueError("no-update windowed stage diagnostic role is invalid")
             if _NO_OPERATIONAL_METRIC_UPDATE_REPAIR_TRIGGER not in repair_triggers:
                 raise ValueError("no-update windowed stage lacks its repair trigger")
+        boundary = self.diagnostics.get("engineering_probe_boundary")
+        if self.final_status == "candidate_rejected":
+            if self.diagnostic_role != "p4e_candidate_boundary_rejection":
+                raise ValueError("P4-E candidate rejection role is invalid")
+            if hard_vetoes or repair_triggers:
+                raise ValueError("P4-E candidate rejection cannot carry vetoes")
+            if not isinstance(boundary, Mapping) or boundary.get("outcome") not in {
+                "candidate_generation_invalid",
+                "candidate_policy_instance_invalid",
+            }:
+                raise ValueError("P4-E candidate rejection lacks its carrier")
+            if any(
+                boundary.get(name) is not True
+                for name in (
+                    "estimate_covariance_signature_equal",
+                    "transform_p4_signature_equal",
+                    "generation_update_count_equal",
+                )
+            ):
+                raise ValueError("P4-E candidate rejection has invalid lineage")
+            if (
+                self.operational_warmup_result is not None
+                or self.operational_warmup_closeout is not None
+                or self.operational_mass_artifact is not None
+                or self.windowed_mass_result is not None
+            ):
+                raise ValueError("P4-E candidate rejection cannot retain an operation")
+            if (
+                self.diagnostics.get("hmc_error_type") is not None
+                or self.diagnostics.get("hmc_error_message") is not None
+                or self.diagnostics.get("passed") is not False
+            ):
+                raise ValueError("P4-E candidate rejection entered a generic path")
+        elif self.diagnostic_role == "p4e_candidate_boundary_rejection":
+            raise ValueError("P4-E candidate role requires candidate_rejected")
+
+        if self.diagnostic_role == "shared_implementation_invalid":
+            if self.final_status != "hard_veto":
+                raise ValueError("shared invalidity must be a hard veto")
+            if not isinstance(boundary, Mapping) or boundary.get("outcome") != (
+                "shared_implementation_invalid"
+            ):
+                raise ValueError("shared invalidity lacks its scalar carrier")
+            failure_code = boundary.get("failure_code")
+            if type(failure_code) is not str or hard_vetoes != (failure_code,):
+                raise ValueError("shared invalidity hard-veto code is inconsistent")
+            if (
+                self.operational_warmup_result is not None
+                or self.operational_warmup_closeout is not None
+                or self.operational_mass_artifact is not None
+                or self.windowed_mass_result is not None
+            ):
+                raise ValueError("shared invalidity cannot retain an operation")
+            if (
+                self.diagnostics.get("hmc_error_type") is not None
+                or self.diagnostics.get("hmc_error_message") is not None
+                or self.diagnostics.get("passed") is not False
+            ):
+                raise ValueError("shared invalidity entered a generic error path")
 
     @property
     def passed(self) -> bool:
@@ -7629,6 +7728,7 @@ def run_hmc_bootstrap_screen(
     run_full_chain: RunFullChainFn = run_full_chain_tfp_hmc,
     progress_callback: BootstrapProgressCallback | None = None,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
+    _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
 ) -> HMCBootstrapScreenResult:
     """Run a short fixed-kernel screen and bounded epsilon repair.
 
@@ -7642,6 +7742,11 @@ def run_hmc_bootstrap_screen(
     cfg = HMCBootstrapScreenConfig() if config is None else config
     if not isinstance(cfg, HMCBootstrapScreenConfig):
         raise TypeError("config must be HMCBootstrapScreenConfig")
+    if _g2_seed_use_registry is not None and not isinstance(
+        _g2_seed_use_registry,
+        G2PreboundarySeedUseRegistry,
+    ):
+        raise TypeError("_g2_seed_use_registry must be G2PreboundarySeedUseRegistry")
     if not isinstance(geometry, HMCGeometryInitializationResult):
         raise TypeError("geometry must be HMCGeometryInitializationResult")
     adapter_signature = stable_adapter_signature(adapter)
@@ -7726,6 +7831,36 @@ def run_hmc_bootstrap_screen(
             max_leapfrog_steps=cfg.max_leapfrog_steps,
         )
         screen_seed = _round_seed(root_seed, round_index)
+        if _g2_seed_use_registry is not None:
+            try:
+                screen_seed = _g2_seed_use_registry.consume(
+                    derivation_site_id=(
+                        _G2_BOOTSTRAP_ROUND_SEED_DERIVATION_SITE_ID
+                    ),
+                    terminal_gate_site_id=_G2_BOOTSTRAP_ROUND_SEED_GATE_SITE_ID,
+                    key=f"bootstrap/round/{round_index:02d}",
+                    owner_file="hmc_kernel_tuning.py",
+                    owner_qualname="run_hmc_bootstrap_screen",
+                    terminal_consumer="hmc_runner_interface",
+                    derivation={
+                        "kind": "round_offset",
+                        "base_key": "bootstrap/root",
+                        "round_index": round_index,
+                    },
+                    indices=(
+                        {"name": "round_index", "value": round_index},
+                    ),
+                    seed=screen_seed,
+                    interface_hop_site_ids=(
+                        _G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS
+                    ),
+                )
+            except _G2SeedRegistryError as exc:
+                raise g2_preboundary_shared_invalidity_exception(
+                    _g2_seed_use_registry,
+                    stage=_G2_BOOTSTRAP_ROUND_SEED_GATE_SITE_ID,
+                    cause=exc,
+                ) from None
         screen_config = _bootstrap_screen_config(
             cfg,
             seed=screen_seed,
@@ -8133,6 +8268,8 @@ def _operational_windowed_mass_capture(
     route_decision: HMCAlgorithmRouteDecision,
     progress_callback: LoopProgressCallback | None,
     attempt_index: int | None,
+    g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
+    g2_p4_action_tracker: _G2P4BoundaryActionTracker | None = None,
 ) -> tuple[
     OperationalWindowedWarmupResult | None,
     WindowedMassAdaptationResult | None,
@@ -8147,7 +8284,7 @@ def _operational_windowed_mass_capture(
         source_coordinate_signature=geometry.mass_artifact_signature,
         estimator_family="geometry_position_covariance",
     )
-    active_transform = compose_base_transform_with_nested_artifact(
+    active_estimate, active_transform = _compose_base_transform_with_nested_estimate(
         base_transform=base_transform,
         nested_artifact=stage_mass_artifact,
         source_coordinate_signature=_mass_artifact_signature(stage_mass_artifact),
@@ -8259,6 +8396,13 @@ def _operational_windowed_mass_capture(
         target_accept_prob=config.target_accept_prob,
         seed=stage_seed,
         target_scope=target_scope,
+<<<<<<< HEAD
+=======
+        engineering_probe_config=engineering_probe_config,
+        initial_position_covariance_estimate_signature=active_estimate.signature,
+        _g2_seed_use_registry=g2_seed_use_registry,
+        _g2_p4_action_tracker=g2_p4_action_tracker,
+>>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
         chain_execution_mode=config.chain_execution_mode,
         jit_compile=config.use_xla,
         target_status_trace_policy=config.target_status_trace_policy,
@@ -8473,6 +8617,139 @@ def _operational_windowed_mass_capture(
     return operational_result, windowed_result, capture, None, authoritative_mass
 
 
+def _run_p4_windowed_boundary_attempt(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    hmc_adapter_signature: str,
+    stage_mass_artifact: PrecomputedMassArtifact,
+    mass_window_seed_kernel: Mapping[str, Any],
+    windowed_config: WindowedMassAdaptationConfig,
+    config: HMCWindowedMassStageConfig,
+    target_scope: str,
+    attempt_state: "_HMCPhaseAttemptState | None",
+    route_decision: HMCAlgorithmRouteDecision,
+    progress_callback: LoopProgressCallback | None,
+    attempt_index: int | None,
+    registry: G2PreboundarySeedUseRegistry,
+) -> tuple[
+    FullChainHMCConfig | None,
+    Mapping[str, Any] | None,
+    OperationalWindowedWarmupResult | None,
+    WindowedMassAdaptationResult | None,
+    Mapping[str, Any],
+    OperationalWindowedWarmupCloseout | None,
+    PrecomputedMassArtifact | None,
+    str | None,
+    str | None,
+    Mapping[str, Any] | None,
+]:
+    """Execute the P4 boundary attempt under one carrier-aware failure scope."""
+
+    diagnostic_config: FullChainHMCConfig | None = None
+    diagnostic_payload: Mapping[str, Any] | None = None
+    operational_result: OperationalWindowedWarmupResult | None = None
+    windowed_result: WindowedMassAdaptationResult | None = None
+    operational_closeout: OperationalWindowedWarmupCloseout | None = None
+    operational_mass: PrecomputedMassArtifact | None = None
+    action_tracker = _G2P4BoundaryActionTracker()
+    failure_stage = "windowed_stage_seed_derivation"
+    try:
+        stage_seed = _derive_seed(config.seed, stage_index=0)
+        failure_stage = _G2_WINDOWED_STAGE_SEED_GATE_SITE_ID
+        stage_seed = registry.consume(
+            derivation_site_id=_G2_WINDOWED_STAGE_SEED_DERIVATION_SITE_ID,
+            terminal_gate_site_id=_G2_WINDOWED_STAGE_SEED_GATE_SITE_ID,
+            key="phase4/stage",
+            owner_file="hmc_kernel_tuning.py",
+            owner_qualname="_run_p4_windowed_boundary_attempt",
+            terminal_consumer="hmc_runner_interface",
+            derivation={
+                "kind": "derive_stage",
+                "base_key": "windowed_stage_config.seed",
+                "stage_index": 0,
+            },
+            indices=(),
+            seed=stage_seed,
+            interface_hop_site_ids=_G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS,
+        )
+        failure_stage = "windowed_stage_diagnostic_config"
+        diagnostic_config = _windowed_stage_diagnostic_run_config(
+            config,
+            windowed_config=windowed_config,
+            selected_kernel=mass_window_seed_kernel,
+            seed=stage_seed,
+            target_scope=target_scope,
+        )
+        failure_stage = "windowed_stage_diagnostic_config_signature"
+        diagnostic_payload = diagnostic_config.signature_payload()
+        failure_stage = "windowed_stage_operational_capture_entry"
+        (
+            operational_result,
+            windowed_result,
+            capture,
+            operational_closeout,
+            operational_mass,
+        ) = _operational_windowed_mass_capture(
+            adapter=adapter,
+            geometry=geometry,
+            hmc_adapter_signature=hmc_adapter_signature,
+            stage_mass_artifact=stage_mass_artifact,
+            mass_window_seed_kernel=mass_window_seed_kernel,
+            windowed_config=windowed_config,
+            config=config,
+            stage_seed=stage_seed,
+            target_scope=target_scope,
+            attempt_state=attempt_state,
+            route_decision=route_decision,
+            progress_callback=progress_callback,
+            attempt_index=attempt_index,
+            g2_seed_use_registry=registry,
+            g2_p4_action_tracker=action_tracker,
+        )
+        return (
+            diagnostic_config,
+            diagnostic_payload,
+            operational_result,
+            windowed_result,
+            capture,
+            operational_closeout,
+            operational_mass,
+            None,
+            None,
+            None,
+        )
+    except Exception as exc:  # noqa: BLE001 - carrier-first closed P4 route.
+        terminal = engineering_probe_bank_qualification_payload_from_exception(exc)
+        early = g2_preboundary_shared_invalidity_payload_from_exception(exc)
+        if terminal is None and early is None and not registry.p4_seed_consumed:
+            wrapped = g2_preboundary_shared_invalidity_exception(
+                registry,
+                stage=failure_stage,
+                cause=exc if isinstance(exc, _G2SeedRegistryError) else None,
+            )
+            exc = wrapped
+        capture, classification, failure_code, private = (
+            _p4_boundary_capture_from_exception(
+                exc,
+                registry=registry,
+                action_tracker=action_tracker,
+            )
+        )
+        return (
+            diagnostic_config,
+            diagnostic_payload,
+            None,
+            None,
+            capture,
+            None,
+            None,
+            classification,
+            failure_code,
+            private,
+        )
+
+
 def run_hmc_windowed_mass_stage(
     *,
     adapter: Any,
@@ -8486,6 +8763,7 @@ def run_hmc_windowed_mass_stage(
     _attempt_index: int | None = None,
     _checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
+    _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
 ) -> HMCWindowedMassStageResult:
     """Capture retained diagnostic draws and run windowed mass adaptation.
 
@@ -8496,6 +8774,12 @@ def run_hmc_windowed_mass_stage(
     cfg = HMCWindowedMassStageConfig() if config is None else config
     if not isinstance(cfg, HMCWindowedMassStageConfig):
         raise TypeError("config must be HMCWindowedMassStageConfig")
+    p4_route = cfg.engineering_probe_covariance_multiplier is not None
+    if p4_route and not isinstance(
+        _g2_seed_use_registry,
+        G2PreboundarySeedUseRegistry,
+    ):
+        raise TypeError("P4-E requires a caller-owned G2 seed-use registry")
     runner_identity = (
         "default"
         if run_full_chain is run_full_chain_tfp_hmc
@@ -8555,14 +8839,17 @@ def run_hmc_windowed_mass_stage(
         mass_policy=cfg.mass_policy,
     )
     draw_capture_policy = _windowed_stage_draw_capture_policy(windowed_config)
-    stage_seed = _derive_seed(cfg.seed, stage_index=0)
-    diagnostic_config = _windowed_stage_diagnostic_run_config(
-        cfg,
-        windowed_config=windowed_config,
-        selected_kernel=mass_window_seed_kernel,
-        seed=stage_seed,
-        target_scope=target_scope,
-    )
+    stage_seed: tuple[int, int] | None = None
+    diagnostic_config: FullChainHMCConfig | None = None
+    if not p4_route:
+        stage_seed = _derive_seed(cfg.seed, stage_index=0)
+        diagnostic_config = _windowed_stage_diagnostic_run_config(
+            cfg,
+            windowed_config=windowed_config,
+            selected_kernel=mass_window_seed_kernel,
+            seed=stage_seed,
+            target_scope=target_scope,
+        )
     progress_attempt_index = (
         int(_attempt_budget_policy.attempt_index)
         if _attempt_index is None and _attempt_budget_policy is not None
@@ -8584,7 +8871,9 @@ def run_hmc_windowed_mass_stage(
 
     diagnostics: Mapping[str, Any]
     run_error: Exception | None = None
-    diagnostic_run_config_payload: Mapping[str, Any] | None = diagnostic_config.signature_payload()
+    diagnostic_run_config_payload: Mapping[str, Any] | None = (
+        None if diagnostic_config is None else diagnostic_config.signature_payload()
+    )
     windowed_result: WindowedMassAdaptationResult | None = None
     operational_warmup_result: OperationalWindowedWarmupResult | None = None
     operational_warmup_closeout: OperationalWindowedWarmupCloseout | None = None
@@ -8592,12 +8881,52 @@ def run_hmc_windowed_mass_stage(
     use_operational_warmup = bool(
         route_decision.algorithm_id == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     )
-    timeout_closeout = _windowed_mass_public_timeout_preflight(
-        cfg,
-        stage="windowed_mass_runner_build_start",
-        attempt_index=progress_attempt_index,
+    p4_boundary_classification: str | None = None
+    p4_boundary_failure_code: str | None = None
+    p4_private_seed_evidence: Mapping[str, Any] | None = None
+    timeout_closeout = (
+        None
+        if p4_route
+        else _windowed_mass_public_timeout_preflight(
+            cfg,
+            stage="windowed_mass_runner_build_start",
+            attempt_index=progress_attempt_index,
+        )
     )
-    if timeout_closeout is not None:
+    if p4_route:
+        if not use_operational_warmup:
+            raise ValueError("P4-E requires the operational windowed-warmup route")
+        assert _g2_seed_use_registry is not None
+        (
+            diagnostic_config,
+            diagnostic_run_config_payload,
+            operational_warmup_result,
+            windowed_result,
+            capture,
+            operational_warmup_closeout,
+            operational_mass_artifact,
+            p4_boundary_classification,
+            p4_boundary_failure_code,
+            p4_private_seed_evidence,
+        ) = _run_p4_windowed_boundary_attempt(
+            adapter=adapter,
+            geometry=geometry,
+            hmc_adapter_signature=hmc_adapter_signature,
+            stage_mass_artifact=stage_mass_artifact,
+            mass_window_seed_kernel=mass_window_seed_kernel,
+            windowed_config=windowed_config,
+            config=cfg,
+            target_scope=target_scope,
+            attempt_state=_attempt_state,
+            route_decision=route_decision,
+            progress_callback=_progress_callback,
+            attempt_index=progress_attempt_index,
+            registry=_g2_seed_use_registry,
+        )
+        if diagnostic_config is not None:
+            stage_seed = diagnostic_config.seed
+        route_category = route_decision.algorithm_id
+    elif timeout_closeout is not None:
         _emit_windowed_mass_progress(
             _progress_callback,
             "windowed_mass_public_timeout_closeout",
@@ -8891,12 +9220,46 @@ def run_hmc_windowed_mass_stage(
                 "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
             },
         )
+<<<<<<< HEAD
     hard_vetoes = list(
         _classify_windowed_stage_capture(
             capture,
             run_error=run_error,
-        )
+=======
+    engineering_probe_qualification = capture.get("raw_diagnostics", {}).get(
+        "engineering_probe_bank_qualification",
+        capture.get("raw_diagnostics", {}).get("engineering_probe_boundary"),
     )
+    if _private_diagnostic_callback is not None and isinstance(
+        engineering_probe_qualification,
+        Mapping,
+    ):
+        _private_diagnostic_callback(
+            "engineering_probe_bank_qualification",
+            {
+                "stage": "phase7_engineering_probe_bank_boundary",
+                "attempt_index": progress_attempt_index,
+                "engineering_probe_bank_qualification": _json_ready(
+                    engineering_probe_qualification
+                ),
+                "private_hmc_mechanics": False,
+                "reports_posterior_convergence": False,
+                "reports_sampler_superiority": False,
+                "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
+            },
+        )
+    if p4_boundary_classification == "candidate_rejected":
+        hard_vetoes: list[str] = []
+    elif p4_boundary_classification == "shared_implementation_invalid":
+        hard_vetoes = [str(p4_boundary_failure_code)]
+    else:
+        hard_vetoes = list(
+            _classify_windowed_stage_capture(
+                capture,
+                run_error=run_error,
+            )
+>>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
+        )
     if (
         not hard_vetoes
         and capture.get("public_timeout_closeout") is None
@@ -8962,7 +9325,13 @@ def run_hmc_windowed_mass_stage(
         and operational_warmup_result is not None
         and operational_warmup_result.operational_metric_update_count == 0
     )
-    if hard_vetoes:
+    if p4_boundary_classification == "candidate_rejected":
+        final_status = "candidate_rejected"
+        diagnostic_role = "p4e_candidate_boundary_rejection"
+    elif p4_boundary_classification == "shared_implementation_invalid":
+        final_status = "hard_veto"
+        diagnostic_role = "shared_implementation_invalid"
+    elif hard_vetoes:
         final_status = "hard_veto"
         diagnostic_role = "hard_veto"
     elif isinstance(resource_closeout, Mapping):
@@ -8983,6 +9352,17 @@ def run_hmc_windowed_mass_stage(
         mass_window_seed_kernel=mass_window_seed_kernel,
         bootstrap_kernel=selected_bootstrap,
     ))
+    engineering_probe_boundary = capture.get("raw_diagnostics", {}).get(
+        "engineering_probe_boundary"
+    )
+    if isinstance(engineering_probe_boundary, Mapping):
+        diagnostics["engineering_probe_boundary"] = dict(
+            engineering_probe_boundary
+        )
+        diagnostics["passed"] = False
+        diagnostics["p4_private_seed_evidence_available"] = (
+            p4_private_seed_evidence is not None
+        )
     diagnostics.update(
         {
             "algorithm_id": route_decision.algorithm_id,
@@ -9001,7 +9381,11 @@ def run_hmc_windowed_mass_stage(
         }
     )
     operational_work_manifest_summary = None
-    if use_operational_warmup and _attempt_budget_policy is not None:
+    if (
+        use_operational_warmup
+        and _attempt_budget_policy is not None
+        and p4_boundary_classification is None
+    ):
         operational_policy = HMCOperationalStatisticalWorkPolicy(
             initial_candidate_results=int(
                 _attempt_budget_policy.operational_screen_num_results
@@ -21226,6 +21610,62 @@ def _phase7_verification_initial_state(
             "raw_values_exposed": False,
             "reports_operational_start_lineage": False,
         }
+<<<<<<< HEAD
+=======
+    if (
+        operational.private_start_bank_policy_id
+        != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+    ):
+        raise ValueError(
+            "operational Phase 7 requires the explicit P4-E engineering probe bank"
+        )
+    engineering_qualification = operational.engineering_probe_bank_qualification
+    if engineering_qualification is None or not engineering_qualification.passed:
+        raise ValueError("operational Phase 7 P4-E qualification is missing or failed")
+    active_target = getattr(phase4_adapter, "base_adapter", None)
+    if active_target is None:
+        raise ValueError("operational Phase 7 P4-E base target identity is missing")
+    expected_target_signature = _phase7_engineering_probe_target_signature(
+        active_target
+    )
+    if engineering_qualification.target_signature != expected_target_signature:
+        raise ValueError("operational Phase 7 P4-E target identity mismatch")
+    active_scope = str(getattr(phase4_adapter, "target_scope", ""))
+    operational_scope = str(getattr(operational, "target_scope", ""))
+    if not active_scope or not operational_scope or active_scope != operational_scope:
+        raise ValueError("operational Phase 7 P4-E target scope mismatch")
+    stage_config = getattr(windowed_stage, "config", None)
+    multiplier = getattr(stage_config, "engineering_probe_covariance_multiplier", None)
+    if multiplier is None:
+        raise ValueError("operational Phase 7 P4-E configuration is missing")
+    configured_scope = getattr(stage_config, "target_scope", None)
+    if configured_scope is not None and str(configured_scope) != active_scope:
+        raise ValueError("operational Phase 7 P4-E configured target scope mismatch")
+    stage_seed = _derive_seed(
+        _validate_seed(getattr(stage_config, "seed", None)),
+        stage_index=0,
+    )
+    operational_seed = _validate_seed(getattr(operational, "seed_root", None))
+    if stage_seed != operational_seed:
+        raise ValueError("operational Phase 7 P4-E stage seed lineage mismatch")
+    expected_probe_config = Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=multiplier,
+        root_seed=operational_seed,
+    )
+    if engineering_qualification.config_signature != expected_probe_config.config_signature:
+        raise ValueError("operational Phase 7 P4-E configuration lineage mismatch")
+    if (
+        engineering_qualification.derived_seed_signature
+        != expected_probe_config.derived_seed_signature
+    ):
+        raise ValueError("operational Phase 7 P4-E derived seed lineage mismatch")
+    if (
+        engineering_qualification.transform_signature
+        != operational.final_kernel_state.transform.signature
+    ):
+        raise ValueError("operational Phase 7 P4-E transform lineage mismatch")
+>>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
     canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
     if canonical.shape != (4, windowed_stage.target_dimension):
         raise ValueError("operational verification start bank shape mismatch")
@@ -25877,6 +26317,211 @@ def _windowed_stage_error_capture(exc: Exception) -> Mapping[str, Any]:
     }
 
 
+def _p4_boundary_scalar_capture(
+    boundary: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Build a redacted P4 capture with no generic exception channel."""
+
+    return {
+        "error_type": None,
+        "error_message": None,
+        "warmup_draws": None,
+        "acceptance_trace": None,
+        "log_accept_ratio": None,
+        "target_log_prob": None,
+        "runtime_s": None,
+        "runtime_finite": False,
+        "samples_shape": None,
+        "acceptance_shape": None,
+        "log_accept_shape": None,
+        "target_log_prob_shape": None,
+        "expected_steps": None,
+        "target_dimension": None,
+        "finite_sample_count": None,
+        "nonfinite_sample_count": None,
+        "raw_diagnostics": {"engineering_probe_boundary": dict(boundary)},
+        "runtime_metadata": {},
+        "runtime_evidence": "p4_boundary",
+        "fixture_or_synthetic": False,
+        "acceptance_trace_key_present": False,
+        "acceptance_policy_filled_or_default": True,
+        "trace_summary": {"trace_keys": (), "trace_unavailability": {}},
+    }
+
+
+def _p4_unavailable_invalidity_payload(
+    *,
+    failure_code: str,
+    p4_boundary_stage: str,
+    p4_builder_entered: bool,
+    p4_seed_consumed: bool,
+    p4_rng_batch_invoked: bool,
+) -> Mapping[str, Any]:
+    return {
+        "schema": "bayesfilter.hmc_p4e_unavailable_invalidity.v1",
+        "outcome": "shared_implementation_invalid",
+        "failure_code": failure_code,
+        "stage": "windowed_mass_p4_carrier_validation",
+        "source_coverage_artifact_sha256": None,
+        "seed_registry_evidence_kind": "unavailable_invalid_carrier",
+        "seed_registry_schema": None,
+        "seed_registry_evidence_signature": None,
+        "registered_entry_count": None,
+        "consumed_entry_count": None,
+        "p4_boundary_stage": p4_boundary_stage,
+        "p4_builder_entered": p4_builder_entered,
+        "p4_seed_consumed": p4_seed_consumed,
+        "p4_rng_batch_invoked": p4_rng_batch_invoked,
+        "final_lineage_available": False,
+    }
+
+
+def _p4_boundary_capture_from_exception(
+    exc: Exception,
+    *,
+    registry: G2PreboundarySeedUseRegistry,
+    action_tracker: _G2P4BoundaryActionTracker | None = None,
+) -> tuple[Mapping[str, Any], str, str, Mapping[str, Any] | None]:
+    """Classify concrete carriers before any generic error capture is allowed."""
+
+    terminal = engineering_probe_bank_qualification_payload_from_exception(exc)
+    early = g2_preboundary_shared_invalidity_payload_from_exception(exc)
+    private = registry.validated_private_evidence(
+        g2_seed_private_evidence_from_exception(exc)
+    )
+
+    tracker_payload = (
+        None if action_tracker is None else action_tracker.scalar_payload()
+    )
+    boundary = terminal if terminal is not None else early
+    if boundary is not None and private is not None:
+        private_signature = private.get(
+            "seed_use_registry_signature",
+            private.get("seed_use_registry_snapshot_signature"),
+        )
+        private_entries = private.get("entries")
+        private_count = (
+            None
+            if not isinstance(private_entries, (tuple, list))
+            else len(private_entries)
+        )
+        boundary_count = boundary.get(
+            "seed_preboundary_consumed_count",
+            boundary.get("registered_entry_count"),
+        )
+        if (
+            boundary.get("seed_registry_evidence_signature") != private_signature
+            or boundary.get("seed_registry_schema") != private.get("schema")
+            or boundary.get("source_coverage_artifact_sha256")
+            != registry.source_coverage_artifact_sha256
+            or private.get("source_coverage_artifact_sha256")
+            != registry.source_coverage_artifact_sha256
+            or boundary_count != private.get("preboundary_consumed_seed_count")
+            or (
+                early is not None
+                and (
+                    boundary.get("registered_entry_count") != private_count
+                    or boundary.get("consumed_entry_count") != private_count
+                )
+            )
+        ):
+            boundary = None
+    elif boundary is not None:
+        boundary = None
+
+    if boundary is not None and tracker_payload is not None:
+        action_names = (
+            "p4_boundary_stage",
+            "p4_builder_entered",
+            "p4_seed_consumed",
+            "p4_rng_batch_invoked",
+        )
+        if any(
+            boundary.get(name) != tracker_payload[name]
+            for name in action_names
+        ):
+            boundary = None
+        elif boundary.get("final_lineage_available") is True:
+            callback_names = (
+                "target_health_callback_invocation_count",
+                "target_health_callback_batch_row_count",
+                "target_health_callback_batch_dimension",
+            )
+            if any(
+                boundary.get(name) != tracker_payload[name]
+                for name in callback_names
+            ):
+                boundary = None
+        elif any(
+            tracker_payload[name] not in {0, None}
+            for name in (
+                "target_health_callback_invocation_count",
+                "target_health_callback_batch_row_count",
+                "target_health_callback_batch_dimension",
+            )
+        ):
+            boundary = None
+
+    if boundary is not None:
+        outcome = str(boundary.get("outcome"))
+        failure_code = str(boundary.get("failure_code"))
+        if outcome in {
+            "candidate_generation_invalid",
+            "candidate_policy_instance_invalid",
+        }:
+            return (
+                _p4_boundary_scalar_capture(boundary),
+                "candidate_rejected",
+                failure_code,
+                private,
+            )
+        if outcome == "shared_implementation_invalid":
+            return (
+                _p4_boundary_scalar_capture(boundary),
+                "shared_implementation_invalid",
+                failure_code,
+                private,
+            )
+
+    try:
+        carrier_attribute_present = bool(
+            hasattr(exc, _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE)
+            or hasattr(exc, _G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE)
+        )
+    except Exception:  # noqa: BLE001 - hostile carrier access remains redacted.
+        carrier_attribute_present = True
+    failure_code = (
+        "qualification_carrier_invalid"
+        if carrier_attribute_present
+        else "unexpected_builder_exception"
+    )
+    if tracker_payload is None:
+        p4_consumed = bool(registry.p4_seed_consumed)
+        action_payload = {
+            "p4_boundary_stage": (
+                "seed_consumed_pre_rng" if p4_consumed else "not_entered"
+            ),
+            "p4_builder_entered": p4_consumed,
+            "p4_seed_consumed": p4_consumed,
+            "p4_rng_batch_invoked": False,
+        }
+    else:
+        action_payload = tracker_payload
+    boundary = _p4_unavailable_invalidity_payload(
+        failure_code=failure_code,
+        p4_boundary_stage=str(action_payload["p4_boundary_stage"]),
+        p4_builder_entered=bool(action_payload["p4_builder_entered"]),
+        p4_seed_consumed=bool(action_payload["p4_seed_consumed"]),
+        p4_rng_batch_invoked=bool(action_payload["p4_rng_batch_invoked"]),
+    )
+    return (
+        _p4_boundary_scalar_capture(boundary),
+        "shared_implementation_invalid",
+        failure_code,
+        None,
+    )
+
+
 def _classify_windowed_stage_capture(
     capture: Mapping[str, Any],
     *,
@@ -26141,6 +26786,19 @@ def _warmup_draw_provenance(
     capture: Mapping[str, Any],
     draw_capture_policy: Mapping[str, Any],
 ) -> Mapping[str, Any]:
+    if capture.get("runtime_evidence") == "p4_boundary":
+        return {
+            "source": "none_p4_boundary",
+            "sample_space": None,
+            "samples_shape": None,
+            "expected_steps": None,
+            "target_dimension": None,
+            "draw_capture_policy_hash": stable_config_hash(draw_capture_policy),
+            "fixture_or_synthetic": False,
+            "runtime_evidence": "p4_boundary",
+            "adaptation_input_only": False,
+            "posterior_samples": False,
+        }
     return {
         "source": "run_full_chain_tfp_hmc_retained_samples",
         "sample_space": "latent_fixed_mass",
@@ -26158,6 +26816,21 @@ def _warmup_draw_provenance(
 def _acceptance_telemetry_provenance(
     capture: Mapping[str, Any],
 ) -> Mapping[str, Any]:
+    if capture.get("runtime_evidence") == "p4_boundary":
+        return {
+            "source": "none_p4_boundary",
+            "shape": None,
+            "expected_steps": None,
+            "trace_key_present": False,
+            "fixture_or_synthetic": False,
+            "policy_filled_or_default": True,
+            "constant_trace": False,
+            "runtime_decision_count_supported": False,
+            "accepted_decision_count": None,
+            "acceptance_decision_count": None,
+            "runtime_evidence": "p4_boundary",
+            "finite_and_aligned": False,
+        }
     acceptance = capture.get("acceptance_trace")
     return {
         "source": "run_full_chain_tfp_hmc_trace.is_accepted",
