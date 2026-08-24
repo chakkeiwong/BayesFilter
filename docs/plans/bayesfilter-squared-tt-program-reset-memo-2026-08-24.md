@@ -71,6 +71,19 @@ question is now answered — the suspect was the domain).
 
 ## Continuation queue (in order)
 
+UPDATE 2 (2026-08-24, engine block): C2 value engine BUILT and
+oracle-certified. Commits eb25d325 (HermiteBasis1D + U-HERM-1),
+36516d5a (gaussian engine), fa8446e2 (U-RET-1 + closure + degree-0
+T=120 gate at 1e-8), d9a5481f (Christoffel half-mixture row law after
+the stress rung exposed the raw-row Gram catastrophe; ALS floor
+quantified 3/8/16 sweeps -> 1e-3/7e-6/1e-7 per step; warm start
+evaluated + rejected; rung 4b = fitter-floor regression bound sweeps 8
+T=12 gate 2e-4; full suite 10/10). Findings + amendments in the C2
+note sec 3b. REMAINING before attempt05: XLA port + parity rung (claim
+lane), adjoint engine port + I-P2-4-style fixture, attempt05 SV plan
+(fitter budget = declared tuned control; Student-t floor expected per
+F1; domination statement incl. retained floor term).
+
 UPDATE (later 2026-08-24): items 1-3's reading/writing/review halves are
 DONE — papers read (caveat disposition: both Hermite objections are
 sampling-side CDF inversion or the O7 domination condition; CD22 Prop 2
