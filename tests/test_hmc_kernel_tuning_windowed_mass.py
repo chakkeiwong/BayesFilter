@@ -6,6 +6,7 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
@@ -36,7 +37,14 @@ from bayesfilter.inference import (
     run_hmc_start_bank_diagnostic,
     run_hmc_windowed_mass_stage,
 )
-from bayesfilter.inference.hmc_coordinates import transform_from_precomputed_mass_artifact
+from bayesfilter.inference.hmc_coordinates import (
+    AffineCoordinateTransform,
+    KernelState,
+    MomentumMetric,
+    PositionCovarianceEstimate,
+    WarmupTrajectoryPolicy,
+    transform_from_precomputed_mass_artifact,
+)
 from bayesfilter.inference.hmc_warmup import (
     MetricAdequacyDecision,
     compose_base_transform_with_nested_artifact,
@@ -2251,3 +2259,361 @@ def test_diagnostic_entry_point_refuses_existing_output_before_prerun(
             parameter_scales=np.ones(2),
         )
     assert calls == 0
+
+
+class _P4IdentityNestedTransform:
+    def position_to_latent(self, value: Any) -> np.ndarray:
+        return np.asarray(value, dtype=float)
+
+    def latent_to_position(self, value: Any) -> np.ndarray:
+        return np.asarray(value, dtype=float)
+
+
+class _P4BaseAdapter:
+    def __init__(self, signature: str) -> None:
+        self._signature = signature
+
+    def adapter_signature(self) -> str:
+        return self._signature
+
+
+class _P4NestedAdapter:
+    def __init__(
+        self,
+        signature: str,
+        *,
+        target_signature: str = "p4-phase7-fixture-target",
+        target_scope: str = "p4_phase7_fixture",
+    ) -> None:
+        self.transform = _P4IdentityNestedTransform()
+        self._signature = signature
+        self.base_adapter = _P4BaseAdapter(target_signature)
+        self.target_scope = target_scope
+
+    def adapter_signature(self) -> str:
+        return self._signature
+
+    def latent_to_position(self, value: Any) -> np.ndarray:
+        return self.transform.latent_to_position(value)
+
+
+def _p4_operational_fixture(*, policy_id: str | None = None) -> Any:
+    estimate = PositionCovarianceEstimate(
+        center=np.zeros(2),
+        covariance=np.eye(2),
+        source_coordinate_signature="p4-phase7-fixture-source",
+        estimator_family="deterministic_test_fixture",
+        state_count=4,
+        effective_rank=2,
+        regularization_report={"method": "none"},
+        adequacy_report={"passed": True},
+    )
+    transform = AffineCoordinateTransform.from_covariance_estimate(estimate)
+    state = KernelState(
+        canonical_theta=np.zeros(2),
+        active_latent=np.zeros(2),
+        transform=transform,
+        momentum_metric=MomentumMetric.identity_for(transform),
+        epsilon=None,
+        trajectory_policy=WarmupTrajectoryPolicy(3, 16),
+        adaptation_generation=1,
+        seed_lineage=(20260821, 30),
+        evidence_status="p4_phase7_fixture",
+    ).with_epsilon(0.1, evidence_status="p4_phase7_fixture_frozen")
+    config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=2.0,
+        root_seed=(20260821, 9207),
+    )
+    build = hmc_warmup.build_phase7_engineering_probe_bank(
+        final_kernel_state=state,
+        config=config,
+        target_signature="p4-phase7-fixture-target",
+        target_health_fn=lambda candidates: {
+            "shared_invalidity_reasons": (),
+            "candidate_data_invalidity_reasons": (),
+            "target_value_finite": True,
+            "target_score_finite": True,
+            "target_status_failure_count": 0,
+            "evaluated_draw_count": int(tf.convert_to_tensor(candidates).shape[0]),
+        },
+    )
+    return SimpleNamespace(
+        private_start_bank_policy_id=(
+            hmc_warmup.PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+            if policy_id is None
+            else policy_id
+        ),
+        engineering_probe_bank_qualification=build.qualification,
+        private_start_bank_theta=build.canonical_theta,
+        private_start_bank_signature=build.qualification.content_signature,
+        seed_root=(20260821, 9207),
+        final_kernel_state=state,
+        target_scope="p4_phase7_fixture",
+    )
+
+
+def test_p4_multiplier_is_explicit_private_and_propagates_without_hmc() -> None:
+    stage = HMCWindowedMassStageConfig(
+        seed=(987654321, 123456789),
+        engineering_probe_covariance_multiplier=2.125
+    )
+    stage_payload = stage.payload()
+    public = stage_payload["engineering_probe_bank"]
+    serialized = json.dumps(stage_payload, sort_keys=True)
+    assert public["configured"] is True
+    assert public["policy_id"] == hmc_warmup.PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+    assert public["private_config_signature"]
+    assert public["covariance_multiplier_exposed"] is False
+    assert stage_payload["seed"] is None
+    assert stage_payload["seed_signature"]
+    assert stage_payload["seed_values_exposed"] is False
+    assert "987654321" not in serialized
+    assert "123456789" not in serialized
+    assert "2.125" not in serialized
+    diagnostic_public = hmc_kernel_tuning._engineering_probe_diagnostic_config_public_payload(
+        {
+            "seed": (987654321, 123456789),
+            "step_size": 0.1,
+        },
+        configured=True,
+    )
+    assert diagnostic_public is not None
+    assert diagnostic_public["seed"] is None
+    assert diagnostic_public["seed_signature"]
+    assert "987654321" not in json.dumps(diagnostic_public, sort_keys=True)
+    assert "123456789" not in json.dumps(diagnostic_public, sort_keys=True)
+    assert HMCWindowedMassStageConfig().engineering_probe_covariance_multiplier is None
+
+    for config_type in (
+        HMCWindowedMassStageConfig,
+        hmc_kernel_tuning.HMCTuneVerifyRepairLoopConfig,
+        HMCKernelTuningConfig,
+    ):
+        for invalid in (0.0, -1.0, np.nan, np.inf, True):
+            with pytest.raises(ValueError, match="positive and finite"):
+                config_type(engineering_probe_covariance_multiplier=invalid)
+
+    top = HMCKernelTuningConfig.diagnostic(
+        engineering_probe_covariance_multiplier=2.125
+    )
+    loop = hmc_kernel_tuning._public_loop_config(top)
+    propagated_stage = hmc_kernel_tuning._phase7_windowed_stage_config(
+        loop,
+        attempt_index=0,
+    )
+    assert loop.engineering_probe_covariance_multiplier == pytest.approx(2.125)
+    assert propagated_stage.engineering_probe_covariance_multiplier == pytest.approx(
+        2.125
+    )
+
+    for config_type in (
+        hmc_kernel_tuning.HMCTuneVerifyRepairLoopConfig,
+        HMCKernelTuningConfig,
+    ):
+        configured_payload = config_type(
+            seed=(987654321, 123456789),
+            engineering_probe_covariance_multiplier=2.125,
+        ).payload()
+        assert configured_payload["seed"] is None
+        assert configured_payload["seed_signature"]
+        assert configured_payload["seed_values_exposed"] is False
+        serialized_config = json.dumps(configured_payload, sort_keys=True)
+        assert "987654321" not in serialized_config
+        assert "123456789" not in serialized_config
+
+
+def test_phase7_initial_state_consumes_only_p4_bank_with_rowwise_lineage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_hmc(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("deterministic P4-E lineage test must not run HMC")
+
+    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+    operational = _p4_operational_fixture()
+    stage = SimpleNamespace(
+        config=HMCWindowedMassStageConfig(
+            seed=(20260821, 31),
+            target_scope="p4_phase7_fixture",
+            engineering_probe_covariance_multiplier=2.0,
+        ),
+        operational_warmup_result=operational,
+        target_dimension=2,
+    )
+    phase4_adapter = _P4NestedAdapter("p4-phase4-adapter")
+    verification_adapter = _P4NestedAdapter("p4-verification-adapter")
+
+    initial_state, lineage = hmc_kernel_tuning._phase7_verification_initial_state(
+        windowed_stage=stage,
+        phase4_adapter=phase4_adapter,
+        verification_adapter=verification_adapter,
+        verification_hmc_signature="p4-verification-adapter",
+    )
+
+    np.testing.assert_allclose(
+        initial_state,
+        operational.final_kernel_state.transform.theta_to_latent(
+            operational.private_start_bank_theta
+        ),
+        rtol=1.0e-10,
+        atol=1.0e-10,
+    )
+    assert lineage["source"] == "phase7_engineering_probe_bank_v1"
+    assert lineage["policy_id"] == hmc_warmup.PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+    assert lineage["qualification_content_signature"] == (
+        operational.engineering_probe_bank_qualification.content_signature
+    )
+    assert lineage["count"] == 4
+    assert lineage["canonical_round_trip_passed"] is True
+    assert lineage["final_coordinate_match_passed"] is True
+    assert lineage["raw_values_exposed"] is False
+    assert lineage["evidence_role"] == "engineering_only"
+    assert lineage["promotion_role"] == "non_promoting"
+    assert lineage["reports_posterior_convergence"] is False
+
+
+def test_phase7_initial_state_rejects_legacy_operational_bank_without_fallback() -> None:
+    operational = _p4_operational_fixture(policy_id="bayesfilter.greedy_four_start_bank.v1")
+    stage = SimpleNamespace(
+        operational_warmup_result=operational,
+        target_dimension=2,
+    )
+
+    with pytest.raises(ValueError, match="requires the explicit P4-E"):
+        hmc_kernel_tuning._phase7_verification_initial_state(
+            windowed_stage=stage,
+            phase4_adapter=_P4NestedAdapter("p4-phase4-adapter"),
+            verification_adapter=_P4NestedAdapter("p4-verification-adapter"),
+            verification_hmc_signature="p4-verification-adapter",
+        )
+
+
+def _p4_stage_fixture() -> tuple[Any, Any]:
+    operational = _p4_operational_fixture()
+    stage = SimpleNamespace(
+        config=HMCWindowedMassStageConfig(
+            seed=(20260821, 31),
+            target_scope="p4_phase7_fixture",
+            engineering_probe_covariance_multiplier=2.0,
+        ),
+        operational_warmup_result=operational,
+        target_dimension=2,
+    )
+    return stage, operational
+
+
+def _p4_operational_with_qualification(
+    operational: Any,
+    qualification: Any,
+    *,
+    content_signature: str,
+) -> Any:
+    values = vars(operational).copy()
+    values["engineering_probe_bank_qualification"] = qualification
+    values["private_start_bank_signature"] = content_signature
+    return SimpleNamespace(**values)
+
+
+def test_phase7_initial_state_rejects_stale_target_identity_even_when_content_matches() -> None:
+    stage, operational = _p4_stage_fixture()
+    wrong_target = "p4-stale-target"
+    qualification = operational.engineering_probe_bank_qualification
+    assert qualification is not None
+    content_signature = hmc_warmup._phase7_engineering_probe_bank_content_signature(
+        operational.private_start_bank_theta,
+        transform_signature=qualification.transform_signature,
+        target_signature=wrong_target,
+        config_signature=qualification.config_signature,
+    )
+    stale_qualification = replace(
+        qualification,
+        target_signature=wrong_target,
+        content_signature=content_signature,
+    )
+    stale_operational = _p4_operational_with_qualification(
+        operational,
+        stale_qualification,
+        content_signature=content_signature,
+    )
+    stage.operational_warmup_result = stale_operational
+
+    with pytest.raises(ValueError, match="target identity mismatch"):
+        hmc_kernel_tuning._phase7_verification_initial_state(
+            windowed_stage=stage,
+            phase4_adapter=_P4NestedAdapter("p4-phase4-adapter"),
+            verification_adapter=_P4NestedAdapter("p4-verification-adapter"),
+            verification_hmc_signature="p4-verification-adapter",
+        )
+
+
+def test_phase7_initial_state_uses_builder_target_signature_fallback() -> None:
+    stage, operational = _p4_stage_fixture()
+
+    class _NoExplicitSignature:
+        pass
+
+    base_adapter = _NoExplicitSignature()
+    qualification = operational.engineering_probe_bank_qualification
+    assert qualification is not None
+    target_signature = hmc_warmup._base_adapter_signature(base_adapter)
+    content_signature = hmc_warmup._phase7_engineering_probe_bank_content_signature(
+        operational.private_start_bank_theta,
+        transform_signature=qualification.transform_signature,
+        target_signature=target_signature,
+        config_signature=qualification.config_signature,
+    )
+    stage.operational_warmup_result = _p4_operational_with_qualification(
+        operational,
+        replace(
+            qualification,
+            target_signature=target_signature,
+            content_signature=content_signature,
+        ),
+        content_signature=content_signature,
+    )
+    phase4_adapter = _P4NestedAdapter("p4-phase4-adapter")
+    phase4_adapter.base_adapter = base_adapter
+
+    initial_state, _lineage = hmc_kernel_tuning._phase7_verification_initial_state(
+        windowed_stage=stage,
+        phase4_adapter=phase4_adapter,
+        verification_adapter=_P4NestedAdapter("p4-verification-adapter"),
+        verification_hmc_signature="p4-verification-adapter",
+    )
+    assert initial_state.shape == (4, 2)
+
+
+def test_phase7_initial_state_rejects_stale_config_and_seed_lineage() -> None:
+    stage, operational = _p4_stage_fixture()
+    qualification = operational.engineering_probe_bank_qualification
+    assert qualification is not None
+    wrong_config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=3.0,
+        root_seed=(20260821, 12345),
+    )
+    content_signature = hmc_warmup._phase7_engineering_probe_bank_content_signature(
+        operational.private_start_bank_theta,
+        transform_signature=qualification.transform_signature,
+        target_signature=qualification.target_signature,
+        config_signature=wrong_config.config_signature,
+    )
+    stale_qualification = replace(
+        qualification,
+        config_signature=wrong_config.config_signature,
+        derived_seed_signature=wrong_config.derived_seed_signature,
+        content_signature=content_signature,
+    )
+    stage.operational_warmup_result = _p4_operational_with_qualification(
+        operational,
+        stale_qualification,
+        content_signature=content_signature,
+    )
+
+    with pytest.raises(ValueError, match="configuration lineage mismatch"):
+        hmc_kernel_tuning._phase7_verification_initial_state(
+            windowed_stage=stage,
+            phase4_adapter=_P4NestedAdapter("p4-phase4-adapter"),
+            verification_adapter=_P4NestedAdapter("p4-verification-adapter"),
+            verification_hmc_signature="p4-verification-adapter",
+        )

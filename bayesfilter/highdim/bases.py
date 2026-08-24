@@ -337,6 +337,130 @@ class LegendreBasis1D:
 
 
 @dataclass(frozen=True)
+class RealLine:
+    """Identity domain for bases living directly on the whitened real line.
+
+    Deliberately exposes no ``length``: any bounded-uniform code path that
+    reaches for a box volume must fail loudly rather than silently reuse
+    bounded-program constants (C2 derivation note 2026-08-24, deletion
+    list).
+    """
+
+    dtype: tf.DType = tf.float64
+
+    def to_reference(self, points: tf.Tensor) -> tf.Tensor:
+        return tf.convert_to_tensor(points, dtype=tf.float64)
+
+    def from_reference(self, reference_points: tf.Tensor) -> tf.Tensor:
+        return tf.convert_to_tensor(reference_points, dtype=tf.float64)
+
+    def domain_to_reference_log_density(self, points: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(points, dtype=tf.float64)
+        return tf.zeros_like(values)
+
+    def reference_to_domain_log_density(self, reference_points: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(reference_points, dtype=tf.float64)
+        return tf.zeros_like(values)
+
+    def manifest_payload(self) -> Mapping[str, object]:
+        return {"family": "real_line", "dtype": self.dtype.name}
+
+
+@dataclass(frozen=True)
+class GaussianReferenceMeasure:
+    """Standard normal probability reference measure on the real line."""
+
+    domain: RealLine
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.domain, RealLine):
+            raise TypeError("domain must be a RealLine")
+
+
+@dataclass(frozen=True)
+class HermiteBasis1D:
+    """Normalized probabilists' Hermite basis under the standard normal measure.
+
+    C2 Gaussian-reference basis (reviewed derivation note 2026-08-24):
+    He~_k = He_k / sqrt(k!), orthonormal w.r.t. N(0, 1), so every mass
+    matrix under the reference probability measure is the identity and
+    Gram chains reduce to plain core contractions. Mass and integral
+    quantities are refused fail-closed for the reference-Lebesgue
+    measure, where the polynomial contraction diverges on the line.
+    """
+
+    max_degree: int
+    domain: RealLine = RealLine()
+    normalized: bool = True
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.domain, RealLine):
+            raise TypeError("domain must be a RealLine")
+        if int(self.max_degree) < 0:
+            raise ValueError("max_degree must be nonnegative")
+        if not self.normalized:
+            raise ValueError("HermiteBasis1D pins the normalized family")
+
+    @property
+    def basis_dim(self) -> int:
+        return int(self.max_degree) + 1
+
+    @property
+    def dtype(self) -> tf.DType:
+        return self.domain.dtype
+
+    @property
+    def reference_measure(self) -> GaussianReferenceMeasure:
+        return GaussianReferenceMeasure(self.domain)
+
+    def evaluate(self, points: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(points, dtype=tf.float64)
+        return _hermite_normalized_values(values, self.max_degree)
+
+    def derivative(self, points: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(points, dtype=tf.float64)
+        return _hermite_normalized_derivatives(values, self.max_degree)
+
+    def mass_matrix(self, measure: MassMeasure) -> tf.Tensor:
+        if not isinstance(measure, MassMeasure):
+            raise TypeError("measure must be a MassMeasure")
+        if measure is not MassMeasure.REFERENCE_MEASURE:
+            raise ValueError(
+                "HermiteBasis1D mass matrix exists only under the Gaussian "
+                "reference probability measure; the reference-Lebesgue "
+                "polynomial contraction diverges on the real line"
+            )
+        return tf.eye(self.basis_dim, dtype=tf.float64)
+
+    def integral_vector(self, measure: MassMeasure) -> tf.Tensor:
+        if not isinstance(measure, MassMeasure):
+            raise TypeError("measure must be a MassMeasure")
+        if measure is not MassMeasure.REFERENCE_MEASURE:
+            raise ValueError(
+                "HermiteBasis1D integral vector exists only under the "
+                "Gaussian reference probability measure"
+            )
+        return tf.concat(
+            [
+                tf.ones([1], dtype=tf.float64),
+                tf.zeros([self.basis_dim - 1], dtype=tf.float64),
+            ],
+            axis=0,
+        )
+
+    def manifest_payload(self) -> Mapping[str, object]:
+        return {
+            "family": "hermite_probabilists_normalized",
+            "basis_dim": self.basis_dim,
+            "domain_map": self.domain.manifest_payload(),
+            "max_degree": int(self.max_degree),
+            "normalized": bool(self.normalized),
+            "dtype": self.dtype.name,
+            "reference_measure": "GaussianReferenceMeasure",
+        }
+
+
+@dataclass(frozen=True)
 class LagrangePiecewiseBasis1D:
     """BayesFilter-owned piecewise Lagrange basis matching author cardinality."""
 
@@ -745,6 +869,42 @@ def _legendre_reference_derivatives(xi: tf.Tensor, max_degree: int) -> tf.Tensor
         derivs.append(deriv)
     stacked = tf.stack(derivs, axis=-1)
     return tf.reshape(stacked, tf.concat([tf.shape(xi), [max_degree + 1]], axis=0))
+
+
+def _hermite_normalized_values(u: tf.Tensor, max_degree: int) -> tf.Tensor:
+    """Normalized probabilists' Hermite values He~_k(u) = He_k(u)/sqrt(k!).
+
+    Recurrence (C2 derivation note 2026-08-24):
+    He~_{k+1} = (u * He~_k - sqrt(k) * He~_{k-1}) / sqrt(k + 1).
+    """
+    u = tf.convert_to_tensor(u, dtype=tf.float64)
+    flat = tf.reshape(u, [-1])
+    values = [tf.ones_like(flat)]
+    if max_degree >= 1:
+        values.append(flat)
+    for k in range(1, max_degree):
+        k_float = tf.cast(k, tf.float64)
+        next_value = (
+            flat * values[k] - tf.sqrt(k_float) * values[k - 1]
+        ) / tf.sqrt(k_float + 1.0)
+        values.append(next_value)
+    stacked = tf.stack(values, axis=-1)
+    return tf.reshape(stacked, tf.concat([tf.shape(u), [max_degree + 1]], axis=0))
+
+
+def _hermite_normalized_derivatives(u: tf.Tensor, max_degree: int) -> tf.Tensor:
+    """d/du He~_k(u) = sqrt(k) * He~_{k-1}(u) (shift-and-scale identity)."""
+    u = tf.convert_to_tensor(u, dtype=tf.float64)
+    flat = tf.reshape(u, [-1])
+    polys = tf.reshape(
+        _hermite_normalized_values(flat, max_degree),
+        [tf.shape(flat)[0], max_degree + 1],
+    )
+    columns = [tf.zeros_like(flat)]
+    for k in range(1, max_degree + 1):
+        columns.append(tf.sqrt(tf.cast(k, tf.float64)) * polys[:, k - 1])
+    stacked = tf.stack(columns, axis=-1)
+    return tf.reshape(stacked, tf.concat([tf.shape(u), [max_degree + 1]], axis=0))
 
 
 def _validate_basis_protocol(basis: Basis1DProtocol) -> None:

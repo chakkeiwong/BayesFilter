@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import inspect
 import os
 import types
 from dataclasses import replace
@@ -14,6 +15,8 @@ import tensorflow as tf
 import bayesfilter.inference.hmc_warmup as hmc_warmup
 from bayesfilter.inference.hmc_coordinates import (
     AffineCoordinateTransform,
+    KernelState,
+    MomentumMetric,
     PositionCovarianceEstimate,
     WarmupTrajectoryPolicy,
 )
@@ -2046,3 +2049,347 @@ def test_repair_v7_schedule_reserves_exact_four_state_final_source() -> None:
     )
     assert schedule[-1].length == 4
     assert sum(window.length for window in schedule) == 32
+
+
+def _p4_kernel_state(
+    *,
+    covariance: np.ndarray | None = None,
+    endpoint: np.ndarray | None = None,
+) -> KernelState:
+    covariance = np.diag([4.0, 9.0]) if covariance is None else covariance
+    transform = _transform(covariance, center=np.array([0.3, -0.4]))
+    theta = np.array([0.7, -0.1]) if endpoint is None else endpoint
+    latent = transform.theta_to_latent(theta).numpy()
+    return KernelState(
+        canonical_theta=theta,
+        active_latent=latent,
+        transform=transform,
+        momentum_metric=MomentumMetric.identity_for(transform),
+        epsilon=None,
+        trajectory_policy=WarmupTrajectoryPolicy(3, 16),
+        adaptation_generation=2,
+        seed_lineage=(20260821, 11),
+        evidence_status="metric_and_step_frozen_fixture",
+    ).with_epsilon(0.1, evidence_status="metric_and_step_frozen_fixture")
+
+
+def _passing_p4_target_health(candidates: object) -> dict[str, object]:
+    assert tuple(tf.convert_to_tensor(candidates).shape) == (4, 2)
+    return {
+        "shared_invalidity_reasons": (),
+        "candidate_data_invalidity_reasons": (),
+        "target_value_finite": True,
+        "target_score_finite": True,
+        "target_status_failure_count": 0,
+        "evaluated_draw_count": 4,
+    }
+
+
+def test_p4_engineering_probe_bank_uses_sqrt_multiplier_covariance_geometry() -> None:
+    state = _p4_kernel_state()
+    multiplier = 2.5
+    offsets = np.array(
+        [
+            [np.sqrt(2.0), 0.0],
+            [-np.sqrt(2.0), 0.0],
+            [0.0, np.sqrt(2.0)],
+            [0.0, -np.sqrt(2.0)],
+        ]
+    )
+    build = hmc_warmup.build_phase7_engineering_probe_bank(
+        final_kernel_state=state,
+        config=hmc_warmup.Phase7EngineeringProbeBankConfig(
+            chain_count=4,
+            covariance_multiplier=multiplier,
+            root_seed=(20260821, 12),
+        ),
+        target_signature="p4-test-target",
+        target_health_fn=_passing_p4_target_health,
+        _offset_sampler=lambda shape, seed: offsets,
+    )
+
+    centered = build.canonical_theta - state.canonical_theta
+    np.testing.assert_allclose(
+        centered.T @ centered / 4.0,
+        multiplier * state.transform.covariance,
+        rtol=1.0e-12,
+        atol=1.0e-12,
+    )
+    np.testing.assert_allclose(
+        state.transform.theta_to_latent(build.canonical_theta),
+        build.final_latent,
+        rtol=1.0e-12,
+        atol=1.0e-12,
+    )
+    assert build.qualification.passed is True
+
+
+def test_p4_engineering_probe_config_is_explicit_and_validates_before_callbacks() -> None:
+    config_parameters = inspect.signature(
+        hmc_warmup.Phase7EngineeringProbeBankConfig
+    ).parameters
+    assert config_parameters["covariance_multiplier"].default is inspect.Parameter.empty
+    builder_parameters = inspect.signature(
+        hmc_warmup.build_phase7_engineering_probe_bank
+    ).parameters
+    assert builder_parameters["target_signature"].default is inspect.Parameter.empty
+    with pytest.raises(TypeError):
+        hmc_warmup.Phase7EngineeringProbeBankConfig(  # type: ignore[call-arg]
+            chain_count=4,
+            root_seed=(1, 2),
+        )
+    for invalid in (0.0, -1.0, np.nan, np.inf, True):
+        with pytest.raises(ValueError, match="positive and finite"):
+            hmc_warmup.Phase7EngineeringProbeBankConfig(
+                chain_count=4,
+                covariance_multiplier=invalid,
+                root_seed=(1, 2),
+            )
+    with pytest.raises(ValueError, match="requires four chains"):
+        hmc_warmup.Phase7EngineeringProbeBankConfig(
+            chain_count=3,
+            covariance_multiplier=2.0,
+            root_seed=(1, 2),
+        )
+
+
+def test_p4_engineering_probe_bank_is_repeatable_domain_separated_and_history_free() -> None:
+    state = _p4_kernel_state()
+    config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=2.0,
+        root_seed=(20260821, 13),
+    )
+    first = hmc_warmup.build_phase7_engineering_probe_bank(
+        final_kernel_state=state,
+        config=config,
+        target_signature="p4-test-target",
+        target_health_fn=_passing_p4_target_health,
+    )
+    second = hmc_warmup.build_phase7_engineering_probe_bank(
+        final_kernel_state=state,
+        config=config,
+        target_signature="p4-test-target",
+        target_health_fn=_passing_p4_target_health,
+    )
+    changed_seed = hmc_warmup.build_phase7_engineering_probe_bank(
+        final_kernel_state=state,
+        config=replace(config, root_seed=(20260821, 14)),
+        target_signature="p4-test-target",
+        target_health_fn=_passing_p4_target_health,
+    )
+    changed_multiplier = hmc_warmup.build_phase7_engineering_probe_bank(
+        final_kernel_state=state,
+        config=replace(config, covariance_multiplier=3.0),
+        target_signature="p4-test-target",
+        target_health_fn=_passing_p4_target_health,
+    )
+    changed_target = hmc_warmup.build_phase7_engineering_probe_bank(
+        final_kernel_state=state,
+        config=config,
+        target_signature="p4-other-target",
+        target_health_fn=_passing_p4_target_health,
+    )
+
+    assert first.standard_normal_offsets.tobytes() == second.standard_normal_offsets.tobytes()
+    assert first.canonical_theta.tobytes() == second.canonical_theta.tobytes()
+    assert first.qualification == second.qualification
+    assert not np.array_equal(first.canonical_theta, changed_seed.canonical_theta)
+    assert not np.array_equal(first.canonical_theta, changed_multiplier.canonical_theta)
+    assert first.qualification.content_signature != changed_seed.qualification.content_signature
+    assert first.qualification.content_signature != (
+        changed_multiplier.qualification.content_signature
+    )
+    assert first.canonical_theta.tobytes() == changed_target.canonical_theta.tobytes()
+    assert first.qualification.content_signature != (
+        changed_target.qualification.content_signature
+    )
+    assert first.qualification.target_signature == "p4-test-target"
+    assert config.derived_seed != config.root_seed
+    assert config.derived_seed != hmc_warmup._seed(config.root_seed, 7)
+    builder_parameters = inspect.signature(
+        hmc_warmup.build_phase7_engineering_probe_bank
+    ).parameters
+    assert "history" not in builder_parameters
+    assert "run_full_chain" not in builder_parameters
+    source = inspect.getsource(hmc_warmup.build_phase7_engineering_probe_bank)
+    assert "tfp.mcmc" not in source
+    assert "run_operational_windowed_warmup" not in source
+
+
+def test_p4_postfreeze_path_never_calls_legacy_selectors_or_reads_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_selector(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("P4-E must not call a legacy history selector")
+
+    monkeypatch.setattr(hmc_warmup, "_assess_private_start_bank", forbidden_selector)
+    monkeypatch.setattr(
+        hmc_warmup,
+        "_best_effort_shadow_start_bank_scope",
+        forbidden_selector,
+    )
+    state = _p4_kernel_state()
+    config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=2.0,
+        root_seed=(20260821, 16),
+    )
+    common = {
+        "final_kernel_state": state,
+        "adapter": _GaussianAdapter(np.eye(2)),
+        "engineering_probe_config": config,
+        "target_status_trace_policy": "none",
+    }
+    first = hmc_warmup._build_postfreeze_private_start_bank(
+        **common,
+        final_window_history=np.full((4, 2), np.nan),
+        all_window_history=np.full((32, 2), np.nan),
+    )
+    second = hmc_warmup._build_postfreeze_private_start_bank(
+        **common,
+        final_window_history=np.arange(8.0).reshape((4, 2)),
+        all_window_history=np.arange(64.0).reshape((32, 2)),
+    )
+
+    assert first[0].tobytes() == second[0].tobytes()
+    assert first[1] is None and second[1] is None
+    assert first[2] == second[2]
+    assert first[3] == hmc_warmup.PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+
+
+def test_p4_engineering_probe_bank_fails_once_without_redraw_or_filtering() -> None:
+    state = _p4_kernel_state()
+    config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=2.0,
+        root_seed=(20260821, 15),
+    )
+    sampler_calls = 0
+    target_calls = 0
+
+    def duplicate_sampler(shape: tuple[int, int], seed: tuple[int, int]) -> np.ndarray:
+        nonlocal sampler_calls
+        sampler_calls += 1
+        assert shape == (4, 2)
+        assert seed == config.derived_seed
+        return np.zeros(shape)
+
+    def target_health(_candidates: object) -> dict[str, object]:
+        nonlocal target_calls
+        target_calls += 1
+        return _passing_p4_target_health(_candidates)
+
+    with pytest.raises(ValueError, match="candidate_generation_duplicate") as error:
+        hmc_warmup.build_phase7_engineering_probe_bank(
+            final_kernel_state=state,
+            config=config,
+            target_signature="p4-test-target",
+            target_health_fn=target_health,
+            _offset_sampler=duplicate_sampler,
+        )
+    payload = hmc_warmup.engineering_probe_bank_qualification_payload_from_exception(
+        error.value
+    )
+    assert sampler_calls == 1
+    assert target_calls == 0
+    assert payload is not None
+    assert payload["outcome"] == "candidate_generation_invalid"
+    assert payload["failure_code"] == "candidate_generation_duplicate"
+
+    target_calls = 0
+
+    def nonfinite_health(_candidates: object) -> dict[str, object]:
+        nonlocal target_calls
+        target_calls += 1
+        return {
+            **_passing_p4_target_health(_candidates),
+            "target_score_finite": False,
+        }
+
+    with pytest.raises(ValueError, match="target_health_invalid") as error:
+        hmc_warmup.build_phase7_engineering_probe_bank(
+            final_kernel_state=state,
+            config=config,
+            target_signature="p4-test-target",
+            target_health_fn=nonfinite_health,
+        )
+    payload = hmc_warmup.engineering_probe_bank_qualification_payload_from_exception(
+        error.value
+    )
+    assert target_calls == 1
+    assert payload is not None
+    assert payload["outcome"] == "candidate_policy_instance_invalid"
+    assert payload["target_score_finite_count"] == 0
+    assert payload["content_signature"] is None
+
+
+def test_p4_engineering_probe_bank_sampler_exception_is_typed() -> None:
+    state = _p4_kernel_state()
+    config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=2.0,
+        root_seed=(20260821, 17),
+    )
+
+    def raising_sampler(
+        _shape: tuple[int, int], _seed: tuple[int, int]
+    ) -> np.ndarray:
+        raise RuntimeError("fixture sampler failure")
+
+    with pytest.raises(ValueError, match="candidate_generation_exception") as error:
+        hmc_warmup.build_phase7_engineering_probe_bank(
+            final_kernel_state=state,
+            config=config,
+            target_signature="p4-test-target",
+            target_health_fn=_passing_p4_target_health,
+            _offset_sampler=raising_sampler,
+        )
+
+    payload = hmc_warmup.engineering_probe_bank_qualification_payload_from_exception(
+        error.value
+    )
+    assert payload is not None
+    assert payload["outcome"] == "candidate_generation_invalid"
+    assert payload["failure_code"] == "candidate_generation_exception"
+
+
+def test_p4_engineering_probe_public_payload_is_private_safe_and_nonpromoting() -> None:
+    config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=2.125,
+        root_seed=(1987654321, 123456789),
+    )
+    build = hmc_warmup.build_phase7_engineering_probe_bank(
+        final_kernel_state=_p4_kernel_state(),
+        config=config,
+        target_signature="p4-test-target",
+        target_health_fn=_passing_p4_target_health,
+    )
+    payload = build.qualification.public_payload()
+    serialized = json.dumps(payload, sort_keys=True)
+
+    assert payload["policy_id"] == hmc_warmup.PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+    assert payload["evidence_role"] == "engineering_only"
+    assert payload["promotion_role"] == "non_promoting"
+    assert payload["reports_posterior_convergence"] is False
+    assert payload["raw_values_exposed"] is False
+    assert payload["paths_exposed"] is False
+    assert payload["seed_values_exposed"] is False
+    assert payload["covariance_multiplier_exposed"] is False
+    assert payload["pairwise_distances_exposed"] is False
+    assert "1987654321" not in serialized
+    assert "123456789" not in serialized
+    for forbidden in (
+        "canonical_theta",
+        "final_latent",
+        "standard_normal_offsets",
+        "target_values",
+        "target_scores",
+        "covariance_multiplier\"",
+        "root_seed",
+        "derived_seed\"",
+        "pairwise_distances\"",
+        "/home/",
+    ):
+        assert forbidden not in serialized

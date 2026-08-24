@@ -1225,6 +1225,80 @@ def _higher_moment_batch_jvp(
     return result
 
 
+def _pairwise_iteration_batch_primal(
+    standardized: Tensor,
+    target_co_skew: Tensor,
+    target_co_kurtosis: Tensor,
+    *,
+    strength: float,
+    floor: float,
+    particle_rms_cap: float,
+) -> dict[str, Tensor]:
+    """Batch port of the general pairwise co-moment step.
+
+    Semantic authority: the primal lines of
+    ``higher_moment_contract_e._pairwise_shape_iteration_jvp`` (single-cloud).
+    Leading batch dimension added; per-batch scalars become [batch] tensors.
+    """
+
+    particle_count = tf.cast(tf.shape(standardized)[1], standardized.dtype)
+    dimension = tf.shape(standardized)[2]
+    off_diagonal = 1.0 - tf.eye(dimension, dtype=standardized.dtype)
+    squared = tf.square(standardized)
+    co_skew = (
+        tf.einsum("bni,bnj->bij", squared, standardized) / particle_count
+    ) * off_diagonal
+    co_kurtosis = (
+        tf.einsum("bni,bnj->bij", squared, squared) / particle_count
+    ) * off_diagonal
+    residual3 = off_diagonal * (target_co_skew - co_skew)
+    residual4 = off_diagonal * (target_co_kurtosis - co_kurtosis)
+
+    row3 = tf.linalg.matmul(standardized, residual3, transpose_b=True)
+    column3 = tf.linalg.matmul(squared, residual3)
+    row4 = tf.linalg.matmul(squared, residual4, transpose_b=True)
+    dimension_scale = tf.cast(
+        tf.maximum(dimension - 1, 1), standardized.dtype
+    )
+    direction = (
+        2.0 * standardized * row3 + column3 + 2.0 * standardized * row4
+    ) / dimension_scale
+    direction -= tf.reduce_mean(direction, axis=1, keepdims=True)
+    cross = _sym(
+        tf.einsum("bni,bnj->bij", standardized, direction) / particle_count
+    )
+    projected = direction - tf.linalg.matmul(standardized, cross)
+    rms = tf.sqrt(
+        tf.reduce_mean(tf.square(projected), axis=[1, 2])
+        + tf.cast(floor, standardized.dtype)
+    )
+    normalized = projected / rms[:, None, None]
+    pre_cap_rms = tf.sqrt(tf.reduce_mean(tf.square(normalized), axis=2))
+    if particle_rms_cap > 0.0:
+        cap = tf.cast(particle_rms_cap, standardized.dtype)
+        row_scale = tf.math.rsqrt(
+            1.0 + tf.reduce_mean(tf.square(normalized), axis=2) / tf.square(cap)
+        )
+        normalized *= row_scale[:, :, None]
+    else:
+        row_scale = tf.ones_like(pre_cap_rms)
+    post_cap_rms = tf.sqrt(tf.reduce_mean(tf.square(normalized), axis=2))
+    corrected = standardized + tf.cast(strength, standardized.dtype) * normalized
+    corrected_mean = tf.reduce_mean(corrected, axis=1)
+    centered = corrected - corrected_mean[:, None, :]
+    covariance = _sym(
+        tf.einsum("bni,bnj->bij", centered, centered) / particle_count
+    )
+    corrected_chol = tf.linalg.cholesky(covariance)
+    return {
+        "standardized": _right_solve(corrected_chol, centered),
+        "corrected_chol": corrected_chol,
+        "maximum_pre_cap_rms": tf.reduce_max(pre_cap_rms, axis=1),
+        "maximum_post_cap_rms": tf.reduce_max(post_cap_rms, axis=1),
+        "minimum_cap_scale": tf.reduce_min(row_scale, axis=1),
+    }
+
+
 def _higher_moment_batch_value(
     source: Tensor,
     weights: Tensor,
@@ -1236,8 +1310,21 @@ def _higher_moment_batch_value(
     lm_damping: float,
     lm_scale_floor: float,
     trust_radius: float,
+    pairwise_correction_steps: int = 0,
+    pairwise_strength: float = 0.0,
+    pairwise_floor: float = 1.0e-6,
+    pairwise_particle_rms_cap: float = 0.0,
+    coordinate_cap: float = 0.0,
+    coordinate_cap_power: int = 8,
 ) -> dict[str, Tensor]:
-    """Selected diagonal shape correction without derivative tensors."""
+    """Selected diagonal shape correction without derivative tensors.
+
+    2026-08-20 general-route port: optional pairwise co-skew/co-kurtosis
+    correction with radial step cap and an optional smooth coordinate clamp,
+    both default-off, ported from the general single-cloud implementation in
+    ``higher_moment_contract_e.higher_moment_shape_jvp``. Defaults preserve
+    the previous diagonal-only behavior exactly.
+    """
 
     if (
         correction_steps < 0
@@ -1246,6 +1333,14 @@ def _higher_moment_batch_value(
         or lm_damping < 0.0
         or lm_scale_floor <= 0.0
         or trust_radius < 0.0
+        or pairwise_correction_steps < 0
+        or pairwise_strength < 0.0
+        or pairwise_floor <= 0.0
+        or pairwise_particle_rms_cap < 0.0
+        or coordinate_cap < 0.0
+        or coordinate_cap >= 1.0
+        or coordinate_cap_power < 2
+        or coordinate_cap_power % 2 != 0
     ):
         raise ValueError("invalid higher-moment correction controls")
 
@@ -1284,9 +1379,22 @@ def _higher_moment_batch_value(
         target_skew, target_kurtosis, tf.shape(source)[1]
     )
     point_mean, point_covariance = moments(points)
+    point_chol = tf.linalg.cholesky(point_covariance)
     standardized = _right_solve(
-        tf.linalg.cholesky(point_covariance), points - point_mean[:, None, :]
+        point_chol, points - point_mean[:, None, :]
     )
+    # Class B fail-closed guard (2026-08-20): the empirical-covariance
+    # Cholesky factors in this route are unridged, so finite-precision
+    # arithmetic can push them onto the sqrt domain boundary. Track the
+    # minimum factor diagonal and fold finiteness/positivity into validity;
+    # accepted results are numerically unchanged.
+    minimum_chol_diagonal = tf.minimum(
+        tf.reduce_min(tf.linalg.diag_part(target_chol), axis=1),
+        tf.reduce_min(tf.linalg.diag_part(point_chol), axis=1),
+    )
+    chol_finite = tf.reduce_all(
+        tf.math.is_finite(target_chol), axis=[1, 2]
+    ) & tf.reduce_all(tf.math.is_finite(point_chol), axis=[1, 2])
     maximum_condition = tf.zeros([tf.shape(source)[0]], source.dtype)
     maximum_pre_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
     maximum_post_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
@@ -1302,6 +1410,14 @@ def _higher_moment_batch_value(
             trust_radius=trust_radius,
         )
         standardized = iteration["standardized"]
+        iteration_chol = iteration["corrected_chol"]
+        minimum_chol_diagonal = tf.minimum(
+            minimum_chol_diagonal,
+            tf.reduce_min(tf.linalg.diag_part(iteration_chol), axis=1),
+        )
+        chol_finite = chol_finite & tf.reduce_all(
+            tf.math.is_finite(iteration_chol), axis=[1, 2]
+        )
         maximum_condition = tf.maximum(
             maximum_condition, iteration["maximum_condition"]
         )
@@ -1311,6 +1427,87 @@ def _higher_moment_batch_value(
         maximum_post_cap_rms = tf.maximum(
             maximum_post_cap_rms, iteration["maximum_post_cap_rms"]
         )
+    maximum_pairwise_pre_cap_rms = tf.zeros(
+        [tf.shape(source)[0]], source.dtype
+    )
+    maximum_pairwise_post_cap_rms = tf.zeros(
+        [tf.shape(source)[0]], source.dtype
+    )
+    minimum_pairwise_cap_scale = tf.ones([tf.shape(source)[0]], source.dtype)
+    if pairwise_correction_steps > 0 and int(source.shape[2] or 2) > 1:
+        target_co_skew = tf.einsum(
+            "bn,bni,bnj->bij",
+            weights,
+            tf.square(source_standardized),
+            source_standardized,
+        )
+        target_co_kurtosis = tf.einsum(
+            "bn,bni,bnj->bij",
+            weights,
+            tf.square(source_standardized),
+            tf.square(source_standardized),
+        )
+        off_diagonal = 1.0 - tf.eye(
+            tf.shape(source)[2], dtype=source.dtype
+        )
+        target_co_skew *= off_diagonal
+        target_co_kurtosis *= off_diagonal
+        for _ in range(pairwise_correction_steps):
+            pairwise = _pairwise_iteration_batch_primal(
+                standardized,
+                target_co_skew,
+                target_co_kurtosis,
+                strength=pairwise_strength,
+                floor=pairwise_floor,
+                particle_rms_cap=pairwise_particle_rms_cap,
+            )
+            standardized = pairwise["standardized"]
+            pairwise_chol = pairwise["corrected_chol"]
+            minimum_chol_diagonal = tf.minimum(
+                minimum_chol_diagonal,
+                tf.reduce_min(tf.linalg.diag_part(pairwise_chol), axis=1),
+            )
+            chol_finite = chol_finite & tf.reduce_all(
+                tf.math.is_finite(pairwise_chol), axis=[1, 2]
+            )
+            maximum_pairwise_pre_cap_rms = tf.maximum(
+                maximum_pairwise_pre_cap_rms,
+                pairwise["maximum_pre_cap_rms"],
+            )
+            maximum_pairwise_post_cap_rms = tf.maximum(
+                maximum_pairwise_post_cap_rms,
+                pairwise["maximum_post_cap_rms"],
+            )
+            minimum_pairwise_cap_scale = tf.minimum(
+                minimum_pairwise_cap_scale,
+                pairwise["minimum_cap_scale"],
+            )
+    maximum_pre_coordinate_cap_absolute = tf.reduce_max(
+        tf.abs(standardized), axis=[1, 2]
+    )
+    if coordinate_cap > 0.0:
+        cap = tf.cast(coordinate_cap, source.dtype)
+        power = tf.cast(coordinate_cap_power, source.dtype)
+        scaled_power = tf.pow(standardized / cap, power)
+        capped = standardized / tf.pow(1.0 + scaled_power, 1.0 / power)
+        capped_mean = tf.reduce_mean(capped, axis=1)
+        capped_centered = capped - capped_mean[:, None, :]
+        capped_covariance = _sym(
+            tf.einsum("bni,bnj->bij", capped_centered, capped_centered)
+            / tf.cast(tf.shape(capped)[1], capped.dtype)
+        )
+        capped_chol = tf.linalg.cholesky(capped_covariance)
+        minimum_chol_diagonal = tf.minimum(
+            minimum_chol_diagonal,
+            tf.reduce_min(tf.linalg.diag_part(capped_chol), axis=1),
+        )
+        chol_finite = chol_finite & tf.reduce_all(
+            tf.math.is_finite(capped_chol), axis=[1, 2]
+        )
+        standardized = _right_solve(capped_chol, capped_centered)
+    maximum_post_coordinate_cap_absolute = tf.reduce_max(
+        tf.abs(standardized), axis=[1, 2]
+    )
     output = mean[:, None, :] + tf.linalg.matmul(
         standardized, target_chol, transpose_b=True
     )
@@ -1333,7 +1530,17 @@ def _higher_moment_batch_value(
         "maximum_diagonal_scaled_system_condition": maximum_condition,
         "maximum_diagonal_pre_cap_particle_rms": maximum_pre_cap_rms,
         "maximum_diagonal_post_cap_particle_rms": maximum_post_cap_rms,
-        "valid": tf.reduce_all(tf.math.is_finite(output), axis=[1, 2]),
+        "maximum_pairwise_pre_cap_particle_rms": maximum_pairwise_pre_cap_rms,
+        "maximum_pairwise_post_cap_particle_rms": maximum_pairwise_post_cap_rms,
+        "minimum_pairwise_particle_cap_scale": minimum_pairwise_cap_scale,
+        "maximum_pre_coordinate_cap_absolute": maximum_pre_coordinate_cap_absolute,
+        "maximum_post_coordinate_cap_absolute": maximum_post_coordinate_cap_absolute,
+        "minimum_higher_moment_cholesky_diagonal": minimum_chol_diagonal,
+        "valid": (
+            tf.reduce_all(tf.math.is_finite(output), axis=[1, 2])
+            & chol_finite
+            & (minimum_chol_diagonal > 0.0)
+        ),
     }
 
 

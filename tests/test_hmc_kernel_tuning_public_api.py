@@ -196,7 +196,10 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "max_results": 64,
             "num_burnin_steps": 16,
             "chain_count": 4,
-            "rhat_threshold_role": "diagnostic_early_stop_only_not_tuning_handoff_gate",
+            "rhat_admission_policy": "explanatory_only",
+            "rhat_threshold_role": "explanatory_only_not_stopping_or_admission",
+            "promotion_role": "non_promoting",
+            "engineering_handoff_eligible": True,
             "step_size": 0.2,
             "num_leapfrog_steps": 8,
         },
@@ -217,6 +220,7 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
                 "single_use_build_count": 0,
                 "fallback_status": "none",
                 "semantic_source": "_run_phase7_sequential_rhat_final_verification",
+                "compatibility_marker": "historical_or_test_only",
                 "step_size": 0.2,
             },
             "samples": [[0.0, 0.1]],
@@ -2163,8 +2167,11 @@ def test_public_artifact_exposes_attempt_and_verification_summary_without_mechan
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
     assert (
         verification["rhat_threshold_role"]
-        == "diagnostic_early_stop_only_not_tuning_handoff_gate"
+        == "explanatory_only_not_stopping_or_admission"
     )
+    assert verification["rhat_admission_policy"] == "explanatory_only"
+    assert verification["promotion_role"] == "non_promoting"
+    assert verification["engineering_handoff_eligible"] is True
     assert verification["acceptance_relation"] == "inside_acceptance_band"
     assert verification["acceptance_band_from_payload"] is True
     assert verification["acceptance_band_fallback_used"] is False

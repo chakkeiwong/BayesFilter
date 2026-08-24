@@ -86,6 +86,42 @@ _START_BANK_INTERPRETATIONS = frozenset(
     }
 )
 
+PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID = (
+    "bayesfilter.phase7_engineering_probe_bank.v1"
+)
+_PHASE7_ENGINEERING_PROBE_BANK_SCHEMA = (
+    "bayesfilter.phase7_engineering_probe_bank_qualification.v1"
+)
+_PHASE7_ENGINEERING_PROBE_SEED_DOMAIN = "phase7_engineering_probe_bank_v1"
+_PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE = (
+    "_bayesfilter_phase7_engineering_probe_bank_qualification_v1"
+)
+_PHASE7_ENGINEERING_PROBE_FAILURE_CODES = frozenset(
+    {
+        "none",
+        "transform_contract_invalid",
+        "candidate_generation_exception",
+        "candidate_generation_nonfinite",
+        "candidate_generation_duplicate",
+        "target_health_invalid",
+    }
+)
+_PHASE7_ENGINEERING_PROBE_OUTCOMES = frozenset(
+    {
+        "shared_implementation_invalid",
+        "candidate_generation_invalid",
+        "candidate_policy_instance_invalid",
+        "engineering_probe_bank_constructed",
+    }
+)
+_PHASE7_ENGINEERING_PROBE_NONCLAIMS = (
+    "engineering-only fixed-kernel verification probes",
+    "not independently warmed scientific chains",
+    "no posterior convergence claim",
+    "no sampler or start-policy promotion claim",
+    "no covariance-multiplier default claim",
+)
+
 
 def _stable_hash(label: str, payload: Mapping[str, Any]) -> str:
     normalized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -1971,6 +2007,607 @@ def start_bank_qualification_payload_from_exception(
 
 
 @dataclass(frozen=True)
+class Phase7EngineeringProbeBankConfig:
+    """Explicit non-promoting configuration for four Phase 7 probes.
+
+    The covariance multiplier deliberately has no default. It is a
+    target-specific hypothesis, not a BayesFilter start-policy default.
+    """
+
+    chain_count: int
+    covariance_multiplier: float
+    root_seed: tuple[int, int]
+
+    def __post_init__(self) -> None:
+        count = _strict_integer(self.chain_count, name="chain_count", minimum=1)
+        if count != 4:
+            raise ValueError("Phase 7 engineering probe bank requires four chains")
+        if isinstance(self.covariance_multiplier, (bool, np.bool_)):
+            raise ValueError("covariance_multiplier must be positive and finite")
+        multiplier = float(self.covariance_multiplier)
+        if not math.isfinite(multiplier) or multiplier <= 0.0:
+            raise ValueError("covariance_multiplier must be positive and finite")
+        root_seed = _strict_seed(self.root_seed, name="root_seed")
+        object.__setattr__(self, "chain_count", count)
+        object.__setattr__(self, "covariance_multiplier", multiplier)
+        object.__setattr__(self, "root_seed", root_seed)
+
+    @property
+    def derived_seed(self) -> tuple[int, int]:
+        material = json.dumps(
+            {
+                "domain": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+                "root_seed": self.root_seed,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+        digest = hashlib.sha256(material).digest()
+        seed = tuple(
+            int.from_bytes(digest[offset : offset + 4], "big") & 0x7FFFFFFF
+            for offset in (0, 4)
+        )
+        if seed == self.root_seed:
+            seed = (seed[0], seed[1] ^ 1)
+        return seed
+
+    @property
+    def config_signature(self) -> str:
+        return _stable_hash(
+            "bayesfilter.phase7_engineering_probe_bank_config.v1",
+            {
+                "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+                "seed_domain": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+                "chain_count": self.chain_count,
+                "covariance_multiplier": self.covariance_multiplier,
+                "root_seed": self.root_seed,
+            },
+        )
+
+    @property
+    def derived_seed_signature(self) -> str:
+        return _stable_hash(
+            "bayesfilter.phase7_engineering_probe_seed.v1",
+            {
+                "domain": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+                "derived_seed": self.derived_seed,
+            },
+        )
+
+    def public_payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.phase7_engineering_probe_bank_config.v1",
+            "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+            "seed_domain": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+            "chain_count": self.chain_count,
+            "config_signature": self.config_signature,
+            "derived_seed_signature": self.derived_seed_signature,
+            "covariance_multiplier_exposed": False,
+            "seed_values_exposed": False,
+            "raw_values_exposed": False,
+            "paths_exposed": False,
+        }
+
+
+@dataclass(frozen=True)
+class _Phase7EngineeringProbeBankQualification:
+    """Scalar-only public carrier for P4-E construction success or failure."""
+
+    config_signature: str
+    transform_signature: str
+    target_signature: str
+    dimension: int
+    candidate_count: int
+    derived_seed_signature: str
+    content_signature: str | None
+    endpoint_round_trip_passed: bool
+    bank_round_trip_passed: bool
+    pairwise_distinct: bool
+    target_value_finite_count: int
+    target_score_finite_count: int
+    target_status_failure_count: int | None
+    evaluated_candidate_count: int
+    outcome: str
+    failure_code: str
+
+    def __post_init__(self) -> None:
+        for name in (
+            "config_signature",
+            "transform_signature",
+            "target_signature",
+            "derived_seed_signature",
+        ):
+            if not str(getattr(self, name)):
+                raise ValueError(f"{name} must be non-empty")
+        dimension = _strict_integer(self.dimension, name="dimension", minimum=1)
+        count = _strict_integer(
+            self.candidate_count, name="candidate_count", minimum=0
+        )
+        value_count = _strict_integer(
+            self.target_value_finite_count,
+            name="target_value_finite_count",
+            minimum=0,
+        )
+        score_count = _strict_integer(
+            self.target_score_finite_count,
+            name="target_score_finite_count",
+            minimum=0,
+        )
+        evaluated = _strict_integer(
+            self.evaluated_candidate_count,
+            name="evaluated_candidate_count",
+            minimum=0,
+        )
+        status_failures = self.target_status_failure_count
+        if status_failures is not None:
+            status_failures = _strict_integer(
+                status_failures,
+                name="target_status_failure_count",
+                minimum=0,
+            )
+        outcome = str(self.outcome)
+        failure_code = str(self.failure_code)
+        if outcome not in _PHASE7_ENGINEERING_PROBE_OUTCOMES:
+            raise ValueError("unsupported engineering probe bank outcome")
+        if failure_code not in _PHASE7_ENGINEERING_PROBE_FAILURE_CODES:
+            raise ValueError("unsupported engineering probe bank failure code")
+        succeeded = outcome == "engineering_probe_bank_constructed"
+        if succeeded != (failure_code == "none"):
+            raise ValueError("engineering probe bank outcome is inconsistent")
+        if succeeded and (
+            count != 4
+            or value_count != 4
+            or score_count != 4
+            or evaluated != 4
+            or status_failures not in {None, 0}
+            or not self.endpoint_round_trip_passed
+            or not self.bank_round_trip_passed
+            or not self.pairwise_distinct
+            or not self.content_signature
+        ):
+            raise ValueError("successful engineering probe qualification is incomplete")
+        object.__setattr__(self, "dimension", dimension)
+        object.__setattr__(self, "candidate_count", count)
+        object.__setattr__(self, "target_value_finite_count", value_count)
+        object.__setattr__(self, "target_score_finite_count", score_count)
+        object.__setattr__(self, "target_status_failure_count", status_failures)
+        object.__setattr__(self, "evaluated_candidate_count", evaluated)
+        object.__setattr__(self, "outcome", outcome)
+        object.__setattr__(self, "failure_code", failure_code)
+
+    @property
+    def passed(self) -> bool:
+        return self.outcome == "engineering_probe_bank_constructed"
+
+    def public_payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": _PHASE7_ENGINEERING_PROBE_BANK_SCHEMA,
+            "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+            "evidence_role": "engineering_only",
+            "promotion_role": "non_promoting",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "config_signature": self.config_signature,
+            "transform_signature": self.transform_signature,
+            "target_signature": self.target_signature,
+            "dimension": self.dimension,
+            "candidate_count": self.candidate_count,
+            "derived_seed_signature": self.derived_seed_signature,
+            "content_signature": self.content_signature,
+            "endpoint_round_trip_passed": self.endpoint_round_trip_passed,
+            "bank_round_trip_passed": self.bank_round_trip_passed,
+            "pairwise_distinct": self.pairwise_distinct,
+            "target_value_finite_count": self.target_value_finite_count,
+            "target_score_finite_count": self.target_score_finite_count,
+            "target_status_failure_count": self.target_status_failure_count,
+            "evaluated_candidate_count": self.evaluated_candidate_count,
+            "outcome": self.outcome,
+            "failure_code": self.failure_code,
+            "raw_values_exposed": False,
+            "paths_exposed": False,
+            "seed_values_exposed": False,
+            "covariance_multiplier_exposed": False,
+            "pairwise_distances_exposed": False,
+            "reports_posterior_convergence": False,
+            "nonclaims": _PHASE7_ENGINEERING_PROBE_NONCLAIMS,
+        }
+
+
+@dataclass(frozen=True)
+class _Phase7EngineeringProbeBankBuild:
+    """Private P4-E handoff; raw arrays never enter the public payload."""
+
+    canonical_theta: Any
+    final_latent: Any
+    standard_normal_offsets: Any
+    qualification: _Phase7EngineeringProbeBankQualification
+
+    def __post_init__(self) -> None:
+        if type(self.qualification) is not _Phase7EngineeringProbeBankQualification:
+            raise TypeError("qualification must use the concrete P4-E type")
+        if not self.qualification.passed:
+            raise ValueError("private P4-E bank requires a passing qualification")
+        arrays = []
+        for name in ("canonical_theta", "final_latent", "standard_normal_offsets"):
+            array = np.asarray(getattr(self, name), dtype=float).copy()
+            if array.shape != (4, self.qualification.dimension):
+                raise ValueError(f"{name} must have the qualified bank shape")
+            if not np.all(np.isfinite(array)):
+                raise ValueError(f"{name} must be finite")
+            array.setflags(write=False)
+            arrays.append(array)
+        object.__setattr__(self, "canonical_theta", arrays[0])
+        object.__setattr__(self, "final_latent", arrays[1])
+        object.__setattr__(self, "standard_normal_offsets", arrays[2])
+
+
+def _phase7_engineering_probe_bank_content_signature(
+    canonical_theta: Any,
+    *,
+    transform_signature: str,
+    target_signature: str,
+    config_signature: str,
+) -> str:
+    array = np.ascontiguousarray(np.asarray(canonical_theta, dtype=np.float64))
+    digest = hashlib.sha256()
+    digest.update(PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID.encode("ascii"))
+    digest.update(str(transform_signature).encode("ascii"))
+    digest.update(str(target_signature).encode("ascii"))
+    digest.update(str(config_signature).encode("ascii"))
+    digest.update(str(array.shape).encode("ascii"))
+    digest.update(array.tobytes())
+    return digest.hexdigest()
+
+
+def engineering_probe_bank_qualification_payload_from_exception(
+    exc: BaseException,
+) -> Mapping[str, Any] | None:
+    """Return only a concrete, validated, scalar-only P4-E diagnostic."""
+
+    try:
+        candidate = getattr(
+            exc,
+            _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
+            None,
+        )
+    except Exception:  # noqa: BLE001 - invalid carriers remain ignorable.
+        return None
+    if type(candidate) is not _Phase7EngineeringProbeBankQualification:
+        return None
+    try:
+        return candidate.public_payload()
+    except Exception:  # noqa: BLE001 - schema validation is fail-closed.
+        return None
+
+
+def build_phase7_engineering_probe_bank(
+    *,
+    final_kernel_state: KernelState,
+    config: Phase7EngineeringProbeBankConfig,
+    target_signature: str,
+    target_health_fn: Callable[[Any], Mapping[str, Any]],
+    _offset_sampler: Callable[[tuple[int, int], tuple[int, int]], Any] | None = None,
+) -> _Phase7EngineeringProbeBankBuild:
+    """Build one fixed four-row P4-E bank without HMC, filtering, or redraw."""
+
+    import tensorflow as tf
+
+    if not isinstance(final_kernel_state, KernelState):
+        raise TypeError("final_kernel_state must be a KernelState")
+    if not isinstance(config, Phase7EngineeringProbeBankConfig):
+        raise TypeError("config must be a Phase7EngineeringProbeBankConfig")
+    target_signature = str(target_signature)
+    if not target_signature:
+        raise ValueError("target_signature must be non-empty")
+    if not callable(target_health_fn):
+        raise TypeError("target_health_fn must be callable")
+    transform = final_kernel_state.transform
+    dimension = transform.dimension
+
+    def qualification(
+        *,
+        outcome: str,
+        failure_code: str,
+        endpoint_round_trip_passed: bool,
+        bank_round_trip_passed: bool = False,
+        pairwise_distinct: bool = False,
+        target_value_finite_count: int = 0,
+        target_score_finite_count: int = 0,
+        target_status_failure_count: int | None = None,
+        evaluated_candidate_count: int = 0,
+        content_signature: str | None = None,
+    ) -> _Phase7EngineeringProbeBankQualification:
+        return _Phase7EngineeringProbeBankQualification(
+            config_signature=config.config_signature,
+            transform_signature=transform.signature,
+            target_signature=target_signature,
+            dimension=dimension,
+            candidate_count=config.chain_count,
+            derived_seed_signature=config.derived_seed_signature,
+            content_signature=content_signature,
+            endpoint_round_trip_passed=endpoint_round_trip_passed,
+            bank_round_trip_passed=bank_round_trip_passed,
+            pairwise_distinct=pairwise_distinct,
+            target_value_finite_count=target_value_finite_count,
+            target_score_finite_count=target_score_finite_count,
+            target_status_failure_count=target_status_failure_count,
+            evaluated_candidate_count=evaluated_candidate_count,
+            outcome=outcome,
+            failure_code=failure_code,
+        )
+
+    def fail(diagnostic: _Phase7EngineeringProbeBankQualification) -> None:
+        error = ValueError(
+            "P4-E engineering probe bank construction failed: "
+            f"{diagnostic.failure_code}"
+        )
+        setattr(error, _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE, diagnostic)
+        raise error
+
+    endpoint = tf.convert_to_tensor(
+        final_kernel_state.canonical_theta,
+        dtype=tf.float64,
+    )
+    try:
+        endpoint_latent = transform.theta_to_latent(endpoint)
+        endpoint_round_trip = transform.latent_to_theta(endpoint_latent)
+        endpoint_ok = bool(
+            tf.reduce_all(
+                tf.math.abs(endpoint_round_trip - endpoint)
+                <= 1.0e-10 + 1.0e-10 * tf.math.abs(endpoint)
+            ).numpy()
+        )
+    except Exception as exc:  # noqa: BLE001 - shared transform boundary.
+        fail(
+            qualification(
+                outcome="shared_implementation_invalid",
+                failure_code="transform_contract_invalid",
+                endpoint_round_trip_passed=False,
+            )
+        )
+        raise AssertionError("unreachable") from exc
+    if not endpoint_ok:
+        fail(
+            qualification(
+                outcome="shared_implementation_invalid",
+                failure_code="transform_contract_invalid",
+                endpoint_round_trip_passed=False,
+            )
+        )
+
+    sampler = _offset_sampler
+    if sampler is None:
+        sampler = lambda shape, seed: tf.random.stateless_normal(
+            shape,
+            seed=tf.convert_to_tensor(seed, dtype=tf.int32),
+            dtype=tf.float64,
+        )
+    try:
+        sampled_offsets = sampler((config.chain_count, dimension), config.derived_seed)
+        offsets = tf.convert_to_tensor(sampled_offsets, dtype=tf.float64)
+    except Exception as exc:  # noqa: BLE001 - typed candidate-generation veto.
+        fail(
+            qualification(
+                outcome="candidate_generation_invalid",
+                failure_code="candidate_generation_exception",
+                endpoint_round_trip_passed=True,
+            )
+        )
+        raise AssertionError("unreachable") from exc
+    if offsets.shape != (config.chain_count, dimension) or not bool(
+        tf.reduce_all(tf.math.is_finite(offsets)).numpy()
+    ):
+        fail(
+            qualification(
+                outcome="candidate_generation_invalid",
+                failure_code="candidate_generation_nonfinite",
+                endpoint_round_trip_passed=True,
+            )
+        )
+    try:
+        final_latent = endpoint_latent[tf.newaxis, :] + tf.sqrt(
+            tf.constant(config.covariance_multiplier, dtype=tf.float64)
+        ) * offsets
+        differences = final_latent[:, tf.newaxis, :] - final_latent[tf.newaxis, :, :]
+        squared_distances = tf.reduce_sum(tf.square(differences), axis=-1)
+    except Exception as exc:  # noqa: BLE001 - typed candidate-generation veto.
+        fail(
+            qualification(
+                outcome="candidate_generation_invalid",
+                failure_code="candidate_generation_exception",
+                endpoint_round_trip_passed=True,
+            )
+        )
+        raise AssertionError("unreachable") from exc
+    upper_triangle = tf.linalg.band_part(
+        tf.ones((config.chain_count, config.chain_count), dtype=tf.bool),
+        0,
+        -1,
+    ) & ~tf.eye(config.chain_count, dtype=tf.bool)
+    pairwise_distinct = bool(
+        tf.reduce_all(tf.boolean_mask(squared_distances, upper_triangle) > 0.0).numpy()
+    )
+    if not pairwise_distinct:
+        fail(
+            qualification(
+                outcome="candidate_generation_invalid",
+                failure_code="candidate_generation_duplicate",
+                endpoint_round_trip_passed=True,
+            )
+        )
+    try:
+        canonical = transform.latent_to_theta(final_latent)
+        mapped_back = transform.theta_to_latent(canonical)
+        arrays_finite = bool(
+            tf.reduce_all(tf.math.is_finite(final_latent)).numpy()
+            and tf.reduce_all(tf.math.is_finite(canonical)).numpy()
+        )
+        round_trip_ok = bool(
+            tf.reduce_all(
+                tf.math.abs(mapped_back - final_latent)
+                <= 1.0e-10 + 1.0e-10 * tf.math.abs(final_latent)
+            ).numpy()
+        )
+    except Exception as exc:  # noqa: BLE001 - shared transform boundary.
+        fail(
+            qualification(
+                outcome="shared_implementation_invalid",
+                failure_code="transform_contract_invalid",
+                endpoint_round_trip_passed=True,
+                pairwise_distinct=True,
+            )
+        )
+        raise AssertionError("unreachable") from exc
+    if not arrays_finite or not round_trip_ok:
+        fail(
+            qualification(
+                outcome="shared_implementation_invalid",
+                failure_code="transform_contract_invalid",
+                endpoint_round_trip_passed=True,
+                bank_round_trip_passed=round_trip_ok,
+                pairwise_distinct=True,
+            )
+        )
+
+    try:
+        health = target_health_fn(canonical)
+    except Exception:  # noqa: BLE001 - target failure is a typed boundary veto.
+        health = {}
+    if not isinstance(health, Mapping):
+        health = {}
+    health_schema_valid = True
+    try:
+        evaluated = int(health.get("evaluated_draw_count", 0) or 0)
+        if evaluated < 0:
+            raise ValueError("negative evaluated draw count")
+        status_failures = health.get("target_status_failure_count")
+        status_failures = None if status_failures is None else int(status_failures)
+        if status_failures is not None and status_failures < 0:
+            raise ValueError("negative target status failure count")
+        shared_reasons = tuple(health.get("shared_invalidity_reasons", ()) or ())
+        candidate_reasons = tuple(
+            health.get("candidate_data_invalidity_reasons", ()) or ()
+        )
+    except (TypeError, ValueError):
+        health_schema_valid = False
+        evaluated = 0
+        status_failures = None
+        shared_reasons = ("target_health_schema_invalid",)
+        candidate_reasons = ()
+    values_finite = health.get("target_value_finite") is True
+    scores_finite = health.get("target_score_finite") is True
+    target_ok = (
+        health_schema_valid
+        and not shared_reasons
+        and not candidate_reasons
+        and values_finite
+        and scores_finite
+        and status_failures in {None, 0}
+        and evaluated == config.chain_count
+    )
+    if not target_ok:
+        fail(
+            qualification(
+                outcome="candidate_policy_instance_invalid",
+                failure_code="target_health_invalid",
+                endpoint_round_trip_passed=True,
+                bank_round_trip_passed=True,
+                pairwise_distinct=True,
+                target_value_finite_count=(config.chain_count if values_finite else 0),
+                target_score_finite_count=(config.chain_count if scores_finite else 0),
+                target_status_failure_count=status_failures,
+                evaluated_candidate_count=evaluated,
+            )
+        )
+
+    canonical_array = np.asarray(canonical.numpy(), dtype=float)
+    content_signature = _phase7_engineering_probe_bank_content_signature(
+        canonical_array,
+        transform_signature=transform.signature,
+        target_signature=target_signature,
+        config_signature=config.config_signature,
+    )
+    diagnostic = qualification(
+        outcome="engineering_probe_bank_constructed",
+        failure_code="none",
+        endpoint_round_trip_passed=True,
+        bank_round_trip_passed=True,
+        pairwise_distinct=True,
+        target_value_finite_count=config.chain_count,
+        target_score_finite_count=config.chain_count,
+        target_status_failure_count=status_failures,
+        evaluated_candidate_count=evaluated,
+        content_signature=content_signature,
+    )
+    return _Phase7EngineeringProbeBankBuild(
+        canonical_theta=canonical_array,
+        final_latent=final_latent.numpy(),
+        standard_normal_offsets=offsets.numpy(),
+        qualification=diagnostic,
+    )
+
+
+def _build_postfreeze_private_start_bank(
+    *,
+    final_kernel_state: KernelState,
+    adapter: Any,
+    final_window_history: Any,
+    all_window_history: Any,
+    engineering_probe_config: Phase7EngineeringProbeBankConfig | None,
+    target_status_trace_policy: str,
+) -> tuple[
+    np.ndarray,
+    _StartBankQualificationDiagnostic | None,
+    _Phase7EngineeringProbeBankQualification | None,
+    str,
+]:
+    """Select the legacy diagnostic or P4-E path, never both.
+
+    The P4-E branch deliberately does not inspect either history input. This
+    helper is pure construction logic and executes no HMC transition.
+    """
+
+    if engineering_probe_config is not None:
+        engineering_build = build_phase7_engineering_probe_bank(
+            final_kernel_state=final_kernel_state,
+            config=engineering_probe_config,
+            target_signature=_base_adapter_signature(adapter),
+            target_health_fn=lambda canonical: _evaluate_retained_target_health(
+                adapter=adapter,
+                samples=canonical,
+                target_status_trace_policy=target_status_trace_policy,
+            ),
+        )
+        return (
+            engineering_build.canonical_theta,
+            None,
+            engineering_build.qualification,
+            PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+        )
+
+    authoritative_assessment = _assess_private_start_bank(
+        final_window_history,
+        reference_transform=final_kernel_state.transform,
+        scope="authoritative_final_window",
+    )
+    shadow_diagnostic = _best_effort_shadow_start_bank_scope(
+        all_window_history,
+        reference_transform=final_kernel_state.transform,
+        minimum_relative_separation=(
+            authoritative_assessment.diagnostic.minimum_relative_separation
+        ),
+    )
+    legacy_qualification = _StartBankQualificationDiagnostic(
+        authoritative=authoritative_assessment.diagnostic,
+        shadow=shadow_diagnostic,
+    )
+    bank = _materialize_private_start_bank(
+        authoritative_assessment,
+        qualification=legacy_qualification,
+    )
+    return bank, legacy_qualification, None, _START_BANK_POLICY_ID
+
+
+@dataclass(frozen=True)
 class OperationalWindowedWarmupResult:
     config: WindowedMassAdaptationConfig
     initial_coordinate_signature: str
@@ -1978,11 +2615,15 @@ class OperationalWindowedWarmupResult:
     reasonable_epsilon: ReasonableEpsilonResult
     windows: tuple[OperationalWarmupWindowResult, ...]
     private_start_bank_theta: Any
-    start_bank_qualification: _StartBankQualificationDiagnostic
+    start_bank_qualification: _StartBankQualificationDiagnostic | None
     seed_root: tuple[int, int]
     target_scope: str
     target_status_trace_policy: str
     elapsed_s: float
+    private_start_bank_policy_id: str = _START_BANK_POLICY_ID
+    engineering_probe_bank_qualification: (
+        _Phase7EngineeringProbeBankQualification | None
+    ) = None
     status: str = "passed"
     algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION
@@ -2052,14 +2693,47 @@ class OperationalWindowedWarmupResult:
         if not np.all(np.isfinite(bank)):
             raise ValueError("private start bank must be finite")
         qualification = self.start_bank_qualification
-        if (
-            type(qualification) is not _StartBankQualificationDiagnostic
-            or not qualification.authoritative.selection_succeeded
-        ):
-            raise ValueError(
-                "operational warmup requires a successful start-bank qualification"
+        bank_policy_id = str(self.private_start_bank_policy_id)
+        engineering_qualification = self.engineering_probe_bank_qualification
+        if bank_policy_id == _START_BANK_POLICY_ID:
+            if (
+                type(qualification) is not _StartBankQualificationDiagnostic
+                or not qualification.authoritative.selection_succeeded
+            ):
+                raise ValueError(
+                    "legacy operational warmup requires a successful start-bank qualification"
+                )
+            qualification.public_payload()
+            if engineering_qualification is not None:
+                raise ValueError("legacy start bank cannot carry a P4-E qualification")
+        elif bank_policy_id == PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
+            if qualification is not None:
+                raise ValueError("P4-E start bank cannot carry a legacy qualification")
+            if (
+                type(engineering_qualification)
+                is not _Phase7EngineeringProbeBankQualification
+                or not engineering_qualification.passed
+                or engineering_qualification.dimension != bank.shape[1]
+                or engineering_qualification.candidate_count != bank.shape[0]
+                or engineering_qualification.transform_signature
+                != self.final_kernel_state.transform.signature
+            ):
+                raise ValueError(
+                    "P4-E operational warmup requires a successful matching qualification"
+                )
+            engineering_qualification.public_payload()
+            expected_content_signature = (
+                _phase7_engineering_probe_bank_content_signature(
+                    bank,
+                    transform_signature=self.final_kernel_state.transform.signature,
+                    target_signature=engineering_qualification.target_signature,
+                    config_signature=engineering_qualification.config_signature,
+                )
             )
-        qualification.public_payload()
+            if engineering_qualification.content_signature != expected_content_signature:
+                raise ValueError("P4-E private start-bank content signature mismatch")
+        else:
+            raise ValueError("unsupported private start-bank policy")
         final_state = self.final_kernel_state
         if self.config.mass_policy == "fixed_identity" and (
             final_state.transform.signature != initial_signature
@@ -2094,19 +2768,39 @@ class OperationalWindowedWarmupResult:
             )
         ):
             raise ValueError("operational warmup final kernel lineage is invalid")
-        scale = max(float(np.linalg.norm(np.std(bank, axis=0))), 1.0)
-        tolerance = 1.0e-10 * scale
-        pairwise = np.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
-        if (
-            not np.allclose(
-                bank[-1],
-                final_state.canonical_theta,
-                rtol=1.0e-10,
-                atol=1.0e-10,
+        if bank_policy_id == _START_BANK_POLICY_ID:
+            scale = max(float(np.linalg.norm(np.std(bank, axis=0))), 1.0)
+            tolerance = 1.0e-10 * scale
+            pairwise = np.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
+            if (
+                not np.allclose(
+                    bank[-1],
+                    final_state.canonical_theta,
+                    rtol=1.0e-10,
+                    atol=1.0e-10,
+                )
+                or np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance)
+            ):
+                raise ValueError(
+                    "legacy private start bank must be dispersed and include the endpoint"
+                )
+        else:
+            final_latent = np.asarray(
+                final_state.transform.theta_to_latent(bank).numpy(),
+                dtype=float,
             )
-            or np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance)
-        ):
-            raise ValueError("private start bank must be dispersed and include the endpoint")
+            round_trip = np.asarray(
+                final_state.transform.latent_to_theta(final_latent).numpy(),
+                dtype=float,
+            )
+            pairwise = np.linalg.norm(
+                final_latent[:, None, :] - final_latent[None, :, :], axis=-1
+            )
+            if (
+                not np.allclose(round_trip, bank, rtol=1.0e-10, atol=1.0e-10)
+                or np.any(pairwise[np.triu_indices(4, k=1)] <= 0.0)
+            ):
+                raise ValueError("P4-E private start bank transform invariant failed")
         seed_root = _strict_seed(self.seed_root, name="seed_root")
         target_scope = str(self.target_scope)
         target_status_policy = _target_status_policy(self.target_status_trace_policy)
@@ -2127,6 +2821,12 @@ class OperationalWindowedWarmupResult:
         object.__setattr__(self, "windows", windows)
         object.__setattr__(self, "private_start_bank_theta", bank)
         object.__setattr__(self, "start_bank_qualification", qualification)
+        object.__setattr__(self, "private_start_bank_policy_id", bank_policy_id)
+        object.__setattr__(
+            self,
+            "engineering_probe_bank_qualification",
+            engineering_qualification,
+        )
         object.__setattr__(self, "seed_root", seed_root)
         object.__setattr__(self, "target_scope", target_scope)
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
@@ -2141,6 +2841,13 @@ class OperationalWindowedWarmupResult:
     def private_start_bank_signature(self) -> str:
         digest = hashlib.sha256(np.ascontiguousarray(self.private_start_bank_theta).tobytes())
         digest.update(self.final_kernel_state.transform.signature.encode("ascii"))
+        digest.update(self.private_start_bank_policy_id.encode("ascii"))
+        if self.engineering_probe_bank_qualification is not None:
+            digest.update(
+                self.engineering_probe_bank_qualification.config_signature.encode(
+                    "ascii"
+                )
+            )
         return digest.hexdigest()
 
     @property
@@ -2198,12 +2905,18 @@ class OperationalWindowedWarmupResult:
             "every_update_used_by_later_transition": self.every_update_used_by_later_transition,
             "private_start_bank": {
                 "schema": "bayesfilter.hmc_private_start_bank.v2",
+                "policy_id": self.private_start_bank_policy_id,
                 "signature": self.private_start_bank_signature,
                 "count": 4,
+                "engineering_probe_qualification": None
+                if self.engineering_probe_bank_qualification is None
+                else self.engineering_probe_bank_qualification.public_payload(),
                 "raw_values_exposed": False,
                 "paths_exposed": False,
             },
-            "seed_root": self.seed_root,
+            "seed_root": self.seed_root
+            if self.private_start_bank_policy_id == _START_BANK_POLICY_ID
+            else None,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "elapsed_s": self.elapsed_s,
@@ -2338,6 +3051,7 @@ def run_operational_windowed_warmup(
     target_accept_prob: float,
     seed: tuple[int, int],
     target_scope: str,
+    engineering_probe_config: Phase7EngineeringProbeBankConfig | None = None,
     chain_execution_mode: str = "tf_function",
     jit_compile: bool = False,
     target_status_trace_policy: str = "none",
@@ -2357,6 +3071,13 @@ def run_operational_windowed_warmup(
         raise TypeError("initial_transform must be AffineCoordinateTransform")
     if not isinstance(trajectory_policy, WarmupTrajectoryPolicy):
         raise TypeError("trajectory_policy must be WarmupTrajectoryPolicy")
+    if engineering_probe_config is not None and not isinstance(
+        engineering_probe_config,
+        Phase7EngineeringProbeBankConfig,
+    ):
+        raise TypeError(
+            "engineering_probe_config must be a Phase7EngineeringProbeBankConfig"
+        )
     normalized_seed = _strict_seed(seed, name="seed")
     if chain_execution_mode not in {"eager", "tf_function"}:
         raise ValueError("chain_execution_mode must be eager or tf_function")
@@ -3199,25 +3920,18 @@ def run_operational_windowed_warmup(
     history = np.asarray(results[-1].adaptation_canonical_states, dtype=float).reshape(
         (-1, initial_transform.dimension)
     )
-    authoritative_assessment = _assess_private_start_bank(
-        history,
-        reference_transform=kernel_state.transform,
-        scope="authoritative_final_window",
-    )
-    shadow_diagnostic = _best_effort_shadow_start_bank_scope(
-        canonical_history,
-        reference_transform=kernel_state.transform,
-        minimum_relative_separation=(
-            authoritative_assessment.diagnostic.minimum_relative_separation
-        ),
-    )
-    start_bank_qualification = _StartBankQualificationDiagnostic(
-        authoritative=authoritative_assessment.diagnostic,
-        shadow=shadow_diagnostic,
-    )
-    bank = _materialize_private_start_bank(
-        authoritative_assessment,
-        qualification=start_bank_qualification,
+    (
+        bank,
+        start_bank_qualification,
+        engineering_qualification,
+        bank_policy_id,
+    ) = _build_postfreeze_private_start_bank(
+        final_kernel_state=kernel_state,
+        adapter=adapter,
+        final_window_history=history,
+        all_window_history=canonical_history,
+        engineering_probe_config=engineering_probe_config,
+        target_status_trace_policy=target_status_policy,
     )
     result = OperationalWindowedWarmupResult(
         config=config,
@@ -3231,6 +3945,8 @@ def run_operational_windowed_warmup(
         target_scope=str(target_scope),
         target_status_trace_policy=target_status_policy,
         elapsed_s=time.perf_counter() - start,
+        private_start_bank_policy_id=bank_policy_id,
+        engineering_probe_bank_qualification=engineering_qualification,
         algorithm_id=algorithm_id,
         route_contract_version=route_contract_version,
     )

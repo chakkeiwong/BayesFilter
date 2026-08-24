@@ -1954,6 +1954,8 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
                 "use_xla": bool(config.use_xla),
                 "chain_execution_mode": config.chain_execution_mode,
                 "target_scope": config.target_scope,
+                "rhat_admission_policy": config.rhat_admission_policy,
+                "explicit_start_bank_policy_id": config.explicit_start_bank_policy_id,
             }
         )
         return _FakeSequentialVerifier(config)
@@ -1983,6 +1985,14 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert route["stopping_rule_role"] == "not_a_stopping_rule"
     assert route["reports_posterior_convergence"] is False
     assert route["reports_sampler_superiority"] is False
+    assert route["rhat_admission_policy"] == "explanatory_only"
+    assert route["rhat_threshold_role"] == (
+        "explanatory_only_not_stopping_or_admission"
+    )
+    assert route["policy_binding"] == "operational"
+    assert route["explicit_start_bank_policy_id"] == (
+        "phase7_engineering_probe_bank_v1"
+    )
     assert verification["sequential_rhat_verification"] is True
     assert verification["all_finite_rhat_at_or_below_threshold"] is True
     assert result.attempts[0].verification_config_payload["verification_policy"] == (
@@ -1998,7 +2008,7 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert verification["sequential_rhat_policy"]["check_interval"] == 64
     assert (
         verification["sequential_rhat_policy"]["rhat_threshold_role"]
-        == "historical_explanatory_only_not_stopping_or_admission"
+        == "explanatory_only_not_stopping_or_admission"
     )
     assert (
         verification["sequential_rhat_policy"]["cap_rule"]
@@ -2012,6 +2022,8 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
             "use_xla": False,
             "chain_execution_mode": "tf_function",
             "target_scope": "kernel_fixed_mass_step_toy_gaussian",
+            "rhat_admission_policy": "explanatory_only",
+            "explicit_start_bank_policy_id": "phase7_engineering_probe_bank_v1",
         }
     ]
     forbidden_keys: list[str] = []
@@ -2933,6 +2945,177 @@ def test_sequential_rhat_is_explanatory_when_acceptance_evidence_passes() -> Non
     assert role == "dependence_aware_fixed_kernel_verification_passed"
     assert hard_vetoes == ()
     assert repair_triggers == ()
+
+
+def test_operational_phase7_rhat_policy_is_required_and_consistent() -> None:
+    base = dict(_sequential_verification_diagnostics(0.70, rhat_passed=False))
+    base["runner_route_summary"] = {
+        "active_route": "phase7_sequential_rhat_fixed_size_chunk_verifier",
+        "semantic_source": "_run_phase7_sequential_rhat_final_verification",
+        "policy_binding": "operational",
+        "rhat_admission_policy": "rhat_gate",
+    }
+    status, role, hard_vetoes, repair_triggers = (
+        hmc_kernel_tuning._classify_phase7_final_verification(
+            _loop_config(),
+            diagnostics=base,
+            screen_error=None,
+            callback_result=FixedMassHMCTuningBudgetCallbackResult(),
+        )
+    )
+    assert status == "hard_veto"
+    assert role == "shared_invalidity"
+    assert hard_vetoes == ("verification_rhat_admission_policy_missing",)
+    assert repair_triggers == ()
+
+    contradictory = dict(base)
+    contradictory["rhat_admission_policy"] = "explanatory_only"
+    contradictory["sequential_rhat_policy"] = {
+        "rhat_admission_policy": "rhat_gate"
+    }
+    status, role, hard_vetoes, repair_triggers = (
+        hmc_kernel_tuning._classify_phase7_final_verification(
+            _loop_config(),
+            diagnostics=contradictory,
+            screen_error=None,
+            callback_result=FixedMassHMCTuningBudgetCallbackResult(),
+        )
+    )
+    assert status == "hard_veto"
+    assert role == "shared_invalidity"
+    assert hard_vetoes == (
+        "verification_rhat_admission_policy_contradictory",
+    )
+    assert repair_triggers == ()
+
+
+def test_unmarked_phase7_route_fails_closed_as_nonoperational() -> None:
+    diagnostics = dict(_sequential_verification_diagnostics(0.70, rhat_passed=False))
+    diagnostics.update(
+        {
+            "runner_route_summary": {
+                "active_route": "phase7_sequential_rhat_fixed_size_chunk_verifier",
+                "semantic_source": "_run_phase7_sequential_rhat_final_verification",
+            }
+        }
+    )
+    status, role, hard_vetoes, repair_triggers = (
+        hmc_kernel_tuning._classify_phase7_final_verification(
+            _loop_config(),
+            diagnostics=diagnostics,
+            screen_error=None,
+            callback_result=FixedMassHMCTuningBudgetCallbackResult(),
+        )
+    )
+    assert status == "hard_veto"
+    assert role == "shared_invalidity"
+    assert hard_vetoes == ("verification_rhat_admission_policy_missing",)
+    assert repair_triggers == ()
+
+
+def test_operational_explanatory_policy_exposes_nonpromoting_handoff() -> None:
+    diagnostics = dict(_sequential_verification_diagnostics(0.70, rhat_passed=False))
+    diagnostics.update(
+        {
+            "rhat_admission_policy": "explanatory_only",
+            "sequential_rhat_policy": {
+                "rhat_admission_policy": "explanatory_only"
+            },
+            "runner_route_summary": {
+                "active_route": "phase7_sequential_rhat_fixed_size_chunk_verifier",
+                "semantic_source": "_run_phase7_sequential_rhat_final_verification",
+                "policy_binding": "operational",
+                "compatibility_marker": None,
+                "rhat_admission_policy": "explanatory_only",
+            },
+            "acceptance_handoff_eligible": True,
+            "promotion_role": "non_promoting",
+            "rhat_passed": False,
+        }
+    )
+    status, role, hard_vetoes, repair_triggers = (
+        hmc_kernel_tuning._classify_phase7_final_verification(
+            _loop_config(),
+            diagnostics=diagnostics,
+            screen_error=None,
+            callback_result=FixedMassHMCTuningBudgetCallbackResult(),
+        )
+    )
+    assert status == "passed"
+    assert role == "dependence_aware_fixed_kernel_verification_passed"
+    assert hard_vetoes == ()
+    assert repair_triggers == ()
+
+
+def test_operational_legacy_rhat_failure_remains_a_repair_trigger() -> None:
+    diagnostics = dict(_sequential_verification_diagnostics(0.70, rhat_passed=False))
+    diagnostics.update(
+        {
+            "rhat_admission_policy": "rhat_gate",
+            "sequential_rhat_policy": {"rhat_admission_policy": "rhat_gate"},
+            "runner_route_summary": {
+                "active_route": "phase7_sequential_rhat_fixed_size_chunk_verifier",
+                "semantic_source": "_run_phase7_sequential_rhat_final_verification",
+                "policy_binding": "operational",
+                "compatibility_marker": None,
+                "rhat_admission_policy": "rhat_gate",
+            },
+            "acceptance_handoff_eligible": True,
+            "promotion_role": "non_promoting",
+            "rhat_passed": False,
+        }
+    )
+    status, role, hard_vetoes, repair_triggers = (
+        hmc_kernel_tuning._classify_phase7_final_verification(
+            _loop_config(),
+            diagnostics=diagnostics,
+            screen_error=None,
+            callback_result=FixedMassHMCTuningBudgetCallbackResult(),
+        )
+    )
+    assert status == "repair_or_retry"
+    assert role == "verification_rhat_repair_trigger"
+    assert hard_vetoes == ()
+    assert repair_triggers == ("verification_rhat_above_threshold_or_cap_hit",)
+
+
+def test_rhat_only_retry_requires_explicit_legacy_gate() -> None:
+    diagnostics = dict(_sequential_verification_diagnostics(0.70, rhat_passed=False))
+    diagnostics.update(
+        {
+            "cap_hit": True,
+            "rhat_admission_policy": "explanatory_only",
+            "sequential_rhat_policy": {
+                "rhat_admission_policy": "explanatory_only"
+            },
+        }
+    )
+    retry_kwargs = {
+        "config": _loop_config(),
+        "verification_diagnostics": diagnostics,
+        "verify_status": "repair_or_retry",
+        "verify_role": "verification_rhat_repair_trigger",
+        "verify_hard_vetoes": (),
+        "verify_repair_triggers": (
+            "verification_rhat_above_threshold_or_cap_hit",
+            "verification_rhat_cap_hit",
+        ),
+    }
+    assert (
+        hmc_kernel_tuning._phase7_verification_result_supports_verification_only_retry(
+            **retry_kwargs
+        )
+        is False
+    )
+    legacy = dict(diagnostics)
+    legacy["rhat_admission_policy"] = "rhat_gate"
+    legacy["sequential_rhat_policy"] = {"rhat_admission_policy": "rhat_gate"}
+    assert (
+        hmc_kernel_tuning._phase7_verification_result_supports_verification_only_retry(
+            **{**retry_kwargs, "verification_diagnostics": legacy}
+        )
+        is True
+    )
 
 
 @pytest.mark.parametrize("acceptance", [0.82, 0.60])

@@ -60,12 +60,22 @@ def _diag_summary(diagnostics: dict[str, tf.Tensor]) -> dict[str, Any]:
 
 
 def _diagnostic_endpoint(
-    target: Any, *, horizon: int, correction_steps: int, mode: str
+    target: Any,
+    *,
+    horizon: int,
+    correction_steps: int,
+    mode: str,
+    control_overrides: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     theta = tf.zeros([1, target.parameter_dim], tf.float32)
     observations = target.observations[:horizon]
     process_noise = target.process_noise[:horizon]
     kwargs = base._controls(target, correction_steps=correction_steps)  # noqa: SLF001
+    if control_overrides:
+        for key, value in control_overrides.items():
+            if key not in kwargs:
+                raise ValueError(f"unknown control override {key!r}")
+            kwargs[key] = value
 
     def value_call(values):
         return batch.batch_finite_value(
@@ -129,6 +139,24 @@ def main() -> None:
         default="on",
         help="off disables TF32 execution before any case runs (reference arm)",
     )
+    parser.add_argument(
+        "--lm-damping",
+        type=float,
+        default=None,
+        help="override higher_moment_lm_damping (Class C evaluation arm)",
+    )
+    parser.add_argument(
+        "--lm-scale-floor",
+        type=float,
+        default=None,
+        help="override higher_moment_lm_scale_floor",
+    )
+    parser.add_argument(
+        "--trust-radius",
+        type=float,
+        default=None,
+        help="override higher_moment_trust_radius (Class C evaluation arm)",
+    )
     args = parser.parse_args()
     output = args.output.resolve()
     started = time.time()
@@ -136,6 +164,17 @@ def main() -> None:
         raise RuntimeError("parsed device does not match pre-import device selection")
     if args.tf32 == "off":
         tf.config.experimental.enable_tensor_float_32_execution(False)
+    control_overrides: dict[str, float] = {}
+    if args.lm_damping is not None:
+        control_overrides["higher_moment_lm_damping"] = float(args.lm_damping)
+    if args.lm_scale_floor is not None:
+        control_overrides["higher_moment_lm_scale_floor"] = float(
+            args.lm_scale_floor
+        )
+    if args.trust_radius is not None:
+        control_overrides["higher_moment_trust_radius"] = float(
+            args.trust_radius
+        )
 
     with tf.device("/CPU:0"):
         target = base.make_genut_neutra_target("austria_sir", particle_count=1008)
@@ -190,6 +229,7 @@ def main() -> None:
             "tf32_enabled_at_run": (
                 tf.config.experimental.tensor_float_32_execution_enabled()
             ),
+            "control_overrides": control_overrides,
             "results": {"cases": []},
         }
     )
@@ -205,6 +245,7 @@ def main() -> None:
                         horizon=horizon,
                         correction_steps=steps,
                         mode=mode,
+                        control_overrides=control_overrides or None,
                     )
                 )
                 base._write_json(output, payload | {"status": "RUNNING"})  # noqa: SLF001

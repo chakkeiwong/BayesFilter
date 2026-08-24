@@ -252,6 +252,167 @@ def test_fixed_size_chunk_runner_xla_compiles_tiny_contract() -> None:
     assert result.metadata["compile_trace_count"] == 1
 
 
+@pytest.mark.parametrize(
+    ("rhat_admission_policy", "expected_passed"),
+    (("rhat_gate", False), ("explanatory_only", True)),
+)
+def test_sequential_verifier_policy_separates_rhat_telemetry_from_handoff(
+    monkeypatch: pytest.MonkeyPatch,
+    rhat_admission_policy: str,
+    expected_passed: bool,
+) -> None:
+    """A fake chunk proves the two admission policies without running HMC."""
+
+    import bayesfilter.inference.hmc as hmc_module
+
+    class _HealthyChunkRunner:
+        def __init__(self, _adapter, initial_state, _config) -> None:
+            self._state = tf.convert_to_tensor(initial_state, dtype=tf.float64)
+
+        def run(self, *, active_results, current_state=None, seed=None, step_size=None):
+            del seed, step_size
+            draws = int(active_results)
+            base = tf.convert_to_tensor(current_state, dtype=tf.float64)
+            draw_axis = tf.cast(tf.range(draws), tf.float64)[:, None, None]
+            chain_axis = tf.reshape(
+                tf.constant([-1.0, 0.0, 1.0, 2.0], dtype=tf.float64),
+                (1, 4, 1),
+            )
+            samples = tf.broadcast_to(
+                draw_axis + chain_axis,
+                (draws, 4, 2),
+            )
+            trace = _standard_verification_trace(
+                draws,
+                chain_count=4,
+                probability=0.70,
+            )
+            diagnostics = {
+                "valid_sample_count": tf.constant(draws, dtype=tf.int32),
+                "nonfinite_valid_sample_count": tf.constant(0, dtype=tf.int32),
+                "acceptance_rate": tf.constant(0.70, dtype=tf.float64),
+                "acceptance_decision_count": tf.constant(4 * draws, dtype=tf.int32),
+                "log_accept_ratio_finite_count": tf.constant(4 * draws, dtype=tf.int32),
+                "log_accept_ratio_nonfinite_count": tf.constant(0, dtype=tf.int32),
+                "log_accept_ratio_max_abs_finite": tf.constant(0.2, dtype=tf.float64),
+                "target_log_prob_finite_count": tf.constant(4 * draws, dtype=tf.int32),
+                "target_log_prob_nonfinite_count": tf.constant(0, dtype=tf.int32),
+                "target_log_prob_min_finite": tf.constant(-1.0, dtype=tf.float64),
+                "target_log_prob_max_finite": tf.constant(-0.1, dtype=tf.float64),
+                "divergence_status": "not_exposed_by_kernel",
+                "divergence_count": None,
+            }
+            return hmc_module.FixedSizeHMCChunkRunResult(
+                samples=samples,
+                valid_mask=tf.ones((draws,), dtype=tf.bool),
+                final_state=base,
+                trace=trace,
+                diagnostics=diagnostics,
+                metadata={
+                    "compile_trace_count": 0,
+                    "first_call_s": 0.0,
+                    "warm_call_s": 0.0,
+                    "chunk_call_s": 0.0,
+                },
+            )
+
+    def _failed_rhat(_samples, *, threshold):
+        del threshold
+        summary = dict(hmc_module._empty_rhat_summary())
+        summary.update(
+            {
+                "max_rank_normalized_split_rhat": 1.20,
+                "max_folded_rank_normalized_split_rhat": 1.15,
+                "max_finite_rhat": 1.20,
+                "finite_rhat_count": 2,
+                "nonfinite_rhat_count": 0,
+            }
+        )
+        return summary
+
+    monkeypatch.setattr(hmc_module, "FixedSizeHMCChunkRunner", _HealthyChunkRunner)
+    monkeypatch.setattr(hmc_module, "_rhat_summary_from_retained_samples", _failed_rhat)
+    config = SequentialRHatHMCVerificationConfig(
+        check_interval=64,
+        max_results=64,
+        num_burnin_steps=0,
+        step_size=0.05,
+        num_leapfrog_steps=1,
+        seed=(20260822, 1),
+        chain_count=4,
+        target_scope="fixed_size_hmc_chunk_gaussian",
+        rhat_admission_policy=rhat_admission_policy,
+        explicit_start_bank_policy_id="phase7_engineering_probe_bank_v1",
+    )
+    result = build_sequential_rhat_hmc_verifier(
+        ReviewedBatchedGaussianAdapter(),
+        tf.zeros((4, 2), dtype=tf.float64),
+        config,
+    ).run()
+
+    assert result.passed is expected_passed
+    assert result.rhat_passed is False
+    assert result.acceptance_handoff_eligible is True
+    assert result.diagnostics["rhat_admission_policy"] == rhat_admission_policy
+    assert result.diagnostics["rhat_passed"] is False
+    assert result.diagnostics["acceptance_handoff_eligible"] is True
+    assert result.diagnostics["promotion_role"] == "non_promoting"
+    expected_role = (
+        "explanatory_only_not_stopping_or_admission"
+        if rhat_admission_policy == "explanatory_only"
+        else "fixed_kernel_convergence_gate_not_candidate_ranking"
+    )
+    assert result.diagnostics["rhat_role"] == expected_role
+    assert result.metadata["initial_state_policy"] == (
+        "phase7_engineering_probe_bank_v1"
+    )
+    payload = config.signature_payload()
+    assert payload["rhat_admission_policy"] == rhat_admission_policy
+    assert payload["explicit_start_bank_policy_id"] == (
+        "phase7_engineering_probe_bank_v1"
+    )
+    gate_config = SequentialRHatHMCVerificationConfig(
+        **{
+            **config.signature_payload(),
+            "acceptance_policy": config.acceptance_policy,
+            "rhat_admission_policy": (
+                "explanatory_only"
+                if rhat_admission_policy == "rhat_gate"
+                else "rhat_gate"
+            ),
+        }
+    )
+    assert hmc_module.program_signature(gate_config.signature_payload()) != (
+        hmc_module.program_signature(config.signature_payload())
+    )
+
+
+def test_sequential_verifier_policy_and_bank_fields_validate() -> None:
+    base = dict(
+        check_interval=4,
+        max_results=4,
+        num_burnin_steps=0,
+        step_size=0.05,
+        num_leapfrog_steps=1,
+        seed=(20260822, 2),
+        chain_count=4,
+        target_scope="fixed_size_hmc_chunk_gaussian",
+    )
+    with pytest.raises(ValueError, match="rhat_admission_policy"):
+        SequentialRHatHMCVerificationConfig(
+            **base,
+            rhat_admission_policy="unknown",
+        )
+    with pytest.raises(ValueError, match="explicit_start_bank_policy_id"):
+        SequentialRHatHMCVerificationConfig(
+            **base,
+            explicit_start_bank_policy_id=" ",
+        )
+    default_config = SequentialRHatHMCVerificationConfig(**base)
+    assert default_config.explicit_start_bank_policy_id == "explicit_start_bank"
+    assert default_config.rhat_admission_policy == "rhat_gate"
+
+
 def test_sequential_verifier_fails_closed_when_modern_rhat_is_undefined(monkeypatch) -> None:
     import bayesfilter.inference.hmc as hmc_module
 

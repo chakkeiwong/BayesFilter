@@ -63,6 +63,9 @@ from bayesfilter.inference.hmc import (
     PrecomputedMassArtifact,
     SequentialRHatCheckpointWriterConfig,
     SequentialRHatHMCVerificationConfig,
+    SEQUENTIAL_RHAT_ADMISSION_POLICIES,
+    SEQUENTIAL_RHAT_ROLE_EXPLANATORY_ONLY,
+    SEQUENTIAL_RHAT_ROLE_GATE,
     assert_sequential_rhat_checkpoint_public_reference_safe,
     build_fixed_size_hmc_chunk_runner,
     build_reusable_full_chain_tfp_hmc_runner,
@@ -96,10 +99,14 @@ from bayesfilter.inference.hmc_coordinates import (
 from bayesfilter.inference.hmc_warmup import (
     OperationalWindowedWarmupCloseout,
     OperationalWindowedWarmupResult,
+    PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+    Phase7EngineeringProbeBankConfig,
     compose_base_transform_with_nested_artifact,
     compose_operational_transform_in_base_coordinates,
+    engineering_probe_bank_qualification_payload_from_exception,
     run_operational_windowed_warmup,
     start_bank_qualification_payload_from_exception,
+    _base_adapter_signature,
     _validate_start_bank_qualification_payload,
 )
 from bayesfilter.inference.hmc_verification import (
@@ -146,6 +153,114 @@ def _validate_metric_update_requirement(value: Any) -> str:
         allowed = ", ".join(sorted(_METRIC_UPDATE_REQUIREMENTS))
         raise ValueError(f"metric_update_requirement must be one of: {allowed}")
     return requirement
+
+
+def _validate_engineering_probe_covariance_multiplier(
+    value: Any,
+) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (bool, np.bool_)):
+        raise ValueError(
+            "engineering_probe_covariance_multiplier must be positive and finite"
+        )
+    multiplier = float(value)
+    if not np.isfinite(multiplier) or multiplier <= 0.0:
+        raise ValueError(
+            "engineering_probe_covariance_multiplier must be positive and finite"
+        )
+    return multiplier
+
+
+def _engineering_probe_config_public_payload(
+    multiplier: float | None,
+) -> Mapping[str, Any]:
+    configured = multiplier is not None
+    return {
+        "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID if configured else None,
+        "configured": configured,
+        "private_config_signature": None
+        if multiplier is None
+        else stable_config_hash(
+            {
+                "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+                "covariance_multiplier": multiplier,
+            }
+        ),
+        "covariance_multiplier_exposed": False,
+        "seed_values_exposed": False,
+        "raw_values_exposed": False,
+    }
+
+
+def _engineering_probe_seed_signature(seed: Sequence[int]) -> str:
+    """Hash a P4 seed lineage value without exposing its two integers."""
+
+    return stable_config_hash(
+        {
+            "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+            "seed": tuple(int(item) for item in seed),
+        }
+    )
+
+
+def _engineering_probe_seed_public_payload(
+    seed: Sequence[int],
+    *,
+    configured: bool,
+) -> Mapping[str, Any]:
+    """Expose legacy seeds unchanged and bind P4 seeds without revealing them."""
+
+    if not configured:
+        return {"seed": tuple(int(item) for item in seed)}
+    return {
+        "seed": None,
+        "seed_signature": _engineering_probe_seed_signature(seed),
+        "seed_values_exposed": False,
+    }
+
+
+def _engineering_probe_seed_report_public_payload(
+    seed_report: Mapping[str, Any],
+    *,
+    configured: bool,
+) -> Mapping[str, Any]:
+    if not configured:
+        return dict(seed_report)
+    return {
+        "seed_values_exposed": False,
+        "seed_lineage_signature": stable_config_hash(
+            {
+                "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+                "seed_report": dict(seed_report),
+            }
+        ),
+        "seed_owner": "BayesFilter",
+    }
+
+
+def _engineering_probe_diagnostic_config_public_payload(
+    payload: Mapping[str, Any] | None,
+    *,
+    configured: bool,
+) -> Mapping[str, Any] | None:
+    """Hide the derived HMC diagnostic seed from a P4 public stage payload."""
+
+    if payload is None or not configured:
+        return None if payload is None else dict(payload)
+    public = dict(payload)
+    seed = public.pop("seed", None)
+    if seed is None:
+        raise ValueError("configured P4 diagnostic payload must carry a seed")
+    public.update(
+        {
+            "seed": None,
+            "seed_signature": _engineering_probe_seed_signature(seed),
+            "seed_values_exposed": False,
+        }
+    )
+    return public
+
 
 _OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY = "initial_only"
 _OPERATIONAL_EVIDENCE_POLICY_ONE_DOUBLING = "one_doubling"
@@ -2094,6 +2209,7 @@ class HMCWindowedMassStageConfig:
     target_status_trace_policy: str = "none"
     mass_policy: str = "windowed_adaptive"
     metric_update_requirement: str = "allow_valid_incumbent"
+    engineering_probe_covariance_multiplier: float | None = None
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
     staged_timeout_policy: HMCStagedTimeoutPolicy | None = None
@@ -2158,6 +2274,13 @@ class HMCWindowedMassStageConfig:
             "metric_update_requirement",
             metric_requirement,
         )
+        object.__setattr__(
+            self,
+            "engineering_probe_covariance_multiplier",
+            _validate_engineering_probe_covariance_multiplier(
+                self.engineering_probe_covariance_multiplier
+            ),
+        )
         timeout_budget = (
             None
             if self.public_timeout_budget_s is None
@@ -2220,13 +2343,19 @@ class HMCWindowedMassStageConfig:
         return {
             "algorithm_id": self.algorithm_id,
             "target_accept_prob": self.target_accept_prob,
-            "seed": self.seed,
+            **_engineering_probe_seed_public_payload(
+                self.seed,
+                configured=self.engineering_probe_covariance_multiplier is not None,
+            ),
             "chain_execution_mode": self.chain_execution_mode,
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "mass_policy": self.mass_policy,
             "metric_update_requirement": self.metric_update_requirement,
+            "engineering_probe_bank": _engineering_probe_config_public_payload(
+                self.engineering_probe_covariance_multiplier
+            ),
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": (
                 self.public_timeout_started_perf_counter_s
@@ -2450,7 +2579,14 @@ class HMCWindowedMassStageResult:
             "draw_capture_policy": self.draw_capture_policy,
             "warmup_draw_provenance": self.warmup_draw_provenance,
             "acceptance_telemetry_provenance": self.acceptance_telemetry_provenance,
-            "diagnostic_run_config_payload": self.diagnostic_run_config_payload,
+            "diagnostic_run_config_payload": (
+                _engineering_probe_diagnostic_config_public_payload(
+                    self.diagnostic_run_config_payload,
+                    configured=(
+                        self.config.engineering_probe_covariance_multiplier is not None
+                    ),
+                )
+            ),
             "windowed_config_payload": self.windowed_config_payload,
             "windowed_mass_result": None
             if self.windowed_mass_result is None
@@ -2467,7 +2603,10 @@ class HMCWindowedMassStageResult:
             "adapted_mass_artifact_payload": self.adapted_mass_artifact_payload,
             "adapted_mass_artifact_signature": self.adapted_mass_artifact_signature,
             "candidate_step_size": self.candidate_step_size,
-            "seed_report": self.seed_report,
+            "seed_report": _engineering_probe_seed_report_public_payload(
+                self.seed_report,
+                configured=self.config.engineering_probe_covariance_multiplier is not None,
+            ),
             "diagnostic_roles": self.diagnostic_roles,
             "passed": self.passed,
             "reports_fixed_mass_step_tuning": False,
@@ -5114,6 +5253,7 @@ class HMCTuneVerifyRepairLoopConfig:
     target_status_trace_policy: str = "none"
     mass_policy: str = "windowed_adaptive"
     metric_update_requirement: str = "allow_valid_incumbent"
+    engineering_probe_covariance_multiplier: float | None = None
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
     verification_chunk_max_results: int | None = None
@@ -5302,6 +5442,13 @@ class HMCTuneVerifyRepairLoopConfig:
             "metric_update_requirement",
             _validate_metric_update_requirement(self.metric_update_requirement),
         )
+        object.__setattr__(
+            self,
+            "engineering_probe_covariance_multiplier",
+            _validate_engineering_probe_covariance_multiplier(
+                self.engineering_probe_covariance_multiplier
+            ),
+        )
         if (
             self.metric_update_requirement == "require_operational_update"
             and mass_policy == "fixed_identity"
@@ -5429,13 +5576,19 @@ class HMCTuneVerifyRepairLoopConfig:
             "terminal_phase6_repair_extra_attempts": (
                 self.terminal_phase6_repair_extra_attempts
             ),
-            "seed": self.seed,
+            **_engineering_probe_seed_public_payload(
+                self.seed,
+                configured=self.engineering_probe_covariance_multiplier is not None,
+            ),
             "chain_execution_mode": self.chain_execution_mode,
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "mass_policy": self.mass_policy,
             "metric_update_requirement": self.metric_update_requirement,
+            "engineering_probe_bank": _engineering_probe_config_public_payload(
+                self.engineering_probe_covariance_multiplier
+            ),
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": self.public_timeout_started_perf_counter_s,
             "verification_chunk_max_results": self.verification_chunk_max_results,
@@ -5743,6 +5896,7 @@ class HMCKernelTuningConfig:
     target_status_trace_policy: str = "none"
     mass_policy: str = "windowed_adaptive"
     metric_update_requirement: str = "allow_valid_incumbent"
+    engineering_probe_covariance_multiplier: float | None = None
     geometry_scaling_c: float = 0.5
     stability_guard: float = 0.8
     covariance_jitter: float = 1.0e-9
@@ -6000,6 +6154,13 @@ class HMCKernelTuningConfig:
             "metric_update_requirement",
             _validate_metric_update_requirement(self.metric_update_requirement),
         )
+        object.__setattr__(
+            self,
+            "engineering_probe_covariance_multiplier",
+            _validate_engineering_probe_covariance_multiplier(
+                self.engineering_probe_covariance_multiplier
+            ),
+        )
         if (
             self.metric_update_requirement == "require_operational_update"
             and mass_policy == "fixed_identity"
@@ -6233,13 +6394,19 @@ class HMCKernelTuningConfig:
             "terminal_phase6_repair_extra_attempts": (
                 self.terminal_phase6_repair_extra_attempts
             ),
-            "seed": self.seed,
+            **_engineering_probe_seed_public_payload(
+                self.seed,
+                configured=self.engineering_probe_covariance_multiplier is not None,
+            ),
             "chain_execution_mode": self.chain_execution_mode,
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "mass_policy": self.mass_policy,
             "metric_update_requirement": self.metric_update_requirement,
+            "engineering_probe_bank": _engineering_probe_config_public_payload(
+                self.engineering_probe_covariance_multiplier
+            ),
             "geometry_scaling_c": self.geometry_scaling_c,
             "stability_guard": self.stability_guard,
             "covariance_jitter": self.covariance_jitter,
@@ -8239,6 +8406,15 @@ def _operational_windowed_mass_capture(
         attempt_state is None
         and isinstance(mass_window_seed_kernel.get("screen_config_payload"), Mapping)
     )
+    engineering_probe_config = (
+        None
+        if config.engineering_probe_covariance_multiplier is None
+        else Phase7EngineeringProbeBankConfig(
+            chain_count=4,
+            covariance_multiplier=config.engineering_probe_covariance_multiplier,
+            root_seed=stage_seed,
+        )
+    )
     operational_outcome = run_operational_windowed_warmup(
         adapter=adapter,
         initial_transform=active_transform,
@@ -8259,6 +8435,7 @@ def _operational_windowed_mass_capture(
         target_accept_prob=config.target_accept_prob,
         seed=stage_seed,
         target_scope=target_scope,
+        engineering_probe_config=engineering_probe_config,
         chain_execution_mode=config.chain_execution_mode,
         jit_compile=config.use_xla,
         target_status_trace_policy=config.target_status_trace_policy,
@@ -8439,7 +8616,14 @@ def _operational_windowed_mass_capture(
                 mass_window_seed_kernel["num_leapfrog_steps"]
             ),
             "start_bank_qualification": (
-                operational_result.start_bank_qualification.public_payload()
+                None
+                if operational_result.start_bank_qualification is None
+                else operational_result.start_bank_qualification.public_payload()
+            ),
+            "engineering_probe_bank_qualification": None
+            if operational_result.engineering_probe_bank_qualification is None
+            else (
+                operational_result.engineering_probe_bank_qualification.public_payload()
             ),
         },
         "runtime_metadata": {
@@ -8884,6 +9068,27 @@ def run_hmc_windowed_mass_stage(
                 "attempt_index": progress_attempt_index,
                 "start_bank_qualification": _json_ready(
                     start_bank_qualification
+                ),
+                "private_hmc_mechanics": False,
+                "reports_posterior_convergence": False,
+                "reports_sampler_superiority": False,
+                "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
+            },
+        )
+    engineering_probe_qualification = capture.get("raw_diagnostics", {}).get(
+        "engineering_probe_bank_qualification"
+    )
+    if _private_diagnostic_callback is not None and isinstance(
+        engineering_probe_qualification,
+        Mapping,
+    ):
+        _private_diagnostic_callback(
+            "engineering_probe_bank_qualification",
+            {
+                "stage": "phase7_engineering_probe_bank_boundary",
+                "attempt_index": progress_attempt_index,
+                "engineering_probe_bank_qualification": _json_ready(
+                    engineering_probe_qualification
                 ),
                 "private_hmc_mechanics": False,
                 "reports_posterior_convergence": False,
@@ -14160,6 +14365,9 @@ def _public_loop_config(
         target_status_trace_policy=config.target_status_trace_policy,
         mass_policy=config.mass_policy,
         metric_update_requirement=config.metric_update_requirement,
+        engineering_probe_covariance_multiplier=(
+            config.engineering_probe_covariance_multiplier
+        ),
         public_timeout_budget_s=config.public_timeout_budget_s,
         public_timeout_started_perf_counter_s=public_timeout_started_perf_counter_s,
         verification_chunk_max_results=config.verification_chunk_max_results,
@@ -15478,7 +15686,30 @@ def _phase7_verification_public_summary(
             "single_use_build_count": runner_route.get("single_use_build_count"),
             "fallback_status": runner_route.get("fallback_status"),
             "semantic_source": runner_route.get("semantic_source"),
+            "policy_binding": runner_route.get("policy_binding"),
+            "compatibility_marker": runner_route.get("compatibility_marker"),
+            "rhat_admission_policy": runner_route.get("rhat_admission_policy"),
+            "promotion_role": runner_route.get("promotion_role"),
         }
+    rhat_policy = config_payload.get("rhat_admission_policy") or diagnostics.get(
+        "rhat_admission_policy"
+    )
+    sequential_rhat_role = (
+        SEQUENTIAL_RHAT_ROLE_EXPLANATORY_ONLY
+        if rhat_policy == "explanatory_only"
+        else (
+            SEQUENTIAL_RHAT_ROLE_GATE
+            if rhat_policy == "rhat_gate"
+            else (
+                config_payload.get("rhat_threshold_role")
+                or (
+                    sequential_policy.get("rhat_threshold_role")
+                    if isinstance(sequential_policy, Mapping)
+                    else None
+                )
+            )
+        )
+    )
     summary = {
         "schema": "bayesfilter.hmc_phase7_verification_public_summary.v1",
         "attempt_index": attempt.attempt_index,
@@ -15498,13 +15729,21 @@ def _phase7_verification_public_summary(
             diagnostics.get("sequential_rhat_verification")
         ),
         "rhat_threshold": diagnostics.get("rhat_threshold"),
-        "rhat_threshold_role": (
-            config_payload.get("rhat_threshold_role")
-            or (
-                sequential_policy.get("rhat_threshold_role")
-                if isinstance(sequential_policy, Mapping)
-                else None
-            )
+        "rhat_admission_policy": rhat_policy,
+        "rhat_threshold_role": sequential_rhat_role,
+        "rhat_passed": diagnostics.get("rhat_passed")
+        if "rhat_passed" in diagnostics
+        else diagnostics.get("all_finite_rhat_at_or_below_threshold"),
+        "engineering_handoff_eligible": diagnostics.get(
+            "acceptance_handoff_eligible",
+            config_payload.get("engineering_handoff_eligible"),
+        ),
+        "promotion_role": config_payload.get(
+            "promotion_role",
+            "non_promoting" if diagnostics.get("sequential_rhat_verification") else None,
+        ),
+        "explicit_start_bank_policy_id": config_payload.get(
+            "explicit_start_bank_policy_id"
         ),
         "rhat_definition": diagnostics.get("rhat_definition"),
         "max_rank_normalized_split_rhat": diagnostics.get(
@@ -17481,6 +17720,14 @@ def _phase7_should_prepare_verification_only_retry(
     handoff_state: "_HMCPhaseAttemptState | None",
     verification_diagnostics: Mapping[str, Any],
 ) -> bool:
+    # R-hat-only retry is meaningful only for the explicitly legacy gated
+    # policy.  The active explanatory-only route must never turn telemetry
+    # into a retry trigger.
+    rhat_policy, _policy_error = _phase7_rhat_admission_policy(
+        verification_diagnostics
+    )
+    if rhat_policy != "rhat_gate":
+        return False
     triggers = tuple(str(item) for item in attempt_repair_triggers)
     return (
         str(attempt_status) == "repair_or_retry"
@@ -17518,6 +17765,11 @@ def _phase7_verification_result_supports_verification_only_retry(
     counts as a valid verify-only outcome because no retuning stages were run.
     """
 
+    rhat_policy, _policy_error = _phase7_rhat_admission_policy(
+        verification_diagnostics
+    )
+    if rhat_policy != "rhat_gate":
+        return False
     triggers = tuple(str(item) for item in verify_repair_triggers)
     acceptance_relation = _acceptance_relation_to_band(
         verification_diagnostics.get("acceptance_rate"),
@@ -18869,6 +19121,9 @@ def _phase7_windowed_stage_config(
         target_status_trace_policy=config.target_status_trace_policy,
         mass_policy=config.mass_policy,
         metric_update_requirement=config.metric_update_requirement,
+        engineering_probe_covariance_multiplier=(
+            config.engineering_probe_covariance_multiplier
+        ),
         public_timeout_budget_s=_staged_timeout_stage_budget(
             config.staged_timeout_policy,
             "windowed_mass",
@@ -21226,6 +21481,57 @@ def _phase7_verification_initial_state(
             "raw_values_exposed": False,
             "reports_operational_start_lineage": False,
         }
+    if (
+        operational.private_start_bank_policy_id
+        != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+    ):
+        raise ValueError(
+            "operational Phase 7 requires the explicit P4-E engineering probe bank"
+        )
+    engineering_qualification = operational.engineering_probe_bank_qualification
+    if engineering_qualification is None or not engineering_qualification.passed:
+        raise ValueError("operational Phase 7 P4-E qualification is missing or failed")
+    active_target = getattr(phase4_adapter, "base_adapter", None)
+    if active_target is None:
+        raise ValueError("operational Phase 7 P4-E base target identity is missing")
+    expected_target_signature = _base_adapter_signature(active_target)
+    if engineering_qualification.target_signature != expected_target_signature:
+        raise ValueError("operational Phase 7 P4-E target identity mismatch")
+    active_scope = str(getattr(phase4_adapter, "target_scope", ""))
+    operational_scope = str(getattr(operational, "target_scope", ""))
+    if not active_scope or not operational_scope or active_scope != operational_scope:
+        raise ValueError("operational Phase 7 P4-E target scope mismatch")
+    stage_config = getattr(windowed_stage, "config", None)
+    multiplier = getattr(stage_config, "engineering_probe_covariance_multiplier", None)
+    if multiplier is None:
+        raise ValueError("operational Phase 7 P4-E configuration is missing")
+    configured_scope = getattr(stage_config, "target_scope", None)
+    if configured_scope is not None and str(configured_scope) != active_scope:
+        raise ValueError("operational Phase 7 P4-E configured target scope mismatch")
+    stage_seed = _derive_seed(
+        _validate_seed(getattr(stage_config, "seed", None)),
+        stage_index=0,
+    )
+    operational_seed = _validate_seed(getattr(operational, "seed_root", None))
+    if stage_seed != operational_seed:
+        raise ValueError("operational Phase 7 P4-E stage seed lineage mismatch")
+    expected_probe_config = Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=multiplier,
+        root_seed=operational_seed,
+    )
+    if engineering_qualification.config_signature != expected_probe_config.config_signature:
+        raise ValueError("operational Phase 7 P4-E configuration lineage mismatch")
+    if (
+        engineering_qualification.derived_seed_signature
+        != expected_probe_config.derived_seed_signature
+    ):
+        raise ValueError("operational Phase 7 P4-E derived seed lineage mismatch")
+    if (
+        engineering_qualification.transform_signature
+        != operational.final_kernel_state.transform.signature
+    ):
+        raise ValueError("operational Phase 7 P4-E transform lineage mismatch")
     canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
     if canonical.shape != (4, windowed_stage.target_dimension):
         raise ValueError("operational verification start bank shape mismatch")
@@ -21264,15 +21570,33 @@ def _phase7_verification_initial_state(
         operational.final_kernel_state.transform.signature,
     )
     return verification_latent, {
-        "source": "operational_warmup_private_start_bank",
+        "source": "phase7_engineering_probe_bank_v1",
+        "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
         "source_signature": source_signature,
         "active_signature": active_signature,
+        "qualification_content_signature": (
+            engineering_qualification.content_signature
+        ),
+        "qualification_target_signature": engineering_qualification.target_signature,
+        "qualification_config_signature": engineering_qualification.config_signature,
+        "qualification_derived_seed_signature": (
+            engineering_qualification.derived_seed_signature
+        ),
+        "target_scope": operational.target_scope,
+        "final_transform_signature": (
+            operational.final_kernel_state.transform.signature
+        ),
+        "phase4_adapter_signature": stable_adapter_signature(phase4_adapter),
+        "verification_adapter_signature": verification_hmc_signature,
         "count": 4,
         "frozen_post_warmup_bank_consumed": True,
         "canonical_round_trip_passed": True,
         "final_coordinate_match_passed": True,
         "raw_values_exposed": False,
         "reports_operational_start_lineage": True,
+        "evidence_role": "engineering_only",
+        "promotion_role": "non_promoting",
+        "reports_posterior_convergence": False,
     }
 
 
@@ -22839,6 +23163,8 @@ def _run_phase7_sequential_rhat_final_verification(
         use_xla=config.use_xla,
         target_scope=sequential_target_scope,
         chain_execution_mode=config.chain_execution_mode,
+        rhat_admission_policy="explanatory_only",
+        explicit_start_bank_policy_id=PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
     )
     verifier = None
     verifier_error: Exception | None = None
@@ -22996,6 +23322,26 @@ def _run_phase7_sequential_rhat_final_verification(
     diagnostics["verification_min_retained_pass_gate_satisfied"] = bool(
         retained_count_int >= int(min_retained_for_pass)
     )
+    try:
+        normalized_evidence = hmc_acceptance_evidence_from_payload(
+            diagnostics.get("acceptance_evidence")
+        )
+    except (TypeError, ValueError):
+        normalized_evidence = None
+    engineering_handoff_eligible = bool(
+        normalized_evidence is not None
+        and normalized_evidence.promotion_eligible
+        and retained_count_int >= int(min_retained_for_pass)
+    )
+    diagnostics["acceptance_handoff_eligible"] = engineering_handoff_eligible
+    diagnostics["engineering_handoff_eligible"] = engineering_handoff_eligible
+    diagnostics["promotion_role"] = "non_promoting"
+    if "rhat_passed" not in diagnostics and (
+        "all_finite_rhat_at_or_below_threshold" in diagnostics
+    ):
+        diagnostics["rhat_passed"] = bool(
+            diagnostics["all_finite_rhat_at_or_below_threshold"]
+        )
     diagnostics["diagnostic_context"] = "phase7_sequential_rhat_fixed_kernel_verification"
     diagnostics["nonclaims"] = TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS
     diagnostics["verification_budget"] = budget_policy.payload()
@@ -23003,6 +23349,10 @@ def _run_phase7_sequential_rhat_final_verification(
     diagnostics["phase7_checkpoint_count"] = len(checkpoint_references)
     diagnostics["phase7_checkpoint_references"] = tuple(checkpoint_references)
     diagnostics["verification_start_bank"] = dict(start_bank_summary)
+    # Bind the caller's policy even when a deterministic injected verifier is
+    # used; the operational route must never infer admission semantics from a
+    # missing fake-result field.
+    diagnostics["rhat_admission_policy"] = sequential_config.rhat_admission_policy
     diagnostics["sequential_rhat_policy"] = {
         "check_interval": check_interval,
         "rhat_threshold": 1.01,
@@ -23014,7 +23364,10 @@ def _run_phase7_sequential_rhat_final_verification(
         "minimum_retained_pass_gate_satisfied": bool(
             retained_count_int >= int(min_retained_for_pass)
         ),
-        "rhat_threshold_role": "historical_explanatory_only_not_stopping_or_admission",
+        "rhat_passed": diagnostics.get("rhat_passed"),
+        "engineering_handoff_eligible": engineering_handoff_eligible,
+        "rhat_admission_policy": sequential_config.rhat_admission_policy,
+        "rhat_threshold_role": SEQUENTIAL_RHAT_ROLE_EXPLANATORY_ONLY,
         "handoff_gate": "dependence_aware_acceptance_evidence_and_hard_health",
         "stopping_rule": "stop_at_first_fixed_checkpoint_with_typed_acceptance_decision",
         "cap_rule": "stop_inconclusive_at_budget_policy_verification_num_results",
@@ -23027,6 +23380,7 @@ def _run_phase7_sequential_rhat_final_verification(
             "continue_until_minimum_retained_count; rhat_remains_explanatory"
         ),
         "mechanics_publicized": False,
+        "explicit_start_bank_policy_id": sequential_config.explicit_start_bank_policy_id,
     }
     diagnostics["runner_route_summary"] = {
         "active_route": "phase7_sequential_rhat_fixed_size_chunk_verifier",
@@ -23035,15 +23389,23 @@ def _run_phase7_sequential_rhat_final_verification(
         "injected_runner_call_count": 0,
         "fallback_status": "none",
         "semantic_source": "_run_phase7_sequential_rhat_final_verification",
+        "policy_binding": "operational",
+        "compatibility_marker": None,
         "route_nonclaims": (
             "sequential R-hat final verification uses fixed-size TF/TFP chunks",
-            "R-hat is historical explanatory telemetry, not a stopping rule, tuning handoff criterion, or posterior convergence proof",
+            "R-hat is explanatory telemetry, not an admission or continuation veto",
         ),
         "evidence_role": "engineering_only",
         "promotion_role": "non_promoting",
         "stopping_rule_role": "not_a_stopping_rule",
         "reports_posterior_convergence": False,
         "reports_sampler_superiority": False,
+        "rhat_admission_policy": sequential_config.rhat_admission_policy,
+        "rhat_threshold_role": SEQUENTIAL_RHAT_ROLE_EXPLANATORY_ONLY,
+        "engineering_handoff_eligible": diagnostics.get(
+            "acceptance_handoff_eligible"
+        ),
+        "explicit_start_bank_policy_id": sequential_config.explicit_start_bank_policy_id,
     }
     verification_payload = {
         "verification_policy": "sequential_rhat",
@@ -23053,7 +23415,13 @@ def _run_phase7_sequential_rhat_final_verification(
         "num_burnin_steps": sequential_config.num_burnin_steps,
         "chain_count": sequential_config.chain_count,
         "rhat_threshold": sequential_config.rhat_threshold,
-        "rhat_threshold_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+        "rhat_admission_policy": sequential_config.rhat_admission_policy,
+        "rhat_threshold_role": SEQUENTIAL_RHAT_ROLE_EXPLANATORY_ONLY,
+        "promotion_role": "non_promoting",
+        "engineering_handoff_eligible": diagnostics.get(
+            "acceptance_handoff_eligible"
+        ),
+        "explicit_start_bank_policy_id": sequential_config.explicit_start_bank_policy_id,
         "rhat_definition": (
             "max(rank-normalized split R-hat, "
             "folded rank-normalized split R-hat)"
@@ -23241,6 +23609,70 @@ def _finalize_phase7_fixed_kernel_verification(
     )
 
 
+def _phase7_rhat_admission_policy(
+    diagnostics: Mapping[str, Any],
+) -> tuple[str | None, str | None]:
+    """Resolve the R-hat policy, distinguishing operational from compatibility data.
+
+    The real Phase 7 route carries a route marker and must publish the policy
+    at both the verifier and route-summary levels.  Historical/injected
+    fixtures predate that field and retain their documented explanatory-only
+    compatibility semantics, but they cannot authorize the legacy R-hat-only
+    retry helper without an explicit ``rhat_gate`` value.
+    """
+
+    route = diagnostics.get("runner_route_summary")
+    route_mapping = route if isinstance(route, Mapping) else {}
+    compatibility_marker = route_mapping.get("compatibility_marker")
+    operational_route = (
+        route_mapping.get("active_route")
+        == "phase7_sequential_rhat_fixed_size_chunk_verifier"
+        and route_mapping.get("semantic_source")
+        == "_run_phase7_sequential_rhat_final_verification"
+        and route_mapping.get("policy_binding") == "operational"
+        and compatibility_marker != "historical_or_test_only"
+    )
+    sequential_policy = diagnostics.get("sequential_rhat_policy")
+    sequential_value = (
+        sequential_policy.get("rhat_admission_policy")
+        if isinstance(sequential_policy, Mapping)
+        else None
+    )
+    route_value = route_mapping.get("rhat_admission_policy")
+    top_level_value = diagnostics.get("rhat_admission_policy")
+    values = tuple(
+        dict.fromkeys(
+            str(value)
+            for value in (top_level_value, sequential_value, route_value)
+            if value is not None
+        )
+    )
+    if operational_route:
+        if (
+            top_level_value is None
+            or sequential_value is None
+            or route_value is None
+        ):
+            return None, "verification_rhat_admission_policy_missing"
+        if len(values) != 1:
+            return None, "verification_rhat_admission_policy_contradictory"
+    elif not values:
+        # Pre-policy fixtures are explicitly compatibility-only.  They retain
+        # the historical classifier semantics but are not retry-authoritative.
+        if (
+            route_mapping.get("active_route") is not None
+            and compatibility_marker != "historical_or_test_only"
+        ):
+            return None, "verification_rhat_admission_policy_missing"
+        return "explanatory_only", None
+    elif len(values) != 1:
+        return None, "verification_rhat_admission_policy_contradictory"
+    policy = values[0]
+    if policy not in SEQUENTIAL_RHAT_ADMISSION_POLICIES:
+        return None, "verification_rhat_admission_policy_invalid"
+    return policy, None
+
+
 def _classify_phase7_final_verification(
     config: HMCTuneVerifyRepairLoopConfig,
     *,
@@ -23318,6 +23750,57 @@ def _classify_phase7_acceptance_evidence_verification(
     callback_result: FixedMassHMCTuningBudgetCallbackResult,
 ) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
     """Classify operational verification from role-separated v3 evidence."""
+
+    rhat_policy, policy_error = _phase7_rhat_admission_policy(diagnostics)
+    if policy_error is not None:
+        return "hard_veto", "shared_invalidity", (policy_error,), ()
+    route_mapping = diagnostics.get("runner_route_summary")
+    operational_route = (
+        isinstance(route_mapping, Mapping)
+        and route_mapping.get("active_route")
+        == "phase7_sequential_rhat_fixed_size_chunk_verifier"
+        and route_mapping.get("semantic_source")
+        == "_run_phase7_sequential_rhat_final_verification"
+        and route_mapping.get("policy_binding") == "operational"
+        and route_mapping.get("compatibility_marker")
+        != "historical_or_test_only"
+    )
+    if operational_route:
+        required_health = (
+            "samples_all_finite",
+            "target_value_health_passed",
+            "acceptance_log_health_passed",
+        )
+        missing_or_failed = tuple(
+            f"verification_{field}_missing_or_failed"
+            for field in required_health
+            if diagnostics.get(field) is not True
+        )
+        if missing_or_failed:
+            return "hard_veto", "shared_invalidity", missing_or_failed, ()
+        rhat_passed = diagnostics.get("rhat_passed")
+        rhat_threshold_passed = diagnostics.get(
+            "all_finite_rhat_at_or_below_threshold"
+        )
+        if not isinstance(rhat_passed, (bool, np.bool_)) or not isinstance(
+            rhat_threshold_passed, (bool, np.bool_)
+        ):
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_rhat_telemetry_missing_or_invalid",),
+                (),
+            )
+        # A failed R-hat is valid explanatory telemetry for the active route;
+        # only the explicit legacy rhat_gate below turns it into a repair
+        # trigger.  The two reported booleans must nevertheless agree.
+        if bool(rhat_passed) != bool(rhat_threshold_passed):
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_rhat_telemetry_contradictory",),
+                (),
+            )
 
     if screen_error is not None:
         return (
@@ -23424,6 +23907,34 @@ def _classify_phase7_acceptance_evidence_verification(
             ),
             (),
         )
+    if operational_route and evidence.evidence_validity == "valid":
+        expected_handoff = bool(
+            evidence.promotion_eligible
+            and diagnostics.get("verification_min_retained_pass_gate_satisfied")
+            is True
+        )
+        reported_handoff = diagnostics.get("acceptance_handoff_eligible")
+        if not isinstance(reported_handoff, (bool, np.bool_)):
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_acceptance_handoff_policy_missing",),
+                (),
+            )
+        if bool(reported_handoff) != expected_handoff:
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_acceptance_handoff_policy_contradictory",),
+                (),
+            )
+        if diagnostics.get("promotion_role") != "non_promoting":
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_promotion_role_missing_or_promoting",),
+                (),
+            )
     if callback_result.hard_vetoes:
         return (
             "hard_veto",
@@ -23479,6 +23990,21 @@ def _classify_phase7_acceptance_evidence_verification(
             (),
         )
     if evidence.promotion_eligible:
+        if (
+            rhat_policy == "rhat_gate"
+            and diagnostics.get("all_finite_rhat_at_or_below_threshold") is not True
+        ):
+            rhat_repair_triggers = [
+                "verification_rhat_above_threshold_or_cap_hit"
+            ]
+            if diagnostics.get("cap_hit") is True:
+                rhat_repair_triggers.append("verification_rhat_cap_hit")
+            return (
+                "repair_or_retry",
+                "verification_rhat_repair_trigger",
+                (),
+                tuple(rhat_repair_triggers),
+            )
         return (
             "passed",
             "dependence_aware_fixed_kernel_verification_passed",
@@ -25845,11 +26371,16 @@ def _windowed_stage_public_timeout_capture(
 
 def _windowed_stage_error_capture(exc: Exception) -> Mapping[str, Any]:
     start_bank_qualification = start_bank_qualification_payload_from_exception(exc)
-    raw_diagnostics = (
-        {}
-        if start_bank_qualification is None
-        else {"start_bank_qualification": start_bank_qualification}
+    engineering_probe_qualification = (
+        engineering_probe_bank_qualification_payload_from_exception(exc)
     )
+    raw_diagnostics = {}
+    if start_bank_qualification is not None:
+        raw_diagnostics["start_bank_qualification"] = start_bank_qualification
+    if engineering_probe_qualification is not None:
+        raw_diagnostics["engineering_probe_bank_qualification"] = (
+            engineering_probe_qualification
+        )
     return {
         "error_type": type(exc).__name__,
         "error_message": str(exc),
