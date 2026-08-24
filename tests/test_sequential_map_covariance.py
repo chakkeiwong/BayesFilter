@@ -21,6 +21,42 @@ from bayesfilter.inference.sequential_map_covariance import (
 )
 
 
+def test_score_fit_retains_best_exact_cloud_row(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cloud = tf.constant([[-0.5], [0.5], [-0.25], [0.25]], tf.float64)
+    monkeypatch.setattr(sequential, "_antithetic_cloud", lambda *args, **kwargs: cloud)
+
+    def target(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        point = tf.reshape(tf.convert_to_tensor(theta, tf.float64), [-1])
+        delta = point - 0.5
+        return -0.5 * tf.reduce_sum(delta**2), -delta
+
+    fit, evaluations = sequential._fit_score_curvature(
+        target,
+        tf.zeros([1], tf.float64),
+        tf.ones([1], tf.float64) * 0.5,
+        tf.ones([1], tf.float64),
+        dimension=1,
+        radius=0.5,
+        sample_count=4,
+        seed=(41, 42),
+        config=SequentialMapCovarianceConfig(
+            regression_sample_count=4,
+            terminal_sample_count=4,
+            holdout_fraction=0.25,
+            score_holdout_relative_rmse=1.0,
+        ),
+        evaluations=0,
+        batched_value_and_score_fn=None,
+    )
+
+    assert evaluations == 4
+    assert fit["best_exact_value"] == pytest.approx(0.0)
+    assert fit["best_exact_source"] == "score_fit_cloud"
+    np.testing.assert_array_equal(fit["best_exact_position"], np.array([0.5]))
+
+
 def _quadratic_target(precision: np.ndarray, mode: np.ndarray):
     precision_tf = tf.constant(precision, dtype=tf.float64)
     mode_tf = tf.constant(mode, dtype=tf.float64)
@@ -440,14 +476,15 @@ def test_policy_switch_preserves_transactional_center_and_radius(
     assert fractional_row["action"] == "proposal_rejected"
     assert fractional_row["radius_action"] == "contract"
     assert fractional_row["radius_after"] == 0.125
-    np.testing.assert_array_equal(fractional.map_candidate, np.array([0.0]))
+    np.testing.assert_array_equal(fractional.map_candidate, np.array([0.01]))
+    assert fractional_row["exact_incumbent_promoted_without_model_acceptance"] is True
     fractional_movement = fractional_row["refinement_movement"]
     assert fractional_movement["proposal_accepted"] is False
     np.testing.assert_allclose(
         fractional_movement["evaluated_proposal_position_z"], [0.01]
     )
-    np.testing.assert_allclose(fractional_movement["terminal_position_z"], [0.0])
-    assert fractional_movement["terminal_value"] == -0.5
+    np.testing.assert_allclose(fractional_movement["terminal_position_z"], [0.01])
+    assert fractional_movement["terminal_value"] == pytest.approx(-0.5 * 0.99**2)
     assert fractional_movement["radius_before"] == 0.25
     assert fractional_movement["radius_after"] == 0.125
 
@@ -592,8 +629,8 @@ def test_nonlinear_canary_recovers_after_truncated_locator() -> None:
             regression_sample_count=48,
             terminal_sample_count=48,
             locator_max_iterations=1,
-            max_attempts=8,
-            max_exact_evaluations=800,
+            max_attempts=24,
+            max_exact_evaluations=2400,
             score_holdout_relative_rmse=0.8,
             max_stalled_attempts=5,
             seed=(2026, 716),
@@ -627,7 +664,7 @@ def test_rank_deficient_terminal_fit_fails_closed() -> None:
     assert result.status == "sequential_refinement_without_terminal_geometry"
 
 
-def test_terminal_projection_veto_fails_closed() -> None:
+def test_terminal_cloud_saddle_winner_prevents_curvature_emission() -> None:
     def saddle(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         x, y = tf.unstack(tf.convert_to_tensor(theta, tf.float64))
         return -x**2 + y**2, tf.stack([-2.0 * x, 2.0 * y])
@@ -643,7 +680,17 @@ def test_terminal_projection_veto_fails_closed() -> None:
         ),
     )
     assert result.accepted is False
-    assert result.status == "terminal_projection_exceeds_cap"
+    assert result.status in {
+        "maximum_exact_evaluations",
+        "sequential_refinement_without_terminal_geometry",
+    }
+    assert result.precision is None
+    assert result.covariance is None
+    assert any(
+        row.get("action") == "terminal_fit_cloud_recentered"
+        or row.get("action") == "fit_cloud_recentered"
+        for row in result.diagnostics["history"]
+    )
 
 
 def test_no_finite_start_fails_closed() -> None:

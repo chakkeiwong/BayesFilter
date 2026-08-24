@@ -16,6 +16,10 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from bayesfilter.inference._exact_incumbent import (
+    candidates_from_rows,
+    select_exact_incumbent,
+)
 from bayesfilter.inference.mass_matrix import covariance_from_precision
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
@@ -577,6 +581,20 @@ def estimate_sequential_map_covariance(
                     "projection_relative_frobenius"
                 ),
             )
+            terminal_winner = _fit_best_exact_candidate(terminal_fit)
+            if terminal_winner is not None and terminal_winner[0] > center_value:
+                center_value, center, center_score = terminal_winner
+                history.append(
+                    {
+                        "attempt": attempt,
+                        "action": "terminal_fit_cloud_recentered",
+                        "center_value": center_value,
+                        "fit": terminal_fit,
+                    }
+                )
+                terminal_fit = None
+                stalled = 0
+                continue
             if terminal_fit["status"] != "usable":
                 radius *= cfg.shrink_factor
                 history.append({"attempt": attempt, "action": "terminal_fit_rejected", **terminal_fit})
@@ -687,6 +705,27 @@ def estimate_sequential_map_covariance(
                 config=cfg, evaluations=evaluations,
                 batched_value_and_score_fn=batched_value_and_score_fn,
             )
+        fit_winner = _fit_best_exact_candidate(fit)
+        if fit_winner is not None and fit_winner[0] > center_value:
+            center_value, center, center_score = fit_winner
+            history.append(
+                {
+                    "attempt": attempt,
+                    "action": "fit_cloud_recentered",
+                    "center_value": center_value,
+                    "fit": fit,
+                    "radius_action": "retain",
+                    "radius_after": radius,
+                    "proposal_score_gate": {
+                        "policy": cfg.proposal_score_acceptance_policy,
+                        "active": cfg.require_proposal_score_reduction,
+                        "passed": not cfg.require_proposal_score_reduction,
+                        "proposal_evaluated": False,
+                    },
+                }
+            )
+            stalled = 0
+            continue
         row_diag: dict[str, Any] = {
             "attempt": attempt, "radius_before": radius, "recentered": recentered,
             "center_value": center_value, "fit": fit,
@@ -741,6 +780,9 @@ def estimate_sequential_map_covariance(
         evaluated_proposal: tf.Tensor | None = None
         evaluated_proposal_value: float | None = None
         evaluated_proposal_score: tf.Tensor | None = None
+        best_proposal: tf.Tensor | None = None
+        best_proposal_value = center_value
+        best_proposal_score: tf.Tensor | None = None
         selected_fit = fit
         actual = float("-inf")
         predicted = float("-inf")
@@ -807,6 +849,10 @@ def estimate_sequential_map_covariance(
             finite = bool(
                 (tf.math.is_finite(proposal_value_tf) & tf.reduce_all(tf.math.is_finite(proposal_score))).numpy()
             )
+            if finite and proposal_value > best_proposal_value:
+                best_proposal = proposal
+                best_proposal_value = proposal_value
+                best_proposal_score = proposal_score
             proposal_score_gate = _proposal_score_gate(
                 old_norm,
                 new_norm,
@@ -844,8 +890,19 @@ def estimate_sequential_map_covariance(
             )
             if accepted:
                 break
-        if accepted:
-            center_value, center, center_score = proposal_value, proposal, proposal_score
+        incumbent_promoted_without_model_acceptance = bool(
+            best_proposal is not None
+            and best_proposal_score is not None
+            and (
+                not accepted
+                or evaluated_proposal_value is None
+                or best_proposal_value > evaluated_proposal_value
+            )
+        )
+        if best_proposal is not None and best_proposal_score is not None:
+            center_value = best_proposal_value
+            center = best_proposal
+            center_score = best_proposal_score
             stalled = 0
         else:
             stalled += 1
@@ -867,6 +924,9 @@ def estimate_sequential_map_covariance(
             "boundary_active": bool(step_info["boundary_active"]),
             "radius_action": radius_action, "radius_after": radius,
             "proposal_attempts": proposal_rows,
+            "exact_incumbent_promoted_without_model_acceptance": (
+                incumbent_promoted_without_model_acceptance
+            ),
             **(
                 {
                     "refinement_movement": _refinement_movement_payload(
@@ -1181,9 +1241,10 @@ def _structured_factor_fit_data(
         (seed[0], seed[1] + 104729),
     )
     fresh_z = tf.concat((train_z, holdout_z), axis=0)
-    _fresh_values, fresh_scores = _evaluate_cloud(
+    fresh_theta = center[None, :] + fresh_z * scale[None, :]
+    fresh_values, fresh_scores = _evaluate_cloud(
         function,
-        center[None, :] + fresh_z * scale[None, :],
+        fresh_theta,
         dimension,
         batched_value_and_score_fn=batched_value_and_score_fn,
     )
@@ -1205,6 +1266,14 @@ def _structured_factor_fit_data(
         reused_scores = tf.boolean_mask(search_scores, eligible)
 
     reused_count = int(tf.shape(reused_z)[0].numpy())
+    fresh_candidates = candidates_from_rows(
+        np.asarray(fresh_theta.numpy(), dtype=float),
+        np.asarray(fresh_values.numpy(), dtype=float),
+        np.asarray(fresh_scores.numpy(), dtype=float),
+        start_index=int(evaluations - fresh_sample_count),
+        source_role="structured_fit_cloud",
+    )
+    fresh_incumbent = select_exact_incumbent(fresh_candidates)
     training_z = tf.concat((train_z, reused_z), axis=0)
     training_scores = tf.concat((fresh_train_scores, reused_scores), axis=0)
     if reused_count:
@@ -1237,6 +1306,18 @@ def _structured_factor_fit_data(
         "fresh_holdout_count": fresh_holdout_count,
         "reused_training_count": reused_count,
         "unique_fresh_evaluations": fresh_sample_count,
+        "best_exact_value": (
+            None if fresh_incumbent is None else fresh_incumbent.value
+        ),
+        "best_exact_position": (
+            None if fresh_incumbent is None else fresh_incumbent.position
+        ),
+        "best_exact_score": (
+            None if fresh_incumbent is None else fresh_incumbent.score
+        ),
+        "best_exact_source": (
+            None if fresh_incumbent is None else fresh_incumbent.source_role
+        ),
     }, evaluations
 
 
@@ -1275,6 +1356,10 @@ def _fit_factor_from_data(
             "fresh_training_count": int(data["fresh_training_count"]),
             "fresh_holdout_count": int(data["fresh_holdout_count"]),
             "reused_training_count": int(data["reused_training_count"]),
+            "best_exact_value": data.get("best_exact_value"),
+            "best_exact_position": data.get("best_exact_position"),
+            "best_exact_score": data.get("best_exact_score"),
+            "best_exact_source": data.get("best_exact_source"),
         }
     )
     return _json_ready(payload)
@@ -1312,13 +1397,36 @@ def _fit_score_curvature(
     if support_count * dimension < coefficient_count + dimension:
         return {"status": "insufficient_symmetric_support", "seed": list(seed)}, evaluations
     z = _antithetic_cloud(sample_count, dimension, radius, seed)
-    _, scores = _evaluate_cloud(
+    theta_rows = center[None, :] + z * scale[None, :]
+    values, scores = _evaluate_cloud(
         function,
-        center[None, :] + z * scale[None, :],
+        theta_rows,
         dimension,
         batched_value_and_score_fn=batched_value_and_score_fn,
     )
     evaluations += sample_count
+    exact_candidates = candidates_from_rows(
+        np.asarray(theta_rows.numpy(), dtype=float),
+        np.asarray(values.numpy(), dtype=float),
+        np.asarray(scores.numpy(), dtype=float),
+        start_index=int(evaluations - sample_count),
+        source_role="score_fit_cloud",
+    )
+    exact_incumbent = select_exact_incumbent(exact_candidates)
+    best_exact = {
+        "best_exact_value": (
+            None if exact_incumbent is None else exact_incumbent.value
+        ),
+        "best_exact_position": (
+            None if exact_incumbent is None else exact_incumbent.position
+        ),
+        "best_exact_score": (
+            None if exact_incumbent is None else exact_incumbent.score
+        ),
+        "best_exact_source": (
+            None if exact_incumbent is None else exact_incumbent.source_role
+        ),
+    }
     response = scale[None, :] * center_score[None, :] - scale[None, :] * scores
     design = _symmetric_score_design(z, dimension)
     if config.pair_disjoint_score_holdout:
@@ -1337,7 +1445,12 @@ def _fit_score_curvature(
     tolerance = tf.reduce_max(singular_values) * tf.cast(tf.shape(train_design)[0], tf.float64) * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
     rank = int(tf.reduce_sum(tf.cast(singular_values > tolerance, tf.int32)).numpy())
     if rank < coefficient_count:
-        return {"status": "rank_deficient_symmetric_fit", "rank": rank, "seed": list(seed)}, evaluations
+        return {
+            "status": "rank_deficient_symmetric_fit",
+            "rank": rank,
+            "seed": list(seed),
+            **best_exact,
+        }, evaluations
     ridge = tf.sqrt(tf.constant(config.ridge, tf.float64)) * tf.eye(coefficient_count, dtype=tf.float64)
     beta = tf.linalg.lstsq(
         tf.concat([train_design, ridge], axis=0),
@@ -1376,6 +1489,7 @@ def _fit_score_curvature(
         "projected_eigenvalues": projected_eigenvalues.numpy(),
         "projection_relative_frobenius": projection_relative,
         "projected_precision_z": projected.numpy(),
+        **best_exact,
         **(
             {
                 "pair_disjoint_score_holdout": True,
@@ -1386,6 +1500,32 @@ def _fit_score_curvature(
             else {}
         ),
     }, evaluations
+
+
+def _fit_best_exact_candidate(
+    fit: Mapping[str, Any],
+) -> tuple[float, tf.Tensor, tf.Tensor] | None:
+    """Extract a finite exact cloud winner from one fit result."""
+
+    value = fit.get("best_exact_value")
+    position = fit.get("best_exact_position")
+    score = fit.get("best_exact_score")
+    if value is None or position is None or score is None:
+        return None
+    value_float = float(value)
+    position_tensor = tf.reshape(tf.convert_to_tensor(position, tf.float64), [-1])
+    score_tensor = tf.reshape(tf.convert_to_tensor(score, tf.float64), [-1])
+    finite = bool(
+        (
+            tf.math.is_finite(value_float)
+            & tf.reduce_all(
+                tf.math.is_finite(position_tensor) & tf.math.is_finite(score_tensor)
+            )
+        ).numpy()
+    )
+    if not finite:
+        return None
+    return value_float, position_tensor, score_tensor
 
 
 def _score_fit_partition_indices(

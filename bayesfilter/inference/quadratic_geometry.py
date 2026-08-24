@@ -16,6 +16,12 @@ from typing import Any
 import numpy as np
 import tensorflow as tf
 
+from bayesfilter.inference._exact_incumbent import (
+    ExactCandidate,
+    candidates_from_rows,
+    select_exact_incumbent,
+)
+
 
 LOW_RANK_SPD_QUADRATIC_GEOMETRY_NONCLAIMS = (
     "low-rank quadratic geometry diagnostic only",
@@ -140,6 +146,12 @@ class LowRankSPDQuadraticGeometryResult:
     refined_center: np.ndarray | None
     center_refinement_accepted: bool
     diagnostics: Mapping[str, Any]
+    best_evaluated_position: np.ndarray | None = None
+    best_evaluated_value: float | None = None
+    best_evaluated_score: np.ndarray | None = None
+    best_evaluated_source: str | None = None
+    best_evaluated_index: int | None = None
+    exact_evaluation_count: int = 0
     nonclaims: tuple[str, ...] = LOW_RANK_SPD_QUADRATIC_GEOMETRY_NONCLAIMS
 
     def __post_init__(self) -> None:
@@ -159,15 +171,22 @@ class LowRankSPDQuadraticGeometryResult:
             refined = np.asarray(self.refined_center, dtype=float).copy()
             refined.setflags(write=False)
             object.__setattr__(self, "refined_center", refined)
+        for name in ("best_evaluated_position", "best_evaluated_score"):
+            value = getattr(self, name)
+            if value is not None:
+                array = np.asarray(value, dtype=float).reshape([-1]).copy()
+                array.setflags(write=False)
+                object.__setattr__(self, name, array)
         object.__setattr__(self, "accepted", bool(self.accepted))
         object.__setattr__(self, "status", str(self.status))
         object.__setattr__(self, "center_refinement_accepted", bool(self.center_refinement_accepted))
+        object.__setattr__(self, "exact_evaluation_count", int(self.exact_evaluation_count))
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
         object.__setattr__(self, "nonclaims", tuple(str(item) for item in self.nonclaims))
 
     def payload(self, *, include_arrays: bool = False) -> Mapping[str, Any]:
         payload: dict[str, Any] = {
-            "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v1",
+            "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
             "accepted": self.accepted,
             "status": self.status,
             "dimension": self.dimension,
@@ -175,6 +194,10 @@ class LowRankSPDQuadraticGeometryResult:
             "center_refinement_accepted": self.center_refinement_accepted,
             "intercept": self.intercept,
             "lambda0": self.lambda0,
+            "best_evaluated_value": self.best_evaluated_value,
+            "best_evaluated_source": self.best_evaluated_source,
+            "best_evaluated_index": self.best_evaluated_index,
+            "exact_evaluation_count": self.exact_evaluation_count,
             "diagnostics": self.diagnostics,
             "nonclaims": self.nonclaims,
         }
@@ -194,6 +217,8 @@ class LowRankSPDQuadraticGeometryResult:
                     "q_basis": self.q_basis,
                     "linear_term": self.linear_term,
                     "refined_center": self.refined_center,
+                    "best_evaluated_position": self.best_evaluated_position,
+                    "best_evaluated_score": self.best_evaluated_score,
                 }
             )
         return _json_ready(payload)
@@ -263,7 +288,7 @@ def fit_low_rank_spd_quadratic_geometry(
     center_score_z = center_score * scale_np
     center_score_norm = float(np.linalg.norm(center_score_z))
 
-    q_basis, pilot_diagnostics = _pilot_q_basis(
+    q_basis, pilot_diagnostics, pilot_candidates = _pilot_q_basis(
         value_and_score_fn,
         batched_value_and_score_fn=batched_value_and_score_fn,
         center=center_np,
@@ -273,6 +298,7 @@ def fit_low_rank_spd_quadratic_geometry(
         rng=rng,
         center_value=center_value,
         center_score_z=center_score_z,
+        start_index=1,
     )
     z_samples = _sample_trust_ball(
         sample_count,
@@ -286,6 +312,25 @@ def fit_low_rank_spd_quadratic_geometry(
         theta_samples,
         batched_value_and_score_fn=batched_value_and_score_fn,
     )
+    exact_candidates: list[ExactCandidate] = [
+        ExactCandidate(
+            position=center_np,
+            value=center_value,
+            score=center_score,
+            evaluation_index=0,
+            source_role="center",
+        ),
+        *pilot_candidates,
+        *candidates_from_rows(
+            theta_samples,
+            values,
+            scores,
+            start_index=1 + len(pilot_candidates),
+            source_role="design",
+        ),
+    ]
+    exact_evaluation_count = len(exact_candidates)
+    incumbent = select_exact_incumbent(exact_candidates)
     finite_mask = np.isfinite(values) & np.all(np.isfinite(scores), axis=1)
     finite_sample_count = int(np.sum(finite_mask))
     diagnostics = _base_diagnostics(
@@ -318,6 +363,8 @@ def fit_low_rank_spd_quadratic_geometry(
             dim=dim,
             rank=rank,
             diagnostics=diagnostics,
+            incumbent=incumbent,
+            exact_evaluation_count=exact_evaluation_count,
         )
 
     z_finite = z_samples[finite_mask]
@@ -354,6 +401,8 @@ def fit_low_rank_spd_quadratic_geometry(
             dim=dim,
             rank=rank,
             diagnostics=diagnostics,
+            incumbent=incumbent,
+            exact_evaluation_count=exact_evaluation_count,
         )
 
     precision = np.asarray(fit["precision"], dtype=float)
@@ -402,6 +451,30 @@ def fit_low_rank_spd_quadratic_geometry(
         center_value=float(center_value),
         center_score_norm=center_score_norm,
     )
+    exact_evaluation_count += int(center_refinement.get("exact_evaluation_count", 0))
+    refined_score = center_refinement.get("refined_score")
+    if (
+        center_refinement.get("refined_center") is not None
+        and center_refinement.get("refined_log_prob") is not None
+        and refined_score is not None
+    ):
+        exact_candidates.append(
+            ExactCandidate(
+                position=np.asarray(center_refinement["refined_center"], dtype=float),
+                value=float(center_refinement["refined_log_prob"]),
+                score=np.asarray(refined_score, dtype=float),
+                evaluation_index=exact_evaluation_count - 1,
+                source_role="surrogate_replay",
+                eligible=bool(center_refinement.get("refined_target_finite", True)),
+            )
+        )
+        incumbent = select_exact_incumbent(exact_candidates)
+    replay = _canonical_replay(
+        value_and_score_fn,
+        incumbent,
+        evaluation_index=exact_evaluation_count,
+    )
+    exact_evaluation_count += int(replay["attempted"])
     diagnostics.update(
         {
             "fit": {
@@ -416,6 +489,7 @@ def fit_low_rank_spd_quadratic_geometry(
             "precision_eigen_summary": precision_summary,
             "covariance_eigen_summary": covariance_summary,
             "center_refinement": center_refinement,
+            "best_evaluated_replay": replay,
             "artifact_hash": _artifact_hash(
                 {
                     "config": cfg.payload(),
@@ -441,6 +515,8 @@ def fit_low_rank_spd_quadratic_geometry(
             dim=dim,
             rank=rank,
             diagnostics=diagnostics,
+            incumbent=incumbent,
+            exact_evaluation_count=exact_evaluation_count,
         )
     if not precision_summary["positive"]:
         return _rejected_result(
@@ -450,6 +526,8 @@ def fit_low_rank_spd_quadratic_geometry(
             dim=dim,
             rank=rank,
             diagnostics=diagnostics,
+            incumbent=incumbent,
+            exact_evaluation_count=exact_evaluation_count,
         )
     if precision_summary["condition_number"] > float(cfg.max_condition_number) * (
         1.0 + 1.0e-8
@@ -461,6 +539,8 @@ def fit_low_rank_spd_quadratic_geometry(
             dim=dim,
             rank=rank,
             diagnostics=diagnostics,
+            incumbent=incumbent,
+            exact_evaluation_count=exact_evaluation_count,
         )
 
     refined_center = (
@@ -485,6 +565,12 @@ def fit_low_rank_spd_quadratic_geometry(
         refined_center=refined_center,
         center_refinement_accepted=bool(center_refinement["accepted"]),
         diagnostics=diagnostics,
+        best_evaluated_position=None if incumbent is None else incumbent.position,
+        best_evaluated_value=None if incumbent is None else incumbent.value,
+        best_evaluated_score=None if incumbent is None else incumbent.score,
+        best_evaluated_source=None if incumbent is None else incumbent.source_role,
+        best_evaluated_index=None if incumbent is None else incumbent.evaluation_index,
+        exact_evaluation_count=exact_evaluation_count,
     )
 
 
@@ -649,10 +735,15 @@ def _pilot_q_basis(
     rng: np.random.Generator,
     center_value: float,
     center_score_z: np.ndarray,
-) -> tuple[np.ndarray, Mapping[str, Any]]:
+    start_index: int,
+) -> tuple[np.ndarray, Mapping[str, Any], tuple[ExactCandidate, ...]]:
     dim = int(center.size)
     if rank == 0:
-        return np.zeros([dim, 0], dtype=float), {"positive_curvature_count": 0}
+        return (
+            np.zeros([dim, 0], dtype=float),
+            {"positive_curvature_count": 0},
+            (),
+        )
     count = (
         int(cfg.pilot_direction_count)
         if cfg.pilot_direction_count is not None
@@ -666,6 +757,7 @@ def _pilot_q_basis(
     h = float(cfg.pilot_radius)
     if batched_value_and_score_fn is None:
         pilot_rows = []
+        pilot_candidates: list[ExactCandidate] = []
         for direction in directions:
             plus = center + (h * direction) * scale
             minus = center - (h * direction) * scale
@@ -678,6 +770,26 @@ def _pilot_q_basis(
             pilot_rows.append(
                 (value_plus, score_plus, status_plus, value_minus, score_minus, status_minus)
             )
+            pilot_candidates.extend(
+                (
+                    ExactCandidate(
+                        position=plus,
+                        value=value_plus,
+                        score=score_plus,
+                        evaluation_index=start_index + len(pilot_candidates),
+                        source_role="pilot",
+                        eligible=status_plus == "finite",
+                    ),
+                    ExactCandidate(
+                        position=minus,
+                        value=value_minus,
+                        score=score_minus,
+                        evaluation_index=start_index + len(pilot_candidates) + 1,
+                        source_role="pilot",
+                        eligible=status_minus == "finite",
+                    ),
+                )
+            )
         evaluation_route = "scalar_value_and_score_loop"
         evaluation_batch_size = 1
     else:
@@ -688,6 +800,15 @@ def _pilot_q_basis(
             value_and_score_fn,
             pilot_points,
             batched_value_and_score_fn=batched_value_and_score_fn,
+        )
+        pilot_candidates = list(
+            candidates_from_rows(
+                pilot_points,
+                pilot_values,
+                pilot_scores,
+                start_index=start_index,
+                source_role="pilot",
+            )
         )
         split = int(directions.shape[0])
         pilot_rows = []
@@ -753,7 +874,7 @@ def _pilot_q_basis(
         ),
         "evaluation_route": evaluation_route,
         "evaluation_batch_size": evaluation_batch_size,
-    }
+    }, tuple(pilot_candidates)
 
 
 def _evaluate_center_refinement(
@@ -812,6 +933,8 @@ def _evaluate_center_refinement(
             "boundary_active": bool(step["boundary_active"]),
             "lagrange_multiplier": float(step["lagrange_multiplier"]),
             "predicted_improvement": float(step["predicted_improvement"]),
+            "exact_evaluation_count": 1,
+            "refined_target_finite": False,
         }
     score_norm = float(np.linalg.norm(score * scale))
     actual_improvement = float(value - center_value)
@@ -862,7 +985,39 @@ def _evaluate_center_refinement(
         "refined_log_prob": float(value),
         "center_score_norm": float(center_score_norm),
         "refined_score_norm": score_norm,
+        "refined_score": score,
+        "refined_target_finite": True,
+        "exact_evaluation_count": 1,
         "refined_center": refined,
+    }
+
+
+def _canonical_replay(
+    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    incumbent: ExactCandidate | None,
+    *,
+    evaluation_index: int,
+) -> Mapping[str, Any]:
+    """Replay the selected exact row without changing its earlier provenance."""
+
+    if incumbent is None:
+        return {"attempted": False, "valid": False, "matches": False}
+    value, score, status = _evaluate_value_score(
+        value_and_score_fn, np.asarray(incumbent.position, dtype=float)
+    )
+    valid = status == "finite"
+    matches = bool(
+        valid
+        and np.isclose(value, incumbent.value, rtol=1.0e-10, atol=1.0e-12)
+        and np.allclose(score, incumbent.score, rtol=1.0e-9, atol=1.0e-11)
+    )
+    return {
+        "attempted": True,
+        "evaluation_index": int(evaluation_index),
+        "valid": valid,
+        "matches": matches,
+        "value": value,
+        "source": incumbent.source_role,
     }
 
 
@@ -1064,6 +1219,8 @@ def _rejected_result(
     dim: int,
     rank: int,
     diagnostics: Mapping[str, Any],
+    incumbent: ExactCandidate | None = None,
+    exact_evaluation_count: int = 0,
 ) -> LowRankSPDQuadraticGeometryResult:
     return LowRankSPDQuadraticGeometryResult(
         accepted=False,
@@ -1082,6 +1239,12 @@ def _rejected_result(
         refined_center=None,
         center_refinement_accepted=False,
         diagnostics={**dict(diagnostics), "rejection_status": status},
+        best_evaluated_position=None if incumbent is None else incumbent.position,
+        best_evaluated_value=None if incumbent is None else incumbent.value,
+        best_evaluated_score=None if incumbent is None else incumbent.score,
+        best_evaluated_source=None if incumbent is None else incumbent.source_role,
+        best_evaluated_index=None if incumbent is None else incumbent.evaluation_index,
+        exact_evaluation_count=exact_evaluation_count,
     )
 
 
