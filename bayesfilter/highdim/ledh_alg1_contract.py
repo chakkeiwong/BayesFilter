@@ -206,6 +206,13 @@ ENTRY_POINTS: tuple[EntryPoint, ...] = (
 )
 
 
+# G-5 conformance stamp (conformance test plan, implemented 2026-08-24
+# for the Q3 leaderboard): benchmark artifacts carry this version string
+# plus the run commit in `alg1_conformance`, stamped only by runners
+# that verified the canonical gate battery green at launch. Aggregators
+# must refuse unstamped artifacts (historical-result quarantine).
+ALG1_CONFORMANCE_SUITE_VERSION = "ledh-canonical-conformance-v1-2026-08-24"
+
 FORBIDDEN_CALLBACK_PLACEHOLDERS = (
     "identity_covariance_without_reviewed_exception",
     "constant_covariance_without_provenance",

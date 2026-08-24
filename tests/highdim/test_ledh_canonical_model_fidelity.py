@@ -461,3 +461,53 @@ def test_austria_reduction_slice_matches_kalman():
         f"{kalman:.4f} (err {err:.4f}, per-seed {values})"
     )
 
+
+
+def test_bootstrap_comparator_matches_kalman_on_linear_anchor():
+    """Fidelity item #6 gate (2026-08-25): the Q3 bootstrap comparator
+    (per-step systematic resampling) must converge to the exact Kalman
+    value on the linear anchor — the class of gate that would have
+    caught the slice-2 comparator's no-resampling defect (which treated
+    incoming weights as uniform while never resampling; wrong relative
+    to the bootstrap-PF likelihood decomposition for T > 1).
+    Declared: |mean over 5 seeds - Kalman| < 3*seed-SE + 0.5 nats at
+    N=4096, T=8."""
+
+    import sys as _sys
+    _sys.path.insert(0, "docs/benchmarks")
+    from run_q3_leaderboard_20260824 import (
+        bootstrap_value,
+        _gaussian_obs_log,
+    )
+    from test_ledh_canonical_filter import (
+        _kalman_log_likelihood,
+        _lgssm_model,
+    )
+
+    spec = _lgssm_model(303, horizon=8)
+    exact = _kalman_log_likelihood(spec)
+    transition = tf.constant(spec["transition"], DTYPE)
+
+    class _LG:
+        transition_mean_fn = staticmethod(
+            lambda theta, p: tf.einsum("ij,nj->ni", transition, p)
+        )
+        observation_fn = staticmethod(lambda p: p)
+        process_covariance = tf.constant(spec["process_cov"], DTYPE)
+        observation_covariance = tf.constant(spec["obs_cov"], DTYPE)
+        observation_log_density_fn = None
+
+    obs_log = _gaussian_obs_log(_LG, None)
+    observations = tf.constant(spec["observations"], DTYPE)
+    initial_mean = tf.constant(spec["initial_mean"], DTYPE)
+    values = [
+        bootstrap_value(_LG, None, observations, obs_log, initial_mean,
+                        2, 4096, seed)
+        for seed in range(5)
+    ]
+    mean = float(np.mean(values))
+    se = float(np.std(values, ddof=1) / np.sqrt(5))
+    assert abs(mean - exact) < 3.0 * se + 0.5, (
+        f"bootstrap comparator {mean:.3f} vs Kalman {exact:.3f} "
+        f"(SE {se:.3f}, per-seed {values})"
+    )
