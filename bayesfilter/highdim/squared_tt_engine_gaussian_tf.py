@@ -156,7 +156,10 @@ def _christoffel_rows(
     )
     log_weight = -tf.reduce_sum(log_half_mixture, axis=1)
     weights = tf.exp(log_weight - tf.reduce_logsumexp(log_weight))
-    return rows, weights
+    # Class-A observability (campaign plan CF2): the effective sample
+    # size of the importance weights is computed here anyway — emit it.
+    row_ess = 1.0 / tf.reduce_sum(tf.square(weights))
+    return rows, weights, float(row_ess.numpy())
 
 
 def _log_eta(points: tf.Tensor) -> tf.Tensor:
@@ -230,7 +233,7 @@ def run_value_filter_branch_axis_gaussian(
         if t == 0:
             m_c, l_cc = _check_hint(*initial_moment_hint(observations[0]), n)
             map_c = AffineCoordinateMap(offset=m_c, matrix=l_cc)
-            rows, weights = _christoffel_rows(
+            rows, weights, row_ess = _christoffel_rows(
                 config, config.row_count, n, (config.seed, 17), config.basis_degree
             )
             x_current = m_c[None, :] + tf.einsum("ij,nj->ni", l_cc, rows)
@@ -280,7 +283,7 @@ def run_value_filter_branch_axis_gaussian(
                 * tf.eye(tf.shape(gram)[0], dtype=DTYPE)
             )
             branch_count = retained.boundary_rank + 1
-            u_rows, u_weights = _christoffel_rows(
+            u_rows, u_weights, row_ess = _christoffel_rows(
                 config, config.row_count, 2 * n, (config.seed, 100 + t),
                 config.basis_degree,
             )
@@ -408,6 +411,7 @@ def run_value_filter_branch_axis_gaussian(
                 "log_increment": float(log_increment.numpy()),
                 "tau_t": float(tau_t.numpy()),
                 "eps_rel_sq": eps_rel_sq,
+                "row_ess": row_ess,
                 "tie_flag": False,
                 **fit_diag,
                 **step_extra,
