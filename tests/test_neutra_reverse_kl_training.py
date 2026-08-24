@@ -660,6 +660,7 @@ def test_pure_paper_recipe_uses_piecewise_lr_no_clipping_and_all_kernel_init() -
         jit_compile=False,
     )
     trainer = NeuTraReverseKLTrainer(Target(), config)
+    assert "paper_piecewise_boundaries" not in config.manifest_payload()
     output_kernels = (trainer.variables[4], trainer.variables[10], trainer.variables[16])
     assert all(bool(tf.reduce_any(tf.not_equal(value, 0.0)).numpy()) for value in output_kernels)
     assert float(trainer.learning_rate_at(0).numpy()) == pytest.approx(1.0e-2)
@@ -702,6 +703,172 @@ def test_pure_paper_recipe_uses_piecewise_lr_no_clipping_and_all_kernel_init() -
     )
     with pytest.raises(NeuTraTrainingError, match="paper_piecewise"):
         restored.set_learning_rate(1.0e-3)
+
+
+def test_pure_paper_recipe_accepts_manifest_bound_schedule_boundaries() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: "2" * 64
+        config = type(
+            "Config",
+            (),
+            {
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                }
+            },
+        )()
+
+    values = dict(
+        dimension=2,
+        initial_output_shift=(0.3, -0.2),
+        initial_output_scale_log=(-1.2, -0.8),
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature="2" * 64,
+        s_max=2.0,
+        learning_rate=1.0e-2,
+        learning_rate_schedule="paper_piecewise",
+        paper_piecewise_boundaries=(99, 399),
+        gradient_clip_mode="none",
+        kernel_initialization="paper_variance_scaling",
+        scale_transform="identity",
+        epsilon=1.0e-8,
+        jit_compile=False,
+    )
+    config = ssl_lstm_pure_neutra_config(**values)
+    trainer = NeuTraReverseKLTrainer(Target(), config)
+
+    assert config.manifest_payload()["paper_piecewise_boundaries"] == [99, 399]
+    assert float(trainer.learning_rate_at(0).numpy()) == pytest.approx(1.0e-2)
+    assert float(trainer.learning_rate_at(99).numpy()) == pytest.approx(1.0e-2)
+    assert float(trainer.learning_rate_at(100).numpy()) == pytest.approx(1.0e-3)
+    assert float(trainer.learning_rate_at(399).numpy()) == pytest.approx(1.0e-3)
+    assert float(trainer.learning_rate_at(400).numpy()) == pytest.approx(1.0e-4)
+
+    state = trainer.state_payload()
+    restored = NeuTraReverseKLTrainer(Target(), config)
+    restored.restore_state(state)
+    assert restored.state_payload()["state_hash"] == state["state_hash"]
+
+    extended_config = NeuTraTrainerConfig(
+        **{**config.__dict__, "paper_piecewise_boundaries": (9, 19, 29)}
+    )
+    extended = NeuTraReverseKLTrainer(Target(), extended_config)
+    assert extended_config.manifest_payload()["paper_piecewise_boundaries"] == [
+        9,
+        19,
+        29,
+    ]
+    for iteration, expected_rate in (
+        (9, 1.0e-2),
+        (10, 1.0e-3),
+        (20, 1.0e-4),
+        (30, 1.0e-5),
+    ):
+        assert float(extended.learning_rate_at(iteration).numpy()) == pytest.approx(
+            expected_rate
+        )
+
+    for invalid in ((99, 99), (100, 99), (-1,), (99.0, 399), (True, 399)):
+        with pytest.raises(ValueError, match="paper_piecewise_boundaries"):
+            NeuTraTrainerConfig(
+                **{**config.__dict__, "paper_piecewise_boundaries": invalid}
+            )
+    with pytest.raises(ValueError, match="requires paper_piecewise"):
+        NeuTraTrainerConfig(
+            **{
+                **config.__dict__,
+                "learning_rate_schedule": "adaptive_constant",
+            }
+        )
+
+
+def test_restore_accepts_only_history_preserving_paper_schedule_extension() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: "2" * 64
+        config = type(
+            "Config",
+            (),
+            {
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                }
+            },
+        )()
+
+    base_values = dict(
+        dimension=2,
+        initial_output_shift=(0.3, -0.2),
+        initial_output_scale_log=(-1.2, -0.8),
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature="2" * 64,
+        s_max=2.0,
+        learning_rate=1.0e-2,
+        learning_rate_schedule="paper_piecewise",
+        paper_piecewise_boundaries=(99, 399),
+        gradient_clip_mode="none",
+        kernel_initialization="paper_variance_scaling",
+        scale_transform="identity",
+        epsilon=1.0e-8,
+        jit_compile=False,
+    )
+    saved_trainer = NeuTraReverseKLTrainer(
+        Target(), ssl_lstm_pure_neutra_config(**base_values)
+    )
+    saved_trainer.step.assign(500)
+    assert saved_trainer.optimizer is not None
+    saved_trainer.optimizer.iterations.assign(500)
+    state = saved_trainer.state_payload()
+
+    prospective_config = ssl_lstm_pure_neutra_config(
+        **{**base_values, "paper_piecewise_boundaries": (99, 399, 499)}
+    )
+    prospective = NeuTraReverseKLTrainer(Target(), prospective_config)
+    with pytest.raises(NeuTraTrainingError, match="config mismatch"):
+        prospective.restore_state(state)
+    prospective.restore_state(state, allow_paper_schedule_extension=True)
+    assert int(prospective.step.numpy()) == 500
+    assert int(prospective.optimizer.iterations.numpy()) == 500
+    for restored_value, saved_value in zip(
+        prospective.variables, saved_trainer.variables
+    ):
+        np.testing.assert_array_equal(restored_value.numpy(), saved_value.numpy())
+    for restored_value, saved_value in zip(
+        prospective.optimizer.variables, saved_trainer.optimizer.variables
+    ):
+        np.testing.assert_array_equal(restored_value.numpy(), saved_value.numpy())
+    assert float(prospective.learning_rate_at(499).numpy()) == pytest.approx(1.0e-4)
+    assert float(prospective.learning_rate_at(500).numpy()) == pytest.approx(1.0e-5)
+
+    rejected_configs = (
+        {**base_values, "paper_piecewise_boundaries": (99, 399, 498)},
+        {**base_values, "paper_piecewise_boundaries": (99, 499, 599)},
+        {**base_values, "paper_piecewise_boundaries": (99,)},
+        {
+            **base_values,
+            "paper_piecewise_boundaries": (99, 399, 499),
+            "initialization_seed": (7, 8),
+        },
+    )
+    for rejected_values in rejected_configs:
+        rejected = NeuTraReverseKLTrainer(
+            Target(), ssl_lstm_pure_neutra_config(**rejected_values)
+        )
+        with pytest.raises(NeuTraTrainingError, match="config mismatch"):
+            rejected.restore_state(state, allow_paper_schedule_extension=True)
 
 
 def test_generic_pure_paper_family_uses_dimension_width_and_no_affine() -> None:

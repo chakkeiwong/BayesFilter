@@ -80,6 +80,65 @@ DSGE_PAPER_LR_BOUNDARIES = (999, 3999)
 _LEARNING_RATE_RESTORE_REL_TOL = 1.0e-6
 
 
+def _resolved_paper_piecewise_boundaries(
+    boundaries: Sequence[int],
+) -> tuple[int, ...]:
+    """Return validated zero-based boundaries, preserving the paper default."""
+
+    values = tuple(boundaries)
+    if not values:
+        return DSGE_PAPER_LR_BOUNDARIES
+    if any(type(value) is not int for value in values):
+        raise ValueError("paper_piecewise_boundaries must contain only integers")
+    if values[0] < 0 or any(
+        previous >= current for previous, current in zip(values, values[1:])
+    ):
+        raise ValueError(
+            "paper_piecewise_boundaries must be nonnegative and strictly increasing"
+        )
+    return values
+
+
+def _paper_schedule_extension_preserves_history(
+    *,
+    saved_config: Mapping[str, Any],
+    active_config: Mapping[str, Any],
+    state_step: int,
+) -> bool:
+    """Return whether an explicit paper-schedule append changes no past update.
+
+    Keras schedule boundaries are zero-based and inclusive.  A checkpoint at
+    ``state_step`` has applied iterations ``0`` through ``state_step - 1``, so
+    every new boundary must be at or beyond that last applied iteration.
+    """
+
+    saved = dict(saved_config)
+    active = dict(active_config)
+    if (
+        saved.get("learning_rate_schedule") != "paper_piecewise"
+        or active.get("learning_rate_schedule") != "paper_piecewise"
+    ):
+        return False
+    saved_boundaries = _resolved_paper_piecewise_boundaries(
+        saved.pop("paper_piecewise_boundaries", ())
+    )
+    active_boundaries = _resolved_paper_piecewise_boundaries(
+        active.pop("paper_piecewise_boundaries", ())
+    )
+    if saved != active:
+        return False
+    if (
+        len(active_boundaries) <= len(saved_boundaries)
+        or active_boundaries[: len(saved_boundaries)] != saved_boundaries
+    ):
+        return False
+    last_applied_iteration = state_step - 1
+    return all(
+        boundary >= last_applied_iteration
+        for boundary in active_boundaries[len(saved_boundaries) :]
+    )
+
+
 @dataclass(frozen=True)
 class NeuTraTrainerConfig:
     """Configuration for a trainable diagonal-affine or dense-IAF transport."""
@@ -93,6 +152,7 @@ class NeuTraTrainerConfig:
     initialization_seed: tuple[int, int] = (20260714, 2101)
     learning_rate: float = 1.0e-3
     learning_rate_schedule: str = "constant"
+    paper_piecewise_boundaries: tuple[int, ...] = ()
     beta1: float = 0.9
     beta2: float = 0.999
     epsilon: float = 1.0e-8
@@ -146,6 +206,12 @@ class NeuTraTrainerConfig:
             "adaptive_constant",
         }:
             raise ValueError("unsupported learning_rate_schedule")
+        boundaries = tuple(self.paper_piecewise_boundaries)
+        if boundaries and self.learning_rate_schedule != "paper_piecewise":
+            raise ValueError(
+                "paper_piecewise_boundaries requires paper_piecewise schedule"
+            )
+        _resolved_paper_piecewise_boundaries(boundaries)
         if self.gradient_clip_mode not in {"global", "per_variable", "none"}:
             raise ValueError("unsupported gradient_clip_mode")
         if self.kernel_initialization not in {
@@ -358,6 +424,12 @@ class NeuTraTrainerConfig:
         payload["initial_output_shift"] = list(self.initial_output_shift)
         payload["initial_output_scale_log"] = list(self.initial_output_scale_log)
         payload["target_parameter_names"] = list(self.target_parameter_names)
+        if self.paper_piecewise_boundaries:
+            payload["paper_piecewise_boundaries"] = list(
+                self.paper_piecewise_boundaries
+            )
+        else:
+            payload.pop("paper_piecewise_boundaries")
         if self.kernel_initialization == "legacy_zero_output":
             payload.pop("kernel_initialization")
         # The bounded pure family carries the transform explicitly so a
@@ -593,6 +665,7 @@ def ssl_lstm_pure_neutra_config(
     initialization_scale: float = 0.02,
     gradient_clip_norm: float = 10.0,
     learning_rate_schedule: str = "adaptive_constant",
+    paper_piecewise_boundaries: Sequence[int] = (),
     gradient_clip_mode: str = "per_variable",
     kernel_initialization: str = "legacy_zero_output",
     scale_transform: str = "bounded_tanh",
@@ -612,6 +685,7 @@ def ssl_lstm_pure_neutra_config(
         initialization_seed=tuple(int(value) for value in initialization_seed),
         learning_rate=float(learning_rate),
         learning_rate_schedule=str(learning_rate_schedule),
+        paper_piecewise_boundaries=tuple(paper_piecewise_boundaries),
         beta1=0.9,
         beta2=0.999,
         epsilon=float(epsilon),
@@ -732,13 +806,16 @@ def pure_bounded_neutra_config(
 
 def dsge_paper_learning_rate(
     learning_rate: float = 0.01,
+    *,
+    boundaries: Sequence[int] = (),
 ) -> tf.keras.optimizers.schedules.PiecewiseConstantDecay:
-    """Build the exact zero-based schedule used by the DSGE NeuTra runner."""
+    """Build the zero-based DSGE schedule, optionally at explicit boundaries."""
 
     rate = float(learning_rate)
+    active_boundaries = _resolved_paper_piecewise_boundaries(boundaries)
     return tf.keras.optimizers.schedules.PiecewiseConstantDecay(
-        boundaries=list(DSGE_PAPER_LR_BOUNDARIES),
-        values=[rate, rate * 0.1, rate * 0.01],
+        boundaries=list(active_boundaries),
+        values=[rate * (0.1**index) for index in range(len(active_boundaries) + 1)],
     )
 
 
@@ -1356,7 +1433,10 @@ class NeuTraReverseKLTrainer:
             self.first_moments = ()
             self.second_moments = ()
             optimizer_learning_rate: Any = (
-                dsge_paper_learning_rate(config.learning_rate)
+                dsge_paper_learning_rate(
+                    config.learning_rate,
+                    boundaries=config.paper_piecewise_boundaries,
+                )
                 if config.learning_rate_schedule == "paper_piecewise"
                 else float(config.learning_rate)
             )
@@ -1676,7 +1756,10 @@ class NeuTraReverseKLTrainer:
             raise ValueError("iteration must be nonnegative")
         if self.config.learning_rate_schedule == "paper_piecewise":
             return tf.cast(
-                dsge_paper_learning_rate(self.config.learning_rate)(
+                dsge_paper_learning_rate(
+                    self.config.learning_rate,
+                    boundaries=self.config.paper_piecewise_boundaries,
+                )(
                     tf.constant(int(iteration), tf.int64)
                 ),
                 tf.float64,
@@ -1746,21 +1829,44 @@ class NeuTraReverseKLTrainer:
             ]
         return {**payload, "state_hash": _stable_hash(payload)}
 
-    def restore_state(self, payload: Mapping[str, Any]) -> None:
+    def restore_state(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        allow_paper_schedule_extension: bool = False,
+    ) -> None:
+        """Restore an exact trainer checkpoint.
+
+        ``allow_paper_schedule_extension`` permits only a prospective append
+        to a paper piecewise schedule.  It cannot alter a boundary governing an
+        update already represented by the checkpoint, and it never relaxes
+        state-hash, variable, shape, dtype, or Adam-state validation.
+        """
+
         state = dict(payload)
         supplied_hash = str(state.pop("state_hash", ""))
         if supplied_hash != _stable_hash(state):
             raise NeuTraTrainingError("trainer state_hash mismatch")
         if state.get("schema") != "bayesfilter.neutra.reverse_kl_trainer_state.v1":
             raise NeuTraTrainingError("unsupported trainer state schema")
-        if state.get("config") != self.config.manifest_payload():
+        step = int(state.get("step", -1))
+        if step < 0:
+            raise NeuTraTrainingError("trainer step must be nonnegative")
+        saved_config = state.get("config")
+        active_config = self.config.manifest_payload()
+        if saved_config != active_config and not (
+            allow_paper_schedule_extension
+            and isinstance(saved_config, Mapping)
+            and _paper_schedule_extension_preserves_history(
+                saved_config=saved_config,
+                active_config=active_config,
+                state_step=step,
+            )
+        ):
             raise NeuTraTrainingError("trainer state config mismatch")
         keys = tuple(str(item) for item in state.get("variable_keys", ()))
         if keys != self.transport.variable_keys:
             raise NeuTraTrainingError("trainer variable keys mismatch")
-        step = int(state.get("step", -1))
-        if step < 0:
-            raise NeuTraTrainingError("trainer step must be nonnegative")
         effective_learning_rate = float(
             state.get("effective_learning_rate", self.config.learning_rate)
         )
