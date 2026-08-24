@@ -1,0 +1,48 @@
+{
+  "schema": "bayesfilter.ssl_lstm.q20_adaptive_replay_ab_manifest.v1",
+  "status": "SCREEN_COMPLETED_NO_PROMOTION",
+  "plan": "docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-ab-comparison-plan-2026-08-24.md",
+  "plan_sha256": "7c323f3d6d9e3ce913c8eac0339f3790cd7a08f276e61c05afe476f4711c9fca",
+  "plan_sha256_bound_at_launch": "7c323f3d6d9e3ce913c8eac0339f3790cd7a08f276e61c05afe476f4711c9fca",
+  "terminal_plan_sha256": "4df94a4744bfc77559831750b784c66e093367d21efccd543c2110f336130c08",
+  "runner": "docs/benchmarks/run_ssl_lstm_q20_adaptive_replay_neutra_ab_2026_08_24.py",
+  "runner_sha256": "ccf51bfef363cc0bbbdfe6770599e7400566cdda5d33e26c2e13dff1ade4c89a",
+  "git": {
+    "commit": "68ba5271989fe35740416dff599bb61c83dfa099",
+    "dirty": true
+  },
+  "command": "TF_FORCE_GPU_ALLOW_GROWTH=true PYTHONUNBUFFERED=1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_ssl_lstm_q20_adaptive_replay_neutra_ab_2026_08_24.py --phase screen --device 1 --rows-per-block 64 --updates 24 --hidden-width 16 --stages 2 --learning-rate 0.0003 --max-seconds 54000 --output-root docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu",
+  "environment": "tfgpu",
+  "gpu": {
+    "requested_physical_selector": "1",
+    "device": "NVIDIA GeForce RTX 4080 SUPER",
+    "memory_growth": true,
+    "tf32_enabled": false,
+    "jit_compile": true,
+    "dtype": "float64"
+  },
+  "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278",
+  "geometry_sha256": "dc3dd7b84566867bc49c11ad16f50778d21457adbb398a17c2a75f3c3b461eeb",
+  "seeds": [17, 29],
+  "rows_per_block": 64,
+  "blocks_per_update": 4,
+  "updates": 24,
+  "training_batch_size": 256,
+  "wall_seconds": 2342.2090410579985,
+  "artifacts": {
+    "preflight_launch": {"path": "docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu/preflight/launch.json", "sha256": "f5f3fc788499b8802139b7daa7f31f0d420b3c577d0d494e772da0fb008db0d3"},
+    "preflight_result": {"path": "docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu/preflight/preflight.json", "sha256": "2c8ec6d4cabaab0a636920ca1fd0682a344b905321d4756ca2f070673de18ec1"},
+    "screen_launch": {"path": "docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu/screen/launch.json", "sha256": "319d2d14ea9b94703ad4c05d65c6fad0bb1f3bfe5385fca2188b04c1b8ed5c5e"},
+    "screen_result": {"path": "docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu/screen/result.json", "sha256": "776ff5d2d1e0a6296d7608801185e988058d9606f560a24c0fd1ec5aa743dde0"},
+    "arm_A_seed_17": {"path": "docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu/screen/arm-A/seed-17/result.json", "sha256": "3a3088614d7e9067843e1fdd200a2e79793d843fb831467f8b956810d3ec6ea9"},
+    "arm_A_seed_29": {"path": "docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu/screen/arm-A/seed-29/result.json", "sha256": "1e5ce149d897c91c2cf30f687bc59a3088354a36921b81167d1446f75b6b0153"},
+    "arm_B_seed_17": {"path": "docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu/screen/arm-B/seed-17/result.json", "sha256": "ca1801168d7cda04c09ccc72b39da4b8893d1e85f8d1e0159d93792d508fee39"},
+    "arm_B_seed_29": {"path": "docs/plans/artifacts/ssl-lstm-q20-adaptive-replay-neutra-ab-2026-08-24/r1-gpu/screen/arm-B/seed-29/result.json", "sha256": "bfa04a5a42353aa73f4e773e8c2c0f83e75b93de1ce73b4ef3341e797d5bf812"}
+  },
+  "nonclaims": [
+    "no theorem-level unbiasedness claim",
+    "no whitening or mode-discovery claim",
+    "no HMC or posterior claim",
+    "no statistical ranking or default promotion"
+  ]
+}
