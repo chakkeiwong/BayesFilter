@@ -86,8 +86,18 @@ the 4080 first per the standing directive; CPU-only diagnostics say so.
   mirroring `squared_tt_engine_xla_tf` (tf.function, stable input
   signatures; provenance/IO outside kernels per the TF policy; fresh-
   process compile batteries).
-- Gate A: jitted-vs-eager parity ≤ 1e-12 on (i) the degree-0 T=120
-  oracle and (ii) a T=12 stress-config run; compile time recorded and
+- Gate A (recalibrated 2026-08-25 on measured attribution evidence;
+  `gate_a/gate_a_verdict.json`): per-step lane parity ≤ 1e-12 on the
+  degree-0 T=120 oracle (certifies every non-fit component; measured
+  7.06e-14) AND U-SOLVE-PARITY backend equivalence ≤ 1e-10 on a single
+  stress-conditioned solve under real Christoffel weights (measured
+  7.9e-14) — these are the correctness criteria. Swamp-regime
+  stress-config lane gaps are floor noise, not correctness evidence
+  (eager-vs-eager with a 1e-7 ridge perturbation diverges to
+  4.13e-4/step; lanes at sweeps 16 converge to 4.07e-7/step, tracking
+  the F-ENG-2 floor): gated only at a 10×-floor ceiling with each
+  lane's own defensive-corrected oracle gap (rung-4b bound) as the
+  scientific criterion. Compile time recorded and
   bounded (per-cell timeout rule inherited from attempt04). Failure →
   repair within budget; if XLA is unreachable, eager-CPU becomes the
   documented-exception lane (TF policy) and D's budgets are re-derived
