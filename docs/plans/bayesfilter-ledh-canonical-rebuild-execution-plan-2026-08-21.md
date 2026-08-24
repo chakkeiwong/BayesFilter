@@ -828,3 +828,24 @@ review.
   tangent channel). Full battery 33 passed. Q1 exit criteria met: the
   score entry point covers the complete canonical per-step program
   including annealed mode; no autodiff ships (C-9 standing).
+
+- 2026-08-24 (ledger): Q2 OPENED and 3/7 curves closed. Campaign plan
+  `bayesfilter-q2-calibration-campaign-plan-2026-08-24.md` written with
+  pre-declared per-curve contracts and skeptical audit. Curve 1 (annealed
+  k/c response surface) COMPLETE: 24-cell f32/TF32 GPU grid + f64 anchors;
+  calibrated defaults k=4, c=8 under the pre-declared threshold rule;
+  c=inf measured harmful (NaN on the production lane at k<=4 all seeds;
+  10x stage-ESS loss at f64) — the spectral cap's Class-C justification
+  is now a measured calibration artifact, not convenience. Austria model
+  dtype-parameterized (f64 default unchanged, gates green) to make the
+  f32 lane claim real. Curve 5 closed by provenance: dual-cap constants'
+  owner rationale located in the 2026-08-07 spec (cross-scope family
+  policy); registry C4 dual-cap row closed-by-provenance. Curve 6 closed:
+  production-lane decision note (f32+TF32 GPU with mandatory cap; f64 CPU
+  reference), with the new coupling finding that the cap is part of the
+  lane definition. REMAINING in Q2: Curve 2 (trust-radius model-trust
+  curve), Curve 3 (LM-damping bias curve), Curve 4 (relative-ridge
+  derivation + verification), Curve 7 (Austria Fisher GPU gate) — each
+  needs its harness/derivation written under the campaign plan's
+  contract-before-run rule. Budget spent: ~10 GPU-minutes of the
+  ~1-GPU-day budget.
