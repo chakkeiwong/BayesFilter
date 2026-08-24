@@ -2,7 +2,7 @@
 
 Date: 2026-08-24  
 Amended: 2026-08-25  
-Status: `AMENDED_AFTER_FABLE_REVIEW_AWAITING_NEW_GROK_REPLY`  
+Status: `BOTH_REVIEWS_RECEIVED_PRE_AMENDMENT_REPAIRS_APPLIED`  
 Scope: q=20 SSL-LSTM proposal generation, filtering, replay, and NeuTra training support
 
 ## Executive decision
@@ -61,6 +61,8 @@ Source artifacts:
 - `docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-mathematical-note-2026-08-24.md`
 - `docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-fable-review-reply-2026-08-24.md`
 - `docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-grok-adjudication-2026-08-24.md`
+- `docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-modular-etpf-genut-ledh-fable-review-reply-2026-08-24.md`
+- `docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-modular-etpf-genut-ledh-grok-review-reply-2026-08-24.md`
 
 ## Source and literature ledger
 
@@ -504,10 +506,30 @@ reviewed the pre-amendment plan and returned `VERDICT: AGREE` with two minor
 repairs: freeze/hash the claim-run tempering protocol, and state the ETPF
 moment constraints explicitly. Those repairs are applied above.
 
-The requested new Grok reply path
-`docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-modular-etpf-genut-ledh-grok-review-reply-2026-08-24.md`
-is not present in the workspace. The older dual-cap Grok review is documentary
-evidence about the previous plan, not a review of this amended plan, so it is
-not silently counted as a new Grok verdict. This plan therefore remains
-`AMENDED_AFTER_FABLE_REVIEW_AWAITING_NEW_GROK_REPLY`; no implementation-phase
-plan or runtime work is authorized until the amended text is reviewed.
+The 2026-08-25 Grok reply is now preserved at
+`docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-modular-etpf-genut-ledh-grok-review-reply-2026-08-24.md`.
+I agree with its core findings: the hybrid authority change is coherent, the
+arm exactness labels are correct, proxy metrics remain explanatory, and the
+M0 known-density mass fixture is the cheapest discriminating artifact. Its
+`execution readiness: AGREE` is accepted only as documentary readiness; it is
+not runtime, posterior, HMC, or default approval.
+
+| Grok claim | Adjudication | Consequence |
+|---|---|---|
+| Hybrid authority change is coherent | Agree | Keep fresh M0 as the candidate authority and retain C0/M1--M5 role boundaries. |
+| No proxy metric is accidentally promoted | Agree | Keep whitening, ESS, loss, covariance residuals, and runtime explanatory-only. |
+| No changes are required | Qualify | No new Grok repair is needed, but Fable's two minor repairs remain applied because the reviewed text predated them. |
+| Execution readiness is `AGREE` | Documentary only | The plan may proceed to an implementation-phase plan; no runtime or scientific promotion is authorized. |
+| M0 known-density fixture is the next discriminator | Agree | Keep it as the first authority-gate artifact before q=20-scale runs. |
+
+The reply appears to have reviewed the pre-amendment wording because it still
+lists the tempering schedule as unresolved. The Fable repairs applied on
+2026-08-25 therefore remain binding: calibration-time adaptation is allowed,
+claim-run protocol state must be frozen and hashed, and online-adaptive runs
+remain C0-class until separately proved. The explicit ETPF constraints and the
+mode-aware wording repair are also retained.
+
+Both bounded reviews now agree on the documentary research direction. This
+plan remains `BOTH_REVIEWS_RECEIVED_PRE_AMENDMENT_REPAIRS_APPLIED`; a separate
+implementation-phase plan, fixtures, and all scientific/HMC gates are still
+required before execution or promotion.
