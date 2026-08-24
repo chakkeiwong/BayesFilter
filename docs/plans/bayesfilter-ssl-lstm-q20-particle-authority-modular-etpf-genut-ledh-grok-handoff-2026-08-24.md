@@ -1,7 +1,7 @@
 # Grok handoff: q=20 particle authority and modular ETPF/GenUT/LEDH plan
 
 Date: 2026-08-24  
-Status: `READY_FOR_BOUNDED_REVIEW`  
+Status: `REVIEW_RECEIVED_PRE_AMENDMENT`  
 Reviewer: Grok (requested; no verdict has been issued)
 
 Review-state note: the primary plan was amended on 2026-08-25 after the
