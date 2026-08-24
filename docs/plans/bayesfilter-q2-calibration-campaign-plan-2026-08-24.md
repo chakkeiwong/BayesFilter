@@ -245,3 +245,70 @@ absolute-1e-5 vs relative form on the frozen fixture — identical
 healthy-path outputs within declared tolerance, bounded flagged
 behavior on the pathological fixture. Changing the shipped ridge is
 Class C and lands only with that verification green.
+
+## Curves 2+3 — RESULT (2026-08-24)
+
+Artifacts: `docs/benchmarks/q2_calibration_20260824/trust_damping_seed{0,1,2}_*/result.json`.
+Fixtures: real correction-input clouds captured from the claim-bearing
+filter at the calibrated k=4/c=8 annealed defaults, frozen Austria,
+takeoff step (min stage-ESS, step 2 all seeds) and healthy step (max
+stage-ESS, step 13 all seeds). Mirror parity vs `_shape_iteration_jvp`
+gated at f64: max abs diff ~1e-12, PASSED all seeds/fixtures (the f32
+gap ~2e-3 is accumulation-order noise, recorded descriptively; the
+declared-then-revised gating is in the runner docstring).
+
+Curve 2 (trust radius) — model-trust ratio rho on takeoff clouds:
+
+| seed | r=0.1 | r=0.2 | r=0.5 | r=1 | r=2 | uncapped |
+|------|-------|-------|-------|-----|-----|----------|
+| 0    | 0.745 | 0.454 | 0.256 | 0.298 | 0.407 | 1.751 |
+| 1    | 0.249 | 0.082 | -0.125 | -0.233 | -0.290 | -0.027 |
+| 2    | 1.041 | 1.031 | 1.059 | 1.170 | 1.333 | 1.476 |
+
+PROMOTION CRITERION FAILED: no ladder radius achieves rho >= 0.75 in
+every seed on takeoff clouds (seed 1's local model is untrustworthy at
+EVERY radius, with negative rho at r >= 0.5 — the step increases the
+residual). This is candidate-rule rejection, not direction rejection:
+the takeoff clouds are seed-heterogeneous (seed 0: uncapped step halves
+the residual; seed 1: only r=0.1 reduces it at all, everything larger
+harms; seed 2: monotone improvement to uncapped). A single
+rho-threshold radius does not exist on this ladder. On healthy clouds
+rho >= 0.87 at every radius/seed and the cap costs <= ~5% of residual
+reduction (monotone in 1/radius) — the strict "<= uncapped" non-harm
+clause fails by small margins at every finite radius.
+
+Decision (Curve 2): NO calibrated radius is promoted. The default 0.5
+remains a warm start, now with a measured failure mode on file (rho at
+0.5 on takeoff clouds: 0.256 / -0.125 / 1.059) — which satisfies the
+frozen-default safety-justification requirement (failure mode + earliest
+diagnostic recorded) without upgrading 0.5 to calibrated. The rejected
+question is recorded: "is there a ladder radius with rho >= 0.75 across
+seeds on one iteration"; the answer is no. What would decide the radius:
+a criterion defined on the full 4-iteration production correction
+(per-iteration rho compounds), a larger seed set with an uncertainty
+analysis, or a minimax-regret criterion across cloud classes — each is a
+new contract, not a post-hoc relaxation of this one. Seed-1's finding
+that ONLY the smallest radius avoids harm on its takeoff cloud is
+independent evidence that some cap is safety-relevant (uncapped is NOT
+uniformly safe), even though this protocol could not pick the value.
+
+Curve 3 (LM damping) — max scaled-system condition on takeoff clouds:
+damping 0: 6983 / 2478 / 9044; 1e-3: 427/163/579; 1e-2: 147/94/161;
+residual-norm effect of damping vs 0 is <= ~0.3% descriptively.
+
+Decision (Curve 3): under the pre-declared bound (cond <= 1e4, derived
+from f32 solve accuracy), the zero arm passes in all seeds — damping 0
+is a VIABLE calibrated value and this artifact is its Class-C
+justification. The standing default 1e-2 also passes with ~40x
+condition headroom and <= 0.3% residual effect — measured non-harm.
+Seed 2's zero-arm condition (9044) is within 10% of the bound: with 3
+seeds this margin is thin, so a DEFAULT CHANGE (1e-2 -> 0) is not
+promoted (default changes carry a higher evidence bar); the default
+1e-2 keeps its now-measured justification, closing its registry C4 gap.
+No ranking between 0, 1e-3, and 1e-2 is claimed.
+
+Inference status (both curves): hard vetoes — none (all cells finite,
+parity green); statistically supported ranking — none claimed (3 seeds,
+descriptive); default-readiness — damping 1e-2 justified, radius 0.5
+warm-start-with-failure-mode; next evidence — multi-iteration
+trust study and larger seed set under a fresh contract.
