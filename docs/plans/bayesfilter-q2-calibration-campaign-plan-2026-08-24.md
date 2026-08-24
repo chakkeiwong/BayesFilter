@@ -105,3 +105,51 @@ the frozen Austria target used by the passed probe contract; f32/TF32
 vs f64 is discriminated by the anchor cell. No material flaw found;
 proceeding with a single-cell smoke to measure wall time before the
 full grid launch.
+
+## Curve 1 — RESULT (2026-08-24)
+
+Artifacts: `docs/benchmarks/q2_calibration_20260824/`
+`kc_surface_f32tf32_full_1787545211/result.json` (24 cells),
+`kc_surface_f64cpu_anchor_1787545242/result.json`,
+`kc_surface_f64cpu_veto_classify_1787550172/result.json`.
+Commit: 5a0a4684 lane. Wall: ~7.5 min GPU grid + 2 CPU cells.
+
+Observed surface (min per-step stage-ESS fraction, N=1008, 3 seeds):
+
+| k | c=8 (seeds 0/1/2)     | c=inf (seeds 0/1/2)      |
+|---|------------------------|--------------------------|
+| 1 | .010 / .011 / .014     | NaN / NaN / NaN (veto)   |
+| 2 | .092 / .095 / .122     | NaN / NaN / NaN (veto)   |
+| 4 | .444 / .501 / .510     | NaN / NaN / NaN (veto)   |
+| 8 | .811 / .826 / .843     | .711 / .645 / NaN (veto) |
+
+f64 CPU anchor (k=4, c=8, seed 0): 0.454 — agrees with the f32/TF32
+cells at the same coordinates (cross-lane validity at the anchor).
+
+Veto classification (pre-declared repair trigger): k=4/c=inf at f64 CPU
+is VALID but ESS-collapsed (0.040). So the uncapped flow prior fails in
+two separable ways: NaN on the f32/TF32 production lane (precision-lane
+effect) and a lane-independent ~10x stage-ESS degradation at f64. The
+k=1/c=8 cells reproduce the recorded plain-mode takeoff collapse
+(~1%), confirming the fixture discriminates (pre-mortem check b).
+
+Decision table:
+- Decision: calibrated defaults k=4, c=8 for the frozen-Austria
+  canonical annealed lane (per-scope; not transferable per tuning rule).
+- Primary criterion: PASSED — k=4 is the smallest k with min stage-ESS
+  fraction >= 0.30 in every seed at c=8 (rule pre-declared above).
+- Veto status: hard vetoes confined to the c=inf arm; the c=8 arm is
+  veto-free in all 12 cells. The vetoes are themselves the Class-C
+  evidence: the OFF setting of the spectral cap (c=inf) is now
+  MEASURED as harmful (NaN on the production lane; 10x ESS loss at
+  f64), so the cap's on-state carries calibration provenance, not
+  convenience provenance.
+- Statistical status: k=4 and k=8 both pass the screen; k=8 is
+  descriptively higher-ESS at ~2x wall cost; no superiority ranking is
+  made (3 seeds, no uncertainty analysis; the selection rule is a
+  threshold screen, not a ranking).
+- Main uncertainty: 3 seeds; tail behavior of stage-ESS beyond min;
+  transfer to other models/scopes is explicitly NOT concluded.
+- Next justified action: Curves 2-5 (trust-radius, LM damping, ridge,
+  dual-cap constants) under their to-be-finalized contracts; Curve 6
+  gains the cross-lane anchor row from this curve.
