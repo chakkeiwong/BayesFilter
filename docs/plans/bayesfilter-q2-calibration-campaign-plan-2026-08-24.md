@@ -312,3 +312,36 @@ parity green); statistically supported ranking — none claimed (3 seeds,
 descriptive); default-readiness — damping 1e-2 justified, radius 0.5
 warm-start-with-failure-mode; next evidence — multi-iteration
 trust study and larger seed set under a fresh contract.
+
+## Curve 4 — RESULT (2026-08-24): derivation + measurement; change deferred
+
+Derivation. The reset ridge guards Cholesky factorizations of empirical
+covariance differences (the Contract-E gap). Rounding perturbs those
+matrices' eigenvalues by O(u_eff * ||C||_2), where u_eff is the unit
+roundoff of the lane actually forming the Grams — on the production
+route the reset runs at float32 with TF32 matmuls, so u_eff = 2^-11
+~ 4.9e-4. An ABSOLUTE ridge therefore silently expires once
+||C||_2 * u_eff exceeds it. The R6 relative form delta * tr(C)/d uses
+the mean eigenvalue as scale; since ||C||_2 <= tr(C), a safety factor s
+in delta = s * u_eff must additionally absorb the reduction-order
+constant and the spectral spread d*||C||_2/tr(C).
+
+Measurement (seed-0 captured clouds, reset's own gap diagnostics):
+takeoff step: min gap eigenvalue 0.300, gap condition 54.9, tr(C)/d
+11.7; healthy step: 1.78 / 19.7 / 3.48. The current absolute ridge 1e-5
+is 4-5 orders of magnitude below the TF32 rounding scale of these
+matrices (u_eff * lambda_max ~ 8e-3 at takeoff): on the production lane
+it is a NOMINAL guard only — any near-rank-deficient gap would be
+decided by TF32 rounding noise, not by the ridge. Today's clouds are
+healthy (lambda_min >= 0.30 >> rounding), so this is a guard-adequacy
+finding, not an active correctness failure. The candidate relative
+ridge with s=10 gives 0.057 at takeoff = 19% of lambda_min — a material
+eigenvalue shift; s=1 gives 1.9% but only ~0.7x the rounding scale.
+
+Decision: NO shipped-ridge change now. The relative form is derived and
+measured; the value of s trades guard multiple against eigenvalue bias
+and its choice plus the score-lane tangent threading (a relative ridge
+is theta-dependent through C(theta)) land only under a dedicated
+Class-C non-harm contract with the healthy/pathological fixture pair.
+The registry C4 ridge row moves from "unjustified" to "measured
+inadequacy on file, replacement derived, change gated".

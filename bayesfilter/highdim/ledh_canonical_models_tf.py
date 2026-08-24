@@ -190,6 +190,47 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
         100.0 * tf.exp(2.0 * theta_fixed[2]) * tf.eye(9, dtype=dtype)
     )
 
+    # theta_2-bearing observation density (Q2 Curve-7 wiring, 2026-08-24):
+    # R(theta) = 100*exp(2*theta_2)*I_9. The Gaussian FALLBACK density in
+    # the score assembly carries no dR term, so a model with R(theta)
+    # must supply the density callback pair and the covariance tangent
+    # (same convention as the dlgssm q/r wiring).
+    log_two_pi = tf.constant(np.log(2.0 * np.pi), dtype)
+
+    def observation_log_density_fn(theta, points, observation):
+        observed = tf.einsum("oi,ni->no", infectious_matrix, points)
+        residual = observation[None, :] - observed
+        log_variance = (
+            tf.math.log(tf.constant(100.0, dtype)) + 2.0 * theta[2]
+        )
+        variance = tf.exp(log_variance)
+        return -0.5 * (
+            tf.reduce_sum(tf.square(residual), axis=1) / variance
+            + 9.0 * (log_two_pi + log_variance)
+        )
+
+    def observation_log_density_tangent_fn(theta, points, observation, d_points):
+        # d log p = (r . d_observed)/V + (||r||^2/V - 9) d_theta_2
+        d_theta = _current_direction[0]
+        observed = tf.einsum("oi,ni->no", infectious_matrix, points)
+        d_observed = tf.einsum("oi,ni->no", infectious_matrix, d_points)
+        residual = observation[None, :] - observed
+        variance = tf.constant(100.0, dtype) * tf.exp(2.0 * theta[2])
+        quad = tf.reduce_sum(tf.square(residual), axis=1)
+        return (
+            tf.reduce_sum(residual * d_observed, axis=1) / variance
+            + (quad / variance - 9.0) * d_theta[2]
+        )
+
+    def observation_covariance_tangent_fn(theta):
+        d_theta = _current_direction[0]
+        return (
+            200.0
+            * tf.exp(2.0 * theta[2])
+            * d_theta[2]
+            * tf.eye(9, dtype=dtype)
+        )
+
     model = NonlinearScoreModel(
         transition_mean_fn=transition_mean_fn,
         transition_mean_tangent_fn=transition_mean_tangent_fn,
@@ -205,6 +246,9 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
         # the UKF sigma-point propagation of the real RK4 dynamics, and I
         # enters only as the true additive-noise covariance.
         observation_covariance=observation_covariance,
+        observation_log_density_fn=observation_log_density_fn,
+        observation_log_density_tangent_fn=observation_log_density_tangent_fn,
+        observation_covariance_tangent_fn=observation_covariance_tangent_fn,
     )
     # NonlinearScoreModel is frozen; the direction setter travels alongside.
     return model, set_score_direction

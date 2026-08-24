@@ -460,3 +460,4 @@ def test_austria_reduction_slice_matches_kalman():
         f"Austria reduction: canonical {np.mean(values):.4f} vs Kalman "
         f"{kalman:.4f} (err {err:.4f}, per-seed {values})"
     )
+

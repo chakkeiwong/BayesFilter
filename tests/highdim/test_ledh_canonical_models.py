@@ -467,3 +467,43 @@ def test_diagonal_lgssm_annealed_qr_direction_scores_match_oracle():
             model_builder=diagonal_lgssm_canonical_model,
             annealed_stages=2, annealed_seed=41,
         )
+
+
+def test_austria_r_direction_score_matches_oracle():
+    """Q2 Curve-7 prerequisite gate: theta_2 (observation-variance)
+    direction score vs the oracle with a REBUILT model inside the
+    accumulator (theta_2 lives in the baked observation covariance, so
+    a fixed-model oracle would differentiate a partial function — the
+    same harness defect class fixed for dlgssm q/r on 2026-08-24).
+    Covers: R(theta) density callbacks, dR into UKF update, flow
+    innovation and R^-1 threading, sampling unaffected (Q constant)."""
+
+    model, set_direction, theta0, initial, covs, noises, observations = (
+        _austria_fixture(87, n=24, horizon=2)
+    )
+    set_direction(tf.constant([0.0, 0.0, 1.0], DTYPE))
+
+    def value_fn_1p(theta_1):
+        theta = tf.stack([theta0[0], theta0[1], theta_1[0]])
+        eval_model, _sd = austria_sir_canonical_model(theta)
+        value, _ = canonical_value_and_analytical_score(
+            eval_model, theta, initial, covs, noises, observations,
+            substeps=8, with_score=False,
+        )
+        return value
+
+    oracle = oracle_forward_autodiff_score(
+        value_fn_1p, tf.constant([0.0], DTYPE)
+    )
+    value, score = canonical_value_and_analytical_score(
+        model, theta0, initial, covs, noises, observations,
+        substeps=8, with_score=True,
+    )
+    assert np.isfinite(float(value.numpy()))
+    assert abs(float(score[0].numpy())) > 1.0e-12, "vacuous theta_2 score"
+    err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
+    scale = max(abs(float(oracle[0].numpy())), 1.0)
+    assert err < 1.0e-4 * scale, (
+        f"Austria theta_2 analytical {float(score[0].numpy())} vs oracle "
+        f"{float(oracle[0].numpy())}"
+    )
