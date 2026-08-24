@@ -188,3 +188,60 @@ requirement are coupled, and the cap is part of the lane definition,
 not an optional extra. f64 CPU remains the reference/anchor lane.
 Not concluded: posterior correctness, HMC readiness, cross-scope
 transfer (per-scope tuning rule stands).
+
+## Curves 2+3 — finalized contracts (2026-08-24; runs pending)
+
+Shared harness design (recorded so the next session starts mechanically):
+wrap `ledh_canonical_filter_tf._restore_cloud_primal` in the runner
+(diagnostic instrumentation only), record each step's real
+(children, weights) correction-input cloud from a frozen-Austria
+canonical run at the calibrated k=4/c=8 defaults, and select the
+minimum-stage-ESS (takeoff) step's cloud as the calibration fixture.
+The ladder then drives one diagonal shape iteration per setting on that
+frozen cloud. Faithfulness gate before any curve is read: the runner's
+mirrored (J, c, displacement) computation must reproduce
+`_shape_iteration_jvp`'s actual output on the fixture (parity check,
+call-chain rule); a mismatch is a harness veto.
+
+Curve 2 (trust radius): ladder radius in {0.1, 0.2, 0.5, 1.0, 2.0} plus
+the off arm (0.0 = uncapped, mandatory zero comparator). Per rung
+compute predicted reduction ||r||^2 - ||r - J c_capped||^2 and actual
+reduction ||r||^2 - ||r_after||^2; model-trust ratio rho = actual /
+predicted. Calibrated radius = largest rung with rho >= 0.75 in every
+seed (threshold provenance: the "very successful step" constant of
+standard trust-region methods, Nocedal & Wright Numerical Optimization
+Alg. 4.1); the current default 0.5 is a warm start, not privileged.
+Non-harm acceptance: at the calibrated radius, post-step residual norm
+must be <= the uncapped arm's on the healthy fixture (the cap must not
+degrade a healthy step), and the capped arm must be finite/valid where
+any arm is. Descriptive only: everything else.
+
+Curve 3 (LM damping): ladder damping in {0, 1e-3, 1e-2, 1e-1, 1.0}
+(zero arm mandatory). Per rung record post-step residual norm (bias
+axis) and max scaled-system condition (robustness axis). Calibrated
+damping = smallest rung whose max scaled-system condition <= 1e4;
+derivation of the threshold: the production lane is float32
+(eps ~ 1.19e-7) and a linear solve loses O(cond * eps) relative
+accuracy, so cond <= 1e4 keeps coefficient accuracy ~ 1e-3, the same
+order as the correction strength scale. If the zero arm already meets
+the condition bound on the fixture, the calibrated value is 0 WITH this
+artifact as its Class-C justification (an off setting needs evidence
+too); the current default 1e-2 is a warm start.
+
+Curve 7 (Austria Fisher GPU): replicate the CPU Fisher-identity gate
+class on the Austria model at GPU scale — simulate observations from
+the model's own RK4 simulator at theta0 (independent numpy path per the
+harness convention), replications >= 40, directions 0..2, gate
+|mean score| < 3*SE + bias slack with the 2026-08-24 non-vacuity guard.
+Runs on the GPU because the replication cost rides there (score lane
+stays float64; GPU f64 accepted for this diagnostic, recorded in the
+manifest).
+
+Curve 4 (relative ridge): derivation note first (worst-lane effective
+epsilon: TF32 unit roundoff 2^-11 ~ 4.9e-4 on the production lane;
+relative form delta * tr(C)/d; safety factor derived from the Gram
+accumulation error bound, N-aware), then a non-harm verification cell:
+absolute-1e-5 vs relative form on the frozen fixture — identical
+healthy-path outputs within declared tolerance, bounded flagged
+behavior on the pathological fixture. Changing the shipped ridge is
+Class C and lands only with that verification green.
