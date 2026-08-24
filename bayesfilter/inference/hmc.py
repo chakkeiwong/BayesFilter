@@ -45,6 +45,15 @@ _PROCESS_LOCAL_SIGNATURE_PATTERNS = (
 )
 
 
+# These values are part of the verifier metadata contract.  The generic
+# default remains the historical R-hat gate; the active Phase 7 caller opts
+# into the engineering-only explanatory policy explicitly.
+SEQUENTIAL_RHAT_ADMISSION_POLICIES = frozenset({"rhat_gate", "explanatory_only"})
+SEQUENTIAL_RHAT_ROLE_GATE = "fixed_kernel_convergence_gate_not_candidate_ranking"
+SEQUENTIAL_RHAT_ROLE_EXPLANATORY_ONLY = "explanatory_only_not_stopping_or_admission"
+DEFAULT_EXPLICIT_START_BANK_POLICY_ID = "explicit_start_bank"
+
+
 @dataclass(frozen=True)
 class PrecomputedMAP:
     """Shape- and adapter-scoped precomputed MAP/mass artifact metadata."""
@@ -990,8 +999,10 @@ class SequentialRHatHMCVerificationConfig:
     The verifier runs a fixed-size TF/TFP HMC chunk repeatedly, computes
     dependence-aware acceptance evidence and rank-normalized split/folded R-hat
     on private traces after each checkpoint. Out-of-band acceptance returns a
-    repair decision immediately; promotion requires both acceptance evidence
-    and the R-hat gate after the minimum retained count.
+    repair decision immediately.  The admission policy is explicit: the
+    generic ``rhat_gate`` mode requires R-hat after the minimum retained count,
+    while ``explanatory_only`` admits only the typed acceptance/health handoff
+    and reports R-hat as telemetry.
     It is a tuning-verification gate, not a posterior-convergence certificate.
     """
 
@@ -1010,6 +1021,8 @@ class SequentialRHatHMCVerificationConfig:
     use_xla: bool = False
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
+    rhat_admission_policy: str = "rhat_gate"
+    explicit_start_bank_policy_id: str = DEFAULT_EXPLICIT_START_BANK_POLICY_ID
 
     def __post_init__(self) -> None:
         check_interval = int(self.check_interval)
@@ -1078,6 +1091,21 @@ class SequentialRHatHMCVerificationConfig:
         object.__setattr__(self, "chain_execution_mode", chain_execution_mode)
         if self.target_scope is not None:
             object.__setattr__(self, "target_scope", str(self.target_scope))
+        rhat_admission_policy = str(self.rhat_admission_policy)
+        if rhat_admission_policy not in SEQUENTIAL_RHAT_ADMISSION_POLICIES:
+            allowed = ", ".join(sorted(SEQUENTIAL_RHAT_ADMISSION_POLICIES))
+            raise ValueError(
+                "rhat_admission_policy must be one of: " + allowed
+            )
+        object.__setattr__(self, "rhat_admission_policy", rhat_admission_policy)
+        explicit_start_bank_policy_id = str(self.explicit_start_bank_policy_id).strip()
+        if not explicit_start_bank_policy_id:
+            raise ValueError("explicit_start_bank_policy_id must be non-empty")
+        object.__setattr__(
+            self,
+            "explicit_start_bank_policy_id",
+            explicit_start_bank_policy_id,
+        )
 
     def signature_payload(self) -> Mapping[str, Any]:
         return {
@@ -1094,6 +1122,8 @@ class SequentialRHatHMCVerificationConfig:
             "use_xla": self.use_xla,
             "chain_execution_mode": self.chain_execution_mode,
             "target_scope": self.target_scope,
+            "rhat_admission_policy": self.rhat_admission_policy,
+            "explicit_start_bank_policy_id": self.explicit_start_bank_policy_id,
         }
 
 
@@ -1146,6 +1176,10 @@ class SequentialRHatHMCVerificationResult:
     nonfinite_rhat_count: int
     diagnostics: Mapping[str, Any]
     metadata: Mapping[str, Any]
+    # Optional-at-the-end fields preserve positional construction compatibility
+    # for historical callers while making the two admission signals explicit.
+    rhat_passed: bool = False
+    acceptance_handoff_eligible: bool = False
 
 
 @dataclass(frozen=True)
@@ -4973,7 +5007,7 @@ class SequentialRHatHMCVerifier:
                     "explicit sequential verification start bank must match chain_count"
                 )
             initial_state = base
-            initial_state_policy = "private_frozen_post_warmup_start_bank"
+            initial_state_policy = config.explicit_start_bank_policy_id
         initial_chunk_config = FixedSizeHMCChunkConfig(
             max_results=config.check_interval,
             num_burnin_steps=config.num_burnin_steps,
@@ -5225,7 +5259,10 @@ class SequentialRHatHMCVerifier:
             if (
                 acceptance_evidence.promotion_eligible
                 and minimum_retained_satisfied
-                and bool(final_rhat["passed"])
+                and (
+                    config.rhat_admission_policy == "explanatory_only"
+                    or bool(final_rhat["passed"])
+                )
             ):
                 passed = True
                 break
@@ -5240,6 +5277,17 @@ class SequentialRHatHMCVerifier:
             in {"passed", "inconclusive_evidence"}
         ):
             cap_hit = True
+        rhat_passed = bool(final_rhat["passed"])
+        acceptance_handoff_eligible = bool(
+            acceptance_evidence is not None
+            and acceptance_evidence.promotion_eligible
+            and retained_count >= int(config.min_retained_results_for_pass)
+        )
+        rhat_role = (
+            SEQUENTIAL_RHAT_ROLE_EXPLANATORY_ONLY
+            if config.rhat_admission_policy == "explanatory_only"
+            else SEQUENTIAL_RHAT_ROLE_GATE
+        )
         runtime_s = time.perf_counter() - start
         diagnostics = {
             "sequential_rhat_verification": True,
@@ -5253,7 +5301,8 @@ class SequentialRHatHMCVerifier:
             ),
             "chunk_count": len(chunk_summaries),
             "rhat_threshold": float(config.rhat_threshold),
-            "rhat_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+            "rhat_admission_policy": config.rhat_admission_policy,
+            "rhat_role": rhat_role,
             "rhat_definition": final_rhat["rhat_definition"],
             "max_finite_rhat": final_rhat["max_finite_rhat"],
             "max_rank_normalized_split_rhat": final_rhat[
@@ -5264,7 +5313,10 @@ class SequentialRHatHMCVerifier:
             ],
             "finite_rhat_count": int(final_rhat["finite_rhat_count"]),
             "nonfinite_rhat_count": int(final_rhat["nonfinite_rhat_count"]),
-            "all_finite_rhat_at_or_below_threshold": bool(final_rhat["passed"]),
+            "all_finite_rhat_at_or_below_threshold": rhat_passed,
+            "rhat_passed": rhat_passed,
+            "acceptance_handoff_eligible": acceptance_handoff_eligible,
+            "promotion_role": "non_promoting",
             "minimum_retained_pass_gate_satisfied": bool(
                 retained_count >= int(config.min_retained_results_for_pass)
             ),
@@ -5356,7 +5408,7 @@ class SequentialRHatHMCVerifier:
             },
             "nonclaims": (
                 "sequential fixed-checkpoint HMC tuning verification only",
-                "historical unsplit R-hat is explanatory only",
+                "R-hat admission role is explicit in rhat_admission_policy",
                 "no posterior convergence claim",
                 "no scientific validity claim",
                 "no sampler superiority claim",
@@ -5392,6 +5444,11 @@ class SequentialRHatHMCVerifier:
             "chunk_count": len(chunk_summaries),
             "chain_count": int(config.chain_count),
             "rhat_threshold": float(config.rhat_threshold),
+            "rhat_admission_policy": config.rhat_admission_policy,
+            "rhat_role": rhat_role,
+            "rhat_passed": rhat_passed,
+            "acceptance_handoff_eligible": acceptance_handoff_eligible,
+            "promotion_role": "non_promoting",
             "rhat_definition": final_rhat["rhat_definition"],
             "max_rank_normalized_split_rhat": final_rhat[
                 "max_rank_normalized_split_rhat"
@@ -5428,6 +5485,8 @@ class SequentialRHatHMCVerifier:
             nonfinite_rhat_count=int(final_rhat["nonfinite_rhat_count"]),
             diagnostics=_json_safe_metadata(diagnostics),
             metadata=_json_safe_metadata(metadata),
+            rhat_passed=rhat_passed,
+            acceptance_handoff_eligible=acceptance_handoff_eligible,
         )
 
     __call__ = run

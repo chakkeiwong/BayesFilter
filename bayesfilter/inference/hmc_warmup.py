@@ -86,6 +86,284 @@ _START_BANK_INTERPRETATIONS = frozenset(
     }
 )
 
+PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID = (
+    "bayesfilter.phase7_engineering_probe_bank.v1"
+)
+_PHASE7_ENGINEERING_PROBE_BANK_SCHEMA = (
+    "bayesfilter.phase7_engineering_probe_bank_qualification.v2"
+)
+_PHASE7_ENGINEERING_PROBE_SEED_DOMAIN = "phase7_engineering_probe_bank_v1"
+_PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE = (
+    "_bayesfilter_phase7_engineering_probe_bank_qualification_v2"
+)
+_G2_PREBOUNDARY_SEED_REGISTRY_SCHEMA = (
+    "bayesfilter.hmc_g2_preboundary_seed_use_registry.v1"
+)
+_G2_PREBOUNDARY_SEED_REGISTRY_FAILURE_SCHEMA = (
+    "bayesfilter.hmc_g2_preboundary_seed_use_registry_failure_snapshot.v1"
+)
+_G2_PREBOUNDARY_SHARED_INVALIDITY_SCHEMA = (
+    "bayesfilter.hmc_g2_preboundary_shared_invalidity.v2"
+)
+_G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE = (
+    "_bayesfilter_hmc_g2_preboundary_shared_invalidity_v2"
+)
+_G2_PREBOUNDARY_SEED_PRIVATE_EVIDENCE_ATTRIBUTE = (
+    "_bayesfilter_hmc_g2_preboundary_seed_private_evidence_v1"
+)
+_PHASE7_ENGINEERING_PROBE_FAILURE_CODES = frozenset(
+    {
+        "none",
+        "seed_registry_source_coverage_invalid",
+        "seed_registry_entry_invalid",
+        "seed_registry_unregistered_consumption",
+        "seed_registry_preboundary_duplicate",
+        "seed_registry_p4_collision",
+        "seed_registry_postboundary_call",
+        "transform_contract_invalid",
+        "offset_sampler_exception",
+        "offset_sampler_contract_invalid",
+        "candidate_construction_exception",
+        "content_signature_construction_invalid",
+        "target_callback_contract_invalid",
+        "target_callback_exception",
+        "target_health_schema_invalid",
+        "target_health_shared_invalidity",
+        "target_health_count_mismatch",
+        "transform_covariance_lineage_invalid",
+        "transform_p4_lineage_invalid",
+        "adaptation_update_lineage_invalid",
+        "qualification_carrier_invalid",
+        "unexpected_builder_exception",
+        "candidate_generation_nonfinite",
+        "candidate_generation_duplicate",
+        "candidate_data_invalid",
+        "target_value_nonfinite",
+        "target_score_nonfinite",
+        "target_status_failed",
+    }
+)
+_PHASE7_ENGINEERING_PROBE_OUTCOMES = frozenset(
+    {
+        "shared_implementation_invalid",
+        "candidate_generation_invalid",
+        "candidate_policy_instance_invalid",
+        "engineering_probe_bank_constructed",
+    }
+)
+_PHASE7_ENGINEERING_PROBE_NONCLAIMS = (
+    "single_seed_candidate_instance_only",
+    "no_covariance_multiplier_adequacy_claim",
+    "opaque_tensorflow_tfp_substreams_not_enumerated",
+    "no_kernel_validity_or_convergence_claim",
+    "no_posterior_or_scientific_claim",
+    "no_p4s_gpu_xla_or_default_readiness_claim",
+)
+
+_G2_P4_SEED_DERIVATION_SITE_ID = (
+    "hmc_warmup.build_phase7_engineering_probe_bank.p4_seed_derivation.v1"
+)
+_G2_P4_SEED_GATE_SITE_ID = (
+    "hmc_warmup.build_phase7_engineering_probe_bank.p4_seed_gate.v1"
+)
+_G2_INITIAL_EPSILON_SEED_DERIVATION_SITE_ID = (
+    "hmc_warmup.run_operational_windowed_warmup.initial_epsilon_seed_derivation.v1"
+)
+_G2_INITIAL_EPSILON_SEED_GATE_SITE_ID = (
+    "hmc_warmup.run_operational_windowed_warmup.initial_epsilon_seed_gate.v1"
+)
+_G2_SEGMENT_SEED_DERIVATION_SITE_ID = (
+    "hmc_warmup.run_operational_windowed_warmup.segment_seed_derivation.v1"
+)
+_G2_SEGMENT_SEED_GATE_SITE_ID = (
+    "hmc_warmup.run_operational_windowed_warmup.segment_seed_gate.v1"
+)
+_G2_METRIC_BOUNDARY_SEED_DERIVATION_SITE_ID = (
+    "hmc_warmup.run_operational_windowed_warmup.metric_seed_derivation.v1"
+)
+_G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID = (
+    "hmc_warmup.run_operational_windowed_warmup.metric_seed_gate.v1"
+)
+_G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID = (
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_derivation.v1"
+)
+_G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID = (
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1"
+)
+_G2_INITIAL_EPSILON_SEED_INTERFACE_HOPS = (
+    "hmc_warmup.run_operational_windowed_warmup.initial_registry_dispatch.v1",
+    "hmc_warmup.run_operational_windowed_warmup.initial_reasonable_seed_pass_through.v1",
+    "hmc_warmup.find_reasonable_epsilon.initial_seed_normalization.v1",
+)
+_G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS = (
+    "hmc_warmup.run_operational_windowed_warmup.metric_registry_dispatch.v1",
+    "hmc_warmup.run_operational_windowed_warmup.metric_reasonable_seed_pass_through.v1",
+    "hmc_warmup.find_reasonable_epsilon.metric_seed_normalization.v1",
+)
+_G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS = (
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_list_pass_through.v1",
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_tuple_pass_through.v1",
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_tensor_construction.v1",
+    "hmc_warmup.find_reasonable_epsilon.proposal_one_step_pass_through.v1",
+    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_conversion.v1",
+    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_pass_through.v1",
+    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_one_step_rng_call.v1",
+)
+_G2_SEGMENT_SEED_INTERFACE_HOPS = (
+    "hmc_warmup.run_operational_windowed_warmup.segment_registry_dispatch.v1",
+    "hmc_warmup.run_operational_windowed_warmup.segment_seed_tensor_construction.v1",
+    "hmc_warmup.run_operational_windowed_warmup.segment_runner_seed_pass_through.v1",
+    "hmc_warmup.run_operational_windowed_warmup.sample_chain_rng_call.v1",
+    "hmc_warmup.run_operational_windowed_warmup.sample_chain_seed_pass_through.v1",
+)
+_G2_P4_SEED_INTERFACE_HOPS = (
+    "hmc_warmup.build_phase7_engineering_probe_bank.offset_sampler_seed_pass_through.v1",
+    "hmc_warmup.build_phase7_engineering_probe_bank.p4_seed_tensor_conversion.v1",
+    "hmc_warmup.build_phase7_engineering_probe_bank.stateless_normal_seed_pass_through.v1",
+    "hmc_warmup.build_phase7_engineering_probe_bank.stateless_normal_rng_call.v1",
+)
+
+# These two hop chains are owned by hmc_kernel_tuning, but the registry lives in
+# this module and must validate their exact order without importing its caller.
+_G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS_CONTRACT = (
+    "hmc_kernel_tuning.run_hmc_bootstrap_screen.screen_config_seed_pass_through.v1",
+    "hmc_kernel_tuning._bootstrap_screen_config.seed_pass_through.v1",
+    "hmc.bootstrap.FullChainHMCConfig.seed_normalization.v1",
+    "hmc_kernel_tuning.run_hmc_bootstrap_screen.reusable_runner_config_pass_through.v1",
+    "hmc_kernel_tuning.run_hmc_bootstrap_screen.reusable_runner_seed_pass_through.v1",
+    "hmc.bootstrap.ReusableFullChainHMCRunner.run_seed_selection.v1",
+    "hmc.bootstrap.ReusableFullChainHMCRunner.run_seed_conversion.v1",
+    "hmc.bootstrap.ReusableFullChainHMCRunner.compiled_runner_seed_pass_through.v1",
+    "hmc.bootstrap.ReusableFullChainHMCRunner.sample_chain_rng_call.v1",
+    "hmc.bootstrap.ReusableFullChainHMCRunner.sample_chain_seed_pass_through.v1",
+)
+_G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT = (
+    "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.diagnostic_config_seed_pass_through.v1",
+    "hmc_kernel_tuning._windowed_stage_diagnostic_run_config.seed_pass_through.v1",
+    "hmc.windowed_stage.FullChainHMCConfig.seed_normalization.v1",
+    "hmc_kernel_tuning._operational_windowed_mass_capture.seed_pass_through.v1",
+    "hmc_kernel_tuning._operational_windowed_mass_capture.engineering_config_seed_pass_through.v1",
+    "hmc_warmup.Phase7EngineeringProbeBankConfig.root_seed_normalization.v1",
+    "hmc_kernel_tuning._operational_windowed_mass_capture.warmup_seed_pass_through.v1",
+    "hmc_warmup.run_operational_windowed_warmup.root_seed_validation.v1",
+    "hmc_warmup.run_operational_windowed_warmup.initial_kernel_state_seed_lineage.v1",
+    "hmc_coordinates.KernelState.windowed_stage_seed_lineage_tuple_normalization.v1",
+    "hmc_coordinates.KernelState.windowed_stage_seed_lineage_integer_normalization.v1",
+    "hmc_warmup.run_operational_windowed_warmup.final_kernel_state_seed_lineage.v1",
+    "hmc_warmup.run_operational_windowed_warmup.final_kernel_state_with_epsilon_call.v1",
+    "hmc_coordinates.KernelState.with_epsilon_seed_lineage_forwarding.v1",
+)
+
+_G2_SEED_TERMINAL_CONSUMERS = frozenset(
+    {
+        "numpy_rng",
+        "tensorflow_stateless_rng",
+        "tfp_sample_chain",
+        "hmc_runner_interface",
+    }
+)
+_G2_SEED_DERIVATION_CHILDREN = {
+    "root": frozenset({"kind"}),
+    "derive_stage": frozenset({"kind", "base_key", "stage_index"}),
+    "round_offset": frozenset({"kind", "base_key", "round_index"}),
+    "warmup_index_lane": frozenset({"kind", "base_key", "index", "lane"}),
+    "p4_domain_hash": frozenset({"kind", "base_key", "domain_label"}),
+}
+_G2_SHARED_FAILURE_CODES = _PHASE7_ENGINEERING_PROBE_FAILURE_CODES - {
+    "none",
+    "candidate_generation_nonfinite",
+    "candidate_generation_duplicate",
+    "candidate_data_invalid",
+    "target_value_nonfinite",
+    "target_score_nonfinite",
+    "target_status_failed",
+}
+
+_G2_SEED_GATE_SEMANTIC_CONTRACTS = {
+    _G2_INITIAL_EPSILON_SEED_GATE_SITE_ID: {
+        "derivation_site_id": _G2_INITIAL_EPSILON_SEED_DERIVATION_SITE_ID,
+        "derivation_owner_qualname": "run_operational_windowed_warmup",
+        "owner_file": "hmc_warmup.py",
+        "owner_qualname": "run_operational_windowed_warmup",
+        "terminal_consumer": "hmc_runner_interface",
+        "interface_hop_site_ids": _G2_INITIAL_EPSILON_SEED_INTERFACE_HOPS,
+        "is_p4": False,
+    },
+    _G2_SEGMENT_SEED_GATE_SITE_ID: {
+        "derivation_site_id": _G2_SEGMENT_SEED_DERIVATION_SITE_ID,
+        "derivation_owner_qualname": "run_operational_windowed_warmup",
+        "owner_file": "hmc_warmup.py",
+        "owner_qualname": "run_operational_windowed_warmup",
+        "terminal_consumer": "tfp_sample_chain",
+        "interface_hop_site_ids": _G2_SEGMENT_SEED_INTERFACE_HOPS,
+        "is_p4": False,
+    },
+    _G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID: {
+        "derivation_site_id": _G2_METRIC_BOUNDARY_SEED_DERIVATION_SITE_ID,
+        "derivation_owner_qualname": "run_operational_windowed_warmup",
+        "owner_file": "hmc_warmup.py",
+        "owner_qualname": "run_operational_windowed_warmup",
+        "terminal_consumer": "hmc_runner_interface",
+        "interface_hop_site_ids": _G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS,
+        "is_p4": False,
+    },
+    _G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID: {
+        "derivation_site_id": _G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID,
+        "derivation_owner_qualname": "find_reasonable_epsilon",
+        "owner_file": "hmc_warmup.py",
+        "owner_qualname": "find_reasonable_epsilon",
+        "terminal_consumer": "tensorflow_stateless_rng",
+        "interface_hop_site_ids": _G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS,
+        "is_p4": False,
+    },
+    _G2_P4_SEED_GATE_SITE_ID: {
+        "derivation_site_id": _G2_P4_SEED_DERIVATION_SITE_ID,
+        "derivation_owner_qualname": "Phase7EngineeringProbeBankConfig.derived_seed",
+        "owner_file": "hmc_warmup.py",
+        "owner_qualname": "build_phase7_engineering_probe_bank",
+        "terminal_consumer": "tensorflow_stateless_rng",
+        "interface_hop_site_ids": _G2_P4_SEED_INTERFACE_HOPS,
+        "is_p4": True,
+    },
+    "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_gate.v1": {
+        "derivation_site_id": (
+            "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_derivation.v1"
+        ),
+        "derivation_owner_qualname": "run_hmc_bootstrap_screen",
+        "owner_file": "hmc_kernel_tuning.py",
+        "owner_qualname": "run_hmc_bootstrap_screen",
+        "terminal_consumer": "hmc_runner_interface",
+        "interface_hop_site_ids": (
+            _G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS_CONTRACT
+        ),
+        "is_p4": False,
+    },
+    "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.stage_seed_gate.v1": {
+        "derivation_site_id": (
+            "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.stage_seed_derivation.v1"
+        ),
+        "derivation_owner_qualname": "_run_p4_windowed_boundary_attempt",
+        "owner_file": "hmc_kernel_tuning.py",
+        "owner_qualname": "_run_p4_windowed_boundary_attempt",
+        "terminal_consumer": "hmc_runner_interface",
+        "interface_hop_site_ids": (
+            _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT
+        ),
+        "is_p4": False,
+    },
+}
+
+_G2_PREBOUNDARY_SHARED_INVALIDITY_STAGES = frozenset(
+    {
+        *_G2_SEED_GATE_SEMANTIC_CONTRACTS,
+        "operational_warmup_initial_covariance_lineage",
+        "windowed_stage_seed_derivation",
+        "windowed_stage_diagnostic_config",
+        "windowed_stage_diagnostic_config_signature",
+        "windowed_stage_operational_capture_entry",
+    }
+)
+
 
 def _stable_hash(label: str, payload: Mapping[str, Any]) -> str:
     normalized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -140,6 +418,1193 @@ def _strict_seed(value: Any, *, name: str) -> tuple[int, int]:
     return tuple(
         _strict_integer(item, name=f"{name} item", minimum=0) for item in raw
     )
+
+
+def _is_sha256_hex(value: Any) -> bool:
+    return bool(
+        type(value) is str
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _strict_ascii_identifier(value: Any, *, name: str) -> str:
+    if type(value) is not str or not value or not value.isascii():
+        raise ValueError(f"{name} must be non-empty ASCII")
+    return value
+
+
+def _strict_builtin_seed(value: Any, *, name: str) -> tuple[int, int]:
+    """Validate a registry seed before any compatibility coercion occurs."""
+
+    if type(value) is not tuple or len(value) != 2:
+        raise ValueError(f"{name} must be a two-item built-in tuple")
+    if any(type(item) is not int for item in value):
+        raise ValueError(f"{name} items must be built-in integers")
+    if any(item < 0 or item > 0x7FFFFFFF for item in value):
+        raise ValueError(f"{name} items must fit non-negative signed tf.int32")
+    return value
+
+
+def _canonical_ascii_sha256(payload: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("ascii")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _clone_seed_registry_value(value: Any) -> Any:
+    """Copy the closed registry tree without changing tuple/list semantics."""
+
+    if isinstance(value, Mapping):
+        return {key: _clone_seed_registry_value(item) for key, item in value.items()}
+    if type(value) is tuple:
+        return tuple(_clone_seed_registry_value(item) for item in value)
+    if type(value) is list:
+        return [_clone_seed_registry_value(item) for item in value]
+    return value
+
+
+_G2_SEED_REGISTRY_ENTRY_KEYS = frozenset(
+    {
+        "derivation_site_id",
+        "terminal_gate_site_id",
+        "key",
+        "owner_file",
+        "owner_qualname",
+        "terminal_consumer",
+        "derivation",
+        "indices",
+        "seed",
+        "interface_hop_site_ids",
+        "consumption_count",
+        "is_p4",
+    }
+)
+_G2_SEED_REGISTRY_COMPLETE_KEYS = frozenset(
+    {
+        "schema",
+        "source_coverage_artifact_sha256",
+        "entries",
+        "preboundary_consumed_seed_count",
+        "p4_entry_key",
+        "p4_distinct_from_preboundary_seeds",
+        "post_boundary_registry_call_count",
+        "seed_use_registry_signature",
+    }
+)
+_G2_SEED_REGISTRY_FAILURE_KEYS = frozenset(
+    {
+        "schema",
+        "source_coverage_artifact_sha256",
+        "entries",
+        "preboundary_consumed_seed_count",
+        "p4_entry_key",
+        "p4_distinct_from_preboundary_seeds",
+        "p4_seed_consumed",
+        "post_boundary_registry_call_count",
+        "failure_stage",
+        "failure_code",
+        "attempted_p4_seed_signature",
+        "seed_use_registry_snapshot_signature",
+    }
+)
+
+
+def _validated_g2_seed_registry_evidence(value: Any) -> Mapping[str, Any] | None:
+    """Validate the complete private tagged union before trusting its digest."""
+
+    try:
+        if not isinstance(value, Mapping):
+            return None
+        payload = dict(value)
+        schema = payload.get("schema")
+        if schema == _G2_PREBOUNDARY_SEED_REGISTRY_SCHEMA:
+            required_keys = _G2_SEED_REGISTRY_COMPLETE_KEYS
+            signature_name = "seed_use_registry_signature"
+            complete = True
+        elif schema == _G2_PREBOUNDARY_SEED_REGISTRY_FAILURE_SCHEMA:
+            required_keys = _G2_SEED_REGISTRY_FAILURE_KEYS
+            signature_name = "seed_use_registry_snapshot_signature"
+            complete = False
+        else:
+            return None
+        if set(payload) != required_keys:
+            return None
+        coverage_digest = payload["source_coverage_artifact_sha256"]
+        signature = payload[signature_name]
+        if not _is_sha256_hex(coverage_digest) or not _is_sha256_hex(signature):
+            return None
+        unsigned = dict(payload)
+        unsigned.pop(signature_name)
+        if _canonical_ascii_sha256(unsigned) != signature:
+            return None
+
+        raw_entries = payload["entries"]
+        if type(raw_entries) is not tuple:
+            return None
+        entries: list[Mapping[str, Any]] = []
+        keys: set[str] = set()
+        numeric_seeds: set[tuple[int, int]] = set()
+        for raw_entry in raw_entries:
+            if not isinstance(raw_entry, Mapping) or set(raw_entry) != (
+                _G2_SEED_REGISTRY_ENTRY_KEYS
+            ):
+                return None
+            entry = dict(raw_entry)
+            for name in (
+                "derivation_site_id",
+                "terminal_gate_site_id",
+                "key",
+                "owner_file",
+                "owner_qualname",
+            ):
+                _strict_ascii_identifier(entry[name], name=name)
+            if entry["owner_file"] not in {
+                "hmc_warmup.py",
+                "hmc_kernel_tuning.py",
+            }:
+                return None
+            if entry["terminal_consumer"] not in _G2_SEED_TERMINAL_CONSUMERS:
+                return None
+            derivation = entry["derivation"]
+            if not isinstance(derivation, Mapping):
+                return None
+            derivation = dict(derivation)
+            kind = derivation.get("kind")
+            if kind not in _G2_SEED_DERIVATION_CHILDREN or set(derivation) != (
+                _G2_SEED_DERIVATION_CHILDREN[kind]
+            ):
+                return None
+            for name, item in derivation.items():
+                if name == "kind":
+                    continue
+                if name in {"stage_index", "round_index", "index", "lane"}:
+                    if type(item) is not int:
+                        return None
+                else:
+                    _strict_ascii_identifier(item, name=f"derivation {name}")
+            if type(entry["indices"]) is not tuple:
+                return None
+            for index in entry["indices"]:
+                if not isinstance(index, Mapping) or set(index) != {"name", "value"}:
+                    return None
+                _strict_ascii_identifier(index["name"], name="seed index name")
+                if type(index["value"]) is not int:
+                    return None
+            seed = _strict_builtin_seed(entry["seed"], name="registry evidence seed")
+            hops = entry["interface_hop_site_ids"]
+            if type(hops) is not tuple:
+                return None
+            for hop in hops:
+                _strict_ascii_identifier(hop, name="interface hop site ID")
+            if len(set(hops)) != len(hops):
+                return None
+            if type(entry["consumption_count"]) is not int or (
+                entry["consumption_count"] != 1
+            ):
+                return None
+            if type(entry["is_p4"]) is not bool:
+                return None
+            if entry["key"] in keys or seed in numeric_seeds:
+                return None
+            keys.add(entry["key"])
+            numeric_seeds.add(seed)
+            entries.append(entry)
+
+        non_p4 = [entry for entry in entries if entry["is_p4"] is False]
+        p4 = [entry for entry in entries if entry["is_p4"] is True]
+        if non_p4 != sorted(non_p4, key=lambda entry: entry["key"]):
+            return None
+        if entries != non_p4 + p4:
+            return None
+        count = payload["preboundary_consumed_seed_count"]
+        if type(count) is not int or count != len(non_p4):
+            return None
+        post_count = payload["post_boundary_registry_call_count"]
+        if type(post_count) is not int:
+            return None
+
+        if complete:
+            if (
+                len(p4) != 1
+                or payload["p4_entry_key"] != p4[0]["key"]
+                or payload["p4_distinct_from_preboundary_seeds"] is not True
+                or post_count not in {0, 1}
+            ):
+                return None
+        else:
+            attempted = payload["attempted_p4_seed_signature"]
+            failure_code = payload["failure_code"]
+            if (
+                p4
+                or payload["p4_entry_key"] is not None
+                or payload["p4_seed_consumed"] is not False
+                or post_count != 0
+                or payload["failure_stage"]
+                not in {"preboundary", "p4_entered_pre_seed"}
+                or failure_code not in _G2_SHARED_FAILURE_CODES
+                or (attempted is not None and not _is_sha256_hex(attempted))
+            ):
+                return None
+            collision = failure_code == "seed_registry_p4_collision"
+            if collision != (
+                payload["failure_stage"] == "p4_entered_pre_seed"
+                and attempted is not None
+                and payload["p4_distinct_from_preboundary_seeds"] is False
+            ):
+                return None
+            if not collision and (
+                attempted is not None
+                or payload["p4_distinct_from_preboundary_seeds"] is not None
+            ):
+                return None
+        return _clone_seed_registry_value(payload)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _registry_key_matches_template(key: str, template: str) -> bool:
+    key_parts = key.split("/")
+    template_parts = template.split("/")
+    if len(key_parts) != len(template_parts):
+        return False
+    for actual, expected in zip(key_parts, template_parts):
+        if expected.startswith("<") and expected.endswith(">"):
+            if not actual or not actual.isascii():
+                return False
+            continue
+        if actual != expected:
+            return False
+    return True
+
+
+def _registry_derivation_matches_gate(
+    derivation_site_id: str,
+    terminal_gate_site_id: str,
+) -> bool:
+    suffix = "_derivation.v1"
+    return bool(
+        derivation_site_id.endswith(suffix)
+        and terminal_gate_site_id
+        == f"{derivation_site_id[:-len(suffix)]}_gate.v1"
+    )
+
+
+def _g2_registry_entry_matches_semantic_contract(
+    entry: Mapping[str, Any],
+) -> bool:
+    """Check the exact gate-specific derivation, indices, and hop order."""
+
+    try:
+        gate_id = entry["terminal_gate_site_id"]
+        contract = _G2_SEED_GATE_SEMANTIC_CONTRACTS[gate_id]
+        if any(
+            entry[name] != contract[name]
+            for name in (
+                "derivation_site_id",
+                "owner_file",
+                "owner_qualname",
+                "terminal_consumer",
+                "is_p4",
+            )
+        ) or tuple(entry["interface_hop_site_ids"]) != tuple(
+            contract["interface_hop_site_ids"]
+        ):
+            return False
+
+        derivation = dict(entry["derivation"])
+        indices = tuple(
+            (item["name"], item["value"]) for item in entry["indices"]
+        )
+        key = entry["key"]
+
+        if gate_id == _G2_INITIAL_EPSILON_SEED_GATE_SITE_ID:
+            return bool(
+                key == "operational_warmup/reasonable_epsilon/initial"
+                and indices == ()
+                and derivation
+                == {
+                    "kind": "warmup_index_lane",
+                    "base_key": "operational_warmup/root",
+                    "index": -1,
+                    "lane": 1,
+                }
+            )
+
+        if gate_id == _G2_SEGMENT_SEED_GATE_SITE_ID:
+            if len(indices) != 2 or indices[0][0] != "window_index" or (
+                indices[1][0] != "segment_index"
+            ):
+                return False
+            window_index, segment_index = indices[0][1], indices[1][1]
+            if window_index < 0 or segment_index < 0:
+                return False
+            seed_index = derivation.get("index")
+            expected_seed_indices = {window_index * 100_000 + segment_index}
+            if segment_index == 0:
+                expected_seed_indices.add(window_index)
+            return bool(
+                key
+                == (
+                    f"operational_warmup/window/{window_index:02d}/"
+                    f"segment/{segment_index:02d}"
+                )
+                and derivation
+                == {
+                    "kind": "warmup_index_lane",
+                    "base_key": "operational_warmup/root",
+                    "index": seed_index,
+                    "lane": 2,
+                }
+                and seed_index in expected_seed_indices
+            )
+
+        if gate_id == _G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID:
+            if len(indices) != 1 or indices[0][0] != "window_index":
+                return False
+            window_index = indices[0][1]
+            return bool(
+                window_index >= 0
+                and key == f"operational_warmup/metric_boundary/{window_index:02d}"
+                and derivation
+                == {
+                    "kind": "warmup_index_lane",
+                    "base_key": "operational_warmup/root",
+                    "index": window_index,
+                    "lane": 3,
+                }
+            )
+
+        if gate_id == _G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID:
+            if len(indices) != 1 or indices[0][0] != "proposal_index":
+                return False
+            proposal_index = indices[0][1]
+            parts = key.split("/")
+            if (
+                proposal_index < 0
+                or len(parts) != 5
+                or parts[0] != "operational_warmup"
+                or parts[3] != "proposal"
+                or parts[4] != f"{proposal_index:02d}"
+            ):
+                return False
+            if parts[1] == "reasonable_epsilon":
+                if parts[2] != "initial":
+                    return False
+            elif parts[1] == "metric_boundary":
+                if not parts[2].isdigit() or parts[2] != f"{int(parts[2]):02d}":
+                    return False
+            else:
+                return False
+            base_key = "/".join(parts[:3])
+            return derivation == {
+                "kind": "warmup_index_lane",
+                "base_key": base_key,
+                "index": proposal_index,
+                "lane": 0,
+            }
+
+        if gate_id == _G2_P4_SEED_GATE_SITE_ID:
+            return bool(
+                key == "p4/engineering_probe"
+                and indices == ()
+                and derivation
+                == {
+                    "kind": "p4_domain_hash",
+                    "base_key": "engineering_probe_config.root_seed",
+                    "domain_label": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+                }
+            )
+
+        if gate_id == (
+            "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_gate.v1"
+        ):
+            if len(indices) != 1 or indices[0][0] != "round_index":
+                return False
+            round_index = indices[0][1]
+            return bool(
+                round_index >= 0
+                and key == f"bootstrap/round/{round_index:02d}"
+                and derivation
+                == {
+                    "kind": "round_offset",
+                    "base_key": "bootstrap/root",
+                    "round_index": round_index,
+                }
+            )
+
+        if gate_id == (
+            "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.stage_seed_gate.v1"
+        ):
+            return bool(
+                key == "phase4/stage"
+                and indices == ()
+                and derivation
+                == {
+                    "kind": "derive_stage",
+                    "base_key": "windowed_stage_config.seed",
+                    "stage_index": 0,
+                }
+            )
+        return False
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+class _G2SeedRegistryError(ValueError):
+    """Internal typed stop carrying private seed evidence without raw text."""
+
+    def __init__(
+        self,
+        failure_code: str,
+        *,
+        evidence_kind: str,
+        private_evidence: Mapping[str, Any],
+    ) -> None:
+        super().__init__("G2 preboundary seed registry rejected a consumption")
+        self.failure_code = failure_code
+        self.evidence_kind = evidence_kind
+        self.private_evidence = _clone_seed_registry_value(private_evidence)
+
+
+class G2PreboundarySeedUseRegistry:
+    """Caller-owned private registry for explicit seeds consumed through P4-E.
+
+    The registry is deliberately not global. It validates each original Python
+    seed before conversion, binds the writable gate to the retained AST source
+    manifest, and freezes after the one P4 offset seed is consumed.
+    """
+
+    def __init__(
+        self,
+        *,
+        source_coverage_artifact_sha256: str,
+        source_site_contracts: Mapping[str, Mapping[str, Any]],
+    ) -> None:
+        if not _is_sha256_hex(source_coverage_artifact_sha256):
+            raise ValueError("source coverage artifact SHA-256 is invalid")
+        if not isinstance(source_site_contracts, Mapping) or not source_site_contracts:
+            raise ValueError("source site contracts must be a non-empty mapping")
+        contracts: dict[str, Mapping[str, Any]] = {}
+        required = {
+            "site_id",
+            "source_path",
+            "owner_qualname",
+            "site_kind",
+            "terminal_consumer",
+            "registry_key_template",
+            "upstream_gate_site_id",
+        }
+        for raw_site_id, raw_contract in source_site_contracts.items():
+            site_id = _strict_ascii_identifier(raw_site_id, name="site contract ID")
+            if not isinstance(raw_contract, Mapping) or set(raw_contract) != required:
+                raise ValueError("source site contract has an invalid schema")
+            contract = dict(raw_contract)
+            if contract["site_id"] != site_id:
+                raise ValueError("source site contract ID is inconsistent")
+            for name in ("source_path", "owner_qualname", "site_kind"):
+                _strict_ascii_identifier(contract[name], name=name)
+            if contract["site_kind"] not in {
+                "derivation",
+                "terminal_consumption_gate",
+                "read_only_pass_through",
+            }:
+                raise ValueError("source site kind is invalid")
+            consumer = contract["terminal_consumer"]
+            if consumer is not None and consumer not in _G2_SEED_TERMINAL_CONSUMERS:
+                raise ValueError("source site terminal consumer is invalid")
+            template = contract["registry_key_template"]
+            if template is not None:
+                _strict_ascii_identifier(template, name="registry key template")
+            upstream = contract["upstream_gate_site_id"]
+            if upstream is not None:
+                _strict_ascii_identifier(upstream, name="upstream gate site ID")
+            if contract["site_kind"] == "derivation" and any(
+                item is not None for item in (consumer, template, upstream)
+            ):
+                raise ValueError("derivation source contract has invalid fields")
+            if contract["site_kind"] == "terminal_consumption_gate" and (
+                consumer is None or template is None or upstream is not None
+            ):
+                raise ValueError("terminal gate source contract has invalid fields")
+            if contract["site_kind"] == "read_only_pass_through" and (
+                consumer is not None or template is not None or upstream is None
+            ):
+                raise ValueError("pass-through source contract has invalid fields")
+            contracts[site_id] = contract
+        for contract in contracts.values():
+            upstream = contract["upstream_gate_site_id"]
+            if upstream is not None and (
+                upstream not in contracts
+                or contracts[upstream]["site_kind"] != "terminal_consumption_gate"
+            ):
+                raise ValueError("pass-through upstream gate is not declared")
+        self._source_coverage_artifact_sha256 = source_coverage_artifact_sha256
+        self._source_site_contracts = contracts
+        self._entries: dict[str, Mapping[str, Any]] = {}
+        self._numeric_seeds: dict[tuple[int, int], str] = {}
+        self._p4_entry_key: str | None = None
+        self._p4_distinct: bool | None = None
+        self._p4_seed_consumed = False
+        self._post_boundary_registry_call_count = 0
+        self._private_evidence: Mapping[str, Any] | None = None
+        self._failure_frozen = False
+
+    @property
+    def source_coverage_artifact_sha256(self) -> str:
+        return self._source_coverage_artifact_sha256
+
+    @property
+    def p4_seed_consumed(self) -> bool:
+        return self._p4_seed_consumed
+
+    @property
+    def post_boundary_registry_call_count(self) -> int:
+        return self._post_boundary_registry_call_count
+
+    @property
+    def private_evidence(self) -> Mapping[str, Any] | None:
+        return (
+            None
+            if self._private_evidence is None
+            else _clone_seed_registry_value(self._private_evidence)
+        )
+
+    def _ordered_entries(self) -> tuple[Mapping[str, Any], ...]:
+        non_p4 = sorted(
+            (entry for entry in self._entries.values() if entry["is_p4"] is False),
+            key=lambda entry: entry["key"],
+        )
+        p4 = tuple(
+            entry for entry in self._entries.values() if entry["is_p4"] is True
+        )
+        return tuple(
+            _clone_seed_registry_value(entry) for entry in tuple(non_p4) + p4
+        )
+
+    def validated_private_evidence(self, value: Any) -> Mapping[str, Any] | None:
+        """Bind signed private evidence back to this registry's source contracts."""
+
+        payload = _validated_g2_seed_registry_evidence(value)
+        if payload is None or payload["source_coverage_artifact_sha256"] != (
+            self._source_coverage_artifact_sha256
+        ):
+            return None
+        frozen = _validated_g2_seed_registry_evidence(self._private_evidence)
+        if frozen is None or payload != frozen:
+            return None
+        for entry in payload["entries"]:
+            try:
+                semantic_contract = _G2_SEED_GATE_SEMANTIC_CONTRACTS[
+                    entry["terminal_gate_site_id"]
+                ]
+                derivation_contract = self._source_site_contracts[
+                    entry["derivation_site_id"]
+                ]
+                gate_contract = self._source_site_contracts[
+                    entry["terminal_gate_site_id"]
+                ]
+                declared_hops = {
+                    site_id
+                    for site_id, contract in self._source_site_contracts.items()
+                    if contract["site_kind"] == "read_only_pass_through"
+                    and contract["upstream_gate_site_id"]
+                    == entry["terminal_gate_site_id"]
+                }
+                if (
+                    derivation_contract["site_kind"] != "derivation"
+                    or derivation_contract["owner_qualname"]
+                    != semantic_contract["derivation_owner_qualname"]
+                    or not _registry_derivation_matches_gate(
+                        entry["derivation_site_id"],
+                        entry["terminal_gate_site_id"],
+                    )
+                    or not str(derivation_contract["source_path"]).endswith(
+                        entry["owner_file"]
+                    )
+                    or gate_contract["site_kind"]
+                    != "terminal_consumption_gate"
+                    or not str(gate_contract["source_path"]).endswith(
+                        entry["owner_file"]
+                    )
+                    or gate_contract["owner_qualname"]
+                    != entry["owner_qualname"]
+                    or gate_contract["terminal_consumer"]
+                    != entry["terminal_consumer"]
+                    or not _registry_key_matches_template(
+                        entry["key"],
+                        gate_contract["registry_key_template"],
+                    )
+                    or tuple(entry["interface_hop_site_ids"])
+                    != tuple(semantic_contract["interface_hop_site_ids"])
+                    or declared_hops
+                    != set(semantic_contract["interface_hop_site_ids"])
+                    or not _g2_registry_entry_matches_semantic_contract(entry)
+                ):
+                    return None
+            except (KeyError, TypeError, ValueError):
+                return None
+        return _clone_seed_registry_value(payload)
+
+    def _complete_payload(self) -> Mapping[str, Any]:
+        if not self._p4_seed_consumed or self._p4_entry_key is None:
+            raise ValueError("complete seed registry requires a consumed P4 seed")
+        unsigned = {
+            "schema": _G2_PREBOUNDARY_SEED_REGISTRY_SCHEMA,
+            "source_coverage_artifact_sha256": (
+                self._source_coverage_artifact_sha256
+            ),
+            "entries": self._ordered_entries(),
+            "preboundary_consumed_seed_count": sum(
+                entry["is_p4"] is False for entry in self._entries.values()
+            ),
+            "p4_entry_key": self._p4_entry_key,
+            "p4_distinct_from_preboundary_seeds": self._p4_distinct,
+            "post_boundary_registry_call_count": (
+                self._post_boundary_registry_call_count
+            ),
+        }
+        return {
+            **unsigned,
+            "seed_use_registry_signature": _canonical_ascii_sha256(unsigned),
+        }
+
+    def _failure_snapshot(
+        self,
+        *,
+        failure_code: str,
+        failure_stage: str,
+        attempted_p4_seed_signature: str | None = None,
+        p4_distinct_from_preboundary_seeds: bool | None = None,
+    ) -> Mapping[str, Any]:
+        if failure_stage not in {"preboundary", "p4_entered_pre_seed"}:
+            raise ValueError("seed registry failure stage is invalid")
+        unsigned = {
+            "schema": _G2_PREBOUNDARY_SEED_REGISTRY_FAILURE_SCHEMA,
+            "source_coverage_artifact_sha256": (
+                self._source_coverage_artifact_sha256
+            ),
+            "entries": self._ordered_entries(),
+            "preboundary_consumed_seed_count": sum(
+                entry["is_p4"] is False for entry in self._entries.values()
+            ),
+            "p4_entry_key": None,
+            "p4_distinct_from_preboundary_seeds": (
+                p4_distinct_from_preboundary_seeds
+            ),
+            "p4_seed_consumed": False,
+            "post_boundary_registry_call_count": 0,
+            "failure_stage": failure_stage,
+            "failure_code": failure_code,
+            "attempted_p4_seed_signature": attempted_p4_seed_signature,
+        }
+        return {
+            **unsigned,
+            "seed_use_registry_snapshot_signature": _canonical_ascii_sha256(unsigned),
+        }
+
+    def _raise_failure(
+        self,
+        failure_code: str,
+        *,
+        failure_stage: str,
+        attempted_p4_seed_signature: str | None = None,
+        p4_distinct_from_preboundary_seeds: bool | None = None,
+    ) -> None:
+        if self._failure_frozen:
+            raise ValueError("seed registry failure snapshot is already frozen")
+        snapshot = self._failure_snapshot(
+            failure_code=failure_code,
+            failure_stage=failure_stage,
+            attempted_p4_seed_signature=attempted_p4_seed_signature,
+            p4_distinct_from_preboundary_seeds=p4_distinct_from_preboundary_seeds,
+        )
+        self._private_evidence = snapshot
+        self._failure_frozen = True
+        raise _G2SeedRegistryError(
+            failure_code,
+            evidence_kind="failure_snapshot",
+            private_evidence=snapshot,
+        )
+
+    def failure_snapshot(
+        self,
+        *,
+        failure_code: str,
+        failure_stage: str = "preboundary",
+    ) -> Mapping[str, Any]:
+        if failure_code not in _G2_SHARED_FAILURE_CODES:
+            raise ValueError("unsupported shared seed-registry failure code")
+        if self._failure_frozen:
+            raise ValueError("seed registry failure snapshot is already frozen")
+        snapshot = self._failure_snapshot(
+            failure_code=failure_code,
+            failure_stage=failure_stage,
+        )
+        self._private_evidence = snapshot
+        self._failure_frozen = True
+        return _clone_seed_registry_value(snapshot)
+
+    def consume(
+        self,
+        *,
+        derivation_site_id: str,
+        terminal_gate_site_id: str,
+        key: str,
+        owner_file: str,
+        owner_qualname: str,
+        terminal_consumer: str,
+        derivation: Mapping[str, Any],
+        indices: Sequence[Mapping[str, Any]],
+        seed: Any,
+        interface_hop_site_ids: Sequence[str] = (),
+        is_p4: bool = False,
+    ) -> tuple[int, int]:
+        if type(is_p4) is not bool:
+            self._raise_failure(
+                "seed_registry_entry_invalid",
+                failure_stage="preboundary",
+            )
+        if self._failure_frozen:
+            raise ValueError("seed registry is frozen after failure")
+        if self._p4_seed_consumed:
+            if self._post_boundary_registry_call_count != 0:
+                raise ValueError("post-boundary registry rejection already recorded")
+            self._post_boundary_registry_call_count = 1
+            complete = self._complete_payload()
+            self._private_evidence = complete
+            raise _G2SeedRegistryError(
+                "seed_registry_postboundary_call",
+                evidence_kind="complete",
+                private_evidence=complete,
+            )
+
+        failure_stage = "p4_entered_pre_seed" if is_p4 else "preboundary"
+        try:
+            normalized_seed = _strict_builtin_seed(seed, name="registry seed")
+        except ValueError:
+            self._raise_failure(
+                "seed_registry_entry_invalid",
+                failure_stage=failure_stage,
+            )
+            raise AssertionError("unreachable")
+        attempted_signature = (
+            _stable_hash(
+                "bayesfilter.hmc_g2_attempted_p4_seed.v1",
+                {"seed": normalized_seed},
+            )
+            if is_p4
+            else None
+        )
+        try:
+            derivation_site_id = _strict_ascii_identifier(
+                derivation_site_id,
+                name="derivation site ID",
+            )
+            terminal_gate_site_id = _strict_ascii_identifier(
+                terminal_gate_site_id,
+                name="terminal gate site ID",
+            )
+            key = _strict_ascii_identifier(key, name="registry key")
+            owner_file = _strict_ascii_identifier(owner_file, name="owner file")
+            owner_qualname = _strict_ascii_identifier(
+                owner_qualname,
+                name="owner qualname",
+            )
+            if owner_file not in {"hmc_warmup.py", "hmc_kernel_tuning.py"}:
+                raise ValueError("registry owner file is invalid")
+            if terminal_consumer not in _G2_SEED_TERMINAL_CONSUMERS:
+                raise ValueError("terminal consumer is invalid")
+            derivation_contract = self._source_site_contracts[derivation_site_id]
+            gate_contract = self._source_site_contracts[terminal_gate_site_id]
+            if derivation_contract["site_kind"] != "derivation":
+                raise ValueError("derivation source contract is invalid")
+            if not _registry_derivation_matches_gate(
+                derivation_site_id,
+                terminal_gate_site_id,
+            ):
+                raise ValueError("derivation and terminal gate do not match")
+            if not str(derivation_contract["source_path"]).endswith(owner_file):
+                raise ValueError("derivation source contract owner file is invalid")
+            if gate_contract["site_kind"] != "terminal_consumption_gate":
+                raise ValueError("terminal gate source contract is invalid")
+            if (
+                not str(gate_contract["source_path"]).endswith(owner_file)
+                or gate_contract["owner_qualname"] != owner_qualname
+                or gate_contract["terminal_consumer"] != terminal_consumer
+                or not _registry_key_matches_template(
+                    key,
+                    gate_contract["registry_key_template"],
+                )
+            ):
+                raise ValueError("terminal gate does not match source contract")
+            hops = tuple(
+                _strict_ascii_identifier(item, name="interface hop site ID")
+                for item in interface_hop_site_ids
+            )
+            if len(set(hops)) != len(hops):
+                raise ValueError("interface hop IDs must be duplicate-free")
+            for hop in hops:
+                contract = self._source_site_contracts[hop]
+                if (
+                    contract["site_kind"] != "read_only_pass_through"
+                    or contract["upstream_gate_site_id"] != terminal_gate_site_id
+                ):
+                    raise ValueError("interface hop source contract is invalid")
+            semantic_contract = _G2_SEED_GATE_SEMANTIC_CONTRACTS[
+                terminal_gate_site_id
+            ]
+            declared_hops = {
+                site_id
+                for site_id, contract in self._source_site_contracts.items()
+                if contract["site_kind"] == "read_only_pass_through"
+                and contract["upstream_gate_site_id"] == terminal_gate_site_id
+            }
+            if (
+                derivation_contract["owner_qualname"]
+                != semantic_contract["derivation_owner_qualname"]
+                or hops != tuple(semantic_contract["interface_hop_site_ids"])
+                or declared_hops != set(semantic_contract["interface_hop_site_ids"])
+            ):
+                raise ValueError("interface hop source coverage is incomplete")
+            if not isinstance(derivation, Mapping):
+                raise ValueError("seed derivation must be a mapping")
+            derivation_payload = dict(derivation)
+            kind = derivation_payload.get("kind")
+            if kind not in _G2_SEED_DERIVATION_CHILDREN or set(
+                derivation_payload
+            ) != _G2_SEED_DERIVATION_CHILDREN[kind]:
+                raise ValueError("seed derivation schema is invalid")
+            for name, value in derivation_payload.items():
+                if name == "kind":
+                    continue
+                if name in {"stage_index", "round_index", "index", "lane"}:
+                    if type(value) is not int:
+                        raise ValueError("seed derivation index must be a strict integer")
+                else:
+                    _strict_ascii_identifier(value, name=f"derivation {name}")
+            index_payload: list[Mapping[str, int | str]] = []
+            for item in indices:
+                if not isinstance(item, Mapping) or set(item) != {"name", "value"}:
+                    raise ValueError("seed indices schema is invalid")
+                name = _strict_ascii_identifier(item["name"], name="seed index name")
+                value = item["value"]
+                if type(value) is not int:
+                    raise ValueError("seed index value must be a strict integer")
+                index_payload.append({"name": name, "value": value})
+            candidate_entry = {
+                "derivation_site_id": derivation_site_id,
+                "terminal_gate_site_id": terminal_gate_site_id,
+                "key": key,
+                "owner_file": owner_file,
+                "owner_qualname": owner_qualname,
+                "terminal_consumer": terminal_consumer,
+                "derivation": derivation_payload,
+                "indices": tuple(index_payload),
+                "seed": normalized_seed,
+                "interface_hop_site_ids": hops,
+                "consumption_count": 1,
+                "is_p4": is_p4,
+            }
+            if not _g2_registry_entry_matches_semantic_contract(candidate_entry):
+                raise ValueError("seed entry semantic contract is invalid")
+        except (KeyError, TypeError, ValueError):
+            self._raise_failure(
+                "seed_registry_source_coverage_invalid",
+                failure_stage=failure_stage,
+            )
+            raise AssertionError("unreachable")
+
+        if key in self._entries:
+            self._raise_failure(
+                "seed_registry_entry_invalid",
+                failure_stage=failure_stage,
+            )
+        if normalized_seed in self._numeric_seeds:
+            self._raise_failure(
+                "seed_registry_p4_collision"
+                if is_p4
+                else "seed_registry_preboundary_duplicate",
+                failure_stage=failure_stage,
+                attempted_p4_seed_signature=attempted_signature,
+                p4_distinct_from_preboundary_seeds=False if is_p4 else None,
+            )
+        if is_p4 and any(entry["is_p4"] for entry in self._entries.values()):
+            self._raise_failure(
+                "seed_registry_entry_invalid",
+                failure_stage=failure_stage,
+            )
+
+        entry = candidate_entry
+        self._entries[key] = entry
+        self._numeric_seeds[normalized_seed] = key
+        if is_p4:
+            self._p4_entry_key = key
+            self._p4_distinct = True
+            self._p4_seed_consumed = True
+            self._private_evidence = self._complete_payload()
+        return normalized_seed
+
+    def complete_payload(self) -> Mapping[str, Any]:
+        payload = self._complete_payload()
+        self._private_evidence = payload
+        return _clone_seed_registry_value(payload)
+
+
+@dataclass
+class _G2P4BoundaryActionTracker:
+    """Caller-owned monotonic P4 action facts independent of exception carriers."""
+
+    p4_boundary_stage: str = "not_entered"
+    p4_builder_entered: bool = False
+    p4_seed_consumed: bool = False
+    p4_rng_batch_invoked: bool = False
+    target_health_callback_invocation_count: int = 0
+    target_health_callback_batch_row_count: int | None = None
+    target_health_callback_batch_dimension: int | None = None
+
+    def mark_builder_entered(self) -> None:
+        if self.p4_boundary_stage != "not_entered":
+            raise ValueError("P4 builder entry is not monotonic")
+        self.p4_boundary_stage = "entered_pre_seed"
+        self.p4_builder_entered = True
+
+    def mark_seed_consumed(self) -> None:
+        if self.p4_boundary_stage != "entered_pre_seed":
+            raise ValueError("P4 seed consumption is not monotonic")
+        self.p4_boundary_stage = "seed_consumed_pre_rng"
+        self.p4_seed_consumed = True
+
+    def mark_rng_invoked(self) -> None:
+        if self.p4_boundary_stage != "seed_consumed_pre_rng":
+            raise ValueError("P4 RNG entry is not monotonic")
+        self.p4_boundary_stage = "rng_invoked"
+        self.p4_rng_batch_invoked = True
+
+    def mark_candidate_terminal(self) -> None:
+        if self.p4_boundary_stage != "rng_invoked":
+            raise ValueError("P4 candidate terminal is not monotonic")
+        self.p4_boundary_stage = "candidate_terminal"
+
+    def record_target_callback_entry(
+        self,
+        *,
+        invocation_count: int,
+        row_count: int,
+        dimension: int,
+    ) -> None:
+        count = _strict_integer(
+            invocation_count,
+            name="target callback invocation count",
+            minimum=1,
+        )
+        rows = _strict_integer(row_count, name="target callback row count", minimum=0)
+        width = _strict_integer(
+            dimension,
+            name="target callback dimension",
+            minimum=0,
+        )
+        if count > 2 or count != self.target_health_callback_invocation_count + 1:
+            raise ValueError("target callback entry is not monotonic")
+        self.target_health_callback_invocation_count = count
+        self.target_health_callback_batch_row_count = rows
+        self.target_health_callback_batch_dimension = width
+
+    def scalar_payload(self) -> Mapping[str, Any]:
+        return {
+            "p4_boundary_stage": self.p4_boundary_stage,
+            "p4_builder_entered": self.p4_builder_entered,
+            "p4_seed_consumed": self.p4_seed_consumed,
+            "p4_rng_batch_invoked": self.p4_rng_batch_invoked,
+            "target_health_callback_invocation_count": (
+                self.target_health_callback_invocation_count
+            ),
+            "target_health_callback_batch_row_count": (
+                self.target_health_callback_batch_row_count
+            ),
+            "target_health_callback_batch_dimension": (
+                self.target_health_callback_batch_dimension
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class _G2PreboundarySharedInvalidity:
+    """Scalar carrier for failures before final warmup/P4 lineage exists."""
+
+    stage: str
+    source_coverage_artifact_sha256: str
+    seed_registry_schema: str
+    seed_registry_evidence_signature: str
+    registered_entry_count: int
+    consumed_entry_count: int
+    failure_code: str = "unexpected_builder_exception"
+    schema: str = _G2_PREBOUNDARY_SHARED_INVALIDITY_SCHEMA
+    outcome: str = "shared_implementation_invalid"
+    seed_registry_evidence_kind: str = "failure_snapshot"
+    p4_boundary_stage: str = "not_entered"
+    p4_builder_entered: bool = False
+    p4_seed_consumed: bool = False
+    p4_rng_batch_invoked: bool = False
+    final_lineage_available: bool = False
+
+    def __post_init__(self) -> None:
+        if self.schema != _G2_PREBOUNDARY_SHARED_INVALIDITY_SCHEMA:
+            raise ValueError("preboundary shared-invalidity schema is invalid")
+        if self.outcome != "shared_implementation_invalid":
+            raise ValueError("preboundary shared-invalidity outcome is invalid")
+        if self.failure_code not in _G2_SHARED_FAILURE_CODES:
+            raise ValueError("preboundary shared-invalidity code is invalid")
+        stage = _strict_ascii_identifier(
+            self.stage,
+            name="preboundary failure stage",
+        )
+        if stage not in _G2_PREBOUNDARY_SHARED_INVALIDITY_STAGES:
+            raise ValueError("preboundary shared-invalidity stage is invalid")
+        if not _is_sha256_hex(self.source_coverage_artifact_sha256):
+            raise ValueError("preboundary coverage digest is invalid")
+        if self.seed_registry_evidence_kind != "failure_snapshot":
+            raise ValueError("preboundary registry evidence kind is invalid")
+        if self.seed_registry_schema != _G2_PREBOUNDARY_SEED_REGISTRY_FAILURE_SCHEMA:
+            raise ValueError("preboundary registry schema is invalid")
+        if not _is_sha256_hex(self.seed_registry_evidence_signature):
+            raise ValueError("preboundary registry signature is invalid")
+        registered = _strict_integer(
+            self.registered_entry_count,
+            name="registered_entry_count",
+            minimum=0,
+        )
+        consumed = _strict_integer(
+            self.consumed_entry_count,
+            name="consumed_entry_count",
+            minimum=0,
+        )
+        if registered != consumed:
+            raise ValueError("preboundary registry counts must agree")
+        if (
+            self.p4_boundary_stage != "not_entered"
+            or self.p4_builder_entered
+            or self.p4_seed_consumed
+            or self.p4_rng_batch_invoked
+            or self.final_lineage_available
+        ):
+            raise ValueError("preboundary carrier cannot fabricate P4 lineage")
+        object.__setattr__(self, "registered_entry_count", registered)
+        object.__setattr__(self, "consumed_entry_count", consumed)
+        object.__setattr__(self, "stage", stage)
+
+    def public_payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": self.schema,
+            "outcome": self.outcome,
+            "failure_code": self.failure_code,
+            "stage": self.stage,
+            "source_coverage_artifact_sha256": (
+                self.source_coverage_artifact_sha256
+            ),
+            "seed_registry_evidence_kind": self.seed_registry_evidence_kind,
+            "seed_registry_schema": self.seed_registry_schema,
+            "seed_registry_evidence_signature": (
+                self.seed_registry_evidence_signature
+            ),
+            "registered_entry_count": self.registered_entry_count,
+            "consumed_entry_count": self.consumed_entry_count,
+            "p4_boundary_stage": self.p4_boundary_stage,
+            "p4_builder_entered": self.p4_builder_entered,
+            "p4_seed_consumed": self.p4_seed_consumed,
+            "p4_rng_batch_invoked": self.p4_rng_batch_invoked,
+            "final_lineage_available": self.final_lineage_available,
+        }
+
+
+def g2_preboundary_shared_invalidity_exception(
+    registry: G2PreboundarySeedUseRegistry,
+    *,
+    stage: str,
+    cause: BaseException | None = None,
+    failure_code: str | None = None,
+) -> ValueError:
+    """Return a redacted exception carrying exact early private seed evidence."""
+
+    if not isinstance(registry, G2PreboundarySeedUseRegistry):
+        raise TypeError("registry must be G2PreboundarySeedUseRegistry")
+    if isinstance(cause, _G2SeedRegistryError):
+        selected_failure_code = cause.failure_code
+        private = cause.private_evidence
+        evidence_kind = cause.evidence_kind
+    else:
+        if failure_code is not None and type(failure_code) is not str:
+            raise ValueError("shared invalidity failure code must be a string")
+        selected_failure_code = (
+            "unexpected_builder_exception"
+            if failure_code is None
+            else failure_code
+        )
+        private = registry.failure_snapshot(failure_code=selected_failure_code)
+        evidence_kind = "failure_snapshot"
+    if evidence_kind != "failure_snapshot":
+        raise ValueError("early shared invalidity requires failure-snapshot evidence")
+    private = registry.validated_private_evidence(private)
+    if private is None:
+        raise ValueError("early shared invalidity registry evidence is invalid")
+    entries = tuple(private["entries"])
+    carrier = _G2PreboundarySharedInvalidity(
+        stage=stage,
+        source_coverage_artifact_sha256=(
+            registry.source_coverage_artifact_sha256
+        ),
+        seed_registry_schema=private["schema"],
+        seed_registry_evidence_signature=private[
+            "seed_use_registry_snapshot_signature"
+        ],
+        registered_entry_count=len(entries),
+        consumed_entry_count=sum(entry["consumption_count"] for entry in entries),
+        failure_code=selected_failure_code,
+    )
+    error = ValueError("G2 preboundary shared invalidity")
+    setattr(error, _G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE, carrier)
+    setattr(
+        error,
+        _G2_PREBOUNDARY_SEED_PRIVATE_EVIDENCE_ATTRIBUTE,
+        _clone_seed_registry_value(private),
+    )
+    return error
+
+
+def g2_preboundary_shared_invalidity_payload_from_exception(
+    exc: BaseException,
+) -> Mapping[str, Any] | None:
+    try:
+        candidate = getattr(exc, _G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE, None)
+    except Exception:  # noqa: BLE001 - malformed carriers are unavailable evidence.
+        return None
+    if type(candidate) is not _G2PreboundarySharedInvalidity:
+        return None
+    try:
+        return candidate.public_payload()
+    except Exception:  # noqa: BLE001 - validation remains fail-closed.
+        return None
+
+
+def g2_seed_private_evidence_from_exception(
+    exc: BaseException,
+) -> Mapping[str, Any] | None:
+    """Extract canonical private registry evidence from a validated carrier."""
+
+    try:
+        private = getattr(
+            exc,
+            _G2_PREBOUNDARY_SEED_PRIVATE_EVIDENCE_ATTRIBUTE,
+            None,
+        )
+    except Exception:  # noqa: BLE001 - malformed attributes are unavailable.
+        return None
+    return _validated_g2_seed_registry_evidence(private)
 
 
 def _seed(root: tuple[int, int], index: int, lane: int = 0) -> tuple[int, int]:
@@ -510,6 +1975,23 @@ def _rejected_metric_candidate(
     dual-averaging state may continue without exposing exception text.
     """
 
+    # P4/G2 carriers describe shared invalidity, not a rejectable metric
+    # proposal. Preserve even malformed carrier attributes so the outer
+    # carrier-first classifier can fail closed without losing lineage.
+    try:
+        exception_attributes = vars(error)
+    except TypeError:
+        exception_attributes = {}
+    if any(
+        name in exception_attributes
+        for name in (
+            _G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE,
+            _G2_PREBOUNDARY_SEED_PRIVATE_EVIDENCE_ATTRIBUTE,
+            _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
+        )
+    ):
+        raise error
+
     if not decision.update_applied:
         raise ValueError("only an adequate metric proposal can be rejected")
     rejection_stage = str(stage)
@@ -773,6 +2255,15 @@ def _base_adapter_signature(adapter: Any) -> str:
     return value
 
 
+def _phase7_engineering_probe_target_signature(adapter: Any) -> str:
+    """Bind the P4-E target identity to a fixed-width public digest."""
+
+    return _stable_hash(
+        "bayesfilter.phase7_engineering_probe_target.v1",
+        {"base_adapter_signature": _base_adapter_signature(adapter)},
+    )
+
+
 @dataclass(frozen=True)
 class ReasonableEpsilonAttempt:
     step_size: float
@@ -948,6 +2439,9 @@ def find_reasonable_epsilon(
     momentum_probe_count: int = 1,
     target_status_trace_policy: str = "none",
     jit_compile: bool = False,
+    _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
+    _g2_seed_key_prefix: str | None = None,
+    _g2_seed_base_key: str | None = None,
 ) -> ReasonableEpsilonResult:
     """Bracket epsilon using the fixed trajectory that will consume it."""
 
@@ -966,6 +2460,13 @@ def find_reasonable_epsilon(
     ):
         raise ValueError("reasonable-epsilon acceptance bracket must lie inside (0, 1)")
     normalized_seed = _strict_seed(seed, name="seed")
+    if _g2_seed_use_registry is not None:
+        if not isinstance(_g2_seed_use_registry, G2PreboundarySeedUseRegistry):
+            raise TypeError("_g2_seed_use_registry must be a G2 seed registry")
+        _strict_ascii_identifier(_g2_seed_key_prefix, name="G2 seed key prefix")
+        _strict_ascii_identifier(_g2_seed_base_key, name="G2 seed base key")
+    elif _g2_seed_key_prefix is not None or _g2_seed_base_key is not None:
+        raise ValueError("G2 seed labels require a G2 seed registry")
     leapfrog_steps = _strict_integer(
         num_leapfrog_steps,
         name="num_leapfrog_steps",
@@ -1003,7 +2504,44 @@ def find_reasonable_epsilon(
     attempts: list[ReasonableEpsilonAttempt] = []
     high_acceptance_step: float | None = None
     low_acceptance_step: float | None = None
-    proposal_seeds = tuple(_seed(normalized_seed, index) for index in range(probe_count))
+    proposal_seed_list: list[tuple[int, int]] = []
+    for proposal_index in range(probe_count):
+        proposal_seed = _seed(normalized_seed, proposal_index)
+        if _g2_seed_use_registry is not None:
+            try:
+                proposal_seed = _g2_seed_use_registry.consume(
+                    derivation_site_id=(
+                        _G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID
+                    ),
+                    terminal_gate_site_id=(
+                        _G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID
+                    ),
+                    key=f"{_g2_seed_key_prefix}/proposal/{proposal_index:02d}",
+                    owner_file="hmc_warmup.py",
+                    owner_qualname="find_reasonable_epsilon",
+                    terminal_consumer="tensorflow_stateless_rng",
+                    derivation={
+                        "kind": "warmup_index_lane",
+                        "base_key": _g2_seed_base_key,
+                        "index": proposal_index,
+                        "lane": 0,
+                    },
+                    indices=(
+                        {"name": "proposal_index", "value": proposal_index},
+                    ),
+                    seed=proposal_seed,
+                    interface_hop_site_ids=(
+                        _G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS
+                    ),
+                )
+            except _G2SeedRegistryError as exc:
+                raise g2_preboundary_shared_invalidity_exception(
+                    _g2_seed_use_registry,
+                    stage=_G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID,
+                    cause=exc,
+                ) from None
+        proposal_seed_list.append(proposal_seed)
+    proposal_seeds = tuple(proposal_seed_list)
 
     def is_declared_target_domain_failure(error: BaseException) -> bool:
         classifier = getattr(adapter, "classify_target_exception", None)
@@ -1971,6 +3509,1413 @@ def start_bank_qualification_payload_from_exception(
 
 
 @dataclass(frozen=True)
+class Phase7EngineeringProbeBankConfig:
+    """Explicit non-promoting configuration for four Phase 7 probes.
+
+    The covariance multiplier deliberately has no default. It is a
+    target-specific hypothesis, not a BayesFilter start-policy default.
+    """
+
+    chain_count: int
+    covariance_multiplier: float
+    root_seed: tuple[int, int]
+
+    def __post_init__(self) -> None:
+        count = _strict_integer(self.chain_count, name="chain_count", minimum=1)
+        if count != 4:
+            raise ValueError("Phase 7 engineering probe bank requires four chains")
+        if isinstance(self.covariance_multiplier, (bool, np.bool_)):
+            raise ValueError("covariance_multiplier must be positive and finite")
+        multiplier = float(self.covariance_multiplier)
+        if not math.isfinite(multiplier) or multiplier <= 0.0:
+            raise ValueError("covariance_multiplier must be positive and finite")
+        root_seed = _strict_seed(self.root_seed, name="root_seed")
+        object.__setattr__(self, "chain_count", count)
+        object.__setattr__(self, "covariance_multiplier", multiplier)
+        object.__setattr__(self, "root_seed", root_seed)
+
+    @property
+    def derived_seed(self) -> tuple[int, int]:
+        material = json.dumps(
+            {
+                "domain": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+                "root_seed": self.root_seed,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+        digest = hashlib.sha256(material).digest()
+        seed = tuple(
+            int.from_bytes(digest[offset : offset + 4], "big") & 0x7FFFFFFF
+            for offset in (0, 4)
+        )
+        if seed == self.root_seed:
+            seed = (seed[0], seed[1] ^ 1)
+        return seed
+
+    @property
+    def config_signature(self) -> str:
+        return _stable_hash(
+            "bayesfilter.phase7_engineering_probe_bank_config.v1",
+            {
+                "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+                "seed_domain": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+                "chain_count": self.chain_count,
+                "covariance_multiplier": self.covariance_multiplier,
+                "root_seed": self.root_seed,
+            },
+        )
+
+    @property
+    def derived_seed_signature(self) -> str:
+        return _stable_hash(
+            "bayesfilter.phase7_engineering_probe_seed.v1",
+            {
+                "domain": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+                "derived_seed": self.derived_seed,
+            },
+        )
+
+    def public_payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.phase7_engineering_probe_bank_config.v1",
+            "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+            "seed_domain": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+            "chain_count": self.chain_count,
+            "config_signature": self.config_signature,
+            "derived_seed_signature": self.derived_seed_signature,
+            "covariance_multiplier_exposed": False,
+            "seed_values_exposed": False,
+            "raw_values_exposed": False,
+            "paths_exposed": False,
+        }
+
+
+@dataclass(frozen=True)
+class _Phase7EngineeringProbeBankQualification:
+    """Closed scalar P4-E v2 qualification and failure-lineage carrier."""
+
+    config_signature: str
+    position_covariance_estimate_signature: str
+    covariance_signature: str
+    estimate_covariance_signature_equal: bool
+    transform_signature: str
+    p4_transform_signature: str
+    transform_p4_signature_equal: bool
+    metric_signature: str
+    adaptation_generation: int
+    applied_metric_update_count: int
+    generation_update_count_equal: bool
+    target_signature: str
+    dimension: int
+    candidate_count: int
+    derived_seed_signature: str
+    source_coverage_artifact_sha256: str
+    seed_registry_evidence_kind: str
+    seed_registry_schema: str
+    seed_registry_evidence_signature: str
+    seed_preboundary_consumed_count: int
+    p4_distinct_from_preboundary_seeds: bool | None
+    p4_seed_consumed: bool
+    post_boundary_registry_call_count: int
+    target_health_callback_invocation_count: int
+    target_health_callback_batch_row_count: int | None
+    target_health_callback_batch_dimension: int | None
+    content_signature: str | None
+    endpoint_round_trip_passed: bool
+    bank_round_trip_passed: bool | None
+    pairwise_distinct: bool | None
+    candidate_data_invalidity_present: bool | None
+    target_value_finite_count: int | None
+    target_score_finite_count: int | None
+    target_status_failure_count: int | None
+    evaluated_candidate_count: int | None
+    outcome: str
+    failure_code: str
+    p4_boundary_stage: str
+    p4_builder_entered: bool
+    p4_rng_batch_invoked: bool
+
+    def __post_init__(self) -> None:
+        digest_fields = (
+            "config_signature",
+            "position_covariance_estimate_signature",
+            "covariance_signature",
+            "transform_signature",
+            "p4_transform_signature",
+            "metric_signature",
+            "target_signature",
+            "derived_seed_signature",
+            "source_coverage_artifact_sha256",
+            "seed_registry_evidence_signature",
+        )
+        for name in digest_fields:
+            if not _is_sha256_hex(getattr(self, name)):
+                raise ValueError(f"{name} must be a SHA-256 digest")
+
+        def strict_optional_count(value: Any, *, name: str) -> int | None:
+            if value is None:
+                return None
+            return _strict_integer(value, name=name, minimum=0)
+
+        dimension = _strict_integer(self.dimension, name="dimension", minimum=1)
+        candidate_count = _strict_integer(
+            self.candidate_count,
+            name="candidate_count",
+            minimum=0,
+        )
+        adaptation_generation = _strict_integer(
+            self.adaptation_generation,
+            name="adaptation_generation",
+            minimum=0,
+        )
+        applied_updates = _strict_integer(
+            self.applied_metric_update_count,
+            name="applied_metric_update_count",
+            minimum=0,
+        )
+        preboundary_count = _strict_integer(
+            self.seed_preboundary_consumed_count,
+            name="seed_preboundary_consumed_count",
+            minimum=0,
+        )
+        post_boundary_count = _strict_integer(
+            self.post_boundary_registry_call_count,
+            name="post_boundary_registry_call_count",
+            minimum=0,
+        )
+        callback_count = _strict_integer(
+            self.target_health_callback_invocation_count,
+            name="target_health_callback_invocation_count",
+            minimum=0,
+        )
+        if callback_count > 2:
+            raise ValueError("target callback invocation count must be in 0..2")
+        callback_rows = strict_optional_count(
+            self.target_health_callback_batch_row_count,
+            name="target_health_callback_batch_row_count",
+        )
+        callback_dimension = strict_optional_count(
+            self.target_health_callback_batch_dimension,
+            name="target_health_callback_batch_dimension",
+        )
+        if callback_count == 0:
+            if callback_rows is not None or callback_dimension is not None:
+                raise ValueError("zero callbacks require null callback shape facts")
+        elif callback_rows is None or callback_dimension is None:
+            raise ValueError("positive callback count requires actual shape facts")
+        evaluated_count = strict_optional_count(
+            self.evaluated_candidate_count,
+            name="evaluated_candidate_count",
+        )
+        value_count = strict_optional_count(
+            self.target_value_finite_count,
+            name="target_value_finite_count",
+        )
+        score_count = strict_optional_count(
+            self.target_score_finite_count,
+            name="target_score_finite_count",
+        )
+        status_count = strict_optional_count(
+            self.target_status_failure_count,
+            name="target_status_failure_count",
+        )
+        for name in (
+            "estimate_covariance_signature_equal",
+            "transform_p4_signature_equal",
+            "generation_update_count_equal",
+            "endpoint_round_trip_passed",
+            "p4_seed_consumed",
+            "p4_builder_entered",
+            "p4_rng_batch_invoked",
+        ):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f"{name} must be a strict boolean")
+        for name in (
+            "p4_distinct_from_preboundary_seeds",
+            "bank_round_trip_passed",
+            "pairwise_distinct",
+            "candidate_data_invalidity_present",
+        ):
+            if getattr(self, name) is not None and type(getattr(self, name)) is not bool:
+                raise ValueError(f"{name} must be a strict boolean or null")
+
+        outcome = str(self.outcome)
+        failure_code = str(self.failure_code)
+        allowed_codes = {
+            "engineering_probe_bank_constructed": frozenset({"none"}),
+            "candidate_generation_invalid": frozenset(
+                {"candidate_generation_nonfinite", "candidate_generation_duplicate"}
+            ),
+            "candidate_policy_instance_invalid": frozenset(
+                {
+                    "candidate_data_invalid",
+                    "target_value_nonfinite",
+                    "target_score_nonfinite",
+                    "target_status_failed",
+                }
+            ),
+            "shared_implementation_invalid": _G2_SHARED_FAILURE_CODES,
+        }
+        if outcome not in allowed_codes or failure_code not in allowed_codes[outcome]:
+            raise ValueError("P4-E outcome and failure code are inconsistent")
+
+        evidence_kind = str(self.seed_registry_evidence_kind)
+        expected_registry_schema = {
+            "complete": _G2_PREBOUNDARY_SEED_REGISTRY_SCHEMA,
+            "failure_snapshot": _G2_PREBOUNDARY_SEED_REGISTRY_FAILURE_SCHEMA,
+        }.get(evidence_kind)
+        if expected_registry_schema is None or self.seed_registry_schema != expected_registry_schema:
+            raise ValueError("seed registry evidence discriminator is invalid")
+        if self.p4_seed_consumed != (evidence_kind == "complete"):
+            raise ValueError("P4 consumption and registry evidence disagree")
+        if self.p4_seed_consumed:
+            if self.p4_distinct_from_preboundary_seeds is not True:
+                raise ValueError("consumed P4 seed must be distinct")
+        elif self.p4_distinct_from_preboundary_seeds not in {None, False}:
+            raise ValueError("unconsumed P4 seed has invalid distinctness")
+        if post_boundary_count not in {0, 1}:
+            raise ValueError("post-boundary registry count must be zero or one")
+        if (failure_code == "seed_registry_postboundary_call") != (
+            post_boundary_count == 1
+        ):
+            raise ValueError("post-boundary registry code/count pairing is invalid")
+
+        stage = str(self.p4_boundary_stage)
+        stage_actions = {
+            "entered_pre_seed": (True, False, False),
+            "seed_consumed_pre_rng": (True, True, False),
+            "rng_invoked": (True, True, True),
+            "candidate_terminal": (True, True, True),
+        }
+        if stage not in stage_actions or stage_actions[stage] != (
+            self.p4_builder_entered,
+            self.p4_seed_consumed,
+            self.p4_rng_batch_invoked,
+        ):
+            raise ValueError("P4 boundary stage/action facts are inconsistent")
+
+        terminal_shared_stages = {
+            "seed_registry_source_coverage_invalid": frozenset(
+                {"entered_pre_seed"}
+            ),
+            "seed_registry_entry_invalid": frozenset({"entered_pre_seed"}),
+            "seed_registry_p4_collision": frozenset({"entered_pre_seed"}),
+            "seed_registry_unregistered_consumption": frozenset(
+                {"seed_consumed_pre_rng"}
+            ),
+            "seed_registry_postboundary_call": frozenset(
+                {"seed_consumed_pre_rng"}
+            ),
+            "transform_contract_invalid": frozenset(
+                {"seed_consumed_pre_rng", "rng_invoked"}
+            ),
+            "transform_covariance_lineage_invalid": frozenset(
+                {"seed_consumed_pre_rng"}
+            ),
+            "transform_p4_lineage_invalid": frozenset(
+                {"seed_consumed_pre_rng"}
+            ),
+            "adaptation_update_lineage_invalid": frozenset(
+                {"seed_consumed_pre_rng"}
+            ),
+            "offset_sampler_exception": frozenset({"rng_invoked"}),
+            "offset_sampler_contract_invalid": frozenset({"rng_invoked"}),
+            "candidate_construction_exception": frozenset({"rng_invoked"}),
+            "content_signature_construction_invalid": frozenset(
+                {"rng_invoked"}
+            ),
+            "target_callback_contract_invalid": frozenset({"rng_invoked"}),
+            "target_callback_exception": frozenset({"rng_invoked"}),
+            "target_health_schema_invalid": frozenset({"rng_invoked"}),
+            "target_health_shared_invalidity": frozenset({"rng_invoked"}),
+            "target_health_count_mismatch": frozenset({"rng_invoked"}),
+        }
+        if outcome == "shared_implementation_invalid" and stage not in (
+            terminal_shared_stages.get(failure_code, frozenset())
+        ):
+            raise ValueError("shared-invalidity code is invalid at this P4 stage")
+
+        candidate_outcome = outcome != "shared_implementation_invalid"
+        if candidate_outcome:
+            if stage != "candidate_terminal":
+                raise ValueError("candidate outcome requires candidate_terminal")
+            if not (
+                self.estimate_covariance_signature_equal
+                and self.transform_p4_signature_equal
+                and self.generation_update_count_equal
+                and adaptation_generation == applied_updates
+            ):
+                raise ValueError("candidate outcome has invalid covariance/update lineage")
+        if self.estimate_covariance_signature_equal != (
+            failure_code != "transform_covariance_lineage_invalid"
+        ):
+            raise ValueError("covariance equality and failure code disagree")
+        if self.transform_p4_signature_equal != (
+            failure_code != "transform_p4_lineage_invalid"
+        ):
+            raise ValueError("transform equality and failure code disagree")
+        if self.generation_update_count_equal != (
+            failure_code != "adaptation_update_lineage_invalid"
+        ):
+            raise ValueError("update-count equality and failure code disagree")
+
+        expected_callback = (
+            callback_count == 1
+            and callback_rows == 4
+            and callback_dimension == dimension
+        )
+        if outcome == "candidate_generation_invalid":
+            if (
+                candidate_count != 4
+                or not self.endpoint_round_trip_passed
+                or any(
+                    value is not None
+                    for value in (
+                        evaluated_count,
+                        self.candidate_data_invalidity_present,
+                        value_count,
+                        score_count,
+                        status_count,
+                        self.content_signature,
+                    )
+                )
+                or callback_count != 0
+            ):
+                raise ValueError("generation failure cannot claim target-health facts")
+            if failure_code == "candidate_generation_nonfinite" and (
+                self.bank_round_trip_passed is not None
+                or self.pairwise_distinct is not None
+            ):
+                raise ValueError("nonfinite generation has invalid geometry facts")
+            if failure_code == "candidate_generation_duplicate" and (
+                self.bank_round_trip_passed is not None
+                or self.pairwise_distinct is not False
+            ):
+                raise ValueError("duplicate generation has invalid geometry facts")
+        elif outcome in {
+            "candidate_policy_instance_invalid",
+            "engineering_probe_bank_constructed",
+        }:
+            counts = (value_count, score_count, status_count)
+            if (
+                candidate_count != 4
+                or evaluated_count != 4
+                or not expected_callback
+                or not self.endpoint_round_trip_passed
+                or self.bank_round_trip_passed is not True
+                or self.pairwise_distinct is not True
+                or not _is_sha256_hex(self.content_signature)
+                or any(item is None or item > 4 for item in counts)
+            ):
+                raise ValueError("terminal candidate qualification is incomplete")
+            if any(item > evaluated_count for item in counts):
+                raise ValueError("target-health count exceeds evaluated candidates")
+            if failure_code == "none" and (
+                self.candidate_data_invalidity_present is not False
+                or value_count != 4
+                or score_count != 4
+                or status_count != 0
+            ):
+                raise ValueError("successful candidate health facts are invalid")
+            if failure_code == "candidate_data_invalid" and self.candidate_data_invalidity_present is not True:
+                raise ValueError("candidate-data rejection lacks its flag")
+            if failure_code != "candidate_data_invalid" and self.candidate_data_invalidity_present is not False:
+                raise ValueError("candidate-data flag contradicts precedence")
+            if failure_code == "target_value_nonfinite" and value_count >= 4:
+                raise ValueError("value-nonfinite rejection has a full finite count")
+            if failure_code == "target_score_nonfinite" and (
+                value_count != 4 or score_count >= 4
+            ):
+                raise ValueError("score-nonfinite rejection facts are invalid")
+            if failure_code == "target_status_failed" and (
+                value_count != 4 or score_count != 4 or status_count < 1
+            ):
+                raise ValueError("target-status rejection facts are invalid")
+        else:
+            content_failure_codes = {
+                "target_callback_contract_invalid",
+                "target_callback_exception",
+                "target_health_schema_invalid",
+                "target_health_shared_invalidity",
+                "target_health_count_mismatch",
+            }
+            content_available = _is_sha256_hex(self.content_signature)
+            if content_available != (failure_code in content_failure_codes):
+                raise ValueError("shared-invalidity content availability is invalid")
+            if failure_code == "target_callback_contract_invalid":
+                if expected_callback:
+                    raise ValueError("callback-contract failure has expected facts")
+            elif failure_code in content_failure_codes:
+                if not expected_callback:
+                    raise ValueError("post-callback shared failure has invalid callback facts")
+            elif callback_count != 0:
+                raise ValueError("pre-callback shared failure cannot claim a callback")
+
+        object.__setattr__(self, "dimension", dimension)
+        object.__setattr__(self, "candidate_count", candidate_count)
+        object.__setattr__(self, "adaptation_generation", adaptation_generation)
+        object.__setattr__(self, "applied_metric_update_count", applied_updates)
+        object.__setattr__(self, "seed_preboundary_consumed_count", preboundary_count)
+        object.__setattr__(self, "post_boundary_registry_call_count", post_boundary_count)
+        object.__setattr__(self, "target_health_callback_invocation_count", callback_count)
+        object.__setattr__(self, "target_health_callback_batch_row_count", callback_rows)
+        object.__setattr__(self, "target_health_callback_batch_dimension", callback_dimension)
+        object.__setattr__(self, "target_value_finite_count", value_count)
+        object.__setattr__(self, "target_score_finite_count", score_count)
+        object.__setattr__(self, "target_status_failure_count", status_count)
+        object.__setattr__(self, "evaluated_candidate_count", evaluated_count)
+        object.__setattr__(self, "outcome", outcome)
+        object.__setattr__(self, "failure_code", failure_code)
+        object.__setattr__(self, "p4_boundary_stage", stage)
+
+    @property
+    def passed(self) -> bool:
+        return self.outcome == "engineering_probe_bank_constructed"
+
+    def public_payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": _PHASE7_ENGINEERING_PROBE_BANK_SCHEMA,
+            "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+            "evidence_role": "engineering_only",
+            "promotion_role": "non_promoting",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "config_signature": self.config_signature,
+            "position_covariance_estimate_signature": self.position_covariance_estimate_signature,
+            "covariance_signature": self.covariance_signature,
+            "estimate_covariance_signature_equal": self.estimate_covariance_signature_equal,
+            "transform_signature": self.transform_signature,
+            "p4_transform_signature": self.p4_transform_signature,
+            "transform_p4_signature_equal": self.transform_p4_signature_equal,
+            "metric_signature": self.metric_signature,
+            "adaptation_generation": self.adaptation_generation,
+            "applied_metric_update_count": self.applied_metric_update_count,
+            "generation_update_count_equal": self.generation_update_count_equal,
+            "target_signature": self.target_signature,
+            "dimension": self.dimension,
+            "candidate_count": self.candidate_count,
+            "derived_seed_signature": self.derived_seed_signature,
+            "source_coverage_artifact_sha256": self.source_coverage_artifact_sha256,
+            "seed_registry_evidence_kind": self.seed_registry_evidence_kind,
+            "seed_registry_schema": self.seed_registry_schema,
+            "seed_registry_evidence_signature": self.seed_registry_evidence_signature,
+            "seed_preboundary_consumed_count": self.seed_preboundary_consumed_count,
+            "p4_distinct_from_preboundary_seeds": self.p4_distinct_from_preboundary_seeds,
+            "p4_seed_consumed": self.p4_seed_consumed,
+            "post_boundary_registry_call_count": self.post_boundary_registry_call_count,
+            "target_health_callback_invocation_count": self.target_health_callback_invocation_count,
+            "target_health_callback_batch_row_count": self.target_health_callback_batch_row_count,
+            "target_health_callback_batch_dimension": self.target_health_callback_batch_dimension,
+            "content_signature": self.content_signature,
+            "endpoint_round_trip_passed": self.endpoint_round_trip_passed,
+            "bank_round_trip_passed": self.bank_round_trip_passed,
+            "pairwise_distinct": self.pairwise_distinct,
+            "candidate_data_invalidity_present": self.candidate_data_invalidity_present,
+            "target_value_finite_count": self.target_value_finite_count,
+            "target_score_finite_count": self.target_score_finite_count,
+            "target_status_failure_count": self.target_status_failure_count,
+            "evaluated_candidate_count": self.evaluated_candidate_count,
+            "outcome": self.outcome,
+            "failure_code": self.failure_code,
+            "p4_boundary_stage": self.p4_boundary_stage,
+            "p4_builder_entered": self.p4_builder_entered,
+            "p4_rng_batch_invoked": self.p4_rng_batch_invoked,
+            "final_lineage_available": True,
+            "raw_values_exposed": False,
+            "paths_exposed": False,
+            "seed_values_exposed": False,
+            "covariance_multiplier_exposed": False,
+            "pairwise_distances_exposed": False,
+            "reports_posterior_convergence": False,
+            "nonclaims": _PHASE7_ENGINEERING_PROBE_NONCLAIMS,
+        }
+
+
+@dataclass(frozen=True)
+class _Phase7EngineeringProbeBankBuild:
+    """Private P4-E handoff; raw arrays never enter the public payload."""
+
+    canonical_theta: Any
+    final_latent: Any
+    standard_normal_offsets: Any
+    qualification: _Phase7EngineeringProbeBankQualification
+    seed_use_registry_payload: Mapping[str, Any]
+
+    def __post_init__(self) -> None:
+        if type(self.qualification) is not _Phase7EngineeringProbeBankQualification:
+            raise TypeError("qualification must use the concrete P4-E type")
+        if not self.qualification.passed:
+            raise ValueError("private P4-E bank requires a passing qualification")
+        arrays = []
+        for name in ("canonical_theta", "final_latent", "standard_normal_offsets"):
+            array = np.asarray(getattr(self, name), dtype=float).copy()
+            if array.shape != (4, self.qualification.dimension):
+                raise ValueError(f"{name} must have the qualified bank shape")
+            if not np.all(np.isfinite(array)):
+                raise ValueError(f"{name} must be finite")
+            array.setflags(write=False)
+            arrays.append(array)
+        object.__setattr__(self, "canonical_theta", arrays[0])
+        object.__setattr__(self, "final_latent", arrays[1])
+        object.__setattr__(self, "standard_normal_offsets", arrays[2])
+        registry_payload = _validated_g2_seed_registry_evidence(
+            self.seed_use_registry_payload
+        )
+        if (
+            registry_payload is None
+            or registry_payload["schema"] != _G2_PREBOUNDARY_SEED_REGISTRY_SCHEMA
+            or registry_payload["source_coverage_artifact_sha256"]
+            != self.qualification.source_coverage_artifact_sha256
+            or registry_payload["seed_use_registry_signature"]
+            != self.qualification.seed_registry_evidence_signature
+            or registry_payload["preboundary_consumed_seed_count"]
+            != self.qualification.seed_preboundary_consumed_count
+            or registry_payload["p4_distinct_from_preboundary_seeds"]
+            != self.qualification.p4_distinct_from_preboundary_seeds
+            or self.qualification.p4_seed_consumed is not True
+            or registry_payload["post_boundary_registry_call_count"]
+            != self.qualification.post_boundary_registry_call_count
+        ):
+            raise ValueError("private P4-E seed registry payload is inconsistent")
+        object.__setattr__(
+            self,
+            "seed_use_registry_payload",
+            _clone_seed_registry_value(registry_payload),
+        )
+
+
+def _phase7_engineering_probe_bank_content_signature(
+    canonical_theta: Any,
+    *,
+    transform_signature: str,
+    target_signature: str,
+    config_signature: str,
+) -> str:
+    array = np.ascontiguousarray(np.asarray(canonical_theta, dtype=np.float64))
+    digest = hashlib.sha256()
+    digest.update(PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID.encode("ascii"))
+    digest.update(str(transform_signature).encode("ascii"))
+    digest.update(str(target_signature).encode("ascii"))
+    digest.update(str(config_signature).encode("ascii"))
+    digest.update(str(array.shape).encode("ascii"))
+    digest.update(array.tobytes())
+    return digest.hexdigest()
+
+
+def engineering_probe_bank_qualification_payload_from_exception(
+    exc: BaseException,
+) -> Mapping[str, Any] | None:
+    """Return only a concrete, validated, scalar-only P4-E diagnostic."""
+
+    try:
+        candidate = getattr(
+            exc,
+            _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
+            None,
+        )
+    except Exception:  # noqa: BLE001 - invalid carriers remain ignorable.
+        return None
+    if type(candidate) is not _Phase7EngineeringProbeBankQualification:
+        return None
+    try:
+        return candidate.public_payload()
+    except Exception:  # noqa: BLE001 - schema validation is fail-closed.
+        return None
+
+
+def build_phase7_engineering_probe_bank(
+    *,
+    final_kernel_state: KernelState,
+    config: Phase7EngineeringProbeBankConfig,
+    position_covariance_estimate_signature: str,
+    p4_transform_signature: str,
+    applied_metric_update_count: int,
+    seed_use_registry: G2PreboundarySeedUseRegistry,
+    target_signature: str,
+    target_health_fn: Callable[[Any], Mapping[str, Any]],
+    _offset_sampler: Callable[[tuple[int, int], tuple[int, int]], Any] | None = None,
+    _target_health_invoker: Callable[[Callable[[Any], Any], Any], Any] | None = None,
+    _content_signature_fn: Callable[..., str] | None = None,
+    _post_p4_registry_call: Callable[[G2PreboundarySeedUseRegistry], Any]
+    | None = None,
+    _p4_action_tracker: _G2P4BoundaryActionTracker | None = None,
+) -> _Phase7EngineeringProbeBankBuild:
+    """Build one fixed four-row P4-E bank without HMC, filtering, or redraw."""
+
+    import tensorflow as tf
+
+    action_tracker = (
+        _G2P4BoundaryActionTracker()
+        if _p4_action_tracker is None
+        else _p4_action_tracker
+    )
+    if not isinstance(action_tracker, _G2P4BoundaryActionTracker):
+        raise TypeError("_p4_action_tracker must be a G2 P4 action tracker")
+    action_tracker.mark_builder_entered()
+    if not isinstance(final_kernel_state, KernelState):
+        raise TypeError("final_kernel_state must be a KernelState")
+    if not isinstance(config, Phase7EngineeringProbeBankConfig):
+        raise TypeError("config must be a Phase7EngineeringProbeBankConfig")
+    if not isinstance(seed_use_registry, G2PreboundarySeedUseRegistry):
+        raise TypeError("seed_use_registry must be G2PreboundarySeedUseRegistry")
+    if not _is_sha256_hex(target_signature):
+        raise ValueError("target_signature must be a SHA-256 digest")
+    if not _is_sha256_hex(position_covariance_estimate_signature):
+        raise ValueError(
+            "position_covariance_estimate_signature must be a SHA-256 digest"
+        )
+    if not _is_sha256_hex(p4_transform_signature):
+        raise ValueError("p4_transform_signature must be a SHA-256 digest")
+    applied_metric_update_count = _strict_integer(
+        applied_metric_update_count,
+        name="applied_metric_update_count",
+        minimum=0,
+    )
+    if not callable(target_health_fn):
+        raise TypeError("target_health_fn must be callable")
+    if _target_health_invoker is not None and not callable(_target_health_invoker):
+        raise TypeError("_target_health_invoker must be callable")
+    if _content_signature_fn is not None and not callable(_content_signature_fn):
+        raise TypeError("_content_signature_fn must be callable")
+    if _post_p4_registry_call is not None and not callable(
+        _post_p4_registry_call
+    ):
+        raise TypeError("_post_p4_registry_call must be callable")
+    transform = final_kernel_state.transform
+    dimension = transform.dimension
+    callback_count = 0
+    callback_rows: int | None = None
+    callback_dimension: int | None = None
+
+    def registry_fields(
+        private_registry_payload: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        payload = dict(private_registry_payload)
+        schema = payload.get("schema")
+        if schema == _G2_PREBOUNDARY_SEED_REGISTRY_SCHEMA:
+            evidence_kind = "complete"
+            signature = payload.get("seed_use_registry_signature")
+            p4_seed_consumed = True
+        elif schema == _G2_PREBOUNDARY_SEED_REGISTRY_FAILURE_SCHEMA:
+            evidence_kind = "failure_snapshot"
+            signature = payload.get("seed_use_registry_snapshot_signature")
+            p4_seed_consumed = False
+        else:
+            raise ValueError("private seed registry evidence schema is invalid")
+        if not _is_sha256_hex(signature):
+            raise ValueError("private seed registry evidence signature is invalid")
+        return {
+            "source_coverage_artifact_sha256": payload.get(
+                "source_coverage_artifact_sha256"
+            ),
+            "seed_registry_evidence_kind": evidence_kind,
+            "seed_registry_schema": schema,
+            "seed_registry_evidence_signature": signature,
+            "seed_preboundary_consumed_count": payload.get(
+                "preboundary_consumed_seed_count"
+            ),
+            "p4_distinct_from_preboundary_seeds": payload.get(
+                "p4_distinct_from_preboundary_seeds"
+            ),
+            "p4_seed_consumed": p4_seed_consumed,
+            "post_boundary_registry_call_count": payload.get(
+                "post_boundary_registry_call_count"
+            ),
+        }
+
+    def qualification(
+        *,
+        outcome: str,
+        failure_code: str,
+        private_registry_payload: Mapping[str, Any],
+        p4_boundary_stage: str,
+        endpoint_round_trip_passed: bool,
+        bank_round_trip_passed: bool | None = None,
+        pairwise_distinct: bool | None = None,
+        candidate_data_invalidity_present: bool | None = None,
+        target_value_finite_count: int | None = None,
+        target_score_finite_count: int | None = None,
+        target_status_failure_count: int | None = None,
+        evaluated_candidate_count: int | None = None,
+        content_signature: str | None = None,
+    ) -> _Phase7EngineeringProbeBankQualification:
+        stage_flags = {
+            "entered_pre_seed": (True, False),
+            "seed_consumed_pre_rng": (True, False),
+            "rng_invoked": (True, True),
+            "candidate_terminal": (True, True),
+        }
+        if p4_boundary_stage not in stage_flags:
+            raise ValueError("P4 boundary stage is invalid")
+        p4_builder_entered, p4_rng_batch_invoked = stage_flags[p4_boundary_stage]
+        registry = registry_fields(private_registry_payload)
+        return _Phase7EngineeringProbeBankQualification(
+            config_signature=config.config_signature,
+            position_covariance_estimate_signature=(
+                position_covariance_estimate_signature
+            ),
+            covariance_signature=transform.covariance_signature,
+            estimate_covariance_signature_equal=(
+                position_covariance_estimate_signature
+                == transform.covariance_signature
+            ),
+            transform_signature=transform.signature,
+            p4_transform_signature=p4_transform_signature,
+            transform_p4_signature_equal=(
+                transform.signature == p4_transform_signature
+            ),
+            metric_signature=final_kernel_state.momentum_metric.signature,
+            adaptation_generation=final_kernel_state.adaptation_generation,
+            applied_metric_update_count=applied_metric_update_count,
+            generation_update_count_equal=(
+                final_kernel_state.adaptation_generation
+                == applied_metric_update_count
+            ),
+            target_signature=target_signature,
+            dimension=dimension,
+            candidate_count=config.chain_count,
+            derived_seed_signature=config.derived_seed_signature,
+            **registry,
+            target_health_callback_invocation_count=callback_count,
+            target_health_callback_batch_row_count=callback_rows,
+            target_health_callback_batch_dimension=callback_dimension,
+            content_signature=content_signature,
+            endpoint_round_trip_passed=endpoint_round_trip_passed,
+            bank_round_trip_passed=bank_round_trip_passed,
+            pairwise_distinct=pairwise_distinct,
+            candidate_data_invalidity_present=(
+                candidate_data_invalidity_present
+            ),
+            target_value_finite_count=target_value_finite_count,
+            target_score_finite_count=target_score_finite_count,
+            target_status_failure_count=target_status_failure_count,
+            evaluated_candidate_count=evaluated_candidate_count,
+            outcome=outcome,
+            failure_code=failure_code,
+            p4_boundary_stage=p4_boundary_stage,
+            p4_builder_entered=p4_builder_entered,
+            p4_rng_batch_invoked=p4_rng_batch_invoked,
+        )
+
+    def fail(
+        *,
+        outcome: str,
+        failure_code: str,
+        private_registry_payload: Mapping[str, Any],
+        p4_boundary_stage: str,
+        endpoint_round_trip_passed: bool,
+        bank_round_trip_passed: bool | None = None,
+        pairwise_distinct: bool | None = None,
+        candidate_data_invalidity_present: bool | None = None,
+        target_value_finite_count: int | None = None,
+        target_score_finite_count: int | None = None,
+        target_status_failure_count: int | None = None,
+        evaluated_candidate_count: int | None = None,
+        content_signature: str | None = None,
+    ) -> None:
+        diagnostic = qualification(
+            outcome=outcome,
+            failure_code=failure_code,
+            private_registry_payload=private_registry_payload,
+            p4_boundary_stage=p4_boundary_stage,
+            endpoint_round_trip_passed=endpoint_round_trip_passed,
+            bank_round_trip_passed=bank_round_trip_passed,
+            pairwise_distinct=pairwise_distinct,
+            candidate_data_invalidity_present=candidate_data_invalidity_present,
+            target_value_finite_count=target_value_finite_count,
+            target_score_finite_count=target_score_finite_count,
+            target_status_failure_count=target_status_failure_count,
+            evaluated_candidate_count=evaluated_candidate_count,
+            content_signature=content_signature,
+        )
+        if outcome in {
+            "candidate_generation_invalid",
+            "candidate_policy_instance_invalid",
+        }:
+            action_tracker.mark_candidate_terminal()
+        error = ValueError(
+            "P4-E engineering probe bank construction failed: "
+            f"{diagnostic.failure_code}"
+        )
+        setattr(error, _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE, diagnostic)
+        setattr(
+            error,
+            _G2_PREBOUNDARY_SEED_PRIVATE_EVIDENCE_ATTRIBUTE,
+            dict(private_registry_payload),
+        )
+        raise error from None
+
+    try:
+        consumed_p4_seed = seed_use_registry.consume(
+            derivation_site_id=_G2_P4_SEED_DERIVATION_SITE_ID,
+            terminal_gate_site_id=_G2_P4_SEED_GATE_SITE_ID,
+            key="p4/engineering_probe",
+            owner_file="hmc_warmup.py",
+            owner_qualname="build_phase7_engineering_probe_bank",
+            terminal_consumer="tensorflow_stateless_rng",
+            derivation={
+                "kind": "p4_domain_hash",
+                "base_key": "engineering_probe_config.root_seed",
+                "domain_label": _PHASE7_ENGINEERING_PROBE_SEED_DOMAIN,
+            },
+            indices=(),
+            seed=config.derived_seed,
+            interface_hop_site_ids=_G2_P4_SEED_INTERFACE_HOPS,
+            is_p4=True,
+        )
+    except _G2SeedRegistryError as exc:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code=exc.failure_code,
+            private_registry_payload=exc.private_evidence,
+            p4_boundary_stage="entered_pre_seed",
+            endpoint_round_trip_passed=False,
+        )
+        raise AssertionError("unreachable")
+    action_tracker.mark_seed_consumed()
+    complete_registry = seed_use_registry.complete_payload()
+    if _post_p4_registry_call is not None:
+        try:
+            _post_p4_registry_call(seed_use_registry)
+        except _G2SeedRegistryError as exc:
+            fail(
+                outcome="shared_implementation_invalid",
+                failure_code=exc.failure_code,
+                private_registry_payload=exc.private_evidence,
+                p4_boundary_stage="seed_consumed_pre_rng",
+                endpoint_round_trip_passed=False,
+            )
+            raise AssertionError("unreachable")
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="seed_registry_unregistered_consumption",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="seed_consumed_pre_rng",
+            endpoint_round_trip_passed=False,
+        )
+
+    endpoint = tf.convert_to_tensor(
+        final_kernel_state.canonical_theta,
+        dtype=tf.float64,
+    )
+    try:
+        endpoint_latent = transform.theta_to_latent(endpoint)
+        endpoint_round_trip = transform.latent_to_theta(endpoint_latent)
+        endpoint_ok = bool(
+            tf.reduce_all(
+                tf.math.abs(endpoint_round_trip - endpoint)
+                <= 1.0e-10 + 1.0e-10 * tf.math.abs(endpoint)
+            ).numpy()
+        )
+    except Exception as exc:  # noqa: BLE001 - shared transform boundary.
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="transform_contract_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="seed_consumed_pre_rng",
+            endpoint_round_trip_passed=False,
+        )
+        raise AssertionError("unreachable") from exc
+    if not endpoint_ok:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="transform_contract_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="seed_consumed_pre_rng",
+            endpoint_round_trip_passed=False,
+        )
+
+    if position_covariance_estimate_signature != transform.covariance_signature:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="transform_covariance_lineage_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="seed_consumed_pre_rng",
+            endpoint_round_trip_passed=True,
+        )
+    if p4_transform_signature != transform.signature:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="transform_p4_lineage_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="seed_consumed_pre_rng",
+            endpoint_round_trip_passed=True,
+        )
+    if final_kernel_state.adaptation_generation != applied_metric_update_count:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="adaptation_update_lineage_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="seed_consumed_pre_rng",
+            endpoint_round_trip_passed=True,
+        )
+
+    sampler = _offset_sampler
+    if sampler is None:
+        sampler = lambda shape, seed: tf.random.stateless_normal(
+            shape,
+            seed=tf.convert_to_tensor(seed, dtype=tf.int32),
+            dtype=tf.float64,
+        )
+    action_tracker.mark_rng_invoked()
+    try:
+        sampled_offsets = sampler((config.chain_count, dimension), consumed_p4_seed)
+    except Exception as exc:  # noqa: BLE001 - sampler authority failed.
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="offset_sampler_exception",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+        )
+        raise AssertionError("unreachable") from exc
+    try:
+        offsets = tf.convert_to_tensor(sampled_offsets, dtype=tf.float64)
+    except Exception as exc:  # noqa: BLE001 - declared sampler contract failed.
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="offset_sampler_contract_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+        )
+        raise AssertionError("unreachable") from exc
+    if tuple(offsets.shape) != (config.chain_count, dimension):
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="offset_sampler_contract_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+        )
+    if not bool(tf.reduce_all(tf.math.is_finite(offsets)).numpy()):
+        fail(
+            outcome="candidate_generation_invalid",
+            failure_code="candidate_generation_nonfinite",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="candidate_terminal",
+            endpoint_round_trip_passed=True,
+        )
+    try:
+        final_latent = endpoint_latent[tf.newaxis, :] + tf.sqrt(
+            tf.constant(config.covariance_multiplier, dtype=tf.float64)
+        ) * offsets
+        differences = final_latent[:, tf.newaxis, :] - final_latent[tf.newaxis, :, :]
+        squared_distances = tf.reduce_sum(tf.square(differences), axis=-1)
+    except Exception as exc:  # noqa: BLE001 - shared construction authority.
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="candidate_construction_exception",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+        )
+        raise AssertionError("unreachable") from exc
+    if not bool(tf.reduce_all(tf.math.is_finite(final_latent)).numpy()):
+        fail(
+            outcome="candidate_generation_invalid",
+            failure_code="candidate_generation_nonfinite",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="candidate_terminal",
+            endpoint_round_trip_passed=True,
+        )
+    upper_triangle = tf.linalg.band_part(
+        tf.ones((config.chain_count, config.chain_count), dtype=tf.bool),
+        0,
+        -1,
+    ) & ~tf.eye(config.chain_count, dtype=tf.bool)
+    pairwise_distinct = bool(
+        tf.reduce_all(tf.boolean_mask(squared_distances, upper_triangle) > 0.0).numpy()
+    )
+    if not pairwise_distinct:
+        fail(
+            outcome="candidate_generation_invalid",
+            failure_code="candidate_generation_duplicate",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="candidate_terminal",
+            endpoint_round_trip_passed=True,
+            pairwise_distinct=False,
+        )
+    try:
+        canonical = transform.latent_to_theta(final_latent)
+        mapped_back = transform.theta_to_latent(canonical)
+        canonical_finite = bool(tf.reduce_all(tf.math.is_finite(canonical)).numpy())
+        round_trip_ok = bool(
+            tf.reduce_all(
+                tf.math.abs(mapped_back - final_latent)
+                <= 1.0e-10 + 1.0e-10 * tf.math.abs(final_latent)
+            ).numpy()
+        )
+    except Exception as exc:  # noqa: BLE001 - shared transform boundary.
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="transform_contract_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+            pairwise_distinct=True,
+        )
+        raise AssertionError("unreachable") from exc
+    if not canonical_finite:
+        fail(
+            outcome="candidate_generation_invalid",
+            failure_code="candidate_generation_nonfinite",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="candidate_terminal",
+            endpoint_round_trip_passed=True,
+        )
+    if not round_trip_ok:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="transform_contract_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+            bank_round_trip_passed=False,
+            pairwise_distinct=True,
+        )
+
+    canonical_array = np.asarray(canonical.numpy(), dtype=float)
+    content_builder = (
+        _phase7_engineering_probe_bank_content_signature
+        if _content_signature_fn is None
+        else _content_signature_fn
+    )
+    try:
+        content_signature = content_builder(
+            canonical_array,
+            transform_signature=transform.signature,
+            target_signature=target_signature,
+            config_signature=config.config_signature,
+        )
+        if not _is_sha256_hex(content_signature):
+            raise ValueError("content signature must be a SHA-256 digest")
+    except Exception as exc:  # noqa: BLE001 - scalar lineage construction failed.
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="content_signature_construction_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+            bank_round_trip_passed=True,
+            pairwise_distinct=True,
+        )
+        raise AssertionError("unreachable") from exc
+
+    class _TargetCallbackContractViolation(Exception):
+        pass
+
+    class _TargetCallbackRaised(Exception):
+        pass
+
+    target_delegate_count = 0
+
+    def guarded_target_health(candidate_batch: Any) -> Any:
+        nonlocal callback_count, callback_rows, callback_dimension
+        nonlocal target_delegate_count
+        if callback_count >= 2:
+            raise _TargetCallbackContractViolation
+        callback_count += 1
+        try:
+            tensor = tf.convert_to_tensor(candidate_batch, dtype=tf.float64)
+            shape = tuple(tensor.shape)
+            if len(shape) != 2 or shape[0] is None or shape[1] is None:
+                callback_rows = 0
+                callback_dimension = 0
+            else:
+                callback_rows = int(shape[0])
+                callback_dimension = int(shape[1])
+        except Exception as exc:  # noqa: BLE001 - wrapper input contract failed.
+            callback_rows = 0
+            callback_dimension = 0
+            action_tracker.record_target_callback_entry(
+                invocation_count=callback_count,
+                row_count=callback_rows,
+                dimension=callback_dimension,
+            )
+            raise _TargetCallbackContractViolation from exc
+        action_tracker.record_target_callback_entry(
+            invocation_count=callback_count,
+            row_count=callback_rows,
+            dimension=callback_dimension,
+        )
+        if (
+            callback_count > 1
+            or callback_rows != config.chain_count
+            or callback_dimension != dimension
+        ):
+            raise _TargetCallbackContractViolation
+        target_delegate_count += 1
+        try:
+            return target_health_fn(tensor)
+        except Exception as exc:  # noqa: BLE001 - redact target exception text.
+            raise _TargetCallbackRaised from exc
+
+    invoker = (
+        (lambda callback, batch: callback(batch))
+        if _target_health_invoker is None
+        else _target_health_invoker
+    )
+    try:
+        health = invoker(guarded_target_health, canonical)
+    except _TargetCallbackRaised:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="target_callback_exception",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+            bank_round_trip_passed=True,
+            pairwise_distinct=True,
+            content_signature=content_signature,
+        )
+    except Exception:  # noqa: BLE001 - invoker/wrapper protocol is closed.
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="target_callback_contract_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+            bank_round_trip_passed=True,
+            pairwise_distinct=True,
+            content_signature=content_signature,
+        )
+    if (
+        callback_count != 1
+        or callback_rows != config.chain_count
+        or callback_dimension != dimension
+        or target_delegate_count != 1
+    ):
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="target_callback_contract_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+            bank_round_trip_passed=True,
+            pairwise_distinct=True,
+            content_signature=content_signature,
+        )
+
+    required_health_fields = {
+        "shared_invalidity_reasons",
+        "candidate_data_invalidity_reasons",
+        "target_value_finite",
+        "target_score_finite",
+        "target_status_failure_count",
+        "evaluated_draw_count",
+    }
+    try:
+        if not isinstance(health, Mapping) or set(health) != required_health_fields:
+            raise ValueError("target health mapping schema is invalid")
+        shared_reasons = health["shared_invalidity_reasons"]
+        candidate_reasons = health["candidate_data_invalidity_reasons"]
+        if type(shared_reasons) is not tuple or type(candidate_reasons) is not tuple:
+            raise ValueError("target health reason fields must be tuples")
+        if any(type(item) is not str or not item for item in shared_reasons):
+            raise ValueError("shared invalidity reasons are malformed")
+        if any(type(item) is not str or not item for item in candidate_reasons):
+            raise ValueError("candidate invalidity reasons are malformed")
+        values_finite = health["target_value_finite"]
+        scores_finite = health["target_score_finite"]
+        if type(values_finite) is not bool or type(scores_finite) is not bool:
+            raise ValueError("target finite flags must be strict booleans")
+        evaluated = _strict_integer(
+            health["evaluated_draw_count"],
+            name="evaluated_draw_count",
+            minimum=0,
+        )
+        status_value = health["target_status_failure_count"]
+        status_failures = (
+            0
+            if status_value is None
+            else _strict_integer(
+                status_value,
+                name="target_status_failure_count",
+                minimum=0,
+            )
+        )
+        if evaluated > config.chain_count or status_failures > config.chain_count:
+            raise ValueError("target health count exceeds the candidate count")
+    except (KeyError, TypeError, ValueError):
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="target_health_schema_invalid",
+            private_registry_payload=complete_registry,
+            p4_boundary_stage="rng_invoked",
+            endpoint_round_trip_passed=True,
+            bank_round_trip_passed=True,
+            pairwise_distinct=True,
+            content_signature=content_signature,
+        )
+
+    value_count = config.chain_count if values_finite else 0
+    score_count = config.chain_count if scores_finite else 0
+    common_health = {
+        "private_registry_payload": complete_registry,
+        "p4_boundary_stage": "rng_invoked",
+        "endpoint_round_trip_passed": True,
+        "bank_round_trip_passed": True,
+        "pairwise_distinct": True,
+        "candidate_data_invalidity_present": bool(candidate_reasons),
+        "target_value_finite_count": value_count,
+        "target_score_finite_count": score_count,
+        "target_status_failure_count": status_failures,
+        "evaluated_candidate_count": evaluated,
+        "content_signature": content_signature,
+    }
+    if shared_reasons:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="target_health_shared_invalidity",
+            **common_health,
+        )
+    if evaluated != config.chain_count:
+        fail(
+            outcome="shared_implementation_invalid",
+            failure_code="target_health_count_mismatch",
+            **common_health,
+        )
+    if candidate_reasons:
+        fail(
+            outcome="candidate_policy_instance_invalid",
+            failure_code="candidate_data_invalid",
+            **{**common_health, "p4_boundary_stage": "candidate_terminal"},
+        )
+    if not values_finite:
+        fail(
+            outcome="candidate_policy_instance_invalid",
+            failure_code="target_value_nonfinite",
+            **{**common_health, "p4_boundary_stage": "candidate_terminal"},
+        )
+    if not scores_finite:
+        fail(
+            outcome="candidate_policy_instance_invalid",
+            failure_code="target_score_nonfinite",
+            **{**common_health, "p4_boundary_stage": "candidate_terminal"},
+        )
+    if status_failures > 0:
+        fail(
+            outcome="candidate_policy_instance_invalid",
+            failure_code="target_status_failed",
+            **{**common_health, "p4_boundary_stage": "candidate_terminal"},
+        )
+
+    diagnostic = qualification(
+        outcome="engineering_probe_bank_constructed",
+        failure_code="none",
+        private_registry_payload=complete_registry,
+        p4_boundary_stage="candidate_terminal",
+        endpoint_round_trip_passed=True,
+        bank_round_trip_passed=True,
+        pairwise_distinct=True,
+        candidate_data_invalidity_present=False,
+        target_value_finite_count=config.chain_count,
+        target_score_finite_count=config.chain_count,
+        target_status_failure_count=0,
+        evaluated_candidate_count=evaluated,
+        content_signature=content_signature,
+    )
+    action_tracker.mark_candidate_terminal()
+    return _Phase7EngineeringProbeBankBuild(
+        canonical_theta=canonical_array,
+        final_latent=final_latent.numpy(),
+        standard_normal_offsets=offsets.numpy(),
+        qualification=diagnostic,
+        seed_use_registry_payload=complete_registry,
+    )
+
+
+def _build_postfreeze_private_start_bank(
+    *,
+    final_kernel_state: KernelState,
+    position_covariance_estimate_signature: str | None,
+    p4_transform_signature: str | None,
+    applied_metric_update_count: int | None,
+    seed_use_registry: G2PreboundarySeedUseRegistry | None,
+    adapter: Any,
+    final_window_history: Any,
+    all_window_history: Any,
+    engineering_probe_config: Phase7EngineeringProbeBankConfig | None,
+    target_status_trace_policy: str,
+    _offset_sampler: Callable[[tuple[int, int], tuple[int, int]], Any]
+    | None = None,
+    _target_health_fn: Callable[[Any], Mapping[str, Any]] | None = None,
+    _p4_action_tracker: _G2P4BoundaryActionTracker | None = None,
+) -> tuple[
+    np.ndarray,
+    _StartBankQualificationDiagnostic | None,
+    _Phase7EngineeringProbeBankQualification | None,
+    str,
+]:
+    """Select the legacy diagnostic or P4-E path, never both.
+
+    The P4-E branch deliberately does not inspect either history input. This
+    helper is pure construction logic and executes no HMC transition.
+    """
+
+    if engineering_probe_config is not None:
+        if position_covariance_estimate_signature is None:
+            raise ValueError("P4-E covariance-estimate lineage is missing")
+        if p4_transform_signature is None:
+            raise ValueError("P4-E transform lineage is missing")
+        if applied_metric_update_count is None:
+            raise ValueError("P4-E metric-update lineage is missing")
+        if seed_use_registry is None:
+            raise ValueError("P4-E seed-use registry is missing")
+        engineering_build = build_phase7_engineering_probe_bank(
+            final_kernel_state=final_kernel_state,
+            config=engineering_probe_config,
+            position_covariance_estimate_signature=(
+                position_covariance_estimate_signature
+            ),
+            p4_transform_signature=p4_transform_signature,
+            applied_metric_update_count=applied_metric_update_count,
+            seed_use_registry=seed_use_registry,
+            target_signature=_phase7_engineering_probe_target_signature(adapter),
+            target_health_fn=(
+                _target_health_fn
+                if _target_health_fn is not None
+                else lambda canonical: _evaluate_retained_target_health(
+                    adapter=adapter,
+                    samples=canonical,
+                    target_status_trace_policy=target_status_trace_policy,
+                )
+            ),
+            _offset_sampler=_offset_sampler,
+            _p4_action_tracker=_p4_action_tracker,
+        )
+        return (
+            engineering_build.canonical_theta,
+            None,
+            engineering_build.qualification,
+            PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+        )
+
+    authoritative_assessment = _assess_private_start_bank(
+        final_window_history,
+        reference_transform=final_kernel_state.transform,
+        scope="authoritative_final_window",
+    )
+    shadow_diagnostic = _best_effort_shadow_start_bank_scope(
+        all_window_history,
+        reference_transform=final_kernel_state.transform,
+        minimum_relative_separation=(
+            authoritative_assessment.diagnostic.minimum_relative_separation
+        ),
+    )
+    legacy_qualification = _StartBankQualificationDiagnostic(
+        authoritative=authoritative_assessment.diagnostic,
+        shadow=shadow_diagnostic,
+    )
+    bank = _materialize_private_start_bank(
+        authoritative_assessment,
+        qualification=legacy_qualification,
+    )
+    return bank, legacy_qualification, None, _START_BANK_POLICY_ID
+
+
+@dataclass(frozen=True)
 class OperationalWindowedWarmupResult:
     config: WindowedMassAdaptationConfig
     initial_coordinate_signature: str
@@ -1978,11 +4923,15 @@ class OperationalWindowedWarmupResult:
     reasonable_epsilon: ReasonableEpsilonResult
     windows: tuple[OperationalWarmupWindowResult, ...]
     private_start_bank_theta: Any
-    start_bank_qualification: _StartBankQualificationDiagnostic
+    start_bank_qualification: _StartBankQualificationDiagnostic | None
     seed_root: tuple[int, int]
     target_scope: str
     target_status_trace_policy: str
     elapsed_s: float
+    private_start_bank_policy_id: str = _START_BANK_POLICY_ID
+    engineering_probe_bank_qualification: (
+        _Phase7EngineeringProbeBankQualification | None
+    ) = None
     status: str = "passed"
     algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION
@@ -2052,14 +5001,47 @@ class OperationalWindowedWarmupResult:
         if not np.all(np.isfinite(bank)):
             raise ValueError("private start bank must be finite")
         qualification = self.start_bank_qualification
-        if (
-            type(qualification) is not _StartBankQualificationDiagnostic
-            or not qualification.authoritative.selection_succeeded
-        ):
-            raise ValueError(
-                "operational warmup requires a successful start-bank qualification"
+        bank_policy_id = str(self.private_start_bank_policy_id)
+        engineering_qualification = self.engineering_probe_bank_qualification
+        if bank_policy_id == _START_BANK_POLICY_ID:
+            if (
+                type(qualification) is not _StartBankQualificationDiagnostic
+                or not qualification.authoritative.selection_succeeded
+            ):
+                raise ValueError(
+                    "legacy operational warmup requires a successful start-bank qualification"
+                )
+            qualification.public_payload()
+            if engineering_qualification is not None:
+                raise ValueError("legacy start bank cannot carry a P4-E qualification")
+        elif bank_policy_id == PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
+            if qualification is not None:
+                raise ValueError("P4-E start bank cannot carry a legacy qualification")
+            if (
+                type(engineering_qualification)
+                is not _Phase7EngineeringProbeBankQualification
+                or not engineering_qualification.passed
+                or engineering_qualification.dimension != bank.shape[1]
+                or engineering_qualification.candidate_count != bank.shape[0]
+                or engineering_qualification.transform_signature
+                != self.final_kernel_state.transform.signature
+            ):
+                raise ValueError(
+                    "P4-E operational warmup requires a successful matching qualification"
+                )
+            engineering_qualification.public_payload()
+            expected_content_signature = (
+                _phase7_engineering_probe_bank_content_signature(
+                    bank,
+                    transform_signature=self.final_kernel_state.transform.signature,
+                    target_signature=engineering_qualification.target_signature,
+                    config_signature=engineering_qualification.config_signature,
+                )
             )
-        qualification.public_payload()
+            if engineering_qualification.content_signature != expected_content_signature:
+                raise ValueError("P4-E private start-bank content signature mismatch")
+        else:
+            raise ValueError("unsupported private start-bank policy")
         final_state = self.final_kernel_state
         if self.config.mass_policy == "fixed_identity" and (
             final_state.transform.signature != initial_signature
@@ -2094,19 +5076,39 @@ class OperationalWindowedWarmupResult:
             )
         ):
             raise ValueError("operational warmup final kernel lineage is invalid")
-        scale = max(float(np.linalg.norm(np.std(bank, axis=0))), 1.0)
-        tolerance = 1.0e-10 * scale
-        pairwise = np.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
-        if (
-            not np.allclose(
-                bank[-1],
-                final_state.canonical_theta,
-                rtol=1.0e-10,
-                atol=1.0e-10,
+        if bank_policy_id == _START_BANK_POLICY_ID:
+            scale = max(float(np.linalg.norm(np.std(bank, axis=0))), 1.0)
+            tolerance = 1.0e-10 * scale
+            pairwise = np.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
+            if (
+                not np.allclose(
+                    bank[-1],
+                    final_state.canonical_theta,
+                    rtol=1.0e-10,
+                    atol=1.0e-10,
+                )
+                or np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance)
+            ):
+                raise ValueError(
+                    "legacy private start bank must be dispersed and include the endpoint"
+                )
+        else:
+            final_latent = np.asarray(
+                final_state.transform.theta_to_latent(bank).numpy(),
+                dtype=float,
             )
-            or np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance)
-        ):
-            raise ValueError("private start bank must be dispersed and include the endpoint")
+            round_trip = np.asarray(
+                final_state.transform.latent_to_theta(final_latent).numpy(),
+                dtype=float,
+            )
+            pairwise = np.linalg.norm(
+                final_latent[:, None, :] - final_latent[None, :, :], axis=-1
+            )
+            if (
+                not np.allclose(round_trip, bank, rtol=1.0e-10, atol=1.0e-10)
+                or np.any(pairwise[np.triu_indices(4, k=1)] <= 0.0)
+            ):
+                raise ValueError("P4-E private start bank transform invariant failed")
         seed_root = _strict_seed(self.seed_root, name="seed_root")
         target_scope = str(self.target_scope)
         target_status_policy = _target_status_policy(self.target_status_trace_policy)
@@ -2127,6 +5129,12 @@ class OperationalWindowedWarmupResult:
         object.__setattr__(self, "windows", windows)
         object.__setattr__(self, "private_start_bank_theta", bank)
         object.__setattr__(self, "start_bank_qualification", qualification)
+        object.__setattr__(self, "private_start_bank_policy_id", bank_policy_id)
+        object.__setattr__(
+            self,
+            "engineering_probe_bank_qualification",
+            engineering_qualification,
+        )
         object.__setattr__(self, "seed_root", seed_root)
         object.__setattr__(self, "target_scope", target_scope)
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
@@ -2141,6 +5149,13 @@ class OperationalWindowedWarmupResult:
     def private_start_bank_signature(self) -> str:
         digest = hashlib.sha256(np.ascontiguousarray(self.private_start_bank_theta).tobytes())
         digest.update(self.final_kernel_state.transform.signature.encode("ascii"))
+        digest.update(self.private_start_bank_policy_id.encode("ascii"))
+        if self.engineering_probe_bank_qualification is not None:
+            digest.update(
+                self.engineering_probe_bank_qualification.config_signature.encode(
+                    "ascii"
+                )
+            )
         return digest.hexdigest()
 
     @property
@@ -2198,12 +5213,18 @@ class OperationalWindowedWarmupResult:
             "every_update_used_by_later_transition": self.every_update_used_by_later_transition,
             "private_start_bank": {
                 "schema": "bayesfilter.hmc_private_start_bank.v2",
+                "policy_id": self.private_start_bank_policy_id,
                 "signature": self.private_start_bank_signature,
                 "count": 4,
+                "engineering_probe_qualification": None
+                if self.engineering_probe_bank_qualification is None
+                else self.engineering_probe_bank_qualification.public_payload(),
                 "raw_values_exposed": False,
                 "paths_exposed": False,
             },
-            "seed_root": self.seed_root,
+            "seed_root": self.seed_root
+            if self.private_start_bank_policy_id == _START_BANK_POLICY_ID
+            else None,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "elapsed_s": self.elapsed_s,
@@ -2338,6 +5359,10 @@ def run_operational_windowed_warmup(
     target_accept_prob: float,
     seed: tuple[int, int],
     target_scope: str,
+    engineering_probe_config: Phase7EngineeringProbeBankConfig | None = None,
+    initial_position_covariance_estimate_signature: str | None = None,
+    _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
+    _g2_p4_action_tracker: _G2P4BoundaryActionTracker | None = None,
     chain_execution_mode: str = "tf_function",
     jit_compile: bool = False,
     target_status_trace_policy: str = "none",
@@ -2357,7 +5382,32 @@ def run_operational_windowed_warmup(
         raise TypeError("initial_transform must be AffineCoordinateTransform")
     if not isinstance(trajectory_policy, WarmupTrajectoryPolicy):
         raise TypeError("trajectory_policy must be WarmupTrajectoryPolicy")
-    normalized_seed = _strict_seed(seed, name="seed")
+    if engineering_probe_config is not None and not isinstance(
+        engineering_probe_config,
+        Phase7EngineeringProbeBankConfig,
+    ):
+        raise TypeError(
+            "engineering_probe_config must be a Phase7EngineeringProbeBankConfig"
+        )
+    if engineering_probe_config is not None:
+        if not isinstance(_g2_seed_use_registry, G2PreboundarySeedUseRegistry):
+            raise TypeError("P4-E requires a caller-owned G2 seed-use registry")
+        if not isinstance(_g2_p4_action_tracker, _G2P4BoundaryActionTracker):
+            raise TypeError("P4-E requires a caller-owned P4 action tracker")
+        if not _is_sha256_hex(initial_position_covariance_estimate_signature):
+            raise ValueError("P4-E initial covariance-estimate signature is invalid")
+        if (
+            initial_position_covariance_estimate_signature
+            != initial_transform.covariance_signature
+        ):
+            raise g2_preboundary_shared_invalidity_exception(
+                _g2_seed_use_registry,
+                stage="operational_warmup_initial_covariance_lineage",
+                failure_code="transform_covariance_lineage_invalid",
+            ) from None
+        normalized_seed = _strict_builtin_seed(seed, name="seed")
+    else:
+        normalized_seed = _strict_seed(seed, name="seed")
     if chain_execution_mode not in {"eager", "tf_function"}:
         raise ValueError("chain_execution_mode must be eager or tf_function")
     target_status_policy = _target_status_policy(target_status_trace_policy)
@@ -2409,11 +5459,69 @@ def run_operational_windowed_warmup(
         seed_lineage=normalized_seed,
         evidence_status="initialized",
     )
+    active_position_covariance_estimate_signature = (
+        initial_transform.covariance_signature
+        if initial_position_covariance_estimate_signature is None
+        else initial_position_covariance_estimate_signature
+    )
+    active_p4_transform_signature = initial_transform.signature
+    applied_metric_update_count = 0
+
+    def consume_g2_seed(
+        *,
+        derivation_site_id: str,
+        terminal_gate_site_id: str,
+        key: str,
+        terminal_consumer: str,
+        derivation: Mapping[str, Any],
+        indices: Sequence[Mapping[str, Any]],
+        seed_value: tuple[int, int],
+        interface_hop_site_ids: Sequence[str] = (),
+    ) -> tuple[int, int]:
+        if _g2_seed_use_registry is None:
+            return seed_value
+        try:
+            return _g2_seed_use_registry.consume(
+                derivation_site_id=derivation_site_id,
+                terminal_gate_site_id=terminal_gate_site_id,
+                key=key,
+                owner_file="hmc_warmup.py",
+                owner_qualname="run_operational_windowed_warmup",
+                terminal_consumer=terminal_consumer,
+                derivation=derivation,
+                indices=indices,
+                seed=seed_value,
+                interface_hop_site_ids=interface_hop_site_ids,
+            )
+        except _G2SeedRegistryError as exc:
+            raise g2_preboundary_shared_invalidity_exception(
+                _g2_seed_use_registry,
+                stage=terminal_gate_site_id,
+                cause=exc,
+            ) from None
     first_adapter = _AffineWarmupAdapter(
         base_adapter=adapter,
         transform=initial_transform,
         target_scope=target_scope,
     )
+    initial_reasonable_seed: tuple[int, int] | None = None
+    if initial_bound is None:
+        initial_reasonable_seed = _seed(normalized_seed, -1, lane=1)
+        initial_reasonable_seed = consume_g2_seed(
+            derivation_site_id=_G2_INITIAL_EPSILON_SEED_DERIVATION_SITE_ID,
+            terminal_gate_site_id=_G2_INITIAL_EPSILON_SEED_GATE_SITE_ID,
+            key="operational_warmup/reasonable_epsilon/initial",
+            terminal_consumer="hmc_runner_interface",
+            derivation={
+                "kind": "warmup_index_lane",
+                "base_key": "operational_warmup/root",
+                "index": -1,
+                "lane": 1,
+            },
+            indices=(),
+            seed_value=initial_reasonable_seed,
+            interface_hop_site_ids=_G2_INITIAL_EPSILON_SEED_INTERFACE_HOPS,
+        )
     reasonable = (
         ReasonableEpsilonResult(
             status="externally_qualified",
@@ -2426,11 +5534,18 @@ def run_operational_windowed_warmup(
             adapter=first_adapter,
             current_state=latent,
             initial_step_size=initial_step_size,
-            seed=_seed(normalized_seed, -1, lane=1),
+            seed=initial_reasonable_seed,
             num_leapfrog_steps=trajectory_policy.num_leapfrog_steps,
             momentum_probe_count=4,
             target_status_trace_policy=target_status_policy,
             jit_compile=jit_compile,
+            _g2_seed_use_registry=_g2_seed_use_registry,
+            _g2_seed_key_prefix=(
+                "operational_warmup/reasonable_epsilon/initial"
+            ),
+            _g2_seed_base_key=(
+                "operational_warmup/reasonable_epsilon/initial"
+            ),
         )
     )
     if not reasonable.passed or reasonable.selected_step_size is None:
@@ -2686,18 +5801,43 @@ def run_operational_windowed_warmup(
             if closeout is not None:
                 return closeout
             segment_started = time.perf_counter()
+            segment_seed_index = (
+                window.index
+                if not segmented_execution
+                else window.index * 100_000 + segment_index
+            )
+            segment_seed = _seed(
+                normalized_seed,
+                segment_seed_index,
+                lane=2,
+            )
+            segment_seed = consume_g2_seed(
+                derivation_site_id=_G2_SEGMENT_SEED_DERIVATION_SITE_ID,
+                terminal_gate_site_id=_G2_SEGMENT_SEED_GATE_SITE_ID,
+                key=(
+                    f"operational_warmup/window/{window.index:02d}/"
+                    f"segment/{segment_index:02d}"
+                ),
+                terminal_consumer="tfp_sample_chain",
+                derivation={
+                    "kind": "warmup_index_lane",
+                    "base_key": "operational_warmup/root",
+                    "index": segment_seed_index,
+                    "lane": 2,
+                },
+                indices=(
+                    {"name": "window_index", "value": window.index},
+                    {"name": "segment_index", "value": segment_index},
+                ),
+                seed_value=segment_seed,
+                interface_hop_site_ids=_G2_SEGMENT_SEED_INTERFACE_HOPS,
+            )
             checkpoint = active_runner(
                 current_latent,
                 final_kernel_results,
                 tf.constant(active_results, dtype=tf.int32),
                 tf.constant(
-                    _seed(
-                        normalized_seed,
-                        window.index
-                        if not segmented_execution
-                        else window.index * 100_000 + segment_index,
-                        lane=2,
-                    ),
+                    segment_seed,
                     dtype=tf.int32,
                 ),
             )
@@ -3057,15 +6197,55 @@ def run_operational_windowed_warmup(
                     window=window,
                 )
                 try:
+                    metric_boundary_seed = _seed(
+                        normalized_seed,
+                        window.index,
+                        lane=3,
+                    )
+                    metric_boundary_seed = consume_g2_seed(
+                        derivation_site_id=(
+                            _G2_METRIC_BOUNDARY_SEED_DERIVATION_SITE_ID
+                        ),
+                        terminal_gate_site_id=(
+                            _G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID
+                        ),
+                        key=(
+                            "operational_warmup/metric_boundary/"
+                            f"{window.index:02d}"
+                        ),
+                        terminal_consumer="hmc_runner_interface",
+                        derivation={
+                            "kind": "warmup_index_lane",
+                            "base_key": "operational_warmup/root",
+                            "index": window.index,
+                            "lane": 3,
+                        },
+                        indices=(
+                            {"name": "window_index", "value": window.index},
+                        ),
+                        seed_value=metric_boundary_seed,
+                        interface_hop_site_ids=(
+                            _G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS
+                        ),
+                    )
                     candidate_reasonable = find_reasonable_epsilon(
                         adapter=candidate_adapter,
                         current_state=mapped_latent,
                         initial_step_size=candidate_epsilon_start,
-                        seed=_seed(normalized_seed, window.index, lane=3),
+                        seed=metric_boundary_seed,
                         num_leapfrog_steps=trajectory_policy.num_leapfrog_steps,
                         momentum_probe_count=4,
                         target_status_trace_policy=target_status_policy,
                         jit_compile=jit_compile,
+                        _g2_seed_use_registry=_g2_seed_use_registry,
+                        _g2_seed_key_prefix=(
+                            "operational_warmup/metric_boundary/"
+                            f"{window.index:02d}"
+                        ),
+                        _g2_seed_base_key=(
+                            "operational_warmup/metric_boundary/"
+                            f"{window.index:02d}"
+                        ),
                     )
                     if (
                         not candidate_reasonable.passed
@@ -3095,6 +6275,9 @@ def run_operational_windowed_warmup(
             if metric_decision.update_applied:
                 next_transform = candidate_transform
                 next_metric = candidate_metric
+                active_position_covariance_estimate_signature = estimate.signature
+                active_p4_transform_signature = candidate_transform.signature
+                applied_metric_update_count += 1
                 next_coordinate_signature = next_transform.signature
                 next_metric_signature = next_metric.signature
                 target_value_map_residual = candidate_value_residual
@@ -3199,25 +6382,25 @@ def run_operational_windowed_warmup(
     history = np.asarray(results[-1].adaptation_canonical_states, dtype=float).reshape(
         (-1, initial_transform.dimension)
     )
-    authoritative_assessment = _assess_private_start_bank(
-        history,
-        reference_transform=kernel_state.transform,
-        scope="authoritative_final_window",
-    )
-    shadow_diagnostic = _best_effort_shadow_start_bank_scope(
-        canonical_history,
-        reference_transform=kernel_state.transform,
-        minimum_relative_separation=(
-            authoritative_assessment.diagnostic.minimum_relative_separation
+    (
+        bank,
+        start_bank_qualification,
+        engineering_qualification,
+        bank_policy_id,
+    ) = _build_postfreeze_private_start_bank(
+        final_kernel_state=kernel_state,
+        position_covariance_estimate_signature=(
+            active_position_covariance_estimate_signature
         ),
-    )
-    start_bank_qualification = _StartBankQualificationDiagnostic(
-        authoritative=authoritative_assessment.diagnostic,
-        shadow=shadow_diagnostic,
-    )
-    bank = _materialize_private_start_bank(
-        authoritative_assessment,
-        qualification=start_bank_qualification,
+        p4_transform_signature=active_p4_transform_signature,
+        applied_metric_update_count=applied_metric_update_count,
+        seed_use_registry=_g2_seed_use_registry,
+        _p4_action_tracker=_g2_p4_action_tracker,
+        adapter=adapter,
+        final_window_history=history,
+        all_window_history=canonical_history,
+        engineering_probe_config=engineering_probe_config,
+        target_status_trace_policy=target_status_policy,
     )
     result = OperationalWindowedWarmupResult(
         config=config,
@@ -3231,6 +6414,8 @@ def run_operational_windowed_warmup(
         target_scope=str(target_scope),
         target_status_trace_policy=target_status_policy,
         elapsed_s=time.perf_counter() - start,
+        private_start_bank_policy_id=bank_policy_id,
+        engineering_probe_bank_qualification=engineering_qualification,
         algorithm_id=algorithm_id,
         route_contract_version=route_contract_version,
     )
@@ -3565,13 +6750,13 @@ def _native_divergence(kernel_results: Any) -> Any | None:
     return None
 
 
-def compose_base_transform_with_nested_artifact(
+def _compose_base_transform_with_nested_estimate(
     *,
     base_transform: AffineCoordinateTransform,
     nested_artifact: Any,
     source_coordinate_signature: str,
-) -> AffineCoordinateTransform:
-    """Compose ``theta=c0+A0 z0`` with historical ``z0=c1+A1 z``."""
+) -> tuple[PositionCovarianceEstimate, AffineCoordinateTransform]:
+    """Return the exact covariance estimate and its composed transform."""
 
     nested_center = np.asarray(nested_artifact.position, dtype=float)
     nested_factor = np.asarray(nested_artifact.factor, dtype=float)
@@ -3616,6 +6801,22 @@ def compose_base_transform_with_nested_artifact(
     direct_theta = transform.latent_to_theta(probe)
     if not np.allclose(nested_theta, direct_theta, rtol=1.0e-10, atol=1.0e-10):
         raise ValueError("forward operational compatibility composition failed")
+    return estimate, transform
+
+
+def compose_base_transform_with_nested_artifact(
+    *,
+    base_transform: AffineCoordinateTransform,
+    nested_artifact: Any,
+    source_coordinate_signature: str,
+) -> AffineCoordinateTransform:
+    """Compose ``theta=c0+A0 z0`` with historical ``z0=c1+A1 z``."""
+
+    _estimate, transform = _compose_base_transform_with_nested_estimate(
+        base_transform=base_transform,
+        nested_artifact=nested_artifact,
+        source_coordinate_signature=source_coordinate_signature,
+    )
     return transform
 
 
