@@ -100,3 +100,20 @@ Only after R4 does the leaderboard meet the production-level definition
 above. Nothing in R1-R4 requires an owner decision EXCEPT: A1 (dual-cap
 default/activation policy), A5 if the ridge change is declined, and any
 ranking ambition in D2 (which sets R4's analysis scope).
+
+## Amendment 2026-08-26 (owner directive): A1 reclassified
+
+A1 was WRONGLY classified as "owner decision pending". The owner
+directive is on record: the dual-cap trust region is a REQUIRED
+production mechanism — it is the designed control for the
+covariance-explosion problem (reset-less probe flow collapse; Curve-2
+seed-1 measured harm from uncapped steps). The silent omission was a
+planning error of the same class as the score-cell mislabeling and is
+ledgered as owner finding #2. Remedy landed: production program defined
+in code (`LEDH_PRODUCTION_PROGRAM_V1`), registry wiring gate, runner
+rebuilt from the registry (value cells: dual_cap + trust region ON;
+score cells: full S6+S7), estimand gate re-pinned to the registry
+program (passes with the mechanism ON), annealed+full-production
+composition oracle gate added (green first run). REMAINING from A1: only
+the radius calibration (R2/B; 0.5 is a declared warm start) and the A4
+reset-dtype question. A7 (fixed-index annealed tangent) unchanged.

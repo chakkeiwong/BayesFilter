@@ -140,3 +140,16 @@ cells (G-5-style quarantine), and the estimand gate
 production score-lane program to the exact-reference anchor. Chat
 summaries of results must lead with the same configuration-status
 information — a plan-file caveat does not discharge this duty.
+
+Amendment 2026-08-26 (owner finding #2, same failure class): a REQUIRED
+mechanism of the production program (the dual-cap trust region — the
+designed covariance-explosion control) was silently omitted from
+claim-bearing cells because a code default (`dual_cap_enabled=False`)
+quietly defined "production" downward, and the gap register then
+misclassified activation as a pending decision. Rule: the production
+program is DEFINED IN CODE (`LEDH_PRODUCTION_PROGRAM_V1` in
+`ledh_alg1_contract.py`), "production" labels are validated against it
+(wiring gate), and omitting a required mechanism must surface as a
+labeled deviation in the configuration-status table — never as a
+default. Warm-start parameter values inside the registry are declared
+as such in `tuning`; the mechanism itself is not optional.

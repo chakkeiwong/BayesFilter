@@ -66,3 +66,56 @@ def test_g1_ledh_lane_discovery():
     assert not unregistered, (
         f"unregistered LEDH canonical modules (G-1): {unregistered}"
     )
+
+
+def test_production_program_registry_wiring():
+    """Owner directive 2026-08-26: the trust region is a REQUIRED
+    mechanism of the production program (covariance-explosion control),
+    and 'production' must be machine-checkable. This gate pins:
+    (1) the registry requires dual_cap + trust_region ON;
+    (2) `_restore_cloud_primal`'s dual-cap family defaults equal the
+        registry's owner-family constants (the filter relies on them);
+    (3) the Q3 leaderboard runner builds its production configs FROM
+        the registry (no silent local copies)."""
+
+    import inspect
+    import sys as _sys
+
+    from bayesfilter.highdim.ledh_alg1_contract import (
+        LEDH_PRODUCTION_PROGRAM_V1 as REG,
+    )
+    from bayesfilter.highdim.genut_guided_proposal_tf import (
+        _restore_cloud_primal,
+    )
+
+    assert REG["filter"]["dual_cap_enabled"] is True
+    assert REG["filter"]["trust_region_enabled"] is True
+    assert REG["score"]["correction_steps"] > 0
+
+    signature = inspect.signature(_restore_cloud_primal)
+    for key, value in REG["dual_cap_family"].items():
+        default = signature.parameters[key].default
+        assert default == value, (
+            f"_restore_cloud_primal default {key}={default} != "
+            f"registry {value} — family constants drifted"
+        )
+
+    _sys.path.insert(0, "docs/benchmarks")
+    import run_q3_leaderboard_20260824 as runner
+
+    source = inspect.getsource(runner)
+    assert "LEDH_PRODUCTION_PROGRAM_V1" in source, (
+        "leaderboard runner does not import the production-program "
+        "registry — production configs must come from the registry"
+    )
+    score_kwargs = runner.production_score_kwargs(2)
+    for key, value in REG["score"].items():
+        assert score_kwargs.get(key) == value, (
+            f"runner score config {key}={score_kwargs.get(key)} != "
+            f"registry {value}"
+        )
+    assert "reset_design" in score_kwargs
+    for key, value in REG["filter"].items():
+        assert runner.PRODUCTION_FILTER_KWARGS.get(key) == value, (
+            f"runner filter config {key} != registry"
+        )

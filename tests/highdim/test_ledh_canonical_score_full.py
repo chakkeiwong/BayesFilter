@@ -291,10 +291,13 @@ def test_production_score_lane_value_is_likelihood_estimand():
             out.append(float(v.numpy()))
         return float(np.mean(out))
 
-    production = values(dict(
-        reset_policy="contract_e", reset_design=design,
-        reset_sinkhorn_steps=8, reset_balance_steps=8,
-    ))
+    from bayesfilter.highdim.ledh_alg1_contract import (
+        LEDH_PRODUCTION_PROGRAM_V1,
+    )
+
+    production_kwargs = dict(LEDH_PRODUCTION_PROGRAM_V1["score"])
+    production_kwargs["reset_design"] = design
+    production = values(production_kwargs)
     assert abs(production - exact) < 0.4, (
         f"PRODUCTION score-lane value {production:.3f} vs Kalman "
         f"{exact:.3f} — estimand gate failed"
@@ -307,3 +310,48 @@ def test_production_score_lane_value_is_likelihood_estimand():
     # enforced at the artifact layer (leaderboard cells must carry
     # program/tuning labels; the report builder refuses unlabeled
     # cells) and by the score-module estimand warning.
+
+
+def test_annealed_with_full_production_program_matches_oracle():
+    """Composition gate (2026-08-26): annealed telescope + the FULL
+    registry production program (S6 reset + S7 dual-cap trust region)
+    vs the oracle — the Austria-row score-cell composition, previously
+    gated only without the S7 correction."""
+
+    from bayesfilter.highdim.ledh_alg1_contract import (
+        LEDH_PRODUCTION_PROGRAM_V1,
+    )
+
+    rng = np.random.default_rng(103)
+    n, dim, horizon = 24, 2, 2
+    initial = tf.constant(rng.standard_normal((n, dim)), DTYPE)
+    covs = tf.constant(np.stack([np.eye(dim)] * n), DTYPE)
+    noises = tf.constant(rng.standard_normal((horizon, n, dim)), DTYPE)
+    observations = tf.constant(rng.standard_normal((horizon, dim)), DTYPE)
+    theta0 = tf.constant([0.6], DTYPE)
+    model = _model()
+    base = np.concatenate([np.eye(dim), -np.eye(dim)], axis=0)
+    design = tf.constant(np.tile(base, (n // (2 * dim), 1)), DTYPE)
+    kwargs = dict(LEDH_PRODUCTION_PROGRAM_V1["score"])
+    kwargs["reset_design"] = design
+    kwargs.update(substeps=8, annealed_stages=2, annealed_seed=31)
+
+    def value_fn(theta):
+        value, _ = canonical_value_and_analytical_score(
+            model, theta, initial, covs, noises, observations,
+            with_score=False, **kwargs,
+        )
+        return value
+
+    oracle = oracle_forward_autodiff_score(value_fn, theta0)
+    value, score = canonical_value_and_analytical_score(
+        model, theta0, initial, covs, noises, observations,
+        with_score=True, **kwargs,
+    )
+    assert np.isfinite(float(value.numpy()))
+    err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
+    scale = max(abs(float(oracle[0].numpy())), 1.0)
+    assert err < 1.0e-4 * scale, (
+        f"annealed+full-production analytical {float(score[0].numpy())} "
+        f"vs oracle {float(oracle[0].numpy())}"
+    )

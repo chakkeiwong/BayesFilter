@@ -187,7 +187,8 @@ def canonical_filter_values(callbacks, observations, seeds, **filter_kwargs):
     for seed in seeds:
         result = canonical_value_and_diagnostics(
             callbacks, observations, particle_count=1008, seed=seed,
-            flow_substeps=16, resample_seed=seed, **filter_kwargs,
+            flow_substeps=16, resample_seed=seed,
+            **{**PRODUCTION_FILTER_KWARGS, **filter_kwargs},
         )
         values.append(float(result["value"].numpy()))
         valids.append(bool(result["program_valid"].numpy()))
@@ -195,18 +196,31 @@ def canonical_filter_values(callbacks, observations, seeds, **filter_kwargs):
     return values, valids, min_ess
 
 
-def production_reset_kwargs(dim, n=1008):
-    """Production score-lane reset config: contract_e with the tiled
-    +/- unit design (the filter's design construction)."""
+from bayesfilter.highdim.ledh_alg1_contract import (  # noqa: E402
+    LEDH_PRODUCTION_PROGRAM_V1,
+)
+
+# Value-filter production kwargs FROM THE REGISTRY (owner directive
+# 2026-08-26: dual-cap trust region is a REQUIRED mechanism — the
+# covariance-explosion control; omitting it is a labeled deviation,
+# never a default).
+PRODUCTION_FILTER_KWARGS = dict(LEDH_PRODUCTION_PROGRAM_V1["filter"])
+
+
+def production_score_kwargs(dim, n=1008):
+    """Production score-lane config FROM THE REGISTRY (S6 contract_e
+    reset + S7 dual-cap trust-region correction) plus the scope-shaped
+    tiled +/- unit design."""
     base = np.concatenate([np.eye(dim), -np.eye(dim)], axis=0)
     design = tf.constant(np.tile(base, (n // (2 * dim), 1)), DTYPE)
-    return dict(
-        reset_policy="contract_e", reset_design=design,
-        reset_sinkhorn_steps=8, reset_balance_steps=8,
-    )
+    kwargs = dict(LEDH_PRODUCTION_PROGRAM_V1["score"])
+    kwargs["reset_design"] = design
+    return kwargs
 
 
-UNTUNED = "UNTUNED (no per-scope tuning artifact; onboarding-gate config)"
+UNTUNED = ("UNTUNED (no per-scope tuning artifact; registry warm-start "
+           "values: trust radius 0.5 warm start per Q2 Curve-2, "
+           "epsilon 2.0 warm start per gap A2)")
 
 
 def score_cells(model, set_direction, theta, dim, observations,
@@ -300,8 +314,8 @@ def score_cells(model, set_direction, theta, dim, observations,
     }
 
 
-def summarize(values, valids, program="production value filter "
-              "(contract_e reset; dual_cap OFF per filter default)",
+def summarize(values, valids, program="production v1 (registry: contract_e reset + dual-cap "
+              "trust region ON)",
               tuning=UNTUNED):
     return {
         "program": program,
@@ -435,8 +449,8 @@ def row_diagonal_lgssm():
     )
     score = score_cells(
         model, set_direction, theta0, 3, observations, 0, SCORE_SEEDS,
-        reset_kwargs=production_reset_kwargs(3),
-        program="production (contract_e smooth OT reset)",
+        reset_kwargs=production_score_kwargs(3),
+        program="production v1 (registry: S6 contract_e reset + S7 dual-cap trust region)",
     )
     score["exact_kalman_fd_score_dir0"] = exact_score_dir0
     score["abs_error_of_mean_vs_exact"] = abs(
@@ -492,8 +506,8 @@ def row_predator_prey():
     )
     score = score_cells(
         model, set_direction, theta0, 2, observations, 0, SCORE_SEEDS,
-        reset_kwargs=production_reset_kwargs(2),
-        program="production (contract_e smooth OT reset)",
+        reset_kwargs=production_score_kwargs(2),
+        program="production v1 (registry: S6 contract_e reset + S7 dual-cap trust region)",
     )
     return {
         "data": "frozen predator_prey_T20",
@@ -542,8 +556,8 @@ def row_ksc_sv(value_seeds, score_seeds):
     )
     score = score_cells(
         model, set_direction, theta0, 1, observations, 0, score_seeds,
-        reset_kwargs=production_reset_kwargs(1),
-        program="production (contract_e smooth OT reset)",
+        reset_kwargs=production_score_kwargs(1),
+        program="production v1 (registry: S6 contract_e reset + S7 dual-cap trust region)",
     )
     return {
         "data": "frozen zhao_cui_sv_ksc_T1000 (full mixture horizon)",
@@ -603,8 +617,8 @@ def row_generalized_sv():
     )
     score = score_cells(
         model, set_direction, theta0, 2, observations, 4, SCORE_SEEDS,
-        reset_kwargs=production_reset_kwargs(2),
-        program="production (contract_e smooth OT reset)",
+        reset_kwargs=production_score_kwargs(2),
+        program="production v1 (registry: S6 contract_e reset + S7 dual-cap trust region)",
     )
     return {
         "data": "simulated gen-SV T=20 (seed 501; heteroskedastic law)",
@@ -660,9 +674,8 @@ def row_austria_sir():
         model, set_direction, theta0, 18, observations, 0, SCORE_SEEDS,
         annealed_stages=4, initial_mean=initial_mean,
         self_consistency="oracle",
-        reset_kwargs=production_reset_kwargs(18),
-        program="production (annealed k=4 per Q2 calibration + "
-        "contract_e reset)",
+        reset_kwargs=production_score_kwargs(18),
+        program="production v1 (registry + annealed k=4 per Q2 calibration)",
         tuning="Q2 Curve-1 artifact (k=4/c=8) + Curve-3 damping; "
         "epsilon/substeps/reset controls untuned",
     )

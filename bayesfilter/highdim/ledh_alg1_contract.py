@@ -213,6 +213,58 @@ ENTRY_POINTS: tuple[EntryPoint, ...] = (
 # must refuse unstamped artifacts (historical-result quarantine).
 ALG1_CONFORMANCE_SUITE_VERSION = "ledh-canonical-conformance-v1-2026-08-24"
 
+# THE production program, defined in one place so that "production" is
+# machine-checkable and the omission of a required mechanism is a loud,
+# labeled deviation — never a silent default. Owner directive 2026-08-26:
+# the dual-cap TRUST REGION is REQUIRED — it is the designed control for
+# the covariance-explosion problem (reset-less probe: flow collapse at
+# chaos-takeoff steps from unbounded cloud spread; Q2 Curve-2 seed-1:
+# uncapped correction steps measurably harm on takeoff clouds).
+# Parameter provenance: lm_damping 1e-2 justified (Q2 Curve 3);
+# trust_radius 0.5 WARM START (Curve 2 criterion failed honestly; the
+# multi-iteration calibration contract is the R2 gating item); dual-cap
+# family constants = owner family decision (2026-08-07 spec, Curve 5);
+# sinkhorn epsilon 2.0 WARM START (measured epsilon-sensitive, Curve-4/
+# gap A2). Warm-start fields are production-REQUIRED mechanisms with
+# not-yet-calibrated values — cells must say so in `tuning`, and must
+# not omit the mechanism.
+LEDH_PRODUCTION_PROGRAM_V1 = {
+    # value filter kwargs (canonical_value_and_diagnostics)
+    "filter": {
+        "dual_cap_enabled": True,
+        "trust_region_enabled": True,
+        "trust_region_lm_damping": 1.0e-2,
+        "trust_region_lm_scale_floor": 1.0e-4,
+        "trust_region_radius": 0.5,
+    },
+    # dual-cap family constants enforced via _restore_cloud_primal
+    # defaults (wiring-tested against this registry)
+    "dual_cap_family": {
+        "dual_cap_diagonal_steps": 4,
+        "dual_cap_diagonal_strength": 0.2,
+        "dual_cap_pairwise_steps": 4,
+        "dual_cap_pairwise_strength": 0.02,
+        "dual_cap_pairwise_particle_rms_cap": 2.0,
+        "dual_cap_coordinate_cap": 0.98,
+        "dual_cap_coordinate_cap_power": 8,
+    },
+    # score-lane kwargs (canonical_value_and_analytical_score); the
+    # reset design is scope-shaped and supplied by the runner
+    "score": {
+        "reset_policy": "contract_e",
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "correction_steps": 4,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 1.0e-2,
+        "correction_trust_radius": 0.5,
+        "pairwise_steps": 4,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+    },
+}
+
 FORBIDDEN_CALLBACK_PLACEHOLDERS = (
     "identity_covariance_without_reviewed_exception",
     "constant_covariance_without_provenance",

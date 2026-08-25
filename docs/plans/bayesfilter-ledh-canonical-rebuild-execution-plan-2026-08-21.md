@@ -967,3 +967,24 @@ review.
   its calibration; KSC score seeds reduced to 4 for the T=1000 reset
   cost, recorded); prior score cells are SUPERSEDED (git history
   preserves them; do not quote). Cross-session memory updated.
+
+- 2026-08-26 (ledger): OWNER FINDING #2 — silent omission of a REQUIRED
+  mechanism. The dual-cap trust region (the designed covariance-
+  explosion control) was absent from every claim-bearing board cell
+  because the filter default is False and the Q3 runner inherited it;
+  the gap register then misclassified activation as "pending owner
+  decision" although the design record (reset-less-probe explosion
+  evidence; Curve-2 seed-1 uncapped-harm measurement; the 08-07 family
+  spec) already made it required. Same failure class as the score-cell
+  mislabeling: a default quietly redefining "production". Structural
+  remedy: `LEDH_PRODUCTION_PROGRAM_V1` registry in ledh_alg1_contract
+  (single code definition of production; warm-start values declared);
+  registry wiring gate (registry vs _restore_cloud_primal family
+  defaults vs runner configs); runner rebuilt from the registry —
+  value cells dual_cap+trust_region ON, score cells full S6+S7;
+  estimand gate re-pinned to the registry program (PASSES with the
+  mechanism ON — the required mechanism holds the linear-anchor
+  estimand bound); new annealed+full-production composition oracle
+  gate green first run. Board regeneration under the true production
+  program launched; prior board cells SUPERSEDED (git history
+  preserves them).
