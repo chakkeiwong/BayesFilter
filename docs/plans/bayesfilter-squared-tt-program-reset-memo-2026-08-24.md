@@ -71,6 +71,17 @@ question is now answered — the suspect was the domain).
 
 ## Continuation queue (in order)
 
+UPDATE 4 (2026-08-26, GATE C CLOSED): C1 reconciliation (7f704447,
+relocated f3e82a9f); C2 Student-t floor + nu criterion 4/4 (2ebce436);
+C3+C4 SV fixture/references/hints validated (f3e82a9f: n=1 grid+PF
+certified, n=2 N-ladder bias decay measured, 1.6M z=2.02 resolved as
+fluctuation by replication, degeneracy screen 0.05, n=4 policy = SE +
+screen + N-doubling; GH hints 1.3e-2/2.8e-2, alpha 0.67); C5 claim
+parity green (nu=27.62 at alpha_max 0.8/cap 12; deg0 1.2e-13, deg6
+1.2e-14). PHASES A AND C CLOSED. ~5.5h/12h budget. REMAINING: Phase B
+(adjoint, non-blocking) and D1 attempt05 plan (OWNER TOUCHPOINT before
+ladder compute), then D2 runs.
+
 UPDATE 3 (2026-08-25, PHASE A CLOSED): campaign plan REVIEWED-EXECUTABLE
 (47da9206, review AGREE after CF1-CF11). Gate A PASS (a8fe0639,
 recalibrated on attribution evidence: program parity 7.06e-14,
