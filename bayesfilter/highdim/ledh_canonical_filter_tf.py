@@ -156,6 +156,22 @@ def canonical_value_and_diagnostics(
     )[:particle_count]
 
     for time_index in range(horizon):
+        # Class-B fail-closed guard (2026-08-26): nonfinite lifecycle
+        # state must become a RECORDED veto, never an eigh/cholesky
+        # crash. First fired by the first claim-scale full-production
+        # Austria run (f32 reset+dual-cap islands NaN'd a step; the
+        # next step's spectral-cap eigh then raised).
+        state_finite = bool(
+            tf.reduce_all(tf.math.is_finite(states)).numpy()
+        ) and bool(
+            tf.reduce_all(tf.math.is_finite(covariances)).numpy()
+        )
+        if not state_finite:
+            valid = tf.constant(False)
+            total = tf.cast(float("nan"), dtype)
+            for _ in range(time_index, horizon):
+                ess_history.append(tf.cast(float("nan"), dtype))
+            break
         observation = observations[time_index]
 
         def mean_fn(points, _t=time_index):
@@ -164,6 +180,18 @@ def canonical_value_and_diagnostics(
         predicted_means, predicted_covs = ukf_predict_per_particle(
             states, covariances, mean_fn, process_cov
         )
+        predicted_finite = bool(
+            tf.reduce_all(tf.math.is_finite(predicted_covs)).numpy()
+        ) and bool(
+            tf.reduce_all(tf.math.is_finite(predicted_means)).numpy()
+        )
+        if not predicted_finite:
+            # same guard class: dynamics blowup from finite states
+            valid = tf.constant(False)
+            total = tf.cast(float("nan"), dtype)
+            for _ in range(time_index, horizon):
+                ess_history.append(tf.cast(float("nan"), dtype))
+            break
         anchors = mean_fn(states)
         process_noise = generator.normal(
             [particle_count, dim], dtype=dtype

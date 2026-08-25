@@ -265,10 +265,32 @@ def score_cells(model, set_direction, theta, dim, observations,
         )
 
     scores = []
+    crashed = 0
     for seed in seeds:
-        _v, s = run(theta, seed, True)
-        scores.append(float(s[0].numpy()))
+        try:
+            _v, s = run(theta, seed, True)
+            scores.append(float(s[0].numpy()))
+        except Exception as error:  # crash -> recorded veto (2026-08-26)
+            print(f"[score-cell VETO] seed={seed}: {error}", flush=True)
+            scores.append(float("nan"))
+            crashed += 1
     analytical_seed0 = scores[0]
+    if crashed == len(seeds):
+        return {
+            "program": program,
+            "tuning": tuning,
+            "crashed_seeds": crashed,
+            "all_finite": False,
+            "direction_index": direction_index,
+            "analytical_scores": scores,
+            "mean": float("nan"),
+            "seed_spread": float("nan"),
+            "self_consistency_reference": float("nan"),
+            "self_consistency_kind": "unavailable (all seeds vetoed)",
+            "self_consistency_rel_err_seed0": float("nan"),
+            "annealed_stages": annealed_stages,
+            "note": "HARD VETO: every seed crashed nonfinite",
+        }
     if self_consistency == "oracle":
         # Annealed rows: central FD is invalid across resampling-boundary
         # crossings; the forward-autodiff oracle differentiates the SAME
@@ -306,6 +328,8 @@ def score_cells(model, set_direction, theta, dim, observations,
     return {
         "program": program,
         "tuning": tuning,
+        "crashed_seeds": crashed,
+        "all_finite": bool(np.all(np.isfinite(scores))),
         "direction_index": direction_index,
         "analytical_scores": scores,
         "mean": float(np.mean(scores)),
