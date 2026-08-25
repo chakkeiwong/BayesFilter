@@ -68,7 +68,7 @@ def run_arm(label, fn, rows, horizon=HORIZON, compile_probe=False):
     )
     ess_values = [d["row_ess"] for d in diags]
     record = {
-        "arm": label, "rows": rows, "wall_s": wall, "compile_probe_s": compile_s,
+        "arm": label, "rows": rows, "horizon": horizon, "wall_s": wall, "compile_probe_s": compile_s,
         "kalman_gap": kalman_gap, "row_ess_min": min(ess_values),
         "row_ess_mean": sum(ess_values) / len(ess_values),
         "ess_floor": ESS_FLOOR,
@@ -77,7 +77,7 @@ def run_arm(label, fn, rows, horizon=HORIZON, compile_probe=False):
         "increments": [d["log_increment"] for d in diags],
         "memory_growth_verified": "no_gpu_visible_intentional",
     }
-    with open(os.path.join(OUT_DIR, f"arm_{label}_{rows}.json"), "w") as fh:
+    with open(os.path.join(OUT_DIR, f"arm_{label}_{rows}_T{horizon}.json"), "w") as fh:
         json.dump(record, fh, indent=1)
     print(f"A3 {label} rows={rows} wall={wall:.0f}s kalman={kalman_gap:.2e} "
           f"ess_min={record['row_ess_min']:.0f} (floor {ESS_FLOOR}) "
@@ -85,14 +85,38 @@ def run_arm(label, fn, rows, horizon=HORIZON, compile_probe=False):
     return record
 
 
-eager = run_arm("eager", run_value_filter_branch_axis_gaussian, 8192, horizon=2)
-xla = run_arm("xla", run_value_filter_branch_axis_gaussian_xla, 8192, horizon=2,
-              compile_probe=True)
+def run_arm_subprocess(label, rows, horizon, compile_probe):
+    """Fresh process per arm: the LLVM section-memory crash after
+    repeated large XLA compiles in one process is a known failure mode
+    (reset memo 2026-08-19; reproduced here on the first A3 rerun)."""
+    import subprocess
+    args = [sys.executable, os.path.abspath(__file__), "--arm", label,
+            str(rows), str(horizon), "1" if compile_probe else "0"]
+    proc = subprocess.run(args, capture_output=True, text=True, timeout=3600)
+    sys.stdout.write(proc.stdout)
+    sys.stdout.flush()
+    if proc.returncode != 0:
+        sys.stderr.write(proc.stderr[-2000:])
+        raise RuntimeError(f"arm {label} rows={rows} T={horizon} failed rc={proc.returncode}")
+    with open(os.path.join(OUT_DIR, f"arm_{label}_{rows}_T{horizon}.json")) as fh:
+        return json.load(fh)
+
+
+if len(sys.argv) > 1 and sys.argv[1] == "--arm":
+    label, rows, horizon, probe_flag = (
+        sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5] == "1")
+    fn = (run_value_filter_branch_axis_gaussian if label == "eager"
+          else run_value_filter_branch_axis_gaussian_xla)
+    run_arm(label, fn, rows, horizon=horizon, compile_probe=probe_flag)
+    sys.exit(0)
+
+eager = run_arm_subprocess("eager", 8192, 2, False)
+xla = run_arm_subprocess("xla", 8192, 2, True)
 step_gap = max(
     abs(a - b) for a, b in zip(eager["increments"], xla["increments"])
 )
 print(f"A3 parity rows=8192 T=2 step={step_gap:.2e} (floor-ceiling 7e-5)", flush=True)
-xla_big = run_arm("xla", run_value_filter_branch_axis_gaussian_xla, 8192)
+xla_big = run_arm_subprocess("xla", 8192, HORIZON, False)
 decision = {
     "parity_step_gap_8192_T2": step_gap,
     "parity_within_floor_ceiling": step_gap <= 7e-5,
