@@ -83,7 +83,23 @@ def _hermite_product_basis(dimension: int, degree: int) -> ProductBasis:
     )
 
 
-def _christoffel_axis_table(degree: int) -> tuple[tf.Tensor, tf.Tensor]:
+def _christoffel_beta(dimension: int) -> float:
+    """Dimension-aware Christoffel mixture weight (A3 calibration,
+    2026-08-25). Per-axis importance weights multiply across axes, so
+    the product ESS fraction decays geometrically in the axis count:
+    at ell=13, beta=0.5 measured ESS 1400/2048 at d=4 (certified n=2
+    scopes) but 111/2048 and 408/8192 at d=8 — the starved regime that
+    produced non-finite retention in the first A3 run. beta=0.10 at
+    d=8 measured ESS 5347/8192 at axis-Gram cond 1.31 (vs 1.16 for
+    beta=0.5): the Chernoff-side cost of the lighter mixture is
+    negligible at the d>4 operating row count while the ESS gain is
+    ~13x. d<=4 keeps the certified beta=0.5. Evidence:
+    check_c2_hermite_rowlaw_mechanism_20260824.py (beta table)."""
+
+    return 0.5 if dimension <= 4 else 0.10
+
+
+def _christoffel_axis_table(degree: int, beta: float) -> tuple[tf.Tensor, tf.Tensor]:
     """Grid CDF of the per-axis induced mixture q1 = eta * mean_k He~_k^2.
 
     Optimal weighted least squares (Cohen & Migliorati 2017): rows drawn
@@ -105,7 +121,7 @@ def _christoffel_axis_table(degree: int) -> tuple[tf.Tensor, tf.Tensor]:
     # Chernoff Gram guarantee up to a factor 2 (measured: cond 1.32 at
     # ell=13, N=2048, ESS 1400).
     christoffel_bar = tf.reduce_mean(tf.square(values), axis=1)
-    density = tf.exp(log_eta1) * (0.5 + 0.5 * christoffel_bar)
+    density = tf.exp(log_eta1) * ((1.0 - beta) + beta * christoffel_bar)
     cdf = tf.cumsum(density)
     cdf = cdf / cdf[-1]
     return grid, cdf
@@ -136,7 +152,8 @@ def _christoffel_rows(
             "boundary; inverse CDF would be ill-defined (fail closed)"
         )
     probabilities = 0.5 * (uniform + 1.0)
-    grid, cdf = _christoffel_axis_table(degree)
+    beta = _christoffel_beta(dimension)
+    grid, cdf = _christoffel_axis_table(degree, beta)
     flat = tf.reshape(probabilities, [-1])
     upper = tf.clip_by_value(
         tf.searchsorted(cdf, flat, side="left"), 1, int(cdf.shape[0]) - 1
@@ -150,11 +167,13 @@ def _christoffel_rows(
     if not bool(tf.reduce_all(tf.math.is_finite(rows)).numpy()):
         raise ValueError("christoffel rows: non-finite row after inverse CDF")
     values = HermiteBasis1D(max_degree=degree).evaluate(tf.reshape(rows, [-1]))
-    log_half_mixture = tf.reshape(
-        tf.math.log(0.5 + 0.5 * tf.reduce_mean(tf.square(values), axis=1)),
+    log_mixture = tf.reshape(
+        tf.math.log(
+            (1.0 - beta) + beta * tf.reduce_mean(tf.square(values), axis=1)
+        ),
         tf.shape(rows),
     )
-    log_weight = -tf.reduce_sum(log_half_mixture, axis=1)
+    log_weight = -tf.reduce_sum(log_mixture, axis=1)
     weights = tf.exp(log_weight - tf.reduce_logsumexp(log_weight))
     # Class-A observability (campaign plan CF2): the effective sample
     # size of the importance weights is computed here anyway — emit it.

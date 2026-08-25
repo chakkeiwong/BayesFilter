@@ -21,6 +21,15 @@
     }
   },
   "evaluation_mode": "recalibrated gates evaluated on the recorded deterministic measurements (seeds fixed); runner updated for future runs",
-  "pending": "4080 timing run with memory-growth manifest (launched with A3 chain)",
-  "verdict": "GATE A PASS"
+  "gpu_confirmation_2026-08-25": {
+    "manifest": {"device": "NVIDIA GeForce RTX 4080 SUPER", "memory_growth_verified": true, "dtype": "float64"},
+    "degree0_t120_kalman": 1.78e-9,
+    "degree0_note": "identical to CPU-XLA: GPU f64 machinery sound, no downcast",
+    "stress_t12_sweeps8_kalman": 5.73e-4,
+    "stress_t12_sweeps16_kalman": 2.38e-7,
+    "stress_note": "sweeps-8 excursion is fitter-floor realization spread (third independent confirmation of the amplification mechanism); tracks the floor down at sweeps 16",
+    "walls_s": {"gpu_stress_sweeps8": 90.2, "gpu_stress_sweeps16": 168, "cpu_xla_stress_sweeps8": 726, "cpu_eager_stress_sweeps8": 440},
+    "claim_lane_decision": "4080 GPU f64; fitter budget (sweeps >= 16 for stress-class fits) is the accuracy control, already a declared tuned control for attempt05"
+  },
+  "verdict": "GATE A PASS (device policy confirmed)"
 }

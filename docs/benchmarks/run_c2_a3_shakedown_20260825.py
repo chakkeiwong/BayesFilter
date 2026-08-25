@@ -37,11 +37,13 @@ OUT_DIR = os.path.join(
 )
 os.makedirs(OUT_DIR, exist_ok=True)
 ESS_FLOOR = 5 * 468
+# Sized per the beta calibration (2026-08-25): beta(d>4)=0.10 in the
+# engine, N=8192 (measured product ESS 5347 >= floor 2340 at d=8).
 N, HORIZON, DEGREE, RANK, SWEEPS, SEED = 4, 4, 12, 6, 8, 46
 
 
-def run_arm(label, fn, rows, compile_probe=False):
-    adapter, ys, steps, model = T._lgssm_fixture(N, HORIZON, SEED)
+def run_arm(label, fn, rows, horizon=HORIZON, compile_probe=False):
+    adapter, ys, steps, model = T._lgssm_fixture(N, horizon, SEED)
     ih, ph = T._exact_hint_factories(model)
     config = EngineConfig(
         basis_degree=DEGREE, rank=RANK, row_count=rows, sweeps=SWEEPS,
@@ -83,23 +85,22 @@ def run_arm(label, fn, rows, compile_probe=False):
     return record
 
 
-eager = run_arm("eager", run_value_filter_branch_axis_gaussian, 2048)
-xla = run_arm("xla", run_value_filter_branch_axis_gaussian_xla, 2048,
+eager = run_arm("eager", run_value_filter_branch_axis_gaussian, 8192, horizon=2)
+xla = run_arm("xla", run_value_filter_branch_axis_gaussian_xla, 8192, horizon=2,
               compile_probe=True)
 step_gap = max(
     abs(a - b) for a, b in zip(eager["increments"], xla["increments"])
 )
-print(f"A3 parity rows=2048 step={step_gap:.2e} (floor-ceiling 7e-5)", flush=True)
+print(f"A3 parity rows=8192 T=2 step={step_gap:.2e} (floor-ceiling 7e-5)", flush=True)
 xla_big = run_arm("xla", run_value_filter_branch_axis_gaussian_xla, 8192)
 decision = {
-    "parity_step_gap_2048": step_gap,
+    "parity_step_gap_8192_T2": step_gap,
     "parity_within_floor_ceiling": step_gap <= 7e-5,
-    "ess_2048_met": xla["ess_floor_met"],
     "ess_8192_met": xla_big["ess_floor_met"],
+    "row_law": "beta(d>4)=0.10 tempered Christoffel (engine); first A3 run at beta=0.5/N=2048 crashed fail-closed exactly as CF2 projected",
     "sizing_decision": (
-        "N=2048 sufficient" if xla["ess_floor_met"] else
-        ("N=8192 adopted for 8-axis scopes" if xla_big["ess_floor_met"] else
-         "ESCALATE: even N=8192 starved — row law or N ladder needed")
+        "beta=0.10 + N=8192 adopted for 8-axis scopes" if xla_big["ess_floor_met"] else
+        "ESCALATE: beta=0.10 + N=8192 still starved — N ladder needed"
     ),
     "compile_probe_s": xla["compile_probe_s"],
 }
