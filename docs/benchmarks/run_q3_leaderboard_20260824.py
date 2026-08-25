@@ -37,6 +37,12 @@ sys.path.insert(0, os.path.join(_ROOT, "tests", "highdim"))
 import numpy as np  # noqa: E402  (diagnostics/simulation)
 import tensorflow as tf  # noqa: E402
 
+# Memory growth MUST be set before any bayesfilter import (module-level
+# tf constants initialize the GPU); the registry import below would
+# otherwise lock the devices and the runner would fail closed.
+for _gpu in tf.config.list_physical_devices("GPU"):
+    tf.config.experimental.set_memory_growth(_gpu, True)
+
 DTYPE = tf.float64
 VALUE_SEEDS = list(range(16))
 SCORE_SEEDS = list(range(8))
@@ -713,10 +719,7 @@ def main() -> None:
     args = parser.parse_args()
     started = time.time()
 
-    # memory growth BEFORE any bayesfilter import can initialize devices
     gpus = tf.config.list_physical_devices("GPU")
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
 
     from bayesfilter.highdim.ledh_alg1_contract import (
         ALG1_CONFORMANCE_SUITE_VERSION,
