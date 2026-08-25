@@ -2,7 +2,31 @@
 
 Program: Q3 of the completion program; plan: `bayesfilter-q3-leaderboard-execution-plan-2026-08-24.md`. All rows G-5 stamped; seeding uses the fidelity-#7-fixed independent replication streams. N=1008 particles per arm; 16 value seeds / 8 score seeds unless a row's manifest says otherwise.
 
-## Hard-veto screen (read first)
+## Configuration status (READ BEFORE ANY NUMBER)
+
+A cell whose program is not `production` or whose tuning is UNTUNED must not be debugged or interpreted as the production algorithm's performance. Per the per-scope tuning rule, UNTUNED cells carry no per-model claims.
+
+| row | cell | program | tuning |
+|---|---|---|---|
+| linear2d | canonical_ledh | production value filter (contract_e reset; dual_cap OFF per filter default) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| linear2d | bootstrap_pf | comparator (bootstrap PF, systematic resampling) | N/A (no tunables beyond N) |
+| dlgssm | canonical_ledh | production value filter (contract_e reset; dual_cap OFF per filter default) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| dlgssm | bootstrap_pf | comparator (bootstrap PF, systematic resampling) | N/A (no tunables beyond N) |
+| dlgssm | score_dir0 | production (contract_e smooth OT reset) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| predator_prey | canonical_ledh | production value filter (contract_e reset; dual_cap OFF per filter default) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| predator_prey | bootstrap_pf | comparator (bootstrap PF, systematic resampling) | N/A (no tunables beyond N) |
+| predator_prey | score_dir0 | production (contract_e smooth OT reset) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| ksc_sv | canonical_ledh | production value filter (contract_e reset; dual_cap OFF per filter default) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| ksc_sv | bootstrap_pf | comparator (bootstrap PF, systematic resampling) | N/A (no tunables beyond N) |
+| ksc_sv | score_dir0 | production (contract_e smooth OT reset) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| generalized_sv | canonical_ledh | production value filter (contract_e reset; dual_cap OFF per filter default) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| generalized_sv | bootstrap_pf | comparator (bootstrap PF, systematic resampling) | N/A (no tunables beyond N) |
+| generalized_sv | score_dir4 | production (contract_e smooth OT reset) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| austria_sir | canonical_ledh | production value filter (contract_e reset; dual_cap OFF per filter default) | UNTUNED (no per-scope tuning artifact; onboarding-gate config) |
+| austria_sir | bootstrap_pf | comparator (bootstrap PF, systematic resampling) | N/A (no tunables beyond N) |
+| austria_sir | score_dir0 | production (annealed k=4 per Q2 calibration + contract_e reset) | Q2 Curve-1 artifact (k=4/c=8) + Curve-3 damping; epsilon/substeps/reset controls untuned |
+
+## Hard-veto screen
 
 - linear2d: clean
 - dlgssm: clean
@@ -17,21 +41,20 @@ Program: Q3 of the completion program; plan: `bayesfilter-q3-leaderboard-executi
 |---|---|---|---|---|---|
 | linear2d | test-fixture linear 2d, T=5 | -14.390 | -14.415 (0.180), |err| 0.025 | -14.407 (0.101), |err| 0.017 | -14.390, |err| 0.0000 |
 | dlgssm | frozen benchmark_lgssm_m3_T50_seed81100 | -173.123 | -173.872 (0.135), |err| 0.748 | -173.125 (0.193), |err| 0.002 | -173.123, |err| 0.0000 |
-| predator_prey | frozen predator_prey_T20 | — | -654.729 (0.698) | -886.583 (39.454) | -645.158 |
+| predator_prey | frozen predator_prey_T20 | — | -654.728 (0.697) | -886.583 (39.454) | -645.158 |
 | ksc_sv | frozen zhao_cui_sv_ksc_T1000 (full mixture horizon) | — | -2439.377 (1.221) | -2439.069 (0.881) | -2491.603 |
-| generalized_sv | simulated gen-SV T=20 (seed 501; heteroskedastic law) | — | -34.959 (0.108) | -35.063 (0.126) | -34.605 |
+| generalized_sv | simulated gen-SV T=20 (seed 501; heteroskedastic law) | — | -34.959 (0.107) | -35.063 (0.126) | -34.605 |
 | austria_sir | frozen austria_sir_y1_y20; Q2-calibrated annealed k=4/c=8 canonical arm (per-scope calibration applies to this row only) | — | -683.564 (0.512) | -682.428 (0.612) | -681.686 |
 
 ## Score cells (canonical analytical)
 
 | row | cell | dir | mode | mean (seed spread) | self-consistency rel err (seed 0, kind) | exact ref |
 |---|---|---|---|---|---|---|
-| dlgssm | score_dir0 | 0 | plain | -11.477 (0.379) | 2.39e-10 (central_fd_seed0) | -15.6731 (|err of mean| 4.1958) |
-| dlgssm | score_dir0_annealed_k4 | 0 | annealed k=4 | -20.096 (0.327) | 3.51e-16 (oracle_seed0) | -15.6731 (|err of mean| 4.4229) |
-| predator_prey | score_dir0 | 0 | plain | -115.366 (12.016) | 3.47e-07 (central_fd_seed0) | — |
-| ksc_sv | score_dir0 | 0 | plain | 213.985 (1.045) | 4.95e-10 (central_fd_seed0) | — |
-| generalized_sv | score_dir4 | 4 | plain | 3.714 (0.256) | 1.10e-10 (central_fd_seed0) | — |
-| austria_sir | score_dir0 | 0 | annealed k=4 | -320.160 (150.912) | 1.42e-16 (oracle_seed0) | — |
+| dlgssm | score_dir0 | 0 | plain | -17.041 (0.436) | 1.92e-11 (central_fd_seed0) | -15.6731 (|err of mean| 1.3683) |
+| predator_prey | score_dir0 | 0 | plain | -99.021 (9.519) | 5.56e-07 (central_fd_seed0) | — |
+| ksc_sv | score_dir0 | 0 | plain | 237.951 (0.875) | 1.03e-10 (central_fd_seed0) | — |
+| generalized_sv | score_dir4 | 4 | plain | 2.207 (0.234) | 8.09e-11 (central_fd_seed0) | — |
+| austria_sir | score_dir0 | 0 | annealed k=4 | -361.101 (310.413) | 1.98e-14 (oracle_seed0) | — |
 
 Score-cell reading guide: self-consistency columns compare the analytical score against a reference derivative OF THE SAME estimator (central FD for plain cells; the autodiff oracle for annealed cells, since FD is invalid across resampling-boundary crossings) — machine-precision values prove the derivation, not unbiasedness. The exact-reference column shows that the particle score MEAN deviates from the exact score at claim scale: on dlgssm T=50 both modes deviate by ~4 (~30x seed-SE) with OPPOSITE signs (plain -11.5, exact -15.7, annealed -20.1). Finite-N score bias is estimator-variant-dependent; the Austria Fisher result (bias shrinking under annealing) does NOT transfer as a general rule, and score cells must not be read as unbiased score estimates. This is the board's standing caution for Q5.
 
@@ -53,9 +76,9 @@ Score-cell reading guide: self-consistency columns compare the analytical score 
 
 ## Stamps
 
-- linear2d: `ledh-canonical-conformance-v1-2026-08-24@66afacd57ced`
-- dlgssm: `ledh-canonical-conformance-v1-2026-08-24@66afacd57ced`
-- predator_prey: `ledh-canonical-conformance-v1-2026-08-24@66afacd57ced`
-- ksc_sv: `ledh-canonical-conformance-v1-2026-08-24@66afacd57ced`
-- generalized_sv: `ledh-canonical-conformance-v1-2026-08-24@66afacd57ced`
-- austria_sir: `ledh-canonical-conformance-v1-2026-08-24@66afacd57ced`
+- linear2d: `ledh-canonical-conformance-v1-2026-08-24@90aa312c4e55`
+- dlgssm: `ledh-canonical-conformance-v1-2026-08-24@90aa312c4e55`
+- predator_prey: `ledh-canonical-conformance-v1-2026-08-24@90aa312c4e55`
+- ksc_sv: `ledh-canonical-conformance-v1-2026-08-24@9eebadb1a1a4`
+- generalized_sv: `ledh-canonical-conformance-v1-2026-08-24@9eebadb1a1a4`
+- austria_sir: `ledh-canonical-conformance-v1-2026-08-24@9eebadb1a1a4`
