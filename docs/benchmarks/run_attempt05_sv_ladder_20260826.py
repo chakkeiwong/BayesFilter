@@ -191,6 +191,9 @@ def _evaluate_cell(n, degree, rank, obs_seed, sweeps):
 
 
 def _run_cell_guarded(n, degree, rank, obs_seed, sweeps=SWEEPS):
+    if os.path.exists(_cell_path(n, degree, rank, obs_seed, sweeps)):
+        _heartbeat(f"cell n={n} d={degree} r={rank} seed={obs_seed} RESUMED")
+        return _evaluate_cell(n, degree, rank, obs_seed, sweeps)
     try:
         rc = _spawn(["--cell", str(n), str(degree), str(rank),
                      str(obs_seed), str(sweeps)])
@@ -208,7 +211,18 @@ def _run_cell_guarded(n, degree, rank, obs_seed, sweeps=SWEEPS):
                                  "obs_seed": obs_seed, "vetoes": ["crash"],
                                  "passed": False}) + "\n")
         return False, float("inf")
-    return _evaluate_cell(n, degree, rank, obs_seed, sweeps)
+    passed, gap = _evaluate_cell(n, degree, rank, obs_seed, sweeps)
+    # Declared repair (plan sec 2): one retry at 2x sweeps when the fit
+    # residual capped tau; recorded as its own accumulator row.
+    if not passed and sweeps == SWEEPS:
+        row = json.load(open(_cell_path(n, degree, rank, obs_seed, sweeps)))
+        ref_valid = json.load(open(_ref_path(n, obs_seed)))["valid"]
+        if (row["tau_max_seen"] >= 1e-4 and ref_valid
+                and math.isfinite(row["corrected_total"])):
+            _heartbeat(f"cell n={n} d={degree} r={rank} seed={obs_seed} "
+                       f"RETRY at sweeps={2 * SWEEPS} (declared repair)")
+            return _run_cell_guarded(n, degree, rank, obs_seed, 2 * SWEEPS)
+    return passed, gap
 
 
 def orchestrate():
@@ -229,10 +243,11 @@ def orchestrate():
         subprocess.Popen([sys.executable, os.path.abspath(__file__),
                           "--reference", "4", str(s)],
                          stdout=subprocess.PIPE, text=True)
-        for s in OBS_SEEDS
+        for s in OBS_SEEDS if not os.path.exists(_ref_path(4, s))
     ]
     for s in OBS_SEEDS:
-        _spawn(["--reference", "2", str(s)], timeout=1800)
+        if not os.path.exists(_ref_path(2, s)):
+            _spawn(["--reference", "2", str(s)], timeout=1800)
 
     verdict = {}
     for n in (2, 4):
@@ -246,11 +261,17 @@ def orchestrate():
         # degree screen (explanatory, one seed, rank 6)
         screen = {}
         for degree in DEGREES:
-            _passed, gap = _run_cell_guarded(n, degree, 6, OBS_SEEDS[0])
-            screen[degree] = gap
-        passing = [d for d in DEGREES if screen[d] <= BAR]
-        working_degree = min(passing) if passing else min(screen, key=screen.get)
-        _heartbeat(f"screen n={n}: gaps={ {d: f'{g:.2e}' for d, g in screen.items()} } "
+            deg_passed, gap = _run_cell_guarded(n, degree, 6, OBS_SEEDS[0])
+            screen[degree] = {"passed": deg_passed, "gap": gap}
+        passing = [d for d in DEGREES if screen[d]["passed"]]
+        working_degree = (min(passing) if passing
+                          else min(screen, key=lambda d: screen[d]["gap"]))
+        if not passing:
+            _heartbeat(f"screen n={n}: NO veto-clean passing degree — "
+                       f"gap-nominated degree {working_degree}; ladder runs "
+                       f"under that recorded caveat")
+        _heartbeat(f"screen n={n}: "
+                   f"{ {d: (v['passed'], round(v['gap'], 8)) for d, v in screen.items()} } "
                    f"working_degree={working_degree}")
         # rank ladder
         r_star = None
