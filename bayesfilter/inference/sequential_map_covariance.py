@@ -481,6 +481,10 @@ def estimate_sequential_map_covariance(
             locator_rows,
             cfg,
         )
+    # Rank every exact replay before any rejection branch.  A budget failure
+    # still exposes the best finite candidate as a diagnostic; returning the
+    # first row here would make the reported incumbent depend on start order.
+    finite_candidates.sort(key=lambda row: row[0], reverse=True)
     evaluations += locator_objective_evaluations
     if evaluations > cfg.max_exact_evaluations:
         return _rejected(
@@ -490,7 +494,6 @@ def estimate_sequential_map_covariance(
             cfg,
             map_candidate=finite_candidates[0][1].numpy(),
         )
-    finite_candidates.sort(key=lambda row: row[0], reverse=True)
     center_value, center, center_score = finite_candidates[0]
     refinement_origin = center if cfg.record_refinement_movement_diagnostics else None
     refinement_movement_initial = (

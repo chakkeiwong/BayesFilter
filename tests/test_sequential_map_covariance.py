@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import fields
 import json
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -600,6 +601,45 @@ def test_nonstationary_locator_fails_closed_at_evaluation_budget() -> None:
     assert result.map_candidate is not None
     assert result.precision is None
     assert result.covariance is None
+
+
+def test_budget_rejection_reports_highest_exact_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A rejected locator run still reports the exact incumbent, not start 0."""
+
+    def no_op_locator(function, initial_position, **_kwargs):
+        del function
+        initial = tf.convert_to_tensor(initial_position, tf.float64)
+        return SimpleNamespace(
+            position=initial,
+            num_objective_evaluations=tf.constant(0),
+            converged=tf.constant(False),
+            failed=tf.constant(False),
+            num_iterations=tf.constant(0),
+        )
+
+    monkeypatch.setattr(
+        sequential.tfp.optimizer, "lbfgs_minimize", no_op_locator
+    )
+
+    def target(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        point = tf.reshape(tf.convert_to_tensor(theta, tf.float64), [-1])
+        return point[0], tf.ones([1], tf.float64)
+
+    result = estimate_sequential_map_covariance(
+        target,
+        [np.array([0.0]), np.array([1.0])],
+        config=SequentialMapCovarianceConfig(
+            max_exact_evaluations=1,
+            locator_max_iterations=1,
+        ),
+    )
+
+    assert result.accepted is False
+    assert result.status == "maximum_exact_evaluations_after_bounded_locator"
+    assert result.map_candidate is not None
+    np.testing.assert_array_equal(result.map_candidate, np.array([1.0]))
 
 
 def test_malformed_score_fails_closed() -> None:
