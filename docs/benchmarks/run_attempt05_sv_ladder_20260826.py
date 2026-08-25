@@ -190,10 +190,26 @@ def _evaluate_cell(n, degree, rank, obs_seed, sweeps):
     return passed, per_step
 
 
+def _maybe_retry(n, degree, rank, obs_seed, sweeps, passed, gap):
+    """Declared repair (plan sec 2), applied uniformly to fresh AND
+    resumed cells: one retry at 2x sweeps when the fit residual capped
+    tau on an otherwise-valid cell."""
+    if not passed and sweeps == SWEEPS:
+        row = json.load(open(_cell_path(n, degree, rank, obs_seed, sweeps)))
+        ref_valid = json.load(open(_ref_path(n, obs_seed)))["valid"]
+        if (row["tau_max_seen"] >= 1e-4 and ref_valid
+                and math.isfinite(row["corrected_total"])):
+            _heartbeat(f"cell n={n} d={degree} r={rank} seed={obs_seed} "
+                       f"RETRY at sweeps={2 * SWEEPS} (declared repair)")
+            return _run_cell_guarded(n, degree, rank, obs_seed, 2 * SWEEPS)
+    return passed, gap
+
+
 def _run_cell_guarded(n, degree, rank, obs_seed, sweeps=SWEEPS):
     if os.path.exists(_cell_path(n, degree, rank, obs_seed, sweeps)):
         _heartbeat(f"cell n={n} d={degree} r={rank} seed={obs_seed} RESUMED")
-        return _evaluate_cell(n, degree, rank, obs_seed, sweeps)
+        passed, gap = _evaluate_cell(n, degree, rank, obs_seed, sweeps)
+        return _maybe_retry(n, degree, rank, obs_seed, sweeps, passed, gap)
     try:
         rc = _spawn(["--cell", str(n), str(degree), str(rank),
                      str(obs_seed), str(sweeps)])
@@ -212,17 +228,7 @@ def _run_cell_guarded(n, degree, rank, obs_seed, sweeps=SWEEPS):
                                  "passed": False}) + "\n")
         return False, float("inf")
     passed, gap = _evaluate_cell(n, degree, rank, obs_seed, sweeps)
-    # Declared repair (plan sec 2): one retry at 2x sweeps when the fit
-    # residual capped tau; recorded as its own accumulator row.
-    if not passed and sweeps == SWEEPS:
-        row = json.load(open(_cell_path(n, degree, rank, obs_seed, sweeps)))
-        ref_valid = json.load(open(_ref_path(n, obs_seed)))["valid"]
-        if (row["tau_max_seen"] >= 1e-4 and ref_valid
-                and math.isfinite(row["corrected_total"])):
-            _heartbeat(f"cell n={n} d={degree} r={rank} seed={obs_seed} "
-                       f"RETRY at sweeps={2 * SWEEPS} (declared repair)")
-            return _run_cell_guarded(n, degree, rank, obs_seed, 2 * SWEEPS)
-    return passed, gap
+    return _maybe_retry(n, degree, rank, obs_seed, sweeps, passed, gap)
 
 
 def orchestrate():
