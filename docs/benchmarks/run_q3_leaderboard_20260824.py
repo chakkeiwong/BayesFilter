@@ -196,7 +196,8 @@ def canonical_filter_values(callbacks, observations, seeds, **filter_kwargs):
 
 
 def score_cells(model, set_direction, theta, dim, observations,
-                direction_index, seeds, annealed_stages=1):
+                direction_index, seeds, annealed_stages=1,
+                initial_mean=None, self_consistency="fd"):
     from bayesfilter.highdim.ledh_canonical_score_tf import (
         canonical_value_and_analytical_score,
     )
@@ -207,10 +208,15 @@ def score_cells(model, set_direction, theta, dim, observations,
     set_direction(tf.constant(one_hot, DTYPE))
     horizon = int(observations.shape[0])
     n = 1008
+    mean_np = (
+        np.zeros(dim) if initial_mean is None else initial_mean.numpy()
+    )
 
     def run(theta_v, seed, with_score):
         rng = np.random.default_rng(9000 + seed)
-        initial = tf.constant(rng.standard_normal((n, dim)), DTYPE)
+        initial = tf.constant(
+            mean_np[None, :] + rng.standard_normal((n, dim)), DTYPE
+        )
         covs = tf.constant(np.stack([np.eye(dim)] * n), DTYPE)
         noises = tf.constant(
             rng.standard_normal((horizon, n, dim)), DTYPE
@@ -225,23 +231,52 @@ def score_cells(model, set_direction, theta, dim, observations,
     for seed in seeds:
         _v, s = run(theta, seed, True)
         scores.append(float(s[0].numpy()))
-    h = 1.0e-5
-    up = theta.numpy().copy(); up[direction_index] += h
-    down = theta.numpy().copy(); down[direction_index] -= h
-    v_up, _ = run(tf.constant(up, DTYPE), seeds[0], False)
-    v_down, _ = run(tf.constant(down, DTYPE), seeds[0], False)
-    fd = (float(v_up.numpy()) - float(v_down.numpy())) / (2 * h)
     analytical_seed0 = scores[0]
+    if self_consistency == "oracle":
+        # Annealed rows: central FD is invalid across resampling-boundary
+        # crossings; the forward-autodiff oracle differentiates the SAME
+        # fixed-realized-index function the analytical lane computes.
+        from bayesfilter.highdim.ledh_canonical_autodiff_oracle_tf import (
+            oracle_forward_autodiff_score,
+        )
+
+        theta_np = theta.numpy()
+
+        def value_fn_1p(theta_1):
+            parts = [
+                theta_1[0] if i == direction_index
+                else tf.constant(theta_np[i], DTYPE)
+                for i in range(p_count)
+            ]
+            value, _ = run(tf.stack(parts), seeds[0], False)
+            return value
+
+        reference = float(
+            oracle_forward_autodiff_score(
+                value_fn_1p,
+                tf.constant([theta_np[direction_index]], DTYPE),
+            )[0].numpy()
+        )
+        reference_kind = "oracle_seed0"
+    else:
+        h = 1.0e-5
+        up = theta.numpy().copy(); up[direction_index] += h
+        down = theta.numpy().copy(); down[direction_index] -= h
+        v_up, _ = run(tf.constant(up, DTYPE), seeds[0], False)
+        v_down, _ = run(tf.constant(down, DTYPE), seeds[0], False)
+        reference = (float(v_up.numpy()) - float(v_down.numpy())) / (2 * h)
+        reference_kind = "central_fd_seed0"
     return {
         "direction_index": direction_index,
         "analytical_scores": scores,
         "mean": float(np.mean(scores)),
         "seed_spread": float(np.std(scores)),
-        "central_fd_reference_seed0": fd,
-        "self_consistency_rel_err_seed0": abs(analytical_seed0 - fd)
-        / max(abs(fd), 1.0),
+        "self_consistency_reference": reference,
+        "self_consistency_kind": reference_kind,
+        "self_consistency_rel_err_seed0": abs(analytical_seed0 - reference)
+        / max(abs(reference), 1.0),
         "annealed_stages": annealed_stages,
-        "note": "FD is explanatory (same estimator, same seed); "
+        "note": "reference is explanatory (same estimator, same seed); "
         "analytical spread is particle-seed variation",
     }
 
@@ -378,6 +413,14 @@ def row_diagonal_lgssm():
     score = score_cells(
         model, set_direction, theta0, 3, observations, 0, SCORE_SEEDS
     )
+    score_annealed = score_cells(
+        model, set_direction, theta0, 3, observations, 0, SCORE_SEEDS,
+        annealed_stages=4, self_consistency="oracle",
+    )
+    score_annealed["exact_kalman_fd_score_dir0"] = exact_score_dir0
+    score_annealed["abs_error_of_mean_vs_exact"] = abs(
+        score_annealed["mean"] - exact_score_dir0
+    )
     score["exact_kalman_fd_score_dir0"] = exact_score_dir0
     score["abs_error_of_mean_vs_exact"] = abs(
         score["mean"] - exact_score_dir0
@@ -398,6 +441,7 @@ def row_diagonal_lgssm():
             "abs_error_vs_exact": abs(ukf - exact),
         },
         "score_dir0": score,
+        "score_dir0_annealed_k4": score_annealed,
     }
 
 
@@ -592,7 +636,8 @@ def row_austria_sir():
     )
     score = score_cells(
         model, set_direction, theta0, 18, observations, 0, SCORE_SEEDS,
-        annealed_stages=4,
+        annealed_stages=4, initial_mean=initial_mean,
+        self_consistency="oracle",
     )
     return {
         "data": "frozen austria_sir_y1_y20; Q2-calibrated annealed "

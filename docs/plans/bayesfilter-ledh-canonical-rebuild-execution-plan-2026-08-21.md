@@ -889,3 +889,32 @@ review.
   Carlo variance and must not be quoted as uncertainty. Repo-wide
   `from_seed(int(seed))` uses outside the canonical lane (models.py,
   source_route.py) are flagged as same-class migration debt for Q4.
+
+- 2026-08-25 (ledger): Q3 COMPLETE. Six-model leaderboard executed at
+  claim scale (N=1008; frozen datasets for lgssm/pp/ksc/austria; 16
+  value seeds / 8 score seeds under the fidelity-#7 independent
+  seeding), all rows G-5 stamped
+  (`ledh-canonical-conformance-v1-2026-08-24@66afacd5`), owner report:
+  `docs/benchmarks/q3-canonical-leaderboard-report-2026-08-25.md`.
+  Hard-veto screen: all six rows clean. Exact-reference results:
+  linear2d canonical |err| 0.025 (spread 0.180); dlgssm T=50 canonical
+  value |err| 0.748 (spread 0.135) vs bootstrap 0.002 — descriptive
+  note: the OT-reset canonical value estimator shows a T-accumulating
+  deviation on the linear frozen row, recorded for Q5's attention, not
+  ranked. Score cells: analytical-vs-same-estimator references at
+  machine precision everywhere (Austria claim-scale annealed cell vs
+  oracle: 1.4e-16 — the strongest at-scale derivation validation to
+  date); dlgssm score MEANS deviate from the exact Kalman score by ~4
+  (~30x seed-SE) with OPPOSITE signs between plain and annealed modes —
+  finite-N score bias is estimator-variant-dependent; the Austria
+  Fisher improvement does not generalize; recorded as the board's
+  standing caution for Q5. During execution the board also surfaced and
+  closed fidelity items #6 (bootstrap comparator resampling) and #7
+  (pseudo-replication). SGQF/zhao-cui comparator hookup remains slice B
+  (reported ABSENT with reason in the board). Config deviation
+  recorded: pre-2026-08-25 GPU launches ran without
+  CUDA_DEVICE_ORDER=PCI_BUS_ID, so CVD=1 mapped to the 5080, not the
+  4080 SUPER the owner directive intends; artifacts record the realized
+  device and remain valid; later launches pin PCI_BUS_ID order.
+  PROGRAM STATE: Q1, Q2, Q3 complete. Q4 (merge + CI wiring + sibling
+  branch coordination) is the owner's; Q5 is out of scope.
