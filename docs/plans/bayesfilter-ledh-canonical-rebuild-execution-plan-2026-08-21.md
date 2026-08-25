@@ -946,3 +946,24 @@ review.
   owner/tuning campaign. CONSEQUENCE: Q3 score cells must be re-run
   under the production program, and the per-scope tuning campaign is
   the gating next artifact before any per-model interpretation.
+
+- 2026-08-25 (ledger): REPORTING-DISCIPLINE REMEDY (owner finding: the
+  Q3 board surfaced non-production, untuned score cells beside exact
+  references without a leading banner — a days-of-wrong-debugging
+  hazard). Remedy is structural, four layers: (1) Configuration-Status-
+  First Reporting Rule added to CLAUDE.md — program + tuning status
+  BEFORE any number, in artifacts AND chat; (2) artifact-layer
+  enforcement — every leaderboard cell now carries `program`/`tuning`
+  fields and the report builder hard-refuses unlabeled cells and
+  renders the configuration-status table first; (3) estimand gate
+  added: the production score-lane program (contract_e reset) must
+  track exact Kalman on the linear anchor (a comparative reset-none
+  assertion was tried and REMOVED — the plain slice's estimand error is
+  degeneracy-dependent, near-zero on easy fixtures, so the trap is
+  enforced at the artifact layer instead; measured basis in this
+  ledger's 2026-08-25 diagnostics entry); (4) score-module estimand
+  warning docstring. The Q3 board is being regenerated with production
+  score cells (contract_e everywhere; Austria annealed k=4 + reset per
+  its calibration; KSC score seeds reduced to 4 for the T=1000 reset
+  cost, recorded); prior score cells are SUPERSEDED (git history
+  preserves them; do not quote). Cross-session memory updated.

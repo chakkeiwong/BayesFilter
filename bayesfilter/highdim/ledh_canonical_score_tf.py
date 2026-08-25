@@ -91,6 +91,15 @@ def canonical_value_and_analytical_score(
     trust-region correction via the general implementation's hand-derived
     JVPs). reset_policy="none" is the historical gated slice.
 
+    ESTIMAND WARNING (2026-08-25, fidelity ledger): with
+    reset_policy="none" and annealed_stages=1, each step assumes uniform
+    incoming weights but never resamples, so the returned VALUE is NOT a
+    log-likelihood estimator for horizons T > 1 (measured on the frozen
+    LGSSM anchor: N-independent score bias +4.2 at T=50). That slice is
+    a derivative-parity/diagnostic object ONLY. Claim-bearing value or
+    score cells must use the production program (contract_e reset, and
+    annealed mode where the scope's calibration says so).
+
     annealed_stages > 1 selects the within-step annealed telescope (Q1.2):
     tempered flow stages (P/k, R*k) with systematic resampling between
     stages and the SMC normalizer telescope as the step increment; stage

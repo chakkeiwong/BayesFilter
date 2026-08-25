@@ -52,8 +52,45 @@ def main() -> None:
         "otherwise.\n"
     )
 
-    # hard vetoes first
-    lines.append("## Hard-veto screen (read first)\n")
+    # CONFIGURATION STATUS FIRST (2026-08-25 rule): before any number,
+    # say what program each cell ran and its tuning status; refuse
+    # unlabeled cells (same quarantine mechanism as G-5).
+    lines.append("## Configuration status (READ BEFORE ANY NUMBER)\n")
+    lines.append(
+        "A cell whose program is not `production` or whose tuning is "
+        "UNTUNED must not be debugged or interpreted as the production "
+        "algorithm's performance. Per the per-scope tuning rule, "
+        "UNTUNED cells carry no per-model claims.\n"
+    )
+    lines.append("| row | cell | program | tuning |")
+    lines.append("|---|---|---|---|")
+    for name, payload in rows.items():
+        if payload is None:
+            continue
+        r = payload["result"]
+        cells = [
+            (k, v) for k, v in r.items()
+            if isinstance(v, dict) and (
+                k in ("canonical_ledh", "bootstrap_pf")
+                or k.startswith("score_dir")
+            )
+        ]
+        for key, cell in cells:
+            program = cell.get("program")
+            tuning = cell.get("tuning")
+            if key == "bootstrap_pf":
+                program = program or "comparator (bootstrap PF)"
+                tuning = tuning or "N/A (no tunables beyond N)"
+            if not program or not tuning:
+                raise SystemExit(
+                    f"UNLABELED CELL: {name}/{key} lacks program/tuning "
+                    "fields — refusing to build the report"
+                )
+            lines.append(f"| {name} | {key} | {program} | {tuning} |")
+    lines.append("")
+
+    # hard vetoes next
+    lines.append("## Hard-veto screen\n")
     veto_lines = []
     for name, payload in rows.items():
         if payload is None:

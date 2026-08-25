@@ -195,9 +195,25 @@ def canonical_filter_values(callbacks, observations, seeds, **filter_kwargs):
     return values, valids, min_ess
 
 
+def production_reset_kwargs(dim, n=1008):
+    """Production score-lane reset config: contract_e with the tiled
+    +/- unit design (the filter's design construction)."""
+    base = np.concatenate([np.eye(dim), -np.eye(dim)], axis=0)
+    design = tf.constant(np.tile(base, (n // (2 * dim), 1)), DTYPE)
+    return dict(
+        reset_policy="contract_e", reset_design=design,
+        reset_sinkhorn_steps=8, reset_balance_steps=8,
+    )
+
+
+UNTUNED = "UNTUNED (no per-scope tuning artifact; onboarding-gate config)"
+
+
 def score_cells(model, set_direction, theta, dim, observations,
                 direction_index, seeds, annealed_stages=1,
-                initial_mean=None, self_consistency="fd"):
+                initial_mean=None, self_consistency="fd",
+                reset_kwargs=None, program="UNLABELED",
+                tuning=UNTUNED):
     from bayesfilter.highdim.ledh_canonical_score_tf import (
         canonical_value_and_analytical_score,
     )
@@ -225,6 +241,7 @@ def score_cells(model, set_direction, theta, dim, observations,
             model, theta_v, initial, covs, noises, observations,
             substeps=8, with_score=with_score,
             annealed_stages=annealed_stages, annealed_seed=17,
+            **(reset_kwargs or {}),
         )
 
     scores = []
@@ -267,6 +284,8 @@ def score_cells(model, set_direction, theta, dim, observations,
         reference = (float(v_up.numpy()) - float(v_down.numpy())) / (2 * h)
         reference_kind = "central_fd_seed0"
     return {
+        "program": program,
+        "tuning": tuning,
         "direction_index": direction_index,
         "analytical_scores": scores,
         "mean": float(np.mean(scores)),
@@ -281,8 +300,12 @@ def score_cells(model, set_direction, theta, dim, observations,
     }
 
 
-def summarize(values, valids):
+def summarize(values, valids, program="production value filter "
+              "(contract_e reset; dual_cap OFF per filter default)",
+              tuning=UNTUNED):
     return {
+        "program": program,
+        "tuning": tuning,
         "values": values,
         "mean": float(np.mean(values)),
         "seed_spread": float(np.std(values)),
@@ -343,7 +366,7 @@ def row_linear2d_fixture():
             "abs_error_of_mean_vs_exact": abs(float(np.mean(values)) - exact),
         },
         "bootstrap_pf": {
-            **summarize(boot, [True] * len(boot)),
+            **summarize(boot, [True] * len(boot), program="comparator (bootstrap PF, systematic resampling)", tuning="N/A (no tunables beyond N)"),
             "abs_error_of_mean_vs_exact": abs(float(np.mean(boot)) - exact),
         },
         "ukf_gaussian_filter": {
@@ -411,15 +434,9 @@ def row_diagonal_lgssm():
         model, theta0, initial_mean, tf.eye(3, dtype=DTYPE), observations
     )
     score = score_cells(
-        model, set_direction, theta0, 3, observations, 0, SCORE_SEEDS
-    )
-    score_annealed = score_cells(
         model, set_direction, theta0, 3, observations, 0, SCORE_SEEDS,
-        annealed_stages=4, self_consistency="oracle",
-    )
-    score_annealed["exact_kalman_fd_score_dir0"] = exact_score_dir0
-    score_annealed["abs_error_of_mean_vs_exact"] = abs(
-        score_annealed["mean"] - exact_score_dir0
+        reset_kwargs=production_reset_kwargs(3),
+        program="production (contract_e smooth OT reset)",
     )
     score["exact_kalman_fd_score_dir0"] = exact_score_dir0
     score["abs_error_of_mean_vs_exact"] = abs(
@@ -433,7 +450,7 @@ def row_diagonal_lgssm():
             "abs_error_of_mean_vs_exact": abs(float(np.mean(values)) - exact),
         },
         "bootstrap_pf": {
-            **summarize(boot, [True] * len(boot)),
+            **summarize(boot, [True] * len(boot), program="comparator (bootstrap PF, systematic resampling)", tuning="N/A (no tunables beyond N)"),
             "abs_error_of_mean_vs_exact": abs(float(np.mean(boot)) - exact),
         },
         "ukf_gaussian_filter": {
@@ -441,7 +458,6 @@ def row_diagonal_lgssm():
             "abs_error_vs_exact": abs(ukf - exact),
         },
         "score_dir0": score,
-        "score_dir0_annealed_k4": score_annealed,
     }
 
 
@@ -475,12 +491,14 @@ def row_predator_prey():
         model, theta0, initial_mean, tf.eye(2, dtype=DTYPE), observations
     )
     score = score_cells(
-        model, set_direction, theta0, 2, observations, 0, SCORE_SEEDS
+        model, set_direction, theta0, 2, observations, 0, SCORE_SEEDS,
+        reset_kwargs=production_reset_kwargs(2),
+        program="production (contract_e smooth OT reset)",
     )
     return {
         "data": "frozen predator_prey_T20",
         "canonical_ledh": summarize(values, valids),
-        "bootstrap_pf": summarize(boot, [True] * len(boot)),
+        "bootstrap_pf": summarize(boot, [True] * len(boot), program="comparator (bootstrap PF, systematic resampling)", tuning="N/A (no tunables beyond N)"),
         "ukf_gaussian_filter": {
             "value": ukf,
             "note": "Gaussian-approximation comparator",
@@ -523,12 +541,14 @@ def row_ksc_sv(value_seeds, score_seeds):
         model, theta0, initial_mean, tf.eye(1, dtype=DTYPE), observations
     )
     score = score_cells(
-        model, set_direction, theta0, 1, observations, 0, score_seeds
+        model, set_direction, theta0, 1, observations, 0, score_seeds,
+        reset_kwargs=production_reset_kwargs(1),
+        program="production (contract_e smooth OT reset)",
     )
     return {
         "data": "frozen zhao_cui_sv_ksc_T1000 (full mixture horizon)",
         "canonical_ledh": summarize(values, valids),
-        "bootstrap_pf": summarize(boot, [True] * len(boot)),
+        "bootstrap_pf": summarize(boot, [True] * len(boot), program="comparator (bootstrap PF, systematic resampling)", tuning="N/A (no tunables beyond N)"),
         "ukf_gaussian_filter": {
             "value": ukf,
             "note": "Gaussian-approximation comparator; density-"
@@ -582,12 +602,14 @@ def row_generalized_sv():
         model, theta0, initial_mean, tf.eye(2, dtype=DTYPE), observations
     )
     score = score_cells(
-        model, set_direction, theta0, 2, observations, 4, SCORE_SEEDS
+        model, set_direction, theta0, 2, observations, 4, SCORE_SEEDS,
+        reset_kwargs=production_reset_kwargs(2),
+        program="production (contract_e smooth OT reset)",
     )
     return {
         "data": "simulated gen-SV T=20 (seed 501; heteroskedastic law)",
         "canonical_ledh": summarize(values, valids),
-        "bootstrap_pf": summarize(boot, [True] * len(boot)),
+        "bootstrap_pf": summarize(boot, [True] * len(boot), program="comparator (bootstrap PF, systematic resampling)", tuning="N/A (no tunables beyond N)"),
         "ukf_gaussian_filter": {
             "value": ukf,
             "note": "Gaussian-approximation comparator; density-"
@@ -638,6 +660,11 @@ def row_austria_sir():
         model, set_direction, theta0, 18, observations, 0, SCORE_SEEDS,
         annealed_stages=4, initial_mean=initial_mean,
         self_consistency="oracle",
+        reset_kwargs=production_reset_kwargs(18),
+        program="production (annealed k=4 per Q2 calibration + "
+        "contract_e reset)",
+        tuning="Q2 Curve-1 artifact (k=4/c=8) + Curve-3 damping; "
+        "epsilon/substeps/reset controls untuned",
     )
     return {
         "data": "frozen austria_sir_y1_y20; Q2-calibrated annealed "
@@ -647,7 +674,7 @@ def row_austria_sir():
             **summarize(values, valids),
             "min_stage_ess_fraction": float(np.min(min_ess)) / 1008.0,
         },
-        "bootstrap_pf": summarize(boot, [True] * len(boot)),
+        "bootstrap_pf": summarize(boot, [True] * len(boot), program="comparator (bootstrap PF, systematic resampling)", tuning="N/A (no tunables beyond N)"),
         "ukf_gaussian_filter": {"value": ukf},
         "score_dir0": score,
     }

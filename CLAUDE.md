@@ -116,3 +116,27 @@ XLA status, and scalar-fallback/sample-loop status. Batch size one, any scalar
 fallback, or any row-mapped scalar target is a hard veto for NeuTra training,
 including smoke and CPU-only training. Existing violations are migration debt,
 not precedent for approval.
+
+## Configuration-Status-First Reporting Rule
+
+Adopted 2026-08-25 after the Q3 board presented non-production,
+untuned score cells beside exact references without a banner, inviting
+days of debugging the wrong object.
+
+Any artifact, report, or user-facing summary that shows benchmark or
+comparison numbers must state, BEFORE any number is shown or quoted:
+
+1. which program each cell ran — `production` or a named variant, with
+   the configuration diff from production;
+2. per-scope tuning status — the tuning artifact path, or UNTUNED. An
+   UNTUNED or non-production cell carries no per-model claim and must
+   not be presented as the production algorithm's performance;
+3. what must NOT be debugged or concluded from the table.
+
+Enforcement is artifact-layer, not narrative: leaderboard cells carry
+`program` and `tuning` fields, report builders hard-refuse unlabeled
+cells (G-5-style quarantine), and the estimand gate
+(`test_production_score_lane_value_is_likelihood_estimand`) pins the
+production score-lane program to the exact-reference anchor. Chat
+summaries of results must lead with the same configuration-status
+information — a plan-file caveat does not discharge this duty.
