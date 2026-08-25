@@ -219,6 +219,76 @@ def _logdet_lower(matrix: tf.Tensor) -> tf.Tensor:
     return tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(matrix))))
 
 
+def _student_t_log_const(nu: float) -> float:
+    """Constant of log(t_nu(u)/eta(u)) per axis (closed form)."""
+
+    return float(
+        math.lgamma((nu + 1.0) / 2.0)
+        - math.lgamma(nu / 2.0)
+        + 0.5 * math.log(2.0 / nu)
+    )
+
+
+def _log_student_t_ratio(points: tf.Tensor, nu: float) -> tf.Tensor:
+    """log lambda_mu at points [N, d]: sum_axes log(t_nu/eta) per axis.
+
+    lambda_mu is a probability density w.r.t. mu = N(0, I) by
+    construction (each axis factor integrates to one against eta), so
+    the increment identity Z = e^{-c}(1+tau)Z_h and the F7 oracle-gate
+    subtraction are unchanged by the escalation (campaign plan C2; the
+    prior review verified this closed-form claim)."""
+
+    const = tf.constant(_student_t_log_const(nu), DTYPE)
+    u_sq = tf.square(points)
+    per_axis = (
+        const
+        + 0.5 * u_sq
+        - ((nu + 1.0) / 2.0) * tf.math.log1p(u_sq / nu)
+    )
+    return tf.reduce_sum(per_axis, axis=1)
+
+
+def student_t_margin(nu: float, alpha: float) -> float:
+    """Per-axis domination margin M(nu, alpha) = sup_u [alpha u^2/2
+    - log lambda_1(u)] for a whitened tail excess alpha in (0, 1)
+    (review F1 tail model: log F ~ alpha u^2/2 along the worst ray).
+    Closed-form maximizer s* = (nu+1)/(1-alpha) - nu."""
+
+    if not 0.0 < alpha < 1.0:
+        raise ValueError("alpha must be in (0, 1)")
+    s_star = max((nu + 1.0) / (1.0 - alpha) - nu, 0.0)
+    return (
+        -(1.0 - alpha) * s_star / 2.0
+        + ((nu + 1.0) / 2.0) * math.log1p(s_star / nu)
+        - _student_t_log_const(nu)
+    )
+
+
+def student_t_nu_criterion(alpha_max: float, cap_per_axis: float) -> float:
+    """Two-sided nu selection (campaign plan C2, review CF5 repair):
+    the LARGEST nu (lightest tails, least bulk dilution) whose per-axis
+    margin satisfies M(nu, alpha_max) <= cap_per_axis. M is monotone
+    increasing in nu, so the largest admissible nu exists by bisection;
+    domination itself holds for every finite nu (the margin cap, tied
+    to the ratio guard at tau >= TAU_MIN, is what selects)."""
+
+    lo, hi = 1.5, 500.0
+    if student_t_margin(lo, alpha_max) > cap_per_axis:
+        raise ValueError(
+            "no admissible nu: margin cap violated even at nu=1.5 — "
+            "re-declare the cap or the hint class (fail closed)"
+        )
+    if student_t_margin(hi, alpha_max) <= cap_per_axis:
+        return hi
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if student_t_margin(mid, alpha_max) <= cap_per_axis:
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
 def run_value_filter_branch_axis_gaussian(
     adapter,
     observations: tf.Tensor,
@@ -226,12 +296,17 @@ def run_value_filter_branch_axis_gaussian(
     *,
     predictive_moment_hint: Callable[[int, tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     initial_moment_hint: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    defensive_nu: float | None = None,
 ) -> tuple[tf.Tensor, list[dict]]:
     """Gaussian-reference value filter. `predictive_moment_hint(t, y_t)`
     returns JOINT moments (mean [2n], cov [2n,2n]) of (x_t, x_{t-1}) in
     (current, previous) order for t >= 1; `initial_moment_hint(y_0)`
     returns the t=0 moments (mean [n], cov [n,n]) of x_0 | y_0. Hints
-    are frozen step inputs (M2/M3/M1-DETACHED contracts unchanged)."""
+    are frozen step inputs (M2/M3/M1-DETACHED contracts unchanged).
+    `defensive_nu`: None = reference floor (lambda == 1, the default);
+    a float = product Student-t floor per the D3 escalation — the
+    EXPECTED configuration for the SV arm (review F1), selected by
+    `student_t_nu_criterion` per declared scope, never on claim data."""
 
     if config.quadrature_order is not None:
         raise ValueError("gaussian engine is defined for scattered rows only")
@@ -344,18 +419,22 @@ def run_value_filter_branch_axis_gaussian(
                 prefix_row_vectors(retained.prefix_cores, retained.prefix_basis, u_old),
                 chol,
             )
-            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + retained.tau
+            if defensive_nu is None:
+                floor_values = retained.tau * tf.ones(
+                    [int(u_rows.shape[0])], DTYPE
+                )
+            else:
+                floor_values = retained.tau * tf.exp(
+                    _log_student_t_ratio(u_old, defensive_nu)
+                )
+            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + floor_values
             log_f = tf.math.log(sum_sq) + log_g
             shift = tf.reduce_logsumexp(log_f) - tf.math.log(
                 tf.cast(tf.shape(log_f)[0], DTYPE)
             )
             sqrt_g_shifted = tf.exp(0.5 * (log_g - shift))
             amplitudes = tf.concat(
-                [
-                    v_prev,
-                    tf.ones([int(u_rows.shape[0]), 1], DTYPE)
-                    * tf.sqrt(retained.tau),
-                ],
+                [v_prev, tf.sqrt(floor_values)[:, None]],
                 axis=1,
             )
             targets = amplitudes * sqrt_g_shifted[:, None]

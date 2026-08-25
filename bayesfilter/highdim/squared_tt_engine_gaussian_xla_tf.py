@@ -35,6 +35,7 @@ from bayesfilter.highdim.squared_tt_engine_gaussian_tf import (
     _clamped_tau,
     _hermite_product_basis,
     _log_eta,
+    _log_student_t_ratio,
     _logdet_lower,
 )
 from bayesfilter.highdim.squared_tt_engine_v0_tf import (
@@ -58,6 +59,7 @@ def run_value_filter_branch_axis_gaussian_xla(
     *,
     predictive_moment_hint: Callable[[int, tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     initial_moment_hint: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    defensive_nu: float | None = None,
 ) -> tuple[tf.Tensor, list[dict]]:
     if config.quadrature_order is not None:
         raise ValueError("gaussian engine is defined for scattered rows only")
@@ -128,18 +130,22 @@ def run_value_filter_branch_axis_gaussian_xla(
                 prefix_row_vectors(prefix_cores, current_basis, u_old),
                 chol,
             )
-            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + tau_abs_prev
+            if defensive_nu is None:
+                floor_values = tau_abs_prev * tf.ones(
+                    [int(u_rows.shape[0])], DTYPE
+                )
+            else:
+                floor_values = tau_abs_prev * tf.exp(
+                    _log_student_t_ratio(u_old, defensive_nu)
+                )
+            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + floor_values
             log_f = tf.math.log(sum_sq) + log_g
             shift = tf.reduce_logsumexp(log_f) - tf.math.log(
                 tf.cast(tf.shape(log_f)[0], DTYPE)
             )
             sqrt_g_shifted = tf.exp(0.5 * (log_g - shift))
             amplitudes = tf.concat(
-                [
-                    v_prev,
-                    tf.ones([int(u_rows.shape[0]), 1], DTYPE)
-                    * tf.sqrt(tau_abs_prev),
-                ],
+                [v_prev, tf.sqrt(floor_values)[:, None]],
                 axis=1,
             )
             targets = amplitudes * sqrt_g_shifted[:, None]
@@ -254,7 +260,7 @@ def run_value_filter_branch_axis_gaussian_xla(
             config.basis_degree,
         )
         branch_count = retained.boundary_rank + 1
-        cache_key = branch_count
+        cache_key = (branch_count, defensive_nu)
         if cache_key not in step_cache:
             mixed_basis = ProductBasis(
                 list(current_basis.bases)
