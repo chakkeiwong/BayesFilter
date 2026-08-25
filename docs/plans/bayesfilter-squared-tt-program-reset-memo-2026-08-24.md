@@ -71,6 +71,21 @@ question is now answered — the suspect was the domain).
 
 ## Continuation queue (in order)
 
+UPDATE 3 (2026-08-25, PHASE A CLOSED): campaign plan REVIEWED-EXECUTABLE
+(47da9206, review AGREE after CF1-CF11). Gate A PASS (a8fe0639,
+recalibrated on attribution evidence: program parity 7.06e-14,
+backend parity 7.9e-14, floor-amplification proven three ways); claim
+lane = 4080 f64, sweeps as accuracy control (degree-0 kalman 1.78e-9
+identical to CPU; stress s16 2.38e-7 in 168s). Gate A3 PASS (6c98bcab):
+n=4 ORACLE-EXACT 5.5e-10 at deg6/r3/s32; beta(d) row law calibrated
+(744ced2a; 0.5 d<=4, 0.10 d>4, N=8192); ell=13@9-axis recorded as
+measured row-law boundary; per-arm subprocess isolation in runner.
+~4h of the 12h run budget spent. NEXT: Phase C (C1 read Cohen-
+Migliorati + reconcile half-mixture; C2 Student-t floor + two-sided nu
+criterion; C3 SV references with degeneracy screens; C4 SV hints; C5
+claim-config parity) with Phase B (adjoint port) alongside; then D1
+attempt05 plan (owner touchpoint).
+
 UPDATE 2 (2026-08-24, engine block): C2 value engine BUILT and
 oracle-certified. Commits eb25d325 (HermiteBasis1D + U-HERM-1),
 36516d5a (gaussian engine), fa8446e2 (U-RET-1 + closure + degree-0
