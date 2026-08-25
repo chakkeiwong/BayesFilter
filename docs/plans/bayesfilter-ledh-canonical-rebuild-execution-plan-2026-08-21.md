@@ -918,3 +918,31 @@ review.
   device and remain valid; later launches pin PCI_BUS_ID order.
   PROGRAM STATE: Q1, Q2, Q3 complete. Q4 (merge + CI wiring + sibling
   branch coordination) is the owner's; Q5 is out of scope.
+
+- 2026-08-25 (ledger, owner-question diagnostics): dlgssm score/value
+  deviation mechanisms measured on the frozen T=50 row (exact Kalman
+  referent; /tmp scripts archived in this entry's commit as
+  docs/benchmarks/artifacts note). (1) The Q3 board's PLAIN score cells
+  ran reset_policy="none": each step assumes uniform incoming weights
+  but never resamples — the computed value object is WRONG relative to
+  the likelihood for T>1 (fidelity-#6 class, in the score lane's plain
+  mode). Its score bias is +0.61/+0.65/+1.99/+4.20 at T=5/10/25/50 and
+  N-INDEPENDENT (+4.25/+4.20/+4.21 at N=252/1008/4032) — structural
+  estimand error, not MC bias. (2) The PRODUCTION score program
+  (contract_e smooth OT reset, no discrete resampling — the score mode
+  the differentiable-transport design exists for) was NOT in the board
+  (score-cell configuration inherited the gate convention); measured:
+  bias -0.12/-0.55/-1.39 at T=10/25/50 — 3x smaller than either board
+  variant at T=50, still T-growing. (3) The filter VALUE bias with the
+  OT reset is N-PERSISTENT (-0.65/-0.69/-0.78 at N=252/1008/4032) and
+  Sinkhorn-epsilon-sensitive: -0.650 (eps=2.0) / -0.257 (eps=0.5) /
+  -0.734 (eps=0.1, 24 iters — degraded, likely unconverged/f32 kernel
+  underflow at small eps). Entropic-transport bias class; eps is an
+  untuned inherited default on every non-Austria row (and its own
+  Austria tuning covers only k/c + damping). (4) The board's canonical
+  value arms ran with dual_cap_enabled=False (filter default) — the
+  dual-cap family was implemented and gated but NOT exercised in Q3
+  value cells; recorded as a default-provenance question for the
+  owner/tuning campaign. CONSEQUENCE: Q3 score cells must be re-run
+  under the production program, and the per-scope tuning campaign is
+  the gating next artifact before any per-model interpretation.
