@@ -132,3 +132,32 @@ all-finite, self-consistency 1.26e-09 vs oracle. Wall time 897s. Full
 six-model production board (trust region ON) now complete: all rows finite,
 zero crashes. Report regenerated at
 `docs/benchmarks/q3-canonical-leaderboard-report-2026-08-25.md`.
+
+## Q3 COMPLETE (2026-08-27)
+
+Six-model production leaderboard finished with the true production program
+(dual-cap trust region ON per registry definition). All value cells finite,
+zero score crashes across all rows. Artifacts under
+`docs/benchmarks/artifacts/ledh_canonical_leaderboard_2026-08/q3_board/`.
+Report: `docs/benchmarks/q3-canonical-leaderboard-report-2026-08-25.md`.
+Conformance stamp: ledh-canonical-conformance-v1-2026-08-24@6bc7a37558e1.
+
+Key findings:
+- Linear anchor: value error 0.038 nats (8 seeds, N=1008).
+- dlgssm score: error 2.4 vs exact (UNTUNED; tuning artifact pending per
+  gap register B1).
+- Austria score spread 201 over 8 seeds (C5 in gap register: variance
+  source decomposition + annealed N-ladder pending).
+- All nonlinear rows lack reference arms (C2 gap).
+- Bootstrap comparative cells omitted per configuration-status-first rule
+  (no tuning artifacts, comparability contract undefined).
+
+Statistical status: hard vetoes all pass; no ranking supported (8 seeds,
+no uncertainty analysis per gap register D2); all differences descriptive
+only. Default-readiness: Q5 scope (NeuTra training + HMC contracts).
+
+Wall time: ~2.5 GPU-hours (includes the Austria annealed crash repair +
+regeneration).
+
+Next: Q4 (owner-gated merge) whenever the owner chooses. Q1-Q3 all
+complete.
