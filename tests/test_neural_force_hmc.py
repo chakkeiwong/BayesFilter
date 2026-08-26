@@ -197,6 +197,17 @@ def test_native_dual_averaging_preserves_endpoint_only_force_mechanics():
         config.num_leapfrog_steps + 1
     )
     assert result.trace["step_size"].shape == (config.num_results,)
+    assert result.trace["divergence"].shape == (config.num_results, 4)
+    assert result.trace["force_fallback"].shape == (config.num_results, 4)
+    tf.debugging.assert_equal(
+        result.diagnostics["divergence_count"], tf.constant(0, tf.int32)
+    )
+    tf.debugging.assert_equal(
+        result.diagnostics["divergence_count_by_chain"], tf.zeros((4,), tf.int32)
+    )
+    tf.debugging.assert_equal(
+        result.diagnostics["force_fallback_count"], tf.constant(0, tf.int32)
+    )
     assert float(result.diagnostics["final_step_size"].numpy()) > 0.0
     assert result.diagnostics["acceptance_rate_semantics"] == (
         "mean_metropolis_acceptance_probability"
@@ -295,7 +306,7 @@ def test_invalid_force_and_map_apis_are_rejected():
         FrozenPositionOnlyForce(lambda position: position, "bad", frozen=False)
 
 
-def test_nonfinite_force_and_undefined_target_fail_closed():
+def test_nonfinite_force_uses_finite_fallback_and_records_telemetry():
     position = tf.constant([[0.2]], DTYPE)
     config = _config(dimension=1)
     target = _gaussian_target(1)
@@ -303,10 +314,13 @@ def test_nonfinite_force_and_undefined_target_fail_closed():
         lambda value: tf.fill(tf.shape(value), tf.constant(float("nan"), DTYPE)),
         "nan-force",
     )
-    with pytest.raises(tf.errors.InvalidArgumentError, match="force must be finite"):
-        neural_force_hmc_transition(
-            position, tf.constant([0.02], DTYPE), bad_force, target, config, seed=(1, 2)
-        )
+    result = neural_force_hmc_transition(
+        position, tf.constant([0.02], DTYPE), bad_force, target, config, seed=(1, 2)
+    )
+    tf.debugging.assert_equal(result.trace.force_fallback, [True])
+    tf.debugging.assert_equal(result.trace.divergence, [False])
+    tf.debugging.assert_all_finite(result.position, "fallback position")
+    tf.debugging.assert_all_finite(result.potential, "fallback potential")
 
     for bad_value in (float("nan"), -float("inf")):
         def bad_target_function(value):
@@ -327,6 +341,52 @@ def test_nonfinite_force_and_undefined_target_fail_closed():
             )
 
 
+def test_arithmetic_overflow_is_rejected_and_reported_as_divergence():
+    position = tf.constant([[0.2]], DTYPE)
+    config = _config(step_size=1.0, steps=1, dimension=1)
+    huge_force = FrozenPositionOnlyForce(
+        lambda value: tf.fill(tf.shape(value), tf.constant(1.0e308, DTYPE)),
+        "huge-finite-force",
+    )
+    target = _gaussian_target(1)
+    result = neural_force_hmc_transition(
+        position,
+        tf.constant([0.02], DTYPE),
+        huge_force,
+        target,
+        config,
+        seed=(1, 2),
+    )
+    tf.debugging.assert_equal(result.trace.divergence, [True])
+    tf.debugging.assert_equal(result.trace.accepted, [False])
+    tf.debugging.assert_equal(result.position, position)
+    tf.debugging.assert_all_finite(result.trace.log_acceptance_ratio, "divergence log ratio")
+
+
+def test_generated_nonfinite_momentum_is_rejected_without_an_assertion():
+    position = tf.constant([[0.2]], DTYPE)
+    target = _gaussian_target(1)
+    force = _gaussian_force()
+    # A subnormal inverse mass makes the stateless Gaussian scaling overflow.
+    config = NeuralForceHMCConfig(
+        step_size=0.1,
+        num_leapfrog_steps=1,
+        inverse_mass_diagonal=(1.0e-320,),
+        dtype="float64",
+    )
+    result = neural_force_hmc_transition(
+        position,
+        tf.constant([0.02], DTYPE),
+        force,
+        target,
+        config,
+        seed=(3, 5),
+    )
+    tf.debugging.assert_equal(result.trace.divergence, [True])
+    tf.debugging.assert_equal(result.trace.accepted, [False])
+    tf.debugging.assert_equal(result.position, position)
+
+
 def test_declared_positive_infinity_support_boundary_is_ordinary_rejection():
     position = tf.constant([[0.2]], DTYPE)
     target = FrozenTargetPotential(
@@ -343,6 +403,8 @@ def test_declared_positive_infinity_support_boundary_is_ordinary_rejection():
     )
     tf.debugging.assert_equal(result.trace.accepted, [False])
     tf.debugging.assert_equal(result.trace.endpoint_out_of_support, [True])
+    tf.debugging.assert_equal(result.trace.divergence, [False])
+    tf.debugging.assert_equal(result.trace.finite_status, [False])
     tf.debugging.assert_equal(result.position, position)
 
 
@@ -400,6 +462,8 @@ def test_warmup_is_retained_in_chain_archive():
         seed=(88, 99),
     )
     assert chain.positions.shape == (8, 2, 1)
+    assert chain.divergence.shape == (8, 2)
+    assert chain.force_fallback.shape == (8, 2)
     tf.debugging.assert_equal(chain.num_warmup, 3)
 
 
