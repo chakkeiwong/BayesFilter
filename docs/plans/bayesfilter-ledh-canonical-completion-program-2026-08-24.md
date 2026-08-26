@@ -108,3 +108,21 @@ Q1-Q3 ordering; Q5 requires Q3 + Q4.
 - Stop conditions: hard veto (identity/hash/env), 3 consecutive launch
   failures, per-process caps, or any change to scientific targets —
   everything else proceeds and is ledgered.
+
+## 2026-08-27 repair note (Q3 Austria annealed crash)
+
+Austria production annealed score crashed with Cholesky NaN at S7 dual-cap
+entry. Root cause: `affine_restore_cloud_jvp` in
+`higher_moment_contract_e.py` computed target_cov and current_cov Cholesky
+WITHOUT ridge protection. Annealed likelihood concentration collapsed
+smallest eigenvalue to roundoff (-6.4e-16 measured against largest 2.33).
+Fix: apply `_relative_psd_covariance` (symmetrize + relative ridge
+delta*tr(C)/d*I) to both factorizations before Cholesky.
+RELATIVE_PSD_FLOOR=1e-12 calibrated via response curve: passes
+exact-restoration contract (<1e-12 residual on healthy clouds) while
+rescuing the Austria NaN. Classification: Class B (fail-closed guard) +
+light Class C (ridge alters factor, but 1e-12 perturbation negligible).
+Non-harm verified: 32 parity/oracle/JVP gates pass. Austria row
+regeneration in progress. Two speculative guards (LM matrix inverse, flow S
+inverse) reverted — unjustified after real defect identified. Commit
+3ca8b1fd.
