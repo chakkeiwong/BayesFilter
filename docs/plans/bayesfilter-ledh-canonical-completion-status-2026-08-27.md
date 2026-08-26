@@ -83,6 +83,28 @@ claims. Own contracts per gap register R2–R4.
 - Governance: G-1 through G-6 green, meta-governance green, C-9 no-autodiff green
 - Fidelity tally: 5/5 found-and-fixed (last: Austria annealed Cholesky NaN)
 
+## REVISED STATUS (2026-08-27, owner findings #1–#3)
+
+Q3 board is **mechanism-complete, not claim-bearing**. All six rows run the
+true production program (dual-cap ON, conformance-stamped, zero crashes),
+but zero rows have clean per-scope tuning artifacts. Parameter justification
+register audit (35 parameters): Sinkhorn epsilon/iters INHERITED on all 6
+rows, measured as the dlgssm bias driver (0.870 nats error traced to
+untuned ε=2.0); 6 ASSERTED literals where call sites override module
+defaults; Austria k/c/damping tuned ON claim data (B2 violation); other 5
+models have zero tuning artifacts (B1).
+
+Under the 3-gate enforcement system (register completeness + machine-checked
+signature coverage + claim gate rejecting INHERITED/ASSERTED/WARM params),
+every Q3 cell is UNTUNED and carries no per-model performance claim. Board
+remains valid as mechanism evidence: the algorithm executes correctly and is
+oracle-verified on every derivative.
+
+Required before claim-bearing use: R2-LITERAL (resolve 6 asserted literals,
+code hygiene, ~1 session) + R2-TUNE (per-scope campaigns on disjoint data,
+full control family enumerated, 6 scopes, ~1–2 GPU-days per
+gap-register estimate).
+
 ## Gap register status
 
 Production-readiness gaps A1–A7, B1–B3, C1–C6, D1–D3 recorded in 
