@@ -126,3 +126,9 @@ Non-harm verified: 32 parity/oracle/JVP gates pass. Austria row
 regeneration in progress. Two speculative guards (LM matrix inverse, flow S
 inverse) reverted — unjustified after real defect identified. Commit
 3ca8b1fd.
+
+Austria row regenerated successfully post-fix: zero crashed seeds (was 6/8),
+all-finite, self-consistency 1.26e-09 vs oracle. Wall time 897s. Full
+six-model production board (trust region ON) now complete: all rows finite,
+zero crashes. Report regenerated at
+`docs/benchmarks/q3-canonical-leaderboard-report-2026-08-25.md`.
