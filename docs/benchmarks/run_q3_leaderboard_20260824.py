@@ -291,6 +291,34 @@ def score_cells(model, set_direction, theta, dim, observations,
             "annealed_stages": annealed_stages,
             "note": "HARD VETO: every seed crashed nonfinite",
         }
+    try:
+        return _self_consistency_block(
+            self_consistency, run, theta, seeds, scores, direction_index,
+            p_count, program, tuning, crashed, annealed_stages,
+            analytical_seed0,
+        )
+    except Exception as error:  # reference crash -> recorded (2026-08-26)
+        print(f"[score-reference VETO] {error}", flush=True)
+        return {
+            "program": program,
+            "tuning": tuning,
+            "crashed_seeds": crashed,
+            "all_finite": bool(np.all(np.isfinite(scores))),
+            "direction_index": direction_index,
+            "analytical_scores": scores,
+            "mean": float(np.nanmean(scores)),
+            "seed_spread": float(np.nanstd(scores)),
+            "self_consistency_reference": float("nan"),
+            "self_consistency_kind": "unavailable (reference crashed)",
+            "self_consistency_rel_err_seed0": float("nan"),
+            "annealed_stages": annealed_stages,
+            "note": "reference computation crashed nonfinite (recorded)",
+        }
+
+
+def _self_consistency_block(self_consistency, run, theta, seeds, scores,
+                            direction_index, p_count, program, tuning,
+                            crashed, annealed_stages, analytical_seed0):
     if self_consistency == "oracle":
         # Annealed rows: central FD is invalid across resampling-boundary
         # crossings; the forward-autodiff oracle differentiates the SAME

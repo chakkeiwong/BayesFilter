@@ -158,9 +158,10 @@ def canonical_value_and_diagnostics(
     for time_index in range(horizon):
         # Class-B fail-closed guard (2026-08-26): nonfinite lifecycle
         # state must become a RECORDED veto, never an eigh/cholesky
-        # crash. First fired by the first claim-scale full-production
-        # Austria run (f32 reset+dual-cap islands NaN'd a step; the
-        # next step's spectral-cap eigh then raised).
+        # crash. Added during the first claim-scale full-production
+        # Austria run; the crash was later localized to the SCORE
+        # lane's S6 gap Cholesky (this value-lane guard has not fired —
+        # it stands as no-fire Class-B protection).
         state_finite = bool(
             tf.reduce_all(tf.math.is_finite(states)).numpy()
         ) and bool(

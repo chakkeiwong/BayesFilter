@@ -98,13 +98,17 @@ def main() -> None:
             continue
         r = payload["result"]
         problems = []
-        for arm in ("canonical_ledh", "bootstrap_pf"):
-            cell = r.get(arm)
-            if cell and not (
-                cell.get("all_finite", True)
-                and cell.get("all_valid", True)
+        for arm, cell in r.items():
+            if not isinstance(cell, dict):
+                continue
+            if arm in ("canonical_ledh", "bootstrap_pf") or (
+                arm.startswith("score_dir")
             ):
-                problems.append(arm)
+                if not (
+                    cell.get("all_finite", True)
+                    and cell.get("all_valid", True)
+                ):
+                    problems.append(arm)
         if problems:
             veto_lines.append(
                 f"- {name}: VETO — nonfinite/invalid arms: {problems}"
