@@ -128,6 +128,8 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
     }
     assert result["windowed_stage"] is windowed
     assert result["warmup_draws_discarded"] is True
+    assert result["hmc_or_tuning_invoked"] is False
+    assert result["warmup_invoked"] is True
     assert result["reports_posterior_convergence"] is False
 
 

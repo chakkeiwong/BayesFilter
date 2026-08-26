@@ -21484,7 +21484,10 @@ def prepare_operational_windowed_mass_handoff(
         "windowed_stage": windowed,
         "budget_policy_payload": budget_policy.payload(),
         "budget_policy_hash": stable_config_hash(budget_policy.payload()),
-        "hmc_or_tuning_invoked": True,
+        # This prefix invokes warmup preparation only.  Preserve the handoff's
+        # explicit nonclaim that fixed-kernel HMC/tuning was run.
+        "hmc_or_tuning_invoked": handoff["hmc_or_tuning_invoked"],
+        "warmup_invoked": True,
         "warmup_draws_discarded": True,
         "reports_posterior_convergence": False,
     }
