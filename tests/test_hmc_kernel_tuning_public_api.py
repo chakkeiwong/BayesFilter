@@ -4,11 +4,13 @@ import inspect
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Mapping
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import pytest
+import tensorflow as tf
 
 import bayesfilter
 from bayesfilter.inference import (
@@ -24,6 +26,7 @@ from bayesfilter.inference import (
     HMCWindowedMassStageConfig,
     HMCWindowedMassStageResult,
     HMC_KERNEL_TUNING_PUBLIC_NONCLAIMS,
+    prepare_operational_windowed_mass_handoff,
     tune_hmc_kernel,
 )
 from bayesfilter.runtime import stable_config_hash
@@ -40,6 +43,92 @@ from tests.test_hmc_kernel_tuning_bootstrap import run_hmc_bootstrap_screen
 
 def _bootstrap_passed():
     return _passed_bootstrap()
+
+
+def test_public_mass_preparation_owns_adequate_standard_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    geometry = SimpleNamespace(
+        target_dimension=9,
+        artifact_hash="geometry-hash",
+        mass_artifact=None,
+    )
+    bootstrap = SimpleNamespace(
+        artifact_hash="bootstrap-hash",
+        final_status="passed",
+    )
+    operational = SimpleNamespace(operational_metric_update_count=1)
+    windowed = SimpleNamespace(
+        passed=True,
+        final_status="passed",
+        operational_warmup_result=operational,
+    )
+    observed: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "initialize_hmc_kernel_geometry",
+        lambda **_kwargs: geometry,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "run_hmc_bootstrap_screen",
+        lambda **_kwargs: bootstrap,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "_bootstrap_preflight_passed",
+        lambda _bootstrap: True,
+    )
+
+    def run_windowed(**kwargs: Any) -> Any:
+        observed["warmup_steps"] = kwargs[
+            "_attempt_budget_policy"
+        ].phase4_warmup_steps
+        observed["metric_update_requirement"] = kwargs[
+            "config"
+        ].metric_update_requirement
+        return windowed
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "run_hmc_windowed_mass_stage",
+        run_windowed,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "build_operational_fixed_mass_hmc_adapter",
+        lambda **_kwargs: {
+            "adapted_mass_artifact": object(),
+            "adapted_mass_artifact_signature": "mass-hash",
+            "phase4_adapter": object(),
+            "final_adapter": object(),
+            "final_adapter_signature": "adapter-hash",
+            "initial_position": [[0.0] * 9] * 4,
+            "start_lineage": {"count": 4},
+            "target_scope": "mass-preparation-fixture",
+            "hmc_or_tuning_invoked": False,
+            "raw_samples_retained": False,
+        },
+    )
+
+    result = prepare_operational_windowed_mass_handoff(
+        adapter=SimpleNamespace(target_scope="mass-preparation-fixture"),
+        initial_position=[0.0] * 9,
+        config=HMCKernelTuningConfig.standard(
+            target_scope="mass-preparation-fixture",
+            use_xla=False,
+            metric_update_requirement="require_operational_update",
+        ),
+    )
+
+    assert observed == {
+        "warmup_steps": 225,
+        "metric_update_requirement": "require_operational_update",
+    }
+    assert result["windowed_stage"] is windowed
+    assert result["warmup_draws_discarded"] is True
+    assert result["reports_posterior_convergence"] is False
 
 
 def _loop_result(*, passed: bool = True) -> HMCTuneVerifyRepairLoopResult:
@@ -886,6 +975,20 @@ class _MismatchedScopeXLAReadyToyGaussianAdapter(_ToyGaussianAdapter):
         )
 
 
+class _Rank2RequiredToyGaussianAdapter(_ToyGaussianAdapter):
+    batch_rank_policy = "rank2_required"
+
+    def __init__(self) -> None:
+        self.value_score_shapes: list[tuple[int, ...]] = []
+
+    def log_prob_and_grad(self, theta: Any) -> tuple[Any, Any]:
+        value = tf.convert_to_tensor(theta, dtype=tf.float64)
+        if value.shape.rank != 2:
+            raise ValueError("rank2 bootstrap fixture requires [batch, parameter]")
+        self.value_score_shapes.append(tuple(int(item) for item in value.shape))
+        return super().log_prob_and_grad(value)
+
+
 def test_latent_fixed_mass_wrapper_preserves_only_accepted_xla_authority() -> None:
     geometry = _geometry(adapter=_XLAReadyToyGaussianAdapter())
     wrapper = hmc_kernel_tuning_module._build_bootstrap_fixed_mass_adapter(
@@ -923,6 +1026,25 @@ def test_latent_fixed_mass_wrapper_preserves_only_accepted_xla_authority() -> No
     mismatched_capability = mismatched_wrapper.value_score_capability()
     assert mismatched_capability.xla_hmc_ready is False
     assert mismatched_capability.full_chain_xla_diagnostic_ready is False
+
+
+def test_bootstrap_fixed_mass_wrapper_bridges_scalar_state_to_rank2_base() -> None:
+    base = _Rank2RequiredToyGaussianAdapter()
+    geometry = _geometry(adapter=base)
+    wrapper = hmc_kernel_tuning_module._build_bootstrap_fixed_mass_adapter(
+        adapter=base,
+        mass_artifact=geometry.mass_artifact,
+        mass_signature=geometry.mass_artifact_signature,
+        target_scope="kernel_fixed_mass_step_toy_gaussian",
+    )
+
+    value, score = wrapper.log_prob_and_grad(wrapper.initial_position())
+
+    assert value.shape == ()
+    assert score.shape == (2,)
+    assert bool(tf.math.is_finite(value).numpy()) is True
+    assert bool(tf.reduce_all(tf.math.is_finite(score)).numpy()) is True
+    assert base.value_score_shapes == [(1, 2)]
 
 
 def test_tune_hmc_kernel_runs_phase2_phase3_phase7_in_order(monkeypatch: pytest.MonkeyPatch) -> None:

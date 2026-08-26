@@ -121,6 +121,93 @@ def _validate_value_score_shapes(
     return rank, batch_size, parameter_dim
 
 
+def _call_value_score_with_batch_rank_bridge(
+    base_adapter: Any,
+    position: Any,
+    *,
+    with_status: bool = False,
+) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, Any] | None]:
+    """Call a rank-2-only base target from a scalar affine wrapper exactly.
+
+    Generic SSM targets deliberately require ``theta[B, D]``.  Affine HMC
+    wrappers also support one scalar-chain coordinate ``z[D]``.  For that one
+    case, preserve the target contract by calling the base once at
+    ``theta[None, :]`` and remove only the known singleton batch axis from the
+    returned value and score.  Rank-2 calls pass through unchanged.
+    """
+
+    theta = tf.convert_to_tensor(position)
+    promote_singleton = bool(
+        theta.shape.rank == 1
+        and getattr(base_adapter, "batch_rank_policy", None) == "rank2_required"
+    )
+    base_theta = theta[tf.newaxis, :] if promote_singleton else theta
+    if with_status:
+        callback = getattr(base_adapter, "log_prob_and_grad_status", None)
+        if not callable(callback):
+            raise TypeError("base adapter does not expose log_prob_and_grad_status")
+        value, score, status = callback(base_theta)
+        if not isinstance(status, Mapping):
+            raise TypeError("combined value/score/status target must return a mapping")
+    else:
+        value, score = base_adapter.log_prob_and_grad(base_theta)
+        status = None
+    value_tensor = tf.convert_to_tensor(value, dtype=theta.dtype)
+    score_tensor = tf.convert_to_tensor(score, dtype=theta.dtype)
+    if base_theta.shape.rank in (1, 2):
+        _validate_value_score_shapes(
+            theta=base_theta,
+            value=value_tensor,
+            score=score_tensor,
+        )
+    else:
+        # Retained-health adapters may explicitly support [draw, chain, D].
+        # The bridge does not alter those calls; preserve their established
+        # leading axes while still checking value/score correspondence.
+        if not value_tensor.shape.is_compatible_with(base_theta.shape[:-1]):
+            raise ValueError("sample-batched target value leading axes mismatch")
+        if not score_tensor.shape.is_compatible_with(base_theta.shape):
+            raise ValueError("sample-batched target score shape mismatch")
+    if not promote_singleton:
+        return value_tensor, score_tensor, status
+    restored_status = (
+        None
+        if status is None
+        else tf.nest.map_structure(
+            lambda item: tf.squeeze(tf.convert_to_tensor(item), axis=0),
+            status,
+        )
+    )
+    return (
+        tf.squeeze(value_tensor, axis=0),
+        tf.squeeze(score_tensor, axis=0),
+        restored_status,
+    )
+
+
+def _call_mapping_with_batch_rank_bridge(
+    base_adapter: Any,
+    callback: Callable[[Any], Mapping[str, Any]],
+    position: Any,
+) -> Mapping[str, Any]:
+    """Apply the same singleton bridge to target-status telemetry."""
+
+    theta = tf.convert_to_tensor(position)
+    promote_singleton = bool(
+        theta.shape.rank == 1
+        and getattr(base_adapter, "batch_rank_policy", None) == "rank2_required"
+    )
+    payload = callback(theta[tf.newaxis, :] if promote_singleton else theta)
+    if not isinstance(payload, Mapping):
+        raise TypeError("target_status_telemetry must return a mapping")
+    if not promote_singleton:
+        return payload
+    return tf.nest.map_structure(
+        lambda item: tf.squeeze(tf.convert_to_tensor(item), axis=0),
+        payload,
+    )
+
+
 def _broadcast_upstream_gradient_to_score(dy: Any, score: tf.Tensor) -> tf.Tensor:
     """Broadcast target upstream gradients over trailing parameter axes only."""
 
@@ -383,10 +470,9 @@ class LatentAffineBatchValueScoreAdapter:
     def log_prob_and_grad(self, z: Any) -> tuple[tf.Tensor, tf.Tensor]:
         z_tensor = self._validate_latent_tensor(z)
         theta = self.latent_to_position(z_tensor)
-        value, theta_score = self.base_adapter.log_prob_and_grad(theta)
-        value_tensor = tf.convert_to_tensor(value, dtype=z_tensor.dtype)
-        theta_score_tensor = tf.convert_to_tensor(theta_score, dtype=z_tensor.dtype)
-        _validate_value_score_shapes(theta=theta, value=value_tensor, score=theta_score_tensor)
+        value_tensor, theta_score_tensor, _status = (
+            _call_value_score_with_batch_rank_bridge(self.base_adapter, theta)
+        )
         return value_tensor, self.theta_score_to_latent_score(theta_score_tensor)
 
     def target_status_telemetry(self, z: Any) -> Mapping[str, Any]:
@@ -404,10 +490,11 @@ class LatentAffineBatchValueScoreAdapter:
             raise TypeError("base_adapter must expose target_status_telemetry")
         z_tensor = self._validate_latent_tensor(z)
         theta = self.latent_to_position(z_tensor)
-        payload = telemetry(theta)
-        if not isinstance(payload, Mapping):
-            raise TypeError("target_status_telemetry must return a mapping")
-        return payload
+        return _call_mapping_with_batch_rank_bridge(
+            self.base_adapter,
+            telemetry,
+            theta,
+        )
 
     def _validate_latent_tensor(
         self,

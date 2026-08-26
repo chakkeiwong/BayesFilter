@@ -53,6 +53,28 @@ class TelemetryBatchedQuadraticAdapter(BatchedQuadraticAdapter):
         }
 
 
+class Rank2RequiredTelemetryQuadraticAdapter(TelemetryBatchedQuadraticAdapter):
+    batch_rank_policy = "rank2_required"
+
+    def __init__(self) -> None:
+        self.value_score_shapes: list[tuple[int, ...]] = []
+        self.telemetry_shapes: list[tuple[int, ...]] = []
+
+    def log_prob_and_grad(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        values = tf.convert_to_tensor(theta, dtype=tf.float64)
+        if values.shape.rank != 2:
+            raise ValueError("rank2 fixture requires [batch, parameter]")
+        self.value_score_shapes.append(tuple(int(item) for item in values.shape))
+        return super().log_prob_and_grad(values)
+
+    def target_status_telemetry(self, theta: tf.Tensor) -> dict[str, tf.Tensor]:
+        values = tf.convert_to_tensor(theta, dtype=tf.float64)
+        if values.shape.rank != 2:
+            raise ValueError("rank2 fixture requires [batch, parameter]")
+        self.telemetry_shapes.append(tuple(int(item) for item in values.shape))
+        return super().target_status_telemetry(values)
+
+
 class ScalarOnlyQuadraticAdapter(BatchedQuadraticAdapter):
     def log_prob_and_grad(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.convert_to_tensor(theta, dtype=tf.float64)
@@ -331,6 +353,41 @@ def test_latent_affine_batch_value_score_adapter_calls_base_once_and_applies_cha
     np.testing.assert_allclose(score.numpy(), (-theta) @ factor)
     assert value.shape == (3,)
     assert score.shape == (3, 3)
+
+
+def test_latent_affine_adapter_bridges_scalar_call_to_rank2_required_base() -> None:
+    base = Rank2RequiredTelemetryQuadraticAdapter()
+    center = np.array([0.25, -0.5, 0.75])
+    factor = np.array(
+        [
+            [2.0, 0.1, 0.0],
+            [0.0, 1.5, -0.2],
+            [0.3, 0.0, 1.25],
+        ]
+    )
+    transform = LatentAffineHMCTransform(
+        center=center,
+        factor=factor,
+        covariance_provenance="unit_test_covariance",
+    )
+    adapter = LatentAffineBatchValueScoreAdapter(
+        base_adapter=base,
+        transform=transform,
+        target_scope="rank2_scalar_bridge_fixture",
+    )
+    z = tf.constant([0.1, -0.2, 0.3], dtype=tf.float64)
+
+    value, score = adapter.log_prob_and_grad(z)
+    telemetry = adapter.target_status_telemetry(z)
+    theta = center + z.numpy() @ factor.T
+
+    assert value.shape == ()
+    assert score.shape == (3,)
+    np.testing.assert_allclose(value.numpy(), -0.5 * np.sum(theta * theta))
+    np.testing.assert_allclose(score.numpy(), (-theta) @ factor)
+    assert telemetry["status_code"].shape == ()
+    assert base.value_score_shapes == [(1, 3)]
+    assert base.telemetry_shapes == [(1, 3)]
 
 
 def test_latent_affine_transform_helpers_preserve_sample_leading_axes() -> None:

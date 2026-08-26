@@ -23,7 +23,11 @@ from bayesfilter.hmc_route_contract import (
     HMC_ROUTE_CONTRACT_VERSION,
     OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
 )
-from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
+from bayesfilter.inference.batched_value_score import (
+    _call_mapping_with_batch_rank_bridge,
+    _call_value_score_with_batch_rank_bridge,
+    reviewed_value_score_target_fn,
+)
 from bayesfilter.inference.hmc_coordinates import (
     AffineCoordinateTransform,
     KernelState,
@@ -719,11 +723,11 @@ class _AffineWarmupAdapter:
 
         z = tf.convert_to_tensor(latent, dtype=tf.float64)
         theta = self.transform.latent_to_theta(z)
-        if self.supports_retained_value_score_status:
-            value, theta_score, status = self.base_adapter.log_prob_and_grad_status(theta)
-        else:
-            value, theta_score = self.base_adapter.log_prob_and_grad(theta)
-            status = None
+        value, theta_score, status = _call_value_score_with_batch_rank_bridge(
+            self.base_adapter,
+            theta,
+            with_status=self.supports_retained_value_score_status,
+        )
         return (
             tf.convert_to_tensor(value, dtype=z.dtype),
             self.transform.theta_score_to_latent_score(theta_score),
@@ -745,10 +749,11 @@ class _AffineWarmupAdapter:
         if not callable(telemetry):
             raise TypeError("base_adapter must expose target_status_telemetry")
         theta = self.transform.latent_to_theta(latent)
-        payload = telemetry(theta)
-        if not isinstance(payload, Mapping):
-            raise TypeError("target_status_telemetry must return a mapping")
-        return payload
+        return _call_mapping_with_batch_rank_bridge(
+            self.base_adapter,
+            telemetry,
+            theta,
+        )
 
     def classify_target_exception(self, error: BaseException) -> bool:
         """Forward only an adapter-declared target-domain failure classifier."""

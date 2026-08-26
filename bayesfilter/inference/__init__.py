@@ -372,6 +372,7 @@ __all__ = [
     "run_hmc_windowed_mass_stage",
     "run_hmc_start_bank_diagnostic",
     "build_operational_fixed_mass_hmc_adapter",
+    "prepare_operational_windowed_mass_handoff",
     "select_hmc_fixed_grid_scale",
     "select_operational_candidate_union",
     "tune_hmc_kernel",
