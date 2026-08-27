@@ -3,7 +3,7 @@
 Parent: `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md`  
 Version: `v3.4-fresh-paired-uncertainty-replication`  
 Entry gate: Phase 51 report branch `mode_aware_geometry_reduces_between_bank_variability_descriptive`  
-Status: `BLOCKED_GPU_BOUNDARY_REVIEW_503_SIX_ATTEMPTS_NO_PROCESS_STARTED`  
+Status: `BLOCKED_GPU_REVIEW_503_REPRODUCED_BY_STANDALONE_BASH_GPU_REQUEST`  
 Long-boundary attempt cap: `24000 s`; measured pre-boundary campaign remainder: `27806.988883054088 s`
 
 ## Question and scope
@@ -178,6 +178,14 @@ but its completed result was another pre-process HTTP 503 with request ID
 check confirmed that no Python/TensorFlow process started and no boundary
 artifact was created. The gateway problem therefore remains unresolved; the
 transient running-cell report is not launch or scientific evidence.
+
+The independent diagnostic at `/tmp/gateway_admission_repro_standalone.sh`
+then narrowed the blocker further. Its non-GPU modes pass, but the bounded
+`tensorflow-gpu` invocation was rejected before process creation with HTTP 503
+and request ID `3fe18c6e-53ab-414a-b923-2d260650df26`. This reproduces the
+gateway failure without repository imports, Phase 52 inputs, scientific code,
+or artifact writes. It confirms an external GPU-request admission failure and
+does not consume the Phase 52 campaign budget.
 
 ### Implementation-readiness repair audit
 

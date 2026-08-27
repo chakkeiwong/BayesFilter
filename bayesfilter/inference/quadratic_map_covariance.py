@@ -18,6 +18,10 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from bayesfilter.inference.joint_center import (
+    JointCenterLocatorConfig,
+    locate_joint_center,
+)
 from bayesfilter.inference.mass_matrix import (
     MassMatrixResult,
     covariance_from_precision,
@@ -414,6 +418,37 @@ def estimate_quadratic_map_covariance(
             },
         )
 
+    geometry_incumbent = (
+        None
+        if geometry.best_evaluated_position is None
+        else np.asarray(geometry.best_evaluated_position, dtype=float).reshape([-1])
+    )
+    if geometry_incumbent is not None and _geometry_incumbent_move_is_material(
+        geometry
+    ):
+        return _rejected_result(
+            status="covariance_center_mismatch_requires_refit",
+            initial_position=initial_np,
+            locator_position=locator_position,
+            locator_diagnostics=locator_diagnostics,
+            geometry=geometry,
+            mass_matrix=None,
+            map_candidate=geometry_incumbent,
+            map_candidate_role=f"best_exact_{geometry.best_evaluated_source}",
+            diagnostics={
+                "classification": "diagnostic_initializer_rejected",
+                "geometry_status": geometry.status,
+                "geometry_accepted": geometry.accepted,
+                "stale_centered_covariance_prevented": True,
+                "covariance_fit_center": geometry.center,
+                "exact_incumbent_source": geometry.best_evaluated_source,
+                "exact_incumbent_value": geometry.best_evaluated_value,
+                "reports_map_quality": False,
+                "reports_hmc_convergence": False,
+                "reports_default_readiness": False,
+            },
+        )
+
     theta_precision = _precision_from_geometry_to_theta(geometry)
     transform_diagnostics = _coordinate_transform_diagnostics(geometry)
     try:
@@ -446,16 +481,8 @@ def estimate_quadratic_map_covariance(
             },
         )
 
-    map_candidate = (
-        geometry.refined_center
-        if geometry.center_refinement_accepted and geometry.refined_center is not None
-        else locator_position
-    )
-    map_candidate_role = (
-        "quadratic_surrogate_map_candidate"
-        if geometry.center_refinement_accepted and geometry.refined_center is not None
-        else "locator_position_geometry_covariance_only"
-    )
+    map_candidate = np.asarray(geometry.center, dtype=float).copy()
+    map_candidate_role = "exact_incumbent_geometry_center"
     precision = mass.regularized_precision
     if precision is None:
         return _rejected_result(
@@ -666,6 +693,35 @@ def estimate_iterative_quadratic_map_covariance(
                 ),
             )
 
+        geometry_incumbent = (
+            None
+            if geometry.best_evaluated_position is None
+            else np.asarray(geometry.best_evaluated_position, dtype=float).reshape([-1])
+        )
+        if geometry_incumbent is not None and _geometry_incumbent_move_is_material(
+            geometry
+        ):
+            record["exact_incumbent_promoted"] = True
+            record["exact_incumbent_source"] = geometry.best_evaluated_source
+            record["exact_incumbent_value"] = geometry.best_evaluated_value
+            if fit_index >= iterative_cfg.max_refinement_steps:
+                return _iterative_rejected_result(
+                    status="maximum_refinement_steps_after_exact_incumbent_move",
+                    initial_position=initial_np,
+                    locator_position=locator_position,
+                    locator_diagnostics=locator_diagnostics,
+                    iterations=tuple(iteration_records),
+                    terminal_geometry=geometry,
+                    diagnostics=_iterative_diagnostics(
+                        iterative_cfg,
+                        geometry_cfg,
+                        mass_cfg,
+                        scale_np,
+                    ),
+                )
+            current = geometry_incumbent.copy()
+            continue
+
         if terminal_before_fit:
             theta_precision = _precision_from_geometry_to_theta(geometry)
             try:
@@ -814,33 +870,44 @@ def _run_locator(
             "locator_score_norm": initial_score_norm,
         }
 
-    def objective_and_grad(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        theta = tf.reshape(tf.convert_to_tensor(theta, dtype=tf.float64), [-1])
-        value, score = value_and_score_fn(theta)
-        value = tf.convert_to_tensor(value, dtype=tf.float64)
-        score = tf.reshape(tf.convert_to_tensor(score, dtype=tf.float64), [-1])
-        return -value, -score
-
     try:
-        optimizer = tfp.optimizer.lbfgs_minimize(
-            objective_and_grad,
-            initial_position=tf.constant(initial_position, dtype=tf.float64),
-            max_iterations=int(config.max_iterations),
-            tolerance=tf.constant(float(config.tolerance), dtype=tf.float64),
-            parallel_iterations=int(config.parallel_iterations),
-        )
-        candidate = np.asarray(
-            tf.reshape(tf.convert_to_tensor(optimizer.position, dtype=tf.float64), [-1]).numpy(),
-            dtype=float,
-        )
-        candidate_value, candidate_score, candidate_status = _evaluate_value_score(
+        locator = locate_joint_center(
             value_and_score_fn,
-            candidate,
-            dim,
+            initial_position,
+            config=JointCenterLocatorConfig(
+                max_iterations=int(config.max_iterations),
+                gradient_tolerance=float(config.tolerance),
+                parallel_iterations=int(config.parallel_iterations),
+                jit_compile=False,
+                max_objective_evaluations=max(
+                    601, int(config.max_iterations) * 25 + 1
+                ),
+            ),
+        )
+        candidate = (
+            initial_position.copy()
+            if locator.best_evaluated_position is None
+            else np.asarray(locator.best_evaluated_position, dtype=float).copy()
+        )
+        candidate_value = (
+            float(initial_value)
+            if locator.best_evaluated_objective is None
+            else float(locator.best_evaluated_objective)
+        )
+        candidate_score = (
+            np.asarray(initial_score, dtype=float)
+            if locator.best_evaluated_score is None
+            else np.asarray(locator.best_evaluated_score, dtype=float)
+        )
+        candidate_status = (
+            "finite"
+            if np.isfinite(candidate_value) and np.all(np.isfinite(candidate_score))
+            else "nonfinite"
         )
         accepted = bool(
             candidate_status == "finite"
             and candidate_value >= initial_value - float(config.log_prob_tolerance)
+            and locator.best_evaluated_source != "initial"
         )
         diagnostics = {
             **base,
@@ -850,10 +917,14 @@ def _run_locator(
                 else "tfp_lbfgs_locator_rejected_initial_fallback"
             ),
             "accepted_optimizer_position": accepted,
-            "optimizer_converged": _tensor_bool(optimizer.converged),
-            "optimizer_failed": _tensor_bool(optimizer.failed),
-            "optimizer_iterations": _tensor_int(optimizer.num_iterations),
-            "optimizer_objective_value": _tensor_float(optimizer.objective_value),
+            "optimizer_converged": locator.optimizer_converged,
+            "optimizer_failed": locator.optimizer_failed,
+            "optimizer_iterations": locator.optimizer_iterations,
+            "optimizer_objective_value": -float(locator.endpoint_objective),
+            "optimizer_endpoint_log_prob": float(locator.endpoint_objective),
+            "best_evaluated_source": locator.best_evaluated_source,
+            "best_evaluated_callback_index": locator.best_evaluated_callback_index,
+            "joint_center_status": locator.status,
             "candidate_log_prob": candidate_value,
             "candidate_score_norm": (
                 None
@@ -891,6 +962,8 @@ def _rejected_result(
     geometry: LowRankSPDQuadraticGeometryResult | None,
     mass_matrix: MassMatrixResult | None,
     diagnostics: Mapping[str, Any],
+    map_candidate: np.ndarray | None = None,
+    map_candidate_role: str = "none_rejected",
 ) -> QuadraticMapCovarianceResult:
     initial_np = np.asarray(initial_position, dtype=float).reshape([-1])
     locator_np = np.asarray(locator_position, dtype=float).reshape([-1])
@@ -900,8 +973,8 @@ def _rejected_result(
         dimension=int(initial_np.size),
         initial_position=initial_np,
         locator_position=locator_np,
-        map_candidate=None,
-        map_candidate_role="none_rejected",
+        map_candidate=map_candidate,
+        map_candidate_role=map_candidate_role,
         precision=None,
         covariance=None,
         covariance_source=None,
@@ -1033,6 +1106,37 @@ def _precision_from_geometry_to_theta(
         * inverse_scale[np.newaxis, :]
     )
     return 0.5 * (precision_theta + precision_theta.T)
+
+
+def _geometry_incumbent_move_is_material(
+    geometry: LowRankSPDQuadraticGeometryResult,
+) -> bool:
+    """Apply the geometry's frozen objective tolerance to centeredness.
+
+    Exact incumbent provenance is retained even for roundoff-sized
+    improvements. Curvature is invalidated only when the selected point moves
+    by more than numerical noise and improves log probability beyond the
+    pre-existing center tolerance.
+    """
+
+    if geometry.best_evaluated_position is None or geometry.best_evaluated_value is None:
+        return False
+    center = np.asarray(geometry.center, dtype=float)
+    best = np.asarray(geometry.best_evaluated_position, dtype=float)
+    scale = np.asarray(geometry.scale, dtype=float)
+    z_norm = float(np.linalg.norm((best - center) / scale))
+    center_value = float(geometry.diagnostics.get("center_log_prob", np.nan))
+    tolerance = float(
+        geometry.diagnostics.get("config", {}).get(
+            "center_log_prob_tolerance", 1.0e-8
+        )
+    )
+    improvement = float(geometry.best_evaluated_value) - center_value
+    return bool(
+        np.isfinite(improvement)
+        and improvement > tolerance
+        and z_norm > 1.0e-10
+    )
 
 
 def _coordinate_transform_diagnostics(

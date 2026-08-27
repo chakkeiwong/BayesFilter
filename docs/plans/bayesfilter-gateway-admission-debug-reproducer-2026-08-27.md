@@ -90,9 +90,26 @@ creation five times. The reviewer reported HTTP 503 from
 - `550d0b2c-3a01-4b12-8f48-cf6885228ef0`
 - `ca16e829-1eaf-4dd9-8767-c6713c752e7d`
 
-Because every reduced request passes, there is currently no deterministic
-shell-level reproducer. The strongest diagnosis is an intermittent failure in
-the permission-review backend while handling the exact scientific launch
-request. A clean retry after switching gateways produced the sixth 503 request
-ID above, before process creation. This directly reproduces the failure for the
-exact command while the entire reduced ladder remains accepted.
+At that point every reduced request passed, so the only reproducer was the
+exact scientific command. A clean retry after switching gateways produced the
+sixth 503 request ID above, before process creation. The standalone Bash
+reproducer below subsequently narrowed the failing request substantially.
+
+## Standalone Bash Reproducer
+
+A repository-independent Bash script now provides a substantially smaller
+reproducer at `/tmp/gateway_admission_repro_standalone.sh`. It has no BayesFilter
+paths or imports and writes no artifacts. Its Bash-only `basic`, `shape`,
+standard-Python, and CPU-hidden TensorFlow modes all start and pass. Submit this
+GPU mode as one elevated gateway request:
+
+```bash
+PYTHON_BIN=/home/ubuntu/anaconda3/envs/tfgpu/bin/python TF_CPP_MIN_LOG_LEVEL=3 TF_FORCE_GPU_ALLOW_GROWTH=true timeout 60s /tmp/gateway_admission_repro_standalone.sh tensorflow-gpu
+```
+
+On `2026-08-27`, that standalone command was rejected before process creation
+with the same HTTP 503 from `https://llm.visioncoder.ai/responses`, request ID
+`3fe18c6e-53ab-414a-b923-2d260650df26`. This is the smallest currently checked
+reproducer that fails while its neighboring modes pass. Because the gateway
+rejects before Bash starts, the result produces no script output and does not
+initialize TensorFlow or a GPU.
