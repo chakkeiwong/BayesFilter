@@ -51,20 +51,63 @@ def gate_loglik(y, mu, log_sd, gm, hard_bound=True, gh_nodes=15):
 def gate_grid_posterior(y, gm, mu_grid, logsd_grid, hard_bound=True,
                         n_grid=2000):
     """Normalized posterior on the parameter grid via the dense grid filter."""
+    logsd_grid = np.asarray(logsd_grid, float)
     logpost = np.empty((len(mu_grid), len(logsd_grid)))
     for i, mu in enumerate(mu_grid):
-        for j, ls in enumerate(logsd_grid):
-            lp = gate_gridfilter_loglik(y, mu, ls, gm, hard_bound, n_grid)
-            lp += (-0.5 * ((mu - gm.prior_mu_mean) / gm.prior_mu_sd) ** 2
-                   - np.log(gm.prior_mu_sd) - 0.5 * LOG2PI)
-            lp += (-0.5 * ((ls - gm.prior_lognoise_mean)
-                           / gm.prior_lognoise_sd) ** 2
-                   - np.log(gm.prior_lognoise_sd) - 0.5 * LOG2PI)
-            logpost[i, j] = lp
-    logpost -= logpost.max()
+        logpost[i] = gate_gridfilter_loglik_batched(
+            y, mu, logsd_grid, gm, hard_bound, n_grid)
+    logpost += (-0.5 * ((np.asarray(mu_grid, float)[:, None]
+                         - gm.prior_mu_mean) / gm.prior_mu_sd) ** 2
+                - np.log(gm.prior_mu_sd) - 0.5 * LOG2PI)
+    logpost += (-0.5 * ((logsd_grid[None, :] - gm.prior_lognoise_mean)
+                        / gm.prior_lognoise_sd) ** 2
+                - np.log(gm.prior_lognoise_sd) - 0.5 * LOG2PI)
+    finite = np.isfinite(logpost)
+    if not finite.any():
+        raise ValueError("grid posterior has no finite cell")
+    logpost = np.where(finite, logpost, -np.inf)
+    logpost -= logpost[finite].max()
     post = np.exp(logpost)
     post /= post.sum()
     return post
+
+
+def gate_gridfilter_loglik_batched(y, mu, logsd_grid, gm, hard_bound=True,
+                                   n_grid=2000, span_sd=8.0):
+    """Grid-filter log-likelihood for one `mu` and a vector of `log_sd`.
+
+    Same recursion as `gate_gridfilter_loglik`, run for the whole `log_sd`
+    grid at once. On the offset grid `u = x - mu` the AR(1) kernel argument
+    is `u_i - phi u_j` and the initial density is `N(u; 0, p0_sd)`, so
+    neither depends on `mu`: the kernel is built once per call rather than
+    once per parameter cell. `mu` enters only the censored observation mean
+    `max(lower_bound, mu + u)`.
+    """
+    stat_sd = gm.q_sd / np.sqrt(1.0 - gm.phi**2)
+    span = span_sd * max(gm.p0_sd, stat_sd)
+    u = np.linspace(-span, span, n_grid)
+    dx = u[1] - u[0]
+    sd = np.exp(np.asarray(logsd_grid, float))[:, None]  # [S, 1]
+
+    def norm_pdf(v, s):
+        return np.exp(-0.5 * (v / s) ** 2) / (s * np.sqrt(2 * np.pi))
+
+    K = norm_pdf(u[:, None] - gm.phi * u[None, :], gm.q_sd) * dx
+    dens = np.repeat(norm_pdf(u, gm.p0_sd)[None, :], sd.shape[0], 0)  # [S, n]
+    mean_obs = np.maximum(gm.lower_bound, mu + u) if hard_bound else mu + u
+    ll = np.zeros(sd.shape[0])
+    alive = np.ones(sd.shape[0], bool)
+    for t in range(gm.horizon):
+        dens = dens @ K.T  # predictive density on grid
+        joint = dens * norm_pdf(y[t] - mean_obs[None, :], sd)
+        step = joint.sum(1) * dx
+        alive &= (step > 0) & np.isfinite(step)
+        if not alive.any():
+            return np.where(alive, ll, -np.inf)
+        safe = np.where(alive, step, 1.0)
+        ll = np.where(alive, ll + np.log(safe), ll)
+        dens = np.where(alive[:, None], joint / safe[:, None], dens)
+    return np.where(alive, ll, -np.inf)
 
 
 def gate_kalman_loglik(y, mu, log_sd, gm):
@@ -114,6 +157,8 @@ def gate_gridfilter_loglik(y, mu, log_sd, gm, hard_bound=True, n_grid=2000,
         lik = norm_pdf(y[t] - mean_obs, sd)
         joint = dens * lik
         step = joint.sum() * dx
+        if step <= 0 or not np.isfinite(step):
+            return -np.inf
         ll += np.log(step)
-        dens = joint / (joint.sum() * dx)
+        dens = joint / step
     return ll
