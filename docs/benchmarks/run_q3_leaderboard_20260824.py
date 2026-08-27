@@ -259,7 +259,7 @@ def score_cells(model, set_direction, theta, dim, observations,
         )
         return canonical_value_and_analytical_score(
             model, theta_v, initial, covs, noises, observations,
-            substeps=8, with_score=with_score,
+            flow_substeps=8, with_score=with_score,
             annealed_stages=annealed_stages, annealed_seed=17,
             **(reset_kwargs or {}),
         )

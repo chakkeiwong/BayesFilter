@@ -74,19 +74,19 @@ def ukf_gaussian_filter_value(model, theta, initial_mean, initial_cov, observati
     return total
 
 
-def canonical_value(model, theta, initial, covs, noises, observations, substeps=8):
+def canonical_value(model, theta, initial, covs, noises, observations, flow_substeps=8):
     from bayesfilter.highdim.ledh_canonical_score_tf import (
         canonical_value_and_analytical_score,
     )
 
     value, _ = canonical_value_and_analytical_score(
         model, theta, initial, covs, noises, observations,
-        substeps=substeps, with_score=False,
+        flow_substeps=substeps, with_score=False,
     )
     return float(value.numpy())
 
 
-def canonical_score(model, set_direction, theta, initial, covs, noises, observations, direction, substeps=8):
+def canonical_score(model, set_direction, theta, initial, covs, noises, observations, direction, flow_substeps=8):
     from bayesfilter.highdim.ledh_canonical_score_tf import (
         canonical_value_and_analytical_score,
     )
@@ -94,7 +94,7 @@ def canonical_score(model, set_direction, theta, initial, covs, noises, observat
     set_direction(tf.constant(direction, DTYPE))
     _, score = canonical_value_and_analytical_score(
         model, theta, initial, covs, noises, observations,
-        substeps=substeps, with_score=True,
+        flow_substeps=substeps, with_score=True,
     )
     return float(score[0].numpy())
 

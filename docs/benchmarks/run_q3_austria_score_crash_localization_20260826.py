@@ -9,7 +9,7 @@ attribute the crash, and reports the S6 gap-matrix conditioning.
 
 Classification: repair trigger, debugging-only. No score value from this
 run enters a leaderboard cell. Fixtures replicate `score_cells` exactly
-(rng 9000+seed, substeps=8, annealed_stages=4, annealed_seed=17).
+(rng 9000+seed, flow_substeps=8, annealed_stages=4, annealed_seed=17).
 """
 
 from __future__ import annotations
@@ -88,7 +88,7 @@ def main() -> None:
             try:
                 _v, score = canonical_value_and_analytical_score(
                     model, theta0, initial, covs, noises, observations,
-                    substeps=8, with_score=True,
+                    flow_substeps=8, with_score=True,
                     annealed_stages=4, annealed_seed=17, **kwargs,
                 )
                 value = float(score[0].numpy())

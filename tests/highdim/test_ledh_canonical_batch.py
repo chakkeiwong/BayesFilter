@@ -77,12 +77,12 @@ def test_p1_batch_size_one_parity_value_and_score():
     theta_single = tf.constant([0.6], DTYPE)
     value_ref, score_ref = canonical_value_and_analytical_score(
         model, theta_single, initial, covs, noises, observations,
-        substeps=10, with_score=True,
+        flow_substeps=10, with_score=True,
     )
     theta_batch = tf.constant([[0.6]], DTYPE)
     value_b, score_b, diagnostics = canonical_batch_value_score(
         model, theta_batch, initial, covs, noises, observations,
-        substeps=10,
+        flow_substeps=10,
     )
     value_err = abs(float(value_b[0].numpy()) - float(value_ref.numpy()))
     score_err = abs(
@@ -101,11 +101,11 @@ def test_p1_batch_rows_are_independent():
     theta_batch = tf.constant([[0.6], [0.9]], DTYPE)
     value_b, score_b, _ = canonical_batch_value_score(
         model, theta_batch, initial, covs, noises, observations,
-        substeps=10,
+        flow_substeps=10,
     )
     value_row0, _, _ = canonical_batch_value_score(
         model, tf.constant([[0.6]], DTYPE), initial, covs, noises,
-        observations, substeps=10,
+        observations, flow_substeps=10,
     )
     assert bool(
         tf.reduce_all(tf.equal(value_b[0], value_row0[0])).numpy()
@@ -122,12 +122,12 @@ def test_p3_within_mode_identity_under_tf_function():
 
     compiled = tf.function(
         lambda t: canonical_batch_value_score(
-            model, t, initial, covs, noises, observations, substeps=10
+            model, t, initial, covs, noises, observations, flow_substeps=10
         ),
         autograph=False,
     )
     value_eager, score_eager, _ = canonical_batch_value_score(
-        model, theta_batch, initial, covs, noises, observations, substeps=10
+        model, theta_batch, initial, covs, noises, observations, flow_substeps=10
     )
     value_graph, score_graph, _ = compiled(theta_batch)
     # within-mode identity is structural (one program); cross-mode drift is

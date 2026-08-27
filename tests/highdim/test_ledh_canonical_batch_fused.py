@@ -108,7 +108,7 @@ def test_fused_batch_size_one_parity():
     single = _single_model()
     value_ref, score_ref = canonical_value_and_analytical_score(
         single, tf.constant([0.6], DTYPE), initial, covs, noises,
-        observations, substeps=10, with_score=True,
+        observations, flow_substeps=10, with_score=True,
     )
     fused = _fused_model()
     value_b, score_b, diag = canonical_batch_fused_value_score(
@@ -116,7 +116,7 @@ def test_fused_batch_size_one_parity():
         tf.constant([[0.6]], DTYPE),
         tf.constant([[1.0]], DTYPE),
         initial, covs, noises, observations,
-        substeps=10,
+        flow_substeps=10,
     )
     assert bool(diag["program_valid"][0].numpy())
     v_err = abs(float(value_b[0].numpy()) - float(value_ref.numpy()))
@@ -133,14 +133,14 @@ def test_fused_rows_independent_and_distinct():
         tf.constant([[0.6], [0.9]], DTYPE),
         tf.constant([[1.0], [1.0]], DTYPE),
         initial, covs, noises, observations,
-        substeps=10,
+        flow_substeps=10,
     )
     value_row0, _, _ = canonical_batch_fused_value_score(
         fused,
         tf.constant([[0.6]], DTYPE),
         tf.constant([[1.0]], DTYPE),
         initial, covs, noises, observations,
-        substeps=10,
+        flow_substeps=10,
     )
     assert abs(
         float(value_b[0].numpy()) - float(value_row0[0].numpy())
@@ -158,7 +158,7 @@ def test_fused_lane_is_tf_function_compilable():
     fused = _fused_model()
     compiled = tf.function(
         lambda t, d: canonical_batch_fused_value_score(
-            fused, t, d, initial, covs, noises, observations, substeps=8
+            fused, t, d, initial, covs, noises, observations, flow_substeps=8
         ),
         autograph=False,
     )

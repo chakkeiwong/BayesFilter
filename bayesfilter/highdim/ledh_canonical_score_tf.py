@@ -65,7 +65,7 @@ def canonical_value_and_analytical_score(
     noises: Tensor,
     observations: Tensor,
     *,
-    substeps: int,
+    flow_substeps: int = 24,
     with_score: bool,
     reset_policy: str = "none",
     reset_design: Tensor | None = None,
@@ -76,11 +76,13 @@ def canonical_value_and_analytical_score(
     correction_steps: int = 0,
     correction_strength: float = 0.2,
     correction_lm_damping: float = 1.0e-2,
+    correction_lm_scale_floor: float = 1.0e-4,
     correction_trust_radius: float = 0.5,
     pairwise_steps: int = 0,
     pairwise_strength: float = 0.02,
     pairwise_rms_cap: float = 2.0,
     coordinate_cap: float = 0.0,
+    coordinate_cap_power: int = 8,
     annealed_stages: int = 1,
     annealed_seed: int = 0,
 ) -> tuple[Tensor, Tensor | None]:
@@ -120,7 +122,7 @@ def canonical_value_and_analytical_score(
     count = tf.shape(initial_states)[0]
     obs_dim = int(observations.shape[1])
     eye = tf.eye(dim, dtype=dtype)
-    eps = tf.constant(1.0 / substeps, dtype=dtype)
+    eps = tf.constant(1.0 / flow_substeps, dtype=dtype)
     process_chol = tf.linalg.cholesky(model.process_covariance)
     obs_chol = tf.linalg.cholesky(model.observation_covariance)
     r_inv = tf.linalg.cholesky_solve(
@@ -257,7 +259,7 @@ def canonical_value_and_analytical_score(
                         None if d_r is None else d_r * k_f,
                         r_inv / k_f,
                         None if d_r_inv is None else d_r_inv / k_f,
-                        substeps=substeps,
+                        substeps=flow_substeps,
                         eye=eye,
                     )
                 )
@@ -356,7 +358,7 @@ def canonical_value_and_analytical_score(
                     d_r,
                     r_inv,
                     d_r_inv,
-                    substeps=substeps,
+                    substeps=flow_substeps,
                     eye=eye,
                 )
             )
@@ -446,14 +448,14 @@ def canonical_value_and_analytical_score(
                     strength=correction_strength,
                     floor=1.0e-5,
                     diagonal_lm_damping=correction_lm_damping,
-                    diagonal_lm_scale_floor=1.0e-4,
+                    diagonal_lm_scale_floor=correction_lm_scale_floor,
                     diagonal_trust_radius=correction_trust_radius,
                     pairwise_correction_steps=pairwise_steps,
                     pairwise_strength=pairwise_strength,
                     pairwise_floor=1.0e-5,
                     pairwise_particle_rms_cap=pairwise_rms_cap,
                     coordinatewise_standardized_cap=coordinate_cap,
-                    coordinatewise_standardized_cap_power=8,
+                    coordinatewise_standardized_cap_power=coordinate_cap_power,
                 )
                 reset_states = corrected["particles"]
                 d_reset_states = corrected["particles_tangent"][:, :, 0]

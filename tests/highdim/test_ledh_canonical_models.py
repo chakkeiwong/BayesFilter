@@ -64,7 +64,7 @@ def test_austria_analytical_score_direction0_matches_oracle():
     def value_fn(theta):
         value, _ = canonical_value_and_analytical_score(
             model, theta, initial, covs, noises, observations,
-            substeps=8, with_score=False,
+            flow_substeps=8, with_score=False,
         )
         return value
 
@@ -79,7 +79,7 @@ def test_austria_analytical_score_direction0_matches_oracle():
     )
     value, score = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, observations,
-        substeps=8, with_score=True,
+        flow_substeps=8, with_score=True,
     )
     assert np.isfinite(float(value.numpy()))
     err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
@@ -164,7 +164,7 @@ def test_austria_flow_lane_ess_beats_bootstrap_floor():
         observations,
         particle_count=256,
         seed=7,
-        flow_substeps=16,
+        flow_flow_substeps=16,
         temper_stages=4,
     )
     ess = result["per_step_ess"].numpy()
@@ -234,7 +234,7 @@ def test_austria_annealed_mode_holds_takeoff_ess():
         observations,
         particle_count=256,
         seed=7,
-        flow_substeps=12,
+        flow_flow_substeps=12,
         temper_stages=4,
         annealed_resampling=True,
         flow_prior_cap=8.0,
@@ -285,7 +285,7 @@ def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, se
         )
         value, _ = canonical_value_and_analytical_score(
             eval_model, theta, initial, covs, noises, observations,
-            substeps=8, with_score=False, **score_kwargs,
+            flow_substeps=8, with_score=False, **score_kwargs,
         )
         return value
 
@@ -294,7 +294,7 @@ def _score_gate_for_model(model, set_direction, theta0, dim, n=24, horizon=2, se
     )
     value, score = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, observations,
-        substeps=8, with_score=True, **score_kwargs,
+        flow_substeps=8, with_score=True, **score_kwargs,
     )
     assert np.isfinite(float(value.numpy()))
     err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
@@ -376,7 +376,7 @@ def test_ksc_equals_actual_sv_up_to_constant():
     set_direction(tf.constant([1.0, 0.0], DTYPE))
     value_ksc, score_ksc = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, transformed,
-        substeps=8, with_score=True,
+        flow_substeps=8, with_score=True,
     )
     # actual-SV lane: same latent program, same Gaussian family in the
     # SAME transformed coordinate (the definitionally equivalent
@@ -396,7 +396,7 @@ def test_ksc_equals_actual_sv_up_to_constant():
     score_a = float(score_ksc[0].numpy())
     value_b, score_b = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, transformed,
-        substeps=8, with_score=True,
+        flow_substeps=8, with_score=True,
     )
     assert float(score_b[0].numpy()) == score_a, "score not deterministic"
     # (2) the Jacobian constant is finite and theta-free by construction;
@@ -488,7 +488,7 @@ def test_austria_r_direction_score_matches_oracle():
         eval_model, _sd = austria_sir_canonical_model(theta)
         value, _ = canonical_value_and_analytical_score(
             eval_model, theta, initial, covs, noises, observations,
-            substeps=8, with_score=False,
+            flow_substeps=8, with_score=False,
         )
         return value
 
@@ -497,7 +497,7 @@ def test_austria_r_direction_score_matches_oracle():
     )
     value, score = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, observations,
-        substeps=8, with_score=True,
+        flow_substeps=8, with_score=True,
     )
     assert np.isfinite(float(value.numpy()))
     assert abs(float(score[0].numpy())) > 1.0e-12, "vacuous theta_2 score"
@@ -523,7 +523,7 @@ def test_austria_nu_direction_score_matches_oracle():
         theta = tf.stack([theta0[0], theta_1[0], theta0[2]])
         value, _ = canonical_value_and_analytical_score(
             model, theta, initial, covs, noises, observations,
-            substeps=8, with_score=False,
+            flow_substeps=8, with_score=False,
         )
         return value
 
@@ -532,7 +532,7 @@ def test_austria_nu_direction_score_matches_oracle():
     )
     value, score = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, observations,
-        substeps=8, with_score=True,
+        flow_substeps=8, with_score=True,
     )
     assert np.isfinite(float(value.numpy()))
     err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))

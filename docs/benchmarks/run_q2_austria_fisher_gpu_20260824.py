@@ -122,7 +122,7 @@ def main() -> None:
                     covs,
                     noises,
                     observations_tf,
-                    substeps=8,
+                    flow_substeps=8,
                     with_score=True,
                     annealed_stages=args.annealed_stages,
                     annealed_seed=13,

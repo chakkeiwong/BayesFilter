@@ -105,7 +105,7 @@ def test_generalized_sv_fisher_identity():
                 covs,
                 noises,
                 tf.constant(observations_np, DTYPE),
-                substeps=6,
+                flow_substeps=6,
                 with_score=True,
             )
             scores.append(float(score[0].numpy()))
@@ -149,7 +149,7 @@ def _fisher_gate(model, set_direction, theta, simulate_fn, initial_sampler,
             _, score = canonical_value_and_analytical_score(
                 model, theta, initial, covs, noises,
                 tf.constant(observations_np, DTYPE),
-                substeps=6, with_score=True,
+                flow_substeps=6, with_score=True,
             )
             scores.append(float(score[0].numpy()))
         scores = np.array(scores)

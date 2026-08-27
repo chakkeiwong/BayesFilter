@@ -85,7 +85,7 @@ def lgssm_score_cell() -> dict:
     def value_fn(theta):
         value, _ = canonical_value_and_analytical_score(
             model, theta, initial, covs, noises, observations,
-            substeps=10, with_score=False,
+            flow_substeps=10, with_score=False,
         )
         return value
 
@@ -94,7 +94,7 @@ def lgssm_score_cell() -> dict:
     )
     _, score = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, observations,
-        substeps=10, with_score=True,
+        flow_substeps=10, with_score=True,
     )
     analytical = float(score[0].numpy())
     return {
@@ -155,7 +155,7 @@ def austria_cells() -> dict:
                         observation_covariance=model.observation_covariance
                         * stages,
                         prior_means=anchors,
-                        substeps=16,
+                        flow_substeps=16,
                     )
                     current = flow["post_flow_states"]
                     log_det += flow["forward_log_det"]

@@ -74,14 +74,14 @@ def test_full_chained_score_matches_oracle_nonlinear():
     def value_fn(theta):
         value, _ = canonical_value_and_analytical_score(
             model, theta, initial, covs, noises, observations,
-            substeps=10, with_score=False,
+            flow_substeps=10, with_score=False,
         )
         return value
 
     oracle = oracle_forward_autodiff_score(value_fn, theta0)
     value, score = canonical_value_and_analytical_score(
         model, theta0, initial, covs, noises, observations,
-        substeps=10, with_score=True,
+        flow_substeps=10, with_score=True,
     )
     assert np.isfinite(float(value.numpy()))
     err = abs(float(score[0].numpy()) - float(oracle[0].numpy()))
@@ -113,7 +113,7 @@ def test_full_program_score_with_reset_and_dualcap_matches_oracle():
     )
 
     kwargs = dict(
-        substeps=8,
+        flow_substeps=8,
         reset_policy="contract_e",
         reset_design=design,
         reset_sinkhorn_steps=4,
@@ -159,7 +159,7 @@ def test_annealed_telescope_score_matches_oracle():
     observations = tf.constant(rng.standard_normal((horizon, dim)), DTYPE)
     theta0 = tf.constant([0.6], DTYPE)
     model = _model()
-    kwargs = dict(substeps=8, annealed_stages=3, annealed_seed=17)
+    kwargs = dict(flow_substeps=8, annealed_stages=3, annealed_seed=17)
 
     def value_fn(theta):
         value, _ = canonical_value_and_analytical_score(
@@ -198,7 +198,7 @@ def test_annealed_telescope_with_reset_score_matches_oracle():
     base = np.concatenate([np.eye(dim), -np.eye(dim)], axis=0)
     design = tf.constant(np.tile(base, (n // (2 * dim), 1)), DTYPE)
     kwargs = dict(
-        substeps=8,
+        flow_substeps=8,
         annealed_stages=2,
         annealed_seed=29,
         reset_policy="contract_e",
@@ -285,7 +285,7 @@ def test_production_score_lane_value_is_likelihood_estimand():
             )
             v, _ = canonical_value_and_analytical_score(
                 model, tf.constant([0.0], DTYPE), initial, covs, noises,
-                observations, substeps=8, with_score=False,
+                observations, flow_substeps=8, with_score=False,
                 **policy_kwargs,
             )
             out.append(float(v.numpy()))
@@ -334,7 +334,7 @@ def test_annealed_with_full_production_program_matches_oracle():
     design = tf.constant(np.tile(base, (n // (2 * dim), 1)), DTYPE)
     kwargs = dict(LEDH_PRODUCTION_PROGRAM_V1["score"])
     kwargs["reset_design"] = design
-    kwargs.update(substeps=8, annealed_stages=2, annealed_seed=31)
+    kwargs.update(flow_substeps=8, annealed_stages=2, annealed_seed=31)
 
     def value_fn(theta):
         value, _ = canonical_value_and_analytical_score(

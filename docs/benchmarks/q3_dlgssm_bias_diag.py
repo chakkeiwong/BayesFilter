@@ -50,7 +50,7 @@ def analytic_scores(T, n, seeds):
         initial = tf.constant(rng.standard_normal((n,3)), DTYPE)
         covs = tf.constant(np.stack([np.eye(3)]*n), DTYPE)
         noises = tf.constant(rng.standard_normal((T,n,3)), DTYPE)
-        _v, s = canonical_value_and_analytical_score(model, theta0, initial, covs, noises, obs, substeps=8, with_score=True)
+        _v, s = canonical_value_and_analytical_score(model, theta0, initial, covs, noises, obs, flow_substeps=8, with_score=True)
         out.append(float(s[0].numpy()))
     return np.array(out)
 
@@ -74,6 +74,6 @@ cb = make_callbacks(model, theta0, "diag_lgssm_biasdiag", 3, 3, initial_mean)
 exact_v = exact_kalman(np.array(theta0_np), 50)
 from bayesfilter.highdim.ledh_canonical_filter_tf import canonical_value_and_diagnostics
 for n, seeds in ((252, range(8)), (1008, range(8)), (4032, range(4))):
-    vals = [float(canonical_value_and_diagnostics(cb, obs_all, particle_count=n, seed=s, flow_substeps=16, resample_seed=s)["value"].numpy()) for s in seeds]
+    vals = [float(canonical_value_and_diagnostics(cb, obs_all, particle_count=n, seed=s, flow_flow_substeps=16, resample_seed=s)["value"].numpy()) for s in seeds]
     se = np.std(vals, ddof=1)/np.sqrt(len(vals))
     print(f"[N={n}] mean={np.mean(vals):.3f} exact={exact_v:.3f} bias={np.mean(vals)-exact_v:+.3f} SE={se:.3f}", flush=True)

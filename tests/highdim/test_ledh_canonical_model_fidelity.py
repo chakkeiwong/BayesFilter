@@ -338,7 +338,7 @@ def test_generalized_sv_reduction_slice_matches_kalman():
         value, _ = canonical_value_and_analytical_score(
             model, theta, initial, covs, noises,
             tf.constant(observations_np, DTYPE),
-            substeps=8, with_score=False,
+            flow_substeps=8, with_score=False,
         )
         values.append(float(value.numpy()))
     err = abs(float(np.mean(values)) - kalman)
@@ -451,7 +451,7 @@ def test_austria_reduction_slice_matches_kalman():
             tf.constant(observations_np, DTYPE),
             particle_count=4096,
             seed=seed,
-            flow_substeps=12,
+            flow_flow_substeps=12,
         )
         assert bool(result["program_valid"].numpy())
         values.append(float(result["value"].numpy()))
