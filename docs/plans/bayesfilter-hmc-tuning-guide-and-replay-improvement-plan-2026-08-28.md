@@ -4,6 +4,9 @@ Date: 2026-08-28
 
 Status: `COMPLETE`
 
+BGS mechanics-handoff correction:
+`2315e2b28d5c6b6520df84681b6cb358f9808e36`
+
 Baseline: BayesFilter `1ef88766e` (`origin/main` after a clean fast-forward on
 2026-08-28).
 

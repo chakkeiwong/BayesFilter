@@ -8,6 +8,9 @@ Baseline: `1ef8876666ea05698b3fa4e46a1d6c10a721fad7`
 
 Implementation commit: `0da727c49d898478b3259189b846a029280849d8`
 
+BGS mechanics-handoff correction:
+`2315e2b28d5c6b6520df84681b6cb358f9808e36`
+
 Plan:
 `docs/plans/bayesfilter-hmc-tuning-guide-and-replay-improvement-plan-2026-08-28.md`
 

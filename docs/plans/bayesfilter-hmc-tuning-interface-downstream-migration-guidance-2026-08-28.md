@@ -12,7 +12,7 @@ repository, select a backend lock, or certify an HMC result.
 
 | Repository | Inspected commit | Relevant state |
 | --- | --- | --- |
-| BayesFilter | baseline `1ef8876666ea05698b3fa4e46a1d6c10a721fad7`; compatible implementation commit `0da727c49d898478b3259189b846a029280849d8` | capability registry v1; runner binding v2; two active artifact-authority tuners |
+| BayesFilter | baseline `1ef8876666ea05698b3fa4e46a1d6c10a721fad7`; interface implementation `0da727c49d898478b3259189b846a029280849d8`; BGS mechanics-handoff correction `2315e2b28d5c6b6520df84681b6cb358f9808e36` | capability registry v1; runner binding v2; TensorFlow tuning schema v2; two active public tuners |
 | MacroFinance | `98cca3bbed5289c770ff67d174808357ac8fd595` | ordinary tuner consumers; no direct neural-force runner in the scoped source search; dirty worktree preserved |
 | dsge_hmc | `da060c6b4952925b7a1c58bb969300aea56e45c8` | integration plan uses the typed binding, but executable BGS stage still imports the low-level runner; dirty worktree preserved |
 
@@ -40,11 +40,14 @@ The legacy ordinary symbol remains a compatibility delegate. A
 `public_tuner` classification alone is insufficient: the route must also be
 active, `tested_supported`, and `artifact_authority=True`.
 
-The TensorFlow configuration exposed through the ordinary dispatcher is a
-non-promoting diagnostic. It records `admission_supported=False`, implements no
-ordinary fresh-R-hat admission gate, has no XLA qualification, and cannot build
-a retained runner. It does not close a downstream TensorFlow/XLA admission
-requirement.
+The TensorFlow configuration exposed through the ordinary dispatcher has
+`diagnostic_only` and `candidate` roles. Only a candidate that passes the
+declared metric-update, final-divergence, and acceptance screen can build a
+retained runner, and that runner preserves the exact binding and affine
+geometry. This is frozen-mechanics authority only. The artifact explicitly has
+no posterior-admission authority; retained R-hat/ESS and scientific
+interpretation remain separate. Non-XLA execution does not require XLA
+qualification.
 
 Stable downstream policy text should remain short:
 
@@ -176,27 +179,25 @@ source closure are part of binding v2.
 
 Required dsge_hmc work:
 
-1. Update the integration plan's BayesFilter commit and schemas after this
-   implementation is pushed. Retain its typed-binding route correction.
-2. Replace claim-bearing direct-runner use in the BGS stage with the public
-   dispatcher and binding. A retained direct canary may remain only as a named
-   diagnostic that cannot issue tuning authority.
-3. Add negative tests for a bare callback, direct identity-mass fallback,
+1. Select the exact BayesFilter correction commit in the BGS backend lock only
+   after the user explicitly chooses that revision, then refresh preflight.
+2. Keep claim-bearing BGS execution on the public dispatcher and typed binding;
+   the historical direct-runner worker must remain unreachable from the master.
+3. Retain negative tests for a bare callback, direct identity-mass fallback,
    missing/mismatched binding identity, wrong field semantics, coordinate or
    chart-Jacobian mismatch, and any retained handoff after failed required
    verification.
-4. Add positive interface tests that the same binding reaches every legacy
-   ordinary stage and that its binding hash is serialized. Those tests do not
-   establish TensorFlow-only or XLA readiness.
-5. Do not use the current TensorFlow diagnostic result for retained sampling.
-   Its acceptance/finite-health screen and metric update are explanatory; its
-   forced `admission_supported=False` is the controlling result.
+4. Retain positive tests that the same binding reaches tuning, artifact reload,
+   retained pilot, and continuation, and that the binding hash is serialized.
+   Those tests establish route mechanics, not posterior convergence.
+5. Treat the completed one-draw BGS canary as historical diagnostic evidence.
+   It failed the acceptance and covariance-rank screens and cannot authorize
+   retained sampling under schema v2.
 
-The TensorFlow-only BGS blocker remains BayesFilter-owned. The authoritative
-legacy ordinary ladder imports NumPy and materializes host data. The new
-TensorFlow diagnostic deliberately lacks ordinary fresh-R-hat admission and
-XLA qualification. A copied DSGE-local tuner, a silent NumPy exception, or an
-acceptance-only handoff does not resolve that blocker.
+The TensorFlow-only BGS interface blocker is closed by the corrected public
+route. This does not close target-specific Dynare parity, exact backend-lock
+selection, campaign budgeting, or retained posterior assessment. A copied
+DSGE-local tuner or a silent NumPy exception remains forbidden.
 
 Do not update `config/bgs-backend-lock.json` until a later BayesFilter path
 actually satisfies the downstream backend policy, its focused tests pass at an
@@ -209,7 +210,7 @@ no retained HMC run or posterior claim.
 | --- | --- | --- | --- |
 | MacroFinance ordinary targets | `tune_hmc_kernel` | route choice correct; Phase 14 wrapper failed before tuner | repair eligibility contract, pin schema/commit, test covariance and durable replay |
 | dsge_hmc BGS exact score, if established | default `tune_hmc_kernel` | conditional route only | prove the exact-score classification and satisfy backend admission |
-| dsge_hmc BGS non-gradient field | binding v2 passed to `tune_hmc_kernel` | plan corrected; executable still direct; TensorFlow diagnostic non-admitting | migrate consumer, implement authoritative TF/XLA admission, then select lock |
+| dsge_hmc BGS non-gradient field | binding v2 passed to `tune_hmc_kernel` | current worker/master migrated and focused contracts pass; correction commit not selected in lock | select exact commit, refresh preflight, close Dynare prerequisite, then budget candidate tuning |
 | Frozen nonlinear transport consumers | `tune_fixed_transport_hmc_kernel` | separate route | verify transport-specific target, policy, schema, and pin |
 
 BayesFilter tests establish only BayesFilter interface behavior. Each consumer
