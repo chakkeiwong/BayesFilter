@@ -32,16 +32,8 @@ from bayesfilter.inference.hmc_convergence import (
     rank_normalized_hmc_diagnostics,
 )
 from bayesfilter.inference.hmc_kernel_tuning import (
-    HMCWindowedMassStageConfig,
     HMCKernelTuningConfig,
-    build_operational_fixed_mass_hmc_adapter,
-    initialize_hmc_kernel_geometry,
-    run_hmc_bootstrap_screen,
-    _bootstrap_preflight_passed,
-    run_hmc_windowed_mass_stage,
-    _public_bootstrap_config,
-    _public_budget_policy_factory,
-    _public_geometry_config,
+    prepare_operational_windowed_mass_handoff,
 )
 from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
 from bayesfilter.inference.hmc_verification import (
@@ -437,8 +429,8 @@ def tune_hmc_kernel_robust_broad_grid(
         )
 
     progress("campaign_started")
-    # Reuse the existing geometry and windowed-mass authorities directly. The
-    # old narrow Phase-5 selector is deliberately bypassed.
+    # Reuse the bounded public mass-preparation prefix. The old narrow Phase-5
+    # selector is deliberately bypassed.
     serious_cfg = HMCKernelTuningConfig.serious(
         target_accept_prob=cfg.target_accept_prob,
         acceptance_band=cfg.acceptance_band,
@@ -449,81 +441,32 @@ def tune_hmc_kernel_robust_broad_grid(
         seed=cfg.mass_preparation_seed,
     )
     try:
-        geometry = initialize_hmc_kernel_geometry(
+        preparation = prepare_operational_windowed_mass_handoff(
             adapter=adapter,
             initial_position=initial_position,
-            config=_public_geometry_config(serious_cfg),
+            config=serious_cfg,
             negative_hessian=negative_hessian,
             initial_covariance=initial_covariance,
             parameter_scales=parameter_scales,
-        )
-        progress("geometry_completed", status="passed")
-        bootstrap = run_hmc_bootstrap_screen(
-            adapter=adapter,
-            geometry=geometry,
-            config=_public_bootstrap_config(serious_cfg, geometry=geometry),
-        )
-        progress("bootstrap_completed", status=bootstrap.final_status)
-    except Exception as exc:
-        return {
-            "status": "mass_preparation_failed",
-            "base_adapter_signature": base_signature,
-            "prepared_status": "geometry_or_bootstrap_exception",
-            "reason": "geometry/bootstrap mass preparation raised an exception",
-            "error_type": type(exc).__name__,
-            "error_message": str(exc),
-            "nonclaims": NONCLAIMS,
-        }
-    if not _bootstrap_preflight_passed(bootstrap):
-        return {"status": "mass_preparation_failed", "base_adapter_signature": base_signature, "prepared_status": bootstrap.final_status, "reason": "bootstrap contained a hard-vetoed round and cannot provide a geometry-preflight handoff", "nonclaims": NONCLAIMS}
-    budget_factory = _public_budget_policy_factory(serious_cfg, geometry=geometry)
-    budget_policy = None if budget_factory is None else budget_factory(geometry.target_dimension, 0)
-    try:
-        windowed = run_hmc_windowed_mass_stage(
-            adapter=adapter,
-            geometry=geometry,
-            bootstrap=bootstrap,
-            config=HMCWindowedMassStageConfig(
-                target_accept_prob=cfg.target_accept_prob,
-                seed=_seed(cfg.mass_preparation_seed, "windowed_mass", 0),
-                chain_execution_mode=cfg.chain_execution_mode,
-                use_xla=cfg.use_xla,
-                target_scope=cfg.target_scope,
-                mass_policy="windowed_adaptive",
-                source="bayesfilter.inference.hmc_robust_broad_grid.windowed_mass",
+            progress_callback=lambda stage, payload: progress(
+                stage,
+                status=payload.get("final_status"),
             ),
-            _attempt_budget_policy=budget_policy,
-        )
-        progress("windowed_mass_completed", status=windowed.final_status)
-    except Exception as exc:
-        return {
-            "status": "mass_preparation_failed",
-            "base_adapter_signature": base_signature,
-            "prepared_status": "windowed_mass_exception",
-            "reason": "windowed mass preparation raised an exception",
-            "error_type": type(exc).__name__,
-            "error_message": str(exc),
-            "nonclaims": NONCLAIMS,
-        }
-    if not windowed.passed or windowed.operational_warmup_result is None:
-        return {"status": "mass_preparation_failed", "base_adapter_signature": base_signature, "prepared_status": windowed.final_status, "reason": "windowed mass stage did not pass", "nonclaims": NONCLAIMS}
-    try:
-        handoff = build_operational_fixed_mass_hmc_adapter(
-            adapter=adapter,
-            geometry=geometry,
-            windowed_stage=windowed,
-            target_scope=cfg.target_scope or getattr(adapter, "target_scope", ""),
         )
     except Exception as exc:
         return {
             "status": "mass_preparation_failed",
             "base_adapter_signature": base_signature,
-            "prepared_status": "operational_fixed_mass_handoff_exception",
-            "reason": "operational fixed-mass adapter/start-bank handoff failed",
+            "prepared_status": "operational_mass_preparation_exception",
+            "reason": "operational mass preparation raised an exception",
             "error_type": type(exc).__name__,
             "error_message": str(exc),
             "nonclaims": NONCLAIMS,
         }
+    geometry = preparation["geometry"]
+    bootstrap = preparation["bootstrap"]
+    windowed = preparation["windowed_stage"]
+    handoff = preparation
     mass = handoff["adapted_mass_artifact"]
     final_adapter = handoff["final_adapter"]
     phase4_adapter = handoff["phase4_adapter"]

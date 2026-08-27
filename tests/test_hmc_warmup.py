@@ -115,6 +115,29 @@ class _TargetStatusGaussianAdapter(_GaussianAdapter):
         }
 
 
+class _Rank2RequiredTargetStatusGaussianAdapter(_TargetStatusGaussianAdapter):
+    batch_rank_policy = "rank2_required"
+
+    def __init__(self, covariance: np.ndarray) -> None:
+        super().__init__(covariance)
+        self.value_score_shapes: list[tuple[int, ...]] = []
+        self.telemetry_shapes: list[tuple[int, ...]] = []
+
+    def log_prob_and_grad(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        value = tf.convert_to_tensor(theta, dtype=tf.float64)
+        if value.shape.rank != 2:
+            raise ValueError("rank2 warmup fixture requires [batch, parameter]")
+        self.value_score_shapes.append(tuple(int(item) for item in value.shape))
+        return super().log_prob_and_grad(value)
+
+    def target_status_telemetry(self, theta: tf.Tensor) -> dict[str, tf.Tensor]:
+        value = tf.convert_to_tensor(theta, dtype=tf.float64)
+        if value.shape.rank != 2:
+            raise ValueError("rank2 warmup fixture requires [batch, parameter]")
+        self.telemetry_shapes.append(tuple(int(item) for item in value.shape))
+        return super().target_status_telemetry(value)
+
+
 class _BatchCapabilityGaussianAdapter(_TargetStatusGaussianAdapter):
     def __init__(
         self,
@@ -264,6 +287,31 @@ def test_affine_warmup_adapter_rejects_dual_batch_contract_and_preserves_none() 
             transform=transform,
             target_scope="affine_invalid_batch_contract",
         )
+
+
+def test_affine_warmup_adapter_bridges_scalar_state_to_rank2_required_base() -> None:
+    transform = _transform(
+        np.array([[2.0, 0.3], [0.3, 1.0]]),
+        center=np.array([0.2, -0.1]),
+    )
+    base = _Rank2RequiredTargetStatusGaussianAdapter(np.eye(2))
+    wrapped = _AffineWarmupAdapter(
+        base_adapter=base,
+        transform=transform,
+        target_scope="rank2_warmup_scalar_bridge",
+    )
+    latent = tf.constant([0.15, -0.25], dtype=tf.float64)
+
+    value, score = wrapped.log_prob_and_grad(latent)
+    telemetry = wrapped.target_status_telemetry(latent)
+
+    assert value.shape == ()
+    assert score.shape == (2,)
+    assert telemetry["status_code"].shape == ()
+    assert bool(tf.math.is_finite(value).numpy()) is True
+    assert bool(tf.reduce_all(tf.math.is_finite(score)).numpy()) is True
+    assert base.value_score_shapes == [(1, 2)]
+    assert base.telemetry_shapes == [(1, 2)]
 
 
 @pytest.mark.parametrize(("draw_batch", "flat_batch"), ((True, False), (False, True)))
