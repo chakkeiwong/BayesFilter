@@ -2,12 +2,30 @@
 
 Date: 2026-08-27
 
-Status: `DRAFT_FOR_CLAUDE_AUDIT_NOT_AUTHORIZED_FOR_IMPLEMENTATION`
+Status: `REVIEWED_READY_FOR_IMPLEMENTATION`
 
 Baseline commit: `553208502e2e43e6883ad9467381eb5c3e82867a`
 
 Companion review handoff:
 `docs/plans/bayesfilter-hmc-tuning-interface-documentation-claude-audit-handoff-2026-08-27.md`
+
+Review result:
+`docs/plans/bayesfilter-hmc-tuning-interface-documentation-claude-audit-result-2026-08-27.md`
+
+Review disposition: Claude (Fable 5) returned `VERDICT: AGREE` on 2026-08-27
+with no blocker or major finding. The two minor observations confirm that the
+capability registry remains an architecture hypothesis until Phase 2 passes and
+that Phase 4 must characterize ESS without inventing a threshold. Codex accepts
+both observations as already enforced by this plan; no substantive plan change
+was required.
+
+Scope of agreement: the review establishes that this plan is sufficient to
+test and document the interface. It does not establish that the current tuner
+implements the intended R-hat or ESS admission behavior, that the proposed
+neural-force binding is feasible, or that any sampler is scientifically valid.
+Those remain explicit Phase 1--4 evidence gates. The baseline commit above is
+the inspected source baseline; the implementation-start commit must still be
+recorded and re-audited as required by Phase 0.
 
 ## 1. Purpose
 
