@@ -113,3 +113,35 @@ with the same HTTP 503 from `https://llm.visioncoder.ai/responses`, request ID
 reproducer that fails while its neighboring modes pass. Because the gateway
 rejects before Bash starts, the result produces no script output and does not
 initialize TensorFlow or a GPU.
+
+The standalone Bash script now also supports nested Codex checks:
+
+```bash
+CODEX_TIMEOUT_SECONDS=180 /tmp/gateway_admission_repro_standalone.sh codex-model
+
+PYTHON_BIN=/home/ubuntu/anaconda3/envs/tfgpu/bin/python CODEX_TIMEOUT_SECONDS=300 /tmp/gateway_admission_repro_standalone.sh codex-gpu-approval
+```
+
+`codex-model` invokes ephemeral, read-only `codex exec` with approval policy
+`never` and asks for one exact tool-free response. `codex-gpu-approval` invokes
+ephemeral `codex exec` with approval policy `on-request` and asks nested Codex
+to execute this same script's bounded GPU/XLA mode with elevated permission.
+Neither uses an approval or sandbox bypass flag. Both clean their temporary
+logs before exit and emit a plain final `SUCCESS:` or `FAILURE:` line.
+
+Running these commands directly in a terminal starts Bash first and tests the
+gateway configured for the nested Codex CLI. Submitting them as elevated tools
+inside this managed session first tests the outer permission reviewer. The
+first managed submission of `codex-model` was rejected before Bash started
+with HTTP 503 and request ID `658312a2-13e2-4759-99dc-a492e90dd2c9`; therefore
+it could not yet reach the nested CLI in this session.
+
+After the user changed the gateway configuration and approval process, the
+same managed `codex-model` command was retried on `2026-08-28T00:04:34+08:00`.
+It was again rejected before Bash started. The new failure text was
+`Error running remote compact task`, followed by HTTP 503 from
+`https://llm.visioncoder.ai/responses`, request ID
+`eef0ca4b-1470-4d4f-b0a2-04a6993becae`. No nested Codex process, temporary
+probe directory, or Phase 52 artifact was created. An official OpenAI
+documentation lookup in the same turn also returned HTTP 503, but that lookup
+is a separate upstream request and is not itself an approval-path test.

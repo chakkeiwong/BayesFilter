@@ -3,7 +3,7 @@
 Parent: `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md`  
 Version: `v3.4-fresh-paired-uncertainty-replication`  
 Entry gate: Phase 51 report branch `mode_aware_geometry_reduces_between_bank_variability_descriptive`  
-Status: `BLOCKED_GPU_REVIEW_503_REPRODUCED_BY_STANDALONE_BASH_GPU_REQUEST`  
+Status: `READY_TRUSTED_RETRY_AFTER_BYTE_PROVENANCE_REPAIR`  
 Long-boundary attempt cap: `24000 s`; measured pre-boundary campaign remainder: `27806.988883054088 s`
 
 ## Question and scope
@@ -186,6 +186,52 @@ and request ID `3fe18c6e-53ab-414a-b923-2d260650df26`. This reproduces the
 gateway failure without repository imports, Phase 52 inputs, scientific code,
 or artifact writes. It confirms an external GPU-request admission failure and
 does not consume the Phase 52 campaign budget.
+
+The same standalone script was extended with a tool-free `codex-model` mode
+that calls ephemeral, read-only `codex exec`. The managed attempt to start that
+mode was itself rejected by the outer permission reviewer before Bash started,
+with HTTP 503 and request ID `658312a2-13e2-4759-99dc-a492e90dd2c9`. This shows
+that the current blocker is not specific to TensorFlow or GPU initialization;
+the outer review backend also fails while admitting an independent Codex
+gateway-health command.
+
+On 2026-08-28, after the user changed the gateway configuration and approval
+process, the same tool-free managed probe was retried. It was rejected before
+Bash started with `Error running remote compact task`, HTTP 503, and request ID
+`eef0ca4b-1470-4d4f-b0a2-04a6993becae`. No nested Codex process, probe state,
+GPU process, or Phase 52 output exists. The approval/gateway blocker therefore
+remains active, and the scientific boundary was not retried or charged against
+the campaign budget.
+
+The replacement governance now designates a visible managed-session
+TensorFlow/TFP GPU/XLA run as trusted when the structured result records
+`owner_designated_managed_session_visible_gpu_trusted` and the other listed
+device/provenance conditions hold. Phase 52 already records physical and
+logical devices, TF32, XLA, memory growth, source hashes, command, seeds, and
+versioned output, and it launches no HMC, package mutation, network fetch, API
+change, or scientific/default promotion. The boundary runner was therefore
+repaired only to add the exact trust-basis field to its device and run-manifest
+records. No scientific or numerical setting changed. The generic remote
+reviewer remains unavailable, but it is no longer execution authority for this
+owner-designated managed-session route.
+
+The first managed-session attempt on 2026-08-28 was admitted without a remote
+review, then failed closed in `2.24441798 s` because the ordinary sandbox hid
+all physical GPUs. The trusted retry was admitted and initialized both RTX 4080
+SUPER devices with memory growth, proving that the approval and GPU boundary
+now work. It stopped in `4.020615832 s` before creating the output root because
+the six pilot receipts recorded corrected Phase 28 runner SHA-256
+`c0b793ab10bd8d69cec22347c3beba00b5dd15e77e129f61b25d8dc585b9b703`
+while the current file hashed to
+`e06845ee3f16773f181380c35297beaa2c4a489561c4b7d642c89853bb8ace1b`.
+Recovery of the exact recorded Git blob and a direct byte comparison showed
+that the sole difference was one missing trailing blank line after the module
+entry point. The boundary now binds both hashes and the audited difference: it
+requires `c0b793...` in every pilot receipt, requires `e06845...` for the
+current executable, and records equivalence identifier
+`one_trailing_blank_line_only_verified_2026_08_28`. This is a localized
+provenance repair under the unchanged evidence contract; the unused output
+root permits one trusted retry.
 
 ### Implementation-readiness repair audit
 
