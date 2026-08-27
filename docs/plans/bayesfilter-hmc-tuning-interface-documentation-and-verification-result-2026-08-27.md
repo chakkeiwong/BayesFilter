@@ -2,7 +2,7 @@
 
 Date: 2026-08-28
 
-Status: `IMPLEMENTATION_AND_TERMINAL_REVIEW_PASS_CLOSEOUT_PENDING`
+Status: `IMPLEMENTATION_REVIEW_AND_GIT_SYNC_PASS_UNRELATED_WORKTREE_HYGIENE_PENDING`
 
 Implementation commit:
 `8b201a55a6cd453ca199f3e75755f1ea4bf5489e`.
@@ -124,6 +124,8 @@ position-only force. It also rejected direct
 | --- | --- |
 | Implementation-start commit | `1a284ec2d09b7776b7e44fecd211e9f8e7a3ade3` |
 | Implementation commit | `8b201a55a6cd453ca199f3e75755f1ea4bf5489e` |
+| Closeout evidence commit | `8c2194f1dc40a35aeed3d0c07d2eb21de4df1492` |
+| Remote synchronization | `origin/main` advanced from `1a284ec2` to `8c2194f1`; post-push divergence `0 0` |
 | Python | `3.13.13` |
 | TensorFlow | `2.20.0` |
 | TensorFlow Probability | `0.25.0` |
@@ -183,20 +185,20 @@ lock, package, or environment was changed.
 
 ## Remaining Closeout Limitations
 
-1. The first trusted `git fetch origin` attempt failed because `github.com`
-   could not be resolved. A later retry succeeded; `origin/main` remained at
-   `1a284ec2d09b7776b7e44fecd211e9f8e7a3ade3`, and
-   `git merge origin/main` reported `Already up to date`. The closeout commit
-   and push remain to be performed.
-2. `git ls-files --others --exclude-standard` is not repo-wide empty because
+1. `git ls-files --others --exclude-standard` is not repo-wide empty because
    `docs/plans/bayesfilter-ssl-lstm-q20-phase52-governance-migration-2026-08-28.md`
    is concurrent, unrelated, claim-supporting Phase 52 work. It must be tracked
    by that work's owner, not ignored or folded into this implementation commit.
    Every untracked file created by this HMC task is included in the
    implementation commit.
-3. MacroFinance and dsge_hmc migration status is guidance only. Neither
+2. MacroFinance and dsge_hmc migration status is guidance only. Neither
    downstream repository has run the new compatibility tests or selected this
    commit.
+
+Git synchronization itself is complete. The first trusted fetch attempt failed
+on DNS; a later retry succeeded, `git merge origin/main` reported
+`Already up to date`, both HMC commits were pushed, and the post-push check
+resolved `HEAD` and `origin/main` to the same `8c2194f1` commit.
 
 ## Post-Run Red Team
 
