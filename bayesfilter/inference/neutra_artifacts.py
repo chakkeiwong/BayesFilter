@@ -53,10 +53,15 @@ class FrozenNeuTraArtifactManifest:
     topology_hash: str | None = None
     tensor_hash: str | None = None
     chart_signature: str | None = None
+    procedure: str | None = None
+    initialization_mode: str | None = None
+    anchor_release_steps: int | None = None
+    anchor_estimator_signature: str | None = None
+    anchor_factor_orientation: str | None = None
     nonclaims: tuple[str, ...] = NEUTRA_ARTIFACT_NONCLAIMS
 
     def manifest_payload(self) -> Mapping[str, Any]:
-        return {
+        payload = {
             "schema": self.schema,
             "transport_id": self.transport_id,
             "dimension": self.dimension,
@@ -69,6 +74,17 @@ class FrozenNeuTraArtifactManifest:
             "chart_signature": self.chart_signature,
             "nonclaims": self.nonclaims,
         }
+        if self.procedure is not None:
+            payload.update(
+                {
+                    "procedure": self.procedure,
+                    "initialization_mode": self.initialization_mode,
+                    "anchor_release_steps": self.anchor_release_steps,
+                    "anchor_estimator_signature": self.anchor_estimator_signature,
+                    "anchor_factor_orientation": self.anchor_factor_orientation,
+                }
+            )
+        return payload
 
 
 class FrozenAffineDiagonalTransport:
@@ -294,6 +310,11 @@ class _DenseAutoregressiveIAFComponent:
         scale_transform: str,
         weights: tuple[tf.Tensor, ...],
         biases: tuple[tf.Tensor, ...],
+        initialization_mode: str = "legacy",
+        anchor_shift_weight: tf.Tensor | None = None,
+        anchor_shift_bias: tf.Tensor | None = None,
+        anchor_scale_raw: tf.Tensor | None = None,
+        anchor_factor_orientation: str | None = None,
     ) -> None:
         self.dim = dim
         self.hidden_layers = hidden_layers
@@ -302,6 +323,29 @@ class _DenseAutoregressiveIAFComponent:
         self.scale_transform = scale_transform
         self.weights = weights
         self.biases = biases
+        self.initialization_mode = str(initialization_mode)
+        self.anchor_shift_weight = anchor_shift_weight
+        self.anchor_shift_bias = anchor_shift_bias
+        self.anchor_scale_raw = anchor_scale_raw
+        self.anchor_factor_orientation = anchor_factor_orientation
+        if self.initialization_mode == "quadratic_triangular_anchor_v1":
+            if (
+                anchor_shift_weight is None
+                or anchor_shift_bias is None
+                or anchor_scale_raw is None
+            ):
+                raise InvalidNeuTraArtifact("quadratic anchor fields are required")
+            lower = tf.linalg.band_part(anchor_shift_weight, -1, 0)
+            diagonal = tf.linalg.diag(tf.linalg.diag_part(anchor_shift_weight))
+            if bool(tf.reduce_any(tf.not_equal(anchor_shift_weight, lower - diagonal)).numpy()):
+                raise InvalidNeuTraArtifact("quadratic anchor shift weight must be strict lower")
+            if anchor_factor_orientation != "row_lower_cholesky":
+                raise InvalidNeuTraArtifact("unsupported quadratic anchor orientation")
+        elif any(
+            value is not None
+            for value in (anchor_shift_weight, anchor_shift_bias, anchor_scale_raw)
+        ):
+            raise InvalidNeuTraArtifact("anchor fields require quadratic anchor mode")
         self.masks = _dense_iaf_masks(dim, hidden_layers)
 
     def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
@@ -336,7 +380,13 @@ class _DenseAutoregressiveIAFComponent:
             (scale_cotangent * scale_derivative, output_score),
             axis=-1,
         )
-        return direct + self._network_pullback(raw_cotangent, cache)
+        pullback = direct + self._network_pullback(raw_cotangent, cache)
+        if self.anchor_shift_weight is not None:
+            anchor_weight = tf.linalg.band_part(
+                self.anchor_shift_weight, -1, 0
+            ) - tf.linalg.diag(tf.linalg.diag_part(self.anchor_shift_weight))
+            pullback = pullback + tf.matmul(output_score, anchor_weight)
+        return pullback
 
     def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
         _, _, scale_derivative, cache = self._network(values)
@@ -362,15 +412,27 @@ class _DenseAutoregressiveIAFComponent:
             h = _apply_activation(preactivation, self.activation)
         raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
         scale_logits = raw[..., : self.dim]
+        shift = raw[..., self.dim :]
+        if self.anchor_shift_weight is not None:
+            anchor_weight = tf.linalg.band_part(
+                self.anchor_shift_weight, -1, 0
+            ) - tf.linalg.diag(tf.linalg.diag_part(self.anchor_shift_weight))
+            scale_logits = scale_logits + self.anchor_scale_raw
+            shift = shift + tf.matmul(values, anchor_weight, transpose_b=True)
+            shift = shift + self.anchor_shift_bias
         if self.scale_transform == "identity":
             scale_log = scale_logits
             scale_derivative = tf.ones_like(scale_logits)
+        elif self.scale_transform == "dsge_bounded_tanh":
+            scale_tanh = tf.math.tanh(scale_logits)
+            scale_log = self.s_max * scale_tanh
+            scale_derivative = 1.0 - tf.square(scale_tanh)
         else:
             scaled_logits = scale_logits / self.s_max
             scale_tanh = tf.math.tanh(scaled_logits)
             scale_log = self.s_max * scale_tanh
             scale_derivative = 1.0 - tf.square(scale_tanh)
-        return scale_log, raw[..., self.dim :], scale_derivative, tuple(preactivations)
+        return scale_log, shift, scale_derivative, tuple(preactivations)
 
     def _network_pullback(
         self,
@@ -713,6 +775,13 @@ def _load_dense_iaf_neutra_artifact(
             require_bounded_initialization=True,
             label="pure bounded NeuTra",
         )
+    elif procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1":
+        _validate_quadratic_anchor_pure_payload(
+            normalized,
+            dimension,
+            expected_hidden=(dimension, dimension),
+            label="pure quadratic-anchor NeuTra",
+        )
     elif procedure in {
         "bayesfilter_ssl_lstm_capacity_32x32_neutra_v1",
         "bayesfilter_ssl_lstm_tuned_capacity_32x32_neutra_v1",
@@ -776,6 +845,31 @@ def _load_dense_iaf_neutra_artifact(
         topology_hash=finalized["topology_hash"],
         tensor_hash=finalized["tensor_hash"],
         chart_signature=normalized.get("chart_signature"),
+        procedure=(
+            str(procedure)
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+        initialization_mode=(
+            str(normalized.get("initialization_mode"))
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+        anchor_release_steps=(
+            int(normalized.get("anchor_release_steps"))
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+        anchor_estimator_signature=(
+            str(normalized.get("anchor_estimator_signature"))
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+        anchor_factor_orientation=(
+            str(normalized.get("anchor_factor_orientation"))
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
     )
     transport = FrozenDenseIAFTransport(manifest=manifest, components=components)
     binding = binding_type(
@@ -969,6 +1063,121 @@ def _validate_pure_composed_neutra_payload(
         raise InvalidNeuTraArtifact(f"{label} target chart declaration mismatch")
 
 
+def _validate_quadratic_anchor_pure_payload(
+    payload: Mapping[str, Any],
+    dimension: int,
+    *,
+    expected_hidden: tuple[int, int],
+    label: str,
+) -> None:
+    """Validate the trainable triangular-anchor arm without accepting a chart."""
+
+    expected_kinds = (
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+    )
+    components = _component_list(payload.get("components"), "components")
+    order = tuple(
+        _nonempty_text(value, "component_order item")
+        for value in _sequence(payload.get("component_order"), "component_order")
+    )
+    by_id = {
+        _nonempty_text(component.get("component_id"), "component_id"): component
+        for component in components
+    }
+    actual_kinds = tuple(by_id.get(value, {}).get("kind") for value in order)
+    if actual_kinds != expected_kinds:
+        raise InvalidNeuTraArtifact(f"{label} component order mismatch")
+    if payload.get("initialization_mode") != "quadratic_triangular_anchor_v1":
+        raise InvalidNeuTraArtifact(f"{label} initialization mode mismatch")
+    release_steps = int(payload.get("anchor_release_steps", -1))
+    if release_steps < 0:
+        raise InvalidNeuTraArtifact(f"{label} release steps mismatch")
+    estimator_signature = str(payload.get("anchor_estimator_signature", ""))
+    _require_sha256_hex(estimator_signature, "anchor_estimator_signature")
+    if payload.get("anchor_factor_orientation") != "row_lower_cholesky":
+        raise InvalidNeuTraArtifact(f"{label} factor orientation mismatch")
+    initial_factor = payload.get("initial_anchor_factor")
+    if not isinstance(initial_factor, (tuple, list)) or len(initial_factor) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} initial factor shape mismatch")
+    for row in initial_factor:
+        if not isinstance(row, (tuple, list)) or len(row) != dimension:
+            raise InvalidNeuTraArtifact(f"{label} initial factor shape mismatch")
+    for i, row in enumerate(initial_factor):
+        for j, value in enumerate(row):
+            value = float(value)
+            if not math.isfinite(value):
+                raise InvalidNeuTraArtifact(f"{label} initial factor is nonfinite")
+            if j > i and value != 0.0:
+                raise InvalidNeuTraArtifact(f"{label} initial factor is not lower triangular")
+        if float(row[i]) <= 0.0:
+            raise InvalidNeuTraArtifact(f"{label} initial factor diagonal is not positive")
+    initial_shift = payload.get("initial_output_shift")
+    initial_scale_log = payload.get("initial_output_scale_log")
+    if not isinstance(initial_shift, (tuple, list)) or len(initial_shift) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} initial shift mismatch")
+    if not isinstance(initial_scale_log, (tuple, list)) or len(initial_scale_log) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} initial scale mismatch")
+    reverse_matrix = [
+        [1.0 if column == dimension - row - 1 else 0.0 for column in range(dimension)]
+        for row in range(dimension)
+    ]
+    for component_id in order:
+        component = by_id[component_id]
+        if component["kind"] == "mixing_linear":
+            if component.get("matrix") != reverse_matrix:
+                raise InvalidNeuTraArtifact(f"{label} reverse mixing mismatch")
+            continue
+        if component.get("hidden_layers") != list(expected_hidden):
+            raise InvalidNeuTraArtifact(f"{label} hidden layers mismatch")
+        if component.get("activation") != "elu":
+            raise InvalidNeuTraArtifact(f"{label} activation mismatch")
+        if component.get("initialization_mode") != "quadratic_triangular_anchor_v1":
+            raise InvalidNeuTraArtifact(f"{label} component initialization mismatch")
+        transform = component.get("scale_transform")
+        if transform not in {"identity", "dsge_bounded_tanh"}:
+            raise InvalidNeuTraArtifact(f"{label} scale transform mismatch")
+        s_max = float(component.get("s_max", 0.0))
+        if not math.isfinite(s_max) or s_max <= 0.0:
+            raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
+        anchor_weight = component.get("anchor_shift_weight")
+        anchor_bias = component.get("anchor_shift_bias")
+        anchor_raw = component.get("anchor_scale_raw")
+        if not isinstance(anchor_weight, (tuple, list)) or len(anchor_weight) != dimension:
+            raise InvalidNeuTraArtifact(f"{label} anchor weight shape mismatch")
+        if not isinstance(anchor_bias, (tuple, list)) or len(anchor_bias) != dimension:
+            raise InvalidNeuTraArtifact(f"{label} anchor bias shape mismatch")
+        if not isinstance(anchor_raw, (tuple, list)) or len(anchor_raw) != dimension:
+            raise InvalidNeuTraArtifact(f"{label} anchor scale shape mismatch")
+        for i, row in enumerate(anchor_weight):
+            if not isinstance(row, (tuple, list)) or len(row) != dimension:
+                raise InvalidNeuTraArtifact(f"{label} anchor weight shape mismatch")
+            for j, value in enumerate(row):
+                value = float(value)
+                if not math.isfinite(value):
+                    raise InvalidNeuTraArtifact(f"{label} anchor weight is nonfinite")
+                if j >= i and value != 0.0:
+                    raise InvalidNeuTraArtifact(f"{label} anchor weight is not strict lower")
+        if any(not math.isfinite(float(value)) for value in (*anchor_bias, *anchor_raw)):
+            raise InvalidNeuTraArtifact(f"{label} anchor tensor is nonfinite")
+        if component.get("anchor_factor_orientation") != "row_lower_cholesky":
+            raise InvalidNeuTraArtifact(f"{label} component orientation mismatch")
+        if transform == "dsge_bounded_tanh" and not s_max > max(
+            abs(float(value)) for value in initial_scale_log
+        ):
+            raise InvalidNeuTraArtifact(f"{label} scale bound does not represent initialization")
+    if payload.get("fixed_translation") or payload.get("fixed_output_scale") or payload.get("fixed_output_factor"):
+        raise InvalidNeuTraArtifact(f"{label} must not contain fixed affine chart fields")
+    names = payload.get("target_parameter_names")
+    if not isinstance(names, (tuple, list)) or len(names) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} target chart names mismatch")
+    if payload.get("target_chart") != "direct_physical":
+        raise InvalidNeuTraArtifact(f"{label} target chart declaration mismatch")
+
+
 def _parse_dense_component(payload: Mapping[str, Any], dimension: int) -> Any:
     _assert_component_hashes(payload)
     kind = _nonempty_text(payload.get("kind"), "component kind")
@@ -989,7 +1198,11 @@ def _parse_dense_component(payload: Mapping[str, Any], dimension: int) -> Any:
         if s_max <= 0.0:
             raise InvalidNeuTraArtifact("s_max must be positive")
         scale_transform = str(payload.get("scale_transform", "bounded_tanh"))
-        if scale_transform not in {"bounded_tanh", "identity"}:
+        if scale_transform not in {
+            "bounded_tanh",
+            "dsge_bounded_tanh",
+            "identity",
+        }:
             raise InvalidNeuTraArtifact("unsupported dense IAF scale_transform")
         layer_sizes = (dimension, *hidden_layers, 2 * dimension)
         weights = _tensor_tuple(payload.get("weights"), "weights")
@@ -999,6 +1212,22 @@ def _parse_dense_component(payload: Mapping[str, Any], dimension: int) -> Any:
         for index, (weight, bias) in enumerate(zip(weights, biases)):
             _require_shape(weight, (layer_sizes[index], layer_sizes[index + 1]), f"weights[{index}]")
             _require_shape(bias, (layer_sizes[index + 1],), f"biases[{index}]")
+        initialization_mode = str(payload.get("initialization_mode", "legacy"))
+        anchor_shift_weight = anchor_shift_bias = anchor_scale_raw = None
+        anchor_factor_orientation = None
+        if initialization_mode == "quadratic_triangular_anchor_v1":
+            anchor_shift_weight = _tensor(payload.get("anchor_shift_weight"), "anchor_shift_weight")
+            anchor_shift_bias = _tensor(payload.get("anchor_shift_bias"), "anchor_shift_bias")
+            anchor_scale_raw = _tensor(payload.get("anchor_scale_raw"), "anchor_scale_raw")
+            _require_shape(anchor_shift_weight, (dimension, dimension), "anchor_shift_weight")
+            _require_shape(anchor_shift_bias, (dimension,), "anchor_shift_bias")
+            _require_shape(anchor_scale_raw, (dimension,), "anchor_scale_raw")
+            anchor_factor_orientation = _nonempty_text(
+                payload.get("anchor_factor_orientation"),
+                "anchor_factor_orientation",
+            )
+        elif initialization_mode != "legacy":
+            raise InvalidNeuTraArtifact("unsupported dense IAF initialization_mode")
         return _DenseAutoregressiveIAFComponent(
             dim=dimension,
             hidden_layers=hidden_layers,
@@ -1007,6 +1236,11 @@ def _parse_dense_component(payload: Mapping[str, Any], dimension: int) -> Any:
             scale_transform=scale_transform,
             weights=weights,
             biases=biases,
+            initialization_mode=initialization_mode,
+            anchor_shift_weight=anchor_shift_weight,
+            anchor_shift_bias=anchor_shift_bias,
+            anchor_scale_raw=anchor_scale_raw,
+            anchor_factor_orientation=anchor_factor_orientation,
         )
     if kind == "mixing_linear":
         matrix = _tensor(payload.get("matrix"), "matrix")
@@ -1225,6 +1459,22 @@ def _dense_iaf_top_level_hashes(payload: Mapping[str, Any]) -> Mapping[str, str]
             "fixed_output_factor": payload.get("fixed_output_factor"),
             "chart_signature": payload.get("chart_signature"),
         }
+        if payload.get("initialization_mode") is not None or str(
+            payload.get("procedure", "")
+        ).endswith("quadratic_anchor_v1"):
+            transport_payload["procedure_contract"].update(
+                {
+                    "initialization_mode": payload.get("initialization_mode"),
+                    "anchor_release_steps": payload.get("anchor_release_steps"),
+                    "anchor_estimator_signature": payload.get(
+                        "anchor_estimator_signature"
+                    ),
+                    "anchor_factor_orientation": payload.get(
+                        "anchor_factor_orientation"
+                    ),
+                    "initial_anchor_factor": payload.get("initial_anchor_factor"),
+                }
+            )
     transport_hash = _stable_json_hash(transport_payload)
     return {
         "topology_hash": topology_hash,
@@ -1278,6 +1528,20 @@ def _component_topology_payload(component: Mapping[str, Any]) -> Mapping[str, An
         )
         if component.get("scale_transform") is not None:
             base["scale_transform"] = component.get("scale_transform")
+        if component.get("initialization_mode") is not None:
+            base["initialization_mode"] = component.get("initialization_mode")
+            base["anchor_factor_orientation"] = component.get(
+                "anchor_factor_orientation"
+            )
+            base["anchor_shift_weight_shape"] = _shape_of_nested(
+                component.get("anchor_shift_weight")
+            )
+            base["anchor_shift_bias_shape"] = _shape_of_nested(
+                component.get("anchor_shift_bias")
+            )
+            base["anchor_scale_raw_shape"] = _shape_of_nested(
+                component.get("anchor_scale_raw")
+            )
     elif kind == "mixing_linear":
         base["matrix_shape"] = _shape_of_nested(component.get("matrix"))
     elif kind in {"affine", "affine_dense"}:
@@ -1307,6 +1571,11 @@ def _component_tensor_payload(component: Mapping[str, Any]) -> Mapping[str, Any]
     if kind == "dense_autoregressive_iaf":
         base["weights"] = component.get("weights")
         base["biases"] = component.get("biases")
+        if component.get("initialization_mode") is not None:
+            base["initialization_mode"] = component.get("initialization_mode")
+            base["anchor_shift_weight"] = component.get("anchor_shift_weight")
+            base["anchor_shift_bias"] = component.get("anchor_shift_bias")
+            base["anchor_scale_raw"] = component.get("anchor_scale_raw")
     elif kind == "mixing_linear":
         base["matrix"] = component.get("matrix")
     elif kind in {"affine", "affine_dense"}:

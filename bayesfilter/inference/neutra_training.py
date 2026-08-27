@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
@@ -47,6 +48,8 @@ NEUTRA_TRAINING_NONCLAIMS = (
 DSGE_PAPER_NEUTRA_FAMILY = "dsge_paper_dense_iaf"
 PURE_PAPER_NEUTRA_FAMILY = "pure_paper_dense_iaf"
 PURE_BOUNDED_NEUTRA_FAMILY = "pure_bounded_dense_iaf"
+QUADRATIC_ANCHOR_INITIALIZATION_MODE = "quadratic_triangular_anchor_v1"
+LEGACY_INITIALIZATION_MODE = "legacy"
 SSL_LSTM_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_capacity_dense_iaf"
 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_tuned_capacity_dense_iaf"
 SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_deep_capacity_dense_iaf"
@@ -78,6 +81,7 @@ DSGE_PAPER_LR_BOUNDARIES = (999, 3999)
 # versions.  Permit only the resulting sub-ppm roundoff above the configured
 # rate; a materially larger value remains an invalid checkpoint.
 _LEARNING_RATE_RESTORE_REL_TOL = 1.0e-6
+_SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _resolved_paper_piecewise_boundaries(
@@ -160,6 +164,11 @@ class NeuTraTrainerConfig:
     gradient_clip_mode: str = "global"
     kernel_initialization: str = "legacy_zero_output"
     scale_transform: str = "bounded_tanh"
+    initialization_mode: str = LEGACY_INITIALIZATION_MODE
+    initial_anchor_factor: tuple[tuple[float, ...], ...] = ()
+    anchor_release_steps: int = 0
+    anchor_estimator_signature: str | None = None
+    anchor_factor_orientation: str = "row_lower_cholesky"
     stages: int = 1
     fixed_translation: tuple[float, ...] = ()
     fixed_output_scale: tuple[float, ...] = ()
@@ -219,14 +228,30 @@ class NeuTraTrainerConfig:
             "paper_variance_scaling",
         }:
             raise ValueError("unsupported kernel_initialization")
-        if self.scale_transform not in {"bounded_tanh", "identity"}:
+        if self.scale_transform not in {
+            "bounded_tanh",
+            "dsge_bounded_tanh",
+            "identity",
+        }:
             raise ValueError("unsupported scale_transform")
+        if self.initialization_mode not in {
+            LEGACY_INITIALIZATION_MODE,
+            QUADRATIC_ANCHOR_INITIALIZATION_MODE,
+        }:
+            raise ValueError("unsupported initialization_mode")
+        anchor_release_steps = int(self.anchor_release_steps)
+        if anchor_release_steps < 0:
+            raise ValueError("anchor_release_steps must be nonnegative")
+        object.__setattr__(self, "anchor_release_steps", anchor_release_steps)
         if int(self.stages) <= 0:
             raise ValueError("stages must be positive")
         translation = tuple(float(value) for value in self.fixed_translation)
         output_scale = tuple(float(value) for value in self.fixed_output_scale)
         factor_rows = tuple(
             tuple(float(item) for item in row) for row in self.fixed_output_factor
+        )
+        anchor_rows = tuple(
+            tuple(float(item) for item in row) for row in self.initial_anchor_factor
         )
         initial_shift = tuple(float(value) for value in self.initial_output_shift)
         initial_scale_log = tuple(float(value) for value in self.initial_output_scale_log)
@@ -253,6 +278,32 @@ class NeuTraTrainerConfig:
             raise ValueError("fixed_output_factor requires chart_signature")
         if any(not math.isfinite(value) for value in initial_shift + initial_scale_log):
             raise ValueError("initial output values must be finite")
+        if any(not math.isfinite(value) for row in anchor_rows for value in row):
+            raise ValueError("initial_anchor_factor must be finite")
+        anchor_mode = self.initialization_mode == QUADRATIC_ANCHOR_INITIALIZATION_MODE
+        if anchor_mode:
+            if self.family not in PURE_NEUTRA_FAMILIES:
+                raise ValueError("quadratic anchor mode is restricted to pure NeuTra")
+            if len(anchor_rows) != int(self.dimension) or any(
+                len(row) != int(self.dimension) for row in anchor_rows
+            ):
+                raise ValueError("initial_anchor_factor must be square with dimension rows")
+            anchor_tensor = tf.constant(anchor_rows, dtype=tf.float64)
+            strict_upper = tf.linalg.band_part(anchor_tensor, 0, -1) - tf.linalg.diag(
+                tf.linalg.diag_part(anchor_tensor)
+            )
+            if bool(tf.reduce_any(tf.not_equal(strict_upper, 0.0)).numpy()):
+                raise ValueError("initial_anchor_factor must be lower triangular")
+            diagonal = tf.linalg.diag_part(anchor_tensor)
+            if bool(tf.reduce_any(diagonal <= 0.0).numpy()):
+                raise ValueError("initial_anchor_factor diagonal must be positive")
+            if self.anchor_factor_orientation != "row_lower_cholesky":
+                raise ValueError("unsupported anchor_factor_orientation")
+            signature = self.anchor_estimator_signature
+            if signature is None or not _SHA256_HEX_RE.fullmatch(str(signature)):
+                raise ValueError("quadratic anchor mode requires anchor_estimator_signature")
+        elif anchor_rows or self.anchor_release_steps or self.anchor_estimator_signature is not None:
+            raise ValueError("anchor fields require quadratic anchor initialization_mode")
         names = tuple(str(value) for value in self.target_parameter_names)
         if len(set(names)) != len(names):
             raise ValueError("target_parameter_names must be unique")
@@ -274,7 +325,11 @@ class NeuTraTrainerConfig:
             required = {
                 "hidden_layers": hidden_layers,
                 "activation": "elu",
-                "s_max": 1.0 if self.family not in PURE_NEUTRA_FAMILIES else float(self.s_max),
+                "s_max": (
+                    1.0
+                    if self.family not in PURE_NEUTRA_FAMILIES
+                    else float(self.s_max)
+                ),
                 "epsilon": 1.0e-7,
                 "beta1": 0.9,
                 "beta2": 0.999,
@@ -297,10 +352,11 @@ class NeuTraTrainerConfig:
                         "gradient_clip_norm": 10.0,
                         "gradient_clip_mode": "none",
                         "kernel_initialization": "paper_variance_scaling",
-                        "scale_transform": "identity",
                         "target_chart": "direct_physical",
                     }
                 )
+                if not anchor_mode:
+                    required["scale_transform"] = "identity"
             elif self.family == PURE_BOUNDED_NEUTRA_FAMILY:
                 required.update(
                     {
@@ -311,10 +367,11 @@ class NeuTraTrainerConfig:
                         "gradient_clip_norm": 10.0,
                         "gradient_clip_mode": "none",
                         "kernel_initialization": "paper_variance_scaling",
-                        "scale_transform": "bounded_tanh",
                         "target_chart": "direct_physical",
                     }
                 )
+                if not anchor_mode:
+                    required["scale_transform"] = "bounded_tanh"
             elif self.family == SSL_LSTM_PURE_NEUTRA_FAMILY:
                 if self.learning_rate_schedule == "paper_piecewise":
                     required.update(
@@ -398,10 +455,14 @@ class NeuTraTrainerConfig:
                 if len(initial_shift) != int(self.dimension) or len(initial_scale_log) != int(self.dimension):
                     raise ValueError("pure NeuTra requires initial output shift and log scale")
                 if (
-                    self.scale_transform == "bounded_tanh"
+                    self.scale_transform in {"bounded_tanh", "dsge_bounded_tanh"}
                     and not float(self.s_max) > max(abs(value) for value in initial_scale_log)
                 ):
                     raise ValueError("pure NeuTra s_max must exceed initial log-scale magnitude")
+                if anchor_mode and self.scale_transform == "bounded_tanh":
+                    raise ValueError(
+                        "quadratic anchor mode requires paper_direct_log or dsge_bounded_tanh"
+                    )
         else:
             if self.learning_rate_schedule != "constant":
                 raise ValueError(
@@ -423,6 +484,7 @@ class NeuTraTrainerConfig:
         payload["fixed_output_factor"] = [list(row) for row in self.fixed_output_factor]
         payload["initial_output_shift"] = list(self.initial_output_shift)
         payload["initial_output_scale_log"] = list(self.initial_output_scale_log)
+        payload["initial_anchor_factor"] = [list(row) for row in self.initial_anchor_factor]
         payload["target_parameter_names"] = list(self.target_parameter_names)
         if self.paper_piecewise_boundaries:
             payload["paper_piecewise_boundaries"] = list(
@@ -430,6 +492,16 @@ class NeuTraTrainerConfig:
             )
         else:
             payload.pop("paper_piecewise_boundaries")
+        if self.initialization_mode == LEGACY_INITIALIZATION_MODE:
+            # Keep the serialized contract of pre-anchor trainer states stable.
+            for key in (
+                "initialization_mode",
+                "initial_anchor_factor",
+                "anchor_release_steps",
+                "anchor_estimator_signature",
+                "anchor_factor_orientation",
+            ):
+                payload.pop(key, None)
         if self.kernel_initialization == "legacy_zero_output":
             payload.pop("kernel_initialization")
         # The bounded pure family carries the transform explicitly so a
@@ -713,6 +785,13 @@ def pure_paper_neutra_config(
     target_signature: str,
     target_adapter_signature: str,
     initialization_seed: tuple[int, int] = (20260820, 1903),
+    initialization_mode: str = LEGACY_INITIALIZATION_MODE,
+    initial_anchor_factor: Sequence[Sequence[float]] = (),
+    anchor_release_steps: int = 0,
+    anchor_estimator_signature: str | None = None,
+    anchor_factor_orientation: str = "row_lower_cholesky",
+    scale_transform: str = "identity",
+    s_max: float = 1.0,
     jit_compile: bool = True,
 ) -> NeuTraTrainerConfig:
     """Return the no-affine, dimension-width NeuTra paper recipe.
@@ -729,7 +808,7 @@ def pure_paper_neutra_config(
         family=PURE_PAPER_NEUTRA_FAMILY,
         hidden_layers=(active_dimension, active_dimension),
         activation="elu",
-        s_max=1.0,
+        s_max=float(s_max),
         initialization_scale=0.02,
         initialization_seed=tuple(int(value) for value in initialization_seed),
         learning_rate=0.01,
@@ -740,7 +819,108 @@ def pure_paper_neutra_config(
         gradient_clip_norm=10.0,
         gradient_clip_mode="none",
         kernel_initialization="paper_variance_scaling",
-        scale_transform="identity",
+        scale_transform=str(scale_transform),
+        initialization_mode=str(initialization_mode),
+        initial_anchor_factor=tuple(
+            tuple(float(item) for item in row) for row in initial_anchor_factor
+        ),
+        anchor_release_steps=int(anchor_release_steps),
+        anchor_estimator_signature=(
+            None if anchor_estimator_signature is None else str(anchor_estimator_signature)
+        ),
+        anchor_factor_orientation=str(anchor_factor_orientation),
+        stages=3,
+        initial_output_shift=tuple(float(value) for value in initial_output_shift),
+        initial_output_scale_log=tuple(
+            float(value) for value in initial_output_scale_log
+        ),
+        target_parameter_names=tuple(str(value) for value in target_parameter_names),
+        target_chart="direct_physical",
+        target_signature=str(target_signature),
+        target_adapter_signature=str(target_adapter_signature),
+        jit_compile=bool(jit_compile),
+    )
+
+
+def quadratic_anchor_neutra_config(
+    *,
+    dimension: int,
+    initial_output_shift: Sequence[float],
+    initial_output_scale_log: Sequence[float],
+    initial_anchor_factor: Sequence[Sequence[float]],
+    target_parameter_names: Sequence[str],
+    target_signature: str,
+    target_adapter_signature: str,
+    anchor_estimator_signature: str,
+    anchor_release_steps: int = 0,
+    scale_transform: str = "identity",
+    s_max: float = 1.0,
+    initialization_seed: tuple[int, int] = (20260824, 2601),
+    jit_compile: bool = True,
+) -> NeuTraTrainerConfig:
+    """Build the named pure IAF quadratic-anchor initialization arm.
+
+    The factor and center seed trainable conditioner variables; they are not a
+    fixed outer affine chart.  ``scale_transform`` is deliberately restricted
+    by the underlying config to the direct-log or exact dsge bounded contract.
+    """
+
+    return pure_paper_neutra_config(
+        dimension=dimension,
+        initial_output_shift=initial_output_shift,
+        initial_output_scale_log=initial_output_scale_log,
+        target_parameter_names=target_parameter_names,
+        target_signature=target_signature,
+        target_adapter_signature=target_adapter_signature,
+        initialization_seed=initialization_seed,
+        initialization_mode=QUADRATIC_ANCHOR_INITIALIZATION_MODE,
+        initial_anchor_factor=initial_anchor_factor,
+        anchor_release_steps=anchor_release_steps,
+        anchor_estimator_signature=anchor_estimator_signature,
+        anchor_factor_orientation="row_lower_cholesky",
+        scale_transform=scale_transform,
+        s_max=s_max,
+        jit_compile=jit_compile,
+    )
+
+
+def pure_bounded_neutra_config(
+    *,
+    dimension: int,
+    initial_output_shift: Sequence[float],
+    initial_output_scale_log: Sequence[float],
+    target_parameter_names: Sequence[str],
+    target_signature: str,
+    target_adapter_signature: str,
+    s_max: float,
+    initialization_seed: tuple[int, int] = (20260824, 2401),
+    jit_compile: bool = True,
+) -> NeuTraTrainerConfig:
+    """Return the reviewed pure `(d,d)` IAF with a bounded scale output.
+
+    This is deliberately a distinct method from ``pure_paper_neutra_config``:
+    it keeps the paper topology and schedule but uses
+    ``s_max * tanh(raw / s_max)`` for every dense IAF scale.
+    """
+
+    active_dimension = int(dimension)
+    return NeuTraTrainerConfig(
+        dimension=active_dimension,
+        family=PURE_BOUNDED_NEUTRA_FAMILY,
+        hidden_layers=(active_dimension, active_dimension),
+        activation="elu",
+        s_max=float(s_max),
+        initialization_scale=0.02,
+        initialization_seed=tuple(int(value) for value in initialization_seed),
+        learning_rate=0.01,
+        learning_rate_schedule="paper_piecewise",
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=1.0e-8,
+        gradient_clip_norm=10.0,
+        gradient_clip_mode="none",
+        kernel_initialization="paper_variance_scaling",
+        scale_transform="bounded_tanh",
         stages=3,
         initial_output_shift=tuple(float(value) for value in initial_output_shift),
         initial_output_scale_log=tuple(
@@ -1075,6 +1255,7 @@ class _TrainableDenseIAF(_TrainableTransport):
         self.activation = str(config.activation)
         self.s_max = float(config.s_max)
         self.scale_transform = str(config.scale_transform)
+        self.initialization_mode = str(config.initialization_mode)
         self.masks = _dense_iaf_masks(self.dimension, self.hidden_layers)
         layer_sizes = (self.dimension, *self.hidden_layers, 2 * self.dimension)
         weights = []
@@ -1123,7 +1304,44 @@ class _TrainableDenseIAF(_TrainableTransport):
             )
         self.weights = tuple(weights)
         self.biases = tuple(biases)
-        if (
+        self.anchor_shift_weight: tf.Variable | None = None
+        self.anchor_shift_bias: tf.Variable | None = None
+        self.anchor_scale_raw: tf.Variable | None = None
+        if self.initialization_mode == QUADRATIC_ANCHOR_INITIALIZATION_MODE:
+            # Embed the local lower-Cholesky chart in the first IAF
+            # conditioner.  Zeroing the nonlinear output kernel makes the
+            # declared initial map exact; all anchor variables remain
+            # trainable and are released after the mechanics warm-up.
+            self.weights[-1].assign(tf.zeros_like(self.weights[-1]))
+            factor = tf.constant(config.initial_anchor_factor, dtype=tf.float64)
+            strict_lower = tf.linalg.band_part(factor, -1, 0) - tf.linalg.diag(
+                tf.linalg.diag_part(factor)
+            )
+            if self.stage_index == 0:
+                anchor_weight = strict_lower
+                anchor_bias = tf.constant(config.initial_output_shift, tf.float64)
+                scale_log = tf.constant(config.initial_output_scale_log, tf.float64)
+                if self.scale_transform == "dsge_bounded_tanh":
+                    anchor_scale = tf.math.atanh(scale_log / self.s_max)
+                else:
+                    anchor_scale = scale_log
+            else:
+                anchor_weight = tf.zeros((self.dimension, self.dimension), tf.float64)
+                anchor_bias = tf.zeros((self.dimension,), tf.float64)
+                anchor_scale = tf.zeros((self.dimension,), tf.float64)
+            self.anchor_shift_weight = tf.Variable(
+                anchor_weight,
+                name=f"neutra_dense_iaf_{self.stage_index}_anchor_shift_weight",
+            )
+            self.anchor_shift_bias = tf.Variable(
+                anchor_bias,
+                name=f"neutra_dense_iaf_{self.stage_index}_anchor_shift_bias",
+            )
+            self.anchor_scale_raw = tf.Variable(
+                anchor_scale,
+                name=f"neutra_dense_iaf_{self.stage_index}_anchor_scale_raw",
+            )
+        elif (
             self.stage_index == int(config.stages) - 1
             and config.family in PURE_NEUTRA_FAMILIES
         ):
@@ -1141,6 +1359,14 @@ class _TrainableDenseIAF(_TrainableTransport):
         output = []
         for weight, bias in zip(self.weights, self.biases):
             output.extend((weight, bias))
+        if self.anchor_shift_weight is not None:
+            output.extend(
+                (
+                    self.anchor_shift_weight,
+                    self.anchor_shift_bias,
+                    self.anchor_scale_raw,
+                )
+            )
         return tuple(output)
 
     @property
@@ -1148,7 +1374,22 @@ class _TrainableDenseIAF(_TrainableTransport):
         output = []
         for index in range(len(self.weights)):
             output.extend((f"weight[{index}]", f"bias[{index}]"))
+        if self.anchor_shift_weight is not None:
+            output.extend(
+                (
+                    "anchor_shift_weight",
+                    "anchor_shift_bias",
+                    "anchor_scale_raw",
+                )
+            )
         return tuple(output)
+
+    @property
+    def anchor_variable_indices(self) -> tuple[int, ...]:
+        if self.anchor_shift_weight is None:
+            return ()
+        first = 2 * len(self.weights)
+        return (first, first + 1, first + 2)
 
     def forward_and_logdet(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         scale_log, shift = self._network(z)
@@ -1177,11 +1418,21 @@ class _TrainableDenseIAF(_TrainableTransport):
         raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
         scale_logits = raw[..., : self.dimension]
         shift = raw[..., self.dimension :]
-        scale_log = (
-            scale_logits
-            if self.scale_transform == "identity"
-            else self.s_max * tf.math.tanh(scale_logits / self.s_max)
-        )
+        if self.anchor_shift_weight is not None:
+            anchor_weight = tf.linalg.band_part(
+                self.anchor_shift_weight, -1, 0
+            ) - tf.linalg.diag(tf.linalg.diag_part(self.anchor_shift_weight))
+            scale_logits = scale_logits + self.anchor_scale_raw
+            shift = shift + tf.matmul(z, anchor_weight, transpose_b=True)
+            shift = shift + self.anchor_shift_bias
+        if self.scale_transform == "identity":
+            scale_log = scale_logits
+        elif self.scale_transform == "dsge_bounded_tanh":
+            # Exact dsge_hmc convention; do not replace with raw/s_max.
+            scale_log = self.s_max * tf.math.tanh(scale_logits)
+        else:
+            # Historical normalized bounded family, retained for old arms.
+            scale_log = self.s_max * tf.math.tanh(scale_logits / self.s_max)
         max_width = max(self.hidden_layers, default=0)
         padded = [
             tf.pad(values, [[0, 0], [0, max_width - int(values.shape[-1])]])
@@ -1216,6 +1467,16 @@ class _TrainableDenseIAF(_TrainableTransport):
             or self.family == PURE_BOUNDED_NEUTRA_FAMILY
         ):
             payload["scale_transform"] = self.scale_transform
+        if self.initialization_mode == QUADRATIC_ANCHOR_INITIALIZATION_MODE:
+            payload.update(
+                {
+                    "initialization_mode": self.initialization_mode,
+                    "anchor_shift_weight": _tensor_values(self.anchor_shift_weight),
+                    "anchor_shift_bias": _tensor_values(self.anchor_shift_bias),
+                    "anchor_scale_raw": _tensor_values(self.anchor_scale_raw),
+                    "anchor_factor_orientation": "row_lower_cholesky",
+                }
+            )
         return payload
 
 
@@ -1345,6 +1606,16 @@ class _TrainableComposedIAF(_TrainableTransport):
             )
         return tuple(keys)
 
+    @property
+    def anchor_variable_indices(self) -> tuple[int, ...]:
+        indices: list[int] = []
+        offset = 0
+        for component in self.components:
+            if isinstance(component, _TrainableDenseIAF):
+                indices.extend(offset + index for index in component.anchor_variable_indices)
+            offset += len(component.trainable_variables)
+        return tuple(indices)
+
     def forward_and_logdet(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values = z
         logdet = tf.zeros(tf.shape(z)[:-1], z.dtype)
@@ -1425,6 +1696,9 @@ class NeuTraReverseKLTrainer:
             self.transport = _TrainableComposedIAF(config)
             _validate_named_composed_target(target, config)
         self.variables = self.transport.trainable_variables
+        self._anchor_variable_indices = tuple(
+            getattr(self.transport, "anchor_variable_indices", ())
+        )
         if not self.variables:
             raise NeuTraTrainingError("trainer requires trainable variables")
         self.step = tf.Variable(0, dtype=tf.int64, trainable=False, name="neutra_step")
@@ -1621,6 +1895,7 @@ class NeuTraReverseKLTrainer:
             weight * tf.add_n([output[4 + index] for output in raw_outputs])
             for index in range(len(self.variables))
         )
+        gradients = self._mask_anchor_gradients(gradients)
         for index, gradient in enumerate(gradients):
             _assert_finite(gradient, f"chunked gradient[{index}]")
         gradient_norm = tf.linalg.global_norm(gradients)
@@ -1671,7 +1946,7 @@ class NeuTraReverseKLTrainer:
                 "chunked external NeuTra step rejected nonfinite loss or gradient"
             )
         if self.optimizer is not None:
-            self.optimizer.apply_gradients(zip(clipped, self.variables, strict=True))
+            self._apply_optimizer_gradients_with_anchor_policy(clipped)
             next_step = tf.cast(self.optimizer.iterations, tf.int64)
         else:
             next_step = self.step + tf.constant(1, dtype=tf.int64)
@@ -1988,6 +2263,11 @@ class NeuTraReverseKLTrainer:
                     "bayesfilter_ssl_lstm_pure_32x32_neutra_v1"
                 ),
             }[self.config.family]
+            if (
+                self.config.initialization_mode
+                == QUADRATIC_ANCHOR_INITIALIZATION_MODE
+            ):
+                procedure = "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
             raw.update(
                 {
                     "target_adapter_signature": self.config.target_adapter_signature,
@@ -2004,6 +2284,21 @@ class NeuTraReverseKLTrainer:
                     "procedure": procedure,
                 }
             )
+            if (
+                self.config.initialization_mode
+                == QUADRATIC_ANCHOR_INITIALIZATION_MODE
+            ):
+                raw.update(
+                    {
+                        "initialization_mode": self.config.initialization_mode,
+                        "anchor_release_steps": int(self.config.anchor_release_steps),
+                        "anchor_estimator_signature": self.config.anchor_estimator_signature,
+                        "anchor_factor_orientation": self.config.anchor_factor_orientation,
+                        "initial_anchor_factor": [
+                            list(row) for row in self.config.initial_anchor_factor
+                        ],
+                    }
+                )
         return finalize_dense_iaf_neutra_artifact_payload(raw)
 
     def _loss_and_gradients_impl(
@@ -2029,6 +2324,7 @@ class NeuTraReverseKLTrainer:
         if any(gradient is None for gradient in gradients):
             raise NeuTraTrainingError("reverse-KL gradient is missing")
         gradients = tuple(tf.convert_to_tensor(gradient) for gradient in gradients)
+        gradients = self._mask_anchor_gradients(gradients)
         if self.config.family in COMPOSED_NEUTRA_FAMILIES:
             for index, gradient in enumerate(gradients):
                 _assert_finite(gradient, f"gradient[{index}]")
@@ -2080,6 +2376,59 @@ class NeuTraReverseKLTrainer:
         )
         return result, clipped
 
+    def _apply_optimizer_gradients_with_anchor_policy(
+        self, gradients: tuple[tf.Tensor, ...]
+    ) -> None:
+        """Apply Adam while preserving anchor variables/slots during warm-up."""
+
+        if self.optimizer is None:
+            raise NeuTraTrainingError("composed NeuTra optimizer is unavailable")
+        if not self._anchor_variable_indices:
+            self.optimizer.apply_gradients(zip(gradients, self.variables))
+            return
+        frozen = self.step < tf.cast(self.config.anchor_release_steps, tf.int64)
+        anchor_state = tuple(
+            (
+                index,
+                tf.identity(self.variables[index]),
+                tf.identity(self.optimizer._momentums[index]),
+                tf.identity(self.optimizer._velocities[index]),
+            )
+            for index in self._anchor_variable_indices
+        )
+        self.optimizer.apply_gradients(zip(gradients, self.variables))
+
+        def restore_anchor_state() -> tf.Tensor:
+            for index, variable, momentum, velocity in anchor_state:
+                self.variables[index].assign(variable)
+                self.optimizer._momentums[index].assign(momentum)
+                self.optimizer._velocities[index].assign(velocity)
+            return tf.constant(0, tf.int32)
+
+        tf.cond(frozen, restore_anchor_state, lambda: tf.constant(0, tf.int32))
+
+    def _mask_anchor_gradients(
+        self, gradients: tuple[tf.Tensor, ...]
+    ) -> tuple[tf.Tensor, ...]:
+        """Hold the embedded quadratic anchor through the zero-based warm-up.
+
+        This mask is applied before clipping and optimizer updates in direct,
+        detached-worker, and chunked reverse-KL routes.  It changes only the
+        trainable conditioner gradients; the estimator's external ``mu`` and
+        ``L`` inputs are immutable after construction.
+        """
+
+        if not self._anchor_variable_indices:
+            return gradients
+        released = self.step >= tf.cast(self.config.anchor_release_steps, tf.int64)
+        anchor_indices = self._anchor_variable_indices
+        return tuple(
+            tf.where(released, gradient, tf.zeros_like(gradient))
+            if index in anchor_indices
+            else gradient
+            for index, gradient in enumerate(gradients)
+        )
+
     def _validation_impl(self, z: tf.Tensor) -> tuple[tf.Tensor, ...]:
         theta, logdet = self.transport.forward_and_logdet(z)
         target_value, _ = _target_value_and_score(self.target, theta)
@@ -2122,7 +2471,7 @@ class NeuTraReverseKLTrainer:
             )
 
             def apply_update() -> tf.Tensor:
-                self.optimizer.apply_gradients(zip(gradients, self.variables))
+                self._apply_optimizer_gradients_with_anchor_policy(gradients)
                 return tf.cast(self.optimizer.iterations, tf.int64)
 
             next_step = tf.cond(
@@ -2248,6 +2597,7 @@ class NeuTraReverseKLTrainer:
         if any(gradient is None for gradient in gradients):
             raise NeuTraTrainingError("external reverse-KL gradient is missing")
         gradients = tuple(tf.convert_to_tensor(gradient) for gradient in gradients)
+        gradients = self._mask_anchor_gradients(gradients)
         surrogate = tf.reduce_mean(
             -tf.reduce_sum(target_score * tf.stop_gradient(theta), axis=-1)
             - tf.stop_gradient(logdet)
@@ -2288,7 +2638,7 @@ class NeuTraReverseKLTrainer:
 
         def apply_update() -> tf.Tensor:
             if self.optimizer is not None:
-                self.optimizer.apply_gradients(zip(clipped, self.variables))
+                self._apply_optimizer_gradients_with_anchor_policy(clipped)
                 return tf.cast(self.optimizer.iterations, tf.int64)
             next_step = self.step + tf.constant(1, dtype=tf.int64)
             beta1 = tf.cast(self.config.beta1, tf.float64)
@@ -2355,6 +2705,7 @@ class NeuTraReverseKLTrainer:
         if any(gradient is None for gradient in gradients):
             raise NeuTraTrainingError("external chunk reverse-KL gradient is missing")
         gradients = tuple(tf.convert_to_tensor(gradient) for gradient in gradients)
+        gradients = self._mask_anchor_gradients(gradients)
         surrogate = tf.reduce_sum(
             valid_mask
             * (
