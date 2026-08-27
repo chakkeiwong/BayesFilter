@@ -167,19 +167,26 @@ convergence.
 
 The legacy ordinary ladder currently imports NumPy and uses host numerical and
 serialization paths. This is BayesFilter-owned backend migration debt under
-`AGENTS.md`. A TensorFlow-only diagnostic prototype exercises typed mechanics,
-but it serializes `artifact_authority=False` and
-`admission_supported=False`. It has neither the ordinary fresh-R-hat handoff
-gate nor XLA qualification, so its acceptance and metric screens cannot issue a
-retained-kernel handoff or close a downstream TensorFlow/XLA requirement. Its
-screen role is named `diagnostic_candidate_screen`. Its exposed tuning
-hyperparameters have no numeric constructor defaults, but the implementation
-still fixes four chains, `float64`, four identical zero states in the current
-affine coordinates, `L=1` in metric windows, a powers-of-two trajectory grid,
-and a stateless seed-offset scheme. It also inherits TensorFlow Probability's
-internal dual-averaging defaults except for the explicit adaptation count and
-target acceptance. These are unqualified diagnostic choices, not admitted-route
-defaults.
+`AGENTS.md`. The TensorFlow-only route exercises the same typed mechanics and
+has two evidence roles. `diagnostic_only` can never hand off. `candidate` may
+hand the same frozen transition to a retained pilot only when it selected a
+predeclared trajectory length, performed a rank-eligible valid metric update,
+recorded zero final-verification divergences, and passed the declared four-chain
+acceptance screen. Its artifact still serializes `artifact_authority=False`,
+`posterior_admission_authority=False`, and `admission_supported=False`: the
+handoff is mechanics authority, not posterior or scientific admission.
+
+Fresh retained R-hat and ESS are explanatory posterior diagnostics and do not
+enter this tuning handoff. XLA qualification is likewise not required for an
+explicitly non-XLA TensorFlow execution; selecting XLA would require its own
+qualification. The route's exposed tuning hyperparameters have no numeric
+constructor defaults, but the implementation still fixes four chains,
+`float64`, four identical zero states in the current affine coordinates, `L=1`
+in metric windows, a powers-of-two trajectory grid, and a stateless seed-offset
+scheme. It also inherits TensorFlow Probability's internal dual-averaging
+defaults except for the explicit adaptation count and target acceptance. These
+remain explicit route policies rather than evidence of posterior convergence or
+default readiness.
 
 ## Fixed Transport
 

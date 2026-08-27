@@ -10,6 +10,7 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.inference import (
+    BoundRetainedHMCArchiveConfig,
     DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
     FourChainMeanBandAcceptancePolicy,
     FrozenPositionOnlyForce,
@@ -111,11 +112,13 @@ def test_legacy_dispatch_calls_private_implementation_once(
     assert observed["adapter"] == "adapter"
 
 
-def test_tensorflow_config_is_explicitly_nonpromoting() -> None:
+def test_tensorflow_config_limits_authority_to_mechanics_handoff() -> None:
     payload = _config().payload()
 
     assert payload["artifact_authority"] is False
+    assert payload["posterior_admission_authority"] is False
     assert payload["admission_supported"] is False
+    assert payload["mechanics_handoff_supported"] is True
     assert payload["chain_count"] == 4
     assert payload["dtype"] == "float64"
     assert payload["initial_chain_state_policy"] == (
@@ -128,11 +131,11 @@ def test_tensorflow_config_is_explicitly_nonpromoting() -> None:
     assert payload["dual_averaging_internal_policy"].startswith(
         "tensorflow_probability_defaults_except"
     )
-    assert payload["handoff_eligibility"] == "not_supported"
-    assert payload["fresh_rhat_verification"] == "not_implemented"
-    assert payload["rhat_role"] == "not_computed"
-    assert payload["xla_qualification"] == "not_implemented"
-    assert payload["xla_mode"] == "diagnostic_non_xla_only"
+    assert payload["handoff_eligibility"] == "result_dependent_candidate_screen"
+    assert payload["fresh_rhat_verification"] == "not_part_of_tuning_handoff"
+    assert payload["rhat_role"] == "retained_explanatory_only"
+    assert payload["xla_qualification"] == "not_required_for_non_xla_execution"
+    assert payload["xla_mode"] == "disabled_unless_separately_qualified"
     dispatch_source = inspect.getsource(hmc_tuning_dispatch)
     numerical_source = inspect.getsource(hmc_tensorflow_tuning)
     assert "import numpy" not in dispatch_source
@@ -167,7 +170,7 @@ def test_tensorflow_diagnostic_graph_smoke_cannot_issue_handoff() -> None:
     assert operations.isdisjoint(
         {"PyFunc", "PyFuncStateless", "EagerPyFunc", "ParallelFor"}
     )
-    with pytest.raises(ValueError, match="not admission-capable"):
+    with pytest.raises(ValueError, match="candidate mechanics screen"):
         build_retained_bound_hmc_archive_runner_from_tuning_result(
             tuning_result=result,
             runner_binding=binding,
@@ -262,11 +265,11 @@ def test_four_chain_policy_handles_infinities_and_divergence_exactly() -> None:
     assert bool(divergent.passed) is False
 
 
-def test_diagnostic_candidate_dense_metric_requires_enough_states() -> None:
+def test_candidate_dense_metric_requires_enough_states() -> None:
     with pytest.raises(ValueError, match=r"at least d \+ 1 states"):
         TensorFlowHMCKernelTuningConfig(
             parameter_dimension=54,
-            evidence_role="diagnostic_candidate_screen",
+            evidence_role="candidate",
             mass_window_results=(1,),
             step_adaptation_results=1,
             verification_results=1,
@@ -328,13 +331,13 @@ def test_failed_search_reports_last_real_verification_not_synthetic_health() -> 
     )
 
 
-def test_diagnostic_candidate_artifact_reloads_but_cannot_run_retained_archive(
+def test_candidate_artifact_reloads_and_runs_bound_retained_continuation(
     tmp_path: Path,
 ) -> None:
     binding = _binding()
     config = TensorFlowHMCKernelTuningConfig(
         parameter_dimension=2,
-        evidence_role="diagnostic_candidate_screen",
+        evidence_role="candidate",
         mass_window_results=(1,),
         step_adaptation_results=1,
         verification_results=2,
@@ -364,8 +367,9 @@ def test_diagnostic_candidate_artifact_reloads_but_cannot_run_retained_archive(
     assert bool(result.heuristic_screen_passed) is True
     assert result.posterior_admission_authority is False
     assert result.admission_supported is False
-    assert bool(result.handoff_eligible) is False
-    assert bool(result.passed) is False
+    assert result.mechanics_handoff_supported is True
+    assert bool(result.handoff_eligible) is True
+    assert bool(result.passed) is True
 
     loaded = load_tensorflow_hmc_tuning_result(
         result.artifact_manifest_path,
@@ -375,10 +379,34 @@ def test_diagnostic_candidate_artifact_reloads_but_cannot_run_retained_archive(
     assert bool(loaded.heuristic_screen_passed) is True
     assert loaded.posterior_admission_authority is False
     assert loaded.admission_supported is False
-    assert bool(loaded.handoff_eligible) is False
-    assert bool(loaded.passed) is False
-    with pytest.raises(ValueError, match="not admission-capable"):
-        build_retained_bound_hmc_archive_runner_from_tuning_result(
-            tuning_result=loaded,
-            runner_binding=binding,
+    assert loaded.mechanics_handoff_supported is True
+    assert bool(loaded.handoff_eligible) is True
+    assert bool(loaded.passed) is True
+
+    runner = build_retained_bound_hmc_archive_runner_from_tuning_result(
+        tuning_result=loaded,
+        runner_binding=binding,
+    )
+    pilot = runner.run(
+        BoundRetainedHMCArchiveConfig(
+            num_results=2,
+            seed=(20260828, 2),
+            output_dir=tmp_path / "pilot",
+            budget_provenance="two-draw retained mechanics fixture",
         )
+    )
+    tf.debugging.assert_equal(pilot.initial_chain_state, loaded.final_chain_state)
+    assert pilot.binding_hash == binding.binding_hash
+
+    extension = runner.run(
+        BoundRetainedHMCArchiveConfig(
+            num_results=2,
+            seed=(20260828, 3),
+            output_dir=tmp_path / "extension",
+            budget_provenance="two-draw continuation mechanics fixture",
+            continuation_manifest=pilot.archive_manifest_path,
+        )
+    )
+    tf.debugging.assert_equal(
+        extension.initial_chain_state, pilot.final_chain_state
+    )

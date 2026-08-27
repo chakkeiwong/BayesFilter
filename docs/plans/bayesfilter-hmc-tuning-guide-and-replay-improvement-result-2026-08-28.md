@@ -63,20 +63,21 @@ into the final guidance:
   and coordinates, affine Jacobian convention, and a tensor kernel factory.
 - The public dispatcher is the sole inventoried ordinary-tuner entry point; the
   old module-level function is an explicit compatibility delegate.
-- The in-worktree TensorFlow tuning prototype is retained only as diagnostic
-  mechanics. Its artifacts state `artifact_authority=False` and
-  `admission_supported=False`; fresh R-hat verification, XLA qualification, and
-  retained-run construction remain unavailable.
-- A concurrent attempt to promote the prototype using only its metric,
-  divergence, and four-chain acceptance screen was not accepted. That would
-  have changed tuning authority outside the reviewed plan and contradicted the
-  existing fresh-verification contract. Its one-ULP inclusive-boundary fix and
-  two-ULP rejection regression were retained.
+- The TensorFlow route separates `diagnostic_only` from `candidate`. A candidate
+  that passes its declared metric, divergence, and four-chain acceptance screen
+  may hand the same frozen transition to retained execution. This is mechanics
+  authority only: artifacts state `artifact_authority=False`,
+  `posterior_admission_authority=False`, and `admission_supported=False`.
+- The initial closeout's demand for fresh R-hat and XLA before any retained
+  handoff was wrong relative to the BGS plan. R-hat and ESS are retained-run
+  explanatory diagnostics; XLA qualification is irrelevant when execution is
+  explicitly non-XLA. The one-ULP inclusive-boundary fix and two-ULP rejection
+  regression remain.
 - The diagnostic prototype no longer supplies numeric defaults for its exposed
   tuning controls or a bare `candidate` evidence role. Its fixed four-chain,
   `float64`, start-bank, metric-window, trajectory-grid, seed-offset, and TFP
   dual-averaging policies are serialized as unqualified diagnostic choices;
-  the non-admitting screen is labeled `diagnostic_candidate_screen`.
+  the handoff-capable screen is labeled `candidate`.
 - Importable covariance-first and neural-force examples exercise argument and
   binding contracts without launching HMC.
 - Generated route tables, the Markdown reference, the LaTeX chapter,
@@ -124,18 +125,18 @@ same six nodes fail on baseline `1ef88766e` with the same messages.
 | Decision | Primary criterion | Veto status | Main uncertainty | Next justified action | Not concluded |
 |---|---|---|---|---|---|
 | Accept the guide and replay repair | Nonidentity JSON replay preserves both mass signatures without runtime work | No task-specific veto fired | Target equality still requires downstream validation | Commit and migrate downstream callers against the recorded commit | No HMC convergence, posterior, performance, GPU, XLA, or default-readiness claim |
-| Keep TensorFlow prototype diagnostic-only | It lacks ordinary fresh R-hat admission and XLA qualification | Admission and retained handoff fail closed | Full TensorFlow ladder behavior is not evaluated | Plan a separate backend qualification and migration | Not an authoritative tuning backend |
+| Permit candidate mechanics handoff | Exact metric, final-divergence, and four-chain screen passes | Diagnostic-only and failed candidates remain closed | Posterior convergence is not established by tuning | Run the same frozen binding in a retained pilot and assess posterior diagnostics separately | No posterior admission, XLA, or scientific claim |
 | Leave MacroFinance Phase 14 separate | Failure occurs before `tune_hmc_kernel` | Upstream wrapper veto remains | Correct incumbent-eligibility repair belongs to MacroFinance | Repair and retest in that repository | This work did not produce a MacroFinance kernel |
 
 ## Inference Status
 
 | Item | Status |
 |---|---|
-| Hard veto screen | No new interface/replay veto; TensorFlow prototype deliberately vetoed from admission |
+| Hard veto screen | Candidate mechanics require a valid rank-eligible metric update, zero final-verification divergence, and the declared four-chain acceptance screen |
 | Statistically supported ranking | Not applicable; no method comparison was run |
 | Descriptive-only differences | None used for promotion |
 | Default readiness | Not established |
-| Next evidence needed | Target-specific equality checks downstream; fresh R-hat and XLA qualification before TensorFlow-backend admission |
+| Next evidence needed | Target-specific equality checks downstream and retained multi-chain diagnostics; XLA evidence only if XLA is later selected |
 
 ## Post-Run Red Team
 
@@ -146,6 +147,6 @@ identity and absence of runtime work, not scientific target correctness. A
 target-specific value/score or endpoint-potential validation would overturn any
 unsupported downstream equality claim.
 
-The weakest remaining interface area is the diagnostic TensorFlow prototype.
-Its graph mechanics are tested, but it cannot become authoritative until the
-ordinary fresh-verification contract and XLA policy are implemented and tested.
+The weakest remaining interface area is not the mechanics handoff but the later
+posterior interpretation. The tuning screen does not establish convergence,
+and a non-XLA run provides no evidence about XLA compatibility or performance.

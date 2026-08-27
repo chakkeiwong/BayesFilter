@@ -3,9 +3,9 @@
 This module never imports NumPy or SciPy. It keeps tuning state in TensorFlow,
 reuses the bound BayesFilter transition kernel, and leaves public legacy-versus-
 TensorFlow dispatch to :mod:`bayesfilter.inference.hmc_tuning_dispatch`.
-The current graph is diagnostic mechanics only: it does not implement the
-ordinary fresh-R-hat handoff gate or XLA qualification and cannot issue a
-retained-kernel handoff.
+The graph supports both non-handoff diagnostics and a narrowly scoped frozen-
+mechanics handoff. It does not establish posterior convergence or scientific
+admission, and it does not require XLA for an explicitly non-XLA execution.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ import tensorflow_probability as tfp
 from bayesfilter.inference.tuning_contract import HMCTuningRunnerBinding
 
 
-TENSORFLOW_HMC_TUNING_SCHEMA = "bayesfilter.tensorflow_hmc_tuning.v1"
+TENSORFLOW_HMC_TUNING_SCHEMA = "bayesfilter.tensorflow_hmc_tuning.v2"
 FOUR_CHAIN_ACCEPTANCE_SCHEMA = "bayesfilter.four_chain_mean_band_acceptance.v1"
 BOUND_RETAINED_HMC_ARCHIVE_SCHEMA = "bayesfilter.bound_retained_hmc_archive.v1"
 _CHAIN_COUNT = 4
@@ -250,7 +250,7 @@ class FourChainAcceptanceDecision(NamedTuple):
 
 @dataclass(frozen=True)
 class TensorFlowHMCKernelTuningConfig:
-    """Explicit-budget config for non-promoting TensorFlow tuning diagnostics."""
+    """Explicit-budget config for TensorFlow tuning mechanics."""
 
     parameter_dimension: int
     evidence_role: str
@@ -279,10 +279,8 @@ class TensorFlowHMCKernelTuningConfig:
     def __post_init__(self) -> None:
         dimension = _positive_int(self.parameter_dimension, "parameter_dimension")
         role = str(self.evidence_role)
-        if role not in {"diagnostic_only", "diagnostic_candidate_screen"}:
-            raise ValueError(
-                "evidence_role must be diagnostic_only or diagnostic_candidate_screen"
-            )
+        if role not in {"diagnostic_only", "candidate"}:
+            raise ValueError("evidence_role must be diagnostic_only or candidate")
         windows = tuple(
             _positive_int(value, "mass_window_results")
             for value in self.mass_window_results
@@ -290,7 +288,7 @@ class TensorFlowHMCKernelTuningConfig:
         if not windows:
             raise ValueError("mass_window_results must contain at least one window")
         if (
-            role == "diagnostic_candidate_screen"
+            role == "candidate"
             and min(windows) * _CHAIN_COUNT < dimension + 1
         ):
             raise ValueError(
@@ -443,15 +441,18 @@ class TensorFlowHMCKernelTuningConfig:
             "candidate_selection": "first_passing_predeclared_candidate",
             "ranking_claim": False,
             "artifact_authority": False,
+            "posterior_admission_authority": False,
             "admission_supported": False,
-            "handoff_eligibility": "not_supported",
-            "fresh_rhat_verification": "not_implemented",
-            "rhat_role": "not_computed",
-            "xla_qualification": "not_implemented",
-            "xla_mode": "diagnostic_non_xla_only",
+            "mechanics_handoff_supported": True,
+            "handoff_eligibility": "result_dependent_candidate_screen",
+            "fresh_rhat_verification": "not_part_of_tuning_handoff",
+            "rhat_role": "retained_explanatory_only",
+            "xla_qualification": "not_required_for_non_xla_execution",
+            "xla_mode": "disabled_unless_separately_qualified",
             "nonclaims": (
-                "the diagnostic screen cannot issue a tuning handoff",
-                "fresh tuning R-hat and retained ESS are not computed",
+                "diagnostic_only results cannot issue a tuning handoff",
+                "candidate handoff authorizes only the same frozen mechanics",
+                "R-hat and ESS are retained-run explanatory diagnostics",
                 "the route is not XLA qualified",
                 "no retained posterior convergence claim",
             ),
@@ -462,12 +463,16 @@ class TensorFlowHMCKernelTuningConfig:
         if payload.get("schema") != TENSORFLOW_HMC_TUNING_SCHEMA:
             raise ValueError("unsupported TensorFlow HMC tuning config schema")
         if payload.get("artifact_authority") is not False:
-            raise ValueError("TensorFlow diagnostic config cannot claim artifact authority")
+            raise ValueError("TensorFlow mechanics config cannot claim artifact authority")
+        if payload.get("posterior_admission_authority") is not False:
+            raise ValueError("TensorFlow mechanics config cannot claim posterior authority")
         if payload.get("admission_supported") is not False:
-            raise ValueError("TensorFlow diagnostic config cannot claim admission")
-        if payload.get("handoff_eligibility") != "not_supported":
+            raise ValueError("TensorFlow mechanics config cannot claim posterior admission")
+        if payload.get("mechanics_handoff_supported") is not True:
+            raise ValueError("TensorFlow mechanics config must declare handoff support")
+        if payload.get("handoff_eligibility") != "result_dependent_candidate_screen":
             raise ValueError("TensorFlow config has inconsistent handoff eligibility")
-        expected_diagnostic_fields = {
+        expected_execution_fields = {
             "numerical_backend": "tensorflow_only",
             "dtype": _DTYPE.name,
             "chain_count": _CHAIN_COUNT,
@@ -483,14 +488,14 @@ class TensorFlowHMCKernelTuningConfig:
                 "tensorflow_probability_defaults_except_explicit_adaptation_steps_"
                 "and_target_accept_prob"
             ),
-            "fresh_rhat_verification": "not_implemented",
-            "rhat_role": "not_computed",
-            "xla_qualification": "not_implemented",
-            "xla_mode": "diagnostic_non_xla_only",
+            "fresh_rhat_verification": "not_part_of_tuning_handoff",
+            "rhat_role": "retained_explanatory_only",
+            "xla_qualification": "not_required_for_non_xla_execution",
+            "xla_mode": "disabled_unless_separately_qualified",
         }
-        for name, expected in expected_diagnostic_fields.items():
+        for name, expected in expected_execution_fields.items():
             if payload.get(name) != expected:
-                raise ValueError(f"TensorFlow diagnostic config has invalid {name}")
+                raise ValueError(f"TensorFlow mechanics config has invalid {name}")
         return cls(
             parameter_dimension=payload["parameter_dimension"],
             evidence_role=payload["evidence_role"],
@@ -1116,9 +1121,7 @@ def _build_tuning_graph(
                 tf.reduce_all(final_metric_eigenvalues > 0.0),
             ),
         )
-        candidate_role = tf.constant(
-            config.evidence_role == "diagnostic_candidate_screen"
-        )
+        candidate_role = tf.constant(config.evidence_role == "candidate")
         heuristic_screen_passed = tf.logical_and(
             candidate_selected,
             tf.logical_and(
@@ -1129,11 +1132,10 @@ def _build_tuning_graph(
                 ),
             ),
         )
-        # This graph does not implement the ordinary fresh-R-hat admission gate
-        # or XLA qualification. The heuristic remains useful diagnostic output,
-        # but it cannot become a public-tuner handoff condition.
-        handoff_eligible = tf.constant(False)
-        passed = tf.constant(False)
+        # This handoff authorizes only the same frozen mechanics for a retained
+        # pilot. Posterior convergence and scientific admission remain separate.
+        handoff_eligible = heuristic_screen_passed
+        passed = handoff_eligible
         final_raw_state = adapter.latent_to_position(reported_state)
         health_summary = tf.concat(
             (
@@ -1237,6 +1239,10 @@ class TensorFlowHMCKernelTuningResult:
     @property
     def admission_supported(self) -> bool:
         return False
+
+    @property
+    def mechanics_handoff_supported(self) -> bool:
+        return True
 
     @property
     def acceptance_decision(self) -> FourChainAcceptanceDecision:
@@ -1360,12 +1366,14 @@ def _write_tuning_artifact(
             "numerical_backend": "tensorflow_only",
             "arrays_materialized_on_host": False,
             "artifact_authority": False,
+            "posterior_admission_authority": False,
             "admission_supported": False,
-            "handoff_eligibility": "not_supported",
-            "fresh_rhat_verification": "not_implemented",
-            "rhat_role": "not_computed",
-            "xla_qualification": "not_implemented",
-            "xla_mode": "diagnostic_non_xla_only",
+            "mechanics_handoff_supported": True,
+            "handoff_eligibility": "result_dependent_candidate_screen",
+            "fresh_rhat_verification": "not_part_of_tuning_handoff",
+            "rhat_role": "retained_explanatory_only",
+            "xla_qualification": "not_required_for_non_xla_execution",
+            "xla_mode": "disabled_unless_separately_qualified",
             "reports_posterior_convergence": False,
             "reports_sampler_superiority": False,
         },
@@ -1393,21 +1401,27 @@ def load_tensorflow_hmc_tuning_result(
     if payload.get("schema") != TENSORFLOW_HMC_TUNING_SCHEMA:
         raise ValueError("unsupported TensorFlow HMC tuning artifact")
     if payload.get("artifact_authority") is not False:
-        raise ValueError("TensorFlow diagnostic artifact cannot claim authority")
+        raise ValueError("TensorFlow mechanics artifact cannot claim scientific authority")
+    if payload.get("posterior_admission_authority") is not False:
+        raise ValueError("TensorFlow mechanics artifact cannot claim posterior authority")
     if payload.get("admission_supported") is not False:
-        raise ValueError("TensorFlow diagnostic artifact cannot claim admission")
-    if payload.get("handoff_eligibility") != "not_supported":
+        raise ValueError("TensorFlow mechanics artifact cannot claim posterior admission")
+    if payload.get("mechanics_handoff_supported") is not True:
+        raise ValueError("TensorFlow mechanics artifact must declare handoff support")
+    if payload.get("handoff_eligibility") != "result_dependent_candidate_screen":
         raise ValueError("TensorFlow artifact has inconsistent handoff eligibility")
-    expected_diagnostic_fields = {
-        "fresh_rhat_verification": "not_implemented",
-        "rhat_role": "not_computed",
-        "xla_qualification": "not_implemented",
-        "xla_mode": "diagnostic_non_xla_only",
+    expected_execution_fields = {
+        "fresh_rhat_verification": "not_part_of_tuning_handoff",
+        "rhat_role": "retained_explanatory_only",
+        "xla_qualification": "not_required_for_non_xla_execution",
+        "xla_mode": "disabled_unless_separately_qualified",
     }
-    for name, expected in expected_diagnostic_fields.items():
+    for name, expected in expected_execution_fields.items():
         if payload.get(name) != expected:
-            raise ValueError(f"TensorFlow diagnostic artifact has invalid {name}")
+            raise ValueError(f"TensorFlow mechanics artifact has invalid {name}")
     config = TensorFlowHMCKernelTuningConfig.from_payload(payload["config"])
+    if payload.get("artifact_role") != config.evidence_role:
+        raise ValueError("TensorFlow artifact role does not match its config")
     if not isinstance(runner_binding, HMCTuningRunnerBinding):
         raise TypeError("runner_binding must be HMCTuningRunnerBinding")
     if payload["runner_binding"].get("binding_hash") != runner_binding.binding_hash:
@@ -1441,10 +1455,14 @@ def load_tensorflow_hmc_tuning_result(
         dtype = tf.bool if name in bool_fields else tf.int32 if name in int_fields else _DTYPE
         values[name] = _read_tensor_record(root, tensor_payload[name], dtype)
     tf.debugging.assert_equal(
-        values["handoff_eligible"], False, message="diagnostic cannot issue handoff"
+        values["handoff_eligible"],
+        values["heuristic_screen_passed"],
+        message="handoff must equal the declared candidate mechanics screen",
     )
     tf.debugging.assert_equal(
-        values["passed"], False, message="diagnostic cannot pass tuning admission"
+        values["passed"],
+        values["handoff_eligible"],
+        message="passed must mean mechanics-handoff eligibility",
     )
     return TensorFlowHMCKernelTuningResult(
         config=config,
@@ -1627,10 +1645,8 @@ class BoundRetainedHMCArchiveRunner:
         if not isinstance(config, BoundRetainedHMCArchiveConfig):
             raise TypeError("config must be BoundRetainedHMCArchiveConfig")
         tuning = self.tuning_result
-        if not tuning.admission_supported:
-            raise ValueError(
-                "TensorFlow diagnostic tuning is not admission-capable and cannot run retained sampling"
-            )
+        if tuning.config.evidence_role != "candidate":
+            raise ValueError("retained sampling requires a candidate mechanics screen")
         tf.debugging.assert_equal(
             tuning.handoff_eligible,
             True,
@@ -1856,12 +1872,18 @@ def build_retained_bound_hmc_archive_runner_from_tuning_result(
         raise TypeError("tuning_result must be TensorFlowHMCKernelTuningResult")
     if not isinstance(runner_binding, HMCTuningRunnerBinding):
         raise TypeError("runner_binding must be HMCTuningRunnerBinding")
-    if not tuning_result.admission_supported:
-        raise ValueError(
-            "TensorFlow diagnostic tuning is not admission-capable and cannot build a retained runner"
-        )
-    if tuning_result.config.evidence_role != "diagnostic_candidate_screen":
-        raise ValueError("retained sampling requires a diagnostic candidate screen")
+    if tuning_result.config.evidence_role != "candidate":
+        raise ValueError("retained sampling requires a candidate mechanics screen")
+    tf.debugging.assert_equal(
+        tuning_result.handoff_eligible,
+        True,
+        message="retained runner requires a handoff-eligible mechanics result",
+    )
+    tf.debugging.assert_equal(
+        tuning_result.passed,
+        True,
+        message="retained runner requires a passed mechanics result",
+    )
     if tuning_result.runner_binding is not runner_binding:
         raise ValueError("retained sampling requires the exact loaded runner binding")
     if tuning_result.binding_payload.get("binding_hash") != runner_binding.binding_hash:

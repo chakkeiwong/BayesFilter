@@ -140,21 +140,28 @@ The implementation anchor for the threshold is
 that constant rather than hard-code a copied number.
 
 The legacy ordinary ladder still contains NumPy and host numerical and
-serialization paths.  This is BayesFilter-owned backend migration debt.  A
-TensorFlow-only diagnostic implementation can exercise typed mechanics, but it
-sets both \code{artifact\_authority} and \code{admission\_supported} to false
-in its serialized result.  It has neither the ordinary fresh-
-\(\widehat R\) handoff gate nor XLA qualification, so its acceptance and metric
-screens cannot issue a retained-kernel handoff or satisfy a consumer that
-requires an admitted TensorFlow/XLA tuning route.  Its screen role is named
-\code{diagnostic\_candidate\_screen}.  Its exposed tuning hyperparameters have
-no numeric constructor defaults, but the implementation still fixes four
-chains, \code{float64}, four identical zero states in the current affine
-coordinates, (L=1) in metric windows, a powers-of-two trajectory grid, and a
-stateless seed-offset scheme.  It also inherits TensorFlow Probability's
-internal dual-averaging defaults except for the explicit adaptation count and
-target acceptance.  These are unqualified diagnostic choices, not admitted-
-route defaults.
+serialization paths.  This is BayesFilter-owned backend migration debt.  The
+TensorFlow-only route has two evidence roles.  A \code{diagnostic\_only} result
+cannot hand off.  A \code{candidate} result may hand the same frozen transition
+to a retained pilot only after a predeclared trajectory candidate is selected,
+the metric update is rank eligible and valid, final verification has zero
+divergences, and the declared four-chain acceptance screen passes.  Its
+serialized result still sets \code{artifact\_authority},
+\code{posterior\_admission\_authority}, and \code{admission\_supported} to
+false.  Thus the handoff authorizes frozen mechanics, not posterior convergence
+or scientific admission.
+
+Fresh retained \(\widehat R\) and effective sample size are explanatory
+posterior diagnostics and do not enter this tuning handoff.  XLA qualification
+is not required for an explicitly non-XLA TensorFlow execution; selecting XLA
+would require a separate qualification.  The route's exposed tuning
+hyperparameters have no numeric constructor defaults, but the implementation
+still fixes four chains, \code{float64}, four identical zero states in the
+current affine coordinates, \(L=1\) in metric windows, a powers-of-two
+trajectory grid, and a stateless seed-offset scheme.  It also inherits
+TensorFlow Probability's internal dual-averaging defaults except for the
+explicit adaptation count and target acceptance.  These remain explicit route
+policies rather than evidence of posterior convergence or default readiness.
 
 The smoke preset in the following listing deliberately has a tiny budget.  It
 tests invocation and result shape; it need not pass tuning admission.

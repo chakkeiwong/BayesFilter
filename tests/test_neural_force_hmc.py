@@ -16,6 +16,7 @@ from bayesfilter.inference.neural_force_hmc import (
     NeuralForceHMCConfig,
     NeuralForceTransitionKernel,
     bind_neural_force_hmc_tuning_runner,
+    build_affine_neural_force_transition_kernel,
     kinetic_energy,
     neural_force_hmc_transition,
     neural_force_proposal,
@@ -68,6 +69,23 @@ class _IdentityAffineAdapter:
     @staticmethod
     def latent_to_position(value):
         return tf.convert_to_tensor(value, DTYPE)
+
+
+class _NonidentityAffineTransform:
+    factor = tf.constant(((2.0, 0.0), (0.5, 1.5)), DTYPE)
+    center = tf.constant((1.0, -2.0), DTYPE)
+    log_jacobian_convention = "constant_omitted"
+
+
+class _NonidentityAffineAdapter:
+    transform = _NonidentityAffineTransform()
+
+    @staticmethod
+    def latent_to_position(value):
+        value = tf.convert_to_tensor(value, DTYPE)
+        return _NonidentityAffineTransform.center + tf.linalg.matmul(
+            value, _NonidentityAffineTransform.factor, transpose_b=True
+        )
 
 
 def _bound_runner_config(*, target_scope: str = "neural-force-binding-test"):
@@ -161,6 +179,47 @@ def test_typed_binding_v2_builds_tensor_kernel_for_honestly_labeled_field():
         DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS
     )
     assert kernel.force.coordinate_system == "transformed"
+    assert kernel.target.includes_chart_log_jacobian is False
+
+
+def test_nonidentity_affine_kernel_implements_row_chain_rule_and_preserves_metadata():
+    adapter = _NonidentityAffineAdapter()
+
+    def raw_force(position):
+        return tf.stack(
+            (
+                position[..., 0] + 2.0 * position[..., 1],
+                3.0 * position[..., 0] - position[..., 1],
+            ),
+            axis=-1,
+        )
+
+    force = FrozenPositionOnlyForce(
+        raw_force,
+        identity="nonidentity-affine-field",
+        semantics=DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
+    )
+    target = FrozenTargetPotential(
+        lambda position: 0.5 * tf.reduce_sum(tf.square(position), axis=-1),
+        identity="nonidentity-affine-target",
+        includes_chart_log_jacobian=True,
+    )
+    kernel = build_affine_neural_force_transition_kernel(
+        adapter=adapter,
+        force=force,
+        target=target,
+        step_size=tf.constant(0.1, DTYPE),
+        num_leapfrog_steps=tf.constant(2, tf.int32),
+    )
+    latent = tf.constant(((0.25, -0.4), (-0.7, 0.8)), DTYPE)
+    raw_position = adapter.latent_to_position(latent)
+    expected_force = tf.tensordot(
+        raw_force(raw_position), adapter.transform.factor, axes=[[-1], [0]]
+    )
+    expected_target = 0.5 * tf.reduce_sum(tf.square(raw_position), axis=-1)
+
+    tf.debugging.assert_near(kernel.force.function(latent), expected_force)
+    tf.debugging.assert_near(kernel.target.function(latent), expected_target)
     assert kernel.target.includes_chart_log_jacobian is True
 
 
@@ -562,7 +621,7 @@ def test_declared_positive_infinity_support_boundary_is_ordinary_rejection():
     tf.debugging.assert_equal(result.position, position)
 
 
-def test_nonlinear_chart_requires_and_includes_log_jacobian():
+def test_nonlinear_chart_metadata_distinguishes_complete_and_incomplete_targets():
     def transform(z):
         return z + 0.25 * tf.pow(z, 3)
 
@@ -583,13 +642,14 @@ def test_nonlinear_chart_requires_and_includes_log_jacobian():
     tf.debugging.assert_near(target.function(z), expected, atol=1e-14)
     raw_only = 0.5 * tf.reduce_sum(tf.square(transform(z)), axis=-1)
     assert bool(tf.reduce_any(tf.abs(raw_only - expected) > 0.05))
-    with pytest.raises(InvalidNeuralForceHMCConfiguration, match="log-Jacobian"):
-        FrozenTargetPotential(
-            lambda value: 0.5 * tf.reduce_sum(tf.square(transform(value)), axis=-1),
-            identity="wrong-raw-only-target",
-            coordinate_system="transformed",
-            includes_chart_log_jacobian=False,
-        )
+    incomplete = FrozenTargetPotential(
+        lambda value: 0.5 * tf.reduce_sum(tf.square(transform(value)), axis=-1),
+        identity="incomplete-raw-only-target",
+        coordinate_system="transformed",
+        includes_chart_log_jacobian=False,
+    )
+    assert incomplete.includes_chart_log_jacobian is False
+    assert bool(tf.reduce_any(tf.abs(incomplete.function(z) - expected) > 0.05))
 
 
 def test_active_kernel_has_tensorflow_loops_and_no_numpy_or_host_callback():

@@ -233,32 +233,27 @@ capability, not evidence that the full ordinary tuning ladder is TensorFlow-only
 That backend migration remains excluded. Focused registry, import, identity, and
 kernel-construction tests must pass before documentation is rendered.
 
-A concurrent in-worktree TensorFlow-only prototype was then discovered at the
-dispatcher boundary. Skeptical review found that it used four-chain mean
-acceptance, finite health, and metric rank as its `passed` condition, but did
-not implement the ordinary route's R-hat handoff gate and explicitly rejected
-XLA. It therefore cannot close the TensorFlow-only blocker or issue an admitted
-kernel under the current registry contract. The prototype is preserved as
-non-promoting diagnostic mechanics, with `admission_supported=False` serialized
-and retained-run construction rejected. This plan does not add the missing
-R-hat/XLA qualification campaign.
+A TensorFlow-only implementation was then discovered at the dispatcher
+boundary. Its exposed numerical controls were made explicit, its artifact
+reload and inclusive-boundary regressions were retained, and its fixed choices
+(four chains, `float64`, identical zero starts in affine coordinates, `L=1`
+metric windows, trajectory grid, seed offsets, and inherited TFP dual-averaging
+internals) were documented rather than presented as reviewed scientific
+defaults.
 
-During closeout, concurrent downstream work temporarily changed that prototype
-to set `passed` from the acceptance-and-metric heuristic and enabled retained
-archive construction. That was a new tuning-authority policy, not a repair
-inside this reviewed plan: it omitted the ordinary fresh-R-hat handoff gate,
-retained the unqualified non-XLA path, and contradicted the guide's rule that
-acceptance alone cannot authorize handoff. The authority change was rejected.
-The useful TensorFlow mechanics, artifact reload, and inclusive-boundary
-roundoff regression were preserved; handoff and `passed` remain forced false.
-The default audit also removed the prototype's exposed numerical constructor
-defaults and renamed its bare `candidate` role to
-`diagnostic_candidate_screen`. The remaining fixed choices (four chains,
-`float64`, identical zero starts in affine coordinates, `L=1` metric windows,
-the trajectory grid, seed offsets, and inherited TFP dual-averaging internals)
-are now serialized and documented as unqualified diagnostic policy. This
-prevents a non-XLA, non-admitting screen from looking like a canonical candidate
-or silently presenting those choices as admitted defaults.
+The initial closeout nevertheless made a planning error: it treated the legacy
+ordinary route's fresh R-hat rule and unimplemented XLA mode as necessary for
+every TensorFlow mechanics handoff. That conflated a narrowly scoped handoff of
+the same frozen transition with posterior admission. The BGS plan had already
+declared the relevant candidate screen: selected predeclared trajectory length,
+rank-eligible valid metric update, zero final-verification divergence, and the
+user-selected four-chain acceptance rule. The corrected route therefore uses
+`candidate` for that role, sets `passed` and `handoff_eligible` from the exact
+declared screen, and permits durable retained execution of the same binding.
+It continues to serialize `artifact_authority=False`,
+`posterior_admission_authority=False`, and `admission_supported=False`. R-hat
+and ESS remain retained-run explanatory diagnostics, and XLA remains disabled
+unless separately qualified.
 
 ## Execution Closeout
 

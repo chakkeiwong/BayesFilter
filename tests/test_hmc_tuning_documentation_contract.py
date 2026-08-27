@@ -242,6 +242,9 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
         "parameter_scales",
         "Durable ordinary replay",
         "admission_supported=False",
+        "posterior_admission_authority=False",
+        "same frozen transition",
+        "retained R-hat and ESS are explanatory",
         "short `interface_name`",
         "do not transfer to this route",
     ):
@@ -252,9 +255,10 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
     )
     assert "\\label{eq:bf-neural-force-endpoint-correction}" in chapter
     assert "artifact\\_authority" in chapter
+    assert "posterior\\_admission\\_authority" in chapter
     assert "admission\\_supported" in chapter
-    assert "sets both" in chapter and "to false" in chapter
-    assert "cannot issue a retained-kernel handoff" in chapter
+    assert "frozen mechanics" in chapter
+    assert "not posterior convergence" in chapter
 
 
 def test_examples_are_exact_listings_and_public_imports_resolve() -> None:
