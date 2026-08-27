@@ -9,6 +9,7 @@ import textwrap
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
@@ -39,11 +40,41 @@ from bayesfilter.inference import (
     run_hmc_start_bank_diagnostic,
     run_hmc_windowed_mass_stage,
 )
-from bayesfilter.inference.hmc_coordinates import transform_from_precomputed_mass_artifact
+from bayesfilter.inference.hmc_coordinates import (
+    AffineCoordinateTransform,
+    KernelState,
+    MomentumMetric,
+    PositionCovarianceEstimate,
+    WarmupTrajectoryPolicy,
+    transform_from_precomputed_mass_artifact,
+)
 from bayesfilter.inference.hmc_warmup import (
     MetricAdequacyDecision,
     compose_base_transform_with_nested_artifact,
 )
+
+
+_G1A_NO_HMC_TESTS = frozenset(
+    {
+        "test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site",
+        "test_g1a_registry_counts_logical_leaves_not_interface_hops",
+        "test_g1a_metric_boundary_seed_collision_is_repaired_before_terminal_consumer",
+        "test_g1a_v1_proposal_record_is_rejected_by_v2_contract",
+    }
+)
+
+
+@pytest.fixture(autouse=True)
+def _g1a_no_hmc_tripwire(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch):
+    if request.node.name not in _G1A_NO_HMC_TESTS:
+        return
+    import tensorflow_probability as tfp
+
+    def blocked(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("G1A_NO_HMC_TRIPWIRE")
+
+    monkeypatch.setattr(tfp.mcmc, "HamiltonianMonteCarlo", blocked)
+    monkeypatch.setattr(tfp.mcmc, "sample_chain", blocked)
 
 
 class _ToyGaussianAdapter:
@@ -2254,8 +2285,6 @@ def test_diagnostic_entry_point_refuses_existing_output_before_prerun(
             parameter_scales=np.ones(2),
         )
     assert calls == 0
-<<<<<<< HEAD
-=======
 
 
 class _P4IdentityNestedTransform:
@@ -2421,11 +2450,11 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "hmc_warmup.run_operational_windowed_warmup.metric_seed_gate.v1",
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_derivation.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_derivation.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon",
         "Call",
-        ("_seed(normalized_seed, proposal_index)",),
+        ("_g2_domain_separated_seed(",),
         0,
         "derivation",
         None,
@@ -2433,7 +2462,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         None,
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon",
         "Call",
@@ -2445,7 +2474,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         None,
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_list_pass_through.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_list_pass_through.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon",
         "Call",
@@ -2454,10 +2483,10 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "read_only_pass_through",
         None,
         None,
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2",
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_tuple_pass_through.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_tuple_pass_through.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon",
         "Call",
@@ -2466,10 +2495,10 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "read_only_pass_through",
         None,
         None,
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2",
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_tensor_construction.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_tensor_construction.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon",
         "Call",
@@ -2478,10 +2507,10 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "read_only_pass_through",
         None,
         None,
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2",
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_one_step_pass_through.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_one_step_pass_through.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon",
         "Call",
@@ -2490,10 +2519,10 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "read_only_pass_through",
         None,
         None,
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2",
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_conversion.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_conversion.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon.one_step",
         "Call",
@@ -2502,10 +2531,10 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "read_only_pass_through",
         None,
         None,
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2",
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_pass_through.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_pass_through.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon.one_step",
         "keyword",
@@ -2514,10 +2543,10 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "read_only_pass_through",
         None,
         None,
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2",
     ),
     (
-        "hmc_warmup.find_reasonable_epsilon.proposal_kernel_one_step_rng_call.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_kernel_one_step_rng_call.v2",
         "bayesfilter/inference/hmc_warmup.py",
         "find_reasonable_epsilon.one_step",
         "Call",
@@ -2526,7 +2555,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "read_only_pass_through",
         None,
         None,
-        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1",
+        "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2",
     ),
     (
         "hmc_warmup.run_operational_windowed_warmup.segment_seed_derivation.v1",
@@ -2769,11 +2798,27 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
         "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_gate.v1",
     ),
     (
-        "hmc.bootstrap.ReusableFullChainHMCRunner.run_seed_selection.v1",
+        "hmc.bootstrap.ReusableFullChainHMCRunner.runtime_input_seed_pass_through.v1",
         "bayesfilter/inference/hmc.py",
         "ReusableFullChainHMCRunner.run",
+        "Call",
+        (
+            "_validated_hmc_runtime_inputs(",
+            "config_seed=self.config.seed",
+            "seed=seed",
+        ),
+        0,
+        "read_only_pass_through",
+        None,
+        None,
+        "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_gate.v1",
+    ),
+    (
+        "hmc.bootstrap.ReusableFullChainHMCRunner.run_seed_selection.v1",
+        "bayesfilter/inference/hmc.py",
+        "_validated_hmc_runtime_inputs",
         "Assign",
-        ("seed_value = self.config.seed if seed is None else seed",),
+        ("seed_value = config_seed if seed is None else seed",),
         0,
         "read_only_pass_through",
         None,
@@ -2783,7 +2828,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     (
         "hmc.bootstrap.ReusableFullChainHMCRunner.run_seed_conversion.v1",
         "bayesfilter/inference/hmc.py",
-        "ReusableFullChainHMCRunner.run",
+        "_validated_hmc_runtime_inputs",
         "Call",
         ("tf.convert_to_tensor(seed_value, dtype=tf.int32)",),
         0,
@@ -3027,6 +3072,11 @@ _G1A_BAYESFILTER_ROOT = Path("/home/ubuntu/python/BayesFilter")
 _G1A_SOURCE_COVERAGE_MANIFEST = Path(
     "/home/ubuntu/python/MacroFinance/docs/reviews/"
     "daily_asset_midas_identifiable_multi_asset_expansion_phase_14_"
+    "g1a_seed_domain_repair_source_coverage_manifest_2026_08_25.json"
+)
+_G1A_HISTORICAL_SOURCE_COVERAGE_MANIFEST = Path(
+    "/home/ubuntu/python/MacroFinance/docs/reviews/"
+    "daily_asset_midas_identifiable_multi_asset_expansion_phase_14_"
     "g1a_seed_source_coverage_manifest_2026_08_24.json"
 )
 
@@ -3131,9 +3181,11 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
         "manifest_content_sha256",
     }
     assert payload["schema"] == (
-        "bayesfilter.hmc_g2_preboundary_seed_source_coverage.v1"
+        "bayesfilter.hmc_g2_preboundary_seed_source_coverage.v2"
     )
-    assert payload["scope"] == "g2_reachable_through_p4_boundary_only"
+    assert payload["scope"] == (
+        "g2_source_visible_named_closure_through_p4_boundary_only"
+    )
     assert payload["excluded_post_boundary"] == {
         "scope": "after_p4_boundary",
         "reason": "not_executed_or_claimed_by_g2",
@@ -3144,17 +3196,19 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
         "no_project_import": True,
         "source_files_final_before_generation": True,
         "canonical_json": True,
+        "source_visible_named_closure_only": True,
+        "dynamic_routes_nonclaim": True,
     }
 
     source_paths = {
         str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_warmup.py"):
-            "writable_g1a",
+            "seed_domain_repair_writable",
         str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_kernel_tuning.py"):
-            "writable_g1a",
+            "read_only_seed_domain_repair",
         str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc.py"):
-            "read_only_interface",
+            "read_only_seed_domain_repair",
         str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_coordinates.py"):
-            "read_only_interface",
+            "read_only_seed_domain_repair",
     }
     expected_source_files = tuple(
         sorted(
@@ -3172,6 +3226,11 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
     assert tuple(payload["source_files"]) == expected_source_files
     assert tuple(payload["sites"]) == _g1a_manifest_sites_from_final_sources()
 
+    historical_bytes = _G1A_HISTORICAL_SOURCE_COVERAGE_MANIFEST.read_bytes()
+    assert hashlib.sha256(historical_bytes).hexdigest() == (
+        "606649fde63ea8b729e2f923b5e9d257369aa1648f0bba5deaa0fc88b7ae397f"
+    )
+
     unsigned = dict(payload)
     content_digest = unsigned.pop("manifest_content_sha256")
     assert content_digest == hashlib.sha256(
@@ -3184,10 +3243,11 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
         source_text = Path(source_path).read_text(encoding="utf-8")
         assert content_digest not in source_text
         assert retained_digest not in source_text
+    assert _G1A_HISTORICAL_SOURCE_COVERAGE_MANIFEST.read_bytes() == historical_bytes
 
     site_ids = tuple(row["site_id"] for row in payload["sites"])
-    assert len(site_ids) == 60
-    assert len(set(site_ids)) == 60
+    assert len(site_ids) == 61
+    assert len(set(site_ids)) == 61
     declared_ids = {
         hmc_warmup._G2_P4_SEED_DERIVATION_SITE_ID,
         hmc_warmup._G2_P4_SEED_GATE_SITE_ID,
@@ -3212,6 +3272,16 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
         *hmc_kernel_tuning._G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS,
     }
     assert set(site_ids) == declared_ids
+    proposal_rows = tuple(
+        row for row in payload["sites"] if "proposal_seed" in row["site_id"]
+    )
+    assert proposal_rows
+    assert all(row["site_id"].endswith(".v2") for row in proposal_rows)
+    assert all(
+        row["upstream_gate_site_id"] is None
+        or row["upstream_gate_site_id"].endswith(".v2")
+        for row in proposal_rows
+    )
 
     gate_ids = {
         row["site_id"]
@@ -3419,7 +3489,12 @@ def test_g1a_registry_counts_logical_leaves_not_interface_hops() -> None:
     def consume_proposals(base_seed: tuple[int, int], base_key: str) -> int:
         consumed = 0
         for proposal_index in range(4):
-            proposal_seed = hmc_warmup._seed(base_seed, proposal_index)
+            proposal_seed = hmc_warmup._g2_domain_separated_seed(
+                base_seed,
+                base_key=base_key,
+                domain_label=hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
+                index=proposal_index,
+            )
             registry.consume(
                 derivation_site_id=(
                     hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID
@@ -3432,10 +3507,10 @@ def test_g1a_registry_counts_logical_leaves_not_interface_hops() -> None:
                 owner_qualname="find_reasonable_epsilon",
                 terminal_consumer="tensorflow_stateless_rng",
                 derivation={
-                    "kind": "warmup_index_lane",
+                    "kind": "warmup_domain_hash",
                     "base_key": base_key,
+                    "domain_label": hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
                     "index": proposal_index,
-                    "lane": 0,
                 },
                 indices=({"name": "proposal_index", "value": proposal_index},),
                 seed=proposal_seed,
@@ -3452,10 +3527,7 @@ def test_g1a_registry_counts_logical_leaves_not_interface_hops() -> None:
     )
     schedule = build_windowed_warmup_schedule(
         hmc_warmup.WindowedMassAdaptationConfig(
-            # One update window keeps this count-only fixture collision-free.
-            # The live two-window arithmetic collision has its own fail-closed
-            # regression below and must not be hidden by this schema test.
-            warmup_steps=8,
+            warmup_steps=16,
             initial_buffer=2,
             final_buffer=2,
             first_window_size=4,
@@ -3561,8 +3633,8 @@ def test_g1a_registry_counts_logical_leaves_not_interface_hops() -> None:
     ).hexdigest()
 
 
-def test_g1a_metric_boundary_seed_collision_fails_before_second_use() -> None:
-    """Lock the current two-window collision as a pre-RNG shared invalidity."""
+def test_g1a_metric_boundary_seed_collision_is_repaired_before_terminal_consumer() -> None:
+    """The v2 proposal domain removes the old collision before terminal use."""
 
     manifest_bytes = _G1A_SOURCE_COVERAGE_MANIFEST.read_bytes()
     manifest = json.loads(manifest_bytes.decode("ascii"))
@@ -3589,11 +3661,20 @@ def test_g1a_metric_boundary_seed_collision_fails_before_second_use() -> None:
     )
     root_seed = (202, 11176)
     first_metric_seed = hmc_warmup._seed(root_seed, 1, lane=3)
-    first_proposal_seed = hmc_warmup._seed(first_metric_seed, 0)
+    first_proposal_seed = hmc_warmup._g2_domain_separated_seed(
+        first_metric_seed,
+        base_key="operational_warmup/metric_boundary/01",
+        domain_label=hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
+        index=0,
+    )
+    old_affine_proposal_seed = hmc_warmup._seed(first_metric_seed, 0)
     second_metric_seed = hmc_warmup._seed(root_seed, 2, lane=3)
-    assert first_proposal_seed == second_metric_seed
+    assert old_affine_proposal_seed == second_metric_seed
+    assert first_proposal_seed != second_metric_seed
 
-    registry.consume(
+    terminal_seeds: list[tuple[int, int]] = []
+
+    terminal_seeds.append(registry.consume(
         derivation_site_id=hmc_warmup._G2_METRIC_BOUNDARY_SEED_DERIVATION_SITE_ID,
         terminal_gate_site_id=hmc_warmup._G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID,
         key="operational_warmup/metric_boundary/01",
@@ -3609,8 +3690,8 @@ def test_g1a_metric_boundary_seed_collision_fails_before_second_use() -> None:
         indices=({"name": "window_index", "value": 1},),
         seed=first_metric_seed,
         interface_hop_site_ids=hmc_warmup._G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS,
-    )
-    registry.consume(
+    ))
+    terminal_seeds.append(registry.consume(
         derivation_site_id=(
             hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID
         ),
@@ -3622,37 +3703,61 @@ def test_g1a_metric_boundary_seed_collision_fails_before_second_use() -> None:
         owner_qualname="find_reasonable_epsilon",
         terminal_consumer="tensorflow_stateless_rng",
         derivation={
-            "kind": "warmup_index_lane",
+            "kind": "warmup_domain_hash",
             "base_key": "operational_warmup/metric_boundary/01",
+            "domain_label": hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
             "index": 0,
-            "lane": 0,
         },
         indices=({"name": "proposal_index", "value": 0},),
         seed=first_proposal_seed,
         interface_hop_site_ids=(
             hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS
         ),
-    )
+    ))
+    terminal_seeds.append(registry.consume(
+        derivation_site_id=(
+            hmc_warmup._G2_METRIC_BOUNDARY_SEED_DERIVATION_SITE_ID
+        ),
+        terminal_gate_site_id=hmc_warmup._G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID,
+        key="operational_warmup/metric_boundary/02",
+        owner_file="hmc_warmup.py",
+        owner_qualname="run_operational_windowed_warmup",
+        terminal_consumer="hmc_runner_interface",
+        derivation={
+            "kind": "warmup_index_lane",
+            "base_key": "operational_warmup/root",
+            "index": 2,
+            "lane": 3,
+        },
+        indices=({"name": "window_index", "value": 2},),
+        seed=second_metric_seed,
+        interface_hop_site_ids=(
+            hmc_warmup._G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS
+        ),
+    ))
+    assert len(terminal_seeds) == 3
+    assert len(set(terminal_seeds)) == 3
+
     with pytest.raises(hmc_warmup._G2SeedRegistryError) as raised:
         registry.consume(
             derivation_site_id=(
-                hmc_warmup._G2_METRIC_BOUNDARY_SEED_DERIVATION_SITE_ID
+                hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID
             ),
-            terminal_gate_site_id=hmc_warmup._G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID,
-            key="operational_warmup/metric_boundary/02",
+            terminal_gate_site_id=hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID,
+            key="operational_warmup/metric_boundary/01/proposal/01",
             owner_file="hmc_warmup.py",
-            owner_qualname="run_operational_windowed_warmup",
-            terminal_consumer="hmc_runner_interface",
+            owner_qualname="find_reasonable_epsilon",
+            terminal_consumer="tensorflow_stateless_rng",
             derivation={
-                "kind": "warmup_index_lane",
-                "base_key": "operational_warmup/root",
-                "index": 2,
-                "lane": 3,
+                "kind": "warmup_domain_hash",
+                "base_key": "operational_warmup/metric_boundary/01",
+                "domain_label": hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
+                "index": 1,
             },
-            indices=({"name": "window_index", "value": 2},),
-            seed=second_metric_seed,
+            indices=({"name": "proposal_index", "value": 1},),
+            seed=first_proposal_seed,
             interface_hop_site_ids=(
-                hmc_warmup._G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS
+                hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS
             ),
         )
     carrier = hmc_warmup.g2_preboundary_shared_invalidity_exception(
@@ -3683,8 +3788,87 @@ def test_g1a_metric_boundary_seed_collision_fails_before_second_use() -> None:
     assert snapshot is not None
     assert snapshot["failure_code"] == "seed_registry_preboundary_duplicate"
     assert snapshot["failure_stage"] == "preboundary"
-    assert snapshot["preboundary_consumed_seed_count"] == 2
+    assert snapshot["preboundary_consumed_seed_count"] == 3
     assert snapshot["p4_seed_consumed"] is False
+
+
+def test_g1a_v1_proposal_record_is_rejected_by_v2_contract() -> None:
+    manifest_bytes = _G1A_SOURCE_COVERAGE_MANIFEST.read_bytes()
+    manifest = json.loads(manifest_bytes.decode("ascii"))
+    contracts = {
+        row["site_id"]: {
+            name: row[name]
+            for name in (
+                "site_id",
+                "source_path",
+                "owner_qualname",
+                "site_kind",
+                "terminal_consumer",
+                "registry_key_template",
+                "upstream_gate_site_id",
+            )
+        }
+        for row in manifest["sites"]
+    }
+    # Even a caller-supplied map containing the historical v1 rows cannot
+    # manufacture a semantic v1 proposal contract in the current registry.
+    old_contracts = dict(contracts)
+    for row in manifest["sites"]:
+        if "find_reasonable_epsilon.proposal_" not in row["site_id"]:
+            continue
+        old_row = dict(row)
+        old_row["site_id"] = row["site_id"][:-2] + "v1"
+        if old_row["upstream_gate_site_id"] is not None:
+            old_row["upstream_gate_site_id"] = (
+                old_row["upstream_gate_site_id"][:-2] + "v1"
+            )
+        old_contracts[old_row["site_id"]] = {
+            name: old_row[name]
+            for name in (
+                "site_id",
+                "source_path",
+                "owner_qualname",
+                "site_kind",
+                "terminal_consumer",
+                "registry_key_template",
+                "upstream_gate_site_id",
+            )
+        }
+    registry = hmc_warmup.G2PreboundarySeedUseRegistry(
+        source_coverage_artifact_sha256=hashlib.sha256(
+            manifest_bytes
+        ).hexdigest(),
+        source_site_contracts=old_contracts,
+    )
+    terminal_calls = 0
+    with pytest.raises(hmc_warmup._G2SeedRegistryError) as raised:
+        registry.consume(
+            derivation_site_id=(
+                "hmc_warmup.find_reasonable_epsilon."
+                "proposal_seed_derivation.v1"
+            ),
+            terminal_gate_site_id=(
+                "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1"
+            ),
+            key="operational_warmup/metric_boundary/01/proposal/00",
+            owner_file="hmc_warmup.py",
+            owner_qualname="find_reasonable_epsilon",
+            terminal_consumer="tensorflow_stateless_rng",
+            derivation={
+                "kind": "warmup_index_lane",
+                "base_key": "operational_warmup/metric_boundary/01",
+                "index": 0,
+                "lane": 0,
+            },
+            indices=({"name": "proposal_index", "value": 0},),
+            seed=hmc_warmup._seed((202, 11176), 0),
+            interface_hop_site_ids=tuple(
+                hop[:-2] + "v1"
+                for hop in hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS
+            ),
+        )
+    assert raised.value.failure_code == "seed_registry_source_coverage_invalid"
+    assert terminal_calls == 0
 
 
 def _p4_seed_registry() -> hmc_warmup.G2PreboundarySeedUseRegistry:
@@ -3830,8 +4014,8 @@ def _p4_operational_fixture(*, policy_id: str | None = None) -> Any:
         target_health_fn=lambda candidates: {
             "shared_invalidity_reasons": (),
             "candidate_data_invalidity_reasons": (),
-            "target_value_finite": True,
-            "target_score_finite": True,
+            "target_value_finite_count": 4,
+            "target_score_finite_count": 4,
             "target_status_failure_count": 0,
             "evaluated_draw_count": int(tf.convert_to_tensor(candidates).shape[0]),
         },
@@ -3922,6 +4106,390 @@ def test_p4_multiplier_is_explicit_private_and_propagates_without_hmc() -> None:
         serialized_config = json.dumps(configured_payload, sort_keys=True)
         assert "987654321" not in serialized_config
         assert "123456789" not in serialized_config
+
+
+def test_g1a_p4_stage_payload_recursively_redacts_seed_and_exception_details() -> None:
+    secret_seed = (987654321, 123456789)
+    reasonable = SimpleNamespace(
+        status="passed",
+        selected_step_size=0.1,
+        attempts=(
+            SimpleNamespace(
+                seed=secret_seed,
+                probe_seeds=(secret_seed,),
+                error_message="SENTINEL_ATTEMPT_SECRET /private/attempt",
+            ),
+        ),
+        qualification_source="deterministic_fixture",
+    )
+    metric_decision = SimpleNamespace(
+        outcome="candidate_metric_rejected",
+        estimator_family=None,
+        update_applied=False,
+        report={
+            "candidate_rejection_error_type": "SentinelMetricError",
+            "candidate_rejection_error_message": (
+                "SENTINEL_METRIC_SECRET /private/metric"
+            ),
+        },
+    )
+    window = SimpleNamespace(
+        window=SimpleNamespace(
+            payload=lambda: {
+                "index": 0,
+                "kind": "initial_fast",
+                "start": 0,
+                "end": 1,
+                "update_mass": False,
+            }
+        ),
+        transition_count_before_window=0,
+        transition_count_after_window=1,
+        coordinate_signature_used="coordinate",
+        metric_signature_used="metric",
+        epsilon_start=0.1,
+        epsilon_end=0.1,
+        mean_acceptance_probability=0.7,
+        binary_acceptance_rate=1.0,
+        native_divergence_status="not_collected",
+        native_divergence_count=None,
+        target_status_trace_policy="none",
+        target_status_failure_count=None,
+        max_abs_log_accept_energy_proxy=0.2,
+        step_size_upper_bound=1.0,
+        metric_decision=metric_decision,
+        next_coordinate_signature=None,
+        next_metric_signature=None,
+        state_map_residual=0.0,
+        target_value_map_residual=None,
+        target_score_map_residual=None,
+        next_reasonable_epsilon=reasonable,
+        dual_averaging_generation=1,
+        runner_generation=1,
+        runner_trace_count=1,
+        runtime_s=0.1,
+    )
+    final_kernel_state = SimpleNamespace(
+        transform=SimpleNamespace(signature="final-coordinate"),
+        momentum_metric=SimpleNamespace(signature="final-metric"),
+        epsilon=0.1,
+        trajectory_policy=SimpleNamespace(signature="trajectory"),
+    )
+    operational = SimpleNamespace(
+        status="passed",
+        metric_adaptation_status="no_metric_update",
+        algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+        route_contract_version="fixture-route-v1",
+        config=SimpleNamespace(payload=lambda: {"seed": secret_seed}),
+        initial_coordinate_signature="initial-coordinate",
+        final_kernel_state=final_kernel_state,
+        reasonable_epsilon=reasonable,
+        windows=(window,),
+        operational_metric_update_count=0,
+        every_update_used_by_later_transition=True,
+        private_start_bank_policy_id=(
+            hmc_warmup.PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+        ),
+        private_start_bank_signature="private-bank-signature",
+        engineering_probe_bank_qualification=None,
+        target_scope="p4_phase7_fixture",
+        target_status_trace_policy="none",
+        elapsed_s=0.2,
+    )
+    compatibility_payload_called = False
+
+    def forbidden_compatibility_payload() -> dict[str, object]:
+        nonlocal compatibility_payload_called
+        compatibility_payload_called = True
+        return {
+            "seed": secret_seed,
+            "trace": [987654321.0],
+            "error_type": "SentinelCompatibilityError",
+            "path": "/private/compatibility",
+        }
+
+    compatibility = SimpleNamespace(
+        passed=True,
+        initial_mass_artifact_signature="initial-compatibility-mass",
+        shrinkage_target_signature="compatibility-target",
+        final_mass_artifact_signature="final-compatibility-mass",
+        windows=(object(),),
+        mass_updates=(),
+        step_size_trace=(0.2,),
+        acceptance_trace=(0.7,),
+        final_step_size=0.2,
+        target_failure_classification={
+            "error_type": "SentinelCompatibilityError",
+            "error_message": "/private/compatibility",
+        },
+        final_mass_artifact_payload={"private_array": [987654321.0]},
+        payload=forbidden_compatibility_payload,
+    )
+    closeout_payload_called = False
+
+    def forbidden_closeout_payload() -> dict[str, object]:
+        nonlocal closeout_payload_called
+        closeout_payload_called = True
+        return {
+            "completed_windows": (
+                {
+                    "next_reasonable_epsilon": {"seed": secret_seed},
+                    "error_message": "/private/closeout",
+                },
+            )
+        }
+
+    closeout = SimpleNamespace(
+        status="partial_timeout_closeout",
+        algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+        route_contract_version="fixture-route-v1",
+        boundary="before_next_window",
+        completed_windows=(
+            {
+                "next_reasonable_epsilon": {"seed": secret_seed},
+                "error_message": "/private/closeout",
+            },
+        ),
+        planned_window_count=2,
+        completed_transition_count=1,
+        planned_transition_count=2,
+        completed_segment_count=1,
+        planned_segment_count=2,
+        boundary_payload={
+            "stop_source": "bayesfilter_public_timeout_budget",
+            "stop_reason": "public_timeout_budget_exhausted_at_window_boundary",
+            "supervision_counter_baseline": 1,
+        },
+        elapsed_s=0.2,
+        public_payload=forbidden_closeout_payload,
+    )
+    stage = object.__new__(HMCWindowedMassStageResult)
+    stage_fields = {
+        "config": HMCWindowedMassStageConfig(
+            seed=secret_seed,
+            engineering_probe_covariance_multiplier=2.0,
+        ),
+        "geometry_artifact_hash": "geometry",
+        "bootstrap_artifact_hash": "bootstrap",
+        "selected_bootstrap_kernel_hash": "selected",
+        "adapter_signature": "adapter",
+        "hmc_adapter_signature": "hmc-adapter",
+        "initial_mass_artifact_signature": "mass",
+        "target_dimension": 2,
+        "final_status": "passed",
+        "diagnostic_role": "engineering_fixture",
+        "hard_vetoes": (),
+        "diagnostics": {
+            "passed": True,
+            "runtime_s": 0.2,
+            "runtime_finite": True,
+            "public_timeout_closeout": {
+                "schema": "bayesfilter.hmc_operational_windowed_warmup_closeout.v1",
+                "completed_windows": (
+                    {
+                        "next_reasonable_epsilon": {"seed": secret_seed},
+                        "error_message": "SENTINEL_DIAGNOSTIC_SECRET /private/diagnostics",
+                    },
+                ),
+                "completed_window_count": 1,
+                "planned_window_count": 2,
+                "completed_transition_count": 1,
+                "planned_transition_count": 2,
+                "remaining_transition_count": 1,
+                "completed_segment_count": 1,
+                "planned_segment_count": 2,
+                "boundary_payload": {
+                    "stop_reason": "/private/diagnostic-stop"
+                },
+            },
+            "raw_diagnostics": {"private_seed": secret_seed},
+            "runtime_metadata": {"private_path": "/private/runtime"},
+            "hmc_error_type": "SentinelDiagnosticError",
+            "hmc_error_message": "/private/diagnostic-error",
+        },
+        "draw_capture_policy": {},
+        "warmup_draw_provenance": {},
+        "acceptance_telemetry_provenance": {},
+        "diagnostic_run_config_payload": None,
+        "windowed_config_payload": {
+            "seed": secret_seed,
+            "private_path": "/private/windowed-config",
+            "private_array": [987654321.0],
+        },
+        "windowed_mass_result": compatibility,
+        "seed_report": {"private_seed": secret_seed},
+        "diagnostic_roles": {},
+        "repair_triggers": (),
+        "operational_warmup_result": operational,
+        "operational_warmup_closeout": closeout,
+        "operational_mass_artifact": None,
+        "nonclaims": ("deterministic payload fixture only",),
+    }
+    for name, value in stage_fields.items():
+        object.__setattr__(stage, name, value)
+
+    payload = HMCWindowedMassStageResult.payload(stage)
+    serialized = json.dumps(payload, sort_keys=True)
+    assert compatibility_payload_called is False
+    assert closeout_payload_called is False
+    assert payload["windowed_config_payload"]["seed_values_exposed"] is False
+    assert payload["windowed_mass_result"]["seed_values_exposed"] is False
+    assert payload["windowed_mass_result"]["array_values_exposed"] is False
+    assert payload["adapted_mass_artifact_payload"] is None
+    assert payload["operational_warmup_closeout"]["seed_values_exposed"] is False
+    assert payload["operational_warmup_closeout"]["array_values_exposed"] is False
+    assert payload["diagnostics"]["schema"] == (
+        "bayesfilter.hmc_p4e_windowed_stage_diagnostics.v1"
+    )
+    assert payload["diagnostics"]["public_timeout_closeout"][
+        "private_closeout_signature"
+    ]
+    assert payload["diagnostics"]["seed_values_exposed"] is False
+    assert payload["diagnostics"]["array_values_exposed"] is False
+    assert payload["diagnostics"]["paths_exposed"] is False
+    assert payload["diagnostics"]["hmc_error_type"] is None
+    assert payload["diagnostics"]["hmc_error_message"] is None
+    assert payload["operational_warmup_result"]["reasonable_epsilon"][
+        "attempt_count"
+    ] == 1
+    assert payload["operational_warmup_result"]["seed_values_exposed"] is False
+    assert payload["operational_warmup_result"][
+        "exception_details_exposed"
+    ] is False
+    for secret in (
+        "987654321",
+        "123456789",
+        "SENTINEL_ATTEMPT_SECRET",
+        "SENTINEL_METRIC_SECRET",
+        "SentinelMetricError",
+        "SentinelCompatibilityError",
+        "SENTINEL_DIAGNOSTIC_SECRET",
+        "SentinelDiagnosticError",
+        "/private/",
+    ):
+        assert secret not in serialized
+
+    capture_source = inspect.getsource(
+        hmc_kernel_tuning._operational_windowed_mass_capture
+    )
+    assert "operational_outcome.public_payload()" not in capture_source
+    assert "_engineering_probe_operational_closeout_public_payload" in (
+        capture_source
+    )
+
+    poisoned_closeout = SimpleNamespace(
+        **{
+            **vars(closeout),
+            "boundary_payload": {
+                "stop_source": "SENTINEL_STOP_SOURCE",
+                "stop_reason": "/private/stop-reason",
+                "supervision_counter_baseline": 1,
+            },
+        }
+    )
+    with pytest.raises(ValueError, match="metadata is not closed"):
+        hmc_kernel_tuning._engineering_probe_operational_closeout_public_payload(
+            poisoned_closeout,
+            configured=True,
+        )
+
+    legacy_compatibility = (
+        hmc_kernel_tuning._engineering_probe_windowed_mass_result_public_payload(
+            compatibility,
+            configured=False,
+        )
+    )
+    legacy_closeout = (
+        hmc_kernel_tuning._engineering_probe_operational_closeout_public_payload(
+            closeout,
+            configured=False,
+        )
+    )
+    assert compatibility_payload_called is True
+    assert closeout_payload_called is True
+    assert legacy_compatibility["path"] == "/private/compatibility"
+    assert legacy_closeout["completed_windows"][0]["error_message"] == (
+        "/private/closeout"
+    )
+
+
+def test_g1a_p4_compatibility_failure_is_static_and_exception_redacted() -> None:
+    source = inspect.getsource(hmc_kernel_tuning._operational_windowed_mass_capture)
+    assert "legacy_v1_compatibility_projection_unavailable" in source
+    assert "type(exc).__name__" not in source
+    assert "str(exc)" not in source
+
+
+def test_g1a_early_carrier_failure_code_is_bound_to_private_snapshot() -> None:
+    registry = _p4_seed_registry()
+    error = hmc_warmup.g2_preboundary_shared_invalidity_exception(
+        registry,
+        stage="windowed_stage_seed_derivation",
+        failure_code="unexpected_builder_exception",
+    )
+    carrier = getattr(
+        error,
+        hmc_warmup._G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE,
+    )
+    setattr(
+        error,
+        hmc_warmup._G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE,
+        replace(carrier, failure_code="transform_contract_invalid"),
+    )
+
+    _capture, classification, failure_code, _private = (
+        hmc_kernel_tuning._p4_boundary_capture_from_exception(
+            error,
+            registry=registry,
+            action_tracker=hmc_warmup._G2P4BoundaryActionTracker(),
+        )
+    )
+    assert classification == "shared_implementation_invalid"
+    assert failure_code == "qualification_carrier_invalid"
+
+
+def test_g1a_operational_capture_defines_probe_config_before_handoff() -> None:
+    source = textwrap.dedent(
+        inspect.getsource(hmc_kernel_tuning._operational_windowed_mass_capture)
+    )
+    function = ast.parse(source).body[0]
+    assert isinstance(function, ast.FunctionDef)
+
+    definitions = [
+        node
+        for node in ast.walk(function)
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name)
+            and target.id == "engineering_probe_config"
+            for target in node.targets
+        )
+    ]
+    assert len(definitions) == 1
+    definition = definitions[0]
+    rendered_definition = ast.unparse(definition.value)
+    assert "Phase7EngineeringProbeBankConfig" in rendered_definition
+    assert "config.engineering_probe_covariance_multiplier" in rendered_definition
+    assert "chain_count=4" in rendered_definition
+    assert "root_seed=stage_seed" in rendered_definition
+
+    warmup_calls = [
+        node
+        for node in ast.walk(function)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "run_operational_windowed_warmup"
+    ]
+    assert len(warmup_calls) == 1
+    warmup_call = warmup_calls[0]
+    handoff = next(
+        keyword
+        for keyword in warmup_call.keywords
+        if keyword.arg == "engineering_probe_config"
+    )
+    assert isinstance(handoff.value, ast.Name)
+    assert handoff.value.id == "engineering_probe_config"
+    assert definition.lineno < warmup_call.lineno
 
 
 def test_g1a_carrier_first_candidate_and_shared_results_are_closed() -> None:
@@ -4031,6 +4599,11 @@ def test_g1a_carrier_first_candidate_and_shared_results_are_closed() -> None:
         outcome="shared_implementation_invalid",
         failure_code="target_callback_exception",
         p4_boundary_stage="rng_invoked",
+        candidate_data_invalidity_present=None,
+        target_value_finite_count=None,
+        target_score_finite_count=None,
+        target_status_failure_count=None,
+        evaluated_candidate_count=None,
     )
     shared_tracker = hmc_warmup._G2P4BoundaryActionTracker()
     shared_tracker.mark_builder_entered()
@@ -4067,6 +4640,107 @@ def test_g1a_carrier_first_candidate_and_shared_results_are_closed() -> None:
     assert "SENTINEL_OUTER_SECRET" not in serialized
     assert "/private/outer" not in serialized
     assert "windowed_stage_hmc_error" not in serialized
+
+
+def test_g1a_terminal_carrier_rejects_contradictory_scalar_facts() -> None:
+    operational = _p4_operational_fixture()
+    qualification = operational.engineering_probe_bank_qualification
+    assert qualification is not None
+
+    with pytest.raises(ValueError, match="target-health facts"):
+        replace(
+            qualification,
+            outcome="shared_implementation_invalid",
+            failure_code="target_callback_exception",
+            p4_boundary_stage="rng_invoked",
+        )
+    with pytest.raises(ValueError, match="post-boundary registry code/count"):
+        replace(qualification, post_boundary_registry_call_count=1)
+
+    valid_shared = replace(
+        qualification,
+        outcome="shared_implementation_invalid",
+        failure_code="target_callback_exception",
+        p4_boundary_stage="rng_invoked",
+        candidate_data_invalidity_present=None,
+        target_value_finite_count=None,
+        target_score_finite_count=None,
+        target_status_failure_count=None,
+        evaluated_candidate_count=None,
+    )
+    with pytest.raises(ValueError, match="geometry facts"):
+        replace(valid_shared, bank_round_trip_passed=False)
+
+    transform_exception = replace(
+        qualification,
+        outcome="shared_implementation_invalid",
+        failure_code="transform_contract_invalid",
+        p4_boundary_stage="rng_invoked",
+        bank_round_trip_passed=None,
+        pairwise_distinct=True,
+        candidate_data_invalidity_present=None,
+        target_value_finite_count=None,
+        target_score_finite_count=None,
+        target_status_failure_count=None,
+        evaluated_candidate_count=None,
+        target_health_callback_invocation_count=0,
+        target_health_callback_batch_row_count=None,
+        target_health_callback_batch_dimension=None,
+        content_signature=None,
+    )
+    assert transform_exception.bank_round_trip_passed is None
+    transform_mismatch = replace(
+        transform_exception,
+        bank_round_trip_passed=False,
+    )
+    assert transform_mismatch.bank_round_trip_passed is False
+
+    forged = object.__new__(type(qualification))
+    for name in type(qualification).__dataclass_fields__:
+        object.__setattr__(forged, name, getattr(qualification, name))
+    object.__setattr__(forged, "post_boundary_registry_call_count", 1)
+    error = ValueError("SENTINEL_FORGED_CARRIER /private/forged")
+    setattr(
+        error,
+        hmc_warmup._PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
+        forged,
+    )
+    assert (
+        hmc_warmup.engineering_probe_bank_qualification_payload_from_exception(
+            error
+        )
+        is None
+    )
+
+    valid_score_failure = replace(
+        qualification,
+        outcome="candidate_policy_instance_invalid",
+        failure_code="target_score_nonfinite",
+        target_score_finite_count=3,
+    )
+    valid_error = ValueError("schema-valid terminal carrier")
+    setattr(
+        valid_error,
+        hmc_warmup._PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
+        valid_score_failure,
+    )
+    assert (
+        hmc_warmup.engineering_probe_bank_qualification_payload_from_exception(
+            valid_error
+        )["target_score_finite_count"]
+        == 3
+    )
+    object.__setattr__(
+        valid_score_failure,
+        "target_score_finite_count",
+        2,
+    )
+    assert (
+        hmc_warmup.engineering_probe_bank_qualification_payload_from_exception(
+            valid_error
+        )
+        is None
+    )
 
 
 def test_g1a_resigned_malformed_private_evidence_invalidates_carrier() -> None:
@@ -4314,6 +4988,11 @@ def test_g1a_complete_windowed_stage_bypasses_generic_classifier(
             outcome="shared_implementation_invalid",
             failure_code="target_callback_exception",
             p4_boundary_stage="rng_invoked",
+            candidate_data_invalidity_present=None,
+            target_value_finite_count=None,
+            target_score_finite_count=None,
+            target_status_failure_count=None,
+            evaluated_candidate_count=None,
         )
     boundary = carrier.public_payload()
     failure_code = str(boundary["failure_code"])
@@ -4652,4 +5331,3 @@ def test_phase7_initial_state_rejects_stale_config_and_seed_lineage() -> None:
             verification_adapter=_P4NestedAdapter("p4-verification-adapter"),
             verification_hmc_signature="p4-verification-adapter",
         )
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)

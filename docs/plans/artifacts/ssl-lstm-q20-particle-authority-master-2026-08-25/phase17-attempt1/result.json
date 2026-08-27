@@ -1,0 +1,110 @@
+{
+  "arms": {
+    "M1": {
+      "claimed_target": "Acevedo second-order corrected ETPF",
+      "classification": "wrong_relative_to_named_etpf_source_identity",
+      "computed_quantity": "affine Cholesky finite-cloud mean/covariance match",
+      "relation": "different",
+      "required_operations_present": {
+        "letf_transport_matrix_D": false,
+        "optimal_transport_or_sinkhorn": false,
+        "riccati_correction": false
+      },
+      "scaffold_status": "validity_not_rejected_for_explicit_affine_moment_scaffold",
+      "source_anchor": "Acevedo et al. equations 16,20,26,42-44,48-57"
+    },
+    "M2": {
+      "claimed_target": "Ebeigbe et al. generalized unscented transform",
+      "classification": "wrong_relative_to_named_genut_source_identity",
+      "computed_quantity": "symmetric 2d+1 mean/covariance unscented rule",
+      "dynamic_moment_receipt": {
+        "maximum_fourth_moment_residual": 119.54941759822418,
+        "maximum_third_moment_residual": 32.19762348451181,
+        "sigma_marginal_third_central": [
+          0.0,
+          0.0,
+          -1.942890293094024e-16,
+          -1.7763568394002505e-15
+        ],
+        "source_marginal_third_central": [
+          -32.19762348451181,
+          21.755119974372832,
+          -0.24586918547040787,
+          -6.820508421963204
+        ]
+      },
+      "relation": "different_for_measured_nonzero_skewness",
+      "required_operations_present": {
+        "asymmetric_sigma_offsets": false,
+        "marginal_kurtosis_input": false,
+        "marginal_skewness_input": false
+      },
+      "scaffold_status": "validity_not_rejected_for_explicit_symmetric_ut_scaffold",
+      "source_anchor": "Ebeigbe et al. selected diagonal skewness/kurtosis contract"
+    },
+    "M3": {
+      "claimed_target": "Li-Coates invertible LEDH-PFPF proposal",
+      "classification": "wrong_relative_to_named_ledh_pfpf_source_identity",
+      "computed_quantity": "single fixed affine map and tautological log-density comparison",
+      "relation": "different",
+      "required_operations_present": {
+        "covariance_lifecycle": false,
+        "pre_and_post_flow_target_terms": false,
+        "pseudo_time_step_product": false
+      },
+      "scaffold_status": "explicit_affine_density_scaffold_only",
+      "source_anchor": "Li-Coates equations 16,19,20 and Algorithm 1"
+    },
+    "M4": {
+      "claimed_target": "full second-order ET-PF comparator",
+      "classification": "wrong_relative_to_named_full_etpf_identity",
+      "computed_quantity": "alias of M1 affine finite-moment scaffold",
+      "relation": "different",
+      "required_operations_present": {
+        "independent_filter_route": false,
+        "reference_filter_comparison": false
+      },
+      "scaffold_status": "descriptive_affine_comparator_only",
+      "source_anchor": "project M4 contract in reviewed modular plan"
+    }
+  },
+  "authority": {
+    "mode_axis": 2,
+    "particle_count": 300,
+    "pilot_sha256": "3a1c2be3c1398270775cf639c261b44f71e99fc9d4d8f252b0a348a6cad794fc",
+    "protocol_hash": "71bdd9caf2d4ca98598ebaf011707a4c6d2f0369abe95f932ff56d3d484cc05f",
+    "root": "docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase6-attempt9-metadata-n300-seed2401",
+    "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278"
+  },
+  "engineering_ledger": "audit runner and immutable input/hash gates passed",
+  "nonclaims": [
+    "absence in the bounded q20 runner is not absence elsewhere in the repository",
+    "the audit does not reject ETPF, GenUT, LEDH-PFPF, or ET-PF as scientific ideas",
+    "the audit does not establish posterior correctness, IID sampling, HMC readiness, or default status"
+  ],
+  "numerical_ledger": "measured M2 third-moment mismatch is finite and nonzero",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_particle_authority_method_identity_audit_2026_08_25.py --authority-root docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase6-attempt9-metadata-n300-seed2401 --output-root docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase17-attempt1",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "gpu_intentionally_hidden": true,
+    "jit_compile": false,
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "role": "cpu_reference_method_identity_audit",
+    "tensorflow": "2.20.0",
+    "wall_seconds": 0.32977782998932526
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.particle_authority.method_identity_audit.v1",
+  "scientific_ledger": "no current q20 modular arm implements its named source method",
+  "source_hashes": {
+    "acevedo": "40c3737d60e74bfb6d187b43c6b97ef37344c77313178964f5d355f0edd6528d",
+    "audit_runner": "9d5015487f3eab71e1f1b02667ed7dc8121d2697ab6e39e2ef17674040d1bb98",
+    "genut": "82729fd80403d50f35f1c5ba072f7caeac20449e39dae91a9d67dab0316a811b",
+    "li_coates": "6161a17b82a0bdacce1e51213cfadb1d67c59fb9bb670a47b80df45ecb32610f",
+    "modular_runner": "b45d589eb48df2b50691ba38aa7b9f4ea20fbe16b9b6f520f034cb4072943ab2",
+    "plan": "8e2e3e0a4a7fa9e09c875f6d3f28710b2b60a9cfa3bfa34b42abfc6fc69bc7ba"
+  },
+  "status": "PASS_METHOD_IDENTITY_AUDIT_REPAIR_REQUIRED"
+}

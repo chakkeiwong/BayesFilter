@@ -2,7 +2,7 @@
 
 Date: 2026-08-24  
 Amended: 2026-08-25  
-Status: `AMENDED_AFTER_FABLE_REVIEW_AWAITING_NEW_GROK_REPLY`  
+Status: `BOTH_REVIEWS_RECEIVED_DOCUMENTARY_PLAN_CLOSED`  
 Scope: q=20 SSL-LSTM proposal generation, filtering, replay, and NeuTra training support
 
 ## Executive decision
@@ -504,10 +504,10 @@ reviewed the pre-amendment plan and returned `VERDICT: AGREE` with two minor
 repairs: freeze/hash the claim-run tempering protocol, and state the ETPF
 moment constraints explicitly. Those repairs are applied above.
 
-The requested new Grok reply path
-`docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-modular-etpf-genut-ledh-grok-review-reply-2026-08-24.md`
-is not present in the workspace. The older dual-cap Grok review is documentary
-evidence about the previous plan, not a review of this amended plan, so it is
-not silently counted as a new Grok verdict. This plan therefore remains
-`AMENDED_AFTER_FABLE_REVIEW_AWAITING_NEW_GROK_REPLY`; no implementation-phase
-plan or runtime work is authorized until the amended text is reviewed.
+The requested Grok reply is now preserved at
+`docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-modular-etpf-genut-ledh-grok-review-reply-2026-08-24.md`.
+It reviewed the pre-amendment documentary plan and returned `VERDICT: AGREE`;
+the Fable repairs above are recorded as strengthening repairs. Neither review
+authorizes runtime work or certifies implementation. Runtime execution is
+controlled by the dated master program and its phase gates:
+`docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-master-program-2026-08-25.md`.

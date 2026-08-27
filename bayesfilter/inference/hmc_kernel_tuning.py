@@ -95,12 +95,9 @@ from bayesfilter.inference.hmc_coordinates import (
 )
 from bayesfilter.inference.hmc_warmup import (
     G2PreboundarySeedUseRegistry,
+    OPERATIONAL_WARMUP_NONCLAIMS,
     OperationalWindowedWarmupCloseout,
     OperationalWindowedWarmupResult,
-<<<<<<< HEAD
-    compose_base_transform_with_nested_artifact,
-    compose_operational_transform_in_base_coordinates,
-=======
     PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
     Phase7EngineeringProbeBankConfig,
     _G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS_CONTRACT,
@@ -116,9 +113,9 @@ from bayesfilter.inference.hmc_warmup import (
     g2_preboundary_shared_invalidity_exception,
     g2_preboundary_shared_invalidity_payload_from_exception,
     g2_seed_private_evidence_from_exception,
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
     run_operational_windowed_warmup,
     start_bank_qualification_payload_from_exception,
+    _base_adapter_signature,
     _validate_start_bank_qualification_payload,
 )
 
@@ -186,6 +183,510 @@ def _validate_metric_update_requirement(value: Any) -> str:
         allowed = ", ".join(sorted(_METRIC_UPDATE_REQUIREMENTS))
         raise ValueError(f"metric_update_requirement must be one of: {allowed}")
     return requirement
+
+
+def _validate_engineering_probe_covariance_multiplier(
+    value: Any,
+) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (bool, np.bool_)):
+        raise ValueError(
+            "engineering_probe_covariance_multiplier must be positive and finite"
+        )
+    multiplier = float(value)
+    if not np.isfinite(multiplier) or multiplier <= 0.0:
+        raise ValueError(
+            "engineering_probe_covariance_multiplier must be positive and finite"
+        )
+    return multiplier
+
+
+def _engineering_probe_config_public_payload(
+    multiplier: float | None,
+) -> Mapping[str, Any]:
+    configured = multiplier is not None
+    return {
+        "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID if configured else None,
+        "configured": configured,
+        "private_config_signature": None
+        if multiplier is None
+        else stable_config_hash(
+            {
+                "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+                "covariance_multiplier": multiplier,
+            }
+        ),
+        "covariance_multiplier_exposed": False,
+        "seed_values_exposed": False,
+        "raw_values_exposed": False,
+    }
+
+
+def _engineering_probe_seed_signature(seed: Sequence[int]) -> str:
+    """Hash a P4 seed lineage value without exposing its two integers."""
+
+    return stable_config_hash(
+        {
+            "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+            "seed": tuple(int(item) for item in seed),
+        }
+    )
+
+
+def _engineering_probe_seed_public_payload(
+    seed: Sequence[int],
+    *,
+    configured: bool,
+) -> Mapping[str, Any]:
+    """Expose legacy seeds unchanged and bind P4 seeds without revealing them."""
+
+    if not configured:
+        return {"seed": tuple(int(item) for item in seed)}
+    return {
+        "seed": None,
+        "seed_signature": _engineering_probe_seed_signature(seed),
+        "seed_values_exposed": False,
+    }
+
+
+def _engineering_probe_seed_report_public_payload(
+    seed_report: Mapping[str, Any],
+    *,
+    configured: bool,
+) -> Mapping[str, Any]:
+    if not configured:
+        return dict(seed_report)
+    return {
+        "seed_values_exposed": False,
+        "seed_lineage_signature": stable_config_hash(
+            {
+                "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
+                "seed_report": dict(seed_report),
+            }
+        ),
+        "seed_owner": "BayesFilter",
+    }
+
+
+def _engineering_probe_diagnostic_config_public_payload(
+    payload: Mapping[str, Any] | None,
+    *,
+    configured: bool,
+) -> Mapping[str, Any] | None:
+    """Hide the derived HMC diagnostic seed from a P4 public stage payload."""
+
+    if payload is None or not configured:
+        return None if payload is None else dict(payload)
+    public = dict(payload)
+    seed = public.pop("seed", None)
+    if seed is None:
+        raise ValueError("configured P4 diagnostic payload must carry a seed")
+    public.update(
+        {
+            "seed": None,
+            "seed_signature": _engineering_probe_seed_signature(seed),
+            "seed_values_exposed": False,
+        }
+    )
+    return public
+
+
+def _engineering_probe_windowed_config_public_payload(
+    payload: Mapping[str, Any],
+    *,
+    configured: bool,
+) -> Mapping[str, Any]:
+    """Keep a configured P4 compatibility config private behind its digest."""
+
+    if not configured:
+        return dict(payload)
+    return {
+        "schema": "bayesfilter.hmc_p4e_windowed_config_summary.v1",
+        "private_config_signature": stable_config_hash(dict(payload)),
+        "seed_values_exposed": False,
+        "raw_values_exposed": False,
+        "exception_details_exposed": False,
+    }
+
+
+def _engineering_probe_windowed_mass_result_public_payload(
+    result: WindowedMassAdaptationResult | None,
+    *,
+    configured: bool,
+) -> Mapping[str, Any] | None:
+    """Allowlist compatibility evidence without exposing traces or artifacts."""
+
+    if result is None:
+        return None
+    if not configured:
+        return result.payload()
+    return {
+        "schema": "bayesfilter.hmc_p4e_windowed_mass_compatibility_summary.v1",
+        "passed": bool(result.passed),
+        "initial_mass_artifact_signature": result.initial_mass_artifact_signature,
+        "shrinkage_target_signature": result.shrinkage_target_signature,
+        "final_mass_artifact_signature": result.final_mass_artifact_signature,
+        "window_count": len(result.windows),
+        "mass_update_count": len(result.mass_updates),
+        "step_size_count": len(result.step_size_trace),
+        "acceptance_count": len(result.acceptance_trace),
+        "final_step_size": result.final_step_size,
+        "target_failure_present": result.target_failure_classification is not None,
+        "seed_values_exposed": False,
+        "raw_values_exposed": False,
+        "array_values_exposed": False,
+        "exception_details_exposed": False,
+    }
+
+
+def _engineering_probe_operational_closeout_public_payload(
+    result: OperationalWindowedWarmupCloseout,
+    *,
+    configured: bool,
+) -> Mapping[str, Any]:
+    """Publish only counters and fixed stop metadata for a P4 closeout."""
+
+    if not configured:
+        return result.public_payload()
+    expected_stop_reasons = {
+        "before_first_window": "public_timeout_budget_exhausted_at_window_boundary",
+        "before_next_window": "public_timeout_budget_exhausted_at_window_boundary",
+        "before_next_segment": "public_timeout_budget_exhausted_before_next_segment",
+    }
+    stop_source = result.boundary_payload.get("stop_source")
+    stop_reason = result.boundary_payload.get("stop_reason")
+    supervision_baseline = result.boundary_payload.get(
+        "supervision_counter_baseline"
+    )
+    if (
+        result.boundary not in expected_stop_reasons
+        or stop_source != "bayesfilter_public_timeout_budget"
+        or stop_reason != expected_stop_reasons[result.boundary]
+        or type(supervision_baseline) is not int
+        or supervision_baseline < 0
+    ):
+        raise ValueError("configured P4 closeout metadata is not closed")
+    return {
+        "schema": "bayesfilter.hmc_p4e_operational_warmup_closeout.v1",
+        "status": result.status,
+        "algorithm_id": result.algorithm_id,
+        "route_contract_version": result.route_contract_version,
+        "boundary": result.boundary,
+        "completed_window_count": len(result.completed_windows),
+        "planned_window_count": result.planned_window_count,
+        "completed_transition_count": result.completed_transition_count,
+        "planned_transition_count": result.planned_transition_count,
+        "remaining_transition_count": (
+            result.planned_transition_count - result.completed_transition_count
+        ),
+        "completed_segment_count": result.completed_segment_count,
+        "planned_segment_count": result.planned_segment_count,
+        "stop_source": stop_source,
+        "stop_reason": stop_reason,
+        "supervision_counter_baseline": supervision_baseline,
+        "elapsed_s": result.elapsed_s,
+        "completed_warmup_result": False,
+        "private_start_bank_exposed": False,
+        "seed_values_exposed": False,
+        "raw_values_exposed": False,
+        "array_values_exposed": False,
+        "paths_exposed": False,
+        "exception_details_exposed": False,
+    }
+
+
+_ENGINEERING_PROBE_BOUNDARY_PUBLIC_KEYS = (
+    "schema",
+    "policy_id",
+    "evidence_role",
+    "promotion_role",
+    "adaptation_policy",
+    "config_signature",
+    "position_covariance_estimate_signature",
+    "covariance_signature",
+    "estimate_covariance_signature_equal",
+    "transform_signature",
+    "p4_transform_signature",
+    "transform_p4_signature_equal",
+    "metric_signature",
+    "adaptation_generation",
+    "applied_metric_update_count",
+    "generation_update_count_equal",
+    "target_signature",
+    "dimension",
+    "candidate_count",
+    "derived_seed_signature",
+    "source_coverage_artifact_sha256",
+    "seed_registry_evidence_kind",
+    "seed_registry_schema",
+    "seed_registry_evidence_signature",
+    "seed_preboundary_consumed_count",
+    "registered_entry_count",
+    "consumed_entry_count",
+    "p4_distinct_from_preboundary_seeds",
+    "p4_seed_consumed",
+    "post_boundary_registry_call_count",
+    "target_health_callback_invocation_count",
+    "target_health_callback_batch_row_count",
+    "target_health_callback_batch_dimension",
+    "content_signature",
+    "endpoint_round_trip_passed",
+    "bank_round_trip_passed",
+    "pairwise_distinct",
+    "candidate_data_invalidity_present",
+    "target_value_finite_count",
+    "target_score_finite_count",
+    "target_status_failure_count",
+    "evaluated_candidate_count",
+    "outcome",
+    "failure_code",
+    "stage",
+    "p4_boundary_stage",
+    "p4_builder_entered",
+    "p4_rng_batch_invoked",
+    "final_lineage_available",
+    "raw_values_exposed",
+    "paths_exposed",
+    "seed_values_exposed",
+    "covariance_multiplier_exposed",
+    "pairwise_distances_exposed",
+    "reports_posterior_convergence",
+    "nonclaims",
+)
+
+
+def _engineering_probe_timeout_diagnostics_public_payload(
+    payload: Mapping[str, Any] | None,
+) -> Mapping[str, Any] | None:
+    """Bind a timeout receipt without republishing either legacy nested copy."""
+
+    if payload is None:
+        return None
+    if not isinstance(payload, Mapping):
+        raise ValueError("configured P4 timeout diagnostics must be a mapping")
+    counts: dict[str, int | None] = {}
+    for name in (
+        "completed_window_count",
+        "planned_window_count",
+        "completed_transition_count",
+        "planned_transition_count",
+        "remaining_transition_count",
+        "completed_segment_count",
+        "planned_segment_count",
+    ):
+        value = payload.get(name)
+        counts[name] = value if type(value) is int and value >= 0 else None
+    return {
+        "schema": "bayesfilter.hmc_p4e_timeout_diagnostics_summary.v1",
+        **counts,
+        "private_closeout_signature": stable_config_hash(dict(payload)),
+        "seed_values_exposed": False,
+        "raw_values_exposed": False,
+        "array_values_exposed": False,
+        "paths_exposed": False,
+        "exception_details_exposed": False,
+    }
+
+
+def _engineering_probe_stage_diagnostics_public_payload(
+    payload: Mapping[str, Any],
+    *,
+    configured: bool,
+) -> Mapping[str, Any]:
+    """Publish a closed scalar P4 diagnostic summary; retain legacy behavior."""
+
+    if not configured:
+        return payload
+    boundary = payload.get("engineering_probe_boundary")
+    if boundary is not None and not isinstance(boundary, Mapping):
+        raise ValueError("configured P4 boundary diagnostics must be a mapping")
+    public_boundary = (
+        None
+        if boundary is None
+        else {
+            key: boundary[key]
+            for key in _ENGINEERING_PROBE_BOUNDARY_PUBLIC_KEYS
+            if key in boundary
+        }
+    )
+
+    def strict_scalar(name: str, allowed_types: tuple[type, ...]) -> Any:
+        value = payload.get(name)
+        return value if value is None or type(value) in allowed_types else None
+
+    return {
+        "schema": "bayesfilter.hmc_p4e_windowed_stage_diagnostics.v1",
+        "passed": strict_scalar("passed", (bool,)),
+        "runtime_s": strict_scalar("runtime_s", (int, float)),
+        "runtime_finite": strict_scalar("runtime_finite", (bool,)),
+        "finite_sample_count": strict_scalar("finite_sample_count", (int,)),
+        "nonfinite_sample_count": strict_scalar(
+            "nonfinite_sample_count", (int,)
+        ),
+        "windowed_mass_passed": strict_scalar(
+            "windowed_mass_passed", (bool,)
+        ),
+        "candidate_step_size": strict_scalar(
+            "candidate_step_size", (int, float)
+        ),
+        "engineering_probe_boundary": public_boundary,
+        "p4_private_seed_evidence_available": strict_scalar(
+            "p4_private_seed_evidence_available", (bool,)
+        ),
+        "required_operational_metric_update_missing": strict_scalar(
+            "required_operational_metric_update_missing", (bool,)
+        ),
+        "public_timeout_closeout": (
+            _engineering_probe_timeout_diagnostics_public_payload(
+                payload.get("public_timeout_closeout")
+            )
+        ),
+        "hmc_error_type": None,
+        "hmc_error_message": None,
+        "windowed_mass_error_type": None,
+        "windowed_mass_error_message": None,
+        "private_diagnostics_signature": stable_config_hash(dict(payload)),
+        "seed_values_exposed": False,
+        "raw_values_exposed": False,
+        "array_values_exposed": False,
+        "paths_exposed": False,
+        "exception_details_exposed": False,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+    }
+
+
+def _engineering_probe_reasonable_epsilon_public_payload(
+    result: Any,
+) -> Mapping[str, Any]:
+    """Summarize a P4 epsilon bracket without publishing its RNG leaves."""
+
+    return {
+        "status": result.status,
+        "selected_step_size": result.selected_step_size,
+        "attempt_count": len(result.attempts),
+        "qualification_source": result.qualification_source,
+        "diagnostic_role": "reasonable_epsilon_engineering_bracket",
+        "seed_values_exposed": False,
+        "exception_details_exposed": False,
+    }
+
+
+def _engineering_probe_operational_window_public_payload(
+    window: Any,
+) -> Mapping[str, Any]:
+    """Allowlist one P4 warmup-window summary and omit private error reports."""
+
+    metric_decision = window.metric_decision
+    return {
+        "window": window.window.payload(),
+        "transition_count_before_window": window.transition_count_before_window,
+        "transition_count_after_window": window.transition_count_after_window,
+        "coordinate_signature_used": window.coordinate_signature_used,
+        "metric_signature_used": window.metric_signature_used,
+        "epsilon_start": window.epsilon_start,
+        "epsilon_end": window.epsilon_end,
+        "mean_acceptance_probability": window.mean_acceptance_probability,
+        "binary_acceptance_rate": window.binary_acceptance_rate,
+        "native_divergence_status": window.native_divergence_status,
+        "native_divergence_count": window.native_divergence_count,
+        "target_status_trace_policy": window.target_status_trace_policy,
+        "target_status_failure_count": window.target_status_failure_count,
+        "max_abs_log_accept_energy_proxy": window.max_abs_log_accept_energy_proxy,
+        "step_size_upper_bound": window.step_size_upper_bound,
+        "metric_decision": None
+        if metric_decision is None
+        else {
+            "outcome": metric_decision.outcome,
+            "estimator_family": metric_decision.estimator_family,
+            "update_applied": metric_decision.update_applied,
+            "exception_details_exposed": False,
+        },
+        "next_coordinate_signature": window.next_coordinate_signature,
+        "next_metric_signature": window.next_metric_signature,
+        "state_map_residual": window.state_map_residual,
+        "target_value_map_residual": window.target_value_map_residual,
+        "target_score_map_residual": window.target_score_map_residual,
+        "next_reasonable_epsilon": None
+        if window.next_reasonable_epsilon is None
+        else _engineering_probe_reasonable_epsilon_public_payload(
+            window.next_reasonable_epsilon
+        ),
+        "dual_averaging_generation": window.dual_averaging_generation,
+        "runner_generation": window.runner_generation,
+        "runner_trace_count": window.runner_trace_count,
+        "runtime_s": window.runtime_s,
+        "raw_states_exposed": False,
+        "seed_values_exposed": False,
+        "exception_details_exposed": False,
+    }
+
+
+def _engineering_probe_operational_warmup_public_payload(
+    result: OperationalWindowedWarmupResult,
+    *,
+    configured: bool,
+) -> Mapping[str, Any]:
+    """Keep legacy output unchanged and make the P4 tree recursively private."""
+
+    if not configured:
+        return result.public_payload()
+    qualification = result.engineering_probe_bank_qualification
+    return {
+        "schema": "bayesfilter.hmc_operational_windowed_warmup.v2",
+        "status": result.status,
+        "metric_adaptation_status": result.metric_adaptation_status,
+        "algorithm_id": result.algorithm_id,
+        "route_contract_version": result.route_contract_version,
+        "config": {
+            "schema": "bayesfilter.hmc_p4e_private_warmup_config.v1",
+            "signature": stable_config_hash(result.config.payload()),
+            "seed_values_exposed": False,
+            "raw_values_exposed": False,
+        },
+        "initial_coordinate_signature": result.initial_coordinate_signature,
+        "final_coordinate_signature": result.final_kernel_state.transform.signature,
+        "final_metric_signature": result.final_kernel_state.momentum_metric.signature,
+        "final_epsilon": result.final_kernel_state.epsilon,
+        "trajectory_policy_signature": (
+            result.final_kernel_state.trajectory_policy.signature
+        ),
+        "reasonable_epsilon": (
+            _engineering_probe_reasonable_epsilon_public_payload(
+                result.reasonable_epsilon
+            )
+        ),
+        "windows": tuple(
+            _engineering_probe_operational_window_public_payload(window)
+            for window in result.windows
+        ),
+        "operational_metric_update_count": result.operational_metric_update_count,
+        "every_update_used_by_later_transition": (
+            result.every_update_used_by_later_transition
+        ),
+        "private_start_bank": {
+            "schema": "bayesfilter.hmc_private_start_bank.v2",
+            "policy_id": result.private_start_bank_policy_id,
+            "signature": result.private_start_bank_signature,
+            "count": 4,
+            "engineering_probe_qualification": None
+            if qualification is None
+            else qualification.public_payload(),
+            "raw_values_exposed": False,
+            "paths_exposed": False,
+            "seed_values_exposed": False,
+        },
+        "seed_root": None,
+        "target_scope": result.target_scope,
+        "target_status_trace_policy": result.target_status_trace_policy,
+        "elapsed_s": result.elapsed_s,
+        "seed_values_exposed": False,
+        "exception_details_exposed": False,
+        "reports_posterior_convergence": False,
+        "nonclaims": OPERATIONAL_WARMUP_NONCLAIMS,
+    }
+
 
 _OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY = "initial_only"
 _OPERATIONAL_EVIDENCE_POLICY_ONE_DOUBLING = "one_doubling"
@@ -2134,6 +2635,7 @@ class HMCWindowedMassStageConfig:
     target_status_trace_policy: str = "none"
     mass_policy: str = "windowed_adaptive"
     metric_update_requirement: str = "allow_valid_incumbent"
+    engineering_probe_covariance_multiplier: float | None = None
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
     staged_timeout_policy: HMCStagedTimeoutPolicy | None = None
@@ -2198,6 +2700,13 @@ class HMCWindowedMassStageConfig:
             "metric_update_requirement",
             metric_requirement,
         )
+        object.__setattr__(
+            self,
+            "engineering_probe_covariance_multiplier",
+            _validate_engineering_probe_covariance_multiplier(
+                self.engineering_probe_covariance_multiplier
+            ),
+        )
         timeout_budget = (
             None
             if self.public_timeout_budget_s is None
@@ -2260,13 +2769,19 @@ class HMCWindowedMassStageConfig:
         return {
             "algorithm_id": self.algorithm_id,
             "target_accept_prob": self.target_accept_prob,
-            "seed": self.seed,
+            **_engineering_probe_seed_public_payload(
+                self.seed,
+                configured=self.engineering_probe_covariance_multiplier is not None,
+            ),
             "chain_execution_mode": self.chain_execution_mode,
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "mass_policy": self.mass_policy,
             "metric_update_requirement": self.metric_update_requirement,
+            "engineering_probe_bank": _engineering_probe_config_public_payload(
+                self.engineering_probe_covariance_multiplier
+            ),
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": (
                 self.public_timeout_started_perf_counter_s
@@ -2530,6 +3045,9 @@ class HMCWindowedMassStageResult:
         return stable_config_hash(self.payload())
 
     def payload(self) -> Mapping[str, Any]:
+        engineering_probe_configured = (
+            self.config.engineering_probe_covariance_multiplier is not None
+        )
         return {
             "schema": "bayesfilter.hmc_windowed_mass_stage.v1",
             "config": self.config.payload(),
@@ -2545,28 +3063,57 @@ class HMCWindowedMassStageResult:
             "diagnostic_role": self.diagnostic_role,
             "hard_vetoes": self.hard_vetoes,
             "repair_triggers": self.repair_triggers,
-            "diagnostics": self.diagnostics,
+            "diagnostics": _engineering_probe_stage_diagnostics_public_payload(
+                self.diagnostics,
+                configured=engineering_probe_configured,
+            ),
             "draw_capture_policy": self.draw_capture_policy,
             "warmup_draw_provenance": self.warmup_draw_provenance,
             "acceptance_telemetry_provenance": self.acceptance_telemetry_provenance,
-            "diagnostic_run_config_payload": self.diagnostic_run_config_payload,
-            "windowed_config_payload": self.windowed_config_payload,
-            "windowed_mass_result": None
-            if self.windowed_mass_result is None
-            else self.windowed_mass_result.payload(),
+            "diagnostic_run_config_payload": (
+                _engineering_probe_diagnostic_config_public_payload(
+                    self.diagnostic_run_config_payload,
+                    configured=engineering_probe_configured,
+                )
+            ),
+            "windowed_config_payload": (
+                _engineering_probe_windowed_config_public_payload(
+                    self.windowed_config_payload,
+                    configured=engineering_probe_configured,
+                )
+            ),
+            "windowed_mass_result": (
+                _engineering_probe_windowed_mass_result_public_payload(
+                    self.windowed_mass_result,
+                    configured=engineering_probe_configured,
+                )
+            ),
             "operational_warmup_result": None
             if self.operational_warmup_result is None
-            else self.operational_warmup_result.public_payload(),
+            else _engineering_probe_operational_warmup_public_payload(
+                self.operational_warmup_result,
+                configured=engineering_probe_configured,
+            ),
             "operational_warmup_closeout": None
             if self.operational_warmup_closeout is None
-            else self.operational_warmup_closeout.public_payload(),
+            else _engineering_probe_operational_closeout_public_payload(
+                self.operational_warmup_closeout,
+                configured=engineering_probe_configured,
+            ),
             "operational_mass_artifact_available": (
                 self.operational_mass_artifact is not None
             ),
-            "adapted_mass_artifact_payload": self.adapted_mass_artifact_payload,
+            "adapted_mass_artifact_payload": (
+                None
+                if engineering_probe_configured
+                else self.adapted_mass_artifact_payload
+            ),
             "adapted_mass_artifact_signature": self.adapted_mass_artifact_signature,
             "candidate_step_size": self.candidate_step_size,
-            "seed_report": self.seed_report,
+            "seed_report": _engineering_probe_seed_report_public_payload(
+                self.seed_report,
+                configured=engineering_probe_configured,
+            ),
             "diagnostic_roles": self.diagnostic_roles,
             "passed": self.passed,
             "reports_fixed_mass_step_tuning": False,
@@ -5213,6 +5760,7 @@ class HMCTuneVerifyRepairLoopConfig:
     target_status_trace_policy: str = "none"
     mass_policy: str = "windowed_adaptive"
     metric_update_requirement: str = "allow_valid_incumbent"
+    engineering_probe_covariance_multiplier: float | None = None
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
     verification_chunk_max_results: int | None = None
@@ -5401,6 +5949,13 @@ class HMCTuneVerifyRepairLoopConfig:
             "metric_update_requirement",
             _validate_metric_update_requirement(self.metric_update_requirement),
         )
+        object.__setattr__(
+            self,
+            "engineering_probe_covariance_multiplier",
+            _validate_engineering_probe_covariance_multiplier(
+                self.engineering_probe_covariance_multiplier
+            ),
+        )
         if (
             self.metric_update_requirement == "require_operational_update"
             and mass_policy == "fixed_identity"
@@ -5528,13 +6083,19 @@ class HMCTuneVerifyRepairLoopConfig:
             "terminal_phase6_repair_extra_attempts": (
                 self.terminal_phase6_repair_extra_attempts
             ),
-            "seed": self.seed,
+            **_engineering_probe_seed_public_payload(
+                self.seed,
+                configured=self.engineering_probe_covariance_multiplier is not None,
+            ),
             "chain_execution_mode": self.chain_execution_mode,
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "mass_policy": self.mass_policy,
             "metric_update_requirement": self.metric_update_requirement,
+            "engineering_probe_bank": _engineering_probe_config_public_payload(
+                self.engineering_probe_covariance_multiplier
+            ),
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": self.public_timeout_started_perf_counter_s,
             "verification_chunk_max_results": self.verification_chunk_max_results,
@@ -5842,6 +6403,7 @@ class HMCKernelTuningConfig:
     target_status_trace_policy: str = "none"
     mass_policy: str = "windowed_adaptive"
     metric_update_requirement: str = "allow_valid_incumbent"
+    engineering_probe_covariance_multiplier: float | None = None
     geometry_scaling_c: float = 0.5
     stability_guard: float = 0.8
     covariance_jitter: float = 1.0e-9
@@ -6099,6 +6661,13 @@ class HMCKernelTuningConfig:
             "metric_update_requirement",
             _validate_metric_update_requirement(self.metric_update_requirement),
         )
+        object.__setattr__(
+            self,
+            "engineering_probe_covariance_multiplier",
+            _validate_engineering_probe_covariance_multiplier(
+                self.engineering_probe_covariance_multiplier
+            ),
+        )
         if (
             self.metric_update_requirement == "require_operational_update"
             and mass_policy == "fixed_identity"
@@ -6332,13 +6901,19 @@ class HMCKernelTuningConfig:
             "terminal_phase6_repair_extra_attempts": (
                 self.terminal_phase6_repair_extra_attempts
             ),
-            "seed": self.seed,
+            **_engineering_probe_seed_public_payload(
+                self.seed,
+                configured=self.engineering_probe_covariance_multiplier is not None,
+            ),
             "chain_execution_mode": self.chain_execution_mode,
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "mass_policy": self.mass_policy,
             "metric_update_requirement": self.metric_update_requirement,
+            "engineering_probe_bank": _engineering_probe_config_public_payload(
+                self.engineering_probe_covariance_multiplier
+            ),
             "geometry_scaling_c": self.geometry_scaling_c,
             "stability_guard": self.stability_guard,
             "covariance_jitter": self.covariance_jitter,
@@ -8376,6 +8951,15 @@ def _operational_windowed_mass_capture(
         attempt_state is None
         and isinstance(mass_window_seed_kernel.get("screen_config_payload"), Mapping)
     )
+    engineering_probe_config = (
+        None
+        if config.engineering_probe_covariance_multiplier is None
+        else Phase7EngineeringProbeBankConfig(
+            chain_count=4,
+            covariance_multiplier=config.engineering_probe_covariance_multiplier,
+            root_seed=stage_seed,
+        )
+    )
     operational_outcome = run_operational_windowed_warmup(
         adapter=adapter,
         initial_transform=active_transform,
@@ -8396,13 +8980,10 @@ def _operational_windowed_mass_capture(
         target_accept_prob=config.target_accept_prob,
         seed=stage_seed,
         target_scope=target_scope,
-<<<<<<< HEAD
-=======
         engineering_probe_config=engineering_probe_config,
         initial_position_covariance_estimate_signature=active_estimate.signature,
         _g2_seed_use_registry=g2_seed_use_registry,
         _g2_p4_action_tracker=g2_p4_action_tracker,
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
         chain_execution_mode=config.chain_execution_mode,
         jit_compile=config.use_xla,
         target_status_trace_policy=config.target_status_trace_policy,
@@ -8413,7 +8994,10 @@ def _operational_windowed_mass_capture(
         segment_callback=segment_callback,
     )
     if isinstance(operational_outcome, OperationalWindowedWarmupCloseout):
-        closeout_payload = operational_outcome.public_payload()
+        closeout_payload = _engineering_probe_operational_closeout_public_payload(
+            operational_outcome,
+            configured=config.engineering_probe_covariance_multiplier is not None,
+        )
         _emit_windowed_mass_progress(
             progress_callback,
             "windowed_mass_public_timeout_closeout",
@@ -8534,13 +9118,15 @@ def _operational_windowed_mass_capture(
             "error_type": None,
             "error_message": None,
         }
-    except Exception as exc:  # noqa: BLE001 - compatibility is non-authoritative.
+    except Exception:  # noqa: BLE001 - compatibility is non-authoritative.
         windowed_result = None
         compatibility_status = {
             "status": "unavailable_error",
             "authoritative": False,
-            "error_type": type(exc).__name__,
-            "error_message": str(exc),
+            "failure_code": "legacy_v1_compatibility_projection_unavailable",
+            "error_type": None,
+            "error_message": None,
+            "exception_details_exposed": False,
         }
     binary_trace = binary_acceptance.astype(float, copy=False)
     capture = {
@@ -8583,7 +9169,14 @@ def _operational_windowed_mass_capture(
                 mass_window_seed_kernel["num_leapfrog_steps"]
             ),
             "start_bank_qualification": (
-                operational_result.start_bank_qualification.public_payload()
+                None
+                if operational_result.start_bank_qualification is None
+                else operational_result.start_bank_qualification.public_payload()
+            ),
+            "engineering_probe_bank_qualification": None
+            if operational_result.engineering_probe_bank_qualification is None
+            else (
+                operational_result.engineering_probe_bank_qualification.public_payload()
             ),
         },
         "runtime_metadata": {
@@ -9220,12 +9813,6 @@ def run_hmc_windowed_mass_stage(
                 "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
             },
         )
-<<<<<<< HEAD
-    hard_vetoes = list(
-        _classify_windowed_stage_capture(
-            capture,
-            run_error=run_error,
-=======
     engineering_probe_qualification = capture.get("raw_diagnostics", {}).get(
         "engineering_probe_bank_qualification",
         capture.get("raw_diagnostics", {}).get("engineering_probe_boundary"),
@@ -9258,7 +9845,6 @@ def run_hmc_windowed_mass_stage(
                 capture,
                 run_error=run_error,
             )
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
         )
     if (
         not hard_vetoes
@@ -14544,6 +15130,9 @@ def _public_loop_config(
         target_status_trace_policy=config.target_status_trace_policy,
         mass_policy=config.mass_policy,
         metric_update_requirement=config.metric_update_requirement,
+        engineering_probe_covariance_multiplier=(
+            config.engineering_probe_covariance_multiplier
+        ),
         public_timeout_budget_s=config.public_timeout_budget_s,
         public_timeout_started_perf_counter_s=public_timeout_started_perf_counter_s,
         verification_chunk_max_results=config.verification_chunk_max_results,
@@ -19253,6 +19842,9 @@ def _phase7_windowed_stage_config(
         target_status_trace_policy=config.target_status_trace_policy,
         mass_policy=config.mass_policy,
         metric_update_requirement=config.metric_update_requirement,
+        engineering_probe_covariance_multiplier=(
+            config.engineering_probe_covariance_multiplier
+        ),
         public_timeout_budget_s=_staged_timeout_stage_budget(
             config.staged_timeout_policy,
             "windowed_mass",
@@ -21610,8 +22202,6 @@ def _phase7_verification_initial_state(
             "raw_values_exposed": False,
             "reports_operational_start_lineage": False,
         }
-<<<<<<< HEAD
-=======
     if (
         operational.private_start_bank_policy_id
         != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
@@ -21665,7 +22255,6 @@ def _phase7_verification_initial_state(
         != operational.final_kernel_state.transform.signature
     ):
         raise ValueError("operational Phase 7 P4-E transform lineage mismatch")
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
     canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
     if canonical.shape != (4, windowed_stage.target_dimension):
         raise ValueError("operational verification start bank shape mismatch")
@@ -21704,15 +22293,33 @@ def _phase7_verification_initial_state(
         operational.final_kernel_state.transform.signature,
     )
     return verification_latent, {
-        "source": "operational_warmup_private_start_bank",
+        "source": "phase7_engineering_probe_bank_v1",
+        "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
         "source_signature": source_signature,
         "active_signature": active_signature,
+        "qualification_content_signature": (
+            engineering_qualification.content_signature
+        ),
+        "qualification_target_signature": engineering_qualification.target_signature,
+        "qualification_config_signature": engineering_qualification.config_signature,
+        "qualification_derived_seed_signature": (
+            engineering_qualification.derived_seed_signature
+        ),
+        "target_scope": operational.target_scope,
+        "final_transform_signature": (
+            operational.final_kernel_state.transform.signature
+        ),
+        "phase4_adapter_signature": stable_adapter_signature(phase4_adapter),
+        "verification_adapter_signature": verification_hmc_signature,
         "count": 4,
         "frozen_post_warmup_bank_consumed": True,
         "canonical_round_trip_passed": True,
         "final_coordinate_match_passed": True,
         "raw_values_exposed": False,
         "reports_operational_start_lineage": True,
+        "evidence_role": "engineering_only",
+        "promotion_role": "non_promoting",
+        "reports_posterior_convergence": False,
     }
 
 
@@ -26285,11 +26892,16 @@ def _windowed_stage_public_timeout_capture(
 
 def _windowed_stage_error_capture(exc: Exception) -> Mapping[str, Any]:
     start_bank_qualification = start_bank_qualification_payload_from_exception(exc)
-    raw_diagnostics = (
-        {}
-        if start_bank_qualification is None
-        else {"start_bank_qualification": start_bank_qualification}
+    engineering_probe_qualification = (
+        engineering_probe_bank_qualification_payload_from_exception(exc)
     )
+    raw_diagnostics = {}
+    if start_bank_qualification is not None:
+        raw_diagnostics["start_bank_qualification"] = start_bank_qualification
+    if engineering_probe_qualification is not None:
+        raw_diagnostics["engineering_probe_bank_qualification"] = (
+            engineering_probe_qualification
+        )
     return {
         "error_type": type(exc).__name__,
         "error_message": str(exc),
@@ -26418,9 +27030,24 @@ def _p4_boundary_capture_from_exception(
             != registry.source_coverage_artifact_sha256
             or boundary_count != private.get("preboundary_consumed_seed_count")
             or (
+                terminal is not None
+                and (
+                    boundary.get("p4_distinct_from_preboundary_seeds")
+                    != private.get("p4_distinct_from_preboundary_seeds")
+                    or boundary.get("p4_seed_consumed")
+                    != (
+                        private.get("schema")
+                        == "bayesfilter.hmc_g2_preboundary_seed_use_registry.v1"
+                    )
+                    or boundary.get("post_boundary_registry_call_count")
+                    != private.get("post_boundary_registry_call_count")
+                )
+            )
+            or (
                 early is not None
                 and (
-                    boundary.get("registered_entry_count") != private_count
+                    boundary.get("failure_code") != private.get("failure_code")
+                    or boundary.get("registered_entry_count") != private_count
                     or boundary.get("consumed_entry_count") != private_count
                 )
             )

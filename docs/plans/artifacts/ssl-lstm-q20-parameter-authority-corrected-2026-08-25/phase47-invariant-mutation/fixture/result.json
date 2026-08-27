@@ -1,0 +1,56 @@
+{
+  "diagnostics": {
+    "acceptance_rate": 0.890869140625,
+    "mean_abs_error": 0.0010465945880017624,
+    "move_fraction": 0.890869140625,
+    "proposal_max": 4.32513417572925,
+    "proposal_min": -3.6988587186960924,
+    "second_moment_abs_error": 0.00041179604088481536
+  },
+  "formula": {
+    "acceptance": "min(1, exp(log pi(x_prime) - log pi(x)))",
+    "proposal": "x_prime = x + sigma * Normal(0,1)",
+    "symmetry": "proposal(x,x_prime) = proposal(x_prime,x)",
+    "target": "log pi(x) = -x^2/2 - log(sqrt(2*pi))"
+  },
+  "gates": {
+    "acceptance_in_range": true,
+    "finite_log_alpha": true,
+    "finite_state": true,
+    "mean_error_screen": true,
+    "nonzero_movement": true,
+    "second_moment_error_screen": true
+  },
+  "nonclaims": [
+    "A finite fixture is not an invariance proof for q=20.",
+    "No posterior, whitening, HMC, or LEDH claim."
+  ],
+  "role": "finite_symmetric_mh_invariant_gaussian_fixture",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase47_fixture_2026_08_26.py --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/fixture",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "gpu_hidden_intentionally": true,
+    "jit_compile": true,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase47_fixture_2026_08_26.py",
+    "source_sha256": {
+      "plan": "506a4456829c8b1b5c79f51dd01f423c3965005ff96e4ee49d7934283af742c2",
+      "runner": "77a4d4c18c3574e29b1395b28fdefafe420d75b6a583ab38ad324199accfb348"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 0.3921517609851435
+  },
+  "sample_count": 8192,
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_mh_fixture.v1",
+  "seed": [
+    20260826,
+    4701
+  ],
+  "sigma": 0.35,
+  "status": "PASS_V2_9_MH_FIXTURE"
+}

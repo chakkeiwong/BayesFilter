@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import ast
+import hashlib
+import inspect
 import json
 import os
+import subprocess
+import sys
 import types
 from dataclasses import replace
 
@@ -14,6 +19,8 @@ import tensorflow as tf
 import bayesfilter.inference.hmc_warmup as hmc_warmup
 from bayesfilter.inference.hmc_coordinates import (
     AffineCoordinateTransform,
+    KernelState,
+    MomentumMetric,
     PositionCovarianceEstimate,
     WarmupTrajectoryPolicy,
 )
@@ -31,6 +38,27 @@ from bayesfilter.inference.hmc_warmup import (
     run_operational_windowed_warmup,
 )
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
+
+
+_G1A_NO_HMC_TESTS = frozenset(
+    {
+        "test_g1a_domain_separated_seed_fixed_vectors_and_strict_inputs",
+        "test_g1a_domain_separated_seed_branch_contract_is_static",
+    }
+)
+
+
+@pytest.fixture(autouse=True)
+def _g1a_no_hmc_tripwire(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch):
+    if request.node.name not in _G1A_NO_HMC_TESTS:
+        return
+    import tensorflow_probability as tfp
+
+    def blocked(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("G1A_NO_HMC_TRIPWIRE")
+
+    monkeypatch.setattr(tfp.mcmc, "HamiltonianMonteCarlo", blocked)
+    monkeypatch.setattr(tfp.mcmc, "sample_chain", blocked)
 
 
 class _GaussianAdapter:
@@ -2046,8 +2074,6 @@ def test_repair_v7_schedule_reserves_exact_four_state_final_source() -> None:
     )
     assert schedule[-1].length == 4
     assert sum(window.length for window in schedule) == 32
-<<<<<<< HEAD
-=======
 
 
 def _p4_kernel_state(
@@ -2171,8 +2197,8 @@ def _passing_p4_target_health(candidates: object) -> dict[str, object]:
     return {
         "shared_invalidity_reasons": (),
         "candidate_data_invalidity_reasons": (),
-        "target_value_finite": True,
-        "target_score_finite": True,
+        "target_value_finite_count": 4,
+        "target_score_finite_count": 4,
         "target_status_failure_count": 0,
         "evaluated_draw_count": 4,
     }
@@ -2400,7 +2426,7 @@ def test_p4_engineering_probe_bank_fails_once_without_redraw_or_filtering() -> N
         target_calls += 1
         return {
             **_passing_p4_target_health(_candidates),
-            "target_score_finite": False,
+            "target_score_finite_count": 3,
         }
 
     with pytest.raises(ValueError, match="target_score_nonfinite") as error:
@@ -2416,7 +2442,7 @@ def test_p4_engineering_probe_bank_fails_once_without_redraw_or_filtering() -> N
     assert payload is not None
     assert payload["outcome"] == "candidate_policy_instance_invalid"
     assert payload["failure_code"] == "target_score_nonfinite"
-    assert payload["target_score_finite_count"] == 0
+    assert payload["target_score_finite_count"] == 3
     assert payload["content_signature"] is not None
 
 
@@ -2586,14 +2612,16 @@ def test_g1a_p4_invalidity_partition_is_closed_and_redacted(
             payload["shared_invalidity_reasons"] = ("private shared reason",)
         elif case == "health_count":
             payload["evaluated_draw_count"] = 3
+            payload["target_value_finite_count"] = 3
+            payload["target_score_finite_count"] = 3
         elif case == "candidate_data":
             payload["candidate_data_invalidity_reasons"] = (
                 "private candidate reason",
             )
         elif case == "target_value":
-            payload["target_value_finite"] = False
+            payload["target_value_finite_count"] = 2
         elif case == "target_score":
-            payload["target_score_finite"] = False
+            payload["target_score_finite_count"] = 3
         elif case == "target_status":
             payload["target_status_failure_count"] = 2
         return payload
@@ -2657,6 +2685,142 @@ def test_g1a_p4_invalidity_partition_is_closed_and_redacted(
         assert target_calls == 0
     else:
         assert target_calls == 1
+
+
+@pytest.mark.parametrize(
+    ("count_field", "finite_count", "failure_code"),
+    tuple(
+        ("target_value_finite_count", count, "target_value_nonfinite")
+        for count in (1, 2, 3)
+    )
+    + tuple(
+        ("target_score_finite_count", count, "target_score_nonfinite")
+        for count in (1, 2, 3)
+    ),
+)
+def test_g1a_p4_partial_finite_counts_are_exact_and_not_boolean_proxies(
+    count_field: str,
+    finite_count: int,
+    failure_code: str,
+) -> None:
+    state = _p4_kernel_state()
+    config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=2.0,
+        root_seed=(20260825, 610 + finite_count),
+    )
+
+    def partial_health(candidates: object) -> dict[str, object]:
+        payload = _passing_p4_target_health(candidates)
+        payload[count_field] = finite_count
+        return payload
+
+    with pytest.raises(ValueError, match=failure_code) as error:
+        _build_p4_fixture(
+            state=state,
+            config=config,
+            target_health_fn=partial_health,
+        )
+    payload = hmc_warmup.engineering_probe_bank_qualification_payload_from_exception(
+        error.value
+    )
+    assert payload is not None
+    assert payload["failure_code"] == failure_code
+    assert payload[count_field] == finite_count
+
+
+def test_g1a_default_p4_health_adapter_aggregates_four_injected_row_results(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+
+    def injected_row_health(**kwargs: object) -> dict[str, object]:
+        samples = np.asarray(kwargs["samples"], dtype=float)
+        assert samples.shape == (1, 2)
+        row = int(samples[0, 0])
+        calls.append(row)
+        return {
+            "shared_invalidity_reasons": (),
+            "candidate_data_invalidity_reasons": (),
+            "target_value_finite": row != 1,
+            "target_score_finite": row not in {1, 2},
+            "target_status_failure_count": row == 3,
+            "evaluated_draw_count": 1,
+        }
+
+    monkeypatch.setattr(
+        hmc_warmup,
+        "_evaluate_retained_target_health",
+        injected_row_health,
+    )
+    health = hmc_warmup._evaluate_phase7_engineering_probe_target_health(
+        adapter=object(),
+        candidates=np.array(
+            [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0], [3.0, 0.0]]
+        ),
+        target_status_trace_policy="per_chain_step",
+    )
+    assert calls == [0, 1, 2, 3]
+    assert health == {
+        "shared_invalidity_reasons": (),
+        "candidate_data_invalidity_reasons": (),
+        "target_value_finite_count": 3,
+        "target_score_finite_count": 2,
+        "target_status_failure_count": 1,
+        "evaluated_draw_count": 4,
+    }
+
+
+def test_g1a_p4_unavailable_status_telemetry_remains_null(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = _p4_kernel_state()
+    config = hmc_warmup.Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=2.0,
+        root_seed=(20260825, 614),
+    )
+
+    row_calls = 0
+
+    def injected_row_health(**kwargs: object) -> dict[str, object]:
+        nonlocal row_calls
+        samples = np.asarray(kwargs["samples"], dtype=float)
+        assert samples.shape == (1, 2)
+        row_calls += 1
+        return {
+            "shared_invalidity_reasons": (),
+            "candidate_data_invalidity_reasons": (),
+            "target_value_finite": True,
+            "target_score_finite": True,
+            "target_status_failure_count": None,
+            "evaluated_draw_count": 1,
+        }
+
+    monkeypatch.setattr(
+        hmc_warmup,
+        "_evaluate_retained_target_health",
+        injected_row_health,
+    )
+
+    def health_without_status(candidates: object) -> dict[str, object]:
+        return hmc_warmup._evaluate_phase7_engineering_probe_target_health(
+            adapter=object(),
+            candidates=candidates,
+            target_status_trace_policy="none",
+        )
+
+    build = _build_p4_fixture(
+        state=state,
+        config=config,
+        target_health_fn=health_without_status,
+    )
+    assert build.qualification.outcome == "engineering_probe_bank_constructed"
+    assert row_calls == 4
+    assert build.qualification.target_status_failure_count is None
+    assert build.qualification.public_payload()[
+        "target_status_failure_count"
+    ] is None
 
 
 @pytest.mark.parametrize(
@@ -3142,7 +3306,7 @@ def test_g1a_closed_qualification_stages_and_early_stage_ids() -> None:
         duplicate_error.value,
         hmc_warmup._PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
     )
-    with pytest.raises(ValueError, match="generation failure"):
+    with pytest.raises(ValueError, match="exactly four candidate rows"):
         replace(duplicate, candidate_count=3)
     with pytest.raises(ValueError, match="generation failure"):
         replace(duplicate, endpoint_round_trip_passed=False)
@@ -3181,4 +3345,189 @@ def test_g1a_closed_qualification_stages_and_early_stage_ids() -> None:
     )
     with pytest.raises(ValueError, match="stage is invalid"):
         replace(early, stage="unreviewed_free_form_stage")
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
+    assert (
+        hmc_warmup.g2_preboundary_shared_invalidity_payload_from_exception(
+            early_error
+        )
+        is not None
+    )
+    object.__setattr__(early, "stage", "windowed_stage_diagnostic_config")
+    assert (
+        hmc_warmup.g2_preboundary_shared_invalidity_payload_from_exception(
+            early_error
+        )
+        is None
+    )
+
+
+def test_g1a_domain_separated_seed_fixed_vectors_and_strict_inputs() -> None:
+    vectors = (
+        (
+            (202, 11176),
+            "operational_warmup/metric_boundary/01",
+            "hmc_warmup.find_reasonable_epsilon.proposal_seed.v2",
+            0,
+            '{"base_key":"operational_warmup/metric_boundary/01","domain":"hmc_warmup.find_reasonable_epsilon.proposal_seed.v2","index":0,"root_seed":[202,11176]}',
+            "0b4a4cddbbd992326a127584e11b82aad99dabaa557593c8f33a42a7879fac45",
+            (189418717, 1004114482),
+        ),
+        (
+            (7, 19),
+            "ctx/a",
+            "domain.test.v2",
+            3,
+            '{"base_key":"ctx/a","domain":"domain.test.v2","index":3,"root_seed":[7,19]}',
+            "2bd36c888e7391e54e611189cd155a731839f1f2c60eab39cb36f4a0788e0d8a",
+            (735276168, 242455013),
+        ),
+    )
+    for root, base_key, domain_label, index, encoded, digest, expected in vectors:
+        payload = {
+            "domain": domain_label,
+            "base_key": base_key,
+            "index": index,
+            "root_seed": [root[0], root[1]],
+        }
+        canonical = json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        ).encode("ascii")
+        assert canonical.decode("ascii") == encoded
+        assert hashlib.sha256(canonical).hexdigest() == digest
+        actual = hmc_warmup._g2_domain_separated_seed(
+            root,
+            base_key=base_key,
+            domain_label=domain_label,
+            index=index,
+        )
+        assert actual == expected
+        assert type(actual) is tuple and all(type(item) is int for item in actual)
+        assert actual == hmc_warmup._g2_domain_separated_seed(
+            root,
+            base_key=base_key,
+            domain_label=domain_label,
+            index=index,
+        )
+
+    independent_code = (
+        "import hashlib,json; "
+        "rows=[({'domain':'hmc_warmup.find_reasonable_epsilon.proposal_seed.v2',"
+        "'base_key':'operational_warmup/metric_boundary/01','index':0,"
+        "'root_seed':[202,11176]}),({'domain':'domain.test.v2','base_key':'ctx/a',"
+        "'index':3,'root_seed':[7,19]})]; "
+        "print(' '.join(hashlib.sha256(json.dumps(row,sort_keys=True,"
+        "separators=(',',':'),ensure_ascii=True,allow_nan=False).encode('ascii'))"
+        ".hexdigest() for row in rows))"
+    )
+    outputs = []
+    for hash_seed in ("0", "1"):
+        env = {
+            **os.environ,
+            "CUDA_VISIBLE_DEVICES": "-1",
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONHASHSEED": hash_seed,
+        }
+        result = subprocess.run(
+            [sys.executable, "-c", independent_code],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=30,
+        )
+        outputs.append(result.stdout.strip())
+    assert outputs == [
+        "0b4a4cddbbd992326a127584e11b82aad99dabaa557593c8f33a42a7879fac45 "
+        "2bd36c888e7391e54e611189cd155a731839f1f2c60eab39cb36f4a0788e0d8a"
+    ] * 2
+
+    invalid_calls = (
+        (([202, 11176],), {}),
+        (((np.int64(202), 11176),), {}),
+        (((True, 11176),), {}),
+        (((-1, 11176),), {}),
+        (((0x80000000, 11176),), {}),
+        (((202,),), {}),
+        (((202, 11176),), {"base_key": "", "domain_label": "d", "index": 0}),
+        (((202, 11176),), {"base_key": "é", "domain_label": "d", "index": 0}),
+        (((202, 11176),), {"base_key": "b", "domain_label": "", "index": 0}),
+        (((202, 11176),), {"base_key": "b", "domain_label": "d", "index": True}),
+        (((202, 11176),), {"base_key": "b", "domain_label": "d", "index": -1}),
+        (((202, 11176),), {"base_key": "b", "domain_label": "d", "index": 0x80000000}),
+        (((202, 11176),), {"base_key": "b", "domain_label": "d", "index": 1.0}),
+    )
+    for positional, keyword in invalid_calls:
+        with pytest.raises(ValueError):
+            hmc_warmup._g2_domain_separated_seed(
+                positional[0],
+                base_key=keyword.get("base_key", "b"),
+                domain_label=keyword.get("domain_label", "d"),
+                index=keyword.get("index", 0),
+            )
+
+
+def test_g1a_domain_separated_seed_branch_contract_is_static() -> None:
+    source_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "bayesfilter/inference/hmc_warmup.py",
+    )
+    tree = ast.parse(open(source_path, encoding="utf-8").read())
+    function = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "find_reasonable_epsilon"
+    )
+    loop = next(node for node in ast.walk(function) if isinstance(node, ast.For))
+    registry_branch = next(
+        node
+        for node in ast.walk(loop)
+        if isinstance(node, ast.If)
+        and isinstance(node.test, ast.Compare)
+        and isinstance(node.test.left, ast.Name)
+        and node.test.left.id == "_g2_seed_use_registry"
+    )
+    assert isinstance(registry_branch.test.ops[0], ast.Is)
+    assert isinstance(registry_branch.test.comparators[0], ast.Constant)
+    assert registry_branch.test.comparators[0].value is None
+
+    def assignment_calls(nodes: list[ast.stmt]) -> tuple[ast.Call, ...]:
+        calls = []
+        for node in nodes:
+            for child in ast.walk(node):
+                if isinstance(child, ast.Assign) and isinstance(child.value, ast.Call):
+                    calls.append(child.value)
+        return tuple(calls)
+
+    no_registry_calls = assignment_calls(registry_branch.body)
+    registry_calls = assignment_calls(registry_branch.orelse)
+    assert any(
+        isinstance(call.func, ast.Name)
+        and call.func.id == "_seed"
+        and [ast.unparse(arg) for arg in call.args]
+        == ["normalized_seed", "proposal_index"]
+        for call in no_registry_calls
+    )
+    domain_calls = tuple(
+        call
+        for call in registry_calls
+        if isinstance(call.func, ast.Name)
+        and call.func.id == "_g2_domain_separated_seed"
+    )
+    assert len(domain_calls) == 1
+    call = domain_calls[0]
+    assert [ast.unparse(arg) for arg in call.args] == ["normalized_seed"]
+    assert {
+        keyword.arg: ast.unparse(keyword.value) for keyword in call.keywords
+    } == {
+        "base_key": "_g2_seed_base_key",
+        "domain_label": "_G2_REASONABLE_PROPOSAL_SEED_DOMAIN",
+        "index": "proposal_index",
+    }
+    assert hmc_warmup._seed((202, 36951), 0) == (202, 37960)
+    assert hmc_warmup._seed((202, 11176), -1, lane=1) == (202, 19095)
+    assert hmc_warmup._seed((202, 11176), 2, lane=3) == (202, 37960)
+    assert hmc_warmup._seed((202, 11176), 100001, lane=2) == (202, 100929032)

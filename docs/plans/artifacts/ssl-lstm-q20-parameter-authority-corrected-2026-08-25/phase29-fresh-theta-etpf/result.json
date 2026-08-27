@@ -1,0 +1,466 @@
+{
+  "authority": {
+    "measure": "theta_R4",
+    "pilot_sha256": "faa8d8cfcd9e7a6d2286908af2562085455da49994376e382636ab37a0f43c6a",
+    "protocol_hash": "a1f0f0493bb8bd594923b61ee9a92f3c8dcb72a612b64ad675b9ab7ff4723631",
+    "root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase28-fresh-theta-pilot",
+    "source_particle_count": 64,
+    "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278"
+  },
+  "controls": {
+    "regularization": 10.0,
+    "riccati_max_steps": 2000,
+    "riccati_tolerance": 1e-05,
+    "sinkhorn_steps": 400,
+    "tolerance_provenance": "phase19_source_fixture_repair_warm_start"
+  },
+  "diagnostics": {
+    "above_source_range_count": 3,
+    "analysis_mean": [
+      2.9067464188464434,
+      0.5844711551665679,
+      -0.2101460698898378,
+      0.6226026975848538
+    ],
+    "analysis_negative_mode_fraction": 0.6875,
+    "below_source_range_count": 0,
+    "covariance_residual": 8.687604143808869e-05,
+    "mean_residual": 4.440892098500626e-16,
+    "negative_correction_fraction": 0.50390625,
+    "riccati_iterations": 54,
+    "source_negative_mode_fraction": 0.6875,
+    "source_weighted_mean": [
+      2.906746418846443,
+      0.5844711551665676,
+      -0.2101460698898379,
+      0.6226026975848538
+    ]
+  },
+  "hard_gates": {
+    "column_residual": true,
+    "finite_transform": true,
+    "output_shape_subset_by_4": true,
+    "riccati_converged": true,
+    "row_residual": true,
+    "score_finite": true,
+    "source_shape_N_by_4": true,
+    "source_weights_normalized": true,
+    "target_finite": true,
+    "target_status_valid": true
+  },
+  "nonclaims": [
+    "The transformed empirical rows have no assigned proposal density or Jacobian.",
+    "ETPF moment and target/status checks do not establish IID samples, posterior correctness, or mode discovery.",
+    "No SMC-U authority admission, LEDH, NeuTra, HMC, whitening, or default promotion."
+  ],
+  "receipts": {
+    "analysis_theta": {
+      "bytes": 1039,
+      "dtype": "float64",
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase29-fresh-theta-etpf/analysis-theta.tftensor",
+      "sha256": "e868e7d7213d8db36286ed2ecda3115e9aa27166ab1b8fbf444ff2d10032c86d",
+      "shape": [
+        32,
+        4
+      ]
+    },
+    "source_subset_theta": {
+      "bytes": 1039,
+      "dtype": "float64",
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase29-fresh-theta-etpf/source-subset-theta.tftensor",
+      "sha256": "efced562603faf8f2fd5aa0191d585e4c75c6d6f6584d7fdbaccaa9cc2e43775",
+      "shape": [
+        32,
+        4
+      ]
+    },
+    "source_subset_weights": {
+      "bytes": 267,
+      "dtype": "float64",
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase29-fresh-theta-etpf/source-subset-weights.tftensor",
+      "sha256": "71e9c69c0af3b6d8df39be5fbde60f5577e2e2b914fd6c6bf953e5be3265b4b1",
+      "shape": [
+        32
+      ]
+    },
+    "target_scores": {
+      "bytes": 1039,
+      "dtype": "float64",
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase29-fresh-theta-etpf/analysis-target-scores.tftensor",
+      "sha256": "6c36fac1c73832dbb99c6770984dc60a5b49e3b3efe5b5a0b5a7a73d4fba5bcb",
+      "shape": [
+        32,
+        4
+      ]
+    },
+    "target_values": {
+      "bytes": 267,
+      "dtype": "float64",
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase29-fresh-theta-etpf/analysis-target-values.tftensor",
+      "sha256": "5a1f8dc314851993691aa1a7e3c0dc1c78dd9aef33a5b5aaceb769063254df4a",
+      "shape": [
+        32
+      ]
+    }
+  },
+  "role": "source_faithful_etpf_fresh_theta_role_limited",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase29_2026_08_25.py --authority-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase28-fresh-theta-pilot --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase29-fresh-theta-etpf",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "jit_compile": true,
+    "logical_gpus": [],
+    "physical_gpus": [],
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase29_2026_08_25.py",
+    "source_sha256": {
+      "authority_pilot": "faa8d8cfcd9e7a6d2286908af2562085455da49994376e382636ab37a0f43c6a",
+      "etpf_module": "8a7b23ded988ec224681e842e56bb93b4aff0bf7f850ce9b215fccfec1ae3817",
+      "plan": "f934ecf03f397fd22b4de5f3766b4de251346eed0cb25185009c6338eda076f1",
+      "runner": "e5cc820d68d85d15db1172461f83ccc961e9eed99c3f6e21cb97bb3df8fd2578"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 26.098822082043625
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_etpf.v1",
+  "status": "PASS_FRESH_THETA_ETPF_ROLE_LIMITED",
+  "subset": {
+    "count": 32,
+    "indices": [
+      0,
+      2,
+      4,
+      6,
+      8,
+      10,
+      12,
+      14,
+      16,
+      18,
+      20,
+      22,
+      24,
+      26,
+      28,
+      30,
+      33,
+      35,
+      37,
+      39,
+      41,
+      43,
+      45,
+      47,
+      49,
+      51,
+      53,
+      55,
+      57,
+      59,
+      61,
+      63
+    ]
+  },
+  "target": {
+    "scores": [
+      [
+        -0.2500756602527041,
+        -3.595386038184475,
+        -4.899172568426881,
+        -6.389204639788519
+      ],
+      [
+        0.26904092666478624,
+        4.033600773434653,
+        12.048008303629436,
+        -4.458963350549153
+      ],
+      [
+        -0.362388088426499,
+        2.9039136912756582,
+        -10.45936448493326,
+        -5.577879135543259
+      ],
+      [
+        0.12071053211167004,
+        4.322164666889785,
+        22.698221788518158,
+        -7.067797776037379
+      ],
+      [
+        0.4757832890028217,
+        3.406069876903313,
+        -1.3220536280906268,
+        5.181905352375782
+      ],
+      [
+        -0.19566022594776505,
+        -0.6353046920831668,
+        3.914461584103152,
+        -1.6507138214859025
+      ],
+      [
+        -0.02638297072320447,
+        1.3578118247265527,
+        -10.547536815784447,
+        -3.9872136973750516
+      ],
+      [
+        0.0771444093532809,
+        4.148777358328917,
+        -23.91875869984495,
+        -8.9627079853821
+      ],
+      [
+        -0.24400765244669254,
+        0.40783352559137304,
+        -2.1644452293376504,
+        -1.3143007206861876
+      ],
+      [
+        -0.380769549080901,
+        6.614105792541596,
+        -4.199165092675317,
+        -13.307801513472509
+      ],
+      [
+        0.1904715455211432,
+        -3.108360968611704,
+        -6.370364443256014,
+        -4.154775389462674
+      ],
+      [
+        -0.026412608150286267,
+        -6.034728919704413,
+        0.765428261892667,
+        -9.756898998288921
+      ],
+      [
+        -0.3711611270796793,
+        8.22298235290364,
+        -65.79459876761167,
+        -15.307336287149456
+      ],
+      [
+        -0.06313873018229832,
+        -3.337244868152351,
+        -26.438450802266445,
+        6.776900191271939
+      ],
+      [
+        0.05197490151928402,
+        -8.91021643849226,
+        29.547116193919575,
+        15.103934652379678
+      ],
+      [
+        0.05197490151928397,
+        -8.91021643849225,
+        29.547116193919543,
+        15.103934652379671
+      ],
+      [
+        0.05197490151928366,
+        -8.910216438492238,
+        29.5471161939195,
+        15.103934652379651
+      ],
+      [
+        -0.11790380212504664,
+        -4.997317477400229,
+        13.38935773853081,
+        6.780340303184743
+      ],
+      [
+        -0.09449875551904802,
+        -1.4128721235256032,
+        3.9823641807385917,
+        -2.9196580615374463
+      ],
+      [
+        -0.4401109136009008,
+        2.2586398814970736,
+        7.717686471076308,
+        -4.282821339404098
+      ],
+      [
+        -0.44011091360090127,
+        2.25863988149707,
+        7.717686471076298,
+        -4.282821339404088
+      ],
+      [
+        -0.4401109136009015,
+        2.258639881497074,
+        7.717686471076317,
+        -4.282821339404099
+      ],
+      [
+        0.10397776060653374,
+        -1.1008389977106334,
+        4.127290687565842,
+        -2.1318307070180267
+      ],
+      [
+        0.10397776060653373,
+        -1.1008389977106332,
+        4.127290687565843,
+        -2.131830707018026
+      ],
+      [
+        -0.08370937444370177,
+        -4.250162992122424,
+        32.70178925075163,
+        5.815939674488536
+      ],
+      [
+        -0.38365027693770615,
+        -1.2872174490910593,
+        4.15922620211085,
+        1.8307890645655005
+      ],
+      [
+        -0.38365027693770637,
+        -1.2872174490910528,
+        4.159226202110833,
+        1.8307890645654876
+      ],
+      [
+        -0.38365027693770637,
+        -1.2872174490910528,
+        4.159226202110833,
+        1.8307890645654876
+      ],
+      [
+        -0.28463409451082006,
+        0.19160568849226478,
+        -6.293964484445111,
+        0.034173484166035974
+      ],
+      [
+        -0.1634475452992244,
+        1.4574800747974805,
+        -1.9619637128532121,
+        -2.8346352533055987
+      ],
+      [
+        -0.45354456128804876,
+        1.811815360374522,
+        14.716398954039974,
+        3.77836269053969
+      ],
+      [
+        -0.21796923945125316,
+        -5.556611311974934,
+        -5.212304958114137,
+        8.76566302016579
+      ]
+    ],
+    "status_code": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "values": [
+      -38.61464897935987,
+      -39.66763313093657,
+      -38.92787788031766,
+      -38.57885415316129,
+      -40.09215517651741,
+      -38.60472280201355,
+      -38.978178288716165,
+      -39.10750390338791,
+      -38.86682869285327,
+      -40.704258809465955,
+      -38.389783836645215,
+      -38.777146906860594,
+      -40.981582344005204,
+      -38.590246316106494,
+      -40.84252397009199,
+      -40.84252397009198,
+      -40.842523970091975,
+      -39.16942021593329,
+      -37.845517319293876,
+      -39.72563239145004,
+      -39.72563239145004,
+      -39.72563239145005,
+      -37.82765097491371,
+      -37.8276509749137,
+      -40.207915711700196,
+      -39.56291200672795,
+      -39.56291200672794,
+      -39.56291200672794,
+      -38.80845930302549,
+      -37.93488730866205,
+      -39.57826593118117,
+      -39.13276535064816
+    ]
+  }
+}

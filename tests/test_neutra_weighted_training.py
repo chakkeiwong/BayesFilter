@@ -520,6 +520,19 @@ def test_weighted_loss_matches_manual_reduction_and_weight_diagnostics() -> None
     assert float(validation.maximum_normalized_weight.numpy()) == pytest.approx(0.4)
 
 
+def test_validation_accepts_distinct_static_partition_sizes() -> None:
+    """A holdout and an independent audit may have different fixed row counts."""
+    trainer = WeightedForwardKLNeuTraTrainer(_config(jit_compile=False))
+    holdout = tf.random.stateless_normal((12, 2), seed=(20260826, 9601), dtype=DTYPE)
+    audit = tf.random.stateless_normal((256, 2), seed=(20260826, 9602), dtype=DTYPE)
+    holdout_result = trainer.validation_batch(holdout, tf.zeros((12,), DTYPE))
+    audit_result = trainer.validation_batch(audit, tf.zeros((256,), DTYPE))
+    assert tuple(holdout_result.normalized_weights.shape) == (12,)
+    assert tuple(audit_result.normalized_weights.shape) == (256,)
+    assert bool(tf.math.is_finite(holdout_result.loss).numpy())
+    assert bool(tf.math.is_finite(audit_result.loss).numpy())
+
+
 def test_validation_reuses_inverse_identity_without_changing_log_density() -> None:
     trainer = WeightedForwardKLNeuTraTrainer(_config(jit_compile=False))
     rows = tf.random.stateless_normal((9, 2), seed=(20260814, 9201), dtype=DTYPE)

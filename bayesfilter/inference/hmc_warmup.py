@@ -14,7 +14,7 @@ import json
 import math
 import sys
 import time
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
@@ -86,8 +86,6 @@ _START_BANK_INTERPRETATIONS = frozenset(
     }
 )
 
-<<<<<<< HEAD
-=======
 PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID = (
     "bayesfilter.phase7_engineering_probe_bank.v1"
 )
@@ -187,10 +185,13 @@ _G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID = (
     "hmc_warmup.run_operational_windowed_warmup.metric_seed_gate.v1"
 )
 _G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID = (
-    "hmc_warmup.find_reasonable_epsilon.proposal_seed_derivation.v1"
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_derivation.v2"
 )
 _G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID = (
-    "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v1"
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2"
+)
+_G2_REASONABLE_PROPOSAL_SEED_DOMAIN = (
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed.v2"
 )
 _G2_INITIAL_EPSILON_SEED_INTERFACE_HOPS = (
     "hmc_warmup.run_operational_windowed_warmup.initial_registry_dispatch.v1",
@@ -203,13 +204,13 @@ _G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS = (
     "hmc_warmup.find_reasonable_epsilon.metric_seed_normalization.v1",
 )
 _G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS = (
-    "hmc_warmup.find_reasonable_epsilon.proposal_seed_list_pass_through.v1",
-    "hmc_warmup.find_reasonable_epsilon.proposal_seed_tuple_pass_through.v1",
-    "hmc_warmup.find_reasonable_epsilon.proposal_seed_tensor_construction.v1",
-    "hmc_warmup.find_reasonable_epsilon.proposal_one_step_pass_through.v1",
-    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_conversion.v1",
-    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_pass_through.v1",
-    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_one_step_rng_call.v1",
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_list_pass_through.v2",
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_tuple_pass_through.v2",
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_tensor_construction.v2",
+    "hmc_warmup.find_reasonable_epsilon.proposal_one_step_pass_through.v2",
+    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_conversion.v2",
+    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_seed_pass_through.v2",
+    "hmc_warmup.find_reasonable_epsilon.proposal_kernel_one_step_rng_call.v2",
 )
 _G2_SEGMENT_SEED_INTERFACE_HOPS = (
     "hmc_warmup.run_operational_windowed_warmup.segment_registry_dispatch.v1",
@@ -233,6 +234,7 @@ _G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS_CONTRACT = (
     "hmc.bootstrap.FullChainHMCConfig.seed_normalization.v1",
     "hmc_kernel_tuning.run_hmc_bootstrap_screen.reusable_runner_config_pass_through.v1",
     "hmc_kernel_tuning.run_hmc_bootstrap_screen.reusable_runner_seed_pass_through.v1",
+    "hmc.bootstrap.ReusableFullChainHMCRunner.runtime_input_seed_pass_through.v1",
     "hmc.bootstrap.ReusableFullChainHMCRunner.run_seed_selection.v1",
     "hmc.bootstrap.ReusableFullChainHMCRunner.run_seed_conversion.v1",
     "hmc.bootstrap.ReusableFullChainHMCRunner.compiled_runner_seed_pass_through.v1",
@@ -269,6 +271,9 @@ _G2_SEED_DERIVATION_CHILDREN = {
     "derive_stage": frozenset({"kind", "base_key", "stage_index"}),
     "round_offset": frozenset({"kind", "base_key", "round_index"}),
     "warmup_index_lane": frozenset({"kind", "base_key", "index", "lane"}),
+    "warmup_domain_hash": frozenset(
+        {"kind", "base_key", "domain_label", "index"}
+    ),
     "p4_domain_hash": frozenset({"kind", "base_key", "domain_label"}),
 }
 _G2_SHARED_FAILURE_CODES = _PHASE7_ENGINEERING_PROBE_FAILURE_CODES - {
@@ -366,7 +371,6 @@ _G2_PREBOUNDARY_SHARED_INVALIDITY_STAGES = frozenset(
     }
 )
 
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
 
 def _stable_hash(label: str, payload: Mapping[str, Any]) -> str:
     normalized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -458,6 +462,45 @@ def _canonical_ascii_sha256(payload: Mapping[str, Any]) -> str:
         allow_nan=False,
     ).encode("ascii")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _g2_domain_separated_seed(
+    root: tuple[int, int],
+    *,
+    base_key: str,
+    domain_label: str,
+    index: int,
+) -> tuple[int, int]:
+    """Derive a strict stateless seed from a canonical, domain-bound payload."""
+
+    if type(root) is not tuple or len(root) != 2:
+        raise ValueError("root must be a two-item built-in tuple")
+    if any(type(item) is not int for item in root):
+        raise ValueError("root items must be built-in integers")
+    if any(item < 0 or item > 0x7FFFFFFF for item in root):
+        raise ValueError("root items must fit non-negative signed tf.int32")
+    _strict_ascii_identifier(base_key, name="base_key")
+    _strict_ascii_identifier(domain_label, name="domain_label")
+    if type(index) is not int or index < 0 or index > 0x7FFFFFFF:
+        raise ValueError("index must fit non-negative signed tf.int32")
+    payload = {
+        "domain": domain_label,
+        "base_key": base_key,
+        "index": index,
+        "root_seed": [root[0], root[1]],
+    }
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("ascii")
+    digest = hashlib.sha256(encoded).digest()
+    return (
+        int.from_bytes(digest[0:4], "big") & 0x7FFFFFFF,
+        int.from_bytes(digest[4:8], "big") & 0x7FFFFFFF,
+    )
 
 
 def _clone_seed_registry_value(value: Any) -> Any:
@@ -690,12 +733,13 @@ def _registry_derivation_matches_gate(
     derivation_site_id: str,
     terminal_gate_site_id: str,
 ) -> bool:
-    suffix = "_derivation.v1"
-    return bool(
-        derivation_site_id.endswith(suffix)
-        and terminal_gate_site_id
-        == f"{derivation_site_id[:-len(suffix)]}_gate.v1"
-    )
+    for version in ("v1", "v2"):
+        suffix = f"_derivation.{version}"
+        if derivation_site_id.endswith(suffix):
+            return terminal_gate_site_id == (
+                f"{derivation_site_id[:-len(suffix)]}_gate.{version}"
+            )
+    return False
 
 
 def _g2_registry_entry_matches_semantic_contract(
@@ -789,7 +833,9 @@ def _g2_registry_entry_matches_semantic_contract(
             proposal_index = indices[0][1]
             parts = key.split("/")
             if (
-                proposal_index < 0
+                type(proposal_index) is not int
+                or proposal_index < 0
+                or proposal_index > 0x7FFFFFFF
                 or len(parts) != 5
                 or parts[0] != "operational_warmup"
                 or parts[3] != "proposal"
@@ -806,10 +852,10 @@ def _g2_registry_entry_matches_semantic_contract(
                 return False
             base_key = "/".join(parts[:3])
             return derivation == {
-                "kind": "warmup_index_lane",
+                "kind": "warmup_domain_hash",
                 "base_key": base_key,
+                "domain_label": _G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
                 "index": proposal_index,
-                "lane": 0,
             }
 
         if gate_id == _G2_P4_SEED_GATE_SITE_ID:
@@ -1455,6 +1501,7 @@ class _G2PreboundarySharedInvalidity:
     p4_seed_consumed: bool = False
     p4_rng_batch_invoked: bool = False
     final_lineage_available: bool = False
+    _carrier_signature: str = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         if self.schema != _G2_PREBOUNDARY_SHARED_INVALIDITY_SCHEMA:
@@ -1477,6 +1524,14 @@ class _G2PreboundarySharedInvalidity:
             raise ValueError("preboundary registry schema is invalid")
         if not _is_sha256_hex(self.seed_registry_evidence_signature):
             raise ValueError("preboundary registry signature is invalid")
+        for name in (
+            "p4_builder_entered",
+            "p4_seed_consumed",
+            "p4_rng_batch_invoked",
+            "final_lineage_available",
+        ):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f"{name} must be a strict boolean")
         registered = _strict_integer(
             self.registered_entry_count,
             name="registered_entry_count",
@@ -1500,6 +1555,11 @@ class _G2PreboundarySharedInvalidity:
         object.__setattr__(self, "registered_entry_count", registered)
         object.__setattr__(self, "consumed_entry_count", consumed)
         object.__setattr__(self, "stage", stage)
+        object.__setattr__(
+            self,
+            "_carrier_signature",
+            _canonical_ascii_sha256(self.public_payload()),
+        )
 
     def public_payload(self) -> Mapping[str, Any]:
         return {
@@ -1589,7 +1649,18 @@ def g2_preboundary_shared_invalidity_payload_from_exception(
     if type(candidate) is not _G2PreboundarySharedInvalidity:
         return None
     try:
-        return candidate.public_payload()
+        validated = _G2PreboundarySharedInvalidity(
+            **{
+                name: getattr(candidate, name)
+                for name, definition in (
+                    _G2PreboundarySharedInvalidity.__dataclass_fields__.items()
+                )
+                if definition.init
+            }
+        )
+        if candidate._carrier_signature != validated._carrier_signature:
+            return None
+        return validated.public_payload()
     except Exception:  # noqa: BLE001 - validation remains fail-closed.
         return None
 
@@ -2267,6 +2338,57 @@ def _phase7_engineering_probe_target_signature(adapter: Any) -> str:
     )
 
 
+def _evaluate_phase7_engineering_probe_target_health(
+    *,
+    adapter: Any,
+    candidates: Any,
+    target_status_trace_policy: str,
+) -> Mapping[str, Any]:
+    """Measure exact P4-E finite counts without changing the health rules.
+
+    The retained-target helper intentionally reports only all-finite booleans.
+    P4-E needs exact per-candidate counts, so this diagnostic-only adapter calls
+    that existing authority once per row and aggregates its closed result.
+    """
+
+    candidate_array = np.asarray(candidates, dtype=float)
+    shared_reasons: list[str] = []
+    candidate_reasons: list[str] = []
+    value_finite_count = 0
+    score_finite_count = 0
+    status_failure_count = 0
+    status_count_available = True
+    evaluated_draw_count = 0
+    for row_index in range(int(candidate_array.shape[0])):
+        row_health = _evaluate_retained_target_health(
+            adapter=adapter,
+            samples=candidate_array[row_index : row_index + 1],
+            target_status_trace_policy=target_status_trace_policy,
+        )
+        shared_reasons.extend(row_health["shared_invalidity_reasons"])
+        candidate_reasons.extend(row_health["candidate_data_invalidity_reasons"])
+        value_finite_count += int(row_health["target_value_finite"] is True)
+        score_finite_count += int(row_health["target_score_finite"] is True)
+        evaluated_draw_count += int(row_health["evaluated_draw_count"])
+        row_status_count = row_health["target_status_failure_count"]
+        if row_status_count is None:
+            status_count_available = False
+        else:
+            status_failure_count += int(row_status_count)
+    return {
+        "shared_invalidity_reasons": tuple(dict.fromkeys(shared_reasons)),
+        "candidate_data_invalidity_reasons": tuple(
+            dict.fromkeys(candidate_reasons)
+        ),
+        "target_value_finite_count": value_finite_count,
+        "target_score_finite_count": score_finite_count,
+        "target_status_failure_count": (
+            status_failure_count if status_count_available else None
+        ),
+        "evaluated_draw_count": evaluated_draw_count,
+    }
+
+
 @dataclass(frozen=True)
 class ReasonableEpsilonAttempt:
     step_size: float
@@ -2509,8 +2631,17 @@ def find_reasonable_epsilon(
     low_acceptance_step: float | None = None
     proposal_seed_list: list[tuple[int, int]] = []
     for proposal_index in range(probe_count):
-        proposal_seed = _seed(normalized_seed, proposal_index)
-        if _g2_seed_use_registry is not None:
+        if _g2_seed_use_registry is None:
+            # Preserve the historical non-registry stream exactly. The G2
+            # registry branch below is the only path that changes derivation.
+            proposal_seed = _seed(normalized_seed, proposal_index)
+        else:
+            proposal_seed = _g2_domain_separated_seed(
+                normalized_seed,
+                base_key=_g2_seed_base_key,
+                domain_label=_G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
+                index=proposal_index,
+            )
             try:
                 proposal_seed = _g2_seed_use_registry.consume(
                     derivation_site_id=(
@@ -2524,10 +2655,10 @@ def find_reasonable_epsilon(
                     owner_qualname="find_reasonable_epsilon",
                     terminal_consumer="tensorflow_stateless_rng",
                     derivation={
-                        "kind": "warmup_index_lane",
+                        "kind": "warmup_domain_hash",
                         "base_key": _g2_seed_base_key,
+                        "domain_label": _G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
                         "index": proposal_index,
-                        "lane": 0,
                     },
                     indices=(
                         {"name": "proposal_index", "value": proposal_index},
@@ -3512,8 +3643,6 @@ def start_bank_qualification_payload_from_exception(
 
 
 @dataclass(frozen=True)
-<<<<<<< HEAD
-=======
 class Phase7EngineeringProbeBankConfig:
     """Explicit non-promoting configuration for four Phase 7 probes.
 
@@ -3640,6 +3769,7 @@ class _Phase7EngineeringProbeBankQualification:
     p4_boundary_stage: str
     p4_builder_entered: bool
     p4_rng_batch_invoked: bool
+    _carrier_signature: str = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         digest_fields = (
@@ -3669,6 +3799,8 @@ class _Phase7EngineeringProbeBankQualification:
             name="candidate_count",
             minimum=0,
         )
+        if candidate_count != 4:
+            raise ValueError("P4-E requires exactly four candidate rows")
         adaptation_generation = _strict_integer(
             self.adaptation_generation,
             name="adaptation_generation",
@@ -3777,8 +3909,12 @@ class _Phase7EngineeringProbeBankQualification:
         if self.p4_seed_consumed:
             if self.p4_distinct_from_preboundary_seeds is not True:
                 raise ValueError("consumed P4 seed must be distinct")
-        elif self.p4_distinct_from_preboundary_seeds not in {None, False}:
-            raise ValueError("unconsumed P4 seed has invalid distinctness")
+        else:
+            expected_distinctness = (
+                False if failure_code == "seed_registry_p4_collision" else None
+            )
+            if self.p4_distinct_from_preboundary_seeds is not expected_distinctness:
+                raise ValueError("unconsumed P4 seed has invalid distinctness")
         if post_boundary_count not in {0, 1}:
             raise ValueError("post-boundary registry count must be zero or one")
         if (failure_code == "seed_registry_postboundary_call") != (
@@ -3870,6 +4006,13 @@ class _Phase7EngineeringProbeBankQualification:
             and callback_rows == 4
             and callback_dimension == dimension
         )
+        health_facts = (
+            self.candidate_data_invalidity_present,
+            value_count,
+            score_count,
+            status_count,
+            evaluated_count,
+        )
         if outcome == "candidate_generation_invalid":
             if (
                 candidate_count != 4
@@ -3902,7 +4045,7 @@ class _Phase7EngineeringProbeBankQualification:
             "candidate_policy_instance_invalid",
             "engineering_probe_bank_constructed",
         }:
-            counts = (value_count, score_count, status_count)
+            required_counts = (value_count, score_count)
             if (
                 candidate_count != 4
                 or evaluated_count != 4
@@ -3911,16 +4054,22 @@ class _Phase7EngineeringProbeBankQualification:
                 or self.bank_round_trip_passed is not True
                 or self.pairwise_distinct is not True
                 or not _is_sha256_hex(self.content_signature)
-                or any(item is None or item > 4 for item in counts)
+                or any(item is None or item > 4 for item in required_counts)
+                or (status_count is not None and status_count > 4)
             ):
                 raise ValueError("terminal candidate qualification is incomplete")
-            if any(item > evaluated_count for item in counts):
+            measured_counts = (
+                value_count,
+                score_count,
+                *(() if status_count is None else (status_count,)),
+            )
+            if any(item > evaluated_count for item in measured_counts):
                 raise ValueError("target-health count exceeds evaluated candidates")
             if failure_code == "none" and (
                 self.candidate_data_invalidity_present is not False
                 or value_count != 4
                 or score_count != 4
-                or status_count != 0
+                or status_count not in {None, 0}
             ):
                 raise ValueError("successful candidate health facts are invalid")
             if failure_code == "candidate_data_invalid" and self.candidate_data_invalidity_present is not True:
@@ -3934,7 +4083,10 @@ class _Phase7EngineeringProbeBankQualification:
             ):
                 raise ValueError("score-nonfinite rejection facts are invalid")
             if failure_code == "target_status_failed" and (
-                value_count != 4 or score_count != 4 or status_count < 1
+                value_count != 4
+                or score_count != 4
+                or status_count is None
+                or status_count < 1
             ):
                 raise ValueError("target-status rejection facts are invalid")
         else:
@@ -3948,6 +4100,169 @@ class _Phase7EngineeringProbeBankQualification:
             content_available = _is_sha256_hex(self.content_signature)
             if content_available != (failure_code in content_failure_codes):
                 raise ValueError("shared-invalidity content availability is invalid")
+            shared_fact_rows = {
+                ("seed_registry_source_coverage_invalid", "entered_pre_seed"): (
+                    False,
+                    None,
+                    None,
+                    "none",
+                ),
+                ("seed_registry_entry_invalid", "entered_pre_seed"): (
+                    False,
+                    None,
+                    None,
+                    "none",
+                ),
+                ("seed_registry_p4_collision", "entered_pre_seed"): (
+                    False,
+                    None,
+                    None,
+                    "none",
+                ),
+                (
+                    "seed_registry_unregistered_consumption",
+                    "seed_consumed_pre_rng",
+                ): (False, None, None, "none"),
+                ("seed_registry_postboundary_call", "seed_consumed_pre_rng"): (
+                    False,
+                    None,
+                    None,
+                    "none",
+                ),
+                ("transform_contract_invalid", "seed_consumed_pre_rng"): (
+                    False,
+                    None,
+                    None,
+                    "none",
+                ),
+                (
+                    "transform_covariance_lineage_invalid",
+                    "seed_consumed_pre_rng",
+                ): (True, None, None, "none"),
+                ("transform_p4_lineage_invalid", "seed_consumed_pre_rng"): (
+                    True,
+                    None,
+                    None,
+                    "none",
+                ),
+                ("adaptation_update_lineage_invalid", "seed_consumed_pre_rng"): (
+                    True,
+                    None,
+                    None,
+                    "none",
+                ),
+                ("offset_sampler_exception", "rng_invoked"): (
+                    True,
+                    None,
+                    None,
+                    "none",
+                ),
+                ("offset_sampler_contract_invalid", "rng_invoked"): (
+                    True,
+                    None,
+                    None,
+                    "none",
+                ),
+                ("candidate_construction_exception", "rng_invoked"): (
+                    True,
+                    None,
+                    None,
+                    "none",
+                ),
+                ("transform_contract_invalid", "rng_invoked"): (
+                    True,
+                    (None, False),
+                    True,
+                    "none",
+                ),
+                ("content_signature_construction_invalid", "rng_invoked"): (
+                    True,
+                    True,
+                    True,
+                    "none",
+                ),
+                ("target_callback_contract_invalid", "rng_invoked"): (
+                    True,
+                    True,
+                    True,
+                    "none",
+                ),
+                ("target_callback_exception", "rng_invoked"): (
+                    True,
+                    True,
+                    True,
+                    "none",
+                ),
+                ("target_health_schema_invalid", "rng_invoked"): (
+                    True,
+                    True,
+                    True,
+                    "none",
+                ),
+                ("target_health_shared_invalidity", "rng_invoked"): (
+                    True,
+                    True,
+                    True,
+                    "returned_health",
+                ),
+                ("target_health_count_mismatch", "rng_invoked"): (
+                    True,
+                    True,
+                    True,
+                    "returned_health",
+                ),
+            }
+            expected_shared_facts = shared_fact_rows.get((failure_code, stage))
+            if expected_shared_facts is None:
+                raise ValueError("shared-invalidity fact row is unavailable")
+            (
+                expected_endpoint,
+                expected_bank,
+                expected_pairwise,
+                health_mode,
+            ) = expected_shared_facts
+            if (
+                self.endpoint_round_trip_passed is not expected_endpoint
+                or not any(
+                    self.bank_round_trip_passed is allowed_bank
+                    for allowed_bank in (
+                        expected_bank
+                        if type(expected_bank) is tuple
+                        else (expected_bank,)
+                    )
+                )
+                or self.pairwise_distinct is not expected_pairwise
+            ):
+                raise ValueError("shared-invalidity geometry facts are inconsistent")
+            if health_mode == "none":
+                if any(item is not None for item in health_facts):
+                    raise ValueError(
+                        "shared-invalidity row cannot claim target-health facts"
+                    )
+            elif (
+                self.candidate_data_invalidity_present is None
+                or value_count is None
+                or value_count > 4
+                or score_count is None
+                or score_count > 4
+                or evaluated_count is None
+                or evaluated_count > 4
+                or (status_count is not None and status_count > 4)
+                or value_count > evaluated_count
+                or score_count > evaluated_count
+                or (
+                    status_count is not None
+                    and status_count > evaluated_count
+                )
+            ):
+                raise ValueError(
+                    "post-callback shared-invalidity health facts are inconsistent"
+                )
+            if (
+                failure_code == "target_health_count_mismatch"
+                and evaluated_count == 4
+            ):
+                raise ValueError("target-health count mismatch claims four evaluations")
             if failure_code == "target_callback_contract_invalid":
                 if expected_callback:
                     raise ValueError("callback-contract failure has expected facts")
@@ -3973,6 +4288,11 @@ class _Phase7EngineeringProbeBankQualification:
         object.__setattr__(self, "outcome", outcome)
         object.__setattr__(self, "failure_code", failure_code)
         object.__setattr__(self, "p4_boundary_stage", stage)
+        object.__setattr__(
+            self,
+            "_carrier_signature",
+            _canonical_ascii_sha256(self.public_payload()),
+        )
 
     @property
     def passed(self) -> bool:
@@ -4123,7 +4443,18 @@ def engineering_probe_bank_qualification_payload_from_exception(
     if type(candidate) is not _Phase7EngineeringProbeBankQualification:
         return None
     try:
-        return candidate.public_payload()
+        validated = _Phase7EngineeringProbeBankQualification(
+            **{
+                name: getattr(candidate, name)
+                for name, definition in (
+                    _Phase7EngineeringProbeBankQualification.__dataclass_fields__.items()
+                )
+                if definition.init
+            }
+        )
+        if candidate._carrier_signature != validated._carrier_signature:
+            return None
+        return validated.public_payload()
     except Exception:  # noqa: BLE001 - schema validation is fail-closed.
         return None
 
@@ -4705,8 +5036,8 @@ def build_phase7_engineering_probe_bank(
     required_health_fields = {
         "shared_invalidity_reasons",
         "candidate_data_invalidity_reasons",
-        "target_value_finite",
-        "target_score_finite",
+        "target_value_finite_count",
+        "target_score_finite_count",
         "target_status_failure_count",
         "evaluated_draw_count",
     }
@@ -4721,10 +5052,16 @@ def build_phase7_engineering_probe_bank(
             raise ValueError("shared invalidity reasons are malformed")
         if any(type(item) is not str or not item for item in candidate_reasons):
             raise ValueError("candidate invalidity reasons are malformed")
-        values_finite = health["target_value_finite"]
-        scores_finite = health["target_score_finite"]
-        if type(values_finite) is not bool or type(scores_finite) is not bool:
-            raise ValueError("target finite flags must be strict booleans")
+        value_count = _strict_integer(
+            health["target_value_finite_count"],
+            name="target_value_finite_count",
+            minimum=0,
+        )
+        score_count = _strict_integer(
+            health["target_score_finite_count"],
+            name="target_score_finite_count",
+            minimum=0,
+        )
         evaluated = _strict_integer(
             health["evaluated_draw_count"],
             name="evaluated_draw_count",
@@ -4732,7 +5069,7 @@ def build_phase7_engineering_probe_bank(
         )
         status_value = health["target_status_failure_count"]
         status_failures = (
-            0
+            None
             if status_value is None
             else _strict_integer(
                 status_value,
@@ -4740,7 +5077,13 @@ def build_phase7_engineering_probe_bank(
                 minimum=0,
             )
         )
-        if evaluated > config.chain_count or status_failures > config.chain_count:
+        measured_counts = (
+            value_count,
+            score_count,
+            evaluated,
+            *(() if status_failures is None else (status_failures,)),
+        )
+        if any(count > config.chain_count for count in measured_counts):
             raise ValueError("target health count exceeds the candidate count")
     except (KeyError, TypeError, ValueError):
         fail(
@@ -4754,8 +5097,6 @@ def build_phase7_engineering_probe_bank(
             content_signature=content_signature,
         )
 
-    value_count = config.chain_count if values_finite else 0
-    score_count = config.chain_count if scores_finite else 0
     common_health = {
         "private_registry_payload": complete_registry,
         "p4_boundary_stage": "rng_invoked",
@@ -4787,19 +5128,19 @@ def build_phase7_engineering_probe_bank(
             failure_code="candidate_data_invalid",
             **{**common_health, "p4_boundary_stage": "candidate_terminal"},
         )
-    if not values_finite:
+    if value_count != config.chain_count:
         fail(
             outcome="candidate_policy_instance_invalid",
             failure_code="target_value_nonfinite",
             **{**common_health, "p4_boundary_stage": "candidate_terminal"},
         )
-    if not scores_finite:
+    if score_count != config.chain_count:
         fail(
             outcome="candidate_policy_instance_invalid",
             failure_code="target_score_nonfinite",
             **{**common_health, "p4_boundary_stage": "candidate_terminal"},
         )
-    if status_failures > 0:
+    if status_failures is not None and status_failures > 0:
         fail(
             outcome="candidate_policy_instance_invalid",
             failure_code="target_status_failed",
@@ -4815,9 +5156,9 @@ def build_phase7_engineering_probe_bank(
         bank_round_trip_passed=True,
         pairwise_distinct=True,
         candidate_data_invalidity_present=False,
-        target_value_finite_count=config.chain_count,
-        target_score_finite_count=config.chain_count,
-        target_status_failure_count=0,
+        target_value_finite_count=value_count,
+        target_score_finite_count=score_count,
+        target_status_failure_count=status_failures,
         evaluated_candidate_count=evaluated,
         content_signature=content_signature,
     )
@@ -4881,9 +5222,9 @@ def _build_postfreeze_private_start_bank(
             target_health_fn=(
                 _target_health_fn
                 if _target_health_fn is not None
-                else lambda canonical: _evaluate_retained_target_health(
+                else lambda canonical: _evaluate_phase7_engineering_probe_target_health(
                     adapter=adapter,
-                    samples=canonical,
+                    candidates=canonical,
                     target_status_trace_policy=target_status_trace_policy,
                 )
             ),
@@ -4921,7 +5262,6 @@ def _build_postfreeze_private_start_bank(
 
 
 @dataclass(frozen=True)
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
 class OperationalWindowedWarmupResult:
     config: WindowedMassAdaptationConfig
     initial_coordinate_signature: str
@@ -4929,11 +5269,15 @@ class OperationalWindowedWarmupResult:
     reasonable_epsilon: ReasonableEpsilonResult
     windows: tuple[OperationalWarmupWindowResult, ...]
     private_start_bank_theta: Any
-    start_bank_qualification: _StartBankQualificationDiagnostic
+    start_bank_qualification: _StartBankQualificationDiagnostic | None
     seed_root: tuple[int, int]
     target_scope: str
     target_status_trace_policy: str
     elapsed_s: float
+    private_start_bank_policy_id: str = _START_BANK_POLICY_ID
+    engineering_probe_bank_qualification: (
+        _Phase7EngineeringProbeBankQualification | None
+    ) = None
     status: str = "passed"
     algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION
@@ -5003,14 +5347,47 @@ class OperationalWindowedWarmupResult:
         if not np.all(np.isfinite(bank)):
             raise ValueError("private start bank must be finite")
         qualification = self.start_bank_qualification
-        if (
-            type(qualification) is not _StartBankQualificationDiagnostic
-            or not qualification.authoritative.selection_succeeded
-        ):
-            raise ValueError(
-                "operational warmup requires a successful start-bank qualification"
+        bank_policy_id = str(self.private_start_bank_policy_id)
+        engineering_qualification = self.engineering_probe_bank_qualification
+        if bank_policy_id == _START_BANK_POLICY_ID:
+            if (
+                type(qualification) is not _StartBankQualificationDiagnostic
+                or not qualification.authoritative.selection_succeeded
+            ):
+                raise ValueError(
+                    "legacy operational warmup requires a successful start-bank qualification"
+                )
+            qualification.public_payload()
+            if engineering_qualification is not None:
+                raise ValueError("legacy start bank cannot carry a P4-E qualification")
+        elif bank_policy_id == PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
+            if qualification is not None:
+                raise ValueError("P4-E start bank cannot carry a legacy qualification")
+            if (
+                type(engineering_qualification)
+                is not _Phase7EngineeringProbeBankQualification
+                or not engineering_qualification.passed
+                or engineering_qualification.dimension != bank.shape[1]
+                or engineering_qualification.candidate_count != bank.shape[0]
+                or engineering_qualification.transform_signature
+                != self.final_kernel_state.transform.signature
+            ):
+                raise ValueError(
+                    "P4-E operational warmup requires a successful matching qualification"
+                )
+            engineering_qualification.public_payload()
+            expected_content_signature = (
+                _phase7_engineering_probe_bank_content_signature(
+                    bank,
+                    transform_signature=self.final_kernel_state.transform.signature,
+                    target_signature=engineering_qualification.target_signature,
+                    config_signature=engineering_qualification.config_signature,
+                )
             )
-        qualification.public_payload()
+            if engineering_qualification.content_signature != expected_content_signature:
+                raise ValueError("P4-E private start-bank content signature mismatch")
+        else:
+            raise ValueError("unsupported private start-bank policy")
         final_state = self.final_kernel_state
         if self.config.mass_policy == "fixed_identity" and (
             final_state.transform.signature != initial_signature
@@ -5045,19 +5422,39 @@ class OperationalWindowedWarmupResult:
             )
         ):
             raise ValueError("operational warmup final kernel lineage is invalid")
-        scale = max(float(np.linalg.norm(np.std(bank, axis=0))), 1.0)
-        tolerance = 1.0e-10 * scale
-        pairwise = np.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
-        if (
-            not np.allclose(
-                bank[-1],
-                final_state.canonical_theta,
-                rtol=1.0e-10,
-                atol=1.0e-10,
+        if bank_policy_id == _START_BANK_POLICY_ID:
+            scale = max(float(np.linalg.norm(np.std(bank, axis=0))), 1.0)
+            tolerance = 1.0e-10 * scale
+            pairwise = np.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
+            if (
+                not np.allclose(
+                    bank[-1],
+                    final_state.canonical_theta,
+                    rtol=1.0e-10,
+                    atol=1.0e-10,
+                )
+                or np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance)
+            ):
+                raise ValueError(
+                    "legacy private start bank must be dispersed and include the endpoint"
+                )
+        else:
+            final_latent = np.asarray(
+                final_state.transform.theta_to_latent(bank).numpy(),
+                dtype=float,
             )
-            or np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance)
-        ):
-            raise ValueError("private start bank must be dispersed and include the endpoint")
+            round_trip = np.asarray(
+                final_state.transform.latent_to_theta(final_latent).numpy(),
+                dtype=float,
+            )
+            pairwise = np.linalg.norm(
+                final_latent[:, None, :] - final_latent[None, :, :], axis=-1
+            )
+            if (
+                not np.allclose(round_trip, bank, rtol=1.0e-10, atol=1.0e-10)
+                or np.any(pairwise[np.triu_indices(4, k=1)] <= 0.0)
+            ):
+                raise ValueError("P4-E private start bank transform invariant failed")
         seed_root = _strict_seed(self.seed_root, name="seed_root")
         target_scope = str(self.target_scope)
         target_status_policy = _target_status_policy(self.target_status_trace_policy)
@@ -5078,6 +5475,12 @@ class OperationalWindowedWarmupResult:
         object.__setattr__(self, "windows", windows)
         object.__setattr__(self, "private_start_bank_theta", bank)
         object.__setattr__(self, "start_bank_qualification", qualification)
+        object.__setattr__(self, "private_start_bank_policy_id", bank_policy_id)
+        object.__setattr__(
+            self,
+            "engineering_probe_bank_qualification",
+            engineering_qualification,
+        )
         object.__setattr__(self, "seed_root", seed_root)
         object.__setattr__(self, "target_scope", target_scope)
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
@@ -5092,6 +5495,13 @@ class OperationalWindowedWarmupResult:
     def private_start_bank_signature(self) -> str:
         digest = hashlib.sha256(np.ascontiguousarray(self.private_start_bank_theta).tobytes())
         digest.update(self.final_kernel_state.transform.signature.encode("ascii"))
+        digest.update(self.private_start_bank_policy_id.encode("ascii"))
+        if self.engineering_probe_bank_qualification is not None:
+            digest.update(
+                self.engineering_probe_bank_qualification.config_signature.encode(
+                    "ascii"
+                )
+            )
         return digest.hexdigest()
 
     @property
@@ -5149,12 +5559,18 @@ class OperationalWindowedWarmupResult:
             "every_update_used_by_later_transition": self.every_update_used_by_later_transition,
             "private_start_bank": {
                 "schema": "bayesfilter.hmc_private_start_bank.v2",
+                "policy_id": self.private_start_bank_policy_id,
                 "signature": self.private_start_bank_signature,
                 "count": 4,
+                "engineering_probe_qualification": None
+                if self.engineering_probe_bank_qualification is None
+                else self.engineering_probe_bank_qualification.public_payload(),
                 "raw_values_exposed": False,
                 "paths_exposed": False,
             },
-            "seed_root": self.seed_root,
+            "seed_root": self.seed_root
+            if self.private_start_bank_policy_id == _START_BANK_POLICY_ID
+            else None,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
             "elapsed_s": self.elapsed_s,
@@ -5289,13 +5705,10 @@ def run_operational_windowed_warmup(
     target_accept_prob: float,
     seed: tuple[int, int],
     target_scope: str,
-<<<<<<< HEAD
-=======
     engineering_probe_config: Phase7EngineeringProbeBankConfig | None = None,
     initial_position_covariance_estimate_signature: str | None = None,
     _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
     _g2_p4_action_tracker: _G2P4BoundaryActionTracker | None = None,
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
     chain_execution_mode: str = "tf_function",
     jit_compile: bool = False,
     target_status_trace_policy: str = "none",
@@ -5315,9 +5728,6 @@ def run_operational_windowed_warmup(
         raise TypeError("initial_transform must be AffineCoordinateTransform")
     if not isinstance(trajectory_policy, WarmupTrajectoryPolicy):
         raise TypeError("trajectory_policy must be WarmupTrajectoryPolicy")
-<<<<<<< HEAD
-    normalized_seed = _strict_seed(seed, name="seed")
-=======
     if engineering_probe_config is not None and not isinstance(
         engineering_probe_config,
         Phase7EngineeringProbeBankConfig,
@@ -5344,7 +5754,6 @@ def run_operational_windowed_warmup(
         normalized_seed = _strict_builtin_seed(seed, name="seed")
     else:
         normalized_seed = _strict_seed(seed, name="seed")
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
     if chain_execution_mode not in {"eager", "tf_function"}:
         raise ValueError("chain_execution_mode must be eager or tf_function")
     target_status_policy = _target_status_policy(target_status_trace_policy)
@@ -6319,27 +6728,6 @@ def run_operational_windowed_warmup(
     history = np.asarray(results[-1].adaptation_canonical_states, dtype=float).reshape(
         (-1, initial_transform.dimension)
     )
-<<<<<<< HEAD
-    authoritative_assessment = _assess_private_start_bank(
-        history,
-        reference_transform=kernel_state.transform,
-        scope="authoritative_final_window",
-    )
-    shadow_diagnostic = _best_effort_shadow_start_bank_scope(
-        canonical_history,
-        reference_transform=kernel_state.transform,
-        minimum_relative_separation=(
-            authoritative_assessment.diagnostic.minimum_relative_separation
-        ),
-    )
-    start_bank_qualification = _StartBankQualificationDiagnostic(
-        authoritative=authoritative_assessment.diagnostic,
-        shadow=shadow_diagnostic,
-    )
-    bank = _materialize_private_start_bank(
-        authoritative_assessment,
-        qualification=start_bank_qualification,
-=======
     (
         bank,
         start_bank_qualification,
@@ -6359,7 +6747,6 @@ def run_operational_windowed_warmup(
         all_window_history=canonical_history,
         engineering_probe_config=engineering_probe_config,
         target_status_trace_policy=target_status_policy,
->>>>>>> bdf6197d (Add generated artifacts, plans, reviews, and benchmarks to gitignore)
     )
     result = OperationalWindowedWarmupResult(
         config=config,
@@ -6373,6 +6760,8 @@ def run_operational_windowed_warmup(
         target_scope=str(target_scope),
         target_status_trace_policy=target_status_policy,
         elapsed_s=time.perf_counter() - start,
+        private_start_bank_policy_id=bank_policy_id,
+        engineering_probe_bank_qualification=engineering_qualification,
         algorithm_id=algorithm_id,
         route_contract_version=route_contract_version,
     )
