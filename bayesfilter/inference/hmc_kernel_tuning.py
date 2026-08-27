@@ -141,7 +141,10 @@ from bayesfilter.inference.posterior_adapter import (
     ValueScoreCapability,
     value_score_capability,
 )
-from bayesfilter.inference.tuning_contract import require_active_hmc_tuning_route
+from bayesfilter.inference.tuning_contract import (
+    HMCTuningRunnerBinding,
+    require_active_hmc_tuning_route,
+)
 from bayesfilter.runtime import stable_config_hash
 
 
@@ -6172,6 +6175,25 @@ class HMCTuneVerifyRepairAttempt:
             else dict(self.handoff_state_payload)
         )
         object.__setattr__(self, "handoff_state_payload", handoff)
+        if self.final_status == "passed":
+            if self.hard_vetoes:
+                raise ValueError("passed Phase 7 attempt cannot have hard vetoes")
+            diagnostics = self.verification_diagnostics
+            if diagnostics.get("sequential_rhat_verification") is True:
+                if diagnostics.get("passed") is not True:
+                    raise ValueError(
+                        "passed Phase 7 attempt requires passed sequential verifier"
+                    )
+                if diagnostics.get(
+                    "all_finite_rhat_at_or_below_threshold"
+                ) is not True:
+                    raise ValueError(
+                        "passed Phase 7 attempt requires the sequential R-hat gate"
+                    )
+                if diagnostics.get("cap_hit") is not False:
+                    raise ValueError(
+                        "passed Phase 7 attempt cannot report a verification cap hit"
+                    )
 
     @property
     def passed(self) -> bool:
@@ -6271,6 +6293,8 @@ class HMCTuneVerifyRepairLoopResult:
                 raise ValueError("passed Phase 7 loop requires final kernel")
             if stable_config_hash(final_payload) != final_hash:
                 raise ValueError("final kernel hash mismatch")
+            if not attempts[-1].passed:
+                raise ValueError("passed Phase 7 loop requires a passed final attempt")
         if self.final_status in {
             "repair_or_retry",
             "budget_exhausted",
@@ -6987,6 +7011,7 @@ class HMCKernelTuningResult:
     nonclaims: tuple[str, ...] = HMC_KERNEL_TUNING_PUBLIC_NONCLAIMS
     phase7_early_closeout_public_summary: Mapping[str, Any] | None = None
     failure_diagnostics: Mapping[str, Any] | None = None
+    runner_binding_payload: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.config, HMCKernelTuningConfig):
@@ -7034,6 +7059,20 @@ class HMCKernelTuningResult:
             else dict(self.failure_diagnostics)
         )
         object.__setattr__(self, "failure_diagnostics", failure_diagnostics)
+        runner_binding_payload = (
+            None
+            if self.runner_binding_payload is None
+            else dict(self.runner_binding_payload)
+        )
+        if runner_binding_payload is not None:
+            if not str(runner_binding_payload.get("runner_identity", "")):
+                raise ValueError("runner_binding_payload requires runner_identity")
+            binding_hash = str(runner_binding_payload.get("binding_hash", ""))
+            if len(binding_hash) != 64:
+                raise ValueError("runner_binding_payload requires a SHA-256 binding_hash")
+            if runner_binding_payload.get("artifact_authority") is not False:
+                raise ValueError("chain runner binding cannot own tuning authority")
+        object.__setattr__(self, "runner_binding_payload", runner_binding_payload)
         nonclaims = tuple(str(item) for item in self.nonclaims)
         if not nonclaims:
             raise ValueError("nonclaims must be non-empty")
@@ -7135,6 +7174,7 @@ class HMCKernelTuningResult:
                 self.phase7_early_closeout_public_summary
             ),
             "failure_diagnostics": self.failure_diagnostics,
+            "runner_binding_payload": self.runner_binding_payload,
             "passed": self.passed,
             "smoke_result_is_contract_only": self.config.is_smoke,
             "final_kernel_requires_phase7_pass": True,
@@ -9118,13 +9158,13 @@ def _operational_windowed_mass_capture(
             "error_type": None,
             "error_message": None,
         }
-    except Exception:  # noqa: BLE001 - compatibility is non-authoritative.
+    except Exception as exc:  # noqa: BLE001 - compatibility is non-authoritative.
         windowed_result = None
         compatibility_status = {
             "status": "unavailable_error",
             "authoritative": False,
             "failure_code": "legacy_v1_compatibility_projection_unavailable",
-            "error_type": None,
+            "error_type": type(exc).__name__,
             "error_message": None,
             "exception_details_exposed": False,
         }
@@ -13028,6 +13068,60 @@ def run_hmc_tune_verify_repair_loop(
     return result
 
 
+def _ordinary_tuning_source_dependency_closure() -> Mapping[str, Any]:
+    """Hash the executable source boundary of the default ordinary runner."""
+
+    inference_root = Path(__file__).resolve().parent
+    package_root = inference_root.parent
+    repository_root = package_root.parent
+    paths = (
+        inference_root / "hmc_kernel_tuning.py",
+        inference_root / "hmc.py",
+        inference_root / "hmc_tuning.py",
+        inference_root / "hmc_coordinates.py",
+        inference_root / "tuning_contract.py",
+        inference_root / "posterior_adapter.py",
+        inference_root / "__init__.py",
+        package_root / "__init__.py",
+    )
+    missing = tuple(str(path) for path in paths if not path.is_file())
+    if missing:
+        raise RuntimeError(
+            "ordinary HMC tuning source closure is incomplete: " + ", ".join(missing)
+        )
+    return {
+        "schema": "bayesfilter.ordinary_hmc_tuning_source_closure.v1",
+        "files": tuple(
+            {
+                "path": str(path.relative_to(repository_root)),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+            for path in paths
+        ),
+    }
+
+
+def _public_tuning_runner_identity_payload(
+    *,
+    runner_binding: HMCTuningRunnerBinding | None,
+    target_scope: str | None,
+) -> Mapping[str, Any]:
+    if runner_binding is not None:
+        return runner_binding.payload()
+    identity = {
+        "schema": "bayesfilter.default_hmc_tuning_runner_identity.v1",
+        "runner_identity": "bayesfilter.inference.hmc.run_full_chain_tfp_hmc",
+        "algorithm_family": "tfp_exact_gradient_fixed_trajectory_hmc",
+        "target_scope": target_scope,
+        "supported_target_status_trace_policies": ("none", "per_chain_step"),
+        "supported_chain_execution_modes": ("tf_function", "eager"),
+        "backend": "tensorflow_probability",
+        "source_dependency_closure": _ordinary_tuning_source_dependency_closure(),
+        "artifact_authority": False,
+    }
+    return {**identity, "binding_hash": stable_config_hash(identity)}
+
+
 def _run_canonical_hmc_tuning(
     *,
     adapter: Any,
@@ -13039,6 +13133,7 @@ def _run_canonical_hmc_tuning(
     parameter_scales: Any | None = None,
     diagnostic_callback: FixedMassScreenCallback | None = None,
     verification_checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
+    runner_binding: HMCTuningRunnerBinding | None = None,
 ) -> HMCKernelTuningResult:
     """Tune a frozen HMC kernel from model-facing inputs.
 
@@ -13055,6 +13150,38 @@ def _run_canonical_hmc_tuning(
     cfg = HMCKernelTuningConfig.standard() if config is None else config
     if not isinstance(cfg, HMCKernelTuningConfig):
         raise TypeError("config must be HMCKernelTuningConfig")
+    if runner_binding is not None and not isinstance(
+        runner_binding, HMCTuningRunnerBinding
+    ):
+        raise TypeError("runner_binding must be HMCTuningRunnerBinding")
+    capability_scope = value_score_capability(adapter).target_scope
+    resolved_target_scope = (
+        cfg.target_scope if cfg.target_scope is not None else capability_scope
+    )
+    if runner_binding is not None:
+        if resolved_target_scope is None or not str(resolved_target_scope):
+            raise ValueError(
+                "typed runner binding requires config.target_scope or adapter target scope"
+            )
+        runner_binding.validate_public_context(
+            target_scope=str(resolved_target_scope),
+            target_status_trace_policy=cfg.target_status_trace_policy,
+            chain_execution_mode=cfg.chain_execution_mode,
+            use_xla=cfg.use_xla,
+        )
+        if verification_checkpoint_writer_config is not None:
+            raise ValueError(
+                "typed runner binding does not support sequential-R-hat checkpoint writing"
+            )
+    selected_run_full_chain: RunFullChainFn = (
+        run_full_chain_tfp_hmc if runner_binding is None else runner_binding
+    )
+    runner_identity_payload = _public_tuning_runner_identity_payload(
+        runner_binding=runner_binding,
+        target_scope=(
+            None if resolved_target_scope is None else str(resolved_target_scope)
+        ),
+    )
     require_hmc_algorithm_route(
         algorithm_id=cfg.algorithm_id,
         stage=HMC_TOP_LEVEL_SELECTION_STAGE,
@@ -13065,6 +13192,9 @@ def _run_canonical_hmc_tuning(
         heartbeat_enabled=cfg.incall_progress_heartbeat_s is not None,
         output_path_enabled=output_dir is not None,
         checkpointing_enabled=verification_checkpoint_writer_config is not None,
+        runner_identity=(
+            "default" if runner_binding is None else runner_binding.runner_identity
+        ),
     )
     public_timeout_started_perf_counter_s = (
         time.perf_counter() if cfg.public_timeout_budget_s is not None else None
@@ -13467,6 +13597,7 @@ def _run_canonical_hmc_tuning(
             final_kernel_hash=None,
             artifact_path=None if artifact_path is None else str(artifact_path),
             diagnostic_roles=_public_tuning_diagnostic_roles(),
+            runner_binding_payload=runner_identity_payload,
             failure_diagnostics=_public_failure_diagnostics(
                 stage="geometry", exc=exc
             ),
@@ -13508,6 +13639,7 @@ def _run_canonical_hmc_tuning(
             adapter=adapter,
             geometry=geometry,
             config=_public_bootstrap_config(cfg, geometry=geometry),
+            run_full_chain=selected_run_full_chain,
             progress_callback=write_bootstrap_progress,
             _private_diagnostic_callback=write_private_tuning_diagnostic,
         )
@@ -13532,6 +13664,7 @@ def _run_canonical_hmc_tuning(
                 final_kernel_hash=None,
                 artifact_path=None if artifact_path is None else str(artifact_path),
                 diagnostic_roles=_public_tuning_diagnostic_roles(),
+                runner_binding_payload=runner_identity_payload,
                 failure_diagnostics=_public_bootstrap_failure_diagnostics(bootstrap),
             )
             write_result_artifact(result)
@@ -13565,6 +13698,7 @@ def _run_canonical_hmc_tuning(
                 final_kernel_hash=None,
                 artifact_path=None if artifact_path is None else str(artifact_path),
                 diagnostic_roles=_public_tuning_diagnostic_roles(),
+                runner_binding_payload=runner_identity_payload,
                 failure_diagnostics={
                     "stage": "bootstrap",
                     "bootstrap_final_status": bootstrap.final_status,
@@ -13639,6 +13773,7 @@ def _run_canonical_hmc_tuning(
             final_kernel_hash=None,
             artifact_path=None if artifact_path is None else str(artifact_path),
             diagnostic_roles=_public_tuning_diagnostic_roles(),
+            runner_binding_payload=runner_identity_payload,
             failure_diagnostics=_public_failure_diagnostics(
                 stage="bootstrap", exc=exc
             ),
@@ -13703,6 +13838,7 @@ def _run_canonical_hmc_tuning(
             final_kernel_hash=None,
             artifact_path=None if artifact_path is None else str(artifact_path),
             diagnostic_roles=_public_tuning_diagnostic_roles(),
+            runner_binding_payload=runner_identity_payload,
             phase7_early_closeout_public_summary=early_phase7_closeout,
         )
         write_result_artifact(result)
@@ -13734,6 +13870,7 @@ def _run_canonical_hmc_tuning(
             trajectory_screen_callback=diagnostic_callback,
             verification_callback=diagnostic_callback,
             verification_checkpoint_writer_config=verification_checkpoint_writer_config,
+            run_full_chain=selected_run_full_chain,
             _budget_policy_factory=_public_budget_policy_factory(
                 cfg,
                 geometry=geometry,
@@ -13770,6 +13907,7 @@ def _run_canonical_hmc_tuning(
             final_kernel_hash=None,
             artifact_path=None if artifact_path is None else str(artifact_path),
             diagnostic_roles=_public_tuning_diagnostic_roles(),
+            runner_binding_payload=runner_identity_payload,
         )
         write_result_artifact(result)
         write_progress(
@@ -13786,7 +13924,11 @@ def _run_canonical_hmc_tuning(
     hard_vetoes = loop.hard_vetoes
     repair_triggers = loop.repair_triggers
     if loop.passed:
-        final_kernel_payload = _public_final_kernel_handoff_payload(loop)
+        final_kernel_payload = {
+            **_public_final_kernel_handoff_payload(loop),
+            "runner_binding_hash": runner_identity_payload["binding_hash"],
+            "runner_identity": runner_identity_payload["runner_identity"],
+        }
         final_kernel_hash = stable_config_hash(final_kernel_payload)
     result = HMCKernelTuningResult(
         config=cfg,
@@ -13803,6 +13945,7 @@ def _run_canonical_hmc_tuning(
         final_kernel_hash=final_kernel_hash,
         artifact_path=None if artifact_path is None else str(artifact_path),
         diagnostic_roles=_public_tuning_diagnostic_roles(),
+        runner_binding_payload=runner_identity_payload,
     )
     write_result_artifact(result)
     write_progress(
@@ -14196,8 +14339,13 @@ def tune_hmc_kernel(
     parameter_scales: Any | None = None,
     diagnostic_callback: FixedMassScreenCallback | None = None,
     verification_checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
+    runner_binding: HMCTuningRunnerBinding | None = None,
 ) -> HMCKernelTuningResult:
-    """Run BayesFilter's sole active ordinary-HMC tuning interface."""
+    """Run BayesFilter's sole active ordinary-HMC tuning interface.
+
+    ``runner_binding`` accepts only a repository-issued typed binding. A bare
+    chain runner cannot enter the public route or issue artifact authority.
+    """
 
     require_active_hmc_tuning_route("tune_hmc_kernel")
     return _run_canonical_hmc_tuning(
@@ -14210,6 +14358,7 @@ def tune_hmc_kernel(
         parameter_scales=parameter_scales,
         diagnostic_callback=diagnostic_callback,
         verification_checkpoint_writer_config=verification_checkpoint_writer_config,
+        runner_binding=runner_binding,
     )
 
 
@@ -24061,9 +24210,13 @@ def _run_phase7_sequential_rhat_final_verification(
         "minimum_retained_pass_gate_satisfied": bool(
             retained_count_int >= int(min_retained_for_pass)
         ),
-        "rhat_threshold_role": "historical_explanatory_only_not_stopping_or_admission",
-        "handoff_gate": "dependence_aware_acceptance_evidence_and_hard_health",
-        "stopping_rule": "stop_at_first_fixed_checkpoint_with_typed_acceptance_decision",
+        "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
+        "handoff_gate": (
+            "dependence_aware_acceptance_evidence_hard_health_minimum_draws_and_rhat"
+        ),
+        "stopping_rule": (
+            "stop_on_nonpromoting_acceptance_or_first_checkpoint_passing_acceptance_health_minimum_draws_and_rhat"
+        ),
         "cap_rule": "stop_inconclusive_at_budget_policy_verification_num_results",
         "acceptance_policy": acceptance_policy.payload(),
         "target_status_trace_policy": config.target_status_trace_policy,
@@ -24071,7 +24224,7 @@ def _run_phase7_sequential_rhat_final_verification(
             "finite_value_and_score_per_retained_chain_batch"
         ),
         "early_rhat_pass_before_minimum_retained_count": (
-            "continue_until_minimum_retained_count; rhat_remains_explanatory"
+            "continue_until_minimum_retained_count; both gates are required"
         ),
         "mechanics_publicized": False,
     }
@@ -24084,11 +24237,11 @@ def _run_phase7_sequential_rhat_final_verification(
         "semantic_source": "_run_phase7_sequential_rhat_final_verification",
         "route_nonclaims": (
             "sequential R-hat final verification uses fixed-size TF/TFP chunks",
-            "R-hat is historical explanatory telemetry, not a stopping rule, tuning handoff criterion, or posterior convergence proof",
+            "R-hat gates this fixed-kernel tuning handoff but does not prove retained posterior convergence",
         ),
-        "evidence_role": "engineering_only",
-        "promotion_role": "non_promoting",
-        "stopping_rule_role": "not_a_stopping_rule",
+        "evidence_role": "fixed_kernel_tuning_admission",
+        "promotion_role": "handoff_gate",
+        "stopping_rule_role": "required_with_acceptance_health_and_minimum_draws",
         "reports_posterior_convergence": False,
         "reports_sampler_superiority": False,
     }
@@ -24526,6 +24679,45 @@ def _classify_phase7_acceptance_evidence_verification(
             (),
         )
     if evidence.promotion_eligible:
+        rhat_passed = diagnostics.get("passed")
+        all_rhat_passed = diagnostics.get(
+            "all_finite_rhat_at_or_below_threshold"
+        )
+        cap_hit = diagnostics.get("cap_hit")
+        if not all(
+            isinstance(value, bool)
+            for value in (rhat_passed, all_rhat_passed, cap_hit)
+        ):
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_rhat_gate_missing_or_invalid",),
+                (),
+            )
+        if rhat_passed != all_rhat_passed or (rhat_passed and cap_hit):
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_rhat_gate_inconsistent",),
+                (),
+            )
+        if not rhat_passed:
+            if not cap_hit:
+                return (
+                    "hard_veto",
+                    "shared_invalidity",
+                    ("verification_rhat_failure_without_cap",),
+                    (),
+                )
+            return (
+                "repair_or_retry",
+                "verification_rhat_repair_trigger",
+                (),
+                (
+                    "verification_rhat_above_threshold_or_cap_hit",
+                    "verification_rhat_cap_hit",
+                ),
+            )
         return (
             "passed",
             "dependence_aware_fixed_kernel_verification_passed",

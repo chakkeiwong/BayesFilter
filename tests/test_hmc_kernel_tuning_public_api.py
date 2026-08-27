@@ -9,6 +9,7 @@ from typing import Any, Mapping
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import pytest
+import tensorflow as tf
 
 import bayesfilter
 from bayesfilter.inference import (
@@ -27,6 +28,11 @@ from bayesfilter.inference import (
     tune_hmc_kernel,
 )
 from bayesfilter.runtime import stable_config_hash
+from bayesfilter.inference.neural_force_hmc import (
+    FrozenPositionOnlyForce,
+    FrozenTargetPotential,
+    bind_neural_force_hmc_tuning_runner,
+)
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning_module
 from tests.test_hmc_kernel_tuning_fixed_mass_step import _ToyGaussianAdapter
@@ -40,6 +46,70 @@ from tests.test_hmc_kernel_tuning_bootstrap import run_hmc_bootstrap_screen
 
 def _bootstrap_passed():
     return _passed_bootstrap()
+
+
+def test_public_tuner_threads_typed_runner_binding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target_scope = "kernel_fixed_mass_step_toy_gaussian"
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=FrozenPositionOnlyForce(
+            lambda position: tf.convert_to_tensor(position, tf.float64),
+            identity="public-api-binding-force",
+        ),
+        target=FrozenTargetPotential(
+            lambda position: 0.5
+            * tf.reduce_sum(tf.square(position), axis=-1),
+            identity="public-api-binding-target",
+        ),
+        target_scope=target_scope,
+    )
+    geometry = _geometry()
+    bootstrap = _bootstrap_passed()
+    loop = _loop_result(passed=False)
+    seen: list[str] = []
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "initialize_hmc_kernel_geometry",
+        lambda **_kwargs: geometry,
+    )
+
+    def bootstrap_runner(**kwargs: Any):
+        assert kwargs["run_full_chain"] is binding
+        seen.append("bootstrap")
+        return bootstrap
+
+    def loop_runner(**kwargs: Any):
+        assert kwargs["run_full_chain"] is binding
+        seen.append("loop")
+        return loop
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module, "run_hmc_bootstrap_screen", bootstrap_runner
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module, "run_hmc_tune_verify_repair_loop", loop_runner
+    )
+
+    result = tune_hmc_kernel(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=[0.0, 0.0],
+        config=HMCKernelTuningConfig.smoke(target_scope=target_scope),
+        runner_binding=binding,
+    )
+
+    assert seen == ["bootstrap", "loop"]
+    assert result.runner_binding_payload is not None
+    assert result.runner_binding_payload["binding_hash"] == binding.binding_hash
+    assert result.final_kernel_payload is None
+    with pytest.raises(TypeError, match="HMCTuningRunnerBinding"):
+        tune_hmc_kernel(
+            adapter=_ToyGaussianAdapter(),
+            initial_position=[0.0, 0.0],
+            config=HMCKernelTuningConfig.smoke(target_scope=target_scope),
+            runner_binding=lambda *_args: None,
+        )
 
 
 def _loop_result(*, passed: bool = True) -> HMCTuneVerifyRepairLoopResult:
@@ -196,12 +266,13 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "max_results": 64,
             "num_burnin_steps": 16,
             "chain_count": 4,
-            "rhat_threshold_role": "diagnostic_early_stop_only_not_tuning_handoff_gate",
+            "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
             "step_size": 0.2,
             "num_leapfrog_steps": 8,
         },
         verification_diagnostics={
             "sequential_rhat_verification": True,
+            "passed": False,
             "rhat_threshold": 1.01,
             "check_interval": 64,
             "max_results": 64,
@@ -225,21 +296,15 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "reports_posterior_convergence": False,
         },
         verification_callback_result=attempt.verification_callback_result,
-        final_status="passed",
-        diagnostic_role="sequential_rhat_fixed_kernel_verification_passed",
+        final_status="repair_or_retry",
+        diagnostic_role="verification_rhat_repair_trigger",
         hard_vetoes=(),
-        repair_triggers=(),
+        repair_triggers=(
+            "verification_rhat_above_threshold_or_cap_hit",
+            "verification_rhat_cap_hit",
+        ),
         handoff_state_payload=attempt.handoff_state_payload,
     )
-    final_kernel_payload = {
-        "schema": "bayesfilter.hmc_phase7_final_kernel_public_handoff.v1",
-        "hmc_mechanics_exposed": False,
-        "reports_posterior_convergence": False,
-        "reports_sampler_superiority": False,
-        "reports_default_readiness": False,
-        "reports_gpu_or_xla_readiness": False,
-    }
-    final_kernel_hash = stable_config_hash(final_kernel_payload)
     return HMCTuneVerifyRepairLoopResult(
         config=base.config,
         geometry_artifact_hash=base.geometry_artifact_hash,
@@ -247,12 +312,15 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
         adapter_signature=base.adapter_signature,
         target_dimension=base.target_dimension,
         attempts=(attempt,),
-        final_status="passed",
-        diagnostic_role="fresh_fixed_kernel_verification_passed",
+        final_status="repair_or_retry",
+        diagnostic_role="verification_rhat_repair_trigger",
         hard_vetoes=(),
-        repair_triggers=(),
-        final_kernel_payload=final_kernel_payload,
-        final_kernel_hash=final_kernel_hash,
+        repair_triggers=(
+            "verification_rhat_above_threshold_or_cap_hit",
+            "verification_rhat_cap_hit",
+        ),
+        final_kernel_payload=None,
+        final_kernel_hash=None,
         seed_report=base.seed_report,
         diagnostic_roles=base.diagnostic_roles,
     )
@@ -2123,7 +2191,7 @@ def test_public_artifact_exposes_phase7_public_timeout_before_windowed_mass_with
         assert forbidden not in text
 
 
-def test_public_artifact_exposes_attempt_and_verification_summary_without_mechanics(
+def test_public_tuner_rejects_failed_sequential_rhat_handoff(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2150,7 +2218,9 @@ def test_public_artifact_exposes_attempt_and_verification_summary_without_mechan
     phase7 = payload["phase7_public_summary"]
     attempt = phase7["attempt_summaries"][0]
     verification = attempt["stage_statuses"]["verification"]
-    assert result.final_kernel_hash is not None
+    assert result.final_status == "repair_or_retry"
+    assert result.final_kernel_hash is None
+    assert result.final_kernel_payload is None
     assert phase7["attempt_count"] == 1
     assert attempt["attempt_index"] == 0
     assert attempt["budget_public_summary"]["public_budget_class"] == (
@@ -2163,7 +2233,7 @@ def test_public_artifact_exposes_attempt_and_verification_summary_without_mechan
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
     assert (
         verification["rhat_threshold_role"]
-        == "diagnostic_early_stop_only_not_tuning_handoff_gate"
+        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
     )
     assert verification["acceptance_relation"] == "inside_acceptance_band"
     assert verification["acceptance_band_from_payload"] is True

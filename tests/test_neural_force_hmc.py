@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+from dataclasses import replace
 
 import pytest
 import tensorflow as tf
@@ -12,14 +13,16 @@ from bayesfilter.inference.neural_force_hmc import (
     FrozenTargetPotential,
     InvalidNeuralForceHMCConfiguration,
     NeuralForceHMCConfig,
+    bind_neural_force_hmc_tuning_runner,
     kinetic_energy,
     neural_force_hmc_transition,
     neural_force_proposal,
     run_full_chain_neural_force_hmc,
     sample_neural_force_hmc,
 )
-from bayesfilter.inference.hmc import FullChainHMCConfig
+from bayesfilter.inference.hmc import FullChainHMCConfig, FullChainHMCRunResult
 from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
+from bayesfilter.inference.tuning_contract import hmc_tuning_interface_capability
 
 
 DTYPE = tf.float64
@@ -47,6 +50,110 @@ def _gaussian_target(dimension: int = 2):
         function=lambda position: 0.5 * tf.reduce_sum(tf.square(position), axis=-1),
         identity="standard-gaussian-target",
     )
+
+
+class _IdentityAffineTransform:
+    factor = tf.eye(2, dtype=DTYPE)
+    center = tf.zeros((2,), dtype=DTYPE)
+
+
+class _IdentityAffineAdapter:
+    transform = _IdentityAffineTransform()
+
+    @staticmethod
+    def latent_to_position(value):
+        return tf.convert_to_tensor(value, DTYPE)
+
+
+def _bound_runner_config(*, target_scope: str = "neural-force-binding-test"):
+    return FullChainHMCConfig(
+        num_results=2,
+        num_burnin_steps=1,
+        step_size=0.1,
+        num_leapfrog_steps=2,
+        seed=(20260828, 31),
+        chain_execution_mode="eager",
+        target_scope=target_scope,
+    )
+
+
+def test_typed_tuning_binding_validates_identity_and_telemetry():
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=_gaussian_force(),
+        target=_gaussian_target(),
+        target_scope="neural-force-binding-test",
+    )
+    result = binding(
+        _IdentityAffineAdapter(),
+        tf.zeros((4, 2), DTYPE),
+        _bound_runner_config(),
+    )
+
+    payload = binding.payload()
+    assert len(payload["binding_hash"]) == 64
+    assert payload["artifact_authority"] is False
+    assert payload["source_dependency_closure"]["files"]
+    assert result.metadata["coordinate_route"] == "native_fixed_mass_affine"
+    assert result.metadata["force_identity"] == binding.force_identity
+    assert result.metadata["target_identity"] == binding.endpoint_target_identity
+    capability = hmc_tuning_interface_capability(
+        "run_full_chain_neural_force_hmc"
+    )
+    assert capability.interface_kind == "chain_runner"
+    assert capability.artifact_authority is False
+
+    missing = dict(result.diagnostics)
+    missing.pop("divergence_count")
+    bad_binding = replace(
+        binding,
+        runner=lambda _adapter, _state, _config: FullChainHMCRunResult(
+            samples=result.samples,
+            trace=result.trace,
+            diagnostics=missing,
+            metadata=result.metadata,
+        ),
+    )
+    with pytest.raises(ValueError, match="required telemetry"):
+        bad_binding(
+            _IdentityAffineAdapter(),
+            tf.zeros((4, 2), DTYPE),
+            _bound_runner_config(),
+        )
+
+
+def test_typed_tuning_binding_rejects_identity_mass_fallback():
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=_gaussian_force(),
+        target=_gaussian_target(),
+        target_scope="neural-force-binding-test",
+    )
+
+    with pytest.raises(ValueError, match="native affine"):
+        binding(object(), tf.zeros((4, 2), DTYPE), _bound_runner_config())
+    with pytest.raises(ValueError, match="target_scope mismatch"):
+        binding(
+            _IdentityAffineAdapter(),
+            tf.zeros((4, 2), DTYPE),
+            _bound_runner_config(target_scope="wrong-scope"),
+        )
+
+
+def test_typed_tuning_binding_rejects_coordinate_mismatch():
+    transformed_target = FrozenTargetPotential(
+        function=lambda position: 0.5 * tf.reduce_sum(
+            tf.square(position), axis=-1
+        ),
+        identity="transformed-gaussian-target",
+        coordinate_system="transformed",
+        includes_chart_log_jacobian=True,
+    )
+
+    with pytest.raises(InvalidNeuralForceHMCConfiguration, match="same coordinate"):
+        bind_neural_force_hmc_tuning_runner(
+            force=_gaussian_force(),
+            target=transformed_target,
+            target_scope="neural-force-binding-test",
+        )
 
 
 def test_config_is_immutable_and_validated():

@@ -27,6 +27,26 @@ Those remain explicit Phase 1--4 evidence gates. The baseline commit above is
 the inspected source baseline; the implementation-start commit must still be
 recorded and re-audited as required by Phase 0.
 
+Implementation-start audit, 2026-08-28:
+
+- implementation commit: `1a284ec2d09b7776b7e44fecd211e9f8e7a3ade3`;
+- no intervening commit changed `hmc_kernel_tuning.py`, `tuning_contract.py`, or
+  `neural_force_hmc.py` relative to the reviewed baseline;
+- Python `3.13.13`, TensorFlow `2.20.0`, and TensorFlow Probability `0.25.0`;
+- all implementation checks in this plan are deliberate CPU-only checks with
+  `CUDA_VISIBLE_DEVICES=-1` set before TensorFlow import;
+- the worktree contained unrelated concurrent Phase 52 files when
+  implementation began. They are outside this plan and must not be staged or
+  modified by this work; and
+- the skeptical re-audit passed after identifying one material implementation
+  contradiction: the sequential verifier reports R-hat failure and cap status,
+  but the public admission classifier currently ignores that verdict. Restoring
+  the already-declared `1.01` fresh-verification gate is in scope. Enabling an
+  ESS gate or choosing an ESS threshold is not in scope.
+
+The implementation contradiction ledger is
+`docs/plans/bayesfilter-hmc-tuning-interface-contradiction-ledger-2026-08-28.md`.
+
 ## 1. Purpose
 
 BayesFilter has substantial HMC tuning machinery, but its monograph does not

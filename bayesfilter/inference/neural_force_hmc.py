@@ -8,14 +8,21 @@ TensorFlow-native and use ``tf.while_loop`` for leapfrog and sample loops.
 
 from __future__ import annotations
 
+import hashlib
 import inspect
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, NamedTuple
 
 import tensorflow as tf
 import tensorflow_probability as tfp
+
+from bayesfilter.inference.tuning_contract import (
+    HMCTuningRunnerBinding,
+    _issue_hmc_tuning_runner_binding,
+)
 
 
 NEURAL_FORCE_HMC_SCHEMA = "bayesfilter.neural_force_hmc.v1"
@@ -72,6 +79,7 @@ class FrozenPositionOnlyForce:
     momentum_dependent: bool = False
     direct_state_update: bool = False
     symmetric_schedule: bool = True
+    coordinate_system: str = "raw"
 
     def __post_init__(self) -> None:
         _require_position_only_callable(self.function, "force function")
@@ -88,6 +96,14 @@ class FrozenPositionOnlyForce:
             raise InvalidNeuralForceHMCConfiguration("direct neural state updates are forbidden")
         if not self.symmetric_schedule:
             raise InvalidNeuralForceHMCConfiguration("force schedule must be symmetric")
+        coordinate_system = _require_nonempty(
+            self.coordinate_system, "force coordinate_system"
+        )
+        if coordinate_system not in {"raw", "transformed"}:
+            raise InvalidNeuralForceHMCConfiguration(
+                "force coordinate_system must be 'raw' or 'transformed'"
+            )
+        object.__setattr__(self, "coordinate_system", coordinate_system)
 
 
 @dataclass(frozen=True)
@@ -939,6 +955,119 @@ def run_full_chain_neural_force_hmc(
             "exact_filter_gradient_inside_leapfrog": False,
             "trace_unavailability": {},
         },
+    )
+
+
+def _neural_force_tuning_source_dependency_closure() -> dict[str, Any]:
+    """Hash the executable boundary of the typed neural-force tuning binding."""
+
+    inference_root = Path(__file__).resolve().parent
+    package_root = inference_root.parent
+    repository_root = package_root.parent
+    paths = (
+        inference_root / "neural_force_hmc.py",
+        inference_root / "hmc_kernel_tuning.py",
+        inference_root / "hmc.py",
+        inference_root / "hmc_tuning.py",
+        inference_root / "hmc_coordinates.py",
+        inference_root / "tuning_contract.py",
+        inference_root / "posterior_adapter.py",
+        inference_root / "__init__.py",
+        package_root / "__init__.py",
+    )
+    missing = tuple(str(path) for path in paths if not path.is_file())
+    if missing:
+        raise RuntimeError(
+            "neural-force tuning source closure is incomplete: " + ", ".join(missing)
+        )
+    return {
+        "schema": "bayesfilter.neural_force_hmc_tuning_source_closure.v1",
+        "files": tuple(
+            {
+                "path": str(path.relative_to(repository_root)),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+            for path in paths
+        ),
+    }
+
+
+def bind_neural_force_hmc_tuning_runner(
+    *,
+    force: FrozenPositionOnlyForce,
+    target: FrozenTargetPotential,
+    target_scope: str,
+) -> HMCTuningRunnerBinding:
+    """Bind neural-force mechanics to the ordinary public tuning ladder.
+
+    The ordinary tuner owns mass adaptation, epsilon, and leapfrog-count
+    selection. This binding only supplies the fixed-configuration transition
+    mechanics and exact endpoint potential. Direct identity-mass coordinates
+    are rejected by the binding after every stage call.
+    """
+
+    if not isinstance(force, FrozenPositionOnlyForce):
+        raise TypeError("force must be FrozenPositionOnlyForce")
+    if not isinstance(target, FrozenTargetPotential):
+        raise TypeError("target must be FrozenTargetPotential")
+    scope = _require_nonempty(target_scope, "target_scope")
+    if force.coordinate_system != target.coordinate_system:
+        raise InvalidNeuralForceHMCConfiguration(
+            "force and endpoint target must use the same coordinate system"
+        )
+    if force.coordinate_system != "raw":
+        raise InvalidNeuralForceHMCConfiguration(
+            "ordinary neural-force tuning requires raw adapter coordinates; "
+            "a transformed target belongs to the fixed-transport contract"
+        )
+
+    def bound_runner(adapter: Any, initial_state: Any, config: Any) -> Any:
+        return run_full_chain_neural_force_hmc(
+            adapter,
+            initial_state,
+            config,
+            force=force,
+            target=target,
+        )
+
+    return _issue_hmc_tuning_runner_binding(
+        runner=bound_runner,
+        runner_identity=(
+            "bayesfilter.inference.neural_force_hmc."
+            "run_full_chain_neural_force_hmc"
+        ),
+        algorithm_family="endpoint_corrected_frozen_position_force_hmc",
+        target_scope=scope,
+        coordinate_scope=force.coordinate_system,
+        force_identity=force.identity,
+        endpoint_target_identity=target.identity,
+        target_status_evidence=(
+            "exact_endpoint_target_finite_health_and_transition_finite_status_fail_closed"
+        ),
+        supported_target_status_trace_policies=("none",),
+        supported_chain_execution_modes=("tf_function", "eager"),
+        backend="tensorflow_probability",
+        dtype="float64",
+        xla_capable=True,
+        required_diagnostic_fields=(
+            "finite_sample_count",
+            "nonfinite_sample_count",
+            "log_accept_ratio_finite_count",
+            "log_accept_ratio_nonfinite_count",
+            "maximum_absolute_delta_h",
+            "target_log_prob_finite_count",
+            "target_log_prob_nonfinite_count",
+            "divergence_count",
+            "force_fallback_count",
+        ),
+        required_metadata_fields=(
+            "force_identity",
+            "target_identity",
+            "coordinate_route",
+            "target_scope",
+            "chain_execution_mode",
+        ),
+        source_dependency_closure=_neural_force_tuning_source_dependency_closure(),
     )
 
 

@@ -1,0 +1,211 @@
+\chapter{HMC Tuning Interfaces}
+\label{ch:bf-hmc-tuning-interfaces}
+
+Hamiltonian dynamics execute a kernel only after its mass matrix, step size,
+and trajectory length have been fixed.  Choosing those quantities is a
+different operation from drawing transitions with them.  BayesFilter makes
+that boundary explicit because a chain runner that happens to adapt a step
+size can otherwise be mistaken for a complete tuning procedure.
+
+\section{Terms and authority}
+
+A \emph{tuner} is a public, repository-owned orchestration route.  It may issue
+a canonical tuning artifact only after its required stages and fresh
+verification pass.  A \emph{chain runner} executes one supplied configuration;
+it does not become a tuner when it dual-averages only the step size.  A
+\emph{stage helper} implements an internal or diagnostic part of the ladder,
+and direct use of it does not inherit public artifact authority.
+
+A \emph{tuning artifact} records scope-bound evidence for a selected fixed
+kernel.  Its draws are tuning draws, not retained posterior draws.  A
+\emph{final handoff} consists of a replayable private kernel payload and a
+redacted public status record.  It exists only when the route's tested
+admission rule passes.
+
+\emph{Ordinary coordinates} are the target adapter's coordinates.  The
+ordinary tuner builds affine mass coordinates around them.  \emph{Fixed-
+transport coordinates} are the latent coordinates (z) of one frozen,
+identity-bound nonlinear map.  Replacing that map changes the tuning scope.
+\emph{Neural-force mechanics} means a fixed position-only force combined with
+an exact endpoint potential.  That description alone supplies neither a
+nonlinear transport nor mass or leapfrog-count tuning.
+
+When sources disagree, the checked mathematical target and project policy come
+first, followed by executable signatures and behavioral tests, then the
+validated capability registry and its generated documentation.  Historical
+plans and result notes do not override current executable behavior.  The
+registry classifies authority and supported behavior; an evidence anchor in
+the registry identifies the test that checks each behavioral statement.
+
+\section{Choose the route from the target}
+
+The decision starts with the probability measure, not with a convenient
+function name.
+
+\begin{enumerate}
+  \item If an adapter supplies one exact log target and its matching score in
+    ordinary coordinates, use
+    \code{tune\_hmc\_kernel} with
+    \code{HMCKernelTuningConfig}.
+  \item If a genuine frozen map \(T:z\mapsto\theta\) supplies an exact
+    transformed value and score, use
+    \code{tune\_fixed\_transport\_hmc\_kernel} with
+    \code{FixedTransportHMCKernelTuningConfig}.
+  \item If proposal mechanics use a frozen position-only force in ordinary
+    coordinates, bind it with
+    \code{bind\_neural\_force\_hmc\_tuning\_runner} and pass the resulting
+    typed binding to \code{tune\_hmc\_kernel}.
+  \item If none of those contracts describes the target and coordinates, stop.
+    A diagnostic runner is not a substitute for an unsupported public route.
+\end{enumerate}
+
+The complete generated registry follows.  It is rendered from
+\code{HMC\_TUNING\_INTERFACE\_CAPABILITIES}; it is not a separately maintained
+summary.
+
+\input{generated/hmc_tuning_route_table}
+
+\section{Ordinary-coordinate tuning}
+
+The public import is
+\code{from bayesfilter.inference import HMCKernelTuningConfig,
+tune\_hmc\_kernel}.  The adapter must bind its dimension, stable signature,
+target scope, exact log value, matching score, and value--score capability.
+The public configuration selects a reviewed preset and target policy.  It does
+not let a model caller insert candidate grids, mass windows, tuning draw
+counts, a bare chain callback, or private handoff mechanics.
+
+The ordinary route performs the following linked stages:
+
+\begin{enumerate}
+  \item initialize geometry and a positive-definite mass representation;
+  \item run a bootstrap screen for a viable fixed-(L) step;
+  \item by default, update mass in bounded windows and requalify the step after
+    every coordinate change;
+  \item tune epsilon with the active fixed mass and leapfrog count;
+  \item select (L) and epsilon together, using the same runner and coordinate
+    binding;
+  \item screen the selected candidate and apply bounded repair when a declared
+    repair trigger fires; and
+  \item freeze the kernel and run fresh verification on draws not used for
+    candidate selection.
+\end{enumerate}
+
+The default ordinary TFP verifier requires typed finite-state and acceptance
+evidence, the configured minimum retained tuning draws, and finite
+rank-normalized split and folded split \(\widehat R\) values at or below 1.01.
+Failure or exhaustion at that cap prevents the final handoff.  The value 1.01
+is the existing verifier setting restored at the admission boundary; this
+documentation work did not choose a new threshold.  Bulk and tail effective
+sample sizes are disabled for ordinary tuning admission.  They belong to
+subsequent retained-posterior assessment unless another reviewed route
+explicitly says otherwise.  Acceptance by itself never authorizes a handoff.
+
+The smoke preset in the following listing deliberately has a tiny budget.  It
+tests invocation and result shape; it need not pass tuning admission.
+
+\lstinputlisting[language=Python,caption={Ordinary public-tuner invocation.},label={lst:bf-hmc-tuning-ordinary}]{examples/hmc_tuning_ordinary.py}
+
+\section{A frozen nonlinear transport}
+
+Let the base log density in model coordinates be
+\(\ell_{\theta}(\theta)\), and let one frozen differentiable bijection map
+latent coordinates into those model coordinates,
+\[
+  \theta = T(z), \qquad J_T(z)=\frac{\partial T(z)}{\partial z}.
+\]
+The fixed-transport HMC target is
+\begin{equation}
+  \ell_z(z)
+  = \ell_{\theta}\!\left(T(z)\right)
+    + \log\left|\det J_T(z)\right|,
+  \label{eq:bf-fixed-transport-hmc-target}
+\end{equation}
+and its matching score is
+\begin{equation}
+  \nabla_z\ell_z(z)
+  = J_T(z)^{\mathsf T}\nabla_{\theta}
+      \ell_{\theta}\!\left(T(z)\right)
+    + \nabla_z\log\left|\det J_T(z)\right|.
+  \label{eq:bf-fixed-transport-hmc-score}
+\end{equation}
+Dropping either Jacobian term changes the target or its derivative.  Such a
+calculation is wrong relative to the transformed-target claim.
+
+The public tuner constructs the transformed adapter itself, hashes the
+transport manifest, and uses a fixed identity mass in (z).  It tunes step
+size and chooses a leapfrog count from its declared policy, then performs fresh
+candidate or held-out verification.  It does not perform ordinary windowed
+mass adaptation.  A supplied chain runner is scoped only after the transformed
+adapter has been built; this argument is not a generic arbitrary-force hook.
+Changing the transport manifest, base or transformed adapter signature, target
+scope, dimension, backend, or coordinate identity invalidates reuse.
+
+The identity map below is mathematically simple but satisfies the complete
+transport protocol.  Its Jacobian contribution is zero rather than omitted.
+
+\lstinputlisting[language=Python,caption={Frozen-transport public-tuner invocation.},label={lst:bf-hmc-tuning-fixed-transport}]{examples/hmc_tuning_fixed_transport.py}
+
+\section{Neural-force mechanics inside the ordinary ladder}
+
+\code{run\_full\_chain\_neural\_force\_hmc} consumes a supplied mass
+coordinate system, fixed (L), and fixed or dual-averaged epsilon.  Directly
+calling it with (M=I), (L=1), and a few adaptation transitions establishes
+only that this configuration ran.  It does not establish mass adaptation,
+trajectory selection, fresh verification, or a reason to reject HMC or the
+target.
+
+For a raw-coordinate frozen force, the public binding factory verifies a
+coordinate-consistent exact endpoint potential and issues an
+\code{HMCTuningRunnerBinding}.  The ordinary tuner then owns the affine mass
+wrapper, epsilon, (L), screening, verification, and repair.  The binding
+must report finite values, divergence and energy status, movement, endpoint
+target health, deterministic execution identity, and source closure.  It
+rejects the low-level runner's direct identity-coordinate fallback.  A bare
+Python callable is rejected by the public ordinary tuner.
+
+A transformed neural target is not allowed to masquerade as this ordinary raw-
+coordinate binding.  It belongs to the fixed-transport route only when an
+actual frozen transport supplies Equations~\eqref{eq:bf-fixed-transport-hmc-target}
+and~\eqref{eq:bf-fixed-transport-hmc-score}.
+
+\section{Artifacts, failures, and conclusions}
+
+Before consuming a tuning result, a caller checks that the public route has
+artifact authority, the result and capability schema versions are supported,
+the target and coordinate scope match, all bound identities and source closure
+are present, fresh verification passed, and the private replay payload is
+available at the BayesFilter-owned boundary.  Tuning draws must be discarded.
+
+\begin{longtable}{p{0.20\textwidth}p{0.34\textwidth}p{0.36\textwidth}}
+\toprule
+Observed result & Classification & Justified action \\
+\midrule
+\endfirsthead
+\toprule
+Observed result & Classification & Justified action \\
+\midrule
+\endhead
+Missing identity, telemetry, nonfinite target, or inconsistent coordinates &
+Implementation or target-contract veto & Repair the smallest violated
+contract; do not interpret acceptance or tuning metrics. \\
+\addlinespace
+Finite candidate fails acceptance, movement, energy, or fresh
+\(\widehat R\) screen & Tuning-candidate failure & Use the declared bounded
+repair or retry budget.  The result does not reject HMC or the target. \\
+\addlinespace
+Exact endpoint target or score is wrong for the claimed measure & Target
+invalidity & Correct the value and score contract before tuning. \\
+\addlinespace
+Public tuning handoff passes & Fixed-kernel tuning admission only & Start a
+separate retained-chain assessment under its own evidence requirements. \\
+\bottomrule
+\end{longtable}
+
+No route in this chapter turns tuning acceptance, a documentation build, or a
+short smoke into proof of posterior convergence, target correctness, sampler
+superiority, scientific validity, default readiness, performance, or GPU/XLA
+readiness.  The route-selection example makes that authority boundary
+executable.
+
+\lstinputlisting[language=Python,caption={Capability-based route selection and expected chain-runner rejection.},label={lst:bf-hmc-tuning-route-selection}]{examples/hmc_tuning_route_selection.py}
