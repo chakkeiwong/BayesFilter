@@ -46,6 +46,10 @@ EXPECTED_BOUNDARY_STATUS = "PASS_V3_4_FRESH_PAIRED_BOUNDARY"
 EXPECTED_FIXTURE_SCHEMA = "bayesfilter.ssl_lstm.q20.corrected_theta_fresh_paired_fixture.v1"
 EXPECTED_FIXTURE_STATUS = "PASS_V3_4_FRESH_PAIRED_FIXTURE"
 EXPECTED_ARM_STATUS = "PASS_V3_4_MUTATION_ARM"
+EXPECTED_TRUST_BASIS = "owner_designated_managed_session_visible_gpu_trusted"
+EXPECTED_PILOT_RUNNER_RECEIPT_SHA256 = "c0b793ab10bd8d69cec22347c3beba00b5dd15e77e129f61b25d8dc585b9b703"
+EXPECTED_PILOT_RUNNER_CURRENT_SHA256 = "e06845ee3f16773f181380c35297beaa2c4a489561c4b7d642c89853bb8ace1b"
+EXPECTED_PILOT_RUNNER_EQUIVALENCE = "one_trailing_blank_line_only_verified_2026_08_28"
 EXPECTED_STEPS = 8
 EXPECTED_SUPPORT_RHO = 0.50
 EXPECTED_SUPPORT_STD = 4.0
@@ -409,6 +413,9 @@ def main() -> int:
         or boundary.get("pilot_receipts_distinct") is not True
         or boundary.get("pilot_roots_match_fresh_namespace") is not True
         or boundary.get("pilot_seeds_match_fresh_ledger") is not True
+        or boundary.get("pilot_runner_sha256") != EXPECTED_PILOT_RUNNER_RECEIPT_SHA256
+        or boundary.get("pilot_runner_current_sha256") != EXPECTED_PILOT_RUNNER_CURRENT_SHA256
+        or boundary.get("pilot_runner_equivalence") != EXPECTED_PILOT_RUNNER_EQUIVALENCE
         or boundary.get("fresh_rows_used_for_training") is not False
         or boundary.get("fresh_rows_used_for_selection") is not False
         or boundary.get("hmc_launched") is not False
@@ -417,11 +424,17 @@ def main() -> int:
         or device.get("tf32_enabled") is not True
         or device.get("jit_compile_target") is not True
         or device.get("jit_compile_mutation") is not True
+        or device.get("trust_basis") != EXPECTED_TRUST_BASIS
         or run_manifest.get("gpu_memory_growth_verified") is not True
         or run_manifest.get("tf_force_gpu_allow_growth") != "true"
         or run_manifest.get("jit_compile") is not True
+        or run_manifest.get("trust_basis") != EXPECTED_TRUST_BASIS
         or run_manifest.get("source_sha256", {}).get("runner") != _sha(BOUNDARY_RUNNER)
         or run_manifest.get("source_sha256", {}).get("plan") != _sha(PLAN)
+        or run_manifest.get("source_sha256", {}).get("corrected_pilot_runner")
+        != EXPECTED_PILOT_RUNNER_CURRENT_SHA256
+        or run_manifest.get("source_sha256", {}).get("corrected_pilot_runner_receipt")
+        != EXPECTED_PILOT_RUNNER_RECEIPT_SHA256
         or run_manifest.get("source_sha256", {}).get("fixture") != _sha(fixture_path)
         or run_manifest.get("source_sha256", {}).get("phase50_report") != _sha(phase50_path)
         or run_manifest.get("source_sha256", {}).get("phase51_report") != _sha(phase51_path)

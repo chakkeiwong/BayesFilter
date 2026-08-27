@@ -86,6 +86,9 @@ EXPECTED_PHASE51_REPORT_STATUS = "PASS_V3_3_MODE_AWARE_GEOMETRY_REPORT"
 EXPECTED_FIXTURE_SCHEMA = "bayesfilter.ssl_lstm.q20.corrected_theta_fresh_paired_fixture.v1"
 EXPECTED_FIXTURE_STATUS = "PASS_V3_4_FRESH_PAIRED_FIXTURE"
 EXPECTED_GEOMETRY_SHA256 = "dc3dd7b84566867bc49c11ad16f50778d21457adbb398a17c2a75f3c3b461eeb"
+EXPECTED_PILOT_RUNNER_RECEIPT_SHA256 = "c0b793ab10bd8d69cec22347c3beba00b5dd15e77e129f61b25d8dc585b9b703"
+EXPECTED_PILOT_RUNNER_CURRENT_SHA256 = "e06845ee3f16773f181380c35297beaa2c4a489561c4b7d642c89853bb8ace1b"
+PILOT_RUNNER_EQUIVALENCE = "one_trailing_blank_line_only_verified_2026_08_28"
 
 SCHEDULE = (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
 PARTICLES = 256
@@ -708,7 +711,7 @@ def _pilot(path: Path) -> tuple[Path, Mapping[str, Any], Mapping[str, Any]]:
         or manifest.get("physical_gpus") != []
         or manifest.get("logical_gpus") != []
         or manifest.get("jit_compile") is not True
-        or manifest.get("source_sha256", {}).get("runner") != _sha(CORRECTED_PILOT_RUNNER)
+        or manifest.get("source_sha256", {}).get("runner") != EXPECTED_PILOT_RUNNER_RECEIPT_SHA256
         or manifest.get("source_sha256", {}).get("plan") != _sha(PLAN)
     ):
         raise Phase52Error(f"pilot runner/device provenance mismatch: {pilot_path}")
@@ -727,6 +730,8 @@ def main() -> int:
     parser.add_argument("--fixture-root", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     args = parser.parse_args()
+    if _sha(CORRECTED_PILOT_RUNNER) != EXPECTED_PILOT_RUNNER_CURRENT_SHA256:
+        raise Phase52Error("current corrected pilot runner does not match its audited equivalent source")
     roots = (
         args.pilot_root_1,
         args.pilot_root_2,
@@ -897,7 +902,9 @@ def main() -> int:
         "pilot_receipts_distinct": True,
         "pilot_roots_match_fresh_namespace": True,
         "pilot_seeds_match_fresh_ledger": True,
-        "pilot_runner_sha256": _sha(CORRECTED_PILOT_RUNNER),
+        "pilot_runner_sha256": EXPECTED_PILOT_RUNNER_RECEIPT_SHA256,
+        "pilot_runner_current_sha256": _sha(CORRECTED_PILOT_RUNNER),
+        "pilot_runner_equivalence": PILOT_RUNNER_EQUIVALENCE,
         "phase50_report_sha256": _sha(phase50_report_path),
         "phase50_report_branch": phase50_report["branch"],
         "phase51_report_sha256": _sha(phase51_report_path),
@@ -907,6 +914,7 @@ def main() -> int:
         "fresh_rows_used_for_selection": False,
         "hmc_launched": False,
         "device": {
+            "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
             "gpu_memory_policy": GPU_POLICY,
             "physical_devices": [device.name for device in PHYSICAL_GPUS],
             "logical_devices": [device.name for device in LOGICAL_GPUS],
@@ -915,6 +923,7 @@ def main() -> int:
             "jit_compile_mutation": True,
         },
         "run_manifest": {
+            "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
             "program": PLAN.as_posix(),
             "runner": RUNNER.as_posix(),
             "command": " ".join(sys.argv),
@@ -936,6 +945,7 @@ def main() -> int:
                 "smc_module": _sha(SMC_MODULE),
                 "importance_module": _sha(IMPORTANCE_MODULE),
                 "corrected_pilot_runner": _sha(CORRECTED_PILOT_RUNNER),
+                "corrected_pilot_runner_receipt": EXPECTED_PILOT_RUNNER_RECEIPT_SHA256,
                 "phase50_report": _sha(phase50_report_path),
                 "phase51_report": _sha(phase51_report_path),
                 "fixture": _sha(fixture_path),
