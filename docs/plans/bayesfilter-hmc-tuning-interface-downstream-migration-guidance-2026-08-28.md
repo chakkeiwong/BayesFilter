@@ -2,7 +2,7 @@
 
 Date: 2026-08-28
 
-Status: `IMPLEMENTATION_TESTED_COMMIT_PENDING`
+Status: `READY_FOR_DOWNSTREAM_MIGRATION`
 
 This dated note records what MacroFinance and dsge_hmc need to change after the
 BayesFilter implementation is committed. It does not edit either downstream
@@ -12,7 +12,7 @@ repository, select a backend lock, or certify an HMC result.
 
 | Repository | Inspected commit | Relevant state |
 | --- | --- | --- |
-| BayesFilter | baseline `1ef8876666ea05698b3fa4e46a1d6c10a721fad7`; compatible implementation commit `PENDING_FIRST_COMMIT` | capability registry v1; runner binding v2; two active artifact-authority tuners |
+| BayesFilter | baseline `1ef8876666ea05698b3fa4e46a1d6c10a721fad7`; compatible implementation commit `0da727c49d898478b3259189b846a029280849d8` | capability registry v1; runner binding v2; two active artifact-authority tuners |
 | MacroFinance | `98cca3bbed5289c770ff67d174808357ac8fd595` | ordinary tuner consumers; no direct neural-force runner in the scoped source search; dirty worktree preserved |
 | dsge_hmc | `da060c6b4952925b7a1c58bb969300aea56e45c8` | integration plan uses the typed binding, but executable BGS stage still imports the low-level runner; dirty worktree preserved |
 

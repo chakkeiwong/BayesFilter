@@ -2,11 +2,11 @@
 
 Date: 2026-08-28
 
-Status: `IMPLEMENTATION_VERIFIED_COMMIT_PENDING`
+Status: `COMPLETE`
 
 Baseline: `1ef8876666ea05698b3fa4e46a1d6c10a721fad7`
 
-Implementation commit: `PENDING_FIRST_COMMIT`
+Implementation commit: `0da727c49d898478b3259189b846a029280849d8`
 
 Plan:
 `docs/plans/bayesfilter-hmc-tuning-guide-and-replay-improvement-plan-2026-08-28.md`

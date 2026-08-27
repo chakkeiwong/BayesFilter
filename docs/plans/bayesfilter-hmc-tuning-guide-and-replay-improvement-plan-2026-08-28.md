@@ -2,7 +2,7 @@
 
 Date: 2026-08-28
 
-Status: `EXECUTED_COMMIT_PENDING`
+Status: `COMPLETE`
 
 Baseline: BayesFilter `1ef88766e` (`origin/main` after a clean fast-forward on
 2026-08-28).
@@ -279,4 +279,6 @@ were inspected from the rendered PDF.
 
 Detailed evidence and remaining nonclaims are recorded in
 `docs/plans/bayesfilter-hmc-tuning-guide-and-replay-improvement-result-2026-08-28.md`.
-Git commit and remote synchronization remain before this plan is complete.
+The compatible implementation is commit
+`0da727c49d898478b3259189b846a029280849d8`; the closeout commit records this
+identity in the result and downstream migration note.
