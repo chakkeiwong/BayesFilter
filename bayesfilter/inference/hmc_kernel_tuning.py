@@ -147,8 +147,8 @@ from bayesfilter.inference.posterior_adapter import (
     value_score_capability,
 )
 from bayesfilter.inference.tuning_contract import (
+    HMC_TUNING_ORDINARY_RHAT_THRESHOLD,
     HMCTuningRunnerBinding,
-    require_active_hmc_tuning_route,
 )
 from bayesfilter.runtime import stable_config_hash
 
@@ -7477,30 +7477,19 @@ class RetainedFrozenKernelAdapterReplayResult:
         return int(value)
 
 
-def build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
+def _validated_retained_replay_header(
     *,
     adapter: Any,
     tuning_payload: Mapping[str, Any],
-    initial_position: Any,
-    initial_covariance: Any | None = None,
-    negative_hessian: Any | None = None,
-    parameter_scales: Any | None = None,
-    target_scope: str | None = None,
-) -> RetainedFrozenKernelAdapterReplayResult:
-    """Rebuild the BayesFilter adapter stack verified by one-call tuning.
-
-    This helper performs no HMC execution.  It is the replay boundary for model
-    repositories that need to launch a retained fixed-kernel run from a prior
-    BayesFilter tuning result: callers supply their reviewed base adapter and
-    the private tuning payload, and BayesFilter reconstructs the exact
-    two-transform HMC adapter stack that the tuning verifier signed.
-    """
-
+    target_scope: str | None,
+) -> tuple[str, int, Mapping[str, Any], Mapping[str, Any], str]:
     if not isinstance(tuning_payload, Mapping):
         raise TypeError("tuning_payload must be a mapping")
     if tuning_payload.get("schema") != "bayesfilter.hmc_kernel_tuning_result.v1":
         raise ValueError("tuning payload schema mismatch")
-    if tuning_payload.get("passed") is not True or tuning_payload.get("final_status") != "passed":
+    if tuning_payload.get("passed") is not True or tuning_payload.get(
+        "final_status"
+    ) != "passed":
         raise ValueError("retained frozen-kernel replay requires passed tuning payload")
     if tuning_payload.get("hard_vetoes"):
         raise ValueError("retained frozen-kernel replay rejects hard-vetoed tuning payload")
@@ -7523,16 +7512,26 @@ def build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
         final_kernel_payload=final_kernel_payload,
         target_scope=target_scope,
     )
-    geometry_payload = _required_mapping(tuning_payload, "geometry")
-    geometry_config_payload = _required_mapping(geometry_payload, "config")
-    geometry = initialize_hmc_kernel_geometry(
-        adapter=adapter,
-        initial_position=initial_position,
-        config=_geometry_config_from_payload(geometry_config_payload),
-        negative_hessian=negative_hessian,
-        initial_covariance=initial_covariance,
-        parameter_scales=parameter_scales,
+    return (
+        adapter_signature,
+        dimension,
+        config_payload,
+        final_kernel_payload,
+        scope,
     )
+
+
+def _build_retained_frozen_kernel_hmc_adapter_from_validated_geometry(
+    *,
+    adapter: Any,
+    tuning_payload: Mapping[str, Any],
+    geometry: HMCGeometryInitializationResult,
+    adapter_signature: str,
+    dimension: int,
+    final_kernel_payload: Mapping[str, Any],
+    scope: str,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    geometry_payload = _required_mapping(tuning_payload, "geometry")
     if geometry.artifact_hash != str(tuning_payload.get("geometry_artifact_hash", "")):
         raise ValueError("reconstructed geometry artifact hash mismatch")
     if geometry.mass_artifact_signature != str(
@@ -7610,6 +7609,57 @@ def build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
     )
 
 
+def build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
+    *,
+    adapter: Any,
+    tuning_payload: Mapping[str, Any],
+    initial_position: Any,
+    initial_covariance: Any | None = None,
+    negative_hessian: Any | None = None,
+    parameter_scales: Any | None = None,
+    target_scope: str | None = None,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    """Rebuild the BayesFilter adapter stack verified by one-call tuning.
+
+    This helper performs no HMC execution.  It is the replay boundary for model
+    repositories that need to launch a retained fixed-kernel run from a prior
+    BayesFilter tuning result: callers supply their reviewed base adapter and
+    the private tuning payload, and BayesFilter reconstructs the exact
+    two-transform HMC adapter stack that the tuning verifier signed.
+    """
+
+    (
+        adapter_signature,
+        dimension,
+        _config_payload,
+        final_kernel_payload,
+        scope,
+    ) = _validated_retained_replay_header(
+        adapter=adapter,
+        tuning_payload=tuning_payload,
+        target_scope=target_scope,
+    )
+    geometry_payload = _required_mapping(tuning_payload, "geometry")
+    geometry_config_payload = _required_mapping(geometry_payload, "config")
+    geometry = initialize_hmc_kernel_geometry(
+        adapter=adapter,
+        initial_position=initial_position,
+        config=_geometry_config_from_payload(geometry_config_payload),
+        negative_hessian=negative_hessian,
+        initial_covariance=initial_covariance,
+        parameter_scales=parameter_scales,
+    )
+    return _build_retained_frozen_kernel_hmc_adapter_from_validated_geometry(
+        adapter=adapter,
+        tuning_payload=tuning_payload,
+        geometry=geometry,
+        adapter_signature=adapter_signature,
+        dimension=dimension,
+        final_kernel_payload=final_kernel_payload,
+        scope=scope,
+    )
+
+
 def build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
     *,
     adapter: Any,
@@ -7657,14 +7707,65 @@ def build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
         "final_kernel_hash": loop.final_kernel_hash,
         "passed": True,
     }
-    return build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
+    if any(
+        value is not None
+        for value in (initial_covariance, negative_hessian, parameter_scales)
+    ):
+        return build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
+            adapter=adapter,
+            tuning_payload=private_payload,
+            initial_position=initial_position,
+            initial_covariance=initial_covariance,
+            negative_hessian=negative_hessian,
+            parameter_scales=parameter_scales,
+            target_scope=target_scope,
+        )
+
+    import tensorflow as tf
+
+    try:
+        supplied_position = tf.convert_to_tensor(initial_position, dtype=tf.float64)
+        bound_position = tf.convert_to_tensor(
+            tuning_result.geometry.mass_artifact.position,
+            dtype=tf.float64,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError("replay initial position must be a numeric vector") from exc
+    if (
+        supplied_position.shape.rank != 1
+        or bound_position.shape.rank != 1
+        or supplied_position.shape != bound_position.shape
+    ):
+        raise ValueError("replay initial position does not match result-bound geometry")
+    try:
+        tf.debugging.assert_all_finite(
+            supplied_position,
+            "replay initial position must be finite",
+        )
+        tf.debugging.assert_equal(supplied_position, bound_position)
+    except tf.errors.InvalidArgumentError as exc:
+        raise ValueError(
+            "replay initial position does not match result-bound geometry"
+        ) from exc
+    (
+        adapter_signature,
+        dimension,
+        _config_payload,
+        final_kernel_payload,
+        scope,
+    ) = _validated_retained_replay_header(
         adapter=adapter,
         tuning_payload=private_payload,
-        initial_position=initial_position,
-        initial_covariance=initial_covariance,
-        negative_hessian=negative_hessian,
-        parameter_scales=parameter_scales,
         target_scope=target_scope,
+    )
+    return _build_retained_frozen_kernel_hmc_adapter_from_validated_geometry(
+        adapter=adapter,
+        tuning_payload=private_payload,
+        geometry=tuning_result.geometry,
+        adapter_signature=adapter_signature,
+        dimension=dimension,
+        final_kernel_payload=final_kernel_payload,
+        scope=scope,
     )
 
 
@@ -7704,6 +7805,8 @@ def admitted_kernel_mechanics_payload_from_tuning_result(
         raise ValueError("passed tuning result is missing geometry")
     base_signature = stable_adapter_signature(adapter)
     initial_mass = tuning_result.geometry.mass_artifact
+    initial_mass_signature = _mass_artifact_signature(initial_mass)
+    adapted_mass_signature = _mass_artifact_signature(replay.adapted_mass_artifact)
     mechanics = {
         "schema": _ADMITTED_KERNEL_MECHANICS_PAYLOAD_SCHEMA,
         "target_signature": str(target_signature),
@@ -7717,6 +7820,8 @@ def admitted_kernel_mechanics_payload_from_tuning_result(
             "final_hmc_adapter_signature"
         ],
         "mass_policy": str(tuning_result.config.mass_policy),
+        "initial_mass_artifact_signature": initial_mass_signature,
+        "adapted_mass_artifact_signature": adapted_mass_signature,
         "initial_mass_artifact_payload": initial_mass.to_payload(include_arrays=True),
         "adapted_mass_artifact_payload": replay.adapted_mass_artifact.to_payload(
             include_arrays=True
@@ -8022,7 +8127,8 @@ def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
     observed_band = tuple(float(item) for item in mechanics.get("acceptance_band", ()))
     if observed_band != tuple(float(item) for item in acceptance_band):
         raise ValueError("admitted kernel acceptance band mismatch")
-    if mechanics.get("mass_policy") != "fixed_identity":
+    mass_policy = str(mechanics.get("mass_policy", ""))
+    if mass_policy not in {"fixed_identity", "windowed_adaptive"}:
         raise ValueError("admitted kernel mass policy mismatch")
     step_size = float(mechanics.get("step_size", float("nan")))
     leapfrogs = int(mechanics.get("num_leapfrog_steps", 0))
@@ -8048,6 +8154,14 @@ def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
     ):
         raise ValueError("admitted kernel initial position mismatch")
     initial_mass_signature = _mass_artifact_signature(initial_mass)
+    expected_initial_mass_signature = mechanics.get(
+        "initial_mass_artifact_signature"
+    )
+    if (
+        expected_initial_mass_signature is not None
+        and expected_initial_mass_signature != initial_mass_signature
+    ):
+        raise ValueError("admitted kernel initial mass signature mismatch")
     phase4_adapter = _build_bootstrap_fixed_mass_adapter(
         adapter=adapter,
         mass_artifact=initial_mass,
@@ -8065,6 +8179,14 @@ def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
         expected_dim=int(mechanics["target_dimension"]),
     )
     adapted_mass_signature = _mass_artifact_signature(adapted_mass)
+    expected_adapted_mass_signature = mechanics.get(
+        "adapted_mass_artifact_signature"
+    )
+    if (
+        expected_adapted_mass_signature is not None
+        and expected_adapted_mass_signature != adapted_mass_signature
+    ):
+        raise ValueError("admitted kernel adapted mass signature mismatch")
     final_adapter = _build_fixed_mass_hmc_adapter(
         adapter=phase4_adapter,
         mass_artifact=adapted_mass,
@@ -8081,6 +8203,8 @@ def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
         contract={
             "schema": "bayesfilter.retained_frozen_kernel_adapter_replay_contract.v1",
             "base_adapter_signature": base_signature,
+            "mass_policy": mass_policy,
+            "geometry_mass_artifact_signature": initial_mass_signature,
             "phase4_hmc_adapter_signature": mechanics[
                 "phase4_hmc_adapter_signature"
             ],
@@ -14346,14 +14470,17 @@ def tune_hmc_kernel(
     verification_checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
     runner_binding: HMCTuningRunnerBinding | None = None,
 ) -> HMCKernelTuningResult:
-    """Run BayesFilter's sole active ordinary-HMC tuning interface.
+    """Compatibility delegate to the public ordinary-HMC tuning interface.
 
     ``runner_binding`` accepts only a repository-issued typed binding. A bare
     chain runner cannot enter the public route or issue artifact authority.
     """
 
-    require_active_hmc_tuning_route("tune_hmc_kernel")
-    return _run_canonical_hmc_tuning(
+    from bayesfilter.inference.hmc_tuning_dispatch import (
+        tune_hmc_kernel as public_tune_hmc_kernel,
+    )
+
+    return public_tune_hmc_kernel(
         adapter=adapter,
         initial_position=initial_position,
         config=config,
@@ -24189,7 +24316,7 @@ def _run_phase7_sequential_rhat_final_verification(
         seed=verification_seed,
         min_retained_results_for_pass=min_retained_for_pass,
         chain_count=4,
-        rhat_threshold=1.01,
+        rhat_threshold=HMC_TUNING_ORDINARY_RHAT_THRESHOLD,
         acceptance_policy=acceptance_policy,
         use_xla=config.use_xla,
         target_scope=sequential_target_scope,
@@ -24327,7 +24454,7 @@ def _run_phase7_sequential_rhat_final_verification(
         diagnostics = dict(_bootstrap_error_diagnostics(run_error))
     if run_error is not None:
         diagnostics["sequential_rhat_verification"] = True
-        diagnostics["rhat_threshold"] = 1.01
+        diagnostics["rhat_threshold"] = HMC_TUNING_ORDINARY_RHAT_THRESHOLD
         diagnostics["check_interval"] = check_interval
         diagnostics["max_results"] = max_results
         diagnostics["verification_min_retained_results_for_pass"] = (
@@ -24360,7 +24487,7 @@ def _run_phase7_sequential_rhat_final_verification(
     diagnostics["verification_start_bank"] = dict(start_bank_summary)
     diagnostics["sequential_rhat_policy"] = {
         "check_interval": check_interval,
-        "rhat_threshold": 1.01,
+        "rhat_threshold": HMC_TUNING_ORDINARY_RHAT_THRESHOLD,
         "rhat_definition": diagnostics.get("rhat_definition"),
         "max_results": max_results,
         "verification_chunk_max_results": configured_chunk,

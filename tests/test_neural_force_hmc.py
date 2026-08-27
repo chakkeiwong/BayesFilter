@@ -9,10 +9,12 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.inference.neural_force_hmc import (
+    DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
     FrozenPositionOnlyForce,
     FrozenTargetPotential,
     InvalidNeuralForceHMCConfiguration,
     NeuralForceHMCConfig,
+    NeuralForceTransitionKernel,
     bind_neural_force_hmc_tuning_runner,
     kinetic_energy,
     neural_force_hmc_transition,
@@ -22,7 +24,10 @@ from bayesfilter.inference.neural_force_hmc import (
 )
 from bayesfilter.inference.hmc import FullChainHMCConfig, FullChainHMCRunResult
 from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
-from bayesfilter.inference.tuning_contract import hmc_tuning_interface_capability
+from bayesfilter.inference.tuning_contract import (
+    HMC_TUNING_RUNNER_BINDING_SCHEMA,
+    hmc_tuning_interface_capability,
+)
 
 
 DTYPE = tf.float64
@@ -121,6 +126,44 @@ def test_typed_tuning_binding_validates_identity_and_telemetry():
         )
 
 
+def test_typed_binding_v2_builds_tensor_kernel_for_honestly_labeled_field():
+    force = FrozenPositionOnlyForce(
+        function=lambda position: tf.stack(
+            (position[..., 0] + 0.2 * position[..., 1], 0.4 * position[..., 1]),
+            axis=-1,
+        ),
+        identity="deterministic-nongradient-field-v1",
+        semantics=DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
+    )
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=force,
+        target=_gaussian_target(),
+        target_scope="neural-force-binding-test",
+    )
+
+    payload = binding.payload()
+    assert payload["schema"] == HMC_TUNING_RUNNER_BINDING_SCHEMA
+    assert payload["force_semantics"] == (
+        DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS
+    )
+    assert payload["endpoint_target_coordinate_system"] == "raw"
+    kernel = binding.build_tensor_kernel(
+        _IdentityAffineAdapter(),
+        step_size=tf.constant(0.1, DTYPE),
+        num_leapfrog_steps=tf.constant(2, tf.int32),
+        target_scope="neural-force-binding-test",
+        target_status_trace_policy="none",
+        chain_execution_mode="tf_function",
+        use_xla=False,
+    )
+    assert isinstance(kernel, NeuralForceTransitionKernel)
+    assert kernel.force.semantics == (
+        DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS
+    )
+    assert kernel.force.coordinate_system == "transformed"
+    assert kernel.target.includes_chart_log_jacobian is True
+
+
 def test_typed_tuning_binding_rejects_identity_mass_fallback():
     binding = bind_neural_force_hmc_tuning_runner(
         force=_gaussian_force(),
@@ -164,6 +207,10 @@ def test_config_is_immutable_and_validated():
         _config(step_size=0.0)
     with pytest.raises(InvalidNeuralForceHMCConfiguration):
         NeuralForceHMCConfig(0.1, 1, (1.0, 0.0))
+    with pytest.raises(InvalidNeuralForceHMCConfiguration, match="integer dtype"):
+        NeuralForceHMCConfig(0.1, tf.constant(1.5), (1.0, 1.0))
+    with pytest.raises(InvalidNeuralForceHMCConfiguration, match="positive finite"):
+        NeuralForceHMCConfig(0.1, 1, (1.0, float("nan")))
     with pytest.raises(InvalidNeuralForceHMCConfiguration):
         NeuralForceHMCConfig(0.1, 1, (1.0,), dtype="int32")
 

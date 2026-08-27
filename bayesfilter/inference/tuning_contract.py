@@ -21,7 +21,8 @@ HMC_TUNING_CAPABILITY_SCHEMA = "bayesfilter.hmc_tuning_capability.v1"
 HMC_TUNING_CAPABILITY_REGISTRY_SCHEMA = (
     "bayesfilter.hmc_tuning_capability_registry.v1"
 )
-HMC_TUNING_RUNNER_BINDING_SCHEMA = "bayesfilter.hmc_tuning_runner_binding.v1"
+HMC_TUNING_RUNNER_BINDING_SCHEMA = "bayesfilter.hmc_tuning_runner_binding.v2"
+HMC_TUNING_ORDINARY_RHAT_THRESHOLD = 1.01
 
 TuningRouteRole = Literal["active", "historical", "diagnostic"]
 HMCInterfaceKind = Literal[
@@ -377,12 +378,17 @@ class HMCTuningRunnerBinding:
 
     _issuer_token: Any = field(repr=False, compare=False)
     runner: Callable[[Any, Any, Any], Any] = field(repr=False, compare=False)
+    tensor_kernel_factory: Callable[..., Any] = field(repr=False, compare=False)
     runner_identity: str
     algorithm_family: str
     target_scope: str
     coordinate_scope: str
     force_identity: str
+    force_semantics: str
     endpoint_target_identity: str
+    endpoint_target_coordinate_system: str
+    endpoint_target_includes_chart_log_jacobian: bool
+    affine_log_jacobian_convention: str
     target_status_evidence: str
     supported_target_status_trace_policies: tuple[str, ...]
     supported_chain_execution_modes: tuple[str, ...]
@@ -402,13 +408,18 @@ class HMCTuningRunnerBinding:
             raise ValueError("HMC tuning runner bindings must be repository-issued")
         if not callable(self.runner):
             raise TypeError("runner must be callable")
+        if not callable(self.tensor_kernel_factory):
+            raise TypeError("tensor_kernel_factory must be callable")
         for name in (
             "runner_identity",
             "algorithm_family",
             "target_scope",
             "coordinate_scope",
             "force_identity",
+            "force_semantics",
             "endpoint_target_identity",
+            "endpoint_target_coordinate_system",
+            "affine_log_jacobian_convention",
             "target_status_evidence",
             "backend",
             "dtype",
@@ -446,6 +457,17 @@ class HMCTuningRunnerBinding:
         if not isinstance(closure, Mapping) or not closure:
             raise ValueError("source_dependency_closure must be a non-empty mapping")
         object.__setattr__(self, "source_dependency_closure", closure)
+        object.__setattr__(
+            self,
+            "endpoint_target_includes_chart_log_jacobian",
+            bool(self.endpoint_target_includes_chart_log_jacobian),
+        )
+        if self.endpoint_target_coordinate_system != self.coordinate_scope:
+            raise ValueError("binding target and force coordinate scopes must match")
+        if self.affine_log_jacobian_convention != "constant_omitted":
+            raise ValueError(
+                "ordinary affine HMC bindings require constant_omitted convention"
+            )
         for name in (
             "xla_capable",
             "requires_native_affine_mass",
@@ -472,7 +494,16 @@ class HMCTuningRunnerBinding:
             "target_scope": self.target_scope,
             "coordinate_scope": self.coordinate_scope,
             "force_identity": self.force_identity,
+            "force_semantics": self.force_semantics,
             "endpoint_target_identity": self.endpoint_target_identity,
+            "endpoint_target_coordinate_system": (
+                self.endpoint_target_coordinate_system
+            ),
+            "endpoint_target_includes_chart_log_jacobian": (
+                self.endpoint_target_includes_chart_log_jacobian
+            ),
+            "affine_log_jacobian_convention": self.affine_log_jacobian_convention,
+            "tensor_kernel_factory_available": True,
             "target_status_evidence": self.target_status_evidence,
             "supported_target_status_trace_policies": (
                 self.supported_target_status_trace_policies
@@ -562,8 +593,23 @@ class HMCTuningRunnerBinding:
             raise ValueError("bound runner used forbidden direct identity-mass fallback")
         if str(metadata.get("force_identity")) != self.force_identity:
             raise ValueError("bound runner force identity mismatch")
+        if str(metadata.get("force_semantics")) != self.force_semantics:
+            raise ValueError("bound runner force semantics mismatch")
         if str(metadata.get("target_identity")) != self.endpoint_target_identity:
             raise ValueError("bound runner endpoint-target identity mismatch")
+        if (
+            str(metadata.get("target_coordinate_system"))
+            != self.endpoint_target_coordinate_system
+        ):
+            raise ValueError("bound runner endpoint-target coordinates mismatch")
+        if bool(metadata.get("target_includes_chart_log_jacobian")) != (
+            self.endpoint_target_includes_chart_log_jacobian
+        ):
+            raise ValueError("bound runner endpoint-target Jacobian status mismatch")
+        if str(metadata.get("affine_log_jacobian_convention")) != (
+            self.affine_log_jacobian_convention
+        ):
+            raise ValueError("bound runner affine log-Jacobian convention mismatch")
         if str(metadata.get("target_scope")) != self.target_scope:
             raise ValueError("bound runner result target_scope mismatch")
         if str(metadata.get("chain_execution_mode")) not in (
@@ -574,16 +620,53 @@ class HMCTuningRunnerBinding:
             raise ValueError("bound runner result lacks samples for movement checks")
         return result
 
+    def build_tensor_kernel(
+        self,
+        adapter: Any,
+        *,
+        step_size: Any,
+        num_leapfrog_steps: Any,
+        target_scope: str,
+        target_status_trace_policy: str,
+        chain_execution_mode: str,
+        use_xla: bool,
+    ) -> Any:
+        """Build the repository-owned bound kernel without a host chain runner."""
+
+        self.validate_public_context(
+            target_scope=target_scope,
+            target_status_trace_policy=target_status_trace_policy,
+            chain_execution_mode=chain_execution_mode,
+            use_xla=use_xla,
+        )
+        if not callable(getattr(adapter, "latent_to_position", None)):
+            raise ValueError("runner binding requires native affine latent_to_position")
+        transform = getattr(adapter, "transform", None)
+        if transform is None or not hasattr(transform, "factor") or not hasattr(
+            transform, "center"
+        ):
+            raise ValueError("runner binding requires native affine mass transform")
+        return self.tensor_kernel_factory(
+            adapter=adapter,
+            step_size=step_size,
+            num_leapfrog_steps=num_leapfrog_steps,
+        )
+
 
 def _issue_hmc_tuning_runner_binding(
     *,
     runner: Callable[[Any, Any, Any], Any],
+    tensor_kernel_factory: Callable[..., Any],
     runner_identity: str,
     algorithm_family: str,
     target_scope: str,
     coordinate_scope: str,
     force_identity: str,
+    force_semantics: str,
     endpoint_target_identity: str,
+    endpoint_target_coordinate_system: str,
+    endpoint_target_includes_chart_log_jacobian: bool,
+    affine_log_jacobian_convention: str,
     target_status_evidence: str,
     supported_target_status_trace_policies: tuple[str, ...],
     supported_chain_execution_modes: tuple[str, ...],
@@ -599,12 +682,19 @@ def _issue_hmc_tuning_runner_binding(
     return HMCTuningRunnerBinding(
         _issuer_token=_RUNNER_BINDING_ISSUER_TOKEN,
         runner=runner,
+        tensor_kernel_factory=tensor_kernel_factory,
         runner_identity=runner_identity,
         algorithm_family=algorithm_family,
         target_scope=target_scope,
         coordinate_scope=coordinate_scope,
         force_identity=force_identity,
+        force_semantics=force_semantics,
         endpoint_target_identity=endpoint_target_identity,
+        endpoint_target_coordinate_system=endpoint_target_coordinate_system,
+        endpoint_target_includes_chart_log_jacobian=(
+            endpoint_target_includes_chart_log_jacobian
+        ),
+        affine_log_jacobian_convention=affine_log_jacobian_convention,
         target_status_evidence=target_status_evidence,
         supported_target_status_trace_policies=supported_target_status_trace_policies,
         supported_chain_execution_modes=supported_chain_execution_modes,
@@ -632,7 +722,7 @@ _HISTORICAL_NONCLAIMS = (
 HMC_TUNING_ROUTE_REGISTRY: tuple[HMCTuningRouteRecord, ...] = (
     HMCTuningRouteRecord(
         interface_name="tune_hmc_kernel",
-        module="bayesfilter.inference.hmc_kernel_tuning",
+        module="bayesfilter.inference.hmc_tuning_dispatch",
         role="active",
         artifact_authority=True,
     ),
@@ -760,13 +850,17 @@ def _nonactive_route_capability(
 HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
     HMCTuningInterfaceCapability(
         interface_name="tune_hmc_kernel",
-        module="bayesfilter.inference.hmc_kernel_tuning",
+        module="bayesfilter.inference.hmc_tuning_dispatch",
         interface_kind="public_tuner",
         capability_status="tested_supported",
         artifact_authority=True,
-        algorithm_family="ordinary_exact_value_score_fixed_trajectory_hmc",
+        algorithm_family=(
+            "ordinary_exact_value_score_or_typed_endpoint_corrected_"
+            "position_field_fixed_trajectory_hmc"
+        ),
         target_contract=(
-            "one adapter-owned exact log target and matching exact score authority"
+            "legacy ordinary exact value/score, or a repository-issued typed binding "
+            "with an exact endpoint target and honestly labeled deterministic field"
         ),
         coordinate_prerequisite=(
             "ordinary adapter coordinates with repository-owned affine mass coordinates"
@@ -777,7 +871,9 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         step_size_policy="bootstrap, fixed-mass tuning, bounded repair, then freeze",
         trajectory_policy="joint leapfrog-count and epsilon selection with bounded repair",
         fresh_verification_policy=(
-            "fresh fixed-kernel verification; default TFP runner requires typed acceptance, health, minimum draws, and rank-normalized split/folded R-hat at or below 1.01"
+            "fresh fixed-kernel verification; default TFP runner requires typed "
+            "acceptance, health, minimum draws, and rank-normalized split/folded "
+            f"R-hat at or below {HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}"
         ),
         ess_admission_policy=(
             "disabled for ordinary tuning admission; retained posterior ESS is separate"
@@ -1117,6 +1213,7 @@ __all__ = [
     "HMC_TUNING_CAPABILITY_REGISTRY_SCHEMA",
     "HMC_TUNING_CAPABILITY_SCHEMA",
     "HMC_TUNING_INTERFACE_CAPABILITIES",
+    "HMC_TUNING_ORDINARY_RHAT_THRESHOLD",
     "HMC_TUNING_RUNNER_BINDING_SCHEMA",
     "HMC_TUNING_ROUTE_REGISTRY",
     "HMCTuningInterfaceCapability",

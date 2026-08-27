@@ -31,6 +31,11 @@ EXCLUDED_FUNCTIONS = frozenset(
         "run_staged_fixed_kernel_hmc_estimation",
     }
 )
+COMPATIBILITY_ALIASES = frozenset(
+    {
+        "bayesfilter.inference.hmc_kernel_tuning.tune_hmc_kernel",
+    }
+)
 INTERNAL_STAGE_PREFIXES = (
     "run_hmc_",
     "run_bounded_operational_fixed_trajectory_",
@@ -57,6 +62,9 @@ def discover_routes(inference_root: Path) -> tuple[dict[str, Any], ...]:
             name = node.name
             if name.startswith("_") or name in EXCLUDED_FUNCTIONS:
                 continue
+            qualified_name = f"{module}.{name}"
+            if qualified_name in COMPATIBILITY_ALIASES:
+                continue
             if name.startswith(INTERNAL_STAGE_PREFIXES):
                 continue
             lowered = name.lower()
@@ -71,7 +79,7 @@ def discover_routes(inference_root: Path) -> tuple[dict[str, Any], ...]:
                 {
                     "interface_name": name,
                     "module": module,
-                    "qualified_name": f"{module}.{name}",
+                    "qualified_name": qualified_name,
                     "path": str(path),
                     "line": int(node.lineno),
                 }
@@ -93,6 +101,7 @@ def inventory_payload(repo_root: Path) -> dict[str, Any]:
         "exclusions": {
             "module_prefixes": EXCLUDED_MODULE_PREFIXES,
             "functions": tuple(sorted(EXCLUDED_FUNCTIONS)),
+            "compatibility_aliases": tuple(sorted(COMPATIBILITY_ALIASES)),
             "internal_stage_prefixes": INTERNAL_STAGE_PREFIXES,
             "separate_algorithm_families": (
                 "NeuTra HMC",
