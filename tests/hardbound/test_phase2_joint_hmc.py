@@ -260,15 +260,23 @@ def test_g2_3_full_c1_fixture_recovery():
         return jt.joint_log_prob_raw_batched(y_tf, theta_raw, x0_raw, eta_raw,
                                              "mf_c1_k40_hardmax")
 
-    out = run_nuts(lp, init, NutsConfig(num_chains=nc, num_warmup=2000,
-                                        num_samples=1000, seed=20260822,
+    # Budget: 1600 mass matrix estimation steps (0.8*2000) proved thin for a
+    # 337-dim diagonal -- attempt 3 reached max R-hat 1.073, mixing but not
+    # converged. 4000 warmup gives 3200 estimation steps and 3000 draws
+    # reduces finite-sample R-hat noise. The 1.02 threshold is unchanged.
+    ns = 3000
+    out = run_nuts(lp, init, NutsConfig(num_chains=nc, num_warmup=4000,
+                                        num_samples=ns, seed=20260822,
                                         initial_step_size=1e-2,
-                                        target_accept=0.9,
+                                        target_accept=0.95,
                                         diagonal_mass_matrix=True))
-    n_total = 4 * 1000
+    n_total = nc * ns
     assert out["divergences"] <= 0.001 * n_total, out["divergences"]
     rhat = out["rhat"][0].numpy()
-    assert np.all(rhat < 1.02), rhat
+    ess = out["ess"][0].numpy()
+    # ESS reported alongside R-hat: distinguishes "needs more draws" from
+    # "a coordinate block still will not move".
+    assert np.all(rhat < 1.02), (rhat, ess)
     # Map draws back to the natural chart before comparing against truth.
     draws = jt.theta_from_raw(
         out["samples"][0].numpy().reshape(-1, 9)).numpy()
