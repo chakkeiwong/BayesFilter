@@ -74,6 +74,6 @@ cb = make_callbacks(model, theta0, "diag_lgssm_biasdiag", 3, 3, initial_mean)
 exact_v = exact_kalman(np.array(theta0_np), 50)
 from bayesfilter.highdim.ledh_canonical_filter_tf import canonical_value_and_diagnostics
 for n, seeds in ((252, range(8)), (1008, range(8)), (4032, range(4))):
-    vals = [float(canonical_value_and_diagnostics(cb, obs_all, particle_count=n, seed=s, flow_flow_substeps=16, resample_seed=s)["value"].numpy()) for s in seeds]
+    vals = [float(canonical_value_and_diagnostics(cb, obs_all, particle_count=n, seed=s, flow_substeps=16, resample_seed=s)["value"].numpy()) for s in seeds]
     se = np.std(vals, ddof=1)/np.sqrt(len(vals))
     print(f"[N={n}] mean={np.mean(vals):.3f} exact={exact_v:.3f} bias={np.mean(vals)-exact_v:+.3f} SE={se:.3f}", flush=True)

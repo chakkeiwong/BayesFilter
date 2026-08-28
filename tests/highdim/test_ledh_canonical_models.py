@@ -164,7 +164,7 @@ def test_austria_flow_lane_ess_beats_bootstrap_floor():
         observations,
         particle_count=256,
         seed=7,
-        flow_flow_substeps=16,
+        flow_substeps=16,
         temper_stages=4,
     )
     ess = result["per_step_ess"].numpy()
@@ -234,7 +234,7 @@ def test_austria_annealed_mode_holds_takeoff_ess():
         observations,
         particle_count=256,
         seed=7,
-        flow_flow_substeps=12,
+        flow_substeps=12,
         temper_stages=4,
         annealed_resampling=True,
         flow_prior_cap=8.0,

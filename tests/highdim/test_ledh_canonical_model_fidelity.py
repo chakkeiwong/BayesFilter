@@ -451,7 +451,7 @@ def test_austria_reduction_slice_matches_kalman():
             tf.constant(observations_np, DTYPE),
             particle_count=4096,
             seed=seed,
-            flow_flow_substeps=12,
+            flow_substeps=12,
         )
         assert bool(result["program_valid"].numpy())
         values.append(float(result["value"].numpy()))

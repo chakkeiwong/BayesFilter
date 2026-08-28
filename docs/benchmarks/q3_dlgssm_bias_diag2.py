@@ -61,5 +61,5 @@ initial_mean = tf.zeros([3], DTYPE)
 cb = make_callbacks(model, theta0, "diag_lgssm_epsdiag", 3, 3, initial_mean)
 exact_v = exact_kalman(np.array(theta0_np), 50)
 for eps in (2.0, 0.5, 0.1):
-    vals = [float(canonical_value_and_diagnostics(cb, obs_all, particle_count=n, seed=s, flow_flow_substeps=16, resample_seed=s, epsilon=eps, sinkhorn_steps=24 if eps < 1.0 else 8)["value"].numpy()) for s in range(6)]
+    vals = [float(canonical_value_and_diagnostics(cb, obs_all, particle_count=n, seed=s, flow_substeps=16, resample_seed=s, epsilon=eps, sinkhorn_steps=24 if eps < 1.0 else 8)["value"].numpy()) for s in range(6)]
     print(f"[eps={eps}] mean={np.mean(vals):.3f} exact={exact_v:.3f} bias={np.mean(vals)-exact_v:+.3f} SE={np.std(vals,ddof=1)/np.sqrt(len(vals)):.3f}", flush=True)

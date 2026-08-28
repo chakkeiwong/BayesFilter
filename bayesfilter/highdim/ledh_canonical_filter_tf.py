@@ -141,6 +141,15 @@ def canonical_value_and_diagnostics(
     valid = tf.constant(True)
     ess_history = []
     dual_cap_active = tf.constant(dual_cap_enabled)
+    # Class-A observability (2026-08-27): the Sinkhorn marginal-convergence
+    # diagnostic is computed inside _restore_cloud_primal and was discarded
+    # at this call site. Small entropic epsilon is exactly where the
+    # inner loop converges slowest, so a tuning grid that never sees this
+    # residual selects its most-suspect arm by construction. These fields
+    # are reported only; they do NOT gate `valid` (that would change
+    # accepted results and is a Class-C decision).
+    marginal_tv_history = []
+    marginal_valid_history = []
 
     design = tf.linalg.matrix_transpose(
         tf.stack(
@@ -410,6 +419,10 @@ def canonical_value_and_diagnostics(
         )
         reset_states = tf.cast(restored["particles"], dtype)
         reset_valid = tf.reduce_all(tf.math.is_finite(reset_states))
+        marginal_tv_history.append(
+            tf.cast(restored["post_quotient_column_tv_error"], dtype)
+        )
+        marginal_valid_history.append(restored["marginal_valid"])
 
         # OT reset outputs an equal-weight cloud whose rows are transport
         # barycenters of the weighted children; the covariance triple
@@ -425,12 +438,35 @@ def canonical_value_and_diagnostics(
         valid = valid & step_valid & reset_valid
 
     nan = tf.cast(float("nan"), dtype)
+    if marginal_tv_history:
+        marginal_tv = tf.stack(marginal_tv_history)
+        marginal_ok = tf.stack(marginal_valid_history)
+    else:
+        marginal_tv = tf.zeros([0], dtype)
+        marginal_ok = tf.zeros([0], tf.bool)
     return {
         "value": tf.where(valid, total, nan),
         "program_valid": valid,
         "per_step_ess": tf.stack(ess_history),
         "dual_cap_active": dual_cap_active,
         "model_id": tf.constant(callbacks.model_id),
+        # Class-A: reported, not gating. `marginal_steps_completed` lets a
+        # caller distinguish "veto passed" from "reset never reached".
+        "per_step_marginal_tv_error": marginal_tv,
+        "per_step_marginal_valid": marginal_ok,
+        "max_marginal_tv_error": (
+            tf.reduce_max(marginal_tv)
+            if marginal_tv_history
+            else tf.cast(float("nan"), dtype)
+        ),
+        "all_marginals_valid": (
+            tf.reduce_all(marginal_ok)
+            if marginal_valid_history
+            else tf.constant(False)
+        ),
+        "marginal_steps_completed": tf.constant(
+            len(marginal_tv_history), tf.int32
+        ),
     }
 
 
