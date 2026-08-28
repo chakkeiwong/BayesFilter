@@ -293,6 +293,35 @@ class TFBatchedSigmaPointOutputCotangents:
 
 
 @dataclass(frozen=True)
+class TFBatchedSigmaPointValue:
+    """Value-only result for the batch-native structural sigma-point filter."""
+
+    value: tf.Tensor
+    diagnostics: Mapping[str, tf.Tensor]
+    transition_previous_points: tf.Tensor | None = None
+    transition_innovation_points: tf.Tensor | None = None
+    observation_state_points: tf.Tensor | None = None
+
+
+@dataclass(frozen=True)
+class TFBatchedPrincipalSqrtFactor:
+    """Value-path principal-root factor and hard classification diagnostics."""
+
+    eigenvalues: tf.Tensor
+    floored_eigenvalues: tf.Tensor
+    eigenvectors: tf.Tensor
+    factor: tf.Tensor
+    implemented_covariance: tf.Tensor
+    floor_count: tf.Tensor
+    min_eigenvalue: tf.Tensor
+    min_eigen_gap: tf.Tensor
+    psd_projection_residual: tf.Tensor
+    roundoff_repair_count: tf.Tensor
+    classified_invalid_count: tf.Tensor
+    max_abs_covariance_entry: tf.Tensor
+
+
+@dataclass(frozen=True)
 class TFBatchedSmoothEighFactorFirstDerivatives:
     eigenvalues: tf.Tensor
     floored_eigenvalues: tf.Tensor
@@ -1138,6 +1167,148 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
     )
 
 
+def _checked_batched_principal_sqrt_factor_value(
+    covariance: tf.Tensor,
+    *,
+    singular_floor: tf.Tensor,
+    fixed_null_tolerance: tf.Tensor,
+    label: str,
+    factor_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
+) -> TFBatchedPrincipalSqrtFactor:
+    """Return the principal-root factor without derivative work."""
+
+    covariance = _symmetrize(covariance)
+    finite_covariance = tf.reduce_all(
+        tf.math.is_finite(covariance), axis=[-2, -1]
+    )
+    eigensolver_covariance = tf.where(
+        finite_covariance[:, tf.newaxis, tf.newaxis],
+        covariance,
+        tf.eye(
+            int(covariance.shape[-1]),
+            batch_shape=[tf.shape(covariance)[0]],
+            dtype=tf.float64,
+        ),
+    )
+    (
+        eigenvalues,
+        _floored,
+        eigenvectors,
+        _implemented_covariance,
+        psd_projection_residual,
+    ) = _batched_psd_eigh(eigensolver_covariance, singular_floor)
+    eigenvalues = tf.where(
+        finite_covariance[:, tf.newaxis],
+        eigenvalues,
+        tf.fill(tf.shape(eigenvalues), tf.constant(float("nan"), tf.float64)),
+    )
+    psd_projection_residual = tf.where(
+        finite_covariance,
+        psd_projection_residual,
+        tf.fill(
+            tf.shape(psd_projection_residual),
+            tf.constant(_PRINCIPAL_SQRT_DIAGNOSTIC_LARGE, tf.float64),
+        ),
+    )
+    min_eigenvalue = tf.reduce_min(
+        tf.where(
+            tf.math.is_finite(eigenvalues),
+            eigenvalues,
+            tf.fill(
+                tf.shape(eigenvalues),
+                tf.constant(-_PRINCIPAL_SQRT_DIAGNOSTIC_LARGE, tf.float64),
+            ),
+        ),
+        axis=-1,
+    )
+    (
+        safe_covariance,
+        safe_eigenvalues,
+        roundoff_repaired,
+        classified_invalid,
+        max_abs_covariance_entry,
+    ) = _principal_sqrt_covariance_classification(
+        covariance,
+        eigenvalues,
+        singular_floor,
+    )
+    identity_eigenvectors = tf.eye(
+        int(covariance.shape[-1]),
+        dtype=tf.float64,
+    )[tf.newaxis, :, :]
+    eigenvectors = tf.where(
+        classified_invalid[:, tf.newaxis, tf.newaxis],
+        identity_eigenvectors,
+        eigenvectors,
+    )
+    structural_null_covariance_residual = tf.zeros(
+        tf.shape(eigenvalues)[0],
+        dtype=tf.float64,
+    )
+    fixed_null_residual = tf.zeros(tf.shape(eigenvalues)[0], dtype=tf.float64)
+    assertions = [
+        tf.debugging.assert_all_finite(
+            safe_eigenvalues,
+            f"blocked_nonfinite_factor: {label} eigenvalues are nonfinite",
+        ),
+        tf.debugging.assert_less_equal(
+            structural_null_covariance_residual,
+            fixed_null_tolerance,
+            message=f"blocked_structural_null_covariance: {label} null support has positive variance",
+        ),
+        tf.debugging.assert_less_equal(
+            fixed_null_residual,
+            fixed_null_tolerance,
+            message=f"blocked_moving_structural_null: {label} null support is parameter-dependent",
+        ),
+    ]
+    with tf.control_dependencies(assertions):
+        eigenvalues = tf.identity(safe_eigenvalues)
+        floored_eigenvalues = tf.identity(
+            tf.maximum(safe_eigenvalues, singular_floor)
+        )
+        eigenvectors = tf.identity(eigenvectors)
+        safe_covariance = tf.identity(safe_covariance)
+
+    factor = _principal_sqrt_factor(
+        safe_covariance,
+        factor_backend=factor_backend,
+    )
+    implemented_covariance = _symmetrize(
+        factor @ tf.linalg.matrix_transpose(factor)
+    )
+    psd_projection_residual = tf.linalg.norm(
+        implemented_covariance - covariance,
+        axis=[-2, -1],
+    )
+    psd_projection_residual = tf.where(
+        tf.logical_not(classified_invalid),
+        psd_projection_residual,
+        tf.fill(
+            tf.shape(psd_projection_residual),
+            tf.constant(_PRINCIPAL_SQRT_DIAGNOSTIC_LARGE, tf.float64),
+        ),
+    )
+    return TFBatchedPrincipalSqrtFactor(
+        eigenvalues=eigenvalues,
+        floored_eigenvalues=floored_eigenvalues,
+        eigenvectors=eigenvectors,
+        factor=factor,
+        implemented_covariance=implemented_covariance,
+        floor_count=tf.zeros(tf.shape(eigenvalues)[0], dtype=tf.int32),
+        min_eigenvalue=min_eigenvalue,
+        min_eigen_gap=tf.where(
+            classified_invalid,
+            tf.zeros_like(min_eigenvalue),
+            _batched_min_eigen_gap(eigenvalues),
+        ),
+        psd_projection_residual=psd_projection_residual,
+        roundoff_repair_count=tf.cast(roundoff_repaired, tf.int32),
+        classified_invalid_count=tf.cast(classified_invalid, tf.int32),
+        max_abs_covariance_entry=max_abs_covariance_entry,
+    )
+
+
 def _weighted_covariance(centered: tf.Tensor, weights: tf.Tensor) -> tf.Tensor:
     return _symmetrize(tf.einsum("r,bri,brj->bij", weights, centered, centered))
 
@@ -1186,7 +1357,7 @@ def _reverse_weighted_covariance_cotangent(
 def tf_batched_svd_sigma_point_value_and_output_cotangents(
     observations: tf.Tensor,
     model: TFBatchedStructuralStateSpace,
-    linearizations: TFBatchedStructuralLinearizations,
+    linearizations: TFBatchedStructuralLinearizations | None,
     *,
     sigma_rule: TFSigmaPointRule | None = None,
     backend: TFBatchedSVDBackend = "tf_principal_sqrt_ukf",
@@ -1197,21 +1368,29 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     principal_sqrt_reconstruction_tolerance: tf.Tensor | float = 1.0e-10,
     principal_sqrt_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
     jitter: tf.Tensor | float = 0.0,
-) -> TFBatchedSigmaPointOutputCotangents:
+    _value_only: bool = False,
+) -> TFBatchedSigmaPointOutputCotangents | TFBatchedSigmaPointValue:
     """Return value and reverse-mode cotangents for model hook outputs.
 
     This API preserves BayesFilter ownership of the sigma-point recursion while
     letting model adapters consume output cotangents with model-owned VJPs.  It
-    is currently scoped to the batch-native current-state principal-sqrt UKF
-    route.
+    is currently scoped to the batch-native principal-sqrt UKF route. The
+    private ``_value_only`` mode is a static trace-time branch used by the
+    public value-only wrapper below; it does not construct the reverse pass.
     """
 
     if backend != "tf_principal_sqrt_ukf":
         raise ValueError(
             "output-cotangent API currently requires backend='tf_principal_sqrt_ukf'"
         )
+    value_only = _value_only
+    if value_only:
+        if linearizations is not None:
+            raise ValueError("value-only API does not accept linearizations")
+    elif linearizations is None:
+        raise ValueError("output-cotangent API requires linearizations")
     lagged_observation_contract = model.has_lagged_observation_contract()
-    if lagged_observation_contract and (
+    if not value_only and lagged_observation_contract and (
         linearizations.lagged_observation_previous_jacobian_fn is None
         or linearizations.lagged_observation_innovation_jacobian_fn is None
         or linearizations.lagged_observation_next_jacobian_fn is None
@@ -1231,7 +1410,7 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     innovation_dim = model.innovation_dim
     observation_dim = model.observation_dim
     if None in (batch_dim, state_dim, innovation_dim, observation_dim):
-        raise ValueError("output-cotangent API requires static model dimensions")
+        raise ValueError("batched sigma-point APIs require static model dimensions")
     batch_dim = int(batch_dim)
     state_dim = int(state_dim)
     innovation_dim = int(innovation_dim)
@@ -1359,15 +1538,24 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             [batch_dim, 1, aug_dim, aug_dim],
             dtype=tf.float64,
         )
-        placement = _checked_batched_principal_sqrt_factor_first_derivatives(
-            aug_covariance,
-            zero_aug_derivative,
-            singular_floor=placement_floor,
-            fixed_null_tolerance=fixed_null_tolerance,
-            lyapunov_tolerance=principal_sqrt_reconstruction_tolerance,
-            factor_backend=principal_sqrt_backend,
-            label="principal-sqrt sigma-point placement cotangent",
-        )
+        if value_only:
+            placement = _checked_batched_principal_sqrt_factor_value(
+                aug_covariance,
+                singular_floor=placement_floor,
+                fixed_null_tolerance=fixed_null_tolerance,
+                factor_backend=principal_sqrt_backend,
+                label="principal-sqrt sigma-point placement value",
+            )
+        else:
+            placement = _checked_batched_principal_sqrt_factor_first_derivatives(
+                aug_covariance,
+                zero_aug_derivative,
+                singular_floor=placement_floor,
+                fixed_null_tolerance=fixed_null_tolerance,
+                lyapunov_tolerance=principal_sqrt_reconstruction_tolerance,
+                factor_backend=principal_sqrt_backend,
+                label="principal-sqrt sigma-point placement cotangent",
+            )
         point_offsets = tf.einsum("ra,bda->brd", sigma_rule.offsets, placement.factor)
         aug_points = aug_mean[:, tf.newaxis, :] + point_offsets
         previous_points = aug_points[:, :, :state_dim]
@@ -1405,15 +1593,24 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             [batch_dim, 1, observation_dim, observation_dim],
             dtype=tf.float64,
         )
-        innovation_factor = _checked_batched_principal_sqrt_factor_first_derivatives(
-            raw_innovation_covariance,
-            zero_observation_derivative,
-            singular_floor=innovation_floor,
-            fixed_null_tolerance=fixed_null_tolerance,
-            lyapunov_tolerance=principal_sqrt_reconstruction_tolerance,
-            factor_backend=principal_sqrt_backend,
-            label="principal-sqrt sigma-point innovation cotangent",
-        )
+        if value_only:
+            innovation_factor = _checked_batched_principal_sqrt_factor_value(
+                raw_innovation_covariance,
+                singular_floor=innovation_floor,
+                fixed_null_tolerance=fixed_null_tolerance,
+                factor_backend=principal_sqrt_backend,
+                label="principal-sqrt sigma-point innovation value",
+            )
+        else:
+            innovation_factor = _checked_batched_principal_sqrt_factor_first_derivatives(
+                raw_innovation_covariance,
+                zero_observation_derivative,
+                singular_floor=innovation_floor,
+                fixed_null_tolerance=fixed_null_tolerance,
+                lyapunov_tolerance=principal_sqrt_reconstruction_tolerance,
+                factor_backend=principal_sqrt_backend,
+                label="principal-sqrt sigma-point innovation cotangent",
+            )
         implemented_innovation_covariance = innovation_factor.implemented_covariance
         cross_covariance = tf.einsum(
             "brn,r,brm->bnm",
@@ -1523,6 +1720,87 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         ),
         parallel_iterations=1,
     )
+
+    if value_only:
+        classified_invalid_count = (
+            max_placement_classified_invalid_count
+            + max_innovation_classified_invalid_count
+        )
+        valid_mask = classified_invalid_count <= 0
+        checked_value = tf.where(
+            valid_mask,
+            log_likelihood,
+            tf.fill(
+                tf.shape(log_likelihood),
+                tf.constant(_PRINCIPAL_SQRT_CLASSIFIED_INVALID_LOG_PROB, tf.float64),
+            ),
+        )
+        checked_value = tf.where(
+            tf.math.is_finite(checked_value),
+            checked_value,
+            tf.fill(
+                tf.shape(checked_value),
+                tf.constant(_PRINCIPAL_SQRT_CLASSIFIED_INVALID_LOG_PROB, tf.float64),
+            ),
+        )
+        checked_value = tf.debugging.check_numerics(
+            checked_value,
+            "blocked_nonfinite_value: batched value-only sigma-point value is nonfinite",
+        )
+        roundoff_repair_count = (
+            max_placement_roundoff_repair_count
+            + max_innovation_roundoff_repair_count
+        )
+        target_row_class_code = tf.where(
+            classified_invalid_count > 0,
+            tf.fill(
+                tf.shape(classified_invalid_count),
+                tf.constant(2, dtype=tf.int32),
+            ),
+            tf.where(
+                roundoff_repair_count > 0,
+                tf.fill(
+                    tf.shape(roundoff_repair_count),
+                    tf.constant(1, dtype=tf.int32),
+                ),
+                tf.fill(
+                    tf.shape(roundoff_repair_count),
+                    tf.constant(0, dtype=tf.int32),
+                ),
+            ),
+        )
+        diagnostics = {
+            "backend": tf.constant(backend_name),
+            "backend_status": tf.constant("historical_reference_only"),
+            "default_backend": tf.constant("direct_factor_srukf"),
+            "default_backend_contract": tf.constant("TFFactorSRUKFModel"),
+            "rule": tf.constant(sigma_rule.name),
+            "value_only_api": tf.constant(
+                "tf_batched_svd_sigma_point_value"
+            ),
+            "time_recursion": tf.constant("tf.while_loop_forward_only"),
+            "observation_contract": tf.constant(observation_contract),
+            "observation_contract_runtime_selected": tf.constant(True),
+            "placement_floor_count": max_placement_floor_count,
+            "innovation_floor_count": max_innovation_floor_count,
+            "min_placement_eigenvalue": min_placement_eigenvalue,
+            "min_innovation_eigenvalue": min_innovation_eigenvalue,
+            "placement_roundoff_repair_count": max_placement_roundoff_repair_count,
+            "innovation_roundoff_repair_count": max_innovation_roundoff_repair_count,
+            "principal_sqrt_target_classified_invalid_count": classified_invalid_count,
+            "principal_sqrt_target_valid_count": tf.cast(valid_mask, tf.int32),
+            "principal_sqrt_target_row_class_code": target_row_class_code,
+            "filter_autodiff_allowed_for_hmc": tf.constant(False),
+            "reverse_cotangent_pass_constructed": tf.constant(False),
+            "parameter_derivative_hooks_called": tf.constant(False),
+        }
+        return TFBatchedSigmaPointValue(
+            value=checked_value,
+            diagnostics=diagnostics,
+            transition_previous_points=previous_ta.stack(),
+            transition_innovation_points=innovation_ta.stack(),
+            observation_state_points=predicted_ta.stack(),
+        )
 
     transition_cotangent_ta = tf.TensorArray(
         dtype=tf.float64,
@@ -1911,6 +2189,44 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         observation_covariance_cotangent=observation_covariance_cotangent,
         diagnostics=diagnostics,
     )
+
+
+def tf_batched_svd_sigma_point_value(
+    observations: tf.Tensor,
+    model: TFBatchedStructuralStateSpace,
+    *,
+    sigma_rule: TFSigmaPointRule | None = None,
+    backend: TFBatchedSVDBackend = "tf_principal_sqrt_ukf",
+    placement_floor: tf.Tensor | float = 0.0,
+    innovation_floor: tf.Tensor | float = 1.0e-12,
+    rank_tolerance: tf.Tensor | float = 1.0e-12,
+    fixed_null_tolerance: tf.Tensor | float = 1.0e-10,
+    principal_sqrt_reconstruction_tolerance: tf.Tensor | float = 1.0e-10,
+    principal_sqrt_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
+    jitter: tf.Tensor | float = 0.0,
+) -> TFBatchedSigmaPointValue:
+    """Return the lagged-compatible forward-only sigma-point value."""
+
+    result = tf_batched_svd_sigma_point_value_and_output_cotangents(
+        observations,
+        model,
+        None,
+        sigma_rule=sigma_rule,
+        backend=backend,
+        placement_floor=placement_floor,
+        innovation_floor=innovation_floor,
+        rank_tolerance=rank_tolerance,
+        fixed_null_tolerance=fixed_null_tolerance,
+        principal_sqrt_reconstruction_tolerance=(
+            principal_sqrt_reconstruction_tolerance
+        ),
+        principal_sqrt_backend=principal_sqrt_backend,
+        jitter=jitter,
+        _value_only=True,
+    )
+    if not isinstance(result, TFBatchedSigmaPointValue):
+        raise TypeError("value-only endpoint returned a cotangent result")
+    return result
 
 
 def _rule_for_backend(
