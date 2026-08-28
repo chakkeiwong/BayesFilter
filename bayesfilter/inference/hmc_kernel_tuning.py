@@ -111,6 +111,7 @@ from bayesfilter.inference.hmc_warmup import (
     _G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE,
     _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT,
     _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
+    _START_BANK_POLICY_ID,
     _compose_base_transform_with_nested_estimate,
     _phase7_engineering_probe_target_signature,
     compose_operational_transform_in_base_coordinates,
@@ -22479,59 +22480,85 @@ def _phase7_verification_initial_state(
             "raw_values_exposed": False,
             "reports_operational_start_lineage": False,
         }
-    if (
-        operational.private_start_bank_policy_id
-        != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
-    ):
-        raise ValueError(
-            "operational Phase 7 requires the explicit P4-E engineering probe bank"
-        )
-    engineering_qualification = operational.engineering_probe_bank_qualification
-    if engineering_qualification is None or not engineering_qualification.passed:
-        raise ValueError("operational Phase 7 P4-E qualification is missing or failed")
-    active_target = getattr(phase4_adapter, "base_adapter", None)
-    if active_target is None:
-        raise ValueError("operational Phase 7 P4-E base target identity is missing")
-    expected_target_signature = _phase7_engineering_probe_target_signature(
-        active_target
-    )
-    if engineering_qualification.target_signature != expected_target_signature:
-        raise ValueError("operational Phase 7 P4-E target identity mismatch")
-    active_scope = str(getattr(phase4_adapter, "target_scope", ""))
-    operational_scope = str(getattr(operational, "target_scope", ""))
-    if not active_scope or not operational_scope or active_scope != operational_scope:
-        raise ValueError("operational Phase 7 P4-E target scope mismatch")
     stage_config = getattr(windowed_stage, "config", None)
     multiplier = getattr(stage_config, "engineering_probe_covariance_multiplier", None)
-    if multiplier is None:
-        raise ValueError("operational Phase 7 P4-E configuration is missing")
-    configured_scope = getattr(stage_config, "target_scope", None)
-    if configured_scope is not None and str(configured_scope) != active_scope:
-        raise ValueError("operational Phase 7 P4-E configured target scope mismatch")
-    stage_seed = _derive_seed(
-        _validate_seed(getattr(stage_config, "seed", None)),
-        stage_index=0,
-    )
-    operational_seed = _validate_seed(getattr(operational, "seed_root", None))
-    if stage_seed != operational_seed:
-        raise ValueError("operational Phase 7 P4-E stage seed lineage mismatch")
-    expected_probe_config = Phase7EngineeringProbeBankConfig(
-        chain_count=4,
-        covariance_multiplier=multiplier,
-        root_seed=operational_seed,
-    )
-    if engineering_qualification.config_signature != expected_probe_config.config_signature:
-        raise ValueError("operational Phase 7 P4-E configuration lineage mismatch")
-    if (
-        engineering_qualification.derived_seed_signature
-        != expected_probe_config.derived_seed_signature
-    ):
-        raise ValueError("operational Phase 7 P4-E derived seed lineage mismatch")
-    if (
-        engineering_qualification.transform_signature
-        != operational.final_kernel_state.transform.signature
-    ):
-        raise ValueError("operational Phase 7 P4-E transform lineage mismatch")
+    p4_configured = multiplier is not None
+    bank_policy_id = str(operational.private_start_bank_policy_id)
+    engineering_qualification = None
+    if p4_configured:
+        if bank_policy_id != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
+            raise ValueError(
+                "configured operational Phase 7 P4-E requires the explicit "
+                "engineering probe bank"
+            )
+        engineering_qualification = (
+            operational.engineering_probe_bank_qualification
+        )
+        if engineering_qualification is None or not engineering_qualification.passed:
+            raise ValueError(
+                "operational Phase 7 P4-E qualification is missing or failed"
+            )
+        active_target = getattr(phase4_adapter, "base_adapter", None)
+        if active_target is None:
+            raise ValueError("operational Phase 7 P4-E base target identity is missing")
+        expected_target_signature = _phase7_engineering_probe_target_signature(
+            active_target
+        )
+        if engineering_qualification.target_signature != expected_target_signature:
+            raise ValueError("operational Phase 7 P4-E target identity mismatch")
+        active_scope = str(getattr(phase4_adapter, "target_scope", ""))
+        operational_scope = str(getattr(operational, "target_scope", ""))
+        if (
+            not active_scope
+            or not operational_scope
+            or active_scope != operational_scope
+        ):
+            raise ValueError("operational Phase 7 P4-E target scope mismatch")
+        configured_scope = getattr(stage_config, "target_scope", None)
+        if configured_scope is not None and str(configured_scope) != active_scope:
+            raise ValueError("operational Phase 7 P4-E configured target scope mismatch")
+        stage_seed = _derive_seed(
+            _validate_seed(getattr(stage_config, "seed", None)),
+            stage_index=0,
+        )
+        operational_seed = _validate_seed(getattr(operational, "seed_root", None))
+        if stage_seed != operational_seed:
+            raise ValueError("operational Phase 7 P4-E stage seed lineage mismatch")
+        expected_probe_config = Phase7EngineeringProbeBankConfig(
+            chain_count=4,
+            covariance_multiplier=multiplier,
+            root_seed=operational_seed,
+        )
+        if (
+            engineering_qualification.config_signature
+            != expected_probe_config.config_signature
+        ):
+            raise ValueError("operational Phase 7 P4-E configuration lineage mismatch")
+        if (
+            engineering_qualification.derived_seed_signature
+            != expected_probe_config.derived_seed_signature
+        ):
+            raise ValueError("operational Phase 7 P4-E derived seed lineage mismatch")
+        if (
+            engineering_qualification.transform_signature
+            != operational.final_kernel_state.transform.signature
+        ):
+            raise ValueError("operational Phase 7 P4-E transform lineage mismatch")
+    else:
+        if bank_policy_id == PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
+            raise ValueError("operational Phase 7 P4-E configuration is missing")
+        if bank_policy_id != _START_BANK_POLICY_ID:
+            raise ValueError(
+                "ordinary operational Phase 7 requires the validated legacy "
+                "start bank"
+            )
+        if (
+            getattr(operational, "engineering_probe_bank_qualification", None)
+            is not None
+        ):
+            raise ValueError(
+                "ordinary operational Phase 7 cannot carry a P4-E qualification"
+            )
     canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
     if canonical.shape != (4, windowed_stage.target_dimension):
         raise ValueError("operational verification start bank shape mismatch")
@@ -22569,6 +22596,19 @@ def _phase7_verification_initial_state(
         verification_latent,
         operational.final_kernel_state.transform.signature,
     )
+    if not p4_configured:
+        return verification_latent, {
+            "source": "operational_warmup_private_start_bank",
+            "source_signature": source_signature,
+            "active_signature": active_signature,
+            "count": 4,
+            "frozen_post_warmup_bank_consumed": True,
+            "canonical_round_trip_passed": True,
+            "final_coordinate_match_passed": True,
+            "raw_values_exposed": False,
+            "reports_operational_start_lineage": True,
+        }
+    assert engineering_qualification is not None
     return verification_latent, {
         "source": "phase7_engineering_probe_bank_v1",
         "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
