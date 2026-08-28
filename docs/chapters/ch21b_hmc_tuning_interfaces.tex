@@ -156,11 +156,21 @@ posterior diagnostics and do not enter this tuning handoff.  XLA qualification
 is not required for an explicitly non-XLA TensorFlow execution; selecting XLA
 would require a separate qualification.  The route's exposed tuning
 hyperparameters have no numeric constructor defaults, but the implementation
-still fixes four chains, \code{float64}, four identical zero states in the
-current affine coordinates, \(L=1\) in metric windows, a powers-of-two
-trajectory grid, and a stateless seed-offset scheme.  It also inherits
-TensorFlow Probability's internal dual-averaging defaults except for the
-explicit adaptation count and target acceptance.  These remain explicit route
+still fixes four chains and \code{float64}.  A candidate supplies an explicit
+raw-position bank \(q_i\), \(i=1,\ldots,4\).  With initial diagonal factor
+\(A=\operatorname{diag}(s)\), the tuner uses
+\begin{equation}
+  c=\frac{1}{4}\sum_{i=1}^{4}q_i,
+  \qquad z_i=(q_i-c)A^{-\mathsf T},
+  \qquad q_i=c+z_iA^{\mathsf T}.
+  \label{eq:bf-tensorflow-hmc-initial-bank}
+\end{equation}
+Caller row order is preserved.  A diagnostic may supply one position, which is
+deliberately replicated and recorded; a candidate may not use that compatibility
+path.  The remaining fixed policies are \(L=1\) in metric windows, a powers-of-
+two trajectory grid, and a stateless seed-offset scheme.  The implementation
+also inherits TensorFlow Probability's internal dual-averaging defaults except
+for the explicit adaptation count and target acceptance.  These are interface
 policies rather than evidence of posterior convergence or default readiness.
 
 The smoke preset in the following listing deliberately has a tiny budget.  It
@@ -285,6 +295,17 @@ artifact authority, the result and capability schema versions are supported,
 the target and coordinate scope match, all bound identities and source closure
 are present, fresh verification passed, and the private replay payload is
 available at the BayesFilter-owned boundary.  Tuning draws must be discarded.
+
+A passing typed TensorFlow candidate is consumed with
+\path{build_retained_bound_hmc_archive_runner_from_tuning_result}.  The builder
+requires the same repository-issued runner binding and durable tuning manifest,
+and it rejects a diagnostic or failed result.  It reuses the frozen endpoint
+target, deterministic proposal field, affine geometry, step size, leapfrog
+count, and final state rather than switching to an ordinary exact-gradient
+kernel.  A retained extension names the immediately preceding archive as its
+continuation manifest; BayesFilter verifies that predecessor and resumes from
+its final active-coordinate state.  This is a frozen-mechanics handoff, not
+posterior admission.
 
 An in-memory ordinary result retains private initial and adapted mass arrays;
 its redacted public status does not.  Before process exit,

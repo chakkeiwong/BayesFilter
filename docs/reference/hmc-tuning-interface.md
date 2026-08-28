@@ -92,9 +92,11 @@ Typed neural-force mechanics inside the ordinary ladder:
 
 ```python
 from bayesfilter.inference import (
+    BoundRetainedHMCArchiveConfig,
     FrozenPositionOnlyForce,
     FrozenTargetPotential,
     bind_neural_force_hmc_tuning_runner,
+    build_retained_bound_hmc_archive_runner_from_tuning_result,
     tune_hmc_kernel,
 )
 ```
@@ -180,13 +182,17 @@ Fresh retained R-hat and ESS are explanatory posterior diagnostics and do not
 enter this tuning handoff. XLA qualification is likewise not required for an
 explicitly non-XLA TensorFlow execution; selecting XLA would require its own
 qualification. The route's exposed tuning hyperparameters have no numeric
-constructor defaults, but the implementation still fixes four chains,
-`float64`, four identical zero states in the current affine coordinates, `L=1`
-in metric windows, a powers-of-two trajectory grid, and a stateless seed-offset
-scheme. It also inherits TensorFlow Probability's internal dual-averaging
-defaults except for the explicit adaptation count and target acceptance. These
-remain explicit route policies rather than evidence of posterior convergence or
-default readiness.
+constructor defaults. The implementation fixes four chains and `float64`. A
+`candidate` must supply an explicit initial-position bank with shape `[4,d]`.
+The tuner preserves caller row order, uses the equal-row mean as the initial
+affine center, and maps each raw row into that chart. A `diagnostic_only` call
+may still supply one `[d]` position; BayesFilter replicates it deliberately and
+records `initial_position_was_replicated=True`. The remaining fixed policies are
+`L=1` in metric windows, a powers-of-two trajectory grid, and a stateless
+seed-offset scheme. The route also inherits TensorFlow Probability's internal
+dual-averaging defaults except for the explicit adaptation count and target
+acceptance. These are interface policies rather than evidence of posterior
+convergence or default readiness.
 
 ## Fixed Transport
 
@@ -244,10 +250,13 @@ Stop without issuing or consuming a handoff when:
 - the exact value and score do not describe the same probability measure;
 - a frozen transport or its Jacobian identity is missing;
 - neural force and endpoint target coordinates differ;
-- required telemetry, movement evidence, or source identity is missing;
+- required transition telemetry or source identity is missing; movement has no
+  additional candidate threshold unless the selected policy declares one;
 - fresh verification fails or exhausts its cap; or
-- a consumer requires TensorFlow-only or XLA-qualified ordinary tuning; the
-  current diagnostic TensorFlow prototype is not an admitted replacement; or
+- a candidate supplies only one initial position, rather than an explicit
+  four-chain bank; or
+- a consumer requires XLA-qualified tuning, because this TensorFlow route is
+  qualified only for its explicit non-XLA execution; or
 - result, route, or capability schemas are unsupported by the consumer's
   pinned BayesFilter commit.
 
@@ -269,6 +278,35 @@ Accept a tuning result only after checking all of the following:
 - The BayesFilter-owned private handoff exists for replay; redacted public
   status alone is not replayable.
 - Tuning draws are excluded from retained posterior inference.
+
+### Durable typed TensorFlow replay
+
+A passing TensorFlow `candidate` is already bound to the endpoint target,
+proposal field, affine geometry, selected epsilon and `L`, final chain state,
+and source closure. Consume it only through the repository-issued binding:
+
+```python
+runner = build_retained_bound_hmc_archive_runner_from_tuning_result(
+    tuning_result=tuning_result,
+    runner_binding=binding,
+)
+pilot = runner.run(
+    BoundRetainedHMCArchiveConfig(
+        num_results=pilot_draws,
+        seed=pilot_seed,
+        output_dir=pilot_output,
+        budget_provenance=pilot_budget_provenance,
+    )
+)
+```
+
+The builder rejects a diagnostic or failed candidate, a changed binding, or a
+missing durable tuning manifest. It runs the same frozen bound transition; it
+does not switch to ordinary exact-gradient HMC. For an extension, pass the
+immediately preceding archive as `continuation_manifest`. BayesFilter verifies
+the predecessor and begins from its final active-coordinate state. The caller
+must not reconstruct the mass map or restart from the original tuning endpoint.
+This is mechanics replay, not posterior admission.
 
 ### Durable ordinary replay
 
@@ -318,7 +356,7 @@ owner-controlled migration.
 - Fixed-transport tests: `tests/test_fixed_transport_hmc_tuning.py` and
   `tests/test_fixed_transport_hmc_binding.py`
 - Neural-force binding tests: `tests/test_neural_force_hmc.py`
-- Dispatcher and non-promoting TensorFlow diagnostic tests:
+- Dispatcher and TensorFlow diagnostic/candidate mechanics tests:
   `tests/test_hmc_tuning_dispatch.py`
 
 These checks establish interface behavior for their fixtures. They do not

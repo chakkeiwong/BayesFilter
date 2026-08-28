@@ -122,7 +122,10 @@ def test_tensorflow_config_limits_authority_to_mechanics_handoff() -> None:
     assert payload["chain_count"] == 4
     assert payload["dtype"] == "float64"
     assert payload["initial_chain_state_policy"] == (
-        "four_identical_zero_states_in_current_affine_coordinates"
+        "explicit_four_chain_bank_or_diagnostic_single_position_replication"
+    )
+    assert payload["candidate_initial_position_policy"] == (
+        "explicit_four_chain_bank_required"
     )
     assert payload["mass_window_leapfrog_steps"] == 1
     assert payload["trajectory_candidate_policy"] == (
@@ -161,8 +164,13 @@ def test_tensorflow_diagnostic_graph_smoke_cannot_issue_handoff() -> None:
     assert bool(result.health_passed) is True
     assert bool(result.handoff_eligible) is False
     assert bool(result.passed) is False
+    assert bool(result.initial_position_was_replicated) is True
+    tf.debugging.assert_equal(result.initial_position, tf.zeros([4, 2], tf.float64))
+    tf.debugging.assert_equal(result.initial_chain_state, tf.zeros([4, 2], tf.float64))
     assert result.final_raw_state.shape == (4, 2)
-    graph_def = result.graph_function.get_concrete_function().graph.as_graph_def()
+    concrete = result.graph_function.get_concrete_function()
+    assert concrete.inputs[0].shape == (4, 2)
+    graph_def = concrete.graph.as_graph_def()
     operations = {node.op for node in graph_def.node}
     operations.update(
         node.op for function in graph_def.library.function for node in function.node_def
@@ -284,6 +292,58 @@ def test_candidate_dense_metric_requires_enough_states() -> None:
         )
 
 
+def test_candidate_requires_an_explicit_four_chain_initial_bank() -> None:
+    config = TensorFlowHMCKernelTuningConfig(
+        parameter_dimension=2,
+        evidence_role="candidate",
+        mass_window_results=(1,),
+        step_adaptation_results=1,
+        verification_results=1,
+        max_leapfrog_steps=1,
+        initial_step_size=0.1,
+        budget_provenance="candidate start-bank contract fixture",
+        initial_step_size_provenance="fixture",
+        geometry_provenance="fixture",
+        target_scope="tensorflow-dispatch-test",
+        acceptance_policy=FourChainMeanBandAcceptancePolicy(
+            overall_band=(0.0, 1.0), per_chain_band=(0.0, 1.0)
+        ),
+        **_explicit_diagnostic_numerics(),
+    )
+
+    with pytest.raises(ValueError, match="explicit four-chain"):
+        tune_hmc_kernel(
+            adapter=_Adapter(),
+            initial_position=tf.zeros([2], tf.float64),
+            parameter_scales=tf.ones([2], tf.float64),
+            config=config,
+            runner_binding=_binding(),
+        )
+
+
+def test_explicit_initial_bank_preserves_order_and_affine_reconstruction() -> None:
+    bank = tf.constant(
+        [[2.0, -4.0], [4.0, 2.0], [-2.0, 5.0], [8.0, -7.0]],
+        tf.float64,
+    )
+    scales = tf.constant([2.0, 3.0], tf.float64)
+    result = tune_hmc_kernel(
+        adapter=_Adapter(),
+        initial_position=bank,
+        parameter_scales=scales,
+        config=_config(),
+        runner_binding=_binding(),
+    )
+
+    center = tf.reduce_mean(bank, axis=0)
+    expected_latent = (bank - center) / scales
+    reconstructed = center + result.initial_chain_state * scales
+    assert bool(result.initial_position_was_replicated) is False
+    tf.debugging.assert_equal(result.initial_position, bank)
+    tf.debugging.assert_near(result.initial_chain_state, expected_latent)
+    tf.debugging.assert_near(reconstructed, bank)
+
+
 def test_failed_search_reports_last_real_verification_not_synthetic_health() -> None:
     binding = bind_neural_force_hmc_tuning_runner(
         force=FrozenPositionOnlyForce(
@@ -354,7 +414,10 @@ def test_candidate_artifact_reloads_and_runs_bound_retained_continuation(
     )
     result = tune_hmc_kernel(
         adapter=_Adapter(),
-        initial_position=tf.constant([0.2, -0.3], tf.float64),
+        initial_position=tf.constant(
+            [[0.2, -0.3], [0.1, -0.2], [0.3, -0.4], [0.0, -0.1]],
+            tf.float64,
+        ),
         parameter_scales=tf.ones([2], tf.float64),
         config=config,
         runner_binding=binding,
@@ -362,6 +425,7 @@ def test_candidate_artifact_reloads_and_runs_bound_retained_continuation(
     )
 
     assert bool(result.candidate_selected) is True
+    assert bool(result.initial_position_was_replicated) is False
     assert bool(result.metric_update_valid) is True
     assert int(result.metric_update_count) == 1
     assert bool(result.heuristic_screen_passed) is True
@@ -377,6 +441,9 @@ def test_candidate_artifact_reloads_and_runs_bound_retained_continuation(
         runner_binding=binding,
     )
     assert bool(loaded.heuristic_screen_passed) is True
+    assert bool(loaded.initial_position_was_replicated) is False
+    tf.debugging.assert_equal(loaded.initial_position, result.initial_position)
+    tf.debugging.assert_equal(loaded.initial_chain_state, result.initial_chain_state)
     assert loaded.posterior_admission_authority is False
     assert loaded.admission_supported is False
     assert loaded.mechanics_handoff_supported is True

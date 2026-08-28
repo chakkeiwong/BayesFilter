@@ -25,7 +25,7 @@ import tensorflow_probability as tfp
 from bayesfilter.inference.tuning_contract import HMCTuningRunnerBinding
 
 
-TENSORFLOW_HMC_TUNING_SCHEMA = "bayesfilter.tensorflow_hmc_tuning.v2"
+TENSORFLOW_HMC_TUNING_SCHEMA = "bayesfilter.tensorflow_hmc_tuning.v3"
 FOUR_CHAIN_ACCEPTANCE_SCHEMA = "bayesfilter.four_chain_mean_band_acceptance.v1"
 BOUND_RETAINED_HMC_ARCHIVE_SCHEMA = "bayesfilter.bound_retained_hmc_archive.v1"
 _CHAIN_COUNT = 4
@@ -402,8 +402,9 @@ class TensorFlowHMCKernelTuningConfig:
             "parameter_dimension": self.parameter_dimension,
             "chain_count": self.chain_count,
             "initial_chain_state_policy": (
-                "four_identical_zero_states_in_current_affine_coordinates"
+                "explicit_four_chain_bank_or_diagnostic_single_position_replication"
             ),
+            "candidate_initial_position_policy": "explicit_four_chain_bank_required",
             "mass_window_leapfrog_steps": 1,
             "evidence_role": self.evidence_role,
             "mass_window_results": self.mass_window_results,
@@ -477,8 +478,9 @@ class TensorFlowHMCKernelTuningConfig:
             "dtype": _DTYPE.name,
             "chain_count": _CHAIN_COUNT,
             "initial_chain_state_policy": (
-                "four_identical_zero_states_in_current_affine_coordinates"
+                "explicit_four_chain_bank_or_diagnostic_single_position_replication"
             ),
+            "candidate_initial_position_policy": "explicit_four_chain_bank_required",
             "mass_window_leapfrog_steps": 1,
             "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
             "seed_derivation_policy": (
@@ -911,7 +913,7 @@ def _build_tuning_graph(
 
     @tf.function(
         input_signature=(
-            tf.TensorSpec([dimension], _DTYPE),
+            tf.TensorSpec([_CHAIN_COUNT, dimension], _DTYPE),
             tf.TensorSpec([dimension], _DTYPE),
         ),
         autograph=False,
@@ -932,12 +934,19 @@ def _build_tuning_graph(
                 ),
             )
         ):
-            center = tf.identity(initial_position)
+            initial_position = tf.identity(initial_position)
             scales = tf.identity(parameter_scales)
+        center = tf.reduce_mean(initial_position, axis=0)
         initial_covariance = tf.linalg.diag(tf.square(scales))
         covariance = initial_covariance
         factor = tf.linalg.diag(scales)
-        state = tf.zeros([_CHAIN_COUNT, dimension], _DTYPE)
+        initial_adapter = _TensorFlowAffineAdapter(
+            transform=_TensorFlowAffineTransform(center=center, factor=factor),
+            base_adapter_signature=adapter_signature,
+            target_scope=config.target_scope,
+        )
+        state = initial_adapter.position_to_latent(initial_position)
+        initial_chain_state = tf.identity(state)
         step_size = tf.constant(config.initial_step_size, _DTYPE)
         adaptation_divergence_count = tf.constant(0, tf.int32)
         adaptation_fallback_count = tf.constant(0, tf.int32)
@@ -1165,6 +1174,7 @@ def _build_tuning_graph(
         )
         return {
             "initial_position": initial_position,
+            "initial_chain_state": initial_chain_state,
             "parameter_scales": parameter_scales,
             "center": center,
             "factor": factor,
@@ -1203,6 +1213,8 @@ class TensorFlowHMCKernelTuningResult:
     binding_payload: Mapping[str, Any]
     runner_binding: HMCTuningRunnerBinding = field(repr=False, compare=False)
     initial_position: tf.Tensor
+    initial_chain_state: tf.Tensor
+    initial_position_was_replicated: tf.Tensor
     parameter_scales: tf.Tensor
     center: tf.Tensor
     factor: tf.Tensor
@@ -1254,6 +1266,8 @@ class TensorFlowHMCKernelTuningResult:
 
 _TUNING_TENSOR_FIELDS = (
     "initial_position",
+    "initial_chain_state",
+    "initial_position_was_replicated",
     "parameter_scales",
     "center",
     "factor",
@@ -1364,6 +1378,9 @@ def _write_tuning_artifact(
                 "passed",
             ),
             "numerical_backend": "tensorflow_only",
+            "initial_position_semantics": (
+                "normalized_four_chain_bank_in_raw_adapter_coordinates"
+            ),
             "arrays_materialized_on_host": False,
             "artifact_authority": False,
             "posterior_admission_authority": False,
@@ -1433,6 +1450,7 @@ def load_tensorflow_hmc_tuning_result(
     tensor_payload = payload["tensors"]
     bool_fields = {
         "candidate_selected",
+        "initial_position_was_replicated",
         "metric_rank_eligible",
         "metric_update_valid",
         "health_passed",
@@ -1464,6 +1482,12 @@ def load_tensorflow_hmc_tuning_result(
         values["handoff_eligible"],
         message="passed must mean mechanics-handoff eligibility",
     )
+    if config.evidence_role == "candidate":
+        tf.debugging.assert_equal(
+            values["initial_position_was_replicated"],
+            tf.constant(False),
+            message="candidate tuning must archive an explicit four-chain bank",
+        )
     return TensorFlowHMCKernelTuningResult(
         config=config,
         adapter_signature=adapter_signature,
@@ -1480,6 +1504,35 @@ def _adapter_signature(adapter: Any) -> str:
     if not callable(value):
         raise TypeError("adapter must expose adapter_signature()")
     return _nonempty(value(), "adapter_signature")
+
+
+def _normalize_initial_chain_positions(
+    initial_position: Any,
+    *,
+    config: TensorFlowHMCKernelTuningConfig,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    position = tf.cast(tf.convert_to_tensor(initial_position), _DTYPE)
+    if position.shape.rank == 1:
+        if config.evidence_role == "candidate":
+            raise ValueError(
+                "candidate TensorFlow tuning requires an explicit four-chain "
+                "initial_position bank with shape [4, dimension]"
+            )
+        row = tf.ensure_shape(position, [config.parameter_dimension])
+        return (
+            tf.repeat(row[tf.newaxis, :], repeats=_CHAIN_COUNT, axis=0),
+            tf.constant(True),
+        )
+    if position.shape.rank == 2:
+        return (
+            tf.ensure_shape(
+                position, [_CHAIN_COUNT, config.parameter_dimension]
+            ),
+            tf.constant(False),
+        )
+    raise ValueError(
+        "initial_position must have shape [dimension] or [4, dimension]"
+    )
 
 
 def _run_tensorflow_hmc_tuning(
@@ -1505,16 +1558,17 @@ def _run_tensorflow_hmc_tuning(
         chain_execution_mode=config.chain_execution_mode,
         use_xla=config.use_xla,
     )
-    position = tf.ensure_shape(
-        tf.cast(tf.convert_to_tensor(initial_position), _DTYPE),
-        [config.parameter_dimension],
+    position, position_was_replicated = _normalize_initial_chain_positions(
+        initial_position,
+        config=config,
     )
     scales = tf.ensure_shape(
         tf.cast(tf.convert_to_tensor(parameter_scales), _DTYPE),
         [config.parameter_dimension],
     )
     graph = _build_tuning_graph(config, runner_binding, adapter_signature)
-    values = graph(position, scales)
+    values = dict(graph(position, scales))
+    values["initial_position_was_replicated"] = position_was_replicated
     result = TensorFlowHMCKernelTuningResult(
         config=config,
         adapter_signature=adapter_signature,
