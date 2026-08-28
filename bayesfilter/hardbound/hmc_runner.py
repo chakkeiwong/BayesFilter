@@ -30,6 +30,13 @@ class NutsConfig:
     seed: int = 20260821
     max_tree_depth: int = 10
     jit_compile: bool = True
+    # Diagonal mass matrix adaptation during warmup. Default False keeps the
+    # master-program kernel row (NoUTurnSampler + DualAveraging step size)
+    # exactly as approved; opt in for badly conditioned targets where one
+    # scalar step size cannot serve every coordinate. See master program
+    # Amendment A2: G2.3 spans 1.9e4 in per-coordinate posterior sd, so an
+    # identity mass matrix cannot mix theta_bar.
+    diagonal_mass_matrix: bool = False
 
 
 def run_nuts(log_prob_fn, initial_states, config: NutsConfig):
@@ -40,16 +47,46 @@ def run_nuts(log_prob_fn, initial_states, config: NutsConfig):
     per-variable potential-scale-reduction.
     """
     configure_memory_growth()
-    kernel = tfp.mcmc.NoUTurnSampler(
-        target_log_prob_fn=log_prob_fn,
-        step_size=tf.constant(config.initial_step_size, tf.float64),
-        max_tree_depth=config.max_tree_depth,
-    )
+    step = tf.constant(config.initial_step_size, tf.float64)
+    if config.diagonal_mass_matrix:
+        # Plain NoUTurnSampler exposes no momentum_distribution slot in TFP
+        # 0.25.0, so diagonal preconditioning needs the Preconditioned
+        # variant. Same NUTS algorithm. Adaptation is warmup-only.
+        inner = tfp.experimental.mcmc.PreconditionedNoUTurnSampler(
+            target_log_prob_fn=log_prob_fn,
+            step_size=step,
+            max_tree_depth=config.max_tree_depth,
+        )
+        kernel = tfp.experimental.mcmc.DiagonalMassMatrixAdaptation(
+            inner_kernel=inner,
+            initial_running_variance=[
+                tfp.experimental.stats.RunningVariance.from_shape(
+                    s.shape[1:], dtype=s.dtype)
+                for s in initial_states
+            ],
+            num_estimation_steps=int(0.8 * config.num_warmup),
+        )
+    else:
+        kernel = tfp.mcmc.NoUTurnSampler(
+            target_log_prob_fn=log_prob_fn,
+            step_size=step,
+            max_tree_depth=config.max_tree_depth,
+        )
     adaptive = tfp.mcmc.DualAveragingStepSizeAdaptation(
         inner_kernel=kernel,
         num_adaptation_steps=int(0.8 * config.num_warmup),
         target_accept_prob=tf.constant(config.target_accept, tf.float64),
     )
+
+    def _nuts_results(pkr):
+        """Descend to NUTS kernel results through any adaptation wrappers.
+
+        Wrapper depth depends on config: one (step size only) or two (step
+        size over mass matrix adaptation).
+        """
+        while not hasattr(pkr, "has_divergence"):
+            pkr = pkr.inner_results
+        return pkr
 
     @tf.function(jit_compile=config.jit_compile)
     def _run():
@@ -60,9 +97,9 @@ def run_nuts(log_prob_fn, initial_states, config: NutsConfig):
             kernel=adaptive,
             seed=tf.constant([config.seed, config.seed + 1], tf.int32),
             trace_fn=lambda _, pkr: {
-                "diverged": pkr.inner_results.has_divergence,
-                "step_size": pkr.inner_results.step_size,
-                "accept": pkr.inner_results.log_accept_ratio,
+                "diverged": _nuts_results(pkr).has_divergence,
+                "step_size": _nuts_results(pkr).step_size,
+                "accept": _nuts_results(pkr).log_accept_ratio,
             },
         )
 

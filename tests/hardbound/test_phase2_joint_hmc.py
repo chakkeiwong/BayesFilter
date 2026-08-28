@@ -242,26 +242,36 @@ def test_g2_3_full_c1_fixture_recovery():
     truth = np.array(list(fix.theta_bar_truth) + [np.log(5e-4)] * 3)
 
     nc = 4
+    # Non-centred parameter chart (master program Amendment A2): theta_raw is
+    # O(1) under a standard normal prior. In the natural chart the
+    # per-coordinate posterior sd spans 1.9e4 (theta_bar levels ~3e-5 against
+    # latent shock raws ~5.8e-1), which no single step size can mix; the
+    # rescale removes 50x of that and diagonal mass matrix adaptation absorbs
+    # the residual 3.9e2.
+    raw_truth = jt.raw_from_theta(tf.constant(truth[None, :], tf.float64))
     init = [
-        tf.constant(truth[None, :] + RNG.normal(size=(nc, 9)) * 0.01
-                    * np.abs(truth).clip(min=0.01), tf.float64),
-        tf.constant(RNG.normal(size=(nc, 8)) * 0.05, tf.float64),
-        tf.constant(RNG.normal(size=(nc, T, 8)) * 0.05, tf.float64),
+        tf.constant(raw_truth.numpy() + RNG.normal(size=(nc, 9)) * 0.05,
+                    tf.float64),
+        tf.constant(RNG.normal(size=(nc, 8)) * 0.1, tf.float64),
+        tf.constant(RNG.normal(size=(nc, T, 8)) * 0.1, tf.float64),
     ]
 
-    def lp(theta, x0_raw, eta_raw):
-        return jt.joint_log_prob_batched(y_tf, theta, x0_raw, eta_raw,
-                                         "mf_c1_k40_hardmax")
+    def lp(theta_raw, x0_raw, eta_raw):
+        return jt.joint_log_prob_raw_batched(y_tf, theta_raw, x0_raw, eta_raw,
+                                             "mf_c1_k40_hardmax")
 
-    out = run_nuts(lp, init, NutsConfig(num_chains=nc, num_warmup=4000,
+    out = run_nuts(lp, init, NutsConfig(num_chains=nc, num_warmup=2000,
                                         num_samples=1000, seed=20260822,
-                                        initial_step_size=1e-3,
-                                        target_accept=0.98))
+                                        initial_step_size=1e-2,
+                                        target_accept=0.9,
+                                        diagonal_mass_matrix=True))
     n_total = 4 * 1000
     assert out["divergences"] <= 0.001 * n_total, out["divergences"]
     rhat = out["rhat"][0].numpy()
     assert np.all(rhat < 1.02), rhat
-    draws = out["samples"][0].numpy().reshape(-1, 9)
+    # Map draws back to the natural chart before comparing against truth.
+    draws = jt.theta_from_raw(
+        out["samples"][0].numpy().reshape(-1, 9)).numpy()
     post_mean = draws.mean(0)
     post_sd = draws.std(0)
     assert np.all(np.abs(post_mean - truth) < 3 * post_sd), (

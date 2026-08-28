@@ -24,6 +24,35 @@ PRIOR_THETA_SD = tf.constant([0.02] * 6, DTYPE)
 PRIOR_LOG_NOISE_MEAN = tf.constant([-7.600902459542082] * 3, DTYPE)  # log 5e-4
 PRIOR_LOG_NOISE_SD = tf.constant([0.5] * 3, DTYPE)
 
+# Prior location/scale stacked in the 9-dim chart order (6 theta_bar, then 3
+# log noise), for the non-centred parameter chart below.
+PRIOR_PARAM_MEAN = tf.concat([PRIOR_THETA_MEAN, PRIOR_LOG_NOISE_MEAN], axis=0)
+PRIOR_PARAM_SD = tf.concat([PRIOR_THETA_SD, PRIOR_LOG_NOISE_SD], axis=0)
+
+
+def theta_from_raw(theta_raw):
+    """Map the non-centred parameter chart to the natural chart.
+
+    ``theta = prior_mean + prior_sd * theta_raw``, so ``theta_raw`` carries a
+    standard normal prior and O(1) posterior scale. The Jacobian
+    ``prod(prior_sd)`` is constant, hence only an additive constant in the log
+    density, which MCMC ignores; ``joint_log_prob_raw_batched`` therefore omits
+    it and still targets the same posterior.
+
+    Motivation (master program Amendment A2): in the natural chart the
+    per-coordinate posterior sd spans 1.9e4 over the 337-dim state, with
+    theta_bar levels near 3e-5 against latent shock raws near 5.8e-1. Scaling
+    by the prior sd removes the parameter-block contribution analytically.
+    """
+    theta_raw = tf.convert_to_tensor(theta_raw, DTYPE)
+    return PRIOR_PARAM_MEAN + PRIOR_PARAM_SD * theta_raw
+
+
+def raw_from_theta(theta):
+    """Inverse of :func:`theta_from_raw`."""
+    theta = tf.convert_to_tensor(theta, DTYPE)
+    return (theta - PRIOR_PARAM_MEAN) / PRIOR_PARAM_SD
+
 
 def _std_normal_logpdf_sum(x):
     return tf.reduce_sum(-0.5 * x * x - 0.5 * _LOG2PI)
@@ -178,6 +207,18 @@ def joint_log_prob_batched(y, theta, x0_raw, eta_raw, target_id,
         -0.5 * z * z - tf.math.log(scales[:, None, :]) - 0.5 * _LOG2PI,
         axis=[-2, -1])
     return lp
+
+
+def joint_log_prob_raw_batched(y, theta_raw, x0_raw, eta_raw, target_id,
+                               fix: model_tf.HardBoundFixture = model_tf.FIXTURE):
+    """``joint_log_prob_batched`` in the non-centred parameter chart.
+
+    Same posterior as :func:`joint_log_prob_batched` up to the constant
+    Jacobian of :func:`theta_from_raw`, so draws map back exactly via
+    ``theta_from_raw(theta_raw)``.
+    """
+    return joint_log_prob_batched(y, theta_from_raw(theta_raw), x0_raw,
+                                  eta_raw, target_id, fix)
 
 
 def gate_joint_log_prob_batched(y, params, raws, gm: GateModel = GATE):
