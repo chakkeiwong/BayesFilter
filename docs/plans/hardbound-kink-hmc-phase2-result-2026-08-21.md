@@ -63,21 +63,78 @@ mean agreement within 3 MCSE, W1_mu=0.000226 (0.051*g_sd), W1_ls similar.
 
 ### G2.3: Full C₁ fixture recovery
 
-**Status**: [PENDING — awaiting retry completion]
+**Status**: PENDING — attempt 3 running with both repairs applied
+(commit `54862177`).
 
 Configuration: K=40, T=40, 9 parameters (6 theta_bar + 3 log noise scales),
-4 chains, target "mf_c1_k40_hardmax".
+4 chains, target "mf_c1_k40_hardmax". State dimension 337 (9 parameters +
+8 initial latent raws + 40×8 shock raws).
 
-**First attempt**: 2000 warmup, 5e-3 initial step size, 5% parameter
-perturbation → **FAILED** with catastrophic R̂=[16.3, 19.3, 5.9, 3.5, 25.0,
-8.0, 1.3, 1.5, 1.5]. First 6 parameters (theta_bar) completely non-convergent,
-last 3 (log noise scales) borderline acceptable.
+**Attempt 1** (2000 warmup, step 5e-3, 5% parameter perturbation): FAILED on
+parameter R̂ = [16.3, 19.3, 5.9, 3.5, 25.0, 8.0, 1.3, 1.5, 1.5]. Runtime
+46m17s. Divergence gate passed.
 
-**Diagnosis**: [describe after retry]
+**Attempt 2** (4000 warmup, step 1e-3, 1% perturbation, tighter latent init):
+FAILED worse, R̂ = [6.7, 60.5, 1.5, 9.8, 49.4, 14.5, 2.9, 1.9, 5.2]. Runtime
+1h04m54s. Divergence gate passed again.
 
-**Repair attempt**: Tightened initialization (1% parameter perturbation,
-0.05 latent raw sd), increased warmup to 4000, decreased initial step size
-to 1e-3. [Result pending]
+That both attempts passed the divergence gate and failed R̂ is the
+discriminating fact: the sampler was not diverging, it was not moving. A
+smaller step size making things worse rules out step size and initialization.
+
+**Diagnosis** (measured, `/tmp/g23_scales.py`): central-differencing the
+analytic gradient gives the Hessian diagonal at truth, hence a per-coordinate
+implied posterior sd. Those span **1.9322e4**:
+
+| coordinate | d²lp/dx² | implied sd |
+|---|---|---|
+| theta_bar[0] dom level | -1.1200e+09 | 2.9881e-05 |
+| theta_bar[1] dom slope | -3.7762e+08 | 5.1460e-05 |
+| theta_bar[2] dom curv | -4.3283e+07 | 1.5200e-04 |
+| log_noise[0] | -3.2007e+04 | 5.5895e-03 |
+| x0_raw[0] | -2.5500e+03 | 1.9803e-02 |
+| eta_raw[39,7] | -3.0000e+00 | 5.7735e-01 |
+
+The runner's approved kernel row adapts step size only, hence an identity mass
+matrix: one absolute step size ε in every coordinate, moving each by ε/sd_i in
+units of its own posterior sd. No ε serves both 3.0e-5 and 5.8e-1. The
+observed R̂ ordering tracks the scale ordering exactly — worst on the
+smallest-sd level and slope components, mildest on curvature (5× larger sd)
+and the log-noise block (200× larger) — which is this pathology's signature
+rather than kink geometry's.
+
+Classification: **tuning/harness failure, not evidence against the target.**
+The target evaluates finitely (lp = -17904.1359 at truth), gradients are
+finite in all three state parts, and the Hessian diagonal is uniformly
+negative definite at truth: a well-behaved locally-Gaussian posterior that is
+badly conditioned in the coordinates the runner was given.
+
+**Repair** (both parts, owner-approved 2026-08-26; master program
+Amendments A1/A2):
+
+1. *Non-centred parameter chart.* Sample `theta_raw` with
+   `theta = prior_mean + prior_sd * theta_raw` via
+   `joint_log_prob_raw_batched`. Constant Jacobian, so the posterior is
+   unchanged. Verified: chart round-trip max abs error 0.0, raw-chart versus
+   natural-chart log density difference 0.0 at truth.
+2. *Diagonal mass matrix adaptation.* `NutsConfig.diagonal_mass_matrix=True`
+   selects `PreconditionedNoUTurnSampler` under
+   `DiagonalMassMatrixAdaptation`, warmup-only. Default `False` preserves the
+   approved kernel for G2.2 and all other callers.
+
+**Post-repair scale check** (`/tmp/g23_scales_raw.py`, ~1 min, run before
+committing an hour of MCMC): condition ratio **1.9322e4 → 3.8644e2, a 50×
+improvement**. The parameter block moved from 3.0e-5–6.3e-3 to 1.5e-3–1.3e-2,
+now overlapping the latent block (2.0e-2–5.8e-1) instead of sitting 200×
+below it. The residual 3.9e2 is what mass matrix adaptation must absorb.
+
+**Kernel plumbing smoke** (2 chains, 30 warmup, 20 draws): both kernel paths
+trace and return correctly-shaped finite draws. Divergences 4 (identity) vs 0
+(diagonal); no weight is placed on that comparison at this budget.
+
+**Attempt 3** (2000 warmup, step 1e-2, target accept 0.9, both repairs):
+result pending. Fast suite (12 tests, `not hmc and not extended`) passes with
+the repairs in place, so the change breaks nothing already green.
 
 ## Repairs and amendments
 
@@ -96,7 +153,15 @@ to 1e-3. [Result pending]
      likelihood vanishes return -inf rather than propagating NaN through
      normalization.
 
-3. **G2.3 [pending]**: [describe repair or failure classification after retry]
+3. **Batched grid filter parity test** (`test_gate_gridfilter_batched_parity`):
+   the batched filter had no regression guard against the scalar version it
+   optimizes. Added; agrees to 1e-10 absolute.
+
+4. **G2.3 conditioning repair** (commit `54862177`, master program Amendment
+   A2): non-centred parameter chart plus opt-in diagonal mass matrix
+   adaptation. Classified as a sampler-conditioning repair, not a target or
+   fixture change — see the G2.3 section above for the measured diagnosis.
+   The runner default is unchanged, so this does not perturb G2.2.
 
 ## Summary
 
@@ -104,13 +169,36 @@ Phase 2 gates G2.0-G2.2: **PASS**.
 Phase 2 gate G2.3: **PENDING**.
 
 Phase 2 delivers:
-- Batched joint log prob with XLA compilation
-- Grid reference posterior with exact filter and batched evaluation
-- NUTS runner with dual-averaging step size adaptation
+- Batched joint log prob with XLA compilation, in both the natural and the
+  non-centred parameter chart
+- Grid reference posterior with exact filter, batched evaluation, underflow
+  safety, and a scalar-parity regression test
+- NUTS runner with dual-averaging step size adaptation, plus opt-in diagonal
+  mass matrix adaptation for badly conditioned targets
 - K=1 gate model exactness validation (grid agreement to sampling error)
 
 Phase 2 open issues:
-- G2.3 convergence failure requires diagnosis and potential runner enhancement
-  (mass matrix adaptation candidate if retry also fails)
+- G2.3 is running as attempt 3 with the conditioning repair. The measured
+  diagnosis (1.9e4 scale spread, reduced 50× by the chart change) explains
+  both prior failures and predicts the repair should mix, but that is a
+  prediction from Hessian-diagonal geometry at a single point, not a result.
+  Only the gate itself settles it.
+
+### Inference status
+
+| Question | Status |
+|---|---|
+| Hard veto screen | No veto fired. Divergence gates passed in all G2.3 attempts; G2.2 divergences 9/32000 (0.03%) against a 0.1% bound. No non-finite value, invalid artifact, or failed invariant. |
+| Statistically supported ranking | None claimed. No method comparison was run in Phase 2. |
+| Descriptive-only differences | The smoke-budget divergence difference (4 identity vs 0 diagonal at 30 warmup steps) is descriptive at best and carries no weight. |
+| Default readiness | Not established. `diagonal_mass_matrix` stays opt-in; the approved kernel remains the default. |
+| Next evidence needed | G2.3 attempt 3 at full budget. If it passes, Phase 3 (Geweke, SBC) proceeds; if it fails with the condition ratio already at 3.9e2, the next discriminating artifact is a per-coordinate ESS breakdown to see which block still fails to move. |
+
+**Not concluded**: nothing here establishes posterior correctness on empirical
+data, calibration of the C₁ model, production readiness, or that the kink
+target is well-behaved in general. G2.2 establishes grid agreement on one K=1
+fixture at one seed; G2.3, if it passes, establishes parameter recovery within
+3 posterior sds on one fixture at one seed, which the master program itself
+labels a recovery smoke rather than a calibration claim.
 
 Next: Phase 3 plan refresh after G2.3 resolution.
