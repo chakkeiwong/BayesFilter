@@ -84,6 +84,14 @@ folded split R-hat values at or below `1.01`. The threshold is inherited from
 the existing verifier policy. Bulk and tail ESS are disabled for ordinary
 tuning admission; retained posterior ESS is a separate check.
 
+When `engineering_probe_covariance_multiplier` configures the private P4-E
+engineering-probe bank, the public tuner creates and owns the required
+`G2PreboundarySeedUseRegistry` internally. It passes one instance through the
+bootstrap, operational warmup, and P4-E boundary consumers, binds the registry
+to the active source-coverage hashes, and keeps the registry and raw seed
+values private. Callers continue to use the ordinary `tune_hmc_kernel`
+signature; they must not construct, inject, or interpret a P4-E registry.
+
 `tune_fixed_transport_hmc_kernel` constructs and identity-binds the transformed
 target before any scoped runner is called. For `theta = T(z)`, it requires
 `log pi_z(z) = log pi_theta(T(z)) + log|det J_T(z)|` and the corresponding total

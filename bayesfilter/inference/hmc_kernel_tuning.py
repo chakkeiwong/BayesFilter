@@ -109,6 +109,7 @@ from bayesfilter.inference.hmc_warmup import (
     _G2P4BoundaryActionTracker,
     _G2SeedRegistryError,
     _G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE,
+    _G2_SEED_GATE_SEMANTIC_CONTRACTS,
     _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT,
     _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
     _compose_base_transform_with_nested_estimate,
@@ -171,6 +172,34 @@ _G2_WINDOWED_STAGE_SEED_GATE_SITE_ID = (
 _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS = (
     _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT
 )
+_G2_PUBLIC_P4_SOURCE_COVERAGE_SCHEMA = (
+    "bayesfilter.hmc_g2_public_p4_runtime_source_coverage.v1"
+)
+_G2_SOURCE_FILE_BY_SITE_PREFIX = {
+    "hmc": "hmc.py",
+    "hmc_coordinates": "hmc_coordinates.py",
+    "hmc_kernel_tuning": "hmc_kernel_tuning.py",
+    "hmc_warmup": "hmc_warmup.py",
+}
+_G2_REGISTRY_KEY_TEMPLATES = {
+    "hmc_warmup.run_operational_windowed_warmup.initial_epsilon_seed_gate.v1": (
+        "operational_warmup/reasonable_epsilon/initial"
+    ),
+    "hmc_warmup.run_operational_windowed_warmup.segment_seed_gate.v1": (
+        "operational_warmup/window/<window>/segment/<segment>"
+    ),
+    "hmc_warmup.run_operational_windowed_warmup.metric_seed_gate.v1": (
+        "operational_warmup/metric_boundary/<window>"
+    ),
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2": (
+        "operational_warmup/<context>/<index>/proposal/<proposal>"
+    ),
+    "hmc_warmup.build_phase7_engineering_probe_bank.p4_seed_gate.v1": (
+        "p4/engineering_probe"
+    ),
+    _G2_BOOTSTRAP_ROUND_SEED_GATE_SITE_ID: "bootstrap/round/<round>",
+    _G2_WINDOWED_STAGE_SEED_GATE_SITE_ID: "phase4/stage",
+}
 
 
 _OPERATIONAL_WARMUP_DEFAULT_REUSABLE_RUNNER_BUILDER = (
@@ -183,6 +212,95 @@ _METRIC_UPDATE_REQUIREMENTS = frozenset(
 _NO_OPERATIONAL_METRIC_UPDATE_REPAIR_TRIGGER = (
     "windowed_mass_no_operational_metric_update"
 )
+
+
+def _g2_source_file_for_site(site_id: str) -> str:
+    prefix = str(site_id).split(".", 1)[0]
+    try:
+        return _G2_SOURCE_FILE_BY_SITE_PREFIX[prefix]
+    except KeyError as exc:
+        raise ValueError(f"unknown G2 source-site prefix: {prefix}") from exc
+
+
+def _public_p4_seed_source_coverage_payload() -> Mapping[str, Any]:
+    """Bind the public P4-E registry to its complete active source closure."""
+
+    contracts: dict[str, Mapping[str, Any]] = {}
+    source_filenames: set[str] = set()
+    for gate_id, semantic in sorted(_G2_SEED_GATE_SEMANTIC_CONTRACTS.items()):
+        derivation_id = str(semantic["derivation_site_id"])
+        owner_file = str(semantic["owner_file"])
+        source_filenames.add(owner_file)
+        owner_source = f"bayesfilter/inference/{owner_file}"
+        contracts[derivation_id] = {
+            "site_id": derivation_id,
+            "source_path": owner_source,
+            "owner_qualname": str(semantic["derivation_owner_qualname"]),
+            "site_kind": "derivation",
+            "terminal_consumer": None,
+            "registry_key_template": None,
+            "upstream_gate_site_id": None,
+        }
+        contracts[gate_id] = {
+            "site_id": gate_id,
+            "source_path": owner_source,
+            "owner_qualname": str(semantic["owner_qualname"]),
+            "site_kind": "terminal_consumption_gate",
+            "terminal_consumer": str(semantic["terminal_consumer"]),
+            "registry_key_template": _G2_REGISTRY_KEY_TEMPLATES[gate_id],
+            "upstream_gate_site_id": None,
+        }
+        for hop_id in semantic["interface_hop_site_ids"]:
+            hop_file = _g2_source_file_for_site(str(hop_id))
+            source_filenames.add(hop_file)
+            contracts[str(hop_id)] = {
+                "site_id": str(hop_id),
+                "source_path": f"bayesfilter/inference/{hop_file}",
+                "owner_qualname": "read_only_seed_pass_through",
+                "site_kind": "read_only_pass_through",
+                "terminal_consumer": None,
+                "registry_key_template": None,
+                "upstream_gate_site_id": gate_id,
+            }
+    if set(contracts) != {
+        str(site_id)
+        for semantic in _G2_SEED_GATE_SEMANTIC_CONTRACTS.values()
+        for site_id in (
+            semantic["derivation_site_id"],
+            *semantic["interface_hop_site_ids"],
+        )
+    } | set(_G2_SEED_GATE_SEMANTIC_CONTRACTS):
+        raise RuntimeError("public P4 source coverage is incomplete")
+    source_root = Path(__file__).resolve().parent
+    source_files = tuple(
+        {
+            "path": f"bayesfilter/inference/{filename}",
+            "sha256": hashlib.sha256((source_root / filename).read_bytes()).hexdigest(),
+        }
+        for filename in sorted(source_filenames)
+    )
+    return {
+        "schema": _G2_PUBLIC_P4_SOURCE_COVERAGE_SCHEMA,
+        "source_files": source_files,
+        "source_site_contracts": {
+            site_id: contracts[site_id] for site_id in sorted(contracts)
+        },
+    }
+
+
+def _build_public_p4_seed_use_registry() -> G2PreboundarySeedUseRegistry:
+    coverage = _public_p4_seed_source_coverage_payload()
+    encoded = json.dumps(
+        coverage,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("ascii")
+    return G2PreboundarySeedUseRegistry(
+        source_coverage_artifact_sha256=hashlib.sha256(encoded).hexdigest(),
+        source_site_contracts=coverage["source_site_contracts"],
+    )
 
 
 def _validate_metric_update_requirement(value: Any) -> str:
@@ -11738,6 +11856,7 @@ def run_hmc_tune_verify_repair_loop(
     ]] | None = None,
     _progress_callback: LoopProgressCallback | None = None,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
+    _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
 ) -> HMCTuneVerifyRepairLoopResult:
     """Run Phase 7 tune/verify/repair with private budget escalation.
 
@@ -11748,6 +11867,14 @@ def run_hmc_tune_verify_repair_loop(
     cfg = HMCTuneVerifyRepairLoopConfig() if config is None else config
     if not isinstance(cfg, HMCTuneVerifyRepairLoopConfig):
         raise TypeError("config must be HMCTuneVerifyRepairLoopConfig")
+    p4_route = cfg.engineering_probe_covariance_multiplier is not None
+    if p4_route and not isinstance(
+        _g2_seed_use_registry,
+        G2PreboundarySeedUseRegistry,
+    ):
+        raise TypeError("P4-E requires a caller-owned G2 seed-use registry")
+    if not p4_route and _g2_seed_use_registry is not None:
+        raise TypeError("G2 seed-use registry is valid only for the P4-E route")
     require_hmc_algorithm_route(
         algorithm_id=cfg.algorithm_id,
         stage=HMC_TOP_LEVEL_SELECTION_STAGE,
@@ -12279,6 +12406,11 @@ def run_hmc_tune_verify_repair_loop(
                         extra=_windowed_mass_progress_extra(payload),
                     )
 
+                p4_registry_kwargs = (
+                    {}
+                    if _g2_seed_use_registry is None
+                    else {"_g2_seed_use_registry": _g2_seed_use_registry}
+                )
                 windowed_stage = _windowed_stage_runner(
                     adapter=adapter,
                     geometry=geometry,
@@ -12291,6 +12423,7 @@ def run_hmc_tune_verify_repair_loop(
                     _attempt_index=attempt_index,
                     _checkpoint_writer_config=verification_checkpoint_writer_config,
                     _private_diagnostic_callback=_private_diagnostic_callback,
+                    **p4_registry_kwargs,
                 )
                 expected_windowed_algorithm_id = (
                     windowed_algorithm_for_selection_algorithm(cfg.algorithm_id)
@@ -13155,6 +13288,11 @@ def _run_canonical_hmc_tuning(
     cfg = HMCKernelTuningConfig.standard() if config is None else config
     if not isinstance(cfg, HMCKernelTuningConfig):
         raise TypeError("config must be HMCKernelTuningConfig")
+    p4_seed_use_registry = (
+        None
+        if cfg.engineering_probe_covariance_multiplier is None
+        else _build_public_p4_seed_use_registry()
+    )
     if runner_binding is not None and not isinstance(
         runner_binding, HMCTuningRunnerBinding
     ):
@@ -13640,6 +13778,11 @@ def _run_canonical_hmc_tuning(
                 },
             )
 
+        p4_registry_kwargs = (
+            {}
+            if p4_seed_use_registry is None
+            else {"_g2_seed_use_registry": p4_seed_use_registry}
+        )
         bootstrap = run_hmc_bootstrap_screen(
             adapter=adapter,
             geometry=geometry,
@@ -13647,6 +13790,7 @@ def _run_canonical_hmc_tuning(
             run_full_chain=selected_run_full_chain,
             progress_callback=write_bootstrap_progress,
             _private_diagnostic_callback=write_private_tuning_diagnostic,
+            **p4_registry_kwargs,
         )
         bootstrap_hard_vetoes = _bootstrap_hard_vetoes(bootstrap)
         if bootstrap_hard_vetoes:
@@ -13859,6 +14003,11 @@ def _run_canonical_hmc_tuning(
 
     try:
         write_progress("loop_start", started=True)
+        p4_registry_kwargs = (
+            {}
+            if p4_seed_use_registry is None
+            else {"_g2_seed_use_registry": p4_seed_use_registry}
+        )
         loop = run_hmc_tune_verify_repair_loop(
             adapter=adapter,
             geometry=geometry,
@@ -13882,6 +14031,7 @@ def _run_canonical_hmc_tuning(
             ),
             _progress_callback=write_loop_progress,
             _private_diagnostic_callback=write_private_tuning_diagnostic,
+            **p4_registry_kwargs,
         )
         write_progress(
             "loop_complete",
