@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-08-28. The prose contract is exercised by
+Last checked: 2026-08-29. The prose contract is exercised by
 `tests/test_hmc_tuning_documentation_contract.py`; the route table is generated
 from the executable capability registry.
 
@@ -9,6 +9,11 @@ may issue BayesFilter tuning artifacts. Several diagnostic or historical
 records also have `interface_kind="public_tuner"`; that field alone does not
 confer active status or artifact authority. A chain runner or stage helper is
 not a complete tuner.
+
+At this revision, the only canonical artifact-authority entry points are
+`tune_hmc_kernel` and `tune_fixed_transport_hmc_kernel`. Exported discovery,
+refinement, campaign, runner, and stage helpers remain diagnostics unless the
+capability registry and active route table explicitly say otherwise.
 
 Import and compare the schemas rather than copying their values:
 
@@ -196,6 +201,100 @@ ordinary ESS-disabled status and `1.01` R-hat threshold do not transfer to this
 route. Read the selected fixed-transport configuration and result schema rather
 than borrowing ordinary-tuner thresholds.
 
+### Keep the operational layers separate
+
+BayesFilter exposes fixed-transport diagnostic procedures in addition to the
+public tuner. They solve different problems and their artifacts are not
+interchangeable:
+
+1. `discover_fixed_transport_hmc_candidates` is diagnostic candidate
+   nomination. It does not select or confirm a kernel.
+2. `refine_fixed_transport_hmc_candidates` is diagnostic, staged comparison of
+   nominated candidates. It does not issue an authoritative handoff.
+3. `tune_fixed_transport_hmc_kernel` is the active public tuner. Only this
+   layer can issue the fixed-transport tuning artifact described by the route
+   registry.
+
+Do not assemble the first two helpers into a new de facto tuning route in a
+consumer. If their policy is wanted for an authoritative handoff, either feed
+the resulting proposal into an active public tuner that independently owns its
+required stages or implement and review a separate artifact-authority route.
+
+### Diagnostic candidate discovery
+
+The discovery helper evaluates the fixed primary grid
+`L=(3, 5, 9, 13, 18, 25)`. It performs separate dual-averaging adaptation for
+each `L`, using four chains, then evaluates the tuned epsilon in two fresh
+fixed-kernel replications. The configured adaptation, returned-draw, and screen
+budgets are explicit caller inputs; do not infer them from the public tuner's
+defaults.
+
+For each `L`, the statistical unit is a replication mean across the four
+chains. If the two replication means are `a1` and `a2`, discovery nominates the
+candidate only when the clipped interval `[mean(a1,a2)-sd(a1,a2),
+mean(a1,a2)+sd(a1,a2)]` intersects `[0.65,0.75]`. This is a deliberately broad
+nomination rule, not confirmation. The result records
+`selection_performed=False`, `confirmation_performed=False`, and does not
+authorize a final kernel or retained sampling.
+
+### Diagnostic candidate refinement
+
+The refinement helper accepts at most one nominated epsilon for each `L` and
+uses four chains. Its configured stages are `(500,500)` returned transitions.
+Stage 1 first discards 500 burn-in transitions; stage 2, when run, continues
+from surviving stage-1 endpoints without another burn-in block. Each attempt
+reports rank-normalized split R-hat plus bulk and tail ESS diagnostics and uses
+the four chain-level acceptance means for its nomination interval. These are
+candidate diagnostics, not retained-posterior convergence evidence.
+
+A stage permits at most one candidate-specific epsilon repair, and that repair
+is attempted only if the first attempt leaves no survivors. Low acceptance
+multiplies epsilon by `0.80`; high acceptance multiplies it by `1.20`. A hard
+veto also follows the lower-epsilon branch. Before describing this as a
+two-stage confirmation, inspect the actual stage list: stage 2 is skipped when
+stage 1 leaves zero or one survivor. Therefore the implemented policy is not an
+unconditional "500+500 confirmation" of every candidate.
+
+### Active public tuner budgets and control flow
+
+For the public `FixedTransportHMCKernelTuningConfig` defaults, a ladder or
+fixed-grid screen uses 4 discarded burn-in plus 16 returned transitions per
+chain. Fresh candidate verification also uses 4 plus 16 per chain. These are
+short tuning screens; they are not posterior convergence runs. The default
+`selection_num_results=64` is consumed only by the
+`replicated_min_bulk_ess_per_gradient` selection policy. It does not lengthen
+the default `acceptance_target_distance` branch.
+
+For the public fixed-grid branch, scales are evaluated in their declared order
+and the first healthy in-band screen stops traversal. That candidate then gets
+fresh verification. If this fresh verification fails, the public call ends
+without trying later declared scales. A plan must not promise continued scale
+search after failed verification unless the implementation is first changed
+and reviewed.
+
+For the public dual-averaging ladder, an in-band healthy screen stops the
+candidate ladder. A low-acceptance screen repairs toward a lower epsilon by
+dividing by `step_repair_factor`; a high-acceptance screen repairs toward a
+higher epsilon by multiplying by that factor. The default factor is `2`. This
+is a bounded multiplicative directional repair, not a continuous repair
+proportional to the measured distance from the acceptance band.
+
+The direction is intentional: all else equal, lowering epsilon normally raises
+acceptance and raising epsilon normally lowers it. Do not, however, infer an
+untested neighboring result from that local rule. At fixed finite `L`, leapfrog
+resonance can make acceptance non-monotone in epsilon, so a proposed neighboring
+epsilon must be measured with the declared screen and fresh seeds.
+
+### Promotion and failed-attempt discipline
+
+Discovery and refinement artifacts remain diagnostic even when their numerical
+checks pass. They cannot be relabeled as canonical tuning handoffs. Promotion
+requires an active public tuner or a separately implemented, tested, registered,
+and reviewed artifact-authority route. Preserve every failed or superseded
+artifact as evidence; do not overwrite its root or retrofit its status. A later
+attempt must use a fresh versioned output root with its own target, transport,
+configuration, seed, source, and code lineage.
+
 `run_full_chain_neural_force_hmc` owns transition mechanics for a supplied
 configuration. It does not tune mass or choose `L`, cannot issue a tuning
 artifact, and has a diagnostic direct identity-mass fallback. That fallback is
@@ -310,6 +409,10 @@ owner-controlled migration.
   `tests/test_hmc_kernel_tuning_outer_loop.py`
 - Fixed-transport tests: `tests/test_fixed_transport_hmc_tuning.py` and
   `tests/test_fixed_transport_hmc_binding.py`
+- Fixed-transport diagnostic discovery and refinement implementation:
+  `bayesfilter/inference/fixed_transport_hmc_candidate_discovery_tf.py`
+- Fixed-transport diagnostic discovery and refinement tests:
+  `tests/test_fixed_transport_hmc_candidate_discovery.py`
 - Neural-force binding tests: `tests/test_neural_force_hmc.py`
 - Dispatcher and non-promoting TensorFlow diagnostic tests:
   `tests/test_hmc_tuning_dispatch.py`
