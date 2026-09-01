@@ -1188,6 +1188,9 @@ Use a fresh versioned artifact directory for each attempt. Preserve:
 - this plan and its review note;
 - the MathDevMCP scope audit in
   docs/plans/bayesfilter-c2-coherent-tt-proposal-testing-plan-20260831-mathdevmcp-audit.md;
+- the focused actual-program MathDevMCP audit in
+  docs/plans/bayesfilter-c2-actual-program-mathdevmcp-audit-20260901.md and
+  its machine-readable JSON companion;
 - invariant and finite-difference test logs;
 - proposal and basis manifests with hashes;
 - held-out and shell diagnostic tables;
@@ -1197,7 +1200,7 @@ Use a fresh versioned artifact directory for each attempt. Preserve:
 - a result note that separates implementation validity, numerical validity,
   proposal quality, representation quality, and scientific interpretation.
 
-## 10. Documentation audit record
+## 10. Documentation audit record (2026-08-31 baseline)
 
 The proposition--proof revision was compiled with two successful
 `pdflatex -interaction=nonstopmode -halt-on-error` passes (27-page PDF; no
@@ -1218,6 +1221,27 @@ with the machine-readable companion `.json`. The remaining flags concern
 formalization routing and local dimension prose, not a demonstrated false
 identity. They remain non-certification boundaries and are covered by the
 Stage 0 fixture and score checks.
+
+### 10.1 Actual-program clarification (2026-09-01)
+
+The manuscript was extended with ``The Actual Program: A Time-Step Trace``.
+This is a documentation-only clarification of the existing call chain: the
+attempt05 driver consumes serialized GH9 moment hints, not a runtime UKF, and
+the retained TT quadratic form is the state carried by the host time loop.  The
+focused MathDevMCP audit selected 30 equations, reported partial coverage,
+and found no algebraic counterexample.  Its remaining findings are
+formalization and dimension-prose obligations, not proof failures.  A
+whole-document audit was attempted but the local exposition assembler raised
+``KeyError: evidence_refs`` while handling a determinant issue; that tool
+failure is recorded in the manuscript and is not a mathematical result.
+
+The current source digest is
+``808883a1112ed4ac5ea89840fc3580c7f2f9c3d6d234756139339f6da838d0dc`` and
+the current compiled PDF digest is
+``0990b56643e693abf16718279d3f3b8f4af43ed60ad3ffff4d0a9ae785082cfd``.
+The current PDF has 34 pages.  The prior hashes above remain the protected
+2026-08-31 baseline; no numerical campaign stage was rerun or promoted by
+this explanatory addition.
 
 ## 11. Execution record
 
