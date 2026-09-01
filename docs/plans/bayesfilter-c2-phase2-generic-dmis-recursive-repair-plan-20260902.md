@@ -1,8 +1,8 @@
 # C2 Phase 2 Generic-DMIS and Recursive-Map Repair Campaign
 
 Date: 2026-09-02  
-Status: reviewed and ready for bounded execution; execution record will be
-written beside this file  
+Status: superseded for execution by the contract-correction re-run; original
+contract preserved  
 Scope: C2 n=4 diagnostic holdout only; no production or default change
 
 ## 1. Why this plan exists
@@ -16,6 +16,11 @@ frozen Stage 2 snapshots and did not execute the recursive moment-map stage.
 
 This plan closes those two explicit gaps. It is a diagnostic campaign, not a
 claim that the C2 carried approximation is the true model likelihood.
+
+The first driver did not apply the plain-DMIS precision criterion exactly as
+written here; the corrective plan and contract-faithful result are
+`bayesfilter-c2-phase2-generic-dmis-contract-correction-plan-20260902.md` and
+`bayesfilter-c2-phase2-generic-dmis-contract-correction-execution-result-20260902.md`.
 
 ## 2. Research question and hypotheses
 

@@ -119,3 +119,10 @@ evidence of exact posterior inference.
 * The C2 nonlinear recursive map may remain unimplemented after the frozen
   integration stage; that outcome must be labeled unresolved rather than
   silently promoted.
+
+## Contract-correction disposition
+
+The parent plan is now marked as superseded for execution because its first
+driver did not bind the declared plain-DMIS precision field. The corrective
+plan review and attempt09 result provide the contract-faithful follow-up; the
+original wording remains preserved for provenance.

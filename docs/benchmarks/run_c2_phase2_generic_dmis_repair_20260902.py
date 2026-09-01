@@ -96,6 +96,7 @@ DEFAULT_SCRAMBLES = 4
 DEFAULT_CALIBRATION_SCRAMBLES = 2
 QMC_HALF_WIDTH_LIMIT = 0.00125
 QMC_T_CRITICAL_95 = 3.182446305284263
+PRECISION_ESTIMATOR = "plain_complete_dmis_log_normalizer"
 TANGENT_STEP = 1.0e-6
 TANGENT_TOLERANCE = 2.0e-6
 SMALL_CONVENTION_ROWS = 32
@@ -634,7 +635,7 @@ def _calibrate_alpha(
         maximum_half_width = 0.0
         for step in CAPTURE_STEPS:
             stats = _stats(
-                [item["log_normalizer"] for item in records[alpha][step]]
+                [item["plain_log_normalizer"] for item in records[alpha][step]]
             )
             by_step[str(step)] = stats
             maximum_half_width = max(
@@ -654,6 +655,7 @@ def _calibrate_alpha(
     return selected, {
         "calibration_row_count_per_component": count,
         "calibration_scrambles": scrambles,
+        "selection_estimator": PRECISION_ESTIMATOR,
         "candidates": summary,
         "selected_alpha_student": selected,
     }
@@ -706,12 +708,14 @@ def _run_claim_ladder(
             log_stats = _stats([item["log_normalizer"] for item in rows])
             plain_stats = _stats([item["plain_log_normalizer"] for item in rows])
             cv_stats = _stats([item["normalizer"] for item in rows])
-            half = float(log_stats["half_width_95"])
+            precision_stats = plain_stats
+            half = float(precision_stats["half_width_95"])
             precision_pass = precision_pass and half <= QMC_HALF_WIDTH_LIMIT
             by_step[str(step)] = {
                 "log_normalizer": log_stats,
                 "cv_log_normalizer": log_stats,
                 "plain_log_normalizer": plain_stats,
+                "precision_log_normalizer": precision_stats,
                 "cv_normalizer": cv_stats,
                 "gram_log_normalizer": float(rows[0]["gram_log_normalizer"]),
                 "normalizer_gap_mean": float(
@@ -749,6 +753,7 @@ def _run_claim_ladder(
         "summaries": summaries,
         "precision_pass": precision_pass,
         "precision_half_width_limit": QMC_HALF_WIDTH_LIMIT,
+        "precision_estimator": PRECISION_ESTIMATOR,
     }
 
 
@@ -782,21 +787,21 @@ def _result_markdown(result: Mapping[str, object]) -> str:
             "",
             "## Precision Ladder",
             "",
-            "| rows/component | t | CV log Z mean +/- 95% half-width | plain DMIS log Z mean +/- 95% half-width | CV Z mean +/- 95% half-width | Gram log Z | ESS fraction |",
+            "| rows/component | t | precision DMIS log Z mean +/- 95% half-width | CV log Z mean +/- 95% half-width | CV Z mean +/- 95% half-width | Gram log Z | ESS fraction |",
             "|---:|---:|---:|---:|---:|---:|---:|",
         ]
     )
     for count in claim["row_counts"]:
         for step in CAPTURE_STEPS:
             summary = claim["summaries"][str(count)][str(step)]
+            precision_stats = summary["precision_log_normalizer"]
             log_stats = summary["cv_log_normalizer"]
             cv_stats = summary["cv_normalizer"]
-            plain_stats = summary["plain_log_normalizer"]
             lines.append(
-                f"| {count} | {step} | {log_stats['mean']:+.8f} +/- "
+                f"| {count} | {step} | {precision_stats['mean']:+.8f} +/- "
+                f"{precision_stats['half_width_95']:.3g} | "
+                f"{log_stats['mean']:+.8f} +/- "
                 f"{log_stats['half_width_95']:.3g} | "
-                f"{plain_stats['mean']:+.8f} +/- "
-                f"{plain_stats['half_width_95']:.3g} | "
                 f"{cv_stats['mean']:+.8f} +/- "
                 f"{cv_stats['half_width_95']:.3g} | "
                 f"{summary['gram_log_normalizer']:+.8f} | "
@@ -809,8 +814,9 @@ def _result_markdown(result: Mapping[str, object]) -> str:
             "",
             f"- Precision screen: `{'PASS' if claim['precision_pass'] else 'FAIL'}` "
             f"(limit `{QMC_HALF_WIDTH_LIMIT}`).",
-            "- `CV log Z` is the known-integral squared-TT control-variate estimate; "
-            "`plain DMIS log Z` is the uncorrected complete-mixture estimate.",
+            "- The precision column is the uncorrected plain complete-DMIS log "
+            "estimate required by the parent plan. `CV log Z` is the known-integral "
+            "squared-TT control-variate diagnostic.",
             "- The convention and tangent checks are engineering diagnostics for "
             "the frozen finite program.",
             "- A precision failure does not classify the TT fit, state recursion, "
@@ -903,6 +909,7 @@ def run(args: argparse.Namespace) -> None:
         "convention_checks": convention_checks,
         "calibration": calibration,
         "claim_ladder": claim_ladder,
+        "precision_estimator": PRECISION_ESTIMATOR,
         "recursive_stage": {
             "executed": False,
             "reason": (
