@@ -22,17 +22,27 @@ from bayesfilter.hmc_route_contract import (
     OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
 )
 from bayesfilter.inference.hmc_coordinates import WarmupTrajectoryPolicy
+from bayesfilter.inference.hmc import FullChainHMCRunResult
+from bayesfilter.inference.neural_force_hmc import (
+    FrozenPositionOnlyForce,
+    FrozenTargetPotential,
+    bind_neural_force_hmc_tuning_runner,
+)
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptancePolicy,
     evaluate_hmc_acceptance_evidence,
 )
 from bayesfilter.inference import (
     FixedMassHMCTuningBudgetCallbackResult,
+    HMCKernelTuningConfig,
+    HMCKernelTuningResult,
     HMCTuneVerifyRepairAttempt,
     HMCTuneVerifyRepairLoopConfig,
     HMCTuneVerifyRepairLoopResult,
     SequentialRHatCheckpointWriterConfig,
     TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS,
+    admitted_kernel_mechanics_payload_from_tuning_result,
+    build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
     build_retained_frozen_kernel_hmc_adapter_from_tuning_payload,
     run_hmc_tune_verify_repair_loop,
     stable_adapter_signature,
@@ -142,7 +152,7 @@ def _sequential_verification_diagnostics(
     acceptance: float,
     *,
     draw_count: int = 64,
-    rhat_passed: bool = False,
+    rhat_passed: bool = True,
     cost_stop_reasons: tuple[str, ...] = (),
     native_divergence_count: int | None = None,
 ) -> Mapping[str, Any]:
@@ -152,10 +162,12 @@ def _sequential_verification_diagnostics(
         cost_stop_reasons=cost_stop_reasons,
         native_divergence_count=native_divergence_count,
     )
+    rhat_gate_passed = bool(rhat_passed and evidence["promotion_eligible"])
     return {
         "sequential_rhat_verification": True,
+        "passed": rhat_gate_passed,
         "all_finite_rhat_at_or_below_threshold": bool(rhat_passed),
-        "cap_hit": evidence["decision"] == "inconclusive_evidence",
+        "cap_hit": bool(evidence["promotion_eligible"] and not rhat_passed),
         "rhat_threshold": 1.01,
         "check_interval": int(draw_count),
         "max_results": int(draw_count),
@@ -368,6 +380,96 @@ def _replay_tuning_payload() -> Mapping[str, Any]:
         "diagnostic_roles": {},
         "passed": True,
     }
+
+
+def test_typed_runner_binding_traverses_mass_step_trajectory_and_verification() -> None:
+    scripted_runner, calls = _scripted_full_chain_runner(
+        verification_acceptances=[0.70]
+    )
+    target_scope = "kernel_fixed_mass_step_toy_gaussian"
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=FrozenPositionOnlyForce(
+            lambda position: position,
+            identity="outer-loop-ledger-force",
+        ),
+        target=FrozenTargetPotential(
+            lambda position: position,
+            identity="outer-loop-ledger-target",
+        ),
+        target_scope=target_scope,
+    )
+
+    def identity_reporting_runner(adapter: Any, initial_state: Any, config: Any):
+        raw = scripted_runner(adapter, initial_state, config)
+        diagnostics = dict(raw.diagnostics)
+        diagnostics.update(
+            {
+                "finite_sample_count": diagnostics.get("finite_sample_count", 1),
+                "nonfinite_sample_count": diagnostics.get("nonfinite_sample_count", 0),
+                "log_accept_ratio_finite_count": diagnostics.get(
+                    "log_accept_ratio_finite_count", 1
+                ),
+                "log_accept_ratio_nonfinite_count": diagnostics.get(
+                    "log_accept_ratio_nonfinite_count", 0
+                ),
+                "maximum_absolute_delta_h": diagnostics.get(
+                    "maximum_absolute_delta_h", 0.0
+                ),
+                "target_log_prob_finite_count": diagnostics.get(
+                    "target_log_prob_finite_count", 1
+                ),
+                "target_log_prob_nonfinite_count": diagnostics.get(
+                    "target_log_prob_nonfinite_count", 0
+                ),
+                "divergence_count": diagnostics.get("divergence_count", 0),
+                "force_fallback_count": 0,
+            }
+        )
+        metadata = dict(raw.metadata)
+        metadata.update(
+            {
+                "force_identity": binding.force_identity,
+                "force_semantics": binding.force_semantics,
+                "target_identity": binding.endpoint_target_identity,
+                "target_coordinate_system": (
+                    binding.endpoint_target_coordinate_system
+                ),
+                "target_includes_chart_log_jacobian": (
+                    binding.endpoint_target_includes_chart_log_jacobian
+                ),
+                "affine_log_jacobian_convention": (
+                    binding.affine_log_jacobian_convention
+                ),
+                "coordinate_route": "native_fixed_mass_affine",
+                "target_scope": config.target_scope,
+                "chain_execution_mode": config.chain_execution_mode,
+            }
+        )
+        return FullChainHMCRunResult(
+            samples=raw.samples,
+            trace=raw.trace,
+            diagnostics=diagnostics,
+            metadata=metadata,
+        )
+
+    binding = replace(binding, runner=identity_reporting_runner)
+    result = run_hmc_tune_verify_repair_loop(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        config=_loop_config(max_attempts=1),
+        run_full_chain=binding,
+        _budget_policy_factory=_tiny_budget_factory,
+    )
+
+    assert result.passed is True
+    assert calls
+    assert all(call["target_scope"] == target_scope for call in calls)
+    assert any(call["uses_dual_averaging"] for call in calls)
+    assert any(not call["uses_dual_averaging"] for call in calls)
+    assert len({call["num_leapfrog_steps"] for call in calls}) > 1
+    assert len({call["adapter_signature"] for call in calls}) > 1
+    assert len({call["step_size"] for call in calls}) > 1
 
 
 def _phase7_direct_fixture() -> tuple[
@@ -1695,6 +1797,133 @@ def test_retained_frozen_kernel_adapter_replay_uses_private_loop_payload() -> No
     ] is None
 
 
+def test_nonidentity_result_geometry_survives_durable_mechanics_replay(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = _ToyGaussianAdapter()
+    initial_position = np.array([0.25, -0.15])
+    initial_covariance = np.diag([2.0, 5.0])
+    geometry = _geometry(
+        adapter=adapter,
+        initial_position=initial_position,
+        initial_covariance=initial_covariance,
+    )
+
+    def bootstrap_runner(_adapter: Any, _initial_state: Any, config: Any):
+        return _fake_result(
+            num_results=int(config.num_results),
+            acceptance=0.70,
+            samples=np.zeros((int(config.num_results), 2)),
+        )
+
+    bootstrap = hmc_kernel_tuning.run_hmc_bootstrap_screen(
+        adapter=adapter,
+        geometry=geometry,
+        run_full_chain=bootstrap_runner,
+    )
+    scripted_runner, _calls = _scripted_full_chain_runner(
+        verification_acceptances=[0.70]
+    )
+    loop = run_hmc_tune_verify_repair_loop(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=_loop_config(max_attempts=1),
+        run_full_chain=scripted_runner,
+        _budget_policy_factory=_tiny_budget_factory,
+    )
+    assert loop.passed is True
+    public_final = hmc_kernel_tuning._public_final_kernel_handoff_payload(loop)
+    tuning_result = HMCKernelTuningResult(
+        config=HMCKernelTuningConfig.smoke(
+            target_scope="kernel_fixed_mass_step_toy_gaussian"
+        ),
+        adapter_signature=stable_adapter_signature(adapter),
+        target_dimension=2,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        tune_verify_repair_loop=loop,
+        final_status="passed",
+        diagnostic_role="fresh_fixed_kernel_verified",
+        hard_vetoes=(),
+        repair_triggers=(),
+        final_kernel_payload=public_final,
+        final_kernel_hash=hmc_kernel_tuning.stable_config_hash(public_final),
+        artifact_path=None,
+        diagnostic_roles={},
+    )
+    execution = {"chain_execution_mode": "tf_function", "use_xla": False}
+
+    def forbidden_runtime(*_args: Any, **_kwargs: Any) -> None:
+        raise AssertionError("durable replay must not invoke tuning or HMC")
+
+    monkeypatch.setattr(hmc_kernel_tuning, "tune_hmc_kernel", forbidden_runtime)
+    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_runtime)
+    monkeypatch.setattr(_ToyGaussianAdapter, "log_prob_and_grad", forbidden_runtime)
+
+    direct_replay = (
+        hmc_kernel_tuning.build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
+            adapter=adapter,
+            tuning_result=tuning_result,
+            initial_position=initial_position,
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+        )
+    )
+    assert direct_replay.contract["geometry_artifact_hash"] == geometry.artifact_hash
+
+    admitted = admitted_kernel_mechanics_payload_from_tuning_result(
+        adapter=adapter,
+        tuning_result=tuning_result,
+        initial_position=initial_position,
+        target_signature="toy-gaussian-target-v1",
+        target_scope="kernel_fixed_mass_step_toy_gaussian",
+        execution=execution,
+    )
+    persisted = json.loads(json.dumps(admitted, sort_keys=True))
+    replay = build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
+        adapter=adapter,
+        mechanics_payload=persisted,
+        initial_position=initial_position,
+        target_signature="toy-gaussian-target-v1",
+        target_scope="kernel_fixed_mass_step_toy_gaussian",
+        execution=execution,
+        target_accept_prob=tuning_result.config.target_accept_prob,
+        acceptance_band=tuning_result.config.acceptance_band,
+    )
+
+    mechanics = admitted["mechanics"]
+    assert mechanics["mass_policy"] == "windowed_adaptive"
+    assert mechanics["initial_mass_artifact_payload"]["covariance"] == [
+        [2.0, 0.0],
+        [0.0, 5.0],
+    ]
+    assert mechanics["initial_mass_artifact_signature"] == (
+        geometry.mass_artifact_signature
+    )
+    assert replay.contract["geometry_mass_artifact_signature"] == (
+        mechanics["initial_mass_artifact_signature"]
+    )
+    assert replay.contract["phase4_hmc_adapter_signature"] == mechanics[
+        "phase4_hmc_adapter_signature"
+    ]
+    assert replay.contract["adapted_mass_artifact_signature"] == mechanics[
+        "adapted_mass_artifact_signature"
+    ]
+    assert replay.contract["adapted_mass_artifact_signature"] == (
+        hmc_kernel_tuning._mass_artifact_signature(replay.adapted_mass_artifact)
+    )
+    assert replay.contract["hmc_or_tuning_invoked"] is False
+    with pytest.raises(ValueError, match="initial position does not match"):
+        admitted_kernel_mechanics_payload_from_tuning_result(
+            adapter=adapter,
+            tuning_result=tuning_result,
+            initial_position=[0.25, -0.16],
+            target_signature="toy-gaussian-target-v1",
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+            execution=execution,
+        )
+
+
 def test_retained_frozen_kernel_adapter_replay_rejects_public_only_handoff() -> None:
     payload = dict(_replay_tuning_payload())
     payload["tune_verify_repair_loop"] = {
@@ -1978,9 +2207,11 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert route["active_route"] == "phase7_sequential_rhat_fixed_size_chunk_verifier"
     assert route["single_use_build_count"] == 0
     assert route["fallback_status"] == "none"
-    assert route["evidence_role"] == "engineering_only"
-    assert route["promotion_role"] == "non_promoting"
-    assert route["stopping_rule_role"] == "not_a_stopping_rule"
+    assert route["evidence_role"] == "fixed_kernel_tuning_admission"
+    assert route["promotion_role"] == "handoff_gate"
+    assert route["stopping_rule_role"] == (
+        "required_with_acceptance_health_and_minimum_draws"
+    )
     assert route["reports_posterior_convergence"] is False
     assert route["reports_sampler_superiority"] is False
     assert verification["sequential_rhat_verification"] is True
@@ -1998,7 +2229,7 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert verification["sequential_rhat_policy"]["check_interval"] == 64
     assert (
         verification["sequential_rhat_policy"]["rhat_threshold_role"]
-        == "historical_explanatory_only_not_stopping_or_admission"
+        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
     )
     assert (
         verification["sequential_rhat_policy"]["cap_rule"]
@@ -2918,7 +3149,7 @@ def test_sequential_verification_supported_high_acceptance_requests_repair() -> 
     assert repair_triggers == ("verification_acceptance_outside_pass_band",)
 
 
-def test_sequential_rhat_is_explanatory_when_acceptance_evidence_passes() -> None:
+def test_sequential_rhat_failure_requests_verification_retry() -> None:
     diagnostics = _sequential_verification_diagnostics(0.70, rhat_passed=False)
     status, role, hard_vetoes, repair_triggers = (
         hmc_kernel_tuning._classify_phase7_final_verification(
@@ -2929,10 +3160,13 @@ def test_sequential_rhat_is_explanatory_when_acceptance_evidence_passes() -> Non
         )
     )
 
-    assert status == "passed"
-    assert role == "dependence_aware_fixed_kernel_verification_passed"
+    assert status == "repair_or_retry"
+    assert role == "verification_rhat_repair_trigger"
     assert hard_vetoes == ()
-    assert repair_triggers == ()
+    assert repair_triggers == (
+        "verification_rhat_above_threshold_or_cap_hit",
+        "verification_rhat_cap_hit",
+    )
 
 
 @pytest.mark.parametrize("acceptance", [0.82, 0.60])
@@ -6251,7 +6485,7 @@ def test_outer_loop_propagates_fixed_mass_budget_incomplete_without_final_kernel
     assert "hard_veto" not in fixed_summary["public_timeout_closeout"]
 
 
-def test_outer_loop_rhat_cap_does_not_block_healthy_tuning_handoff() -> None:
+def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
     windowed = _windowed_stage()
     fixed = hmc_kernel_tuning.run_hmc_fixed_mass_step_stage(
         adapter=_ToyGaussianAdapter(),
@@ -6343,7 +6577,7 @@ def test_outer_loop_rhat_cap_does_not_block_healthy_tuning_handoff() -> None:
                 "verification_policy": "sequential_rhat",
                 "max_results": int(budget_policy.verification_num_results),
                 "acceptance_band": (0.65, 0.75),
-                "rhat_threshold_role": "historical_explanatory_only_not_stopping_or_admission",
+                "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
             },
             diagnostics,
             FixedMassHMCTuningBudgetCallbackResult(),
@@ -6365,13 +6599,16 @@ def test_outer_loop_rhat_cap_does_not_block_healthy_tuning_handoff() -> None:
         _phase7_final_verification_runner=verification_wrapper,
     )
 
-    assert result.final_status == "passed"
+    assert result.final_status == "budget_exhausted"
+    assert result.final_kernel_payload is None
+    assert result.final_kernel_hash is None
     assert verification_calls == [0]
     assert stage_calls == ["windowed", "fixed", "trajectory"]
+    assert len(result.attempts) == 1
     assert result.attempts[0].windowed_stage is windowed
     assert result.attempts[0].fixed_mass_step_stage is fixed
     assert result.attempts[0].frozen_step_trajectory_stage is trajectory
-    assert result.attempts[0].verification_diagnostics["cap_hit"] is False
+    assert result.attempts[0].verification_diagnostics["cap_hit"] is True
     assert (
         result.attempts[0].verification_diagnostics[
             "all_finite_rhat_at_or_below_threshold"
@@ -6385,11 +6622,11 @@ def test_outer_loop_rhat_cap_does_not_block_healthy_tuning_handoff() -> None:
     assert verification["verification_only_retry"] is False
     assert verification["reused_frozen_kernel_handoff"] is False
     assert verification["hmc_mechanics_exposed"] is False
-    assert verification["cap_hit"] is False
+    assert verification["cap_hit"] is True
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
     assert (
         verification["rhat_threshold_role"]
-        == "historical_explanatory_only_not_stopping_or_admission"
+        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
     )
 
 
@@ -6627,12 +6864,28 @@ def test_terminal_phase6_repair_slot_no_longer_depends_on_rhat_saturation() -> N
         _phase7_final_verification_runner=verification_wrapper,
     )
 
-    assert result.final_status == "passed"
-    assert result.diagnostic_role == "fresh_fixed_kernel_verification_passed"
-    assert verification_calls == [0]
+    assert result.final_status == "budget_exhausted"
+    assert result.final_kernel_payload is None
+    assert result.final_kernel_hash is None
+    assert verification_calls == [0, 1]
     assert stage_calls == ["windowed", "fixed", "trajectory"]
-    assert result.terminal_budget_guard_payload is None
-    assert result.attempts[0].verification_diagnostics["cap_hit"] is False
+    assert result.terminal_budget_guard_payload is not None
+    assert result.terminal_budget_guard_payload["classification"] == (
+        "verification_only_rhat_cap_budget_saturated_no_repair_slot"
+    )
+    assert result.diagnostic_role == (
+        "verification_only_rhat_cap_budget_saturated_no_repair_slot"
+    )
+    assert len(result.attempts) == 2
+    assert all(
+        attempt.verification_diagnostics["cap_hit"] is True
+        for attempt in result.attempts
+    )
+    terminal_summary = hmc_kernel_tuning._phase7_public_summary(result)[
+        "attempt_summaries"
+    ][-1]["stage_statuses"]["verification"]
+    assert terminal_summary["verification_only_retry"] is True
+    assert terminal_summary["reused_frozen_kernel_handoff"] is True
     assert (
         result.attempts[0].verification_diagnostics[
             "all_finite_rhat_at_or_below_threshold"

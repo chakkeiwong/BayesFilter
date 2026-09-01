@@ -1,0 +1,56 @@
+{
+  "schema": "bayesfilter.phase_manifest.v1",
+  "program": "docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-master-program-2026-08-25.md",
+  "phase": 0,
+  "status": "PASS_GATE",
+  "decision": "PASS_GATE",
+  "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+  "environment": {
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tensorflow_probability": "0.25.0",
+    "cuda_visible_devices": "-1",
+    "tf_force_gpu_allow_growth": "true",
+    "physical_gpus": [],
+    "logical_gpus": [],
+    "jit_compile": "not used; focused tests/reference lane"
+  },
+  "commands": [
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_CPP_MIN_LOG_LEVEL=3 TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q tests/test_annealed_smc_tf.py tests/test_importance_sampling_tf.py",
+      "result": "11 passed",
+      "wall_seconds": 3.59
+    },
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_CPP_MIN_LOG_LEVEL=3 TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q tests/test_ssl_lstm_q20_physical_annealed_smc_canary.py tests/test_ssl_lstm_q20_physical_annealed_smc_material.py tests/test_ssl_lstm_q20_physical_annealed_smc_receipt_recovery.py",
+      "result": "12 passed",
+      "wall_seconds": 0.23
+    },
+    {
+      "command": "pandoc -f gfm -t plain on all new master/subplan/review files",
+      "result": "pass",
+      "wall_seconds": 0.0
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass",
+      "wall_seconds": 0.0
+    }
+  ],
+  "diagnostic_roles": {
+    "hard_veto": "none fired",
+    "repair_trigger": "stale documentary status repaired",
+    "explanatory": "historical harness source-contract tests"
+  },
+  "nonclaims": [
+    "No q=20 particles were generated or promoted.",
+    "No historical replay bank was reused.",
+    "No GPU, NeuTra, HMC, posterior, or authority claim was made."
+  ],
+  "artifact_paths": [
+    "docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-master-program-review-2026-08-25.md",
+    "docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-mathdevmcp-assumption-audit-2026-08-25.md",
+    "docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-phase0-repair-and-refresh-2026-08-25.md"
+  ]
+}

@@ -87,6 +87,9 @@ def tf_batched_svd_sigma_point_value_and_score_custom_gradient(
     production_diagnostics = dict(diagnostics)
     production_diagnostics.update(
         {
+            "backend_status": tf.constant("historical_reference_only"),
+            "default_backend": tf.constant("direct_factor_srukf"),
+            "default_backend_contract": tf.constant("TFFactorSRUKFModel"),
             "score_authority": tf.constant(
                 "bayesfilter_batched_svd_sigma_point_custom_gradient_certified"
             ),

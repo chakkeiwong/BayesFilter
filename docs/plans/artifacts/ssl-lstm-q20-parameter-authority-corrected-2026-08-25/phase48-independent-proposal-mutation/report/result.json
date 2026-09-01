@@ -1,0 +1,378 @@
+{
+  "boundary_status": "PASS_V3_0_INDEPENDENT_MH_BOUNDARY",
+  "branch": "independent_mh_does_not_reduce_variability",
+  "branch_is_statistical_ranking": false,
+  "decision_table": [
+    {
+      "decision": "retain_theta_target",
+      "next_action": "retain theta authority",
+      "not_concluded": "posterior correctness",
+      "primary_criterion": "fixture/boundary/pairing/replay gates",
+      "status": "pass",
+      "veto": "none"
+    },
+    {
+      "decision": "promote_IID_whitening",
+      "next_action": "keep whitening closed",
+      "not_concluded": "IID Gaussian law",
+      "primary_criterion": "finite mutation clouds",
+      "status": "veto",
+      "veto": "finite replicate comparison is not a Gaussian law"
+    },
+    {
+      "decision": "promote_independent_MH_as_default",
+      "next_action": "retain independent MH as a role-limited candidate only",
+      "not_concluded": "superiority or default readiness",
+      "primary_criterion": "descriptive paired spread",
+      "status": "defer",
+      "veto": "three replicates and no uncertainty model"
+    }
+  ],
+  "fixture_status": "PASS_V3_0_INDEPENDENT_MH_FIXTURE",
+  "identity_spreads": {
+    "covariance_offdiag_max_abs": 0.8367537338704135,
+    "negative_mode_fraction": 0.16475130510001812,
+    "root_count": 21.0,
+    "theta_mean_0": 1.2561410635779426,
+    "weighted_ess_fraction": 0.04006114968300112
+  },
+  "independent_mh_spreads": {
+    "covariance_offdiag_max_abs": 1.972146271076646,
+    "negative_mode_fraction": 0.06285545264338255,
+    "root_count": 13.0,
+    "theta_mean_0": 1.3837987461973809,
+    "weighted_ess_fraction": 0.021026941330161586
+  },
+  "inference_status": {
+    "default_readiness": "not_ready",
+    "descriptive_differences": "paired identity/independent-MH support and mutation diagnostics",
+    "hard_veto_screen": "passed",
+    "next_evidence": "longer independent validation with uncertainty and downstream target checks",
+    "statistically_supported_ranking": "none"
+  },
+  "nonclaims": [
+    "No finite-run convergence, posterior correctness, IID whitening, exhaustive mode discovery, HMC, canonical LEDH, superiority, or default claim.",
+    "Acceptance and spread relations are descriptive only.",
+    "No mutation cloud was used to train NeuTra or select an objective."
+  ],
+  "plan_version": "v3.0-independent-proposal-mutation",
+  "red_team": {
+    "overturning_evidence": "fresh proposal/support construction with stable downstream behavior under uncertainty-aware validation",
+    "strongest_alternative": "the fixed defensive proposal itself has support bias, so mutation can move between proposal components without repairing the target representation",
+    "weakest_evidence": "three replicates and two independent proposals per nonterminal stage without Monte Carlo intervals"
+  },
+  "replicate_rows": [
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 0.8406425690139544,
+        "negative_mode_fraction": 0.4462231562998148,
+        "root_count": 130,
+        "theta_mean_0": -0.41555015439679627,
+        "weighted_ess_fraction": 0.9698815606086202
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "stage_rows": []
+      },
+      "independent_mh": {
+        "covariance_offdiag_max_abs": 0.3625377171160674,
+        "negative_mode_fraction": 0.5469465178268398,
+        "root_count": 148,
+        "theta_mean_0": 0.6928094473670873,
+        "weighted_ess_fraction": 0.8808213633411697
+      },
+      "independent_mh_mutation": {
+        "acceptance_rate_mean": 0.45556640625,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_safe_fraction_mean": 0.20166015625,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 3.0244721010830844,
+        "move_fraction_mean": 0.45556640625,
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.6015625,
+            "accepted_count": 308,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.18359375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -161.79260414996497,
+            "mean_displacement": 4.262214241443907,
+            "move_fraction": 0.6015625,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.45703125,
+            "accepted_count": 234,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.23046875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -264.285284641958,
+            "mean_displacement": 2.9479524527517866,
+            "move_fraction": 0.45703125,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.431640625,
+            "accepted_count": 221,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.19140625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -336.7221885099151,
+            "mean_displacement": 2.7833004575470346,
+            "move_fraction": 0.431640625,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.33203125,
+            "accepted_count": 170,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.201171875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -564.8364311115887,
+            "mean_displacement": 2.10442125258961,
+            "move_fraction": 0.33203125,
+            "steps": 2
+          }
+        ]
+      },
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-01",
+      "pilot_sha256": "bd6ec185f4682e82345be2b450b2a90c9773395cc43743da4217908bd579c43f",
+      "replicate": 1
+    },
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 1.677396302884368,
+        "negative_mode_fraction": 0.6109744613998329,
+        "root_count": 109,
+        "theta_mean_0": -0.41615897274007746,
+        "weighted_ess_fraction": 0.9300097451752558
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "stage_rows": []
+      },
+      "independent_mh": {
+        "covariance_offdiag_max_abs": 1.355560491489079,
+        "negative_mode_fraction": 0.5003129493077505,
+        "root_count": 135,
+        "theta_mean_0": -0.6909892988302935,
+        "weighted_ess_fraction": 0.8859180738737221
+      },
+      "independent_mh_mutation": {
+        "acceptance_rate_mean": 0.4228515625,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_safe_fraction_mean": 0.20361328125,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 2.8318896113106473,
+        "move_fraction_mean": 0.4228515625,
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.57421875,
+            "accepted_count": 294,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.19140625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -161.61554023814176,
+            "mean_displacement": 4.033073762814885,
+            "move_fraction": 0.57421875,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.435546875,
+            "accepted_count": 223,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.22265625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -210.69696157809193,
+            "mean_displacement": 2.815099036065921,
+            "move_fraction": 0.435546875,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.3984375,
+            "accepted_count": 204,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.197265625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -301.6569547281645,
+            "mean_displacement": 2.681477758097956,
+            "move_fraction": 0.3984375,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.283203125,
+            "accepted_count": 145,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.203125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -565.6162914017067,
+            "mean_displacement": 1.797907888263827,
+            "move_fraction": 0.283203125,
+            "steps": 2
+          }
+        ]
+      },
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-02",
+      "pilot_sha256": "263716a629da62c92b0432beb2162e84b41391b2d5ab2cdb713a194e6b4de9a8",
+      "replicate": 2
+    },
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 0.9453415419775976,
+        "negative_mode_fraction": 0.5271286235769748,
+        "root_count": 121,
+        "theta_mean_0": 0.8399820908378651,
+        "weighted_ess_fraction": 0.9700708948582569
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "stage_rows": []
+      },
+      "independent_mh": {
+        "covariance_offdiag_max_abs": 2.3346839881927135,
+        "negative_mode_fraction": 0.48409106518345724,
+        "root_count": 143,
+        "theta_mean_0": 0.25583377491482934,
+        "weighted_ess_fraction": 0.9018483046713313
+      },
+      "independent_mh_mutation": {
+        "acceptance_rate_mean": 0.4697265625,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_safe_fraction_mean": 0.1982421875,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 3.1096402296065793,
+        "move_fraction_mean": 0.4697265625,
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.611328125,
+            "accepted_count": 313,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.193359375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -105.39724656071574,
+            "mean_displacement": 4.2209789854845505,
+            "move_fraction": 0.611328125,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.50390625,
+            "accepted_count": 258,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.203125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -196.9458887028357,
+            "mean_displacement": 3.341253908499855,
+            "move_fraction": 0.50390625,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.4375,
+            "accepted_count": 224,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.19140625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -467.4629794857416,
+            "mean_displacement": 2.8727105501850785,
+            "move_fraction": 0.4375,
+            "steps": 2
+          },
+          {
+            "acceptance_rate": 0.326171875,
+            "accepted_count": 167,
+            "accepted_invalid_count": 0,
+            "candidate_safe_fraction": 0.205078125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -632.927522056962,
+            "mean_displacement": 2.003617474256833,
+            "move_fraction": 0.326171875,
+            "steps": 2
+          }
+        ]
+      },
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-03",
+      "pilot_sha256": "71c4fc984a9797b7b8d616617db292e4dd6c5cf63de8c128ab40accd4ff1d249",
+      "replicate": 3
+    }
+  ],
+  "role": "read_only_paired_identity_vs_independent_mh_report",
+  "run_manifest": {
+    "command": "docs/benchmarks/report_ssl_lstm_q20_parameter_authority_corrected_phase48_2026_08_26.py --fixture-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase48-independent-proposal-mutation/fixture --boundary-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase48-independent-proposal-mutation/q20-paired --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase48-independent-proposal-mutation/report",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "gpu_hidden_intentionally": true,
+    "jit_compile": false,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/report_ssl_lstm_q20_parameter_authority_corrected_phase48_2026_08_26.py",
+    "source_sha256": {
+      "plan": "94d095c7a063edba354711b3ad00c43d02ab92f103c23dfc78f7a7fca1b97546",
+      "runner": "0cc52c9aa2b23c2983682bbc293fdfb972e9c4ad6e1a0a5c45205abf77ac1a86"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 0.3468089979724027
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_independent_mh_report.v1",
+  "sources": {
+    "boundary_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase48-independent-proposal-mutation/q20-paired",
+    "boundary_sha256": "65a4a6e7b4123fc8d73fef945b81345c011e7892594cc4079b8136f44a08b275",
+    "fixture_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase48-independent-proposal-mutation/fixture",
+    "fixture_sha256": "334c6b5a0c558289ca5276263e9f7967a5657da73b4f5d0d116c664d7abc1bd7"
+  },
+  "spread_reductions_or_equal": {
+    "covariance_offdiag_max_abs": false,
+    "negative_mode_fraction": true,
+    "root_count": true,
+    "theta_mean_0": false,
+    "weighted_ess_fraction": true
+  },
+  "status": "PASS_V3_0_INDEPENDENT_MH_REPORT",
+  "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278"
+}

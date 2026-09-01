@@ -1,0 +1,313 @@
+{
+  "rows": [
+    {
+      "branch_status": "fixed_full_rank_positive_pivot",
+      "device": "CPU diagnostic/reference lane",
+      "direct_score": 1.4627591028507945,
+      "direct_value": 0.6910366944078346,
+      "dtype": "float64",
+      "eager_xla_delta": {
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "horizon": 5,
+      "jit_compile_eager": false,
+      "jit_compile_xla": "passed",
+      "maximum_derivative_reconstruction_residual": 3.826075824754506e-32,
+      "maximum_factor_reconstruction_residual": 1.5129499305600347e-16,
+      "minimum_qr_pivot": 0.12722509743560287,
+      "model_id": "model_a_affine",
+      "nonclaims": [
+        "not exact nonlinear Bayesian inference",
+        "not singular score evidence",
+        "not HMC readiness"
+      ],
+      "observation_dim": 1,
+      "old_score": 1.4627591028507947,
+      "old_value": 0.6910366944078346,
+      "parameter_dim": 1,
+      "route": "direct_qr_block_conditional",
+      "score_claim": "same finite direct-factor program; old comparison is historical principal-root parity",
+      "score_delta": {
+        "max_abs": 2.220446049250313e-16,
+        "max_rel": 1.5179847761144334e-16
+      },
+      "source": {
+        "anchor": "model_a_affine fixture builder and parity test",
+        "path": "tests/test_factor_srukf_model_parity.py",
+        "sha256": "f019a260bc2327a6facfa0e038655fd64066ca71e75c51cccf62a11ed7ffe857"
+      },
+      "state_dim": 2,
+      "status": "eligible_score",
+      "value_delta": {
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      }
+    },
+    {
+      "branch_status": "fixed_full_rank_positive_pivot",
+      "device": "CPU diagnostic/reference lane",
+      "direct_score": [
+        -1.1368119479340766,
+        -5.319492587069385,
+        -1.1041735815480669
+      ],
+      "direct_value": -1.559624966284901,
+      "dtype": "float64",
+      "eager_xla_delta": {
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "horizon": 3,
+      "jit_compile_eager": false,
+      "jit_compile_xla": "passed",
+      "maximum_derivative_reconstruction_residual": 1.6537292768255252e-16,
+      "maximum_factor_reconstruction_residual": 1.1462637417170274e-16,
+      "minimum_qr_pivot": 0.07051483509522863,
+      "model_id": "model_b_nonlinear_accumulation",
+      "nonclaims": [
+        "not exact nonlinear Bayesian inference",
+        "not singular score evidence",
+        "not HMC readiness"
+      ],
+      "observation_dim": 1,
+      "old_score": [
+        -1.1376542966555383,
+        -5.319319131948499,
+        -1.1045691312938923
+      ],
+      "old_value": -1.5597940252733968,
+      "parameter_dim": 3,
+      "route": "direct_qr_block_conditional",
+      "score_claim": "same finite direct-factor program; old comparison is historical principal-root parity",
+      "score_delta": {
+        "max_abs": 0.0008423487214617165,
+        "max_rel": 0.0007404259131601248
+      },
+      "source": {
+        "anchor": "model_b_nonlinear_accumulation fixture builder and parity test",
+        "path": "tests/test_factor_srukf_model_parity.py",
+        "sha256": "f019a260bc2327a6facfa0e038655fd64066ca71e75c51cccf62a11ed7ffe857"
+      },
+      "state_dim": 2,
+      "status": "eligible_score",
+      "value_delta": {
+        "max_abs": 0.00016905898849572942,
+        "max_rel": 0.0001083854571542529
+      }
+    },
+    {
+      "branch_status": "fixed_full_rank_positive_pivot",
+      "device": "CPU diagnostic/reference lane",
+      "direct_score": [
+        -0.05856399280274459,
+        -0.039257113219847095,
+        -1.4417801422724832
+      ],
+      "direct_value": -5.562878111183707,
+      "dtype": "float64",
+      "eager_xla_delta": {
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "horizon": 2,
+      "jit_compile_eager": false,
+      "jit_compile_xla": "passed",
+      "maximum_derivative_reconstruction_residual": 4.196103894696977e-16,
+      "maximum_factor_reconstruction_residual": 2.400567334329998e-15,
+      "minimum_qr_pivot": 0.27981867855762754,
+      "model_id": "model_c_nonlinear_growth",
+      "nonclaims": [
+        "not exact nonlinear Bayesian inference",
+        "not singular score evidence",
+        "not HMC readiness"
+      ],
+      "observation_dim": 1,
+      "old_score": [
+        -0.06162141082091739,
+        -0.03920863611252258,
+        -1.466499320288874
+      ],
+      "old_value": -5.532858230180173,
+      "parameter_dim": 3,
+      "route": "direct_qr_block_conditional",
+      "score_claim": "same finite direct-factor program; old comparison is historical principal-root parity",
+      "score_delta": {
+        "max_abs": 0.024719178016390897,
+        "max_rel": 0.01685590826698894
+      },
+      "source": {
+        "anchor": "model_c_nonlinear_growth fixture builder and parity test",
+        "path": "tests/test_factor_srukf_model_parity.py",
+        "sha256": "f019a260bc2327a6facfa0e038655fd64066ca71e75c51cccf62a11ed7ffe857"
+      },
+      "state_dim": 2,
+      "status": "eligible_score",
+      "value_delta": {
+        "max_abs": 0.030019881003534366,
+        "max_rel": 0.005425745564884426
+      }
+    },
+    {
+      "adapter_boundary": "covariances and covariance derivatives are factored once before tracing; no per-step covariance factorization",
+      "adapter_source": {
+        "anchor": "covariance_model_to_factor_contract",
+        "path": "bayesfilter/nonlinear/factor_srukf_compat.py",
+        "sha256": "44d9f63891b27c1c9b1aa0bac675aa78df7424fa793c76fa54092e68652b56e0"
+      },
+      "branch_status": "fixed_full_rank_positive_pivot",
+      "data_sha256": "dc63294b6e77913aef0c92796dd2d3c7a1721a766f976fcc392cd02a70754387",
+      "device": "CPU diagnostic/reference lane",
+      "direct_score": [
+        -8.682444127797101,
+        6.5842546986765,
+        -0.004252141573455288,
+        -0.8815207825788983,
+        -0.28073321869827716,
+        0.0983463802933976
+      ],
+      "direct_value": -103.13785820784229,
+      "dtype": "float64",
+      "eager_xla_score_delta": {
+        "max_abs": 7.105427357601002e-15,
+        "max_rel": 2.7755575615628914e-15
+      },
+      "eager_xla_value_delta": {
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "finite_difference_delta": {
+        "max_abs": 2.149373790061304e-09,
+        "max_rel": 2.149373790061304e-09
+      },
+      "finite_difference_score": [
+        -8.68244412686181,
+        6.58425469737267,
+        -0.004252142105087842,
+        -0.8815207827694848,
+        -0.28073322084765095,
+        0.0983463820602992
+      ],
+      "horizon": 20,
+      "jit_compile_eager": false,
+      "jit_compile_xla": "passed",
+      "maximum_derivative_reconstruction_residual": 2.7029793745513817e-16,
+      "maximum_factor_reconstruction_residual": 1.6317785932323036e-15,
+      "minimum_qr_pivot": 1.440702348788995,
+      "model_id": "PP-UKF",
+      "nonclaims": [
+        "historical principal-root parity is gauge-sensitive",
+        "not exact nonlinear Bayesian inference",
+        "not HMC readiness"
+      ],
+      "observation_dim": 2,
+      "old_score": [
+        -8.68244571022183,
+        6.584262473830327,
+        -0.004251769627425642,
+        -0.8815251118870786,
+        -0.2807387040285132,
+        0.09835321245829709
+      ],
+      "old_value": -103.13786042872691,
+      "parameter_coordinate": "frozen source-probit coordinates",
+      "parameter_dim": 6,
+      "route": "one_time_cholesky_adapter_then_direct_qr_block_conditional",
+      "score_claim": "same finite direct-factor program; centered finite-difference certified",
+      "score_delta": {
+        "max_abs": 7.775153826550252e-06,
+        "max_rel": 6.832164899495119e-06
+      },
+      "source": {
+        "anchor": "_build_ukf_model_and_derivatives",
+        "path": "bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py",
+        "sha256": "2ea9dd737ae837ee14fafc3d962c303309def4b45de982c90e10b6fc03796528"
+      },
+      "state_dim": 2,
+      "status": "eligible_score",
+      "value_delta": {
+        "max_abs": 2.2208846246485336e-06,
+        "max_rel": 2.1533165565163813e-08
+      }
+    },
+    {
+      "adapter_boundary": "covariances and covariance derivatives are factored once before tracing; no per-step covariance factorization",
+      "adapter_source": {
+        "anchor": "covariance_model_to_factor_contract",
+        "path": "bayesfilter/nonlinear/factor_srukf_compat.py",
+        "sha256": "44d9f63891b27c1c9b1aa0bac675aa78df7424fa793c76fa54092e68652b56e0"
+      },
+      "branch_status": "fixed_full_rank_positive_pivot",
+      "data_sha256": "ab7885b135d8098c6e516e06733ef99399ea07f4a39292670b578da4a0efbae3",
+      "device": "CPU diagnostic/reference lane",
+      "direct_score": [
+        -6.011315479772724,
+        -9.87023915316405,
+        -7.0066022506033345,
+        -7.199681767794123,
+        -2.0860425239746165
+      ],
+      "direct_value": -124.62834094097093,
+      "dtype": "float64",
+      "eager_xla_score_delta": {
+        "max_abs": 2.398081733190338e-14,
+        "max_rel": 5.535035515048812e-15
+      },
+      "eager_xla_value_delta": {
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "finite_difference_delta": {
+        "max_abs": 1.621975798116182e-08,
+        "max_rel": 1.9822721069852026e-09
+      },
+      "finite_difference_score": [
+        -6.011315472420619,
+        -9.870239136944292,
+        -7.006602236714342,
+        -7.199681759573195,
+        -2.086042524496179
+      ],
+      "horizon": 100,
+      "jit_compile_eager": false,
+      "jit_compile_xla": "passed",
+      "maximum_derivative_reconstruction_residual": 3.871694145588349e-16,
+      "maximum_factor_reconstruction_residual": 6.9518284432869975e-16,
+      "minimum_qr_pivot": 0.22113172939123196,
+      "model_id": "STR-UKF",
+      "nonclaims": [
+        "historical principal-root parity is gauge-sensitive",
+        "not exact nonlinear Bayesian inference",
+        "not HMC readiness"
+      ],
+      "observation_dim": 1,
+      "old_score": [
+        -4.676386624662289,
+        -8.286691253556466,
+        -6.639406092465015,
+        -6.386163512246568,
+        -2.0583450837078106
+      ],
+      "old_value": -124.46262796972056,
+      "parameter_coordinate": "frozen source-probit coordinates",
+      "parameter_dim": 5,
+      "route": "one_time_cholesky_adapter_then_direct_qr_block_conditional",
+      "score_claim": "same finite direct-factor program; centered finite-difference certified",
+      "score_delta": {
+        "max_abs": 1.5835478996075842,
+        "max_rel": 0.28546161005386056
+      },
+      "source": {
+        "anchor": "build_structural_ukf_model_and_derivatives",
+        "path": "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+        "sha256": "9ff1f846d486a1c696bcb9ca05f7482e49b42740914c75c8416c89e54db4716d"
+      },
+      "state_dim": 2,
+      "status": "eligible_score",
+      "value_delta": {
+        "max_abs": 0.16571297125037177,
+        "max_rel": 0.001331427545388859
+      }
+    }
+  ]
+}

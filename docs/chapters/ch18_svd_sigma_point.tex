@@ -1235,7 +1235,38 @@ targets, the project must additionally provide:
   \item a custom-gradient or analytic-gradient policy if raw spectral autodiff
     fails the preceding checks.
 \end{enumerate}
-For industrial-size models, the conservative default is prevention rather than
-debugging: rely on the promoted strict-SPD principal-square-root derivative path
-for HMC-facing work, and keep the historical eigenderivative SVD-UKF branch as a
-diagnostic comparator rather than the production route.
+For industrial-size models, prevention remains preferable to debugging: use
+the direct-factor QR route on admitted full-rank or fixed-rank charts, and keep
+the principal-square-root and historical eigenderivative SVD-UKF branches as
+diagnostic comparators rather than default production routes.
+
+\section{Current Role of SVD in the Direct-Factor Architecture}
+\label{sec:bf-svd-current-direct-factor-role}
+
+The preceding spectral recursion is retained as historical and diagnostic
+material.  It is not the default SR-UKF implementation.  The current default
+propagates factors and applies direct QR to residual stacks as described in
+Section~\ref{sec:bf-srukf-implemented-direct-qr}; it does not reconstruct a
+covariance and spectrally decompose it at each time step.
+
+SVD still has a useful bounded role for an unknown singular direct stack: it
+can discover numerical rank and nominate a fixed QR chart for a subsequent
+value/score run.  Discovery is value-only because singular-vector gauges are
+nonunique at repeated singular values and derivatives contain inverse spectral
+gaps.  Once rank and chart are frozen, the admitted derivative is the
+rectangular QR derivative, not an SVD derivative.  This separation preserves
+SVD's rank-revealing robustness without importing equal-eigenvalue gauge
+singularities into every temporal score evaluation.
+
+For \(P_\varepsilon=GG^\top+\varepsilon I_n\), SVD also explains the limit but
+does not make the raw ambient likelihood finite as \(\varepsilon\to0\).  With
+rank \(r<n\), the raw likelihood tends to \(+\infty\) on support because of the
+null-space normalization and to \(-\infty\) off support because of the
+null-space quadratic.  Only the renormalized on-support limit
+\[
+ \lim_{\varepsilon\downarrow0}
+ \left[\ell_\varepsilon+\frac{n-r}{2}\log(2\pi\varepsilon)\right]
+\]
+equals the finite affine-support likelihood.  It is a density with respect to
+a different measure, so using it is an explicit statistical contract rather
+than a numerical trick.

@@ -3,23 +3,31 @@
 from __future__ import annotations
 
 import inspect
+from dataclasses import replace
 
 import pytest
 import tensorflow as tf
 
 from bayesfilter.inference.neural_force_hmc import (
+    DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
     FrozenPositionOnlyForce,
     FrozenTargetPotential,
     InvalidNeuralForceHMCConfiguration,
     NeuralForceHMCConfig,
+    NeuralForceTransitionKernel,
+    bind_neural_force_hmc_tuning_runner,
     kinetic_energy,
     neural_force_hmc_transition,
     neural_force_proposal,
     run_full_chain_neural_force_hmc,
     sample_neural_force_hmc,
 )
-from bayesfilter.inference.hmc import FullChainHMCConfig
+from bayesfilter.inference.hmc import FullChainHMCConfig, FullChainHMCRunResult
 from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
+from bayesfilter.inference.tuning_contract import (
+    HMC_TUNING_RUNNER_BINDING_SCHEMA,
+    hmc_tuning_interface_capability,
+)
 
 
 DTYPE = tf.float64
@@ -49,6 +57,148 @@ def _gaussian_target(dimension: int = 2):
     )
 
 
+class _IdentityAffineTransform:
+    factor = tf.eye(2, dtype=DTYPE)
+    center = tf.zeros((2,), dtype=DTYPE)
+
+
+class _IdentityAffineAdapter:
+    transform = _IdentityAffineTransform()
+
+    @staticmethod
+    def latent_to_position(value):
+        return tf.convert_to_tensor(value, DTYPE)
+
+
+def _bound_runner_config(*, target_scope: str = "neural-force-binding-test"):
+    return FullChainHMCConfig(
+        num_results=2,
+        num_burnin_steps=1,
+        step_size=0.1,
+        num_leapfrog_steps=2,
+        seed=(20260828, 31),
+        chain_execution_mode="eager",
+        target_scope=target_scope,
+    )
+
+
+def test_typed_tuning_binding_validates_identity_and_telemetry():
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=_gaussian_force(),
+        target=_gaussian_target(),
+        target_scope="neural-force-binding-test",
+    )
+    result = binding(
+        _IdentityAffineAdapter(),
+        tf.zeros((4, 2), DTYPE),
+        _bound_runner_config(),
+    )
+
+    payload = binding.payload()
+    assert len(payload["binding_hash"]) == 64
+    assert payload["artifact_authority"] is False
+    assert payload["source_dependency_closure"]["files"]
+    assert result.metadata["coordinate_route"] == "native_fixed_mass_affine"
+    assert result.metadata["force_identity"] == binding.force_identity
+    assert result.metadata["target_identity"] == binding.endpoint_target_identity
+    capability = hmc_tuning_interface_capability(
+        "run_full_chain_neural_force_hmc"
+    )
+    assert capability.interface_kind == "chain_runner"
+    assert capability.artifact_authority is False
+
+    missing = dict(result.diagnostics)
+    missing.pop("divergence_count")
+    bad_binding = replace(
+        binding,
+        runner=lambda _adapter, _state, _config: FullChainHMCRunResult(
+            samples=result.samples,
+            trace=result.trace,
+            diagnostics=missing,
+            metadata=result.metadata,
+        ),
+    )
+    with pytest.raises(ValueError, match="required telemetry"):
+        bad_binding(
+            _IdentityAffineAdapter(),
+            tf.zeros((4, 2), DTYPE),
+            _bound_runner_config(),
+        )
+
+
+def test_typed_binding_v2_builds_tensor_kernel_for_honestly_labeled_field():
+    force = FrozenPositionOnlyForce(
+        function=lambda position: tf.stack(
+            (position[..., 0] + 0.2 * position[..., 1], 0.4 * position[..., 1]),
+            axis=-1,
+        ),
+        identity="deterministic-nongradient-field-v1",
+        semantics=DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
+    )
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=force,
+        target=_gaussian_target(),
+        target_scope="neural-force-binding-test",
+    )
+
+    payload = binding.payload()
+    assert payload["schema"] == HMC_TUNING_RUNNER_BINDING_SCHEMA
+    assert payload["force_semantics"] == (
+        DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS
+    )
+    assert payload["endpoint_target_coordinate_system"] == "raw"
+    kernel = binding.build_tensor_kernel(
+        _IdentityAffineAdapter(),
+        step_size=tf.constant(0.1, DTYPE),
+        num_leapfrog_steps=tf.constant(2, tf.int32),
+        target_scope="neural-force-binding-test",
+        target_status_trace_policy="none",
+        chain_execution_mode="tf_function",
+        use_xla=False,
+    )
+    assert isinstance(kernel, NeuralForceTransitionKernel)
+    assert kernel.force.semantics == (
+        DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS
+    )
+    assert kernel.force.coordinate_system == "transformed"
+    assert kernel.target.includes_chart_log_jacobian is True
+
+
+def test_typed_tuning_binding_rejects_identity_mass_fallback():
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=_gaussian_force(),
+        target=_gaussian_target(),
+        target_scope="neural-force-binding-test",
+    )
+
+    with pytest.raises(ValueError, match="native affine"):
+        binding(object(), tf.zeros((4, 2), DTYPE), _bound_runner_config())
+    with pytest.raises(ValueError, match="target_scope mismatch"):
+        binding(
+            _IdentityAffineAdapter(),
+            tf.zeros((4, 2), DTYPE),
+            _bound_runner_config(target_scope="wrong-scope"),
+        )
+
+
+def test_typed_tuning_binding_rejects_coordinate_mismatch():
+    transformed_target = FrozenTargetPotential(
+        function=lambda position: 0.5 * tf.reduce_sum(
+            tf.square(position), axis=-1
+        ),
+        identity="transformed-gaussian-target",
+        coordinate_system="transformed",
+        includes_chart_log_jacobian=True,
+    )
+
+    with pytest.raises(InvalidNeuralForceHMCConfiguration, match="same coordinate"):
+        bind_neural_force_hmc_tuning_runner(
+            force=_gaussian_force(),
+            target=transformed_target,
+            target_scope="neural-force-binding-test",
+        )
+
+
 def test_config_is_immutable_and_validated():
     config = _config()
     with pytest.raises(Exception):
@@ -57,6 +207,10 @@ def test_config_is_immutable_and_validated():
         _config(step_size=0.0)
     with pytest.raises(InvalidNeuralForceHMCConfiguration):
         NeuralForceHMCConfig(0.1, 1, (1.0, 0.0))
+    with pytest.raises(InvalidNeuralForceHMCConfiguration, match="integer dtype"):
+        NeuralForceHMCConfig(0.1, tf.constant(1.5), (1.0, 1.0))
+    with pytest.raises(InvalidNeuralForceHMCConfiguration, match="positive finite"):
+        NeuralForceHMCConfig(0.1, 1, (1.0, float("nan")))
     with pytest.raises(InvalidNeuralForceHMCConfiguration):
         NeuralForceHMCConfig(0.1, 1, (1.0,), dtype="int32")
 
@@ -197,6 +351,17 @@ def test_native_dual_averaging_preserves_endpoint_only_force_mechanics():
         config.num_leapfrog_steps + 1
     )
     assert result.trace["step_size"].shape == (config.num_results,)
+    assert result.trace["divergence"].shape == (config.num_results, 4)
+    assert result.trace["force_fallback"].shape == (config.num_results, 4)
+    tf.debugging.assert_equal(
+        result.diagnostics["divergence_count"], tf.constant(0, tf.int32)
+    )
+    tf.debugging.assert_equal(
+        result.diagnostics["divergence_count_by_chain"], tf.zeros((4,), tf.int32)
+    )
+    tf.debugging.assert_equal(
+        result.diagnostics["force_fallback_count"], tf.constant(0, tf.int32)
+    )
     assert float(result.diagnostics["final_step_size"].numpy()) > 0.0
     assert result.diagnostics["acceptance_rate_semantics"] == (
         "mean_metropolis_acceptance_probability"
@@ -295,7 +460,7 @@ def test_invalid_force_and_map_apis_are_rejected():
         FrozenPositionOnlyForce(lambda position: position, "bad", frozen=False)
 
 
-def test_nonfinite_force_and_undefined_target_fail_closed():
+def test_nonfinite_force_uses_finite_fallback_and_records_telemetry():
     position = tf.constant([[0.2]], DTYPE)
     config = _config(dimension=1)
     target = _gaussian_target(1)
@@ -303,10 +468,13 @@ def test_nonfinite_force_and_undefined_target_fail_closed():
         lambda value: tf.fill(tf.shape(value), tf.constant(float("nan"), DTYPE)),
         "nan-force",
     )
-    with pytest.raises(tf.errors.InvalidArgumentError, match="force must be finite"):
-        neural_force_hmc_transition(
-            position, tf.constant([0.02], DTYPE), bad_force, target, config, seed=(1, 2)
-        )
+    result = neural_force_hmc_transition(
+        position, tf.constant([0.02], DTYPE), bad_force, target, config, seed=(1, 2)
+    )
+    tf.debugging.assert_equal(result.trace.force_fallback, [True])
+    tf.debugging.assert_equal(result.trace.divergence, [False])
+    tf.debugging.assert_all_finite(result.position, "fallback position")
+    tf.debugging.assert_all_finite(result.potential, "fallback potential")
 
     for bad_value in (float("nan"), -float("inf")):
         def bad_target_function(value):
@@ -327,6 +495,52 @@ def test_nonfinite_force_and_undefined_target_fail_closed():
             )
 
 
+def test_arithmetic_overflow_is_rejected_and_reported_as_divergence():
+    position = tf.constant([[0.2]], DTYPE)
+    config = _config(step_size=1.0, steps=1, dimension=1)
+    huge_force = FrozenPositionOnlyForce(
+        lambda value: tf.fill(tf.shape(value), tf.constant(1.0e308, DTYPE)),
+        "huge-finite-force",
+    )
+    target = _gaussian_target(1)
+    result = neural_force_hmc_transition(
+        position,
+        tf.constant([0.02], DTYPE),
+        huge_force,
+        target,
+        config,
+        seed=(1, 2),
+    )
+    tf.debugging.assert_equal(result.trace.divergence, [True])
+    tf.debugging.assert_equal(result.trace.accepted, [False])
+    tf.debugging.assert_equal(result.position, position)
+    tf.debugging.assert_all_finite(result.trace.log_acceptance_ratio, "divergence log ratio")
+
+
+def test_generated_nonfinite_momentum_is_rejected_without_an_assertion():
+    position = tf.constant([[0.2]], DTYPE)
+    target = _gaussian_target(1)
+    force = _gaussian_force()
+    # A subnormal inverse mass makes the stateless Gaussian scaling overflow.
+    config = NeuralForceHMCConfig(
+        step_size=0.1,
+        num_leapfrog_steps=1,
+        inverse_mass_diagonal=(1.0e-320,),
+        dtype="float64",
+    )
+    result = neural_force_hmc_transition(
+        position,
+        tf.constant([0.02], DTYPE),
+        force,
+        target,
+        config,
+        seed=(3, 5),
+    )
+    tf.debugging.assert_equal(result.trace.divergence, [True])
+    tf.debugging.assert_equal(result.trace.accepted, [False])
+    tf.debugging.assert_equal(result.position, position)
+
+
 def test_declared_positive_infinity_support_boundary_is_ordinary_rejection():
     position = tf.constant([[0.2]], DTYPE)
     target = FrozenTargetPotential(
@@ -343,6 +557,8 @@ def test_declared_positive_infinity_support_boundary_is_ordinary_rejection():
     )
     tf.debugging.assert_equal(result.trace.accepted, [False])
     tf.debugging.assert_equal(result.trace.endpoint_out_of_support, [True])
+    tf.debugging.assert_equal(result.trace.divergence, [False])
+    tf.debugging.assert_equal(result.trace.finite_status, [False])
     tf.debugging.assert_equal(result.position, position)
 
 
@@ -400,6 +616,8 @@ def test_warmup_is_retained_in_chain_archive():
         seed=(88, 99),
     )
     assert chain.positions.shape == (8, 2, 1)
+    assert chain.divergence.shape == (8, 2)
+    assert chain.force_fallback.shape == (8, 2)
     tf.debugging.assert_equal(chain.num_warmup, 3)
 
 

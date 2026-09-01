@@ -1,0 +1,291 @@
+{
+  "callback_checks": {
+    "deterministic_residual": {
+      "expected_rank": 3,
+      "finite": true,
+      "name": "deterministic_residual",
+      "path": "model.deterministic_residual_fn",
+      "present": true,
+      "rank_matches": true,
+      "shape": [
+        2,
+        3,
+        40
+      ]
+    },
+    "observation": {
+      "expected_rank": 3,
+      "finite": true,
+      "name": "observation",
+      "path": "model.observation_fn",
+      "present": true,
+      "rank_matches": true,
+      "shape": [
+        2,
+        3,
+        1
+      ]
+    },
+    "observation_state_jacobian": {
+      "expected_rank": 4,
+      "finite": true,
+      "name": "observation_state_jacobian",
+      "path": "derivatives.observation_state_jacobian_fn",
+      "present": true,
+      "rank_matches": true,
+      "shape": [
+        2,
+        3,
+        1,
+        60
+      ]
+    },
+    "parameter_observation": {
+      "expected_rank": 4,
+      "finite": true,
+      "name": "parameter_observation",
+      "path": "derivatives.d_observation_fn",
+      "present": true,
+      "rank_matches": true,
+      "shape": [
+        2,
+        4,
+        3,
+        1
+      ]
+    },
+    "parameter_transition": {
+      "expected_rank": 4,
+      "finite": true,
+      "name": "parameter_transition",
+      "path": "derivatives.d_transition_fn",
+      "present": true,
+      "rank_matches": true,
+      "shape": [
+        2,
+        4,
+        3,
+        60
+      ]
+    },
+    "transition": {
+      "expected_rank": 3,
+      "finite": true,
+      "name": "transition",
+      "path": "model.transition_fn",
+      "present": true,
+      "rank_matches": true,
+      "shape": [
+        2,
+        3,
+        60
+      ]
+    },
+    "transition_innovation_jacobian": {
+      "expected_rank": 4,
+      "finite": true,
+      "name": "transition_innovation_jacobian",
+      "path": "derivatives.transition_innovation_jacobian_fn",
+      "present": true,
+      "rank_matches": true,
+      "shape": [
+        2,
+        3,
+        60,
+        20
+      ]
+    },
+    "transition_state_jacobian": {
+      "expected_rank": 4,
+      "finite": true,
+      "name": "transition_state_jacobian",
+      "path": "derivatives.transition_state_jacobian_fn",
+      "present": true,
+      "rank_matches": true,
+      "shape": [
+        2,
+        3,
+        60,
+        60
+      ]
+    }
+  },
+  "dimensions": {
+    "batch": 2,
+    "innovation": 20,
+    "observation": 1,
+    "points": 3,
+    "state": 60
+  },
+  "hard_checks": {
+    "aggregate_target_finite": true,
+    "aggregate_target_status_present": true,
+    "derivatives_finite": true,
+    "model_shape_contract": true,
+    "observation_finite": true,
+    "target_instantiated": true,
+    "transition_finite": true
+  },
+  "missing_required_terms": [
+    "transition_log_density",
+    "observation_log_density",
+    "pre_flow_proposal_density",
+    "post_flow_target_terms",
+    "per_step_covariance_lifecycle",
+    "pseudo_time_flow_matrices"
+  ],
+  "nonclaims": [
+    "private structural callbacks do not establish a source-faithful LEDH proposal",
+    "aggregate value/score does not provide proposal or observation density terms",
+    "this audit does not establish q20 whitening, mode coverage, posterior correctness, or HMC readiness"
+  ],
+  "repair_boundary": {
+    "classification": "extension_or_invention_until_source_and_measure_are_bound",
+    "do_not_do": "do not call the private structural UKF object or an affine parameter map source-faithful LEDH without the missing density lifecycle",
+    "smallest_next_step": "add a repository-owned q20 adapter exposing frozen proposal, transition/observation log densities, per-step covariance state, and LEDH pseudo-time matrices; bind each term to this target signature"
+  },
+  "required_terms": {
+    "initial_state_covariance": {
+      "path": "model.initial_covariance",
+      "quantity": "batched initial state covariance",
+      "status": "bound"
+    },
+    "initial_state_mean": {
+      "path": "model.initial_mean",
+      "quantity": "batched initial state mean",
+      "status": "bound"
+    },
+    "innovation_covariance": {
+      "path": "model.innovation_covariance",
+      "quantity": "batched process/innovation covariance",
+      "status": "bound"
+    },
+    "observation_covariance": {
+      "path": "model.observation_covariance",
+      "quantity": "batched observation covariance",
+      "status": "bound"
+    },
+    "observation_log_density": {
+      "path": "missing explicit callback",
+      "quantity": "log p(y_t | x_t) for a realized state",
+      "status": "missing"
+    },
+    "observation_map": {
+      "path": "target._batched_components(...)[0].observation_fn",
+      "quantity": "observation(state)",
+      "status": "bound_private_structural"
+    },
+    "per_step_covariance_lifecycle": {
+      "path": "UKF internals are consumed by value/score, not returned as LEDH callbacks",
+      "quantity": "per-particle covariance/linearization state across pseudo-time",
+      "status": "missing_explicit_contract"
+    },
+    "post_flow_target_terms": {
+      "path": "target.neutra_batch_log_prob_and_grad_status",
+      "quantity": "aggregate posterior value and score, not decomposed flow terms",
+      "status": "aggregate_only"
+    },
+    "pre_flow_proposal_density": {
+      "path": "missing explicit proposal object/callback",
+      "quantity": "log density before the LEDH flow",
+      "status": "missing"
+    },
+    "pseudo_time_flow_matrices": {
+      "path": "missing LEDH pseudo-time coefficient/flow API",
+      "quantity": "A_t, b_t, and determinant product for the proposal flow",
+      "status": "missing"
+    },
+    "transition_innovation_jacobian": {
+      "path": "target._batched_components(...)[1].transition_innovation_jacobian_fn",
+      "quantity": "innovation Jacobian of transition map",
+      "status": "bound_private_structural"
+    },
+    "transition_log_density": {
+      "path": "missing explicit callback",
+      "quantity": "log p(x_t | x_{t-1}) for a realized transition",
+      "status": "missing"
+    },
+    "transition_map": {
+      "path": "target._batched_components(...)[0].transition_fn",
+      "quantity": "transition(previous, innovation)",
+      "status": "bound_private_structural"
+    },
+    "transition_state_jacobian": {
+      "path": "target._batched_components(...)[1].transition_state_jacobian_fn",
+      "quantity": "state Jacobian of transition map",
+      "status": "bound_private_structural"
+    }
+  },
+  "role": "q20_interface_admissibility_diagnostic",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_particle_authority_ledh_adapter_audit_2026_08_25.py --output-root docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase24-attempt1",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": false,
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "random_seed": "deterministic_fixed_tensor_no_rng",
+    "source_sha256": {
+      "plan": "cb5cbcd15ceb831a63464c89f03bf19d713d05e58a60cb608896f47169944300",
+      "runner": "9ec40344614fdc72cc672ae43a4df0bdd842d7cb5062d95f12d8fe59b2602d3c",
+      "structural": "fe7416a21db452e0b4f173da31d9039f6ddf1090e2ddbd5074ea66088bd6fc28",
+      "target": "fa58ef208800054af81a684190cdf07cb2f7a294bef3d620877bb0334e4e98ca"
+    },
+    "tensorflow": "2.20.0",
+    "wall_seconds": 4.596749103977345
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.particle_authority.ledh_adapter_audit.v1",
+  "status": "ADAPTER_NOT_READY_REPAIRABLE",
+  "target": {
+    "adapter_signature": "a8be6c212eb2a74ef926ccb9279871805949cae6e00c312a12525141638166f3",
+    "parameter_dim": 4,
+    "parameter_names": [
+      "latent_mean_weight.0.0",
+      "latent_mean_bias.0",
+      "observation_weight.0.0",
+      "observation_bias.0"
+    ],
+    "public_names": [
+      "adapter_signature",
+      "batch_value_and_score",
+      "config",
+      "evaluation_policy",
+      "neutra_batch_log_prob_and_grad_status",
+      "parameter_dim",
+      "parameter_names",
+      "q",
+      "signature_payload",
+      "supports_retained_flat_batch",
+      "supports_retained_value_score_status",
+      "target_scope",
+      "target_signature",
+      "value_score_capability"
+    ],
+    "q": 20,
+    "source_symbols_structural": {
+      "covariance_lifecycle": false,
+      "determinant": false,
+      "log_density": false,
+      "observation_log_prob": false,
+      "post_flow": false,
+      "pre_flow": false,
+      "proposal_log_prob": false,
+      "pseudo_time": false,
+      "transition_log_prob": false
+    },
+    "source_symbols_target": {
+      "covariance_lifecycle": false,
+      "determinant": false,
+      "log_density": false,
+      "observation_log_prob": false,
+      "post_flow": false,
+      "pre_flow": false,
+      "proposal_log_prob": false,
+      "pseudo_time": false,
+      "transition_log_prob": false
+    },
+    "target_scope": "ssl_lstm_neutra_state_complexity_batch_native:q20",
+    "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278"
+  }
+}

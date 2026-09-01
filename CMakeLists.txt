@@ -95,13 +95,18 @@ add_library(
     SHARED
     bayesfilter/ops/symmetric_sylvester_op.cc
     custom_call_status_stub.cc)
+set(
+    BAYESFILTER_OP_OUTPUT_DIR
+    "${CMAKE_SOURCE_DIR}/bayesfilter/ops"
+    CACHE PATH
+    "Directory for the compiled BayesFilter TensorFlow custom op")
 set_target_properties(
     symmetric_sylvester
     PROPERTIES
     PREFIX ""
     OUTPUT_NAME "_symmetric_sylvester_ops"
     SUFFIX ".so"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bayesfilter/ops"
+    LIBRARY_OUTPUT_DIRECTORY "${BAYESFILTER_OP_OUTPUT_DIR}"
     INSTALL_RPATH "${TF_get_lib};${PY_ENV_PREFIX}/lib")
 
 target_include_directories(

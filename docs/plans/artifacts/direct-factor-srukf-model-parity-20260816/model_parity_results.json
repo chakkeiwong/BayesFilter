@@ -1,0 +1,67 @@
+{
+  "date": "2026-08-16",
+  "scope": "non_ssl_lstm_models",
+  "candidate_backend": "direct_factor_srukf",
+  "reference_backend": "tf_principal_sqrt_ukf_score",
+  "dtype": "float64",
+  "execution": "CPU eager diagnostic; CUDA unavailable",
+  "models": [
+    {
+      "name": "model_a_affine",
+      "horizon": 5,
+      "old_value": 0.6910366944078346,
+      "new_value": 0.6910366944078346,
+      "value_abs_diff": 0.0,
+      "value_rel_diff": 0.0,
+      "old_score": [1.4627591028507947],
+      "new_score": [1.4627591028507945],
+      "score_max_abs_diff": 2.220446049250313e-16,
+      "score_max_rel_diff": 1.5179847761144334e-16,
+      "minimum_qr_pivot": 0.1272250974356028,
+      "minimum_downdate_margin": 0.016186225417498628,
+      "classification": "exact_parity"
+    },
+    {
+      "name": "model_b_nonlinear_accumulation",
+      "horizon": 3,
+      "old_value": -1.5597940252733968,
+      "new_value": -1.5596249662849013,
+      "value_abs_diff": 0.00016905898849550738,
+      "value_rel_diff": 0.00010838545715411055,
+      "old_score": [-1.1376542966555383, -5.319319131948499, -1.1045691312938923],
+      "new_score": [-1.1368119479340764, -5.319492587069384, -1.1041735815480669],
+      "score_max_abs_diff": 0.0008423487214619385,
+      "score_max_rel_diff": 0.00074042591316032,
+      "minimum_qr_pivot": 0.07254736461940815,
+      "minimum_downdate_margin": 0.0049723419685072925,
+      "classification": "orientation_sensitive_close"
+    },
+    {
+      "name": "model_c_nonlinear_growth",
+      "horizon": 2,
+      "old_value": -5.532858230180173,
+      "new_value": -5.562878111183707,
+      "value_abs_diff": 0.030019881003534366,
+      "value_rel_diff": 0.005425745564884426,
+      "old_score": [-0.06162141082091739, -0.03920863611252258, -1.466499320288874],
+      "new_score": [-0.05856399280274458, -0.03925711321984708, -1.4417801422724832],
+      "score_max_abs_diff": 0.024719178016390897,
+      "score_max_rel_diff": 0.01685590869098894,
+      "minimum_qr_pivot": 0.35186594670559945,
+      "minimum_downdate_margin": 0.0782984928697369,
+      "classification": "orientation_sensitive_close_larger_gap"
+    }
+  ],
+  "baseline_suites": {
+    "direct_factor_and_historical_srukf": "28 passed",
+    "nonlinear_and_actual_sv_regression": "45 passed",
+    "broader_non_ssl_highdim_baseline": "73 passed"
+  },
+  "route_status": "default_for_factor_contract_historical_principal_root_reference",
+  "nonclaims": [
+    "not all repository models were direct-factor adapted",
+    "not SSL-LSTM",
+    "principal-root remains explicit historical reference only",
+    "no production, MacroFinance, NeuTra, HMC, posterior, convergence, or scientific claim"
+  ]
+}

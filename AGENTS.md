@@ -567,6 +567,16 @@ This rule is deliberately operational.  It avoids repeated review stalls,
 approval blocks, and over-broad external disclosure.  A review that can be
 answered from a single result/subplan path should be asked as a one-path review.
 
+## HMC Tuning Interface
+
+Before changing or advising an HMC consumer, read
+`docs/reference/hmc-tuning-interface.md` and consult
+`HMC_TUNING_INTERFACE_CAPABILITIES`. Choose one of the registry's public
+artifact-authority tuners for the actual target and coordinate system. A chain
+runner or stage helper is not a tuner and cannot issue a canonical tuning
+artifact. Fail closed when no supported algorithm/coordinate combination
+matches; do not route an arbitrary force through the fixed-transport tuner.
+
 <!-- BEGIN GLOBAL SCIENTIFIC CODING AGENT POLICY -->
 
 # Global Scientific Coding Agent Policy

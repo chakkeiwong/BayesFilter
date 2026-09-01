@@ -185,14 +185,12 @@ reconstruct the implemented covariance derivative:
 Equation~\eqref{eq:bf-srukf-factor-reconstruction-first} is the local audit
 equation for the SR-UKF factor branch.  Chapter~\ref{ch:bf-factor-derivatives}
 supplies the QR and ordinary Cholesky smooth-branch identities used by value and
-reconstruction audits.  The monograph does \emph{not} yet derive the full
-ordered signed rank-one update/downdate recurrence derivative needed to admit
-all negative-weight analytical-score branches.  Therefore a factor-propagating
-SR-UKF score is fully admitted only on reviewed branches whose implemented
-update/downdate derivative primitive is supplied externally and whose
-reconstruction identity is checked directly.  On other signed branches, the
-value path remains useful, but the derivative route is conditional rather than
-fully derived in-book.
+reconstruction audits.  The direct block-QR and rectangular QR derivatives are
+derived below for the nonnegative-weight DZ5 route.  The monograph does
+\emph{not} derive a complete ordered signed rank-one update/downdate derivative
+for arbitrary negative-weight rules.  Such signed branches remain outside the
+admitted default score contract unless a separate reviewed primitive and
+reconstruction test are supplied.
 
 \subsection{Innovation Factor, Likelihood, And Score}
 \label{sec:bf-srukf-innovation-score}
@@ -381,6 +379,53 @@ earlier than a final log likelihood does.  They should not be treated as a
 universal answer to nonlinear filtering: if the moment closure is poor, the
 filter is still approximating the wrong target; if the derivative of the
 factorization is unstable, HMC can still fail.
+
+\section{Implemented Direct-QR Recursions}
+\label{sec:bf-srukf-implemented-direct-qr}
+
+BayesFilter's default full-rank route is
+\texttt{direct\_qr\_block\_conditional}.  For a predicted-state residual stack
+\(X\) and an observation residual/noise stack \(Y\), form only the joint direct
+stack
+\[
+ A=\begin{bmatrix}Y\\X\end{bmatrix},\qquad
+ A^\top=Q
+ \begin{bmatrix}R_{yy}&R_{yx}\\0&R_{xx}\end{bmatrix}.
+\]
+With positive QR diagonals,
+\begin{equation}
+\label{eq:bf-srukf-direct-block-qr}
+ L_y=R_{yy}^\top,\qquad
+ K=R_{yx}^\top R_{yy}^{-\top},\qquad
+ L_f=R_{xx}^\top.
+\end{equation}
+Thus \(L_yL_y^\top\) is the innovation covariance and \(L_fL_f^\top\) is the
+conditional state covariance.  The runtime forms neither covariance, no Schur
+complement, and performs no SVD or eigendecomposition.  The same QR derivative
+produces derivatives of all three objects.  A scale-aware relative pivot floor
+of \(10^{-12}\) rejects a numerically unresolved full-rank chart.
+
+Exact singular branches use the rectangular construction in
+Section~\ref{sec:bf-fixed-rank-rectangular-qr}.  Rank discovery may use SVD on
+the direct stack before the differentiated run.  The score run freezes rank,
+row-pivot permutations, positive QR signs, support identity, and tolerances,
+then uses QR only.  Sigma points are generated in the retained latent factor
+width, not padded ambient zero directions.  The update uses
+\[
+ Y=URV^\top,\qquad
+ K=XV R^{-1}U^\top,\qquad
+ X_f=X(I-VV^\top),
+\]
+where these quantities are obtained from fixed QR charts.  A second fixed
+rectangular QR chart factors \(X_f\).  The likelihood is the affine-support
+density~\eqref{eq:bf-affine-support-log-density}.
+
+The score is local.  If rank, pivot permutation, sign, chart residual,
+observation support, or retained support changes, diagnostics set
+\texttt{score\_valid=false} and return a non-finite score sentinel.  The
+value-only SVD discovery route is never a hidden score fallback.  The current
+DZ5 rule has nonnegative covariance weights; this fixed-support admission does
+not extend to arbitrary signed-weight rules or across their PSD boundaries.
 
 \section{CUT With Square-Root Backends}
 \label{sec:bf-cut-square-root}

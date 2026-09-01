@@ -283,7 +283,13 @@ def test_registry_cells_expose_common_tuning_hook_metadata() -> None:
         "status_code",
         "valid_pre_regularized_score",
     )
-    assert "SVX-ZC" not in by_id
+    assert by_id["SVX-ZC"].common_tuning_status_keys == (
+        "status_code",
+        "valid_pre_regularized_score",
+        "floor_count_value",
+        "min_innovation_eigenvalue",
+        "innovation_condition_estimate",
+    )
     assert by_id["LGSSM-EXACT"].common_tuning_status_keys == (
         "status_code",
         "valid_pre_regularized_score",
