@@ -214,10 +214,21 @@ def sv_particle_reference(model: dict, ys: np.ndarray, n_particles: int,
         totals.append(loglik)
         min_ess.append(min(ess_track))
     totals = np.asarray(totals)
+    if replicates > 1:
+        per_step_covariance = np.cov(per_step, rowvar=False, ddof=1)
+        per_step_se = per_step.std(axis=0, ddof=1) / math.sqrt(replicates)
+    else:
+        per_step_covariance = np.zeros((len(ys), len(ys)), dtype=np.float64)
+        per_step_se = np.full(len(ys), np.nan, dtype=np.float64)
     return {
         "mean_total": float(totals.mean()),
         "se_total": float(totals.std(ddof=1) / math.sqrt(replicates)),
         "per_step_mean": per_step.mean(axis=0).tolist(),
+        "per_step_se": per_step_se.tolist(),
+        "per_step_replicates": per_step.tolist(),
+        "per_step_replicate_covariance": per_step_covariance.tolist(),
+        "per_step_mean_covariance": (per_step_covariance / replicates).tolist(),
+        "total_replicates": totals.tolist(),
         "min_normalized_ess": float(min(min_ess)),
         "replicates": replicates,
         "n_particles": n_particles,
