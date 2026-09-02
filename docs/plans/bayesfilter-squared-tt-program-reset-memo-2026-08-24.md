@@ -71,6 +71,45 @@ question is now answered — the suspect was the domain).
 
 ## Continuation queue (in order)
 
+UPDATE 4 (2026-08-26, GATE C CLOSED): C1 reconciliation (7f704447,
+relocated f3e82a9f); C2 Student-t floor + nu criterion 4/4 (2ebce436);
+C3+C4 SV fixture/references/hints validated (f3e82a9f: n=1 grid+PF
+certified, n=2 N-ladder bias decay measured, 1.6M z=2.02 resolved as
+fluctuation by replication, degeneracy screen 0.05, n=4 policy = SE +
+screen + N-doubling; GH hints 1.3e-2/2.8e-2, alpha 0.67); C5 claim
+parity green (nu=27.62 at alpha_max 0.8/cap 12; deg0 1.2e-13, deg6
+1.2e-14). PHASES A AND C CLOSED. ~5.5h/12h budget. REMAINING: Phase B
+(adjoint, non-blocking) and D1 attempt05 plan (OWNER TOUCHPOINT before
+ladder compute), then D2 runs.
+
+UPDATE 3 (2026-08-25, PHASE A CLOSED): campaign plan REVIEWED-EXECUTABLE
+(47da9206, review AGREE after CF1-CF11). Gate A PASS (a8fe0639,
+recalibrated on attribution evidence: program parity 7.06e-14,
+backend parity 7.9e-14, floor-amplification proven three ways); claim
+lane = 4080 f64, sweeps as accuracy control (degree-0 kalman 1.78e-9
+identical to CPU; stress s16 2.38e-7 in 168s). Gate A3 PASS (6c98bcab):
+n=4 ORACLE-EXACT 5.5e-10 at deg6/r3/s32; beta(d) row law calibrated
+(744ced2a; 0.5 d<=4, 0.10 d>4, N=8192); ell=13@9-axis recorded as
+measured row-law boundary; per-arm subprocess isolation in runner.
+~4h of the 12h run budget spent. NEXT: Phase C (C1 read Cohen-
+Migliorati + reconcile half-mixture; C2 Student-t floor + two-sided nu
+criterion; C3 SV references with degeneracy screens; C4 SV hints; C5
+claim-config parity) with Phase B (adjoint port) alongside; then D1
+attempt05 plan (owner touchpoint).
+
+UPDATE 2 (2026-08-24, engine block): C2 value engine BUILT and
+oracle-certified. Commits eb25d325 (HermiteBasis1D + U-HERM-1),
+36516d5a (gaussian engine), fa8446e2 (U-RET-1 + closure + degree-0
+T=120 gate at 1e-8), d9a5481f (Christoffel half-mixture row law after
+the stress rung exposed the raw-row Gram catastrophe; ALS floor
+quantified 3/8/16 sweeps -> 1e-3/7e-6/1e-7 per step; warm start
+evaluated + rejected; rung 4b = fitter-floor regression bound sweeps 8
+T=12 gate 2e-4; full suite 10/10). Findings + amendments in the C2
+note sec 3b. REMAINING before attempt05: XLA port + parity rung (claim
+lane), adjoint engine port + I-P2-4-style fixture, attempt05 SV plan
+(fitter budget = declared tuned control; Student-t floor expected per
+F1; domination statement incl. retained floor term).
+
 UPDATE (later 2026-08-24): items 1-3's reading/writing/review halves are
 DONE — papers read (caveat disposition: both Hermite objections are
 sampling-side CDF inversion or the O7 domination condition; CD22 Prop 2

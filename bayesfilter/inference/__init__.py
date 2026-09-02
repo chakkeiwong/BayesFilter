@@ -155,10 +155,22 @@ __all__ = [
     "HMC_TUNING_CAPABILITY_REGISTRY_SCHEMA",
     "HMC_TUNING_CAPABILITY_SCHEMA",
     "HMC_TUNING_INTERFACE_CAPABILITIES",
+    "HMC_TUNING_ORDINARY_RHAT_THRESHOLD",
     "HMC_TUNING_RUNNER_BINDING_SCHEMA",
     "HMC_TUNING_ROUTE_REGISTRY",
     "HMCTuningInterfaceCapability",
     "HMCTuningRunnerBinding",
+    "FourChainAcceptanceDecision",
+    "FourChainMeanBandAcceptancePolicy",
+    "TensorFlowHMCKernelTuningConfig",
+    "TensorFlowHMCKernelTuningResult",
+    "BoundRetainedHMCArchiveConfig",
+    "BoundRetainedHMCArchiveResult",
+    "BoundRetainedHMCArchiveRunner",
+    "FrozenPositionOnlyForce",
+    "FrozenTargetPotential",
+    "DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS",
+    "POSITION_ONLY_FORCE_SEMANTICS",
     "HMCTuningRouteRecord",
     "HMCTuningScope",
     "HMCBootstrapRepairRound",
@@ -389,6 +401,9 @@ __all__ = [
     "select_operational_candidate_union",
     "tune_hmc_kernel",
     "bind_neural_force_hmc_tuning_runner",
+    "build_affine_neural_force_transition_kernel",
+    "build_retained_bound_hmc_archive_runner_from_tuning_result",
+    "load_tensorflow_hmc_tuning_result",
     "tune_fixed_transport_hmc_kernel",
     "build_verified_fixed_transport_hmc_handoff_from_tuning_result",
     "run_fixed_transport_full_chain_tfp_hmc",
@@ -520,6 +535,7 @@ _EXPORT_MODULES = (
     "bayesfilter.inference.fixed_transport_hmc_candidate_discovery_tf",
     "bayesfilter.inference.staged_fixed_kernel_hmc",
     "bayesfilter.inference.frozen_kernel_validation",
+    "bayesfilter.inference.hmc_tuning_dispatch",
     "bayesfilter.inference.hmc_kernel_tuning",
     "bayesfilter.inference.tuning_contract",
     "bayesfilter.inference.neural_force_hmc",
@@ -554,10 +570,43 @@ _EXPORT_MODULES = (
     "bayesfilter.inference.neutra_campaign",
 )
 
+_DIRECT_EXPORTS = {
+    "BoundRetainedHMCArchiveConfig": "bayesfilter.inference.hmc_tuning_dispatch",
+    "BoundRetainedHMCArchiveResult": "bayesfilter.inference.hmc_tuning_dispatch",
+    "BoundRetainedHMCArchiveRunner": "bayesfilter.inference.hmc_tuning_dispatch",
+    "FourChainAcceptanceDecision": "bayesfilter.inference.hmc_tuning_dispatch",
+    "FourChainMeanBandAcceptancePolicy": "bayesfilter.inference.hmc_tuning_dispatch",
+    "TensorFlowHMCKernelTuningConfig": "bayesfilter.inference.hmc_tuning_dispatch",
+    "TensorFlowHMCKernelTuningResult": "bayesfilter.inference.hmc_tuning_dispatch",
+    "build_retained_bound_hmc_archive_runner_from_tuning_result": (
+        "bayesfilter.inference.hmc_tuning_dispatch"
+    ),
+    "load_tensorflow_hmc_tuning_result": "bayesfilter.inference.hmc_tuning_dispatch",
+    "tune_hmc_kernel": "bayesfilter.inference.hmc_tuning_dispatch",
+    "DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS": (
+        "bayesfilter.inference.neural_force_hmc"
+    ),
+    "FrozenPositionOnlyForce": "bayesfilter.inference.neural_force_hmc",
+    "FrozenTargetPotential": "bayesfilter.inference.neural_force_hmc",
+    "POSITION_ONLY_FORCE_SEMANTICS": "bayesfilter.inference.neural_force_hmc",
+    "bind_neural_force_hmc_tuning_runner": (
+        "bayesfilter.inference.neural_force_hmc"
+    ),
+    "build_affine_neural_force_transition_kernel": (
+        "bayesfilter.inference.neural_force_hmc"
+    ),
+    "HMCTuningRunnerBinding": "bayesfilter.inference.tuning_contract",
+}
+
 
 def __getattr__(name: str):
     if name not in __all__:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    direct_module = _DIRECT_EXPORTS.get(name)
+    if direct_module is not None:
+        value = getattr(import_module(direct_module), name)
+        globals()[name] = value
+        return value
     for module_name in _EXPORT_MODULES:
         module = import_module(module_name)
         if hasattr(module, name):

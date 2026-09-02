@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import math
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -27,6 +28,13 @@ from bayesfilter.inference.tuning_contract import (
 
 NEURAL_FORCE_HMC_SCHEMA = "bayesfilter.neural_force_hmc.v1"
 POSITION_ONLY_FORCE_SEMANTICS = "position_only_scalar_potential_gradient"
+DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS = (
+    "deterministic_position_only_proposal_field"
+)
+_POSITION_ONLY_FORCE_SEMANTICS = {
+    POSITION_ONLY_FORCE_SEMANTICS,
+    DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
+}
 # A finite log-probability representation for a numerically invalid proposal
 # that is forced to reject.  This is a representation of the decision, not an
 # energy threshold and is never used to define divergence.
@@ -70,7 +78,7 @@ def _require_position_only_callable(function: Callable[..., Any], name: str) -> 
 
 @dataclass(frozen=True)
 class FrozenPositionOnlyForce:
-    """Binding for one frozen scalar-potential gradient used by the proposal."""
+    """Binding for one frozen deterministic position-only proposal field."""
 
     function: Callable[[tf.Tensor], tf.Tensor] = field(repr=False, compare=False)
     identity: str
@@ -84,9 +92,9 @@ class FrozenPositionOnlyForce:
     def __post_init__(self) -> None:
         _require_position_only_callable(self.function, "force function")
         object.__setattr__(self, "identity", _require_nonempty(self.identity, "force identity"))
-        if self.semantics != POSITION_ONLY_FORCE_SEMANTICS:
+        if self.semantics not in _POSITION_ONLY_FORCE_SEMANTICS:
             raise InvalidNeuralForceHMCConfiguration(
-                f"force semantics must be {POSITION_ONLY_FORCE_SEMANTICS!r}"
+                "force semantics must be a supported frozen position-only semantic"
             )
         if not self.frozen:
             raise InvalidNeuralForceHMCConfiguration("force must be frozen before sampling")
@@ -137,28 +145,70 @@ class FrozenTargetPotential:
 class NeuralForceHMCConfig:
     """Immutable fixed-step configuration for the corrected kernel."""
 
-    step_size: float
-    num_leapfrog_steps: int
+    step_size: Any
+    num_leapfrog_steps: Any
     inverse_mass_diagonal: tuple[float, ...]
     dtype: str = "float64"
 
     def __post_init__(self) -> None:
-        step_size = float(self.step_size)
-        steps = int(self.num_leapfrog_steps)
-        inverse_mass = tuple(float(value) for value in self.inverse_mass_diagonal)
         try:
             dtype = tf.as_dtype(self.dtype)
         except TypeError as exc:
-            raise InvalidNeuralForceHMCConfiguration("dtype is not a TensorFlow dtype") from exc
-        if not step_size > 0.0:
-            raise InvalidNeuralForceHMCConfiguration("step_size must be positive")
-        if steps < 1 or steps != self.num_leapfrog_steps:
             raise InvalidNeuralForceHMCConfiguration(
-                "num_leapfrog_steps must be a positive integer"
-            )
-        if not inverse_mass or any(value <= 0.0 for value in inverse_mass):
+                "dtype is not a TensorFlow dtype"
+            ) from exc
+        if tf.is_tensor(self.step_size):
+            step_size = tf.convert_to_tensor(self.step_size, dtype=dtype)
+            with tf.control_dependencies(
+                (
+                    tf.debugging.assert_rank(
+                        step_size, 0, message="step_size must be scalar"
+                    ),
+                    tf.debugging.assert_all_finite(
+                        step_size, "step_size must be finite"
+                    ),
+                    tf.debugging.assert_positive(
+                        step_size, message="step_size must be positive"
+                    ),
+                )
+            ):
+                step_size = tf.identity(step_size)
+        else:
+            step_size = float(self.step_size)
+            if not math.isfinite(step_size) or step_size <= 0.0:
+                raise InvalidNeuralForceHMCConfiguration(
+                    "step_size must be positive and finite"
+                )
+        if tf.is_tensor(self.num_leapfrog_steps):
+            supplied_steps = tf.convert_to_tensor(self.num_leapfrog_steps)
+            if not supplied_steps.dtype.is_integer:
+                raise InvalidNeuralForceHMCConfiguration(
+                    "num_leapfrog_steps tensor must have an integer dtype"
+                )
+            steps = tf.cast(supplied_steps, tf.int32)
+            with tf.control_dependencies(
+                (
+                    tf.debugging.assert_rank(
+                        steps, 0, message="num_leapfrog_steps must be scalar"
+                    ),
+                    tf.debugging.assert_positive(
+                        steps, message="num_leapfrog_steps must be positive"
+                    ),
+                )
+            ):
+                steps = tf.identity(steps)
+        else:
+            steps = int(self.num_leapfrog_steps)
+            if steps < 1 or steps != self.num_leapfrog_steps:
+                raise InvalidNeuralForceHMCConfiguration(
+                    "num_leapfrog_steps must be a positive integer"
+                )
+        inverse_mass = tuple(float(value) for value in self.inverse_mass_diagonal)
+        if not inverse_mass or any(
+            not math.isfinite(value) or value <= 0.0 for value in inverse_mass
+        ):
             raise InvalidNeuralForceHMCConfiguration(
-                "inverse_mass_diagonal must contain positive values"
+                "inverse_mass_diagonal must contain positive finite values"
             )
         if dtype not in {tf.float32, tf.float64}:
             raise InvalidNeuralForceHMCConfiguration("dtype must be float32 or float64")
@@ -487,7 +537,9 @@ def neural_force_proposal(
     return NeuralForceProposal(
         position=final_position,
         momentum=-final_momentum,
-        force_call_count=tf.constant(config.num_leapfrog_steps + 1, tf.int32),
+        force_call_count=(
+            tf.cast(config.num_leapfrog_steps, tf.int32) + tf.constant(1, tf.int32)
+        ),
         divergence=divergence,
         force_fallback=force_fallback,
     )
@@ -683,7 +735,9 @@ class NeuralForceTransitionKernel(tfp.mcmc.TransitionKernel):
             is_accepted=tf.ones_like(target_log_prob, dtype=tf.bool),
             log_accept_ratio=zeros,
             proposed_results=NeuralForceEndpointKernelResults(target_log_prob),
-            step_size=tf.constant(self.config.step_size, dtype=self.config.tf_dtype),
+            step_size=tf.convert_to_tensor(
+                self.config.step_size, dtype=self.config.tf_dtype
+            ),
             delta_h=zeros,
             finite_status=tf.math.is_finite(target_log_prob),
             divergence=tf.zeros_like(target_log_prob, dtype=tf.bool),
@@ -799,6 +853,8 @@ def run_full_chain_neural_force_hmc(
     bound_force = FrozenPositionOnlyForce(
         function=mass_coordinate_force,
         identity=f"{force.identity}:native-fixed-mass-affine",
+        semantics=force.semantics,
+        coordinate_system="transformed",
     )
     bound_target = FrozenTargetPotential(
         function=mass_coordinate_target,
@@ -945,6 +1001,12 @@ def run_full_chain_neural_force_hmc(
             "target_scope": config.target_scope,
             "force_identity": force.identity,
             "target_identity": target.identity,
+            "force_semantics": force.semantics,
+            "target_coordinate_system": target.coordinate_system,
+            "target_includes_chart_log_jacobian": (
+                target.includes_chart_log_jacobian
+            ),
+            "affine_log_jacobian_convention": "constant_omitted",
             "mass_coordinate_factor_shape": tuple(int(item) for item in factor.shape),
             "mass_coordinate_center_shape": tuple(
                 int(item) for item in center.shape
@@ -958,6 +1020,75 @@ def run_full_chain_neural_force_hmc(
     )
 
 
+def build_affine_neural_force_transition_kernel(
+    *,
+    adapter: Any,
+    force: FrozenPositionOnlyForce,
+    target: FrozenTargetPotential,
+    step_size: Any,
+    num_leapfrog_steps: Any,
+) -> NeuralForceTransitionKernel:
+    """Build the typed endpoint-corrected kernel in native affine coordinates."""
+
+    latent_to_position = getattr(adapter, "latent_to_position", None)
+    transform = getattr(adapter, "transform", None)
+    if not callable(latent_to_position) or transform is None:
+        raise InvalidNeuralForceHMCConfiguration(
+            "tensor kernel construction requires a native affine adapter"
+        )
+    factor = tf.cast(tf.convert_to_tensor(transform.factor), tf.float64)
+    center = tf.cast(tf.convert_to_tensor(transform.center), tf.float64)
+    if factor.shape.rank != 2 or factor.shape[0] is None or factor.shape[1] is None:
+        raise InvalidNeuralForceHMCConfiguration(
+            "affine factor must have a static square shape"
+        )
+    dimension = int(factor.shape[0])
+    if factor.shape != (dimension, dimension) or center.shape != (dimension,):
+        raise InvalidNeuralForceHMCConfiguration(
+            "affine center/factor shape mismatch"
+        )
+    convention = str(
+        getattr(transform, "log_jacobian_convention", "constant_omitted")
+    )
+    if convention != "constant_omitted":
+        raise InvalidNeuralForceHMCConfiguration(
+            "native affine neural-force HMC requires constant_omitted convention"
+        )
+
+    def active_force(value: tf.Tensor) -> tf.Tensor:
+        raw_position = latent_to_position(value)
+        raw_force = tf.convert_to_tensor(force.function(raw_position), value.dtype)
+        return tf.tensordot(raw_force, factor, axes=[[-1], [0]])
+
+    def active_target(value: tf.Tensor) -> tf.Tensor:
+        return tf.convert_to_tensor(
+            target.function(latent_to_position(value)), value.dtype
+        )
+
+    bound_force = FrozenPositionOnlyForce(
+        function=active_force,
+        identity=f"{force.identity}:native-fixed-mass-affine",
+        semantics=force.semantics,
+        coordinate_system="transformed",
+    )
+    bound_target = FrozenTargetPotential(
+        function=active_target,
+        identity=f"{target.identity}:native-fixed-mass-affine",
+        coordinate_system="transformed",
+        includes_chart_log_jacobian=True,
+    )
+    return NeuralForceTransitionKernel(
+        force=bound_force,
+        target=bound_target,
+        config=NeuralForceHMCConfig(
+            step_size=step_size,
+            num_leapfrog_steps=num_leapfrog_steps,
+            inverse_mass_diagonal=(1.0,) * dimension,
+            dtype="float64",
+        ),
+    )
+
+
 def _neural_force_tuning_source_dependency_closure() -> dict[str, Any]:
     """Hash the executable boundary of the typed neural-force tuning binding."""
 
@@ -966,6 +1097,8 @@ def _neural_force_tuning_source_dependency_closure() -> dict[str, Any]:
     repository_root = package_root.parent
     paths = (
         inference_root / "neural_force_hmc.py",
+        inference_root / "hmc_tuning_dispatch.py",
+        inference_root / "hmc_tensorflow_tuning.py",
         inference_root / "hmc_kernel_tuning.py",
         inference_root / "hmc.py",
         inference_root / "hmc_tuning.py",
@@ -1030,8 +1163,20 @@ def bind_neural_force_hmc_tuning_runner(
             target=target,
         )
 
+    def tensor_kernel_factory(
+        *, adapter: Any, step_size: Any, num_leapfrog_steps: Any
+    ) -> NeuralForceTransitionKernel:
+        return build_affine_neural_force_transition_kernel(
+            adapter=adapter,
+            force=force,
+            target=target,
+            step_size=step_size,
+            num_leapfrog_steps=num_leapfrog_steps,
+        )
+
     return _issue_hmc_tuning_runner_binding(
         runner=bound_runner,
+        tensor_kernel_factory=tensor_kernel_factory,
         runner_identity=(
             "bayesfilter.inference.neural_force_hmc."
             "run_full_chain_neural_force_hmc"
@@ -1040,7 +1185,13 @@ def bind_neural_force_hmc_tuning_runner(
         target_scope=scope,
         coordinate_scope=force.coordinate_system,
         force_identity=force.identity,
+        force_semantics=force.semantics,
         endpoint_target_identity=target.identity,
+        endpoint_target_coordinate_system=target.coordinate_system,
+        endpoint_target_includes_chart_log_jacobian=(
+            target.includes_chart_log_jacobian
+        ),
+        affine_log_jacobian_convention="constant_omitted",
         target_status_evidence=(
             "exact_endpoint_target_finite_health_and_transition_finite_status_fail_closed"
         ),
@@ -1062,7 +1213,11 @@ def bind_neural_force_hmc_tuning_runner(
         ),
         required_metadata_fields=(
             "force_identity",
+            "force_semantics",
             "target_identity",
+            "target_coordinate_system",
+            "target_includes_chart_log_jacobian",
+            "affine_log_jacobian_convention",
             "coordinate_route",
             "target_scope",
             "chain_execution_mode",
@@ -1198,6 +1353,7 @@ def sample_neural_force_hmc(
 
 
 __all__ = [
+    "DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS",
     "FrozenPositionOnlyForce",
     "FrozenTargetPotential",
     "InvalidNeuralForceHMCConfiguration",
@@ -1208,8 +1364,11 @@ __all__ = [
     "NeuralForceHMCTransition",
     "NeuralForceProposal",
     "POSITION_ONLY_FORCE_SEMANTICS",
+    "bind_neural_force_hmc_tuning_runner",
+    "build_affine_neural_force_transition_kernel",
     "kinetic_energy",
     "neural_force_hmc_transition",
     "neural_force_proposal",
     "sample_neural_force_hmc",
+    "run_full_chain_neural_force_hmc",
 ]

@@ -49,8 +49,8 @@ function name.
     \code{HMCKernelTuningConfig}.
   \item If a genuine frozen map \(T:z\mapsto\theta\) supplies an exact
     transformed value and score, use
-    \code{tune\_fixed\_transport\_hmc\_kernel} with
-    \code{FixedTransportHMCKernelTuningConfig}.
+    \texttt{tune\_fixed\_\allowbreak transport\_hmc\_\allowbreak kernel}
+    with the corresponding fixed-transport configuration.
   \item If proposal mechanics use a frozen position-only force in ordinary
     coordinates, bind it with
     \code{bind\_neural\_force\_hmc\_tuning\_runner} and pass the resulting
@@ -60,7 +60,7 @@ function name.
 \end{enumerate}
 
 The complete generated registry follows.  It is rendered from
-\code{HMC\_TUNING\_INTERFACE\_CAPABILITIES}; it is not a separately maintained
+\path{HMC_TUNING_INTERFACE_CAPABILITIES}; it is not a separately maintained
 summary.
 
 \input{generated/hmc_tuning_route_table}
@@ -69,11 +69,14 @@ summary.
 
 The public import is
 \code{from bayesfilter.inference import HMCKernelTuningConfig,
-tune\_hmc\_kernel}.  The adapter must bind its dimension, stable signature,
-target scope, exact log value, matching score, and value--score capability.
-The public configuration selects a reviewed preset and target policy.  It does
-not let a model caller insert candidate grids, mass windows, tuning draw
-counts, a bare chain callback, or private handoff mechanics.
+tune\_hmc\_kernel}.  With the default runner, the adapter must bind its
+dimension, stable signature, target scope, exact log value, matching score,
+and value--score capability.  The v2 typed deterministic-field branch instead
+binds an exact endpoint potential and a frozen, honestly labeled position-only
+proposal field; it does not relabel that field as an exact score.  The public
+configuration selects a reviewed preset and target policy.  It does not let a
+model caller insert candidate grids, mass windows, tuning draw counts, a bare
+chain callback, or private handoff mechanics.
 
 The ordinary route performs the following linked stages:
 
@@ -91,6 +94,38 @@ The ordinary route performs the following linked stages:
     candidate selection.
 \end{enumerate}
 
+Geometry is a shared responsibility rather than an unspecified tuner default.
+The caller supplies the initial center and may supply a local geometry
+hypothesis; the tuner validates that hypothesis and owns the subsequent affine
+construction and adaptation.  Under windowed adaptation, it tries a supplied
+negative log-posterior Hessian, an initial covariance, and positive diagonal
+parameter scales, in that order, before falling back to identity.  Thus a
+negative Hessian means
+
+\begin{equation}
+  H(\theta_0)=-\nabla_{\theta}^{2}\ell(\theta_0),
+  \qquad
+  \Sigma_0 \approx H(\theta_0)^{-1},
+  \label{eq:bf-ordinary-hmc-initial-geometry}
+\end{equation}
+
+\noindent
+in the same unconstrained coordinates as the supplied center.  With geometry
+fallback enabled, a rejected higher-priority hypothesis is recorded before the
+next is tried; with fallback disabled, it is a hard error.  The explicit fixed-
+identity policy ignores all hints.  Identity is a useful mechanics baseline,
+not evidence that an anisotropic posterior has identity geometry.
+
+A covariance-first calculation must keep the estimated center and covariance
+together.  The covariance should be finite, symmetric, positive definite,
+estimated at the supplied center, and expressed in the adapter's coordinates.
+Exact target and score replay must pass there, and any regularization or
+fallback remains part of the provenance.  The following listing checks this
+argument binding with stubs and therefore performs neither covariance fitting
+nor HMC.
+
+\lstinputlisting[language=Python,caption={Covariance-first ordinary-tuner handoff without chain execution.},label={lst:bf-hmc-tuning-covariance-first}]{examples/hmc_tuning_covariance_first.py}
+
 The default ordinary TFP verifier requires typed finite-state and acceptance
 evidence, the configured minimum retained tuning draws, and finite
 rank-normalized split and folded split \(\widehat R\) values at or below 1.01.
@@ -100,6 +135,26 @@ documentation work did not choose a new threshold.  Bulk and tail effective
 sample sizes are disabled for ordinary tuning admission.  They belong to
 subsequent retained-posterior assessment unless another reviewed route
 explicitly says otherwise.  Acceptance by itself never authorizes a handoff.
+The implementation anchor for the threshold is
+\code{HMC\_TUNING\_ORDINARY\_RHAT\_THRESHOLD}; consumers should import
+that constant rather than hard-code a copied number.
+
+The legacy ordinary ladder still contains NumPy and host numerical and
+serialization paths.  This is BayesFilter-owned backend migration debt.  A
+TensorFlow-only diagnostic implementation can exercise typed mechanics, but it
+sets both \code{artifact\_authority} and \code{admission\_supported} to false
+in its serialized result.  It has neither the ordinary fresh-
+\(\widehat R\) handoff gate nor XLA qualification, so its acceptance and metric
+screens cannot issue a retained-kernel handoff or satisfy a consumer that
+requires an admitted TensorFlow/XLA tuning route.  Its screen role is named
+\code{diagnostic\_candidate\_screen}.  Its exposed tuning hyperparameters have
+no numeric constructor defaults, but the implementation still fixes four
+chains, \code{float64}, four identical zero states in the current affine
+coordinates, (L=1) in metric windows, a powers-of-two trajectory grid, and a
+stateless seed-offset scheme.  It also inherits TensorFlow Probability's
+internal dual-averaging defaults except for the explicit adaptation count and
+target acceptance.  These are unqualified diagnostic choices, not admitted-
+route defaults.
 
 The smoke preset in the following listing deliberately has a tiny budget.  It
 tests invocation and result shape; it need not pass tuning admission.
@@ -140,6 +195,9 @@ mass adaptation.  A supplied chain runner is scoped only after the transformed
 adapter has been built; this argument is not a generic arbitrary-force hook.
 Changing the transport manifest, base or transformed adapter signature, target
 scope, dimension, backend, or coordinate identity invalidates reuse.
+Its ESS and verifier policies are selected by the fixed-transport
+configuration.  The ordinary route's disabled tuning-ESS status and 1.01
+\(\widehat R\) threshold do not transfer automatically.
 
 The identity map below is mathematically simple but satisfies the complete
 transport protocol.  Its Jacobian contribution is zero rather than omitted.
@@ -155,14 +213,58 @@ only that this configuration ran.  It does not establish mass adaptation,
 trajectory selection, fresh verification, or a reason to reject HMC or the
 target.
 
-For a raw-coordinate frozen force, the public binding factory verifies a
-coordinate-consistent exact endpoint potential and issues an
+For a raw-coordinate frozen force, the public binding factory requires and
+identity-binds a coordinate-consistent endpoint potential and issues an
 \code{HMCTuningRunnerBinding}.  The ordinary tuner then owns the affine mass
 wrapper, epsilon, (L), screening, verification, and repair.  The binding
 must report finite values, divergence and energy status, movement, endpoint
 target health, deterministic execution identity, and source closure.  It
 rejects the low-level runner's direct identity-coordinate fallback.  A bare
 Python callable is rejected by the public ordinary tuner.
+The binding proves the declared software identity and coordinate semantics; it
+cannot prove that the supplied endpoint function equals the claimed target.
+That equality still requires a target-specific value check.
+
+The typed objects use potential, not log-density, signs.  If
+\(\ell(\theta)=\log \pi(\theta)\), the exact endpoint object is
+\begin{equation}
+  U(\theta)=-\ell(\theta).
+  \label{eq:bf-neural-force-endpoint-potential}
+\end{equation}
+For the scalar-potential-gradient semantic, the proposal force is
+\(F(\theta)=\nabla U(\theta)=-\nabla\ell(\theta)\).  The kick uses
+\begin{equation}
+  p_{n+1/2}=p_n-\frac{\epsilon}{2}F(q_n),
+  \qquad
+  q_{n+1}=q_n+\epsilon M^{-1}p_{n+1/2},
+  \label{eq:bf-neural-force-kick}
+\end{equation}
+followed by the symmetric terminal kick and momentum flip.
+
+The v2 binding also permits an honestly labeled deterministic position-only
+proposal field \(B(q)\) that need not equal \(\nabla U(q)\).  Position-only
+kicks remain volume-preserving shears, and the symmetric schedule remains
+reversible.  The exact endpoint Metropolis rule is
+\begin{equation}
+  \alpha
+  = \min\left\{1,
+      \exp\bigl[-U(q')-K(p')+U(q)+K(p)\bigr]\right\}.
+  \label{eq:bf-neural-force-endpoint-correction}
+\end{equation}
+Under these conditions, the endpoint potential determines the invariant target;
+a poor or sign-reversed proposal field can destroy efficiency without by itself
+changing that target.  A wrong endpoint potential, missing coordinate change,
+momentum-dependent field, asymmetric schedule, or direct state update invalidates
+that conclusion.
+
+For an affine mass coordinate \(\theta=c+Fz\), the repository wrapper applies
+the chain rule to the proposal field and endpoint potential.  The affine
+log-Jacobian is constant and is deliberately omitted from energy differences
+under the declared \code{constant\_omitted} convention.  Both raw objects and
+that convention are bound into runner schema
+\path{bayesfilter.hmc_tuning_runner_binding.v2}.
+
+\lstinputlisting[language=Python,caption={Typed deterministic proposal-field and exact endpoint-potential binding.},label={lst:bf-hmc-tuning-neural-force-binding}]{examples/hmc_tuning_neural_force_binding.py}
 
 A transformed neural target is not allowed to masquerade as this ordinary raw-
 coordinate binding.  It belongs to the fixed-transport route only when an
@@ -176,6 +278,18 @@ artifact authority, the result and capability schema versions are supported,
 the target and coordinate scope match, all bound identities and source closure
 are present, fresh verification passed, and the private replay payload is
 available at the BayesFilter-owned boundary.  Tuning draws must be discarded.
+
+An in-memory ordinary result retains private initial and adapted mass arrays;
+its redacted public status does not.  Before process exit,
+\path{admitted_kernel_mechanics_payload_from_tuning_result}
+converts a passed result into the durable JSON-ready replay form.  It reuses the
+validated geometry already carried by the result, so nonidentity initialization
+does not require the consumer to rediscover hidden hints.  The payload binds the
+target, scope, execution settings, initial position, adapter identities, and
+both mass signatures.  The corresponding mechanics-payload replay helper
+checks those fields and reconstructs the fixed adapter without invoking tuning
+or HMC.  In contrast, reconstruction from an older serialized tuning payload
+requires the original explicit geometry inputs and private array-bearing data.
 
 \begin{longtable}{p{0.20\textwidth}p{0.34\textwidth}p{0.36\textwidth}}
 \toprule

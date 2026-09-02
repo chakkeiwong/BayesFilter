@@ -223,6 +223,61 @@ Reference ladder: exact-moment oracle unavailable (non-Gaussian), so
 the comparator is the resolved-quadrature / long-particle reference per
 ch38's Defect-2 ledger rules. Not concluded here: any rank prediction.
 
+## 3b. Engine findings and ladder amendments (2026-08-24, post-review)
+
+Localized infrastructure findings from implementing and running the
+ladder; recorded under the campaign repair rules (the material review's
+mathematical content is untouched — the degree-0 rungs re-verify it
+after every change below).
+
+**F-ENG-1 (row law, repaired; replaces this note's "rows are
+Φ⁻¹(Sobol)" for degree ≥ 1).** Monte Carlo least squares with raw
+η-rows is exponentially sample-hungry in the Hermite degree
+(Var(Hē_k²) ~ 4^k): measured design-Gram condition 1.3e6 at ℓ=13,
+N=2048 (entries off identity by 0.84), which let ~1e20 of unseen tail
+mass into ∫h² — the first T=120 stress run overcounted +22..47
+nats/step. Repair: the optimal weighted least-squares row law (Cohen &
+Migliorati, SMAI J. Comput. Math. 3, 2017 — local copy to be fetched)
+in defensive half-mixture form: per-axis density q₁ ∝ η·(½ + ½c̄) with
+c̄ = mean_k Hē_k², weights ∏ 1/(½ + ½c̄) ∈ (0, 2] per axis. Measured:
+Gram condition 1.32 with ESS 1400/2048 (the pure product-Christoffel
+weights had condition 1.28 but ESS 22 — fits starved). Evidence:
+`docs/benchmarks/check_c2_hermite_rowlaw_mechanism_20260824.py`. At
+degree 0 the law degenerates exactly to Φ⁻¹(Sobol), so every
+review-certified rung re-ran unchanged and green.
+
+**F-ENG-2 (ALS convergence floor, quantified; not an engine defect).**
+With the sound row law, the stress-rung residual tracks the sweep
+budget exactly — per-step gaps 1e-3 / 7e-6 / 1e-7 at sweeps 3 / 8 / 16
+on an exactly representable target (random-init ALS swamp on
+near-rank-1 targets). This is the same magnitude the bounded program
+recorded as its "fit resolution" plateau; the oracle isolates its true
+cause as the fitter, not the representation.
+
+**F-ENG-3 (warm start evaluated and not adopted).** Continuation init
+(each step's ALS started from the previous step's cores) was measured:
+at sweeps 3 it is HARMFUL (tail degrades to 0.29/step — feedback of
+half-converged structure); at sweeps 8 it is indistinguishable from
+cold init at T=12. Rejected as "beneficial at fixed budget"; the
+re-askable question it did not fail: continuation init combined with
+TT rounding/orthogonalization between steps.
+
+**Rung 4b redefinition.** The overparameterized stress rung (ℓ=13,
+r=6) is redefined from "1e-8, must not degrade" — which F-ENG-2 shows
+buys ALS convergence, not correctness evidence — to a fitter-floor
+regression bound: sweeps 8, T = 12, total defensive-corrected gap
+≤ 2e-4 (measured floor ~7e-6/step with ~2.5× headroom), plus the
+pathology detectors (finite values, τ_t < τ_max). The correctness
+anchor is unchanged: the degree-0 T=120 gate at 1e-8, U-RET-1, and the
+conversion-closure rung certify every mathematical claim of this note
+independently of ALS quality.
+
+**SV-arm consequence (for the attempt05 default audit).** If the SV
+question requires per-step accuracy below ~1e-6 at degrees where rank
+structure is nontrivial, the fitter budget (sweeps, init, rounding)
+becomes a first-class tuned control with its own scope — not an
+inherited constant. Record it in the attempt05 evidence contract.
+
 ## 4. What the review must check (material review scope)
 
 1. The conversion-term derivation of §1 (the single place a sign can

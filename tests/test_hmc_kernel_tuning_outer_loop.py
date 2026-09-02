@@ -34,11 +34,15 @@ from bayesfilter.inference.hmc_verification import (
 )
 from bayesfilter.inference import (
     FixedMassHMCTuningBudgetCallbackResult,
+    HMCKernelTuningConfig,
+    HMCKernelTuningResult,
     HMCTuneVerifyRepairAttempt,
     HMCTuneVerifyRepairLoopConfig,
     HMCTuneVerifyRepairLoopResult,
     SequentialRHatCheckpointWriterConfig,
     TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS,
+    admitted_kernel_mechanics_payload_from_tuning_result,
+    build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
     build_retained_frozen_kernel_hmc_adapter_from_tuning_payload,
     run_hmc_tune_verify_repair_loop,
     stable_adapter_signature,
@@ -425,7 +429,17 @@ def test_typed_runner_binding_traverses_mass_step_trajectory_and_verification() 
         metadata.update(
             {
                 "force_identity": binding.force_identity,
+                "force_semantics": binding.force_semantics,
                 "target_identity": binding.endpoint_target_identity,
+                "target_coordinate_system": (
+                    binding.endpoint_target_coordinate_system
+                ),
+                "target_includes_chart_log_jacobian": (
+                    binding.endpoint_target_includes_chart_log_jacobian
+                ),
+                "affine_log_jacobian_convention": (
+                    binding.affine_log_jacobian_convention
+                ),
                 "coordinate_route": "native_fixed_mass_affine",
                 "target_scope": config.target_scope,
                 "chain_execution_mode": config.chain_execution_mode,
@@ -1793,6 +1807,133 @@ def test_retained_frozen_kernel_adapter_replay_uses_private_loop_payload() -> No
     assert result.payload()["final_kernel_payload"][
         "public_handoff_schema"
     ] is None
+
+
+def test_nonidentity_result_geometry_survives_durable_mechanics_replay(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = _ToyGaussianAdapter()
+    initial_position = np.array([0.25, -0.15])
+    initial_covariance = np.diag([2.0, 5.0])
+    geometry = _geometry(
+        adapter=adapter,
+        initial_position=initial_position,
+        initial_covariance=initial_covariance,
+    )
+
+    def bootstrap_runner(_adapter: Any, _initial_state: Any, config: Any):
+        return _fake_result(
+            num_results=int(config.num_results),
+            acceptance=0.70,
+            samples=np.zeros((int(config.num_results), 2)),
+        )
+
+    bootstrap = hmc_kernel_tuning.run_hmc_bootstrap_screen(
+        adapter=adapter,
+        geometry=geometry,
+        run_full_chain=bootstrap_runner,
+    )
+    scripted_runner, _calls = _scripted_full_chain_runner(
+        verification_acceptances=[0.70]
+    )
+    loop = run_hmc_tune_verify_repair_loop(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=_loop_config(max_attempts=1),
+        run_full_chain=scripted_runner,
+        _budget_policy_factory=_tiny_budget_factory,
+    )
+    assert loop.passed is True
+    public_final = hmc_kernel_tuning._public_final_kernel_handoff_payload(loop)
+    tuning_result = HMCKernelTuningResult(
+        config=HMCKernelTuningConfig.smoke(
+            target_scope="kernel_fixed_mass_step_toy_gaussian"
+        ),
+        adapter_signature=stable_adapter_signature(adapter),
+        target_dimension=2,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        tune_verify_repair_loop=loop,
+        final_status="passed",
+        diagnostic_role="fresh_fixed_kernel_verified",
+        hard_vetoes=(),
+        repair_triggers=(),
+        final_kernel_payload=public_final,
+        final_kernel_hash=hmc_kernel_tuning.stable_config_hash(public_final),
+        artifact_path=None,
+        diagnostic_roles={},
+    )
+    execution = {"chain_execution_mode": "tf_function", "use_xla": False}
+
+    def forbidden_runtime(*_args: Any, **_kwargs: Any) -> None:
+        raise AssertionError("durable replay must not invoke tuning or HMC")
+
+    monkeypatch.setattr(hmc_kernel_tuning, "tune_hmc_kernel", forbidden_runtime)
+    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_runtime)
+    monkeypatch.setattr(_ToyGaussianAdapter, "log_prob_and_grad", forbidden_runtime)
+
+    direct_replay = (
+        hmc_kernel_tuning.build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
+            adapter=adapter,
+            tuning_result=tuning_result,
+            initial_position=initial_position,
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+        )
+    )
+    assert direct_replay.contract["geometry_artifact_hash"] == geometry.artifact_hash
+
+    admitted = admitted_kernel_mechanics_payload_from_tuning_result(
+        adapter=adapter,
+        tuning_result=tuning_result,
+        initial_position=initial_position,
+        target_signature="toy-gaussian-target-v1",
+        target_scope="kernel_fixed_mass_step_toy_gaussian",
+        execution=execution,
+    )
+    persisted = json.loads(json.dumps(admitted, sort_keys=True))
+    replay = build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
+        adapter=adapter,
+        mechanics_payload=persisted,
+        initial_position=initial_position,
+        target_signature="toy-gaussian-target-v1",
+        target_scope="kernel_fixed_mass_step_toy_gaussian",
+        execution=execution,
+        target_accept_prob=tuning_result.config.target_accept_prob,
+        acceptance_band=tuning_result.config.acceptance_band,
+    )
+
+    mechanics = admitted["mechanics"]
+    assert mechanics["mass_policy"] == "windowed_adaptive"
+    assert mechanics["initial_mass_artifact_payload"]["covariance"] == [
+        [2.0, 0.0],
+        [0.0, 5.0],
+    ]
+    assert mechanics["initial_mass_artifact_signature"] == (
+        geometry.mass_artifact_signature
+    )
+    assert replay.contract["geometry_mass_artifact_signature"] == (
+        mechanics["initial_mass_artifact_signature"]
+    )
+    assert replay.contract["phase4_hmc_adapter_signature"] == mechanics[
+        "phase4_hmc_adapter_signature"
+    ]
+    assert replay.contract["adapted_mass_artifact_signature"] == mechanics[
+        "adapted_mass_artifact_signature"
+    ]
+    assert replay.contract["adapted_mass_artifact_signature"] == (
+        hmc_kernel_tuning._mass_artifact_signature(replay.adapted_mass_artifact)
+    )
+    assert replay.contract["hmc_or_tuning_invoked"] is False
+    with pytest.raises(ValueError, match="initial position does not match"):
+        admitted_kernel_mechanics_payload_from_tuning_result(
+            adapter=adapter,
+            tuning_result=tuning_result,
+            initial_position=[0.25, -0.16],
+            target_signature="toy-gaussian-target-v1",
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+            execution=execution,
+        )
 
 
 def test_retained_frozen_kernel_adapter_replay_rejects_public_only_handoff() -> None:

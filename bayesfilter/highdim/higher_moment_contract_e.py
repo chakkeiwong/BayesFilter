@@ -52,6 +52,57 @@ def _right_solve_jvp(
     return tf.transpose(solved_tangent, [1, 2, 0])
 
 
+# Relative PSD floor for empirical-covariance factorizations (2026-08-26).
+#
+# An empirical covariance of a weighted cloud is symmetric PSD in exact
+# arithmetic, but under annealed weight concentration its smallest
+# eigenvalue lands at roundoff (measured: -6.4e-16 against a largest
+# eigenvalue of 2.33 on the Austria production score lane), which makes
+# `tf.linalg.cholesky` emit NaNs and the downstream spectral diagnostic
+# raise an opaque GPU eigendecomposition error.
+#
+# Two separable corrections, deliberately classified:
+#   symmetrization  - the matrix is mathematically symmetric, so
+#                     averaging with its transpose removes accumulation
+#                     asymmetry without changing the represented object;
+#   relative ridge  - delta * tr(C)/d * I, the scale- and
+#                     dimension-aware form derived for the reset ridge
+#                     (registry gap A5). This DOES shift the computed
+#                     factor and is therefore a numerics-altering
+#                     protection; its non-harm evaluation is recorded in
+#                     the campaign ledger. An absolute floor was rejected
+#                     here: it silently expires as cloud scale grows.
+#
+# The ridge tangent (delta * tr(dC)/d * I) is returned alongside so the
+# hand-derived JVP differentiates the matrix that was actually factored.
+RELATIVE_PSD_FLOOR = 1.0e-12
+
+
+def _relative_psd_covariance(
+    covariance: tf.Tensor,
+    covariance_tangent: tf.Tensor,
+    *,
+    relative_floor: float = RELATIVE_PSD_FLOOR,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Symmetrize and relatively-ridge a covariance and its tangent."""
+
+    symmetric = _sym(covariance)
+    dtype = symmetric.dtype
+    dim = tf.cast(tf.shape(symmetric)[-1], dtype)
+    eye = tf.eye(tf.shape(symmetric)[-1], dtype=dtype)
+    delta = tf.cast(relative_floor, dtype)
+    scale = tf.linalg.trace(symmetric) / dim
+    ridged = symmetric + delta * scale * eye
+    symmetric_tangent = _sym_tangent(covariance_tangent)
+    scale_tangent = (
+        tf.einsum("iip->p", symmetric_tangent) / dim
+    )
+    ridged_tangent = symmetric_tangent + (
+        delta * eye[:, :, None] * scale_tangent[None, None, :]
+    )
+    return ridged, ridged_tangent
+
+
 def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
     parameter_count = tf.shape(matrix_tangent)[-1]
     batched_chol = tf.broadcast_to(
@@ -200,6 +251,9 @@ def weighted_shape_targets_jvp(
     mean, covariance, mean_tangent, covariance_tangent = _weighted_moments_jvp(
         points, weights, points_tangent, weights_tangent
     )
+    covariance, covariance_tangent = _relative_psd_covariance(
+        covariance, covariance_tangent
+    )
     chol = tf.linalg.cholesky(covariance)
     chol_tangent = _cholesky_jvp(chol, covariance_tangent)
     skew, kurtosis, skew_tangent, kurtosis_tangent = _weighted_diag_moments_jvp(
@@ -253,10 +307,18 @@ def affine_restore_cloud_jvp(
     current_mean, current_cov, current_mean_tangent, current_cov_tangent = (
         _uniform_moments_jvp(points, points_tangent)
     )
-    target_chol = tf.linalg.cholesky(target_cov)
-    current_chol = tf.linalg.cholesky(current_cov)
-    target_chol_tangent = _cholesky_jvp(target_chol, target_cov_tangent)
-    current_chol_tangent = _cholesky_jvp(current_chol, current_cov_tangent)
+    # Class-B guard (2026-08-27): annealed concentration can collapse the
+    # covariances in the affine restore; apply relative ridge to both.
+    target_cov_safe, target_cov_tangent_safe = _relative_psd_covariance(
+        target_cov, target_cov_tangent, relative_floor=RELATIVE_PSD_FLOOR
+    )
+    current_cov_safe, current_cov_tangent_safe = _relative_psd_covariance(
+        current_cov, current_cov_tangent, relative_floor=RELATIVE_PSD_FLOOR
+    )
+    target_chol = tf.linalg.cholesky(target_cov_safe)
+    current_chol = tf.linalg.cholesky(current_cov_safe)
+    target_chol_tangent = _cholesky_jvp(target_chol, target_cov_tangent_safe)
+    current_chol_tangent = _cholesky_jvp(current_chol, current_cov_tangent_safe)
     centered = points - current_mean[None, :]
     centered_tangent = points_tangent - current_mean_tangent[None, :, :]
     standardized = _right_solve(current_chol, centered)
@@ -320,6 +382,9 @@ def _standardize_uniform_jvp(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
         points, points_tangent
+    )
+    covariance, covariance_tangent = _relative_psd_covariance(
+        covariance, covariance_tangent
     )
     chol = tf.linalg.cholesky(covariance)
     chol_tangent = _cholesky_jvp(chol, covariance_tangent)
@@ -734,6 +799,9 @@ def _shape_iteration_jvp(
     mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
         points, points_tangent
     )
+    covariance, covariance_tangent = _relative_psd_covariance(
+        covariance, covariance_tangent
+    )
     chol = tf.linalg.cholesky(covariance)
     chol_tangent = _cholesky_jvp(chol, covariance_tangent)
     centered = points - mean[None, :]
@@ -987,6 +1055,9 @@ def higher_moment_shape_jvp(
     state_dim = tf.shape(source)[1]
     mean, covariance, mean_tangent, covariance_tangent = _weighted_moments_jvp(
         source, weights, source_tangent, weights_tangent
+    )
+    covariance, covariance_tangent = _relative_psd_covariance(
+        covariance, covariance_tangent
     )
     target_chol = tf.linalg.cholesky(covariance)
     target_chol_tangent = _cholesky_jvp(target_chol, covariance_tangent)
@@ -1249,8 +1320,11 @@ def higher_moment_shape_jvp(
 
     # Initialize the loop state with a standardization of the input cloud.
     initial_mean, initial_cov, initial_mean_tangent, initial_cov_tangent = _uniform_moments_jvp(points, points_tangent)
-    initial_chol = tf.linalg.cholesky(initial_cov)
-    initial_chol_tangent = _cholesky_jvp(initial_chol, initial_cov_tangent)
+    initial_cov_safe, initial_cov_tangent_safe = _relative_psd_covariance(
+        initial_cov, initial_cov_tangent, relative_floor=RELATIVE_PSD_FLOOR
+    )
+    initial_chol = tf.linalg.cholesky(initial_cov_safe)
+    initial_chol_tangent = _cholesky_jvp(initial_chol, initial_cov_tangent_safe)
     initial_standardized = _right_solve(initial_chol, points - initial_mean[None, :])
     initial_standardized_tangent = _right_solve_jvp(
         initial_chol, initial_chol_tangent, points - initial_mean[None, :], points_tangent - initial_mean_tangent[None, :, :]

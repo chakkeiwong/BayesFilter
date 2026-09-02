@@ -36,6 +36,7 @@ from bayesfilter.inference.hmc_verification import (
 )
 from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
 from bayesfilter.inference.posterior_adapter import value_score_capability
+from bayesfilter.inference.tuning_contract import HMC_TUNING_ORDINARY_RHAT_THRESHOLD
 
 
 _PROCESS_LOCAL_SIGNATURE_PATTERNS = (
@@ -1003,7 +1004,7 @@ class SequentialRHatHMCVerificationConfig:
     seed: tuple[int, int]
     min_retained_results_for_pass: int | None = None
     chain_count: int = 4
-    rhat_threshold: float = 1.01
+    rhat_threshold: float = HMC_TUNING_ORDINARY_RHAT_THRESHOLD
     acceptance_policy: HMCAcceptancePolicy = field(
         default_factory=HMCAcceptancePolicy
     )
