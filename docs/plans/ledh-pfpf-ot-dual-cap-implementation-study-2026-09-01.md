@@ -1,8 +1,8 @@
 # LEDH-PFPF-OT Dual-Cap Trust-Region Implementation Study
 
 **Date:** 2026-09-01  
-**Updated:** 2026-09-02 (Phase 3 complete)  
-**Status:** PHASE_3_COMPLETE_AUSTRIA_SIR_TUNED  
+**Updated:** 2026-09-03 (Phase 4 complete)  
+**Status:** PHASE_4_COMPLETE_ALL_MODELS_TUNED  
 **Owner:** chakwong
 
 ## Research Question
@@ -389,17 +389,15 @@ For each active model (Austria SIR, SV variants, LGSSM, Predator-Prey):
 
 **Completion memo:** `docs/memos/ledh-trust-region-phase3-complete-2026-09-02.md`
 
-### Phase 4: Full Model Tuning (Long Campaign) — IN PROGRESS
+### Phase 4: Full Model Tuning (Long Campaign) — ✅ COMPLETE
 
-**Status**: 1 of 4 models complete
+**Status**: 4 of 4 models complete (2026-09-03)
 
 **Completed**:
-1. ✅ Austria SIR T20 — trust-region tuning complete (Phase 3)
-
-**Remaining**:
-2. ❌ LGSSM T50 — trust-region tuning required
-3. ❌ KSC SV T10 — trust-region tuning required
-4. ❌ Predator-Prey T20 — trust-region tuning required
+1. ✅ Austria SIR T20 — trust-region tuning complete (Phase 3, 2026-09-02)
+2. ✅ LGSSM T50 — trust-region tuning complete (Phase 4, 2026-09-03, 369s wall time)
+3. ✅ KSC SV T10 — trust-region tuning complete (Phase 4, 2026-09-03, 228s wall time)
+4. ✅ Predator-Prey T20 — trust-region tuning complete (Phase 4, 2026-09-03, 359s wall time)
 
 **Protocol**: Each model requires identical Phase 3-style campaign:
 - 3 arms: baseline, dual-cap primal, trust-region grid (27 configs)
@@ -408,14 +406,25 @@ For each active model (Austria SIR, SV variants, LGSSM, Predator-Prey):
 - Validity gates: finite, program_valid, residuals ≤ 5.0e-4, displacement ≤ 2.0
 - Output: model-specific trust-region tuning artifact
 
-**Next action**: Duplicate Phase 3 runner for next model (recommend LGSSM T50)
+**Selected configuration (all 4 models):**
+- `damping=0.001, scale_floor=1e-06, radius=0.1`
+- Label: `d1e-03_f1e-06_r0.1`
+- All 27 configs passed validity gates (100% pass rate across all models)
 
-1. Tune dual-cap for all active models under canonical program
-2. Record artifacts with exact scope signatures
-3. Update model-specific configurations to reference tuning artifacts
-4. Gate claim-bearing runs on tuning-scope match
+**Tuning artifacts:**
+1. `docs/benchmarks/artifacts/ledh_trust_region_austria_sir_t20_20260902/result.json`
+2. `docs/benchmarks/artifacts/ledh_trust_region_lgssm_t50_20260903/result.json`
+3. `docs/benchmarks/artifacts/ledh_trust_region_ksc_sv_t10_20260903/result.json`
+4. `docs/benchmarks/artifacts/ledh_trust_region_predator_prey_t20_20260903/result.json`
 
-**Status**: 1 of 4 models complete (Austria SIR T20). See Phase 4 for remaining work.
+**Next action**: Phase 5 (Safety Evaluation) or claim-seed validation runs
+
+1. Tune dual-cap for all active models under canonical program ✅ COMPLETE
+2. Record artifacts with exact scope signatures ✅ COMPLETE
+3. Update model-specific configurations to reference tuning artifacts — NEXT
+4. Gate claim-bearing runs on tuning-scope match — NEXT
+
+**Status**: 4 of 4 models complete. Phase 4 tuning campaign finished 2026-09-03.
 
 ### Phase 5: Safety Evaluation (Mandatory Class C)
 
