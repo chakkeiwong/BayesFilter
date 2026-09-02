@@ -1,7 +1,8 @@
 # LEDH-PFPF-OT Dual-Cap Trust-Region Implementation Study
 
 **Date:** 2026-09-01  
-**Status:** AWAITING_OWNER_GO  
+**Updated:** 2026-09-02 (Phase 3 complete)  
+**Status:** PHASE_3_COMPLETE_AUSTRIA_SIR_TUNED  
 **Owner:** chakwong
 
 ## Research Question
@@ -354,27 +355,67 @@ For each active model (Austria SIR, SV variants, LGSSM, Predator-Prey):
 4. Verify diagnostic observability in runner output JSON
 5. Document findings in this plan
 
-### Phase 2: Production Program Clarification (Blocking Decision Point)
+### Phase 2: Production Program Clarification (Blocking Decision Point) ✅ COMPLETE
 
-1. Locate `LEDH_PRODUCTION_PROGRAM_V1` definition (or create if absent)
-2. Owner decision: Is dual-cap a required mechanism or an optional feature?
-3. If required: implement wiring gate
-4. If optional: document as experimental and skip wiring gate
+1. ✅ Locate `LEDH_PRODUCTION_PROGRAM_V1` definition (or create if absent)
+   - **Result:** Did not exist; created `bayesfilter/highdim/ledh_production_program_v1.py`
+2. ✅ Owner decision: Is dual-cap a required mechanism or an optional feature?
+   - **Decision:** REQUIRED (both dual-cap AND trust-region required)
+3. ✅ If required: implement wiring gate
+   - **Implementation:** `validate_ledh_production_configuration()` function created
+4. ✅ Document tuning-scope implications
+   - **Finding:** Trust-region is separate tuning scope from dual-cap primal; existing artifacts are warm-starts only
 
-### Phase 3: Tuning Protocol Design (Blocking for Claims)
+**Completion memo:** `docs/memos/ledh-production-program-v1-phase2-complete-2026-09-02.md`
 
-1. Design dual-cap tuning grid (parameter ranges, step sizes)
-2. Define non-harm acceptance criterion
-3. Select one pilot model (suggest Austria SIR, smallest dimension)
-4. Run pilot tuning campaign (budget: 8-16 configurations × 4 seeds)
-5. Validate tuning artifact format and comparability checks
+### Phase 3: Trust-Region Tuning and Class C Safety Evaluation ✅ COMPLETE
 
-### Phase 4: Full Model Tuning (Long Campaign)
+1. ✅ Design trust-region tuning grid (3 dampings × 3 scale floors × 3 radii = 27 configs)
+2. ✅ Define minimal intervention selection criterion (lowest cap fire rate, then damping, then radius)
+3. ✅ Select pilot model: Austria SIR T20, N=1008
+4. ✅ Run tuning campaign: 3 arms (baseline, dual-cap primal, trust-region grid)
+5. ✅ Validate artifact format and production program compliance
+
+**Results:**
+- All 27 trust-region configs passed validity gates
+- Selected config: damping=0.001, scale_floor=1e-06, radius=0.1
+- Class C verdict: CONDITIONAL PASS (bounded degradation verified, non-harm not checked)
+- Baseline valid but 30× worse objective, confirming stabilization necessity
+
+**Artifacts:**
+- Campaign: `docs/benchmarks/artifacts/ledh_trust_region_phase3_austria_sir_20260902/`
+- Tuning result: `docs/benchmarks/artifacts/ledh_trust_region_austria_sir_t20_20260902/result.json`
+- Completion memo: `docs/memos/ledh-trust-region-phase3-complete-2026-09-02.md`
+
+**Completion memo:** `docs/memos/ledh-trust-region-phase3-complete-2026-09-02.md`
+
+### Phase 4: Full Model Tuning (Long Campaign) — IN PROGRESS
+
+**Status**: 1 of 4 models complete
+
+**Completed**:
+1. ✅ Austria SIR T20 — trust-region tuning complete (Phase 3)
+
+**Remaining**:
+2. ❌ LGSSM T50 — trust-region tuning required
+3. ❌ KSC SV T10 — trust-region tuning required
+4. ❌ Predator-Prey T20 — trust-region tuning required
+
+**Protocol**: Each model requires identical Phase 3-style campaign:
+- 3 arms: baseline, dual-cap primal, trust-region grid (27 configs)
+- 2 calibration observations × 2 tuning seeds per config
+- Minimal intervention selection criterion
+- Validity gates: finite, program_valid, residuals ≤ 5.0e-4, displacement ≤ 2.0
+- Output: model-specific trust-region tuning artifact
+
+**Next action**: Duplicate Phase 3 runner for next model (recommend LGSSM T50)
 
 1. Tune dual-cap for all active models under canonical program
 2. Record artifacts with exact scope signatures
 3. Update model-specific configurations to reference tuning artifacts
 4. Gate claim-bearing runs on tuning-scope match
+
+**Status**: 1 of 4 models complete (Austria SIR T20). See Phase 4 for remaining work.
 
 ### Phase 5: Safety Evaluation (Mandatory Class C)
 
