@@ -2,7 +2,8 @@
 
 **Program ID:** `RQMC_LEDH_INIT_V1`  
 **Date:** 2026-09-02  
-**Status:** ACTIVE  
+**Updated:** 2026-09-03 (Phase 1 complete)  
+**Status:** ACTIVE - PHASE_1_COMPLETE_READY_FOR_PHASE_0_COMPLETION  
 **Owner:** chakwong
 
 ## Research Goal
@@ -80,11 +81,11 @@ All arms use identical LEDH-PFPF-OT dual-cap trust-region route after initializa
 - Dual-cap controls: inherited from dual-cap primal tuning
 - Trust-region controls: damping, scale_floor, radius
 
-**Tuning status (as of 2026-09-02):**
+**Tuning status (as of 2026-09-03):**
 - ✅ Austria SIR T20: tuning artifact exists (`docs/benchmarks/artifacts/ledh_trust_region_austria_sir_t20_20260902/result.json`)
-- ❌ LGSSM T50: trust-region tuning required
-- ❌ KSC SV T10: trust-region tuning required
-- ❌ Predator-Prey T20: trust-region tuning required
+- ✅ LGSSM T50: tuning artifact exists (`docs/benchmarks/artifacts/ledh_trust_region_lgssm_t50_20260903/result.json`)
+- ✅ KSC SV T10: tuning artifact exists (`docs/benchmarks/artifacts/ledh_trust_region_ksc_sv_t10_20260903/result.json`)
+- ✅ Predator-Prey T20: tuning artifact exists (`docs/benchmarks/artifacts/ledh_trust_region_predator_prey_t20_20260903/result.json`)
 
 **Tuning protocol:** Identical Phase 3-style campaign from `ledh-trust-region-tuning-safety-evaluation-phase3-2026-09-02.md`:
 - 3 arms: baseline (no dual-cap), dual-cap primal, trust-region grid (27 configs)
@@ -172,7 +173,7 @@ Recorded per arm per model per seed, not used for promotion/veto:
 
 **Note:** Phase 1 (tuning) can proceed in parallel with completing Phase 0 items 3-7, since tuning only requires the template (item 2). Phase 0 must be complete before Phase 2 starts.
 
-### Phase 1: Trust-Region Tuning (BLOCKING) — IN PROGRESS
+### Phase 1: Trust-Region Tuning (BLOCKING) — ✅ COMPLETE
 
 **Objective:** Generate per-scope trust-region tuning artifacts for all 3 test models.
 
@@ -183,21 +184,33 @@ Recorded per arm per model per seed, not used for promotion/veto:
 - Output: model-specific tuning artifact JSON
 
 **Models:**
-1. ❌ LGSSM T50 — trust-region tuning required (next)
-2. ❌ KSC SV T10 — trust-region tuning required
-3. ❌ Predator-Prey T20 — trust-region tuning required
+1. ✅ LGSSM T50 — trust-region tuning complete (2026-09-03, 369s wall time)
+2. ✅ KSC SV T10 — trust-region tuning complete (2026-09-03, 228s wall time)
+3. ✅ Predator-Prey T20 — trust-region tuning complete (2026-09-03, 359s wall time)
 
 **Completion criteria per model:**
-- [ ] Campaign completes with ≥1 passing trust-region config (≥1/27 valid)
-- [ ] Selected config improves on dual-cap primal or is statistically indistinguishable
-- [ ] Tuning artifact JSON written with exact scope signature
-- [ ] Completion memo documents selection and Class C verdict
+- [x] Campaign completes with ≥1 passing trust-region config (≥1/27 valid)
+- [x] Selected config improves on dual-cap primal or is statistically indistinguishable
+- [x] Tuning artifact JSON written with exact scope signature
+- [x] Completion memo documents selection and Class C verdict
 
-**Budget:** ~380 seconds per model (GPU, from Austria SIR precedent) = ~20 minutes total
+**Results:**
+- All 27 configs passed validity gates (100% pass rate) for all 3 models
+- All models selected identical configuration: damping=0.001, scale_floor=1e-06, radius=0.1
+- Class C verdict: CONDITIONAL PASS (bounded degradation verified, non-harm not checked)
 
-**Continuation veto:** If >1 model fails to produce ≥1 valid trust-region config after the 27-config grid, stop and diagnose. Do not proceed to Phase 2.
+**Artifacts:**
+1. `docs/benchmarks/artifacts/ledh_trust_region_lgssm_t50_20260903/result.json`
+2. `docs/benchmarks/artifacts/ledh_trust_region_ksc_sv_t10_20260903/result.json`
+3. `docs/benchmarks/artifacts/ledh_trust_region_predator_prey_t20_20260903/result.json`
 
-**Status:** 0 of 3 models complete
+**Completion memo:** `docs/memos/ledh-trust-region-phase4-complete-2026-09-03.md`
+
+**Budget:** ~380 seconds per model (GPU, from Austria SIR precedent) = ~20 minutes total — ACTUAL: 956 seconds total (16 minutes)
+
+**Continuation veto:** None fired. All models produced valid trust-region configs.
+
+**Status:** 3 of 3 models complete (2026-09-03)
 
 ### Phase 2: RQMC Claim-Bearing Runs (BLOCKING)
 
