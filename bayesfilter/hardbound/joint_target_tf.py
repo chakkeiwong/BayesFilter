@@ -18,10 +18,22 @@ from bayesfilter.hardbound import model_tf
 _LOG2PI = tf.constant(1.8378770664093453, DTYPE)
 
 # Priors (master program Sec. 2, frozen).
+#
+# For the identification audit, displaced +3 standard deviations from truth.
+# Truth-centred values retained for reference:
+#   PRIOR_THETA_MEAN_TRUTH = [0.02, -0.01, 0.005, 0.015, -0.008, 0.004]
+#   PRIOR_LOG_NOISE_MEAN_TRUTH = [-7.600902459542082] * 3
+#
+# Under approximate Gaussian conjugacy, posterior_mean ≈
+#   (var_ratio * truth + prior_mean) / (1 + var_ratio),
+# so posterior shift ≈ prior_displacement / var_ratio.  At var_ratio 55-105
+# for theta0-5, the shift is <3%; at var_ratio 2.0 for theta8, shift ~50%.
 PRIOR_THETA_MEAN = tf.constant(
-    [0.02, -0.01, 0.005, 0.015, -0.008, 0.004], DTYPE)
+    [0.02 + 3*0.02, -0.01 + 3*0.02, 0.005 + 3*0.02,
+     0.015 + 3*0.02, -0.008 + 3*0.02, 0.004 + 3*0.02], DTYPE)
 PRIOR_THETA_SD = tf.constant([0.02] * 6, DTYPE)
-PRIOR_LOG_NOISE_MEAN = tf.constant([-7.600902459542082] * 3, DTYPE)  # log 5e-4
+PRIOR_LOG_NOISE_MEAN = tf.constant(
+    [(-7.600902459542082 + 3*0.5)] * 3, DTYPE)  # log 5e-4 + 3 sd
 PRIOR_LOG_NOISE_SD = tf.constant([0.5] * 3, DTYPE)
 
 # Prior location/scale stacked in the 9-dim chart order (6 theta_bar, then 3

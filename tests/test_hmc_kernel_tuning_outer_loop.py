@@ -524,8 +524,20 @@ def _historical_phase5_stage(
             "algorithm": "historical_fixed_mass_step_fixture",
             "candidate_count": 0,
             "historical_phase5_compatibility_fixture": True,
+            # A historical fixture must not retain the repaired operational
+            # manifest.  Keeping that manifest would claim generic-grid work
+            # while deliberately bypassing the candidate batch.
+            "operational_joint_l_epsilon_route": False,
+            "operational_route_marker": None,
+            "operational_budget_policy_id": None,
+            "operational_budget_policy_hash": None,
+            "public_work_manifest_hash": None,
+            "private_work_manifest_hash": None,
+            "executed_work_reconciliation": None,
         },
         _candidate_batch_handoff=None,
+        _operational_private_work_manifest=None,
+        _operational_public_work_manifest=None,
     )
 
 
@@ -6937,7 +6949,9 @@ def test_outer_loop_out_of_band_historical_acceptance_reenters_full_stages() -> 
         diagnostics = _sequential_verification_diagnostics(
             acceptance,
             draw_count=max(64, int(budget_policy.verification_num_results)),
-            rhat_passed=False,
+            # The historical fixture models an acceptance-triggered repair on
+            # attempt zero and a fully passing verification on attempt one.
+            rhat_passed=len(verification_calls) > 1,
         )
         status, role, hard_vetoes, repair_triggers = (
             hmc_kernel_tuning._classify_phase7_final_verification(

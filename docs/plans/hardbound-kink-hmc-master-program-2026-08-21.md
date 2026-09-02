@@ -343,3 +343,67 @@ Two amendments, owner-approved 2026-08-26 after the diagnosis was presented:
 Both are sampler-geometry repairs. Neither changes the target, the fixture,
 the priors, the bound, or any gate threshold, and neither licenses a claim
 about posterior correctness beyond what G2.3 itself tests.
+
+### A3 (2026-08-26, fixed-trajectory HMC kernel)
+
+The Sec. 1 kernel row (line 55) pre-approved `tfp.mcmc.NoUTurnSampler` with
+`DualAveragingStepSizeAdaptation` for the hardbound suite. Execution showed
+two issues:
+
+1. **Performance.** User observation: "the current Tensorflow version of NUTS
+   is extremely slow." NUTS tree building and backtracking scale poorly for the
+   hardbound target at T=40, 337 dimensions, and C1-only kink gradients.
+
+2. **Policy violation.** Repository-wide codified NUTS policy at
+   `bayesfilter/inference/fixed_trajectory_hmc_tuning_v2.py` lines 130-134
+   raises on any NUTS tuning request with message:
+   "NUTS is reference/diagnostic only, not a tuning/default remedy;
+   fixed-trajectory HMC tuning must use HamiltonianMonteCarlo."
+   An approved project-scoped NUTS block also exists at
+   `docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase5-nuts-readiness-result-2026-06-16.md`
+   line 5 status `BLOCK_NUTS_NOT_READY_REVIEWED`.
+
+3. **Misapplied acceptance target.** Sec. 6 line 259 prescribed "Lower target
+   accept stat to 0.9/0.95" *conditionally* on "NUTS divergences from kink
+   gradient jumps near heavy binding." Measured G2.3 evidence: sampling
+   divergences were 0/12000 in every tested warmup/shrinkage arm (warmup
+   4000/6000/8000, λ 0.05/0.1/0.15), so the divergence condition never fired.
+   Yet `target_accept=0.95` was applied unconditionally, producing step sizes
+   5.99e-4 to 9.19e-4, tree-depth saturation at 2^max_tree_depth=1024, and
+   high acceptance with poor mixing. R-hat worsened monotonically with more
+   adaptation toward the 0.95-optimal small step size: warmup 4000 → 1.0196
+   (λ=0.1), 6000 → 1.0273, 8000 → 1.0315. Repository standard is target 0.70,
+   band (0.65, 0.75) per
+   `FIXED_TRAJECTORY_HMC_V2_ACCEPTANCE_BAND`.
+
+Amended kernel row (line 55 scope, entire hardbound suite):
+
+- Kernel: `tfp.mcmc.HamiltonianMonteCarlo` (fixed-trajectory HMC) with
+  `DualAveragingStepSizeAdaptation` during warmup. Explicit
+  `num_leapfrog_steps` selected via manual tuning ladder for G2.3 (which
+  requires non-identity mass under A2); identity-mass fixtures may use the v2
+  tuning protocol in `bayesfilter/inference/fixed_trajectory_hmc_tuning_v2.py`
+  once v2 is extended beyond its current identity-mass-only constraint (lines
+  137-141).
+- Acceptance target: 0.70 with band (0.65, 0.75), applied unconditionally.
+- Observability: trace must capture `is_accepted`, `log_accept_ratio`, and
+  `step_size` directly from `kernel_results` (no unwrapping).
+- Preserved constraints: thin local runner, no entanglement with the
+  NeuTra/route-ledger stack, fixed seed streams per the original line 55.
+
+Pre-approved dense mass matrix policy (A2 `PreconditionedNoUTurnSampler` with
+diagonal adaptation for G2.3) remains available for optional use with
+fixed-trajectory HMC via `tfp.experimental.mcmc.PreconditionedHamiltonianMonteCarlo`
+(verified present in TFP 0.25.0, `momentum_distribution` slot confirmed) under
+the same diagonal/windowed policy. The windowed implementation at
+`bayesfilter/hardbound/windowed_dense_mass_adaptation.py` line 306 currently
+hardcodes `PreconditionedNoUTurnSampler` and will need adaptation:
+- Replace kernel with `PreconditionedHamiltonianMonteCarlo` plus explicit
+  `num_leapfrog_steps`
+- Change [_nuts_results](bayesfilter/hardbound/windowed_dense_mass_adaptation.py#L279-L282) unwrapping to direct access
+  (`kernel_results.is_accepted`, `kernel_results.log_accept_ratio`)
+- HMC divergence detection is `nonfinite_log_accept_ratio` per
+  `fixed_trajectory_hmc_tuning_v2.py` line 209, not `has_divergence` field
+
+This amendment corrects the kernel family and acceptance target; it does not
+alter the mass adaptation decisions recorded in A2.
