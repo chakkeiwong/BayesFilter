@@ -468,7 +468,7 @@ def run(output_root: Path) -> dict[str, Any]:
             "python": platform.python_version(),
             "tensorflow": tf.__version__,
             "plan": PLAN.as_posix(),
-            "output_json": str((output_root / "result.json").relative_to(ROOT)),
+            "output_json": str((ROOT / output_root / "result.json").relative_to(ROOT)),
         },
     }
 
