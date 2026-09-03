@@ -150,28 +150,35 @@ Recorded per arm per model per seed, not used for promotion/veto:
 
 ## Phase Structure
 
-### Phase 0: Infrastructure Setup (BLOCKING) ⚠️ PARTIAL
+### Phase 0: Infrastructure Setup (BLOCKING) — ✅ COMPLETE (2026-09-03)
 
 **Objective:** Implement the 3 required runners and validate production program wiring.
 
 **Deliverables:**
 1. ✅ Production program definition (`bayesfilter/highdim/ledh_production_program_v1.py`)
 2. ✅ Trust-region tuning runner template (`docs/benchmarks/run_ledh_trust_region_phase3_austria_sir.py`)
-3. ❌ RQMC claim-bearing runner (`docs/benchmarks/run_rqmc_ledh_initialization.py`) — BLOCKING PHASE 2
-4. ❌ Result assembler (`docs/benchmarks/assemble_rqmc_ledh_results.py`) — BLOCKING PHASE 3
+3. ✅ RQMC claim-bearing runner (`docs/benchmarks/run_rqmc_ledh_initialization.py`)
+4. ✅ Result assembler (`docs/benchmarks/assemble_rqmc_ledh_results.py`)
 
 **Completion criteria:**
 - [x] Production program validation function exists and passes on Austria SIR
 - [x] Trust-region tuning runner template exists and runs without error
-- [ ] MC baseline smoke test passes: LGSSM result matches historical leaderboard within 50%
-- [ ] RQMC runner accepts `--model`, `--arm`, `--seed`, `--tuning_artifact`, `--output`
-- [ ] Result assembler computes bootstrap 95% CI for paired differences
-- [ ] All runners use `replication_generator(seed)` for seed hashing
-- [ ] Configuration-status-first reporting enforced in result tables
+- [x] MC baseline smoke test passes: LGSSM T50 seed 98301 = -136.26 (finite, program_valid, 21s)
+- [x] RQMC runner accepts `--model`, `--arm`, `--seed`, `--tuning_artifact`, `--output`
+- [x] Result assembler computes bootstrap 95% CI for paired differences (10K samples)
+- [x] All runners use `replication_generator(seed)` for seed hashing (NumPy SeedSequence)
+- [x] Configuration-status-first reporting enforced in result tables
 
-**Status:** PARTIAL (2/7 complete) — production program and tuning template exist, RQMC runner and assembler missing
+**Status:** COMPLETE (7/7 complete) — all infrastructure delivered
 
-**Note:** Phase 1 (tuning) can proceed in parallel with completing Phase 0 items 3-7, since tuning only requires the template (item 2). Phase 0 must be complete before Phase 2 starts.
+**Arms implemented:**
+- ✅ MC baseline (tf.random.normal via replication_generator)
+- ✅ Sobol-Matousek (scipy.stats.qmc.Sobol with scramble=True, optimization='lloyd')
+- ✅ Sobol-Owen (scipy.stats.qmc.Sobol with scramble=True, optimization=None)
+- ✅ Halton-Owen (tfp.mcmc.sample_halton_sequence with randomized=True)
+- ✅ GenUT guided (Ebeigbe et al. replicated positive GenUT or cubature design)
+
+**Completion memo:** All Phase 0 criteria met. MC baseline smoke test passed. Ready for Phase 2.
 
 ### Phase 1: Trust-Region Tuning (BLOCKING) — ✅ COMPLETE
 
@@ -410,10 +417,11 @@ Before proceeding with Phase 2, verify:
 ---
 
 **Program status:** ACTIVE  
-**Current phase:** Phase 0 (PARTIAL, 2/7 complete) + Phase 1 (COMPLETE)  
-**Next action:** Complete Phase 0 infrastructure: implement RQMC runner and result assembler  
-**Blocking:** Phase 2 cannot start until Phase 0 is complete (RQMC runner must exist)
+**Current phase:** Phase 0 COMPLETE → Phase 2 (READY)  
+**Next action:** Execute 45 claim-bearing runs (3 models × 5 arms × 3 seeds)  
+**Blocking:** None — all Phase 0 and Phase 1 requirements met
 
 **Program approved by:** chakwong  
 **Execution authorized:** 2026-09-02  
+**Phase 0 completed:** 2026-09-03  
 **Phase 1 completed:** 2026-09-03

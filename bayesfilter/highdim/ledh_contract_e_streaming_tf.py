@@ -1233,31 +1233,35 @@ def _contract_e_streaming_jvp_core(
         col_chunk_size=col_chunk_size,
     )
     parameter_count = tf.shape(source_particles_tangent)[3]
-    output_signature = tf.TensorSpec(
-        shape=source_particles.shape, dtype=source_particles.dtype
-    )
 
     def one_direction(index: tf.Tensor) -> tf.Tensor:
+        # Closure capture for tf.vectorized_map traced function
+        _source_particles = source_particles
+        _normalized_weights = normalized_weights
+        _quotient_particles = quotient["particles"]
+        _residual_design = residual_design
+        _ridge = ridge
+        _source_particles_tangent = source_particles_tangent
+        _normalized_weights_tangent = normalized_weights_tangent
+        _quotient_particles_tangent = quotient["particles_tangent"]
+        _residual_design_tangent = residual_design_tangent
+        _ridge_tangent = ridge_tangent
+
         return _contract_e_chol_cloud_jvp_core(
-            source_particles,
-            normalized_weights,
-            quotient["particles"],
-            residual_design,
-            ridge,
-            source_particles_tangent[:, :, :, index],
-            normalized_weights_tangent[:, :, index],
-            quotient["particles_tangent"][:, :, :, index],
-            residual_design_tangent[:, :, :, index],
-            ridge_tangent[:, index],
+            _source_particles,
+            _normalized_weights,
+            _quotient_particles,
+            _residual_design,
+            _ridge,
+            _source_particles_tangent[:, :, :, index],
+            _normalized_weights_tangent[:, :, index],
+            _quotient_particles_tangent[:, :, :, index],
+            _residual_design_tangent[:, :, :, index],
+            _ridge_tangent[:, index],
         )["particles"]
 
     reset_particles = tf.transpose(
-        tf.map_fn(
-            one_direction,
-            tf.range(parameter_count),
-            fn_output_signature=output_signature,
-            parallel_iterations=1,
-        ),
+        tf.vectorized_map(one_direction, tf.range(parameter_count)),
         [1, 2, 3, 0],
     )
     return {
@@ -1318,32 +1322,37 @@ def _contract_e_streaming_forward_jvp_core(
         ridge,
     )
     parameter_count = tf.shape(source_particles_tangent)[3]
-    output_signature = tf.TensorSpec(
-        shape=source_particles.shape, dtype=source_particles.dtype
-    )
 
     def one_direction(index: tf.Tensor) -> tf.Tensor:
+        # Closure capture for tf.vectorized_map traced function
+        _reset = reset
+        _source_particles = source_particles
+        _normalized_weights = normalized_weights
+        _quotient_particles = quotient["particles"]
+        _residual_design = residual_design
+        _ridge = ridge
+        _source_particles_tangent = source_particles_tangent
+        _normalized_weights_tangent = normalized_weights_tangent
+        _quotient_particles_tangent = quotient["particles_tangent"]
+        _residual_design_tangent = residual_design_tangent
+        _ridge_tangent = ridge_tangent
+
         return _contract_e_chol_cloud_jvp_from_forward_core(
-            reset,
-            source_particles,
-            normalized_weights,
-            quotient["particles"],
-            residual_design,
-            ridge,
-            source_particles_tangent[:, :, :, index],
-            normalized_weights_tangent[:, :, index],
-            quotient["particles_tangent"][:, :, :, index],
-            residual_design_tangent[:, :, :, index],
-            ridge_tangent[:, index],
+            _reset,
+            _source_particles,
+            _normalized_weights,
+            _quotient_particles,
+            _residual_design,
+            _ridge,
+            _source_particles_tangent[:, :, :, index],
+            _normalized_weights_tangent[:, :, index],
+            _quotient_particles_tangent[:, :, :, index],
+            _residual_design_tangent[:, :, :, index],
+            _ridge_tangent[:, index],
         )["particles"]
 
     reset_tangent = tf.transpose(
-        tf.map_fn(
-            one_direction,
-            tf.range(parameter_count),
-            fn_output_signature=output_signature,
-            parallel_iterations=1,
-        ),
+        tf.vectorized_map(one_direction, tf.range(parameter_count)),
         [1, 2, 3, 0],
     )
     return {

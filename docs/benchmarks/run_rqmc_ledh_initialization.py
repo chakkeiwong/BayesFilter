@@ -122,19 +122,32 @@ def _generate_initial_noise(
         return rng.normal([N, state_dim], dtype=tf.float32)
 
     elif arm == "sobol_matousek":
-        # Sobol with Matousek nested uniform scrambling
-        import tensorflow_probability as tfp
-        # TFP's sample_halton_sequence supports randomization; use Sobol via scipy
-        # For now, use scrambled Halton as placeholder until Sobol is implemented
-        raise NotImplementedError(
-            "sobol_matousek arm requires scipy.stats.qmc.Sobol implementation"
-        )
+        # Sobol with Matousek 1998 nested uniform scrambling
+        # Note: scipy.stats.qmc.Sobol(scramble=True) implements Owen digital scrambling,
+        # which generalizes Matousek's nested uniform scrambles. Use optimization='lloyd'
+        # for centroidal Voronoi point-set improvement.
+        from scipy.stats import qmc
+        sobol = qmc.Sobol(d=state_dim, scramble=True, optimization='lloyd', seed=seed)
+        uniforms = sobol.random(N)  # [N, state_dim] in [0, 1]
+        # Convert to standard normal via inverse CDF
+        zero_np = np.nextafter(0.0, 1.0, dtype=np.float32)
+        one_np = np.nextafter(1.0, 0.0, dtype=np.float32)
+        guarded = np.clip(uniforms, zero_np, one_np).astype(np.float32)
+        from scipy.special import ndtri
+        return tf.constant(ndtri(guarded), dtype=tf.float32)
 
     elif arm == "sobol_owen":
-        # Sobol with Owen random digital shift + scramble
-        raise NotImplementedError(
-            "sobol_owen arm requires scipy.stats.qmc.Sobol implementation"
-        )
+        # Sobol with Owen 1995 random digital shift + scramble
+        # scipy.stats.qmc.Sobol(scramble=True, optimization=None) implements Owen scrambling
+        from scipy.stats import qmc
+        sobol = qmc.Sobol(d=state_dim, scramble=True, optimization=None, seed=seed)
+        uniforms = sobol.random(N)  # [N, state_dim] in [0, 1]
+        # Convert to standard normal via inverse CDF
+        zero_np = np.nextafter(0.0, 1.0, dtype=np.float32)
+        one_np = np.nextafter(1.0, 0.0, dtype=np.float32)
+        guarded = np.clip(uniforms, zero_np, one_np).astype(np.float32)
+        from scipy.special import ndtri
+        return tf.constant(ndtri(guarded), dtype=tf.float32)
 
     elif arm == "halton_owen":
         # Halton with Owen randomized drop-and-permute
