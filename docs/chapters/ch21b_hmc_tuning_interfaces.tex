@@ -95,6 +95,11 @@ The ordinary route performs the following linked stages:
     candidate selection.
 \end{enumerate}
 
+Each candidate binds the mass-artifact signature, target scope, coordinates, and
+metric signature.  A mass-signature change invalidates the selection and its
+calibration: the stage emits a hard veto and no final handoff, and fresh tuning
+is required under the new geometry.
+
 For the ordinary configuration, the resolved public variant is
 \texttt{ordinary\_hmc} with algorithm identifier
 \texttt{operational\_paired\_fixed\_trajectory\_selection\_v3}.  The explicit
@@ -238,6 +243,83 @@ transport protocol.  Its Jacobian contribution is zero rather than omitted.
 
 \lstinputlisting[language=Python,caption={Frozen-transport public-tuner invocation.},label={lst:bf-hmc-tuning-fixed-transport}]{examples/hmc_tuning_fixed_transport.py}
 
+\subsection{Joint fixed-transport tuning}
+\label{sec:bf-fixed-transport-joint-tuning}
+
+The artifact-authoritative fixed-transport tuning policy is
+\texttt{measured\_joint\_grid\_v1}.  It treats the step size
+\(\epsilon\) and the leapfrog count \(L\) as a coupled design choice.  A
+configuration therefore supplies a finite, explicit set
+\(E\) of positive step sizes and at least two distinct values of \(L\).  The
+runner measures every pair in \(E\times\mathcal L\) with the same frozen
+transport, target, coordinate identity, chain bank, and fixed-kernel screen.
+The configured maximum candidate count is checked before execution.  No
+result at an unmeasured neighboring step is inferred from a result that was
+measured.
+The dataclass does not silently construct a grid; the no-configuration
+convenience call supplies a small repository baseline and records it as a
+convenience hypothesis rather than target-specific evidence.
+
+For a transition started from \(x\), write
+\begin{equation}
+  a(\epsilon,L\mid x)
+  =\mathbb E\!\left[\min\{1,\exp(-\Delta H)
+      \}\mid x\right]
+\end{equation}
+for the expected Metropolis probability, and let
+\(b(\epsilon,L\mid x)\) denote the probability of a Bernoulli accept/reject
+decision.  The implementation reports the sample mean of the former and the
+sample mean of the latter separately.  Neither quantity is a convergence
+diagnostic.  Candidate selection also records movement, squared jump distance,
+energy/error telemetry, divergence availability, and target/score finiteness;
+their roles are explicit in the tuning artifact.
+
+The distinction is necessary because fixed-length leapfrog dynamics do not
+make \(a(\epsilon,L)\) monotone in \(\epsilon\).  For the unit harmonic
+oscillator, the leapfrog phase is
+\begin{equation}
+  \vartheta(\epsilon)=\arccos(1-\epsilon^2/2),
+  \qquad 0<\epsilon<2,
+\end{equation}
+and a trajectory has phase \(L\vartheta(\epsilon)\).  Values near a return
+phase can have high acceptance and little net movement.  Consequently, a
+factor-of-two increase after a high-acceptance screen (or decrease after a
+low-acceptance screen) is a proposal for another experiment, not evidence
+about that experiment.  The former ladder is retained only as
+\texttt{legacy\_directional\_diagnostic\_v1}; its records are stamped
+\texttt{diagnostic\_only\_legacy\_policy} and cannot be handed to a retained
+sampler.
+
+Under the measured policy, replicated fixed-kernel efficiency evidence is
+collected for every candidate that survives the basic validity screen, then a
+disjoint held-out fixed-kernel run qualifies the nominated pair.  Missing or
+non-finite acceptance and missing retained movement are hard failures.  An
+acceptance value outside the target band is recorded as a repair diagnostic,
+but is not a measured-route validity veto: a target such as 0.70 is an
+efficiency heuristic, not a correctness condition.  The payload labels a
+healthy candidate \texttt{mechanics\_validated}, an efficiency-eligible row
+\texttt{tuning\_candidate}, and leaves \texttt{posterior\_ready} false until a
+separate retained-chain assessment.  Thus acceptance cannot by itself
+establish convergence, correctness, mode discovery, or sampler superiority.
+
+The July 2026 LGSSM validation caller is retained as historical compatibility
+code and explicitly uses \texttt{legacy\_directional\_diagnostic\_v1}.  Its
+one-$L$ ladder can emit diagnostic records but cannot issue an
+artifact-authoritative handoff.  An active caller must provide a reviewed,
+target-specific measured grid before it can issue a claim-bearing result.
+
+The same explicit legacy classification applies to the historical
+fixed-transport benchmark callers in this checkout: the weighted three-mode,
+paper-d100, German reverse-comparator, strong-smooth, defensive analytic,
+banana-repair, replication, q=20 CPU validation, q=20 global-mixing, q=20
+seed-B, and Chart-A six-$L$ scripts.  Their configurations select
+\texttt{FIXED\_TRANSPORT\_HMC\_LEGACY\_DIAGNOSTIC\_POLICY} and the historical
+\texttt{acceptance\_target\_distance} selector, so a bare
+\texttt{passed} value cannot issue a current measured-grid handoff.  A caller
+that is intended to be active must replace that explicit legacy policy with a
+reviewed finite \texttt{step\_size\_candidates} grid and at least two
+\texttt{leapfrog\_grid} values before it can use the measured policy.
+
 \section{Neural-force mechanics inside the ordinary ladder}
 
 \code{run\_full\_chain\_neural\_force\_hmc} consumes a supplied mass
@@ -321,8 +403,9 @@ target, deterministic proposal field, affine geometry, step size, leapfrog
 count, and final state rather than switching to an ordinary exact-gradient
 kernel.  A retained extension names the immediately preceding archive as its
 continuation manifest; BayesFilter verifies that predecessor and resumes from
-its final active-coordinate state.  This is a frozen-mechanics handoff, not
-posterior admission.
+its final active-coordinate state.  This typed archive path is a
+frozen-mechanics handoff, not posterior admission; its binding's
+\code{artifact\_authority=False} cannot be upgraded by a consumer.
 
 An in-memory ordinary result retains private initial and adapted mass arrays;
 its redacted public status does not.  Before process exit,
@@ -335,6 +418,37 @@ both mass signatures.  The corresponding mechanics-payload replay helper
 checks those fields and reconstructs the fixed adapter without invoking tuning
 or HMC.  In contrast, reconstruction from an older serialized tuning payload
 requires the original explicit geometry inputs and private array-bearing data.
+
+\subsection{Replay roles and claim authority}
+\label{sec:bf-hmc-replay-roles}
+
+The compatibility helpers
+\path{build_retained_frozen_kernel_hmc_adapter_from_tuning_payload} and
+\path{build_retained_frozen_kernel_hmc_adapter_from_tuning_result} are
+mechanics-only boundaries, despite their historical names.  New mechanics
+consumers may use the explicit
+\path{build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload}
+and \path{build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result}
+aliases.  A consumer that is eligible to make a claim must instead call one
+of the separately named claim-bearing builders:
+\path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload},
+\path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result},
+or \path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload}.
+
+The claim-bearing boundary requires a repository-issued \code{resolved_policy}
+with an empty \code{claim_bearing_blockers} collection and
+\code{claim_bearing_artifact_authority=True}.  Before reconstruction it
+recomputes the ordinary epsilon/L policy from the repository-owned
+\code{config} (or durable \code{tuning_config}) and compares the embedded
+policy and blocker list.  A caller-edited authority flag or blocker list
+therefore cannot grant authority.  The boundary also checks the persisted
+replay role, so a mechanics-only payload cannot acquire claim authority through
+a caller-supplied flag.  The current ordinary route fails this gate while its
+known NumPy runtime-policy and shared-epsilon selection blockers remain.  The
+durable ordinary helper consequently emits the explicit
+\code{mechanics_only} role, \code{authority_status=mechanics_only_nonclaiming},
+and the source \code{tuning_config}; this describes reusable transition
+mechanics and does not admit posterior or scientific claims.
 
 \begin{longtable}{p{0.20\textwidth}p{0.34\textwidth}p{0.36\textwidth}}
 \toprule

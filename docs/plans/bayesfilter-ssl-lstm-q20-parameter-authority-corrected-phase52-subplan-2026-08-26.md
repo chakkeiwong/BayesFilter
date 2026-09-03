@@ -3,8 +3,9 @@
 Parent: `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md`  
 Version: `v3.4-fresh-paired-uncertainty-replication`  
 Entry gate: Phase 51 report branch `mode_aware_geometry_reduces_between_bank_variability_descriptive`  
-Status: `READY_TRUSTED_RETRY_AFTER_BYTE_PROVENANCE_REPAIR`  
-Long-boundary attempt cap: `24000 s`; measured pre-boundary campaign remainder: `27806.988883054088 s`
+Status: `COMPLETE_CANDIDATE_REJECTED_NEXT_VALID_PHASE_UNDER_BUDGET`  
+Long-boundary attempt cap: `24000 s`; successful boundary wall time: `23316.68617718201 s`  
+Final conservative campaign use: `60316.343009740929 s`; remainder: `4483.656990259071 s`
 
 ## Question and scope
 
@@ -354,3 +355,36 @@ CUDA_VISIBLE_DEVICES=-1 TF_CPP_MIN_LOG_LEVEL=3 TF_FORCE_GPU_ALLOW_GROWTH=true PY
 
 No branch establishes a population limit, posterior law, IID Gaussian law,
 mode-discovery theorem, method superiority, or default readiness.
+
+## Terminal execution and decision
+
+The trusted managed-session boundary completed with status
+`PASS_V3_4_FRESH_PAIRED_BOUNDARY`. Both RTX 4080 SUPER devices were visible,
+memory growth was verified before logical-device initialization, and the
+manifest records TF32, XLA, the exact command, seeds, source hashes, wall time,
+and trust basis `owner_designated_managed_session_visible_gpu_trusted`. All six
+replicates and all 18 arm receipts passed the engineering and numerical gates.
+
+The deterministic CPU-hidden report completed with status
+`PASS_V3_4_FRESH_PAIRED_REPORT` and selected branch
+`fresh_geometry_uncertainty_incompatible`. The 95% upper endpoints for the
+geometry-minus-support range differences were nonpositive for
+`covariance_offdiag_max_abs` and `negative_mode_fraction`, but the endpoint for
+`theta_mean_0` was `0.1823817845 > 0`. The predeclared conjunctive criterion
+therefore failed. The frozen equal-weight geometry is rejected as a
+spread-reduction nominee; the target, harness, and broader mode-aware proposal
+idea are not invalidated.
+
+The terminal records are:
+
+- `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-result-2026-08-28.md`
+- `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-repair-refresh-2026-08-28.md`
+- `docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/q20-paired/result.json`
+- `docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/report/result.json`
+
+The conservative campaign remainder is `4483.656990259071 s`, below the
+observed `5558.9085 s` cost of the prior three-bank boundary alone. It cannot
+fund a scientifically valid phase with disjoint calibration, reference
+construction, and untouched validation. The campaign stops at this genuine
+budget blocker. No Phase 53 is active, and the six Phase 52 banks must not be
+reused for tuning.

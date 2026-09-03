@@ -26,9 +26,9 @@ import tensorflow as tf
 from bayesfilter.inference.batched_value_score import FixedTransportValueScoreAdapter
 from bayesfilter.inference.hmc_kernel_tuning import (
     admitted_kernel_mechanics_payload_from_tuning_result,
-    build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
+    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
     HMCKernelTuningConfig,
-    build_retained_frozen_kernel_hmc_adapter_from_tuning_result,
+    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result,
     tune_hmc_kernel,
 )
 from bayesfilter.inference.hmc_convergence import (
@@ -729,7 +729,7 @@ def run_neutra_end_to_end_cell(
     tuned_adapter = _fixed_transport_adapter(
         bound_adapter, loaded.transport, f"{spec.cell_id}:fixed_neutra_native_tuning"
     )
-    replay = build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
+    replay = build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result(
         adapter=tuned_adapter,
         tuning_result=tuning,
         initial_position=tf.zeros((spec.parameter_dim,), tf.float64),
@@ -966,7 +966,7 @@ def run_neutra_frozen_transport_validation_cell(
         atomic_write_json(replay_path, mechanics)
     else:
         mechanics = _read_mapping(replay_path)
-    replay = build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
+    replay = build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
         adapter=tuned_adapter,
         mechanics_payload=mechanics,
         initial_position=tf.zeros((spec.parameter_dim,), tf.float64),

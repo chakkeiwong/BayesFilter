@@ -3,7 +3,7 @@
 Date: 2026-08-26  
 Version: `v3.4-fresh-paired-uncertainty-replication`  
 Parent terminal record: `docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-master-program-result-2026-08-25.md`  
-Status: `IN_PROGRESS_PHASE52_FRESH_PAIRED_UNCERTAINTY_REPLICATION`
+Status: `CLOSED_PHASE52_CANDIDATE_REJECTED_NEXT_VALID_PHASE_UNDER_BUDGET`
 
 This is an append-only continuation of the closed 2026-08-25 particle-authority
 program. The parent phases and their artifacts are historical evidence and are
@@ -182,7 +182,7 @@ time. Local caps below are ceilings, not additive authority.
 | 49 | Independent-proposal MH depth repair (two versus eight proposals per stage) | Phase 48 report; unchanged target/protocol/proposal and exact replay | `phase49-independent-proposal-depth/` | `PASS_V3_1_INDEPENDENT_MH_DEPTH_REPORT_REPAIR_TRIGGERED` |
 | 50 | Defensive proposal-support repair with non-symmetric independent MH | Phase 49 report; unchanged target/base bridge and exact replay | `phase50-defensive-proposal-support/` | `PASS_V3_2_DEFENSIVE_SUPPORT_REPORT_REPAIR_TRIGGERED` |
 | 51 | Mode-aware proposal-geometry repair with non-symmetric independent MH | Phase 50 report; unchanged target/base bridge, theta measure, and exact replay | `phase51-mode-aware-proposal-geometry/` | `PASS_V3_3_MODE_AWARE_GEOMETRY_REPORT_REPAIR_TRIGGERED` |
-| 52 | Fresh paired uncertainty replication of identity, isotropic support, and mode-aware geometry | Phase 51 descriptive nomination; fresh pilot seeds; unchanged target/measure/depth | `phase52-fresh-paired-uncertainty-replication/` | `IN_PROGRESS` |
+| 52 | Fresh paired uncertainty replication of identity, isotropic support, and mode-aware geometry | Phase 51 descriptive nomination; fresh pilot seeds; unchanged target/measure/depth | `phase52-fresh-paired-uncertainty-replication/` | `PASS_V3_4_REPORT_CANDIDATE_REJECTED` |
 
 After every phase: preserve its unique root; run focused tests; classify the
 failure; apply the adjacent repair note; record wall time and remaining pool;
@@ -456,16 +456,27 @@ Phase 51's result is:
 
 - `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase51-result-2026-08-26.md`
 
-The active version is now `v3.4-fresh-paired-uncertainty-replication`.
-Phase 52 will generate six fresh q=20 pilot banks and run identity,
-isotropic-support, and mode-aware-geometry arms on identical initial clouds and
-resampling streams. It will report paired uncertainty diagnostics without
-pooling rows, tuning on the claim data, changing the q-based bridge, or
-promoting a default.
+The terminal version is `v3.4-fresh-paired-uncertainty-replication`. Phase 52
+generated six fresh q=20 pilot banks and ran identity, isotropic-support, and
+mode-aware-geometry arms on identical initial clouds and resampling streams.
+The engineering and numerical gates passed. The frozen geometry candidate did
+not pass the predeclared uncertainty criterion because the 95% upper endpoint
+for the `theta_mean_0` range difference was positive. This rejects the frozen
+candidate as a spread-reduction nominee; it does not invalidate the target,
+harness, or every mode-aware proposal.
 
-Phase 52's active subplan is:
+Phase 52's subplan and terminal records are:
 
 - `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-subplan-2026-08-26.md`
+- `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-result-2026-08-28.md`
+- `docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-repair-refresh-2026-08-28.md`
+
+The conservative campaign use is `60316.343009740929 s` of `64800 s`, leaving
+`4483.656990259071 s`. This is less than the observed cost of the prior
+three-bank boundary and cannot fund a new reference-anchored phase with
+disjoint calibration and untouched validation. The continuation therefore
+closes at a real budget blocker. No Phase 53 is active; whitening, NeuTra, HMC,
+canonical LEDH, posterior correctness, and default promotion remain closed.
 
 Phase 35's initial result is retained as a superseded diagnostic. Its full-bank
 affine factor did not match the 40-row optimizer measure, so it cannot support

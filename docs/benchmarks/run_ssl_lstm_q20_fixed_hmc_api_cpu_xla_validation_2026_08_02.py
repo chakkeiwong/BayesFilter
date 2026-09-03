@@ -895,6 +895,7 @@ def _run_distributed_canary_supervisor(args: argparse.Namespace) -> int:
 def _run_chart_tuning(args: argparse.Namespace) -> int:
     tf = _configure_tensorflow(args.threads)
     from bayesfilter.inference.fixed_transport_hmc_tuning import (
+        FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
         FixedTransportHMCKernelTuningConfig,
         tune_fixed_transport_hmc_kernel,
     )
@@ -912,6 +913,8 @@ def _run_chart_tuning(args: argparse.Namespace) -> int:
         target_accept_prob=0.70,
         acceptance_band=(0.65, 0.75),
         repair_band=(0.55, 0.85),
+        selection_policy="acceptance_target_distance",
+        selection_replications=1,
         budget_schedule=(8, 16, 32),
         tune_num_results=8,
         screen_num_results=16,
@@ -920,6 +923,7 @@ def _run_chart_tuning(args: argparse.Namespace) -> int:
         verification_num_burnin_steps=16,
         target_status_trace_policy="per_chain_step",
         target_scope=f"{base.target_scope}:claim_tuning_l2",
+        tuning_policy=FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
         use_xla=True,
         output_filename="tuning-result.json",
     )

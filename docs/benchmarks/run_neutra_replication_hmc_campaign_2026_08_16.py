@@ -230,16 +230,22 @@ def _initial_bank(tf_module: Any, dimension: int) -> Any:
 
 
 def _tune_hmc(base_adapter: Any, transport: Any, initial: Any, out: Path, scope: str) -> Mapping[str, Any]:
-    from bayesfilter.inference.fixed_transport_hmc_tuning_tf import FixedTransportHMCKernelTuningConfig, tune_fixed_transport_hmc_kernel
+    from bayesfilter.inference.fixed_transport_hmc_tuning_tf import (
+        FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
+        FixedTransportHMCKernelTuningConfig,
+        tune_fixed_transport_hmc_kernel,
+    )
     cfg = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.05, leapfrog_grid=(3, 5, 10, 15, 20, 25), chain_count=HMC_CHAINS,
         initial_state_bank=tuple(tuple(float(x) for x in row) for row in initial.numpy().tolist()),
-        target_accept_prob=0.70, acceptance_band=(0.55, 0.90), repair_band=(0.40, 0.95), fixed_grid_fallback_acceptance_max=0.95,
+        target_accept_prob=0.70, acceptance_band=(0.55, 0.90), repair_band=(0.40, 0.95),
+        selection_policy="acceptance_target_distance", selection_replications=1, fixed_grid_fallback_acceptance_max=0.95,
         budget_schedule=(32, 64, 128), tune_num_results=16, screen_num_results=64, screen_num_burnin_steps=16,
         verification_num_results=2000, verification_num_burnin_steps=64, require_modern_rank_normalized_verification=True,
         verification_coordinate_system="hmc_coordinates", verification_min_retained_results_per_chain=2000,
         tune_seed_base=(20260816, 55001), screen_seed_base=(20260816, 56001), verification_seed_base=(20260816, 57001),
-        chain_execution_mode="tf_function", use_xla=True, target_scope=scope, output_filename="tuning_result.json",
+        chain_execution_mode="tf_function", use_xla=True, target_scope=scope,
+        tuning_policy=FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY, output_filename="tuning_result.json",
     )
     return tune_fixed_transport_hmc_kernel(base_adapter=base_adapter, fixed_transport=transport, initial_position=initial[0], config=cfg, output_dir=out).payload()
 

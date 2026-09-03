@@ -154,6 +154,7 @@ Frozen transport:
 ```python
 from bayesfilter.inference import (
     FixedTransportHMCKernelTuningConfig,
+    FIXED_TRANSPORT_HMC_MEASURED_POLICY,
     tune_fixed_transport_hmc_kernel,
 )
 ```
@@ -195,6 +196,11 @@ windowed mass adaptation by default, screens the bounded operational
 shared/frozen epsilon and three replications, retunes epsilon at the nominated
 `L`, screens the frozen candidate, runs fresh verification, and applies bounded
 repair.
+
+Each candidate binds the mass-artifact signature, target scope, coordinates, and
+metric signature. A mass-signature change invalidates the selection and its
+calibration; the stage emits a hard veto and no final handoff, so the caller
+must perform fresh tuning under the new geometry.
 
 For `mass_policy="windowed_adaptive"`, geometry hints are tried in this order:
 
@@ -292,6 +298,75 @@ ordinary ESS-disabled status and `1.01` R-hat threshold do not transfer to this
 route. Read the selected fixed-transport configuration and result schema rather
 than borrowing ordinary-tuner thresholds.
 
+### Fixed-transport tuning policy
+
+The artifact-authoritative fixed-transport policy is
+`measured_joint_grid_v1`. A configuration under this policy must explicitly
+declare `step_size_candidates` and at least two distinct values in
+`leapfrog_grid`; the dataclass does not invent a grid. The no-configuration
+convenience call supplies the small `(0.05, 0.1, 0.2)` baseline and records it
+as a repository convenience hypothesis, not target-specific evidence.
+The tuner executes every declared pair `(epsilon, L)` with the same frozen
+transport, target, coordinate identity, chain bank, and fixed-kernel screen.
+The candidate count is bounded by `max_joint_candidate_count`; a missing grid,
+duplicate-only grid, or exceeded bound fails before a chain is started. The
+legacy `fixed_grid_base_step_size_candidates` and
+`fixed_grid_scale_candidates` fields are accepted only as an explicitly
+recorded migration input and are expanded into measured pairs; they do not
+retain first-in-band or directional-repair semantics.
+
+Selection under `measured_joint_grid_v1` uses replicated fixed-kernel
+efficiency evidence (`replicated_min_bulk_ess_per_gradient`) followed by a
+disjoint held-out verification. Mean Metropolis acceptance probability and
+binary acceptance are both recorded, but neither is a convergence statistic.
+Movement, squared jump distance, energy/error telemetry, divergence provenance,
+and finite target/score checks are recorded with their stated diagnostic role.
+Missing or non-finite acceptance, and missing or non-positive
+retained-transition movement, are hard ineligibility conditions. An acceptance
+value outside the target band is instead recorded as a descriptive repair
+trigger in the measured route; it is not a validity veto, because a target such
+as `0.70` is an efficiency heuristic rather than a correctness condition.
+The selected candidate is never inferred from an unmeasured neighboring step
+size, and an acceptance target is not a substitute for an efficiency or health
+check.
+
+`legacy_directional_diagnostic_v1` preserves the former dual-averaging and
+factor-of-two ladder for migration and debugging only. Its result is stamped
+`diagnostic_only_legacy_policy`; the verified-handoff builder rejects it. At
+finite fixed `L`, leapfrog phase can make `a(epsilon,L)` non-monotone, so a
+higher acceptance does not justify multiplying epsilon and a lower acceptance
+does not justify dividing it without measuring the proposed pair. A harmonic
+oscillator makes this visible: the leapfrog phase is
+`theta(epsilon)=acos(1-epsilon^2/2)`, and the trajectory phase is
+`L*theta(epsilon)`, which can approach a return or resonance while acceptance
+remains high. This is why the measured policy evaluates the joint grid.
+
+The payload exposes distinct status fields: a candidate with finite target/score
+and valid transition health is `mechanics_validated`; a row that also passes
+the replicated efficiency screen is `tuning_candidate`; `posterior_ready`
+requires a later retained-chain assessment and is always false in this tuner.
+The result and final-kernel payloads carry `authority_status`,
+`posterior_status`, and `posterior_ready` explicitly so these labels cannot be
+inferred from a bare `passed` boolean.
+
+The July 2026 LGSSM validation caller is retained as a historical compatibility
+route and explicitly selects `legacy_directional_diagnostic_v1`. Its one-`L`
+ladder may emit diagnostics, but the handoff builder rejects it. Any active
+caller must provide a reviewed target-specific measured grid before it can
+issue a claim-bearing artifact.
+
+The same explicit legacy classification is required for the historical
+fixed-transport benchmark callers in this checkout, including the weighted
+three-mode, paper-d100, German reverse-comparator, strong-smooth, defensive
+analytic, banana-repair, replication, q=20 CPU validation, q=20 global-mixing,
+q=20 seed-B, and Chart-A six-`L` scripts. Their configurations set
+`FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY` and the historical
+`acceptance_target_distance` selector, so a bare `passed` value cannot issue a
+current measured-grid handoff. A caller that is intended to be active must
+replace that explicit legacy policy with a reviewed finite
+`step_size_candidates` grid and at least two `leapfrog_grid` values before it
+can use the measured policy.
+
 ### Keep the operational layers separate
 
 BayesFilter exposes fixed-transport diagnostic procedures in addition to the
@@ -356,25 +431,17 @@ short tuning screens; they are not posterior convergence runs. The default
 `replicated_min_bulk_ess_per_gradient` selection policy. It does not lengthen
 the default `acceptance_target_distance` branch.
 
-For the public fixed-grid branch, scales are evaluated in their declared order
-and the first healthy in-band screen stops traversal. That candidate then gets
-fresh verification. If this fresh verification fails, the public call ends
-without trying later declared scales. A plan must not promise continued scale
-search after failed verification unless the implementation is first changed
-and reviewed.
+For `measured_joint_grid_v1`, every declared pair is measured before selection;
+there is no first-in-band early stop. The selection and held-out budgets are
+explicit and disjoint. A failed pair is preserved as a candidate failure and
+does not invalidate the target or promote a neighboring unmeasured pair. A
+declared step above the configured hard cap is rejected before execution, so a
+cap-excluded pair is never counted as measured.
 
-For the public dual-averaging ladder, an in-band healthy screen stops the
-candidate ladder. A low-acceptance screen repairs toward a lower epsilon by
-dividing by `step_repair_factor`; a high-acceptance screen repairs toward a
-higher epsilon by multiplying by that factor. The default factor is `2`. This
-is a bounded multiplicative directional repair, not a continuous repair
-proportional to the measured distance from the acceptance band.
-
-The direction is intentional: all else equal, lowering epsilon normally raises
-acceptance and raising epsilon normally lowers it. Do not, however, infer an
-untested neighboring result from that local rule. At fixed finite `L`, leapfrog
-resonance can make acceptance non-monotone in epsilon, so a proposed neighboring
-epsilon must be measured with the declared screen and fresh seeds.
+The old directional ladder remains available only under
+`legacy_directional_diagnostic_v1`. Its factor-of-two repairs are explanatory
+diagnostics, not claim-bearing tuning evidence. Do not use its artifact as a
+kernel handoff or as a baseline for a new serious campaign.
 
 ### Promotion and failed-attempt discipline
 
@@ -454,6 +521,11 @@ Accept a tuning result only after checking all of the following:
   verifier must have no final kernel or public success payload.
 - The BayesFilter-owned private handoff exists for replay; redacted public
   status alone is not replayable.
+- A claim-adjacent retained consumer uses an explicit claim-bearing replay
+  builder and verifies `resolved_policy.claim_bearing_blockers == []` plus
+  `claim_bearing_artifact_authority=True`. A mechanics consumer instead uses
+  the explicit mechanics-only role; route-level `artifact_authority=True` is
+  not sufficient for posterior or scientific authority.
 - Tuning draws are excluded from retained posterior inference.
 
 ### Durable typed TensorFlow replay
@@ -483,7 +555,8 @@ does not switch to ordinary exact-gradient HMC. For an extension, pass the
 immediately preceding archive as `continuation_manifest`. BayesFilter verifies
 the predecessor and begins from its final active-coordinate state. The caller
 must not reconstruct the mass map or restart from the original tuning endpoint.
-This is mechanics replay, not posterior admission.
+This typed archive path is mechanics replay, not posterior admission; its
+`artifact_authority=False` binding must not be upgraded by the consumer.
 
 ### Durable ordinary replay
 
@@ -510,6 +583,46 @@ The older serialized tuning-payload replay API is different: when reconstructing
 geometry from such a payload, the caller must provide the same explicit geometry
 inputs used originally. A public status payload without the private mass arrays
 is not replayable.
+
+### Replay roles and authority
+
+The historical-looking name
+`build_retained_frozen_kernel_hmc_adapter_from_tuning_payload` is retained for
+compatibility, but it is explicitly a `mechanics_only` replay boundary. The
+same is true of its `...from_tuning_result` form. Prefer the explicit aliases
+when writing new mechanics consumers:
+
+```python
+from bayesfilter.inference import (
+    build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload,
+    build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result,
+)
+```
+
+Claim-adjacent consumers must use the separate claim-bearing builders:
+
+```python
+from bayesfilter.inference import (
+    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload,
+    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result,
+    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
+)
+```
+
+Those builders fail closed unless the repository-issued `resolved_policy`
+explicitly has an empty `claim_bearing_blockers` collection and
+`claim_bearing_artifact_authority=True`. The guard recomputes the ordinary
+epsilon/L policy from the repository-owned `config` (or the durable
+`tuning_config`) and compares both the embedded policy and blocker list; a
+caller-edited authority flag or blocker list cannot grant authority. They also
+require the persisted mechanics role to be `claim_bearing_retained`; a
+mechanics artifact cannot gain claim authority by changing a caller-side flag.
+The current ordinary route does not satisfy this gate: its result remains
+non-claim-bearing while the known NumPy runtime-policy and shared-epsilon
+selection blockers are unresolved. `admitted_kernel_mechanics_payload_from_tuning_result`
+therefore emits an explicit `mechanics_only` role,
+`authority_status=mechanics_only_nonclaiming`, and the source `tuning_config`
+needed for a future repository-owned policy check.
 
 Never infer compatibility from a matching schema string alone. Record the
 BayesFilter Git commit in the consumer, compare the current registry payload,

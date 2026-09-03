@@ -1,0 +1,40 @@
+{
+  "schema": "bayesfilter.ssl_lstm_q20.performance_whitening_repair.e0_r0_audit.v1",
+  "status": "PASS",
+  "date": "2026-09-02",
+  "governing_master": "docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-master-program-2026-09-02.md",
+  "terminal_boundary": "M3_TERMINAL_CANARY_RESOURCE_VETO_PHASE9B_BLOCKED",
+  "old_replay_resumed": false,
+  "focused_tests": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true TF_CPP_MIN_LOG_LEVEL=3 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q --disable-warnings tests/test_tempered_transport_ensemble.py tests/test_tempered_lineage_transitions.py tests/test_fixed_transport_hmc_tuning.py tests/test_fixed_transport_hmc_step_cap.py tests/test_ssl_lstm_q20_phase9a_repair_runner.py",
+    "result": "92 passed",
+    "wall_time_seconds": 40.36
+  },
+  "route_scan": {
+    "paths": [
+      "bayesfilter/inference/tempered_target_tf.py",
+      "bayesfilter/inference/tempered_transport_ensemble_tf.py",
+      "bayesfilter/inference/tempered_transitions_tf.py",
+      "bayesfilter/inference/fixed_transport_hmc_mechanics_tf.py"
+    ],
+    "forbidden_tokens": [
+      "tf.map_fn",
+      "tf.vectorized_map",
+      "GradientTape.jacobian",
+      "GradientTape.batch_jacobian",
+      "pfor"
+    ],
+    "hits": [],
+    "passed": true
+  },
+  "execution_model": {
+    "gpu_chain_axis": "batched tensor",
+    "candidate_chart_scope_loops": "serial Python orchestration",
+    "explicit_cpu_worker_pool_in_active_route": false,
+    "python_io_and_validation_xla_compiled": false
+  },
+  "source_commit": "54201f5cd925ed15036bad8156606b812d53b045",
+  "nonclaims": [
+    "No posterior, whitening, convergence, mode-discovery, or scaling claim"
+  ]
+}

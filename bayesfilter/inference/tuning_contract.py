@@ -928,9 +928,16 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         ),
         coordinate_prerequisite="fixed transport latent z coordinates",
         mass_policy="fixed identity mass in z; no ordinary windowed mass adaptation",
-        step_size_policy="candidate-specific adaptation followed by fixed verification",
-        trajectory_policy="prepared leapfrog-count grid or reviewed selection policy",
-        fresh_verification_policy="fresh candidate or held-out fixed-kernel verification",
+        step_size_policy=(
+            "measured_joint_grid_v1 explicit step-size candidates; legacy directional "
+            "ladder is diagnostic-only"
+        ),
+        trajectory_policy=(
+            "all declared (epsilon, L) pairs measured before replicated selection"
+        ),
+        fresh_verification_policy=(
+            "disjoint replicated fixed-kernel selection and held-out verification"
+        ),
         ess_admission_policy=(
             "selection-policy dependent; ordinary-tuner ESS status does not transfer"
         ),
@@ -951,6 +958,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "arbitrary position-only force without a frozen transport",
             "ordinary mass adaptation claim",
             "reuse after transport identity changes",
+            "legacy directional diagnostic policy as an artifact-authority handoff",
         ),
         nonclaims=_PUBLIC_TUNER_NONCLAIMS,
         evidence_anchors=(

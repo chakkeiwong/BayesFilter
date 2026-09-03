@@ -846,6 +846,90 @@ _OPERATIONAL_VERIFICATION_BRACKET_POLICIES = {
     _OPERATIONAL_VERIFICATION_BRACKET_POLICY_ONE_LOG_MIDPOINT,
 }
 
+# These identifiers describe the executable epsilon/L policy.  They are kept
+# separate from the algorithm-route identifiers because one route can expose
+# more than one internally reachable stage policy.  The ordinary shared-
+# epsilon policy is intentionally non-claim-bearing until a target-specific
+# measured pair policy is reviewed and promoted.
+ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID = (
+    "ordinary_shared_epsilon_screen_v3"
+)
+ORDINARY_LEGACY_JOINT_L_EPSILON_POLICY_ID = (
+    "ordinary_legacy_joint_l_epsilon_grid_v1"
+)
+ORDINARY_ENGINEERING_JOINT_L_EPSILON_POLICY_ID = (
+    "ordinary_engineering_joint_l_epsilon_grid_v1"
+)
+_ORDINARY_RUNTIME_NUMPY_POLICY_BLOCKER = (
+    "ordinary_runtime_numpy_policy_pending"
+)
+
+
+def resolve_ordinary_hmc_selection_policy(
+    algorithm_id: str,
+    *,
+    engineering_probe_covariance_multiplier_configured: bool = False,
+) -> Mapping[str, Any]:
+    """Describe the observed ordinary epsilon/L policy without running HMC.
+
+    This resolver is deliberately descriptive.  It does not select an
+    algorithm, invent candidate values, or grant scientific authority.  The
+    returned policy is suitable for configuration/result provenance and for
+    fail-closed authority checks.
+    """
+
+    selected = str(algorithm_id)
+    if selected == LEGACY_JOINT_L_EPSILON_ALGORITHM_ID:
+        return {
+            "policy_id": ORDINARY_LEGACY_JOINT_L_EPSILON_POLICY_ID,
+            "algorithm_id": selected,
+            "epsilon_l_treatment": "per_l_epsilon_ladder_with_bounded_edge_repair",
+            "candidate_construction": "legacy_internal_joint_l_epsilon_grid",
+            "mass_signature_frozen_during_selection": True,
+            "seed_separation": "fresh_candidate_and_replication_seeds",
+            "authority_status": "diagnostic_only_non_promoting",
+            "claim_bearing_blockers": (
+                "legacy_joint_grid_not_owner_promoted",
+            ),
+        }
+    if engineering_probe_covariance_multiplier_configured:
+        return {
+            "policy_id": ORDINARY_ENGINEERING_JOINT_L_EPSILON_POLICY_ID,
+            "algorithm_id": selected,
+            "epsilon_l_treatment": "per_l_epsilon_ladder_with_bounded_edge_repair",
+            "candidate_construction": "engineering_probe_joint_l_epsilon_grid",
+            "mass_signature_frozen_during_selection": True,
+            "seed_separation": "fresh_candidate_and_replication_seeds",
+            "authority_status": "engineering_only_non_promoting",
+            "claim_bearing_blockers": (
+                "engineering_probe_route_not_claim_bearing",
+            ),
+        }
+    return {
+        "policy_id": ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID,
+        "algorithm_id": selected,
+        "epsilon_l_treatment": "shared_frozen_epsilon_screen_then_exact_l_retune",
+        "candidate_construction": "floor_anchor_double_trajectory_screen",
+        "mass_signature_frozen_during_selection": True,
+        "seed_separation": "three_replications_with_fresh_screen_seeds",
+        "authority_status": "diagnostic_only_non_promoting",
+        "claim_bearing_blockers": (
+            "shared_epsilon_screen_not_joint_pair_selection",
+        ),
+    }
+
+
+def _ordinary_selection_policy_payload(
+    config: Any,
+) -> Mapping[str, Any]:
+    return resolve_ordinary_hmc_selection_policy(
+        str(config.algorithm_id),
+        engineering_probe_covariance_multiplier_configured=(
+            getattr(config, "engineering_probe_covariance_multiplier", None)
+            is not None
+        ),
+    )
+
 
 def _validated_operational_verification_bracket_policy(value: Any) -> str:
     policy = str(value)
@@ -1761,6 +1845,9 @@ RETAINED_FROZEN_KERNEL_REPLAY_NONCLAIMS = (
     "no external-client scientific claim",
     "no GPU or XLA readiness claim",
 )
+
+REPLAY_ROLE_MECHANICS_ONLY = "mechanics_only"
+REPLAY_ROLE_CLAIM_BEARING_RETAINED = "claim_bearing_retained"
 
 _GEOMETRY_MIN_LEAPFROG = 3
 _GEOMETRY_MAX_LEAPFROG = 25
@@ -6359,6 +6446,7 @@ class HMCTuneVerifyRepairLoopConfig:
     def payload(self) -> Mapping[str, Any]:
         return {
             "algorithm_id": self.algorithm_id,
+            "ordinary_selection_policy": _ordinary_selection_policy_payload(self),
             "operational_budget_policy_id": self.operational_budget_policy_id,
             "operational_candidate_handoff_policy": (
                 self.operational_candidate_handoff_policy
@@ -6655,6 +6743,7 @@ class HMCTuneVerifyRepairLoopResult:
         if final_kernel_payload is not None and not include_final_mass_arrays:
             final_kernel_payload = _public_final_kernel_summary_from_private_payload(
                 final_kernel_payload,
+                config=self.config,
                 phase7_final_kernel_hash=self.final_kernel_hash,
             )
         resolved_policy = _public_resolved_policy_payload(
@@ -7198,6 +7287,7 @@ class HMCKernelTuningConfig:
         return {
             "schema": "bayesfilter.hmc_kernel_tuning_config.v1",
             "algorithm_id": self.algorithm_id,
+            "ordinary_selection_policy": _ordinary_selection_policy_payload(self),
             "operational_budget_policy_id": self.operational_budget_policy_id,
             "operational_evidence_policy": self.operational_evidence_policy,
             "operational_candidate_handoff_policy": (
@@ -7729,6 +7819,25 @@ class RetainedFrozenKernelAdapterReplayResult:
             raise TypeError("adapted_mass_artifact must be PrecomputedMassArtifact")
         contract = dict(self.contract)
         final_payload = dict(self.final_kernel_payload)
+        replay_role = str(
+            contract.get("replay_role", REPLAY_ROLE_MECHANICS_ONLY)
+        )
+        if replay_role not in {
+            REPLAY_ROLE_MECHANICS_ONLY,
+            REPLAY_ROLE_CLAIM_BEARING_RETAINED,
+        }:
+            raise ValueError("replay contract has an unknown replay_role")
+        claim_bearing = contract.get("claim_bearing_artifact_authority", False)
+        if not isinstance(claim_bearing, bool):
+            raise ValueError(
+                "replay contract claim_bearing_artifact_authority must be Boolean"
+            )
+        if claim_bearing != (
+            replay_role == REPLAY_ROLE_CLAIM_BEARING_RETAINED
+        ):
+            raise ValueError("replay role and claim-bearing authority disagree")
+        contract["replay_role"] = replay_role
+        contract["claim_bearing_artifact_authority"] = claim_bearing
         final_signature = str(contract.get("final_hmc_adapter_signature", ""))
         if not final_signature:
             raise ValueError("replay contract missing final_hmc_adapter_signature")
@@ -7750,6 +7859,10 @@ class RetainedFrozenKernelAdapterReplayResult:
         return {
             "schema": "bayesfilter.retained_frozen_kernel_adapter_replay_result.v1",
             "contract": self.contract,
+            "replay_role": self.contract["replay_role"],
+            "claim_bearing_artifact_authority": self.contract[
+                "claim_bearing_artifact_authority"
+            ],
             "final_kernel_payload": {
                 "public_handoff_schema": self.final_kernel_payload.get(
                     "public_handoff_schema"
@@ -7897,6 +8010,8 @@ def _build_retained_frozen_kernel_hmc_adapter_from_validated_geometry(
 
     contract = {
         "schema": "bayesfilter.retained_frozen_kernel_adapter_replay_contract.v1",
+        "replay_role": REPLAY_ROLE_MECHANICS_ONLY,
+        "claim_bearing_artifact_authority": False,
         "base_adapter_signature": adapter_signature,
         "geometry_artifact_hash": geometry.artifact_hash,
         "geometry_mass_artifact_signature": geometry.mass_artifact_signature,
@@ -7933,13 +8048,12 @@ def build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
     parameter_scales: Any | None = None,
     target_scope: str | None = None,
 ) -> RetainedFrozenKernelAdapterReplayResult:
-    """Rebuild the BayesFilter adapter stack verified by one-call tuning.
+    """Rebuild a mechanics-only adapter stack verified by one-call tuning.
 
-    This helper performs no HMC execution.  It is the replay boundary for model
-    repositories that need to launch a retained fixed-kernel run from a prior
-    BayesFilter tuning result: callers supply their reviewed base adapter and
-    the private tuning payload, and BayesFilter reconstructs the exact
-    two-transform HMC adapter stack that the tuning verifier signed.
+    This compatibility helper performs no HMC execution and grants no retained
+    or posterior authority.  Claim-adjacent consumers must use the explicit
+    claim-bearing replay API, which validates the resolved-policy blockers
+    before reconstruction.
     """
 
     (
@@ -7984,13 +8098,13 @@ def build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
     parameter_scales: Any | None = None,
     target_scope: str | None = None,
 ) -> RetainedFrozenKernelAdapterReplayResult:
-    """Replay a passed public tuning result without exposing mechanics to callers.
+    """Replay passed tuning mechanics without granting retained authority.
 
     The result object retains the private in-memory phase handoffs needed to
     rebuild the verified adapter.  The helper assembles that private payload
     inside BayesFilter, then delegates validation and reconstruction to the
-    canonical payload replay boundary above.  Callers never need to assemble
-    step size, trajectory, or mass-array fields themselves.
+    mechanics-only compatibility boundary above.  Callers never need to
+    assemble step size, trajectory, or mass-array fields themselves.
     """
 
     if not isinstance(tuning_result, HMCKernelTuningResult):
@@ -8002,9 +8116,15 @@ def build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
     loop = tuning_result.tune_verify_repair_loop
     if loop is None or not loop.passed or loop.final_kernel_payload is None:
         raise ValueError("passed tuning result is missing private Phase 7 handoff")
+    resolved_policy = _public_resolved_policy_payload(
+        tuning_result.config,
+        output_path_enabled=tuning_result.artifact_path is not None,
+        config_variant="ordinary_hmc",
+    )
     private_payload = {
         "schema": "bayesfilter.hmc_kernel_tuning_result.v1",
         "config": tuning_result.config.payload(),
+        "resolved_policy": resolved_policy,
         "adapter_signature": tuning_result.adapter_signature,
         "target_dimension": tuning_result.target_dimension,
         "geometry_artifact_hash": tuning_result.geometry.artifact_hash,
@@ -8083,6 +8203,198 @@ def build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
     )
 
 
+def _require_claim_bearing_tuning_policy(
+    tuning_payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Validate the policy gate required before claim-bearing replay.
+
+    Serialized authority fields are evidence, not authority by themselves.
+    Once a caller presents an apparently clear policy, recompute the ordinary
+    epsilon/L policy from the repository-owned configuration payload and
+    compare the two descriptions before allowing reconstruction.  This keeps
+    a caller-edited blocker list from turning a mechanics artifact into a
+    claim-bearing handoff.
+    """
+
+    resolved = tuning_payload.get("resolved_policy")
+    if not isinstance(resolved, Mapping):
+        raise ValueError(
+            "claim-bearing replay requires a resolved_policy; "
+            "payload is historical or mechanics-only"
+        )
+    blockers = resolved.get("claim_bearing_blockers")
+    if not isinstance(blockers, (tuple, list)):
+        raise ValueError(
+            "claim-bearing replay requires an explicit claim_bearing_blockers list"
+        )
+    normalized = tuple(str(item) for item in blockers if str(item))
+    primary = resolved.get("claim_bearing_blocker")
+    if normalized or (primary not in (None, "")):
+        observed = normalized or (str(primary),)
+        raise ValueError(
+            "claim-bearing replay is blocked by: " + ", ".join(observed)
+        )
+    if resolved.get("claim_bearing_artifact_authority") is not True:
+        raise ValueError(
+            "claim-bearing replay requires claim_bearing_artifact_authority=True"
+        )
+
+    config_payload = tuning_payload.get("config")
+    if not isinstance(config_payload, Mapping):
+        # Durable mechanics artifacts use a distinct name so that their
+        # policy inputs cannot be confused with the outer replay envelope.
+        config_payload = tuning_payload.get("tuning_config")
+    if not isinstance(config_payload, Mapping):
+        raise ValueError(
+            "claim-bearing replay requires repository-owned tuning_config; "
+            "policy fields alone cannot grant authority"
+        )
+    algorithm_id = str(config_payload.get("algorithm_id", ""))
+    if not algorithm_id:
+        raise ValueError(
+            "claim-bearing replay requires a non-empty tuning configuration "
+            "algorithm_id"
+        )
+    engineering_bank = config_payload.get("engineering_probe_bank")
+    if not isinstance(engineering_bank, Mapping) or not isinstance(
+        engineering_bank.get("configured"), bool
+    ):
+        raise ValueError(
+            "claim-bearing replay requires an explicit engineering-probe "
+            "configuration flag"
+        )
+    expected_ordinary_policy = resolve_ordinary_hmc_selection_policy(
+        algorithm_id,
+        engineering_probe_covariance_multiplier_configured=bool(
+            engineering_bank["configured"]
+        ),
+    )
+    configured_policy = config_payload.get("ordinary_selection_policy")
+    if not isinstance(configured_policy, Mapping) or stable_config_hash(
+        configured_policy
+    ) != stable_config_hash(expected_ordinary_policy):
+        raise ValueError(
+            "claim-bearing replay ordinary_selection_policy does not match "
+            "the repository-owned tuning configuration"
+        )
+    resolved_ordinary_policy = resolved.get("ordinary_selection_policy")
+    if not isinstance(resolved_ordinary_policy, Mapping) or stable_config_hash(
+        resolved_ordinary_policy
+    ) != stable_config_hash(expected_ordinary_policy):
+        raise ValueError(
+            "claim-bearing replay resolved_policy does not match the "
+            "repository-owned tuning configuration"
+        )
+    expected_blockers = tuple(
+        dict.fromkeys(
+            (_ORDINARY_RUNTIME_NUMPY_POLICY_BLOCKER,)
+            + tuple(
+                str(item)
+                for item in expected_ordinary_policy.get("claim_bearing_blockers", ())
+                if str(item)
+            )
+        )
+    )
+    if normalized != expected_blockers:
+        observed = ", ".join(normalized) if normalized else "<empty>"
+        expected = ", ".join(expected_blockers) if expected_blockers else "<empty>"
+        raise ValueError(
+            "claim-bearing replay blocker list does not match repository "
+            f"policy (observed {observed}; expected {expected})"
+        )
+    expected_primary = expected_blockers[0] if expected_blockers else None
+    if primary not in (None, "") and str(primary) != expected_primary:
+        raise ValueError(
+            "claim-bearing replay primary blocker does not match repository policy"
+        )
+    if resolved.get("algorithm_id") != algorithm_id:
+        raise ValueError(
+            "claim-bearing replay resolved_policy algorithm_id does not match "
+            "the tuning configuration"
+        )
+    if expected_blockers:
+        raise ValueError(
+            "claim-bearing replay is blocked by repository policy: "
+            + ", ".join(expected_blockers)
+        )
+    return resolved
+
+
+def _with_replay_role(
+    replay: RetainedFrozenKernelAdapterReplayResult,
+    *,
+    role: str,
+    claim_bearing: bool,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    if claim_bearing != (role == REPLAY_ROLE_CLAIM_BEARING_RETAINED):
+        raise ValueError("requested replay role and authority disagree")
+    return dataclasses.replace(
+        replay,
+        contract={
+            **dict(replay.contract),
+            "replay_role": role,
+            "claim_bearing_artifact_authority": bool(claim_bearing),
+        },
+    )
+
+
+def build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload(
+    **kwargs: Any,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    """Explicit name for the non-claiming compatibility replay path."""
+
+    return build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(**kwargs)
+
+
+def build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result(
+    **kwargs: Any,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    """Explicit name for in-memory mechanics-only replay."""
+
+    return build_retained_frozen_kernel_hmc_adapter_from_tuning_result(**kwargs)
+
+
+def build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
+    **kwargs: Any,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    """Replay only a policy-cleared serialized tuning result.
+
+    The current ordinary route intentionally fails this check because its
+    backend and shared-epsilon blockers remain active.  This entry point is a
+    fail-closed boundary for a future reviewed claim-bearing route.
+    """
+
+    tuning_payload = kwargs.get("tuning_payload")
+    if not isinstance(tuning_payload, Mapping):
+        raise TypeError("tuning_payload must be a mapping")
+    _require_claim_bearing_tuning_policy(tuning_payload)
+    replay = build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(**kwargs)
+    return _with_replay_role(
+        replay,
+        role=REPLAY_ROLE_CLAIM_BEARING_RETAINED,
+        claim_bearing=True,
+    )
+
+
+def build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result(
+    **kwargs: Any,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    """Replay only a policy-cleared in-memory tuning result."""
+
+    tuning_result = kwargs.get("tuning_result")
+    if not isinstance(tuning_result, HMCKernelTuningResult):
+        raise TypeError("tuning_result must be HMCKernelTuningResult")
+    _require_claim_bearing_tuning_policy(
+        tuning_result.payload(include_internal_diagnostics=False)
+    )
+    replay = build_retained_frozen_kernel_hmc_adapter_from_tuning_result(**kwargs)
+    return _with_replay_role(
+        replay,
+        role=REPLAY_ROLE_CLAIM_BEARING_RETAINED,
+        claim_bearing=True,
+    )
+
+
 ADMITTED_KERNEL_MECHANICS_SCHEMA = (
     "bayesfilter.admitted_hmc_kernel_replay_artifact.v1"
 )
@@ -8109,7 +8421,7 @@ def admitted_kernel_mechanics_payload_from_tuning_result(
     from accidental edits.
     """
 
-    replay = build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
+    replay = build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result(
         adapter=adapter,
         tuning_result=tuning_result,
         initial_position=initial_position,
@@ -8121,8 +8433,24 @@ def admitted_kernel_mechanics_payload_from_tuning_result(
     initial_mass = tuning_result.geometry.mass_artifact
     initial_mass_signature = _mass_artifact_signature(initial_mass)
     adapted_mass_signature = _mass_artifact_signature(replay.adapted_mass_artifact)
+    resolved_policy = _public_resolved_policy_payload(
+        tuning_result.config,
+        output_path_enabled=tuning_result.artifact_path is not None,
+        config_variant="ordinary_hmc",
+    )
     mechanics = {
         "schema": _ADMITTED_KERNEL_MECHANICS_PAYLOAD_SCHEMA,
+        "replay_role": REPLAY_ROLE_MECHANICS_ONLY,
+        "authority_status": "mechanics_only_nonclaiming",
+        "claim_bearing_artifact_authority": False,
+        "claim_bearing_blockers": tuple(
+            resolved_policy.get("claim_bearing_blockers", ())
+        ),
+        "resolved_policy": dict(resolved_policy),
+        # Preserve the repository-owned inputs used to derive the policy.  A
+        # future claim-bearing consumer can recompute the policy instead of
+        # trusting a caller-edited blocker list.
+        "tuning_config": dict(tuning_result.config.payload()),
         "target_signature": str(target_signature),
         "target_scope": str(target_scope),
         "target_dimension": int(tuning_result.target_dimension),
@@ -8366,8 +8694,29 @@ def admitted_kernel_mechanics_payload_from_serialized_tuning_payload(
     ):
         raise ValueError("serialized public acceptance handoff mismatch")
 
+    resolved_policy = tuning_payload.get("resolved_policy")
+    if not isinstance(resolved_policy, Mapping):
+        # Old serialized payloads remain readable only as historical mechanics
+        # diagnostics.  They cannot silently acquire claim-bearing authority.
+        resolved_policy = {
+            "schema": "bayesfilter.hmc_resolved_tuning_policy.historical_missing.v1",
+            "claim_bearing_artifact_authority": False,
+            "claim_bearing_blockers": ("missing_resolved_policy",),
+            "claim_bearing_blocker": "missing_resolved_policy",
+            "authority_status": "historical_diagnostic_only",
+        }
     mechanics = {
         "schema": _ADMITTED_KERNEL_MECHANICS_PAYLOAD_SCHEMA,
+        "replay_role": REPLAY_ROLE_MECHANICS_ONLY,
+        "authority_status": "mechanics_only_nonclaiming",
+        "claim_bearing_artifact_authority": False,
+        "claim_bearing_blockers": tuple(
+            resolved_policy.get("claim_bearing_blockers", ())
+        ),
+        "resolved_policy": dict(resolved_policy),
+        # Preserve the source configuration for a future authority check;
+        # legacy payloads remain mechanics-only when this field is absent.
+        "tuning_config": dict(config),
         "target_signature": str(target_signature),
         "target_scope": str(target_scope),
         "target_dimension": dimension,
@@ -8414,8 +8763,15 @@ def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
     execution: Mapping[str, Any],
     target_accept_prob: float,
     acceptance_band: tuple[float, float],
+    _expected_replay_role: str = REPLAY_ROLE_MECHANICS_ONLY,
 ) -> RetainedFrozenKernelAdapterReplayResult:
-    """Rebuild an admitted retained HMC adapter without invoking the tuner."""
+    """Rebuild a mechanics-only adapter without invoking the tuner.
+
+    The underscored role argument is used only by the explicit
+    claim-bearing wrapper below.  Ordinary callers must consume this function
+    as mechanics-only and cannot infer posterior or scientific authority from
+    its return value.
+    """
 
     if not isinstance(mechanics_payload, Mapping):
         raise TypeError("mechanics_payload must be a mapping")
@@ -8427,6 +8783,23 @@ def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
         raise ValueError("admitted kernel mechanics payload schema mismatch")
     if observed_hash != stable_config_hash(mechanics):
         raise ValueError("admitted kernel mechanics fingerprint mismatch")
+    expected_role = str(_expected_replay_role)
+    if expected_role not in {
+        REPLAY_ROLE_MECHANICS_ONLY,
+        REPLAY_ROLE_CLAIM_BEARING_RETAINED,
+    }:
+        raise ValueError("unknown expected replay role")
+    observed_role = mechanics.get("replay_role")
+    if observed_role != expected_role:
+        raise ValueError("admitted kernel replay role mismatch")
+    observed_claim = mechanics.get("claim_bearing_artifact_authority")
+    expected_claim = expected_role == REPLAY_ROLE_CLAIM_BEARING_RETAINED
+    if observed_claim is not expected_claim:
+        raise ValueError("admitted kernel replay authority role mismatch")
+    if expected_claim:
+        _require_claim_bearing_tuning_policy(mechanics)
+    elif observed_claim is not False:
+        raise ValueError("mechanics-only replay must not claim artifact authority")
     for key, expected in (
         ("target_signature", str(target_signature)),
         ("target_scope", str(target_scope)),
@@ -8516,6 +8889,8 @@ def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
         adapted_mass_artifact=adapted_mass,
         contract={
             "schema": "bayesfilter.retained_frozen_kernel_adapter_replay_contract.v1",
+            "replay_role": expected_role,
+            "claim_bearing_artifact_authority": expected_claim,
             "base_adapter_signature": base_signature,
             "mass_policy": mass_policy,
             "geometry_mass_artifact_signature": initial_mass_signature,
@@ -8531,6 +8906,29 @@ def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
         },
         final_kernel_payload=final_kernel_payload,
     )
+
+
+def build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
+    **kwargs: Any,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    """Replay a mechanics artifact only after its claim policy is cleared."""
+
+    mechanics_payload = kwargs.get("mechanics_payload")
+    if not isinstance(mechanics_payload, Mapping):
+        raise TypeError("mechanics_payload must be a mapping")
+    mechanics = mechanics_payload.get("mechanics")
+    if not isinstance(mechanics, Mapping):
+        raise ValueError("claim-bearing replay requires mechanics mapping")
+    _require_claim_bearing_tuning_policy(mechanics)
+    call_kwargs = dict(kwargs)
+    # Keep the private role selector owned by this boundary. A caller cannot
+    # downgrade a claim-bearing request with a conflicting value.
+    call_kwargs.pop("_expected_replay_role", None)
+    replay = build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
+        **call_kwargs,
+        _expected_replay_role=REPLAY_ROLE_CLAIM_BEARING_RETAINED,
+    )
+    return replay
 
 
 def _required_mapping(payload: Mapping[str, Any], key: str) -> Mapping[str, Any]:
@@ -12396,7 +12794,7 @@ def run_hmc_tune_verify_repair_loop(
         raise TypeError("P4-E requires a caller-owned G2 seed-use registry")
     if not p4_route and _g2_seed_use_registry is not None:
         raise TypeError("G2 seed-use registry is valid only for the P4-E route")
-    require_hmc_algorithm_route(
+    route_decision = require_hmc_algorithm_route(
         algorithm_id=cfg.algorithm_id,
         stage=HMC_TOP_LEVEL_SELECTION_STAGE,
         runtime_backend="tensorflow",
@@ -16173,6 +16571,7 @@ def _public_final_kernel_handoff_payload(
         raise ValueError("public handoff requires passed Phase 7 final kernel")
     return _public_final_kernel_summary_from_private_payload(
         loop.final_kernel_payload,
+        config=loop.config,
         phase7_final_kernel_hash=loop.final_kernel_hash,
     )
 
@@ -16180,6 +16579,7 @@ def _public_final_kernel_handoff_payload(
 def _public_final_kernel_summary_from_private_payload(
     private_payload: Mapping[str, Any],
     *,
+    config: Any,
     phase7_final_kernel_hash: str | None,
 ) -> Mapping[str, Any]:
     """Return a non-replayable public summary of a private frozen HMC kernel."""
@@ -16211,6 +16611,9 @@ def _public_final_kernel_summary_from_private_payload(
     return {
         "runtime": "bayesfilter.inference.tune_hmc_kernel",
         "public_handoff_schema": "bayesfilter.hmc_public_frozen_kernel_handoff.v1",
+        "ordinary_selection_policy": _ordinary_selection_policy_payload(config),
+        "replay_role": REPLAY_ROLE_MECHANICS_ONLY,
+        "claim_bearing_artifact_authority": False,
         **{key: private_payload[key] for key in required_keys if key in private_payload},
         "phase7_final_kernel_hash": phase7_final_kernel_hash,
         "internal_tuning_controls_exposed": False,
@@ -16453,6 +16856,18 @@ def _public_resolved_policy_payload(
     preset_role = (
         None if preset is None else _public_tuning_preset_role(str(preset))
     )
+    ordinary_policy = _ordinary_selection_policy_payload(config)
+    policy_blockers = tuple(
+        str(item) for item in ordinary_policy.get("claim_bearing_blockers", ())
+    )
+    # The ordinary implementation currently imports/uses NumPy in runtime
+    # tuning paths.  Keep this blocker independent of the descriptive policy
+    # so a future policy repair cannot accidentally erase the backend gate.
+    policy_blockers = tuple(
+        dict.fromkeys(
+            (_ORDINARY_RUNTIME_NUMPY_POLICY_BLOCKER,) + policy_blockers
+        )
+    )
     return {
         "schema": "bayesfilter.hmc_resolved_tuning_policy.v1",
         "interface_name": "tune_hmc_kernel",
@@ -16467,11 +16882,14 @@ def _public_resolved_policy_payload(
         "scientific_promotion_authority": bool(
             route["scientific_promotion_authority"]
         ),
-        # Ordinary runtime NumPy use is a known policy blocker. This field
-        # makes the non-admitting status explicit instead of hiding it in a
-        # generic route or preset label.
-        "claim_bearing_artifact_authority": False,
-        "claim_bearing_blocker": "ordinary_runtime_numpy_policy_pending",
+        "ordinary_selection_policy": dict(ordinary_policy),
+        "claim_bearing_artifact_authority": bool(
+            route["artifact_authority"] and not policy_blockers
+        ),
+        "claim_bearing_blockers": policy_blockers,
+        # Keep one stable primary blocker for older consumers while exposing
+        # every blocker to new authority checks.
+        "claim_bearing_blocker": policy_blockers[0] if policy_blockers else None,
         "evidence_role": route["evidence_role"],
         "promotion_role": route["promotion_role"],
         "use_xla": bool(config.use_xla),

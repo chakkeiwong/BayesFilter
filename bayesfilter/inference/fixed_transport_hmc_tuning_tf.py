@@ -63,6 +63,16 @@ _SELECTION_POLICIES = frozenset(
         "replicated_min_bulk_ess_per_gradient",
     }
 )
+_TUNING_POLICIES = frozenset(
+    {
+        "measured_joint_grid_v1",
+        "legacy_directional_diagnostic_v1",
+    }
+)
+_MEASURED_JOINT_GRID_POLICY = "measured_joint_grid_v1"
+_LEGACY_DIRECTIONAL_POLICY = "legacy_directional_diagnostic_v1"
+FIXED_TRANSPORT_HMC_MEASURED_POLICY = _MEASURED_JOINT_GRID_POLICY
+FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY = _LEGACY_DIRECTIONAL_POLICY
 
 
 @dataclass(frozen=True)
@@ -83,8 +93,8 @@ class FixedTransportHMCKernelTuningConfig:
     tune_num_results: int = 8
     screen_num_results: int = 16
     screen_num_burnin_steps: int = 4
-    selection_policy: str = "acceptance_target_distance"
-    selection_replications: int = 1
+    selection_policy: str = "replicated_min_bulk_ess_per_gradient"
+    selection_replications: int = 2
     selection_num_results: int = 64
     selection_num_burnin_steps: int = 32
     selection_seed_base: tuple[int, int] = (20260625, 250)
@@ -112,10 +122,20 @@ class FixedTransportHMCKernelTuningConfig:
     output_filename: str = "fixed_transport_hmc_tuning_result.json"
     source: str = "bayesfilter.inference.fixed_transport_hmc_tuning"
     proposal_dynamics_identity: str = "exact_transformed_gradient"
+    tuning_policy: str = _MEASURED_JOINT_GRID_POLICY
+    step_size_candidates: tuple[float, ...] = ()
+    max_joint_candidate_count: int = 64
 
     def __post_init__(self) -> None:
         step = _positive_float(self.initial_step_size, name="initial_step_size")
         object.__setattr__(self, "initial_step_size", step)
+        tuning_policy = str(self.tuning_policy)
+        if tuning_policy not in _TUNING_POLICIES:
+            raise ValueError(
+                "tuning_policy must be one of: "
+                + ", ".join(sorted(_TUNING_POLICIES))
+            )
+        object.__setattr__(self, "tuning_policy", tuning_policy)
         cap = self.maximum_candidate_step_size
         if cap is not None:
             cap = _positive_float(cap, name="maximum_candidate_step_size")
@@ -254,6 +274,63 @@ class FixedTransportHMCKernelTuningConfig:
                     "fixed_grid_num_leapfrog_steps must be greater than or equal to 2"
                 )
             object.__setattr__(self, "fixed_grid_num_leapfrog_steps", fixed_l)
+        steps = tuple(float(value) for value in self.step_size_candidates)
+        if any(not math.isfinite(value) or value <= 0.0 for value in steps):
+            raise ValueError("step_size_candidates must be positive and finite")
+        if tuning_policy == _MEASURED_JOINT_GRID_POLICY:
+            if base and steps:
+                raise ValueError(
+                    "measured_joint_grid does not allow both step_size_candidates "
+                    "and legacy fixed-grid fields"
+                )
+            if base:
+                steps = tuple(
+                    dict.fromkeys(
+                        float(base_step * scale)
+                        for base_step in base
+                        for scale in scales
+                    )
+                )
+            steps = tuple(dict.fromkeys(steps))
+            if len(steps) < 2:
+                raise ValueError(
+                    "measured_joint_grid requires at least two distinct step_size_candidates"
+                )
+            if len(leapfrogs) < 2:
+                raise ValueError(
+                    "measured_joint_grid requires at least two distinct leapfrog values"
+                )
+            if selection_policy != "replicated_min_bulk_ess_per_gradient":
+                raise ValueError(
+                    "measured_joint_grid requires replicated_min_bulk_ess_per_gradient"
+                )
+            if int(self.selection_replications) < 2:
+                raise ValueError(
+                    "measured_joint_grid requires at least two selection replications"
+                )
+            if self.fixed_grid_num_leapfrog_steps is not None:
+                raise ValueError(
+                    "fixed_grid_num_leapfrog_steps is diagnostic-only; measured_joint_grid uses leapfrog_grid"
+                )
+            if (
+                cap is not None
+                and any(step_value > cap for step_value in steps)
+            ):
+                raise ValueError(
+                    "measured_joint_grid step_size_candidates must not exceed "
+                    "maximum_candidate_step_size"
+                )
+        object.__setattr__(self, "step_size_candidates", steps)
+        max_joint = int(self.max_joint_candidate_count)
+        if max_joint <= 0:
+            raise ValueError("max_joint_candidate_count must be positive")
+        if tuning_policy == _MEASURED_JOINT_GRID_POLICY:
+            candidate_count = len(steps) * len(leapfrogs)
+            if candidate_count > max_joint:
+                raise ValueError(
+                    "measured_joint_grid candidate count exceeds max_joint_candidate_count"
+                )
+        object.__setattr__(self, "max_joint_candidate_count", max_joint)
         fallback = float(self.fixed_grid_fallback_acceptance_max)
         if not math.isfinite(fallback) or not 0.0 < fallback < 1.0:
             raise ValueError("fixed_grid_fallback_acceptance_max is invalid")
@@ -283,7 +360,25 @@ class FixedTransportHMCKernelTuningConfig:
             else "not_configured"
         )
         payload["tuning_branch"] = (
-            "fixed_grid" if self.fixed_grid_base_step_size_candidates else "dual_averaging"
+            "measured_joint_grid"
+            if self.tuning_policy == _MEASURED_JOINT_GRID_POLICY
+            else (
+                "fixed_grid" if self.fixed_grid_base_step_size_candidates else "dual_averaging"
+            )
+        )
+        payload["tuning_policy"] = self.tuning_policy
+        payload["tuning_policy_role"] = (
+            "claim_bearing_joint_measurement"
+            if self.tuning_policy == _MEASURED_JOINT_GRID_POLICY
+            else "diagnostic_only_legacy_policy"
+        )
+        payload["step_size_candidate_grid_source"] = (
+            "legacy_fixed_grid_fields_expanded"
+            if self.fixed_grid_base_step_size_candidates
+            else "explicit_step_size_candidates"
+        )
+        payload["joint_candidate_count"] = len(self.step_size_candidates) * len(
+            self.leapfrog_grid
         )
         payload["fixed_grid_fallback_acceptance_max_role"] = (
             "fixed_grid_acceptance_classification"
@@ -349,9 +444,16 @@ class FixedTransportHMCCandidateResult:
             "candidate_index": self.candidate_index,
             "num_leapfrog_steps": self.num_leapfrog_steps,
             "handoff_source": (
-                "fixed_grid_scale_probe"
+                "measured_joint_grid"
+                if self.ladder_result is None
+                and self.fixed_kernel_step_size is not None
+                and self.verification_diagnostics.get("diagnostic_context")
+                == "fixed_transport_joint_grid_screen"
+                else (
+                    "fixed_grid_scale_probe"
                 if self.fixed_kernel_step_size is not None
                 else "fixed_mass_dual_averaging_ladder"
+                )
             ),
             "ladder_artifact_hash": (
                 None if self.ladder_result is None else _stable_hash(self.ladder_result)
@@ -366,6 +468,12 @@ class FixedTransportHMCCandidateResult:
             "hard_vetoes": self.hard_vetoes,
             "repair_triggers": self.repair_triggers,
             "passed": self.passed,
+            "mechanics_status": (
+                "mechanics_validated" if self.passed else "mechanics_failed"
+            ),
+            "tuning_candidate_status": (
+                "eligible_for_selection" if self.passed else "candidate_rejected"
+            ),
             "reports_posterior_convergence": False,
         }
 
@@ -416,7 +524,7 @@ class FixedTransportHMCKernelTuningResult:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.fixed_transport_hmc_kernel_tuning_result.v4",
+            "schema": "bayesfilter.fixed_transport_hmc_kernel_tuning_result.v5",
             "config": self.config.payload(),
             "tuning_scope": self.tuning_scope_payload,
             "active_route": self.route_record_payload,
@@ -430,6 +538,12 @@ class FixedTransportHMCKernelTuningResult:
             "identity_z_mass_artifact_signature": self.identity_z_mass_artifact_signature,
             "candidates": tuple(candidate.payload() for candidate in self.candidates),
             "candidate_selection": self.candidate_selection_payload,
+            "tuning_policy": self.config.tuning_policy,
+            "tuning_policy_role": (
+                "claim_bearing_joint_measurement"
+                if self.config.tuning_policy == _MEASURED_JOINT_GRID_POLICY
+                else "diagnostic_only_legacy_policy"
+            ),
             "full_chain_runner_evidence": self.full_chain_runner_evidence,
             "selected_candidate_index": self.selected_candidate_index,
             "final_status": self.final_status,
@@ -441,6 +555,17 @@ class FixedTransportHMCKernelTuningResult:
             "hard_vetoes": self.hard_vetoes,
             "repair_triggers": self.repair_triggers,
             "passed": self.passed,
+            "authority_status": (
+                "tuning_candidate"
+                if self.passed
+                else (
+                    "diagnostic_only_legacy_policy"
+                    if self.config.tuning_policy == _LEGACY_DIRECTIONAL_POLICY
+                    else "tuning_failed"
+                )
+            ),
+            "posterior_status": "not_assessed",
+            "posterior_ready": False,
             "reports_posterior_convergence": False,
             "reports_sampler_superiority": False,
             "reports_default_readiness": False,
@@ -492,6 +617,11 @@ def build_verified_fixed_transport_hmc_handoff_from_tuning_result(
 
     if not isinstance(tuning_result, FixedTransportHMCKernelTuningResult):
         raise TypeError("tuning_result must be FixedTransportHMCKernelTuningResult")
+    if tuning_result.config.tuning_policy != _MEASURED_JOINT_GRID_POLICY:
+        raise ValueError(
+            "verified fixed-transport handoff requires measured_joint_grid_v1; "
+            "legacy directional results are diagnostic-only"
+        )
     if not tuning_result.passed or tuning_result.final_kernel_payload is None:
         raise ValueError("fixed-transport tuning result did not authorize a kernel")
     selected = tuning_result.selected_candidate
@@ -564,9 +694,11 @@ def build_verified_fixed_transport_hmc_handoff_from_tuning_result(
     acceptance = _scalar_or_none(
         kernel.get("verification_diagnostics", {}).get("acceptance_rate")
     )
+    if acceptance is None or not math.isfinite(acceptance) or not 0.0 <= acceptance <= 1.0:
+        raise ValueError("final kernel verification acceptance is missing or invalid")
     if (
-        acceptance is None
-        or not cfg.acceptance_band[0] <= acceptance <= cfg.acceptance_band[1]
+        cfg.tuning_policy == _LEGACY_DIRECTIONAL_POLICY
+        and not cfg.acceptance_band[0] <= acceptance <= cfg.acceptance_band[1]
     ):
         raise ValueError("final kernel verification acceptance is outside the pass band")
     selection = tuning_result.candidate_selection_payload
@@ -577,6 +709,22 @@ def build_verified_fixed_transport_hmc_handoff_from_tuning_result(
         != tuning_result.selected_candidate_index
     ):
         raise ValueError("fixed-transport tuning lacks a matching passed selection")
+    if (
+        selection.get("tuning_policy") != _MEASURED_JOINT_GRID_POLICY
+        or selection.get("all_candidate_pairs_measured") is not True
+        or selection.get("joint_measurement_required") is not True
+    ):
+        raise ValueError("fixed-transport handoff lacks measured joint-grid evidence")
+    grid = tuning_result.fixed_grid_scale_selection_payload
+    if (
+        not isinstance(grid, Mapping)
+        or grid.get("tuning_policy") != _MEASURED_JOINT_GRID_POLICY
+        or grid.get("all_declared_pairs_measured") is not True
+        or grid.get("all_declared_pairs_attempted") is not True
+        or int(grid.get("candidate_count", -1))
+        != len(cfg.step_size_candidates) * len(cfg.leapfrog_grid)
+    ):
+        raise ValueError("fixed-transport handoff lacks complete measured-grid evidence")
     if kernel.get("tuning_scope") != tuning_result.tuning_scope_payload:
         raise ValueError("final kernel tuning scope mismatch")
     if kernel.get("candidate_selection_hash") != _stable_hash(selection):
@@ -712,7 +860,12 @@ def tune_fixed_transport_hmc_kernel(
     route_record = require_active_hmc_tuning_route(
         "tune_fixed_transport_hmc_kernel"
     )
-    cfg = config or FixedTransportHMCKernelTuningConfig(initial_step_size=0.1)
+    cfg = config or FixedTransportHMCKernelTuningConfig(
+        initial_step_size=0.1,
+        step_size_candidates=(0.05, 0.1, 0.2),
+        leapfrog_grid=(5, 10),
+        tuning_policy=_MEASURED_JOINT_GRID_POLICY,
+    )
     if not isinstance(cfg, FixedTransportHMCKernelTuningConfig):
         raise TypeError("config must be FixedTransportHMCKernelTuningConfig")
     if (
@@ -800,8 +953,19 @@ def tune_fixed_transport_hmc_kernel(
     selected_raw = selection.get("selected_candidate_index")
     selected = None if selected_raw is None else int(selected_raw)
     selected_candidate = None if selected is None else candidates[selected]
+    legacy_diagnostic = cfg.tuning_policy == _LEGACY_DIRECTIONAL_POLICY
+    route_payload = dict(route_record.payload())
+    if legacy_diagnostic:
+        route_payload.update(
+            {
+                "artifact_authority": False,
+                "posterior_admission_authority": False,
+                "admission_supported": False,
+                "status_override": "diagnostic_only_legacy_policy",
+            }
+        )
     final_kernel = None
-    if selected_candidate is not None:
+    if selected_candidate is not None and not legacy_diagnostic:
         heldout = selection.get("heldout_verification")
         if cfg.selection_policy == "replicated_min_bulk_ess_per_gradient":
             if not isinstance(heldout, Mapping) or heldout.get("final_status") != "passed":
@@ -816,7 +980,7 @@ def tune_fixed_transport_hmc_kernel(
         )
         selection_evidence = selected_selection_row.get("selection_evidence")
         final_kernel = {
-            "schema": "bayesfilter.fixed_transport_hmc_kernel.v4",
+            "schema": "bayesfilter.fixed_transport_hmc_kernel.v5",
             "runtime": "bayesfilter.inference.tune_fixed_transport_hmc_kernel",
             "runtime_numerical_backend": "tensorflow_tfp_only",
             "step_size": selected_candidate.selected_step_size,
@@ -829,7 +993,7 @@ def tune_fixed_transport_hmc_kernel(
             "base_adapter_signature": base_signature,
             "fixed_transport_manifest_hash": adapter.transport_manifest_hash,
             "tuning_scope": tuning_scope.payload(),
-            "active_route": route_record.payload(),
+            "active_route": route_payload,
             "coordinate_identity": coordinate_payload,
             "source_dependency_closure_hash": _stable_hash(source_closure),
             "full_chain_runner_evidence": runner_evidence,
@@ -845,6 +1009,10 @@ def tune_fixed_transport_hmc_kernel(
             "mass_adaptation_used": False,
             "transport_training_or_adaptation_used": False,
             "selection_policy": cfg.selection_policy,
+            "tuning_policy": cfg.tuning_policy,
+            "authority_status": "tuning_candidate",
+            "posterior_status": "not_assessed",
+            "posterior_ready": False,
             "candidate_selection": selection,
             "candidate_selection_diagnostics": (
                 None
@@ -860,7 +1028,11 @@ def tune_fixed_transport_hmc_kernel(
             ),
             "nonclaims": FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS,
         }
-    final_status = str(selection.get("final_status", "no_viable_candidate"))
+    final_status = (
+        "diagnostic_only_legacy_policy"
+        if legacy_diagnostic
+        else str(selection.get("final_status", "no_viable_candidate"))
+    )
     selection_hard_vetoes = tuple(selection.get("hard_vetoes", ()))
     selection_repair_triggers = tuple(selection.get("repair_triggers", ()))
     result = FixedTransportHMCKernelTuningResult(
@@ -872,11 +1044,11 @@ def tune_fixed_transport_hmc_kernel(
         identity_z_mass_artifact_payload=mass_payload,
         identity_z_mass_artifact_signature=mass_signature,
         candidates=tuple(candidates),
-        selected_candidate_index=selected,
+        selected_candidate_index=None if legacy_diagnostic else selected,
         final_status=final_status,
         final_kernel_payload=final_kernel,
         tuning_scope_payload=tuning_scope.payload(),
-        route_record_payload=route_record.payload(),
+        route_record_payload=route_payload,
         coordinate_payload=coordinate_payload,
         source_dependency_closure=source_closure,
         candidate_selection_payload=selection,
@@ -891,6 +1063,7 @@ def tune_fixed_transport_hmc_kernel(
                     for veto in candidate.hard_vetoes
                 ]
                 + list(selection_hard_vetoes)
+                + (["legacy_tuning_policy_not_authoritative"] if legacy_diagnostic else [])
             )
         ),
         repair_triggers=tuple(
@@ -928,6 +1101,14 @@ def _candidate_attempts(
     run_full_chain: RunFullChainFn,
     passthrough_exceptions: tuple[type[Exception], ...],
 ) -> tuple[list[FixedTransportHMCCandidateResult], Mapping[str, Any] | None]:
+    if config.tuning_policy == _MEASURED_JOINT_GRID_POLICY:
+        return _measured_joint_grid_attempts(
+            config,
+            adapter=adapter,
+            z0=z0,
+            run_full_chain=run_full_chain,
+            passthrough_exceptions=passthrough_exceptions,
+        )
     if config.fixed_grid_base_step_size_candidates:
         return _fixed_grid_attempts(
             config,
@@ -948,6 +1129,97 @@ def _candidate_attempts(
         )
         for index, leapfrog in enumerate(config.leapfrog_grid)
     ], None
+
+
+def _measured_joint_grid_attempts(
+    config: FixedTransportHMCKernelTuningConfig,
+    *,
+    adapter: FixedTransportValueScoreAdapter,
+    z0: tf.Tensor,
+    run_full_chain: RunFullChainFn,
+    passthrough_exceptions: tuple[type[Exception], ...],
+) -> tuple[list[FixedTransportHMCCandidateResult], Mapping[str, Any]]:
+    """Measure every declared (step size, leapfrog count) pair.
+
+    The grid is deliberately boring: no adaptive result is used to infer a
+    neighboring pair, and no first-in-band result terminates traversal.  This
+    is the executable counterpart of ``measured_joint_grid_v1``.
+    """
+
+    pairs = tuple(
+        (float(step), int(leapfrog))
+        for step in config.step_size_candidates
+        for leapfrog in config.leapfrog_grid
+    )
+    if len(pairs) > config.max_joint_candidate_count:
+        # Config validation normally catches this. Keep the runtime check in
+        # place so a deserialized or caller-mutated object still fails closed.
+        raise ValueError(
+            "measured_joint_grid candidate count exceeds max_joint_candidate_count"
+        )
+    if (
+        config.maximum_candidate_step_size is not None
+        and any(step > config.maximum_candidate_step_size for step, _ in pairs)
+    ):
+        raise ValueError(
+            "measured_joint_grid step_size_candidates must not exceed "
+            "maximum_candidate_step_size"
+        )
+    candidates: list[FixedTransportHMCCandidateResult] = []
+    rows: list[Mapping[str, Any]] = []
+    for candidate_index, (step, leapfrog) in enumerate(pairs):
+        verification = _run_verification(
+            config,
+            adapter=adapter,
+            z0=z0,
+            step=step,
+            leapfrog=leapfrog,
+            candidate_index=candidate_index,
+            run_full_chain=run_full_chain,
+            probe_only=True,
+            passthrough_exceptions=passthrough_exceptions,
+        )
+        candidate = FixedTransportHMCCandidateResult(
+            candidate_index,
+            leapfrog,
+            None,
+            verification["config_payload"],
+            verification["diagnostics"],
+            verification["final_status"],
+            verification["diagnostic_role"],
+            fixed_kernel_step_size=step,
+            hard_vetoes=verification["hard_vetoes"],
+            repair_triggers=verification["repair_triggers"],
+        )
+        candidates.append(candidate)
+        rows.append(
+            {
+                "candidate_index": candidate_index,
+                "step_size": step,
+                "num_leapfrog_steps": leapfrog,
+                "measured": True,
+                "final_status": verification["final_status"],
+                "diagnostic_role": verification["diagnostic_role"],
+                "hard_vetoes": verification["hard_vetoes"],
+                "repair_triggers": verification["repair_triggers"],
+            }
+        )
+    payload = {
+        "artifact_type": "bayesfilter_fixed_transport_hmc_measured_joint_grid",
+        "schema_version": 2,
+        "tuning_policy": _MEASURED_JOINT_GRID_POLICY,
+        "step_size_candidates": config.step_size_candidates,
+        "leapfrog_grid": config.leapfrog_grid,
+        "candidate_count": len(pairs),
+        "max_joint_candidate_count": config.max_joint_candidate_count,
+        "all_declared_pairs_measured": True,
+        "all_declared_pairs_attempted": True,
+        "directional_inference_used": False,
+        "first_in_band_early_stop": False,
+        "attempts": tuple(rows),
+        "nonclaims": FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS,
+    }
+    return candidates, payload
 
 
 def _dual_averaging_candidate(
@@ -1166,8 +1438,10 @@ def _run_replicated_efficiency_selection(
     The minimum replication-level bulk-ESS-per-declared-gradient score prevents
     one unusually favorable short chain from winning the trajectory grid. These
     screens remain discarded heuristics. Every input candidate has already
-    passed an independent in-band fixed-kernel ladder screen, but has not yet
-    consumed the post-selection held-out verification.
+    passed an independent finite/health fixed-kernel screen, but has not yet
+    consumed the post-selection held-out verification. Acceptance-band status
+    is descriptive under the measured policy and does not define this screen's
+    validity.
     """
 
     rows = []
@@ -1218,6 +1492,8 @@ def _run_replicated_efficiency_selection(
             if mean_esjd is None or not math.isfinite(mean_esjd)
             else mean_esjd / float(leapfrog)
         )
+        if mean_esjd is None or not math.isfinite(mean_esjd) or mean_esjd <= 0.0:
+            replication_vetoes.append("selection_nonpositive_or_missing_retained_movement")
         prefixed_vetoes = tuple(
             f"selection_replication_{replication}_{reason}"
             for reason in dict.fromkeys(replication_vetoes)
@@ -1273,8 +1549,16 @@ def _run_replicated_efficiency_selection(
             else sum(acceptances) / float(len(acceptances))
         ),
         "acceptance_rate_by_replication": acceptances,
+        "acceptance_rate_std_across_replications": _sample_std(acceptances),
         "minimum_bulk_ess_per_declared_target_gradient": (
             min(scores) if len(scores) == config.selection_replications else None
+        ),
+        "minimum_bulk_ess_per_declared_target_gradient_by_replication": scores,
+        "minimum_bulk_ess_per_declared_target_gradient_mean": _mean_or_none(scores),
+        "minimum_bulk_ess_per_declared_target_gradient_std": _sample_std(scores),
+        "uncertainty_semantics": (
+            "descriptive sample standard deviation across independent selection "
+            "replications; not a confidence interval"
         ),
         "maximum_modern_rhat_across_replications": (
             max(rhats) if len(rhats) == config.selection_replications else None
@@ -1455,7 +1739,11 @@ def _run_verification(
         num_results = config.screen_num_results
         burnin = config.screen_num_burnin_steps
         seed = _derived_seed(config.screen_seed_base, 2, candidate_index)
-        diagnostic_context = "fixed_transport_step_ladder_screen"
+        diagnostic_context = (
+            "fixed_transport_joint_grid_screen"
+            if config.tuning_policy == _MEASURED_JOINT_GRID_POLICY
+            else "fixed_transport_step_ladder_screen"
+        )
         require_efficiency = False
     else:
         num_results = config.verification_num_results
@@ -1561,6 +1849,11 @@ def _verification_diagnostics(
     require_efficiency: bool = False,
 ) -> Mapping[str, Any]:
     payload = _tensor_diagnostics(result.samples, result.trace)
+    payload["acceptance_band_role"] = (
+        "hard_veto_and_repair_trigger_legacy_only"
+        if config.tuning_policy == _LEGACY_DIRECTIONAL_POLICY
+        else "descriptive_and_repair_trigger_only"
+    )
     run_diagnostics = dict(result.diagnostics)
     divergence_status = run_diagnostics.get(
         "divergence_status", run_diagnostics.get("native_divergence_status")
@@ -1610,8 +1903,8 @@ def _verification_diagnostics(
     state = tf.cast(tf.convert_to_tensor(initial_state), tf.float64)
     state_shape = tuple(int(value) for value in tf.shape(state).numpy().tolist())
     if len(sample_shape) == 3 and sample_shape[1:] == state_shape:
-        trajectory = tf.concat((state[tf.newaxis, :, :], samples), axis=0)
-        increments = trajectory[1:] - trajectory[:-1]
+        initial_displacement = samples[0] - state
+        retained_increments = samples[1:] - samples[:-1]
         maximum_displacement = tf.reduce_max(
             tf.abs(samples - state[tf.newaxis, :, :]), axis=(0, 2)
         )
@@ -1623,9 +1916,19 @@ def _verification_diagnostics(
             bool(value) for value in moved.numpy().tolist()
         )
         payload["all_chains_moved"] = bool(tf.reduce_all(moved).numpy())
-        payload["mean_squared_jump_distance_hmc_coordinates"] = float(
-            tf.reduce_mean(tf.reduce_sum(tf.square(increments), axis=-1)).numpy()
+        payload["initial_to_first_retained_squared_jump_distance_hmc_coordinates"] = float(
+            tf.reduce_mean(tf.reduce_sum(tf.square(initial_displacement), axis=-1)).numpy()
         )
+        if int(sample_shape[0]) > 1:
+            payload["mean_squared_jump_distance_hmc_coordinates"] = float(
+                tf.reduce_mean(
+                    tf.reduce_sum(tf.square(retained_increments), axis=-1)
+                ).numpy()
+            )
+        else:
+            payload["mean_squared_jump_distance_hmc_coordinates"] = None
+        payload["jump_distance_excludes_initial_state"] = True
+        payload["retained_transition_count"] = max(int(sample_shape[0]) - 1, 0)
     else:
         payload["maximum_displacement_by_chain"] = None
         payload["chain_movement_by_chain"] = None
@@ -1704,7 +2007,8 @@ def _classify_verification(
     if acceptance is None or not math.isfinite(acceptance):
         hard.append("verification_acceptance_missing_or_nonfinite")
     elif not acceptance_band[0] <= acceptance <= acceptance_band[1]:
-        hard.append("verification_acceptance_outside_pass_band")
+        if config.tuning_policy == _LEGACY_DIRECTIONAL_POLICY:
+            hard.append("verification_acceptance_outside_pass_band")
     hard.extend(
         _basic_hard_vetoes(
             diagnostics,
@@ -1929,6 +2233,13 @@ def _select_candidates(
     posterior draws.
     """
 
+    if (
+        config.tuning_policy == _MEASURED_JOINT_GRID_POLICY
+        and config.selection_policy != "replicated_min_bulk_ess_per_gradient"
+    ):
+        raise ValueError(
+            "measured_joint_grid requires replicated_min_bulk_ess_per_gradient"
+        )
     candidate_rows: list[dict[str, Any]] = []
     selection_hard_vetoes: list[str] = []
     selection_repair_triggers: list[str] = []
@@ -1970,6 +2281,9 @@ def _select_candidates(
                 {
                     "selection_evidence": evidence,
                     "eligible": eligible,
+                    "authority_status": (
+                        "tuning_candidate" if eligible else "candidate_rejected"
+                    ),
                     "minimum_bulk_ess_per_declared_target_gradient": (
                         diagnostics.get(
                             "minimum_bulk_ess_per_declared_target_gradient"
@@ -1992,6 +2306,9 @@ def _select_candidates(
                 {
                     "selection_evidence": None,
                     "eligible": candidate.passed,
+                    "authority_status": (
+                        "tuning_candidate" if candidate.passed else "candidate_rejected"
+                    ),
                     "minimum_bulk_ess_per_declared_target_gradient": None,
                     "maximum_modern_rhat_across_replications": None,
                 }
@@ -2072,8 +2389,12 @@ def _select_candidates(
         nominated_candidate_index=nominated,
     )
     return {
-        "schema": "bayesfilter.fixed_transport_hmc_candidate_selection.v3",
+        "schema": "bayesfilter.fixed_transport_hmc_candidate_selection.v4",
         "selection_policy": config.selection_policy,
+        "tuning_policy": config.tuning_policy,
+        "joint_measurement_required": (
+            config.tuning_policy == _MEASURED_JOINT_GRID_POLICY
+        ),
         "selection_acceptance_band": config.selection_acceptance_band,
         "selection_replications": config.selection_replications,
         "selection_num_results": config.selection_num_results,
@@ -2098,6 +2419,11 @@ def _select_candidates(
             if config.selection_policy == "replicated_min_bulk_ess_per_gradient"
             else "minimize acceptance target distance; L; step size; candidate order"
         ),
+        "all_candidate_pairs_measured": (
+            config.tuning_policy == _MEASURED_JOINT_GRID_POLICY
+        ),
+        "posterior_status": "not_assessed",
+        "posterior_ready": False,
         "final_status": final_status,
         "hard_vetoes": tuple(dict.fromkeys(selection_hard_vetoes)),
         "repair_triggers": tuple(dict.fromkeys(selection_repair_triggers)),
@@ -2315,6 +2641,24 @@ def _scalar_or_none(value: Any) -> float | None:
         return None
 
 
+def _mean_or_none(values: Sequence[float]) -> float | None:
+    if not values:
+        return None
+    return sum(float(value) for value in values) / float(len(values))
+
+
+def _sample_std(values: Sequence[float]) -> float | None:
+    """Return a descriptive sample standard deviation without NumPy."""
+
+    if len(values) < 2:
+        return None
+    mean = sum(float(value) for value in values) / float(len(values))
+    variance = sum((float(value) - mean) ** 2 for value in values) / float(
+        len(values) - 1
+    )
+    return math.sqrt(variance)
+
+
 def _int_or_none(value: Any) -> int | None:
     scalar = _scalar_or_none(value)
     return None if scalar is None else int(scalar)
@@ -2371,6 +2715,8 @@ def _string_tuple(value: Sequence[str] | str) -> tuple[str, ...]:
 
 
 __all__ = [
+    "FIXED_TRANSPORT_HMC_MEASURED_POLICY",
+    "FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY",
     "FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS",
     "FixedTransportHMCCandidateResult",
     "FixedTransportHMCKernelTuningConfig",

@@ -176,6 +176,8 @@ def test_phase5_tuning_config_builds_fresh_modern_verifier() -> None:
     assert config.verification_num_results == 1000
     assert config.verification_seed_base != config.screen_seed_base
     assert config.require_modern_rank_normalized_verification is True
+    assert config.tuning_policy == "legacy_directional_diagnostic_v1"
+    assert config.selection_policy == "acceptance_target_distance"
 
 
 def test_score_parity_summary_checks_score_not_only_forward() -> None:

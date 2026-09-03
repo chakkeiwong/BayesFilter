@@ -229,6 +229,17 @@ docs/plans/artifacts/**/.material-run.lock
 # Bounded static HMC migration audit output is reproducible local diagnostics.
 docs/plans/artifacts/ordinary-hmc-migration-debt-2026-09-03/
 
+# Per-worker summaries and test/review render sidecars are generated execution
+# output. The campaign-level summaries, manifests, and result receipts remain
+# visible through the allow-list rules above.
+docs/plans/artifacts/**/*worker_summary.json
+docs/plans/artifacts/**/*-junit.xml
+docs/plans/artifacts/**/note.tex
+
+# This malformed retry directory was emitted by an old wrapper with a literal
+# closing brace in its name; retain no generated copy in Git.
+docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-09-02/phase9a-full-replay}/
+
 # Compact receipts that support the current q=20 and PP-UKF decisions remain
 # visible; checkpoints, private payloads, and per-arm traces stay ignored by
 # the general JSON rule above.

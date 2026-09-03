@@ -17,6 +17,7 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 import tensorflow as tf
 
 from bayesfilter.inference import (
+    FIXED_TRANSPORT_HMC_MEASURED_POLICY,
     FixedTransportHMCKernelTuningConfig,
     ValueScoreCapability,
     tune_fixed_transport_hmc_kernel,
@@ -93,21 +94,23 @@ result = tune_fixed_transport_hmc_kernel(
     initial_position=[0.25, -0.25],
     config=FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
-        leapfrog_grid=(2,),
+        # Claim-bearing tuning measures every declared (epsilon, L) pair.
+        step_size_candidates=(0.05, 0.1, 0.2),
+        leapfrog_grid=(2, 4),
         chain_count=4,
-        budget_schedule=(2,),
-        tune_num_results=2,
-        screen_num_results=2,
-        screen_num_burnin_steps=1,
-        verification_num_results=2,
-        verification_num_burnin_steps=1,
+        selection_replications=2,
+        selection_num_results=16,
+        selection_num_burnin_steps=4,
+        verification_num_results=8,
+        verification_num_burnin_steps=2,
         chain_execution_mode="eager",
         use_xla=False,
         target_scope="docs_fixed_transport_analytic_gaussian",
+        tuning_policy=FIXED_TRANSPORT_HMC_MEASURED_POLICY,
     ),
 )
 payload = result.payload()
 
-assert payload["schema"] == "bayesfilter.fixed_transport_hmc_kernel_tuning_result.v4"
+assert payload["schema"] == "bayesfilter.fixed_transport_hmc_kernel_tuning_result.v5"
 assert payload["reports_posterior_convergence"] is False
 print(payload["final_status"])

@@ -2398,11 +2398,17 @@ def _phase5_tuning_config(
     source_suffix: str,
 ):
     from bayesfilter.inference.fixed_transport_hmc_tuning import (
+        FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
         FixedTransportHMCKernelTuningConfig,
     )
 
     return FixedTransportHMCKernelTuningConfig(
         initial_step_size=TUNING_BASE_STEP_SIZE,
+        # This July campaign predates the measured joint-grid contract.  Keep
+        # its one-L directional ladder available only as an explicit
+        # diagnostic record; it cannot issue a claim-bearing handoff.
+        tuning_policy=FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
+        selection_policy="acceptance_target_distance",
         leapfrog_grid=(TUNING_LEAPFROG_STEPS,),
         chain_count=CHAIN_COUNT,
         target_accept_prob=0.70,

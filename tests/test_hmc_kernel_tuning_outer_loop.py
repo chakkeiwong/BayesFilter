@@ -1905,6 +1905,9 @@ def test_nonidentity_result_geometry_survives_durable_mechanics_replay(
 
     mechanics = admitted["mechanics"]
     assert mechanics["mass_policy"] == "windowed_adaptive"
+    assert mechanics["tuning_config"]["ordinary_selection_policy"] == (
+        tuning_result.config.payload()["ordinary_selection_policy"]
+    )
     assert mechanics["initial_mass_artifact_payload"]["covariance"] == [
         [2.0, 0.0],
         [0.0, 5.0],

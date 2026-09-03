@@ -245,6 +245,20 @@ class LeapfrogAcceptanceFakeHMC(FakeHMC):
         return super().__call__(adapter, initial_state, config)
 
 
+class RejectedLeapfrogFakeHMC(FakeHMC):
+    """Reject one measured L through invalid target telemetry."""
+
+    def __call__(self, adapter, initial_state, config) -> FullChainHMCRunResult:
+        result = super().__call__(adapter, initial_state, config)
+        if int(config.num_leapfrog_steps) != 5:
+            return result
+        trace = dict(result.trace)
+        trace["target_log_prob"] = tf.fill(
+            tf.shape(trace["target_log_prob"]), tf.constant(float("nan"), tf.float64)
+        )
+        return replace(result, trace=trace)
+
+
 class HeldoutFailureFakeHMC(EfficiencyRankingFakeHMC):
     def __call__(self, adapter, initial_state, config) -> FullChainHMCRunResult:
         self.acceptance = (
@@ -253,7 +267,15 @@ class HeldoutFailureFakeHMC(EfficiencyRankingFakeHMC):
             and int(config.num_burnin_steps) == 5
             else 0.72
         )
-        return super().__call__(adapter, initial_state, config)
+        result = super().__call__(adapter, initial_state, config)
+        if int(config.num_results) == 10:
+            trace = dict(result.trace)
+            trace["target_log_prob"] = tf.fill(
+                tf.shape(trace["target_log_prob"]),
+                tf.constant(float("nan"), tf.float64),
+            )
+            return replace(result, trace=trace)
+        return result
 
 
 class AllLeapfrogEfficiencyFakeHMC(FakeHMC):
@@ -413,6 +435,7 @@ class EnergyTailFakeHMC(ArchiveFakeHMC):
 def _config() -> FixedTransportHMCKernelTuningConfig:
     return FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.11,
+        step_size_candidates=(0.05, 0.1, 0.2),
         leapfrog_grid=(5, 7),
         chain_count=4,
         budget_schedule=(3,),
@@ -430,11 +453,19 @@ def _config() -> FixedTransportHMCKernelTuningConfig:
 
 
 def test_fixed_transport_defaults_match_owner_acceptance_policy() -> None:
-    config = FixedTransportHMCKernelTuningConfig(initial_step_size=0.1)
+    with pytest.raises(ValueError, match="at least two distinct step_size_candidates"):
+        FixedTransportHMCKernelTuningConfig(initial_step_size=0.1)
+    config = FixedTransportHMCKernelTuningConfig(
+        initial_step_size=0.1,
+        step_size_candidates=(0.05, 0.1),
+        leapfrog_grid=(5, 7),
+    )
     assert config.target_accept_prob == 0.70
     assert config.acceptance_band == (0.65, 0.75)
     assert config.repair_band == (0.55, 0.85)
     assert config.maximum_absolute_energy_error == 1000.0
+    assert config.tuning_policy == "measured_joint_grid_v1"
+    assert config.selection_policy == "replicated_min_bulk_ess_per_gradient"
     assert config.use_xla is True
 
 
@@ -457,7 +488,8 @@ def test_fixed_transport_tuning_forbids_one_leapfrog_step(overrides) -> None:
 def _modern_config(**overrides) -> FixedTransportHMCKernelTuningConfig:
     values = {
         "initial_step_size": 0.2,
-        "leapfrog_grid": (5,),
+        "step_size_candidates": (0.1, 0.2),
+        "leapfrog_grid": (5, 7),
         "chain_count": 4,
         "budget_schedule": (3,),
         "tune_num_results": 2,
@@ -473,10 +505,7 @@ def _modern_config(**overrides) -> FixedTransportHMCKernelTuningConfig:
         "chain_execution_mode": "eager",
         "use_xla": False,
         "target_scope": "gaussian_fixture_fixed_transport",
-        "fixed_grid_base_step_size_candidates": (0.2,),
-        "fixed_grid_scale_candidates": (1.0,),
-        "fixed_grid_num_leapfrog_steps": 5,
-        "fixed_grid_max_attempts": 1,
+        "selection_replications": 2,
     }
     values.update(overrides)
     return FixedTransportHMCKernelTuningConfig(**values)
@@ -583,7 +612,7 @@ def test_fixed_transport_hmc_tuner_still_converts_undeclared_runtime_error() -> 
     )
 
     assert result.passed is False
-    assert "tune_samples_nonfinite_or_missing" in result.hard_vetoes
+    assert "verification_runtime_error" in result.hard_vetoes
 
 
 def test_fixed_transport_hmc_tuner_uses_and_records_explicit_initial_state_bank() -> None:
@@ -639,7 +668,7 @@ def test_nominal_acceptance_cannot_promote_stuck_chains() -> None:
     assert "verification_chain_without_movement" in result.hard_vetoes
 
 
-def test_move_then_return_to_initial_state_counts_as_movement() -> None:
+def test_initial_jump_does_not_count_as_retained_movement() -> None:
     result = tune_fixed_transport_hmc_kernel(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
@@ -648,15 +677,23 @@ def test_move_then_return_to_initial_state_counts_as_movement() -> None:
         run_full_chain=MoveThenReturnFakeHMC(),
     )
 
-    assert result.passed
-    diagnostics = result.selected_candidate.verification_diagnostics
+    assert not result.passed
+    diagnostics = result.candidates[0].verification_diagnostics
     assert diagnostics["all_chains_moved"] is True
-    assert all(value > 0.0 for value in diagnostics["maximum_displacement_by_chain"])
+    assert diagnostics["jump_distance_excludes_initial_state"] is True
+    assert diagnostics["mean_squared_jump_distance_hmc_coordinates"] > 0.0
+    assert any(
+        "selection_efficiency_nonfinite" in veto
+        or "selection_nonpositive_or_missing_retained_movement" in veto
+        for veto in result.hard_vetoes
+    )
 
 
 def test_dual_averaging_does_not_validate_fixed_grid_fallback_against_pass_band() -> None:
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
+        tuning_policy="legacy_directional_diagnostic_v1",
+        selection_policy="acceptance_target_distance",
         acceptance_band=(0.65, 0.90),
         repair_band=(0.35, 0.95),
     )
@@ -668,6 +705,8 @@ def test_dual_averaging_does_not_validate_fixed_grid_fallback_against_pass_band(
     with pytest.raises(ValueError, match="contain the pass-band upper bound"):
         FixedTransportHMCKernelTuningConfig(
             initial_step_size=0.1,
+            tuning_policy="legacy_directional_diagnostic_v1",
+            selection_policy="acceptance_target_distance",
             acceptance_band=(0.65, 0.90),
             repair_band=(0.35, 0.95),
             fixed_grid_base_step_size_candidates=(0.1,),
@@ -680,7 +719,7 @@ def test_replicated_efficiency_policy_screens_every_ladder_nominee_then_holds_ou
         **{
             **_config().__dict__,
             "selection_policy": "replicated_min_bulk_ess_per_gradient",
-            "selection_replications": 1,
+            "selection_replications": 2,
             "selection_num_results": 64,
             "selection_num_burnin_steps": 32,
             "selection_acceptance_band": (0.35, 0.95),
@@ -700,17 +739,21 @@ def test_replicated_efficiency_policy_screens_every_ladder_nominee_then_holds_ou
     assert result.passed
     assert result.selected_candidate_index == 1
     rows = result.candidate_selection_payload["candidate_rows"]
-    assert [row["candidate_index"] for row in rows if row["selection_evidence"]] == [
-        0,
-        1,
-    ]
+    assert [row["candidate_index"] for row in rows if row["selection_evidence"]] == list(
+        range(6)
+    )
     assert all(row["eligible"] for row in rows)
     selection_calls = [
         call
         for call in fake_hmc.calls
         if call["num_results"] == 64 and call["num_burnin_steps"] == 32
     ]
-    assert [call["num_leapfrog_steps"] for call in selection_calls] == [5, 7]
+    assert [call["num_leapfrog_steps"] for call in selection_calls] == [
+        5,
+        5,
+        7,
+        7,
+    ] * 3
     selection = result.candidate_selection_payload
     assert selection["candidate_verification_serves_as_final"] is False
     assert selection["post_selection_candidate_only_verification_used"] is True
@@ -761,26 +804,37 @@ def test_replicated_efficiency_traverses_all_l_values_and_tunes_epsilon_independ
     )
 
     assert result.passed
-    assert tuple(candidate.num_leapfrog_steps for candidate in result.candidates) == leapfrogs
+    assert tuple(candidate.num_leapfrog_steps for candidate in result.candidates) == (
+        leapfrogs * len(config.step_size_candidates)
+    )
     assert tuple(candidate.selected_step_size for candidate in result.candidates) == tuple(
-        0.1 + 0.001 * leapfrog for leapfrog in leapfrogs
+        step
+        for step in config.step_size_candidates
+        for _ in leapfrogs
     )
     adaptation_calls = [
         call for call in fake_hmc.calls if call["tuning_policy"] == "fixed_mass_dual_averaging"
     ]
-    assert [call["num_leapfrog_steps"] for call in adaptation_calls] == list(leapfrogs)
+    assert adaptation_calls == []
     selection_calls = [
         call
         for call in fake_hmc.calls
         if call["num_results"] == 16 and call["num_burnin_steps"] == 8
     ]
-    assert len(selection_calls) == 3 * len(leapfrogs)
+    assert len(selection_calls) == (
+        config.selection_replications
+        * len(config.step_size_candidates)
+        * len(leapfrogs)
+    )
     assert {
         leapfrog: sum(
             call["num_leapfrog_steps"] == leapfrog for call in selection_calls
         )
         for leapfrog in leapfrogs
-    } == {leapfrog: 3 for leapfrog in leapfrogs}
+    } == {
+        leapfrog: config.selection_replications * len(config.step_size_candidates)
+        for leapfrog in leapfrogs
+    }
     heldout_calls = [
         call
         for call in fake_hmc.calls
@@ -800,7 +854,7 @@ def test_failed_post_selection_holdout_suppresses_kernel_without_trying_runner_u
         **{
             **_config().__dict__,
             "selection_policy": "replicated_min_bulk_ess_per_gradient",
-            "selection_replications": 1,
+            "selection_replications": 2,
             "selection_num_results": 64,
             "selection_num_burnin_steps": 32,
             "selection_acceptance_band": (0.35, 0.95),
@@ -852,7 +906,7 @@ def test_selection_requires_complete_target_value_and_score_telemetry(
         **{
             **_config().__dict__,
             "selection_policy": "replicated_min_bulk_ess_per_gradient",
-            "selection_replications": 1,
+            "selection_replications": 2,
             "selection_num_results": 64,
             "selection_num_burnin_steps": 32,
             "selection_acceptance_band": (0.35, 0.95),
@@ -888,6 +942,8 @@ def test_dual_averaging_screen_repairs_epsilon_in_the_correct_direction(
             **_config().__dict__,
             "initial_step_size": 0.1,
             "leapfrog_grid": (5,),
+            "tuning_policy": "legacy_directional_diagnostic_v1",
+            "selection_policy": "acceptance_target_distance",
             "budget_schedule": (3, 6),
             "acceptance_band": (0.65, 0.75),
             "repair_band": (0.55, 0.85),
@@ -901,7 +957,9 @@ def test_dual_averaging_screen_repairs_epsilon_in_the_correct_direction(
         run_full_chain=AcceptanceRepairFakeHMC(direction=direction),
     )
 
-    assert result.passed
+    assert not result.passed
+    assert result.final_status == "diagnostic_only_legacy_policy"
+    assert result.final_kernel_payload is None
     rounds = result.candidates[0].ladder_result["rounds"]
     assert rounds[0]["initial_step_size"] == 0.1
     assert rounds[0]["repair_triggers"] == (expected_trigger,)
@@ -949,7 +1007,7 @@ def test_rejected_candidate_never_runs_efficiency_selection() -> None:
             "selection_acceptance_band": (0.35, 0.95),
         }
     )
-    fake_hmc = LeapfrogAcceptanceFakeHMC()
+    fake_hmc = RejectedLeapfrogFakeHMC()
     result = tune_fixed_transport_hmc_kernel(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
@@ -969,7 +1027,7 @@ def test_rejected_candidate_never_runs_efficiency_selection() -> None:
         for call in fake_hmc.calls
         if call["num_results"] == 64 and call["num_burnin_steps"] == 32
     ]
-    assert [call["num_leapfrog_steps"] for call in selection_calls] == [7]
+    assert [call["num_leapfrog_steps"] for call in selection_calls] == [7] * 6
 
 
 def test_verified_handoff_rejects_target_scope_substitution() -> None:
@@ -1141,6 +1199,8 @@ def test_real_tfp_xla_route_uses_shared_scalar_step_and_zero_chain_bank() -> Non
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
         leapfrog_grid=(2,),
+        tuning_policy="legacy_directional_diagnostic_v1",
+        selection_policy="acceptance_target_distance",
         chain_count=4,
         budget_schedule=(2,),
         tune_num_results=2,
@@ -1167,7 +1227,8 @@ def test_real_tfp_xla_route_uses_shared_scalar_step_and_zero_chain_bank() -> Non
     assert runner_evidence["runner_count"] == 2
     assert runner_evidence["total_call_count"] == 3
     assert runner_evidence["all_runners_traced_exactly_once"] is True
-    assert result.final_kernel_payload["full_chain_runner_evidence"] == runner_evidence
+    assert result.final_status == "diagnostic_only_legacy_policy"
+    assert result.final_kernel_payload is None
     ladder = result.candidates[0].ladder_result
     assert ladder is not None
     assert ladder["shared_scalar_step_across_chain_bank"] is True
@@ -1192,7 +1253,7 @@ def test_fixed_transport_hmc_tuner_forbids_gradient_tape_fallback() -> None:
         )
 
 
-def test_fixed_transport_hmc_tuner_records_no_viable_candidate() -> None:
+def test_fixed_transport_hmc_tuner_keeps_valid_high_acceptance_candidate() -> None:
     result = tune_fixed_transport_hmc_kernel(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
@@ -1201,14 +1262,11 @@ def test_fixed_transport_hmc_tuner_records_no_viable_candidate() -> None:
         run_full_chain=FakeHMC(acceptance=0.99),
     )
 
-    assert not result.passed
-    assert result.final_status == "no_viable_candidate"
-    assert result.final_kernel_payload is None
-    assert result.selected_candidate_index is None
-    assert any(
-        "screen_acceptance_above_repair_band" in candidate.repair_triggers
-        or "screen_acceptance_outside_repair_band" in candidate.hard_vetoes
-        or "verification_acceptance_outside_repair_band" in candidate.hard_vetoes
+    assert result.passed
+    assert result.final_kernel_payload is not None
+    assert result.selected_candidate_index is not None
+    assert all(
+        "verification_acceptance_outside_pass_band" not in candidate.hard_vetoes
         for candidate in result.candidates
     )
 
@@ -1229,6 +1287,8 @@ def test_fixed_transport_hmc_tuner_runs_bayesfilter_fixed_grid_scale_repair() ->
         chain_execution_mode="eager",
         use_xla=False,
         target_scope="gaussian_fixture_fixed_transport",
+        tuning_policy="legacy_directional_diagnostic_v1",
+        selection_policy="acceptance_target_distance",
         fixed_grid_base_step_size_candidates=(0.05, 0.5),
         fixed_grid_scale_candidates=(0.1, 0.2, 1.0, 5.0, 9.0),
         fixed_grid_num_leapfrog_steps=5,
@@ -1245,7 +1305,8 @@ def test_fixed_transport_hmc_tuner_runs_bayesfilter_fixed_grid_scale_repair() ->
         run_full_chain=fake_hmc,
     )
 
-    assert result.passed
+    assert not result.passed
+    assert result.final_status == "diagnostic_only_legacy_policy"
     assert result.fixed_grid_scale_selection_payload is not None
     scale_payload = result.fixed_grid_scale_selection_payload
     assert scale_payload["artifact_type"] == (
@@ -1273,8 +1334,7 @@ def test_fixed_transport_hmc_tuner_runs_bayesfilter_fixed_grid_scale_repair() ->
         call["num_leapfrog_steps"] == config.fixed_grid_num_leapfrog_steps
         for call in fake_hmc.calls
     )
-    assert result.final_kernel_payload is not None
-    assert result.final_kernel_payload["step_size"] == 4.5
+    assert result.final_kernel_payload is None
 
 
 def test_modern_verification_requires_four_chains_and_1000_draws() -> None:
@@ -1321,7 +1381,10 @@ def test_modern_verification_passes_from_real_iid_archive() -> None:
     assert modern["rhat_definition"] == (
         "max(rank-normalized split R-hat, folded rank-normalized split R-hat)"
     )
-    assert [call["num_results"] for call in fake_hmc.calls] == [2, 1000]
+    assert [call["num_results"] for call in fake_hmc.calls].count(1000) == 1
+    # The measured joint grid evaluates each of four (epsilon, L) pairs
+    # under two independent selection replications.
+    assert [call["num_results"] for call in fake_hmc.calls].count(64) == 8
 
 
 def test_modern_verification_folded_rhat_vetoes_in_band_acceptance() -> None:
@@ -1335,21 +1398,21 @@ def test_modern_verification_folded_rhat_vetoes_in_band_acceptance() -> None:
 
     assert not result.passed
     assert result.final_kernel_payload is None
-    assert len(result.candidates) == 1
-    assert result.candidates[0].final_status == "hard_veto"
+    assert len(result.candidates) == 4
+    assert result.candidates[0].final_status == "passed"
     scale = result.fixed_grid_scale_selection_payload
     assert scale is not None
     attempt = scale["attempts"][0]
-    assert attempt["probe_diagnostics"]["modern_rank_normalized_verification"] is None
-    assert attempt["pilot_acceptance_rate"] == pytest.approx(0.70)
-    modern = result.candidates[0].verification_diagnostics[
+    assert attempt["measured"] is True
+    assert result.candidate_selection_payload["heldout_verification"]["final_status"] == (
+        "hard_veto"
+    )
+    modern = result.candidate_selection_payload["heldout_verification"]["diagnostics"][
         "modern_rank_normalized_verification"
     ]
     assert modern["max_rank_normalized_split_rhat"] < 1.01
     assert modern["max_folded_rank_normalized_split_rhat"] > 1.01
-    assert "verification_modern_rank_folded_rhat_failed" in result.candidates[
-        0
-    ].hard_vetoes
+    assert "heldout_verification_modern_rank_folded_rhat_failed" in result.hard_vetoes
 
 
 def test_diagnostic_modern_rhat_is_reported_without_vetoing_healthy_mechanics() -> None:
@@ -1433,12 +1496,12 @@ def test_verification_target_status_failure_is_a_hard_veto() -> None:
     )
 
     assert not result.passed
-    assert len(result.candidates) == 0
+    assert len(result.candidates) == 4
     scale = result.fixed_grid_scale_selection_payload
     assert scale is not None
-    assert "verification_target_status_telemetry_failure" in scale["attempts"][0][
-        "probe_hard_vetoes"
-    ]
+    assert "verification_target_status_telemetry_failure" in result.candidates[
+        0
+    ].hard_vetoes
 
 
 def test_native_divergence_is_a_hard_veto() -> None:
@@ -1453,9 +1516,7 @@ def test_native_divergence_is_a_hard_veto() -> None:
     assert not result.passed
     scale = result.fixed_grid_scale_selection_payload
     assert scale is not None
-    assert "verification_native_divergence_detected" in scale["attempts"][0][
-        "probe_hard_vetoes"
-    ]
+    assert "verification_native_divergence_detected" in result.candidates[0].hard_vetoes
 
 
 def test_unavailable_native_divergence_is_recorded_but_not_a_veto() -> None:
@@ -1470,8 +1531,7 @@ def test_unavailable_native_divergence_is_recorded_but_not_a_veto() -> None:
     assert result.passed
     scale = result.fixed_grid_scale_selection_payload
     assert scale is not None
-    assert scale["attempts"][0]["probe_hard_vetoes"] == ()
-    diagnostics = scale["attempts"][0]["probe_diagnostics"]
+    diagnostics = result.candidates[0].verification_diagnostics
     assert diagnostics["divergence_status"] == "not_exposed_by_kernel"
     assert diagnostics["divergence_count"] is None
     assert diagnostics["native_divergence_interpretation"] == (
@@ -1490,8 +1550,7 @@ def test_finite_log_accept_energy_tail_is_explanatory_only() -> None:
     assert result.passed
     scale = result.fixed_grid_scale_selection_payload
     assert scale is not None
-    assert scale["attempts"][0]["probe_hard_vetoes"] == ()
-    diagnostics = result.selected_candidate.verification_diagnostics
+    diagnostics = result.final_kernel_payload["verification_diagnostics"]
     assert diagnostics["max_abs_log_accept_energy_proxy"] == pytest.approx(1001.0)
     assert diagnostics["log_accept_energy_proxy_alert"] is True
     assert diagnostics["log_accept_energy_proxy_role"] == "explanatory_alert_only"

@@ -21,3 +21,20 @@ package or environment change, HMC, NeuTra training, LEDH execution, public
 release, broader compute, or any scientific/default promotion. The next
 command remains the exact Phase 52 six-bank boundary already specified in the
 Phase 52 subplan, followed by its CPU-hidden report if the boundary passes.
+
+## Completion
+
+The managed-session route subsequently admitted the exact trusted boundary,
+exposed both RTX 4080 SUPER devices, verified memory growth, and completed the
+GPU/XLA run. The CPU-hidden report also completed. This establishes that the
+replacement execution and approval path works for the required repository
+workload; it does not establish that every independent remote Codex endpoint is
+healthy.
+
+The report selected `fresh_geometry_uncertainty_incompatible`, so the frozen
+geometry candidate was rejected under the unchanged scientific criterion. The
+campaign then closed with `4483.656990259071 s` remaining because a new valid
+disjoint calibration/validation phase is under-budgeted. See
+`docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-result-2026-08-28.md`
+and
+`docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-repair-refresh-2026-08-28.md`.

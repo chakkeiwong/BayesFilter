@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from typing import Any, Mapping
 
 import tensorflow as tf
@@ -80,6 +81,7 @@ class BatchNativeSSLLSTMComplexityPosteriorTarget:
             }
         )
         self._compiled_batches: dict[int, Any] = {}
+        self._compiled_component_batches: dict[int, Any] = {}
         self.supports_retained_flat_batch = True
         self.supports_retained_value_score_status = True
         self._fixed = unpack_ssl_lstm_parameters(
@@ -139,6 +141,52 @@ class BatchNativeSSLLSTMComplexityPosteriorTarget:
             "evidence_path": _EVIDENCE_PATH,
         }
 
+    def bridge_source_facts(self) -> Mapping[str, Any]:
+        """Return the fixed facts used by the q-specific bridge proof.
+
+        The values are materialized only at the host-side identity/artifact
+        boundary.  The target and bridge numerical kernels remain TensorFlow
+        programs and do not use these Python values for computation.
+        """
+        from bayesfilter.nonlinear.sigma_points_tf import tf_unit_sigma_point_rule
+
+        augmented_dim = int(self.config.static_config.augmented_state_dim)
+        rule = tf_unit_sigma_point_rule(
+            augmented_dim,
+            rule="unscented",
+            alpha=1.0,
+            beta=2.0,
+            kappa=0.0,
+        )
+        observation_variance = tf.reshape(self._fixed.observation_covariance, [-1])[0]
+        # Identity metadata must be portable across CPU/GPU reductions.  The
+        # TensorFlow reduction of these fixed weights can differ by one ulp
+        # with device/order (for example 3.0 versus 2.9999999999999996), which
+        # must not create distinct mathematical bridge identities.
+        covariance_weights = [
+            float(value) for value in rule.covariance_weights.numpy().tolist()
+        ]
+        return {
+            "horizon": int(self.config.static_config.horizon),
+            "observation_dim": int(self.config.static_config.observation_dim),
+            "augmented_state_dim": augmented_dim,
+            "parameter_dim": self.parameter_dim,
+            "prior_variance": float(self.config.prior_standard_deviation) ** 2,
+            "observation_variance": float(observation_variance.numpy()),
+            "sigma_rule": rule.name,
+            "sigma_alpha": 1.0,
+            "sigma_beta": 2.0,
+            "sigma_kappa": 0.0,
+            "covariance_weights": covariance_weights,
+            "covariance_weights_nonnegative": all(
+                value >= 0.0 for value in covariance_weights
+            ),
+            "covariance_weight_sum": math.fsum(covariance_weights),
+            "gaussian_innovation_factorization": True,
+            "likelihood_strictly_positive": True,
+            "target_signature": self.target_signature(),
+        }
+
     def batch_value_and_score(self, free: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.convert_to_tensor(free, tf.float64)
         if values.shape.rank != 2 or values.shape[-1] != 4:
@@ -163,6 +211,39 @@ class BatchNativeSSLLSTMComplexityPosteriorTarget:
     ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
         return _batch_native_neutra_value_score_status(self, theta)
 
+    def batch_prior_likelihood_value_score_status(
+        self, theta: Any
+    ) -> tuple[
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        Mapping[str, tf.Tensor],
+    ]:
+        """Return prior and likelihood terms from one target evaluation.
+
+        Both terms are produced by the same custom-gradient filter program.
+        A temperature bridge can therefore combine them without subtracting
+        separately rounded posterior and prior calls.
+        """
+        values = tf.convert_to_tensor(theta, tf.float64)
+        if values.shape.rank != 2 or values.shape[-1] != 4:
+            raise ValueError("batch-native target requires shape [batch,4]")
+        batch_size = values.shape[0]
+        if batch_size is None:
+            raise ValueError("batch-native target requires a static batch size")
+        size = int(batch_size)
+        compiled = self._compiled_component_batches.get(size)
+        if compiled is None:
+            compiled = tf.function(
+                self._batch_prior_likelihood_value_score_status_impl,
+                input_signature=(tf.TensorSpec([size, 4], tf.float64),),
+                jit_compile=self._jit_compile,
+                reduce_retracing=False,
+            )
+            self._compiled_component_batches[size] = compiled
+        return compiled(values)
+
     def _batch_value_score_impl(
         self, free: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
@@ -175,6 +256,17 @@ class BatchNativeSSLLSTMComplexityPosteriorTarget:
         return tf.where(valid, value, invalid_value), tf.where(
             valid[:, tf.newaxis], score, invalid_score
         )
+
+    def _batch_prior_likelihood_value_score_status_impl(
+        self, free: tf.Tensor
+    ) -> tuple[
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        Mapping[str, tf.Tensor],
+    ]:
+        return _batch_native_neutra_component_value_score_status(self, free)
 
     def _batched_components(
         self, free: tf.Tensor
@@ -453,6 +545,29 @@ def _batch_native_neutra_value_score_status(
     free: Any,
 ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
     values = tf.convert_to_tensor(free, tf.float64)
+    likelihood, likelihood_score, prior, prior_score, status = (
+        _batch_native_neutra_component_value_score_status(target, values)
+    )
+    value = likelihood + prior
+    score = likelihood_score + prior_score
+    return (
+        tf.ensure_shape(value, [values.shape[0]]),
+        tf.ensure_shape(score, [values.shape[0], 4]),
+        status,
+    )
+
+
+def _batch_native_neutra_component_value_score_status(
+    target: BatchNativeSSLLSTMComplexityPosteriorTarget,
+    free: Any,
+) -> tuple[
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    tf.Tensor,
+    Mapping[str, tf.Tensor],
+]:
+    values = tf.convert_to_tensor(free, tf.float64)
     if values.shape.rank != 2 or values.shape[-1] != 4:
         raise ValueError("batch-native target requires shape [batch,4]")
     if values.shape[0] is None:
@@ -473,8 +588,10 @@ def _batch_native_neutra_value_score_status(
     )
     delta = values - PRIOR_CENTER[tf.newaxis, :]
     variance = tf.constant(16.0, tf.float64)
-    value = likelihood - 0.5 * tf.reduce_sum(tf.square(delta) / variance, axis=1)
-    score = likelihood_score - delta / variance
+    prior = -0.5 * tf.reduce_sum(tf.square(delta) / variance, axis=1)
+    prior_score = -delta / variance
+    value = likelihood + prior
+    score = likelihood_score + prior_score
 
     placement_floors = tf.convert_to_tensor(
         diagnostics["placement_floor_count"], tf.int32
@@ -554,8 +671,10 @@ def _batch_native_neutra_value_score_status(
         "input_finite": tf.reduce_all(tf.math.is_finite(values), axis=1),
     }
     return (
-        tf.ensure_shape(value, [values.shape[0]]),
-        tf.ensure_shape(score, [values.shape[0], 4]),
+        tf.ensure_shape(likelihood, [values.shape[0]]),
+        tf.ensure_shape(likelihood_score, [values.shape[0], 4]),
+        tf.ensure_shape(prior, [values.shape[0]]),
+        tf.ensure_shape(prior_score, [values.shape[0], 4]),
         status,
     )
 

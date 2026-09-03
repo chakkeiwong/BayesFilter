@@ -122,6 +122,8 @@ def _adapter() -> tuple[GaussianAdapter, object]:
 def test_step_cap_config_is_positive_and_lineage_visible() -> None:
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
+        step_size_candidates=(0.05, 0.1),
+        leapfrog_grid=(5, 10),
         maximum_candidate_step_size=0.45,
     )
     assert config.payload()["maximum_candidate_step_size"] == pytest.approx(0.45)
@@ -287,8 +289,9 @@ class CappedFakeHMC(MissingCapTelemetryRunner):
 def test_tuner_fails_closed_when_cap_telemetry_is_missing() -> None:
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.03,
+        step_size_candidates=(0.03, 0.04),
         maximum_candidate_step_size=0.05,
-        leapfrog_grid=(3,),
+        leapfrog_grid=(3, 5),
         chain_count=4,
         budget_schedule=(2,),
         tune_num_results=2,
@@ -335,8 +338,11 @@ def test_tuner_stops_before_building_runner_for_repaired_step_above_cap() -> Non
 
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
+        step_size_candidates=(0.1, 0.12),
         maximum_candidate_step_size=0.15,
-        leapfrog_grid=(3,),
+        leapfrog_grid=(3, 5),
+        tuning_policy="legacy_directional_diagnostic_v1",
+        selection_policy="acceptance_target_distance",
         chain_count=4,
         budget_schedule=(2, 2),
         tune_num_results=2,
@@ -366,8 +372,9 @@ def test_successful_handoff_binds_the_configured_cap() -> None:
 
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
+        step_size_candidates=(0.05, 0.1),
         maximum_candidate_step_size=0.2,
-        leapfrog_grid=(3,),
+        leapfrog_grid=(3, 5),
         chain_count=4,
         budget_schedule=(2,),
         tune_num_results=2,

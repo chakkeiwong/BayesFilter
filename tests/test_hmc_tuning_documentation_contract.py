@@ -272,6 +272,7 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
         "bind_neural_force_hmc_tuning_runner",
         "run_full_chain_neural_force_hmc",
         "fixed `M=I`, fixed `L=1`",
+        "artifact-authoritative fixed-transport policy",
         "Bulk and tail ESS are disabled",
         "R-hat values at or below",
         "negative_hessian",
@@ -283,9 +284,17 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
         "build_retained_bound_hmc_archive_runner_from_tuning_result",
         "continuation_manifest",
         "Durable ordinary replay",
+        "Replay roles and authority",
+        "build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload",
+        "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload",
+        "claim_bearing_blockers",
+        "caller-edited authority flag or blocker list cannot grant authority",
+        "tuning_config",
+        "mechanics_only_nonclaiming",
         "admission_supported=False",
         "posterior_admission_authority=False",
         "same frozen transition",
+        "mass-signature change invalidates the selection and its calibration",
         "retained R-hat and ESS are explanatory",
         "short `interface_name`",
         "do not transfer to this route",
@@ -307,6 +316,9 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
     assert "shared/frozen epsilon" in chapter
     assert "public artifact-authority boundary rejects" in chapter
     assert "frozen mechanics" in chapter
+    assert "Replay roles and claim authority" in chapter
+    assert "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload" in chapter
+    assert "artifact-authoritative fixed-transport tuning policy" in chapter
     assert "not posterior convergence" in chapter
 
 

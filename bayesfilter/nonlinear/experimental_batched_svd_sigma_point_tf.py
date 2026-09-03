@@ -1133,10 +1133,38 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
         )
         * derivative_scale
     )
+    # A finite derivative RHS can still make a Frobenius norm overflow.  Do
+    # not let ``Inf - Inf`` become the apparent reconstruction result: report
+    # the non-representable diagnostic explicitly and retain the strict guard.
+    reconstruction_health = tf.concat(
+        [
+            tf.reshape(max_residual, [-1]),
+            tf.reshape(derivative_scale, [-1]),
+            tf.reshape(scaled_tolerance, [-1]),
+            tf.reshape(d_factor, [-1]),
+        ],
+        axis=0,
+    )
+    safe_max_residual = tf.where(
+        tf.math.is_finite(max_residual), max_residual, tf.zeros_like(max_residual)
+    )
+    safe_scaled_tolerance = tf.where(
+        tf.math.is_finite(scaled_tolerance),
+        scaled_tolerance,
+        tf.zeros_like(scaled_tolerance),
+    )
+    reconstruction_margin = safe_max_residual - safe_scaled_tolerance
     with tf.control_dependencies(
         [
+            tf.debugging.assert_all_finite(
+                reconstruction_health,
+                message=(
+                    f"blocked_nonfinite_principal_sqrt_reconstruction: {label} "
+                    "derivative residual or scale is nonfinite"
+                ),
+            ),
             tf.debugging.assert_less_equal(
-                tf.reduce_max(max_residual - scaled_tolerance),
+                tf.reduce_max(reconstruction_margin),
                 tf.constant(0.0, dtype=tf.float64),
                 message=f"blocked_principal_sqrt_reconstruction: {label} derivative reconstruction failed",
             )

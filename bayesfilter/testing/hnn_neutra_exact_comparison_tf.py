@@ -939,14 +939,14 @@ def _native_tune_arm(
     step_sizes, leapfrog_steps = _tuning_grid(context)
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=float(step_sizes[0]),
+        step_size_candidates=tuple(float(value) for value in step_sizes),
         leapfrog_grid=tuple(int(value) for value in leapfrog_steps),
         chain_count=4,
         target_accept_prob=0.70,
         acceptance_band=(0.65, 0.75),
         repair_band=(0.55, 0.85),
-        # Attempt 1 showed that 64 adaptation steps left the exact arm just
-        # outside the owner band.  Continue the same native dual-averaging
-        # ladder rather than substituting a hand-selected step size.
+        # The measured joint grid owns both epsilon and L; the adaptation
+        # budget remains recorded for compatibility with the shared config.
         budget_schedule=(16, 32, 64, 128, 256),
         tune_num_results=16,
         screen_num_results=32,
