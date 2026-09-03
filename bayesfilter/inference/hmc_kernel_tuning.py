@@ -57,9 +57,11 @@ from bayesfilter.hmc_route_contract import (
 )
 from bayesfilter.hmc_budget_contract import (
     HMCOperationalStatisticalWorkPolicy,
+    JOINT_L_EPSILON_OPERATIONAL_ROUTE,
     OPERATIONAL_HMC_BUDGET_POLICY_ID,
     build_private_resolved_hmc_work_manifest,
     build_public_hmc_work_manifest,
+    joint_l_epsilon_grid_work_bound,
     reconcile_executed_hmc_work,
     validate_executed_hmc_work_reconciliation,
     validate_private_resolved_hmc_work_manifest,
@@ -114,9 +116,9 @@ from bayesfilter.inference.hmc_warmup import (
     _G2P4BoundaryActionTracker,
     _G2SeedRegistryError,
     _G2_PREBOUNDARY_SHARED_INVALIDITY_ATTRIBUTE,
+    _G2_SEED_GATE_SEMANTIC_CONTRACTS,
     _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT,
     _PHASE7_ENGINEERING_PROBE_DIAGNOSTIC_ATTRIBUTE,
-    _START_BANK_POLICY_ID,
     _compose_base_transform_with_nested_estimate,
     _phase7_engineering_probe_target_signature,
     compose_operational_transform_in_base_coordinates,
@@ -177,6 +179,34 @@ _G2_WINDOWED_STAGE_SEED_GATE_SITE_ID = (
 _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS = (
     _G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS_CONTRACT
 )
+_G2_PUBLIC_P4_SOURCE_COVERAGE_SCHEMA = (
+    "bayesfilter.hmc_g2_public_p4_runtime_source_coverage.v1"
+)
+_G2_SOURCE_FILE_BY_SITE_PREFIX = {
+    "hmc": "hmc.py",
+    "hmc_coordinates": "hmc_coordinates.py",
+    "hmc_kernel_tuning": "hmc_kernel_tuning.py",
+    "hmc_warmup": "hmc_warmup.py",
+}
+_G2_REGISTRY_KEY_TEMPLATES = {
+    "hmc_warmup.run_operational_windowed_warmup.initial_epsilon_seed_gate.v1": (
+        "operational_warmup/reasonable_epsilon/initial"
+    ),
+    "hmc_warmup.run_operational_windowed_warmup.segment_seed_gate.v1": (
+        "operational_warmup/window/<window>/segment/<segment>"
+    ),
+    "hmc_warmup.run_operational_windowed_warmup.metric_seed_gate.v1": (
+        "operational_warmup/metric_boundary/<window>"
+    ),
+    "hmc_warmup.find_reasonable_epsilon.proposal_seed_gate.v2": (
+        "operational_warmup/<context>/<index>/proposal/<proposal>"
+    ),
+    "hmc_warmup.build_phase7_engineering_probe_bank.p4_seed_gate.v1": (
+        "p4/engineering_probe"
+    ),
+    _G2_BOOTSTRAP_ROUND_SEED_GATE_SITE_ID: "bootstrap/round/<round>",
+    _G2_WINDOWED_STAGE_SEED_GATE_SITE_ID: "phase4/stage",
+}
 
 
 _OPERATIONAL_WARMUP_DEFAULT_REUSABLE_RUNNER_BUILDER = (
@@ -189,6 +219,95 @@ _METRIC_UPDATE_REQUIREMENTS = frozenset(
 _NO_OPERATIONAL_METRIC_UPDATE_REPAIR_TRIGGER = (
     "windowed_mass_no_operational_metric_update"
 )
+
+
+def _g2_source_file_for_site(site_id: str) -> str:
+    prefix = str(site_id).split(".", 1)[0]
+    try:
+        return _G2_SOURCE_FILE_BY_SITE_PREFIX[prefix]
+    except KeyError as exc:
+        raise ValueError(f"unknown G2 source-site prefix: {prefix}") from exc
+
+
+def _public_p4_seed_source_coverage_payload() -> Mapping[str, Any]:
+    """Bind the public P4-E registry to its complete active source closure."""
+
+    contracts: dict[str, Mapping[str, Any]] = {}
+    source_filenames: set[str] = set()
+    for gate_id, semantic in sorted(_G2_SEED_GATE_SEMANTIC_CONTRACTS.items()):
+        derivation_id = str(semantic["derivation_site_id"])
+        owner_file = str(semantic["owner_file"])
+        source_filenames.add(owner_file)
+        owner_source = f"bayesfilter/inference/{owner_file}"
+        contracts[derivation_id] = {
+            "site_id": derivation_id,
+            "source_path": owner_source,
+            "owner_qualname": str(semantic["derivation_owner_qualname"]),
+            "site_kind": "derivation",
+            "terminal_consumer": None,
+            "registry_key_template": None,
+            "upstream_gate_site_id": None,
+        }
+        contracts[gate_id] = {
+            "site_id": gate_id,
+            "source_path": owner_source,
+            "owner_qualname": str(semantic["owner_qualname"]),
+            "site_kind": "terminal_consumption_gate",
+            "terminal_consumer": str(semantic["terminal_consumer"]),
+            "registry_key_template": _G2_REGISTRY_KEY_TEMPLATES[gate_id],
+            "upstream_gate_site_id": None,
+        }
+        for hop_id in semantic["interface_hop_site_ids"]:
+            hop_file = _g2_source_file_for_site(str(hop_id))
+            source_filenames.add(hop_file)
+            contracts[str(hop_id)] = {
+                "site_id": str(hop_id),
+                "source_path": f"bayesfilter/inference/{hop_file}",
+                "owner_qualname": "read_only_seed_pass_through",
+                "site_kind": "read_only_pass_through",
+                "terminal_consumer": None,
+                "registry_key_template": None,
+                "upstream_gate_site_id": gate_id,
+            }
+    if set(contracts) != {
+        str(site_id)
+        for semantic in _G2_SEED_GATE_SEMANTIC_CONTRACTS.values()
+        for site_id in (
+            semantic["derivation_site_id"],
+            *semantic["interface_hop_site_ids"],
+        )
+    } | set(_G2_SEED_GATE_SEMANTIC_CONTRACTS):
+        raise RuntimeError("public P4 source coverage is incomplete")
+    source_root = Path(__file__).resolve().parent
+    source_files = tuple(
+        {
+            "path": f"bayesfilter/inference/{filename}",
+            "sha256": hashlib.sha256((source_root / filename).read_bytes()).hexdigest(),
+        }
+        for filename in sorted(source_filenames)
+    )
+    return {
+        "schema": _G2_PUBLIC_P4_SOURCE_COVERAGE_SCHEMA,
+        "source_files": source_files,
+        "source_site_contracts": {
+            site_id: contracts[site_id] for site_id in sorted(contracts)
+        },
+    }
+
+
+def _build_public_p4_seed_use_registry() -> G2PreboundarySeedUseRegistry:
+    coverage = _public_p4_seed_source_coverage_payload()
+    encoded = json.dumps(
+        coverage,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("ascii")
+    return G2PreboundarySeedUseRegistry(
+        source_coverage_artifact_sha256=hashlib.sha256(encoded).hexdigest(),
+        source_site_contracts=coverage["source_site_contracts"],
+    )
 
 
 def _validate_metric_update_requirement(value: Any) -> str:
@@ -4678,6 +4797,22 @@ class HMCFixedMassStepStageResult:
             and operational_loop.selection.signature != operational_selection.signature
         ):
             raise ValueError("operational selection loop terminal lineage mismatch")
+        generic_operational_route = bool(
+            self.diagnostics.get("operational_joint_l_epsilon_route") is True
+            and self.diagnostics.get("operational_route_marker")
+            == JOINT_L_EPSILON_OPERATIONAL_ROUTE
+            and self.diagnostics.get("algorithm")
+            == _PHASE5_JOINT_L_EPSILON_ALGORITHM
+        )
+        if (
+            self.diagnostics.get("operational_joint_l_epsilon_route") is True
+            and not generic_operational_route
+        ):
+            raise ValueError("operational joint route marker/algorithm mismatch")
+        if generic_operational_route and (
+            operational_selection is not None or operational_loop is not None
+        ):
+            raise ValueError("generic operational route cannot carry legacy selection authority")
         private_work_manifest = (
             None
             if self._operational_private_work_manifest is None
@@ -4695,13 +4830,17 @@ class HMCFixedMassStepStageResult:
         if (private_work_manifest is None) != (public_work_manifest is None):
             raise ValueError("operational public/private work manifests must be paired")
         if private_work_manifest is not None:
-            if operational_loop is None:
+            if operational_loop is None and not generic_operational_route:
                 raise ValueError("operational private work manifest lost its selection")
             public_manifest_hash = str(
                 self.diagnostics.get("public_work_manifest_hash", "")
             )
             if public_work_manifest["manifest_hash"] != public_manifest_hash:
                 raise ValueError("operational public work manifest hash changed")
+            if generic_operational_route and public_work_manifest.get("route_marker") != (
+                JOINT_L_EPSILON_OPERATIONAL_ROUTE
+            ):
+                raise ValueError("generic operational manifest route marker mismatch")
             private_work_manifest = dict(
                 validate_private_resolved_hmc_work_manifest(
                     private_work_manifest,
@@ -4770,9 +4909,166 @@ class HMCFixedMassStepStageResult:
     def private_evidence_ledger(self) -> Mapping[str, Any] | None:
         """Return aggregate operational evidence through a private-only API."""
 
-        if self._operational_selection_loop is None:
+        if self._operational_selection_loop is not None:
+            return self._operational_selection_loop.private_evidence_ledger()
+        if not (
+            self.diagnostics.get("operational_joint_l_epsilon_route") is True
+            and self.diagnostics.get("operational_route_marker")
+            == JOINT_L_EPSILON_OPERATIONAL_ROUTE
+        ):
             return None
-        return self._operational_selection_loop.private_evidence_ledger()
+
+        handoff = self._candidate_batch_handoff
+        if handoff is None:
+            raise ValueError(
+                "generic operational route requires a private candidate batch"
+            )
+        candidates = tuple(self.diagnostics.get("candidates", ()))
+        if len(candidates) != handoff.candidate_count:
+            raise ValueError("generic private ledger candidate count mismatch")
+
+        ladder_records: list[Mapping[str, Any]] = []
+        ladder_round_count = 0
+        tune_call_count = 0
+        screen_call_count = 0
+        repair_screen_call_count = 0
+        for candidate in candidates:
+            if not isinstance(candidate, Mapping):
+                raise TypeError("generic private ledger candidate is not a mapping")
+            ladder_payload = candidate.get("ladder_payload")
+            if not isinstance(ladder_payload, Mapping):
+                # Error candidates have no ladder object; preserve their
+                # identity and failure record without fabricating work.
+                ladder_records.append(
+                    {
+                        "round_index": int(candidate.get("round_index", 0)),
+                        "grid_stage": str(candidate.get("grid_stage", "")),
+                        "candidate_index": int(candidate.get("candidate_index", -1)),
+                        "num_leapfrog_steps": int(
+                            candidate.get("num_leapfrog_steps", 0)
+                        ),
+                        "ladder_artifact_hash": candidate.get("ladder_artifact_hash"),
+                        "ladder_final_status": candidate.get("ladder_final_status"),
+                        "run_error_type": candidate.get("run_error_type"),
+                        "run_error_message": candidate.get("run_error_message"),
+                        "ladder_present": False,
+                    }
+                )
+                continue
+            rounds = tuple(ladder_payload.get("rounds", ()))
+            ladder_round_count += len(rounds)
+            for round_payload in rounds:
+                if not isinstance(round_payload, Mapping):
+                    continue
+                tune_payload = round_payload.get("tune_config_payload")
+                screen_payload = round_payload.get("screen_config_payload")
+                if isinstance(tune_payload, Mapping):
+                    tune_call_count += 1
+                if isinstance(screen_payload, Mapping):
+                    screen_call_count += 1
+                    if tune_payload is None:
+                        repair_screen_call_count += 1
+            ladder_records.append(
+                {
+                    "round_index": int(candidate.get("round_index", 0)),
+                    "grid_stage": str(candidate.get("grid_stage", "")),
+                    "candidate_index": int(candidate.get("candidate_index", -1)),
+                    "num_leapfrog_steps": int(
+                        candidate.get("num_leapfrog_steps", 0)
+                    ),
+                    "ladder_artifact_hash": candidate.get("ladder_artifact_hash"),
+                    "ladder_final_status": candidate.get("ladder_final_status"),
+                    "ladder_passed": bool(candidate.get("ladder_passed")),
+                    "selected_round_index": candidate.get("selected_round_index"),
+                    "selected_budget": candidate.get("selected_budget"),
+                    "selected_step_size": candidate.get("selected_step_size"),
+                    "screen_acceptance_rate": candidate.get("screen_acceptance_rate"),
+                    "trajectory_length": candidate.get("trajectory_length"),
+                    "trajectory_window_relation": candidate.get(
+                        "trajectory_window_relation"
+                    ),
+                    "hard_vetoes": tuple(candidate.get("hard_vetoes", ())),
+                    "continuation_vetoes": tuple(
+                        candidate.get("continuation_vetoes", ())
+                    ),
+                    "repair_triggers": tuple(candidate.get("repair_triggers", ())),
+                    "ladder_payload": dict(ladder_payload),
+                    "ladder_present": True,
+                }
+            )
+
+        policy = _validated_operational_candidate_handoff_policy(
+            self.diagnostics.get(
+                "operational_candidate_handoff_policy",
+                _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT,
+            )
+        )
+        reconciliation = self.diagnostics.get("executed_work_reconciliation")
+        if reconciliation is not None and not isinstance(reconciliation, Mapping):
+            raise ValueError("generic private ledger reconciliation is invalid")
+        start_lineage = self.diagnostics.get("operational_start_bank_lineage")
+        if start_lineage is not None and not isinstance(start_lineage, Mapping):
+            raise ValueError("generic private ledger start-bank lineage is invalid")
+        return {
+            "schema": "bayesfilter.hmc_fixed_trajectory_private_evidence_ledger.v1",
+            "candidate_handoff_policy": candidate_handoff_policy_payload(policy),
+            "handoff_screen_policy": self.config.handoff_screen_policy,
+            "bounded_selection_signature": self.artifact_hash,
+            "terminal_disposition": self.final_status,
+            "candidate_batch_handoff_hash": handoff.handoff_hash,
+            "candidate_batch_handoff": handoff.payload(),
+            "candidate_batch_count": handoff.candidate_count,
+            "candidate_batch_handoff_eligible_count": handoff.handoff_eligible_count,
+            "verification_order_seed": handoff.verification_order_seed,
+            "round_summaries": tuple(
+                dict(item) for item in self.diagnostics.get("round_summaries", ())
+            ),
+            "candidate_ladders": tuple(ladder_records),
+            "source_bank_lineage": None
+            if start_lineage is None
+            else dict(start_lineage),
+            "manifest_lineage": {
+                "route_marker": self.diagnostics.get("operational_route_marker"),
+                "public_manifest_hash": self.diagnostics.get(
+                    "public_work_manifest_hash"
+                ),
+                "private_manifest_hash": self.diagnostics.get(
+                    "private_work_manifest_hash"
+                ),
+                "reconciliation_hash": None
+                if reconciliation is None
+                else reconciliation.get("reconciliation_hash"),
+            },
+            "aggregate_counts": {
+                "candidate_count": len(candidates),
+                "viable_candidate_count": int(
+                    self.diagnostics.get("viable_candidate_count", 0)
+                ),
+                "nomination_candidate_count": int(
+                    self.diagnostics.get("nomination_candidate_count", 0)
+                ),
+                "run_error_count": len(
+                    tuple(self.diagnostics.get("candidate_run_errors", ()))
+                ),
+                "ladder_count": sum(
+                    1 for record in ladder_records if record.get("ladder_present")
+                ),
+                "ladder_round_count": ladder_round_count,
+                "tune_call_count": tune_call_count,
+                "screen_call_count": screen_call_count,
+                "repair_screen_call_count": repair_screen_call_count,
+            },
+            "executed_work_reconciliation": None
+            if reconciliation is None
+            else dict(reconciliation),
+            "private_handoff_only": True,
+            "raw_samples_exposed": False,
+            "raw_start_bank_exposed": False,
+            "stochastic_ranking_performed": False,
+            "explanatory_intervals_are_promotion_criteria": False,
+            "reports_posterior_convergence": False,
+            "reports_sampler_superiority": False,
+        }
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -10366,7 +10662,28 @@ def run_hmc_fixed_mass_step_stage(
         attempt_state=_attempt_state,
     )
     target_trajectory = float(geometry.target_trajectory_length)
-    use_final_geometry_anchor = windowed_stage.operational_warmup_result is not None
+    # Both the repaired P4-E route and the explicitly legacy compatibility
+    # route need the same Phase 4 latent adapter and geometry-derived anchor.
+    # Resolve them before the compatibility branch so the legacy call cannot
+    # observe an uninitialized local when it is selected for a test fixture.
+    phase4_adapter = _phase4_latent_adapter_for_step_stage(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        target_scope=target_scope,
+    )
+    operational_warmup = windowed_stage.operational_warmup_result
+    # The repaired generic grid is reserved for the explicit P4-E route.  A
+    # number of historical/test fixtures construct the older operational
+    # warmup with the greedy start-bank policy; those fixtures must continue
+    # through the legacy selector and are never eligible for public tuning
+    # handoff.  The public tuner always configures P4-E, so this distinction
+    # does not weaken the active route.
+    use_final_geometry_anchor = bool(
+        operational_warmup is not None
+        and operational_warmup.private_start_bank_policy_id
+        == PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+    )
     anchor_l = _joint_l_epsilon_anchor_l(
         selected_kernel=selected_kernel,
         attempt_state=_attempt_state,
@@ -10376,22 +10693,15 @@ def run_hmc_fixed_mass_step_stage(
         ),
         max_leapfrog_steps=max_leapfrog_steps,
     )
-    ladder_result: FixedMassHMCTuningBudgetLadderResult | None = None
-    hard_vetoes: list[str] = []
-    before_signature = _mass_artifact_signature(adapted_mass)
-    progress_attempt_index = (
-        int(_attempt_budget_policy.attempt_index)
-        if _attempt_index is None and _attempt_budget_policy is not None
-        else None if _attempt_index is None else int(_attempt_index)
-    )
-    progress_attempt = 0 if progress_attempt_index is None else progress_attempt_index
-    phase4_adapter = _phase4_latent_adapter_for_step_stage(
-        adapter=adapter,
-        geometry=geometry,
-        windowed_stage=windowed_stage,
-        target_scope=target_scope,
-    )
-    if use_final_geometry_anchor:
+    if use_final_geometry_anchor and not (
+        run_full_chain is run_full_chain_tfp_hmc
+        or isinstance(run_full_chain, HMCTuningRunnerBinding)
+    ):
+        raise ValueError(
+            "operational Phase 5 requires the default TF/TFP runner or a "
+            "repository-issued HMCTuningRunnerBinding"
+        )
+    if operational_warmup is not None and not use_final_geometry_anchor:
         return _run_operational_fixed_mass_step_stage(
             adapter=adapter,
             geometry=geometry,
@@ -10411,9 +10721,51 @@ def run_hmc_fixed_mass_step_stage(
             candidate_handoff_policy=_candidate_handoff_policy,
             run_full_chain=run_full_chain,
         )
-    initial_state_factory = _fixed_mass_step_initial_state_factory(
-        adapted_mass.dimension
+    if use_final_geometry_anchor:
+        _validated_operational_candidate_handoff_policy(_candidate_handoff_policy)
+    ladder_result: FixedMassHMCTuningBudgetLadderResult | None = None
+    hard_vetoes: list[str] = []
+    before_signature = _mass_artifact_signature(adapted_mass)
+    progress_attempt_index = (
+        int(_attempt_budget_policy.attempt_index)
+        if _attempt_index is None and _attempt_budget_policy is not None
+        else None if _attempt_index is None else int(_attempt_index)
     )
+    progress_attempt = 0 if progress_attempt_index is None else progress_attempt_index
+    operational_start_lineage: Mapping[str, Any] | None = None
+    operational_factory_state = {"call_count": 0}
+    if use_final_geometry_anchor:
+        # The operational route uses the same generic joint grid as the
+        # historical diagnostic route, but every ladder starts from a fresh
+        # copy of the validated P4-E post-warmup bank.  The legacy zero-state
+        # factory remains below for historical/test-only compatibility.
+        final_adapter = _build_fixed_mass_hmc_adapter(
+            adapter=phase4_adapter,
+            mass_artifact=adapted_mass,
+            mass_signature=before_signature,
+            target_scope=target_scope,
+        )
+        final_adapter_signature = stable_adapter_signature(final_adapter)
+        start_bank, operational_start_lineage = _phase7_verification_initial_state(
+            windowed_stage=windowed_stage,
+            phase4_adapter=phase4_adapter,
+            verification_adapter=final_adapter,
+            verification_hmc_signature=final_adapter_signature,
+        )
+        if operational_start_lineage.get("frozen_post_warmup_bank_consumed") is not True:
+            raise ValueError("operational Phase 5 did not consume the frozen start bank")
+        initial_state_factory = _operational_fixed_mass_initial_state_factory(
+            start_bank,
+            expected_signature=str(operational_start_lineage["active_signature"]),
+            transform_signature=str(
+                operational_start_lineage["final_transform_signature"]
+            ),
+            call_state=operational_factory_state,
+        )
+    else:
+        initial_state_factory = _fixed_mass_step_initial_state_factory(
+            adapted_mass.dimension
+        )
     joint_rounds: list[Mapping[str, Any]] = []
     joint_candidates: list[Mapping[str, Any]] = []
     joint_candidate_elapsed_s: list[float] = []
@@ -10687,10 +11039,126 @@ def run_hmc_fixed_mass_step_stage(
         for round_payload in joint_rounds
         for error in tuple(round_payload.get("run_errors", ()))
     )
+    operational_public_work_manifest: Mapping[str, Any] | None = None
+    operational_private_work_manifest: Mapping[str, Any] | None = None
+    operational_work_reconciliation: Mapping[str, Any] | None = None
+    if use_final_geometry_anchor:
+        operational = windowed_stage.operational_warmup_result
+        if operational is None:
+            raise ValueError("operational joint route lost its warmup result")
+        # These are the exact values consumed by
+        # ``_fixed_mass_step_stage_ladder_config`` below.  Do not derive them
+        # from the legacy operational selector fields: doing so makes the
+        # public bound disagree with the calls that actually ran.
+        operational_tune_budgets = (
+            _FIXED_MASS_STAGE_TEST_BUDGET_SCHEDULE
+            if _attempt_budget_policy is None
+            else tuple(_attempt_budget_policy.phase5_tune_budgets)
+        )
+        operational_tune_results = _FIXED_MASS_STAGE_TUNE_NUM_RESULTS
+        operational_screen_results = (
+            _FIXED_MASS_STAGE_SCREEN_NUM_RESULTS
+            if _attempt_budget_policy is None
+            else int(_attempt_budget_policy.phase5_screen_num_results)
+        )
+        operational_screen_burnin = (
+            _FIXED_MASS_STAGE_SCREEN_BURNIN_STEPS
+            if _attempt_budget_policy is None
+            else int(_attempt_budget_policy.phase5_screen_burnin_steps)
+        )
+        operational_final_adaptation = (
+            operational_tune_budgets[-1]
+        )
+        operational_verification_results = (
+            64
+            if _attempt_budget_policy is None
+            else int(_attempt_budget_policy.operational_verification_num_results)
+        )
+        operational_verification_burnin = (
+            16
+            if _attempt_budget_policy is None
+            else int(_attempt_budget_policy.operational_verification_num_burnin_steps)
+        )
+        operational_verification_starts = (
+            2
+            if _attempt_budget_policy is None
+            else int(
+                _attempt_budget_policy.operational_verification_starts_per_outer_attempt
+            )
+        )
+        operational_policy = HMCOperationalStatisticalWorkPolicy(
+            initial_candidate_results=operational_screen_results,
+            candidate_burnin_steps=operational_screen_burnin,
+            evidence_extension_checkpoints=(),
+            exact_l_tune_adaptation_steps=operational_final_adaptation,
+            fresh_verification_results=operational_verification_results,
+            fresh_verification_burnin_steps=operational_verification_burnin,
+            fresh_verification_starts_per_outer_attempt=operational_verification_starts,
+            policy_id=(
+                OPERATIONAL_HMC_BUDGET_POLICY_ID
+                if _attempt_budget_policy is None
+                else str(_attempt_budget_policy.operational_budget_policy_id)
+            ),
+        )
+        operational_public_work_manifest = build_public_hmc_work_manifest(
+            target_dimension=geometry.target_dimension,
+            metric_adaptation_steps=(int(operational.config.warmup_steps),),
+            selection_attempts_per_outer_attempt=(1,),
+            max_leapfrog_steps=max_leapfrog_steps,
+            policy=operational_policy,
+            algorithm_id=_PHASE5_JOINT_L_EPSILON_ALGORITHM,
+            run_class="runtime_resolved_attempt",
+            route_marker=JOINT_L_EPSILON_OPERATIONAL_ROUTE,
+            joint_tune_budget_schedule=operational_tune_budgets,
+            joint_tune_num_results=operational_tune_results,
+            joint_screen_num_results=operational_screen_results,
+            joint_screen_num_burnin_steps=operational_screen_burnin,
+        )
+        resolved_candidates = tuple(
+            {
+                "round_index": int(candidate.get("round_index", 0)),
+                "grid_stage": str(candidate.get("grid_stage", "")),
+                "candidate": dict(candidate),
+            }
+            for candidate in joint_candidates
+        )
+        operational_private_work_manifest = build_private_resolved_hmc_work_manifest(
+            public_manifest=operational_public_work_manifest,
+            resolved_candidates=resolved_candidates,
+        )
+        candidate_transitions = sum(
+            _joint_l_epsilon_ladder_transition_count(ladder)
+            for round_payload in joint_rounds
+            for ladder in tuple(
+                round_payload.get("ladders_by_candidate_index", {}).values()
+            )
+            if isinstance(ladder, FixedMassHMCTuningBudgetLadderResult)
+        )
+        operational_work_reconciliation = reconcile_executed_hmc_work(
+            public_manifest=operational_public_work_manifest,
+            executed_work={
+                "initial_candidate_batched_transitions": candidate_transitions,
+                "extension_candidate_batched_transitions": 0,
+                "exact_l_tune_batched_transitions": 0,
+            },
+        )
     diagnostics = {
         "passed": final_status == "passed",
         "algorithm": "joint_l_epsilon_grid_fixed_mass_hmc",
-        "promoted_default": True,
+        "promoted_default": False if use_final_geometry_anchor else True,
+        "operational_non_promoting_candidate_route": bool(use_final_geometry_anchor),
+        "operational_joint_l_epsilon_route": bool(use_final_geometry_anchor),
+        "operational_route_marker": (
+            JOINT_L_EPSILON_OPERATIONAL_ROUTE if use_final_geometry_anchor else None
+        ),
+        "operational_candidate_handoff_policy": (
+            _candidate_handoff_policy if use_final_geometry_anchor else None
+        ),
+        "operational_runner_route": (
+            "default_tf_tfp_runner"
+            if run_full_chain is run_full_chain_tfp_hmc
+            else "typed_hmc_tuning_runner_binding"
+        ),
         "handoff_screen_policy": cfg.handoff_screen_policy,
         "bootstrap_l_is_anchor_not_fixed_policy": True,
         "initial_anchor_l": int(anchor_l),
@@ -10728,6 +11196,29 @@ def run_hmc_fixed_mass_step_stage(
             else False
         ),
         "completed_candidate_elapsed_count": len(joint_candidate_elapsed_s),
+        "operational_start_bank_lineage": None
+        if operational_start_lineage is None
+        else dict(operational_start_lineage),
+        "operational_start_bank_factory_call_count": int(
+            operational_factory_state.get("call_count", 0)
+        ),
+        "operational_start_bank_factory_validated": (
+            operational_start_lineage is None
+            or operational_factory_state.get("call_count", 0) > 0
+        ),
+        "operational_budget_policy_id": None
+        if operational_public_work_manifest is None
+        else operational_public_work_manifest.get("policy_id"),
+        "operational_budget_policy_hash": None
+        if operational_public_work_manifest is None
+        else operational_public_work_manifest.get("policy_hash"),
+        "public_work_manifest_hash": None
+        if operational_public_work_manifest is None
+        else operational_public_work_manifest.get("manifest_hash"),
+        "private_work_manifest_hash": None
+        if operational_private_work_manifest is None
+        else operational_private_work_manifest.get("private_manifest_hash"),
+        "executed_work_reconciliation": operational_work_reconciliation,
         "hard_vetoes_from_ladder": candidate_hard_vetoes,
         "continuation_vetoes_from_ladder": continuation_vetoes,
         "repair_triggers_from_ladder": candidate_repair_triggers,
@@ -10802,6 +11293,8 @@ def run_hmc_fixed_mass_step_stage(
             "reports_posterior_convergence": False,
             "reports_sampler_superiority": False,
         },
+        _operational_private_work_manifest=operational_private_work_manifest,
+        _operational_public_work_manifest=operational_public_work_manifest,
     )
     selected_source_key = (
         _phase5_candidate_source_key(selected_candidate)
@@ -11884,6 +12377,7 @@ def run_hmc_tune_verify_repair_loop(
     ]] | None = None,
     _progress_callback: LoopProgressCallback | None = None,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
+    _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
 ) -> HMCTuneVerifyRepairLoopResult:
     """Run Phase 7 tune/verify/repair with private budget escalation.
 
@@ -11894,6 +12388,14 @@ def run_hmc_tune_verify_repair_loop(
     cfg = HMCTuneVerifyRepairLoopConfig() if config is None else config
     if not isinstance(cfg, HMCTuneVerifyRepairLoopConfig):
         raise TypeError("config must be HMCTuneVerifyRepairLoopConfig")
+    p4_route = cfg.engineering_probe_covariance_multiplier is not None
+    if p4_route and not isinstance(
+        _g2_seed_use_registry,
+        G2PreboundarySeedUseRegistry,
+    ):
+        raise TypeError("P4-E requires a caller-owned G2 seed-use registry")
+    if not p4_route and _g2_seed_use_registry is not None:
+        raise TypeError("G2 seed-use registry is valid only for the P4-E route")
     require_hmc_algorithm_route(
         algorithm_id=cfg.algorithm_id,
         stage=HMC_TOP_LEVEL_SELECTION_STAGE,
@@ -12425,6 +12927,11 @@ def run_hmc_tune_verify_repair_loop(
                         extra=_windowed_mass_progress_extra(payload),
                     )
 
+                p4_registry_kwargs = (
+                    {}
+                    if _g2_seed_use_registry is None
+                    else {"_g2_seed_use_registry": _g2_seed_use_registry}
+                )
                 windowed_stage = _windowed_stage_runner(
                     adapter=adapter,
                     geometry=geometry,
@@ -12437,6 +12944,7 @@ def run_hmc_tune_verify_repair_loop(
                     _attempt_index=attempt_index,
                     _checkpoint_writer_config=verification_checkpoint_writer_config,
                     _private_diagnostic_callback=_private_diagnostic_callback,
+                    **p4_registry_kwargs,
                 )
                 expected_windowed_algorithm_id = (
                     windowed_algorithm_for_selection_algorithm(cfg.algorithm_id)
@@ -13301,6 +13809,11 @@ def _run_canonical_hmc_tuning(
     cfg = HMCKernelTuningConfig.standard() if config is None else config
     if not isinstance(cfg, HMCKernelTuningConfig):
         raise TypeError("config must be HMCKernelTuningConfig")
+    p4_seed_use_registry = (
+        None
+        if cfg.engineering_probe_covariance_multiplier is None
+        else _build_public_p4_seed_use_registry()
+    )
     if runner_binding is not None and not isinstance(
         runner_binding, HMCTuningRunnerBinding
     ):
@@ -13789,6 +14302,11 @@ def _run_canonical_hmc_tuning(
                 },
             )
 
+        p4_registry_kwargs = (
+            {}
+            if p4_seed_use_registry is None
+            else {"_g2_seed_use_registry": p4_seed_use_registry}
+        )
         bootstrap = run_hmc_bootstrap_screen(
             adapter=adapter,
             geometry=geometry,
@@ -13796,6 +14314,7 @@ def _run_canonical_hmc_tuning(
             run_full_chain=selected_run_full_chain,
             progress_callback=write_bootstrap_progress,
             _private_diagnostic_callback=write_private_tuning_diagnostic,
+            **p4_registry_kwargs,
         )
         bootstrap_hard_vetoes = _bootstrap_hard_vetoes(bootstrap)
         if bootstrap_hard_vetoes:
@@ -14008,6 +14527,11 @@ def _run_canonical_hmc_tuning(
 
     try:
         write_progress("loop_start", started=True)
+        p4_registry_kwargs = (
+            {}
+            if p4_seed_use_registry is None
+            else {"_g2_seed_use_registry": p4_seed_use_registry}
+        )
         loop = run_hmc_tune_verify_repair_loop(
             adapter=adapter,
             geometry=geometry,
@@ -14031,6 +14555,7 @@ def _run_canonical_hmc_tuning(
             ),
             _progress_callback=write_loop_progress,
             _private_diagnostic_callback=write_private_tuning_diagnostic,
+            **p4_registry_kwargs,
         )
         write_progress(
             "loop_complete",
@@ -20534,6 +21059,50 @@ def _fixed_mass_step_initial_state_factory(
     return factory
 
 
+def _operational_fixed_mass_initial_state_factory(
+    start_bank: Any,
+    *,
+    expected_signature: str,
+    transform_signature: str,
+    call_state: dict[str, int] | None = None,
+) -> Callable[[tuple[int, int], str, int, int, float], np.ndarray]:
+    """Return a copy-only factory for the validated P4-E start bank.
+
+    The bank is already in the final fixed-mass latent coordinates.  Each
+    ladder receives a distinct array copy, while the content signature is
+    checked at the call boundary so a silent zero-state restart cannot pass as
+    operational evidence.  Raw bank values never enter a public payload.
+    """
+
+    bank = np.asarray(start_bank, dtype=float)
+    if bank.ndim != 2 or bank.shape[0] != 4 or bank.shape[1] <= 0:
+        raise ValueError("operational start bank must have shape (4, dimension)")
+    if not np.all(np.isfinite(bank)):
+        raise ValueError("operational start bank must be finite")
+    expected = str(expected_signature)
+    transform = str(transform_signature)
+    if not expected or not transform:
+        raise ValueError("operational start-bank signatures must be non-empty")
+    frozen = np.array(bank, copy=True)
+    state = call_state if call_state is not None else {"call_count": 0}
+
+    def factory(
+        _seed: tuple[int, int],
+        _stage: str,
+        _round_index: int,
+        _budget: int,
+        _step: float,
+    ) -> np.ndarray:
+        candidate = np.array(frozen, copy=True)
+        observed = private_start_bank_content_signature(candidate, transform)
+        if observed != expected:
+            raise ValueError("operational start-bank signature changed")
+        state["call_count"] = int(state.get("call_count", 0)) + 1
+        return candidate
+
+    return factory
+
+
 def _joint_l_epsilon_anchor_l(
     *,
     selected_kernel: Mapping[str, Any],
@@ -20799,6 +21368,26 @@ def _joint_l_epsilon_ladder_private_diagnostic_summary(
         "reports_sampler_superiority": False,
         "nonclaims": FIXED_MASS_STEP_STAGE_NONCLAIMS,
     }
+
+
+def _joint_l_epsilon_ladder_transition_count(
+    ladder: FixedMassHMCTuningBudgetLadderResult,
+) -> int:
+    """Count all declared tune/screen transitions in one completed ladder."""
+
+    total = 0
+    for round_result in ladder.rounds:
+        for config_payload in (
+            round_result.tune_config_payload,
+            round_result.screen_config_payload,
+        ):
+            if not isinstance(config_payload, Mapping):
+                continue
+            total += int(config_payload.get("num_results", 0))
+            total += int(config_payload.get("num_burnin_steps", 0))
+    if total < 0:
+        raise ValueError("joint ladder transition count cannot be negative")
+    return total
 
 
 def _private_log_accept_diagnostic_summary(
@@ -22564,85 +23153,133 @@ def _phase7_verification_initial_state(
             "raw_values_exposed": False,
             "reports_operational_start_lineage": False,
         }
+    policy_id = str(getattr(operational, "private_start_bank_policy_id", ""))
+    if policy_id != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
+        # Historical operational fixtures use the predecessor greedy bank.
+        # Preserve their test-only selector semantics while still mapping the
+        # actual post-warmup bank through the active nested transforms.  This
+        # branch cannot be reached by the repaired public P4-E route (which is
+        # selected explicitly in ``run_hmc_fixed_mass_step_stage``).
+        canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
+        if canonical.shape != (4, windowed_stage.target_dimension):
+            raise ValueError("operational verification start bank shape mismatch")
+        if not np.all(np.isfinite(canonical)):
+            raise ValueError("operational verification start bank must be finite")
+        source_signature = str(
+            getattr(operational, "private_start_bank_signature", "")
+        )
+        if not source_signature:
+            raise ValueError("operational verification start bank signature is missing")
+        phase4_latent = np.asarray(
+            phase4_adapter.transform.position_to_latent(canonical), dtype=float
+        )
+        verification_latent = np.asarray(
+            verification_adapter.transform.position_to_latent(phase4_latent),
+            dtype=float,
+        )
+        round_trip_phase4 = np.asarray(
+            verification_adapter.latent_to_position(verification_latent), dtype=float
+        )
+        round_trip_theta = np.asarray(
+            phase4_adapter.latent_to_position(round_trip_phase4), dtype=float
+        )
+        operational_latent = np.asarray(
+            operational.final_kernel_state.transform.theta_to_latent(canonical).numpy(),
+            dtype=float,
+        )
+        if not np.allclose(
+            round_trip_phase4, phase4_latent, rtol=1.0e-10, atol=1.0e-10
+        ):
+            raise ValueError("verification nested start-bank transform did not round trip")
+        if not np.allclose(
+            round_trip_theta, canonical, rtol=1.0e-10, atol=1.0e-10
+        ):
+            raise ValueError("verification canonical start bank did not round trip")
+        if not np.allclose(
+            verification_latent,
+            operational_latent,
+            rtol=1.0e-10,
+            atol=1.0e-10,
+        ):
+            raise ValueError(
+                "verification start bank does not match final warmup coordinates"
+            )
+        active_signature = private_start_bank_content_signature(
+            verification_latent,
+            operational.final_kernel_state.transform.signature,
+        )
+        return verification_latent, {
+            "source": "historical_operational_start_bank_v1",
+            "policy_id": policy_id,
+            "source_signature": source_signature,
+            "active_signature": active_signature,
+            "target_scope": operational.target_scope,
+            "final_transform_signature": operational.final_kernel_state.transform.signature,
+            "phase4_adapter_signature": stable_adapter_signature(phase4_adapter),
+            "verification_adapter_signature": verification_hmc_signature,
+            "count": 4,
+            "frozen_post_warmup_bank_consumed": True,
+            "canonical_round_trip_passed": True,
+            "final_coordinate_match_passed": True,
+            "raw_values_exposed": False,
+            "reports_operational_start_lineage": True,
+            "evidence_role": "historical_compatibility_fixture",
+            "promotion_role": "non_promoting",
+            "reports_posterior_convergence": False,
+        }
+    if (
+        operational.private_start_bank_policy_id
+        != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+    ):
+        raise ValueError(
+            "operational Phase 7 requires the explicit P4-E engineering probe bank"
+        )
+    engineering_qualification = operational.engineering_probe_bank_qualification
+    if engineering_qualification is None or not engineering_qualification.passed:
+        raise ValueError("operational Phase 7 P4-E qualification is missing or failed")
+    active_target = getattr(phase4_adapter, "base_adapter", None)
+    if active_target is None:
+        raise ValueError("operational Phase 7 P4-E base target identity is missing")
+    expected_target_signature = _phase7_engineering_probe_target_signature(
+        active_target
+    )
+    if engineering_qualification.target_signature != expected_target_signature:
+        raise ValueError("operational Phase 7 P4-E target identity mismatch")
+    active_scope = str(getattr(phase4_adapter, "target_scope", ""))
+    operational_scope = str(getattr(operational, "target_scope", ""))
+    if not active_scope or not operational_scope or active_scope != operational_scope:
+        raise ValueError("operational Phase 7 P4-E target scope mismatch")
     stage_config = getattr(windowed_stage, "config", None)
     multiplier = getattr(stage_config, "engineering_probe_covariance_multiplier", None)
-    p4_configured = multiplier is not None
-    bank_policy_id = str(operational.private_start_bank_policy_id)
-    engineering_qualification = None
-    if p4_configured:
-        if bank_policy_id != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
-            raise ValueError(
-                "configured operational Phase 7 P4-E requires the explicit "
-                "engineering probe bank"
-            )
-        engineering_qualification = (
-            operational.engineering_probe_bank_qualification
-        )
-        if engineering_qualification is None or not engineering_qualification.passed:
-            raise ValueError(
-                "operational Phase 7 P4-E qualification is missing or failed"
-            )
-        active_target = getattr(phase4_adapter, "base_adapter", None)
-        if active_target is None:
-            raise ValueError("operational Phase 7 P4-E base target identity is missing")
-        expected_target_signature = _phase7_engineering_probe_target_signature(
-            active_target
-        )
-        if engineering_qualification.target_signature != expected_target_signature:
-            raise ValueError("operational Phase 7 P4-E target identity mismatch")
-        active_scope = str(getattr(phase4_adapter, "target_scope", ""))
-        operational_scope = str(getattr(operational, "target_scope", ""))
-        if (
-            not active_scope
-            or not operational_scope
-            or active_scope != operational_scope
-        ):
-            raise ValueError("operational Phase 7 P4-E target scope mismatch")
-        configured_scope = getattr(stage_config, "target_scope", None)
-        if configured_scope is not None and str(configured_scope) != active_scope:
-            raise ValueError("operational Phase 7 P4-E configured target scope mismatch")
-        stage_seed = _derive_seed(
-            _validate_seed(getattr(stage_config, "seed", None)),
-            stage_index=0,
-        )
-        operational_seed = _validate_seed(getattr(operational, "seed_root", None))
-        if stage_seed != operational_seed:
-            raise ValueError("operational Phase 7 P4-E stage seed lineage mismatch")
-        expected_probe_config = Phase7EngineeringProbeBankConfig(
-            chain_count=4,
-            covariance_multiplier=multiplier,
-            root_seed=operational_seed,
-        )
-        if (
-            engineering_qualification.config_signature
-            != expected_probe_config.config_signature
-        ):
-            raise ValueError("operational Phase 7 P4-E configuration lineage mismatch")
-        if (
-            engineering_qualification.derived_seed_signature
-            != expected_probe_config.derived_seed_signature
-        ):
-            raise ValueError("operational Phase 7 P4-E derived seed lineage mismatch")
-        if (
-            engineering_qualification.transform_signature
-            != operational.final_kernel_state.transform.signature
-        ):
-            raise ValueError("operational Phase 7 P4-E transform lineage mismatch")
-    else:
-        if bank_policy_id == PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
-            raise ValueError("operational Phase 7 P4-E configuration is missing")
-        if bank_policy_id != _START_BANK_POLICY_ID:
-            raise ValueError(
-                "ordinary operational Phase 7 requires the validated legacy "
-                "start bank"
-            )
-        if (
-            getattr(operational, "engineering_probe_bank_qualification", None)
-            is not None
-        ):
-            raise ValueError(
-                "ordinary operational Phase 7 cannot carry a P4-E qualification"
-            )
+    if multiplier is None:
+        raise ValueError("operational Phase 7 P4-E configuration is missing")
+    configured_scope = getattr(stage_config, "target_scope", None)
+    if configured_scope is not None and str(configured_scope) != active_scope:
+        raise ValueError("operational Phase 7 P4-E configured target scope mismatch")
+    stage_seed = _derive_seed(
+        _validate_seed(getattr(stage_config, "seed", None)),
+        stage_index=0,
+    )
+    operational_seed = _validate_seed(getattr(operational, "seed_root", None))
+    if stage_seed != operational_seed:
+        raise ValueError("operational Phase 7 P4-E stage seed lineage mismatch")
+    expected_probe_config = Phase7EngineeringProbeBankConfig(
+        chain_count=4,
+        covariance_multiplier=multiplier,
+        root_seed=operational_seed,
+    )
+    if engineering_qualification.config_signature != expected_probe_config.config_signature:
+        raise ValueError("operational Phase 7 P4-E configuration lineage mismatch")
+    if (
+        engineering_qualification.derived_seed_signature
+        != expected_probe_config.derived_seed_signature
+    ):
+        raise ValueError("operational Phase 7 P4-E derived seed lineage mismatch")
+    if (
+        engineering_qualification.transform_signature
+        != operational.final_kernel_state.transform.signature
+    ):
+        raise ValueError("operational Phase 7 P4-E transform lineage mismatch")
     canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
     if canonical.shape != (4, windowed_stage.target_dimension):
         raise ValueError("operational verification start bank shape mismatch")
@@ -22680,19 +23317,6 @@ def _phase7_verification_initial_state(
         verification_latent,
         operational.final_kernel_state.transform.signature,
     )
-    if not p4_configured:
-        return verification_latent, {
-            "source": "operational_warmup_private_start_bank",
-            "source_signature": source_signature,
-            "active_signature": active_signature,
-            "count": 4,
-            "frozen_post_warmup_bank_consumed": True,
-            "canonical_round_trip_passed": True,
-            "final_coordinate_match_passed": True,
-            "raw_values_exposed": False,
-            "reports_operational_start_lineage": True,
-        }
-    assert engineering_qualification is not None
     return verification_latent, {
         "source": "phase7_engineering_probe_bank_v1",
         "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,

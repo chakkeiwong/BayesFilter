@@ -10,14 +10,13 @@ import hashlib
 import json
 import math
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import tensorflow as tf
 
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
-
 
 PAPER_D100_DIMENSION = 100
 PAPER_FUNNEL_NAME = "paper_funnel"
@@ -176,20 +175,61 @@ def load_paper_gaussian_spec(path: str | Path) -> PaperD100TargetSpec:
     return spec
 
 
+def _paper_funnel_value_terms(
+    rows: tf.Tensor,
+    *,
+    dimension: int,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Evaluate the funnel quadratic without forming ``inf * 0``.
+
+    For ``log p(y,x) = -y^2/2 - exp(-2y)||x||^2/2 - (d-1)y``, the
+    separate float64 factors ``exp(-2y)`` and ``x_i^2`` can overflow and
+    underflow even when their product is representable.  Log-domain products
+    preserve those finite tail rows. Exact zeros remain zeros; genuinely
+    unrepresentable score magnitudes remain nonfinite and are rejected by the
+    public value/score boundary.
+    """
+
+    y = rows[:, 0]
+    x = rows[:, 1:]
+    nonzero_x = tf.not_equal(x, tf.constant(0.0, tf.float64))
+    safe_abs_x = tf.where(nonzero_x, tf.abs(x), tf.ones_like(x))
+    log_abs_x = tf.math.log(safe_abs_x)
+    negative_inf = tf.constant(-math.inf, tf.float64)
+    log_abs_x = tf.where(
+        nonzero_x,
+        log_abs_x,
+        tf.fill(tf.shape(log_abs_x), negative_inf),
+    )
+    log_squared_norm = tf.reduce_logsumexp(
+        tf.constant(2.0, tf.float64) * log_abs_x,
+        axis=1,
+    )
+    has_nonzero_x = tf.reduce_any(nonzero_x, axis=1)
+    log_squared_norm = tf.where(
+        has_nonzero_x,
+        log_squared_norm,
+        tf.fill(tf.shape(y), negative_inf),
+    )
+    log_quadratic = tf.constant(-2.0, tf.float64) * y + log_squared_norm
+    half_quadratic = tf.exp(
+        log_quadratic - tf.math.log(tf.constant(2.0, tf.float64))
+    )
+    count = tf.cast(dimension - 1, tf.float64)
+    value = -(
+        tf.constant(0.5, tf.float64) * tf.square(y)
+        + half_quadratic
+        + count * y
+    )
+    return y, x, nonzero_x, log_abs_x, half_quadratic, value
+
+
 def paper_d100_log_prob_batch(spec: PaperD100TargetSpec, physical: Any) -> tf.Tensor:
     """Evaluate the source-equivalent unnormalized batch log density."""
 
     rows = _rank2(physical, spec.dimension, "paper d100 physical rows")
     if spec.name == PAPER_FUNNEL_NAME:
-        y = rows[:, 0]
-        x = rows[:, 1:]
-        return -(
-            tf.constant(0.5, tf.float64) * tf.square(y)
-            + tf.constant(0.5, tf.float64)
-            * tf.exp(tf.constant(-2.0, tf.float64) * y)
-            * tf.reduce_sum(tf.square(x), axis=1)
-            + tf.cast(spec.dimension - 1, tf.float64) * y
-        )
+        return _paper_funnel_value_terms(rows, dimension=spec.dimension)[-1]
     delta = rows - tf.constant(spec.mean, tf.float64)[tf.newaxis, :]
     precision = tf.constant(spec.precision, tf.float64)
     return -tf.constant(0.5, tf.float64) * tf.reduce_sum(
@@ -203,19 +243,26 @@ def paper_d100_log_prob_and_score_batch(
     """Evaluate the source-equivalent target and explicit analytic score."""
 
     rows = _rank2(physical, spec.dimension, "paper d100 physical rows")
-    value = paper_d100_log_prob_batch(spec, rows)
     if spec.name == PAPER_FUNNEL_NAME:
-        y = rows[:, 0]
-        x = rows[:, 1:]
-        inverse_variance = tf.exp(tf.constant(-2.0, tf.float64) * y)
+        y, x, nonzero_x, log_abs_x, half_quadratic, value = (
+            _paper_funnel_value_terms(rows, dimension=spec.dimension)
+        )
         y_score = (
             -y
-            + inverse_variance * tf.reduce_sum(tf.square(x), axis=1)
+            + tf.constant(2.0, tf.float64) * half_quadratic
             - tf.cast(spec.dimension - 1, tf.float64)
         )
-        x_score = -inverse_variance[:, tf.newaxis] * x
+        log_abs_x_score = (
+            tf.constant(-2.0, tf.float64) * y[:, tf.newaxis] + log_abs_x
+        )
+        x_score = tf.where(
+            nonzero_x,
+            -tf.sign(x) * tf.exp(log_abs_x_score),
+            tf.zeros_like(x),
+        )
         score = tf.concat((y_score[:, tf.newaxis], x_score), axis=1)
     else:
+        value = paper_d100_log_prob_batch(spec, rows)
         delta = rows - tf.constant(spec.mean, tf.float64)[tf.newaxis, :]
         score = -tf.matmul(delta, tf.constant(spec.precision, tf.float64))
     tf.debugging.assert_all_finite(value, "paper d100 target value")

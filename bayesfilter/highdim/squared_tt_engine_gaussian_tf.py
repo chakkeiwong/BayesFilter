@@ -83,7 +83,23 @@ def _hermite_product_basis(dimension: int, degree: int) -> ProductBasis:
     )
 
 
-def _christoffel_axis_table(degree: int) -> tuple[tf.Tensor, tf.Tensor]:
+def _christoffel_beta(dimension: int) -> float:
+    """Dimension-aware Christoffel mixture weight (A3 calibration,
+    2026-08-25). Per-axis importance weights multiply across axes, so
+    the product ESS fraction decays geometrically in the axis count:
+    at ell=13, beta=0.5 measured ESS 1400/2048 at d=4 (certified n=2
+    scopes) but 111/2048 and 408/8192 at d=8 — the starved regime that
+    produced non-finite retention in the first A3 run. beta=0.10 at
+    d=8 measured ESS 5347/8192 at axis-Gram cond 1.31 (vs 1.16 for
+    beta=0.5): the Chernoff-side cost of the lighter mixture is
+    negligible at the d>4 operating row count while the ESS gain is
+    ~13x. d<=4 keeps the certified beta=0.5. Evidence:
+    check_c2_hermite_rowlaw_mechanism_20260824.py (beta table)."""
+
+    return 0.5 if dimension <= 4 else 0.10
+
+
+def _christoffel_axis_table(degree: int, beta: float) -> tuple[tf.Tensor, tf.Tensor]:
     """Grid CDF of the per-axis induced mixture q1 = eta * mean_k He~_k^2.
 
     Optimal weighted least squares (Cohen & Migliorati 2017): rows drawn
@@ -105,7 +121,7 @@ def _christoffel_axis_table(degree: int) -> tuple[tf.Tensor, tf.Tensor]:
     # Chernoff Gram guarantee up to a factor 2 (measured: cond 1.32 at
     # ell=13, N=2048, ESS 1400).
     christoffel_bar = tf.reduce_mean(tf.square(values), axis=1)
-    density = tf.exp(log_eta1) * (0.5 + 0.5 * christoffel_bar)
+    density = tf.exp(log_eta1) * ((1.0 - beta) + beta * christoffel_bar)
     cdf = tf.cumsum(density)
     cdf = cdf / cdf[-1]
     return grid, cdf
@@ -136,7 +152,8 @@ def _christoffel_rows(
             "boundary; inverse CDF would be ill-defined (fail closed)"
         )
     probabilities = 0.5 * (uniform + 1.0)
-    grid, cdf = _christoffel_axis_table(degree)
+    beta = _christoffel_beta(dimension)
+    grid, cdf = _christoffel_axis_table(degree, beta)
     flat = tf.reshape(probabilities, [-1])
     upper = tf.clip_by_value(
         tf.searchsorted(cdf, flat, side="left"), 1, int(cdf.shape[0]) - 1
@@ -150,13 +167,18 @@ def _christoffel_rows(
     if not bool(tf.reduce_all(tf.math.is_finite(rows)).numpy()):
         raise ValueError("christoffel rows: non-finite row after inverse CDF")
     values = HermiteBasis1D(max_degree=degree).evaluate(tf.reshape(rows, [-1]))
-    log_half_mixture = tf.reshape(
-        tf.math.log(0.5 + 0.5 * tf.reduce_mean(tf.square(values), axis=1)),
+    log_mixture = tf.reshape(
+        tf.math.log(
+            (1.0 - beta) + beta * tf.reduce_mean(tf.square(values), axis=1)
+        ),
         tf.shape(rows),
     )
-    log_weight = -tf.reduce_sum(log_half_mixture, axis=1)
+    log_weight = -tf.reduce_sum(log_mixture, axis=1)
     weights = tf.exp(log_weight - tf.reduce_logsumexp(log_weight))
-    return rows, weights
+    # Class-A observability (campaign plan CF2): the effective sample
+    # size of the importance weights is computed here anyway — emit it.
+    row_ess = 1.0 / tf.reduce_sum(tf.square(weights))
+    return rows, weights, float(row_ess.numpy())
 
 
 def _log_eta(points: tf.Tensor) -> tf.Tensor:
@@ -197,6 +219,76 @@ def _logdet_lower(matrix: tf.Tensor) -> tf.Tensor:
     return tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(matrix))))
 
 
+def _student_t_log_const(nu: float) -> float:
+    """Constant of log(t_nu(u)/eta(u)) per axis (closed form)."""
+
+    return float(
+        math.lgamma((nu + 1.0) / 2.0)
+        - math.lgamma(nu / 2.0)
+        + 0.5 * math.log(2.0 / nu)
+    )
+
+
+def _log_student_t_ratio(points: tf.Tensor, nu: float) -> tf.Tensor:
+    """log lambda_mu at points [N, d]: sum_axes log(t_nu/eta) per axis.
+
+    lambda_mu is a probability density w.r.t. mu = N(0, I) by
+    construction (each axis factor integrates to one against eta), so
+    the increment identity Z = e^{-c}(1+tau)Z_h and the F7 oracle-gate
+    subtraction are unchanged by the escalation (campaign plan C2; the
+    prior review verified this closed-form claim)."""
+
+    const = tf.constant(_student_t_log_const(nu), DTYPE)
+    u_sq = tf.square(points)
+    per_axis = (
+        const
+        + 0.5 * u_sq
+        - ((nu + 1.0) / 2.0) * tf.math.log1p(u_sq / nu)
+    )
+    return tf.reduce_sum(per_axis, axis=1)
+
+
+def student_t_margin(nu: float, alpha: float) -> float:
+    """Per-axis domination margin M(nu, alpha) = sup_u [alpha u^2/2
+    - log lambda_1(u)] for a whitened tail excess alpha in (0, 1)
+    (review F1 tail model: log F ~ alpha u^2/2 along the worst ray).
+    Closed-form maximizer s* = (nu+1)/(1-alpha) - nu."""
+
+    if not 0.0 < alpha < 1.0:
+        raise ValueError("alpha must be in (0, 1)")
+    s_star = max((nu + 1.0) / (1.0 - alpha) - nu, 0.0)
+    return (
+        -(1.0 - alpha) * s_star / 2.0
+        + ((nu + 1.0) / 2.0) * math.log1p(s_star / nu)
+        - _student_t_log_const(nu)
+    )
+
+
+def student_t_nu_criterion(alpha_max: float, cap_per_axis: float) -> float:
+    """Two-sided nu selection (campaign plan C2, review CF5 repair):
+    the LARGEST nu (lightest tails, least bulk dilution) whose per-axis
+    margin satisfies M(nu, alpha_max) <= cap_per_axis. M is monotone
+    increasing in nu, so the largest admissible nu exists by bisection;
+    domination itself holds for every finite nu (the margin cap, tied
+    to the ratio guard at tau >= TAU_MIN, is what selects)."""
+
+    lo, hi = 1.5, 500.0
+    if student_t_margin(lo, alpha_max) > cap_per_axis:
+        raise ValueError(
+            "no admissible nu: margin cap violated even at nu=1.5 — "
+            "re-declare the cap or the hint class (fail closed)"
+        )
+    if student_t_margin(hi, alpha_max) <= cap_per_axis:
+        return hi
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if student_t_margin(mid, alpha_max) <= cap_per_axis:
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
 def run_value_filter_branch_axis_gaussian(
     adapter,
     observations: tf.Tensor,
@@ -204,12 +296,17 @@ def run_value_filter_branch_axis_gaussian(
     *,
     predictive_moment_hint: Callable[[int, tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     initial_moment_hint: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    defensive_nu: float | None = None,
 ) -> tuple[tf.Tensor, list[dict]]:
     """Gaussian-reference value filter. `predictive_moment_hint(t, y_t)`
     returns JOINT moments (mean [2n], cov [2n,2n]) of (x_t, x_{t-1}) in
     (current, previous) order for t >= 1; `initial_moment_hint(y_0)`
     returns the t=0 moments (mean [n], cov [n,n]) of x_0 | y_0. Hints
-    are frozen step inputs (M2/M3/M1-DETACHED contracts unchanged)."""
+    are frozen step inputs (M2/M3/M1-DETACHED contracts unchanged).
+    `defensive_nu`: None = reference floor (lambda == 1, the default);
+    a float = product Student-t floor per the D3 escalation — the
+    EXPECTED configuration for the SV arm (review F1), selected by
+    `student_t_nu_criterion` per declared scope, never on claim data."""
 
     if config.quadrature_order is not None:
         raise ValueError("gaussian engine is defined for scattered rows only")
@@ -225,18 +322,12 @@ def run_value_filter_branch_axis_gaussian(
     log_likelihood = tf.constant(0.0, DTYPE)
     retained: RetainedQuadraticForm | None = None
     diagnostics: list[dict] = []
-    # ALS continuation: warm-start each mixed fit from the previous
-    # step's fitted cores when shapes match (the successive subproblems
-    # share their dominant structure; measured 2026-08-24: random init at
-    # 3 sweeps floors at ~1e-4 rms on an exactly representable target,
-    # a pure ALS-convergence artifact). Deterministic and frozen.
-    warm_cores: tuple[TTCore, ...] | None = None
 
     for t in range(horizon):
         if t == 0:
             m_c, l_cc = _check_hint(*initial_moment_hint(observations[0]), n)
             map_c = AffineCoordinateMap(offset=m_c, matrix=l_cc)
-            rows, weights = _christoffel_rows(
+            rows, weights, row_ess = _christoffel_rows(
                 config, config.row_count, n, (config.seed, 17), config.basis_degree
             )
             x_current = m_c[None, :] + tf.einsum("ij,nj->ni", l_cc, rows)
@@ -286,7 +377,7 @@ def run_value_filter_branch_axis_gaussian(
                 * tf.eye(tf.shape(gram)[0], dtype=DTYPE)
             )
             branch_count = retained.boundary_rank + 1
-            u_rows, u_weights = _christoffel_rows(
+            u_rows, u_weights, row_ess = _christoffel_rows(
                 config, config.row_count, 2 * n, (config.seed, 100 + t),
                 config.basis_degree,
             )
@@ -328,18 +419,22 @@ def run_value_filter_branch_axis_gaussian(
                 prefix_row_vectors(retained.prefix_cores, retained.prefix_basis, u_old),
                 chol,
             )
-            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + retained.tau
+            if defensive_nu is None:
+                floor_values = retained.tau * tf.ones(
+                    [int(u_rows.shape[0])], DTYPE
+                )
+            else:
+                floor_values = retained.tau * tf.exp(
+                    _log_student_t_ratio(u_old, defensive_nu)
+                )
+            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + floor_values
             log_f = tf.math.log(sum_sq) + log_g
             shift = tf.reduce_logsumexp(log_f) - tf.math.log(
                 tf.cast(tf.shape(log_f)[0], DTYPE)
             )
             sqrt_g_shifted = tf.exp(0.5 * (log_g - shift))
             amplitudes = tf.concat(
-                [
-                    v_prev,
-                    tf.ones([int(u_rows.shape[0]), 1], DTYPE)
-                    * tf.sqrt(retained.tau),
-                ],
+                [v_prev, tf.sqrt(floor_values)[:, None]],
                 axis=1,
             )
             targets = amplitudes * sqrt_g_shifted[:, None]
@@ -364,39 +459,24 @@ def run_value_filter_branch_axis_gaussian(
                 current_basis.convention,
             )
             mixed_dims = [basis_dim] * n + [branch_count] + [basis_dim] * n
-            required_shapes = [
-                (
-                    1 if axis == 0 else config.rank,
-                    mixed_dims[axis],
-                    1 if axis == 2 * n else config.rank,
+            cores0 = tuple(
+                TTCore(
+                    0.3
+                    * tf.random.stateless_normal(
+                        [
+                            1 if axis == 0 else config.rank,
+                            mixed_dims[axis],
+                            1 if axis == 2 * n else config.rank,
+                        ],
+                        tf.constant((config.seed, 7000 + 31 * t + axis), tf.int32),
+                        dtype=DTYPE,
+                    )
                 )
                 for axis in range(2 * n + 1)
-            ]
-            if warm_cores is not None and [
-                tuple(core.values.shape.as_list()) for core in warm_cores
-            ] == required_shapes:
-                cores0 = warm_cores
-                warm_started = True
-            else:
-                cores0 = tuple(
-                    TTCore(
-                        0.3
-                        * tf.random.stateless_normal(
-                            list(shape),
-                            tf.constant(
-                                (config.seed, 7000 + 31 * t + axis), tf.int32
-                            ),
-                            dtype=DTYPE,
-                        )
-                    )
-                    for axis, shape in enumerate(required_shapes)
-                )
-                warm_started = False
+            )
             cores, fit_diag = _fixed_als_fit(
                 mixed_basis, full_rows, sqrt_target, weights, cores0, config
             )
-            warm_cores = tuple(cores)
-            fit_diag = {**fit_diag, "warm_started": warm_started}
             base = retained_quadratic_form_from_squared_tt(
                 tuple(cores), mixed_basis, split_index=n, tau=0.0,
                 prefix_basis=current_basis, coordinate_map=map_c,
@@ -429,6 +509,7 @@ def run_value_filter_branch_axis_gaussian(
                 "log_increment": float(log_increment.numpy()),
                 "tau_t": float(tau_t.numpy()),
                 "eps_rel_sq": eps_rel_sq,
+                "row_ess": row_ess,
                 "tie_flag": False,
                 **fit_diag,
                 **step_extra,

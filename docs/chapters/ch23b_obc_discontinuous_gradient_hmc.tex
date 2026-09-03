@@ -1,0 +1,547 @@
+\chapter{Occasionally Binding Constraints, Gradient Discontinuities, and a Failed Hypothesis}
+\label{ch:bf-obc-discontinuous-gradient}
+
+\section{Purpose and scope}
+
+This chapter documents a research hypothesis that was \emph{mathematically wrong}, the rigorous audit that exposed it, and the lessons learned. It is preserved here not as a correct method but as an instructive failure: an example of how plausible-sounding geometric reasoning, when not grounded in explicit derivations, can lead to a research program built on a false premise.
+
+The hypothesis was that a softplus-smoothed occasionally binding constraint, when composed with an Unscented Kalman Filter (UKF) recursion inside an HMC target, creates gradient discontinuities that require specialized event-aware integration or neural transport. An adversarial audit proved this claim false: the composed map is $C^\infty$ wherever the UKF covariance remains positive definite, so no gradient discontinuity exists. The real difficulty—if any—is stiffness (high curvature), which belongs to the smooth geometry and calls for step-size reduction or preconditioning, not for event detection.
+
+The chapter structure follows the scientific autopsy method:
+\begin{enumerate}
+\item State the wrong hypothesis and its narrative motivation.
+\item Present the rigorous mathematical rebuttal, with full derivations.
+\item Identify the specific errors: where intuition diverged from proof, where claims lacked anchors, and where terminology conflated distinct geometric cases.
+\item Extract durable lessons for research discipline and claim verification.
+\end{enumerate}
+
+\textbf{Reader responsibility.} This chapter does not present a correct sampling method. Its value is diagnostic: it shows what a wrong claim looks like when stated precisely, how to audit one rigorously, and how to distinguish ``seems like it should cause trouble'' from ``proven to cause trouble.''
+
+\section{The failed hypothesis}
+
+\subsection{Narrative form}
+
+In a shadow-rate term-structure model or New Keynesian model with an occasionally binding zero lower bound, the forward yield curve or policy rate is bounded below by some $\ell$ (typically 0 or a small negative effective lower bound). A hard censoring rule
+\begin{equation}\label{eq:hard-max}
+i_t = \max\{\ell, i_t^\star\}
+\end{equation}
+is continuous but has a kinked gradient at $i_t^\star = \ell$. Hamiltonian Monte Carlo remains valid for continuous kinked targets when the nondifferentiable set has Lebesgue measure zero\footnote{Afshar and Domke (2015), ``Reflection, Refraction, and Hamiltonian Monte Carlo.''}, but leapfrog integration may be inefficient near the kink.
+
+A natural smoothing strategy replaces the hard max with a softplus approximation:
+\begin{equation}\label{eq:softplus-smooth}
+s(u) = \ell + a \log(1 + e^{(u-\ell)/a}) = \ell + a \cdot \mathrm{softplus}\left(\frac{u-\ell}{a}\right),
+\end{equation}
+where $a > 0$ is a scale parameter. As $a \to 0$, $s(u) \to \max\{\ell, u\}$ pointwise. The softplus is smooth: it is a composition of $C^\infty$ functions (translation, scaling, exponential, logarithm), so $s \in C^\infty(\mathbb{R})$.
+
+\textbf{The wrong hypothesis (retracted).} In a nonlinear state-space model where the observation map involves \eqref{eq:softplus-smooth}, if the marginal likelihood is computed via an Unscented Kalman Filter, the composed parameter-to-log-likelihood map can exhibit gradient discontinuities when the latent shadow rate crosses the bound deeply. Specifically, when the state drifts far below the bound, the UKF covariance collapses, sigma points cluster, and the gradient of the log-likelihood with respect to parameters jumps discontinuously. This creates a ``continuous-kink'' geometry that ordinary HMC handles inefficiently and that motivates event-aware integration or neural transport.
+
+This hypothesis was recorded in a survey manuscript (``Bayesian Inference for Nonlinear Models with a Genuine Zero Lower Bound,'' §7, August 2026 draft) and motivated an 11-week, 1000 GPU-hour research plan targeting event-aware HMC (Tran \& Kleppe reflection/refraction), UKF variance inflation, and neural surrogate training.
+
+\subsection{Why it seemed plausible}
+
+The hypothesis rested on several intuitively appealing but unverified steps:
+\begin{enumerate}
+\item \textbf{Softplus curvature.} For small $a$, the second derivative $s''(u) = O(a^{-1})$ grows large, suggesting stiffness.
+\item \textbf{UKF sensitivity loss.} When the latent rate is far below the bound, $s'(u) \approx 0$, so the observation Jacobian $H_t \approx 0$ and the Kalman gain $K_t \approx 0$. The filtered covariance $P_{t|t}$ approaches the predicted $P_{t|t-1}$, and the observation becomes uninformative.
+\item \textbf{Sigma-point clustering.} As $P_t \to 0$, unscented sigma points collapse toward the mean, and the UKF's quadrature-based likelihood approximation changes character.
+\item \textbf{Parameter sensitivity amplification.} If $P_t$ is small and parameter-sensitive, and if the innovation covariance $S_t = H_t P_t H_t^\top + R$ is also small, then $\|\nabla_\theta \log p(y_t \mid y_{1:t-1}, \theta)\|$ could amplify rapidly.
+\item \textbf{Analogy to hard kinks.} Since the softplus ``approximates'' the hard max, and hard max has a kinked gradient, perhaps the softplus inherits a ``near-kink'' that becomes a discontinuity under composition with the UKF recursion.
+\end{enumerate}
+
+None of these steps is individually absurd. Together, they painted a picture of a smooth function that, when embedded in a recursive filter and differentiated with respect to parameters, might develop jump discontinuities. The error was \emph{not checking the conclusion with a derivation}.
+
+
+\section{The rigorous rebuttal}
+
+An adversarial audit (Codex, September 2026) subjected the hypothesis to mandatory derivations and fixed-verdict vocabulary. The audit proved the central mathematical claim false. We reproduce the key results here.
+
+\subsection{Softplus smoothness and curvature bound}
+
+\begin{proposition}[Softplus is $C^\infty$, not kinked]
+\label{prop:softplus-smooth}
+The softplus map \eqref{eq:softplus-smooth} is infinitely differentiable with bounded derivatives on compact sets. Its first and second derivatives are
+\begin{equation}\label{eq:softplus-derivatives}
+s'(u) = \sigma(z), \qquad s''(u) = \frac{\sigma(z)(1 - \sigma(z))}{a},
+\end{equation}
+where $z = (u - \ell)/a$ and $\sigma(z) = 1/(1 + e^{-z})$ is the logistic function. The supremum of the second derivative is
+\begin{equation}\label{eq:softplus-curvature-bound}
+\sup_{u \in \mathbb{R}} s''(u) = \frac{1}{4a}.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Write $s(u) = \ell + a \log(1 + e^z)$ where $z = (u - \ell)/a$. The logarithm, exponential, and affine maps are all $C^\infty$ on their domains, and the composition is $C^\infty$ on $\mathbb{R}$.
+
+For the first derivative, use the chain rule:
+\[
+\frac{d}{dz} \log(1 + e^z) = \frac{e^z}{1 + e^z} = \frac{1}{1 + e^{-z}} = \sigma(z).
+\]
+Since $dz/du = 1/a$,
+\[
+s'(u) = a \cdot \sigma(z) \cdot \frac{1}{a} = \sigma(z).
+\]
+
+For the second derivative,
+\[
+\frac{d\sigma}{dz} = \sigma(z)(1 - \sigma(z)),
+\]
+so
+\[
+s''(u) = \frac{d\sigma}{du} = \frac{d\sigma}{dz} \cdot \frac{dz}{du} = \frac{\sigma(z)(1 - \sigma(z))}{a}.
+\]
+
+The product $\sigma(1 - \sigma)$ achieves its maximum at $\sigma = 1/2$ (i.e., $z = 0$), where $\sigma(1 - \sigma) = 1/4$. Thus
+\[
+\sup_u s''(u) = \frac{1}{4a}.
+\]
+\end{proof}
+
+\textbf{Consequence.} The softplus map has no kink, no jump, and no discontinuous derivative of any order. Its curvature scales as $O(1/a)$, which is \emph{stiffness}, not a discontinuity. For small $a$, the second derivative is large but finite and continuous.
+
+\subsection{UKF composition: no gradient jump}
+
+\begin{proposition}[UKF composition remains smooth]
+\label{prop:ukf-smooth}
+Let $\theta \in \mathbb{R}^p$ be parameters, and let the UKF recursion compute a filtered mean $m_t(\theta)$ and covariance $P_t(\theta)$ at each time $t$, assuming $P_t(\theta) \succ 0$ for all $\theta$ in a neighborhood. Let the observation map be $h_t(x_t, \theta) = s(g(x_t, \theta))$, where $s$ is the softplus \eqref{eq:softplus-smooth} and $g$ is smooth. If the UKF operations (Cholesky factorization, matrix inversion, sigma-point propagation) are smooth in $(m_t, P_t, \theta)$ on the open cone $P_t \succ 0$, then the log-likelihood $\ell(\theta) = \log p(y_{1:T} \mid \theta)$ computed via the UKF is smooth in $\theta$ wherever all intermediate $P_t(\theta)$ remain positive definite.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+The UKF recursion is a finite composition of:
+\begin{enumerate}
+\item Smooth parameter-dependent functions: $m_t(\theta)$, $P_t(\theta)$, $g(\cdot, \theta)$, $s(\cdot)$.
+\item Smooth matrix operations: addition, multiplication, Cholesky factorization $L L^\top = P$ (smooth on $P \succ 0$), matrix inversion (smooth on invertible matrices).
+\item Smooth scalar operations: weighted sums (unscented mean), quadratic forms, log determinant $\log |S|$ (smooth when $S \succ 0$).
+\end{enumerate}
+
+At each time $t$:
+\begin{itemize}
+\item Predicted mean and covariance: smooth in $\theta$ if the previous filtered estimates are smooth.
+\item Sigma points: $\mathcal{X}_t^{(j)} = m_t + (\sqrt{(n + \lambda) P_t})_j$, smooth in $(m_t, P_t)$ via the Cholesky factor.
+\item Propagated sigma points: $\mathcal{Y}_t^{(j)} = h_t(\mathcal{X}_t^{(j)}, \theta)$, smooth because $s$ and $g$ are smooth.
+\item Unscented observation mean: $\hat{y}_t = \sum_j w_j \mathcal{Y}_t^{(j)}$, a smooth weighted sum.
+\item Innovation covariance: $S_t = \sum_j w_j (\mathcal{Y}_t^{(j)} - \hat{y}_t)(\mathcal{Y}_t^{(j)} - \hat{y}_t)^\top + R$, smooth in the sigma points.
+\item Log-likelihood increment: $-\frac{1}{2}[\log |S_t| + (y_t - \hat{y}_t)^\top S_t^{-1} (y_t - \hat{y}_t)]$, smooth when $S_t \succ 0$.
+\item Kalman gain and filtered update: smooth matrix operations.
+\end{itemize}
+
+By induction over $t$, the entire log-likelihood $\ell(\theta) = \sum_{t=1}^T \ell_t(\theta)$ is smooth in $\theta$ on the open set where all $P_t(\theta) \succ 0$.
+\end{proof}
+
+\textbf{Consequence.} There is no composition-induced discontinuity. If the UKF covariance stays positive definite, the gradient $\nabla_\theta \ell(\theta)$ is continuous. The hypothesis that ``UKF filtering creates gradient jumps'' is \textbf{wrong relative to the stated softplus target}.
+
+
+\subsection{The variance collapse mechanism is backwards}
+
+The survey manuscript claimed that when the latent shadow rate drifts far below the bound ($u \ll \ell$), the UKF covariance collapses, amplifying parameter sensitivity and creating gradient instability. The audit proved this mechanism backwards.
+
+\begin{proposition}[Variance preservation under insensitive observations]
+\label{prop:variance-preserved}
+In the scalar observation case, let $m_t^-$, $P_t^-$ be the predicted mean and variance, $h_t = s(g(m_t^-, \theta))$ the observation function, and $H_t = s'(g(m_t^-)) \cdot g'(m_t^-)$ the observation Jacobian. The Kalman update is
+\begin{equation}\label{eq:kalman-update}
+S_t = H_t P_t^- H_t + R, \quad K_t = P_t^- H_t S_t^{-1}, \quad P_{t|t} = (1 - K_t H_t) P_t^-.
+\end{equation}
+If $s'(g(m_t^-)) \to 0$ (deep below bound), then $H_t \to 0$, $K_t \to 0$, and $P_{t|t} \to P_t^-$.
+\end{proposition}
+
+\begin{proof}
+As $H_t \to 0$, the innovation covariance $S_t = H_t P_t^- H_t + R \to R > 0$. The Kalman gain $K_t = P_t^- H_t / S_t \to P_t^- \cdot 0 / R = 0$. The filtered variance $P_{t|t} = (1 - K_t H_t) P_t^- \to (1 - 0) P_t^- = P_t^-$.
+
+The observation is uninformative about the shadow depth: it provides no information to shrink the variance. The filtered variance equals the predicted variance, which can grow under the state dynamics if $\Phi \neq 0$ and $Q > 0$.
+\end{proof}
+
+\textbf{Consequence.} The correct implication is:
+\begin{center}
+\framebox{$s' \to 0 \implies H_t \to 0 \implies K_t \to 0 \implies P_{t|t} \to P_t^-$ \quad (variance preserved or grows)}
+\end{center}
+not
+\begin{center}
+\textit{(Wrong claim, retracted)}: $s' \to 0 \implies$ variance collapses $\implies$ gradient jumps.
+\end{center}
+
+The survey's §7.1 narrative inverted cause and effect. Insensitive observations preserve variance; they do not collapse it.
+
+\subsection{Innovation covariance bound: no unbounded inverse}
+
+The survey claimed that variance collapse could make the innovation covariance $S_t$ small, causing its inverse $S_t^{-1}$ to amplify parameter derivatives unboundedly. This is also false.
+
+\begin{proposition}[Innovation covariance lower bound]
+\label{prop:innovation-bound}
+For $S_t = H_t P_t^- H_t^\top + R$ with $R \succ 0$, we have $S_t \succeq R$, hence $\|S_t^{-1}\| \leq \|R^{-1}\|$ in operator norm.
+\end{proposition}
+
+\begin{proof}
+Since $H_t P_t^- H_t^\top \succeq 0$ (positive semidefinite) and $R \succ 0$ (positive definite), $S_t = H_t P_t^- H_t^\top + R \succeq R$. For positive definite matrices, $A \succeq B \succ 0$ implies $A^{-1} \preceq B^{-1}$, so $S_t^{-1} \preceq R^{-1}$, giving $\|S_t^{-1}\| \leq \|R^{-1}\|$.
+\end{proof}
+
+\textbf{Consequence.} The measurement noise covariance $R$ (fixed at $5 \times 10^{-4}$ in the fixture) bounds the innovation inverse from above, regardless of $P_t$ collapse. The survey's §7.2 amplification mechanism does not follow from variance collapse alone.
+
+\subsection{Sigma-point limit: convergence to linearization}
+
+The survey suggested that as $P_t \to 0$, the UKF sigma points undergo a ``regime flip'' or ``simultaneous cluster contribution'' that creates discontinuous parameter sensitivity. The audit showed this is a misunderstanding of the sigma-point limit.
+
+\begin{proposition}[Unscented mean converges to the observation function]
+\label{prop:sigma-point-limit}
+For the standard symmetric UKF with sigma points $\mathcal{X}_t^{(j)} = m_t \pm \sqrt{(n + \lambda) P_t} \, e_j$, the unscented observation mean is
+\[
+\hat{y}_t = w_0 h(m_t) + \sum_{j=1}^n w_j [h(m_t + c_j) + h(m_t - c_j)],
+\]
+where $c_j = \sqrt{(n + \lambda) P_t} \, e_j$. As $P_t \to 0$, $c_j \to 0$ and $\hat{y}_t \to h(m_t)$.
+\end{proposition}
+
+\begin{proof}
+Taylor expand $h(m_t \pm c_j)$ around $m_t$:
+\begin{align*}
+h(m_t \pm c_j) &= h(m_t) \pm J_h(m_t) c_j + \tfrac{1}{2} c_j^\top H_h(m_t) c_j + O(\|c_j\|^3).
+\end{align*}
+The odd terms cancel under symmetric weights, and the weights sum to one, so
+\[
+\hat{y}_t = h(m_t) + \tfrac{1}{2} \sum_{j=1}^n w_j c_j^\top H_h(m_t) c_j + O(\|P_t\|^{3/2}).
+\]
+As $P_t \to 0$, the second-order correction vanishes, giving $\hat{y}_t \to h(m_t)$.
+\end{proof}
+
+\textbf{Consequence.} All sigma points converge to the mean $m_t$, and the unscented observation mean converges to $h(m_t)$ (the linearization). There is no ``cluster flip'' or ``simultaneous regime contribution.'' The UKF gracefully becomes an extended Kalman filter in the limit $P_t \to 0$.
+
+
+\subsection{Leapfrog stability for smooth stiff potentials}
+
+The survey cited a kink-crossing energy-error bound (eq:56a in the survey manuscript) as motivation for event-aware integration. For a smooth potential, this bound is vacuous.
+
+\begin{proposition}[Leapfrog stability bound]
+\label{prop:leapfrog-stability}
+For a smooth potential $U(\theta)$ with Hessian eigenvalues bounded by $\lambda_{\max}$, leapfrog integration is stable when
+\begin{equation}\label{eq:leapfrog-stability}
+\epsilon < \frac{2}{\sqrt{\lambda_{\max}}}.
+\end{equation}
+For the softplus-composed Hessian with $\sup s'' = 1/(4a)$, if the dominant curvature is $\lambda_{\max} = O(1/a)$, then the stability bound is $\epsilon = O(\sqrt{a})$.
+\end{proposition}
+
+\begin{proof}
+For the harmonic mode with Hessian eigenvalue $\lambda$, the linearized leapfrog update has stability only when $\epsilon \sqrt{\lambda} < 2$. For a general smooth potential, the worst-case mode sets the bound.
+
+If the observation Jacobian $H_t = s'(g(m_t)) \cdot g'(m_t)$ and the parameter Hessian involves $s'' = O(1/a)$, then $\lambda_{\max} = O(1/a)$ is plausible. This gives $\epsilon = O(\sqrt{a})$ as the stability scale.
+\end{proof}
+
+\textbf{Consequence.} For smooth stiff potentials, the mathematics selects step-size reduction, mass-matrix preconditioning, or Riemannian metric adaptation—not event detection. The survey's eq:56a bound states
+\[
+\Delta H = O(\epsilon \|\nabla U^+ - \nabla U^-\|).
+\]
+For smooth softplus, $\nabla U^+ = \nabla U^-$ (the gradient is continuous), so $\|\nabla U^+ - \nabla U^-\| = 0$ and the bound is $\Delta H = O(\epsilon \cdot 0) = 0$—vacuous. Event-aware integration addresses actual gradient jumps (hard kinks, regime switches), not smooth high curvature.
+
+\section{Specific errors in the failed hypothesis}
+
+We now catalog the precise points where the hypothesis diverged from mathematical reality.
+
+\subsection{Error 1: Confusing stiffness with discontinuity}
+
+\textbf{What was claimed:} ``The softplus creates gradient discontinuities when composed with UKF filtering.''
+
+\textbf{What is true:} The softplus has curvature $s'' = O(1/a)$, which for small $a$ is large but finite and continuous. This is \emph{stiffness}, a property of smooth geometry. Stiffness makes small step sizes necessary for leapfrog stability; it does not create a discontinuity.
+
+\textbf{Why the error persisted:} The informal language ``the gradient becomes very sensitive'' was interpreted as ``the gradient jumps,'' and the limiting behavior $s(u) \to \max\{\ell, u\}$ as $a \to 0$ was misread as implying that the finite-$a$ softplus inherits the hard max's kink. Neither inference is valid without a proof.
+
+\subsection{Error 2: Inverting the variance collapse mechanism}
+
+\textbf{What was claimed:} ``When the latent shadow rate drifts far below the bound, the UKF covariance collapses, creating gradient amplification.''
+
+\textbf{What is true:} When $s'(u) \to 0$ (deep below bound), the observation Jacobian $H_t \to 0$, the Kalman gain $K_t \to 0$, and the filtered covariance $P_{t|t} \to P_t^-$ (preserved, not collapsed). The observation is uninformative, so it neither shrinks nor amplifies the variance.
+
+\textbf{Why the error persisted:} The narrative confused two different regimes: (i) informative observations near the kink, which can shrink variance and make the filter sensitive, versus (ii) uninformative observations far below the bound, which leave variance unchanged. The survey conflated these and concluded that deep-below-bound implies collapse.
+
+\subsection{Error 3: Unbounded inverse claim without the $S \succeq R$ bound}
+
+\textbf{What was claimed:} ``Variance collapse makes the innovation covariance $S_t$ small, causing $S_t^{-1}$ to amplify gradients unboundedly.''
+
+\textbf{What is true:} $S_t = H_t P_t H_t^\top + R \succeq R > 0$ always, so $\|S_t^{-1}\| \leq \|R^{-1}\|$ is bounded by the measurement noise covariance, regardless of $P_t$.
+
+\textbf{Why the error persisted:} The derivation in the survey computed $dS$ and $d(\log |S|)$ but did not check the $S \succeq R$ lower bound before asserting amplification. The mechanism was plausible-sounding but not derived.
+
+\subsection{Error 4: Misunderstanding the sigma-point limit}
+
+\textbf{What was claimed:} ``As $P_t \to 0$, sigma points undergo a simultaneous regime flip or cluster jump that creates discontinuous parameter sensitivity.''
+
+\textbf{What is true:} As $P_t \to 0$, all sigma points converge to the mean $m_t$, and the unscented mean $\hat{y}_t \to h(m_t)$ smoothly. The UKF becomes an extended Kalman filter in this limit; there is no flip.
+
+\textbf{Why the error persisted:} The intuition that ``collapsing sigma points must do something discontinuous'' was never tested with a Taylor expansion. The correct limit is a smooth convergence, not a jump.
+
+
+\subsection{Error 5: Convention collision in scaling statements}
+
+The survey manuscript used the symbol $\alpha$ with two different meanings:
+\begin{itemize}
+\item In §7 (UKF discontinuities): $\alpha$ as temperature parameter, where the softplus is written $s(u) = (1/\alpha) \log(1 + e^{\alpha(u - \ell)})$, so $\alpha = 1/a$ in our notation.
+\item In §13 (model specification): $\alpha$ as the scale parameter itself, matching our $a$.
+\end{itemize}
+
+These are reciprocals: $\alpha_{\text{temp}} = 1/\alpha_{\text{scale}}$. Every statement of the form ``curvature is $O(\alpha)$'' is correct under one convention and wrong under the other. The survey's O($\alpha$) scaling claims are internally inconsistent, making it impossible to verify whether stiffness grows or shrinks with the stated parameter.
+
+\textbf{Why the error persisted:} The two sections were written at different times, and no global symbol audit caught the reuse. This is a cautionary example of how notation drift can corrupt quantitative claims.
+
+\subsection{Error 6: Taxonomy confusion}
+
+The survey manuscript (§2) correctly defines four posterior geometries:
+\begin{enumerate}
+\item Case 1: Continuous kinked target, $i_t = \max\{\ell, i_t^\star\}$, $\Delta U = 0$.
+\item Case 2: Deterministic branch jump, $\Delta U \neq 0$ from selection between equilibria.
+\item Case 3: Mixed discrete-continuous target (stochastic regime variable).
+\item Case 4: Multiplicity or nonexistence (no well-defined posterior until a selection rule is added).
+\end{enumerate}
+
+The survey's §7 then claims the softplus UKF creates a Case 1 (kinked) or Case 3 (value jump) geometry, contradicting the §13 case-study text that explicitly classifies the UKF route as smooth (no kink, no jump). This internal contradiction was not noticed until the audit.
+
+\textbf{Why the error persisted:} Different sections were drafted with different claims in mind, and no cross-section consistency check was performed before the hypothesis hardened into a research plan.
+
+\section{What the executed evidence actually shows}
+
+An 8-parameter joint HMC run (G2.3, filter-free, hard-max target \texttt{mf\_c1\_k40\_hardmax}) was executed and passed a convergence gate at max $\hat{R} = 1.0090$ after warmup 8000 / draws 8000. The bottleneck was parameter $\theta_8$ (log FX measurement noise scale) with ESS 848.7, about 5$\times$ slower than the drift parameters.
+
+The G2.3 result document (September 2026) offers two candidate explanations for the $\theta_8$ bottleneck:
+\begin{enumerate}
+\item \textbf{Funnel geometry:} Log noise scales in a non-centered parameterization sit in a funnel against the latent innovations. The conditional curvature of the latent-to-parameter map varies with the noise scale itself, so a fixed dense mass matrix cannot flatten the geometry.
+\item \textbf{Trajectory-length periodicity:} In a stiff direction, leapfrog trajectories can return near their starting point after an integer multiple of the period, producing high acceptance but poor exploration. This would explain the non-monotone mixing (L=64 worse than L=32 and L=128).
+\end{enumerate}
+
+Neither explanation invokes UKF filtering, gradient discontinuities, or softplus kinks, because:
+\begin{itemize}
+\item The executed target used the hard max (C1), not softplus (S1).
+\item The executed target was filter-free joint HMC over latent states, not UKF-marginalized.
+\item No UKF implementation exists in the \texttt{bayesfilter/hardbound/} package to test.
+\end{itemize}
+
+The measured evidence does not support the UKF discontinuity hypothesis. It supports a different bottleneck (funnel or periodicity) in a different target (hard-max joint HMC) that passed its convergence gate without requiring event-aware integration or neural transport.
+
+\section{The research plan that followed the wrong hypothesis}
+
+Based on the false discontinuity claim, an 11-week research plan was drafted with the following phases:
+
+\begin{enumerate}
+\item \textbf{Phase 1 (weeks 1-2, 20 GPU-hours):} Measurement. Build a UKF-filtered softplus target, run toy-model and G2.3 diagnostics, and measure gradient discontinuities at kink crossings.
+\item \textbf{Phase 2 (weeks 3-4, 100 GPU-hours):} Event-aware integration. Implement Tran \& Kleppe (2025) reflection/refraction HMC (GRHMC) for the measured discontinuities.
+\item \textbf{Phase 3 (weeks 5-6, 80 GPU-hours):} UKF variance inflation. Inflate UKF covariance to prevent collapse, retune HMC, and measure impact on mixing.
+\item \textbf{Phase 4 (weeks 7-10, 800 GPU-hours):} Neural surrogate. Train a Hamiltonian Neural Network on the discontinuous UKF target and use it as an HMC proposal or warping.
+\item \textbf{Phase 5 (week 11):} Production candidate selection. Rank methods by ESS/gradient > 0.1 threshold and promote to production.
+\end{enumerate}
+
+Total budget: 1000 GPU-hours over 11 weeks.
+
+\subsection{Why the plan was abandoned}
+
+The adversarial audit (M1-M25, September 2026) delivered 17 ``wrong relative to stated target'' verdicts, 6 ``unsupported'' verdicts, 1 ``correct,'' and 1 ``heuristic only.'' The five mandatory mathematical derivations (M1, M3, M4, M5, M6) all contradicted the hypothesis. Specifically:
+\begin{itemize}
+\item M1: Softplus is $C^\infty$; gradient jump claim is false.
+\item M4: Variance collapse mechanism is backwards.
+\item M5: Innovation covariance bound prevents unbounded amplification.
+\item M6: Sigma-point limit is smooth convergence, not a flip.
+\item M15: Plan contradicts master program's binding non-goals (filter-free, no event-aware HMC).
+\item M16: G2.3 evidence uses hard-max joint HMC, not UKF-filtered softplus.
+\item M20: Surrogate-target HMC is biased, not exact.
+\end{itemize}
+
+The plan was retracted in full, the survey §7 scheduled for removal, and the research direction closed. No phase was executed.
+
+
+\section{Lessons for research discipline}
+
+This failure offers several durable lessons for structuring research claims and avoiding similar errors.
+
+\subsection{Lesson 1: Derive, don't narrate}
+
+\textbf{The failure mode.} The hypothesis was built from a chain of plausible-sounding steps: ``softplus is steep'' $\to$ ``UKF becomes sensitive'' $\to$ ``gradients jump.'' Each local step seemed reasonable, but the composition was never verified with an end-to-end derivation.
+
+\textbf{The corrective discipline.} For any mathematical claim that motivates expensive work (measurement, tuning, training, 1000 GPU-hours):
+\begin{enumerate}
+\item Write the claim as a proposition with explicit hypotheses and conclusion.
+\item Derive the conclusion from the hypotheses, or cite a theorem that does so.
+\item If the derivation is ``obvious,'' write it anyway—errors hide in the obvious.
+\item If the derivation is blocked by missing definitions or assumptions, treat that as a signal that the claim is not yet ready.
+\end{enumerate}
+
+Narrative momentum (``it makes sense that $X$ would cause $Y$'') is not evidence. A correct derivation or a measurement artifact is evidence.
+
+\subsection{Lesson 2: Distinguish stiffness from discontinuity}
+
+\textbf{The failure mode.} The softplus second derivative $s'' = O(1/a)$ grows large as $a \to 0$, and the pointwise limit $\lim_{a \to 0} s(u) = \max\{\ell, u\}$ is kinked. These facts were conflated into ``the softplus is almost kinked, so it acts like a kink.''
+
+\textbf{The corrective discipline.} Stiffness (large but finite and continuous derivatives) and discontinuity (actual jumps) are distinct geometric classes with distinct samplers:
+\begin{itemize}
+\item \textbf{Stiffness} calls for step-size reduction ($\epsilon = O(\lambda_{\max}^{-1/2})$), mass-matrix preconditioning, Riemannian metrics, or trust-region methods. Leapfrog remains valid; it is merely expensive.
+\item \textbf{Discontinuity} calls for event detection, reflection/refraction, or discontinuous HMC variants that explicitly handle the jump in potential or gradient.
+\end{itemize}
+
+A function that is $C^k$ for finite $k \geq 1$ is not discontinuous. Treating smooth high-curvature functions as discontinuous is a category error that leads to the wrong sampler.
+
+\subsection{Lesson 3: Check mechanisms in both directions}
+
+\textbf{The failure mode.} The narrative was ``$s' \to 0$ causes variance collapse.'' The Kalman equations say $s' \to 0 \implies K_t \to 0 \implies P_{t|t} \to P_t^-$ (variance preserved). The correct implication is the opposite of the claimed one, but the error was not caught because the mechanism was stated in words, not equations.
+
+\textbf{The corrective discipline.} For any claimed causal mechanism $A \implies B$:
+\begin{enumerate}
+\item Write the explicit equations or inequalities connecting $A$ and $B$.
+\item Derive $B$ from $A$ using those equations.
+\item Derive the contrapositive: $\neg B \implies \neg A$. If the contrapositive is false, the original claim is false.
+\item Check whether $B \implies A$ is also true, false, or independent. If ``thus'' appears in the narrative, verify that the implication actually points in the stated direction.
+\end{enumerate}
+
+Equations are bidirectional; they can be solved for any variable. A verbal ``thus'' can point in the wrong direction without triggering an error signal.
+
+\subsection{Lesson 4: Anchor claims to code, not to plans}
+
+\textbf{The failure mode.} The hypothesis referenced ``the UKF route'' as if it existed. The survey described a UKF implementation (§13), and the research plan budgeted GPU-hours for UKF experiments. Neither the description nor the plan constituted an implementation. The actual `bayesfilter/hardbound/` package contained no UKF recursion, no `tf.where` branching on parameter-dependent conditions, and no Cholesky factorization inside an observation loop—none of the elements required for a UKF-marginalized target.
+
+\textbf{The corrective discipline.} Before claiming that ``method $X$ exhibits property $Y$'':
+\begin{enumerate}
+\item Locate the implementation of method $X$: file path, function name, call chain from entry point to the relevant operation.
+\item Run a minimal test that exercises the claimed property $Y$.
+\item Record the artifact (test output, diagnostic value, plot) as evidence.
+\end{enumerate}
+
+A plan to implement $X$ is not an implementation of $X$. A survey section describing $X$ is not an implementation of $X$. An implementation is code that compiles and runs. If the claim is about code that does not yet exist, state that explicitly: ``If we implement $X$, we conjecture $Y$.''
+
+\subsection{Lesson 5: Adversarial review catches what friendly review misses}
+
+\textbf{The failure mode.} The hypothesis was developed incrementally: a survey section here, a research plan there, informal discussions, and gradual narrative convergence. Each local decision seemed reasonable, and no single-author review caught the composition error.
+
+\textbf{The corrective discipline.} For research directions that commit significant resources (time, compute, opportunity cost of alternative directions):
+\begin{enumerate}
+\item Write a single self-contained document stating the hypothesis, the evidence for it, the research plan, and the expected outcome.
+\item Subject that document to adversarial review: a reviewer whose task is to find flaws, not to approve the plan.
+\item Require the reviewer to deliver mandatory derivations for key mathematical claims, not just a thumbs-up/thumbs-down verdict.
+\item Use fixed verdict vocabulary (correct, wrong relative to stated target, unsupported, not checked) to prevent evasive language (``reasonable,'' ``approximately,'' ``in some sense'').
+\item Treat ``unsupported'' the same as ``wrong'' for go/no-go decisions: if the evidence is missing, the claim is not ready.
+\end{enumerate}
+
+Friendly review surfaces misunderstandings and unclear exposition. Adversarial review surfaces wrong claims that sound right. Both are necessary, but they are not the same service.
+
+\subsection{Lesson 6: ``Not checked'' is not ``probably fine''}
+
+\textbf{The failure mode.} Several sub-claims in the hypothesis were never verified: the UKF implementation did not exist, the Tran \& Kleppe (2025) paper was a dangling citation (not in the bibliography, no full text available), the 800 GPU-hour Phase 4 budget had no cost model, and the ESS/gradient > 0.1 promotion threshold had no calibration to the measured ladder. Each of these was noted as ``to be done later,'' but the research plan proceeded as if they were already validated.
+
+\textbf{The corrective discipline.} Distinguish three evidence states:
+\begin{itemize}
+\item \textbf{Verified:} A derivation, measurement, or cited theorem explicitly supports the claim.
+\item \textbf{Unsupported:} No evidence has been checked, but the claim might be true.
+\item \textbf{Wrong:} A derivation or measurement explicitly contradicts the claim.
+\end{itemize}
+
+For go/no-go decisions, treat ``unsupported'' as a block, not as ``probably fine.'' A hypothesis with three verified steps and two unsupported steps is not 60\% validated; it is unvalidated. The unsupported steps are gaps, not rounding errors.
+
+
+\section{What remains correct}
+
+Not every statement in the original hypothesis was wrong. We record the surviving claims to avoid overcorrecting.
+
+\subsection{Stiffness is real}
+
+The softplus second derivative bound $\sup s'' = 1/(4a)$ is correct. For small $a$, the curvature is large, and the leapfrog stability bound $\epsilon < 2/\sqrt{\lambda_{\max}}$ can force small step sizes. This is a genuine implementation challenge for HMC, even though it is not a discontinuity.
+
+\textbf{What works for stiffness:}
+\begin{itemize}
+\item Step-size adaptation (dual averaging with a conservative target acceptance rate).
+\item Dense or Riemannian mass-matrix adaptation to precondition the geometry.
+\item Trust-region or implicit integrators for severely stiff problems.
+\end{itemize}
+
+\subsection{Hard kinks are different}
+
+The hard max $i_t = \max\{\ell, i_t^\star\}$ does have a kinked gradient: $\partial i_t / \partial i_t^\star = \mathbf{1}\{i_t^\star > \ell\}$, which jumps from 0 to 1. Leapfrog remains valid (the nondifferentiable set has measure zero), but event-aware methods can improve efficiency by detecting boundary crossings and adjusting trajectories accordingly.\footnote{Pakman and Paninski (2014), ``Exact Hamiltonian Monte Carlo for truncated multivariate Gaussians''; Afshar and Domke (2015), ``Reflection, Refraction, and Hamiltonian Monte Carlo.''}
+
+\textbf{Key distinction:} The hard max is a Case 1 geometry (continuous kink, $\Delta U = 0$). The softplus is smooth (no kink, $\Delta U = 0$, but large curvature). They are not the same, and methods for one do not automatically apply to the other.
+
+\subsection{Filter choice matters for HMC targets}
+
+For nonlinear state-space models, the choice of filter (particle filter, extended Kalman filter, unscented Kalman filter, ensemble Kalman filter) determines the marginal likelihood approximation and its gradient. Different filters have different:
+\begin{itemize}
+\item Bias-variance tradeoffs (bootstrap particle filter is unbiased but high-variance; UKF is deterministic but biased for highly nonlinear models).
+\item Differentiability (ordinary resampling is discontinuous; optimal-transport resampling is smooth but adds regularization).
+\item Computational cost (particle filter scales with particle count $N$; UKF scales with state dimension $d$).
+\end{itemize}
+
+The hypothesis was wrong about \emph{where} the discontinuity arises (not in the softplus-UKF composition), but correct that filter geometry matters for HMC.
+
+\subsection{Funnel geometry is a real bottleneck}
+
+The G2.3 leapfrog ladder result identified $\theta_8$ (log FX noise scale) as the bottleneck, with ESS 848.7 vs 4000-5100 for drift parameters. The candidate explanation is funnel geometry: in a non-centered parameterization, the conditional curvature of latent innovations varies with the noise scale, creating a funnel that dense mass matrices cannot flatten.
+
+This is a real geometric challenge, independent of the failed UKF discontinuity hypothesis. Standard repairs for funnel geometry include:
+\begin{itemize}
+\item Non-centered vs centered parameterization (already used in the executed G2.3 target).
+\item QR reparameterization of the latent-to-observable Jacobian to decorrelate scales from rotations.
+\item Hierarchical priors on log scales to regularize extreme values.
+\item Partial centering (adaptively interpolating between centered and non-centered) \citep{Gorinova2020}.
+\end{itemize}
+
+The funnel is a smooth geometry problem, not a discontinuity problem. It is orthogonal to the retracted UKF hypothesis.
+
+\section{Archival status and relation to other chapters}
+
+\subsection{This chapter in the BayesFilter monograph}
+
+This chapter is an \emph{autopsy}, not a method. It documents a hypothesis that failed adversarial review and was retracted. Its purpose is pedagogical: to show what a wrong claim looks like when stated precisely, how to audit it rigorously, and how to avoid similar errors.
+
+Readers implementing HMC for occasionally binding constraints should read:
+\begin{itemize}
+\item Chapter~\ref{ch:bf-boundary-gradients}: Boundary handling and safe gradients (correct general treatment).
+\item Chapter~\ref{ch:bf-hmc-for-state-space}: HMC for state-space models (correct filter-HMC integration).
+\item The cited literature on reflection/refraction HMC \citep{Pakman2014, Afshar2015} for hard kinks.
+\item This chapter only for the cautionary example.
+\end{itemize}
+
+\subsection{Relation to the retracted survey section}
+
+The failed hypothesis originated in §7 of the survey manuscript ``Bayesian Inference for Nonlinear Models with a Genuine Zero Lower Bound'' (August 2026 draft). That section is scheduled for retraction, and the survey will note:
+\begin{quote}
+``An earlier draft (August 2026) included §7, which claimed that softplus-smoothed occasionally binding constraints create gradient discontinuities when composed with UKF filtering. This section was retracted in September 2026 after an adversarial audit proved the central mathematical claim false. The softplus-UKF composition is $C^\infty$ wherever the covariance remains positive definite; the claimed discontinuity does not exist. See BayesFilter monograph Chapter~\ref{ch:bf-obc-discontinuous-gradient} for the full autopsy.''
+\end{quote}
+
+The survey's correct Case 1-4 taxonomy (§2), particle-filter treatment (§6, §9-12), and New Keynesian multiplicity analysis (§8) are unaffected and remain in the final version.
+
+\subsection{Relation to the abandoned research plan}
+
+The research plan ``UKF Discontinuous-Gradient HMC Program'' (August 26, 2026) was archived without execution. Its five phases (measurement, event-aware integration, UKF variance inflation, neural surrogate, production selection) were all predicated on the false discontinuity hypothesis. The plan is preserved in the repository at
+\begin{center}
+\texttt{docs/plans/ukf-discontinuous-gradient-hmc-research-plan-2026-08-26.md}
+\end{center}
+with a header stating ``RETRACTED: This plan was based on a mathematically false hypothesis. See the Codex audit reply for the rebuttal.''
+
+\subsection{Relation to executed work}
+
+The ``Hard-Bound Kink-Target HMC Master Program'' (Program A, August-September 2026) executed filter-free joint HMC on the hard-max target \texttt{mf\_c1\_k40\_hardmax} and passed the G2.3 convergence gate. This work is unaffected by the failed UKF hypothesis, because:
+\begin{itemize}
+\item Program A used the hard max (C1), not softplus (S1).
+\item Program A was filter-free (joint HMC over latent states), not UKF-marginalized.
+\item Program A's binding non-goals explicitly excluded particle filters, UKF marginal likelihood, and event-aware HMC.
+\end{itemize}
+
+The executed work stands as correct. The abandoned plan was a separate, unexecuted proposal.
+
+\section{Final summary}
+
+\textbf{The hypothesis:} Softplus-smoothed occasionally binding constraints, when composed with UKF filtering inside an HMC target, create gradient discontinuities that require event-aware integration or neural transport.
+
+\textbf{The verdict:} \textbf{Wrong relative to the stated target.} The softplus is $C^\infty$, UKF composition with smooth maps is smooth, and no gradient discontinuity exists. The real difficulty—if any—is stiffness (high curvature $O(1/a)$), which is a smooth geometry problem.
+
+\textbf{The specific errors:}
+\begin{enumerate}
+\item Confusing stiffness with discontinuity.
+\item Inverting the variance collapse mechanism ($s' \to 0$ preserves variance, does not collapse it).
+\item Ignoring the $S \succeq R$ bound (innovation inverse is bounded by measurement noise).
+\item Misunderstanding the sigma-point limit (smooth convergence to linearization, not a flip).
+\item Convention collision ($\alpha$ used as both $1/a$ and $a$, inverting all scaling claims).
+\item Taxonomy confusion (softplus UKF is smooth, not Case 1 kinked or Case 3 value-jump).
+\end{enumerate}
+
+\textbf{The lessons:}
+\begin{enumerate}
+\item Derive, don't narrate.
+\item Distinguish stiffness from discontinuity.
+\item Check mechanisms in both directions.
+\item Anchor claims to code, not to plans.
+\item Adversarial review catches what friendly review misses.
+\item ``Not checked'' is not ``probably fine.''
+\end{enumerate}
+
+\textbf{The corrective action:} Survey §7 retracted, research plan archived, hypothesis closed. No phases executed, no GPU-hours spent. The failure was caught by adversarial audit before resources were committed.
+
+\textbf{The durable value:} A worked example of how to structure, audit, and reject a wrong hypothesis—and how to extract lessons that prevent the next one.
+
+

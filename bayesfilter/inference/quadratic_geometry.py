@@ -428,7 +428,10 @@ def fit_low_rank_spd_quadratic_geometry(
             q_basis=q_basis,
         )
         holdout_rmse = _rmse(y_holdout, holdout_pred)
-        holdout_scale = max(1.0, float(np.std(y_train)), abs(float(center_value)))
+        # A log density is defined only up to an additive constant. Scale the
+        # relative gate by local variation, never by the arbitrary level at
+        # the fit center, so shifting every target value cannot relax the gate.
+        holdout_scale = max(1.0, float(np.std(y_train - center_value)))
         holdout_threshold = max(
             float(cfg.holdout_rmse_abs_tolerance),
             float(cfg.holdout_rmse_rel_tolerance) * holdout_scale,
