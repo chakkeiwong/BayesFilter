@@ -116,7 +116,7 @@ def test_fused_batch_size_one_parity():
         tf.constant([[0.6]], DTYPE),
         tf.constant([[1.0]], DTYPE),
         initial, covs, noises, observations,
-        flow_substeps=10,
+        substeps=10,
     )
     assert bool(diag["program_valid"][0].numpy())
     v_err = abs(float(value_b[0].numpy()) - float(value_ref.numpy()))
@@ -133,14 +133,14 @@ def test_fused_rows_independent_and_distinct():
         tf.constant([[0.6], [0.9]], DTYPE),
         tf.constant([[1.0], [1.0]], DTYPE),
         initial, covs, noises, observations,
-        flow_substeps=10,
+        substeps=10,
     )
     value_row0, _, _ = canonical_batch_fused_value_score(
         fused,
         tf.constant([[0.6]], DTYPE),
         tf.constant([[1.0]], DTYPE),
         initial, covs, noises, observations,
-        flow_substeps=10,
+        substeps=10,
     )
     assert abs(
         float(value_b[0].numpy()) - float(value_row0[0].numpy())
@@ -158,7 +158,7 @@ def test_fused_lane_is_tf_function_compilable():
     fused = _fused_model()
     compiled = tf.function(
         lambda t, d: canonical_batch_fused_value_score(
-            fused, t, d, initial, covs, noises, observations, flow_substeps=8
+            fused, t, d, initial, covs, noises, observations, substeps=8
         ),
         autograph=False,
     )
@@ -169,3 +169,90 @@ def test_fused_lane_is_tf_function_compilable():
     assert value_g.shape == (3,)
     assert bool(tf.reduce_all(tf.math.is_finite(value_g)).numpy())
     assert bool(tf.reduce_all(tf.math.is_finite(score_g)).numpy())
+
+
+def test_fused_multi_direction_matches_swept():
+    """Phase 2: K=P in one call must match P swept single-direction calls."""
+    initial, covs, noises, observations = _fixture(101, n=6, horizon=3)
+    fused = _fused_model()
+
+    # One call with K=3 directions (standard basis)
+    theta = tf.constant([[0.6]], DTYPE)
+    directions = tf.constant([[[1.0], [0.0], [0.0]]], DTYPE)  # [B, K, P] with K=3, P=1
+
+    # For P=1 model, we only have 1 parameter, so K=1 for meaningful test
+    # Use K=3 with 3 different direction magnitudes
+    directions = tf.constant([[[1.0], [0.5], [0.25]]], DTYPE)
+
+    value_multi, score_multi, diag = canonical_batch_fused_value_score(
+        fused, theta, directions, initial, covs, noises, observations, substeps=10
+    )
+
+    assert diag["program_valid"][0].numpy()
+    assert score_multi.shape == (1, 3)
+
+    # Swept calls
+    swept_scores = []
+    for k in range(3):
+        _, score_k, _ = canonical_batch_fused_value_score(
+            fused,
+            theta,
+            directions[:, k, :],  # [B, P]
+            initial, covs, noises, observations,
+            substeps=10,
+        )
+        swept_scores.append(float(score_k[0].numpy()))
+
+    # Compare
+    for k in range(3):
+        err = abs(float(score_multi[0, k].numpy()) - swept_scores[k])
+        rtol = 5.0e-4 * max(abs(swept_scores[k]), 1.0)
+        assert err < rtol, f"direction {k}: error {err} exceeds rtol {rtol}"
+
+
+def test_fused_multi_direction_rank_two_backward_compatible():
+    """Phase 2: rank-2 theta_directions returns rank-1 score (backward compat)."""
+    initial, covs, noises, observations = _fixture(103)
+    fused = _fused_model()
+
+    # Rank-2 input
+    value, score, diag = canonical_batch_fused_value_score(
+        fused,
+        tf.constant([[0.6], [0.8]], DTYPE),
+        tf.constant([[1.0], [1.0]], DTYPE),  # [B, P]
+        initial, covs, noises, observations,
+        substeps=10,
+    )
+
+    assert diag["program_valid"].shape == (2,)
+    assert value.shape == (2,)
+    assert score.shape == (2,), f"Expected rank-1 score, got shape {score.shape}"
+    assert bool(tf.reduce_all(tf.math.is_finite(value)).numpy())
+    assert bool(tf.reduce_all(tf.math.is_finite(score)).numpy())
+
+
+def test_fused_multi_direction_graph_compilable():
+    """Phase 2: tf.function with K>1 must compile."""
+    initial, covs, noises, observations = _fixture(107)
+    fused = _fused_model()
+
+    compiled = tf.function(
+        lambda t, d: canonical_batch_fused_value_score(
+            fused, t, d, initial, covs, noises, observations, substeps=8
+        ),
+        autograph=True,
+        experimental_relax_shapes=True,
+    )
+
+    # K=3 directions
+    directions = tf.constant([[[1.0], [0.5], [0.25]]], DTYPE)  # [B, K, P]
+    value, score, _ = compiled(
+        tf.constant([[0.7]], DTYPE),
+        directions,
+    )
+
+    assert value.shape == (1,)
+    assert score.shape == (1, 3)
+    assert bool(tf.reduce_all(tf.math.is_finite(value)).numpy())
+    assert bool(tf.reduce_all(tf.math.is_finite(score)).numpy())
+
