@@ -85,14 +85,28 @@ The ordinary route performs the following linked stages:
   \item run a bootstrap screen for a viable fixed-(L) step;
   \item by default, update mass in bounded windows and requalify the step after
     every coordinate change;
-  \item tune epsilon with the active fixed mass and leapfrog count;
-  \item select (L) and epsilon together, using the same runner and coordinate
-    binding;
+  \item screen the bounded operational trajectory candidates
+    \(\{\lfloor L_0/2\rfloor,L_0,2L_0\}\) with one shared/frozen epsilon and
+    three replications per candidate;
+  \item retune epsilon at the nominated \(L\), then freeze both controls;
   \item screen the selected candidate and apply bounded repair when a declared
     repair trigger fires; and
   \item freeze the kernel and run fresh verification on draws not used for
     candidate selection.
 \end{enumerate}
+
+For the ordinary configuration, the resolved public variant is
+\texttt{ordinary\_hmc} with algorithm identifier
+\texttt{operational\_paired\_fixed\_trajectory\_selection\_v3}.  The explicit
+\texttt{joint\_l\_epsilon\_grid\_fixed\_mass\_hmc} identifier reaches a
+legacy per-\(L\) epsilon-grid branch used for diagnostics and compatibility;
+the public artifact-authority boundary rejects that identifier.  The route
+payload separates \code{operational\_authority}, replayable
+\code{artifact\_authority}, and \code{scientific\_promotion\_authority}.
+Operational or replayable authority does not establish a scientific claim.
+The current ordinary result is explicitly non-admitting for claim-bearing use
+while its known NumPy runtime-policy debt and XLA-default mismatch remain
+unresolved.
 
 Geometry is a shared responsibility rather than an unspecified tuner default.
 The caller supplies the initial center and may supply a local geometry
@@ -139,8 +153,9 @@ The implementation anchor for the threshold is
 \code{HMC\_TUNING\_ORDINARY\_RHAT\_THRESHOLD}; consumers should import
 that constant rather than hard-code a copied number.
 
-The legacy ordinary ladder still contains NumPy and host numerical and
-serialization paths.  This is BayesFilter-owned backend migration debt.  The
+The ordinary tuning family still contains NumPy and host numerical and
+serialization paths.  This is BayesFilter-owned backend migration debt, so the
+ordinary public result is currently non-admitting for claim-bearing use.  The
 TensorFlow-only route has two evidence roles.  A \code{diagnostic\_only} result
 cannot hand off.  A \code{candidate} result may hand the same frozen transition
 to a retained pilot only after a predeclared trajectory candidate is selected,
@@ -152,9 +167,11 @@ false.  Thus the handoff authorizes frozen mechanics, not posterior convergence
 or scientific admission.
 
 Fresh retained \(\widehat R\) and effective sample size are explanatory
-posterior diagnostics and do not enter this tuning handoff.  XLA qualification
-is not required for an explicitly non-XLA TensorFlow execution; selecting XLA
-would require a separate qualification.  The route's exposed tuning
+posterior diagnostics and do not enter this tuning handoff.  The ordinary
+configuration currently defaults to \code{use\_xla=False}, which is a mismatch
+with the repository XLA-default policy rather than an implicit qualification.
+A claim-adjacent consumer must wait for an XLA-on default or a scope-bound
+reviewed exception.  The route's exposed tuning
 hyperparameters have no numeric constructor defaults, but the implementation
 still fixes four chains and \code{float64}.  A candidate supplies an explicit
 raw-position bank \(q_i\), \(i=1,\ldots,4\).  With initial diagonal factor

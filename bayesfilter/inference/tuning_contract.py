@@ -859,7 +859,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "position_field_fixed_trajectory_hmc"
         ),
         target_contract=(
-            "legacy ordinary exact value/score, or a repository-issued typed binding "
+            "ordinary exact value/score, or a repository-issued typed binding "
             "with an exact endpoint target and honestly labeled deterministic field"
         ),
         coordinate_prerequisite=(
@@ -868,8 +868,15 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         mass_policy=(
             "windowed adaptation by default or explicit fixed identity from config"
         ),
-        step_size_policy="bootstrap, fixed-mass tuning, bounded repair, then freeze",
-        trajectory_policy="joint leapfrog-count and epsilon selection with bounded repair",
+        step_size_policy=(
+            "bootstrap, shared-epsilon fixed-trajectory screen, bounded repair, "
+            "then exact-L epsilon retune and freeze"
+        ),
+        trajectory_policy=(
+            "default operational bounded {floor(anchor/2), anchor, 2*anchor} "
+            "screen with three replications; explicit joint epsilon/L grid is "
+            "legacy diagnostic-only"
+        ),
         fresh_verification_policy=(
             "fresh fixed-kernel verification; default TFP runner requires typed "
             "acceptance, health, minimum draws, and rank-normalized split/folded "

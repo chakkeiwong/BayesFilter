@@ -21,6 +21,17 @@ from bayesfilter.inference.tuning_contract import (
     hmc_tuning_interface_capability,
     validate_hmc_tuning_interface_capabilities,
 )
+from bayesfilter.hmc_route_contract import (
+    HMC_TOP_LEVEL_SELECTION_STAGE,
+    OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+    resolve_hmc_algorithm_route,
+)
+from bayesfilter.inference.hmc_kernel_tuning import (
+    HMCKernelTuningConfig,
+    _public_resolved_policy_payload,
+)
+import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning_module
+import bayesfilter.inference.hmc_tuning_dispatch as hmc_tuning_dispatch
 from scripts.render_hmc_tuning_interface_docs import (
     OUTPUT_PATHS,
     render_markdown,
@@ -102,6 +113,32 @@ def test_ordinary_capability_matches_public_signature() -> None:
     assert ordinary.acceptance_alone_can_handoff is False
     assert fixed_transport.requires_frozen_transport is True
     assert fixed_transport.mass_capability == "fixed"
+
+
+def test_compatibility_delegate_cannot_create_a_second_public_route(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sentinel = object()
+    observed: dict[str, object] = {}
+
+    def fake_dispatch(**kwargs: object) -> object:
+        observed.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(hmc_tuning_dispatch, "tune_hmc_kernel", fake_dispatch)
+    result = hmc_kernel_tuning_module.tune_hmc_kernel(
+        adapter="adapter",
+        initial_position="position",
+    )
+
+    assert result is sentinel
+    assert observed["adapter"] == "adapter"
+    assert observed["initial_position"] == "position"
+    assert observed["config"] is None
+    assert observed["runner_binding"] is None
+    assert "Compatibility delegate" in (
+        hmc_kernel_tuning_module.tune_hmc_kernel.__doc__ or ""
+    )
 
 
 def test_every_documented_interface_resolves() -> None:
@@ -252,6 +289,9 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
         "retained R-hat and ESS are explanatory",
         "short `interface_name`",
         "do not transfer to this route",
+        "audit_ordinary_hmc_migration_surface.py",
+        "unknown_dynamic_import",
+        "unresolved_dynamic_attribute",
     ):
         assert term in normalized_guide
     assert (
@@ -262,6 +302,10 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
     assert "artifact\\_authority" in chapter
     assert "posterior\\_admission\\_authority" in chapter
     assert "admission\\_supported" in chapter
+    assert "ordinary\\_hmc" in chapter
+    assert "operational\\_paired\\_fixed\\_trajectory\\_selection\\_v3" in chapter
+    assert "shared/frozen epsilon" in chapter
+    assert "public artifact-authority boundary rejects" in chapter
     assert "frozen mechanics" in chapter
     assert "not posterior convergence" in chapter
 
@@ -310,3 +354,44 @@ def test_guide_rejects_the_observed_low_level_runner_misclassification() -> None
     assert "Acceptance by itself" not in guide
     assert "Do not treat acceptance alone as convergence or handoff evidence" in normalized
     assert "A failed verifier must have no final kernel" in normalized
+
+
+def test_guide_binds_the_executable_ordinary_default_policy() -> None:
+    config = HMCKernelTuningConfig.standard()
+    route = resolve_hmc_algorithm_route(
+        algorithm_id=config.algorithm_id,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        chain_execution_mode=config.chain_execution_mode,
+        use_xla=config.use_xla,
+    )
+    resolved = _public_resolved_policy_payload(config)
+
+    assert route.algorithm_id == OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    assert route.operational_authority is True
+    assert route.artifact_authority is True
+    assert route.scientific_promotion_authority is False
+    assert resolved["config_variant"] == "ordinary_hmc"
+    assert resolved["algorithm_id"] == OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    assert resolved["claim_bearing_artifact_authority"] is False
+    assert resolved["claim_bearing_blocker"] == (
+        "ordinary_runtime_numpy_policy_pending"
+    )
+
+    guide = " ".join(GUIDE_PATH.read_text(encoding="utf-8").split())
+    assert "ordinary_hmc" in guide
+    assert OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID in guide
+    assert "shared/frozen epsilon" in guide
+    assert "explicit `joint_l_epsilon_grid_fixed_mass_hmc` identifier" in guide
+    assert "claim_bearing_artifact_authority=True" in guide
+
+
+def test_ordinary_module_prose_does_not_promote_the_legacy_joint_grid() -> None:
+    source = (
+        REPO_ROOT / "bayesfilter/inference/hmc_kernel_tuning.py"
+    ).read_text(encoding="utf-8")
+
+    assert "operational fixed-trajectory screen" in source
+    assert "shared/frozen epsilon" in source
+    assert "legacy or internal construction" in source
+    assert "diagnostic/non-promoting" in source
+    assert "promoted fixed-mass joint" not in source

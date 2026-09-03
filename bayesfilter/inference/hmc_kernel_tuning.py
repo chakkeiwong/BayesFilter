@@ -6,10 +6,14 @@ initial mass artifact and derives a formula-based initial step size and
 leapfrog count.  Phase 3 runs a short fixed-kernel bootstrap screen and bounded
 epsilon repair from that geometry.  Phase 4 captures retained fixed-kernel
 diagnostic draws and feeds them to the reviewed windowed-mass diagnostic.  Phase
-5 runs the promoted fixed-mass joint leapfrog/epsilon grid: every candidate
-leapfrog count gets its own epsilon tuning ladder, edge selections trigger a
-bounded grid repair, and a final local grid chooses the handoff pair.  Phase 6
-screens that selected pair without performing a second frozen-epsilon L search.
+5 has two explicitly distinguishable fixed-mass branches.  The public ordinary
+   configuration reaches the operational fixed-trajectory screen after an
+   operational warm-up: it uses one shared/frozen epsilon over a bounded
+   floor/anchor/double trajectory set and then retunes epsilon at the nominated
+   L.  An explicit legacy or internal construction can instead run the joint
+   (L, epsilon) grid; that branch is diagnostic/non-promoting pending an owner
+   policy decision.  Phase 6 screens the selected pair without silently changing
+   the branch's policy.
 Phase 7 runs the internal tune/verify/repair loop.  Phase 8 exposes a one-call
 public wrapper while keeping raw HMC tuning mechanics internal to BayesFilter
 policy.
@@ -47,6 +51,7 @@ from bayesfilter.hmc_route_contract import (
     OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
     OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
     HMCAlgorithmRouteDecision,
+    require_hmc_artifact_authority_route,
     require_hmc_algorithm_route,
     windowed_algorithm_for_selection_algorithm,
 )
@@ -6356,9 +6361,15 @@ class HMCTuneVerifyRepairLoopResult:
                 final_kernel_payload,
                 phase7_final_kernel_hash=self.final_kernel_hash,
             )
+        resolved_policy = _public_resolved_policy_payload(
+            self.config,
+            output_path_enabled=False,
+            config_variant="ordinary_phase7_loop",
+        )
         return {
             "schema": "bayesfilter.hmc_tune_verify_repair_loop.v1",
             "config": self.config.payload(),
+            "resolved_policy": resolved_policy,
             "geometry_artifact_hash": self.geometry_artifact_hash,
             "bootstrap_artifact_hash": self.bootstrap_artifact_hash,
             "adapter_signature": self.adapter_signature,
@@ -7145,9 +7156,15 @@ class HMCKernelTuningResult:
         return self.tune_verify_repair_loop.private_evidence_ledger()
 
     def payload(self, *, include_internal_diagnostics: bool = True) -> Mapping[str, Any]:
+        resolved_policy = _public_resolved_policy_payload(
+            self.config,
+            output_path_enabled=self.artifact_path is not None,
+            config_variant="ordinary_hmc",
+        )
         return {
             "schema": "bayesfilter.hmc_kernel_tuning_result.v1",
             "config": self.config.payload(),
+            "resolved_policy": resolved_policy,
             "adapter_signature": self.adapter_signature,
             "target_dimension": self.target_dimension,
             "geometry_artifact_hash": None
@@ -10310,10 +10327,14 @@ def run_hmc_fixed_mass_step_stage(
 ) -> HMCFixedMassStepStageResult:
     """Run Phase 5 fixed-mass step tuning from a passed Phase 4 handoff.
 
-    Phase 5 freezes the Phase 4 adapted mass and runs the promoted joint
-    ``(L, epsilon)`` fixed-mass grid: every candidate leapfrog count gets an
-    independent epsilon ladder, edge selections trigger bounded grid repair,
-    and one final local grid chooses the handoff pair.
+    Phase 5 freezes the Phase 4 adapted mass.  When the preceding windowed
+    stage contains the operational warm-up result, this helper runs the
+    operational fixed-trajectory screen with one shared/frozen epsilon,
+    followed by exact-L epsilon retuning.  If that operational result is
+    absent, an explicit legacy/internal construction runs the fixed-mass
+    ``(L, epsilon)`` grid with per-L epsilon ladders and bounded edge repair.
+    The legacy branch is diagnostic/non-promoting and is not the public
+    ordinary default.
     """
 
     cfg = HMCFixedMassStepStageConfig() if config is None else config
@@ -13284,6 +13305,23 @@ def _run_canonical_hmc_tuning(
         runner_binding, HMCTuningRunnerBinding
     ):
         raise TypeError("runner_binding must be HMCTuningRunnerBinding")
+    # Resolve the public route before touching adapter geometry or any runtime
+    # state. Legacy routes remain available to the private diagnostic loop,
+    # but cannot enter the artifact-authority facade.
+    _route_decision = require_hmc_artifact_authority_route(
+        algorithm_id=cfg.algorithm_id,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        runtime_backend="tensorflow",
+        chain_execution_mode=cfg.chain_execution_mode,
+        use_xla=cfg.use_xla,
+        timeout_enabled=cfg.public_timeout_budget_s is not None,
+        heartbeat_enabled=cfg.incall_progress_heartbeat_s is not None,
+        output_path_enabled=output_dir is not None,
+        checkpointing_enabled=verification_checkpoint_writer_config is not None,
+        runner_identity=(
+            "default" if runner_binding is None else runner_binding.runner_identity
+        ),
+    )
     capability_scope = value_score_capability(adapter).target_scope
     resolved_target_scope = (
         cfg.target_scope if cfg.target_scope is not None else capability_scope
@@ -13310,20 +13348,6 @@ def _run_canonical_hmc_tuning(
         runner_binding=runner_binding,
         target_scope=(
             None if resolved_target_scope is None else str(resolved_target_scope)
-        ),
-    )
-    require_hmc_algorithm_route(
-        algorithm_id=cfg.algorithm_id,
-        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
-        runtime_backend="tensorflow",
-        chain_execution_mode=cfg.chain_execution_mode,
-        use_xla=cfg.use_xla,
-        timeout_enabled=cfg.public_timeout_budget_s is not None,
-        heartbeat_enabled=cfg.incall_progress_heartbeat_s is not None,
-        output_path_enabled=output_dir is not None,
-        checkpointing_enabled=verification_checkpoint_writer_config is not None,
-        runner_identity=(
-            "default" if runner_binding is None else runner_binding.runner_identity
         ),
     )
     public_timeout_started_perf_counter_s = (
@@ -15884,6 +15908,54 @@ def _selection_route_public_payload(
     }
 
 
+def _public_resolved_policy_payload(
+    config: HMCKernelTuningConfig | HMCTuneVerifyRepairLoopConfig,
+    *,
+    output_path_enabled: bool | None = None,
+    checkpointing_enabled: bool | None = None,
+    runner_identity: str = "not_retained_in_public_result",
+    config_variant: str = "ordinary_hmc",
+) -> Mapping[str, Any]:
+    """Serialize policy roles without conflating route and claim authority."""
+
+    route = _selection_route_public_payload(
+        config,
+        output_path_enabled=output_path_enabled,
+        checkpointing_enabled=checkpointing_enabled,
+        runner_identity=runner_identity,
+    )
+    preset = getattr(config, "preset", None)
+    preset_role = (
+        None if preset is None else _public_tuning_preset_role(str(preset))
+    )
+    return {
+        "schema": "bayesfilter.hmc_resolved_tuning_policy.v1",
+        "interface_name": "tune_hmc_kernel",
+        "config_variant": str(config_variant),
+        "preset": None if preset is None else str(preset),
+        "preset_role": preset_role,
+        "algorithm_id": route["algorithm_id"],
+        "windowed_mass_algorithm_id": route["windowed_mass_algorithm_id"],
+        "route_contract_version": route["route_contract_version"],
+        "operational_authority": bool(route["operational_authority"]),
+        "artifact_authority": bool(route["artifact_authority"]),
+        "scientific_promotion_authority": bool(
+            route["scientific_promotion_authority"]
+        ),
+        # Ordinary runtime NumPy use is a known policy blocker. This field
+        # makes the non-admitting status explicit instead of hiding it in a
+        # generic route or preset label.
+        "claim_bearing_artifact_authority": False,
+        "claim_bearing_blocker": "ordinary_runtime_numpy_policy_pending",
+        "evidence_role": route["evidence_role"],
+        "promotion_role": route["promotion_role"],
+        "use_xla": bool(config.use_xla),
+        "execution_control_configuration": dict(
+            route["execution_control_configuration"]
+        ),
+    }
+
+
 def _mass_matrix_private_summary(
     mass_artifact: PrecomputedMassArtifact,
     *,
@@ -16107,9 +16179,15 @@ def _public_tuning_artifact_payload(
     historical_repair_triggers = result.repair_triggers if result.final_status == "passed" else ()
     phase7_public_summary = _phase7_public_summary(result.tune_verify_repair_loop)
     phase7_early_closeout = _phase7_early_closeout_public_summary(result)
+    resolved_policy = _public_resolved_policy_payload(
+        result.config,
+        output_path_enabled=True,
+        config_variant="ordinary_hmc",
+    )
     return {
         "schema": "bayesfilter.hmc_kernel_tuning_public_artifact.v1",
         "algorithm_id": result.config.algorithm_id,
+        "resolved_policy": resolved_policy,
         "operational_budget_policy_id": (
             result.config.operational_budget_policy_id
         ),
@@ -16233,9 +16311,15 @@ def _phase7_public_summary(
         if last_attempt is None
         else _phase7_loop_resume_split_public_summary(loop)
     )
+    resolved_policy = _public_resolved_policy_payload(
+        loop.config,
+        output_path_enabled=False,
+        config_variant="ordinary_phase7_loop",
+    )
     return {
         "schema": "bayesfilter.hmc_tune_verify_repair_public_summary.v1",
         "algorithm_id": loop.config.algorithm_id,
+        "resolved_policy": resolved_policy,
         "operational_budget_policy_id": (
             loop.config.operational_budget_policy_id
         ),

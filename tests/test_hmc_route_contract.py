@@ -16,7 +16,9 @@ from bayesfilter.hmc_route_contract import (
     LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
     OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
     OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+    NonAuthoritativeHMCAlgorithmRoute,
     UnsupportedHMCAlgorithmRoute,
+    require_hmc_artifact_authority_route,
     require_hmc_algorithm_route,
     resolve_hmc_algorithm_route,
     windowed_algorithm_for_selection_algorithm,
@@ -26,6 +28,10 @@ from bayesfilter.hmc_route_contract import (
 def test_route_contract_import_does_not_import_tensorflow() -> None:
     env = dict(os.environ)
     env["CUDA_VISIBLE_DEVICES"] = "-1"
+    # The repository-wide test bootstrap preloads the optional custom op for
+    # TensorFlow tests.  This subprocess specifically checks that the route
+    # contract remains importable without that numerical backend.
+    env["BAYESFILTER_PRELOAD_CUSTOM_OP"] = "0"
     completed = subprocess.run(
         [
             sys.executable,
@@ -139,4 +145,30 @@ def test_legacy_route_is_explicit_and_non_authoritative() -> None:
     )
     assert decision.supported is True
     assert decision.operational_authority is False
+    assert decision.artifact_authority is False
+    assert decision.scientific_promotion_authority is False
     assert decision.promotion_role == "non_promoting"
+
+
+def test_artifact_authority_guard_rejects_supported_legacy_route() -> None:
+    with pytest.raises(NonAuthoritativeHMCAlgorithmRoute) as caught:
+        require_hmc_artifact_authority_route(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+            stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        )
+    assert caught.value.decision.supported is True
+    assert caught.value.decision.operational_authority is False
+    assert caught.value.decision.artifact_authority is False
+
+
+def test_artifact_authority_is_explicit_and_not_scientific_promotion() -> None:
+    decision = require_hmc_artifact_authority_route(
+        algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+    )
+    assert decision.operational_authority is True
+    assert decision.artifact_authority is True
+    assert decision.scientific_promotion_authority is False
+    payload = decision.payload()
+    assert payload["artifact_authority"] is True
+    assert payload["scientific_promotion_authority"] is False

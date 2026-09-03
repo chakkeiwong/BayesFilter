@@ -1,14 +1,23 @@
 # HMC Tuning Interface
 
-Last checked: 2026-08-28. The prose contract is exercised by
+Last checked: 2026-09-03. The prose contract is exercised by
 `tests/test_hmc_tuning_documentation_contract.py`; the route table is generated
 from the executable capability registry.
 
 Read this before changing an HMC consumer. Exactly two routes are active and
-may issue BayesFilter tuning artifacts. Several diagnostic or historical
-records also have `interface_kind="public_tuner"`; that field alone does not
-confer active status or artifact authority. A chain runner or stage helper is
-not a complete tuner.
+may issue BayesFilter replayable engineering artifacts. Several diagnostic or
+historical records also have `interface_kind="public_tuner"`; that field alone
+does not confer active status or artifact authority. A chain runner or stage
+helper is not a complete tuner. Replayable artifact authority is distinct from
+scientific/promotion authority: the ordinary runtime currently carries a
+known NumPy-policy blocker, so its public result is explicitly non-admitting
+for claims, default promotion, and posterior admission until that debt is
+repaired or a reviewed exception is recorded.
+
+At this revision, the only canonical artifact-authority entry points are
+`tune_hmc_kernel` and `tune_fixed_transport_hmc_kernel`. Exported discovery,
+refinement, campaign, runner, and stage helpers remain diagnostics unless the
+capability registry and active route table explicitly say otherwise.
 
 Import and compare the schemas rather than copying their values:
 
@@ -68,6 +77,67 @@ The generated complete table is
 is `HMC_TUNING_INTERFACE_CAPABILITIES`, and
 `scripts/render_hmc_tuning_interface_docs.py --check` rejects drift.
 
+## Downstream Static Audit
+
+Before changing a consumer, run the bounded standard-library audit and inspect
+its branch, consumer-role, NumPy, and provenance ledgers:
+
+```bash
+python scripts/audit_ordinary_hmc_migration_surface.py \
+  --downstream-root /home/ubuntu/python/MacroFinance \
+  --downstream-root /home/ubuntu/python/dsge_hmc
+```
+
+The report is a source-classification aid, not numerical evidence. A row marked
+`unknown_dynamic_import`, `unresolved_dynamic_attribute`, or
+`mixed_public_and_lower_level` requires manual role classification before a
+claim-adjacent consumer can be admitted. Generated reports belong under the
+ignored plan-artifact root; the authored execution note records the command
+and the unresolved rows.
+
+## Ordinary Default Policy
+
+For `tune_hmc_kernel` with `HMCKernelTuningConfig` or an omitted config, the
+resolved variant is `ordinary_hmc` with algorithm ID
+`operational_paired_fixed_trajectory_selection_v3`. The default path performs
+windowed mass warm-up, then screens the bounded
+`{floor(anchor/2), anchor, 2*anchor}` trajectory candidates using one
+shared/frozen epsilon and three replications; it retunes epsilon at the nominated `L` and
+then runs fresh verification. This is not joint epsilon/L selection in the
+screen. The explicit `joint_l_epsilon_grid_fixed_mass_hmc` identifier reaches
+the alternate per-L epsilon grid only through an internal/legacy diagnostic
+construction and is rejected by the public artifact-authority facade.
+
+The route payload reports three separate roles: `operational_authority` for a
+stage route, `artifact_authority` for a replayable route artifact, and
+`scientific_promotion_authority` for a scientific/default claim. The first two
+are not evidence of the third. Inspect `result.payload()["resolved_policy"]`
+and require `claim_bearing_artifact_authority=True` only after the backend and
+target-specific evidence gates have passed; the current ordinary result sets
+it to `False` with blocker `ordinary_runtime_numpy_policy_pending`.
+
+The route can be inspected without constructing a chain:
+
+```python
+from bayesfilter.inference import HMCKernelTuningConfig
+from bayesfilter.hmc_route_contract import (
+    HMC_TOP_LEVEL_SELECTION_STAGE,
+    resolve_hmc_algorithm_route,
+)
+
+config = HMCKernelTuningConfig.standard()
+route = resolve_hmc_algorithm_route(
+    algorithm_id=config.algorithm_id,
+    stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+    chain_execution_mode=config.chain_execution_mode,
+    use_xla=config.use_xla,
+)
+print({"config_variant": "ordinary_hmc", "preset": config.preset, **route.payload()})
+```
+
+This is a construction-only inspection. It does not tune, initialize an HMC
+runner, or establish numerical validity.
+
 ## Exact Public Imports
 
 Ordinary target:
@@ -120,8 +190,11 @@ claimed target. That equality still requires a target-specific check.
 The caller and tuner have different geometry responsibilities. The caller
 supplies a center and may supply a local geometry hypothesis. The tuner
 validates that input, constructs the affine fixed-mass adapter, performs
-windowed mass adaptation by default, tunes epsilon and `L`, screens candidates,
-runs fresh verification, and applies bounded repair.
+windowed mass adaptation by default, screens the bounded operational
+`{floor(anchor/2), anchor, 2*anchor}` trajectory candidates with one
+shared/frozen epsilon and three replications, retunes epsilon at the nominated
+`L`, screens the frozen candidate, runs fresh verification, and applies bounded
+repair.
 
 For `mass_policy="windowed_adaptive"`, geometry hints are tried in this order:
 
@@ -167,11 +240,12 @@ ESS are disabled for ordinary tuning admission; retained posterior ESS is a
 separate check. Neither acceptance nor tuning R-hat proves retained posterior
 convergence.
 
-The legacy ordinary ladder currently imports NumPy and uses host numerical and
+The ordinary ladder currently imports NumPy and uses host numerical and
 serialization paths. This is BayesFilter-owned backend migration debt under
-`AGENTS.md`. The TensorFlow-only route exercises the same typed mechanics and
-has two evidence roles. `diagnostic_only` can never hand off. `candidate` may
-hand the same frozen transition to a retained pilot only when it selected a
+`AGENTS.md`; until repaired, the ordinary public result is non-admitting for
+claim-bearing use. The TensorFlow-only route exercises the same typed mechanics
+and has two evidence roles. `diagnostic_only` can never hand off. `candidate`
+may hand the same frozen transition to a retained pilot only when it selected a
 predeclared trajectory length, performed a rank-eligible valid metric update,
 recorded zero final-verification divergences, and passed the declared four-chain
 acceptance screen. Its artifact still serializes `artifact_authority=False`,
@@ -179,9 +253,10 @@ acceptance screen. Its artifact still serializes `artifact_authority=False`,
 handoff is mechanics authority, not posterior or scientific admission.
 
 Fresh retained R-hat and ESS are explanatory posterior diagnostics and do not
-enter this tuning handoff. XLA qualification is likewise not required for an
-explicitly non-XLA TensorFlow execution; selecting XLA would require its own
-qualification. The route's exposed tuning hyperparameters have no numeric
+enter this tuning handoff. The ordinary config currently defaults to
+`use_xla=False`, which is a documented policy mismatch under `AGENTS.md`, not
+an implicit qualification. A claim-adjacent consumer must wait for an XLA-on
+default or a scope-bound reviewed exception. The route's exposed tuning hyperparameters have no numeric
 constructor defaults. The implementation fixes four chains and `float64`. A
 `candidate` must supply an explicit initial-position bank with shape `[4,d]`.
 The tuner preserves caller row order, uses the equal-row mean as the initial
@@ -255,8 +330,8 @@ Stop without issuing or consuming a handoff when:
 - fresh verification fails or exhausts its cap; or
 - a candidate supplies only one initial position, rather than an explicit
   four-chain bank; or
-- a consumer requires XLA-qualified tuning, because this TensorFlow route is
-  qualified only for its explicit non-XLA execution; or
+- a consumer requires XLA-qualified tuning, because the ordinary default is
+  currently non-XLA and no reviewed exception record is present; or
 - result, route, or capability schemas are unsupported by the consumer's
   pinned BayesFilter commit.
 
@@ -350,6 +425,7 @@ owner-controlled migration.
 - Fixed-transport example: [hmc_tuning_fixed_transport.py](../examples/hmc_tuning_fixed_transport.py)
 - Route-selection example: [hmc_tuning_route_selection.py](../examples/hmc_tuning_route_selection.py)
 - Documentation contract: `tests/test_hmc_tuning_documentation_contract.py`
+- Bounded downstream audit: `scripts/audit_ordinary_hmc_migration_surface.py`
 - Ordinary admission and binding tests:
   `tests/test_hmc_kernel_tuning_public_api.py` and
   `tests/test_hmc_kernel_tuning_outer_loop.py`
