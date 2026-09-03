@@ -169,7 +169,7 @@ Recorded per arm per model per seed, not used for promotion/veto:
 - [ ] All runners use `replication_generator(seed)` for seed hashing
 - [ ] Configuration-status-first reporting enforced in result tables
 
-**Status:** PARTIAL (4/7 complete) — production program and tuning template exist, RQMC runner and assembler missing
+**Status:** PARTIAL (2/7 complete) — production program and tuning template exist, RQMC runner and assembler missing
 
 **Note:** Phase 1 (tuning) can proceed in parallel with completing Phase 0 items 3-7, since tuning only requires the template (item 2). Phase 0 must be complete before Phase 2 starts.
 
@@ -313,27 +313,27 @@ python docs/benchmarks/assemble_rqmc_ledh_results.py \
 
 ## Seed Allocation
 
-**Tuning seeds:** 98301, 98302 (2 per model, used in Phase 1)  
-**Claim-bearing seeds:** 98303, 98304, 98305 (3 per arm per model, used in Phase 2)
+**Tuning seeds:** 98101, 98102 (2 per model, used in Phase 1)  
+**Claim-bearing seeds:** 98301, 98302, 98303 (3 per arm per model, used in Phase 2)
 
 **Note:** Seeds are hashed via `np.random.SeedSequence(seed).generate_state(2, dtype=np.uint64)` before passing to `tf.random.Generator.from_seed()` to avoid the consecutive-seed Philox stream sharing bug documented in `tf-consecutive-from-seed-is-one-stream.md`.
 
 ## Artifact Locations
 
 **Phase 1 tuning artifacts:**
-- `docs/benchmarks/artifacts/ledh_trust_region_lgssm_t50_20260902/result.json`
-- `docs/benchmarks/artifacts/ledh_trust_region_ksc_sv_t10_20260902/result.json`
-- `docs/benchmarks/artifacts/ledh_trust_region_predator_prey_t20_20260902/result.json`
+- `docs/benchmarks/artifacts/ledh_trust_region_lgssm_t50_20260903/result.json`
+- `docs/benchmarks/artifacts/ledh_trust_region_ksc_sv_t10_20260903/result.json`
+- `docs/benchmarks/artifacts/ledh_trust_region_predator_prey_t20_20260903/result.json`
 
 **Phase 2 run artifacts:**
-- Root: `docs/benchmarks/artifacts/rqmc_ledh_init_v1_20260902/`
+- Root: `docs/benchmarks/artifacts/rqmc_ledh_init_v1_20260903/`
 - Per-run: `<root>/runs/<model>_<arm>_seed<seed>/result.json`
 
 **Phase 3 result artifact:**
-- `docs/benchmarks/artifacts/rqmc_ledh_init_v1_20260902/results.json`
+- `docs/benchmarks/artifacts/rqmc_ledh_init_v1_20260903/results.json`
 
 **Phase 4 result memo:**
-- `docs/memos/rqmc-ledh-init-v1-result-2026-09-<date>.md`
+- `docs/memos/rqmc-ledh-init-v1-result-2026-09-03.md`
 
 ## Pre-Execution Gates
 
@@ -410,9 +410,10 @@ Before proceeding with Phase 2, verify:
 ---
 
 **Program status:** ACTIVE  
-**Current phase:** Phase 0 (PARTIAL, 4/7 complete) + Phase 1 (Trust-Region Tuning, 0 of 3 models complete)  
-**Next action:** Start Phase 1 tuning for LGSSM T50 (can proceed in parallel with Phase 0 runner implementation)  
-**Execution strategy:** Phase 1 tuning uses existing template and is independent of Phase 2 runners; complete Phase 1 while finishing Phase 0 items 3-7 in parallel
+**Current phase:** Phase 0 (PARTIAL, 2/7 complete) + Phase 1 (COMPLETE)  
+**Next action:** Complete Phase 0 infrastructure: implement RQMC runner and result assembler  
+**Blocking:** Phase 2 cannot start until Phase 0 is complete (RQMC runner must exist)
 
 **Program approved by:** chakwong  
-**Execution authorized:** 2026-09-02
+**Execution authorized:** 2026-09-02  
+**Phase 1 completed:** 2026-09-03
