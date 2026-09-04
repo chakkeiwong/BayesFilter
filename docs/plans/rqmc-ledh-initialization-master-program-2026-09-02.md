@@ -248,8 +248,8 @@ arms for statistical support.
 
 **Program version:** 1.0 (2026-09-02)  
 **Last updated:** 2026-09-04 (Phase 3 complete)  
-**Git commit (Phase 2 execution):** [to be recorded]  
-**Git commit (Phase 3 analysis):** [to be recorded]  
+**Git commit (Phase 2 execution):** 62527549b7c67141db85e87041e257c1ee3885f2  
+**Git commit (Phase 3 analysis):** 62527549b7c67141db85e87041e257c1ee3885f2  
 
 **Current state:**
 - Phase 0: COMPLETE
