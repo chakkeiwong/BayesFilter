@@ -312,11 +312,24 @@ def canonical_batch_fused_value_score(
             )
             return d_predicted_means, d_predicted_covs
 
-        # Stack tangent results using tf.vectorized_map
-        d_predicted_means, d_predicted_covs = tf.vectorized_map(
-            compute_tangent_prediction,
-            (d_covariances, d_states, dtheta_flat),
+        # Stack tangent results using tf.while_loop
+        def tangent_pred_loop_body(k, d_pm_array, d_pc_array):
+            d_pm_k, d_pc_k = compute_tangent_prediction(
+                (d_covariances[k], d_states[k], dtheta_flat[k])
+            )
+            return k + 1, d_pm_array.write(k, d_pm_k), d_pc_array.write(k, d_pc_k)
+
+        _, d_pm_array_final, d_pc_array_final = tf.while_loop(
+            cond=lambda k, *_: k < k_count,
+            body=tangent_pred_loop_body,
+            loop_vars=(
+                tf.constant(0, tf.int32),
+                tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m, dim])),
+                tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m, dim, dim])),
+            ),
         )
+        d_predicted_means = d_pm_array_final.stack()
+        d_predicted_covs = d_pc_array_final.stack()
 
         # --- S2 anchors + pre-flow
         anchors = model.transition_mean_fn(theta_flat, states)
@@ -331,10 +344,22 @@ def canonical_batch_fused_value_score(
             d_pre_flow = d_anchors
             return d_anchors, d_pre_flow
 
-        d_anchors, d_pre_flow = tf.vectorized_map(
-            compute_tangent_anchors,
-            (d_states, dtheta_flat),
+        # Tangent: use tf.while_loop over directions
+        def tangent_anchors_loop_body(k, d_anch_array, d_pf_array):
+            d_anch_k, d_pf_k = compute_tangent_anchors((d_states[k], dtheta_flat[k]))
+            return k + 1, d_anch_array.write(k, d_anch_k), d_pf_array.write(k, d_pf_k)
+
+        _, d_anch_array_final, d_pf_array_final = tf.while_loop(
+            cond=lambda k, *_: k < k_count,
+            body=tangent_anchors_loop_body,
+            loop_vars=(
+                tf.constant(0, tf.int32),
+                tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m, dim])),
+                tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m, dim])),
+            ),
         )
+        d_anchors = d_anch_array_final.stack()
+        d_pre_flow = d_pf_array_final.stack()
 
         # --- S3 fused flow with tangent (linear/affine H per model set)
         def _flow_body(s, actual, d_actual, auxiliary, d_auxiliary, log_det, d_log_det):
@@ -439,10 +464,27 @@ def canonical_batch_fused_value_score(
                 dldet_inc = eps * tf.linalg.trace(solved_da)
                 return new_d_actual_k, new_d_auxiliary_k, dldet_inc
 
-            new_d_actual, new_d_auxiliary, d_ldet_inc = tf.vectorized_map(
-                compute_tangent_flow_step,
-                (d_predicted_covs, d_auxiliary, d_anchors, d_actual, dtheta_flat),
+            # Tangent: use tf.while_loop over directions
+            def tangent_flow_loop_body(k, d_act_array, d_aux_array, d_ldet_array):
+                d_act_k, d_aux_k, d_ldet_k = compute_tangent_flow_step(
+                    (d_predicted_covs[k], d_auxiliary[k], d_anchors[k], d_actual[k], dtheta_flat[k])
+                )
+                return (k + 1, d_act_array.write(k, d_act_k),
+                        d_aux_array.write(k, d_aux_k), d_ldet_array.write(k, d_ldet_k))
+
+            _, d_act_array_final, d_aux_array_final, d_ldet_array_final = tf.while_loop(
+                cond=lambda k, *_: k < k_count,
+                body=tangent_flow_loop_body,
+                loop_vars=(
+                    tf.constant(0, tf.int32),
+                    tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m, dim])),
+                    tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m, dim])),
+                    tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m])),
+                ),
             )
+            new_d_actual = d_act_array_final.stack()
+            new_d_auxiliary = d_aux_array_final.stack()
+            d_ldet_inc = d_ldet_array_final.stack()
 
             return (s + 1, new_actual, new_d_actual, new_aux, new_d_auxiliary,
                     log_det + ldet_inc, d_log_det + d_ldet_inc)
@@ -487,10 +529,20 @@ def canonical_batch_fused_value_score(
                 return model.observation_log_density_tangent_fn(
                     theta_flat, children, observation, d_children_k, dtheta_flat_k
                 )
-            d_observation_log = tf.vectorized_map(
-                compute_tangent_obs_log,
-                (d_children, dtheta_flat),
+            # Tangent: use tf.while_loop over directions
+            def tangent_obs_log_loop_body(k, d_obs_log_array):
+                d_obs_log_k = compute_tangent_obs_log((d_children[k], dtheta_flat[k]))
+                return k + 1, d_obs_log_array.write(k, d_obs_log_k)
+
+            _, d_obs_log_array_final = tf.while_loop(
+                cond=lambda k, *_: k < k_count,
+                body=tangent_obs_log_loop_body,
+                loop_vars=(
+                    tf.constant(0, tf.int32),
+                    tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m])),
+                ),
             )
+            d_observation_log = d_obs_log_array_final.stack()
         else:
             observed = model.observation_fn(children)
             obs_target = tf.broadcast_to(
@@ -499,10 +551,20 @@ def canonical_batch_fused_value_score(
             # Tangent: vectorized over directions
             def compute_tangent_observed(d_children_k):
                 return model.observation_tangent_fn(children, d_children_k)
-            d_observed = tf.vectorized_map(
-                compute_tangent_observed,
-                d_children,
+            # Tangent: use tf.while_loop over directions
+            def tangent_observed_loop_body(k, d_obs_array):
+                d_obs_k = compute_tangent_observed(d_children[k])
+                return k + 1, d_obs_array.write(k, d_obs_k)
+
+            _, d_obs_array_final = tf.while_loop(
+                cond=lambda k, *_: k < k_count,
+                body=tangent_observed_loop_body,
+                loop_vars=(
+                    tf.constant(0, tf.int32),
+                    tf.TensorArray(dtype=dtype, size=k_count, element_shape=model.observation_tangent_fn(children, d_children[0]).shape),
+                ),
             )
+            d_observed = d_obs_array_final.stack()
             observation_log, d_observation_log = _gaussian_log_and_tangent(
                 obs_target, None, observed, d_observed, obs_chol, obs_log_norm, m, k_count, dtype
             )
@@ -612,10 +674,20 @@ def canonical_batch_fused_value_score(
             )
             return new_d_cov
 
-        new_d_covariances = tf.vectorized_map(
-            compute_tangent_update,
-            (d_predicted_means, d_predicted_covs),
+        # Tangent: use tf.while_loop over directions
+        def tangent_update_loop_body(k, d_cov_array):
+            d_cov_k = compute_tangent_update((d_predicted_means[k], d_predicted_covs[k]))
+            return k + 1, d_cov_array.write(k, d_cov_k)
+
+        _, d_cov_array_final = tf.while_loop(
+            cond=lambda k, *_: k < k_count,
+            body=tangent_update_loop_body,
+            loop_vars=(
+                tf.constant(0, tf.int32),
+                tf.TensorArray(dtype=dtype, size=k_count, element_shape=tf.TensorShape([m, dim, dim])),
+            ),
         )
+        new_d_covariances = d_cov_array_final.stack()
 
         return (t + 1, children, d_children, new_covariances, new_d_covariances,
                 new_total, new_d_total)
