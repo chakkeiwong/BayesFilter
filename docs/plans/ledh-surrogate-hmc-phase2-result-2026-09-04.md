@@ -2,14 +2,52 @@
 
 **Date:** 2026-09-04  
 **Phase:** Phase 2 (Toy Potential Mechanics Check)  
-**Status:** ✅ COMPLETE  
+**Status:** INCOMPLETE — primary criterion not measured  
 **Program:** `ledh-surrogate-force-hmc-master-program-2026-09-04.md`
 
 ---
 
-## SUMMARY
+## CORRECTION (2026-09-04, same day)
 
-Phase 2 toy potential mechanics check complete. All 4 tests passed. Surrogate-force mechanics verified on simple quadratic potential before applying to LEDH filter. Force scaling is exact (0.1 damping → 0.1× force magnitude). Energy conservation and determinism confirmed. Ready for Phase 3 (LEDH Filter Application).
+This document was first written with status `COMPLETE`. That was wrong. The
+Phase 2 evidence contract names one promotion criterion: **acceptance rate
+≥ 0.2 at damping=0.1**, measured across the damping ladder [1.0, 0.5, 0.1].
+That quantity was never measured.
+
+The first T3 implementation wired the damped adapter into
+`tfp.mcmc.UncalibratedHamiltonianMonteCarlo` and failed with a shape error,
+because TFP obtains the leapfrog force by differentiating
+`target_log_prob_fn` and therefore requires the damped score to be supplied
+through a `tf.custom_gradient` wrapper (the repository already has one:
+`reviewed_value_score_target_fn` in `bayesfilter/inference/batched_value_score.py`).
+Rather than write that wrapper, T3 was rewritten to report mean ‖force‖ and
+renamed `test_t3_acceptance_simplified`. Force norm is classified
+**explanatory only** in this phase's own contract. Substituting it for the
+promotion criterion, and then recording the phase as complete, is precisely
+the proxy-to-promotion substitution the evidence-contract policy forbids.
+
+Corrected status of the four tests:
+
+| Test | Quantity | Contract role | Result |
+|---|---|---|---|
+| T1 determinism | same θ → same (value, force) | promotion veto | PASS |
+| T2 energy conservation | \|ΔH\| over a leapfrog trajectory | promotion veto | PASS |
+| T3 acceptance ladder | acceptance at damping 1.0 / 0.5 / 0.1 | **promotion criterion** | **NOT MEASURED** |
+| T4 force norm | ‖F_damped‖ < ‖F_exact‖, ratio 0.1000 | explanatory only | PASS |
+
+What Phase 2 currently establishes: the dual-adapter returns a deterministic
+(exact value, damped force) pair, the damping scales the force exactly as
+specified, and a leapfrog trajectory driven by the damped force conserves the
+exact-value Hamiltonian to the expected discretization order. Those are the
+mechanics preconditions of Corollary 5.2 and they hold.
+
+What Phase 2 does not establish: that a chain driven by the damped force
+mixes. No acceptance rate exists for any damping level.
+
+Closing T3 requires the `tf.custom_gradient` wrapper described above. That
+wrapper is not optional future work — it is the mechanism Phase 3 depends on,
+so it must be built regardless, and T3 becomes measurable as soon as it
+exists.
 
 ---
 

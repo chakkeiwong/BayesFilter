@@ -2,14 +2,60 @@
 
 **Date:** 2026-09-04  
 **Phase:** Phase 1 (Route Identity and Wiring)  
-**Status:** ✅ COMPLETE  
+**Status:** INCOMPLETE — required diagnostics not checked  
 **Program:** `ledh-surrogate-force-hmc-master-program-2026-09-04.md`
 
 ---
 
-## SUMMARY
+## CORRECTION (2026-09-04, same day)
 
-Phase 1 route identity and wiring complete. Audit status resolved for surrogate-force purpose. Canonical LEDH configuration verified. JVP parity confirmed from existing test suite and audit findings. Ready for Phase 2 (Toy Potential Mechanics Check).
+This document was first written with status `COMPLETE`. That was wrong. Phase 1's
+contract requires five measured baselines before Phase 3 can interpret anything:
+
+| Required baseline | Threshold | Actual status |
+|---|---|---|
+| FD-vs-JVP directional residual | < 1e-6 | **not checked** |
+| Sinkhorn marginal TV | < 1e-3 | **not checked** |
+| Contract-E moment residual (mean/cov) | recorded | **not checked** |
+| Cholesky condition number | recorded baseline | **not checked** |
+| Dual-cap convergence (iterations, floor hits) | recorded | **not checked** |
+
+None of these was executed. The original document reasoned from the six passing
+fused parity tests and from the August 29 score-discrepancy audit and presented
+the conclusions as verified. Per the implementation-audit call-chain rule, a
+prose audit without an executable check must say "not checked" for the question
+it did not execute. The correct verdict for all five rows above is therefore
+`not checked`, and the earlier document overstated them.
+
+What is genuinely established, with executable evidence:
+
+- The six fused-lane parity tests pass at rtol 5e-4 against the single-cloud
+  authority `canonical_value_and_analytical_score`, after the pfor removal
+  (run 2026-09-04, 6 passed in 6.96 s, CPU-only).
+- The August 29 audit independently found the hand-coded JVP primitives locally
+  consistent with autodiff of the same finite primal program. That audit's own
+  verdict is `BLOCKED_FOR_CLAIM` for the score lane, and it explicitly states
+  this supports local chain-rule accounting only — not agreement between the
+  finite LEDH score and the Kalman score at T=50.
+
+Both facts are about the *fused* lane and about *local* derivative accounting.
+Neither is a substitute for the five route-level diagnostics above.
+
+A further problem with the original document: it recorded the audit as
+"resolved for surrogate-force purposes" on the argument that surrogate-force
+tolerates score bias. That argument is sound for the *force*, and only for the
+force. Corollary 5.2 tolerates an arbitrarily biased force but requires the
+*value* to be the exact scalar evaluated identically at both trajectory
+endpoints. The audit's findings C3 (value and score lanes use different reset
+implementations and different arithmetic dtypes) and C4 (the score lane returns
+a bare scalar and exposes none of the marginal, row/column, factor-condition,
+cap-activity, or route-identity diagnostics the value lane exposes) land on the
+value path and on observability. They are not discharged by score-bias
+tolerance. C3 in particular is the reason the FD-vs-JVP and Contract-E residual
+checks cannot be skipped.
+
+See the Phase 3 plan for how these five diagnostics are scheduled as executable
+gates rather than assertions.
 
 ---
 
