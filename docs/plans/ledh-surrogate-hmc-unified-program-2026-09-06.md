@@ -31,14 +31,15 @@ four with trust-region tuning artifacts from 2026-09-02/03).
 | Phase | Content | Duration | Status |
 |---|---|---|---|
 | **0** | Policy repair (pfor removal) | complete | ✅ DONE 2026-09-04 |
-| **1** | Route identity baselines | 0.5 day | ⏳ INCOMPLETE |
+| **1** | Route identity baselines | 0.5 day | ⏳ INCOMPLETE (deferred to 2B Step 5) |
 | **2A** | Toy potential mechanics | 0.5 day | ⏳ INCOMPLETE (T3 missing) |
-| **2B** | Engine unification | 6–9 days | ⏸️ BLOCKED on Phase 1 |
-| **3** | Damping derivation + calibration | 1–2 days | ⏸️ BLOCKED on 2B |
+| **2B** | Engine unification | 6–9 days | 📋 NEXT |
+| **2C** | Contract-integrity test suite | 2–3 days | ⏸️ BLOCKED on 2B |
+| **3** | Damping derivation + calibration | 1–2 days | ⏸️ BLOCKED on 2C |
 | **4** | LGSSM d=3 T=50 full validation | 1 day + 12 GPU-hours | ⏸️ BLOCKED on 3 |
 | **5** | Tier A suite (conditional) | 2 days + 48 GPU-hours | ⏸️ BLOCKED on 4 |
 
-**Total estimate:** 11–15 days + 60 GPU-hours (assumes no major redesign)
+**Total estimate:** 13–18 days + 60 GPU-hours (assumes no major redesign)
 
 ---
 
@@ -284,6 +285,200 @@ stayed identical.
 
 ---
 
+## Phase 2C: Contract-Integrity Test Suite
+
+**Why this phase exists:** The 2026-09-06 audit found 12 defects. None was a
+mathematical error. Every one was a **contract-integrity** failure — code not
+implementing what a document claimed, or a document asserting a quantity never
+measured. The repository has extensive numerical tests and no tests of this
+class at all, which is why B1 (a runner silently skipping the reset) survived
+five days and a Codex review.
+
+**Design note:** `docs/plans/contract-integrity-testing-framework-design-2026-09-06.md`
+
+**Position:** After 2B, before Phase 3. Unification produces one engine with the
+full capability union — the natural checkpoint to verify the contract stack.
+Earlier means testing a forked implementation; later means Phase 3/4 findings
+force backtracking.
+
+### The seven test classes
+
+Each maps to audit findings it would have caught.
+
+| Class | What it checks | Catches |
+|---|---|---|
+| 1. Enum / string-literal validation | Every dispatch string is ledgered; unrecognized fails closed | **B1** |
+| 2. Wiring and resolution | Every registry key, artifact reference, fixture claim, and kwarg resolves | **B3, B4**, registry drift |
+| 3. Shape and dimension consistency | Declared shapes match actual tensor shapes | **M1** |
+| 4. Artifact schema and completeness | Artifacts carry required fields; budget tables sum | **N2**, Phase 1 overclaim |
+| 5. Parameter provenance / Class C | Every numerics-altering parameter has derivation, curve, or rationale | **M5** |
+| 6. Seed determinism | Every "frozen" or "deterministic" claim has a golden-hash regression | **B2, M4** |
+| 7. Policy compliance | Policy "must"/"forbidden" rules mechanized as failing tests | **M2, M3**, Phase 2A T3 substitution |
+
+### Class 1 — Enum and string-literal validation
+
+Every configuration string compared via `==` or dispatched on must validate
+against a ledger. Unrecognized → raise, never fall through.
+
+The B1 mechanism: `ledh_canonical_score_tf.py:413` tests one literal
+(`"contract_e"`); the runner passed `"transport_affine_cumulant_trust"`; the
+bare `else` silently skipped the reset. The fix is a Class B fail-closed guard
+(adopt-by-default under Safety Guardrail Reversed Burden), plus a **negative
+test** asserting the unrecognized value raises.
+
+Scope: every string literal in an `if x == "..."` or `match` in claim-bearing
+code. Each needs a legal-values ledger and a negative case.
+
+### Class 2 — Wiring and resolution
+
+Every indirection resolves to what it names:
+
+- `ENTRY_POINTS[k]` imports and is callable (the Aug-29 audit found one that
+  was not)
+- Every `Baseline: X` in an evidence contract resolves to `artifacts/X/`
+  (**B3**)
+- Every runner `kwarg=value` maps to a formal parameter via
+  `inspect.signature` (**B4**)
+- Every claim-bearing endpoint reaches the unified engine — the executable
+  wiring test the Implementation Audit Call-Chain Rule requires
+
+Method: reflection, `inspect.signature`, filesystem checks, AST walk for call
+chains.
+
+### Class 3 — Shape and dimension consistency
+
+Declared shapes match produced shapes. **M1** was a 1-D runner under a
+5-parameter coverage criterion; a shape test comparing runner output rank
+against the contract's claim fails immediately.
+
+Scope: every dimension claim in a docstring, plan, or evidence contract.
+
+### Class 4 — Artifact schema and completeness
+
+Artifacts carry the fields consumers require; plan arithmetic is
+self-consistent. Two sub-checks matter most:
+
+- **Measurement existence.** Every "measured" claim in a result document maps
+  to an artifact field holding that number. This is the structural fix for
+  Phase 1's five asserted-but-unmeasured diagnostics: a phase cannot close on
+  prose, only on an artifact containing the measurement.
+- **Budget completeness.** Phase-table durations sum to the stated total
+  (**N2**).
+
+### Class 5 — Parameter provenance and Class C calibration
+
+Every Class C (numerics-altering) parameter appears in a ledger mapping
+`(name, model, route)` → `(artifact_path, justification_type)`. Justification
+type may not be "inherited" or "convenient" — the policy is explicit that an
+off/zero setting carries the same burden as any other value.
+
+**M5** is the live case: the 100× damping ratio traces to one Aug-29 line with
+no calibration. **B4** compounds it — the runner would have overwritten a
+*tuned* control (`correction_lm_scale_floor`, selected 1e-06) with 1e-3.
+
+### Class 6 — Seed determinism and reproducibility
+
+Every "frozen" or "deterministic" claim gets a regression:
+
+- Fixture golden-hash: `_lgssm_frozen_observations()` → recorded SHA-256. This
+  is exactly **B2** — the runner's `make_observations()` returned i.i.d. noise
+  under a docstring claiming the historical fixture. A hash test fails on the
+  first run.
+- Determinism: run twice, assert bitwise-identical.
+- Seed-freeze (**M4**): force evaluated at the same θ but different leapfrog
+  steps must use identical noise, which is what Corollary 5.2 requires and what
+  v2's θ-derived `hash()` violates.
+
+Note the repository already has a recorded instance of naive seed derivation
+producing pseudo-replication (`tf-consecutive-from-seed-is-one-stream`); use
+`SeedSequence`, not `hash()`.
+
+### Class 7 — Policy compliance
+
+Policy rules become failing tests rather than prose reminders:
+
+- **Heuristic Dominance Gate** (**M3**): Phase 4/5 plan schema requires
+  `adversary_set` ≥ 3 entries and `salient_situations` ≥ 2. A plan without
+  them cannot validate.
+- **Evidence contract**: Phase 3+ requires all six fields present.
+- **Promotion-criterion binding**: the measured quantity must be the
+  contract's stated primary criterion — this is the check that would have
+  refused Phase 2A's substitution of mean-‖force‖ for acceptance rate.
+- **Program-artifact binding** (**M2**): a phase's model set must match the
+  tuning-artifact index, which is how the HNN model list got into a LEDH
+  program.
+- **Pfor approval**: `tf.vectorized_map` appearing in a diff fails CI unless
+  `docs/approvals/pfor_{module}_{date}.md` exists.
+
+### Deliverables
+
+1. **Test modules** under `tests/contracts/`:
+   `test_enum_validation.py`, `test_wiring_resolution.py`,
+   `test_shape_consistency.py`, `test_artifact_schema.py`,
+   `test_parameter_provenance.py`, `test_seed_determinism.py`,
+   `test_policy_compliance.py`
+
+2. **Machine-readable ledgers** under `bayesfilter/contracts/`:
+   `reset_policy_enum.json`, `entry_points_registry.json`,
+   `class_c_parameter_ledger.json`, `tuning_artifact_index.json`,
+   `fixture_hashes.json`
+
+3. **Plan schema** `docs/schemas/experiment_plan.schema.json`
+
+4. **Validation runner** `scripts/validate_contracts.py` — runs all seven
+   classes, validates every plan against schema, checks artifact schemas,
+   exit 1 on any violation. Wired into CI and used as a pre-execution gate.
+
+5. **Fail-closed guard** on `reset_policy` in the unified engine (the B1 repair
+   proper, not just its test).
+
+6. **Result document**
+   `docs/plans/ledh-contract-integrity-suite-result-2026-09-06.md` recording
+   coverage counts, violations found and repaired, and how to register a new
+   contract when extending the code.
+
+### Promotion criteria
+
+1. Each of the 12 audit findings has a test that fails on the original defect
+2. Enum test fails on `reset_policy="transport_affine_cumulant_trust"`
+3. Fixture-hash test fails if `make_observations()` returns wrong data
+4. Parameter-resolution test fails on a non-existent kwarg
+5. Schema validation rejects a Phase 4 plan lacking an adversary set
+6. Full suite green on the unified engine
+7. `validate_contracts.py` runs in CI and fails the build on violation
+
+### Promotion vetoes
+
+- Any of the 12 findings without covering test
+- A contract test that warns instead of failing
+- `class_c_parameter_ledger.json` missing a Class C parameter used in
+  claim-bearing code
+
+### Regression check
+
+The suite must be green against **current** code after repairs, and each test
+must be demonstrated failing against the pre-repair state (git stash or a
+deliberately reverted fixture). A test never seen to fail is not evidence.
+
+### Budget
+
+2–3 days, CPU only, no GPU. Independent of Phase 3's derivations — those may
+proceed in parallel, but no scientific run executes until this suite is green.
+
+### Fallback if schedule pressure
+
+Minimum viable gate, 0.5 day, covering all four blockers:
+
+1. Enum validation for `reset_policy` and `ENTRY_POINTS` (B1)
+2. Fixture golden-hash for `_lgssm_frozen_observations` (B2)
+3. Parameter resolution across every runner in `docs/benchmarks/` (B3, B4)
+
+Full Class 1–7 suite then becomes a later phase. These three are load-bearing;
+without them the program is one unrecognized string from another silent
+failure.
+
+---
+
 ## Phase 3: Damping Derivation and Calibration
 
 **Why this phase exists:** Four blocking/major findings from the 2026-09-06
@@ -495,6 +690,17 @@ One artifact per model under `docs/benchmarks/artifacts/`, each with:
   inadequate
 - Phase 5: all three models fail → surrogate-force does not generalise
 
+### Structural rule adopted 2026-09-06
+
+**A phase does not close on a document. It closes on an artifact containing the
+measurement.**
+
+Six defects to date share one shape: a document asserting a verified quantity
+that was never measured (Phase 1's five diagnostics, Phase 2A's promotion
+criterion, and audit findings B2/B3/M1/M5). Prose cannot be the evidence for
+its own claim. Phase 2C Class 4 mechanizes this as a test: every "measured"
+claim in a result document must map to an artifact field holding that number.
+
 ### Continuation vetoes (stop, redesign required)
 
 - Phase 2B Step 3a derivation shows flattening incompatible with per-row
@@ -536,6 +742,11 @@ One artifact per model under `docs/benchmarks/artifacts/`, each with:
 | 2B | `tests/highdim/test_ledh_engine_row_independence.py` | B≥2 independence tests |
 | 2B | `bayesfilter/highdim/ledh_canonical_engine_tf.py` | unified engine |
 | 2B | `docs/plans/ledh-engine-unification-result-2026-09-06.md` | result doc |
+| 2C | `tests/contracts/test_*.py` (7 modules) | contract test suite |
+| 2C | `bayesfilter/contracts/*.json` (5 ledgers) | machine-readable contracts |
+| 2C | `docs/schemas/experiment_plan.schema.json` | plan validation schema |
+| 2C | `scripts/validate_contracts.py` | validation runner |
+| 2C | `docs/plans/ledh-contract-integrity-suite-result-2026-09-06.md` | result doc |
 | 3 | `docs/plans/ledh-damping-derivation-2026-09-06.md` | parameter derivation |
 | 3 | `docs/benchmarks/artifacts/ledh_damping_calibration_lgssm_t50_20260906/` | calibration curve |
 | 3 | `docs/plans/ledh-seed-discipline-decision-2026-09-06.md` | seed policy |
