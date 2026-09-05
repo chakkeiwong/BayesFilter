@@ -18,166 +18,20 @@ from tests.test_hmc_kernel_tuning_fixed_mass_step import (
 )
 
 
-def test_public_p4_call_chain_uses_one_private_registry_without_transitions(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The public endpoint carries one registry through every P4 boundary."""
-
-    geometry = _geometry()
-    bootstrap = _bootstrap()
-    seen: dict[str, Any] = {}
-    original_loop = hmc_kernel_tuning.run_hmc_tune_verify_repair_loop
-
-    def bootstrap_runner(**kwargs: Any) -> Any:
-        seen["bootstrap"] = kwargs.get("_g2_seed_use_registry")
-        return bootstrap
-
-    def windowed_runner(**kwargs: Any) -> Any:
-        seen["windowed"] = kwargs.get("_g2_seed_use_registry")
-        raise RuntimeError("zero-transition windowed boundary sentinel")
-
-    def loop_runner(**kwargs: Any) -> Any:
-        seen["loop"] = kwargs.get("_g2_seed_use_registry")
-        assert isinstance(seen["loop"], hmc_warmup.G2PreboundarySeedUseRegistry)
-        # Run the real Phase 7 dispatcher with its transition-producing stage
-        # replaced by a sentinel. This proves the public-to-windowed hop while
-        # keeping the test strictly zero-transition.
-        return original_loop(
-            **kwargs,
-            _windowed_stage_runner=windowed_runner,
-        )
-
-    monkeypatch.setattr(hmc_kernel_tuning, "initialize_hmc_kernel_geometry", lambda **_: geometry)
-    monkeypatch.setattr(hmc_kernel_tuning, "run_hmc_bootstrap_screen", bootstrap_runner)
-    monkeypatch.setattr(hmc_kernel_tuning, "run_hmc_tune_verify_repair_loop", loop_runner)
-
-    result = tune_hmc_kernel(
-        adapter=_ToyGaussianAdapter(),
-        initial_position=[0.0, 0.0],
-        config=HMCKernelTuningConfig.smoke(
+def test_public_config_rejects_p4_before_target_or_transition_work() -> None:
+    with pytest.raises(ValueError, match="lower-level P4-E diagnostic"):
+        HMCKernelTuningConfig.smoke(
             target_scope="kernel_fixed_mass_step_toy_gaussian",
             engineering_probe_covariance_multiplier=2.0,
-        ),
-    )
-
-    assert result.final_kernel_payload is None
-    assert result.final_status in {"hard_veto", "budget_exhausted"}
-    assert isinstance(seen["bootstrap"], hmc_warmup.G2PreboundarySeedUseRegistry)
-    assert seen["bootstrap"] is seen["loop"]
-    assert seen["loop"] is seen["windowed"]
-
-
-def test_public_p4_retry_reuses_one_registry_without_hmc_runner_calls(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A Phase 7 retry must carry the original private registry object."""
-
-    geometry = _geometry()
-    bootstrap = _bootstrap()
-    original_loop = hmc_kernel_tuning.run_hmc_tune_verify_repair_loop
-    seen_registries: list[Any] = []
-    hmc_runner_calls: list[tuple[Any, ...]] = []
-
-    retry_state = hmc_kernel_tuning._HMCPhaseAttemptState(
-        mass_artifact_payload={"schema": "test.phase4.mass.v1"},
-        mass_artifact_signature="a" * 64,
-        canonical_theta_state=[0.0, 0.0],
-        private_start_bank_theta=[[0.0, 0.0]] * 4,
-        private_start_bank_signature="b" * 64,
-        handoff_stage="phase4",
-    )
-
-    class _RetryableWindowedStage:
-        def __init__(self, config: Any, attempt_index: int) -> None:
-            self.config = config
-            self.final_status = "passed_no_metric_update"
-            self.diagnostic_role = "metric_adaptation_not_observed"
-            self.hard_vetoes = ()
-            self.repair_triggers = ("windowed_mass_no_operational_metric_update",)
-            self.attempt_index = int(attempt_index)
-            self.passed = False
-            self.artifact_hash = f"test-windowed-stage-{attempt_index}"
-
-        def payload(self) -> dict[str, Any]:
-            return {
-                "schema": "test.windowed_stage.v1",
-                "attempt_index": self.attempt_index,
-                "final_status": self.final_status,
-                "diagnostic_role": self.diagnostic_role,
-            }
-
-    def bootstrap_runner(**kwargs: Any) -> Any:
-        assert isinstance(
-            kwargs.get("_g2_seed_use_registry"),
-            hmc_warmup.G2PreboundarySeedUseRegistry,
         )
-        return bootstrap
 
-    def windowed_runner(**kwargs: Any) -> Any:
-        registry = kwargs.get("_g2_seed_use_registry")
-        assert isinstance(registry, hmc_warmup.G2PreboundarySeedUseRegistry)
-        seen_registries.append(registry)
-        return _RetryableWindowedStage(kwargs["config"], len(seen_registries) - 1)
 
-    def forbidden_hmc_runner(*args: Any, **kwargs: Any) -> Any:
-        hmc_runner_calls.append(args)
-        raise AssertionError("retry identity test must not invoke an HMC runner")
-
-    def loop_runner(**kwargs: Any) -> Any:
-        registry = kwargs.get("_g2_seed_use_registry")
-        assert isinstance(registry, hmc_warmup.G2PreboundarySeedUseRegistry)
-        kwargs["_windowed_stage_runner"] = windowed_runner
-        kwargs["_fixed_mass_step_stage_runner"] = (
-            lambda **_: (_ for _ in ()).throw(
-                AssertionError("Phase 5 must not run for the Phase 4 retry fixture")
-            )
-        )
-        return original_loop(**kwargs)
-
-    monkeypatch.setattr(
-        hmc_kernel_tuning,
-        "initialize_hmc_kernel_geometry",
-        lambda **_: geometry,
-    )
-    monkeypatch.setattr(
-        hmc_kernel_tuning,
-        "run_hmc_bootstrap_screen",
-        bootstrap_runner,
-    )
-    monkeypatch.setattr(
-        hmc_kernel_tuning,
-        "run_hmc_tune_verify_repair_loop",
-        loop_runner,
-    )
-    monkeypatch.setattr(
-        hmc_kernel_tuning,
-        "run_full_chain_tfp_hmc",
-        forbidden_hmc_runner,
-    )
-    monkeypatch.setattr(
-        hmc_kernel_tuning,
-        "_phase7_attempt_state_from_stages",
-        lambda **_: retry_state,
-    )
-
-    result = tune_hmc_kernel(
-        adapter=_ToyGaussianAdapter(),
-        initial_position=[0.0, 0.0],
-        config=HMCKernelTuningConfig.standard(
+def test_public_standard_config_rejects_p4_compatibility_switch() -> None:
+    with pytest.raises(ValueError, match="not a public ordinary tuning mode"):
+        HMCKernelTuningConfig.standard(
             target_scope="kernel_fixed_mass_step_toy_gaussian",
             engineering_probe_covariance_multiplier=2.0,
-            max_attempts=2,
-            metric_update_requirement="require_operational_update",
-            chain_execution_mode="eager",
-            public_timeout_budget_s=None,
-        ),
-    )
-
-    assert result.final_kernel_payload is None
-    assert result.final_status == "budget_exhausted"
-    assert len(seen_registries) == 2
-    assert seen_registries[0] is seen_registries[1]
-    assert hmc_runner_calls == []
+        )
 
 
 def test_public_p4_source_coverage_is_complete_deterministic_and_hash_bound() -> None:

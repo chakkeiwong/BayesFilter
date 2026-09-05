@@ -13,6 +13,7 @@ from bayesfilter.hmc_route_contract import (
     HMC_TOP_LEVEL_SELECTION_STAGE,
     HMC_WINDOWED_MASS_STAGE,
     LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+    LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
     LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
     OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
     OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
@@ -79,6 +80,9 @@ def test_stage_scoped_identity_mapping_is_deterministic() -> None:
         OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
     ) == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     assert windowed_algorithm_for_selection_algorithm(
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    ) == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+    assert windowed_algorithm_for_selection_algorithm(
         LEGACY_JOINT_L_EPSILON_ALGORITHM_ID
     ) == LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
 
@@ -89,6 +93,10 @@ def test_stage_scoped_identity_mapping_is_deterministic() -> None:
         (OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID, HMC_WINDOWED_MASS_STAGE),
         (LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID, HMC_WINDOWED_MASS_STAGE),
         (OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID, HMC_FIXED_TRAJECTORY_STAGE),
+        (
+            LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+            HMC_FIXED_TRAJECTORY_STAGE,
+        ),
         (LEGACY_JOINT_L_EPSILON_ALGORITHM_ID, HMC_TOP_LEVEL_SELECTION_STAGE),
     ],
 )
@@ -159,6 +167,14 @@ def test_artifact_authority_guard_rejects_supported_legacy_route() -> None:
     assert caught.value.decision.supported is True
     assert caught.value.decision.operational_authority is False
     assert caught.value.decision.artifact_authority is False
+
+    with pytest.raises(NonAuthoritativeHMCAlgorithmRoute) as paired:
+        require_hmc_artifact_authority_route(
+            algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+            stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        )
+    assert paired.value.decision.supported is True
+    assert paired.value.decision.artifact_authority is False
 
 
 def test_artifact_authority_is_explicit_and_not_scientific_promotion() -> None:

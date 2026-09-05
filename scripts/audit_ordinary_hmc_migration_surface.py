@@ -521,7 +521,7 @@ def _branch_reachability() -> tuple[dict[str, Any], ...]:
         HMC_WINDOWED_MASS_STAGE,
         LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
         LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
-        OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
         OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
         resolve_hmc_algorithm_route,
         require_hmc_artifact_authority_route,
@@ -531,7 +531,7 @@ def _branch_reachability() -> tuple[dict[str, Any], ...]:
         (
             "default_ordinary_config",
             "ordinary_hmc",
-            OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+            ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
             HMC_TOP_LEVEL_SELECTION_STAGE,
             "public ordinary construction",
         ),

@@ -29,6 +29,10 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Mapping, Sequence
 
+from bayesfilter.hmc_ordinary_selection_policy import (
+    ORDINARY_BROAD_PRIMARY_L_GRID,
+    midpoint_refinement_l_values,
+)
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptanceEvidence,
     HMCAcceptancePolicy,
@@ -36,7 +40,7 @@ from bayesfilter.inference.hmc_verification import (
 )
 
 
-DEFAULT_L_GRID = (3, 5, 9, 13, 18, 25)
+DEFAULT_L_GRID = ORDINARY_BROAD_PRIMARY_L_GRID
 MIN_LEAPFROG_STEPS = 1
 MAX_LEAPFROG_STEPS = 25
 REPLICATION_COUNT = 3
@@ -809,34 +813,12 @@ def refinement_l_values(
 ) -> tuple[int, ...]:
     """Return untested integer midpoints adjacent to every initial survivor."""
 
-    grid = tuple(sorted(int(item) for item in initial_grid))
-    survivors = set(int(item) for item in survivor_l_values)
-    if len(grid) < 3 or len(set(grid)) != len(grid):
-        raise ValueError("refinement requires at least three distinct grid values")
-    if any(
-        item < MIN_LEAPFROG_STEPS or item > MAX_LEAPFROG_STEPS for item in grid
-    ):
-        raise ValueError("refinement grid values exceed the reviewed bounds")
-    if not survivors.issubset(grid):
-        raise ValueError("refinement survivors must come from the initial grid")
-    additions: set[int] = set()
-    for survivor in survivors:
-        index = grid.index(survivor)
-        intervals = []
-        if index > 0:
-            intervals.append((grid[index - 1], survivor))
-        if index + 1 < len(grid):
-            intervals.append((survivor, grid[index + 1]))
-        for lower, upper in intervals:
-            floor_midpoint = (lower + upper) // 2
-            ceil_midpoint = (lower + upper + 1) // 2
-            additions.update(
-                item
-                for item in (floor_midpoint, ceil_midpoint)
-                if MIN_LEAPFROG_STEPS <= item <= MAX_LEAPFROG_STEPS
-                and item not in grid
-            )
-    return tuple(sorted(additions))
+    return midpoint_refinement_l_values(
+        initial_grid,
+        survivor_l_values,
+        minimum=MIN_LEAPFROG_STEPS,
+        maximum=MAX_LEAPFROG_STEPS,
+    )
 
 
 @dataclass(frozen=True)

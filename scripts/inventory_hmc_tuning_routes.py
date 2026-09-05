@@ -23,17 +23,11 @@ EXCLUDED_MODULE_PREFIXES = (
 )
 EXCLUDED_FUNCTIONS = frozenset(
     {
-        "run_fixed_transport_hmc_candidate_campaign",
         "run_fixed_transport_full_chain_tfp_hmc",
         "run_full_chain_tfp_hmc",
         "run_native_tfp_fixed_kernel_hmc",
         "run_native_tfp_independent_chains",
         "run_staged_fixed_kernel_hmc_estimation",
-    }
-)
-COMPATIBILITY_ALIASES = frozenset(
-    {
-        "bayesfilter.inference.hmc_kernel_tuning.tune_hmc_kernel",
     }
 )
 INTERNAL_STAGE_PREFIXES = (
@@ -43,9 +37,16 @@ INTERNAL_STAGE_PREFIXES = (
 )
 RUN_ORCHESTRATION_NAME_MARKERS = (
     "hmc_tuning",
+    "fixed_transport_hmc_candidate_campaign",
     "fixed_metric_grid_search",
     "operational_broad_grid",
     "generic_hmc_tuning",
+)
+DIAGNOSTIC_ROUTE_NAME_MARKERS = (
+    "tuning_diagnostic",
+    "mass_adaptation_diagnostic",
+    "dual_averaging_diagnostic",
+    "hmc_start_bank_diagnostic",
 )
 
 
@@ -63,17 +64,27 @@ def discover_routes(inference_root: Path) -> tuple[dict[str, Any], ...]:
             if name.startswith("_") or name in EXCLUDED_FUNCTIONS:
                 continue
             qualified_name = f"{module}.{name}"
-            if qualified_name in COMPATIBILITY_ALIASES:
-                continue
-            if name.startswith(INTERNAL_STAGE_PREFIXES):
-                continue
             lowered = name.lower()
+            is_diagnostic_route = name.startswith("run_") and any(
+                marker in lowered for marker in DIAGNOSTIC_ROUTE_NAME_MARKERS
+            )
+            if name.startswith(INTERNAL_STAGE_PREFIXES) and not is_diagnostic_route:
+                continue
             is_tuner = name.startswith("tune_") and "hmc" in lowered
             is_runner = name.startswith("run_") and any(
                 marker in lowered for marker in RUN_ORCHESTRATION_NAME_MARKERS
             )
             is_orchestrator = name.startswith("orchestrate_") and "hmc_tuning" in lowered
-            if not (is_tuner or is_runner or is_orchestrator):
+            is_candidate_helper = name.startswith(("discover_", "refine_")) and (
+                "fixed_transport_hmc_candidates" in lowered
+            )
+            if not (
+                is_tuner
+                or is_runner
+                or is_orchestrator
+                or is_candidate_helper
+                or is_diagnostic_route
+            ):
                 continue
             rows.append(
                 {
@@ -101,12 +112,10 @@ def inventory_payload(repo_root: Path) -> dict[str, Any]:
         "exclusions": {
             "module_prefixes": EXCLUDED_MODULE_PREFIXES,
             "functions": tuple(sorted(EXCLUDED_FUNCTIONS)),
-            "compatibility_aliases": tuple(sorted(COMPATIBILITY_ALIASES)),
             "internal_stage_prefixes": INTERNAL_STAGE_PREFIXES,
             "separate_algorithm_families": (
                 "NeuTra HMC",
                 "neural-force HMC",
-                "fixed-transport candidate discovery",
                 "full-chain execution mechanics",
             ),
         },

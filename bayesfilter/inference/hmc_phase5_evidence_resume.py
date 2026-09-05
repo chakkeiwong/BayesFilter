@@ -19,6 +19,9 @@ from bayesfilter.hmc_budget_contract import (
     build_public_hmc_work_manifest,
     reconcile_executed_hmc_work,
 )
+from bayesfilter.hmc_route_contract import (
+    LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+)
 from bayesfilter.inference.hmc import run_full_chain_tfp_hmc, stable_adapter_signature
 from bayesfilter.inference.hmc_kernel_selection import (
     BoundedFixedTrajectorySelectionResult,
@@ -522,6 +525,7 @@ def _extend_fixed_stage(
             for item in selection.candidate_results
         ),
         policy=work_policy,
+        algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         run_class="phase5_replay_gated_evidence_extension",
     )
     resolved_candidates = tuple(

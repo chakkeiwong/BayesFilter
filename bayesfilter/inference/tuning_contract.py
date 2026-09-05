@@ -16,10 +16,10 @@ from typing import Any, Literal
 
 
 TUNING_CONTRACT_SCHEMA = "bayesfilter.hmc_tuning_contract.v1"
-TUNING_ROUTE_REGISTRY_SCHEMA = "bayesfilter.hmc_tuning_route_registry.v1"
-HMC_TUNING_CAPABILITY_SCHEMA = "bayesfilter.hmc_tuning_capability.v1"
+TUNING_ROUTE_REGISTRY_SCHEMA = "bayesfilter.hmc_tuning_route_registry.v2"
+HMC_TUNING_CAPABILITY_SCHEMA = "bayesfilter.hmc_tuning_capability.v2"
 HMC_TUNING_CAPABILITY_REGISTRY_SCHEMA = (
-    "bayesfilter.hmc_tuning_capability_registry.v1"
+    "bayesfilter.hmc_tuning_capability_registry.v2"
 )
 HMC_TUNING_RUNNER_BINDING_SCHEMA = "bayesfilter.hmc_tuning_runner_binding.v2"
 HMC_TUNING_ORDINARY_RHAT_THRESHOLD = 1.01
@@ -27,6 +27,8 @@ HMC_TUNING_ORDINARY_RHAT_THRESHOLD = 1.01
 TuningRouteRole = Literal["active", "historical", "diagnostic"]
 HMCInterfaceKind = Literal[
     "public_tuner",
+    "diagnostic_helper",
+    "historical_helper",
     "stage_helper",
     "chain_runner",
     "runner_binding_factory",
@@ -241,6 +243,8 @@ class HMCTuningInterfaceCapability:
             object.__setattr__(self, name, _nonempty_text(getattr(self, name), name))
         if self.interface_kind not in {
             "public_tuner",
+            "diagnostic_helper",
+            "historical_helper",
             "stage_helper",
             "chain_runner",
             "runner_binding_factory",
@@ -309,6 +313,17 @@ class HMCTuningInterfaceCapability:
                 )
         elif self.artifact_authority:
             raise ValueError("only supported public tuners may own artifact authority")
+        if self.interface_kind in {"diagnostic_helper", "historical_helper"}:
+            expected_status = (
+                "diagnostic_only"
+                if self.interface_kind == "diagnostic_helper"
+                else "historical_only"
+            )
+            if self.capability_status != expected_status or replacement is None:
+                raise ValueError(
+                    "diagnostic and historical helpers require their matching "
+                    "status and an active replacement"
+                )
         if self.capability_status == "tested_supported" and any(
             value == "unknown"
             for value in (
@@ -773,6 +788,76 @@ HMC_TUNING_ROUTE_REGISTRY: tuple[HMCTuningRouteRecord, ...] = (
         nonclaims=_HISTORICAL_NONCLAIMS,
     ),
     HMCTuningRouteRecord(
+        interface_name="run_fixed_mass_step_tuning_diagnostic",
+        module="bayesfilter.inference.hmc_tuning",
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_hmc_kernel",
+        nonclaims=_HISTORICAL_NONCLAIMS,
+    ),
+    HMCTuningRouteRecord(
+        interface_name="run_windowed_mass_adaptation_diagnostic",
+        module="bayesfilter.inference.hmc_tuning",
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_hmc_kernel",
+        nonclaims=_HISTORICAL_NONCLAIMS,
+    ),
+    HMCTuningRouteRecord(
+        interface_name="run_fixed_trajectory_tuning_diagnostic",
+        module="bayesfilter.inference.hmc_tuning",
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_hmc_kernel",
+        nonclaims=_HISTORICAL_NONCLAIMS,
+    ),
+    HMCTuningRouteRecord(
+        interface_name="run_gaussian_dual_averaging_diagnostic",
+        module="bayesfilter.inference.hmc_tuning",
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_hmc_kernel",
+        nonclaims=_HISTORICAL_NONCLAIMS,
+    ),
+    HMCTuningRouteRecord(
+        interface_name="run_hmc_start_bank_diagnostic",
+        module="bayesfilter.inference.hmc_kernel_tuning",
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_hmc_kernel",
+        nonclaims=_HISTORICAL_NONCLAIMS,
+    ),
+    HMCTuningRouteRecord(
+        interface_name="discover_fixed_transport_hmc_candidates",
+        module=(
+            "bayesfilter.inference.fixed_transport_hmc_candidate_discovery_tf"
+        ),
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_fixed_transport_hmc_kernel",
+        nonclaims=_HISTORICAL_NONCLAIMS,
+    ),
+    HMCTuningRouteRecord(
+        interface_name="run_fixed_transport_hmc_candidate_campaign",
+        module=(
+            "bayesfilter.inference.fixed_transport_hmc_candidate_discovery_tf"
+        ),
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_fixed_transport_hmc_kernel",
+        nonclaims=_HISTORICAL_NONCLAIMS,
+    ),
+    HMCTuningRouteRecord(
+        interface_name="refine_fixed_transport_hmc_candidates",
+        module=(
+            "bayesfilter.inference.fixed_transport_hmc_candidate_discovery_tf"
+        ),
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_fixed_transport_hmc_kernel",
+        nonclaims=_HISTORICAL_NONCLAIMS,
+    ),
+    HMCTuningRouteRecord(
         interface_name="run_generic_hmc_tuning_orchestration",
         module="bayesfilter.inference.generic_hmc_tuning",
         role="historical",
@@ -813,7 +898,11 @@ def _nonactive_route_capability(
     return HMCTuningInterfaceCapability(
         interface_name=record.interface_name,
         module=record.module,
-        interface_kind="public_tuner",
+        interface_kind=(
+            "historical_helper"
+            if record.role == "historical"
+            else "diagnostic_helper"
+        ),
         capability_status=(
             "historical_only" if record.role == "historical" else "diagnostic_only"
         ),
@@ -855,12 +944,13 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         capability_status="tested_supported",
         artifact_authority=True,
         algorithm_family=(
-            "ordinary_exact_value_score_or_typed_endpoint_corrected_"
-            "position_field_fixed_trajectory_hmc"
+            "ordinary_exact_value_score_broad_fixed_metric_hmc; typed "
+            "position-field config is a conditional mechanics branch"
         ),
         target_contract=(
-            "ordinary exact value/score, or a repository-issued typed binding "
-            "with an exact endpoint target and honestly labeled deterministic field"
+            "artifact authority requires an ordinary exact value/score target; "
+            "the typed position-field branch additionally requires a repository-"
+            "issued binding and exact endpoint target but remains mechanics-only"
         ),
         coordinate_prerequisite=(
             "ordinary adapter coordinates with repository-owned affine mass coordinates"
@@ -869,13 +959,12 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "windowed adaptation by default or explicit fixed identity from config"
         ),
         step_size_policy=(
-            "bootstrap, shared-epsilon fixed-trajectory screen, bounded repair, "
-            "then exact-L epsilon retune and freeze"
+            "bootstrap, then an independent epsilon ladder for every L in the "
+            "primary and survivor-midpoint barriers"
         ),
         trajectory_policy=(
-            "default operational bounded {floor(anchor/2), anchor, 2*anchor} "
-            "screen with three replications; explicit joint epsilon/L grid is "
-            "legacy diagnostic-only"
+            "ordinary primary L grid (3, 5, 9, 13, 18, 25), followed by one "
+            "midpoint-refinement barrier adjacent to every primary survivor"
         ),
         fresh_verification_policy=(
             "fresh fixed-kernel verification; default TFP runner requires typed "
@@ -889,7 +978,10 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "default runner supports none or per-chain-step; typed bindings must declare equivalent fail-closed endpoint evidence"
         ),
         runner_injection_policy=(
-            "default TFP runner or repository-issued HMCTuningRunnerBinding; bare callables forbidden"
+            "default TFP runner for exact-score ordinary HMC; a repository-issued "
+            "HMCTuningRunnerBinding is accepted only with "
+            "TensorFlowHMCKernelTuningConfig and is conditional mechanics evidence "
+            "only; bare callables are forbidden"
         ),
         identity_bindings=(
             "adapter signature",
@@ -902,6 +994,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         replacement=None,
         forbidden_uses=(
             "arbitrary bare runner callback",
+            "engineering_probe_covariance_multiplier as a public ordinary mode",
+            "shared epsilon across different ordinary L candidates",
             "fixed nonlinear transport without its transformed target contract",
             "retained posterior convergence claim",
         ),
@@ -909,6 +1003,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         evidence_anchors=(
             "tests/test_hmc_tuning_documentation_contract.py::test_ordinary_capability_matches_public_signature",
             "tests/test_hmc_kernel_tuning_public_api.py::test_public_tuner_rejects_failed_sequential_rhat_handoff",
+            "tests/test_hmc_kernel_tuning_public_api.py::test_public_ordinary_config_rejects_typed_runner_binding",
             "tests/test_neural_force_hmc.py::test_typed_tuning_binding_rejects_identity_mass_fallback",
         ),
         mass_capability="owned",
@@ -1033,6 +1128,36 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         ),
     ),
     HMCTuningInterfaceCapability(
+        interface_name="run_fixed_transport_full_chain_tfp_hmc",
+        module="bayesfilter.inference.fixed_transport_hmc_mechanics_tf",
+        interface_kind="chain_runner",
+        capability_status="internal_only",
+        artifact_authority=False,
+        algorithm_family="fixed_transport_fixed_configuration_hmc_mechanics",
+        target_contract="preconstructed exact transformed value/score adapter",
+        coordinate_prerequisite="frozen-transport latent z coordinates",
+        mass_policy="not owned; consumes the supplied fixed coordinate system",
+        step_size_policy="fixed or config-requested dual averaging only",
+        trajectory_policy="fixed caller-supplied leapfrog count",
+        fresh_verification_policy="none by itself",
+        ess_admission_policy="none by itself",
+        target_status_telemetry="transformed-target finite health from the supplied adapter",
+        runner_injection_policy="internal mechanics runner for fixed-transport workflows",
+        identity_bindings=("transformed adapter signature", "target scope", "fixed config"),
+        source_closure_policy="serialized only by an enclosing fixed-transport workflow",
+        replacement="tune_fixed_transport_hmc_kernel",
+        forbidden_uses=(
+            "standalone full-tuning claim",
+            "candidate-selection claim",
+            "canonical artifact authority",
+        ),
+        nonclaims=_HISTORICAL_NONCLAIMS,
+        evidence_anchors=(
+            "tests/test_neutra_fixed_transport_hmc_mechanics_xla_tf.py",
+            "bayesfilter/inference/fixed_transport_hmc_mechanics_tf.py::run_fixed_transport_full_chain_tfp_hmc",
+        ),
+    ),
+    HMCTuningInterfaceCapability(
         interface_name="run_full_chain_neural_force_hmc",
         module="bayesfilter.inference.neural_force_hmc",
         interface_kind="chain_runner",
@@ -1047,7 +1172,10 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         fresh_verification_policy="none by itself",
         ess_admission_policy="none by itself",
         target_status_telemetry="endpoint target finite health is fail-closed; per-chain-step status trace unsupported",
-        runner_injection_policy="only through bind_neural_force_hmc_tuning_runner for ordinary public tuning",
+        runner_injection_policy=(
+            "only through bind_neural_force_hmc_tuning_runner and "
+            "TensorFlowHMCKernelTuningConfig at the public facade"
+        ),
         identity_bindings=("force identity", "endpoint target identity", "coordinate route"),
         source_closure_policy="serialized by the repository-issued binding",
         replacement="tune_hmc_kernel",
@@ -1066,12 +1194,18 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         interface_kind="runner_binding_factory",
         capability_status="tested_supported",
         artifact_authority=False,
-        algorithm_family="ordinary_tuner_bound_neural_force_hmc",
+        algorithm_family="typed_position_field_hmc_mechanics",
         target_contract="coordinate-consistent frozen force and exact raw-coordinate endpoint potential",
-        coordinate_prerequisite="ordinary tuner native affine mass wrapper; identity fallback forbidden",
-        mass_policy="owned by tune_hmc_kernel and consumed through native affine coordinates",
-        step_size_policy="owned by tune_hmc_kernel across every stage",
-        trajectory_policy="owned by tune_hmc_kernel across every stage",
+        coordinate_prerequisite=(
+            "TensorFlow tuning branch native affine mass wrapper; identity fallback "
+            "for a direct low-level call is diagnostic only"
+        ),
+        mass_policy="owned by the typed TensorFlow mechanics branch",
+        step_size_policy="owned by the typed TensorFlow mechanics branch",
+        trajectory_policy=(
+            "powers-of-two candidate screen owned by the typed TensorFlow mechanics "
+            "branch; not the ordinary broad-grid policy"
+        ),
         fresh_verification_policy="fresh injected-runner fixed-kernel health and acceptance verification",
         ess_admission_policy="disabled for ordinary tuning admission",
         target_status_telemetry="equivalent fail-closed endpoint target, finite, divergence, energy, and movement evidence",
@@ -1092,7 +1226,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         nonclaims=_PUBLIC_TUNER_NONCLAIMS,
         evidence_anchors=(
             "tests/test_neural_force_hmc.py::test_typed_tuning_binding_validates_identity_and_telemetry",
-            "tests/test_hmc_kernel_tuning_public_api.py::test_public_tuner_threads_typed_runner_binding",
+            "tests/test_hmc_tuning_dispatch.py::test_tensorflow_config_limits_authority_to_mechanics_handoff",
         ),
     ),
 )

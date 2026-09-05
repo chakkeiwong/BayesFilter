@@ -14,14 +14,22 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from bayesfilter.hmc_ordinary_selection_policy import (
+    ORDINARY_BROAD_FIXED_METRIC_POLICY_ID,
+    ORDINARY_BROAD_MAX_CANDIDATE_COUNT,
+    ORDINARY_BROAD_MAX_REFINEMENT_L_GRID,
+    ORDINARY_BROAD_PRIMARY_L_GRID,
+)
+
 
 OPERATIONAL_HMC_BUDGET_POLICY_ID = (
     "bayesfilter.hmc_operational_statistical_work.v1"
 )
-# The generic Phase 5 route uses the existing joint-grid algorithm identifier,
-# but needs a distinct route marker so its bounded grid is not confused with
-# the historical three-candidate selector.  Keep the marker local to the
-# manifest contract; the public algorithm id remains backwards compatible.
+# Broad ordinary selection and the lower-level joint-grid diagnostic both tune
+# epsilon per L, but they have different candidate construction and bounds.
+BROAD_FIXED_METRIC_OPERATIONAL_ROUTE = (
+    "operational_broad_fixed_metric_selection_v1"
+)
 JOINT_L_EPSILON_OPERATIONAL_ROUTE = "operational_joint_l_epsilon_grid_v1"
 JOINT_L_EPSILON_INITIAL_GRID_WIDTH = 7
 JOINT_L_EPSILON_EDGE_REPAIR_ROUND_CAP = 2
@@ -284,14 +292,14 @@ def build_public_hmc_work_manifest(
     selection_attempts_per_outer_attempt: Sequence[int],
     max_leapfrog_steps: int,
     policy: HMCOperationalStatisticalWorkPolicy | None = None,
-    algorithm_id: str = "operational_paired_fixed_trajectory_selection_v3",
+    algorithm_id: str = ORDINARY_BROAD_FIXED_METRIC_POLICY_ID,
     run_class: str = "serious",
     route_marker: str | None = None,
-    joint_tune_budget_schedule: Sequence[int] | None = None,
-    joint_tune_num_results: int | None = None,
-    joint_screen_num_results: int | None = None,
-    joint_screen_num_burnin_steps: int | None = None,
-    joint_repair_screen_count: int = JOINT_L_EPSILON_REPAIR_SCREEN_COUNT,
+    per_l_tune_budget_schedule: Sequence[int] | None = None,
+    per_l_tune_num_results: int | None = None,
+    per_l_screen_num_results: int | None = None,
+    per_l_screen_num_burnin_steps: int | None = None,
+    per_l_repair_screen_count: int = JOINT_L_EPSILON_REPAIR_SCREEN_COUNT,
 ) -> Mapping[str, Any]:
     """Build the conservative public upper bound before runtime initialization."""
 
@@ -320,49 +328,83 @@ def build_public_hmc_work_manifest(
         raise ValueError("algorithm_id and run_class must be non-empty")
 
     route = None if route_marker is None else str(route_marker)
+    if route is None and algorithm == ORDINARY_BROAD_FIXED_METRIC_POLICY_ID:
+        route = BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
     if route == "":
         raise ValueError("route_marker must be non-empty when provided")
-    joint_arguments = (
-        joint_tune_budget_schedule,
-        joint_tune_num_results,
-        joint_screen_num_results,
-        joint_screen_num_burnin_steps,
-    )
-    if route is not None and route != JOINT_L_EPSILON_OPERATIONAL_ROUTE:
-        raise ValueError(f"unsupported route_marker: {route}")
-    if route != JOINT_L_EPSILON_OPERATIONAL_ROUTE and any(
-        value is not None for value in joint_arguments
+    if (
+        route == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+        and per_l_tune_budget_schedule is None
+        and per_l_tune_num_results is None
+        and per_l_screen_num_results is None
+        and per_l_screen_num_burnin_steps is None
     ):
-        raise ValueError("joint route arguments require the joint route marker")
+        maximum_tune_budget = max(metric)
+        per_l_tune_budget_schedule = (
+            (maximum_tune_budget + 3) // 4,
+            (maximum_tune_budget + 1) // 2,
+            maximum_tune_budget,
+        )
+        per_l_tune_num_results = active.exact_l_tune_result_steps
+        per_l_screen_num_results = active.initial_candidate_results
+        per_l_screen_num_burnin_steps = active.candidate_burnin_steps
+    per_l_arguments = (
+        per_l_tune_budget_schedule,
+        per_l_tune_num_results,
+        per_l_screen_num_results,
+        per_l_screen_num_burnin_steps,
+    )
+    per_l_routes = {
+        BROAD_FIXED_METRIC_OPERATIONAL_ROUTE,
+        JOINT_L_EPSILON_OPERATIONAL_ROUTE,
+    }
+    if route is not None and route not in per_l_routes:
+        raise ValueError(f"unsupported route_marker: {route}")
+    if route not in per_l_routes and any(
+        value is not None for value in per_l_arguments
+    ):
+        raise ValueError("per-L route arguments require a per-L route marker")
+    if (
+        route == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+        and algorithm != ORDINARY_BROAD_FIXED_METRIC_POLICY_ID
+    ):
+        raise ValueError("broad route marker requires the broad ordinary algorithm")
+    if (
+        route == JOINT_L_EPSILON_OPERATIONAL_ROUTE
+        and algorithm == ORDINARY_BROAD_FIXED_METRIC_POLICY_ID
+    ):
+        raise ValueError("broad ordinary algorithm requires the broad route marker")
 
     selection_attempt_total = sum(selection_attempts)
+    per_l_route = route in per_l_routes
+    broad_route = route == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
     joint_route = route == JOINT_L_EPSILON_OPERATIONAL_ROUTE
-    if joint_route:
-        if any(value is None for value in joint_arguments):
+    if per_l_route:
+        if any(value is None for value in per_l_arguments):
             raise ValueError(
-                "joint route requires tune budget, tune result, and screen counts"
+                "per-L route requires tune budget, tune result, and screen counts"
             )
         tune_budgets = tuple(
-            _strict_positive_int(item, name="joint tune budget")
-            for item in joint_tune_budget_schedule or ()
+            _strict_positive_int(item, name="per-L tune budget")
+            for item in per_l_tune_budget_schedule or ()
         )
         if not tune_budgets:
-            raise ValueError("joint tune budget schedule must be non-empty")
+            raise ValueError("per-L tune budget schedule must be non-empty")
         tune_results = _strict_positive_int(
-            joint_tune_num_results,
-            name="joint tune results",
+            per_l_tune_num_results,
+            name="per-L tune results",
         )
         screen_results = _strict_positive_int(
-            joint_screen_num_results,
-            name="joint screen results",
+            per_l_screen_num_results,
+            name="per-L screen results",
         )
         screen_burnin = _strict_positive_int(
-            joint_screen_num_burnin_steps,
-            name="joint screen burnin steps",
+            per_l_screen_num_burnin_steps,
+            name="per-L screen burnin steps",
         )
         repair_screen_count = _strict_nonnegative_int(
-            joint_repair_screen_count,
-            name="joint repair screen count",
+            per_l_repair_screen_count,
+            name="per-L repair screen count",
         )
         # Rebind the policy identity to the exact generic-grid counts and its
         # fixed candidate bound.  This keeps the policy hash tied to the
@@ -374,7 +416,11 @@ def build_public_hmc_work_manifest(
             exact_l_tune_adaptation_steps=tune_budgets[-1],
             fresh_verification_results=active.fresh_verification_results,
             fresh_verification_burnin_steps=active.fresh_verification_burnin_steps,
-            candidate_count_upper_bound=joint_l_epsilon_grid_candidate_count_bound(),
+            candidate_count_upper_bound=(
+                ORDINARY_BROAD_MAX_CANDIDATE_COUNT
+                if broad_route
+                else joint_l_epsilon_grid_candidate_count_bound()
+            ),
             replications_per_candidate=1,
             exact_l_tune_result_steps=tune_results,
             fresh_verification_starts_per_outer_attempt=(
@@ -383,7 +429,7 @@ def build_public_hmc_work_manifest(
             chain_count=active.chain_count,
             policy_id=active.policy_id,
         )
-        joint_work = joint_l_epsilon_grid_work_bound(
+        per_l_work = joint_l_epsilon_grid_work_bound(
             tune_budget_schedule=tune_budgets,
             tune_num_results=tune_results,
             screen_num_results=screen_results,
@@ -395,7 +441,7 @@ def build_public_hmc_work_manifest(
         initial_candidate_transitions = (
             selection_attempt_total
             * candidate_count_upper_bound
-            * joint_work["total_transitions_per_ladder"]
+            * per_l_work["total_transitions_per_ladder"]
         )
         extension_candidate_transitions = 0
         retune_starts_per_selection_attempt = 0
@@ -504,22 +550,43 @@ def build_public_hmc_work_manifest(
         "reports_gpu_or_xla_readiness": False,
         "nonclaims": OPERATIONAL_HMC_BUDGET_NONCLAIMS,
     }
-    if joint_route:
+    if per_l_route:
+        route_prefix = "broad" if broad_route else "joint"
         payload.update(
             {
-                "route_marker": JOINT_L_EPSILON_OPERATIONAL_ROUTE,
-                "joint_grid_initial_width": JOINT_L_EPSILON_INITIAL_GRID_WIDTH,
-                "joint_grid_edge_repair_round_cap": JOINT_L_EPSILON_EDGE_REPAIR_ROUND_CAP,
-                "joint_grid_final_local_width": JOINT_L_EPSILON_FINAL_LOCAL_GRID_WIDTH,
-                "joint_grid_ladder_count_upper_bound": candidate_count_upper_bound,
-                "joint_grid_ladder_work_per_candidate": joint_work,
-                "joint_grid_repair_screen_count": repair_screen_count,
-                "joint_tune_budget_schedule": tune_budgets,
-                "joint_tune_num_results": tune_results,
-                "joint_screen_num_results": screen_results,
-                "joint_screen_num_burnin_steps": screen_burnin,
+                "route_marker": route,
+                f"{route_prefix}_grid_ladder_count_upper_bound": (
+                    candidate_count_upper_bound
+                ),
+                f"{route_prefix}_grid_ladder_work_per_candidate": per_l_work,
+                f"{route_prefix}_grid_repair_screen_count": repair_screen_count,
+                f"{route_prefix}_tune_budget_schedule": tune_budgets,
+                f"{route_prefix}_tune_num_results": tune_results,
+                f"{route_prefix}_screen_num_results": screen_results,
+                f"{route_prefix}_screen_num_burnin_steps": screen_burnin,
             }
         )
+        if broad_route:
+            payload.update(
+                {
+                    "broad_primary_grid_width": len(ORDINARY_BROAD_PRIMARY_L_GRID),
+                    "broad_refinement_grid_width_upper_bound": len(
+                        ORDINARY_BROAD_MAX_REFINEMENT_L_GRID
+                    ),
+                }
+            )
+        else:
+            payload.update(
+                {
+                    "joint_grid_initial_width": JOINT_L_EPSILON_INITIAL_GRID_WIDTH,
+                    "joint_grid_edge_repair_round_cap": (
+                        JOINT_L_EPSILON_EDGE_REPAIR_ROUND_CAP
+                    ),
+                    "joint_grid_final_local_width": (
+                        JOINT_L_EPSILON_FINAL_LOCAL_GRID_WIDTH
+                    ),
+                }
+            )
         payload["candidate_replication_slots_per_selection_attempt"] = (
             candidate_replication_slots
         )
@@ -537,18 +604,31 @@ def build_serious_public_hmc_work_manifest(
     policy: HMCOperationalStatisticalWorkPolicy | None = None,
 ) -> Mapping[str, Any]:
     attempts = _strict_positive_int(outer_attempt_count, name="outer_attempt_count")
+    active = HMCOperationalStatisticalWorkPolicy() if policy is None else policy
+    if not isinstance(active, HMCOperationalStatisticalWorkPolicy):
+        raise TypeError("policy must be HMCOperationalStatisticalWorkPolicy")
+    metric_schedule = serious_metric_adaptation_schedule(
+        target_dimension=target_dimension,
+        outer_attempt_count=attempts,
+    )
+    maximum_tune_budget = max(metric_schedule)
     return build_public_hmc_work_manifest(
         target_dimension=target_dimension,
-        metric_adaptation_steps=serious_metric_adaptation_schedule(
-            target_dimension=target_dimension,
-            outer_attempt_count=attempts,
-        ),
+        metric_adaptation_steps=metric_schedule,
         selection_attempts_per_outer_attempt=tuple(
             min(5, attempts - index) for index in range(attempts)
         ),
         max_leapfrog_steps=max_leapfrog_steps,
-        policy=policy,
+        policy=active,
         run_class="serious",
+        per_l_tune_budget_schedule=(
+            (maximum_tune_budget + 3) // 4,
+            (maximum_tune_budget + 1) // 2,
+            maximum_tune_budget,
+        ),
+        per_l_tune_num_results=active.exact_l_tune_result_steps,
+        per_l_screen_num_results=active.initial_candidate_results,
+        per_l_screen_num_burnin_steps=active.candidate_burnin_steps,
     )
 
 
@@ -615,12 +695,30 @@ def validate_public_hmc_work_manifest(payload: Mapping[str, Any]) -> Mapping[str
         algorithm_id=str(manifest.get("algorithm_id", "")),
         run_class=str(manifest.get("run_class", "")),
         route_marker=manifest.get("route_marker"),
-        joint_tune_budget_schedule=manifest.get("joint_tune_budget_schedule"),
-        joint_tune_num_results=manifest.get("joint_tune_num_results"),
-        joint_screen_num_results=manifest.get("joint_screen_num_results"),
-        joint_screen_num_burnin_steps=manifest.get("joint_screen_num_burnin_steps"),
-        joint_repair_screen_count=manifest.get(
-            "joint_grid_repair_screen_count",
+        per_l_tune_budget_schedule=manifest.get(
+            "broad_tune_budget_schedule"
+            if manifest.get("route_marker") == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+            else "joint_tune_budget_schedule"
+        ),
+        per_l_tune_num_results=manifest.get(
+            "broad_tune_num_results"
+            if manifest.get("route_marker") == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+            else "joint_tune_num_results"
+        ),
+        per_l_screen_num_results=manifest.get(
+            "broad_screen_num_results"
+            if manifest.get("route_marker") == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+            else "joint_screen_num_results"
+        ),
+        per_l_screen_num_burnin_steps=manifest.get(
+            "broad_screen_num_burnin_steps"
+            if manifest.get("route_marker") == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+            else "joint_screen_num_burnin_steps"
+        ),
+        per_l_repair_screen_count=manifest.get(
+            "broad_grid_repair_screen_count"
+            if manifest.get("route_marker") == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+            else "joint_grid_repair_screen_count",
             JOINT_L_EPSILON_REPAIR_SCREEN_COUNT,
         ),
     )

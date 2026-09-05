@@ -289,7 +289,11 @@ def test_frozen_step_trajectory_stage_passes_with_internal_candidates_and_real_h
     assert result.passed is True
     assert result.final_status == "passed"
     assert result.candidate_generation["candidate_l_values"] == expected_candidates
+    assert result.candidate_generation["phase5_measured_epsilon_l_pair"] is True
     assert result.candidate_generation["phase5_joint_l_epsilon_algorithm"] is True
+    assert result.candidate_generation["phase5_algorithm_id"] == (
+        hmc_kernel_tuning.LEGACY_JOINT_L_EPSILON_ALGORITHM_ID
+    )
     assert result.candidate_generation["no_second_frozen_epsilon_l_search"] is True
     assert result.candidate_generation["internal_min_leapfrog"] == 3
     assert result.candidate_generation["internal_max_leapfrog"] == 25

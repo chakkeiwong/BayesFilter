@@ -2620,10 +2620,14 @@ def _json_ready(value: Any) -> Any:
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):
         return [_json_ready(item) for item in value]
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return {"__nonfinite__": value.__repr__()}
+        return value
     if hasattr(value, "tolist"):
-        return value.tolist()
+        return _json_ready(value.tolist())
     if hasattr(value, "item"):
-        return value.item()
+        return _json_ready(value.item())
     return value
 
 

@@ -28,7 +28,7 @@ def test_route_registry_has_exactly_two_active_interfaces() -> None:
     )
     assert all(record.artifact_authority for record in active)
     assert hmc_tuning_route_registry_payload()["schema"] == (
-        "bayesfilter.hmc_tuning_route_registry.v1"
+        "bayesfilter.hmc_tuning_route_registry.v2"
     )
 
 
@@ -40,6 +40,44 @@ def test_historical_route_cannot_claim_active_authority() -> None:
     assert record.artifact_authority is False
     with pytest.raises(ValueError, match="not active"):
         require_active_hmc_tuning_route(record.interface_name)
+
+
+@pytest.mark.parametrize(
+    "name",
+    (
+        "discover_fixed_transport_hmc_candidates",
+        "run_fixed_transport_hmc_candidate_campaign",
+        "refine_fixed_transport_hmc_candidates",
+    ),
+)
+def test_fixed_transport_candidate_helpers_are_diagnostic_only(name: str) -> None:
+    record = hmc_tuning_route_record(name)
+
+    assert record.role == "diagnostic"
+    assert record.replacement == "tune_fixed_transport_hmc_kernel"
+    assert record.artifact_authority is False
+    with pytest.raises(ValueError, match="not active"):
+        require_active_hmc_tuning_route(name)
+
+
+@pytest.mark.parametrize(
+    "name",
+    (
+        "run_fixed_mass_step_tuning_diagnostic",
+        "run_windowed_mass_adaptation_diagnostic",
+        "run_fixed_trajectory_tuning_diagnostic",
+        "run_gaussian_dual_averaging_diagnostic",
+        "run_hmc_start_bank_diagnostic",
+    ),
+)
+def test_ordinary_diagnostic_helpers_are_not_tuners(name: str) -> None:
+    record = hmc_tuning_route_record(name)
+
+    assert record.role == "diagnostic"
+    assert record.replacement == "tune_hmc_kernel"
+    assert record.artifact_authority is False
+    with pytest.raises(ValueError, match="not active"):
+        require_active_hmc_tuning_route(name)
 
 
 def test_inventory_has_no_unclassified_or_stale_routes() -> None:

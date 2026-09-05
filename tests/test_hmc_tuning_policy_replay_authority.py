@@ -11,6 +11,8 @@ import pytest
 
 from bayesfilter.inference import (
     HMCKernelTuningConfig,
+    ORDINARY_BROAD_FIXED_METRIC_POLICY_ID,
+    ORDINARY_BROAD_PRIMARY_L_GRID,
     ORDINARY_ENGINEERING_JOINT_L_EPSILON_POLICY_ID,
     ORDINARY_LEGACY_JOINT_L_EPSILON_POLICY_ID,
     ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID,
@@ -58,8 +60,13 @@ def test_config_payload_carries_policy_identity() -> None:
     payload = HMCKernelTuningConfig.standard().payload()
     policy = payload["ordinary_selection_policy"]
 
-    assert policy["policy_id"] == ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID
-    assert policy["epsilon_l_treatment"].startswith("shared_frozen_epsilon")
+    assert policy["policy_id"] == ORDINARY_BROAD_FIXED_METRIC_POLICY_ID
+    assert tuple(policy["primary_l_grid"]) == ORDINARY_BROAD_PRIMARY_L_GRID
+    assert policy["epsilon_l_treatment"] == (
+        "independent_epsilon_ladder_for_every_l"
+    )
+    assert policy["refinement_rounds"] == 1
+    assert policy["claim_bearing_blockers"] == ()
 
 
 def test_claim_bearing_tuning_replay_rejects_numpy_blocker_before_validation() -> None:

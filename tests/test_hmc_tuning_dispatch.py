@@ -26,7 +26,6 @@ from bayesfilter.inference import hmc_tensorflow_tuning
 from bayesfilter.inference import hmc_tuning_dispatch
 from bayesfilter.hmc_route_contract import (
     LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
-    NonAuthoritativeHMCAlgorithmRoute,
 )
 
 
@@ -116,16 +115,10 @@ def test_legacy_dispatch_calls_private_implementation_once(
     assert observed["adapter"] == "adapter"
 
 
-def test_public_ordinary_dispatch_rejects_legacy_route_before_adapter_use() -> None:
-    config = hmc_kernel_tuning.HMCKernelTuningConfig(
-        algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
-    )
-
-    with pytest.raises(NonAuthoritativeHMCAlgorithmRoute):
-        hmc_tuning_dispatch.tune_hmc_kernel(
-            adapter=object(),
-            initial_position=object(),
-            config=config,
+def test_public_ordinary_config_rejects_legacy_route_before_adapter_use() -> None:
+    with pytest.raises(ValueError, match="one ordinary tuning policy"):
+        hmc_kernel_tuning.HMCKernelTuningConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
         )
 
 

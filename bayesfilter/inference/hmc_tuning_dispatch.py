@@ -1,4 +1,4 @@
-"""Public dispatch for legacy and TensorFlow-native HMC tuning."""
+"""Public dispatch for ordinary and typed TensorFlow HMC tuning."""
 
 from __future__ import annotations
 
@@ -66,6 +66,13 @@ def tune_hmc_kernel(
             output_dir=output_dir,
             parameter_scales=parameter_scales,
             runner_binding=runner_binding,
+        )
+
+    if runner_binding is not None:
+        raise ValueError(
+            "runner_binding is supported only with "
+            "TensorFlowHMCKernelTuningConfig; ordinary HMCKernelTuningConfig "
+            "uses the exact adapter score and BayesFilter's default TFP runner"
         )
 
     from bayesfilter.inference.hmc_kernel_tuning import _run_canonical_hmc_tuning

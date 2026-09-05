@@ -84,6 +84,8 @@ __all__ = [
     "RetainedFrozenKernelAdapterReplayResult",
     "REPLAY_ROLE_MECHANICS_ONLY",
     "REPLAY_ROLE_CLAIM_BEARING_RETAINED",
+    "ORDINARY_BROAD_FIXED_METRIC_POLICY_ID",
+    "ORDINARY_BROAD_PRIMARY_L_GRID",
     "ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID",
     "ORDINARY_LEGACY_JOINT_L_EPSILON_POLICY_ID",
     "ORDINARY_ENGINEERING_JOINT_L_EPSILON_POLICY_ID",
@@ -615,6 +617,9 @@ _DIRECT_EXPORTS = {
     ),
     "load_tensorflow_hmc_tuning_result": "bayesfilter.inference.hmc_tuning_dispatch",
     "tune_hmc_kernel": "bayesfilter.inference.hmc_tuning_dispatch",
+    "tune_fixed_transport_hmc_kernel": (
+        "bayesfilter.inference.fixed_transport_hmc_tuning_tf"
+    ),
     "DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS": (
         "bayesfilter.inference.neural_force_hmc"
     ),

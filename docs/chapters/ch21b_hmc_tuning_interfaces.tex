@@ -40,30 +40,51 @@ the registry identifies the test that checks each behavioral statement.
 \section{Choose the route from the target}
 
 The decision starts with the probability measure, not with a convenient
-function name.
+function name.  There are exactly two public tuners.  Each supported situation
+has one primary instruction and at most one weaker conditional alternative.
 
-\begin{enumerate}
-  \item If an adapter supplies one exact log target and its matching score in
-    ordinary coordinates, use
-    \code{tune\_hmc\_kernel} with
-    \code{HMCKernelTuningConfig}.
-  \item If a genuine frozen map \(T:z\mapsto\theta\) supplies an exact
-    transformed value and score, use
-    \texttt{tune\_fixed\_\allowbreak transport\_hmc\_\allowbreak kernel}
-    with the corresponding fixed-transport configuration.
-  \item If proposal mechanics use a frozen position-only force in ordinary
-    coordinates, bind it with
-    \code{bind\_neural\_force\_hmc\_tuning\_runner} and pass the resulting
-    typed binding to \code{tune\_hmc\_kernel}.
-  \item If none of those contracts describes the target and coordinates, stop.
-    A diagnostic runner is not a substitute for an unsupported public route.
-\end{enumerate}
+\begin{longtable}{p{0.25\textwidth}p{0.34\textwidth}p{0.32\textwidth}}
+\toprule
+Situation & Primary instruction & Conditional alternative or stop \\
+\midrule
+\endfirsthead
+\toprule
+Situation & Primary instruction & Conditional alternative or stop \\
+\midrule
+\endhead
+Exact log target and matching exact score in ordinary coordinates &
+Use \code{tune\_hmc\_kernel} with \code{HMCKernelTuningConfig}; this is the
+broad-first ordinary procedure. & Reuse an admitted result only when its
+complete tuning scope is unchanged; otherwise retune. \\
+\addlinespace
+One frozen nonlinear transport with the exact Jacobian-corrected transformed
+value and matching score & Use
+\texttt{tune\_fixed\_\allowbreak transport\_hmc\_\allowbreak kernel} with the
+measured joint-grid policy. & The legacy directional policy is available only
+for mechanics debugging and cannot issue a verified handoff. \\
+\addlinespace
+Deterministic position-only proposal field that is not the exact score, with an
+exact endpoint potential in the same coordinates & Build the repository
+binding and call \code{tune\_hmc\_kernel} with
+\texttt{TensorFlow\allowbreak HMC\allowbreak Kernel\allowbreak Tuning\allowbreak Config}.
+& This is mechanics/candidate evidence
+only.  Stop if artifact-authoritative tuning is required. \\
+\addlinespace
+Chain-mechanics smoke or historical replay & Use the exact runner or helper
+named by the test or record. & Never use that result as a tuning handoff. \\
+\addlinespace
+No matching contract & Stop. & Do not relabel a runner, helper, arbitrary
+force, or partial derivative as a supported tuner. \\
+\bottomrule
+\end{longtable}
 
-The complete generated registry follows.  It is rendered from
-\path{HMC_TUNING_INTERFACE_CAPABILITIES}; it is not a separately maintained
-summary.
+An exact ordinary score uses the first row without a runner binding.  A
+different deterministic proposal field uses the third row and retains its
+mechanics-only authority boundary.
 
-\input{generated/hmc_tuning_route_table}
+The complete generated registry appears in
+Section~\ref{sec:bf-hmc-complete-interface-inventory}.  It is an audit
+inventory, not a menu of peer tuning procedures.
 
 \section{Ordinary-coordinate tuning}
 
@@ -71,12 +92,10 @@ The public import is
 \code{from bayesfilter.inference import HMCKernelTuningConfig,
 tune\_hmc\_kernel}.  With the default runner, the adapter must bind its
 dimension, stable signature, target scope, exact log value, matching score,
-and value--score capability.  The v2 typed deterministic-field branch instead
-binds an exact endpoint potential and a frozen, honestly labeled position-only
-proposal field; it does not relabel that field as an exact score.  The public
-configuration selects a reviewed preset and target policy.  It does not let a
-model caller insert candidate grids, mass windows, tuning draw counts, a bare
-chain callback, or private handoff mechanics.
+and value--score capability.  This configuration selects the one reviewed
+ordinary policy.  It does not let a model caller insert candidate grids, mass
+windows, tuning draw counts, a runner binding, a bare chain callback, or
+private handoff mechanics.
 
 The ordinary route performs the following linked stages:
 
@@ -85,15 +104,32 @@ The ordinary route performs the following linked stages:
   \item run a bootstrap screen for a viable fixed-(L) step;
   \item by default, update mass in bounded windows and requalify the step after
     every coordinate change;
-  \item screen the bounded operational trajectory candidates
-    \(\{\lfloor L_0/2\rfloor,L_0,2L_0\}\) with one shared/frozen epsilon and
-    three replications per candidate;
-  \item retune epsilon at the nominated \(L\), then freeze both controls;
-  \item screen the selected candidate and apply bounded repair when a declared
-    repair trigger fires; and
+  \item evaluate the complete primary grid
+    \(L\in\{3,5,9,13,18,25\}\), tuning epsilon independently for every
+    value from the same frozen metric and checked four-chain start bank;
+  \item evaluate one refinement barrier containing every untested floor and
+    ceiling integer midpoint adjacent to a surviving primary value, again with
+    an independent epsilon tune for every \(L\);
+  \item order eligible measured pairs deterministically for verification,
+    without treating that order as a statistical ranking; and
   \item freeze the kernel and run fresh verification on draws not used for
     candidate selection.
 \end{enumerate}
+
+The geometry-derived trajectory target helps order viable candidates.  It does
+not construct the primary grid, eliminate a primary value before measurement,
+or trigger a second local \(L\) search after the broad barriers.
+
+Fresh verification consumes the eligible measured pairs directly and starts
+at most two candidates from the deterministic queue in one attempt.  A passing
+candidate ends tuning.  Otherwise, a consistent acceptance-direction signal
+may seed another complete attempt, but it cannot bypass mass adaptation or
+either broad-grid barrier; conflicting signals do not mutate epsilon.  The
+public configuration fixes
+\path{operational_verification_bracket_policy} at
+\path{single_repair}.  The old \path{one_verified_log_midpoint} procedure
+is accepted only by the explicitly selected historical shared-epsilon helper
+route and is not an ordinary public-tuner option.
 
 Each candidate binds the mass-artifact signature, target scope, coordinates, and
 metric signature.  A mass-signature change invalidates the selection and its
@@ -101,17 +137,30 @@ calibration: the stage emits a hard veto and no final handoff, and fresh tuning
 is required under the new geometry.
 
 For the ordinary configuration, the resolved public variant is
-\texttt{ordinary\_hmc} with algorithm identifier
-\texttt{operational\_paired\_fixed\_trajectory\_selection\_v3}.  The explicit
-\texttt{joint\_l\_epsilon\_grid\_fixed\_mass\_hmc} identifier reaches a
-legacy per-\(L\) epsilon-grid branch used for diagnostics and compatibility;
-the public artifact-authority boundary rejects that identifier.  The route
-payload separates \code{operational\_authority}, replayable
-\code{artifact\_authority}, and \code{scientific\_promotion\_authority}.
+\path{ordinary_hmc} with algorithm identifier
+\path{ordinary_broad_fixed_metric_selection_v1}.  The public config
+fixes the upper bound at \(L=25\) so that it cannot silently truncate the
+primary grid, and it exposes neither a caller-selected grid nor the private
+P4-E covariance-multiplier switch.  The former shared-epsilon
+\path{operational_paired_fixed_trajectory_selection_v3} identity and the
+internal \path{joint_l_epsilon_grid_fixed_mass_hmc} identity remain
+readable compatibility records; the public artifact-authority boundary rejects
+both.  The route
+payload separates \path{operational_authority}, replayable
+\path{artifact_authority}, and \path{scientific_promotion_authority}.
 Operational or replayable authority does not establish a scientific claim.
 The current ordinary result is explicitly non-admitting for claim-bearing use
 while its known NumPy runtime-policy debt and XLA-default mismatch remain
 unresolved.
+
+The package exports one implementation entry for each public tuner.  The
+ordinary export delegates to
+\path{bayesfilter.inference.hmc_tuning_dispatch.tune_hmc_kernel}; the ordinary
+implementation module contains only the private canonical executor.  The
+fixed-transport package export delegates to the sole implementation in
+\path{bayesfilter.inference.fixed_transport_hmc_tuning_tf}.  Chain runners,
+stage helpers, and compatibility procedures do not define additional public
+tuners.
 
 Geometry is a shared responsibility rather than an unspecified tuner default.
 The caller supplies the initial center and may supply a local geometry
@@ -161,7 +210,8 @@ that constant rather than hard-code a copied number.
 The ordinary tuning family still contains NumPy and host numerical and
 serialization paths.  This is BayesFilter-owned backend migration debt, so the
 ordinary public result is currently non-admitting for claim-bearing use.  The
-TensorFlow-only route has two evidence roles.  A \code{diagnostic\_only} result
+separate TensorFlow-only proposal-field branch has two evidence roles.  A
+\code{diagnostic\_only} result
 cannot hand off.  A \code{candidate} result may hand the same frozen transition
 to a retained pilot only after a predeclared trajectory candidate is selected,
 the metric update is rank eligible and valid, final verification has zero
@@ -176,7 +226,7 @@ posterior diagnostics and do not enter this tuning handoff.  The ordinary
 configuration currently defaults to \code{use\_xla=False}, which is a mismatch
 with the repository XLA-default policy rather than an implicit qualification.
 A claim-adjacent consumer must wait for an XLA-on default or a scope-bound
-reviewed exception.  The route's exposed tuning
+reviewed exception.  The typed proposal-field branch's exposed tuning
 hyperparameters have no numeric constructor defaults, but the implementation
 still fixes four chains and \code{float64}.  A candidate supplies an explicit
 raw-position bank \(q_i\), \(i=1,\ldots,4\).  With initial diagonal factor
@@ -286,8 +336,8 @@ phase can have high acceptance and little net movement.  Consequently, a
 factor-of-two increase after a high-acceptance screen (or decrease after a
 low-acceptance screen) is a proposal for another experiment, not evidence
 about that experiment.  The former ladder is retained only as
-\texttt{legacy\_directional\_diagnostic\_v1}; its records are stamped
-\texttt{diagnostic\_only\_legacy\_policy} and cannot be handed to a retained
+\path{legacy_directional_diagnostic_v1}; its records are stamped
+\path{diagnostic_only_legacy_policy} and cannot be handed to a retained
 sampler.
 
 Under the measured policy, replicated fixed-kernel efficiency evidence is
@@ -303,7 +353,7 @@ separate retained-chain assessment.  Thus acceptance cannot by itself
 establish convergence, correctness, mode discovery, or sampler superiority.
 
 The July 2026 LGSSM validation caller is retained as historical compatibility
-code and explicitly uses \texttt{legacy\_directional\_diagnostic\_v1}.  Its
+code and explicitly uses \path{legacy_directional_diagnostic_v1}.  Its
 one-$L$ ladder can emit diagnostic records but cannot issue an
 artifact-authoritative handoff.  An active caller must provide a reviewed,
 target-specific measured grid before it can issue a claim-bearing result.
@@ -313,14 +363,14 @@ fixed-transport benchmark callers in this checkout: the weighted three-mode,
 paper-d100, German reverse-comparator, strong-smooth, defensive analytic,
 banana-repair, replication, q=20 CPU validation, q=20 global-mixing, q=20
 seed-B, and Chart-A six-$L$ scripts.  Their configurations select
-\texttt{FIXED\_TRANSPORT\_HMC\_LEGACY\_DIAGNOSTIC\_POLICY} and the historical
-\texttt{acceptance\_target\_distance} selector, so a bare
+\path{FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY} and the historical
+\path{acceptance_target_distance} selector, so a bare
 \texttt{passed} value cannot issue a current measured-grid handoff.  A caller
 that is intended to be active must replace that explicit legacy policy with a
-reviewed finite \texttt{step\_size\_candidates} grid and at least two
-\texttt{leapfrog\_grid} values before it can use the measured policy.
+reviewed finite \path{step_size_candidates} grid and at least two
+\path{leapfrog_grid} values before it can use the measured policy.
 
-\section{Neural-force mechanics inside the ordinary ladder}
+\section{Typed deterministic proposal-field mechanics}
 
 \code{run\_full\_chain\_neural\_force\_hmc} consumes a supplied mass
 coordinate system, fixed (L), and fixed or dual-averaged epsilon.  Directly
@@ -331,8 +381,14 @@ target.
 
 For a raw-coordinate frozen force, the public binding factory requires and
 identity-binds a coordinate-consistent endpoint potential and issues an
-\code{HMCTuningRunnerBinding}.  The ordinary tuner then owns the affine mass
-wrapper, epsilon, (L), screening, verification, and repair.  The binding
+\texttt{HMC\allowbreak Tuning\allowbreak Runner\allowbreak Binding}.  The
+binding is accepted by the public facade only together with
+\texttt{TensorFlow\allowbreak HMC\allowbreak Kernel\allowbreak Tuning\allowbreak Config};
+\texttt{HMC\allowbreak Kernel\allowbreak Tuning\allowbreak Config} rejects it
+and continues to use the exact adapter score.  The typed TensorFlow branch owns
+its affine mass wrapper, epsilon,
+(L), screening, verification, and repair.  This branch is not the canonical
+ordinary broad-grid policy, and its result remains mechanics-only.  The binding
 must report finite values, divergence and energy status, movement, endpoint
 target health, deterministic execution identity, and source closure.  It
 rejects the low-level runner's direct identity-coordinate fallback.  A bare
@@ -422,32 +478,43 @@ requires the original explicit geometry inputs and private array-bearing data.
 \subsection{Replay roles and claim authority}
 \label{sec:bf-hmc-replay-roles}
 
-The compatibility helpers
-\path{build_retained_frozen_kernel_hmc_adapter_from_tuning_payload} and
-\path{build_retained_frozen_kernel_hmc_adapter_from_tuning_result} are
-mechanics-only boundaries, despite their historical names.  New mechanics
-consumers may use the explicit
-\path{build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload}
-and \path{build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result}
-aliases.  A consumer that is eligible to make a claim must instead call one
-of the separately named claim-bearing builders:
-\path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload},
-\path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result},
-or \path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload}.
+Despite their historical names, these compatibility helpers are mechanics-only
+boundaries:
+\begin{itemize}[leftmargin=*,nosep]
+  \item \path{build_retained_frozen_kernel_hmc_adapter_from_tuning_payload}
+  \item \path{build_retained_frozen_kernel_hmc_adapter_from_tuning_result}
+\end{itemize}
+New mechanics consumers may use the corresponding explicit aliases:
+\begin{itemize}[leftmargin=*,nosep]
+  \item \path{build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload}
+  \item \path{build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result}
+\end{itemize}
+A claim-eligible consumer must instead call one of the separately named
+claim-bearing builders:
+{\footnotesize
+\begin{itemize}[leftmargin=*,nosep]
+  \item \path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload}
+  \item \path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result}
+  \item \path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload}
+\end{itemize}
+}
 
-The claim-bearing boundary requires a repository-issued \code{resolved_policy}
-with an empty \code{claim_bearing_blockers} collection and
-\code{claim_bearing_artifact_authority=True}.  Before reconstruction it
+The claim-bearing boundary requires a repository-issued \path{resolved_policy}
+with an empty \path{claim_bearing_blockers} collection.  It must also set
+\texttt{claim\_bearing\_artifact\_\allowbreak authority=True}.  Before
+reconstruction it
 recomputes the ordinary epsilon/L policy from the repository-owned
-\code{config} (or durable \code{tuning_config}) and compares the embedded
+\path{config} (or durable \path{tuning_config}) and compares the embedded
 policy and blocker list.  A caller-edited authority flag or blocker list
 therefore cannot grant authority.  The boundary also checks the persisted
 replay role, so a mechanics-only payload cannot acquire claim authority through
 a caller-supplied flag.  The current ordinary route fails this gate while its
-known NumPy runtime-policy and shared-epsilon selection blockers remain.  The
+known NumPy runtime-policy blocker remains.  The
 durable ordinary helper consequently emits the explicit
-\code{mechanics_only} role, \code{authority_status=mechanics_only_nonclaiming},
-and the source \code{tuning_config}; this describes reusable transition
+\path{mechanics_only} role,
+\texttt{authority\_status=\allowbreak mechanics\_only\_\allowbreak nonclaiming},
+and the source
+\path{tuning_config}; this describes reusable transition
 mechanics and does not admit posterior or scientific claims.
 
 \begin{longtable}{p{0.20\textwidth}p{0.34\textwidth}p{0.36\textwidth}}
@@ -482,3 +549,15 @@ readiness.  The route-selection example makes that authority boundary
 executable.
 
 \lstinputlisting[language=Python,caption={Capability-based route selection and expected chain-runner rejection.},label={lst:bf-hmc-tuning-route-selection}]{examples/hmc_tuning_route_selection.py}
+
+\section{Complete interface inventory}
+\label{sec:bf-hmc-complete-interface-inventory}
+
+The following table is rendered from
+\path{HMC_TUNING_INTERFACE_CAPABILITIES}; it is not a separately maintained
+summary.  Its diagnostic helpers cover fixed-mass steps, mass adaptation,
+trajectory selection, dual averaging, start banks, candidate discovery, and
+chain execution.  They have no artifact authority and name the relevant public
+tuner as their replacement.
+
+\input{generated/hmc_tuning_route_table}

@@ -6,14 +6,12 @@ initial mass artifact and derives a formula-based initial step size and
 leapfrog count.  Phase 3 runs a short fixed-kernel bootstrap screen and bounded
 epsilon repair from that geometry.  Phase 4 captures retained fixed-kernel
 diagnostic draws and feeds them to the reviewed windowed-mass diagnostic.  Phase
-5 has two explicitly distinguishable fixed-mass branches.  The public ordinary
-   configuration reaches the operational fixed-trajectory screen after an
-   operational warm-up: it uses one shared/frozen epsilon over a bounded
-   floor/anchor/double trajectory set and then retunes epsilon at the nominated
-   L.  An explicit legacy or internal construction can instead run the joint
-   (L, epsilon) grid; that branch is diagnostic/non-promoting pending an owner
-   policy decision.  Phase 6 screens the selected pair without silently changing
-   the branch's policy.
+5 has explicitly distinguishable fixed-mass branches.  The public ordinary
+configuration runs a broad primary L barrier, independently tunes epsilon at
+every L, and performs one survivor-midpoint refinement round.  The older
+shared-epsilon, anchor-offset, and explicit joint-grid branches remain
+diagnostic compatibility paths.  Phase 6 cannot silently replace the public
+broad policy with another L search.
 Phase 7 runs the internal tune/verify/repair loop.  Phase 8 exposes a one-call
 public wrapper while keeping raw HMC tuning mechanics internal to BayesFilter
 policy.
@@ -47,15 +45,23 @@ from bayesfilter.hmc_route_contract import (
     HMC_TOP_LEVEL_SELECTION_STAGE,
     HMC_WINDOWED_MASS_STAGE,
     LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+    LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
     LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
-    OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+    ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
     OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
     HMCAlgorithmRouteDecision,
     require_hmc_artifact_authority_route,
     require_hmc_algorithm_route,
     windowed_algorithm_for_selection_algorithm,
 )
+from bayesfilter.hmc_ordinary_selection_policy import (
+    ORDINARY_BROAD_FIXED_METRIC_POLICY_ID,
+    ORDINARY_BROAD_MAX_LEAPFROG_STEPS,
+    ORDINARY_BROAD_PRIMARY_L_GRID,
+    ordinary_broad_refinement_l_values,
+)
 from bayesfilter.hmc_budget_contract import (
+    BROAD_FIXED_METRIC_OPERATIONAL_ROUTE,
     HMCOperationalStatisticalWorkPolicy,
     JOINT_L_EPSILON_OPERATIONAL_ROUTE,
     OPERATIONAL_HMC_BUDGET_POLICY_ID,
@@ -846,11 +852,9 @@ _OPERATIONAL_VERIFICATION_BRACKET_POLICIES = {
     _OPERATIONAL_VERIFICATION_BRACKET_POLICY_ONE_LOG_MIDPOINT,
 }
 
-# These identifiers describe the executable epsilon/L policy.  They are kept
-# separate from the algorithm-route identifiers because one route can expose
-# more than one internally reachable stage policy.  The ordinary shared-
-# epsilon policy is intentionally non-claim-bearing until a target-specific
-# measured pair policy is reviewed and promoted.
+# These identifiers describe executable epsilon/L policies.  The broad policy
+# is the sole public ordinary policy.  The remaining identifiers are retained
+# only to classify historical and lower-level diagnostic payloads.
 ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID = (
     "ordinary_shared_epsilon_screen_v3"
 )
@@ -905,18 +909,40 @@ def resolve_ordinary_hmc_selection_policy(
                 "engineering_probe_route_not_claim_bearing",
             ),
         }
-    return {
-        "policy_id": ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID,
-        "algorithm_id": selected,
-        "epsilon_l_treatment": "shared_frozen_epsilon_screen_then_exact_l_retune",
-        "candidate_construction": "floor_anchor_double_trajectory_screen",
-        "mass_signature_frozen_during_selection": True,
-        "seed_separation": "three_replications_with_fresh_screen_seeds",
-        "authority_status": "diagnostic_only_non_promoting",
-        "claim_bearing_blockers": (
-            "shared_epsilon_screen_not_joint_pair_selection",
-        ),
-    }
+    if selected == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID:
+        return {
+            "policy_id": ORDINARY_BROAD_FIXED_METRIC_POLICY_ID,
+            "algorithm_id": selected,
+            "epsilon_l_treatment": "independent_epsilon_ladder_for_every_l",
+            "candidate_construction": (
+                "broad_primary_grid_then_survivor_midpoint_refinement"
+            ),
+            "primary_l_grid": ORDINARY_BROAD_PRIMARY_L_GRID,
+            "refinement_policy": (
+                "all_untested_midpoints_adjacent_to_every_survivor"
+            ),
+            "refinement_rounds": 1,
+            "mass_signature_frozen_during_selection": True,
+            "seed_separation": "fresh_ladder_and_screen_seeds_for_every_l",
+            "authority_status": "artifact_authoritative_stage_handoff",
+            "claim_bearing_blockers": (),
+        }
+    if selected == LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID:
+        return {
+            "policy_id": ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID,
+            "algorithm_id": selected,
+            "epsilon_l_treatment": (
+                "shared_frozen_epsilon_screen_then_exact_l_retune"
+            ),
+            "candidate_construction": "floor_anchor_double_trajectory_screen",
+            "mass_signature_frozen_during_selection": True,
+            "seed_separation": "three_replications_with_fresh_screen_seeds",
+            "authority_status": "historical_only_non_promoting",
+            "claim_bearing_blockers": (
+                "shared_epsilon_screen_not_joint_pair_selection",
+            ),
+        }
+    raise ValueError(f"unknown ordinary HMC selection algorithm_id: {selected}")
 
 
 def _ordinary_selection_policy_payload(
@@ -992,8 +1018,8 @@ WINDOWED_MASS_STAGE_NONCLAIMS = (
 )
 
 FIXED_MASS_STEP_STAGE_NONCLAIMS = (
-    "fixed-mass joint L/epsilon grid-stage diagnostic only",
-    "phase 4 adapted mass is frozen during joint L/epsilon tuning",
+    "fixed-mass per-L epsilon tuning stage only",
+    "phase 4 adapted mass is frozen during leapfrog-count selection",
     "each candidate leapfrog count gets its own epsilon tuning ladder",
     "fresh fixed-kernel screen required for step handoff",
     "selected pair is a kernel handoff only",
@@ -1040,14 +1066,21 @@ _PHASE7_OPERATIONAL_BRACKET_MIDPOINT_SEED_POLICY = (
 _PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY = (
     "bayesfilter.phase7_operational_evidence_extension_seed.v2"
 )
+_PHASE5_BROAD_FIXED_METRIC_ALGORITHM = ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
 _PHASE5_JOINT_L_EPSILON_ALGORITHM = LEGACY_JOINT_L_EPSILON_ALGORITHM_ID
+_PHASE5_DIRECT_GRID_ALGORITHMS = frozenset(
+    {
+        _PHASE5_BROAD_FIXED_METRIC_ALGORITHM,
+        _PHASE5_JOINT_L_EPSILON_ALGORITHM,
+    }
+)
 _PHASE7_DIRECT_QUEUE_MAX_STARTS = 2
 
 FROZEN_STEP_TRAJECTORY_STAGE_NONCLAIMS = (
-    "selected joint L/epsilon handoff screen only",
+    "selected Phase 5 epsilon/L-pair handoff screen only",
     "phase 4 adapted mass is frozen during handoff screening",
     "phase 5 selected step and leapfrog count are frozen during handoff screening",
-    "does not perform a second frozen-epsilon leapfrog search when Phase 5 used joint grid",
+    "does not perform a second frozen-epsilon leapfrog search after direct Phase 5 selection",
     "not fresh final verification",
     "no posterior convergence claim",
     "no sampler superiority claim",
@@ -3349,11 +3382,14 @@ class HMCWindowedMassStageResult:
 class HMCFixedMassStepStageConfig:
     """Policy-level config for Phase 5 fixed-mass step tuning.
 
-    The caller does not supply the budget schedule, tune/screen draw counts,
-    burn-in counts, step size, leapfrog count, trajectory grid, or candidate
-    grid. Phase 5 owns those mechanics and records them in the result.
+    ``algorithm_id`` carries the already selected top-level route into Phase 5;
+    it does not let a caller supply a grid. The caller does not supply the
+    budget schedule, tune/screen draw counts, burn-in counts, step size,
+    leapfrog count, trajectory grid, or candidate grid. Phase 5 owns those
+    mechanics and records them in the result.
     """
 
+    algorithm_id: str = ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
     target_accept_prob: float = 0.70
     acceptance_band: tuple[float, float] = (0.65, 0.75)
     repair_band: tuple[float, float] = (0.55, 0.85)
@@ -3381,6 +3417,11 @@ class HMCFixedMassStepStageConfig:
     source: str = "bayesfilter.inference.hmc_kernel_tuning.fixed_mass_step_stage"
 
     def __post_init__(self) -> None:
+        algorithm_id = str(self.algorithm_id)
+        # This pure mapping is also the authoritative membership check for
+        # top-level selection identities accepted by the lower-level stage.
+        windowed_algorithm_for_selection_algorithm(algorithm_id)
+        object.__setattr__(self, "algorithm_id", algorithm_id)
         target = float(self.target_accept_prob)
         if not np.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
@@ -3555,6 +3596,7 @@ class HMCFixedMassStepStageConfig:
 
     def payload(self) -> Mapping[str, Any]:
         return {
+            "algorithm_id": self.algorithm_id,
             "target_accept_prob": self.target_accept_prob,
             "acceptance_band": self.acceptance_band,
             "repair_band": self.repair_band,
@@ -4884,18 +4926,41 @@ class HMCFixedMassStepStageResult:
             and operational_loop.selection.signature != operational_selection.signature
         ):
             raise ValueError("operational selection loop terminal lineage mismatch")
-        generic_operational_route = bool(
-            self.diagnostics.get("operational_joint_l_epsilon_route") is True
-            and self.diagnostics.get("operational_route_marker")
-            == JOINT_L_EPSILON_OPERATIONAL_ROUTE
-            and self.diagnostics.get("algorithm")
-            == _PHASE5_JOINT_L_EPSILON_ALGORITHM
+        phase5_algorithm = self.diagnostics.get("algorithm")
+        route_marker = self.diagnostics.get("operational_route_marker")
+        broad_route_declared = (
+            self.diagnostics.get("operational_broad_fixed_metric_route") is True
         )
-        if (
+        joint_route_declared = (
             self.diagnostics.get("operational_joint_l_epsilon_route") is True
-            and not generic_operational_route
-        ):
-            raise ValueError("operational joint route marker/algorithm mismatch")
+        )
+        per_l_route_declared = bool(
+            self.diagnostics.get("operational_per_l_epsilon_route") is True
+            or broad_route_declared
+            or joint_route_declared
+        )
+        expected_route_marker = (
+            BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+            if phase5_algorithm == _PHASE5_BROAD_FIXED_METRIC_ALGORITHM
+            else (
+                JOINT_L_EPSILON_OPERATIONAL_ROUTE
+                if phase5_algorithm == _PHASE5_JOINT_L_EPSILON_ALGORITHM
+                else None
+            )
+        )
+        generic_operational_route = bool(
+            per_l_route_declared
+            and expected_route_marker is not None
+            and route_marker == expected_route_marker
+        )
+        if broad_route_declared and joint_route_declared:
+            raise ValueError("broad and compatibility joint routes are exclusive")
+        if broad_route_declared and phase5_algorithm != _PHASE5_BROAD_FIXED_METRIC_ALGORITHM:
+            raise ValueError("broad route marker/algorithm mismatch")
+        if joint_route_declared and phase5_algorithm != _PHASE5_JOINT_L_EPSILON_ALGORITHM:
+            raise ValueError("compatibility joint route marker/algorithm mismatch")
+        if per_l_route_declared and not generic_operational_route:
+            raise ValueError("operational per-L route marker/algorithm mismatch")
         if generic_operational_route and (
             operational_selection is not None or operational_loop is not None
         ):
@@ -4924,8 +4989,9 @@ class HMCFixedMassStepStageResult:
             )
             if public_work_manifest["manifest_hash"] != public_manifest_hash:
                 raise ValueError("operational public work manifest hash changed")
-            if generic_operational_route and public_work_manifest.get("route_marker") != (
-                JOINT_L_EPSILON_OPERATIONAL_ROUTE
+            if (
+                generic_operational_route
+                and public_work_manifest.get("route_marker") != route_marker
             ):
                 raise ValueError("generic operational manifest route marker mismatch")
             private_work_manifest = dict(
@@ -4999,9 +5065,12 @@ class HMCFixedMassStepStageResult:
         if self._operational_selection_loop is not None:
             return self._operational_selection_loop.private_evidence_ledger()
         if not (
-            self.diagnostics.get("operational_joint_l_epsilon_route") is True
+            self.diagnostics.get("operational_per_l_epsilon_route") is True
             and self.diagnostics.get("operational_route_marker")
-            == JOINT_L_EPSILON_OPERATIONAL_ROUTE
+            in {
+                BROAD_FIXED_METRIC_OPERATIONAL_ROUTE,
+                JOINT_L_EPSILON_OPERATIONAL_ROUTE,
+            }
         ):
             return None
 
@@ -5302,7 +5371,7 @@ def _phase5_candidate_batch_handoff(
         if candidate_count != 0:
             raise ValueError("completed Phase 5 candidates require a private handoff")
         is_current_joint = (
-            result.diagnostics.get("algorithm") == _PHASE5_JOINT_L_EPSILON_ALGORITHM
+            result.diagnostics.get("algorithm") in _PHASE5_DIRECT_GRID_ALGORITHMS
         )
         historical_compatibility = (
             result.diagnostics.get("historical_phase5_compatibility_fixture") is True
@@ -6128,7 +6197,7 @@ class HMCTuneVerifyRepairLoopConfig:
     derived from target dimension by BayesFilter-owned policy.
     """
 
-    algorithm_id: str = OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    algorithm_id: str = ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
     operational_budget_policy_id: str = OPERATIONAL_HMC_BUDGET_POLICY_ID
     operational_candidate_handoff_policy: str = (
         _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT
@@ -6174,6 +6243,16 @@ class HMCTuneVerifyRepairLoopConfig:
         if not algorithm_id:
             raise ValueError("algorithm_id must be non-empty")
         object.__setattr__(self, "algorithm_id", algorithm_id)
+        if (
+            algorithm_id == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+            and self.engineering_probe_covariance_multiplier is None
+            and int(self.max_leapfrog_steps)
+            != ORDINARY_BROAD_MAX_LEAPFROG_STEPS
+        ):
+            raise ValueError(
+                "canonical ordinary tuning fixes max_leapfrog_steps at "
+                f"{ORDINARY_BROAD_MAX_LEAPFROG_STEPS}"
+            )
         budget_policy_id = str(self.operational_budget_policy_id)
         if budget_policy_id != OPERATIONAL_HMC_BUDGET_POLICY_ID:
             raise ValueError("operational_budget_policy_id is fixed by BayesFilter")
@@ -6200,10 +6279,11 @@ class HMCTuneVerifyRepairLoopConfig:
         if (
             verification_bracket_policy
             == _OPERATIONAL_VERIFICATION_BRACKET_POLICY_ONE_LOG_MIDPOINT
-            and algorithm_id != OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+            and algorithm_id != LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
         ):
             raise ValueError(
-                "one_verified_log_midpoint requires the operational HMC route"
+                "one_verified_log_midpoint is historical compatibility logic and "
+                "requires the explicit legacy shared-epsilon algorithm"
             )
         object.__setattr__(
             self,
@@ -6794,7 +6874,7 @@ class HMCKernelTuningConfig:
     warmup budgets, draw counts, or budget schedules.
     """
 
-    algorithm_id: str = OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    algorithm_id: str = ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
     operational_budget_policy_id: str = OPERATIONAL_HMC_BUDGET_POLICY_ID
     operational_evidence_policy: str = _OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY
     operational_candidate_handoff_policy: str = (
@@ -6852,8 +6932,12 @@ class HMCKernelTuningConfig:
 
     def __post_init__(self) -> None:
         algorithm_id = str(self.algorithm_id)
-        if not algorithm_id:
-            raise ValueError("algorithm_id must be non-empty")
+        if algorithm_id != ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID:
+            raise ValueError(
+                "tune_hmc_kernel exposes one ordinary tuning policy: "
+                f"{ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID!r}; compatibility "
+                "algorithms are available only through lower-level diagnostic APIs"
+            )
         object.__setattr__(self, "algorithm_id", algorithm_id)
         budget_policy_id = str(self.operational_budget_policy_id)
         if budget_policy_id != OPERATIONAL_HMC_BUDGET_POLICY_ID:
@@ -6901,13 +6985,13 @@ class HMCKernelTuningConfig:
                 self.operational_verification_bracket_policy
             )
         )
-        if (
-            verification_bracket_policy
-            == _OPERATIONAL_VERIFICATION_BRACKET_POLICY_ONE_LOG_MIDPOINT
-            and algorithm_id != OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+        if verification_bracket_policy != (
+            _OPERATIONAL_VERIFICATION_BRACKET_POLICY_SINGLE_REPAIR
         ):
             raise ValueError(
-                "one_verified_log_midpoint requires the operational HMC route"
+                "tune_hmc_kernel fixes operational_verification_bracket_policy "
+                "at 'single_repair'; the verified-log-midpoint policy belongs "
+                "only to the lower-level historical shared-epsilon route"
             )
         object.__setattr__(
             self,
@@ -6938,14 +7022,6 @@ class HMCKernelTuningConfig:
                     "mixed operational_candidate_handoff_policy requires "
                     "operational_evidence_policy='one_doubling'"
                 )
-        if (
-            verification_bracket_policy
-            == _OPERATIONAL_VERIFICATION_BRACKET_POLICY_ONE_LOG_MIDPOINT
-            and preset != "serious"
-        ):
-            raise ValueError(
-                "one_verified_log_midpoint requires preset='serious'"
-            )
         object.__setattr__(self, "preset", preset)
         target = float(self.target_accept_prob)
         if not np.isfinite(target) or not 0.0 < target < 1.0:
@@ -6957,10 +7033,19 @@ class HMCKernelTuningConfig:
             raise ValueError("repair_band must contain acceptance_band")
         object.__setattr__(self, "acceptance_band", acceptance_band)
         object.__setattr__(self, "repair_band", repair_band)
+        max_leapfrog_steps = _validate_max_leapfrog_steps(
+            self.max_leapfrog_steps
+        )
+        if max_leapfrog_steps != ORDINARY_BROAD_MAX_LEAPFROG_STEPS:
+            raise ValueError(
+                "tune_hmc_kernel fixes max_leapfrog_steps at "
+                f"{ORDINARY_BROAD_MAX_LEAPFROG_STEPS} so the ordinary broad L "
+                "grid is not silently truncated"
+            )
         object.__setattr__(
             self,
             "max_leapfrog_steps",
-            _validate_max_leapfrog_steps(self.max_leapfrog_steps),
+            max_leapfrog_steps,
         )
         lower, upper = _validate_trajectory_window_multipliers(
             self.trajectory_window_lower_multiplier,
@@ -7087,12 +7172,20 @@ class HMCKernelTuningConfig:
             "metric_update_requirement",
             _validate_metric_update_requirement(self.metric_update_requirement),
         )
+        engineering_probe_multiplier = (
+            _validate_engineering_probe_covariance_multiplier(
+                self.engineering_probe_covariance_multiplier
+            )
+        )
+        if engineering_probe_multiplier is not None:
+            raise ValueError(
+                "engineering_probe_covariance_multiplier is a lower-level P4-E "
+                "diagnostic compatibility control, not a public ordinary tuning mode"
+            )
         object.__setattr__(
             self,
             "engineering_probe_covariance_multiplier",
-            _validate_engineering_probe_covariance_multiplier(
-                self.engineering_probe_covariance_multiplier
-            ),
+            None,
         )
         if (
             self.metric_update_requirement == "require_operational_update"
@@ -10884,8 +10977,19 @@ def run_hmc_windowed_mass_stage(
             selection_attempts_per_outer_attempt=(1,),
             max_leapfrog_steps=_GEOMETRY_MAX_LEAPFROG,
             policy=operational_policy,
-            algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+            algorithm_id=ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
             run_class="serious",
+            route_marker=BROAD_FIXED_METRIC_OPERATIONAL_ROUTE,
+            per_l_tune_budget_schedule=tuple(
+                _attempt_budget_policy.phase5_tune_budgets
+            ),
+            per_l_tune_num_results=_FIXED_MASS_STAGE_TUNE_NUM_RESULTS,
+            per_l_screen_num_results=int(
+                _attempt_budget_policy.phase5_screen_num_results
+            ),
+            per_l_screen_num_burnin_steps=int(
+                _attempt_budget_policy.phase5_screen_burnin_steps
+            ),
         )
         completed_metric_transitions = (
             0
@@ -10906,8 +11010,8 @@ def run_hmc_windowed_mass_stage(
         )
         operational_work_manifest_summary = {
             "schema": "bayesfilter.hmc_operational_partial_work_summary.v1",
-            "policy_id": operational_policy.policy_id,
-            "policy_hash": operational_policy.policy_hash,
+            "policy_id": public_manifest["policy_id"],
+            "policy_hash": public_manifest["policy_hash"],
             "public_manifest_hash": public_manifest["manifest_hash"],
             "executed_work_reconciliation": reconciliation,
             "accounting_scope": "partial_metric_adaptation_before_selection",
@@ -11021,14 +11125,11 @@ def run_hmc_fixed_mass_step_stage(
 ) -> HMCFixedMassStepStageResult:
     """Run Phase 5 fixed-mass step tuning from a passed Phase 4 handoff.
 
-    Phase 5 freezes the Phase 4 adapted mass.  When the preceding windowed
-    stage contains the operational warm-up result, this helper runs the
-    operational fixed-trajectory screen with one shared/frozen epsilon,
-    followed by exact-L epsilon retuning.  If that operational result is
-    absent, an explicit legacy/internal construction runs the fixed-mass
-    ``(L, epsilon)`` grid with per-L epsilon ladders and bounded edge repair.
-    The legacy branch is diagnostic/non-promoting and is not the public
-    ordinary default.
+    Phase 5 freezes the Phase 4 adapted mass and checked post-warmup start bank.
+    The canonical ordinary route tunes epsilon independently over the complete
+    broad primary L grid, then over one survivor-midpoint refinement grid. The
+    shared-epsilon selector, P4-E anchor-offset grid, and legacy joint grid are
+    retained only behind explicit lower-level compatibility identities.
     """
 
     cfg = HMCFixedMassStepStageConfig() if config is None else config
@@ -11060,10 +11161,7 @@ def run_hmc_fixed_mass_step_stage(
         attempt_state=_attempt_state,
     )
     target_trajectory = float(geometry.target_trajectory_length)
-    # Both the repaired P4-E route and the explicitly legacy compatibility
-    # route need the same Phase 4 latent adapter and geometry-derived anchor.
-    # Resolve them before the compatibility branch so the legacy call cannot
-    # observe an uninitialized local when it is selected for a test fixture.
+    # Every Phase 5 policy consumes the same frozen Phase 4 metric coordinates.
     phase4_adapter = _phase4_latent_adapter_for_step_stage(
         adapter=adapter,
         geometry=geometry,
@@ -11071,27 +11169,53 @@ def run_hmc_fixed_mass_step_stage(
         target_scope=target_scope,
     )
     operational_warmup = windowed_stage.operational_warmup_result
-    # The repaired generic grid is reserved for the explicit P4-E route.  A
-    # number of historical/test fixtures construct the older operational
-    # warmup with the greedy start-bank policy; those fixtures must continue
-    # through the legacy selector and are never eligible for public tuning
-    # handoff.  The public tuner always configures P4-E, so this distinction
-    # does not weaken the active route.
-    use_final_geometry_anchor = bool(
+    use_engineering_probe_route = bool(
         operational_warmup is not None
         and operational_warmup.private_start_bank_policy_id
         == PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
     )
+    canonical_broad_route = bool(
+        operational_warmup is not None
+        and cfg.algorithm_id == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+        and not use_engineering_probe_route
+    )
+    legacy_shared_epsilon_route = bool(
+        operational_warmup is not None
+        and cfg.algorithm_id == LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+        and not use_engineering_probe_route
+    )
+    use_operational_grid_route = bool(
+        canonical_broad_route or use_engineering_probe_route
+    )
+    if (
+        canonical_broad_route
+        and max_leapfrog_steps != ORDINARY_BROAD_MAX_LEAPFROG_STEPS
+    ):
+        raise ValueError(
+            "canonical ordinary Phase 5 requires the complete broad L grid "
+            f"through {ORDINARY_BROAD_MAX_LEAPFROG_STEPS}"
+        )
+    if (
+        cfg.algorithm_id
+        in {
+            ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+            LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        }
+        and operational_warmup is None
+    ):
+        raise ValueError(
+            "operational Phase 5 selection requires an operational warmup result"
+        )
     anchor_l = _joint_l_epsilon_anchor_l(
         selected_kernel=selected_kernel,
         attempt_state=_attempt_state,
-        final_step_size=initial_step if use_final_geometry_anchor else None,
+        final_step_size=initial_step if use_engineering_probe_route else None,
         target_trajectory_length=(
-            target_trajectory if use_final_geometry_anchor else None
+            target_trajectory if use_engineering_probe_route else None
         ),
         max_leapfrog_steps=max_leapfrog_steps,
     )
-    if use_final_geometry_anchor and not (
+    if use_operational_grid_route and not (
         run_full_chain is run_full_chain_tfp_hmc
         or isinstance(run_full_chain, HMCTuningRunnerBinding)
     ):
@@ -11099,7 +11223,7 @@ def run_hmc_fixed_mass_step_stage(
             "operational Phase 5 requires the default TF/TFP runner or a "
             "repository-issued HMCTuningRunnerBinding"
         )
-    if operational_warmup is not None and not use_final_geometry_anchor:
+    if legacy_shared_epsilon_route:
         return _run_operational_fixed_mass_step_stage(
             adapter=adapter,
             geometry=geometry,
@@ -11119,7 +11243,7 @@ def run_hmc_fixed_mass_step_stage(
             candidate_handoff_policy=_candidate_handoff_policy,
             run_full_chain=run_full_chain,
         )
-    if use_final_geometry_anchor:
+    if use_operational_grid_route:
         _validated_operational_candidate_handoff_policy(_candidate_handoff_policy)
     ladder_result: FixedMassHMCTuningBudgetLadderResult | None = None
     hard_vetoes: list[str] = []
@@ -11132,11 +11256,10 @@ def run_hmc_fixed_mass_step_stage(
     progress_attempt = 0 if progress_attempt_index is None else progress_attempt_index
     operational_start_lineage: Mapping[str, Any] | None = None
     operational_factory_state = {"call_count": 0}
-    if use_final_geometry_anchor:
-        # The operational route uses the same generic joint grid as the
-        # historical diagnostic route, but every ladder starts from a fresh
-        # copy of the validated P4-E post-warmup bank.  The legacy zero-state
-        # factory remains below for historical/test-only compatibility.
+    if use_operational_grid_route:
+        # Every operational broad/P4-E ladder starts from a fresh copy of the
+        # checked Phase 4 post-warmup bank. The zero-state factory remains only
+        # for the explicitly legacy joint-grid compatibility route.
         final_adapter = _build_fixed_mass_hmc_adapter(
             adapter=phase4_adapter,
             mass_artifact=adapted_mass,
@@ -11174,18 +11297,22 @@ def run_hmc_fixed_mass_step_stage(
     selected_candidate: Mapping[str, Any] | None = None
     selected_ladder: FixedMassHMCTuningBudgetLadderResult | None = None
     selected_edge_direction: str | None = None
+    refinement_round: Mapping[str, Any] | None = None
+    broad_refinement_l_values: tuple[int, ...] = ()
+    broad_primary_complete = False
     public_timeout_closeout: Mapping[str, Any] | None = None
     previous_edge_direction: str | None = None
     previous_selected_l: int | None = None
     joint_runner_cache: dict[str, Any] = {}
     joint_runner_contract_payloads: dict[str, Mapping[str, Any]] = {}
-    for edge_round in range(_JOINT_L_EPSILON_MAX_EDGE_REPAIR_ROUNDS + 1):
-        grid_values = _joint_l_epsilon_grid_values(
-            anchor_l=current_anchor_l,
-            max_leapfrog_steps=max_leapfrog_steps,
-            offsets=_JOINT_L_EPSILON_INITIAL_OFFSETS,
-        )
-        round_payload = _run_joint_l_epsilon_grid_round(
+
+    def execute_grid_round(
+        *,
+        grid_stage: str,
+        grid_values: Sequence[int],
+        round_anchor_l: int,
+    ) -> Mapping[str, Any]:
+        return _run_joint_l_epsilon_grid_round(
             adapter=phase4_adapter,
             adapted_mass=adapted_mass,
             initial_state_factory=initial_state_factory,
@@ -11193,10 +11320,10 @@ def run_hmc_fixed_mass_step_stage(
             initial_step=initial_step,
             target_scope=target_scope,
             target_trajectory=target_trajectory,
-            anchor_l=current_anchor_l,
+            anchor_l=round_anchor_l,
             max_leapfrog_steps=max_leapfrog_steps,
             round_index=round_index,
-            grid_stage="initial" if edge_round == 0 else "edge_repair",
+            grid_stage=grid_stage,
             grid_values=grid_values,
             fixed_mass_stage_start_perf_counter_s=fixed_mass_stage_start,
             completed_candidate_elapsed_s=joint_candidate_elapsed_s,
@@ -11210,80 +11337,131 @@ def run_hmc_fixed_mass_step_stage(
             shared_runner_cache=joint_runner_cache,
             shared_runner_contract_payloads=joint_runner_contract_payloads,
         )
-        joint_rounds.append(round_payload)
-        joint_candidates.extend(tuple(round_payload["candidates"]))
-        selected_candidate = round_payload["selected_candidate"]
-        selected_ladder = round_payload["selected_ladder"]
-        selected_edge_direction = round_payload["edge_direction"]
-        if isinstance(round_payload.get("public_timeout_closeout"), Mapping):
-            public_timeout_closeout = dict(round_payload["public_timeout_closeout"])
-            break
-        if selected_candidate is None:
-            break
-        selected_l = int(selected_candidate["num_leapfrog_steps"])
-        if selected_edge_direction is None:
-            break
-        if (
-            previous_edge_direction is not None
-            and selected_edge_direction != previous_edge_direction
-        ):
-            break
-        if previous_selected_l is not None and selected_l == previous_selected_l:
-            break
-        if edge_round >= _JOINT_L_EPSILON_MAX_EDGE_REPAIR_ROUNDS:
-            break
-        step = max(1, max(abs(int(offset)) for offset in _JOINT_L_EPSILON_INITIAL_OFFSETS))
-        current_anchor_l = (
-            max(_GEOMETRY_MIN_LEAPFROG, selected_l - step)
-            if selected_edge_direction == "lower"
-            else min(
-                max_leapfrog_steps,
-                selected_l + step,
+
+    if canonical_broad_route:
+        primary_round = execute_grid_round(
+            grid_stage="broad_primary",
+            grid_values=ORDINARY_BROAD_PRIMARY_L_GRID,
+            round_anchor_l=int(anchor_l),
+        )
+        joint_rounds.append(primary_round)
+        primary_candidates = tuple(primary_round["candidates"])
+        joint_candidates.extend(primary_candidates)
+        if isinstance(primary_round.get("public_timeout_closeout"), Mapping):
+            public_timeout_closeout = dict(primary_round["public_timeout_closeout"])
+        broad_primary_complete = bool(
+            public_timeout_closeout is None
+            and len(primary_candidates) == len(ORDINARY_BROAD_PRIMARY_L_GRID)
+        )
+        if broad_primary_complete:
+            survivor_field = (
+                "nomination_eligible"
+                if _phase23_nomination_policy_active(cfg.handoff_screen_policy)
+                else "viable"
             )
-        )
-        previous_edge_direction = selected_edge_direction
-        previous_selected_l = selected_l
-        round_index += 1
-    if selected_candidate is not None and public_timeout_closeout is None:
-        local_anchor_l = int(selected_candidate["num_leapfrog_steps"])
-        local_grid = _joint_l_epsilon_grid_values(
-            anchor_l=local_anchor_l,
-            max_leapfrog_steps=max_leapfrog_steps,
-            offsets=_JOINT_L_EPSILON_FINAL_LOCAL_OFFSETS,
-        )
-        round_index += 1
-        final_round = _run_joint_l_epsilon_grid_round(
-            adapter=phase4_adapter,
-            adapted_mass=adapted_mass,
-            initial_state_factory=initial_state_factory,
-            config=cfg,
-            initial_step=initial_step,
-            target_scope=target_scope,
+            primary_survivors = tuple(
+                int(candidate["num_leapfrog_steps"])
+                for candidate in primary_candidates
+                if candidate.get(survivor_field) is True
+            )
+            broad_refinement_l_values = ordinary_broad_refinement_l_values(
+                primary_survivors
+            )
+            if broad_refinement_l_values:
+                round_index = 1
+                refinement_round = execute_grid_round(
+                    grid_stage="survivor_midpoint_refinement",
+                    grid_values=broad_refinement_l_values,
+                    round_anchor_l=int(anchor_l),
+                )
+                joint_rounds.append(refinement_round)
+                joint_candidates.extend(tuple(refinement_round["candidates"]))
+                if isinstance(
+                    refinement_round.get("public_timeout_closeout"), Mapping
+                ):
+                    public_timeout_closeout = dict(
+                        refinement_round["public_timeout_closeout"]
+                    )
+        selected_index = _select_joint_l_epsilon_candidate(
+            joint_candidates,
+            target_accept_prob=cfg.target_accept_prob,
             target_trajectory=target_trajectory,
-            anchor_l=local_anchor_l,
-            max_leapfrog_steps=max_leapfrog_steps,
-            round_index=round_index,
-            grid_stage="final_local",
-            grid_values=local_grid,
-            fixed_mass_stage_start_perf_counter_s=fixed_mass_stage_start,
-            completed_candidate_elapsed_s=joint_candidate_elapsed_s,
-            screen_callback=screen_callback,
-            run_full_chain=run_full_chain,
-            attempt_budget_policy=_attempt_budget_policy,
-            attempt_state=_attempt_state,
-            progress_callback=_progress_callback,
-            progress_attempt_index=progress_attempt,
-            private_diagnostic_callback=_private_diagnostic_callback,
-            shared_runner_cache=joint_runner_cache,
-            shared_runner_contract_payloads=joint_runner_contract_payloads,
+            handoff_screen_policy=cfg.handoff_screen_policy,
         )
-        joint_rounds.append(final_round)
-        joint_candidates.extend(tuple(final_round["candidates"]))
-        selected_candidate = final_round["selected_candidate"]
-        selected_ladder = final_round["selected_ladder"]
-        selected_edge_direction = final_round["edge_direction"]
-        if isinstance(final_round.get("public_timeout_closeout"), Mapping):
-            public_timeout_closeout = dict(final_round["public_timeout_closeout"])
+        if selected_index is not None:
+            selected_candidate = joint_candidates[selected_index]
+            selected_ladder = _phase5_candidate_ladders_by_source(
+                joint_rounds
+            ).get(_phase5_candidate_source_key(selected_candidate))
+            if selected_ladder is None:
+                raise ValueError("broad Phase 5 selection lost ladder provenance")
+        selected_edge_direction = None
+    else:
+        for edge_round in range(_JOINT_L_EPSILON_MAX_EDGE_REPAIR_ROUNDS + 1):
+            grid_values = _joint_l_epsilon_grid_values(
+                anchor_l=current_anchor_l,
+                max_leapfrog_steps=max_leapfrog_steps,
+                offsets=_JOINT_L_EPSILON_INITIAL_OFFSETS,
+            )
+            round_payload = execute_grid_round(
+                grid_stage="initial" if edge_round == 0 else "edge_repair",
+                grid_values=grid_values,
+                round_anchor_l=current_anchor_l,
+            )
+            joint_rounds.append(round_payload)
+            joint_candidates.extend(tuple(round_payload["candidates"]))
+            selected_candidate = round_payload["selected_candidate"]
+            selected_ladder = round_payload["selected_ladder"]
+            selected_edge_direction = round_payload["edge_direction"]
+            if isinstance(round_payload.get("public_timeout_closeout"), Mapping):
+                public_timeout_closeout = dict(round_payload["public_timeout_closeout"])
+                break
+            if selected_candidate is None:
+                break
+            selected_l = int(selected_candidate["num_leapfrog_steps"])
+            if selected_edge_direction is None:
+                break
+            if (
+                previous_edge_direction is not None
+                and selected_edge_direction != previous_edge_direction
+            ):
+                break
+            if previous_selected_l is not None and selected_l == previous_selected_l:
+                break
+            if edge_round >= _JOINT_L_EPSILON_MAX_EDGE_REPAIR_ROUNDS:
+                break
+            step = max(
+                1,
+                max(abs(int(offset)) for offset in _JOINT_L_EPSILON_INITIAL_OFFSETS),
+            )
+            current_anchor_l = (
+                max(_GEOMETRY_MIN_LEAPFROG, selected_l - step)
+                if selected_edge_direction == "lower"
+                else min(max_leapfrog_steps, selected_l + step)
+            )
+            previous_edge_direction = selected_edge_direction
+            previous_selected_l = selected_l
+            round_index += 1
+        if selected_candidate is not None and public_timeout_closeout is None:
+            local_anchor_l = int(selected_candidate["num_leapfrog_steps"])
+            local_grid = _joint_l_epsilon_grid_values(
+                anchor_l=local_anchor_l,
+                max_leapfrog_steps=max_leapfrog_steps,
+                offsets=_JOINT_L_EPSILON_FINAL_LOCAL_OFFSETS,
+            )
+            round_index += 1
+            final_round = execute_grid_round(
+                grid_stage="final_local",
+                grid_values=local_grid,
+                round_anchor_l=local_anchor_l,
+            )
+            joint_rounds.append(final_round)
+            joint_candidates.extend(tuple(final_round["candidates"]))
+            selected_candidate = final_round["selected_candidate"]
+            selected_ladder = final_round["selected_ladder"]
+            selected_edge_direction = final_round["edge_direction"]
+            if isinstance(final_round.get("public_timeout_closeout"), Mapping):
+                public_timeout_closeout = dict(final_round["public_timeout_closeout"])
     after_signature = _mass_artifact_signature(adapted_mass)
     frozen_mass_invariant = _fixed_mass_step_frozen_mass_invariant(
         before_signature,
@@ -11326,11 +11504,17 @@ def run_hmc_fixed_mass_step_stage(
         for candidate in joint_candidates
         if candidate.get("nomination_eligible") is True
     )
-    selected_pair_progress_before_closeout = bool(viable_candidates)
+    handoff_candidates = (
+        nomination_candidates
+        if _phase23_nomination_policy_active(cfg.handoff_screen_policy)
+        else viable_candidates
+    )
+    selected_pair_progress_before_closeout = bool(handoff_candidates)
     budget_incomplete_closeout = bool(
         public_timeout_closeout is not None
         and selected_pair_progress_before_closeout
-        and str(public_timeout_closeout.get("grid_stage")) in {"edge_repair", "final_local"}
+        and str(public_timeout_closeout.get("grid_stage"))
+        in {"edge_repair", "final_local", "survivor_midpoint_refinement"}
     )
     if public_timeout_closeout is not None:
         timeout_payload = dict(public_timeout_closeout)
@@ -11339,7 +11523,11 @@ def run_hmc_fixed_mass_step_stage(
         )
         timeout_payload["budget_incomplete"] = budget_incomplete_closeout
         timeout_payload["budget_incomplete_scope"] = (
-            "edge_or_final_local_after_selected_pair_progress"
+            (
+                "edge_or_final_local_after_selected_pair_progress"
+                if timeout_payload.get("grid_stage") in {"edge_repair", "final_local"}
+                else "survivor_midpoint_refinement_after_selected_pair_progress"
+            )
             if budget_incomplete_closeout
             else "pre_candidate_or_no_selected_pair_progress"
         )
@@ -11362,7 +11550,7 @@ def run_hmc_fixed_mass_step_stage(
         final_status = "budget_exhausted"
     elif selected_candidate is not None and ladder_result is not None and ladder_result.passed:
         final_status = "passed"
-    elif candidate_continuation_vetoes and not viable_candidates:
+    elif candidate_continuation_vetoes and not handoff_candidates:
         final_status = "hard_veto"
         hard_vetoes = list(
             dict.fromkeys(
@@ -11373,7 +11561,7 @@ def run_hmc_fixed_mass_step_stage(
                 ]
             )
         )
-    elif candidate_hard_vetoes and not viable_candidates and not repair_ladder:
+    elif candidate_hard_vetoes and not handoff_candidates and not repair_ladder:
         final_status = "hard_veto"
         hard_vetoes = list(dict.fromkeys([*hard_vetoes, *candidate_hard_vetoes]))
     else:
@@ -11427,7 +11615,11 @@ def run_hmc_fixed_mass_step_stage(
         if representative_ladder is None
         else {
             **representative_ladder.config.payload(),
-            "joint_l_epsilon_algorithm": "joint_l_epsilon_grid_fixed_mass_hmc",
+            "fixed_metric_selection_algorithm": (
+                _PHASE5_BROAD_FIXED_METRIC_ALGORITHM
+                if canonical_broad_route
+                else _PHASE5_JOINT_L_EPSILON_ALGORITHM
+            ),
             "representative_selected_ladder": ladder_result is representative_ladder,
         }
     )
@@ -11440,7 +11632,18 @@ def run_hmc_fixed_mass_step_stage(
     operational_public_work_manifest: Mapping[str, Any] | None = None
     operational_private_work_manifest: Mapping[str, Any] | None = None
     operational_work_reconciliation: Mapping[str, Any] | None = None
-    if use_final_geometry_anchor:
+    phase5_algorithm_id = (
+        _PHASE5_BROAD_FIXED_METRIC_ALGORITHM
+        if canonical_broad_route
+        else _PHASE5_JOINT_L_EPSILON_ALGORITHM
+    )
+    ordinary_selection_policy = resolve_ordinary_hmc_selection_policy(
+        cfg.algorithm_id,
+        engineering_probe_covariance_multiplier_configured=(
+            use_engineering_probe_route
+        ),
+    )
+    if use_operational_grid_route:
         operational = windowed_stage.operational_warmup_result
         if operational is None:
             raise ValueError("operational joint route lost its warmup result")
@@ -11504,13 +11707,17 @@ def run_hmc_fixed_mass_step_stage(
             selection_attempts_per_outer_attempt=(1,),
             max_leapfrog_steps=max_leapfrog_steps,
             policy=operational_policy,
-            algorithm_id=_PHASE5_JOINT_L_EPSILON_ALGORITHM,
+            algorithm_id=phase5_algorithm_id,
             run_class="runtime_resolved_attempt",
-            route_marker=JOINT_L_EPSILON_OPERATIONAL_ROUTE,
-            joint_tune_budget_schedule=operational_tune_budgets,
-            joint_tune_num_results=operational_tune_results,
-            joint_screen_num_results=operational_screen_results,
-            joint_screen_num_burnin_steps=operational_screen_burnin,
+            route_marker=(
+                BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+                if canonical_broad_route
+                else JOINT_L_EPSILON_OPERATIONAL_ROUTE
+            ),
+            per_l_tune_budget_schedule=operational_tune_budgets,
+            per_l_tune_num_results=operational_tune_results,
+            per_l_screen_num_results=operational_screen_results,
+            per_l_screen_num_burnin_steps=operational_screen_burnin,
         )
         resolved_candidates = tuple(
             {
@@ -11542,15 +11749,26 @@ def run_hmc_fixed_mass_step_stage(
         )
     diagnostics = {
         "passed": final_status == "passed",
-        "algorithm": "joint_l_epsilon_grid_fixed_mass_hmc",
-        "promoted_default": False if use_final_geometry_anchor else True,
-        "operational_non_promoting_candidate_route": bool(use_final_geometry_anchor),
-        "operational_joint_l_epsilon_route": bool(use_final_geometry_anchor),
+        "algorithm": phase5_algorithm_id,
+        "ordinary_selection_policy": dict(ordinary_selection_policy),
+        "promoted_default": bool(canonical_broad_route),
+        "operational_non_promoting_candidate_route": bool(
+            use_engineering_probe_route
+        ),
+        "operational_per_l_epsilon_route": bool(use_operational_grid_route),
+        "operational_broad_fixed_metric_route": bool(canonical_broad_route),
+        "operational_joint_l_epsilon_route": bool(use_engineering_probe_route),
         "operational_route_marker": (
-            JOINT_L_EPSILON_OPERATIONAL_ROUTE if use_final_geometry_anchor else None
+            (
+                BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+                if canonical_broad_route
+                else JOINT_L_EPSILON_OPERATIONAL_ROUTE
+            )
+            if use_operational_grid_route
+            else None
         ),
         "operational_candidate_handoff_policy": (
-            _candidate_handoff_policy if use_final_geometry_anchor else None
+            _candidate_handoff_policy if use_operational_grid_route else None
         ),
         "operational_runner_route": (
             "default_tf_tfp_runner"
@@ -11560,6 +11778,19 @@ def run_hmc_fixed_mass_step_stage(
         "handoff_screen_policy": cfg.handoff_screen_policy,
         "bootstrap_l_is_anchor_not_fixed_policy": True,
         "initial_anchor_l": int(anchor_l),
+        "broad_primary_l_grid": (
+            ORDINARY_BROAD_PRIMARY_L_GRID if canonical_broad_route else ()
+        ),
+        "broad_primary_complete": (
+            broad_primary_complete if canonical_broad_route else None
+        ),
+        "broad_refinement_l_values": (
+            broad_refinement_l_values if canonical_broad_route else ()
+        ),
+        "broad_refinement_round_ran": refinement_round is not None,
+        "broad_refinement_rounds": 1 if refinement_round is not None else 0,
+        "per_l_epsilon_tuning": True,
+        "shared_epsilon_across_l": False,
         "selected_num_leapfrog_steps": None
         if selected_candidate is None
         else int(selected_candidate["num_leapfrog_steps"]),
@@ -11921,7 +12152,7 @@ def _run_operational_fixed_mass_step_stage(
         selection_attempts_per_outer_attempt=(selection_attempts,),
         max_leapfrog_steps=max_leapfrog_steps,
         policy=operational_policy,
-        algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         run_class="runtime_resolved_attempt",
     )
     resolved_candidates = tuple(
@@ -11963,7 +12194,12 @@ def _run_operational_fixed_mass_step_stage(
     )
     diagnostics = {
         "passed": final_status == "passed",
-        "algorithm": "operational_paired_fixed_trajectory_selection_v3",
+        "algorithm": LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        "ordinary_selection_policy": dict(
+            resolve_ordinary_hmc_selection_policy(
+                LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+            )
+        ),
         "promoted_default": False,
         "candidate_count": len(selection.candidate_results),
         "replication_count_per_candidate": 3,
@@ -12146,9 +12382,10 @@ def run_hmc_frozen_step_trajectory_stage(
     if trajectory_hmc_signature != fixed_mass_step_stage.ladder_hmc_adapter_signature:
         raise ValueError("Phase 6 trajectory HMC adapter signature mismatch")
     phase5_algorithm = fixed_mass_step_stage.diagnostics.get("algorithm")
-    if phase5_algorithm == "joint_l_epsilon_grid_fixed_mass_hmc":
-        candidate_generation = _joint_l_epsilon_selected_pair_candidate_generation(
+    if phase5_algorithm in _PHASE5_DIRECT_GRID_ALGORITHMS:
+        candidate_generation = _phase5_selected_pair_candidate_generation(
             geometry=geometry,
+            phase5_algorithm_id=str(phase5_algorithm),
             selected_step_size=frozen_step,
             selected_num_leapfrog_steps=fixed_pair_l,
             fixed_bootstrap_l=fixed_pair_l,
@@ -14139,6 +14376,9 @@ def _ordinary_tuning_source_dependency_closure() -> Mapping[str, Any]:
         inference_root / "tuning_contract.py",
         inference_root / "posterior_adapter.py",
         inference_root / "__init__.py",
+        package_root / "hmc_budget_contract.py",
+        package_root / "hmc_ordinary_selection_policy.py",
+        package_root / "hmc_route_contract.py",
         package_root / "__init__.py",
     )
     missing = tuple(str(path) for path in paths if not path.is_file())
@@ -15405,43 +15645,6 @@ def run_hmc_start_bank_diagnostic(
     )
 
 
-def tune_hmc_kernel(
-    *,
-    adapter: Any,
-    initial_position: Any,
-    config: HMCKernelTuningConfig | None = None,
-    output_dir: str | Path | None = None,
-    negative_hessian: Any | None = None,
-    initial_covariance: Any | None = None,
-    parameter_scales: Any | None = None,
-    diagnostic_callback: FixedMassScreenCallback | None = None,
-    verification_checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
-    runner_binding: HMCTuningRunnerBinding | None = None,
-) -> HMCKernelTuningResult:
-    """Compatibility delegate to the public ordinary-HMC tuning interface.
-
-    ``runner_binding`` accepts only a repository-issued typed binding. A bare
-    chain runner cannot enter the public route or issue artifact authority.
-    """
-
-    from bayesfilter.inference.hmc_tuning_dispatch import (
-        tune_hmc_kernel as public_tune_hmc_kernel,
-    )
-
-    return public_tune_hmc_kernel(
-        adapter=adapter,
-        initial_position=initial_position,
-        config=config,
-        output_dir=output_dir,
-        negative_hessian=negative_hessian,
-        initial_covariance=initial_covariance,
-        parameter_scales=parameter_scales,
-        diagnostic_callback=diagnostic_callback,
-        verification_checkpoint_writer_config=verification_checkpoint_writer_config,
-        runner_binding=runner_binding,
-    )
-
-
 @dataclass(frozen=True)
 class _GeometryHint:
     kind: str
@@ -16017,6 +16220,11 @@ def _validate_fixed_mass_step_stage_inputs(
 ) -> None:
     if config.mass_policy != windowed_stage.config.mass_policy:
         raise ValueError("Phase 5 mass policy does not match Phase 4")
+    expected_windowed_algorithm = windowed_algorithm_for_selection_algorithm(
+        config.algorithm_id
+    )
+    if windowed_stage.config.algorithm_id != expected_windowed_algorithm:
+        raise ValueError("Phase 5 selection and Phase 4 warmup algorithms do not match")
     adapter_signature = stable_adapter_signature(adapter)
     if adapter_signature != windowed_stage.adapter_signature:
         raise ValueError("fixed-mass step stage adapter signature must match Phase 4")
@@ -16154,6 +16362,7 @@ def _validate_frozen_step_trajectory_stage_inputs(
         bootstrap=bootstrap,
         windowed_stage=windowed_stage,
         config=HMCFixedMassStepStageConfig(
+            algorithm_id=fixed_mass_step_stage.config.algorithm_id,
             target_accept_prob=fixed_mass_step_stage.config.target_accept_prob,
             acceptance_band=fixed_mass_step_stage.config.acceptance_band,
             repair_band=fixed_mass_step_stage.config.repair_band,
@@ -20852,7 +21061,7 @@ def _phase7_direct_candidate_queue_plan(
 def _phase7_uses_operational_budget_policy(
     config: HMCTuneVerifyRepairLoopConfig,
 ) -> bool:
-    return config.algorithm_id == OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    return config.algorithm_id == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
 
 
 def _phase7_verification_num_results(
@@ -20954,26 +21163,26 @@ def _phase7_direct_candidate_queue_route(
     fixed_mass_step_stage: HMCFixedMassStepStageResult,
     fixed_mass_step_stage_runner: Callable[..., HMCFixedMassStepStageResult],
 ) -> str:
-    """Choose direct, terminal-joint, or explicit historical compatibility."""
+    """Choose direct Phase 5 or explicit historical compatibility."""
 
     if fixed_mass_step_stage._operational_selection is not None:
         if fixed_mass_step_stage.diagnostics.get("algorithm") != (
-            "operational_paired_fixed_trajectory_selection_v3"
+            LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
         ):
             raise ValueError("operational selection authority/algorithm mismatch")
         return "operational_selection_v2"
     algorithm = fixed_mass_step_stage.diagnostics.get("algorithm")
-    is_current_joint = algorithm == _PHASE5_JOINT_L_EPSILON_ALGORITHM
+    is_direct_phase5 = algorithm in _PHASE5_DIRECT_GRID_ALGORITHMS
     handoff = _phase5_candidate_batch_handoff(fixed_mass_step_stage)
-    if is_current_joint and fixed_mass_step_stage.final_status in {
+    if is_direct_phase5 and fixed_mass_step_stage.final_status in {
         "budget_exhausted",
         "hard_veto",
     }:
         return "direct_phase5_terminal_no_queue"
     if handoff is not None:
         return "direct_phase5_candidate_queue"
-    if is_current_joint:
-        raise ValueError("current joint Phase 5 result is missing its candidate batch")
+    if is_direct_phase5:
+        raise ValueError("direct Phase 5 result is missing its candidate batch")
     explicitly_injected = fixed_mass_step_stage_runner is not run_hmc_fixed_mass_step_stage
     historical_fixture = (
         fixed_mass_step_stage.diagnostics.get("historical_phase5_compatibility_fixture")
@@ -20981,7 +21190,7 @@ def _phase7_direct_candidate_queue_route(
     )
     if explicitly_injected and historical_fixture:
         return "historical_phase6_compatibility"
-    raise ValueError("Phase 5 route is neither current joint nor reviewed historical")
+    raise ValueError("Phase 5 route is neither direct selection nor reviewed historical")
 
 
 def _phase7_direct_candidate_queue_timeout_closeout(
@@ -21178,6 +21387,7 @@ def _phase7_fixed_step_stage_config(
     attempt_index: int,
 ) -> HMCFixedMassStepStageConfig:
     return HMCFixedMassStepStageConfig(
+        algorithm_id=config.algorithm_id,
         target_accept_prob=config.target_accept_prob,
         acceptance_band=config.acceptance_band,
         repair_band=config.repair_band,
@@ -22099,6 +22309,7 @@ def _run_joint_l_epsilon_grid_round(
     ladders_by_candidate_index: dict[int, FixedMassHMCTuningBudgetLadderResult] = {}
     run_errors: list[Mapping[str, Any]] = []
     grid = tuple(int(item) for item in grid_values)
+    selection_algorithm = str(config.algorithm_id)
     public_timeout_closeout: Mapping[str, Any] | None = None
     runner_cache = {} if shared_runner_cache is None else shared_runner_cache
     runner_contract_payloads = (
@@ -22134,7 +22345,7 @@ def _run_joint_l_epsilon_grid_round(
                 extra={
                     "schema": "bayesfilter.fixed_mass_step_public_timeout_progress.v1",
                     "stage": "fixed_mass_step_candidate_soft_deadline_closeout",
-                    "joint_l_epsilon_algorithm": "joint_l_epsilon_grid_fixed_mass_hmc",
+                    "joint_l_epsilon_algorithm": selection_algorithm,
                     "joint_l_epsilon_grid_stage": str(grid_stage),
                     "joint_l_epsilon_round_index": int(round_index),
                     "joint_l_epsilon_candidate_index": int(candidate_index),
@@ -22173,7 +22384,7 @@ def _run_joint_l_epsilon_grid_round(
                 completed=bool(payload.get("completed")),
                 extra={
                     **_budget_ladder_progress_extra(payload),
-                    "joint_l_epsilon_algorithm": "joint_l_epsilon_grid_fixed_mass_hmc",
+                    "joint_l_epsilon_algorithm": selection_algorithm,
                     "joint_l_epsilon_grid_stage": str(grid_stage),
                     "joint_l_epsilon_round_index": int(round_index),
                     "joint_l_epsilon_candidate_index": int(candidate_index),
@@ -22708,9 +22919,10 @@ def _frozen_step_trajectory_candidate_generation(
     }
 
 
-def _joint_l_epsilon_selected_pair_candidate_generation(
+def _phase5_selected_pair_candidate_generation(
     *,
     geometry: HMCGeometryInitializationResult,
+    phase5_algorithm_id: str,
     selected_step_size: float,
     selected_num_leapfrog_steps: int,
     fixed_bootstrap_l: int,
@@ -22739,10 +22951,17 @@ def _joint_l_epsilon_selected_pair_candidate_generation(
         upper_multiplier=float(trajectory_window_upper_multiplier),
     )
     trajectory_length = step * selected_l
+    phase5_algorithm = str(phase5_algorithm_id)
+    if phase5_algorithm not in _PHASE5_DIRECT_GRID_ALGORITHMS:
+        raise ValueError("selected-pair handoff requires a direct Phase 5 algorithm")
     return {
-        "formula": "Phase 5 joint L/epsilon selected pair handoff screen",
-        "algorithm": "joint_l_epsilon_grid_fixed_mass_hmc_selected_pair_handoff",
-        "phase5_joint_l_epsilon_algorithm": True,
+        "formula": "Phase 5 measured epsilon/L selected-pair handoff screen",
+        "algorithm": f"{phase5_algorithm}_selected_pair_handoff",
+        "phase5_algorithm_id": phase5_algorithm,
+        "phase5_measured_epsilon_l_pair": True,
+        "phase5_joint_l_epsilon_algorithm": bool(
+            phase5_algorithm == _PHASE5_JOINT_L_EPSILON_ALGORITHM
+        ),
         "selected_step_size": step,
         "selected_num_leapfrog_steps": selected_l,
         "target_trajectory_length": target,
@@ -23573,11 +23792,9 @@ def _phase7_verification_initial_state(
         }
     policy_id = str(getattr(operational, "private_start_bank_policy_id", ""))
     if policy_id != PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID:
-        # Historical operational fixtures use the predecessor greedy bank.
-        # Preserve their test-only selector semantics while still mapping the
-        # actual post-warmup bank through the active nested transforms.  This
-        # branch cannot be reached by the repaired public P4-E route (which is
-        # selected explicitly in ``run_hmc_fixed_mass_step_stage``).
+        # The ordinary broad route uses the checked post-warmup bank produced
+        # by operational warmup. Map that bank through both frozen affine
+        # layers and verify its identity before any per-L epsilon ladder runs.
         canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
         if canonical.shape != (4, windowed_stage.target_dimension):
             raise ValueError("operational verification start bank shape mismatch")
@@ -23627,7 +23844,7 @@ def _phase7_verification_initial_state(
             operational.final_kernel_state.transform.signature,
         )
         return verification_latent, {
-            "source": "historical_operational_start_bank_v1",
+            "source": "operational_post_warmup_start_bank_v2",
             "policy_id": policy_id,
             "source_signature": source_signature,
             "active_signature": active_signature,
@@ -23641,8 +23858,8 @@ def _phase7_verification_initial_state(
             "final_coordinate_match_passed": True,
             "raw_values_exposed": False,
             "reports_operational_start_lineage": True,
-            "evidence_role": "historical_compatibility_fixture",
-            "promotion_role": "non_promoting",
+            "evidence_role": "tuning_handoff",
+            "promotion_role": "phase5_candidate_start_only",
             "reports_posterior_convergence": False,
         }
     if (

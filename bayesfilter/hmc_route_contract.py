@@ -11,14 +11,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
+from bayesfilter.hmc_ordinary_selection_policy import (
+    ORDINARY_BROAD_FIXED_METRIC_POLICY_ID,
+)
 
-HMC_ROUTE_CONTRACT_VERSION = "bayesfilter.hmc_algorithm_route.v1"
+HMC_ROUTE_CONTRACT_VERSION = "bayesfilter.hmc_algorithm_route.v2"
 
 OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID = (
     "operational_interleaved_windowed_warmup_v2"
 )
-OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID = (
+ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID = (
+    ORDINARY_BROAD_FIXED_METRIC_POLICY_ID
+)
+LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID = (
     "operational_paired_fixed_trajectory_selection_v3"
+)
+# Compatibility symbol for callers that imported the active algorithm constant
+# rather than persisting the old v3 string.
+OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID = (
+    ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
 )
 LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID = "segmented_windowed_mass_runner"
 LEGACY_JOINT_L_EPSILON_ALGORITHM_ID = "joint_l_epsilon_grid_fixed_mass_hmc"
@@ -33,11 +44,13 @@ _KNOWN_BY_STAGE = {
         LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
     },
     HMC_FIXED_TRAJECTORY_STAGE: {
-        OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
     },
     HMC_TOP_LEVEL_SELECTION_STAGE: {
-        OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
     },
 }
@@ -131,7 +144,10 @@ def windowed_algorithm_for_selection_algorithm(algorithm_id: str) -> str:
     """Map a top-level selection family to its compatible warmup algorithm."""
 
     selected = str(algorithm_id)
-    if selected == OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID:
+    if selected in {
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+    }:
         return OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     if selected == LEGACY_JOINT_L_EPSILON_ALGORITHM_ID:
         return LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
@@ -179,9 +195,10 @@ def resolve_hmc_algorithm_route(
 
     operational = selected in {
         OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
-        OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
     }
     legacy = selected in {
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
         LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
     }

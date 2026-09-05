@@ -50,9 +50,7 @@ def _bootstrap_passed():
     return _passed_bootstrap()
 
 
-def test_public_tuner_threads_typed_runner_binding(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_public_ordinary_config_rejects_typed_runner_binding() -> None:
     target_scope = "kernel_fixed_mass_step_toy_gaussian"
     binding = bind_neural_force_hmc_tuning_runner(
         force=FrozenPositionOnlyForce(
@@ -66,46 +64,15 @@ def test_public_tuner_threads_typed_runner_binding(
         ),
         target_scope=target_scope,
     )
-    geometry = _geometry()
-    bootstrap = _bootstrap_passed()
-    loop = _loop_result(passed=False)
-    seen: list[str] = []
 
-    monkeypatch.setattr(
-        hmc_kernel_tuning_module,
-        "initialize_hmc_kernel_geometry",
-        lambda **_kwargs: geometry,
-    )
-
-    def bootstrap_runner(**kwargs: Any):
-        assert kwargs["run_full_chain"] is binding
-        seen.append("bootstrap")
-        return bootstrap
-
-    def loop_runner(**kwargs: Any):
-        assert kwargs["run_full_chain"] is binding
-        seen.append("loop")
-        return loop
-
-    monkeypatch.setattr(
-        hmc_kernel_tuning_module, "run_hmc_bootstrap_screen", bootstrap_runner
-    )
-    monkeypatch.setattr(
-        hmc_kernel_tuning_module, "run_hmc_tune_verify_repair_loop", loop_runner
-    )
-
-    result = tune_hmc_kernel(
-        adapter=_ToyGaussianAdapter(),
-        initial_position=[0.0, 0.0],
-        config=HMCKernelTuningConfig.smoke(target_scope=target_scope),
-        runner_binding=binding,
-    )
-
-    assert seen == ["bootstrap", "loop"]
-    assert result.runner_binding_payload is not None
-    assert result.runner_binding_payload["binding_hash"] == binding.binding_hash
-    assert result.final_kernel_payload is None
-    with pytest.raises(TypeError, match="HMCTuningRunnerBinding"):
+    with pytest.raises(ValueError, match="TensorFlowHMCKernelTuningConfig"):
+        tune_hmc_kernel(
+            adapter=_ToyGaussianAdapter(),
+            initial_position=[0.0, 0.0],
+            config=HMCKernelTuningConfig.smoke(target_scope=target_scope),
+            runner_binding=binding,
+        )
+    with pytest.raises(ValueError, match="TensorFlowHMCKernelTuningConfig"):
         tune_hmc_kernel(
             adapter=_ToyGaussianAdapter(),
             initial_position=[0.0, 0.0],
@@ -882,7 +849,7 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
         metric_update_requirement="require_operational_update",
         use_xla=True,
         public_timeout_budget_s=810.0,
-        max_leapfrog_steps=40,
+        max_leapfrog_steps=25,
         step_repair_factor=2.5,
         step_repair_high_acceptance_directional_factor=3.0,
         step_repair_high_acceptance_ladder_max_factor=4.0,
@@ -902,15 +869,15 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
         "require_operational_update"
     )
     assert config.payload()["public_timeout_budget_s"] == pytest.approx(810.0)
-    assert config.payload()["max_leapfrog_steps"] == 40
+    assert config.payload()["max_leapfrog_steps"] == 25
     assert config.payload()["step_repair_high_acceptance_directional_factor"] == (
         pytest.approx(3.0)
     )
     assert config.payload()["step_repair_high_acceptance_ladder_max_factor"] == (
         pytest.approx(4.0)
     )
-    assert geometry.max_leapfrog_steps == 40
-    assert bootstrap.max_leapfrog_steps == 40
+    assert geometry.max_leapfrog_steps == 25
+    assert bootstrap.max_leapfrog_steps == 25
     assert bootstrap.step_repair_factor == pytest.approx(2.5)
     assert bootstrap.use_xla is True
     assert bootstrap.payload()["use_xla"] is True
@@ -932,7 +899,7 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
     assert loop.verification_min_retained_results_for_pass == 1000
     assert loop.payload()["verification_chunk_max_results"] == 250
     assert loop.payload()["verification_min_retained_results_for_pass"] == 1000
-    assert loop.max_leapfrog_steps == 40
+    assert loop.max_leapfrog_steps == 25
     assert loop.step_repair_factor == pytest.approx(2.5)
     assert loop.step_repair_high_acceptance_directional_factor == pytest.approx(3.0)
     assert loop.step_repair_high_acceptance_ladder_max_factor == pytest.approx(4.0)
@@ -974,11 +941,16 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
     assert fixed_step.step_repair_high_acceptance_ladder_max_factor == pytest.approx(4.0)
     assert trajectory.use_xla is True
     assert trajectory.handoff_screen_policy == "phase23_nomination_only"
-    assert trajectory.max_leapfrog_steps == 40
+    assert trajectory.max_leapfrog_steps == 25
     assert trajectory.trajectory_window_lower_multiplier == pytest.approx(0.75)
     assert trajectory.trajectory_window_upper_multiplier == pytest.approx(1.5)
     assert trajectory.public_timeout_budget_s == pytest.approx(810.0)
     assert trajectory.public_timeout_started_perf_counter_s == pytest.approx(12.5)
+
+
+def test_public_config_rejects_altered_broad_grid_cap() -> None:
+    with pytest.raises(ValueError, match="fixes max_leapfrog_steps at 25"):
+        HMCKernelTuningConfig.standard(max_leapfrog_steps=40)
 
 
 def test_public_handoff_screen_policy_defaults_and_rejects_unknown_value() -> None:
