@@ -1,5 +1,17 @@
 # RQMC LEDH Initialization: Phase 3 Statistical Analysis Result
 
+**SUPERSEDED — SEE CORRECTION NOTICE**
+
+This document reported `MIXED_PROMOTE` based on a sign-inversion defect in
+the analysis script. The corrected verdict on the complete 45-run grid is
+**`MIXED_REJECT`** — see
+`docs/memos/rqmc-ledh-correction-and-phase2b-completion-2026-09-05.md` for
+the corrected result and the four errors that produced the inverted finding.
+
+---
+
+**Original header (incorrect):**
+
 **Date:** 2026-09-04  
 **Program:** docs/plans/rqmc-ledh-initialization-master-program-2026-09-02.md  
 **Analysis artifact:** docs/benchmarks/artifacts/rqmc_ledh_init_v1_20260904/phase3_analysis.json  

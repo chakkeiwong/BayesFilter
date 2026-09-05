@@ -1,3 +1,9 @@
+> **SUPERSEDED 2026-09-06** by
+> `docs/plans/ledh-surrogate-hmc-unified-program-2026-09-06.md`, which absorbs
+> this plan as its Phase 2B. The technical content (two-engine diagnosis,
+> Fowler method, segmentation risk, promotion criteria) carried over intact;
+> only the sequencing changed. Retained as historical record.
+
 # LEDH Single-Authority Engine Unification — Phase Plan
 
 **Phase ID:** `ledh-engine-unification-2026-09-04`

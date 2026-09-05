@@ -1,3 +1,11 @@
+> **SUPERSEDED 2026-09-06** by
+> `docs/plans/ledh-surrogate-hmc-unified-program-2026-09-06.md`.
+> Retained as historical record. The 2026-09-06 audit found 12 defects in
+> this program, 4 blocking: the λ/δ damping parameters it names do not exist
+> in the code, its Arm 1 baseline artifact does not exist, its Phase 4 model
+> list belongs to the unrelated HNN program, and it carries no heuristic
+> adversary set. Do not execute from this file.
+
 # LEDH Surrogate-Force HMC Master Program
 
 **Program ID:** `ledh-surrogate-force-hmc-2026-09-04`  

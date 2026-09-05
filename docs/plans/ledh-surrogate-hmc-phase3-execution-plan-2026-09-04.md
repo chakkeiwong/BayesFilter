@@ -1,3 +1,9 @@
+> **SUPERSEDED 2026-09-06** by
+> `docs/plans/ledh-surrogate-hmc-unified-program-2026-09-06.md` Phase 4.
+> Retained as historical record. This plan would have executed against a lane
+> that cannot run the production program, using a runner that silently
+> disables the Contract-E reset. Do not execute from this file.
+
 # Phase 3: LEDH Filter Application — Implementation Plan
 
 **Date:** 2026-09-04  

@@ -1,3 +1,9 @@
+> **SUPERSEDED 2026-09-06** by
+> `docs/plans/ledh-surrogate-hmc-unified-program-2026-09-06.md`.
+> Retained as historical record. Its Phase 3 lane assumption and its
+> "audit resolved" reading of the 2026-08-29 score audit were both found
+> wrong by the 2026-09-06 pre-execution audit. Do not execute from this file.
+
 # LEDH Surrogate-Force HMC Program — Single Authority Document
 
 **Date Created:** 2026-09-04  
