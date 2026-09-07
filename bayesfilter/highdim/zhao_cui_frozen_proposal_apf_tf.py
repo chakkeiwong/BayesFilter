@@ -150,6 +150,8 @@ class PreparedFrozenProposalBranch:
     ancestors: tf.Tensor
     auxiliary_log_probabilities: tf.Tensor
     transition_log_proposal_density: tf.Tensor
+    initial_log_base_mass: tf.Tensor | None = None
+    transition_log_base_mass: tf.Tensor | None = None
     branch_id: str = field(init=False)
 
     def __post_init__(self) -> None:
@@ -196,6 +198,29 @@ class PreparedFrozenProposalBranch:
             raise ValueError(
                 "transition_log_proposal_density must have shape [time - 1, particle]"
             )
+        if self.initial_log_base_mass is None:
+            initial_log_base_mass = tf.fill(
+                [particle_count], -tf.math.log(tf.cast(particle_count, states.dtype))
+            )
+        else:
+            initial_log_base_mass = tf.convert_to_tensor(
+                self.initial_log_base_mass, dtype=states.dtype
+            )
+        if self.transition_log_base_mass is None:
+            transition_log_base_mass = tf.fill(
+                transition_shape,
+                -tf.math.log(tf.cast(particle_count, states.dtype)),
+            )
+        else:
+            transition_log_base_mass = tf.convert_to_tensor(
+                self.transition_log_base_mass, dtype=states.dtype
+            )
+        if initial_log_base_mass.shape != (particle_count,):
+            raise ValueError("initial_log_base_mass must have shape [particle]")
+        if transition_log_base_mass.shape != transition_shape:
+            raise ValueError(
+                "transition_log_base_mass must have shape [time - 1, particle]"
+            )
 
         for name, value in (
             ("observations", observations),
@@ -203,6 +228,8 @@ class PreparedFrozenProposalBranch:
             ("initial_log_proposal_density", initial_log_q),
             ("auxiliary_log_probabilities", auxiliary_log_probabilities),
             ("transition_log_proposal_density", transition_log_q),
+            ("initial_log_base_mass", initial_log_base_mass),
+            ("transition_log_base_mass", transition_log_base_mass),
         ):
             _require_all_finite(name, value)
         if time_steps > 1:
@@ -216,6 +243,18 @@ class PreparedFrozenProposalBranch:
             tolerance = 5e-5 if states.dtype == tf.float32 else 1e-10
             if float(normalization_error.numpy()) > tolerance:
                 raise ValueError("each auxiliary categorical law must be normalized")
+        base_mass_tolerance = 5e-5 if states.dtype == tf.float32 else 1e-10
+        initial_mass_error = tf.abs(tf.reduce_logsumexp(initial_log_base_mass))
+        if float(initial_mass_error.numpy()) > base_mass_tolerance:
+            raise ValueError("initial base masses must form a normalized categorical law")
+        if time_steps > 1:
+            transition_mass_error = tf.reduce_max(
+                tf.abs(tf.reduce_logsumexp(transition_log_base_mass, axis=1))
+            )
+            if float(transition_mass_error.numpy()) > base_mass_tolerance:
+                raise ValueError(
+                    "each transition base-mass row must form a normalized categorical law"
+                )
 
         object.__setattr__(self, "observations", observations)
         object.__setattr__(self, "states", states)
@@ -225,6 +264,8 @@ class PreparedFrozenProposalBranch:
             self, "auxiliary_log_probabilities", auxiliary_log_probabilities
         )
         object.__setattr__(self, "transition_log_proposal_density", transition_log_q)
+        object.__setattr__(self, "initial_log_base_mass", initial_log_base_mass)
+        object.__setattr__(self, "transition_log_base_mass", transition_log_base_mass)
         object.__setattr__(self, "branch_id", _branch_fingerprint(self))
 
     @property
@@ -258,6 +299,8 @@ class PreparedFrozenProposalBranch:
             "proposal_parameter_dependence": "none",
             "fixed_genealogy": True,
             "pseudo_marginal_exact_target_claimed": False,
+            "base_mass_policy": "repository_resolved_log_probability_v1",
+            "base_mass_rows_normalized": True,
             "dtype": self.dtype.name,
             "time_steps": self.time_steps,
             "particle_count": self.particle_count,
@@ -566,6 +609,18 @@ def combine_fixed_ttsirt_block_compilations(
             first.auxiliary_log_probabilities,
             message=f"block {index} auxiliary law differs",
         )
+        tf.debugging.assert_near(
+            branch.initial_log_base_mass,
+            first.initial_log_base_mass,
+            atol=5e-7 if first.dtype == tf.float32 else 1e-12,
+            message=f"block {index} initial base mass differs",
+        )
+        tf.debugging.assert_near(
+            branch.transition_log_base_mass,
+            first.transition_log_base_mass,
+            atol=5e-7 if first.dtype == tf.float32 else 1e-12,
+            message=f"block {index} transition base mass differs",
+        )
 
     combined_observations = (
         first.observations
@@ -583,6 +638,8 @@ def combine_fixed_ttsirt_block_compilations(
         transition_log_proposal_density=tf.add_n(
             [item.branch.transition_log_proposal_density for item in blocks]
         ),
+        initial_log_base_mass=first.initial_log_base_mass,
+        transition_log_base_mass=first.transition_log_base_mass,
     )
     manifest = {
         "compiler_route_id": "zhao_cui_blockwise_fixed_ttsirt_branch_compiler_v1",
@@ -624,6 +681,8 @@ def prepare_frozen_proposal_branch(
     ancestors: tf.Tensor,
     auxiliary_log_probabilities: tf.Tensor,
     transition_log_proposal_density: tf.Tensor,
+    initial_log_base_mass: tf.Tensor | None = None,
+    transition_log_base_mass: tf.Tensor | None = None,
 ) -> PreparedFrozenProposalBranch:
     """Issue a repository-computed identity for one realized proposal branch."""
 
@@ -634,6 +693,8 @@ def prepare_frozen_proposal_branch(
         ancestors=ancestors,
         auxiliary_log_probabilities=auxiliary_log_probabilities,
         transition_log_proposal_density=transition_log_proposal_density,
+        initial_log_base_mass=initial_log_base_mass,
+        transition_log_base_mass=transition_log_base_mass,
     )
 
 
@@ -708,7 +769,7 @@ class FrozenProposalAPFProgram:
             "program_id": self.program_id,
             "score_backend_id": SCORE_BACKEND_ID,
             "jit_compile_default": True,
-            "finite_scalar": "sum_t(logsumexp(log_importance_weight_t)-log(N))",
+            "finite_scalar": "sum_t(logsumexp(log_base_mass_t + log_importance_weight_t))",
             "score_semantics": "analytical_recursive_score_of_same_finite_scalar",
             "model": self.model.manifest_payload(),
         }
@@ -731,7 +792,6 @@ def _evaluate_core(
     dtype = branch.dtype
     particle_count = branch.particle_count
     parameter_dimension = int(model.parameter_dim())
-    log_particle_count = tf.math.log(tf.cast(particle_count, dtype))
 
     initial_state = branch.states[0]
     initial_log_density = _vector(
@@ -759,13 +819,14 @@ def _evaluate_core(
         dtype,
     )
     log_unnormalized = (
-        initial_log_density
+        branch.initial_log_base_mass
+        + initial_log_density
         + observation_log_density
         - branch.initial_log_proposal_density
     )
     local_marks = initial_score + observation_score
     log_sum = tf.reduce_logsumexp(log_unnormalized)
-    increment = log_sum - log_particle_count
+    increment = log_sum
     log_weights = log_unnormalized - log_sum
     normalized_weights = tf.exp(log_weights)
     increment_score = tf.reduce_sum(normalized_weights[:, None] * local_marks, axis=0)
@@ -787,6 +848,9 @@ def _evaluate_core(
     )
     increments = [increment]
     increment_scores = [increment_score]
+    ess_by_time = [minimum_ess]
+    log_weight_spread_by_time = [maximum_log_weight_spread]
+    maximum_normalized_weight_by_time = [tf.reduce_max(normalized_weights)]
 
     for time_index in range(1, branch.time_steps):
         ancestors = branch.ancestors[time_index - 1]
@@ -835,7 +899,8 @@ def _evaluate_core(
             dtype,
         )
         log_unnormalized = (
-            selected_previous_log_weights
+            branch.transition_log_base_mass[time_index - 1]
+            + selected_previous_log_weights
             + transition_log_density
             + observation_log_density
             - selected_auxiliary_log_probability
@@ -843,7 +908,7 @@ def _evaluate_core(
         )
         local_marks = selected_previous_marks + transition_score + observation_score
         log_sum = tf.reduce_logsumexp(log_unnormalized)
-        increment = log_sum - log_particle_count
+        increment = log_sum
         log_weights = log_unnormalized - log_sum
         normalized_weights = tf.exp(log_weights)
         increment_score = tf.reduce_sum(
@@ -852,13 +917,16 @@ def _evaluate_core(
         derivative_log_weights = local_marks - increment_score[None, :]
         total_log_likelihood = total_log_likelihood + increment
         total_score = total_score + increment_score
-        minimum_ess = tf.minimum(
-            minimum_ess,
-            tf.math.reciprocal(tf.reduce_sum(tf.square(normalized_weights))),
+        current_ess = tf.math.reciprocal(
+            tf.reduce_sum(tf.square(normalized_weights))
         )
+        current_log_weight_spread = tf.reduce_max(log_unnormalized) - tf.reduce_min(
+            log_unnormalized
+        )
+        current_maximum_normalized_weight = tf.reduce_max(normalized_weights)
+        minimum_ess = tf.minimum(minimum_ess, current_ess)
         maximum_log_weight_spread = tf.maximum(
-            maximum_log_weight_spread,
-            tf.reduce_max(log_unnormalized) - tf.reduce_min(log_unnormalized),
+            maximum_log_weight_spread, current_log_weight_spread
         )
         finite = finite & _all_finite(
             (
@@ -871,12 +939,20 @@ def _evaluate_core(
         )
         increments.append(increment)
         increment_scores.append(increment_score)
+        ess_by_time.append(current_ess)
+        log_weight_spread_by_time.append(current_log_weight_spread)
+        maximum_normalized_weight_by_time.append(current_maximum_normalized_weight)
 
     return {
         "log_likelihood": total_log_likelihood,
         "score": total_score,
         "log_increments": tf.stack(increments),
         "increment_scores": tf.stack(increment_scores),
+        "ess_by_time": tf.stack(ess_by_time),
+        "log_weight_spread_by_time": tf.stack(log_weight_spread_by_time),
+        "maximum_normalized_weight_by_time": tf.stack(
+            maximum_normalized_weight_by_time
+        ),
         "final_log_weights": log_weights,
         "minimum_ess": minimum_ess,
         "maximum_log_weight_spread": maximum_log_weight_spread,
@@ -935,6 +1011,8 @@ def _branch_fingerprint(branch: PreparedFrozenProposalBranch) -> str:
         "ancestors",
         "auxiliary_log_probabilities",
         "transition_log_proposal_density",
+        "initial_log_base_mass",
+        "transition_log_base_mass",
     ):
         _update_hash(digest, name)
         _update_hash(digest, getattr(branch, name))
