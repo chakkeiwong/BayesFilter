@@ -111,6 +111,11 @@ def _time_one_configuration(
     )
 
     model = _lgssm_model(dtype, state_dim, obs_dim)
+
+    # Define matrices directly since NonlinearScoreModel doesn't expose them
+    observation_matrix = tf.eye(obs_dim, state_dim, dtype=dtype)
+    process_covariance = 0.1 * tf.eye(state_dim, dtype=dtype)
+
     with tf.device("/GPU:0"):
         initial_states = tf.random.stateless_normal(
             [particle_count, state_dim], seed=[2609, 9001], dtype=dtype
@@ -127,10 +132,12 @@ def _time_one_configuration(
         observations = tf.random.stateless_normal(
             [horizon, obs_dim], seed=[2609, 9003], dtype=dtype
         )
-        observation_matrix = model.observation_matrix
         d_observation_matrix = tf.zeros_like(observation_matrix)
-        scale = tf.sqrt(tf.linalg.diag_part(model.process_covariance))
-        bandwidth_diagonal = bandwidth_rho * scale
+        scale = tf.sqrt(tf.linalg.diag_part(process_covariance))
+        # The declared Phase 4A family is B=diag((rho*s_d)^2), where
+        # s_d=sqrt(Q_dd).  Keep this pilot on the same covariance scale as
+        # the integrated KDM kernel and the research plan.
+        bandwidth_diagonal = tf.square(bandwidth_rho * scale)
         bandwidths = tf.broadcast_to(
             tf.linalg.diag(bandwidth_diagonal),
             [horizon, particle_count, state_dim, state_dim],
@@ -225,6 +232,18 @@ def main() -> None:
     parser.add_argument(
         "--jit-compile", choices=("true", "false"), default="true"
     )
+    parser.add_argument(
+        "--max-rows",
+        type=int,
+        default=None,
+        help="Run only the first bounded number of ladder rows.",
+    )
+    parser.add_argument(
+        "--start-row",
+        type=int,
+        default=0,
+        help="Zero-based ladder row at which to start.",
+    )
     arguments = parser.parse_args()
 
     if arguments.repeats < 2:
@@ -244,24 +263,26 @@ def main() -> None:
     dtype = tf.float32 if arguments.dtype == "float32" else tf.float64
     jit_compile = arguments.jit_compile == "true"
 
-    # Intended ladder from plan section 4A.5
+    # Reduced representative ladder for timing pilot
+    # Full ladder: 14 rows from (32,5) to (512,50)
+    # This pilot samples 6 representative points for budget estimation
     ladder = [
-        # (N, T, rho)
+        # (N, T, rho) — atom and positive bandwidth for each size class
         (32, 5, 0.0),
         (32, 5, 0.20),
-        (32, 20, 0.0),
-        (32, 20, 0.20),
-        (128, 5, 0.0),
-        (128, 5, 0.20),
         (128, 20, 0.0),
         (128, 20, 0.20),
-        (512, 5, 0.0),
-        (512, 5, 0.20),
-        (512, 20, 0.0),
-        (512, 20, 0.20),
         (512, 50, 0.0),
         (512, 50, 0.20),
     ]
+    if arguments.start_row < 0 or arguments.start_row >= len(ladder):
+        raise ValueError("start-row must identify an existing ladder row")
+    end_row = len(ladder)
+    if arguments.max_rows is not None:
+        if arguments.max_rows < 1:
+            raise ValueError("max-rows must be positive")
+        end_row = min(arguments.start_row + arguments.max_rows, len(ladder))
+    ladder = ladder[arguments.start_row:end_row]
 
     timing_rows = []
     for particle_count, horizon, bandwidth_rho in ladder:
@@ -279,7 +300,8 @@ def main() -> None:
         print(
             f"N={particle_count:3d} T={horizon:2d} rho={bandwidth_rho:.2f} "
             f"→ {row['mean_repeat_seconds']*1000:.1f} ms "
-            f"(peak {row['peak_gpu_bytes']/1e6:.0f} MB)"
+            f"(peak {row['peak_gpu_bytes']/1e6:.0f} MB)",
+            flush=True,
         )
 
     root = Path(__file__).resolve().parents[2]
@@ -304,6 +326,8 @@ def main() -> None:
             "does not establish production, HMC, or default readiness",
         ],
         "ladder": ladder,
+        "max_rows": arguments.max_rows,
+        "start_row": arguments.start_row,
         "timing_rows": timing_rows,
         "total_ladder_mean_seconds": total_ladder_seconds,
         "max_peak_gpu_bytes": max_peak_bytes,

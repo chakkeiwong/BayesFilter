@@ -162,6 +162,7 @@ def _finite_valid(result) -> bool:
         "children",
         "predicted_covariances",
         "post_covariances",
+        "covariances_after_reset",
     ):
         finite &= tf.reduce_all(tf.math.is_finite(result[name]))
     return bool((finite & result["valid"]).numpy())
@@ -211,6 +212,10 @@ COMPARE_KEYS = (
     "d_posterior_weights",
     "predicted_covariances",
     "post_covariances",
+    "covariances_after_reset",
+    "d_covariances_after_reset",
+    "reset_transport",
+    "d_reset_transport",
     "states_after_reset",
     "d_states_after_reset",
     "value",
@@ -226,6 +231,7 @@ STAGE_KEYS = (
     "posterior_weights",
     "predicted_covariances",
     "post_covariances",
+    "covariances_after_reset",
     "states_after_reset",
 )
 

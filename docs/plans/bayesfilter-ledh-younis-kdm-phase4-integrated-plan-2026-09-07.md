@@ -1,7 +1,7 @@
 # Phase 4: Integrated Younis-KDM Score Investigation
 
 Date: 2026-09-07  
-Status: `SKEPTICAL_AUDIT_PASSED_FOR_PHASE4A_ENGINEERING; PHASE4B_MATH_BLOCKED; NO_RESEARCH_RUN_YET`  
+Status: `PHASE4A_IMPLEMENTED_COVARIANCE_REPAIRED; GPU_RERUN_PENDING; PHASE4B_MATH_BLOCKED; NO_RESEARCH_RUN_YET`  
 Governing reset:
 `docs/plans/bayesfilter-ledh-younis-kdm-score-research-reset-2026-09-07.md`
 
@@ -69,6 +69,21 @@ mixture. In particular, it does not propagate each component's conditional
 posterior mean and covariance. It must therefore be named
 `kernelized_observation_weighting`, not `Younis MDPF` or `full KDM posterior`.
 The distinction is part of the result, not a minor implementation caveat.
+
+The Contract-E reset also carries the particle-local UKF covariance with the
+same target-by-source transport used for the state.  If `A_ri` is the
+normalized reset transport, the executed recurrence is
+
+```text
+P'_r  = sum_i A_ri P_i
+dP'_r = sum_i dA_ri P_i + sum_i A_ri dP_i.
+```
+
+The carried covariance, rather than the pre-reset source ordering, is consumed
+by the next UKF prediction.  This was a real call-chain bug found and repaired
+on 2026-09-07; the focused endpoint tests now exercise it.  The covariance is
+the particle-local conditional UKF covariance, so no between-cloud scatter is
+added.
 
 The zero-bandwidth branch uses `B=0` directly in the effective observation
 covariance. It must reproduce `ATOM-FINITE` value, score, posterior weights,
@@ -190,7 +205,12 @@ The plan was challenged for the required failure classes.
   variance, and MCSE can be recomputed.
 
 The audit passes for Phase 4A implementation and focused engineering checks.
-It does not authorize Phase 4B code or a serious research campaign yet.
+It does not authorize Phase 4B code or a serious research campaign yet.  The
+existing `batch_fused` file is separately registered but its current endpoint
+returns `children` directly after the UKF update and does not execute
+Contract-E, GenUT, or the dual caps.  It is therefore not a full canonical
+lane and is excluded from the Phase 4A experiment and NeuTra claims until a
+dedicated repair replaces that reduced recurrence and its parity gates pass.
 
 ## Execution sequence
 

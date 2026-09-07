@@ -829,6 +829,18 @@ def make_integrated_linear_gaussian_kdm_kernel(
             "post_covariances": tf.stack(
                 [step["post_covariances"] for step in trace]
             ),
+            "covariances_after_reset": tf.stack(
+                [step["covariances_after_reset"] for step in trace]
+            ),
+            "d_covariances_after_reset": tf.stack(
+                [step["d_covariances_after_reset"] for step in trace]
+            ),
+            "reset_transport": tf.stack(
+                [step["reset_transport"] for step in trace]
+            ),
+            "d_reset_transport": tf.stack(
+                [step["d_reset_transport"] for step in trace]
+            ),
             "d_posterior_weights": tf.stack(
                 [step["d_posterior_weights"] for step in trace]
             ),

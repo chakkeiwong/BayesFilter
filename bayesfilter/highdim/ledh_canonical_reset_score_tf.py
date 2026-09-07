@@ -41,7 +41,7 @@ def _sym(value: Tensor) -> Tensor:
     return 0.5 * (value + tf.linalg.matrix_transpose(value))
 
 
-def sinkhorn_contract_e_reset_with_tangent(
+def _sinkhorn_contract_e_reset_core(
     children: Tensor,
     d_children: Tensor,
     weights: Tensor,
@@ -52,8 +52,8 @@ def sinkhorn_contract_e_reset_with_tangent(
     sinkhorn_steps: int,
     balance_steps: int,
     ridge: float,
-) -> tuple[Tensor, Tensor]:
-    """Return reset particles and their score-direction tangent.
+) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    """Return reset particles plus the shared transport and tangents.
 
     children [N, d]; weights [N] (normalized); design [N, d].
     """
@@ -109,14 +109,17 @@ def sinkhorn_contract_e_reset_with_tangent(
     )
     row_mass = tf.reduce_sum(coupling, axis=1)
     d_row_mass = tf.reduce_sum(d_coupling, axis=1)
-    numer = tf.linalg.matmul(coupling, children)
-    d_numer = tf.linalg.matmul(d_coupling, children) + tf.linalg.matmul(
-        coupling, d_children
+    transport = coupling / row_mass[:, None]
+    d_transport = (
+        d_coupling / row_mass[:, None]
+        - coupling
+        * d_row_mass[:, None]
+        / tf.square(row_mass)[:, None]
     )
-    barycentric = numer / row_mass[:, None]
+    barycentric = tf.linalg.matmul(transport, children)
     d_barycentric = (
-        d_numer / row_mass[:, None]
-        - numer * d_row_mass[:, None] / tf.square(row_mass)[:, None]
+        tf.linalg.matmul(d_transport, children)
+        + tf.linalg.matmul(transport, d_children)
     )
 
     # --- Contract-E restore with tangent
@@ -202,7 +205,91 @@ def sinkhorn_contract_e_reset_with_tangent(
         + tf.linalg.matmul(d_centered_inj, affine, transpose_b=True)
         + tf.linalg.matmul(centered_inj, d_affine, transpose_b=True)
     )
+    return particles, d_particles, transport, d_transport
+
+
+def sinkhorn_contract_e_reset_with_tangent(
+    children: Tensor,
+    d_children: Tensor,
+    weights: Tensor,
+    d_weights: Tensor,
+    design: Tensor,
+    *,
+    epsilon: float,
+    sinkhorn_steps: int,
+    balance_steps: int,
+    ridge: float,
+) -> tuple[Tensor, Tensor]:
+    """Return reset particles and their score-direction tangent."""
+
+    particles, d_particles, _, _ = _sinkhorn_contract_e_reset_core(
+        children,
+        d_children,
+        weights,
+        d_weights,
+        design,
+        epsilon=epsilon,
+        sinkhorn_steps=sinkhorn_steps,
+        balance_steps=balance_steps,
+        ridge=ridge,
+    )
     return particles, d_particles
 
 
-__all__ = ["sinkhorn_contract_e_reset_with_tangent"]
+def sinkhorn_contract_e_reset_triple_with_tangent(
+    children: Tensor,
+    d_children: Tensor,
+    covariances: Tensor,
+    d_covariances: Tensor,
+    weights: Tensor,
+    d_weights: Tensor,
+    design: Tensor,
+    *,
+    epsilon: float,
+    sinkhorn_steps: int,
+    balance_steps: int,
+    ridge: float,
+) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    """Reset states and carry local UKF covariances with the same map.
+
+    The final two tensors are the normalized target-by-source transport and
+    its total tangent. They are returned for executable call-chain evidence;
+    no second Sinkhorn solve or independently reconstructed transport is used.
+    """
+
+    particles, d_particles, transport, d_transport = (
+        _sinkhorn_contract_e_reset_core(
+            children,
+            d_children,
+            weights,
+            d_weights,
+            design,
+            epsilon=epsilon,
+            sinkhorn_steps=sinkhorn_steps,
+            balance_steps=balance_steps,
+            ridge=ridge,
+        )
+    )
+    carried_covariances = tf.einsum(
+        "ri,iab->rab", transport, covariances
+    )
+    d_carried_covariances = (
+        tf.einsum("ri,iab->rab", d_transport, covariances)
+        + tf.einsum("ri,iab->rab", transport, d_covariances)
+    )
+    carried_covariances = _sym(carried_covariances)
+    d_carried_covariances = _sym(d_carried_covariances)
+    return (
+        particles,
+        d_particles,
+        carried_covariances,
+        d_carried_covariances,
+        transport,
+        d_transport,
+    )
+
+
+__all__ = [
+    "sinkhorn_contract_e_reset_triple_with_tangent",
+    "sinkhorn_contract_e_reset_with_tangent",
+]

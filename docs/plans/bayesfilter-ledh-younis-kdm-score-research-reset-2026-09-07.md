@@ -2,7 +2,7 @@
 
 Date: 2026-09-07
 
-Status: PHASE4A_ENGINEERING_COMPLETE_TF32_VETO; PHASE4B_MATH_BLOCKED; NO RESEARCH CAMPAIGN YET
+Status: PHASE4A_COVARIANCE_REPAIRED_GPU_RERUN_PENDING; PHASE4B_MATH_BLOCKED; NO RESEARCH CAMPAIGN YET
 
 This plan corrects the research question after the earlier
 Fisher/FFBSm/PaRIS rewrite proposal. The earlier proposal is preserved as
@@ -828,7 +828,7 @@ CPU-only reference evidence and does not compare score error or variance.
 
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
 |---|---|---|---|---|---|
-| Retain Phase 4A as a full-feedback diagnostic | Shared-executor identity, zero-bandwidth trajectory parity, total finite differences, PSD support, CPU XLA pass, and trusted-GPU validity | TF32 identity/parity veto; Phase 4B remains math-blocked | Whether kernelized observation weighting reduces model-score MSE at equal compute is untested | Repair or explicitly exclude TF32 for this route, then run the bounded timing/power gate before freezing a serious LGSSM campaign | No evidence yet that KDM helps the score; Phase 4A is not a full Younis MDPF |
+| Retain Phase 4A as a full-feedback diagnostic | Shared-executor identity, zero-bandwidth trajectory parity, total finite differences, Gaussian-factor identity, PSD/support checks, covariance-carry call-chain identity, and executable endpoint checks | TF32 identity/parity veto remains to be rerun after the covariance repair; Phase 4B remains math-blocked | Whether kernelized observation weighting reduces model-score MSE at equal compute is untested | Rerun the repaired GPU/XLA gate, then run the bounded timing/power gate before freezing a serious LGSSM campaign | No evidence yet that KDM helps the score; Phase 4A is not a full Younis MDPF |
 
 ## Decision
 
@@ -838,9 +838,12 @@ the baseline. A KDM sidecar may help only if it is either an explicitly
 changed finite program or a demonstrably target-preserving auxiliary estimator.
 Phase 1 through Phase 4A have supplied the tested algebraic, endpoint,
 fixed-chart, auxiliary, and full-feedback kernelized-observation foundation.
-The first trusted-GPU calibration then found a TF32 identity/parity veto, so
-the next step is a code-level TF32 repair evaluation or an explicit
-no-TF32/float64 route decision, followed only then by the timing and power
-gate. This is not a port of Nemeth, Scibior--Wood, PaRIS, or Del Moral. The
+The Contract-E covariance-carry call-chain bug was repaired and passed the
+focused CPU suite; its GPU/XLA calibration must now be rerun because the
+finite program changed.  The earlier trusted-GPU calibration found a TF32
+identity/parity veto, so the repaired run may either confirm that veto or
+provide evidence for a code-level repair.  Only after that gate is resolved
+does the timing and power gate run. This is not a port of Nemeth,
+Scibior--Wood, PaRIS, or Del Moral. The
 exact all-pairs Phase 4B route must wait for its complete proposal derivation
 rather than being approximated silently.

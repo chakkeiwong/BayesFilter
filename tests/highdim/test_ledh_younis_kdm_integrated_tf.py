@@ -221,6 +221,10 @@ def test_zero_bandwidth_is_exact_full_trajectory_call_chain_identity():
             "states_after_reset",
             "d_states_after_reset",
             "post_covariances",
+            "covariances_after_reset",
+            "d_covariances_after_reset",
+            "reset_transport",
+            "d_reset_transport",
         ):
             np.testing.assert_allclose(
                 actual_step[field].numpy(), expected_step[field].numpy(),

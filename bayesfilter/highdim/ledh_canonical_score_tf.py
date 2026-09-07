@@ -481,15 +481,26 @@ def _value_and_analytical_score_impl(
         d_step_weights = softmax * (
             d_logits - tf.reduce_sum(softmax * d_logits)
         )
+        reset_transport = tf.eye(count, dtype=dtype)
+        d_reset_transport = tf.zeros_like(reset_transport)
         if reset_policy == "contract_e":
             from bayesfilter.highdim.ledh_canonical_reset_score_tf import (
-                sinkhorn_contract_e_reset_with_tangent,
+                sinkhorn_contract_e_reset_triple_with_tangent,
             )
 
-            reset_states, d_reset_states = (
-                sinkhorn_contract_e_reset_with_tangent(
+            (
+                reset_states,
+                d_reset_states,
+                reset_covariances,
+                d_reset_covariances,
+                reset_transport,
+                d_reset_transport,
+            ) = (
+                sinkhorn_contract_e_reset_triple_with_tangent(
                     children,
                     d_children,
+                    post_covs,
+                    d_post_covs,
                     step_weights,
                     d_step_weights,
                     reset_design,
@@ -527,9 +538,13 @@ def _value_and_analytical_score_impl(
                 reset_states = corrected["particles"]
                 d_reset_states = corrected["particles_tangent"][:, :, 0]
             states, d_states = reset_states, d_reset_states
+            covariances, d_covariances = (
+                reset_covariances,
+                d_reset_covariances,
+            )
         else:
             states, d_states = children, d_children
-        covariances, d_covariances = post_covs, d_post_covs
+            covariances, d_covariances = post_covs, d_post_covs
 
         if trace is not None:
             trace.append(
@@ -554,6 +569,10 @@ def _value_and_analytical_score_impl(
                     "observation": observation,
                     "predicted_covariances": predicted_covs,
                     "post_covariances": post_covs,
+                    "covariances_after_reset": covariances,
+                    "d_covariances_after_reset": d_covariances,
+                    "reset_transport": reset_transport,
+                    "d_reset_transport": d_reset_transport,
                     "states_after_reset": states,
                     "d_states_after_reset": d_states,
                 }
