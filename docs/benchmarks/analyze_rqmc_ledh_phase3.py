@@ -91,7 +91,12 @@ def _bootstrap_comparison(
             "median_difference": float(np.median(differences)),
             "ci_lower": float(np.percentile(boot, 2.5)),
             "ci_upper": float(np.percentile(boot, 97.5)),
-            "favors_rqmc": bool(np.percentile(boot, 97.5) < 0),  # upper CI < 0
+            # Metric is terminal log-likelihood: HIGHER IS BETTER. Difference is
+            # (RQMC - MC). So RQMC is superior when the whole CI is ABOVE zero
+            # (ci_lower > 0) and inferior when the whole CI is BELOW zero
+            # (ci_upper < 0). An earlier revision had these inverted.
+            "rqmc_superior": bool(float(np.percentile(boot, 2.5)) > 0.0),
+            "rqmc_inferior": bool(float(np.percentile(boot, 97.5)) < 0.0),
             "statistically_indistinguishable": (
                 float(np.percentile(boot, 2.5)) < 0 < float(np.percentile(boot, 97.5))
             ),
@@ -105,10 +110,15 @@ def _promotion_recommendation(
 ) -> dict[str, Any]:
     """Determine promotion recommendation per program criteria.
 
-    Program criteria (inferred from continuation veto logic):
-    - PROMOTE: at least one RQMC arm has ci_upper < 0 (favors RQMC)
+    Metric is terminal log-likelihood, higher is better; difference is (RQMC - MC).
+
+    - PROMOTE: at least one RQMC arm has ci_lower > 0 (RQMC superior)
     - NEUTRAL: all RQMC arms statistically indistinguishable from MC
-    - REJECT: at least one RQMC arm has ci_lower > 0 (MC superior)
+    - REJECT: at least one RQMC arm has ci_upper < 0 (MC superior)
+
+    Degenerate arms (recorded via `arm_degenerate_with` in the run artifact) are
+    collapsed by the caller before reaching this function, so two names for one
+    computation cannot inflate the count of agreeing arms.
     """
     if comparison["status"] != "complete":
         return {"decision": "BLOCKED", "reason": comparison["status"]}
@@ -119,11 +129,8 @@ def _promotion_recommendation(
     if not evaluated:
         return {"decision": "BLOCKED", "reason": "no_evaluated_rqmc_arms"}
 
-    favors_rqmc = [k for k, v in evaluated.items() if v["favors_rqmc"]]
-    mc_superior = [
-        k for k, v in evaluated.items()
-        if v["ci_lower"] > 0  # lower CI > 0 means MC better
-    ]
+    favors_rqmc = [k for k, v in evaluated.items() if v["rqmc_superior"]]
+    mc_superior = [k for k, v in evaluated.items() if v["rqmc_inferior"]]
     indistinguishable = [
         k for k, v in evaluated.items()
         if v["statistically_indistinguishable"]
@@ -176,8 +183,37 @@ def main() -> int:
         "campaign_summary": str(args.campaign_summary),
         "bootstrap_samples": BOOTSTRAP_SAMPLES,
         "bootstrap_seed": BOOTSTRAP_SEED,
+        "sign_convention": (
+            "metric=terminal_log_likelihood_higher_is_better; "
+            "difference=(rqmc-mc); rqmc_superior<=>ci_lower>0; "
+            "rqmc_inferior<=>ci_upper<0"
+        ),
+        "collapsed_degenerate_arms": [],
         "per_model": {},
     }
+
+    # Degeneracy collapse: an arm whose run artifacts carry `arm_degenerate_with`
+    # computes the identical cloud as the named arm on this model, so keeping both
+    # would let one computation appear as two agreeing arms in the verdict count.
+    # Drop the redundant name, keeping the arm it duplicates.
+    degenerate_map: dict[tuple[str, str], str] = {}
+    for row in rows:
+        twin = row.get("arm_degenerate_with")
+        if twin:
+            degenerate_map[(row["model"], row["arm"])] = twin
+    if degenerate_map:
+        print("Degenerate arms collapsed (one computation, two names):")
+        for (model_name, arm_name), twin in sorted(degenerate_map.items()):
+            print(f"  {model_name}: dropping '{arm_name}' (identical to '{twin}')")
+        rows = [
+            r for r in rows
+            if (r["model"], r["arm"]) not in degenerate_map
+        ]
+        print()
+    analysis["collapsed_degenerate_arms"] = [
+        {"model": m, "dropped_arm": a, "identical_to": t}
+        for (m, a), t in sorted(degenerate_map.items())
+    ]
 
     for model in models:
         print(f"--- {model} " + "-" * max(0, 70 - len(model)))
@@ -200,7 +236,7 @@ def main() -> int:
                     print(
                         f"  {arm:18s} mean_diff={result['mean_difference']:+9.4f} "
                         f"95% CI=[{result['ci_lower']:+8.4f}, {result['ci_upper']:+8.4f}] "
-                        f"favors_rqmc={result['favors_rqmc']}"
+                        f"verdict={'RQMC_SUPERIOR' if result['rqmc_superior'] else 'MC_SUPERIOR' if result['rqmc_inferior'] else 'indistinguishable'}"
                     )
         else:
             print(f"  Status: {comparison['status']}")

@@ -40,13 +40,26 @@ def canonical_batch_value_score(
     noises: Tensor,
     observations: Tensor,
     *,
-    substeps: int,
+    substeps: int | None = None,
+    flow_substeps: int | None = None,
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
     """Batched value/score: theta [B, P] -> value [B], score [B, P].
 
     Frozen inputs (initial cloud, noises, observations) are shared across
-    rows, matching the NeuTra target contract.
+    rows, matching the NeuTra target contract.  ``substeps`` is the historical
+    batch-lane spelling; ``flow_substeps`` is accepted as the authority's
+    spelling.  Supplying both is allowed only when they agree.
     """
+
+    if substeps is None:
+        substeps = flow_substeps
+    elif flow_substeps is not None and int(substeps) != int(flow_substeps):
+        raise ValueError("substeps and flow_substeps must agree")
+    if substeps is None:
+        raise TypeError("one of substeps or flow_substeps is required")
+    substeps = int(substeps)
+    if substeps < 1:
+        raise ValueError("substeps must be positive")
 
     theta = tf.convert_to_tensor(theta)
     if theta.shape.rank != 2:
@@ -72,7 +85,7 @@ def canonical_batch_value_score(
             initial_covariances,
             noises,
             observations,
-            substeps=substeps,
+            flow_substeps=substeps,
             with_score=True,
         )
         values.append(value)

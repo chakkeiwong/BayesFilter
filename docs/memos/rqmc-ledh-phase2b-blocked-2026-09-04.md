@@ -1,3 +1,7 @@
+> **SUPERSEDED:** This document contains inverted findings. See
+> `docs/memos/rqmc-ledh-correction-and-phase2b-completion-2026-09-05.md`
+> for the corrected result.
+
 # RQMC LEDH Phase 2B: Implementation Blocked
 
 **Date:** 2026-09-04  

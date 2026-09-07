@@ -126,8 +126,15 @@ def _generate_initial_noise(
         # Note: scipy.stats.qmc.Sobol(scramble=True) implements Owen digital scrambling,
         # which generalizes Matousek's nested uniform scrambles. Use optimization='lloyd'
         # for centroidal Voronoi point-set improvement.
+        #
+        # Lloyd (centroidal Voronoi tessellation) is only defined for d >= 2 and
+        # raises for d == 1. Falling back to optimization=None at d == 1 makes this
+        # arm BYTE-IDENTICAL to sobol_owen, so the two are not independent arms on
+        # scalar-state models. Callers must treat them as one arm there; the run
+        # artifact records this via `arm_degenerate_with`.
         from scipy.stats import qmc
-        sobol = qmc.Sobol(d=state_dim, scramble=True, optimization='lloyd', seed=seed)
+        optimization = 'lloyd' if state_dim >= 2 else None
+        sobol = qmc.Sobol(d=state_dim, scramble=True, optimization=optimization, seed=seed)
         uniforms = sobol.random(N)  # [N, state_dim] in [0, 1]
         # Convert to standard normal via inverse CDF
         zero_np = np.nextafter(0.0, 1.0, dtype=np.float32)
@@ -329,6 +336,16 @@ def _run_evaluation(
         "finite": bool(tf.reduce_all(tf.math.is_finite(value)).numpy()),
         "wall_time_seconds": wall_time,
     }
+
+    # Arm degeneracy: at state_dim == 1 the Lloyd point-set optimization that
+    # distinguishes sobol_matousek from sobol_owen is undefined, so the two arms
+    # compute the identical cloud. Record it so downstream analysis treats them
+    # as one arm rather than two agreeing arms.
+    if arm == "sobol_matousek" and int(target["state_dim"]) == 1:
+        result["arm_degenerate_with"] = "sobol_owen"
+        result["arm_degeneracy_reason"] = (
+            "lloyd_point_set_optimization_undefined_at_state_dim_1"
+        )
 
     # Extract diagnostics from status dict
     for key in status:

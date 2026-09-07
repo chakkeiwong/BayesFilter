@@ -40,6 +40,10 @@ class NonlinearScoreModel:
     observation_tangent_fn: Callable[[Tensor, Tensor], Tensor]
     process_covariance: Tensor
     observation_covariance: Tensor
+    # Total tangent of H_theta(x_theta).  None is valid only when the
+    # observation Jacobian is constant in both theta and x along the executed
+    # direction.  The observation-value tangent alone cannot recover dH.
+    observation_jacobian_tangent_fn: Callable[[Tensor, Tensor], Tensor] | None = None
     # Optional NON-GAUSSIAN observation density for the WEIGHT/VALUE path
     # (the Gaussian observation_fn/covariance above remain the FLOW's
     # proposal-design inputs, corrected by the PF-PF identity). When set,
@@ -57,7 +61,7 @@ class NonlinearScoreModel:
     transition_log_density_tangent_fn: Callable[[Tensor, Tensor, Tensor, Tensor, Tensor], Tensor] | None = None
 
 
-def canonical_value_and_analytical_score(
+def _value_and_analytical_score_impl(
     model: NonlinearScoreModel,
     theta: Tensor,
     initial_states: Tensor,
@@ -67,6 +71,11 @@ def canonical_value_and_analytical_score(
     *,
     flow_substeps: int = 24,
     with_score: bool,
+    return_trace: bool = False,
+    observation_factor_override: Callable[
+        [int, Tensor, Tensor, Tensor, Tensor, Tensor], tuple[Tensor, Tensor]
+    ]
+    | None = None,
     reset_policy: str = "none",
     reset_design: Tensor | None = None,
     reset_epsilon: float = 2.0,
@@ -85,8 +94,10 @@ def canonical_value_and_analytical_score(
     coordinate_cap_power: int = 8,
     annealed_stages: int = 1,
     annealed_seed: int = 0,
-) -> tuple[Tensor, Tensor | None]:
-    """T-step canonical value and analytical score (single parameter dir).
+) -> tuple[Tensor, Tensor | None] | tuple[
+    Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]
+]:
+    """Shared T-step LEDH analytical executor (single parameter direction).
 
     reset_policy="contract_e" runs the FULL per-step program (S6: Sinkhorn
     + Contract-E reset with analytical tangent; S7: optional dual-cap
@@ -114,9 +125,30 @@ def canonical_value_and_analytical_score(
     Multi-parameter models call this per direction; the per-direction
     tangent callbacks close over the direction (same convention as the
     repository's model tangent adapters).
+
+    ``observation_factor_override`` is repository-internal composition: it
+    receives ``(time_index, points, d_points, observation, base_log,
+    d_base_log)`` and returns the component log factors and their total
+    tangents.  The registered canonical wrapper never supplies it.
+
+    ``return_trace=True`` is an opt-in diagnostic surface.  It returns a third
+    value containing the actual per-step clouds, weights, tangents, observation,
+    and post-reset state produced by this same finite program.  The trace is
+    not part of the default return contract and does not feed back into the
+    value or score computation.
     """
 
     dtype = initial_states.dtype
+    if return_trace and annealed_stages != 1:
+        raise ValueError(
+            "return_trace currently supports only annealed_stages=1; "
+            "the annealed telescope needs a separate prior-observation factorization"
+        )
+    if observation_factor_override is not None and annealed_stages != 1:
+        raise ValueError(
+            "an observation-factor override currently supports only "
+            "annealed_stages=1"
+        )
     horizon = int(observations.shape[0])
     dim = int(initial_states.shape[1])
     count = tf.shape(initial_states)[0]
@@ -155,6 +187,7 @@ def canonical_value_and_analytical_score(
     d_covariances = tf.zeros_like(covariances)
     total = tf.zeros([], dtype)
     d_total = tf.zeros([], dtype)
+    trace = [] if return_trace else None
 
     def mean_fn(points):
         return model.transition_mean_fn(theta, points)
@@ -204,12 +237,17 @@ def canonical_value_and_analytical_score(
                     ),
                 )
             return _gaussian_log_density_and_tangent(
-                points, d_points, means, d_means, process_chol
+                points,
+                d_points,
+                means,
+                d_means,
+                process_chol,
+                d_covariance=d_q,
             )
 
         def _observation_density(points, d_points):
             if model.observation_log_density_fn is not None:
-                return (
+                base_result = (
                     model.observation_log_density_fn(
                         theta, points, observation
                     ),
@@ -217,13 +255,29 @@ def canonical_value_and_analytical_score(
                         theta, points, observation, d_points
                     ),
                 )
-            observed = model.observation_fn(points)
-            d_observed = model.observation_tangent_fn(points, d_points)
-            obs_target = tf.broadcast_to(
-                observation[None, :], tf.shape(observed)
-            )
-            return _gaussian_log_density_and_tangent(
-                obs_target, None, observed, d_observed, obs_chol
+            else:
+                observed = model.observation_fn(points)
+                d_observed = model.observation_tangent_fn(points, d_points)
+                obs_target = tf.broadcast_to(
+                    observation[None, :], tf.shape(observed)
+                )
+                base_result = _gaussian_log_density_and_tangent(
+                    obs_target,
+                    None,
+                    observed,
+                    d_observed,
+                    obs_chol,
+                    d_covariance=d_r,
+                )
+            if observation_factor_override is None:
+                return base_result
+            return observation_factor_override(
+                time_index,
+                points,
+                d_points,
+                observation,
+                base_result[0],
+                base_result[1],
             )
 
         if annealed_stages > 1:
@@ -374,19 +428,32 @@ def canonical_value_and_analytical_score(
             weights_log = -tf.math.log(tf.cast(count, dtype)) * tf.ones(
                 [count], dtype
             )
-            logits = (
+            prior_observation_logits = (
                 weights_log
                 + transition_log
-                + observation_log
                 + log_det
                 - proposal_log
             )
-            d_logits = (
+            d_prior_observation_logits = (
                 d_transition_log
-                + d_observation_log
                 + d_log_det
                 - d_proposal_log
             )
+            prior_observation_normalizer = tf.reduce_logsumexp(
+                prior_observation_logits
+            )
+            prior_observation_weights = tf.exp(
+                prior_observation_logits - prior_observation_normalizer
+            )
+            d_prior_observation_normalizer = tf.reduce_sum(
+                prior_observation_weights * d_prior_observation_logits
+            )
+            d_prior_observation_weights = prior_observation_weights * (
+                d_prior_observation_logits
+                - d_prior_observation_normalizer
+            )
+            logits = prior_observation_logits + observation_log
+            d_logits = d_prior_observation_logits + d_observation_log
             increment = tf.reduce_logsumexp(logits)
             softmax = tf.exp(logits - increment)
             total += increment
@@ -410,15 +477,15 @@ def canonical_value_and_analytical_score(
             d_observation_covariance=d_r,
         )
 
+        step_weights = softmax
+        d_step_weights = softmax * (
+            d_logits - tf.reduce_sum(softmax * d_logits)
+        )
         if reset_policy == "contract_e":
             from bayesfilter.highdim.ledh_canonical_reset_score_tf import (
                 sinkhorn_contract_e_reset_with_tangent,
             )
 
-            step_weights = softmax
-            d_step_weights = softmax * (
-                d_logits - tf.reduce_sum(softmax * d_logits)
-            )
             reset_states, d_reset_states = (
                 sinkhorn_contract_e_reset_with_tangent(
                     children,
@@ -464,9 +531,113 @@ def canonical_value_and_analytical_score(
             states, d_states = children, d_children
         covariances, d_covariances = post_covs, d_post_covs
 
+        if trace is not None:
+            trace.append(
+                {
+                    "time_index": time_index,
+                    "pre_flow": pre_flow,
+                    "d_pre_flow": d_pre_flow,
+                    "children": children,
+                    "d_children": d_children,
+                    "posterior_weights": step_weights,
+                    "d_posterior_weights": d_step_weights,
+                    "prior_observation_weights": prior_observation_weights,
+                    "d_prior_observation_weights": d_prior_observation_weights,
+                    "prior_observation_logits": prior_observation_logits,
+                    "d_prior_observation_logits": d_prior_observation_logits,
+                    "prior_observation_log_normalizer": prior_observation_normalizer,
+                    "d_prior_observation_log_normalizer": d_prior_observation_normalizer,
+                    "observation_log_density": observation_log,
+                    "d_observation_log_density": d_observation_log,
+                    "posterior_logits": logits,
+                    "d_posterior_logits": d_logits,
+                    "observation": observation,
+                    "predicted_covariances": predicted_covs,
+                    "post_covariances": post_covs,
+                    "states_after_reset": states,
+                    "d_states_after_reset": d_states,
+                }
+            )
+
+    score = d_total[None] if with_score else None
+    if trace is not None:
+        return total, score, tuple(trace)
     if with_score:
         return total, d_total[None]
     return total, None
+
+
+def canonical_value_and_analytical_score(
+    model: NonlinearScoreModel,
+    theta: Tensor,
+    initial_states: Tensor,
+    initial_covariances: Tensor,
+    noises: Tensor,
+    observations: Tensor,
+    *,
+    flow_substeps: int = 24,
+    with_score: bool,
+    return_trace: bool = False,
+    reset_policy: str = "none",
+    reset_design: Tensor | None = None,
+    reset_epsilon: float = 2.0,
+    reset_sinkhorn_steps: int = 8,
+    reset_balance_steps: int = 8,
+    reset_ridge: float = 1.0e-5,
+    correction_steps: int = 0,
+    correction_strength: float = 0.2,
+    correction_lm_damping: float = 1.0e-2,
+    correction_lm_scale_floor: float = 1.0e-4,
+    correction_trust_radius: float = 0.5,
+    pairwise_steps: int = 0,
+    pairwise_strength: float = 0.02,
+    pairwise_rms_cap: float = 2.0,
+    coordinate_cap: float = 0.0,
+    coordinate_cap_power: int = 8,
+    annealed_stages: int = 1,
+    annealed_seed: int = 0,
+) -> tuple[Tensor, Tensor | None] | tuple[
+    Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]
+]:
+    """Registered canonical atom-program value and analytical total score.
+
+    This wrapper deliberately offers no observation-factor substitution.  It
+    invokes the shared executor with the model's actual observation density,
+    preserving the canonical target and its default two-value return contract.
+    ``reset_policy='none'`` remains a diagnostic slice; claim-bearing calls
+    must explicitly select Contract-E and the required correction settings.
+    """
+
+    return _value_and_analytical_score_impl(
+        model,
+        theta,
+        initial_states,
+        initial_covariances,
+        noises,
+        observations,
+        flow_substeps=flow_substeps,
+        with_score=with_score,
+        return_trace=return_trace,
+        observation_factor_override=None,
+        reset_policy=reset_policy,
+        reset_design=reset_design,
+        reset_epsilon=reset_epsilon,
+        reset_sinkhorn_steps=reset_sinkhorn_steps,
+        reset_balance_steps=reset_balance_steps,
+        reset_ridge=reset_ridge,
+        correction_steps=correction_steps,
+        correction_strength=correction_strength,
+        correction_lm_damping=correction_lm_damping,
+        correction_lm_scale_floor=correction_lm_scale_floor,
+        correction_trust_radius=correction_trust_radius,
+        pairwise_steps=pairwise_steps,
+        pairwise_strength=pairwise_strength,
+        pairwise_rms_cap=pairwise_rms_cap,
+        coordinate_cap=coordinate_cap,
+        coordinate_cap_power=coordinate_cap_power,
+        annealed_stages=annealed_stages,
+        annealed_seed=annealed_seed,
+    )
 
 
 def _flow_substeps_with_tangent(
@@ -502,21 +673,41 @@ def _flow_substeps_with_tangent(
     for step_index in range(substeps):
         lam = tf.constant((step_index + 1) / substeps, dtype=dtype)
         h_jac = model.observation_jacobian_fn(auxiliary)
-        # For state-independent H (linear observation), d(H)=0; models
-        # with state-dependent H supply the jacobian's tangent through
-        # observation_tangent_fn acting on the auxiliary tangent. The
-        # canonical six-model set all have linear/affine observation
-        # maps (recorded assumption; conformance C-8 fixtures cover
-        # linear H; a curvature-H model extension would add d_h_jac).
+        d_h_jac = (
+            model.observation_jacobian_tangent_fn(
+                auxiliary, d_auxiliary
+            )
+            if model.observation_jacobian_tangent_fn is not None
+            else tf.zeros_like(h_jac)
+        )
         php = tf.einsum("noi,nij,npj->nop", h_jac, predicted_covs, h_jac)
-        d_php = tf.einsum(
-            "noi,nij,npj->nop", h_jac, d_predicted_covs, h_jac
+        d_php = (
+            tf.einsum(
+                "noi,nij,npj->nop",
+                d_h_jac,
+                predicted_covs,
+                h_jac,
+            )
+            + tf.einsum(
+                "noi,nij,npj->nop",
+                h_jac,
+                d_predicted_covs,
+                h_jac,
+            )
+            + tf.einsum(
+                "noi,nij,npj->nop",
+                h_jac,
+                predicted_covs,
+                d_h_jac,
+            )
         )
         innovation_chol = tf.linalg.cholesky(
             lam * php + observation_covariance[None]
         )
         ph_t = tf.einsum("nij,noj->nio", predicted_covs, h_jac)
-        d_ph_t = tf.einsum("nij,noj->nio", d_predicted_covs, h_jac)
+        d_ph_t = tf.einsum(
+            "nij,noj->nio", d_predicted_covs, h_jac
+        ) + tf.einsum("nij,noj->nio", predicted_covs, d_h_jac)
         k_lam = tf.linalg.matrix_transpose(
             tf.linalg.cholesky_solve(
                 innovation_chol, tf.linalg.matrix_transpose(ph_t)
@@ -538,13 +729,18 @@ def _flow_substeps_with_tangent(
         )
         d_k_lam = term_one - term_two
         a_matrix = -0.5 * tf.einsum("nio,noj->nij", k_lam, h_jac)
-        d_a_matrix = -0.5 * tf.einsum("nio,noj->nij", d_k_lam, h_jac)
+        d_a_matrix = -0.5 * (
+            tf.einsum("nio,noj->nij", d_k_lam, h_jac)
+            + tf.einsum("nio,noj->nij", k_lam, d_h_jac)
+        )
 
         h_val = model.observation_fn(auxiliary)
         d_h_val = model.observation_tangent_fn(auxiliary, d_auxiliary)
         residual_e = h_val - tf.einsum("noi,ni->no", h_jac, auxiliary)
-        d_residual_e = d_h_val - tf.einsum(
-            "noi,ni->no", h_jac, d_auxiliary
+        d_residual_e = (
+            d_h_val
+            - tf.einsum("noi,ni->no", d_h_jac, auxiliary)
+            - tf.einsum("noi,ni->no", h_jac, d_auxiliary)
         )
         z_eff = observation[None, :] - residual_e
         d_z_eff = -d_residual_e
@@ -593,10 +789,18 @@ def _flow_substeps_with_tangent(
         )
         actual, auxiliary = new_actual, new_auxiliary
         step_matrix = eye[None] + eps * a_matrix
-        log_det += tf.math.log(tf.abs(tf.linalg.det(step_matrix)))
-        step_inv = tf.linalg.inv(step_matrix)
+        q_factor, r_factor = tf.linalg.qr(step_matrix)
+        log_det += tf.reduce_sum(
+            tf.math.log(tf.abs(tf.linalg.diag_part(r_factor))), axis=1
+        )
+        q_transpose_d_a = tf.linalg.matmul(
+            q_factor, d_a_matrix, transpose_a=True
+        )
+        solved_d_a = tf.linalg.triangular_solve(
+            r_factor, q_transpose_d_a, lower=False
+        )
         d_log_det += eps * tf.linalg.trace(
-            tf.einsum("nij,njk->nik", step_inv, d_a_matrix)
+            solved_d_a
         )
     return actual, d_actual, log_det, d_log_det
 

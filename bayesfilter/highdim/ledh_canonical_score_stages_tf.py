@@ -586,8 +586,14 @@ def _gaussian_log_density_and_tangent(
     means: Tensor,
     d_means: Tensor | None,
     covariance_chol: Tensor,
+    *,
+    d_covariance: Tensor | None = None,
 ) -> tuple[Tensor, Tensor | None]:
-    """log N(points; means, C) with analytical tangent through both args."""
+    """Return ``log N(points; means, C)`` and its total tangent.
+
+    ``d_covariance`` is the tangent of ``C`` itself, not of its Cholesky
+    factor.  Existing callers with a fixed covariance may omit it.
+    """
 
     residual = points - means
     solved = tf.linalg.triangular_solve(
@@ -605,7 +611,7 @@ def _gaussian_log_density_and_tangent(
         tf.math.log(tf.linalg.diag_part(covariance_chol))
     )
     value = -0.5 * (tf.reduce_sum(tf.square(solved), axis=1) + log_norm)
-    if d_points is None and d_means is None:
+    if d_points is None and d_means is None and d_covariance is None:
         return value, None
     d_residual = (d_points if d_points is not None else 0.0) - (
         d_means if d_means is not None else 0.0
@@ -617,6 +623,27 @@ def _gaussian_log_density_and_tangent(
         d_residual[:, :, None],
     )[:, :, 0]
     d_value = -tf.reduce_sum(solved * d_solved, axis=1)
+    if d_covariance is not None:
+        symmetric_d_covariance = 0.5 * (
+            d_covariance + tf.linalg.matrix_transpose(d_covariance)
+        )
+        precision_residual = tf.linalg.cholesky_solve(
+            covariance_chol, residual[:, :, None]
+        )[:, :, 0]
+        covariance_quadratic = tf.einsum(
+            "ni,ij,nj->n",
+            precision_residual,
+            symmetric_d_covariance,
+            precision_residual,
+        )
+        covariance_trace = tf.linalg.trace(
+            tf.linalg.cholesky_solve(
+                covariance_chol, symmetric_d_covariance
+            )
+        )
+        d_value = d_value + 0.5 * (
+            covariance_quadratic - covariance_trace
+        )
     return value, d_value
 
 

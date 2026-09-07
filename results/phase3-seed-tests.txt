@@ -1,0 +1,32 @@
+
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /home/chakwong/anaconda3/envs/tftwogpu/bin/python
+cachedir: .pytest_cache
+rootdir: /home/chakwong/BayesFilter
+configfile: pytest.ini
+plugins: cov-7.1.0, anyio-4.14.2
+collecting ... collected 5 items
+
+tests/inference/test_ledh_seed_policy.py::test_v1_determinism_same_seed_gives_bitwise_identical_force ✓ V1 PASS: Determinism verified (bitwise equality)
+PASSED
+tests/inference/test_ledh_seed_policy.py::test_v1_different_seed_gives_different_force ✓ V1 control: Different seeds produce different forces
+PASSED
+tests/inference/test_ledh_seed_policy.py::test_v2_reversibility_forward_backward_forward_is_identity ✓ V2 PASS: Reversibility verified (involution within tolerance)
+PASSED
+tests/inference/test_ledh_seed_policy.py::test_v3_no_call_count_dependence ✓ V3 PASS: No call-count dependence (force is stateless)
+PASSED
+tests/inference/test_ledh_seed_policy.py::test_exact_and_damped_forces_differ_by_damping_factor ✓ Sanity check: damped = exact / (1 + epsilon)
+PASSED
+
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 5 passed, 2 warnings in 35.43s ========================
+

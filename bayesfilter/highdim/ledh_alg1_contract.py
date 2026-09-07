@@ -165,7 +165,7 @@ ENTRY_POINTS: tuple[EntryPoint, ...] = (
         lane="single_cloud",
         role="canonical",
         module="bayesfilter.highdim.ledh_canonical_score_tf",
-        callable_name="canonical_value_score_and_diagnostics",
+        callable_name="canonical_value_and_analytical_score",
         notes="analytical recursive score; P4",
     ),
     EntryPoint(

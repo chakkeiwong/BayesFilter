@@ -15,6 +15,7 @@ os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 import inspect
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from bayesfilter.highdim.ledh_canonical_batch_tf import (
@@ -145,3 +146,33 @@ def test_p2_capability_surface():
     required = {"model", "theta", "substeps"}
     missing = required - set(signature.parameters)
     assert not missing, f"batch lane lost capabilities: {missing}"
+
+
+def test_p2_flow_substeps_alias_matches_historical_spelling():
+    model = _model()
+    initial, covs, noises, observations = _fixture(83)
+    theta = tf.constant([[0.6]], DTYPE)
+    value_old, score_old, _ = canonical_batch_value_score(
+        model, theta, initial, covs, noises, observations, substeps=8
+    )
+    value_new, score_new, _ = canonical_batch_value_score(
+        model, theta, initial, covs, noises, observations, flow_substeps=8
+    )
+    tf.debugging.assert_equal(value_old, value_new)
+    tf.debugging.assert_equal(score_old, score_new)
+
+
+def test_p2_flow_substeps_alias_rejects_conflict():
+    model = _model()
+    initial, covs, noises, observations = _fixture(85)
+    with pytest.raises(ValueError, match="must agree"):
+        canonical_batch_value_score(
+            model,
+            tf.constant([[0.6]], DTYPE),
+            initial,
+            covs,
+            noises,
+            observations,
+            substeps=8,
+            flow_substeps=9,
+        )

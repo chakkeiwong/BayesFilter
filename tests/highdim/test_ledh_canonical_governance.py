@@ -5,6 +5,7 @@ These run per-commit on CPU; they are the anti-silent-lane layer.
 
 from __future__ import annotations
 
+import importlib
 import pathlib
 import re
 
@@ -66,6 +67,22 @@ def test_g1_ledh_lane_discovery():
     assert not unregistered, (
         f"unregistered LEDH canonical modules (G-1): {unregistered}"
     )
+
+
+def test_g1_registered_entry_points_resolve():
+    """Every registry row must name an importable callable."""
+
+    from bayesfilter.highdim.ledh_alg1_contract import ENTRY_POINTS
+
+    unresolved = []
+    for entry in ENTRY_POINTS:
+        module = importlib.import_module(entry.module)
+        endpoint = getattr(module, entry.callable_name, None)
+        if not callable(endpoint):
+            unresolved.append(
+                f"{entry.lane}: {entry.module}.{entry.callable_name}"
+            )
+    assert not unresolved, f"unresolved LEDH entry points (G-1): {unresolved}"
 
 
 def test_production_program_registry_wiring():

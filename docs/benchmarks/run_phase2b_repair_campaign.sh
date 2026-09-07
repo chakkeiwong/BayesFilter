@@ -9,10 +9,14 @@
 set -euo pipefail
 
 ARTIFACT_ROOT="docs/benchmarks/artifacts/rqmc_ledh_init_v1_20260904"
-RUNNER="docs/benchmarks/run_rqmc_phase2b_repair.py"
+RUNNER="docs/benchmarks/run_rqmc_ledh_initialization.py"
 
-# Use GPU 1 (4080 SUPER)
+# Use GPU 1 (4080 SUPER). CUDA_DEVICE_ORDER is load-bearing: without it,
+# CUDA_VISIBLE_DEVICES=1 selects the 5080 instead, and the repair cells would
+# run on different silicon than the 36 cells they are compared against.
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
 export CUDA_VISIBLE_DEVICES=1
+export TF_FORCE_GPU_ALLOW_GROWTH=true
 
 echo "========================================================================"
 echo "Phase 2B Repair Campaign"
