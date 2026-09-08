@@ -48,9 +48,18 @@ branch: ledh-refactor-with-policy-fix
 ```
 
 That commit is an archival checkpoint for the old checkout. It is not a
-Zhao-Cui dependency and is not merged here. Additional unrelated changes
-appeared in the old checkout after that checkpoint. They were not made,
-staged, committed, restored, or copied as part of this reset.
+Zhao-Cui dependency and is not merged here. Additional unrelated Phase 4A
+changes appeared in the old checkout after that checkpoint. They were later
+preserved, without review or scientific validation, in the same LEDH branch as:
+
+```text
+76f09a6dac780fc3dfec0116947b974b92376fa3
+Checkpoint LEDH Phase 4A follow-up state
+```
+
+Neither LEDH checkpoint was restored or copied into the Zhao-Cui branch. The
+second checkpoint retained existing Markdown hard-break whitespace reported by
+`git diff --check`; it is an archival snapshot, not validated result evidence.
 
 The two inherited Codex subagent sessions visible at reset time were already
 interrupted. No live subagent is assigned to this workspace.
