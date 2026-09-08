@@ -1,0 +1,168 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}[proposition]{Corollary}
+\newtheorem{remark}[proposition]{Remark}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+\title{Machine-auditable propositions for the LEDH--PFPF--GenUT note}
+\author{BayesFilter research record}
+\date{2026-08-24}
+
+\begin{document}
+\maketitle
+
+\paragraph{Scope.}
+This appendix records the narrow algebraic propositions used by the Markdown
+note
+\texttt{bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-
+mathematical-note-2026-08-24.md}.  It is an audit surface, not a claim that the
+current implementation satisfies every hypothesis.
+
+\begin{proposition}[Moment non-identification]
+\label{prop:ledh-moment-nonidentification}
+The standard normal law and the law assigning mass $2/3$ to $0$ and mass $1/6$
+to each of $\sqrt{3}$ and $-\sqrt{3}$ have equal first four raw moments but are
+different probability measures.
+\end{proposition}
+\begin{proof}
+Both means and third moments are zero.  The second moment of the discrete law is
+$\frac16(3)+\frac16(3)=1$, and its fourth moment is
+$\frac16(9)+\frac16(9)=3$, which are the corresponding standard-normal
+moments.  One law is discrete and the other is absolutely continuous, so they
+cannot be equal.
+\end{proof}
+
+\begin{proposition}[Bounded image of the smooth caps]
+\label{prop:ledh-cap-support}
+For $d>0$ and $\rho>0$, define
+\[
+ C_\rho(u)=u\left(1+\frac{\norm{u}^2}{d\rho^2}\right)^{-1/2}.
+\]
+Then $\norm{C_\rho(u)}<\sqrt d\,\rho$ for finite $u$.  For $b>0$ and even
+$p\geq2$, define
+\[
+ g_{b,p}(u)=u\left(1+(u/b)^p\right)^{-1/p}.
+\]
+Then $\abs{g_{b,p}(u)}<b$ for finite $u$ and
+\[
+ g'_{b,p}(u)=\left(1+(u/b)^p\right)^{-1/p-1}>0.
+\]
+Neither map is onto its unconstrained Euclidean codomain.
+\end{proposition}
+\begin{proof}
+Writing $r=\norm{u}$ gives
+\[
+ \norm{C_\rho(u)}
+ =\frac{r}{\sqrt{1+r^2/(d\rho^2)}}<\sqrt d\,\rho.
+\]
+For the scalar cap, put $s=(u/b)^p\geq0$.  Differentiation gives
+\[
+ \frac{d}{du}\{u(1+s)^{-1/p}\}
+ =(1+s)^{-1/p}-s(1+s)^{-1/p-1}
+ =(1+s)^{-1/p-1}>0.
+\]
+The limits as $u\to\pm\infty$ are $\pm b$, proving the image bound and
+non-surjectivity.
+\end{proof}
+
+\begin{proposition}[Invertible PF--PF change of variables]
+\label{prop:ledh-pfpf-change}
+Let $q_0$ be a density on $\R^d$, positive on the relevant preimage support,
+and let $\Phi:\R^d\to\R^d$ be a $C^1$ diffeomorphism with nonzero determinant.
+If $X\sim q_0$ and $Y=\Phi(X)$, then
+\[
+ q_1(y)=q_0(\Phi^{-1}(y))\abs{\det D\Phi^{-1}(y)}
+\]
+and, for every integrable $f$ and nonnegative unnormalized target
+$\widetilde\pi$,
+\[
+ {\mathbb E}_{q_0}\!\left[
+ \frac{\widetilde\pi(\Phi(X))\abs{\det D\Phi(X)}}{q_0(X)}
+ f(\Phi(X))\right]
+ =\int_{\R^d}\widetilde\pi(y)f(y)\,dy.
+\]
+\end{proposition}
+\begin{proof}
+The first equality is the change-of-variables theorem.  In the expectation,
+substitute $y=\Phi(x)$; the factors $q_0(x)$ and
+$\abs{\det D\Phi(x)}$ are exactly the inverse factors in the transformed
+measure, leaving the target integral.
+\end{proof}
+
+\begin{corollary}[Cap/reset boundary]
+\label{cor:ledh-reset-boundary}
+The determinant in Proposition~\ref{prop:ledh-pfpf-change} does not certify a
+later Contract-E/OT/GenUT operation that maps an entire cloud
+$(y_1,\ldots,y_N)$ to a new cloud and is not a single-point diffeomorphism with
+an evaluated joint determinant.
+\end{corollary}
+\begin{proof}
+The proposition uses a map on $\R^d$.  A cloud reset is a map on
+$(\R^d)^N$ and generally couples all rows through global moments and OT
+weights.  Its required Jacobian would therefore be an $Nd$-dimensional joint
+Jacobian, not the LEDH single-particle determinant.
+\end{proof}
+
+\begin{proposition}[Frozen deterministic-mixture replay]
+\label{prop:ledh-replay-unbiased}
+Let $r_1,\ldots,r_H$ be proposal densities frozen before drawing
+$n_h$ samples each, let $N=\sum_h n_h$, and set
+\[
+ \alpha_h=\frac{n_h}{N},\qquad m(x)=\sum_{h=1}^H\alpha_h r_h(x).
+\]
+Assume $m(x)>0$ wherever $\widetilde\pi(x)|f(x)|>0$.  For any integrable
+$f$, the stratified estimator
+\[
+ \widehat\gamma(f)
+ =\frac1N\sum_{h=1}^H\sum_{i=1}^{n_h}
+ \frac{\widetilde\pi(X_{hi})}{m(X_{hi})}f(X_{hi}),
+ \qquad X_{hi}\sim r_h,
+\]
+satisfies
+\[
+ {\mathbb E}\{\widehat\gamma(f)\mid r_1,\ldots,r_H\}
+ =\int\widetilde\pi(x)f(x)\,dx.
+\]
+\end{proposition}
+\begin{proof}
+Linearity of expectation gives
+\[
+ \sum_h\alpha_h\int r_h(x)
+ \frac{\widetilde\pi(x)}{m(x)}f(x)\,dx
+ =\int m(x)\frac{\widetilde\pi(x)}{m(x)}f(x)\,dx.
+\]
+\end{proof}
+
+\begin{proposition}[Defensive-mixture second-moment bound]
+\label{prop:ledh-defensive-bound}
+Let $q$ and $r_{\rm safe}$ be densities, with $r_{\rm safe}$ positive wherever
+$\widetilde\pi>0$. Let $0<\epsilon_{\min}\leq\epsilon\leq1$, and set
+$m=(1-\epsilon)q+\epsilon r_{\rm safe}$.  Then $m\geq
+\epsilon_{\min}r_{\rm safe}$ and
+\[
+ \int\frac{\widetilde\pi(x)^2 f(x)^2}{m(x)}\,dx
+ \leq\frac1{\epsilon_{\min}}
+ \int\frac{\widetilde\pi(x)^2 f(x)^2}{r_{\rm safe}(x)}\,dx.
+\]
+\end{proposition}
+\begin{proof}
+The pointwise mixture inequality gives the support statement and, after taking
+reciprocals, the displayed integral inequality.  Finiteness of the
+right-hand side is an additional assumption.
+\end{proof}
+
+\begin{remark}[Interpretation]
+Propositions~\ref{prop:ledh-cap-support} and
+\ref{prop:ledh-moment-nonidentification} rule out a dual-cap-only claim of
+full-support density faithfulness.  Propositions~\ref{prop:ledh-pfpf-change},
+\ref{prop:ledh-replay-unbiased}, and
+\ref{prop:ledh-defensive-bound} give the separate assumptions needed for a
+conditional proposal/replay construction.  They do not certify the active
+q=20 artifacts or NeuTra/HMC readiness.
+\end{remark}
+
+\end{document}

@@ -86,7 +86,7 @@ def test_quadratic_initializer_recovers_gaussian_mode_and_covariance() -> None:
 
     result = estimate_quadratic_map_covariance(
         _quadratic_target(precision, mode=mode),
-        np.array([0.0, 0.0]),
+        mode,
         locator_config=QuadraticMapCovarianceLocatorConfig(enabled=False),
         quadratic_config=_geometry_config(
             rank=1,
@@ -103,7 +103,7 @@ def test_quadratic_initializer_recovers_gaussian_mode_and_covariance() -> None:
 
     assert result.accepted is True
     assert result.status == "usable"
-    assert result.map_candidate_role == "quadratic_surrogate_map_candidate"
+    assert result.map_candidate_role == "exact_incumbent_geometry_center"
     assert result.map_candidate is not None
     np.testing.assert_allclose(result.map_candidate, mode, atol=0.06)
     np.testing.assert_allclose(result.precision, precision, atol=0.08, rtol=0.05)
@@ -131,7 +131,7 @@ def test_scaled_quadratic_initializer_returns_original_coordinate_mass() -> None
 
     result = estimate_quadratic_map_covariance(
         _quadratic_target(precision_theta, mode=mode),
-        np.array([0.0, 0.0]),
+        mode,
         scale=scale,
         locator_config=QuadraticMapCovarianceLocatorConfig(enabled=False),
         quadratic_config=_geometry_config(
@@ -170,11 +170,34 @@ def test_scaled_quadratic_initializer_returns_original_coordinate_mass() -> None
     assert payload["diagnostics"]["scale_all_ones"] is False
 
 
+def test_one_shot_wrapper_never_emits_covariance_at_a_moved_candidate() -> None:
+    result = estimate_quadratic_map_covariance(
+        _quadratic_target(np.eye(2), mode=np.array([0.3, -0.2])),
+        np.zeros(2),
+        locator_config=QuadraticMapCovarianceLocatorConfig(enabled=False),
+        quadratic_config=_geometry_config(
+            rank=1,
+            sample_count=220,
+            pilot_direction_count=512,
+            holdout_rmse_abs_tolerance=7.0e-2,
+            seed=(33, 34),
+        ),
+    )
+
+    assert result.accepted is False
+    assert result.status == "covariance_center_mismatch_requires_refit"
+    assert result.map_candidate is not None
+    assert not np.array_equal(result.map_candidate, result.locator_position)
+    assert result.precision is None
+    assert result.covariance is None
+    assert result.diagnostics["stale_centered_covariance_prevented"] is True
+
+
 def test_initializer_forwards_batched_design_callback_without_changing_result() -> None:
     precision = np.diag([2.0, 4.0])
     mode = np.array([0.18, -0.12])
     kwargs = {
-        "initial_position": np.zeros(2),
+        "initial_position": mode,
         "locator_config": QuadraticMapCovarianceLocatorConfig(enabled=False),
         "quadratic_config": _geometry_config(
             rank=1,
@@ -321,7 +344,7 @@ def test_iterative_initializer_fails_closed_at_refinement_budget() -> None:
     )
 
     assert result.accepted is False
-    assert result.status == "maximum_refinement_steps_without_terminal_score"
+    assert result.status == "maximum_refinement_steps_after_exact_incumbent_move"
     assert len(result.iterations) == 2
     assert result.precision is None
     assert result.covariance is None
@@ -333,7 +356,7 @@ def test_enabled_locator_is_finite_locator_only_not_covariance_authority() -> No
 
     result = estimate_quadratic_map_covariance(
         _quadratic_target(precision, mode=mode),
-        np.array([0.0, 0.0]),
+        mode,
         locator_config=QuadraticMapCovarianceLocatorConfig(
             enabled=True,
             max_iterations=20,

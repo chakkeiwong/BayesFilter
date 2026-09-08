@@ -237,14 +237,29 @@ if "--affine" in sys.argv:
     from bayesfilter.highdim.retained_quadratic_form_tf import (
         prefix_row_vectors as _prv,
     )
+    from bayesfilter.highdim.retained_moments_tf import retained_reference_moments
     m1f_ = mean1 + (cov1 @ np.linalg.inv(S1)) @ innov1
     P1f_ = cov1 - (cov1 @ np.linalg.inv(S1)) @ cov1
+    arms = []
     for kappa in (3.0, 4.0):
-        Lc = np.linalg.cholesky(P1f_) * kappa
-        Lp = np.linalg.cholesky(P_f) * kappa
+        arms.append((f"affine-k{kappa:.0f}", kappa,
+                     m1f_, np.linalg.cholesky(P1f_), m_f, np.linalg.cholesky(P_f)))
+    if "--m1" in sys.argv:
+        # M1 moment source: retained-object moments (design note Section 3),
+        # z-coordinates -> physical via the identity-scaled t=0 map (x = hw z).
+        mz, Cz = retained_reference_moments(retained)
+        m_p_m1 = hw * mz.numpy()
+        L_p_m1 = hw * np.linalg.cholesky(Cz.numpy())
+        # model-free current block: same moments, declared inflation
+        for kappa, kc in ((3.0, 1.5), (3.0, 2.0)):
+            arms.append((f"m1-k{kappa:.0f}-infl{kc:.1f}", kappa,
+                         m_p_m1, kc * L_p_m1, m_p_m1, L_p_m1))
+    for label, kappa, mc_, Lc_base, mp_, Lp_base in arms:
+        Lc = Lc_base * kappa
+        Lp = Lp_base * kappa
         z_rows_np = _design_rows(config, N, 2 * n, (config.seed, 101)).numpy()
-        xc_np = m1f_[None, :] + z_rows_np[:, :n] @ Lc.T
-        xp_np = m_f[None, :] + z_rows_np[:, n:] @ Lp.T
+        xc_np = mc_[None, :] + z_rows_np[:, :n] @ Lc.T
+        xp_np = mp_[None, :] + z_rows_np[:, n:] @ Lp.T
         z_old_p = xp_np / hw
         clip_frac = float((np.abs(z_old_p) > 1.0).any(axis=1).mean())
         # conversion: log|det Mc| + log|det Mp| + n log 2 - n log hw
@@ -295,6 +310,6 @@ if "--affine" in sys.argv:
         incr = float((shift + tf.math.log(zc_new) - tf.math.log(retained.z_complete_ref)).numpy())
         logg_np = log_g.numpy(); wq = np.full(N, 1.0 / N) * np.exp(logg_np - logg_np.max())
         ess = wq.sum() ** 2 / (wq ** 2).sum()
-        print(f"affine-k{kappa:.0f}: incr={incr:.6f} kalman={kalman_incr1:.6f} "
+        print(f"{label}: incr={incr:.6f} kalman={kalman_incr1:.6f} "
               f"err={incr - kalman_incr1:+.4f} fit_rms={fdiag['weighted_fit_rms']:.2e} "
               f"target_ESS={ess:.0f} clip_frac={clip_frac:.3f} wall={time.time()-t0:.0f}s", flush=True)

@@ -1,0 +1,79 @@
+{
+  "adapter_boundary": "covariances and covariance derivatives are factored once before tracing; no per-step covariance factorization",
+  "adapter_source": {
+    "anchor": "covariance_model_to_factor_contract",
+    "path": "bayesfilter/nonlinear/factor_srukf_compat.py",
+    "sha256": "44d9f63891b27c1c9b1aa0bac675aa78df7424fa793c76fa54092e68652b56e0"
+  },
+  "branch_status": "fixed_full_rank_positive_pivot",
+  "data_sha256": "ab7885b135d8098c6e516e06733ef99399ea07f4a39292670b578da4a0efbae3",
+  "device": "CPU diagnostic/reference lane",
+  "direct_score": [
+    -6.011315479772724,
+    -9.87023915316405,
+    -7.0066022506033345,
+    -7.199681767794123,
+    -2.0860425239746165
+  ],
+  "direct_value": -124.62834094097093,
+  "dtype": "float64",
+  "eager_xla_score_delta": {
+    "max_abs": 2.398081733190338e-14,
+    "max_rel": 5.535035515048812e-15
+  },
+  "eager_xla_value_delta": {
+    "max_abs": 0.0,
+    "max_rel": 0.0
+  },
+  "finite_difference_delta": {
+    "max_abs": 1.621975798116182e-08,
+    "max_rel": 1.9822721069852026e-09
+  },
+  "finite_difference_score": [
+    -6.011315472420619,
+    -9.870239136944292,
+    -7.006602236714342,
+    -7.199681759573195,
+    -2.086042524496179
+  ],
+  "horizon": 100,
+  "jit_compile_eager": false,
+  "jit_compile_xla": "passed",
+  "maximum_derivative_reconstruction_residual": 3.871694145588349e-16,
+  "maximum_factor_reconstruction_residual": 6.9518284432869975e-16,
+  "minimum_qr_pivot": 0.22113172939123196,
+  "model_id": "STR-UKF",
+  "nonclaims": [
+    "historical principal-root parity is gauge-sensitive",
+    "not exact nonlinear Bayesian inference",
+    "not HMC readiness"
+  ],
+  "observation_dim": 1,
+  "old_score": [
+    -4.676386624662289,
+    -8.286691253556466,
+    -6.639406092465015,
+    -6.386163512246568,
+    -2.0583450837078106
+  ],
+  "old_value": -124.46262796972056,
+  "parameter_coordinate": "frozen source-probit coordinates",
+  "parameter_dim": 5,
+  "route": "one_time_cholesky_adapter_then_direct_qr_block_conditional",
+  "score_claim": "same finite direct-factor program; centered finite-difference certified",
+  "score_delta": {
+    "max_abs": 1.5835478996075842,
+    "max_rel": 0.28546161005386056
+  },
+  "source": {
+    "anchor": "build_structural_ukf_model_and_derivatives",
+    "path": "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+    "sha256": "9ff1f846d486a1c696bcb9ca05f7482e49b42740914c75c8416c89e54db4716d"
+  },
+  "state_dim": 2,
+  "status": "eligible_score",
+  "value_delta": {
+    "max_abs": 0.16571297125037177,
+    "max_rel": 0.001331427545388859
+  }
+}

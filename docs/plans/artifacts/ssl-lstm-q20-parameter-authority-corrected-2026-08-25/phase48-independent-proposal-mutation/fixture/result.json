@@ -1,0 +1,58 @@
+{
+  "diagnostics": {
+    "beta_one_acceptance_rate": 0.629638671875,
+    "beta_one_max_abs_expected_residual": 1.7763568394002505e-15,
+    "beta_one_movement_count": 5158,
+    "beta_zero_acceptance_rate": 1.0,
+    "beta_zero_max_abs_expected_residual": 4.440892098500626e-16,
+    "beta_zero_max_abs_log_ratio": 4.440892098500626e-16
+  },
+  "formula": {
+    "acceptance": "min(1, exp(bridge(x_prime)-bridge(x)+log q(x)-log q(x_prime)))",
+    "beta_zero_identity": "log alpha = 0 because pi_0=q",
+    "bridge": "(1-beta) log q(x)+beta V(x)",
+    "proposal": "q(x)=Normal(0,1)",
+    "target": "exp(V(x)) with V(x)=log Normal(x;2,1)"
+  },
+  "gates": {
+    "beta_one_acceptance_in_unit_interval": true,
+    "beta_one_expected_residual": true,
+    "beta_one_nonzero_movement": true,
+    "beta_zero_all_accepted": true,
+    "beta_zero_expected_residual": true,
+    "beta_zero_ratio_identity": true,
+    "finite_ratios": true,
+    "finite_states": true
+  },
+  "nonclaims": [
+    "A finite fixture is not an invariance proof for q=20.",
+    "No posterior, whitening, HMC, or LEDH claim."
+  ],
+  "role": "finite_independent_mh_bridge_fixture",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase48_fixture_2026_08_26.py --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase48-independent-proposal-mutation/fixture",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "gpu_hidden_intentionally": true,
+    "jit_compile": true,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase48_fixture_2026_08_26.py",
+    "source_sha256": {
+      "plan": "94d095c7a063edba354711b3ad00c43d02ab92f103c23dfc78f7a7fca1b97546",
+      "runner": "174e15ea15d9a8a679880a97bcf49037e75751b2c943eeb66ac1baa8178a99a1"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 0.4511733159888536
+  },
+  "sample_count": 8192,
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_independent_mh_fixture.v1",
+  "seed": [
+    20260826,
+    4801
+  ],
+  "status": "PASS_V3_0_INDEPENDENT_MH_FIXTURE"
+}

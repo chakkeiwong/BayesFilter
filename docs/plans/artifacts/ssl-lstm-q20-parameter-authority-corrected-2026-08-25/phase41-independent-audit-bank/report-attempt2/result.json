@@ -1,0 +1,226 @@
+{
+  "authority": {
+    "m0_protocol_hash": "a1f0f0493bb8bd594923b61ee9a92f3c8dcb72a612b64ad675b9ab7ff4723631",
+    "pilot_sha256": "064b90a94d469faf3e988d89d5d75d1ecffd990a68b051436c96c372f443b75b",
+    "root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase37-support-ladder/n256",
+    "split_policy": "root_group_stratified_v1"
+  },
+  "branch_is_statistical_ranking": false,
+  "decision_table": [
+    {
+      "decision": "retain_theta_target",
+      "next_action": "continue bounded parameter-space repair",
+      "not_concluded": "posterior correctness",
+      "primary_criterion": "all target/protocol/status gates pass",
+      "status": "pass"
+    },
+    {
+      "decision": "whitening_promotion",
+      "next_action": "design next repair from explanatory branch",
+      "not_concluded": "IID Gaussian whitening",
+      "primary_criterion": "independent fresh audit residuals",
+      "status": "veto"
+    }
+  ],
+  "explanatory_branch": "finite_holdout_mismatch_is_plausible",
+  "fresh_audit": {
+    "independent": true,
+    "m0_protocol_hash": "a1f0f0493bb8bd594923b61ee9a92f3c8dcb72a612b64ad675b9ab7ff4723631",
+    "pilot_sha256": "c8b6b5105bd6ce35f97dd9094166da0ce6f8b3208c59a74ec5320b4483e4bc80",
+    "root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase41-independent-audit-bank/fresh-n256",
+    "untouched": true
+  },
+  "inference_status": {
+    "default_readiness": "not_ready",
+    "descriptive_differences": "support ranges, moments, losses, ESS, and residuals",
+    "hard_veto_screen": "passed",
+    "next_evidence": "fresh-bank replication or objective/support repair with predeclared gates",
+    "statistically_supported_ranking": "none"
+  },
+  "measure": "theta_R4",
+  "nonclaims": [
+    "No IID Gaussian whitening, posterior correctness, exhaustive mode discovery, normalizer, HMC, canonical LEDH, or superiority claim.",
+    "The branch label is a repair hypothesis, not a statistical ranking.",
+    "Fresh rows were not used for optimization or selection."
+  ],
+  "plan_version": "v2.3-independent-audit-bank",
+  "red_team": {
+    "overturning_evidence": "replicated fresh banks with comparable support and persistent residuals would weaken the split explanation",
+    "strongest_alternative": "one fresh bank can still share the proposal's mode bias and one-seed residuals are noisy",
+    "weakest_evidence": "only one independent bank and one training seed"
+  },
+  "role": "read_only_support_vs_objective_explanation_diagnostic",
+  "run_manifest": {
+    "command": "docs/benchmarks/report_ssl_lstm_q20_parameter_authority_corrected_phase41_2026_08_25.py --authority-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase37-support-ladder/n256 --fresh-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase41-independent-audit-bank/fresh-n256 --audit-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase41-independent-audit-bank/frozen-training-audit-attempt3 --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase41-independent-audit-bank/report-attempt2",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/report_ssl_lstm_q20_parameter_authority_corrected_phase41_2026_08_25.py",
+    "source_sha256": {
+      "audit": "ce8474e2fa894b369c1f92ee7ac8ce8ee3c4fdcb2c2f5818b3f0a3e59ed4052b",
+      "authority_pilot": "064b90a94d469faf3e988d89d5d75d1ecffd990a68b051436c96c372f443b75b",
+      "fresh_pilot": "c8b6b5105bd6ce35f97dd9094166da0ce6f8b3208c59a74ec5320b4483e4bc80",
+      "phase40_report": "3e4c47d20d102c7dbbe1d9e1ccb36ee709f073519299f4285425d025fc48c22a",
+      "plan": "2ffc8aa4665c014bafb4886f9399a63ce55ade926e997c4e96ea6946b1661a0e",
+      "runner": "b4a9c55d9879c345a56c3f1969a10ccf58c708a0c51c78de87716c6a078bd612"
+    },
+    "tensorflow": "2.20.0",
+    "wall_seconds": 0.3792516410467215
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_independent_audit_report.v1",
+  "source_reports": {
+    "phase40_measure_report": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase40-root-group-stratified-boundary/measure-separation/result.json",
+    "phase40_measure_report_sha256": "3e4c47d20d102c7dbbe1d9e1ccb36ee709f073519299f4285425d025fc48c22a",
+    "phase41_audit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase41-independent-audit-bank/frozen-training-audit-attempt3/result.json",
+    "phase41_audit_sha256": "ce8474e2fa894b369c1f92ee7ac8ce8ee3c4fdcb2c2f5818b3f0a3e59ed4052b"
+  },
+  "status": "PASS_V2_3_INDEPENDENT_AUDIT_REPORT",
+  "support_rows": [
+    {
+      "affine_covariance_offdiag_max_abs": 6.574601973952099e-16,
+      "affine_latent_mean_max_abs": 4.5102810375396984e-17,
+      "ess_fraction": 0.9505512239865799,
+      "log_ratio_range": [
+        -37.120408196997104,
+        -31.211405327398303
+      ],
+      "negative_mode_fraction": 0.5335713160404859,
+      "proposal_log_range": [
+        -10.967253872529605,
+        -3.674994487558082
+      ],
+      "roots": 108,
+      "rows": 232,
+      "source": "old_v2_2_train",
+      "target_log_range": [
+        -43.20860970655304,
+        -37.67208121986002
+      ],
+      "theta_mean_0": 0.33082114818781044
+    },
+    {
+      "affine_covariance_offdiag_max_abs": 0.7335909605026245,
+      "affine_latent_mean_max_abs": 0.5377407073974609,
+      "ess_fraction": 0.983825604428883,
+      "log_ratio_range": [
+        -35.627232117044116,
+        -33.46783778784976
+      ],
+      "negative_mode_fraction": 0.49195325385389616,
+      "proposal_log_range": [
+        -7.246572866777831,
+        -4.13299894831244
+      ],
+      "roots": 8,
+      "rows": 12,
+      "source": "old_v2_2_validation",
+      "target_log_range": [
+        -41.70016091778627,
+        -38.65027645444382
+      ],
+      "theta_mean_0": 1.1811101336801635
+    },
+    {
+      "affine_covariance_offdiag_max_abs": 0.5799530744552612,
+      "affine_latent_mean_max_abs": 0.39963823556900024,
+      "ess_fraction": 0.9964519118875206,
+      "log_ratio_range": [
+        -34.682686705904,
+        -33.71800063593629
+      ],
+      "negative_mode_fraction": 0.49171690515246624,
+      "proposal_log_range": [
+        -5.140699513360866,
+        -4.100578690665727
+      ],
+      "roots": 6,
+      "rows": 12,
+      "source": "old_v2_2_audit",
+      "target_log_range": [
+        -39.66142665108417,
+        -38.09108737545318
+      ],
+      "theta_mean_0": -1.4227807154724865
+    },
+    {
+      "affine_covariance_offdiag_max_abs": null,
+      "affine_latent_mean_max_abs": null,
+      "ess_fraction": 0.9792483754293076,
+      "log_ratio_range": [
+        -38.03332218131685,
+        -32.392176120811925
+      ],
+      "negative_mode_fraction": 0.5435990197549722,
+      "proposal_log_range": [
+        -9.712168756084852,
+        -3.7103551329869093
+      ],
+      "roots": 121,
+      "rows": 256,
+      "source": "fresh_v2_3_M0",
+      "target_log_range": [
+        -47.04497394295158,
+        -37.73571708375343
+      ],
+      "theta_mean_0": 0.22679768522837004
+    }
+  ],
+  "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278",
+  "transport_rows": [
+    {
+      "arm": "affine:compact",
+      "fresh_audit_covariance_offdiag_max_abs": 0.4690118722548893,
+      "fresh_audit_loss": 6.2248663583956665,
+      "fresh_audit_mean_max_abs": 0.400898702829239,
+      "fresh_rows_used_for_selection": false,
+      "fresh_rows_used_for_training": false,
+      "old_validation_covariance_offdiag_max_abs": 0.6670963168144226,
+      "old_validation_loss": 5.772325290113055,
+      "old_validation_mean_max_abs": 0.37630122900009155,
+      "precondition": "affine",
+      "status": "PASS_NEUTRA_BOUNDARY_CANDIDATE"
+    },
+    {
+      "arm": "affine:wide_low_lr",
+      "fresh_audit_covariance_offdiag_max_abs": 0.4832847457978664,
+      "fresh_audit_loss": 6.546397346540717,
+      "fresh_audit_mean_max_abs": 0.4207629884053419,
+      "fresh_rows_used_for_selection": false,
+      "fresh_rows_used_for_training": false,
+      "old_validation_covariance_offdiag_max_abs": 0.8252637386322021,
+      "old_validation_loss": 6.126891156317797,
+      "old_validation_mean_max_abs": 0.4490281343460083,
+      "precondition": "affine",
+      "status": "PASS_NEUTRA_BOUNDARY_CANDIDATE"
+    },
+    {
+      "arm": "identity:compact",
+      "fresh_audit_covariance_offdiag_max_abs": 0.2856446734605446,
+      "fresh_audit_loss": 8.324053634305933,
+      "fresh_audit_mean_max_abs": 0.24124998040441836,
+      "fresh_rows_used_for_selection": false,
+      "fresh_rows_used_for_training": false,
+      "old_validation_covariance_offdiag_max_abs": 0.8825972676277161,
+      "old_validation_loss": 8.415142583979717,
+      "old_validation_mean_max_abs": 0.5491024851799011,
+      "precondition": "identity",
+      "status": "PASS_NEUTRA_BOUNDARY_CANDIDATE"
+    },
+    {
+      "arm": "identity:wide_low_lr",
+      "fresh_audit_covariance_offdiag_max_abs": 0.32273171562128083,
+      "fresh_audit_loss": 8.429016569300877,
+      "fresh_audit_mean_max_abs": 0.17838823381315635,
+      "fresh_rows_used_for_selection": false,
+      "fresh_rows_used_for_training": false,
+      "old_validation_covariance_offdiag_max_abs": 1.0039371252059937,
+      "old_validation_loss": 8.668450403781744,
+      "old_validation_mean_max_abs": 0.5848420858383179,
+      "precondition": "identity",
+      "status": "PASS_NEUTRA_BOUNDARY_CANDIDATE"
+    }
+  ]
+}

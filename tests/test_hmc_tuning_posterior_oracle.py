@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import math
 import os
-from dataclasses import dataclass
-from typing import Any, Mapping
+from collections.abc import Mapping
+from dataclasses import replace
+from typing import Any
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
@@ -22,12 +23,14 @@ import tensorflow as tf
 
 from bayesfilter.inference import (
     FixedTransportHMCKernelTuningConfig,
+    FixedTransportReusableRunnerPool,
     FullChainHMCConfig,
     HMCKernelTuningConfig,
     PrecomputedMassArtifact,
     RankNormalizedHMCThresholds,
     ValueScoreCapability,
     build_fixed_mass_hmc_adapter,
+    build_verified_fixed_transport_hmc_handoff_from_tuning_result,
     rank_normalized_hmc_diagnostics,
     run_full_chain_tfp_hmc,
     tune_fixed_transport_hmc_kernel,
@@ -35,7 +38,6 @@ from bayesfilter.inference import (
 )
 from bayesfilter.inference.batched_value_score import FixedTransportValueScoreAdapter
 from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
-
 
 MU = tf.constant([0.65, -0.85], dtype=tf.float64)
 SIGMA = tf.constant([[1.40, 0.55], [0.55, 0.90]], dtype=tf.float64)
@@ -154,6 +156,16 @@ class AffineGaussianTransport:
 
     def log_abs_det_jacobian_score_batch(self, z: tf.Tensor) -> tf.Tensor:
         return tf.zeros_like(tf.convert_to_tensor(z, tf.float64))
+
+
+class TaggedAffineGaussianTransport(AffineGaussianTransport):
+    """Equivalent map with distinct lineage for handoff substitution tests."""
+
+    def __init__(self, tag: str):
+        self.tag = str(tag)
+
+    def manifest_payload(self) -> Mapping[str, Any]:
+        return {**super().manifest_payload(), "manifest_tag": self.tag}
 
 
 def _closed_form(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
@@ -439,7 +451,7 @@ def test_fixed_transport_tuner_and_affine_holdout_agree() -> None:
         screen_num_burnin_steps=16,
         verification_num_results=64,
         verification_num_burnin_steps=16,
-        acceptance_band=(0.50, 0.90),
+        acceptance_band=(0.50, 0.95),
         repair_band=(0.41, 0.99),
         fixed_grid_fallback_acceptance_max=0.95,
         chain_execution_mode="eager",
@@ -479,6 +491,144 @@ def test_fixed_transport_tuner_and_affine_holdout_agree() -> None:
     theta_mean = tf.reduce_mean(tf.reshape(theta_samples, [-1, 2]), axis=0)
     np.testing.assert_allclose(theta_mean, MU, atol=0.25, rtol=0.0)
     assert calibration.fixed_transport_manifest_hash
+
+
+def _efficiency_oracle_config(
+    *, leapfrog_grid: tuple[int, ...] = (3, 5, 9, 13, 18, 25)
+) -> FixedTransportHMCKernelTuningConfig:
+    # Broad acceptance limits keep this bounded oracle focused on authority,
+    # execution order, and heldout mechanics rather than a stochastic policy
+    # boundary. The attempt-5 source contract separately freezes [0.65, 0.75].
+    return FixedTransportHMCKernelTuningConfig(
+        initial_step_size=0.20,
+        leapfrog_grid=leapfrog_grid,
+        chain_count=4,
+        target_accept_prob=0.70,
+        acceptance_band=(0.01, 0.999999),
+        repair_band=(0.001, 0.9999999),
+        budget_schedule=(32,),
+        tune_num_results=8,
+        screen_num_results=32,
+        screen_num_burnin_steps=16,
+        selection_policy="replicated_min_bulk_ess_per_gradient",
+        selection_replications=3,
+        selection_num_results=64,
+        selection_num_burnin_steps=16,
+        selection_acceptance_band=(0.01, 0.999999),
+        verification_num_results=128,
+        verification_num_burnin_steps=32,
+        require_modern_rank_normalized_verification=True,
+        verification_min_retained_results_per_chain=128,
+        verification_rhat_max=1.20,
+        verification_coordinate_system="raw_target_coordinates",
+        chain_execution_mode="tf_function",
+        use_xla=False,
+        target_scope="gaussian_oracle_fixed_transport_efficiency",
+        target_status_trace_policy="per_chain_step",
+        tune_seed_base=(20260821, 3_100),
+        screen_seed_base=(20260821, 3_200),
+        selection_seed_base=(20260821, 3_300),
+        verification_seed_base=(20260821, 3_400),
+    )
+
+
+def test_fixed_transport_efficiency_oracle_runs_all_l_and_builds_one_handoff(
+    tmp_path,
+) -> None:
+    base = GaussianOracleAdapter(scope="gaussian_oracle")
+    transport = AffineGaussianTransport()
+    config = _efficiency_oracle_config()
+    runner_pool = FixedTransportReusableRunnerPool()
+    calibration = tune_fixed_transport_hmc_kernel(
+        base_adapter=base,
+        fixed_transport=transport,
+        initial_position=[0.0, 0.0],
+        config=config,
+        output_dir=tmp_path,
+        run_full_chain=runner_pool,
+    )
+
+    assert calibration.passed is True
+    assert tuple(row.num_leapfrog_steps for row in calibration.candidates) == (
+        3,
+        5,
+        9,
+        13,
+        18,
+        25,
+    )
+    selection = calibration.candidate_selection_payload
+    rows = selection["candidate_rows"]
+    assert all(row["selection_evidence"] is not None for row in rows)
+    assert all(
+        len(row["selection_evidence"]["diagnostics"]["replications"]) == 3
+        for row in rows
+    )
+    assert selection["nominated_candidate_index"] is not None
+    assert selection["selected_candidate_index"] == selection["nominated_candidate_index"]
+    assert selection["heldout_verification"]["final_status"] == "passed"
+    assert selection["heldout_verification"]["diagnostics"][
+        "modern_rank_normalized_verification"
+    ]["passed"] is True
+    assert selection["seed_ledger"]["all_seeds_unique"] is True
+    assert calibration.final_kernel_payload[
+        "post_selection_candidate_only_verification_used"
+    ] is True
+    assert runner_pool.evidence()["all_runners_traced_exactly_once"] is True
+
+    handoff = build_verified_fixed_transport_hmc_handoff_from_tuning_result(
+        tuning_result=calibration,
+        base_adapter=base,
+        fixed_transport=transport,
+    )
+    assert handoff.num_leapfrog_steps in config.leapfrog_grid
+    assert handoff.payload()["final_kernel_hash"] == calibration.final_kernel_hash
+    with pytest.raises(ValueError, match="lineage mismatch"):
+        build_verified_fixed_transport_hmc_handoff_from_tuning_result(
+            tuning_result=calibration,
+            base_adapter=base,
+            fixed_transport=TaggedAffineGaussianTransport("substituted"),
+        )
+
+
+def test_fixed_transport_efficiency_oracle_failed_heldout_emits_no_kernel(
+    tmp_path,
+) -> None:
+    config = _efficiency_oracle_config(leapfrog_grid=(5,))
+    heldout_calls = 0
+    runner_pool = FixedTransportReusableRunnerPool()
+
+    def reject_heldout(adapter, initial_state, run_config):
+        nonlocal heldout_calls
+        result = runner_pool(adapter, initial_state, run_config)
+        if run_config.num_results == config.verification_num_results:
+            heldout_calls += 1
+            # Preserve a real analytic HMC run but force the heldout-only
+            # acceptance diagnostic outside its pass band.
+            trace = dict(result.trace)
+            trace["log_accept_ratio"] = tf.fill(
+                tf.shape(trace["log_accept_ratio"]),
+                tf.constant(-100.0, tf.float64),
+            )
+            return replace(result, trace=trace)
+        return result
+
+    calibration = tune_fixed_transport_hmc_kernel(
+        base_adapter=GaussianOracleAdapter(scope="gaussian_oracle"),
+        fixed_transport=AffineGaussianTransport(),
+        initial_position=[0.0, 0.0],
+        config=config,
+        output_dir=tmp_path,
+        run_full_chain=reject_heldout,
+    )
+
+    assert heldout_calls == 1
+    assert calibration.passed is False
+    assert calibration.final_status == "heldout_verification_failed"
+    assert calibration.candidate_selection_payload["nominated_candidate_index"] == 0
+    assert calibration.candidate_selection_payload["selected_candidate_index"] is None
+    assert calibration.final_kernel_payload is None
+    assert calibration.final_kernel_hash is None
 
 
 def test_mass_arms_rebind_and_retest_target_without_mismatch_veto() -> None:

@@ -13,7 +13,17 @@ at `a13c481b` with all nine in-scope hashes verified identical)
 
 Environment: `/home/chakwong/anaconda3/envs/tftwogpu`
 
-Status: `TERMINAL_2026-08-19__PARITY_PASS_UNDER_OWNER_REVISED_BASIS__N16128_OOM_IN_SCORE_RECURSION__LADDER_CLOSED_AWAITING_OWNER_DIRECTION`
+Status: `CLOSED_2026-08-20__ALL_FOUR_N16128_VARIANT_ROWS_PASS_AFTER_SCORE_RECURSION_WHILE_LOOP_REPAIR__FEASIBILITY_ESTABLISHED`
+
+> 2026-08-20 final closeout: after the owner-authorized score-recursion
+> while-loop repair (plan
+> `bayesfilter-score-recursion-while-loop-repair-plan-2026-08-19.md`), all
+> four `N=16128` seed-`97701` streaming rows completed and passed their
+> route-aware gates (allocator peak 7.36 GB; 5.8 h of the 8 h ceiling).
+> Full table, gate semantics, and budget in the 2026-08-20 section of the
+> result note. The lane's next campaign is score accuracy of the dual-cap +
+> trust-region algorithm; mechanism groundwork is in
+> `bayesfilter-dualcap-perturbation-surface-localization-diagnostic-2026-08-20.md`.
 
 > 2026-08-19 terminal note (final): after the owner revised the value gate to
 > `<=0.1%` relative and selected the TF32-off diagnostic, the tiled route was

@@ -13,14 +13,19 @@ mass-matrix, or HMC evidence. The exact endpoint is replayed before acceptance.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-import time
 from typing import Any
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
+
+from bayesfilter.inference._exact_incumbent import (
+    ExactCandidate,
+    select_exact_incumbent,
+)
 
 
 JOINT_CENTER_NONCLAIMS = (
@@ -180,6 +185,12 @@ class JointCenterResult:
     endpoint_score: np.ndarray
     initial_objective: float
     endpoint_objective: float
+    best_evaluated_position: np.ndarray | None
+    best_evaluated_score: np.ndarray | None
+    best_evaluated_objective: float | None
+    best_evaluated_source: str | None
+    best_evaluated_callback_index: int | None
+    best_evaluated_is_endpoint: bool
     initial_score_l2: float
     endpoint_score_l2: float
     initial_score_max_abs: float
@@ -207,6 +218,12 @@ class JointCenterResult:
             value = np.asarray(getattr(self, name), dtype=float).copy()
             value.setflags(write=False)
             object.__setattr__(self, name, value)
+        for name in ("best_evaluated_position", "best_evaluated_score"):
+            value = getattr(self, name)
+            if value is not None:
+                array = np.asarray(value, dtype=float).reshape([-1]).copy()
+                array.setflags(write=False)
+                object.__setattr__(self, name, array)
         object.__setattr__(self, "status", str(self.status))
         object.__setattr__(self, "endpoint_accepted", bool(self.endpoint_accepted))
         object.__setattr__(self, "optimizer_converged", bool(self.optimizer_converged))
@@ -216,13 +233,16 @@ class JointCenterResult:
             self, "wall_time_exhausted", bool(self.wall_time_exhausted)
         )
         object.__setattr__(self, "jit_compile", bool(self.jit_compile))
+        object.__setattr__(
+            self, "best_evaluated_is_endpoint", bool(self.best_evaluated_is_endpoint)
+        )
         object.__setattr__(self, "nonclaims", tuple(self.nonclaims))
 
     def payload(self) -> Mapping[str, Any]:
         """Return an array-free status and accounting payload."""
 
         return {
-            "schema": "bayesfilter.joint_center.public.v1",
+            "schema": "bayesfilter.joint_center.public.v2",
             "status": self.status,
             "endpoint_accepted": self.endpoint_accepted,
             "optimizer_converged": self.optimizer_converged,
@@ -240,6 +260,10 @@ class JointCenterResult:
             "objective_nondecreasing": (
                 self.endpoint_objective >= self.initial_objective
             ),
+            "best_evaluated_objective": self.best_evaluated_objective,
+            "best_evaluated_source": self.best_evaluated_source,
+            "best_evaluated_callback_index": self.best_evaluated_callback_index,
+            "best_evaluated_is_endpoint": self.best_evaluated_is_endpoint,
             "exception_type": self.exception_type,
             "nonclaims": list(self.nonclaims),
         }
@@ -318,6 +342,12 @@ class JointCenterStagedResult:
     wall_time_exhausted: bool
     jit_compile: bool
     exception_type: str | None
+    best_evaluated_position: np.ndarray | None = None
+    best_evaluated_score: np.ndarray | None = None
+    best_evaluated_objective: float | None = None
+    best_evaluated_source: str | None = None
+    best_evaluated_callback_index: int | None = None
+    best_evaluated_is_endpoint: bool = False
     nonclaims: tuple[str, ...] = JOINT_CENTER_NONCLAIMS
 
     def __post_init__(self) -> None:
@@ -330,11 +360,20 @@ class JointCenterStagedResult:
             value = np.asarray(getattr(self, name), dtype=float).copy()
             value.setflags(write=False)
             object.__setattr__(self, name, value)
+        for name in ("best_evaluated_position", "best_evaluated_score"):
+            value = getattr(self, name)
+            if value is not None:
+                array = np.asarray(value, dtype=float).reshape([-1]).copy()
+                array.setflags(write=False)
+                object.__setattr__(self, name, array)
+        object.__setattr__(
+            self, "best_evaluated_is_endpoint", bool(self.best_evaluated_is_endpoint)
+        )
         object.__setattr__(self, "nonclaims", tuple(self.nonclaims))
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.joint_center.staged.public.v1",
+            "schema": "bayesfilter.joint_center.staged.public.v2",
             "status": self.status,
             "endpoint_accepted": self.endpoint_accepted,
             "checkpoint": dict(self.checkpoint.payload()),
@@ -356,6 +395,10 @@ class JointCenterStagedResult:
             "objective_nondecreasing_from_checkpoint": (
                 self.endpoint_objective >= self.checkpoint.objective
             ),
+            "best_evaluated_objective": self.best_evaluated_objective,
+            "best_evaluated_source": self.best_evaluated_source,
+            "best_evaluated_callback_index": self.best_evaluated_callback_index,
+            "best_evaluated_is_endpoint": self.best_evaluated_is_endpoint,
             "exception_type": self.exception_type,
             "nonclaims": list(self.nonclaims),
         }
@@ -431,6 +474,16 @@ def locate_joint_center(
 
     attempts = tf.Variable(0, trainable=False, dtype=tf.int32)
     target_rows = tf.Variable(0, trainable=False, dtype=tf.int32)
+    best_callback_value = tf.Variable(
+        initial_value, trainable=False, dtype=tf.float64
+    )
+    best_callback_z = tf.Variable(
+        tf.zeros([dimension], tf.float64), trainable=False, dtype=tf.float64
+    )
+    best_callback_score = tf.Variable(
+        tf.constant(initial_score, tf.float64), trainable=False, dtype=tf.float64
+    )
+    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int32)
     cap_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
     wall_time_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
     cap = tf.constant(cfg.max_objective_evaluations, tf.int32)
@@ -454,9 +507,37 @@ def locate_joint_center(
         def evaluate_target() -> tuple[tf.Tensor, tf.Tensor]:
             updated_rows = target_rows.assign_add(1)
             with tf.control_dependencies([updated_rows]):
-                return _standardized_objective_and_gradient(
+                objective, gradient = _standardized_objective_and_gradient(
                     value_and_score_fn, initial, scale_tensor, z
                 )
+            z_tensor = tf.reshape(tf.convert_to_tensor(z, tf.float64), [-1])
+            candidate_value = -objective
+            candidate_score = -gradient / scale_tensor
+            eligible = tf.logical_and(
+                tf.math.is_finite(candidate_value),
+                tf.reduce_all(
+                    tf.math.is_finite(z_tensor) & tf.math.is_finite(candidate_score)
+                ),
+            )
+            improve = tf.logical_and(
+                eligible, candidate_value > best_callback_value.read_value()
+            )
+
+            def promote() -> tuple[tf.Tensor, tf.Tensor]:
+                updates = (
+                    best_callback_value.assign(candidate_value),
+                    best_callback_z.assign(z_tensor),
+                    best_callback_score.assign(candidate_score),
+                    best_callback_index.assign(updated_rows - 1),
+                )
+                with tf.control_dependencies(updates):
+                    return tf.identity(objective), tf.identity(gradient)
+
+            return tf.cond(
+                improve,
+                promote,
+                lambda: (tf.identity(objective), tf.identity(gradient)),
+            )
 
         def guarded_nonfinite(flag: tf.Variable) -> tuple[tf.Tensor, tf.Tensor]:
             updated_flag = flag.assign(True)
@@ -504,6 +585,16 @@ def locate_joint_center(
     try:
         optimizer = compiled_optimizer()
     except Exception as exc:  # noqa: BLE001 - typed fail-closed locator result.
+        best = _joint_center_best_candidate(
+            initial_position=initial_np,
+            initial_value=initial_value,
+            initial_score=initial_score,
+            scale=np.asarray(scale_tensor.numpy(), dtype=float),
+            callback_value=float(best_callback_value.numpy()),
+            callback_z=np.asarray(best_callback_z.numpy(), dtype=float),
+            callback_score=np.asarray(best_callback_score.numpy(), dtype=float),
+            callback_index=int(best_callback_index.numpy()),
+        )
         return _result(
             status="optimizer_exception",
             accepted=False,
@@ -525,6 +616,8 @@ def locate_joint_center(
             jit_compile=cfg.jit_compile,
             exception_type=type(exc).__name__,
             scale=np.asarray(scale_tensor.numpy(), dtype=float),
+            best_candidate=best,
+            best_is_endpoint=False,
         )
 
     callback_attempts = int(attempts.numpy())
@@ -568,6 +661,21 @@ def locate_joint_center(
         and endpoint_valid
         and endpoint_value >= initial_value
     )
+    best = _joint_center_best_candidate(
+        initial_position=initial_np,
+        initial_value=initial_value,
+        initial_score=initial_score,
+        scale=np.asarray(scale_tensor.numpy(), dtype=float),
+        callback_value=float(best_callback_value.numpy()),
+        callback_z=np.asarray(best_callback_z.numpy(), dtype=float),
+        callback_score=np.asarray(best_callback_score.numpy(), dtype=float),
+        callback_index=int(best_callback_index.numpy()),
+        endpoint_position=candidate_np,
+        endpoint_value=endpoint_value,
+        endpoint_score=endpoint_score,
+        endpoint_eligible=endpoint_valid,
+        endpoint_evaluation_index=1 + optimizer_target_rows,
+    )
     if not accounting_valid:
         status = "evaluation_accounting_invalid"
     elif exhausted:
@@ -605,6 +713,10 @@ def locate_joint_center(
         jit_compile=cfg.jit_compile,
         exception_type=None,
         scale=np.asarray(scale_tensor.numpy(), dtype=float),
+        best_candidate=best,
+        best_is_endpoint=bool(
+            best is not None and best.source_role == "endpoint_replay"
+        ),
     )
 
 
@@ -682,6 +794,16 @@ def locate_joint_center_staged(
 
     attempts = tf.Variable(0, trainable=False, dtype=tf.int32)
     target_rows = tf.Variable(0, trainable=False, dtype=tf.int32)
+    best_callback_value = tf.Variable(
+        initial_value, trainable=False, dtype=tf.float64
+    )
+    best_callback_z = tf.Variable(
+        tf.zeros([dimension], tf.float64), trainable=False, dtype=tf.float64
+    )
+    best_callback_score = tf.Variable(
+        tf.constant(initial_score, tf.float64), trainable=False, dtype=tf.float64
+    )
+    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int32)
     cap_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
     wall_time_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
     cap = tf.constant(cfg.max_objective_evaluations, tf.int32)
@@ -705,9 +827,37 @@ def locate_joint_center_staged(
         def evaluate_target() -> tuple[tf.Tensor, tf.Tensor]:
             updated_rows = target_rows.assign_add(1)
             with tf.control_dependencies([updated_rows]):
-                return _standardized_objective_and_gradient(
+                objective, gradient = _standardized_objective_and_gradient(
                     value_and_score_fn, initial, scale_tensor, z
                 )
+            z_tensor = tf.reshape(tf.convert_to_tensor(z, tf.float64), [-1])
+            candidate_value = -objective
+            candidate_score = -gradient / scale_tensor
+            eligible = tf.logical_and(
+                tf.math.is_finite(candidate_value),
+                tf.reduce_all(
+                    tf.math.is_finite(z_tensor) & tf.math.is_finite(candidate_score)
+                ),
+            )
+            improve = tf.logical_and(
+                eligible, candidate_value > best_callback_value.read_value()
+            )
+
+            def promote() -> tuple[tf.Tensor, tf.Tensor]:
+                updates = (
+                    best_callback_value.assign(candidate_value),
+                    best_callback_z.assign(z_tensor),
+                    best_callback_score.assign(candidate_score),
+                    best_callback_index.assign(updated_rows - 1),
+                )
+                with tf.control_dependencies(updates):
+                    return tf.identity(objective), tf.identity(gradient)
+
+            return tf.cond(
+                improve,
+                promote,
+                lambda: (tf.identity(objective), tf.identity(gradient)),
+            )
 
         def guarded_nonfinite(flag: tf.Variable) -> tuple[tf.Tensor, tf.Tensor]:
             updated_flag = flag.assign(True)
@@ -728,6 +878,44 @@ def locate_joint_center_staged(
                 ),
                 lambda: guarded_nonfinite(wall_time_exhausted),
             )
+
+    def observed_best(
+        *extra_candidates: tuple[np.ndarray, float, np.ndarray, str, int],
+    ) -> ExactCandidate | None:
+        candidates = [
+            ExactCandidate(
+                position=initial_np,
+                value=initial_value,
+                score=initial_score,
+                evaluation_index=0,
+                source_role="initial",
+            )
+        ]
+        callback_index = int(best_callback_index.numpy())
+        if callback_index >= 0:
+            candidates.append(
+                ExactCandidate(
+                    position=(
+                        initial_np
+                        + scale_np * np.asarray(best_callback_z.numpy(), dtype=float)
+                    ),
+                    value=float(best_callback_value.numpy()),
+                    score=np.asarray(best_callback_score.numpy(), dtype=float),
+                    evaluation_index=1 + callback_index,
+                    source_role="optimizer_callback",
+                )
+            )
+        for position, value, score, source, evaluation_index in extra_candidates:
+            candidates.append(
+                ExactCandidate(
+                    position=position,
+                    value=value,
+                    score=score,
+                    evaluation_index=evaluation_index,
+                    source_role=source,
+                )
+            )
+        return select_exact_incumbent(candidates)
 
     def optimizer_kwargs(max_iterations: int) -> dict[str, Any]:
         return {
@@ -800,6 +988,7 @@ def locate_joint_center_staged(
             jit_compile=cfg.jit_compile,
             exception_type=type(exc).__name__,
             scale=scale_np,
+            best_candidate=observed_best(),
         )
 
     checkpoint_candidate = initial + scale_tensor * tf.reshape(
@@ -857,6 +1046,15 @@ def locate_joint_center_staged(
         optimizer_target_rows=checkpoint_rows,
         physical_target_rows=checkpoint_rows + 2,
     )
+    checkpoint_best = observed_best(
+        (
+            checkpoint_np,
+            checkpoint_value,
+            checkpoint_score,
+            "checkpoint_replay",
+            1 + checkpoint_rows,
+        )
+    )
     if not checkpoint_accepted:
         return _staged_result(
             status=checkpoint_status,
@@ -883,6 +1081,7 @@ def locate_joint_center_staged(
             jit_compile=cfg.jit_compile,
             exception_type=None,
             scale=scale_np,
+            best_candidate=checkpoint_best,
         )
 
     try:
@@ -913,6 +1112,7 @@ def locate_joint_center_staged(
             jit_compile=cfg.jit_compile,
             exception_type=type(exc).__name__,
             scale=scale_np,
+            best_candidate=checkpoint_best,
         )
     if not checkpoint_validated:
         return _staged_result(
@@ -940,6 +1140,7 @@ def locate_joint_center_staged(
             jit_compile=cfg.jit_compile,
             exception_type=None,
             scale=scale_np,
+            best_candidate=checkpoint_best,
         )
 
     def run_continuation() -> Any:
@@ -983,6 +1184,15 @@ def locate_joint_center_staged(
             jit_compile=cfg.jit_compile,
             exception_type=type(exc).__name__,
             scale=scale_np,
+            best_candidate=observed_best(
+                (
+                    checkpoint_np,
+                    checkpoint_value,
+                    checkpoint_score,
+                    "checkpoint_replay",
+                    1 + checkpoint_rows,
+                )
+            ),
         )
 
     final_candidate = initial + scale_tensor * tf.reshape(
@@ -1025,6 +1235,22 @@ def locate_joint_center_staged(
         objective_nondecreasing=endpoint_value >= checkpoint_value,
         optimizer_converged=optimizer_converged,
     )
+    final_best = observed_best(
+        (
+            checkpoint_np,
+            checkpoint_value,
+            checkpoint_score,
+            "checkpoint_replay",
+            1 + checkpoint_rows,
+        ),
+        (
+            endpoint_np,
+            endpoint_value,
+            endpoint_score,
+            "endpoint_replay",
+            2 + optimizer_target_rows,
+        ),
+    )
     return _staged_result(
         status=status,
         accepted=accepted,
@@ -1050,6 +1276,10 @@ def locate_joint_center_staged(
         jit_compile=cfg.jit_compile,
         exception_type=None,
         scale=scale_np,
+        best_candidate=final_best,
+        best_is_endpoint=bool(
+            final_best is not None and final_best.source_role == "endpoint_replay"
+        ),
     )
 
 
@@ -1199,9 +1429,23 @@ def _staged_result(
     jit_compile: bool,
     exception_type: str | None,
     scale: np.ndarray,
+    best_candidate: ExactCandidate | None = None,
+    best_is_endpoint: bool = False,
 ) -> JointCenterStagedResult:
     initial_scaled = np.asarray(initial_score, dtype=float) * scale
     endpoint_scaled = np.asarray(endpoint_score, dtype=float) * scale
+    if (
+        best_candidate is None
+        and np.isfinite(initial_value)
+        and np.all(np.isfinite(initial_score))
+    ):
+        best_candidate = ExactCandidate(
+            position=initial_position,
+            value=initial_value,
+            score=initial_score,
+            evaluation_index=0,
+            source_role="initial",
+        )
     return JointCenterStagedResult(
         status=str(status),
         endpoint_accepted=bool(accepted),
@@ -1230,6 +1474,25 @@ def _staged_result(
         wall_time_exhausted=bool(wall_time_exhausted),
         jit_compile=bool(jit_compile),
         exception_type=exception_type,
+        best_evaluated_position=(
+            None if best_candidate is None else best_candidate.position
+        ),
+        best_evaluated_score=(
+            None if best_candidate is None else best_candidate.score
+        ),
+        best_evaluated_objective=(
+            None if best_candidate is None else best_candidate.value
+        ),
+        best_evaluated_source=(
+            None if best_candidate is None else best_candidate.source_role
+        ),
+        best_evaluated_callback_index=(
+            None
+            if best_candidate is None
+            or best_candidate.source_role != "optimizer_callback"
+            else best_candidate.evaluation_index - 1
+        ),
+        best_evaluated_is_endpoint=best_is_endpoint,
     )
 
 
@@ -1255,6 +1518,8 @@ def _result(
     jit_compile: bool,
     exception_type: str | None,
     scale: np.ndarray,
+    best_candidate: ExactCandidate | None = None,
+    best_is_endpoint: bool = False,
 ) -> JointCenterResult:
     initial_scaled = np.asarray(initial_score, dtype=float) * scale
     endpoint_scaled = np.asarray(endpoint_score, dtype=float) * scale
@@ -1267,6 +1532,23 @@ def _result(
         endpoint_score=endpoint_score,
         initial_objective=float(initial_value),
         endpoint_objective=float(endpoint_value),
+        best_evaluated_position=(
+            None if best_candidate is None else best_candidate.position
+        ),
+        best_evaluated_score=None if best_candidate is None else best_candidate.score,
+        best_evaluated_objective=(
+            None if best_candidate is None else best_candidate.value
+        ),
+        best_evaluated_source=(
+            None if best_candidate is None else best_candidate.source_role
+        ),
+        best_evaluated_callback_index=(
+            best_candidate.evaluation_index - 1
+            if best_candidate is not None
+            and best_candidate.source_role == "optimizer_callback"
+            else None
+        ),
+        best_evaluated_is_endpoint=best_is_endpoint,
         initial_score_l2=float(np.linalg.norm(initial_scaled)),
         endpoint_score_l2=float(np.linalg.norm(endpoint_scaled)),
         initial_score_max_abs=float(np.max(np.abs(initial_scaled))),
@@ -1283,3 +1565,55 @@ def _result(
         jit_compile=jit_compile,
         exception_type=exception_type,
     )
+
+
+def _joint_center_best_candidate(
+    *,
+    initial_position: np.ndarray,
+    initial_value: float,
+    initial_score: np.ndarray,
+    scale: np.ndarray,
+    callback_value: float,
+    callback_z: np.ndarray,
+    callback_score: np.ndarray,
+    callback_index: int,
+    endpoint_position: np.ndarray | None = None,
+    endpoint_value: float | None = None,
+    endpoint_score: np.ndarray | None = None,
+    endpoint_eligible: bool = False,
+    endpoint_evaluation_index: int = -1,
+) -> ExactCandidate | None:
+    """Combine the initial replay, traced callback tracker, and endpoint replay."""
+
+    candidates = [
+        ExactCandidate(
+            position=initial_position,
+            value=initial_value,
+            score=initial_score,
+            evaluation_index=0,
+            source_role="initial",
+        )
+    ]
+    if callback_index >= 0:
+        candidates.append(
+            ExactCandidate(
+                position=np.asarray(initial_position) + np.asarray(scale) * callback_z,
+                value=callback_value,
+                score=callback_score,
+                evaluation_index=1 + callback_index,
+                source_role="optimizer_callback",
+            )
+        )
+    if endpoint_position is not None and endpoint_value is not None and endpoint_score is not None:
+        candidates.append(
+            ExactCandidate(
+                position=endpoint_position,
+                value=endpoint_value,
+                score=endpoint_score,
+                evaluation_index=endpoint_evaluation_index,
+                source_role="endpoint_replay",
+                eligible=endpoint_eligible,
+                canonical_replay=True,
+            )
+        )
+    return select_exact_incumbent(candidates)

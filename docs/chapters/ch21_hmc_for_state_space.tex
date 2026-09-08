@@ -114,9 +114,14 @@ declared target.
 
 This procedure is a tuning and diagnostics policy, not a posterior-validity
 proof.  A passing tuner means that BayesFilter found a finite fixed HMC kernel
-that survived the declared local screens.  Posterior convergence, scientific
-validity, sampler superiority, default readiness, and GPU readiness require
-their own retained-chain evidence.
+that survived its route-specific fresh verification.  For the ordinary default
+runner, that handoff also requires the configured minimum retained draws and
+finite rank-normalized split and folded split \(\widehat R\) values no greater
+than 1.01.  The threshold is a tuning-handoff diagnostic; it does not establish
+posterior convergence.  Chapter~\ref{ch:bf-hmc-tuning-interfaces} gives the
+public interfaces and the exact distinction between tuning evidence and
+retained-chain evidence.  Scientific validity, sampler superiority, default
+readiness, and GPU readiness require separate evidence.
 
 \section{Public And Private Handoffs}
 \label{sec:bf-hmc-public-private-handoffs}

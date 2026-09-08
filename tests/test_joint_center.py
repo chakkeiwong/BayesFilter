@@ -116,6 +116,10 @@ def test_rotated_quadratic_recovers_mode_with_exact_accounting(
     assert result.callback_attempts == result.optimizer_target_rows
     assert result.physical_target_rows == result.optimizer_target_rows + 2
     np.testing.assert_allclose(result.endpoint_position, mode, atol=1.0e-7)
+    assert result.best_evaluated_position is not None
+    np.testing.assert_allclose(result.best_evaluated_position, mode, atol=1.0e-7)
+    assert result.best_evaluated_objective is not None
+    assert result.best_evaluated_objective >= result.endpoint_objective - 1.0e-12
     assert result.endpoint_score_max_abs <= 1.0e-7
 
 
@@ -142,6 +146,13 @@ def test_default_xla_and_non_xla_endpoints_match() -> None:
     )
     assert graph.status == xla.status == "converged"
     np.testing.assert_allclose(graph.endpoint_position, xla.endpoint_position)
+    np.testing.assert_allclose(
+        graph.best_evaluated_position, xla.best_evaluated_position
+    )
+    assert graph.best_evaluated_objective == pytest.approx(
+        xla.best_evaluated_objective, abs=1.0e-12
+    )
+    assert graph.best_evaluated_source == xla.best_evaluated_source
     assert graph.reported_objective_evaluations == xla.reported_objective_evaluations
     assert graph.optimizer_target_rows == xla.optimizer_target_rows
 
@@ -255,6 +266,52 @@ def test_failed_optimizer_result_is_not_promoted(
     )
     assert result.status == "optimizer_failed"
     assert result.endpoint_accepted is False
+
+
+def test_best_exact_internal_callback_point_survives_lower_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from bayesfilter.inference import joint_center
+    from tensorflow_probability.python.optimizer.lbfgs import (
+        LBfgsOptimizerResults,
+    )
+
+    def endpoint_after_better_interior(function, initial_position, **kwargs):
+        function(initial_position)
+        function(tf.ones_like(initial_position))
+        endpoint = tf.fill(tf.shape(initial_position), tf.constant(2.0, tf.float64))
+        value, gradient = function(endpoint)
+        return LBfgsOptimizerResults(
+            converged=tf.constant(True),
+            failed=tf.constant(False),
+            num_iterations=tf.constant(1),
+            num_objective_evaluations=tf.constant(3),
+            position=endpoint,
+            objective_value=value,
+            objective_gradient=gradient,
+            position_deltas=tf.zeros([10, 1], tf.float64),
+            gradient_deltas=tf.zeros([10, 1], tf.float64),
+        )
+
+    monkeypatch.setattr(
+        joint_center.tfp.optimizer,
+        "lbfgs_minimize",
+        endpoint_after_better_interior,
+    )
+    result = locate_joint_center(
+        _quadratic_target(np.eye(1), np.ones(1)),
+        np.zeros(1),
+        config=JointCenterLocatorConfig(jit_compile=False),
+    )
+
+    np.testing.assert_array_equal(result.endpoint_position, np.array([2.0]))
+    np.testing.assert_array_equal(result.best_evaluated_position, np.array([1.0]))
+    np.testing.assert_array_equal(result.best_evaluated_score, np.array([0.0]))
+    assert result.best_evaluated_objective == pytest.approx(0.0)
+    assert result.best_evaluated_source == "optimizer_callback"
+    assert result.best_evaluated_callback_index == 1
+    assert result.best_evaluated_is_endpoint is False
+    assert result.payload()["best_evaluated_source"] == "optimizer_callback"
 
 
 def test_converged_finite_sentinel_zero_score_is_not_promoted(
@@ -374,6 +431,77 @@ def test_staged_checkpoint_is_private_immutable_and_validated_once() -> None:
     assert "gradient_deltas" not in str(public)
     assert "inverse_hessian" not in str(public)
     assert "mass_matrix" not in str(public)
+
+
+def test_staged_locator_retains_best_internal_callback_across_continuation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from bayesfilter.inference import joint_center
+    from tensorflow_probability.python.optimizer.lbfgs import (
+        LBfgsOptimizerResults,
+    )
+
+    calls = 0
+
+    def endpoint_after_better_interior(
+        function,
+        initial_position,
+        previous_optimizer_results=None,
+        **_kwargs,
+    ):
+        nonlocal calls
+        calls += 1
+        if previous_optimizer_results is None:
+            function(initial_position)
+            function(tf.ones_like(initial_position))
+            endpoint = tf.fill(
+                tf.shape(initial_position), tf.constant(2.0, tf.float64)
+            )
+            value, gradient = function(endpoint)
+            evaluations = tf.constant(3)
+            iterations = tf.constant(1)
+        else:
+            endpoint = previous_optimizer_results.position
+            value = previous_optimizer_results.objective_value
+            gradient = previous_optimizer_results.objective_gradient
+            evaluations = previous_optimizer_results.num_objective_evaluations
+            iterations = tf.constant(2)
+        return LBfgsOptimizerResults(
+            converged=tf.constant(True),
+            failed=tf.constant(False),
+            num_iterations=iterations,
+            num_objective_evaluations=evaluations,
+            position=endpoint,
+            objective_value=value,
+            objective_gradient=gradient,
+            position_deltas=tf.zeros([10, 1], tf.float64),
+            gradient_deltas=tf.zeros([10, 1], tf.float64),
+        )
+
+    monkeypatch.setattr(
+        joint_center.tfp.optimizer,
+        "lbfgs_minimize",
+        endpoint_after_better_interior,
+    )
+    result = locate_joint_center_staged(
+        _quadratic_target(np.eye(1), np.ones(1)),
+        np.zeros(1),
+        checkpoint_validator=lambda checkpoint: True,
+        config=JointCenterStagedConfig(
+            checkpoint_iterations=1,
+            total_iterations=2,
+            jit_compile=False,
+        ),
+    )
+
+    assert calls == 2
+    np.testing.assert_array_equal(result.endpoint_position, np.array([2.0]))
+    np.testing.assert_array_equal(result.best_evaluated_position, np.array([1.0]))
+    np.testing.assert_array_equal(result.best_evaluated_score, np.array([0.0]))
+    assert result.best_evaluated_objective == pytest.approx(0.0)
+    assert result.best_evaluated_source == "optimizer_callback"
+    assert result.best_evaluated_callback_index == 1
+    assert result.best_evaluated_is_endpoint is False
 
 
 def test_checkpoint_rejection_prevents_continuation_target_calls() -> None:

@@ -1,0 +1,27 @@
+{
+  "c3_reference_validation_2026-08-26": {
+    "n1_grid_self_convergence": 1.737e-12,
+    "n1_grid_vs_particle": {"gap": 6.796e-4, "se": 4.393e-3, "z": 0.15, "min_norm_ess": 0.27},
+    "n2_grid_self_convergence_points": 4.263e-13,
+    "n2_grid_width_convergence": "identical to 6 decimals at w=9/11/13 (constant spacing) — lesson: convergence checks must vary width AND resolution",
+    "n2_particle_N_ladder_vs_exact_grid": {
+      "N_100k": {"signed_gap": -1.832e-2, "se": 7.128e-3, "z": 2.57, "min_norm_ess": 0.053},
+      "N_400k": {"signed_gap": -7.359e-4, "se": 3.457e-3, "z": 0.21, "min_norm_ess": 0.052},
+      "N_1600k_seed13": {"signed_gap": 3.356e-3, "se": 1.664e-3, "z": 2.02},
+      "N_1600k_seed7777_replication": {"signed_gap": 6.496e-4, "se": 2.318e-3, "z": 0.28,
+        "reading": "original z=2.02 was fluctuation (one of three tests, degeneracy-fragile SE); replication clean — particle machinery certified at N >= 400k"}
+    },
+    "reference_policy_for_n4": [
+      "R >= 10 replicates, SE-of-mean estimator (plan C3)",
+      "degeneracy screen: min per-step normalized ESS >= 0.05 (measured healthy regime 0.05-0.27)",
+      "N sized so the measured bias-decay places bias <= SE (n=2 evidence: bias ~1.8e-2 at 100k -> <1e-3 at 400k)",
+      "N-doubling consistency REQUIRED at n=4 (two adjacent N within joint SE) as the no-grid substitute"
+    ]
+  },
+  "c4_hint_validation_2026-08-26": {
+    "companion": "tensor Gauss-Hermite Gaussian filter, lag-one cross-covariance via exact conditional algebra (y_t indep x_{t-1} given x_t)",
+    "n1_vs_exact_grid_moments": {"max_mean_err": 1.331e-2, "max_var_err": 2.792e-2, "gh_points": 15},
+    "measured_alpha_n1": 0.666,
+    "role": "hints are frozen explanatory inputs; residuals feed whitened-deviation degree demand, never a correctness gate; alpha feeds the D1 nu instantiation with headroom"
+  }
+}

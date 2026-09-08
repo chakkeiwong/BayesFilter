@@ -1,0 +1,18 @@
+{
+  "gate": "A3 n=4-scale shakedown (final verdict 2026-08-25)",
+  "parity_9axis": {"per_step": 3.03e-9, "ceiling": 7e-5, "status": "PASS"},
+  "compile_9axis": {"probe_s": 408, "status": "completes; fresh-process-per-arm guard added to runner after reproducing the known LLVM section-memory crash"},
+  "row_law": {
+    "first_run": "beta=0.5/N=2048 crashed fail-closed (ESS ~111) exactly as review CF2 projected",
+    "calibration": "beta(d): 0.5 for d<=4 (certified scopes untouched), 0.10 for d>4; N=8192 for 8-axis scopes",
+    "measured_ess_at_realistic_widths": {"deg6_rank3": 2582, "floor_5x_width": 315, "status": "PASS with 8x margin"},
+    "stress_ell13_boundary": "MEASURED BOUNDARY at 9 axes: beta=0.5 starves (ESS 408@8192), beta=0.10 leaves multi-axis tail corners unsampled (t=1 increment +9.52 nats, Z_h unseen-mass); ell=13 at 9 axes is outside N<=8192 MC-weighted LS support and outside C2's needed range (O3); any D1 grid reaching ell>=13 at n=4 requires its own row-law evidence first"
+  },
+  "oracle_n4_deg6_rank3_T4_sweeps_ladder": {
+    "s8": 1.50e-2, "s16": 2.011e-8, "s32": 5.484e-10,
+    "reading": "pure ALS convergence floor, six orders per sweep doubling; ORACLE-EXACT at s=32; the 9-axis swamp needs sweeps >= 16-32 (fitter budget scales with axis count; already a declared tuned control; 4080 runs doubled sweeps 4x faster than CPU ran single)"
+  },
+  "degree0_n4": {"T2": 2.276e-10, "T8": 5.793e-10, "status": "all shared machinery exact at n=4"},
+  "evidence_scripts": ["check_c2_n4_sweeps_ladder_20260825.py", "check_c2_n4_lowdeg_probe_20260825.py", "check_c2_hermite_rowlaw_mechanism_20260824.py (beta table)"],
+  "verdict": "GATE A3 PASS: n=4 scopes validated at realistic degrees with sweeps >= 16-32 and beta(d)/N=8192 row law; ell=13@9-axis recorded as a measured boundary, not a blocker"
+}

@@ -1,5 +1,26 @@
 # SSL-LSTM q=20 Gap-Closure Reset Memo (2026-08-18)
 
+## 2026-08-19 Planning Correction
+
+The final line of the original next-step section was too restrictive.  An
+independently converged global physical posterior archive is **not** a
+prerequisite for NeuTra training; requiring one is circular because NeuTra is
+being developed to make global sampling tractable.  The dense physical run is
+now an optional diagnostic comparator, not an upstream NeuTra gate.
+
+Likewise, fixed-HMC runs initialized in separate modes are valid only as
+overdispersed diagnostics.  If they remain mode-separated, their conditional
+draws must not be pooled or assigned equal weights.  A promoted candidate must
+use one exact transformed target and demonstrate initialization forgetting and
+cross-mode transitions under that kernel.
+
+The corrected plan is:
+
+`docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-repair-plan-2026-08-19.md`
+
+The material dense result below remains valid historical evidence; this note
+corrects the decision boundary, not its measurements.
+
 ## Current State
 
 The 2026-08-18 gap-closure campaign completed Phases A--C/H3.

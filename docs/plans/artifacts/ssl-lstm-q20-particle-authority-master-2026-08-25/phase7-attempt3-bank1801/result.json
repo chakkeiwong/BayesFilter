@@ -1,0 +1,841 @@
+{
+  "arms": {
+    "compact": {
+      "audit": {
+        "audit_rows": 60,
+        "target_score_finite": true,
+        "target_status_valid": true,
+        "target_value_finite": true,
+        "transformed_target_log_density_finite": true,
+        "transformed_target_score_finite": true,
+        "transformed_target_status_valid": true,
+        "transformed_target_value_finite": true
+      },
+      "config": {
+        "activation": "tanh",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "dimension": 4,
+        "epsilon": 1e-07,
+        "gradient_clip_norm": 10.0,
+        "hidden_layers": [
+          16,
+          16
+        ],
+        "initialization_scale": 0.02,
+        "initialization_seed": [
+          20260825,
+          5801
+        ],
+        "jit_compile": true,
+        "learning_rate": 0.001,
+        "permutation_policy": "full_reverse",
+        "s_max": 2.0,
+        "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+        "stage_s_max": [],
+        "stage_scale_linear_skip": [],
+        "stage_unbounded_scale_linear": [],
+        "stages": 2
+      },
+      "nonclaims": [
+        "terminal normalized M0 weights are a fixed empirical measure, not an unnormalized SMC-U ledger",
+        "short one-seed training is not a ranking or posterior-correctness result",
+        "no HMC, convergence, predictive, or default-readiness claim"
+      ],
+      "parity": {
+        "finite": true,
+        "logdet_roundtrip_max_abs": 1.3877787807814457e-17,
+        "roundtrip_max_abs": 8.881784197001252e-16
+      },
+      "status": "PASS_CANDIDATE",
+      "training_state_hash": "7a2369f2df7296e2f4846f5004debbe16ff0fe8c631dae80fea0b018d36732e4",
+      "training_trace": [
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.80924333790538,
+            "loss": 17.560170919241575,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 1
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1627540443179045,
+          "validation_latent_mean_max_abs": 1.5800584782147216,
+          "validation_loss": 18.030890966395795
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.689499217009523,
+            "loss": 17.504712192939174,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 2
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1581493443831525,
+          "validation_latent_mean_max_abs": 1.5748582193290253,
+          "validation_loss": 17.975934845908053
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.569106148923826,
+            "loss": 17.448990434018455,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 3
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1535475547778558,
+          "validation_latent_mean_max_abs": 1.5696091901380607,
+          "validation_loss": 17.92070862301571
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.448060410293635,
+            "loss": 17.39296717348348,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 4
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1489400297855723,
+          "validation_latent_mean_max_abs": 1.564305130545669,
+          "validation_loss": 17.86509088618002
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.326278984176287,
+            "loss": 17.336528069269058,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 5
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1443164345923975,
+          "validation_latent_mean_max_abs": 1.558940834318329,
+          "validation_loss": 17.808980007919985
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.203649756526374,
+            "loss": 17.279570326920975,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 6
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.139668458370182,
+          "validation_latent_mean_max_abs": 1.5535110698668178,
+          "validation_loss": 17.752290618220073
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.080065586493273,
+            "loss": 17.22200609299629,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 7
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1349886533018168,
+          "validation_latent_mean_max_abs": 1.5480102665395359,
+          "validation_loss": 17.69494089141582
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.955416494776532,
+            "loss": 17.163751245974666,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 8
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1302710932613715,
+          "validation_latent_mean_max_abs": 1.5424328834798917,
+          "validation_loss": 17.63685436334933
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.82958925810746,
+            "loss": 17.104724636446726,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 9
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1255110194979738,
+          "validation_latent_mean_max_abs": 1.5367733152035803,
+          "validation_loss": 17.577957276532523
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.702468175522448,
+            "loss": 17.044847403030413,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 10
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1207041864018321,
+          "validation_latent_mean_max_abs": 1.5310258707200826,
+          "validation_loss": 17.518177064175966
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.573937447991366,
+            "loss": 16.984042001439985,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 11
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.115846350229126,
+          "validation_latent_mean_max_abs": 1.5251847030646104,
+          "validation_loss": 17.457442042121652
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.443880471459796,
+            "loss": 16.922231267157656,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 12
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.110933496278646,
+          "validation_latent_mean_max_abs": 1.5192438092497318,
+          "validation_loss": 17.395681611446044
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.31217955649918,
+            "loss": 16.859338107081257,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 13
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1059621963732689,
+          "validation_latent_mean_max_abs": 1.513197019747747,
+          "validation_loss": 17.332826721409493
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.178716478553255,
+            "loss": 16.795285782360487,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 14
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1009295865897073,
+          "validation_latent_mean_max_abs": 1.5070379838716363,
+          "validation_loss": 17.268809730178315
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.043372237972534,
+            "loss": 16.729997806602043,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 15
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.0958331406020692,
+          "validation_latent_mean_max_abs": 1.5007601692843022,
+          "validation_loss": 17.203563900629483
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 23.906027206106852,
+            "loss": 16.66339790447334,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 16
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.0906703438446135,
+          "validation_latent_mean_max_abs": 1.4943568597249168,
+          "validation_loss": 17.13702293497589
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 23.76656147177021,
+            "loss": 16.595410069188514,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 17
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.085438272983021,
+          "validation_latent_mean_max_abs": 1.487821151805114,
+          "validation_loss": 17.069120730499982
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 23.62485518441503,
+            "loss": 16.525958682133158,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 18
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.080133231086387,
+          "validation_latent_mean_max_abs": 1.4811459535629212,
+          "validation_loss": 16.999791358250643
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 23.48078887417287,
+            "loss": 16.454968695264476,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 19
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.074751049306972,
+          "validation_latent_mean_max_abs": 1.4743239809764601,
+          "validation_loss": 16.928969235943146
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 23.33424370716767,
+            "loss": 16.382365898412896,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 20
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.0692880576830481,
+          "validation_latent_mean_max_abs": 1.4673477469812723,
+          "validation_loss": 16.856589436981576
+        }
+      ],
+      "validation": {
+        "effective_sample_size_fraction": 0.9900655302585202,
+        "latent_weighted_covariance": [
+          [
+            1.8626679197863625,
+            -0.04096905521700974,
+            1.0692880576830481,
+            0.5090431938129223
+          ],
+          [
+            -0.04096905521700977,
+            0.38259494279493883,
+            0.3180792969907991,
+            0.5328871915029748
+          ],
+          [
+            1.069288057683048,
+            0.3180792969907991,
+            5.799652194221441,
+            0.7678972310326864
+          ],
+          [
+            0.5090431938129222,
+            0.5328871915029748,
+            0.7678972310326864,
+            15.934402284394965
+          ]
+        ],
+        "latent_weighted_mean": [
+          -0.11078824391669964,
+          -0.061624185828810255,
+          0.15352287856905247,
+          1.4673477469812723
+        ],
+        "loss": 16.856589436981576,
+        "maximum_normalized_weight": 0.022743026164116848
+      }
+    },
+    "wide_low_lr": {
+      "audit": {
+        "audit_rows": 60,
+        "target_score_finite": true,
+        "target_status_valid": true,
+        "target_value_finite": true,
+        "transformed_target_log_density_finite": true,
+        "transformed_target_score_finite": true,
+        "transformed_target_status_valid": true,
+        "transformed_target_value_finite": true
+      },
+      "config": {
+        "activation": "tanh",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "dimension": 4,
+        "epsilon": 1e-07,
+        "gradient_clip_norm": 10.0,
+        "hidden_layers": [
+          32,
+          32
+        ],
+        "initialization_scale": 0.02,
+        "initialization_seed": [
+          20260825,
+          5901
+        ],
+        "jit_compile": true,
+        "learning_rate": 0.0005,
+        "permutation_policy": "full_reverse",
+        "s_max": 2.0,
+        "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+        "stage_s_max": [],
+        "stage_scale_linear_skip": [],
+        "stage_unbounded_scale_linear": [],
+        "stages": 2
+      },
+      "nonclaims": [
+        "terminal normalized M0 weights are a fixed empirical measure, not an unnormalized SMC-U ledger",
+        "short one-seed training is not a ranking or posterior-correctness result",
+        "no HMC, convergence, predictive, or default-readiness claim"
+      ],
+      "parity": {
+        "finite": true,
+        "logdet_roundtrip_max_abs": 6.938893903907228e-18,
+        "roundtrip_max_abs": 4.440892098500626e-16
+      },
+      "status": "PASS_CANDIDATE",
+      "training_state_hash": "ab474204541e82591d453c03861dd2a94aeaa8e6922ad40b5897d6c73c950f24",
+      "training_trace": [
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.80939260221886,
+            "loss": 17.560170919241575,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 1
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1651464975235415,
+          "validation_latent_mean_max_abs": 1.5826427761593092,
+          "validation_loss": 18.05826230244186
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.74904845040078,
+            "loss": 17.532183406675596,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 2
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1629300089304464,
+          "validation_latent_mean_max_abs": 1.5800434348118169,
+          "validation_loss": 18.030701139953834
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.68827624102114,
+            "loss": 17.503944322475093,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 3
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1607249721445356,
+          "validation_latent_mean_max_abs": 1.5774144206875258,
+          "validation_loss": 18.00292593297472
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.626950131375292,
+            "loss": 17.475419631085487,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 4
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1585282227562785,
+          "validation_latent_mean_max_abs": 1.5747537512855925,
+          "validation_loss": 17.974901976785606
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.565038883834728,
+            "loss": 17.446576656113642,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 5
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1563334649296766,
+          "validation_latent_mean_max_abs": 1.5720593215432055,
+          "validation_loss": 17.94658531842542
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.50249759611361,
+            "loss": 17.4173778575605,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 6
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1541322873796298,
+          "validation_latent_mean_max_abs": 1.5693288539267367,
+          "validation_loss": 17.91792794821089
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.43927798294337,
+            "loss": 17.387783684294433,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 7
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.151917662735164,
+          "validation_latent_mean_max_abs": 1.5665600632474685,
+          "validation_loss": 17.888884562261985
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.37533065046796,
+            "loss": 17.357754357413107,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 8
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1496833787935037,
+          "validation_latent_mean_max_abs": 1.563750585323763,
+          "validation_loss": 17.859412291691903
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.31060344222046,
+            "loss": 17.327249756641347,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 9
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1474237042339117,
+          "validation_latent_mean_max_abs": 1.560897901678731,
+          "validation_loss": 17.829469085854683
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.245041312366347,
+            "loss": 17.296229114994418,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 10
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1451336244085881,
+          "validation_latent_mean_max_abs": 1.5579993483114611,
+          "validation_loss": 17.79901362969524
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.178586930876246,
+            "loss": 17.264650980190858,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 11
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1428089663814427,
+          "validation_latent_mean_max_abs": 1.5550521144865161,
+          "validation_loss": 17.768005262013894
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.111181003411964,
+            "loss": 17.232473125588974,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 12
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1404464808589985,
+          "validation_latent_mean_max_abs": 1.5520532411190129,
+          "validation_loss": 17.736403230135604
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 25.04276190785446,
+            "loss": 17.19965214400753,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 13
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1380433426063832,
+          "validation_latent_mean_max_abs": 1.5489996375158812,
+          "validation_loss": 17.704166400863876
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.973266056235126,
+            "loss": 17.166143537578012,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 14
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1355968299145824,
+          "validation_latent_mean_max_abs": 1.5458880898665093,
+          "validation_loss": 17.67125365241216
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.90262857768878,
+            "loss": 17.131902123618914,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 15
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1331043827036626,
+          "validation_latent_mean_max_abs": 1.5427152995186126,
+          "validation_loss": 17.637624202807494
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.830783865433425,
+            "loss": 17.096882298818308,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 16
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.130563415030978,
+          "validation_latent_mean_max_abs": 1.5394778995215215,
+          "validation_loss": 17.603237181607206
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.75766573168331,
+            "loss": 17.061038020425748,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 17
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1279712697221067,
+          "validation_latent_mean_max_abs": 1.5361724346182761,
+          "validation_loss": 17.56805106590054
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.68320725992821,
+            "loss": 17.024322639183765,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 18
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.125325537175499,
+          "validation_latent_mean_max_abs": 1.5327953320817325,
+          "validation_loss": 17.53202342462901
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.607340537036013,
+            "loss": 16.986688719357566,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 19
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1226241557226802,
+          "validation_latent_mean_max_abs": 1.5293428779333569,
+          "validation_loss": 17.49511091932695
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9496208320527346,
+            "gradient_norm": 24.529996572885807,
+            "loss": 16.94808797639847,
+            "maximum_normalized_weight": 0.013392443124852292,
+            "step": 20
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.1198652512067788,
+          "validation_latent_mean_max_abs": 1.5258112174598557,
+          "validation_loss": 17.45726957740398
+        }
+      ],
+      "validation": {
+        "effective_sample_size_fraction": 0.9900655302585202,
+        "latent_weighted_covariance": [
+          [
+            1.9562008648019051,
+            -0.039230679825911635,
+            1.1198652512067788,
+            0.5614836649995377
+          ],
+          [
+            -0.03923067982591169,
+            0.3643711851284273,
+            0.3196515958954563,
+            0.5315710396703068
+          ],
+          [
+            1.1198652512067788,
+            0.3196515958954562,
+            6.07910293184228,
+            0.8093209390250133
+          ],
+          [
+            0.5614836649995375,
+            0.5315710396703068,
+            0.8093209390250136,
+            16.711411352949746
+          ]
+        ],
+        "latent_weighted_mean": [
+          -0.08746563494996284,
+          -0.04879572242895134,
+          0.1339428348430392,
+          1.5258112174598557
+        ],
+        "loss": 17.45726957740398,
+        "maximum_normalized_weight": 0.022743026164116848
+      }
+    }
+  },
+  "batch_size": 180,
+  "device": {
+    "global_jit_setting": "",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        },
+        {
+          "device": "/physical_device:GPU:1",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile_per_function": true,
+    "logical_devices": [
+      "/device:GPU:0",
+      "/device:GPU:1"
+    ],
+    "physical_devices": [
+      "/physical_device:GPU:0",
+      "/physical_device:GPU:1"
+    ],
+    "tf32_enabled": true
+  },
+  "dtype": "float64",
+  "hmc_launched": false,
+  "m0_protocol_hash": "e4a092233c022d00dcafd2ceed12c136008c0a62589f307660e142b0c6293a4c",
+  "m0_target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278",
+  "nonclaims": [
+    "normalized terminal M0 weights are a fixed empirical training measure, not an unnormalized SMC-U ledger",
+    "two short arms and one seed cannot establish ranking or superiority",
+    "no IID whitening theorem, posterior correctness, mode-discovery guarantee, HMC convergence, or default promotion"
+  ],
+  "role": "gpu_xla_batch_native_candidate_screen",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_particle_authority_neutra_screen_2026_08_25.py --plan docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-phase7-neutra-retuning-subplan-2026-08-25.md --m0-root docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase6-attempt5-n300-seed1801/seed-1801 --steps 20 --seed 20260825 5801 --output-root docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase7-attempt3-bank1801",
+    "git": {
+      "commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+      "dirty": true
+    },
+    "gpu_memory_growth_verified": true,
+    "logical_gpus": [
+      "/device:GPU:0",
+      "/device:GPU:1"
+    ],
+    "m0_pilot_sha256": "7da75c71c0b76e9c5002fdce7fbc2d932dfb7f45cdfa0d02df4a568bfd28d89a",
+    "m0_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase6-attempt5-n300-seed1801/seed-1801",
+    "physical_gpus": [
+      "/physical_device:GPU:0",
+      "/physical_device:GPU:1"
+    ],
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-phase7-neutra-retuning-subplan-2026-08-25.md",
+    "plan_sha256": "3245a26be614260d6f26fbf2122bc1c85effa250504c1a30252c09131b60ea1d",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner_sha256": "1aaf17aa04c3f92564c31cada69acaecfd6a8a9a7ffdb11e241bec5f7804d71f",
+    "schema": "bayesfilter.ssl_lstm.q20.particle_authority.neutra_screen.launch.v1",
+    "seed": [
+      20260825,
+      5801
+    ],
+    "status": "STARTED",
+    "steps": 20,
+    "tensorflow": "2.20.0",
+    "wall_seconds": 76.44808234396623
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.particle_authority.neutra_screen.v1",
+  "selected_arm": "compact",
+  "split": {
+    "audit": 60,
+    "selection_frozen_before_audit": true,
+    "train": 180,
+    "validation": 60
+  },
+  "status": "PASS_CANDIDATE_ROLE_LIMITED"
+}

@@ -1,0 +1,110 @@
+{
+  "defensive_epsilon": 0.2,
+  "depth_steps": 8,
+  "diagnostics": {
+    "base_covariance_eigenvalues": [
+      [
+        0.43786796564403574,
+        0.8621320343559642
+      ],
+      [
+        0.44384471871911707,
+        0.8561552812808833
+      ]
+    ],
+    "geometry_beta_one_acceptance_rate": 0.5382232666015625,
+    "geometry_beta_one_max_abs_ratio": 62.97452042218468,
+    "geometry_beta_one_max_abs_residual": 0.0,
+    "geometry_beta_one_movement_count": 35273,
+    "geometry_beta_zero_acceptance_rate": 0.7756500244140625,
+    "geometry_beta_zero_component_fraction": 0.5002593994140625,
+    "geometry_beta_zero_max_abs_ratio": 3.6830856849048175,
+    "geometry_beta_zero_max_abs_residual": 0.0,
+    "geometry_beta_zero_movement_count": 50833,
+    "geometry_covariance_eigenvalues": [
+      [
+        1.751471862576143,
+        3.4485281374238568
+      ],
+      [
+        1.7753788748764683,
+        3.424621125123533
+      ]
+    ],
+    "support_beta_one_acceptance_rate": 0.41693115234375,
+    "support_beta_one_max_abs_ratio": 334.94521182908244,
+    "support_beta_one_max_abs_residual": 0.0,
+    "support_beta_one_movement_count": 27324,
+    "support_beta_zero_acceptance_rate": 0.59368896484375,
+    "support_beta_zero_component_fraction": 0.50238037109375,
+    "support_beta_zero_max_abs_ratio": 36.18427916094522,
+    "support_beta_zero_max_abs_residual": 0.0,
+    "support_beta_zero_movement_count": 38908
+  },
+  "dimension": 2,
+  "formula": {
+    "acceptance": "min(1,exp(bridge(x')-bridge(x)+log r_arm(x)-log r_arm(x')))",
+    "base_proposal": "q=(1-epsilon)*0.5*(N(m_minus,C_minus)+N(m_plus,C_plus))+epsilon*N(center,2^2*I)",
+    "bridge": "(1-beta)*log q+beta*V",
+    "geometry_component": "s_geom=0.5*N(m_minus,kappa^2*C_minus)+0.5*N(m_plus,kappa^2*C_plus)",
+    "geometry_proposal": "r_geom=(1-rho)*q+rho*s_geom",
+    "support_proposal": "r_support=(1-rho)*q+rho*N(center,4^2*I)"
+  },
+  "gates": {
+    "acceptance_rates_in_unit_interval": true,
+    "all_ratios_are_nontrivial": true,
+    "all_runs_have_movement": true,
+    "depth_step_count": true,
+    "finite_states_densities_and_ratios": true,
+    "full_covariances_are_spd": true,
+    "geometry_component_fraction_in_expected_band": true,
+    "geometry_correction_beta_one": true,
+    "geometry_correction_beta_zero": true,
+    "geometry_density_differs_from_q": true,
+    "normalized_mixture_weights": true,
+    "positive_support_scale": true,
+    "support_and_geometry_densities_differ": true,
+    "support_component_fraction_in_expected_band": true,
+    "support_correction_beta_one": true,
+    "support_correction_beta_zero": true,
+    "support_density_differs_from_q": true
+  },
+  "geometry_rho": 0.5,
+  "geometry_scale": 2.0,
+  "nonclaims": [
+    "A finite two-dimensional fixture is not an invariance proof for q=20.",
+    "The fixture covariances are algebra fixtures, not SSL-LSTM posterior covariances.",
+    "No posterior, whitening, HMC, LEDH, or superiority claim."
+  ],
+  "plan_version": "v3.4-fresh-paired-uncertainty-replication",
+  "role": "finite_q_bridge_support_and_geometry_independent_mh_algebra_fixture",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase52_fixture_2026_08_26.py --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/fixture --seed 20260826 5200",
+    "cuda_visible_devices": "-1",
+    "git_commit": "4c2b2d7856b9f2cb6882e8f0b32592da81720840",
+    "git_dirty": true,
+    "gpu_hidden_intentionally": true,
+    "jit_compile": true,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase52_fixture_2026_08_26.py",
+    "source_sha256": {
+      "plan": "3f455a6504d77c50aa4447219194b9b884d12d34092e74eccecb9e343d7d4cff",
+      "runner": "c3aa098c0f4910893537e969dd34402c0814ad8928bbfbc7a4ef495c50df0ca9"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 1.7999030420323834
+  },
+  "safe_std": 2.0,
+  "sample_count": 8192,
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_fresh_paired_fixture.v1",
+  "seed": [
+    20260826,
+    5200
+  ],
+  "status": "PASS_V3_4_FRESH_PAIRED_FIXTURE",
+  "support_rho": 0.5,
+  "support_std": 4.0
+}

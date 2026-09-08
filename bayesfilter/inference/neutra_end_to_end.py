@@ -40,7 +40,10 @@ from bayesfilter.inference.neutra_batching import (
     batch_native_value_status_target_fn,
     bind_batch_native_neutra_target,
 )
-from bayesfilter.inference.neutra_hmc import run_sequential_neutra_hmc
+from bayesfilter.inference.neutra_hmc import (
+    NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+    run_sequential_neutra_hmc,
+)
 from bayesfilter.inference.neutra_training import (
     NeuTraTrainingError,
     PlainDenseIAFTrainingConfig,

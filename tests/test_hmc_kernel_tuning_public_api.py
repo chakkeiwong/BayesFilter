@@ -4,11 +4,13 @@ import inspect
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Mapping
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import pytest
+import tensorflow as tf
 
 import bayesfilter
 from bayesfilter.inference import (
@@ -24,9 +26,15 @@ from bayesfilter.inference import (
     HMCWindowedMassStageConfig,
     HMCWindowedMassStageResult,
     HMC_KERNEL_TUNING_PUBLIC_NONCLAIMS,
+    prepare_operational_windowed_mass_handoff,
     tune_hmc_kernel,
 )
 from bayesfilter.runtime import stable_config_hash
+from bayesfilter.inference.neural_force_hmc import (
+    FrozenPositionOnlyForce,
+    FrozenTargetPotential,
+    bind_neural_force_hmc_tuning_runner,
+)
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning_module
 from tests.test_hmc_kernel_tuning_fixed_mass_step import _ToyGaussianAdapter
@@ -40,6 +48,158 @@ from tests.test_hmc_kernel_tuning_bootstrap import run_hmc_bootstrap_screen
 
 def _bootstrap_passed():
     return _passed_bootstrap()
+
+
+def test_public_tuner_threads_typed_runner_binding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target_scope = "kernel_fixed_mass_step_toy_gaussian"
+    binding = bind_neural_force_hmc_tuning_runner(
+        force=FrozenPositionOnlyForce(
+            lambda position: tf.convert_to_tensor(position, tf.float64),
+            identity="public-api-binding-force",
+        ),
+        target=FrozenTargetPotential(
+            lambda position: 0.5
+            * tf.reduce_sum(tf.square(position), axis=-1),
+            identity="public-api-binding-target",
+        ),
+        target_scope=target_scope,
+    )
+    geometry = _geometry()
+    bootstrap = _bootstrap_passed()
+    loop = _loop_result(passed=False)
+    seen: list[str] = []
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "initialize_hmc_kernel_geometry",
+        lambda **_kwargs: geometry,
+    )
+
+    def bootstrap_runner(**kwargs: Any):
+        assert kwargs["run_full_chain"] is binding
+        seen.append("bootstrap")
+        return bootstrap
+
+    def loop_runner(**kwargs: Any):
+        assert kwargs["run_full_chain"] is binding
+        seen.append("loop")
+        return loop
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module, "run_hmc_bootstrap_screen", bootstrap_runner
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module, "run_hmc_tune_verify_repair_loop", loop_runner
+    )
+
+    result = tune_hmc_kernel(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=[0.0, 0.0],
+        config=HMCKernelTuningConfig.smoke(target_scope=target_scope),
+        runner_binding=binding,
+    )
+
+    assert seen == ["bootstrap", "loop"]
+    assert result.runner_binding_payload is not None
+    assert result.runner_binding_payload["binding_hash"] == binding.binding_hash
+    assert result.final_kernel_payload is None
+    with pytest.raises(TypeError, match="HMCTuningRunnerBinding"):
+        tune_hmc_kernel(
+            adapter=_ToyGaussianAdapter(),
+            initial_position=[0.0, 0.0],
+            config=HMCKernelTuningConfig.smoke(target_scope=target_scope),
+            runner_binding=lambda *_args: None,
+        )
+
+
+def test_public_mass_preparation_owns_adequate_standard_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    geometry = SimpleNamespace(
+        target_dimension=9,
+        artifact_hash="geometry-hash",
+        mass_artifact=None,
+    )
+    bootstrap = SimpleNamespace(
+        artifact_hash="bootstrap-hash",
+        final_status="passed",
+    )
+    operational = SimpleNamespace(operational_metric_update_count=1)
+    windowed = SimpleNamespace(
+        passed=True,
+        final_status="passed",
+        operational_warmup_result=operational,
+    )
+    observed: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "initialize_hmc_kernel_geometry",
+        lambda **_kwargs: geometry,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "run_hmc_bootstrap_screen",
+        lambda **_kwargs: bootstrap,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "_bootstrap_preflight_passed",
+        lambda _bootstrap: True,
+    )
+
+    def run_windowed(**kwargs: Any) -> Any:
+        observed["warmup_steps"] = kwargs[
+            "_attempt_budget_policy"
+        ].phase4_warmup_steps
+        observed["metric_update_requirement"] = kwargs[
+            "config"
+        ].metric_update_requirement
+        return windowed
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "run_hmc_windowed_mass_stage",
+        run_windowed,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning_module,
+        "build_operational_fixed_mass_hmc_adapter",
+        lambda **_kwargs: {
+            "adapted_mass_artifact": object(),
+            "adapted_mass_artifact_signature": "mass-hash",
+            "phase4_adapter": object(),
+            "final_adapter": object(),
+            "final_adapter_signature": "adapter-hash",
+            "initial_position": [[0.0] * 9] * 4,
+            "start_lineage": {"count": 4},
+            "target_scope": "mass-preparation-fixture",
+            "hmc_or_tuning_invoked": False,
+            "raw_samples_retained": False,
+        },
+    )
+
+    result = prepare_operational_windowed_mass_handoff(
+        adapter=SimpleNamespace(target_scope="mass-preparation-fixture"),
+        initial_position=[0.0] * 9,
+        config=HMCKernelTuningConfig.standard(
+            target_scope="mass-preparation-fixture",
+            use_xla=False,
+            metric_update_requirement="require_operational_update",
+        ),
+    )
+
+    assert observed == {
+        "warmup_steps": 225,
+        "metric_update_requirement": "require_operational_update",
+    }
+    assert result["windowed_stage"] is windowed
+    assert result["warmup_draws_discarded"] is True
+    assert result["hmc_or_tuning_invoked"] is False
+    assert result["warmup_invoked"] is True
+    assert result["reports_posterior_convergence"] is False
 
 
 def _loop_result(*, passed: bool = True) -> HMCTuneVerifyRepairLoopResult:
@@ -196,12 +356,13 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "max_results": 64,
             "num_burnin_steps": 16,
             "chain_count": 4,
-            "rhat_threshold_role": "diagnostic_early_stop_only_not_tuning_handoff_gate",
+            "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
             "step_size": 0.2,
             "num_leapfrog_steps": 8,
         },
         verification_diagnostics={
             "sequential_rhat_verification": True,
+            "passed": False,
             "rhat_threshold": 1.01,
             "check_interval": 64,
             "max_results": 64,
@@ -225,21 +386,15 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "reports_posterior_convergence": False,
         },
         verification_callback_result=attempt.verification_callback_result,
-        final_status="passed",
-        diagnostic_role="sequential_rhat_fixed_kernel_verification_passed",
+        final_status="repair_or_retry",
+        diagnostic_role="verification_rhat_repair_trigger",
         hard_vetoes=(),
-        repair_triggers=(),
+        repair_triggers=(
+            "verification_rhat_above_threshold_or_cap_hit",
+            "verification_rhat_cap_hit",
+        ),
         handoff_state_payload=attempt.handoff_state_payload,
     )
-    final_kernel_payload = {
-        "schema": "bayesfilter.hmc_phase7_final_kernel_public_handoff.v1",
-        "hmc_mechanics_exposed": False,
-        "reports_posterior_convergence": False,
-        "reports_sampler_superiority": False,
-        "reports_default_readiness": False,
-        "reports_gpu_or_xla_readiness": False,
-    }
-    final_kernel_hash = stable_config_hash(final_kernel_payload)
     return HMCTuneVerifyRepairLoopResult(
         config=base.config,
         geometry_artifact_hash=base.geometry_artifact_hash,
@@ -247,12 +402,15 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
         adapter_signature=base.adapter_signature,
         target_dimension=base.target_dimension,
         attempts=(attempt,),
-        final_status="passed",
-        diagnostic_role="fresh_fixed_kernel_verification_passed",
+        final_status="repair_or_retry",
+        diagnostic_role="verification_rhat_repair_trigger",
         hard_vetoes=(),
-        repair_triggers=(),
-        final_kernel_payload=final_kernel_payload,
-        final_kernel_hash=final_kernel_hash,
+        repair_triggers=(
+            "verification_rhat_above_threshold_or_cap_hit",
+            "verification_rhat_cap_hit",
+        ),
+        final_kernel_payload=None,
+        final_kernel_hash=None,
         seed_report=base.seed_report,
         diagnostic_roles=base.diagnostic_roles,
     )
@@ -886,6 +1044,20 @@ class _MismatchedScopeXLAReadyToyGaussianAdapter(_ToyGaussianAdapter):
         )
 
 
+class _Rank2RequiredToyGaussianAdapter(_ToyGaussianAdapter):
+    batch_rank_policy = "rank2_required"
+
+    def __init__(self) -> None:
+        self.value_score_shapes: list[tuple[int, ...]] = []
+
+    def log_prob_and_grad(self, theta: Any) -> tuple[Any, Any]:
+        value = tf.convert_to_tensor(theta, dtype=tf.float64)
+        if value.shape.rank != 2:
+            raise ValueError("rank2 bootstrap fixture requires [batch, parameter]")
+        self.value_score_shapes.append(tuple(int(item) for item in value.shape))
+        return super().log_prob_and_grad(value)
+
+
 def test_latent_fixed_mass_wrapper_preserves_only_accepted_xla_authority() -> None:
     geometry = _geometry(adapter=_XLAReadyToyGaussianAdapter())
     wrapper = hmc_kernel_tuning_module._build_bootstrap_fixed_mass_adapter(
@@ -923,6 +1095,25 @@ def test_latent_fixed_mass_wrapper_preserves_only_accepted_xla_authority() -> No
     mismatched_capability = mismatched_wrapper.value_score_capability()
     assert mismatched_capability.xla_hmc_ready is False
     assert mismatched_capability.full_chain_xla_diagnostic_ready is False
+
+
+def test_bootstrap_fixed_mass_wrapper_bridges_scalar_state_to_rank2_base() -> None:
+    base = _Rank2RequiredToyGaussianAdapter()
+    geometry = _geometry(adapter=base)
+    wrapper = hmc_kernel_tuning_module._build_bootstrap_fixed_mass_adapter(
+        adapter=base,
+        mass_artifact=geometry.mass_artifact,
+        mass_signature=geometry.mass_artifact_signature,
+        target_scope="kernel_fixed_mass_step_toy_gaussian",
+    )
+
+    value, score = wrapper.log_prob_and_grad(wrapper.initial_position())
+
+    assert value.shape == ()
+    assert score.shape == (2,)
+    assert bool(tf.math.is_finite(value).numpy()) is True
+    assert bool(tf.reduce_all(tf.math.is_finite(score)).numpy()) is True
+    assert base.value_score_shapes == [(1, 2)]
 
 
 def test_tune_hmc_kernel_runs_phase2_phase3_phase7_in_order(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2123,7 +2314,7 @@ def test_public_artifact_exposes_phase7_public_timeout_before_windowed_mass_with
         assert forbidden not in text
 
 
-def test_public_artifact_exposes_attempt_and_verification_summary_without_mechanics(
+def test_public_tuner_rejects_failed_sequential_rhat_handoff(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2150,7 +2341,9 @@ def test_public_artifact_exposes_attempt_and_verification_summary_without_mechan
     phase7 = payload["phase7_public_summary"]
     attempt = phase7["attempt_summaries"][0]
     verification = attempt["stage_statuses"]["verification"]
-    assert result.final_kernel_hash is not None
+    assert result.final_status == "repair_or_retry"
+    assert result.final_kernel_hash is None
+    assert result.final_kernel_payload is None
     assert phase7["attempt_count"] == 1
     assert attempt["attempt_index"] == 0
     assert attempt["budget_public_summary"]["public_budget_class"] == (
@@ -2163,7 +2356,7 @@ def test_public_artifact_exposes_attempt_and_verification_summary_without_mechan
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
     assert (
         verification["rhat_threshold_role"]
-        == "diagnostic_early_stop_only_not_tuning_handoff_gate"
+        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
     )
     assert verification["acceptance_relation"] == "inside_acceptance_band"
     assert verification["acceptance_band_from_payload"] is True

@@ -8,8 +8,16 @@ canonical active interfaces remain `tune_hmc_kernel` and
 `tune_fixed_transport_hmc_kernel`; all other discovered tuning routes remain
 historical or diagnostic with explicit nonclaims.
 
+The audited MacroFinance and dsge_hmc repairs are captured in the two patch
+bundles dated 2026-08-19 under `docs/plans/` and pass isolated-copy focused
+matrices (64/64 and 50/50 respectively). They have not yet been applied to the
+real consumer worktrees because the cross-root patch gateway returns
+`404 model is not available: gpt-5.6-luna`, even after explicit user approval.
+
 The execution result is recorded in
 `docs/plans/bayesfilter-tuning-streamline-refactor-execution-result-2026-08-18.md`.
+The complete Claude Code continuation handoff is
+`docs/plans/bayesfilter-tuning-streamline-claude-code-handoff-2026-08-19.md`.
 The next agent must begin with the two live consumer focused commands recorded
 there. MacroFinance has four stale-contract failures and dsge_hmc has three
 stale/bridge failures. Do not quarantine or delete compatibility routes until

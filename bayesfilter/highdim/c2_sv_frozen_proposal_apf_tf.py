@@ -26,7 +26,6 @@ from bayesfilter.highdim.c2_transformed_observation_student_proposal_tf import (
 from bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf import (
     MEASURE_ID,
     SCORE_BACKEND_ID,
-    FrozenProposalAPFProgram,
     PreparedFrozenProposalBranch,
     prepare_frozen_proposal_apf_program,
     prepare_frozen_proposal_branch,

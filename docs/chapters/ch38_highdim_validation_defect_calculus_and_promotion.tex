@@ -478,14 +478,657 @@ residuals never gate promotion for scattered-row fits; only same-target
 references or resolved-quadrature cross-checks do.  (iii) Fixed-box scopes
 do not extrapolate in \(n\): coverage decays geometrically, so each
 dimension rung requires either a re-validated coverage diagnostic or the
-preconditioned coordinates of \eqref{eq:bf-hd-rowcov-precond}.  Status at
-the time of writing: the affine-bridging repair is validated as a
-\emph{direction} at a single step and seed; its engine-level form (per-step
-frozen maps propagated through the retained object, value and score paths
-alike) is design work in progress, and no \(n\ge4\) rank claim exists.
+preconditioned coordinates of \eqref{eq:bf-hd-rowcov-precond}.
+
+The engine-level form of this repair --- per-step frozen triangular maps
+propagated through the retained object, with a quadrature correction for
+increment mass truncated by the box --- subsequently closed the \(n=2\)
+rung outright: \(5.4\times10^{-5}\) nats per step against the declared
+\(2.5\times10^{-3}\) bar, with \(r^{*}(2)=6\) confirmed across seeds and
+ranks (execution artifacts 2026-08-20 through 2026-08-22).  The same
+engine at \(n=4\), however, exposed a third defect --- not in the rows,
+and not repaired by the maps --- in the bounded domain itself.
+Section~\ref{sec:bf-hd-defect-containment} derives it, and
+Section~\ref{sec:bf-hd-refdom} resolves the construction question it
+forces.
+
+\section[Chained-Domain Truncation]{Defect 3: Chained Bounded Domains Truncate The Filter Itself}
+\label{sec:bf-hd-defect-containment}
+
+The bridged-coordinate repair of
+Section~\ref{sec:bf-hd-defect-row-coverage} places every step's fit on
+its own moment box.  Doing so exposes a third defect that is invisible at
+a single step because it is created by the \emph{recursion}: the retained
+polynomial of step \(t-1\) is defined only on the step-\(t-1\) box, so
+the step-\(t\) construction is forced to keep its previous-block domain
+inside the old one, and the nested domains truncate filter mass at a
+geometric rate in the dimension.  This section derives the defect in
+proposition--proof form.  Throughout, \(n\) is the state dimension (the
+joint fit variable has dimension \(2n\)), \(\Phi\) is the standard normal
+distribution function, and ``the engine'' is the adapted squared-TT value
+engine with per-step frozen affine maps validated at \(n=2\).
+
+\subsection{Why the domains must nest}
+
+\begin{lemma}[Containment is forced by retention]
+\label{lem:bf-hd-containment-nesting}
+Let the step-\(t-1\) retained object be a polynomial density
+representation defined on the image \(B_{t-1}=m_{t-1}+L_{t-1}[-1,1]^n\)
+of its own coordinate map, with no declared extension outside
+\(B_{t-1}\).  Then any step-\(t\) fit whose previous-block rows are drawn
+in a new box \(B^{p}_{t}=m^{p}_{t}+L^{p}_{t}[-1,1]^n\) is well defined
+only if \(B^{p}_{t}\subseteq B_{t-1}\).
+\end{lemma}
+
+\begin{proof}
+The step-\(t\) target evaluates the retained density of step \(t-1\) at
+every previous-block row location \(x_p\in B^{p}_{t}\).  By hypothesis
+the retained object assigns no value to \(x_p\notin B_{t-1}\): the
+polynomial expression exists there formally but does not represent the
+retained density, and the engine's fail-closed assertion rejects such
+rows.  A well-defined step therefore requires every point of
+\(B^{p}_{t}\) to lie in \(B_{t-1}\).
+\end{proof}
+
+The constraint would be harmless if the boxes could remain wide.  They
+cannot.  The engine's measured containment behavior (wide-\(\kappa\)
+grid, 2026-08-21, two independent measurements) is that the
+\emph{effective} previous-block half-width --- the requested \(\kappa\)
+times the shrink factor that containment imposes --- is pinned at
+\(\kappa^{*}\approx 2.0\)--\(2.2\) standard deviations regardless of the
+requested \(\kappa\in[3,6]\): the containment bound involves the ratio of
+new-box to old-box widths, both of which scale with the same requested
+\(\kappa\), so the request cancels.  We record \(\kappa^{*}\) as a
+measured engine constant, not a theorem; the propositions below take it
+as an input and are exact given it.
+
+\subsection{The truncated mass is geometric in dimension}
+
+\begin{proposition}[In-box mass of a whitened Gaussian block]
+\label{prop:bf-hd-gaussian-box-mass}
+Let \(X\sim\calN(m,\Sigma)\) on \(\R^n\) with \(\Sigma=LL^{\top}\)
+nonsingular, and let
+\(B_\kappa=\{x:\lVert L^{-1}(x-m)\rVert_\infty\le\kappa\}\) be the
+moment box with half-width \(\kappa\) in whitened coordinates.  Then
+\begin{equation}
+  \Pr\{X\in B_\kappa\}=\bigl(2\Phi(\kappa)-1\bigr)^{n}.
+  \label{eq:bf-hd-boxmass}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Set \(U=L^{-1}(X-m)\).  Then \(U\sim\calN(0,I_n)\), the event
+\(\{X\in B_\kappa\}\) is \(\{\lvert U_i\rvert\le\kappa\ \forall i\}\),
+the coordinates \(U_i\) are independent standard normals, and
+\(\Pr\{\lvert U_i\rvert\le\kappa\}=\Phi(\kappa)-\Phi(-\kappa)
+=2\Phi(\kappa)-1\).  The product over \(i=1,\dots,n\) gives
+\eqref{eq:bf-hd-boxmass}.
+\end{proof}
+
+\begin{proposition}[Geometric growth of the truncated fraction]
+\label{prop:bf-hd-truncation-growth}
+Under the hypotheses of Proposition~\ref{prop:bf-hd-gaussian-box-mass},
+the truncated fraction
+\(\varepsilon_{\mathrm{trunc}}(n,\kappa)
+ =1-\bigl(2\Phi(\kappa)-1\bigr)^{n}\)
+is strictly increasing in \(n\) and satisfies
+\(\varepsilon_{\mathrm{trunc}}(n,\kappa)\ge
+ 1-e^{-2n\overline{\Phi}(\kappa)}\)
+with \(\overline{\Phi}(\kappa)=1-\Phi(\kappa)\); in particular it does
+not vanish for any fixed \(\kappa\) as \(n\) grows, and at the measured
+containment cap it is already material at \(n=4\):
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & \(n=2\) & \(n=4\) & \(n=8\)\\
+\midrule
+\(\kappa=2.0\) & \(0.089\) & \(0.170\) & \(0.311\)\\
+\(\kappa=2.2\) & \(0.055\) & \(0.107\) & \(0.202\)\\
+\(\kappa=3.0\) & \(0.005\) & \(0.011\) & \(0.021\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{proposition}
+
+\begin{proof}
+Monotonicity in \(n\) is immediate since
+\(0<2\Phi(\kappa)-1<1\).  For the bound, write
+\(2\Phi(\kappa)-1=1-2\overline{\Phi}(\kappa)\) and use
+\(\log(1-x)\le -x\):
+\((1-2\overline{\Phi}(\kappa))^{n}\le e^{-2n\overline{\Phi}(\kappa)}\).
+The tabulated values evaluate \eqref{eq:bf-hd-boxmass} directly
+(diagnostic script \code{check\_reference\_domain\_selection\_20260823.py}).
+\end{proof}
+
+The measured engine telemetry sits \emph{above} this ideal bound, as it
+must: the containment shrink is anisotropic and the box is not perfectly
+centered.  On the \(n=4\) ladder cells (attempt04, 2026-08-22) the ratio
+of increment mass recovered outside the box to mass inside was
+\(0.36\)--\(1.85\) across six cells --- in three of six, more step mass
+lay outside the box than inside --- against the ideal
+\(0.11\)--\(0.17\) of the table.  At \(n=2\) the same telemetry read
+\(0.03\)--\(0.11\), which is why the \(n=2\) rung passes with margin.
+
+\subsection{Truncation is a bias floor, not a resolution problem}
+
+The decisive point is that the truncated mass is not an approximation
+error that better fitting reduces.  Even a \emph{perfect} fit on the box
+retains the wrong law.
+
+\begin{proposition}[Total-variation cost of conditioning]
+\label{prop:bf-hd-conditioning-tv}
+Let \(P\) be a probability measure and \(B\) an event with
+\(P(B)=1-\varepsilon>0\), and let \(P_B=P(\cdot\mid B)\) be the
+conditioned law.  Then
+\(\operatorname{TV}(P_B,P)
+ =\sup_{A}\lvert P_B(A)-P(A)\rvert=\varepsilon.\)
+\end{proposition}
+
+\begin{proof}
+For any measurable \(A\), decompose \(P(A)=P(A\cap B)+P(A\cap B^{c})\)
+and \(P_B(A)=P(A\cap B)/(1-\varepsilon)\).  Hence
+\[
+  P_B(A)-P(A)
+  =P(A\cap B)\Bigl(\tfrac{1}{1-\varepsilon}-1\Bigr)-P(A\cap B^{c})
+  =\tfrac{\varepsilon}{1-\varepsilon}P(A\cap B)-P(A\cap B^{c}).
+\]
+The first term lies in \([0,\varepsilon]\) because
+\(P(A\cap B)\le 1-\varepsilon\); the second lies in
+\([0,\varepsilon]\).  Their difference therefore lies in
+\([-\varepsilon,\varepsilon]\), so the supremum is at most
+\(\varepsilon\), and \(A=B^{c}\) attains it:
+\(P_B(B^{c})-P(B^{c})=0-\varepsilon=-\varepsilon\).
+\end{proof}
+
+\begin{remark}[Zero-fit-error bias floor of the chained-box program]
+\label{rem:bf-hd-bias-floor}
+Combine the three statements.  Containment
+(Lemma~\ref{lem:bf-hd-containment-nesting}) pins the effective
+previous-block box at \(\kappa^{*}\approx2\)--\(2.2\) (measured);
+at that width a Gaussian block loses the geometric mass fraction of
+Proposition~\ref{prop:bf-hd-truncation-growth}; and by
+Proposition~\ref{prop:bf-hd-conditioning-tv} the step's retained law then
+differs from the true one by at least that fraction \emph{in total
+variation even at zero fit error}.  The floor is independent of TT rank,
+basis degree, and row budget --- which is exactly the measured attempt04
+signature at \(n=4\): errors of \(0.34\)--\(0.47\) nats per step, nearly
+flat from rank \(6\) to \(8\), with the truncation-ratio telemetry
+identifying the cause.  The one-step statement is exact; the multi-step
+compounding (each step conditions anew on a new box) is measured rather
+than bounded in closed form here, and it can only worsen the one-step
+floor.  A scalar quadrature correction can and does repay the
+\emph{increment} mass (it moved the \(n=4\) value error from
+\({\sim}2.5\) nats to \(0.34\)--\(0.47\)), but it cannot repair the
+\emph{retained shape}: the recursion propagates a minority slice of the
+posterior.  This is the precise sense in which the bounded-box program is
+insufficient at \(n\ge4\), and it discharges the r\^ole the
+truncation-ratio flag was designed for: those cells are invalid as rank
+evidence, so no \(r^{*}(4)\) statement of any kind is licensed by them.
+\end{remark}
+
+\subsection{Ledger consequences}
+
+Two rules join the calculus.  (i) Any bounded-domain scope whose retained
+object chains across steps must record the truncation-ratio diagnostic
+(recovered outside-mass over inside-mass); a cell whose ratio exceeds the
+declared threshold is invalid as rank or accuracy evidence, whatever its
+residuals.  (ii) A domain policy is a structural assumption in the sense
+of this chapter's promotion calculus: it must be re-justified at every
+dimension rung, because Proposition~\ref{prop:bf-hd-truncation-growth}
+makes ``worked at \(n\)'' evidence that expires geometrically in \(n\).
+
+\section[Reference-Domain Selection]{Reference-Domain Selection For The Squared-TT Program}
+\label{sec:bf-hd-refdom}
+
+Defect 3 forces a construction question that must not be settled by
+preference: on which reference domain, with which basis family and which
+reference measure, should the squared-TT recursion live?  This section
+states the admissible candidates, defines the properties a construction
+must satisfy or optimize, and derives the status of every candidate
+against every property.  The conclusion --- recorded here with its
+supporting derivations because it redirects the high-dimensional program
+--- is that the incumbent bounded construction is \emph{eliminated} by
+three independent arguments, and that among the two source-faithful
+replacements the Gaussian-reference Hermite construction is selected on
+the derived criteria, with the compactified construction retained as the
+documented fallback.
+
+\subsection{Candidates and properties}
+
+\begin{definition}[Candidate constructions]
+\label{def:bf-hd-refdom-candidates}
+All candidates share the per-step frozen affine (triangular)
+preconditioner \(T_t(x)=L_t^{-1}(x-m_t)\) built from deterministic
+moment hints, the squared representation with defensive term, the exact
+Gram-chain normalizer, and the manual-adjoint derivative program.  They
+differ only in the triple (reference measure \(\mu\), basis, domain):
+\begin{itemize}[leftmargin=0.28in]
+  \item[\textbf{C1}] (incumbent) \(\mu=\) uniform on the moment box
+    \(B_t\subset\R^{2n}\); Legendre basis; retained domains chained by
+    Lemma~\ref{lem:bf-hd-containment-nesting}.
+  \item[\textbf{C2}] \(\mu=\calN(0,I_{2n})\) on \(\R^{2n}\) in the
+    preconditioned coordinates \(u=T_t(x)\); normalized probabilists'
+    Hermite basis; no boxes.
+  \item[\textbf{C3}] \(\mu=\) uniform on \([-1,1]^{2n}\) in coordinates
+    \(z_i=u_i/\sqrt{s^2+u_i^2}\) (the per-axis algebraic
+    compactification used by the reference implementation of
+    \citet{zhao2024ttsequential}); Legendre or Lagrange basis on the
+    box; no truncation, since the compactification is a diffeomorphism
+    of \(\R\) onto \((-1,1)\).
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Requirements and objectives]
+\label{def:bf-hd-refdom-properties}
+A construction must satisfy the hard requirements
+\begin{itemize}[leftmargin=0.28in]
+  \item[\textbf{R1}] \emph{Exact normalizer and analytic adjoint}: the
+    one-dimensional mass matrices \(B_{ij}=\int b_i b_j\,d\mu\) are
+    closed-form constants, so the Gram-chain normalizer and the manual
+    adjoint of the declared finite program exist exactly;
+  \item[\textbf{R2}] \emph{Well-defined recursion}: the step-\(t\) row
+    law is supported inside the domain of the step-\((t-1)\) retained
+    object;
+\end{itemize}
+and is scored on the objectives
+\begin{itemize}[leftmargin=0.28in]
+  \item[\textbf{O1}] structural truncation mass
+    \(\varepsilon_{\mathrm{trunc}}\) (target mass outside the
+    representable domain at zero fit error);
+  \item[\textbf{O2}] the zero-fit-error bias floor of the retained law;
+  \item[\textbf{O3}] per-axis basis cardinality \(\ell(\varepsilon)\)
+    needed for relative \(L^2(\mu)\) accuracy \(\varepsilon\) on the
+    program's calibration family (the whitened near-Gaussian step
+    targets; the linear-Gaussian model is the exactly-Gaussian member);
+  \item[\textbf{O4}] TT rank demand on the same family;
+  \item[\textbf{O5}] conditioning of basis evaluations on the effective
+    row support, and the \(\ell\)-driven cost channels (design-matrix
+    width \(\ell r^2\), mass work \(\ell^2\), compiled-graph size);
+  \item[\textbf{O6}] existence of the exact parameter score of the
+    declared program with closed-form adjoint nodes;
+  \item[\textbf{O7}] the defensive floor performs its declared function:
+    the floor density dominates the target
+    (\(\sup_x q/\lambda<\infty\)), which is the hypothesis under which
+    \citet[eq.~(13) and Lemma~1]{zhao2024ttsequential} prove the bounded
+    target-to-approximation ratio.
+\end{itemize}
+Engineering re-derivation cost is deliberately \emph{not} an objective;
+it is a budget input recorded separately, because allowing it to stand in
+for a mathematical property is how an inherited construction survives
+scrutiny it should not survive.
+\end{definition}
+
+\subsection{The reference algebra is closed-form in all three candidates}
+
+\begin{proposition}[Hermite mass identity]
+\label{prop:bf-hd-hermite-mass-identity}
+Let \(\mathrm{He}_k\) denote the probabilists' Hermite polynomials and
+\(\widetilde{\mathrm{He}}_k=\mathrm{He}_k/\sqrt{k!}\).  Under
+\(\mu=\calN(0,1)\),
+\(\int \widetilde{\mathrm{He}}_j\,\widetilde{\mathrm{He}}_k\,d\mu
+ =\delta_{jk}\): the mass matrix is the identity, exactly, at every
+degree.
+\end{proposition}
+
+\begin{proof}
+The generating function of the family is
+\(G(z,t)=e^{zt-t^2/2}=\sum_{k\ge0}\mathrm{He}_k(z)\,t^k/k!\).
+With \(\varphi\) the standard normal density,
+\[
+  \int G(z,s)\,G(z,t)\,\varphi(z)\,dz
+  =e^{-(s^2+t^2)/2}\int e^{z(s+t)}\varphi(z)\,dz
+  =e^{-(s^2+t^2)/2}\,e^{(s+t)^2/2}
+  =e^{st},
+\]
+using the normal moment generating function
+\(\int e^{za}\varphi(z)\,dz=e^{a^2/2}\).  Expanding both sides,
+\[
+  \sum_{j,k}\frac{s^j t^k}{j!\,k!}
+  \int \mathrm{He}_j\,\mathrm{He}_k\,d\mu
+  =\sum_{m}\frac{(st)^m}{m!},
+\]
+and matching coefficients of \(s^j t^k\) gives
+\(\int \mathrm{He}_j \mathrm{He}_k\,d\mu=\delta_{jk}\,k!\).  Dividing by
+\(\sqrt{j!\,k!}\) yields the claim.  (Numerical confirmation: the
+degree-\(\le12\) mass matrix computed by 60-node Gauss--Hermite
+quadrature matches the identity to \(1.3\times10^{-15}\).)
+\end{proof}
+
+\begin{proposition}[C3 leaves the incumbent reference algebra unchanged]
+\label{prop:bf-hd-c3-algebra}
+Under C3 the reference measure is the uniform probability measure on
+\([-1,1]^{2n}\), identical to C1's; every mass matrix, Gram chain,
+retention contraction, and adjoint node of the incumbent program is
+unchanged.  The compactification enters only through the fit target: with
+\(u_i=s z_i/\sqrt{1-z_i^2}\) per axis and Jacobian
+\(du_i/dz_i=s(1-z_i^2)^{-3/2}\), the density of a physical target \(q\)
+with respect to \(\mu\) in \(z\)-coordinates is
+\begin{equation}
+  q_\mu(z)\;=\;q\bigl(u(z)\bigr)\prod_{i=1}^{2n}
+  s\,(1-z_i^2)^{-3/2}\Big/ 2^{-2n},
+  \label{eq:bf-hd-c3-target}
+\end{equation}
+a row-evaluable factor with no effect on the basis-side algebra.
+\end{proposition}
+
+\begin{proof}
+The reference algebra of the incumbent program depends only on the pair
+(basis, \(\mu\)); C3 keeps both.  Equation \eqref{eq:bf-hd-c3-target} is
+the change-of-variables formula for densities under the product
+diffeomorphism \(z\mapsto u(z)\), with \(2^{-2n}\) the uniform reference
+density.  All \(z\)-dependence introduced by the map sits inside the
+target evaluation at rows, which the fit already treats as a black box.
+\end{proof}
+
+\begin{remark}[The derivative requirement never forced the box]
+\label{rem:bf-hd-no-forcing}
+R1 holds for all three candidates ---
+Proposition~\ref{prop:bf-hd-hermite-mass-identity} for C2 (where the
+identity mass matrix in fact \emph{simplifies} every Gram chain),
+Proposition~\ref{prop:bf-hd-c3-algebra} for C3, and the existing
+certified program for C1.  R6 below is likewise
+candidate-independent.  The program's historical premise that the
+analytic-derivative requirement selected the bounded Legendre box is
+therefore \emph{wrong relative to that claim}: the only place the
+derivative requirement genuinely forces a deviation from
+\citet{zhao2024ttsequential} is the preconditioner's moment estimate ---
+their Section~5.2 estimates \((\mu_t,\Sigma_t)\) by a particle step,
+which is not differentiable, so this program uses frozen deterministic
+hints --- and that deviation is identical across C1, C2, and C3.
+\end{remark}
+
+\subsection{Domain validity eliminates the incumbent}
+
+\begin{proposition}[Domain scorecard]
+\label{prop:bf-hd-domain-scorecard}
+(i) C1 fails R2 at the measured containment cap for every unbounded-%
+support state model, with truncation mass growing geometrically in \(n\)
+(Propositions~\ref{prop:bf-hd-gaussian-box-mass}--%
+\ref{prop:bf-hd-truncation-growth}) and a zero-fit-error retained bias of
+at least that mass (Proposition~\ref{prop:bf-hd-conditioning-tv}).
+(ii) C2 and C3 satisfy R2 with
+\(\varepsilon_{\mathrm{trunc}}\equiv0\) and zero structural bias floor:
+their domains are all of \(\R^{2n}\) (directly for C2; via the
+diffeomorphism for C3), so the previous-step retained object is defined
+at every possible row, containment never arises, and at zero fit error
+the retained law equals the true one up to the defensive-term mixture
+quantified in Proposition~\ref{prop:bf-hd-defensive-mixture-bias}.
+\end{proposition}
+
+\begin{proof}
+(i) is the content of Defect 3
+(Section~\ref{sec:bf-hd-defect-containment}).  For (ii), the retained
+object under C2 or C3 is a density on the full space; the step-\(t\) row
+law, wherever it is supported, lies in that domain, so
+Lemma~\ref{lem:bf-hd-containment-nesting} imposes no constraint.  With
+no excluded region, \(\varepsilon_{\mathrm{trunc}}=0\) by definition,
+and the zero-fit-error retained density equals
+\((q_\mu+\tau Z_h\lambda)/((1+\tau)Z_h)\), whose distance from the truth
+is exactly the mixture term treated below.
+\end{proof}
+
+\subsection{The defensive floor: bias cost and domination}
+
+The squared representation carries the defensive term of
+\citet[eq.~(13), eq.~(16)]{zhao2024ttsequential}: the represented
+\(\mu\)-density is \(\bar q=h^2+\tau Z_h\lambda\) with
+\(Z_h=\int h^2 d\mu\), \(\lambda\ge0\), \(\int\lambda\,d\mu=1\), so the
+increment \(\int\bar q\,d\mu=(1+\tau)Z_h\) remains exact.  The floor
+exists to keep the target absolutely continuous with respect to the
+representation --- bounded log-ratios, importance weights satisfying a
+central limit theorem --- and its two costs are quantified next.
+
+\begin{proposition}[Defensive mixture bias]
+\label{prop:bf-hd-defensive-mixture-bias}
+At zero fit error (\(h^2=q_\mu\), the \(\mu\)-density of the true step
+target with mass \(Z_h\)), the normalized represented law is the mixture
+\(\hat p=(1-w)\,p+w\,\lambda\) with \(p=q_\mu/Z_h\) and
+\(w=\tau/(1+\tau)\), and
+\[
+  \operatorname{TV}(\hat p,p)=w\operatorname{TV}(\lambda,p)\le
+  \frac{\tau}{1+\tau},
+\]
+independently of the dimension.  Under the source coupling
+\(\tau_t\le\lVert\phi_t-\sqrt{q_t}\rVert_{L^2}^2\)
+\citep[Lemma~1 and Proposition~11]{zhao2024ttsequential} the bias is
+second order in the fit error, so the zero-fit-error limit of the
+retained law is exactly the truth; under this program's current fixed
+policy \(\tau=10^{-6}\) it is a per-step constant three orders below the
+\(2.5\times10^{-3}\) accuracy bar.
+\end{proposition}
+
+\begin{proof}
+Normalizing \(\bar q=q_\mu+\tau Z_h\lambda\) by its mass
+\((1+\tau)Z_h\) gives
+\(\hat p=\frac{1}{1+\tau}p+\frac{\tau}{1+\tau}\lambda\).  Then
+\(\hat p-p=w(\lambda-p)\), and integrating absolute values,
+\(\operatorname{TV}(\hat p,p)=\tfrac12\int|\hat p-p|
+ =w\cdot\tfrac12\int|\lambda-p|=w\operatorname{TV}(\lambda,p)\le w\).
+The mixture weight \(w\) contains no dimensional quantity.  The two
+\(\tau\) policies substitute directly.
+\end{proof}
+
+\begin{proposition}[Bounded domains defeat the floor's own hypothesis]
+\label{prop:bf-hd-domination-failure}
+Let the step target \(q\) have full support on \(\R^{2n}\) (as for every
+Gaussian-family fixture).  Then for any defensive density \(\lambda\)
+supported in a bounded box \(B\), \(\sup_x q(x)/\lambda(x)=\infty\), so
+the domination hypothesis of \citet[eq.~(13)]{zhao2024ttsequential}
+fails and the guarantee
+\(\sup_x p/\hat p<\tfrac{\hat z}{\tau z}\sup_x q/\lambda\) is vacuous.
+Under C2 and C3 the hypothesis is satisfiable by design: \(\lambda\) may
+be any full-support tensor-product density with closed-form mass
+(the reference density itself, or a heavier-tailed product chosen to
+dominate a declared target tail class), so the floor's tail order is a
+free design parameter rather than a property of the construction.
+\end{proposition}
+
+\begin{proof}
+On \(B^{c}\), \(q>0\) while \(\lambda=0\), so the ratio is unbounded.
+Under C2/C3 take \(\lambda\) to be any product density positive on
+\(\R^{2n}\) with \(\int\lambda\,d\mu=1\); positivity everywhere makes
+\(\sup q/\lambda\) finite for any continuous \(q\) with tails dominated
+by \(\lambda\)'s, which is a choice of \(\lambda\), not a constraint of
+the domain.
+\end{proof}
+
+\begin{remark}[What the floor regularizes, and what it does not]
+\label{rem:bf-hd-floor-channels}
+The floor splits the tail question into two channels that must not be
+conflated.  \emph{Recursion stability}: with domination, the represented
+log-density is floored at \(\log(\tau Z_h\lambda)\), so zeros of the
+fitted polynomial and un-fitted tail regions produce bounded,
+tail-mass-weighted errors at later rows instead of divergent
+log-targets or unbounded ratios --- this is exactly the guard's declared
+function, available to C2 and C3 equally through the choice of
+\(\lambda\), and structurally unavailable to C1 by
+Proposition~\ref{prop:bf-hd-domination-failure}.
+\emph{Increment accuracy}: the floor's mass is \(\lambda\)-shaped, not
+target-shaped; Lemma~1 of \citet{zhao2024ttsequential} prices it as
+additional \(L^2\) error, and target mass the fit does not capture still
+biases the increment one for one.  The floor therefore does not relax
+any approximation-efficiency requirement below; it converts tail
+\emph{failures} from catastrophic to graded, which is a safety property,
+not an accuracy subsidy.
+\end{remark}
+
+\subsection{Approximation efficiency separates the survivors}
+
+\begin{proposition}[Degree collapse at the Gaussian calibration point of C2]
+\label{prop:bf-hd-c2-degree-collapse}
+Let the step target be \(q(x)=Z\,\calN(x;m,\Sigma)\) on \(\R^{d}\)
+(\(d=2n\)), and let the preconditioner use the exact moments:
+\(T(x)=L^{-1}(x-m)\), \(LL^{\top}=\Sigma\).  Then the C2 fit target ---
+the density of the pushforward \(T_\sharp q\) with respect to
+\(\eta=\calN(0,I_d)\) --- is the constant \(Z\), so the exact fit is
+\(h\equiv\sqrt{Z}\): per-axis degree \(0\), TT rank \(1\).
+\end{proposition}
+
+\begin{proof}
+The pushforward density with respect to Lebesgue measure is
+\(q(T^{-1}(u))\,\lvert\det L\rvert
+ =Z\,\calN(m+Lu;m,\Sigma)\,\lvert\det L\rvert\).
+Since
+\(\calN(m+Lu;m,\Sigma)
+ =(2\pi)^{-d/2}\lvert\det\Sigma\rvert^{-1/2}
+  e^{-\frac12 u^{\top}u}\)
+and \(\lvert\det L\rvert=\lvert\det\Sigma\rvert^{1/2}\), this equals
+\(Z\,(2\pi)^{-d/2}e^{-\lVert u\rVert^2/2}=Z\,\eta(u)\).  Dividing by the
+reference density \(\eta\) leaves the constant \(Z\).
+\end{proof}
+
+For the linear-Gaussian calibration model the joint step target
+\emph{is} Gaussian in \((x_t,x_{t-1})\) --- the product of a Gaussian
+retained law, a linear-Gaussian transition, and a linear-Gaussian
+observation has a jointly quadratic exponent --- so
+Proposition~\ref{prop:bf-hd-c2-degree-collapse} applies exactly under
+exact hints, and near-Gaussian targets perturb it continuously: under C2
+the basis burden is set by the \emph{deviation} from Gaussianity, which
+is the rank-collapse mechanism the source paper demonstrates for its
+preconditioned fits (their Figure~2) and the regime its delegated
+weighted-approximation theory addresses
+\citep{cui2022deep,cui2023selfreinforced}.
+
+\begin{proposition}[No geometric Legendre rate for the compactified Gaussian]
+\label{prop:bf-hd-c3-subgeometric}
+Under C3 with map scale \(s>0\), the one-axis fit target at the Gaussian
+calibration point is
+\(f(z)=c\,(1-z^2)^{-3/4}\exp\!\bigl(-a\,\tfrac{z^2}{2(1-z^2)}\bigr)\)
+on \([-1,1]\), with \(a=s^2/2\) and \(c>0\) (the square root of the
+compactified Gaussian--Jacobian product).  Its Legendre coefficients
+\(c_k\) satisfy \(\limsup_{k\to\infty}\lvert c_k\rvert^{1/k}=1\): the
+expansion converges at no geometric rate, in contrast to the entire
+(supergeometric) fit targets of C1 and the constant fit target of C2 at
+the same calibration point.
+\end{proposition}
+
+\begin{proof}
+Suppose, for contradiction,
+\(\limsup_k\lvert c_k\rvert^{1/k}=1/\rho<1\).  By the Laplace integral
+representation
+\(P_k(z)=\frac1\pi\int_0^\pi\bigl(z+\sqrt{z^2-1}\cos\theta\bigr)^k
+ d\theta\),
+every Legendre polynomial obeys
+\(\lvert P_k(z)\rvert\le\bigl(\lvert z\rvert+\lvert\sqrt{z^2-1}\rvert
+\bigr)^k\le\rho'^k\) on the closed Bernstein ellipse
+\(E_{\rho'}\) (foci \(\pm1\), parameter \(\rho'\)), for any
+\(\rho'<\rho\).  Hence \(\sum_k\lvert c_k\rvert\,\lvert P_k(z)\rvert\)
+converges uniformly on \(E_{\rho'}\), and the Legendre series defines a
+function \(F\) analytic on the open ellipse \(\operatorname{int}E_\rho\),
+which contains the points \(\pm1\) in its interior for every
+\(\rho>1\), and which agrees with \(f\) on \((-1,1)\).  Then
+\(F^4\) is analytic on \(\operatorname{int}E_\rho\) and agrees on
+\((-1,1)\) with
+\[
+  f(z)^4=c^4\,(1-z^2)^{-3}\exp\!\Bigl(-\tfrac{2a\,z^2}{1-z^2}\Bigr),
+\]
+which is single-valued and analytic on \(\mathbb{C}\setminus\{\pm1\}\)
+(the algebraic factor is a rational function; the exponential factor is
+analytic wherever \(z\ne\pm1\)).  By the identity theorem on the
+connected open set \(\operatorname{int}E_\rho\setminus\{\pm1\}\), the
+two agree there, so \(f^4\) extends analytically to \(z=1\).  But along
+\(z=1+\delta e^{i\pi/4}\), \(\delta\downarrow0\), one has
+\(1-z^2=-2\delta e^{i\pi/4}+O(\delta^2)\), hence
+\[
+  -\frac{2a\,z^2}{1-z^2}
+  =\frac{a}{\delta}e^{-i\pi/4}+O(1),
+  \qquad
+  \operatorname{Re}\Bigl(-\tfrac{2az^2}{1-z^2}\Bigr)
+  =\frac{a}{\sqrt2\,\delta}+O(1)\to+\infty,
+\]
+so \(\lvert f^4\rvert\ge C\delta^{-3}e^{a/(\sqrt2\delta)}\to\infty\):
+\(f^4\) is unbounded near \(z=1\), contradicting analyticity there.
+Therefore no \(\rho>1\) exists.
+\end{proof}
+
+\begin{remark}[Quantitative verification and cost consequences]
+\label{rem:bf-hd-refdom-quant}
+The proposition rules out a geometric rate; the practical degrees were
+computed exactly (Gauss--Legendre quadrature of the coefficient
+integrals, 2026-08-23 diagnostic script).  For relative \(L^2\) accuracy
+\(10^{-3}\) on one axis at the Gaussian calibration point, C3 needs
+per-axis cardinality \(\ell=33\) at map scale \(s=1\) (\(63\) at
+\(s=0.5\), \(21\) at \(s=2\)); the C1 comparator (entire
+\(\sqrt{\text{truncated Gaussian}}\)) needs \(\ell=7\); C2 needs
+\(\ell=1\) by Proposition~\ref{prop:bf-hd-c2-degree-collapse}.  The
+reference implementation of \citet{zhao2024ttsequential} corroborates
+the C3 figure independently: its compactified route runs \(33\) degrees
+of freedom per axis.  The \(\ell\) burden propagates through every cost
+channel of O5 --- design-matrix width \(\ell r^2\), mass work
+\(\ell^2\), and compiled-graph size, the channel whose rank-driven
+variant already produced measured compile-time failures at nine axes ---
+while C2's recorded O5 cost is the tail growth of normalized Hermite
+values, bounded by \({\sim}26\) at \(\lvert z\rvert=4\) for degrees up
+to \(16\), a region Gaussian-reference rows essentially never exceed.
+\end{remark}
+
+\subsection{Selection, decisions, and what remains open}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Property & C1 (box) & C2 (Hermite) & C3 (compactified)\\
+\midrule
+R1 exact normalizer/adjoint & pass & pass & pass\\
+R2 recursion well defined & \textbf{fail}, \(n\ge4\) & pass & pass\\
+O1 truncation mass & geometric in \(n\) & \(0\) & \(0\)\\
+O2 bias floor & irreducible & \(O(\tau)\), controlled & \(O(\tau)\), controlled\\
+O3 \(\ell(10^{-3})\), calibration & \(7\) (via truncation) & \(1\) & \(21\)--\(63\)\\
+O5 cost channel & moot & bounded tail factor & \(\ell\)-inflated\\
+O7 floor domination & \textbf{fail}, intrinsic & satisfiable & satisfiable\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+C1 is eliminated on three independent grounds: R2
+(Lemma~\ref{lem:bf-hd-containment-nesting} with the measured cap), the
+geometric truncation identity with its conditioning bias floor
+(Propositions~\ref{prop:bf-hd-gaussian-box-mass}--%
+\ref{prop:bf-hd-conditioning-tv}), and the intrinsic failure of the
+defensive floor's domination hypothesis
+(Proposition~\ref{prop:bf-hd-domination-failure}).  Between the
+survivors, every derived criterion either ties (R1, R2, O1, O2, O6, O7)
+or favors C2 (O3 decisively at and near the calibration point; O5
+through the \(\ell\)-driven channels), so the program adopts \textbf{C2},
+with C3 recorded as the fallback should the C2 derivation or
+implementation encounter a blocking obstacle --- C3 reuses the incumbent
+algebra (Proposition~\ref{prop:bf-hd-c3-algebra}) at a permanent
+per-axis cost that the reference implementation itself pays.
+
+Three program decisions are recorded with this selection.  First, the
+defensive constant moves from the fixed convenience value to the source
+coupling \(\tau_t\le\lVert\phi_t-\sqrt{q_t}\rVert_{L^2}^2\) of
+\citet[Proposition~11]{zhao2024ttsequential}, which makes the mixture
+bias of Proposition~\ref{prop:bf-hd-defensive-mixture-bias} second order;
+the fixed value remains for smoke tests only.  Second, the defensive
+density \(\lambda\) defaults to the reference density, with the
+domination requirement of
+Proposition~\ref{prop:bf-hd-domination-failure} to be re-verified
+against the declared tail class of each non-Gaussian target, escalating
+to a heavier-tailed product \(\lambda\) where domination demands it.
+Third, Proposition~\ref{prop:bf-hd-c2-degree-collapse} changes what the
+rank ladder measures: under C2 with exact hints the linear-Gaussian
+ladder collapses by construction, so it becomes a machine-precision
+correctness oracle, and the feasibility question --- the smallest rank
+achieving declared accuracy as dimension grows --- moves to targets that
+are genuinely non-Gaussian after preconditioning (the stochastic-%
+volatility family) or to deliberately degraded hints.  A ladder that
+kept the old question under the new construction would pass for the
+wrong reason.
+
+What remains open is stated so that it cannot be silently promoted:
+the rank demand of C2 on non-Gaussian targets is an empirical question
+with no prediction recorded here; the practical Hermite conditioning
+constant at \(n\ge8\) and the compiled-kernel behavior of Hermite
+evaluations are engineering measurements yet to be made; and the
+delegated weighted-approximation theory
+\citep{cui2022deep,cui2023selfreinforced} is cited as the source of the
+unbounded-domain error analysis and must be read against the C2
+derivation before that derivation is treated as reviewed.
 
 \section{Validation Benchmarks And Promotion Logic}
 \label{sec:bf-hd-validation-benchmarks}
+
 
 The validation ladder should combine exact or controlled references, local
 object-validity diagnostics, and promotion rules.  Exact or reference-density

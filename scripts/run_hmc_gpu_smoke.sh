@@ -8,7 +8,7 @@ if [[ "${mode}" != "mixed_precision_dpf_tf32_gpu0" ]]; then
   exit 2
 fi
 
-python_bin="/home/ubuntu/anaconda3/envs/tfgpu/bin/python"
+python_bin="${TFGPU_PYTHON:-${CONDA_PREFIX:-/home/ubuntu/miniforge3/envs/tf-gpu}/bin/python}"
 log_path="docs/benchmarks/logs/mixed-precision-hmc-smoke-fp32-tf32-gpu0-b1-t3-np8-d2-m2-active-odd-2026-06-17.log"
 json_path="docs/benchmarks/experimental-batched-ledh-pfpf-ot-mixed-precision-hmc-smoke-fp32-tf32-gpu0-b1-t3-np8-d2-m2-active-odd-2026-06-17.json"
 md_path="docs/benchmarks/experimental-batched-ledh-pfpf-ot-mixed-precision-hmc-smoke-fp32-tf32-gpu0-b1-t3-np8-d2-m2-active-odd-2026-06-17.md"

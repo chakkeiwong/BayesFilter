@@ -19,9 +19,11 @@ from bayesfilter.highdim.transport import FixedTTSIRTTransport, KRCDFConfig
 from bayesfilter.highdim.tt import FunctionalTT, TTCore
 from bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf import (
     AlgebraicCoordinateMap,
+    FrozenTTSIRTProposalCompilation,
     TTSIRT_COMPILER_CLASSIFICATION,
     combine_fixed_ttsirt_block_compilations,
     compile_fixed_ttsirt_proposal_branch,
+    prepare_frozen_proposal_branch,
 )
 
 
@@ -334,3 +336,46 @@ def test_block_compiler_can_concatenate_block_observations() -> None:
     )
     assert combined.manifest["observation_mode"] == "concatenate"
     assert combined.manifest["block_observation_dimensions"] == (1, 1)
+
+
+def test_block_compiler_preserves_resolved_nonuniform_base_masses() -> None:
+    keyword_arguments = {
+        "observations": tf.constant([[0.0], [0.2]], DTYPE),
+        "initial_transport": _constant_transport(1),
+        "transition_transports": (_constant_transport(2),),
+        "coordinate_map": IdentityCoordinateMap(1),
+        "initial_reference_points": tf.constant([[0.1, 0.3, 0.6, 0.9]], DTYPE),
+        "ancestor_uniforms": tf.constant([[0.05, 0.15, 0.45, 0.95]], DTYPE),
+        "auxiliary_log_probabilities": tf.math.log(
+            tf.constant([[0.1, 0.2, 0.3, 0.4]], DTYPE)
+        ),
+        "transition_reference_points": tf.constant(
+            [[[0.2, 0.4, 0.7, 0.8]]], DTYPE
+        ),
+    }
+    base_initial = tf.math.log(tf.constant([0.1, 0.2, 0.3, 0.4], DTYPE))
+    base_transition = tf.math.log(tf.constant([[0.4, 0.3, 0.2, 0.1]], DTYPE))
+
+    def with_masses(source: FrozenTTSIRTProposalCompilation) -> FrozenTTSIRTProposalCompilation:
+        branch = source.branch
+        explicit = prepare_frozen_proposal_branch(
+            observations=branch.observations,
+            states=branch.states,
+            initial_log_proposal_density=branch.initial_log_proposal_density,
+            ancestors=branch.ancestors,
+            auxiliary_log_probabilities=branch.auxiliary_log_probabilities,
+            transition_log_proposal_density=branch.transition_log_proposal_density,
+            initial_log_base_mass=base_initial,
+            transition_log_base_mass=base_transition,
+        )
+        return FrozenTTSIRTProposalCompilation(
+            branch=explicit, compiler_id="a" * 64, manifest=source.manifest
+        )
+
+    first = with_masses(compile_fixed_ttsirt_proposal_branch(**keyword_arguments))
+    second = with_masses(compile_fixed_ttsirt_proposal_branch(**keyword_arguments))
+    combined = combine_fixed_ttsirt_block_compilations((first, second))
+    tf.debugging.assert_near(combined.branch.initial_log_base_mass, base_initial, atol=0.0)
+    tf.debugging.assert_near(
+        combined.branch.transition_log_base_mass, base_transition, atol=0.0
+    )

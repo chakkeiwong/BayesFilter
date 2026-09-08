@@ -1,0 +1,983 @@
+{
+  "claim_ir": {
+    "edges": [],
+    "limitations": [
+      "PDF candidates are parser text and require visual/source review.",
+      "Unlabeled adjacency is not treated as dependency.",
+      "Edges inferred by a future validator must retain status='inferred'."
+    ],
+    "nodes": [
+      {
+        "anchor": {
+          "line_end": 169,
+          "line_start": 1,
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-mathematical-note-2026-08-24.tex",
+          "sha256": "885c7f79af5e5849431da393a0f999fce8fcc51a9048d70956824249db038e41",
+          "source_id": "885c7f79af5e5849431d"
+        },
+        "authentication_state": "source_authenticated",
+        "id": "object:source:885c7f79af5e5849431d",
+        "kind": "evidence_object",
+        "label": null,
+        "packet_id": "packet:source:885c7f79af5e5849431d",
+        "raw_text": "\\documentclass[11pt]{article}\n\\usepackage{amsmath,amssymb,amsthm,mathtools}\n\\usepackage[margin=1in]{geometry}\n\\newtheorem{proposition}{Proposition}\n\\newtheorem{corollary}[proposition]{Corollary}\n\\newtheorem{remark}[proposition]{Remark}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\abs}[1]{\\left|#1\\right|}\n\\newcommand{\\norm}[1]{\\left\\lVert#1\\right\\rVert}\n\n\\title{Machine-auditable propositions for the LEDH--PFPF--GenUT note}\n\\author{BayesFilter research record}\n\\date{2026-08-24}\n\n\\begin{document}\n\\maketitle\n\n\\paragraph{Scope.}\nThis appendix records the narrow algebraic propositions used by the Markdown\nnote\n\\texttt{bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-\nmathematical-note-2026-08-24.md}.  It is an audit surface, not a claim that the\ncurrent implementation satisfies every hypothesis.\n\n\\begin{proposition}[Moment non-identification]\n\\label{prop:ledh-moment-nonidentification}\nThe standard normal law and the law assigning mass $2/3$ to $0$ and mass $1/6$\nto each of $\\sqrt{3}$ and $-\\sqrt{3}$ have equal first four raw moments but are\ndifferent probability measures.\n\\end{proposition}\n\\begin{proof}\nBoth means and third moments are zero.  The second moment of the discrete law is\n$\\frac16(3)+\\frac16(3)=1$, and its fourth moment is\n$\\frac16(9)+\\frac16(9)=3$, which are the corresponding standard-normal\nmoments.  One law is discrete and the other is absolutely continuous, so they\ncannot be equal.\n\\end{proof}\n\n\\begin{proposition}[Bounded image of the smooth caps]\n\\label{prop:ledh-cap-support}\nFor $d>0$ and $\\rho>0$, define\n\\[\n C_\\rho(u)=u\\left(1+\\frac{\\norm{u}^2}{d\\rho^2}\\right)^{-1/2}.\n\\]\nThen $\\norm{C_\\rho(u)}<\\sqrt d\\,\\rho$ for finite $u$.  For $b>0$ and even\n$p\\geq2$, define\n\\[\n g_{b,p}(u)=u\\left(1+(u/b)^p\\right)^{-1/p}.\n\\]\nThen $\\abs{g_{b,p}(u)}<b$ for finite $u$ and\n\\[\n g'_{b,p}(u)=\\left(1+(u/b)^p\\right)^{-1/p-1}>0.\n\\]\nNeither map is onto its unconstrained Euclidean codomain.\n\\end{proposition}\n\\begin{proof}\nWriting $r=\\norm{u}$ gives\n\\[\n \\norm{C_\\rho(u)}\n =\\frac{r}{\\sqrt{1+r^2/(d\\rho^2)}}<\\sqrt d\\,\\rho.\n\\]\nFor the scalar cap, put $s=(u/b)^p\\geq0$.  Differentiation gives\n\\[\n \\frac{d}{du}\\{u(1+s)^{-1/p}\\}\n =(1+s)^{-1/p}-s(1+s)^{-1/p-1}\n =(1+s)^{-1/p-1}>0.\n\\]\nThe limits as $u\\to\\pm\\infty$ are $\\pm b$, proving the image bound and\nnon-surjectivity.\n\\end{proof}\n\n\\begin{proposition}[Invertible PF--PF change of variables]\n\\label{prop:ledh-pfpf-change}\nLet $q_0$ be a density on $\\R^d$, positive on the relevant preimage support,\nand let $\\Phi:\\R^d\\to\\R^d$ be a $C^1$ diffeomorphism with nonzero determinant.\nIf $X\\sim q_0$ and $Y=\\Phi(X)$, then\n\\[\n q_1(y)=q_0(\\Phi^{-1}(y))\\abs{\\det D\\Phi^{-1}(y)}\n\\]\nand, for every integrable $f$ and nonnegative unnormalized target\n$\\widetilde\\pi$,\n\\[\n {\\mathbb E}_{q_0}\\!\\left[\n \\frac{\\widetilde\\pi(\\Phi(X))\\abs{\\det D\\Phi(X)}}{q_0(X)}\n f(\\Phi(X))\\right]\n =\\int_{\\R^d}\\widetilde\\pi(y)f(y)\\,dy.\n\\]\n\\end{proposition}\n\\begin{proof}\nThe first equality is the change-of-variables theorem.  In the expectation,\nsubstitute $y=\\Phi(x)$; the factors $q_0(x)$ and\n$\\abs{\\det D\\Phi(x)}$ are exactly the inverse factors in the transformed\nmeasure, leaving the target integral.\n\\end{proof}\n\n\\begin{corollary}[Cap/reset boundary]\n\\label{cor:ledh-reset-boundary}\nThe determinant in Proposition~\\ref{prop:ledh-pfpf-change} does not certify a\nlater Contract-E/OT/GenUT operation that maps an entire cloud\n$(y_1,\\ldots,y_N)$ to a new cloud and is not a single-point diffeomorphism with\nan evaluated joint determinant.\n\\end{corollary}\n\\begin{proof}\nThe proposition uses a map on $\\R^d$.  A cloud reset is a map on\n$(\\R^d)^N$ and generally couples all rows through global moments and OT\nweights.  Its required Jacobian would therefore be an $Nd$-dimensional joint\nJacobian, not the LEDH single-particle determinant.\n\\end{proof}\n\n\\begin{proposition}[Frozen deterministic-mixture replay]\n\\label{prop:ledh-replay-unbiased}\nLet $r_1,\\ldots,r_H$ be proposal densities frozen before drawing\n$n_h$ samples each, let $N=\\sum_h n_h$, and set\n\\[\n \\alpha_h=\\frac{n_h}{N},\\qquad m(x)=\\sum_{h=1}^H\\alpha_h r_h(x).\n\\]\nAssume $m(x)>0$ wherever $\\widetilde\\pi(x)|f(x)|>0$.  For any integrable\n$f$, the stratified estimator\n\\[\n \\widehat\\gamma(f)\n =\\frac1N\\sum_{h=1}^H\\sum_{i=1}^{n_h}\n \\frac{\\widetilde\\pi(X_{hi})}{m(X_{hi})}f(X_{hi}),\n \\qquad X_{hi}\\sim r_h,\n\\]\nsatisfies\n\\[\n {\\mathbb E}\\{\\widehat\\gamma(f)\\mid r_1,\\ldots,r_H\\}\n =\\int\\widetilde\\pi(x)f(x)\\,dx.\n\\]\n\\end{proposition}\n\\begin{proof}\nLinearity of expectation gives\n\\[\n \\sum_h\\alpha_h\\int r_h(x)\n \\frac{\\widetilde\\pi(x)}{m(x)}f(x)\\,dx\n =\\int m(x)\\frac{\\widetilde\\pi(x)}{m(x)}f(x)\\,dx.\n\\]\n\\end{proof}\n\n\\begin{proposition}[Defensive-mixture second-moment bound]\n\\label{prop:ledh-defensive-bound}\nLet $q$ and $r_{\\rm safe}$ be densities, with $r_{\\rm safe}$ positive wherever\n$\\widetilde\\pi>0$. Let $0<\\epsilon_{\\min}\\leq\\epsilon\\leq1$, and set\n$m=(1-\\epsilon)q+\\epsilon r_{\\rm safe}$.  Then $m\\geq\n\\epsilon_{\\min}r_{\\rm safe}$ and\n\\[\n \\int\\frac{\\widetilde\\pi(x)^2 f(x)^2}{m(x)}\\,dx\n \\leq\\frac1{\\epsilon_{\\min}}\n \\int\\frac{\\widetilde\\pi(x)^2 f(x)^2}{r_{\\rm safe}(x)}\\,dx.\n\\]\n\\end{proposition}\n\\begin{proof}\nThe pointwise mixture inequality gives the support statement and, after taking\nreciprocals, the displayed integral inequality.  Finiteness of the\nright-hand side is an additional assumption.\n\\end{proof}\n\n\\begin{remark}[Interpretation]\nPropositions~\\ref{prop:ledh-cap-support} and\n\\ref{prop:ledh-moment-nonidentification} rule out a dual-cap-only claim of\nfull-support density faithfulness.  Propositions~\\ref{prop:ledh-pfpf-change},\n\\ref{prop:ledh-replay-unbiased}, and\n\\ref{prop:ledh-defensive-bound} give the separate assumptions needed for a\nconditional proposal/replay construction.  They do not certify the active\nq=20 artifacts or NeuTra/HMC readiness.\n\\end{remark}\n\n\\end{document}\n",
+        "status": "extracted"
+      }
+    ],
+    "schema": "applied_math_claim_ir",
+    "source_ids": [
+      "885c7f79af5e5849431da393a0f999fce8fcc51a9048d70956824249db038e41"
+    ],
+    "version": "1.1"
+  },
+  "claim_ir_validation_errors": [],
+  "coverage": {
+    "all_obligations_have_disposition": true,
+    "disposition_counts": {
+      "not_applicable": 4,
+      "not_checkable": 8
+    },
+    "selected_count": 8,
+    "total_count": 12,
+    "unresolved_count": 8
+  },
+  "equation_blocks": [],
+  "evidence_packets": [
+    {
+      "anchor": {
+        "line_end": 169,
+        "line_start": 1,
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-mathematical-note-2026-08-24.tex",
+        "sha256": "885c7f79af5e5849431da393a0f999fce8fcc51a9048d70956824249db038e41",
+        "source_id": "885c7f79af5e5849431d"
+      },
+      "authentication_state": "source_authenticated",
+      "id": "packet:source:885c7f79af5e5849431d",
+      "kind": "source_text",
+      "raw_text": "\\documentclass[11pt]{article}\n\\usepackage{amsmath,amssymb,amsthm,mathtools}\n\\usepackage[margin=1in]{geometry}\n\\newtheorem{proposition}{Proposition}\n\\newtheorem{corollary}[proposition]{Corollary}\n\\newtheorem{remark}[proposition]{Remark}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\abs}[1]{\\left|#1\\right|}\n\\newcommand{\\norm}[1]{\\left\\lVert#1\\right\\rVert}\n\n\\title{Machine-auditable propositions for the LEDH--PFPF--GenUT note}\n\\author{BayesFilter research record}\n\\date{2026-08-24}\n\n\\begin{document}\n\\maketitle\n\n\\paragraph{Scope.}\nThis appendix records the narrow algebraic propositions used by the Markdown\nnote\n\\texttt{bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-\nmathematical-note-2026-08-24.md}.  It is an audit surface, not a claim that the\ncurrent implementation satisfies every hypothesis.\n\n\\begin{proposition}[Moment non-identification]\n\\label{prop:ledh-moment-nonidentification}\nThe standard normal law and the law assigning mass $2/3$ to $0$ and mass $1/6$\nto each of $\\sqrt{3}$ and $-\\sqrt{3}$ have equal first four raw moments but are\ndifferent probability measures.\n\\end{proposition}\n\\begin{proof}\nBoth means and third moments are zero.  The second moment of the discrete law is\n$\\frac16(3)+\\frac16(3)=1$, and its fourth moment is\n$\\frac16(9)+\\frac16(9)=3$, which are the corresponding standard-normal\nmoments.  One law is discrete and the other is absolutely continuous, so they\ncannot be equal.\n\\end{proof}\n\n\\begin{proposition}[Bounded image of the smooth caps]\n\\label{prop:ledh-cap-support}\nFor $d>0$ and $\\rho>0$, define\n\\[\n C_\\rho(u)=u\\left(1+\\frac{\\norm{u}^2}{d\\rho^2}\\right)^{-1/2}.\n\\]\nThen $\\norm{C_\\rho(u)}<\\sqrt d\\,\\rho$ for finite $u$.  For $b>0$ and even\n$p\\geq2$, define\n\\[\n g_{b,p}(u)=u\\left(1+(u/b)^p\\right)^{-1/p}.\n\\]\nThen $\\abs{g_{b,p}(u)}<b$ for finite $u$ and\n\\[\n g'_{b,p}(u)=\\left(1+(u/b)^p\\right)^{-1/p-1}>0.\n\\]\nNeither map is onto its unconstrained Euclidean codomain.\n\\end{proposition}\n\\begin{proof}\nWriting $r=\\norm{u}$ gives\n\\[\n \\norm{C_\\rho(u)}\n =\\frac{r}{\\sqrt{1+r^2/(d\\rho^2)}}<\\sqrt d\\,\\rho.\n\\]\nFor the scalar cap, put $s=(u/b)^p\\geq0$.  Differentiation gives\n\\[\n \\frac{d}{du}\\{u(1+s)^{-1/p}\\}\n =(1+s)^{-1/p}-s(1+s)^{-1/p-1}\n =(1+s)^{-1/p-1}>0.\n\\]\nThe limits as $u\\to\\pm\\infty$ are $\\pm b$, proving the image bound and\nnon-surjectivity.\n\\end{proof}\n\n\\begin{proposition}[Invertible PF--PF change of variables]\n\\label{prop:ledh-pfpf-change}\nLet $q_0$ be a density on $\\R^d$, positive on the relevant preimage support,\nand let $\\Phi:\\R^d\\to\\R^d$ be a $C^1$ diffeomorphism with nonzero determinant.\nIf $X\\sim q_0$ and $Y=\\Phi(X)$, then\n\\[\n q_1(y)=q_0(\\Phi^{-1}(y))\\abs{\\det D\\Phi^{-1}(y)}\n\\]\nand, for every integrable $f$ and nonnegative unnormalized target\n$\\widetilde\\pi$,\n\\[\n {\\mathbb E}_{q_0}\\!\\left[\n \\frac{\\widetilde\\pi(\\Phi(X))\\abs{\\det D\\Phi(X)}}{q_0(X)}\n f(\\Phi(X))\\right]\n =\\int_{\\R^d}\\widetilde\\pi(y)f(y)\\,dy.\n\\]\n\\end{proposition}\n\\begin{proof}\nThe first equality is the change-of-variables theorem.  In the expectation,\nsubstitute $y=\\Phi(x)$; the factors $q_0(x)$ and\n$\\abs{\\det D\\Phi(x)}$ are exactly the inverse factors in the transformed\nmeasure, leaving the target integral.\n\\end{proof}\n\n\\begin{corollary}[Cap/reset boundary]\n\\label{cor:ledh-reset-boundary}\nThe determinant in Proposition~\\ref{prop:ledh-pfpf-change} does not certify a\nlater Contract-E/OT/GenUT operation that maps an entire cloud\n$(y_1,\\ldots,y_N)$ to a new cloud and is not a single-point diffeomorphism with\nan evaluated joint determinant.\n\\end{corollary}\n\\begin{proof}\nThe proposition uses a map on $\\R^d$.  A cloud reset is a map on\n$(\\R^d)^N$ and generally couples all rows through global moments and OT\nweights.  Its required Jacobian would therefore be an $Nd$-dimensional joint\nJacobian, not the LEDH single-particle determinant.\n\\end{proof}\n\n\\begin{proposition}[Frozen deterministic-mixture replay]\n\\label{prop:ledh-replay-unbiased}\nLet $r_1,\\ldots,r_H$ be proposal densities frozen before drawing\n$n_h$ samples each, let $N=\\sum_h n_h$, and set\n\\[\n \\alpha_h=\\frac{n_h}{N},\\qquad m(x)=\\sum_{h=1}^H\\alpha_h r_h(x).\n\\]\nAssume $m(x)>0$ wherever $\\widetilde\\pi(x)|f(x)|>0$.  For any integrable\n$f$, the stratified estimator\n\\[\n \\widehat\\gamma(f)\n =\\frac1N\\sum_{h=1}^H\\sum_{i=1}^{n_h}\n \\frac{\\widetilde\\pi(X_{hi})}{m(X_{hi})}f(X_{hi}),\n \\qquad X_{hi}\\sim r_h,\n\\]\nsatisfies\n\\[\n {\\mathbb E}\\{\\widehat\\gamma(f)\\mid r_1,\\ldots,r_H\\}\n =\\int\\widetilde\\pi(x)f(x)\\,dx.\n\\]\n\\end{proposition}\n\\begin{proof}\nLinearity of expectation gives\n\\[\n \\sum_h\\alpha_h\\int r_h(x)\n \\frac{\\widetilde\\pi(x)}{m(x)}f(x)\\,dx\n =\\int m(x)\\frac{\\widetilde\\pi(x)}{m(x)}f(x)\\,dx.\n\\]\n\\end{proof}\n\n\\begin{proposition}[Defensive-mixture second-moment bound]\n\\label{prop:ledh-defensive-bound}\nLet $q$ and $r_{\\rm safe}$ be densities, with $r_{\\rm safe}$ positive wherever\n$\\widetilde\\pi>0$. Let $0<\\epsilon_{\\min}\\leq\\epsilon\\leq1$, and set\n$m=(1-\\epsilon)q+\\epsilon r_{\\rm safe}$.  Then $m\\geq\n\\epsilon_{\\min}r_{\\rm safe}$ and\n\\[\n \\int\\frac{\\widetilde\\pi(x)^2 f(x)^2}{m(x)}\\,dx\n \\leq\\frac1{\\epsilon_{\\min}}\n \\int\\frac{\\widetilde\\pi(x)^2 f(x)^2}{r_{\\rm safe}(x)}\\,dx.\n\\]\n\\end{proposition}\n\\begin{proof}\nThe pointwise mixture inequality gives the support statement and, after taking\nreciprocals, the displayed integral inequality.  Finiteness of the\nright-hand side is an additional assumption.\n\\end{proof}\n\n\\begin{remark}[Interpretation]\nPropositions~\\ref{prop:ledh-cap-support} and\n\\ref{prop:ledh-moment-nonidentification} rule out a dual-cap-only claim of\nfull-support density faithfulness.  Propositions~\\ref{prop:ledh-pfpf-change},\n\\ref{prop:ledh-replay-unbiased}, and\n\\ref{prop:ledh-defensive-bound} give the separate assumptions needed for a\nconditional proposal/replay construction.  They do not certify the active\nq=20 artifacts or NeuTra/HMC readiness.\n\\end{remark}\n\n\\end{document}\n"
+    }
+  ],
+  "execution": {
+    "backend_execution": "not_requested",
+    "source_edits": false,
+    "specialist_side_effects": false
+  },
+  "extractions": [],
+  "findings": [],
+  "metadata": {
+    "contract": "applied_math_audit",
+    "schema_version": "1.0"
+  },
+  "mode": "deep",
+  "non_claims": [
+    {
+      "code": "pdf_equations_not_certified",
+      "text": "PDF extraction and normalized objects do not certify faithful mathematical recovery."
+    },
+    {
+      "code": "obligation_coverage_not_solution",
+      "text": "Accounting for an obligation does not solve it or prove the paper wrong."
+    },
+    {
+      "code": "specialist_diagnostics_not_semantic_equivalence",
+      "text": "Specialist diagnostics do not establish that code and paper express the same scientific model."
+    },
+    {
+      "code": "single_case_not_general_recall",
+      "text": "One document case cannot establish general error-detection recall or precision."
+    },
+    {
+      "code": "no_claim_promotion",
+      "text": "This function does not authorize source edits, publication, release, or scientific claim promotion."
+    },
+    {
+      "code": "dynare_optional_adapter",
+      "text": "DynareMCP is an optional specialist and is not required for non-Dynare papers."
+    }
+  ],
+  "obligations": [
+    {
+      "backend": "pending",
+      "description": "Check algebra, calculus, transformations, and limiting cases.",
+      "disposition": "not_applicable",
+      "evidence_refs": [],
+      "family": "algebra_calculus",
+      "id": "obligation:algebra_calculus",
+      "matched_terms": [],
+      "status": "not_applicable"
+    },
+    {
+      "backend": "pending",
+      "description": "Check definitions, indexing, symbol identity, and undefined notation.",
+      "disposition": "not_applicable",
+      "evidence_refs": [],
+      "family": "notation_definitions",
+      "id": "obligation:notation_definitions",
+      "matched_terms": [],
+      "status": "not_applicable"
+    },
+    {
+      "backend": "pending",
+      "description": "Check dimensions, units, scales, frequencies, and measurement conventions.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "dimensions_units",
+      "id": "obligation:dimensions_units",
+      "matched_terms": [
+        "rate"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check timing, conditioning, information sets, and event order.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "timing_conditioning",
+      "id": "obligation:timing_conditioning",
+      "matched_terms": [
+        "expect"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check objectives, constraints, first-order conditions, and boundary cases.",
+      "disposition": "not_applicable",
+      "evidence_refs": [],
+      "family": "optimization",
+      "id": "obligation:optimization",
+      "matched_terms": [],
+      "status": "not_applicable"
+    },
+    {
+      "backend": "pending",
+      "description": "Check probability, likelihood, normalization, support, and uncertainty language.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "probability_statistics",
+      "id": "obligation:probability_statistics",
+      "matched_terms": [
+        "probability"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check estimands, identification conditions, treatment definitions, and causal claim boundaries.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "identification_causality",
+      "id": "obligation:identification_causality",
+      "matched_terms": [
+        "identif"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check expansion points, retained order, linearization, and approximation domains.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "approximation_linearization",
+      "id": "obligation:approximation_linearization",
+      "matched_terms": [
+        "linear"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check aggregation, ownership, stock-flow identities, and decomposition.",
+      "disposition": "not_applicable",
+      "evidence_refs": [],
+      "family": "accounting_aggregation",
+      "id": "obligation:accounting_aggregation",
+      "matched_terms": [],
+      "status": "not_applicable"
+    },
+    {
+      "backend": "pending",
+      "description": "Check algorithm steps, convergence, initialization, stopping, and numerical evidence.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "algorithm_numerics",
+      "id": "obligation:algorithm_numerics",
+      "matched_terms": [
+        "sample"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check whether claims are supported by the cited source, code, data, or displayed result.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "claim_evidence",
+      "id": "obligation:claim_evidence",
+      "matched_terms": [
+        "claim"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check missing definitions, equations, external dependencies, and reconstruction closure.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "document_completeness",
+      "id": "obligation:document_completeness",
+      "matched_terms": [
+        "appendix"
+      ],
+      "status": "selected"
+    }
+  ],
+  "relation_hypotheses": [],
+  "response_mode": "compact",
+  "routes": [],
+  "semantic_checks": [],
+  "semantic_profiles": [],
+  "semantic_validation_errors": [],
+  "source": {
+    "code_count": 0,
+    "data_count": 0,
+    "records": [
+      {
+        "bytes": 5794,
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-mathematical-note-2026-08-24.tex",
+        "sha256": "885c7f79af5e5849431da393a0f999fce8fcc51a9048d70956824249db038e41",
+        "source_kind": "latex",
+        "structured_objects": {
+          "equations": [],
+          "labels": [
+            "prop:ledh-moment-nonidentification",
+            "prop:ledh-cap-support",
+            "prop:ledh-pfpf-change",
+            "cor:ledh-reset-boundary",
+            "prop:ledh-replay-unbiased",
+            "prop:ledh-defensive-bound"
+          ],
+          "sections": []
+        },
+        "suffix": ".tex"
+      }
+    ],
+    "source_count": 1
+  },
+  "source_discovery": [
+    {
+      "candidates": [
+        {
+          "bytes": 133597,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-dpf-filter-oracle-comparison-target-route-registry-2026-06-08.json",
+          "role": "data_or_config",
+          "sha256": "d7810f02e972550445cc3aa41d34a490d2273b61e56aa3ba005872418c68b96b"
+        },
+        {
+          "bytes": 70018,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-dpf-ledh-pfpf-alg1-ukf-ledh-pfpf-ot-rerun-registry-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "c61512996378b5dbb833f44dbbd0fa6f9f13495005638356a23ca47ba28ea73b"
+        },
+        {
+          "bytes": 55244,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-dpf-ledh-pfpf-ot-scalable-ot-self-contained-survey-paper-2026-06-17.tex",
+          "role": "source",
+          "sha256": "59591ef8d11e10da47bf6c18005099aae757f2b61d668b234c852ef16ccd6c44"
+        },
+        {
+          "bytes": 13005,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-adapter-fixtures-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "8e53b50ab31f55f1ee8ec25b6b32eba2ae00e820dcb44a1a98814d44d7b16a80"
+        },
+        {
+          "bytes": 6863,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-adapter-schema-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "0652cfdf396cf06cc08650f0dbdcdb0121bc8c0f076fb34b2b486eeffce6d853"
+        },
+        {
+          "bytes": 32807,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-deterministic-filter-coverage-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "06ca8ebcd63d1f3cd99f7574588efea9e7d0e5690076a06ded56d2f0f6a80626"
+        },
+        {
+          "bytes": 10176,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-deterministic-filter-smoke-payloads-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "bc452be46e223c7bee547a24b6959beed31ff6bcfa48944167393ae9d8c4ef9d"
+        },
+        {
+          "bytes": 12361,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-dpf-filter-coverage-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "568ffbfbbdd5a6dceab56b2e10175ef1be8acc113161e3594dbe5a12e9905f5b"
+        },
+        {
+          "bytes": 6244,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-dpf-filter-smoke-payloads-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "fd07d37208f3034a5057a276038aa42f4d2637589f41b726d49192215b1aaa73"
+        },
+        {
+          "bytes": 4919,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-dpf-minimal-matrix-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "9107eaec037285d00f06350edc77fb034072222116310df907156c2600ff47ad"
+        },
+        {
+          "bytes": 10758,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-generalized-sv-testing-spec-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "30ea6bc644877edea4a96ca0353d410cc8f9e3d13c84980be8ed61e8c0c81f3c"
+        },
+        {
+          "bytes": 14152,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-gradient-semantics-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "81e1f70ab3d0dcfa70a7e03694de3468842ff88d8a85fede9b42aadd1fe3315e"
+        },
+        {
+          "bytes": 10865,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-adapter-status-matrix-2026-06-11.csv",
+          "role": "data_or_config",
+          "sha256": "9b7ac3de28599af76a49736ab9aff53712bb9dd3f4c05382f9938e04a35f4fda"
+        },
+        {
+          "bytes": 2222,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-blocker-closure-status-2026-06-11.csv",
+          "role": "data_or_config",
+          "sha256": "98a47900ac639b92a9a556ef0daeb7ed22f5a6ec957eaabe148c8b4ed5cdb824"
+        },
+        {
+          "bytes": 25405,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-blocker-closure-status-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "416e781d9772641703831e72c3e1864c7c60c14f4a47d3e4dc391a02ed1d49de"
+        },
+        {
+          "bytes": 44173,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-blocker-fix-gates-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "3cf79f3caacd4c92d9a6777fb46a1bc560eeccd3ffc683984841fa301479bce6"
+        },
+        {
+          "bytes": 11748,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-gradient-error-matrix-2026-06-10.csv",
+          "role": "data_or_config",
+          "sha256": "35d158cd78d49ad691899bb4b434b5fc7ce085b70a2505a5548c964d5e7a2436"
+        },
+        {
+          "bytes": 223155,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-matrices-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "d57b7edd367b22d9610a2a5983e10947cc0a17e30376019cefd7af4e350d494b"
+        },
+        {
+          "bytes": 1457,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-synthetic-dataset-manifest-2026-06-11.csv",
+          "role": "data_or_config",
+          "sha256": "ac700b4c1e6a1d056671cce2f15b5c41f37a33d10dddfc4cce2e7312928b5253"
+        },
+        {
+          "bytes": 27710,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-synthetic-dataset-manifest-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "ff0685e503f5caffbff8ede1685dabddec3c0be35a75ffb73481e7effc902afd"
+        },
+        {
+          "bytes": 23110,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-synthetic-truth-capability-crosswalk-2026-06-11.csv",
+          "role": "data_or_config",
+          "sha256": "122cb99258175302d9e7b56e5432f28330dd7afcd6b234c30db0b0f2bbe7017b"
+        },
+        {
+          "bytes": 177080,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-synthetic-truth-contract-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "01bb52c8f0a89ab230b3148ad8303f808ffe903e29cbcb23e3db059bfba96fe2"
+        },
+        {
+          "bytes": 11989,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-value-error-matrix-2026-06-10.csv",
+          "role": "data_or_config",
+          "sha256": "a614fb6a00ae20feecd67b4ca847ed1c973871311668153e3625e93cb1fdc82d"
+        },
+        {
+          "bytes": 9183,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-curvature-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "b469829a5baac58ed0d6950a9bd0c08fb34762c0ae07a27aa3d715aeaffc9e68"
+        },
+        {
+          "bytes": 82101,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-numeric-results-2026-06-12.json",
+          "role": "data_or_config",
+          "sha256": "99e5b3931a639646be41a6454f99242e79e2dc1ccbb2c05b18507378b088080f"
+        },
+        {
+          "bytes": 7293,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-score-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "ac8655928d90d083d1fbf8d2639d55226dabe7948edf73c1eda163425551ef15"
+        },
+        {
+          "bytes": 12978,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-status-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "46bc48bb4d6103a3f8c1ef3fb6dde19ce21d80951a4e48c5a1f7ff77547c6813"
+        },
+        {
+          "bytes": 6106,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-stochastic-uncertainty-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "d61c2e5f40d6d8d60587470500b0438e2d309930a4b50fa16982be60ff2613e1"
+        },
+        {
+          "bytes": 6379,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-value-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "1f68dbe6e2b5275c5791e13f7b421a8ebcc713edbed39b707a4f4f85378f07d7"
+        },
+        {
+          "bytes": 11154,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-curvature-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "d2d8af6748e176edbe6d84d6cea9c42a46df6c274541147985674378ba85f660"
+        },
+        {
+          "bytes": 96785,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-numeric-results-2026-06-13.json",
+          "role": "data_or_config",
+          "sha256": "c2980092917c62752fc6a707f63b9bf18b3cb865a6a1742d65118b12d563a4e3"
+        },
+        {
+          "bytes": 8740,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-score-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "bf56ad6ede525283bca5723e75dcadad1cd03bd5485375d9c22db44c17acc88d"
+        },
+        {
+          "bytes": 15269,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-status-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "221e0c62ef3e58c465969d90a4a137a6c6cd6b301bb21c26d6d54524b240c66c"
+        },
+        {
+          "bytes": 10495,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-stochastic-uncertainty-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "a5747ca6e76a86f81986a82dd6163563ce0a2c14038e3130fe8cf06db7270442"
+        },
+        {
+          "bytes": 7682,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-value-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "ef1d1b1fb52c824d34b2ff0d7a7e3ae8f3f02cff4dc32d179831704c50d863ee"
+        },
+        {
+          "bytes": 10998,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-curvature-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "8f06cbfc019c72c33ff5a41f9d1901054fa43c75f94463bea8862905d63fa4d1"
+        },
+        {
+          "bytes": 113481,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-numeric-results-2026-06-13.json",
+          "role": "data_or_config",
+          "sha256": "72d1a76ec99a1451b06562cf02d5b5c247b9df714ea4cee25d04f11795250821"
+        },
+        {
+          "bytes": 11927,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-score-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "36704196b1f522a324303bafb1146ace7745f1b488cbad7f765c0f3dbe71086c"
+        },
+        {
+          "bytes": 14264,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-status-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "a020478d5c6d82aca52fa72cf234ecd6b0bda993342eab552e15f2114d563128"
+        },
+        {
+          "bytes": 16699,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-stochastic-uncertainty-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "fc880766d05841d1347a2de04deab8af874891765c564dda04b718b876749157"
+        },
+        {
+          "bytes": 8270,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-value-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "2bc589a1fc30689fea0e931db93d7936014778c4f3868341f8148ff90ce916a4"
+        },
+        {
+          "bytes": 7914,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase1-profile-cpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "601c296ccdf624f9069ed0ce65a75745fc95ef7ba468f5cb3a168e24dbee315b"
+        },
+        {
+          "bytes": 8187,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase1-profile-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "32134dae23bf502fd3a58b3a2b51a4197c6f7a112f0d81a667f0a6965850ca51"
+        },
+        {
+          "bytes": 4027,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2-looped-alg1-smoke-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "e72336d1eafbc3e368feeee2d0fcf77258dab5f44ee8f9535cd90b6cb7d79a1c"
+        },
+        {
+          "bytes": 3761,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2-vectorized-alg1-smoke-cpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "a3e516b4086edbb24bbc038770e164226b5413d00bb0ddd508a99025aca4f50b"
+        },
+        {
+          "bytes": 4035,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2-vectorized-alg1-smoke-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "df54ee91358f0532b5f0c1c64caca894bdd6b55fdf4b5da63a72d56e500ef0f5"
+        },
+        {
+          "bytes": 9129,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2b-sv-scalar-graph-prefix50-5seed-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "e0a5134320f145d60c407941140440de3e8c7e8f028105c6fff1ef1f63b6f678"
+        },
+        {
+          "bytes": 3901,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2b-sv-scalar-graph-smoke-cpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "99856395e54379c11f67b6f613bb9693ac560f6daae656ee534ffb6c9e0445d6"
+        },
+        {
+          "bytes": 4171,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2b-sv-scalar-graph-smoke-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "1e0e7132ff5cc4dcf48d9370b2df24694711f1d5794a37c0a135c499800361d8"
+        },
+        {
+          "bytes": 1089,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase3-fixed-randomness-gradient-checks-cpu-2026-06-15.csv",
+          "role": "data_or_config",
+          "sha256": "71a76269e8245028ce27dfbdf8a1573cae34472562868135281561b4fade4961"
+        },
+        {
+          "bytes": 6693,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase3-fixed-randomness-gradient-checks-cpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "33fa7752075fb61314c66d9647e678be29ab3427181143fd3ed81370f1a6d63e"
+        },
+        {
+          "bytes": 1090,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase3-fixed-randomness-gradient-checks-gpu-2026-06-15.csv",
+          "role": "data_or_config",
+          "sha256": "ab2ef842a40f34dc34f2ed72f64c2ebca473a6ecb2906579b79bc7fb52782e5b"
+        },
+        {
+          "bytes": 6969,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase3-fixed-randomness-gradient-checks-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "76a6850dc46bfe1e5366fa381e3af9abcdf4aea9d949eecf878d579f61ed687b"
+        },
+        {
+          "bytes": 716,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase4-particle-tuning-selected-blocked-2026-06-15.csv",
+          "role": "data_or_config",
+          "sha256": "36c5c763480105fde751cc58cc27d707bf15b50f9c8b5f224488c8433049dd00"
+        },
+        {
+          "bytes": 1445,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase4-particle-tuning-stage0-2026-06-15.csv",
+          "role": "data_or_config",
+          "sha256": "4163e59f687c31c427e4ccb30db46ac5c6bd18eefa5e0bb9c67729396143e837"
+        },
+        {
+          "bytes": 36766,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase4-particle-tuning-stage0-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "70b80027ae6587c9cd29568e51f3cd141aac50949c980b7350b2c54bd2a88e35"
+        },
+        {
+          "bytes": 9935,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-artifact-index-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "fa007cf116113eb9bb6243b668ed2add3c5953f6b71355ae0cd623d7c19b8ce5"
+        },
+        {
+          "bytes": 9502,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase10-commit-boundary-manifest-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "76f2741103887586acbe4da115beda8354ab52150c0ac45991e466bc051509ae"
+        },
+        {
+          "bytes": 7864,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase3-scalar-sv-ot-cpu-smoke-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "d5175a1536a8db2d0b2096ca79c6df302c581f3420c109304f1791649f9bb575"
+        },
+        {
+          "bytes": 8089,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase3-scalar-sv-ot-gpu-smoke-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "b046f65c9af5a81d815df6349061cda7a2e61ef2b0f85eb521c258a2b61a6137"
+        },
+        {
+          "bytes": 13116,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase4-scalar-sv-ot-cpu-diagnostic-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "51c73118fd4a1296b32a0beb2fed8065a01cfdf5fbba86e1dbafb9c83c7398c5"
+        },
+        {
+          "bytes": 13375,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase4-scalar-sv-ot-gpu-diagnostic-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "0cd65252813e98036600f0140a420a4e9237a7134cc7bf5de1aae782fafe7f5f"
+        },
+        {
+          "bytes": 1062,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase5-value-filtering-tuning-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "b484032e133d7b39d3054e3f5d2a2a2c0f7fdd253fce645a2f7750c850bd957a"
+        },
+        {
+          "bytes": 2523,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase5-value-filtering-tuning-stage0-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "62d7be79da5c6fed84b1dcaa466c78e1bd145a09a9b713565771166a197e8abd"
+        },
+        {
+          "bytes": 186951,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase5-value-filtering-tuning-stage0-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "b7648192db22af1a01b354963e5835f04b36ad6c0c25e1ec851ce5cc3404dd6d"
+        },
+        {
+          "bytes": 3061,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase6-ot-gradient-checks-gpu-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "a2632204211b5bed21cfabaeaf8d1c84b5fc40b4f98fa6081c0fc4890e6a09d0"
+        },
+        {
+          "bytes": 29716,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase6-ot-gradient-checks-gpu-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "e95525eecc7442027341189a1debfc880cd72720d0f6b06a7759b76831fa035b"
+        },
+        {
+          "bytes": 1802,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase7-gpu-performance-scaling-profile-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "fd91be8ed195b4caf1e8d84dad6d67f34451302c3da3d33c58b19d76510e6359"
+        },
+        {
+          "bytes": 126739,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase7-gpu-performance-scaling-profile-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "da01456e3582dc91512e76762c09328ce7b039e4bb1743da9640416c51c1c76c"
+        },
+        {
+          "bytes": 1058,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase7-gpu-performance-scaling-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "f3c3b5944d16af94e9018a57e54b41dc719408ef7a3648597694a523751b2f45"
+        },
+        {
+          "bytes": 727,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase8-hmc-tier0-smoke-gpu-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "e6aec575bfb63e7754a4a109ef581d0fa672814164181b481a1807482b1585ba"
+        },
+        {
+          "bytes": 10204,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase8-hmc-tier0-smoke-gpu-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "81b42790084d4f065afacbc50ea8db071bb67ec589f322cf3a763fbfadee5648"
+        },
+        {
+          "bytes": 7216,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-artifact-index-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "bb97c835b3086d9927cc503125dd17ad9366ad4473095cad8f12b10fd5bfc250"
+        },
+        {
+          "bytes": 2531,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-longer-prefix-particle-value-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "17d29e6f1dc0f1912b5d664495f408f7d354bd8845d2eef62b7933466913e266"
+        },
+        {
+          "bytes": 187431,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-longer-prefix-particle-value-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "4bed22651ec88cbc866bc275bc715a2fa2b1be4a81809ee5369e04f459c377b7"
+        },
+        {
+          "bytes": 1067,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-longer-prefix-particle-value-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "b71aaac332d87b057e9cbc925041de1fa5674d1ff51f68132c8582f607d56c0b"
+        },
+        {
+          "bytes": 1074,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-pilot-rung-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "ff5a2d8ff075d5275c4b64d8ef9af159f1dba52122b170115011cd9ac541556d"
+        },
+        {
+          "bytes": 66182,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-pilot-rung-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "1b8b4f5a2532f57120b67978fb0f59c73c7fa7464a3dfed79f89b93fc853f598"
+        },
+        {
+          "bytes": 811,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-pilot-rung-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "08d90f9487753267793a6860c0d42d5d7630ab57aecd88ed78cb40ca8a15ade5"
+        },
+        {
+          "bytes": 3053,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase2-gradient-h16-pilot-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "039324ab0f245208781d4820fec5e0d11ca0b04617c544a553b09d7d14ca0d9a"
+        },
+        {
+          "bytes": 30626,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase2-gradient-h16-pilot-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "60fc8127bb1a2de4c70cfe88a31c6d8026b598b3a2a5d64ca7cc9c59310735d3"
+        },
+        {
+          "bytes": 3050,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase2-gradient-h32-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "1a23f32adf1f3322d2cf9cf03f647ffcb251b15abe34fa7cf576db1d2bd8ae5e"
+        },
+        {
+          "bytes": 30600,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase2-gradient-h32-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "5eecad7db70eb8ebd6875e4bd6b83d1c37b9b6f480fdeb28b230c4e8fba95bea"
+        },
+        {
+          "bytes": 1080,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-adjacent-n10-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "e99f8d94cd42e5c58a3226870dc51b0f8cc51bd24470c52b9faff56f1a705da2"
+        },
+        {
+          "bytes": 66067,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-adjacent-n10-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "00906602b214ac6971c64464f23c92a784149668bcfaf56b399fb6888fe215e9"
+        },
+        {
+          "bytes": 552,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-adjacent-n10-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "9b9bb5c0d6a7804611cb54119725c476f4da3f170822ed00fff2ea1888ae3e4c"
+        },
+        {
+          "bytes": 1074,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-selected-n5-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "bb84a6eefd6e0c2175f0c876ab568e38baf1b10928ba7325f901ec1c62736cb8"
+        },
+        {
+          "bytes": 65691,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-selected-n5-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "cca5482aed221f80f43179ec17e98f8301544e6a4bee1be02c7344cefb834eca"
+        },
+        {
+          "bytes": 551,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-selected-n5-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "5b72d2c6325e4505eae92c7abc42f79c782e5c7a3b01950e58837bedc889685d"
+        },
+        {
+          "bytes": 746,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase4-hmc-tier1-fixed-kernel-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "0453d5c2d82bcc6c448dbcf896a4ed6ed0e7e80cbc1de4f48f8a8765a851e4c7"
+        },
+        {
+          "bytes": 12326,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase4-hmc-tier1-fixed-kernel-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "52f8f05a4f8535fecd6986ea32c9dfd0193447e47aa5c765df832780029b1d58"
+        },
+        {
+          "bytes": 4090,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-repo-boundary-manifest-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "34724606aa836b696995f5522893b1803cc22666ad1e87d4e0192367d98321b7"
+        },
+        {
+          "bytes": 982,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase2-bootstrap-sir-smoke-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "2c51c0287f76eef7de4801a6846c607110ec7bbb9728a5fdde31df0e686b0a0a"
+        },
+        {
+          "bytes": 1299,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase3-ledh-alg1-sir-smoke-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "7503f0acee52200a824dd4f4c302ebd79fdb79ff43a66cf21d890c9a329f6317"
+        },
+        {
+          "bytes": 1893,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase4-ot-ledh-sir-smoke-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "bf9b5ecb902c6f5f3ce01e68d92c23c10dc00ea1e521715cbda3c7da81a067b6"
+        },
+        {
+          "bytes": 1941,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5-sir-particle-tuning-2026-06-17.csv",
+          "role": "data_or_config",
+          "sha256": "cd0d0555e85b60bddb7eebd0c7f177160e2b8ff1bbb7a3b97e2e8bd051e1efaf"
+        },
+        {
+          "bytes": 31773,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5-sir-particle-tuning-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "371487bb2057f367c7d5a4333c93ceb9decdbc743bdadc47a56aad90afd474e6"
+        },
+        {
+          "bytes": 775,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5-sir-particle-tuning-selected-blocked-2026-06-17.csv",
+          "role": "data_or_config",
+          "sha256": "6db9ab70e17e8e012eac560e53fcff1d6b2535383cd0e74a65d7155d25b3bb28"
+        },
+        {
+          "bytes": 932,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5b-bootstrap-higher-count-2026-06-17.csv",
+          "role": "data_or_config",
+          "sha256": "f2098f38ec2050c5ec3d609a9ba21253089fcbcef7831179bd0fe6a20f96be56"
+        },
+        {
+          "bytes": 18020,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5b-bootstrap-higher-count-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "45a23a58d5c824c9e6750c858c72af6acd01626f669ebabe112b5ec5de4d8998"
+        }
+      ],
+      "non_claim": "Candidate discovery does not establish that an artifact belongs to the paper or is authoritative.",
+      "root": "/home/ubuntu/python/BayesFilter/docs/plans",
+      "status": "candidates_found"
+    }
+  ],
+  "specialist_execution": [],
+  "specialist_policy": "none",
+  "status": "completed_with_limits",
+  "warnings": [
+    "No code paths supplied; implementation alignment remains not checked."
+  ]
+}

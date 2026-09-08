@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+import bayesfilter.inference.hmc_robust_broad_grid as robust_module
 from bayesfilter.inference.hmc_robust_broad_grid import (
     DEFAULT_L_GRID,
     RobustBroadGridConfig,
@@ -65,6 +66,38 @@ def test_config_rejects_duplicate_grid() -> None:
 def test_config_rejects_asymmetric_acceptance_band() -> None:
     with pytest.raises(ValueError, match="symmetric"):
         RobustBroadGridConfig(acceptance_band=(0.64, 0.75))
+
+
+def test_campaign_delegates_mass_preparation_to_public_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    def stop_after_public_helper(**kwargs):
+        calls.append(kwargs)
+        raise RuntimeError("bounded helper sentinel")
+
+    monkeypatch.setattr(
+        robust_module,
+        "prepare_operational_windowed_mass_handoff",
+        stop_after_public_helper,
+    )
+    adapter = object()
+    result = robust_module.tune_hmc_kernel_robust_broad_grid(
+        adapter=adapter,
+        initial_position=(0.0, 0.0),
+        config=RobustBroadGridConfig(
+            l_grid=(3,),
+            use_xla=False,
+            chain_execution_mode="eager",
+        ),
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["adapter"] is adapter
+    assert calls[0]["config"].preset == "serious"
+    assert result["status"] == "mass_preparation_failed"
+    assert result["error_message"] == "bounded helper sentinel"
 
 
 def test_selector_accepts_valid_inconclusive_tuning_evidence() -> None:

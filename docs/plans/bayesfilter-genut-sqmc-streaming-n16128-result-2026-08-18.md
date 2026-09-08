@@ -314,6 +314,44 @@ plus primitive-level transport parity. Under this basis both `N=4032` pairs
 pass, and the ladder proceeds to the `N=16128` feasibility rows under the
 original frozen controls (TF32 on, XLA, seed `97701`).
 
+## 2026-08-20 Campaign Closeout: Four-Variant N=16128 Feasibility Table
+
+All four authorized `N=16128` seed-`97701` streaming rows completed on the
+RTX 4080 SUPER (K=2688, 6x6 grid, TF32, XLA, verified memory growth,
+allocator peak 7.36 GB in both artifacts). Attempt17 holds the three
+variant rows (wall 266 min); attempt16 the repaired-permutation row.
+
+| Route | Route-aware gates | TV | Sat | Unique anc | Value | Score `(j0,j1,j2)` | Row s |
+|---|---|---:|---:|---:|---:|---|---:|
+| `repaired_permutation` | PASS | `2.9e-5` | 0 | 16128 (perm valid) | `-681.6127` | `(-34.49, -68.11, 7.34)` | 4991 |
+| `iid_dual_cap` | PASS | `4.0e-5` | 0 | 16128 | `-682.6086` | `(-458.76, 38.99, 9.93)` | 6201 |
+| `previous_inverse_cdf` | PASS | `2.0e-5` | 0 | 15872 (98.4%; duplication expected for CDF sampling; harness `row_valid=True`) | `-681.7332` | `(-281.72, -13.76, 6.86)` | 4871 |
+| `repaired_fixed_previous_controls` | PASS | `2.4e-5` | 0 | 16128 (perm valid) | `-681.1776` | `(-189.48, -36.42, 7.50)` | 4891 |
+
+Gate note: the one-to-one permutation/full-uniqueness requirement binds only
+the `hilbert_*_one_to_one` ancestry routes (source: ancestry-policy gate in
+`ledh_pfpf_genut_initial_rqmc_tf.py`). `previous_inverse_cdf` legitimately
+resamples with duplication; its row passes its own contract. All rows
+finite, program-valid, zero saturation, `TV <= 1e-4`, K=2688 verified.
+
+**Campaign verdict: N=16128 feasibility ESTABLISHED for all four SQMC
+variants** under the streaming transport + while-loop score recursion, on a
+single 16 GB consumer GPU, within budget.
+
+Budget closeout: N=16128 GPU time = 83 + 266 min = 5.8 h of the 8 h
+ceiling (plus the retained 7.6 min OOM attempt). Values agree across
+variants to ~0.2% (descriptive); scores are realization-scrambled as
+expected from the chaos findings. One seed: no ranking, no accuracy claim,
+no promotion. Per the owner's 2026-08-20 direction, this campaign is the
+platform step for the real lane goal — improving score accuracy of the
+modified dual-cap (dual-cap + trust-region) GenUT algorithm — for which the
+perturbation-surface localization diagnostic
+(`bayesfilter-dualcap-perturbation-surface-localization-diagnostic-2026-08-20.md`)
+provides the mechanism map: TF32-scale perturbations diverge via smooth
+chaos before ancestry; FP32-scale perturbations implicate near-tie Hilbert
+swaps at onset; scores scramble in both regimes, so score-accuracy evidence
+must be multi-seed and expectation-level.
+
 ## 2026-08-19 N=16128 Feasibility Row: OOM (Retained Terminal Result)
 
 ### Outcome

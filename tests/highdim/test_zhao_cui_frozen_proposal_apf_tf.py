@@ -359,3 +359,84 @@ def test_preparation_fails_closed_for_invalid_law_and_singular_model() -> None:
     singular_model = _LocationLGSSM(2, measure_id="singular_full_state_delta_v1")
     with pytest.raises(ValueError, match="innovation-coordinate"):
         prepare_frozen_proposal_apf_program(singular_model, branch)
+
+
+def test_nonuniform_base_mass_recomposition_and_uniform_special_case() -> None:
+    model = _LocationLGSSM(2)
+    theta = tf.constant([0.11, -0.07], DTYPE)
+    states = tf.constant(
+        [
+            [[-0.4, 0.1], [0.2, -0.5], [0.7, 0.3]],
+            [[-0.1, 0.6], [0.4, -0.2], [0.8, 0.9]],
+        ],
+        DTYPE,
+    )
+    observations = tf.constant([[0.2, -0.3], [0.5, 0.4]], DTYPE)
+    ancestors = tf.constant([[0, 2, 1]], tf.int32)
+    auxiliary = tf.math.log(tf.constant([[0.2, 0.3, 0.5]], DTYPE))
+    initial_log_q = _isotropic_log_density(states[0], tf.zeros([2], DTYPE), 1.3)
+    transition_log_q = tf.constant([[-1.2, -0.8, -1.0]], DTYPE)
+    initial_mass = tf.math.log(tf.constant([0.2, 0.3, 0.5], DTYPE))
+    transition_mass = tf.math.log(tf.constant([[0.1, 0.3, 0.6]], DTYPE))
+    branch = prepare_frozen_proposal_branch(
+        observations=observations,
+        states=states,
+        initial_log_proposal_density=initial_log_q,
+        ancestors=ancestors,
+        auxiliary_log_probabilities=auxiliary,
+        transition_log_proposal_density=transition_log_q,
+        initial_log_base_mass=initial_mass,
+        transition_log_base_mass=transition_mass,
+    )
+    result = prepare_frozen_proposal_apf_program(model, branch).evaluate(theta)
+    initial_terms = (
+        initial_mass
+        + model.initial_log_density(theta, states[0])
+        + model.observation_log_density(theta, states[0], observations[0], 0)
+        - initial_log_q
+    )
+    initial_log_sum = tf.reduce_logsumexp(initial_terms)
+    previous = initial_terms - initial_log_sum
+    parent = tf.gather(states[0], ancestors[0])
+    current_terms = (
+        transition_mass
+        + tf.gather(previous, ancestors[0])
+        + model.transition_log_density(theta, parent, states[1], 1)
+        + model.observation_log_density(theta, states[1], observations[1], 1)
+        - tf.gather(auxiliary[0], ancestors[0])
+        - transition_log_q[0]
+    )
+    direct = initial_log_sum + tf.reduce_logsumexp(current_terms)
+    tf.debugging.assert_near(result["log_likelihood"], direct, atol=2e-12)
+    tf.debugging.assert_near(
+        tf.reduce_logsumexp(branch.initial_log_base_mass), 0.0, atol=2e-12
+    )
+    tf.debugging.assert_near(
+        tf.reduce_logsumexp(branch.transition_log_base_mass, axis=1),
+        tf.zeros([1], DTYPE),
+        atol=2e-12,
+    )
+    uniform = prepare_frozen_proposal_branch(
+        observations=observations,
+        states=states,
+        initial_log_proposal_density=initial_log_q,
+        ancestors=ancestors,
+        auxiliary_log_probabilities=auxiliary,
+        transition_log_proposal_density=transition_log_q,
+    )
+    explicit_uniform = prepare_frozen_proposal_branch(
+        observations=observations,
+        states=states,
+        initial_log_proposal_density=initial_log_q,
+        ancestors=ancestors,
+        auxiliary_log_probabilities=auxiliary,
+        transition_log_proposal_density=transition_log_q,
+        initial_log_base_mass=tf.fill([3], -tf.math.log(tf.constant(3.0, DTYPE))),
+        transition_log_base_mass=tf.fill(
+            [1, 3], -tf.math.log(tf.constant(3.0, DTYPE))
+        ),
+    )
+    lhs = prepare_frozen_proposal_apf_program(model, uniform).evaluate(theta)
+    rhs = prepare_frozen_proposal_apf_program(model, explicit_uniform).evaluate(theta)
+    tf.debugging.assert_near(lhs["log_likelihood"], rhs["log_likelihood"], atol=2e-12)
+    tf.debugging.assert_near(lhs["score"], rhs["score"], atol=2e-12)

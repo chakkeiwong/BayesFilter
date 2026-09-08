@@ -1,0 +1,350 @@
+{
+  "arms": {
+    "compact": {
+      "audit": {
+        "audit_rows": 20,
+        "target_score_finite": true,
+        "target_status_valid": true,
+        "target_value_finite": true,
+        "transformed_target_log_density_finite": true,
+        "transformed_target_score_finite": true,
+        "transformed_target_status_valid": true,
+        "transformed_target_value_finite": true
+      },
+      "config": {
+        "activation": "tanh",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "dimension": 4,
+        "epsilon": 1e-07,
+        "gradient_clip_norm": 10.0,
+        "hidden_layers": [
+          16,
+          16
+        ],
+        "initialization_scale": 0.02,
+        "initialization_seed": [
+          20260825,
+          4601
+        ],
+        "jit_compile": true,
+        "learning_rate": 0.001,
+        "permutation_policy": "full_reverse",
+        "s_max": 2.0,
+        "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+        "stage_s_max": [],
+        "stage_scale_linear_skip": [],
+        "stage_unbounded_scale_linear": [],
+        "stages": 2
+      },
+      "nonclaims": [
+        "terminal normalized M0 weights are a fixed empirical measure, not an unnormalized SMC-U ledger",
+        "short one-seed training is not a ranking or posterior-correctness result",
+        "no HMC, convergence, predictive, or default-readiness claim"
+      ],
+      "parity": {
+        "finite": true,
+        "logdet_roundtrip_max_abs": 1.734723475976807e-18,
+        "roundtrip_max_abs": 8.881784197001252e-16
+      },
+      "status": "PASS_CANDIDATE",
+      "training_state_hash": "afe4439aa916770d1074dbff96f7f7a5775881c07eab2aebe351cf7178e86deb",
+      "training_trace": [
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9926199915512801,
+            "gradient_norm": 10.666608951639066,
+            "loss": 10.110158992976032,
+            "maximum_normalized_weight": 0.019743119478474496,
+            "step": 1
+          },
+          "validation_latent_covariance_max_abs_offdiag": 4.065217181067414,
+          "validation_latent_mean_max_abs": 1.3465385793602056,
+          "validation_loss": 17.454135187979208
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9926199915512801,
+            "gradient_norm": 10.612051779361117,
+            "loss": 10.085648998394275,
+            "maximum_normalized_weight": 0.019743119478474496,
+            "step": 2
+          },
+          "validation_latent_covariance_max_abs_offdiag": 4.0488876885623215,
+          "validation_latent_mean_max_abs": 1.3417963129895851,
+          "validation_loss": 17.403645335930896
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9926199915512801,
+            "gradient_norm": 10.557195668898332,
+            "loss": 10.060930981923551,
+            "maximum_normalized_weight": 0.019743119478474496,
+            "step": 3
+          },
+          "validation_latent_covariance_max_abs_offdiag": 4.032438778171259,
+          "validation_latent_mean_max_abs": 1.337000382762445,
+          "validation_loss": 17.352917257794893
+        }
+      ],
+      "validation": {
+        "effective_sample_size_fraction": 0.9963468206776418,
+        "latent_weighted_covariance": [
+          [
+            2.1790799739201865,
+            0.08246456387887412,
+            -0.4443954701397054,
+            0.7808575351302063
+          ],
+          [
+            0.08246456387887416,
+            0.30493232941846693,
+            1.0909700560945128,
+            0.5029618763091092
+          ],
+          [
+            -0.4443954701397054,
+            1.0909700560945128,
+            10.512256015138435,
+            4.032438778171259
+          ],
+          [
+            0.7808575351302067,
+            0.502961876309109,
+            4.032438778171259,
+            11.361619172895143
+          ]
+        ],
+        "latent_weighted_mean": [
+          -1.0647516852436372,
+          -0.21613749857883033,
+          -1.337000382762445,
+          0.0648637324656938
+        ],
+        "loss": 17.352917257794893,
+        "maximum_normalized_weight": 0.05320947402650085
+      }
+    },
+    "wide_low_lr": {
+      "audit": {
+        "audit_rows": 20,
+        "target_score_finite": true,
+        "target_status_valid": true,
+        "target_value_finite": true,
+        "transformed_target_log_density_finite": true,
+        "transformed_target_score_finite": true,
+        "transformed_target_status_valid": true,
+        "transformed_target_value_finite": true
+      },
+      "config": {
+        "activation": "tanh",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "dimension": 4,
+        "epsilon": 1e-07,
+        "gradient_clip_norm": 10.0,
+        "hidden_layers": [
+          32,
+          32
+        ],
+        "initialization_scale": 0.02,
+        "initialization_seed": [
+          20260825,
+          4701
+        ],
+        "jit_compile": true,
+        "learning_rate": 0.0005,
+        "permutation_policy": "full_reverse",
+        "s_max": 2.0,
+        "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+        "stage_s_max": [],
+        "stage_scale_linear_skip": [],
+        "stage_unbounded_scale_linear": [],
+        "stages": 2
+      },
+      "nonclaims": [
+        "terminal normalized M0 weights are a fixed empirical measure, not an unnormalized SMC-U ledger",
+        "short one-seed training is not a ranking or posterior-correctness result",
+        "no HMC, convergence, predictive, or default-readiness claim"
+      ],
+      "parity": {
+        "finite": true,
+        "logdet_roundtrip_max_abs": 0.0,
+        "roundtrip_max_abs": 4.440892098500626e-16
+      },
+      "status": "PASS_CANDIDATE",
+      "training_state_hash": "44a24dc2a3df49055f918cff7e85175a708cb39cd388dcb70d8a28d51e41b67d",
+      "training_trace": [
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9926199915512801,
+            "gradient_norm": 10.66669953326566,
+            "loss": 10.110158992976032,
+            "maximum_normalized_weight": 0.019743119478474496,
+            "step": 1
+          },
+          "validation_latent_covariance_max_abs_offdiag": 4.073270249305569,
+          "validation_latent_mean_max_abs": 1.3488787190589229,
+          "validation_loss": 17.47956132239176
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9926199915512801,
+            "gradient_norm": 10.639082821534807,
+            "loss": 10.097730499150586,
+            "maximum_normalized_weight": 0.019743119478474496,
+            "step": 2
+          },
+          "validation_latent_covariance_max_abs_offdiag": 4.06504200163507,
+          "validation_latent_mean_max_abs": 1.3464962828118048,
+          "validation_loss": 17.45460056453384
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9926199915512801,
+            "gradient_norm": 10.61126602026219,
+            "loss": 10.085133500210466,
+            "maximum_normalized_weight": 0.019743119478474496,
+            "step": 3
+          },
+          "validation_latent_covariance_max_abs_offdiag": 4.056744609942426,
+          "validation_latent_mean_max_abs": 1.344083166405503,
+          "validation_loss": 17.429510331160255
+        }
+      ],
+      "validation": {
+        "effective_sample_size_fraction": 0.9963468206776418,
+        "latent_weighted_covariance": [
+          [
+            2.192553917555887,
+            0.08248175450679102,
+            -0.44704828543216446,
+            0.7855571817008067
+          ],
+          [
+            0.08248175450679102,
+            0.3030398334998357,
+            1.0908599991012555,
+            0.5031503181444488
+          ],
+          [
+            -0.44704828543216424,
+            1.0908599991012555,
+            10.57675905234086,
+            4.056744609942426
+          ],
+          [
+            0.7855571817008062,
+            0.5031503181444487,
+            4.056744609942425,
+            11.43085368612014
+          ]
+        ],
+        "latent_weighted_mean": [
+          -1.0649309122679536,
+          -0.2183936930176627,
+          -1.344083166405503,
+          0.06207332352614478
+        ],
+        "loss": 17.429510331160255,
+        "maximum_normalized_weight": 0.05320947402650085
+      }
+    }
+  },
+  "batch_size": 60,
+  "device": {
+    "global_jit_setting": "",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile_per_function": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true
+  },
+  "dtype": "float64",
+  "hmc_launched": false,
+  "m0_protocol_hash": "dcb21e2394063b1d30f0775cdb259f6c486c60f1b885cf9b137fd00aa9d0e7fd",
+  "m0_target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278",
+  "nonclaims": [
+    "normalized terminal M0 weights are a fixed empirical training measure, not an unnormalized SMC-U ledger",
+    "two short arms and one seed cannot establish ranking or superiority",
+    "no IID whitening theorem, posterior correctness, mode-discovery guarantee, HMC convergence, or default promotion"
+  ],
+  "role": "gpu_xla_batch_native_candidate_screen",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_particle_authority_neutra_screen_2026_08_25.py --output-root docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase4-attempt6 --steps 3",
+    "git": {
+      "commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+      "dirty": true
+    },
+    "gpu_memory_growth_verified": true,
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "m0_pilot_sha256": "f7adabd882adc4a40927535206cbe1d3036aa42178054e1f473f46a53d75fab8",
+    "m0_root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-particle-authority-master-2026-08-25/phase2-attempt2-n100",
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-phase4-neutra-subplan-2026-08-25.md",
+    "plan_sha256": "c71c751b4c2de5bf7686731759a0917966ad30fa7e8c2bd1c94025ac3e3088d0",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner_sha256": "71b0541d89e0b426100ea02cb04925164558d5fc95b88df779f308ce61835b4a",
+    "schema": "bayesfilter.ssl_lstm.q20.particle_authority.neutra_screen.launch.v1",
+    "seed": [
+      20260825,
+      4601
+    ],
+    "status": "STARTED",
+    "steps": 3,
+    "tensorflow": "2.20.0",
+    "wall_seconds": 43.152408791007474
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.particle_authority.neutra_screen.v1",
+  "selected_arm": "compact",
+  "split": {
+    "audit": 20,
+    "selection_frozen_before_audit": true,
+    "train": 60,
+    "validation": 20
+  },
+  "status": "PASS_CANDIDATE_ROLE_LIMITED"
+}

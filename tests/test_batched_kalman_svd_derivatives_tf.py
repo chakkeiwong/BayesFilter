@@ -257,6 +257,34 @@ def test_compiled_graph_has_one_time_loop_and_no_mapping_or_callback() -> None:
     assert not any("PyFunc" in operation for operation in operations)
 
 
+def test_distinct_static_parameter_dimensions_get_distinct_traces() -> None:
+    _contract, _raw, observations, kwargs = _inputs()
+    full = kernel.tf_batched_svd_linear_gaussian_score_first_order_graph_status(
+        observations,
+        **kwargs,
+        jitter=tf.constant(1.0e-9, tf.float64),
+        singular_floor=tf.constant(1.0e-12, tf.float64),
+    )
+    reduced_kwargs = {
+        name: value[:, :2] if name.startswith("d_") else value
+        for name, value in kwargs.items()
+    }
+    reduced = kernel.tf_batched_svd_linear_gaussian_score_first_order_graph_status(
+        observations,
+        **reduced_kwargs,
+        jitter=tf.constant(1.0e-9, tf.float64),
+        singular_floor=tf.constant(1.0e-12, tf.float64),
+    )
+    assert full.score.shape == (3, 18)
+    assert reduced.score.shape == (3, 2)
+    tf.debugging.assert_near(
+        reduced.score,
+        full.score[:, :2],
+        atol=2.0e-12,
+        rtol=2.0e-12,
+    )
+
+
 def test_algorithmic_source_has_no_mapping_python_loop_numpy_or_callback() -> None:
     source = inspect.getsource(kernel)
     tree = ast.parse(source)

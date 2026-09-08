@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 
 import tensorflow as tf
 
 
-_LIB_PATH = Path(__file__).with_name("_symmetric_sylvester_ops.so")
+_LIB_DIR = Path(os.environ.get("BAYESFILTER_OP_LIB_DIR", Path(__file__).parent))
+_LIB_PATH = _LIB_DIR / "_symmetric_sylvester_ops.so"
 try:
     _lib = tf.load_op_library(str(_LIB_PATH))
 except Exception as exc:  # pragma: no cover - exercised when build is missing.

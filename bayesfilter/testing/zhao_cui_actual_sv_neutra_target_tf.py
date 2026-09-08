@@ -107,7 +107,10 @@ class ActualSVZCNeuTraAdapter:
             xla_hmc_ready=True,
             full_chain_xla_diagnostic_ready=True,
             runtime_backend="tensorflow_batched_fixed_adjacent_squared_tt_actual_sv_same_program_manual_score",
-            evidence_path="bayesfilter/testing/zhao_cui_actual_sv_neutra_target_tf.py",
+            evidence_path=(
+                "docs/plans/bayesfilter_direct_factor_srukf_remaining_gaps_"
+                "closure_execution_result_2026_08_17.md"
+            ),
             target_scope=self.target_scope,
             nonclaims=NONCLAIMS,
         )

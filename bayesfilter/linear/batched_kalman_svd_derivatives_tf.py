@@ -28,7 +28,7 @@ class BatchedSVDLinearGaussianScoreResult(NamedTuple):
     invalid_eigensolver_input: tf.Tensor
 
 
-@tf.function(reduce_retracing=True, jit_compile=True)
+@tf.function(jit_compile=True)
 def tf_batched_svd_linear_gaussian_score_first_order_graph_status(
     observations: Any,
     *,

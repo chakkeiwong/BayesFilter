@@ -1,0 +1,94 @@
+*** Begin Patch
+*** Update File: tests/contracts/test_rotemberg_fixed_neutra_bayesfilter_xla_relaunch.py
+@@
+-        "shortest_leapfrog_acceptance_in_band_then_diagnostics"
++        "eligible_trajectory_acceptance_in_band_then_rhat_convergence_then_ess"
+@@
+-    assert plan["hmc"]["candidate_count"] == 49
++    assert plan["hmc"]["candidate_count"] == 63
+     assert plan["hmc"]["candidate_workers"] == 49
+@@
+-    assert summary["expected_plan"]["hmc"]["full_grid_candidate_count"] == 49
++    assert summary["expected_plan"]["hmc"]["full_grid_candidate_count"] == 63
+*** Update File: src/dsge_hmc/experiment_adapters/fixed_neutra_hmc.py
+@@
+     def log_abs_det_jacobian_batch(self, z_batch: Any):
+         import tensorflow as tf
+ 
+         z_tf = tf.convert_to_tensor(z_batch, dtype=tf.float64)
+         if hasattr(self.flow, "log_abs_det_jacobian_batch"):
+             return tf.convert_to_tensor(
+                 self.flow.log_abs_det_jacobian_batch(z_tf),
+                 dtype=tf.float64,
+             )
+         return tf.vectorized_map(lambda row: self.log_abs_det_jacobian(row), z_tf)
++
++    def pullback_score(self, z: Any, theta_score: Any):
++        """Pull a base-target score back through the frozen transport."""
++
++        import tensorflow as tf
++
++        z_tf = tf.convert_to_tensor(z, dtype=tf.float64)
++        score_tf = tf.convert_to_tensor(theta_score, dtype=tf.float64)
++        method = getattr(self.flow, "pullback_score", None)
++        if callable(method):
++            return tf.convert_to_tensor(method(z_tf, score_tf), dtype=tf.float64)
++        with tf.GradientTape() as tape:
++            tape.watch(z_tf)
++            theta = self.forward(z_tf)
++            contraction = tf.reduce_sum(theta * tf.stop_gradient(score_tf))
++        gradient = tape.gradient(contraction, z_tf)
++        if gradient is None:
++            raise ValueError("fixed transport is disconnected from its input")
++        return gradient
++
++    def pullback_score_batch(self, z_batch: Any, theta_score_batch: Any):
++        """Pull back independent row scores without constructing a Jacobian."""
++
++        import tensorflow as tf
++
++        z_tf = tf.convert_to_tensor(z_batch, dtype=tf.float64)
++        score_tf = tf.convert_to_tensor(theta_score_batch, dtype=tf.float64)
++        method = getattr(self.flow, "pullback_score_batch", None)
++        if callable(method):
++            return tf.convert_to_tensor(method(z_tf, score_tf), dtype=tf.float64)
++        with tf.GradientTape() as tape:
++            tape.watch(z_tf)
++            theta = self.forward_batch(z_tf)
++            contraction = tf.reduce_sum(theta * tf.stop_gradient(score_tf))
++        gradient = tape.gradient(contraction, z_tf)
++        if gradient is None:
++            raise ValueError("batched fixed transport is disconnected from its input")
++        return gradient
++
++    def log_abs_det_jacobian_score(self, z: Any):
++        """Differentiate the frozen transport log-Jacobian at one state."""
++
++        import tensorflow as tf
++
++        z_tf = tf.convert_to_tensor(z, dtype=tf.float64)
++        method = getattr(self.flow, "log_abs_det_jacobian_score", None)
++        if callable(method):
++            return tf.convert_to_tensor(method(z_tf), dtype=tf.float64)
++        with tf.GradientTape() as tape:
++            tape.watch(z_tf)
++            logdet = self.log_abs_det_jacobian(z_tf)
++        gradient = tape.gradient(logdet, z_tf)
++        return tf.zeros_like(z_tf) if gradient is None else gradient
++
++    def log_abs_det_jacobian_score_batch(self, z_batch: Any):
++        """Differentiate the sum of row-local frozen log-Jacobians."""
++
++        import tensorflow as tf
++
++        z_tf = tf.convert_to_tensor(z_batch, dtype=tf.float64)
++        method = getattr(self.flow, "log_abs_det_jacobian_score_batch", None)
++        if callable(method):
++            return tf.convert_to_tensor(method(z_tf), dtype=tf.float64)
++        with tf.GradientTape() as tape:
++            tape.watch(z_tf)
++            logdet = self.log_abs_det_jacobian_batch(z_tf)
++            contraction = tf.reduce_sum(logdet)
++        gradient = tape.gradient(contraction, z_tf)
++        return tf.zeros_like(z_tf) if gradient is None else gradient
+*** End Patch

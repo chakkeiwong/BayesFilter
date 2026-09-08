@@ -223,3 +223,40 @@ Only the eligible state can construct a
 \path{fit_fixed_center_curvature}, \path{compare_precision_geometry}, and
 \path{consensus_shrunk_precision}.  Exact HMC mechanics, retained-chain
 diagnostics, and posterior convergence remain separate gates.
+
+\section{Posterior-Local Location And Scale Initializer}
+\label{sec:bf-api-posterior-local-initializer}
+
+The separately named
+\path{initialize_posterior_local_location_scale} API initializes a trainable
+transport without asserting that its center is a MAP.  Starting from one
+truth-blind point and positive coordinate units $D$, its locator searches the
+smooth bounded chart
+\[
+  z_j=r\tanh(u_j/r), \qquad \theta=c_0+Dz,
+\]
+and applies the exact chain rule to the original target score.  This is an
+optimizer chart, not a posterior change of variables, so it adds no density
+Jacobian.
+
+Every exact finite eligible value can update the shared incumbent.  At least
+two independently seeded constrained low-rank SPD fits are used only to
+nominate local movements.  A winning cloud or surrogate row invalidates that
+fit for covariance handoff and forces a fresh centered fit.  The final
+precision comes instead from two fixed-center training/selection replicates
+and a disjoint audit cloud.  If the final cloud moves the incumbent after the
+bounded refit budget, the API returns location-only evidence rather than a
+covariance fitted at the wrong point.
+
+For the terminal standardized precision $K$,
+\[
+  \Sigma_{\theta}=D K^{-1}D.
+\]
+The returned center and $\tfrac12\log\operatorname{diag}(\Sigma_{\theta})$
+may initialize trainable output shift and marginal log-scale parameters.  The
+full covariance is retained as diagnostic geometry and is not installed as a
+fixed affine transport.  Optional scalar and batch eligibility callbacks
+must agree with value/score finiteness; this fail-closed contract prevents a
+finite HMC-rejection sentinel with zero score from masquerading as a
+stationary initializer.  The result remains single-start, posterior-local,
+and explicitly makes no MAP, mode-coverage, training, or HMC-readiness claim.

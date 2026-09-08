@@ -8,7 +8,7 @@ from bayesfilter.testing.zhao_cui_actual_sv_neutra_target_tf import (
 )
 
 
-def test_svx_same_program_adapter_exposes_non_autodiff_backend_metadata() -> None:
+def test_svx_same_program_adapter_exposes_admitted_manual_score_metadata() -> None:
     adapter = make_actual_sv_zc_neutra_adapter()
 
     capability = adapter.value_score_capability()
@@ -20,6 +20,7 @@ def test_svx_same_program_adapter_exposes_non_autodiff_backend_metadata() -> Non
     )
     assert capability.xla_hmc_ready is True
     assert capability.full_chain_xla_diagnostic_ready is True
+    assert capability.target_scope == "SVX-ZC-T10-d10-r2-o25-center-frozen-ukf-v1"
 
 
 def test_svx_same_program_adapter_batch_wiring_is_finite_and_has_required_status() -> None:

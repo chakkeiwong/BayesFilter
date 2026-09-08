@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 from scipy.integrate import quad
-from scipy.special import eval_hermitenorm, gamma
+from scipy.special import eval_hermitenorm
 
 
 ROOT = Path(__file__).resolve().parents[2]

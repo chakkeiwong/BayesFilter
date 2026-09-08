@@ -1,4 +1,9 @@
-"""TensorFlow factor-propagating SR-UKF value and score primitives."""
+"""Historical covariance-refactorizing SR-UKF value and score primitives.
+
+This module is retained for compatibility and bounded regression comparisons.
+New compatible SR-UKF code must use the repository-default direct-factor route
+in :mod:`bayesfilter.nonlinear.factor_srukf_tf`.
+"""
 
 from __future__ import annotations
 
@@ -386,6 +391,9 @@ def tf_srukf_factor_score_step(
 
     diagnostics = {
         "backend": "tf_srukf_factor_score",
+        "backend_status": "historical_reference_only",
+        "default_backend": "direct_factor_srukf",
+        "default_backend_contract": "TFFactorSRUKFModel",
         "branch_label": branch_label,
         "score_provenance": "manual_factor_branch_analytical_score",
         "point_count": tf.convert_to_tensor(rule.point_count, dtype=tf.int32),

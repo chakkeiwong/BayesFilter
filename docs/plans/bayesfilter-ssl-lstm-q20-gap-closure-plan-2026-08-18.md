@@ -1,5 +1,11 @@
 # SSL-LSTM q=20 Gap-Closure Plan (2026-08-18)
 
+> **Superseded planning boundary (2026-08-19):** The Phase-D requirement for
+> an eligible global physical posterior archive before NeuTra training was
+> circular and is no longer active.  See
+> `bayesfilter-ssl-lstm-q20-neutra-global-mixing-repair-plan-2026-08-19.md`.
+> The measurements and Phase-A--C result below remain historical evidence.
+
 Status: `PLAN_REVIEWED_READY_FOR_EXECUTION`
 
 ## Research Intent Ledger

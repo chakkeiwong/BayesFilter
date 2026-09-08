@@ -2,7 +2,7 @@
 
 Date: 2026-08-18
 Plan: `docs/plans/bayesfilter-tuning-streamline-refactor-plan-2026-08-16.md`
-Status: `BAYESFILTER_PHASES_0_4_GREEN_CONSUMER_MIGRATION_BLOCKED`
+Status: `BAYESFILTER_PHASES_0_4_GREEN_CONSUMER_REPAIRS_VALIDATED_PENDING_APPLICATION`
 
 ## Scope And Evidence Contract
 
@@ -65,6 +65,13 @@ rejected repeatedly by the patch-review service with a 502 response before
 mutation, including single-file retries after the user requested continuation.
 No MacroFinance files were changed by this run.
 
+The repairs are now captured in
+`docs/plans/macrofinance-tuning-consumer-repair-2026-08-19.patch` and were
+validated in an isolated copy of the current checkout: **64 passed** in the
+focused MacroFinance matrix. The real repository remains unchanged; the
+isolated result is implementation evidence, not a claim that the consumer gate
+has closed.
+
 ### dsge_hmc
 
 The current focused command collected 47 passing tests and 3 failures. The
@@ -83,14 +90,21 @@ was rejected before mutation, including single-file retries after the user
 requested continuation. No dsge_hmc files were changed by this run.
 Archive tests remain excluded because of the known import-time segfault.
 
+The repairs are captured in
+`docs/plans/dsge-hmc-tuning-consumer-repair-2026-08-19.patch` and were validated
+in an isolated copy of the current checkout: **50 passed** in the focused
+dsge_hmc matrix. The temporary copy included the live `src`/`scripts`/`tests`
+trees and Git metadata; archive tests remain excluded. The real repository is
+unchanged, so this does not by itself close the migration gate.
+
 ## Decision Table
 
 | Decision | Primary criterion | Veto status | Next action | Nonclaim |
 | --- | --- | --- | --- | --- |
 | BayesFilter canonical interfaces | PASS | No BayesFilter hard veto | Keep two active interfaces and diagnostic compatibility routes | Does not prove universal adequacy |
 | Mass tuning jointly with epsilon/L | PASS on oracle and mass contract | No stale-signature or target-health veto | Migrate consumers and rerun mass-specific suites | Does not rank mass arms as superior |
-| MacroFinance migration | NOT PASS | Four consumer assertions fail | Apply audited repairs, rerun focused and full configured suites | 60/4 is not a migration pass |
-| dsge_hmc migration | NOT PASS | Three consumer/bridge assertions fail | Apply audited repairs, rerun focused and configured suites | 47/3 is not a migration pass |
+| MacroFinance migration | PENDING APPLICATION | Real checkout still has four stale assertions; patched copy passes 64/64 | Apply patch to real checkout, then run focused and full configured suites | Isolated-copy pass is not a real-checkout pass |
+| dsge_hmc migration | PENDING APPLICATION | Real checkout still has three stale/bridge assertions; patched copy passes 50/50 | Apply patch to real checkout, then run focused and configured suites | Isolated-copy pass is not a real-checkout pass |
 | Cleanup/quarantine | NOT STARTED | Cross-repo green prerequisite unmet | Do not remove shims or exports | No deletion authorized |
 
 ## Run Manifest
@@ -116,3 +130,21 @@ BayesFilter target, mass contract, posterior oracle, or route ledger. The next
 attempt should apply only the listed repairs, rerun the identical focused
 commands, then run each repository's configured full pytest paths. Only two
 green cross-repository runs authorize Phase 7 quarantine and cleanup.
+
+The user explicitly approved the edits, but the execution gateway currently
+returns `404 model is not available: gpt-5.6-luna` for cross-root patch review.
+Until MacroFinance and dsge_hmc are added as writable workspace roots or the
+gateway model is restored, the two patch files above are the safe handoff.
+
+Once the consumer roots are writable, apply them with:
+
+```bash
+cd /home/ubuntu/python/MacroFinance
+apply_patch < /home/ubuntu/python/BayesFilter/docs/plans/macrofinance-tuning-consumer-repair-2026-08-19.patch
+
+cd /home/ubuntu/python/dsge_hmc
+apply_patch < /home/ubuntu/python/BayesFilter/docs/plans/dsge-hmc-tuning-consumer-repair-2026-08-19.patch
+```
+
+Then rerun the two focused commands from the plan before attempting any full
+suite or Phase 7 cleanup.

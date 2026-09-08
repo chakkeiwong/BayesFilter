@@ -1,0 +1,82 @@
+{
+  "allocator_bytes": {
+    "current": 6912,
+    "peak": 9984
+  },
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "docs/benchmarks/run_ssl_lstm_q20_neutra_gpu_preflight_2026_08_19.py",
+    "--device",
+    "1",
+    "--output",
+    "docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/gpu-preflight.json"
+  ],
+  "concrete_function_count": 1,
+  "cuda_visible_devices": "1",
+  "cwd": "/home/ubuntu/python/BayesFilter",
+  "data_version": "N/A_device_only_preflight",
+  "dtype": "float64",
+  "environment": "tfgpu",
+  "git_commit": "5699dafec23de9549a8092bec638997e7973593c",
+  "git_dirty": true,
+  "jit_compile": true,
+  "managed_session_trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "device preflight is not NeuTra training evidence",
+    "device preflight is not HMC, posterior, or scientific evidence"
+  ],
+  "nvidia_smi": {
+    "exit_code": 0,
+    "rows": [
+      "0, GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, NVIDIA GeForce RTX 4080 SUPER, 580.173.02, 32760",
+      "1, GPU-4f1220f9-7ba2-21ad-3f9a-b24c2ca4ce91, NVIDIA GeForce RTX 4080 SUPER, 580.173.02, 32760"
+    ],
+    "stderr": ""
+  },
+  "output_artifact": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/gpu-preflight.json",
+  "plan": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-execution-plan-2026-08-19.md",
+    "sha256": "9c2e03bfd5cb121421c8e50b5a2434131efbf65e719c77f5967836be06e0df84"
+  },
+  "python_version": "3.13.13",
+  "random_seeds": "N/A_deterministic_constant_matmul",
+  "requested_physical_device_selector": "1",
+  "result_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "result_finite": true,
+  "runner": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_neutra_gpu_preflight_2026_08_19.py",
+    "sha256": "349a63dca5eb447574e45d951c0c1de19551796ff7b1496b01e09c1facc0ec58"
+  },
+  "schema": "bayesfilter.ssl_lstm.q20_neutra_gpu_preflight.v1",
+  "status": "GPU_PREFLIGHT_PASSED",
+  "tensorflow_version": "2.20.0",
+  "tf32_enabled": false,
+  "timestamp_completed_utc": "2026-08-19T11:01:47.174995+00:00",
+  "timestamp_started_utc": "2026-08-19T11:01:43.967485+00:00",
+  "value_maximum_absolute_residual": 0.0,
+  "value_roundoff_tolerance": 1.4551915228366852e-11,
+  "value_roundoff_tolerance_provenance": "4096_times_ieee_float64_epsilon_times_max_1_or_expected_scale",
+  "visible_logical_gpus": [
+    "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+  ],
+  "visible_physical_gpus": [
+    "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+  ],
+  "wall_time_seconds": 3.2075341370000388
+}

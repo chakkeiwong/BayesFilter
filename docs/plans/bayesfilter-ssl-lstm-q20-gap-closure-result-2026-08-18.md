@@ -1,5 +1,16 @@
 # SSL-LSTM q=20 Gap-Closure Result (2026-08-18)
 
+## Planning-boundary correction (2026-08-19)
+
+The reported physical failure and the absence of a valid archive are unchanged.
+However, the decision to block NeuTra retraining solely because that archive was
+absent was a circular planning choice: NeuTra is intended to make global
+sampling easier.  The dense run is therefore an optional independent diagnostic,
+not a prerequisite for a NeuTra training attempt.  Mode-separated HMC chains
+remain diagnostic only; their conditional draws must not be pooled.  The
+corrected execution contract is in
+`bayesfilter-ssl-lstm-q20-neutra-global-mixing-repair-plan-2026-08-19.md`.
+
 Plan: `docs/plans/bayesfilter-ssl-lstm-q20-gap-closure-plan-2026-08-18.md`
 
 ## Outcome

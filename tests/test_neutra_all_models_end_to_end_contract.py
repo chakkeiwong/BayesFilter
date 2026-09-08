@@ -13,12 +13,12 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_registry_has_five_executable_six_blocked_and_one_owner_excluded_cell() -> None:
+def test_registry_has_six_executable_five_blocked_and_one_owner_excluded_cell() -> None:
     from bayesfilter.testing.neutra_model_registry_tf import validate_registry
 
     payload = validate_registry()
-    assert len(payload["executable"]) == 5
-    assert len(payload["blocked"]) == 6
+    assert len(payload["executable"]) == 6
+    assert len(payload["blocked"]) == 5
     assert len(payload["owner_excluded"]) == 1
     ids = [
         row["cell_id"]
@@ -58,16 +58,25 @@ def test_sir_ukf_is_owner_excluded_and_not_master_executable() -> None:
     assert excluded.reentry_rung == "none; reentry requires a new owner direction"
 
 
-def test_svx_zc_is_blocked_until_explicit_xla_hmc_admission() -> None:
+def test_svx_zc_is_scope_bound_executable_after_xla_hmc_admission() -> None:
     from bayesfilter.testing.neutra_model_registry_tf import (
         BLOCKED_CELLS,
         EXECUTABLE_CELLS,
     )
 
-    assert "SVX-ZC" not in {spec.cell_id for spec in EXECUTABLE_CELLS}
-    blocked = next(item for item in BLOCKED_CELLS if item.cell_id == "SVX-ZC")
-    assert blocked.state == "TARGET_BLOCKED_XLA_HMC_ADMISSION"
-    assert "fresh scope-specific tuning" in blocked.reentry_rung
+    assert "SVX-ZC" not in {item.cell_id for item in BLOCKED_CELLS}
+    spec = next(item for item in EXECUTABLE_CELLS if item.cell_id == "SVX-ZC")
+    assert spec.target_signature == (
+        "deccdda78028706d0987322d30b9798f0f4d8b518c6773451338e83bf14d1cab"
+    )
+    assert spec.preferred_recipe_id == "svx_zc_narrow_lr1e3"
+    assert spec.common_tuning_status_keys == (
+        "status_code",
+        "valid_pre_regularized_score",
+        "floor_count_value",
+        "min_innovation_eigenvalue",
+        "innovation_condition_estimate",
+    )
 
 
 @pytest.mark.parametrize(

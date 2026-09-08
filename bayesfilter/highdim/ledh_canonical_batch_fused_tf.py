@@ -48,7 +48,6 @@ class PerPointScoreModel:
 
 
 def _unscented_weights(dim: int, dtype):
-    lam = float(dim) - dim  # alpha=1, kappa=0 -> lam = 0
     count = 2 * dim + 1
     rest = 1.0 / (2.0 * dim)
     mean_w = tf.concat(
@@ -401,9 +400,6 @@ def canonical_batch_fused_value_score(
                 axis=1,
             )
 
-            # Tangent: loop over directions
-            new_d_actual_list = []
-            new_d_auxiliary_list = []
             # Tangent: vectorized over directions
             def compute_tangent_flow_step(k_inputs):
                 """Compute tangent flow step for one direction k."""

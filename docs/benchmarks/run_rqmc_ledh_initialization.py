@@ -41,8 +41,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import numpy as np
-import tensorflow as tf
+import numpy as np  # noqa: E402
+import tensorflow as tf  # noqa: E402
 
 # Must set memory growth immediately after TF import, before any device initialization
 physical_gpus = tf.config.list_physical_devices("GPU")
@@ -50,11 +50,10 @@ if physical_gpus:
     for gpu in physical_gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
-from bayesfilter.highdim.ledh_production_program_v1 import (
+from bayesfilter.highdim.ledh_production_program_v1 import (  # noqa: E402
     LEDH_PRODUCTION_PROGRAM_V1,
     validate_ledh_production_configuration,
 )
-from bayesfilter.runtime.gpu_memory_policy import configure_tensorflow_gpu_memory_growth
 
 # Supported models and arms
 SUPPORTED_MODELS = ("lgssm_T50", "ksc_sv_T10", "predator_prey_T20")
@@ -210,7 +209,7 @@ def _load_tuning_artifact(artifact_path: Path) -> dict[str, Any]:
     # Extract controls from selected_config
     selected_config = artifact.get("selected_config")
     if not selected_config:
-        raise ValueError(f"Tuning artifact missing 'selected_config' field")
+        raise ValueError("Tuning artifact missing 'selected_config' field")
 
     controls = dict(selected_config.get("controls", {}))
 
@@ -303,7 +302,7 @@ def _run_evaluation(
     print(f"Loading tuning artifact: {tuning_artifact}")
     controls = _load_tuning_artifact(tuning_artifact)
 
-    print(f"Creating evaluator")
+    print("Creating evaluator")
     evaluator = _make_evaluator(target, controls)
 
     print(f"Generating noise for arm={arm}, seed={seed}")
@@ -315,7 +314,7 @@ def _run_evaluation(
     # Use target's existing design (GenUT)
     design = target["design"]
 
-    print(f"Running evaluation")
+    print("Running evaluation")
     start = time.time()
     value, score, status = evaluator(
         target["theta"],

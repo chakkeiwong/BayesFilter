@@ -1,0 +1,992 @@
+{
+  "claim_ir": {
+    "edges": [],
+    "limitations": [
+      "PDF candidates are parser text and require visual/source review.",
+      "Unlabeled adjacency is not treated as dependency.",
+      "Edges inferred by a future validator must retain status='inferred'."
+    ],
+    "nodes": [
+      {
+        "anchor": {
+          "line_end": 796,
+          "line_start": 1,
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-mathematical-note-2026-08-24.md",
+          "sha256": "6eb3a3822393c74d53073c08818be3ad51edebebdfefb36f901467c6de705459",
+          "source_id": "6eb3a3822393c74d5307"
+        },
+        "authentication_state": "parser_candidate_only",
+        "id": "object:source:6eb3a3822393c74d5307",
+        "kind": "evidence_object",
+        "label": null,
+        "packet_id": "packet:source:6eb3a3822393c74d5307",
+        "raw_text": "# LEDH-PFPF-GenUT dual-cap and trust-region methods for the q=20 NeuTra problem\n\nDate: 2026-08-24  \nStatus: `CONDITIONAL_ROUTE_POSSIBLE_CURRENT_ROUTE_NOT_ADMISSIBLE`\n\n## Executive verdict\n\nYes, the LEDH-PFPF-GenUT dual-cap/trust-region construction can help, but only\nat one layer of the problem. It is useful as a numerically controlled local\nproposal and finite-cloud shape correction. It can reduce ill-conditioned\nhigher-moment updates, preserve selected empirical first/second moments after\nthe reset, and make a local LEDH proposal closer to the observation geometry.\n\nIt does **not**, by itself, do any of the following:\n\n- turn GenUT sigma points into IID draws from a density;\n- prove that the capped cloud has the target density;\n- provide a full-support normalizing flow;\n- remove finite-particle self-normalization bias from replay;\n- create mass in a mode absent from the proposal support; or\n- prove Gaussian whitening of a learned NeuTra pullback.\n\nThere is a conditional solution if the dual-cap route is embedded in a larger\nmeasure-correct construction: use a genuinely invertible, density-evaluable\nLEDH map for proposal generation; retain a defensive full-support proposal;\nuse unnormalized mass-carrying blocks or deterministic-mixture (AMIS) weights\nfor replay; and use a tempered SMC sequence with invariant mutation kernels for\nmode traversal. The current artifacts and code do not establish all of these\nassumptions. Therefore the dual-cap/trust-region route should remain a\nproposal-candidate, not a NeuTra/HMC admission route.\n\nThe strongest negative conclusion is also precise:\n\n> If the required claim is \"dual-cap GenUT alone turns the existing finite\n> replay cloud into a density-faithful, globally mode-covering IID Gaussian\n> whitening map,\" there is no such guarantee, and the claim is mathematically\n> false in general.\n\nThe remainder gives the derivations, the useful conditional route, and the\ntests required before implementation or promotion.\n\n## 1. Target and notation\n\nLet the current q=20 parameter target be represented by an unnormalized density\n\n\\[\n  \\widetilde\\pi(\\theta) > 0, \\qquad\n  Z = \\int \\widetilde\\pi(\\theta)\\,d\\theta \\in (0,\\infty), \\qquad\n  \\pi(\\theta)=Z^{-1}\\widetilde\\pi(\\theta).\n\\]\n\nThe target here is the repository's declared UKF-defined q=20 target. It is not\nautomatically the exact nonlinear state-space posterior. Let \\(\\rho(z)\\) be the\nstandard Gaussian density on \\(\\mathbb R^d\\), and let \\(T_\\phi\\) denote a\ncandidate NeuTra map. A density-level claim requires \\(T_\\phi\\) to be a\n\\(C^1\\) diffeomorphism (or a carefully declared alternative chart):\n\n\\[\n q_\\phi(\\theta)\n =\\rho(T_\\phi^{-1}(\\theta))\n   \\left|\\det D T_\\phi^{-1}(\\theta)\\right|.\n\\]\n\nFor a weighted source cloud write\n\n\\[\n X=\\{(x_n,w_n)\\}_{n=1}^N,\\qquad w_n\\geq 0,\\qquad \\sum_n w_n=1,\n\\]\n\nwith\n\n\\[\n \\mu_X=\\sum_n w_nx_n,\\qquad\n \\Sigma_X=\\sum_n w_n(x_n-\\mu_X)(x_n-\\mu_X)^\\top.\n\\]\n\nThe Contract-E/OT reset and the dual-cap correction produce an equal-weight\ncloud \\(Y=\\{y_n\\}_{n=1}^N\\). This is a finite empirical representation. It is\nnot a density unless an additional sampling law and density evaluation rule are\nspecified.\n\n## 2. Literature survey and exact relevance\n\nThe survey was restricted to primary technical sources. Local copies of the\nmaterial papers are stored under\n`.localresources/papers/ledh_replay_solution_20260824/`; existing local copies\nof Neal AIS, Del Moral--Doucet SMC samplers, Parno--Marzouk transport maps, and\nthe Ebeigbe GenUT paper is retained at\n`.localresources/papers/ebeigbe-et-al-genut-2104.01958.txt`.\n\n| Source | What the source actually establishes | Use for this problem | Boundary |\n|---|---|---|---|\n| Ebeigbe et al., *A Generalized Unscented Transformation for Probability Distributions*, arXiv:2104.01958, Secs. III--V | A (2d+1) sigma-point rule can match mean/covariance and selected diagonal skewness/kurtosis under feasibility conditions; constraints can sacrifice exact higher moments | Justifies selected-moment local shape control and the feasibility diagnostics | A sigma-point quadrature rule is not an IID density representation; constrained moments are not all retained |\n| Li and Coates, *Particle Filtering with Invertible Particle Flow*, arXiv:1607.08799, Sec. IV and Algorithm 1 | A discretized LEDH map can be made invertible under step-size/regularity conditions; the proposal density then uses the pre-flow density and the map Jacobian, and the PF-PF weight includes post-flow transition and observation factors | Supplies the correct density-correction contract for an LEDH proposal | It does not make a Gaussian/local-linear flow exact for a nonlinear target; a later non-invertible cap is outside the identity |\n| Cornuet et al., *Adaptive Multiple Importance Sampling*, arXiv:0907.1254, Secs. 2--5 | Recycle all past samples by recomputing weights with the deterministic mixture of all proposal densities; adaptive convergence needs additional conditions | Direct answer to experience-replay weighting | Keeping old normalized weights, or silently dropping proposal components, is not AMIS |\n| Hesterberg, *Weighted Average Importance Sampling and Defensive Mixture Distributions*, Technometrics 37 (1995), Sec. 6 | A positive defensive mixture can bound ratios when the target is a mixture component; more generally it supplies coverage relative to a safe component and yields a second-moment bound conditional on integrability | Provides the full-support safety component | Support alone does not imply finite variance, and the unknown target cannot simply be inserted as a sampled component |\n| Neal, *Annealed Importance Sampling* (2001), and Del Moral--Doucet SMC samplers | A sequence of intermediate measures can connect an easy law to a difficult target through incremental weights and mutation | Supplies a bridge for separated modes | A finite schedule and finite mutation budget do not prove mode mixing |\n| Fearnhead and Taylor, *An Adaptive Sequential Monte Carlo Sampler*, arXiv:1005.1193 | Adaptive, target-invariant MCMC kernels can be tuned within an SMC sequence under stated assumptions | Supports a mutation/tuning lane after proposal generation | It does not repair a wrong proposal density or a biased replay denominator |\n| Gerber and Chopin, *Sequential Quasi-Monte Carlo*, arXiv:1402.4039 | Randomized low-discrepancy particle constructions can improve integration error under regularity and bounded-weight assumptions | Useful variance reduction for the base-noise lane | RQMC cannot create support or guarantee discovery of a missed mode |\n| Reich, *A non-parametric ensemble transform method for Bayesian inference*, arXiv:1210.0375 | A finite weighted-to-equal ensemble transform is consistent in a large-ensemble limit under its assumptions | Explains why OT/Contract-E can be a useful representation reset | The finite transform is not a proposal-density change of variables and is not exact at finite (N) |\n\nThe source distinction matters: GenUT and ensemble transforms address finite\nquadrature/representation; Li--Coates addresses proposal correction; AMIS and\ndefensive mixtures address sampling measure and weight stability; tempering and\nmutation address global exploration. No single source supplies all four.\n\nFor reproducibility, the technical statements above were checked against these\nlocal text anchors (line numbers refer to the stored `pdftotext` files):\n\n- GenUT: `.localresources/papers/ebeigbe-et-al-genut-2104.01958.txt:84-95,114-164`\n  (constraint count, selected diagonal moments, and constrained second-order\n  accuracy).\n- PF-PF: `.localresources/papers/ledh_replay_solution_20260824/li-coates-2017-particle-filtering-invertible-flow.txt:236-270`\n  (proposal density, Jacobian, weight, and the non-invertible-flow warning).\n- AMIS: `.localresources/papers/ledh_replay_solution_20260824/cornuet-et-al-2009-amis.txt:68-110,208-222,428-465`\n  (deterministic mixture, recycling, and adaptive-convergence caveat).\n- Defensive mixture: `.localresources/papers/ledh_replay_solution_20260824/hesterberg-1995-defensive-mixture.txt:295-340`\n  (bounded weight and support/coverage discussion).\n- Adaptive SMC: `.localresources/papers/ledh_replay_solution_20260824/fearnhead-taylor-2013-adaptive-smc.txt:269-300,620-640`\n  (invariant mutation and assumptions for adaptation).\n- SQMC: `.localresources/papers/ledh_replay_solution_20260824/gerber-chopin-2015-sqmc.txt:230-245,638-650`\n  (regularity-dependent rates and explicit transition-map requirement).\n- Ensemble transform: `.localresources/papers/ledh_replay_solution_20260824/reich-2013-ensemble-transform.txt:100-170`\n  (finite weighted-to-equal transform and its large-ensemble framing).\n\n## 3. What the local implementation actually computes\n\nThe following source anchors were inspected.\n\n1. `bayesfilter/highdim/genut_shape_lm_tf.py:121-167` implements the smooth\n   row-RMS cap\n   \\[\n     u\\mapsto u\\left(1+\\frac{\\|u\\|^2/d}{\\rho^2}\\right)^{-1/2}\n   \\]\n   and its total JVP. It also reports Pearson and finite-particle feasibility\n   margins; those are necessary diagnostics, not realizability theorems.\n2. `bayesfilter/highdim/dual_cap_genut_primal_tf.py:193-245` computes weighted\n   source moments, standardizes an equal-weight reset cloud, performs diagonal\n   and pairwise corrections, applies the coordinate cap, restandardizes, and\n   restores the source mean and Cholesky covariance.\n3. In that same file, lines 235--242 apply\n   \\[\n     g_{b,p}(u)=u\\left(1+(u/b)^p\\right)^{-1/p}\n   \\]\n   coordinatewise. The implementation reports cap activity and the post-cap\n   covariance residual; it does not evaluate a joint proposal density for this\n   cloud operation.\n4. `bayesfilter/highdim/genut_guided_proposal_tf.py:900-1045` applies the\n   Contract-E reset and then the dual-cap/trust-region shape operation. The\n   PF-PF importance logits are formed earlier in\n   `ledh_pfpf_genut_initial_rqmc_tf.py:500-527` and subsequent transition blocks\n   before the reset output is used for the next equal-weight representation.\n   Thus the current log determinant belongs to the LEDH proposal map; it is not\n   the determinant of the later OT/GenUT cloud transformation.\n5. The local monograph\n   `docs/fable-rewrite/monograph/chapters/ch19c_dpf_implementation_literature.tex:156-183,230-342`\n   records the PF-PF ratio, the particle-specific LEDH determinant product, the\n   UKF/EKF covariance lifecycle, and the warning that all density terms must be\n   evaluated on the same pre/post-flow path. Its section\n   `:477-512` explicitly separates proposal correction from exact nonlinear\n   filtering.\n6. The q=20 replay note\n   `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-mathematical-note-2026-08-21.md:298-388`\n   already classifies the stored normalized SMC populations as finite empirical\n   blocks, not as an unnormalized unbiased target-measure estimator.\n\nThese facts prevent a category error: a stable equal-weight cloud after a\nreset is not automatically the density from which its rows were sampled.\n\n## 4. Moment retention is not density retention\n\n### Proposition 1 (selected moments do not identify a density)\n\nSuppose two probability measures have the same first four scalar moments. They\nneed not be the same measure, and therefore matching mean, variance, skewness,\nand kurtosis cannot establish density faithfulness or IID sampling.\n\n#### Proof\n\nLet (P) be the standard normal law. Let (Q) put mass (2/3) at (0) and\nmass (1/6) at each of (+\\sqrt 3) and (-\\sqrt 3). Both laws have\n\n\\[\n E[X]=0,\\quad E[X^2]=1,\\quad E[X^3]=0,\\quad E[X^4]=3.\n\\]\n\nThey are nevertheless different: (P) is absolutely continuous and (Q) is\ndiscrete. Hence equality of those four moments does not imply equality of\nmeasures. In several dimensions, product versions give the same counterexample\nfor marginal moments, and additional cross-moments are still insufficient in\ngeneral. A finite GenUT cloud supplies only finitely many constraints, whereas\nthe target density is an infinite-dimensional object. `QED`\n\nThe GenUT source makes the same dimensional point in a constructive way: with\n(2d+1) points it targets selected diagonal components rather than the full\nthird- and fourth-order tensors. The local dual-cap route adds pairwise moment\ndirections, but remains a finite correction of a finite cloud.\n\n### Proposition 2 (what affine restoration does prove)\n\nLet `Y` be an equal-weight cloud with finite mean and positive-definite sample\ncovariance `C_Y`. Let `\\mu_X,\\Sigma_X=L L^\\top` be the weighted source mean\nand covariance. Define\n\n\\[\n  \\widehat Y_n=\\mu_X+L C_Y^{-1/2}(y_n-\\bar y).\n\\]\n\nThen the equal-weight mean and covariance of `\\widehat Y` are exactly\n\\(\\mu_X\\) and \\(\\Sigma_X\\), up to the chosen matrix square-root convention.\n\n#### Proof\n\nThe centered equal-weight mean is zero by construction. Its covariance is\n\n\\[\n L C_Y^{-1/2} C_Y C_Y^{-1/2}L^\\top\n = L L^\\top=\\Sigma_X.\n\\]\n\nThis is a finite empirical identity. It says nothing about the distribution of\nthe rows beyond those two moments, and it does not restore moments altered by a\nnonlinear cap unless those moments are recomputed and corrected afterward.\n`QED`\n\nThis is the valid mathematical interpretation of the local \"variance retaining\"\nclaim: first and second empirical moments can be restored. It is not a claim of\nvariance-preserving density transport.\n\n## 5. Trust-region caps are stable finite maps, not global normalizing flows\n\n### Proposition 3 (support of the implemented smooth caps)\n\nFor `d >= 1`, define the row-RMS cap used by the local code,\n\n\\[\n C_\\rho(u)=u\\left(1+\\frac{\\|u\\|^2}{d\\rho^2}\\right)^{-1/2},\n \\qquad \\rho>0.\n\\]\n\nThen `C_\\rho` is `C^1`, injective along each ray, and\n\n\\[\n \\|C_\\rho(u)\\|<\\sqrt d\\,\\rho.\n\\]\n\nLikewise, for even `p >= 2`,\n\n\\[\n g_{b,p}(u)=u\\left(1+(u/b)^p\\right)^{-1/p},\n \\qquad b>0,\n\\]\n\nis `C^1`, strictly increasing, and satisfies `|g_{b,p}(u)| < b`.\nNeither map is a surjection from \\(\\mathbb R^d\\) to \\(\\mathbb R^d\\).\n\n#### Proof\n\nFor the radial map, write (r=\\|u\\|). Its radial magnitude is\n\n\\[\n h(r)=\\frac{r}{\\sqrt{1+r^2/(d\\rho^2)}}.\n\\]\n\nDifferentiation gives\n\n\\[\n h'(r)=\\left(1+\\frac{r^2}{d\\rho^2}\\right)^{-3/2}>0,\n \\qquad \\lim_{r\\to\\infty}h(r)=\\sqrt d\\,\\rho.\n\\]\n\nThus it is smooth and monotone on each ray but has a bounded image. For the\ncoordinate map, set (s=(u/b)^p\\geq0). Direct differentiation gives\n\n\\[\n g'_{b,p}(u)=(1+s)^{-1/p-1}>0,\n \\qquad \\lim_{u\\to\\pm\\infty}g_{b,p}(u)=\\pm b.\n\\]\n\nThe image bounds prove non-surjectivity. A normalizing flow on an unconstrained\nparameter space requires a bijection between the declared supports (or an\nexplicit bounded-support base and inverse chart). A bounded cap alone is not\nsuch a flow. `QED`\n\n### Consequence for the current route\n\nThe cap may be differentiated, and its derivative may be included in a\n**finite-cloud JVP**, as the local implementation does. But if one claims a\nproposal density after the cap, one must specify the law before the cap, the\nsupport-restricted pushforward density, and the joint dependence introduced by\nrestandardizing the whole cloud. The current PF-PF determinant does not include\nthat joint cloud operation. A cap-active fraction or a small covariance residual\ntherefore cannot certify density faithfulness.\n\nThe cap can be used safely in either of two ways:\n\n1. as an internal bounded update of a proposal **parameter** while the actual\n   sampled proposal remains a separately density-evaluable full-support law; or\n2. as a component of a declared bounded-support proposal whose density and\n   support are evaluated explicitly, with a defensive full-support mixture\n   component retained for the target.\n\nIt must not be silently appended to the Li--Coates map while retaining the old\nlog determinant.\n\n## 6. PF-PF correction: what LEDH can make exact\n\n### Proposition 4 (change of variables for an invertible LEDH proposal)\n\nLet `q_0` be a density on `\\mathbb R^d`, and let `\\Phi` be a `C^1`\ndiffeomorphism with nonzero determinant. If `X ~ q_0` and `Y = \\Phi(X)`,\nthen\n\n\\[\n q_1(y)=q_0(\\Phi^{-1}(y))\n       \\left|\\det D\\Phi^{-1}(y)\\right|.\n\\]\n\nFor any integrable `f`,\n\n\\[\n E_{q_0}\\left[\n   \\frac{\\widetilde\\pi(\\Phi(X))\\,|\\det D\\Phi(X)|}{q_0(X)}\n   f(\\Phi(X))\n \\right]\n =\\int \\widetilde\\pi(y)f(y)\\,dy.\n\\]\n\n#### Proof\n\nThe first identity is the change-of-variables theorem. For the second, set\n`y=\\Phi(x)`:\n\n\\[\n \\int q_0(x)\\frac{\\widetilde\\pi(\\Phi(x))|\\det D\\Phi(x)|}{q_0(x)}\n f(\\Phi(x))\\,dx\n =\\int \\widetilde\\pi(y)f(y)\\,dy.\n\\]\n\n`QED`\n\nFor the discrete LEDH map in Li--Coates, each pseudo-time step is an affine\nmap\n\n\\[\n x_{j+1}=(I+\\varepsilon_jA_j)x_j+\\varepsilon_jb_j,\n\\]\n\nso, when every factor is nonsingular,\n\n\\[\n |\\det D\\Phi|=\n \\prod_j|\\det(I+\\varepsilon_jA_j)|.\n\\]\n\nThe corresponding PF-PF weight must contain, on the same path,\n\n\\[\n \\widetilde w_i\\propto\n \\frac{p(x_i^{\\rm post}\\mid x_{i}^{\\rm prev})\n       p(y\\mid x_i^{\\rm post})\n       |\\det D\\Phi_i(x_i^{\\rm pre})|}\n      {q_0(x_i^{\\rm pre}\\mid x_i^{\\rm prev},y)}\n      w_i^{\\rm prev}.\n\\]\n\nThis is exactly the source-faithful part of LEDH-PFPF. It restores the\nproposal-to-target ratio **for the declared invertible proposal**. It does not\nremove local-linearization, numerical integration, covariance-closure, or\nfinite-particle error.\n\n### Corollary 4.1 (why the current post-flow reset is outside the identity)\n\nSuppose the sampled proposal is `Y = \\Phi(X)`, but the stored equal-weight\ncloud is then replaced by `R(Y_{1:N})`, where `R` is the Contract-E/OT plus\nGenUT dual-cap operation depending on all `N` rows. The determinant in\nProposition 4 is the determinant of `\\Phi`, not a density correction for\n`R`. Treating `R(Y_{1:N})` as if it were IID from `q_1` is therefore\nwrong relative to the density claim unless a separate joint empirical-map\ntheorem and density evaluation are supplied.\n\n#### Proof\n\nProposition 4 applies to a single-point map `\\Phi:\\mathbb R^d\\to\\mathbb R^d`.\nThe reset `R` takes an entire cloud in `(\\mathbb R^d)^N`, includes\nweighted OT and global restandardization, and generally changes all rows when\none row changes. Its Jacobian would be a joint (Nd\\times Nd) object, and its\noutput law is an empirical transformation rather than the single-point\npushforward (q_1). The current code records no such joint determinant and\nforms PF-PF weights before this reset. Thus the old determinant cannot certify\nthe post-reset density. `QED`\n\n## 7. Replay: the measure must be fixed before rows are reused\n\n### Definition 1 (known-density deterministic-mixture block)\n\nAt block (b), freeze proposal densities (r_{b1},\\ldots,r_{bH}) before\ndrawing. Draw (n_{bh}) rows from (r_{bh}), let\n\n\\[\n N_b=\\sum_h n_{bh},\\qquad\n \\alpha_{bh}=n_{bh}/N_b,\\qquad\n m_b(\\theta)=\\sum_h\\alpha_{bh}r_{bh}(\\theta).\n\\]\n\nFor a fixed integrable function (f), define\n\n\\[\n \\widehat\\gamma_b(f)=\n \\frac1{N_b}\\sum_h\\sum_{i=1}^{n_{bh}}\n \\frac{\\widetilde\\pi(X_{bhi})}{m_b(X_{bhi})}f(X_{bhi}).\n\\]\n\nThe proposal definitions, allocation fractions, map determinants, and evaluated\n\\(\\log m_b\\) must remain attached to the block.\n\n### Proposition 5 (conditional unbiasedness of a mass-carrying block)\n\nIf the proposals are selected from past history but frozen before the block is\ndrawn, then\n\n\\[\n E[\\widehat\\gamma_b(f)\\mid\\text{past, frozen proposals}]\n =\\int\\widetilde\\pi(\\theta)f(\\theta)\\,d\\theta.\n\\]\n\n#### Proof\n\nBy independence within each stratum and linearity,\n\n\\[\n\\begin{aligned}\n E[\\widehat\\gamma_b(f)\\mid\\cdots]\n &=\\sum_h\\alpha_{bh}\n   \\int r_{bh}(\\theta)\\frac{\\widetilde\\pi(\\theta)}{m_b(\\theta)}f(\\theta)d\\theta\\\\\n &=\\int\\left[\\sum_h\\alpha_{bh}r_{bh}(\\theta)\\right]\n   \\frac{\\widetilde\\pi(\\theta)}{m_b(\\theta)}f(\\theta)d\\theta\\\\\n &=\\int\\widetilde\\pi(\\theta)f(\\theta)d\\theta.\n\\end{aligned}\n\\]\n\n`QED`\n\nFor the forward NeuTra objective `F(\\phi)=\\mathrm{KL}(\\pi\\Vert q_\\phi)`,\nwith `s_\\phi(\\theta)=\\nabla_\\phi\\log q_\\phi(\\theta)`,\n\n\\[\n \\nabla_\\phi F(\\phi)=-E_\\pi[s_\\phi(\\theta)],\n \\qquad\n -\\widehat\\gamma_b(s_\\phi)\n \\text{ targets } Z\\nabla_\\phi F(\\phi).\n\\]\n\nThe unknown `Z` changes the scale but not the stationary set of the pure\nforward term. It does matter when that term is combined with a reverse term, so\nthe relative scale must then be estimated or tuned explicitly.\n\n### Proposition 6 (why normalized-only replay is not an unbiased repair)\n\nLet a block produce unnormalized weights `U_i` and normalized weights\n`W_i=U_i/\\sum_jU_j`. The estimator `\\sum_iW_if(X_i)` is a ratio estimator and\nis not generally unbiased for `E_\\pi[f]` at finite `N`. Replacing one finite\nnormalized block by another, or averaging infinitely many independent fixed-size\nnormalized blocks, does not remove the finite-(N) ratio bias in general.\n\n#### Proof\n\nAt `N=1`, `W_1=1` regardless of `U_1`, so the estimator has expectation\n(E_r[f(X)]), which differs from (E_\\pi[f]) whenever (r\\ne\\pi) on (f). For\nfixed (N), averaging independent blocks converges by the law of large numbers\nto the expectation of this ratio estimator, not generally to the target\nexpectation. `QED`\n\nThis is the precise status of the existing six 100-particle normalized SMC\npopulations: they can support a finite empirical training objective and a\nlarge-(N) consistency hypothesis, but not a finite-sample unbiasedness claim.\n\n### Proposition 7 (AMIS-compatible experience replay)\n\nSuppose samples are retained from proposal components (q_0,\\ldots,q_t), with\nsample counts (N_0,\\ldots,N_t). Define the deterministic-mixture denominator\n\n\\[\n \\bar q_t(\\theta)=\n \\frac{\\sum_{\\ell=0}^tN_\\ell q_\\ell(\\theta)}\n      {\\sum_{\\ell=0}^tN_\\ell}.\n\\]\n\nReweight **every retained sample** (X_{\\ell i}) by\n\n\\[\n U_{\\ell i}^{(t)}=\n \\frac{\\widetilde\\pi(X_{\\ell i})}{\\bar q_t(X_{\\ell i})},\n\\]\n\nnot by its old (\\widetilde\\pi/q_\\ell) ratio. For a proposal schedule frozen\nbefore all draws, the resulting deterministic-mixture estimator is the\nordinary importance estimator for the stratified mixture and has the same\nunnormalized target expectation as Proposition 5.\n\n#### Proof\n\nThe pooled sample is stratified from the components with fractions\n(N_\\ell/\\sum_jN_j). Applying Proposition 5 with those fractions gives the\nidentity. The denominator must include every component because the pooled\nsampling law is the mixture, not the component that happened to generate a\nparticular row. `QED`\n\nIf proposals are adapted from previous rows, the proposal schedule is random\nand dependent on the sample history. AMIS provides a route for this dependence,\nbut its convergence result requires tail and adaptation conditions; the simple\nconditional-unbiasedness proof above no longer applies automatically. A bounded\nreplay buffer can therefore be valid only if it either:\n\n- retains enough proposal metadata to recompute the full historical mixture;\n- uses a separately proved finite-window target and labels that target; or\n- emits an unnormalized block with a proof like Proposition 5.\n\nArbitrary row eviction with frozen old normalized weights is not one of these\nroutes.\n\n## 8. Defensive support and tempering for modes\n\n### Proposition 8 (defensive mixture bound)\n\nLet (q_t) and (r_{\\rm safe}) be densities, with (r_{\\rm safe}) satisfying\n\n\\[\n r_{\\rm safe}(\\theta)>0\\quad\\text{whenever}\\quad\n \\widetilde\\pi(\\theta)>0,\n\\]\n\nand define\n\n\\[\n m_t(\\theta)=(1-\\epsilon_t)q_t(\\theta)\n                 +\\epsilon_t r_{\\rm safe}(\\theta),\n \\qquad 0<\\epsilon_{\\min}\\leq\\epsilon_t\\leq1.\n\\]\n\nThen `m_t` covers the target support and, for any `f`,\n\n\\[\n \\int\\frac{\\widetilde\\pi(\\theta)^2f(\\theta)^2}{m_t(\\theta)}d\\theta\n \\leq\n \\frac1{\\epsilon_{\\min}}\n \\int\\frac{\\widetilde\\pi(\\theta)^2f(\\theta)^2}\n                 {r_{\\rm safe}(\\theta)}d\\theta.\n\\]\n\n#### Proof\n\nThe mixture inequality `m_t\\geq\\epsilon_{\\min}r_{\\rm safe}` gives the support\nstatement and, after taking reciprocals, the displayed second-moment bound.\nFiniteness of the right-hand integral is an additional assumption; support\ncoverage alone does not establish it. `QED`\n\nThis is the mathematically useful version of defensive replay. A broad\nStudent-t or transformed heavy-tailed component can protect sign/mode regions,\nbut its tail scale and mixture weight must be audited against the actual target\nand score class. Hesterberg's stronger bounded-weight statement applies when\nthe target itself is a mixture component; that is not available merely because\nthe target density can be evaluated.\n\n### Proposition 9 (tempered bridge and mutation)\n\nLet `r_0` be a full-support reference density and define\n\n\\[\n \\gamma_\\beta(\\theta)=\n r_0(\\theta)^{1-\\beta}\\widetilde\\pi(\\theta)^\\beta,\n \\qquad 0=\\beta_0<\\cdots<\\beta_L=1.\n\\]\n\nAt stage `\\ell`, the incremental potential is\n\n\\[\n G_\\ell(\\theta)=\n \\frac{\\gamma_{\\beta_{\\ell+1}}(\\theta)}\n      {\\gamma_{\\beta_\\ell}(\\theta)}\n =\\exp\\left[(\\beta_{\\ell+1}-\\beta_\\ell)\n        (\\log\\widetilde\\pi(\\theta)-\\log r_0(\\theta))\\right].\n\\]\n\nIf resampling is applied to these potentials and the subsequent kernel\n`K_\\ell` leaves `\\pi_{\\beta_{\\ell+1}}\\propto\\gamma_{\\beta_{\\ell+1}}`\ninvariant, the ideal Feynman--Kac recursion targets the stated bridge sequence.\n\n#### Proof\n\nMultiplication by `G_\\ell` changes the unnormalized measure\n`\\gamma_{\\beta_\\ell}` into `\\gamma_{\\beta_{\\ell+1}}`. An invariant mutation\nkernel preserves the normalized measure after that update. Induction over\n`\\ell` gives the sequence. Finite-particle resampling and imperfect mixing\nintroduce the usual SMC approximation error, but do not change the formal target\nsequence. `QED`\n\nThe bridge can make mode traversal more plausible because the reference and\ntarget are connected through intermediate energy landscapes. It does not prove\nthat a finite run crosses a sign boundary. If a mode region (A) has reference\nmass (p_A), even independent reference draws only give the elementary bound\n\n\\[\n \\Pr(\\text{at least one hit in }n\\text{ draws})=1-(1-p_A)^n;\n\\]\n\nwhen (p_A) is unknown or exponentially small, no finite deterministic mode\ncoverage guarantee follows. Mutation kernels and bridge diagnostics must report\nactual cross-mode transitions and stage-wise mass, not merely ESS.\n\n## 9. RQMC and OT: useful variance controls with explicit limits\n\nRandomized QMC can reduce integration error when the inverse-CDF/transition map\nand weight functions satisfy the regularity assumptions in Gerber--Chopin. It\ndoes not change the target measure or supply an absent support component. Thus\nRQMC should be applied to the safe base-noise and mutation lanes only after the\nproposal density is correct.\n\nThe Contract-E/OT reset is likewise useful for constructing a well-conditioned\nequal-weight representation. Reich's ensemble-transform result supports a\nlarge-ensemble consistency interpretation, not a finite-(N) density identity.\nThe reset should therefore be recorded as a representation layer after the\nproposal-corrected weighted cloud, not as a replacement for proposal-density\ncorrection.\n\n## 10. A conditional solution architecture\n\n### Proposition 10 (conditional validity of the combined route)\n\nAssume the following.\n\n1. **Target and support.** The target is measurable with (0<Z<\\infty), and a\n   full-support (r_{\\rm safe}) satisfies the second-moment condition in\n   Proposition 8 for the forward score class.\n2. **LEDH proposal.** Every claim-bearing LEDH map is a (C^1) diffeomorphism\n   on the declared proposal support; every pseudo-time factor is nonsingular;\n   the actual pre-flow density, post-flow transition, observation, covariance\n   lifecycle, and matching determinant are evaluated together.\n3. **Cap boundary.** The dual-cap/trust-region operation is either (a) used only\n   to choose parameters of the actual proposal, with the actual density still\n   evaluated, or (b) given an explicit bounded-support pushforward density and\n   mixed with (r_{\\rm safe}). It is not silently treated as a full-support\n   normalizing flow.\n4. **Replay.** Retained rows use the full deterministic-mixture denominator,\n   or each block is an SMC-U/known-density mass-carrying block. Proposal choices\n   are frozen before the rows to which the unbiasedness statement is applied.\n5. **Modes.** The bridge in Proposition 9 uses valid incremental weights and\n   mutation kernels invariant for each bridge target. The claimed mode result is\n   limited to consistency/asymptotic statements unless mixing bounds are proved.\n6. **NeuTra.** (T_\\phi) is a genuine diffeomorphism in the admitted family,\n   differentiation/integration interchange is justified, and optimization uses\n   fresh base draws for the reverse term and valid mass-carrying blocks for the\n   forward term.\n\nThen the proposal/replay blocks target the stated unnormalized integrals, and\nthe ideal bridge recursion targets its declared sequence; a finite-particle\nimplementation has the usual SMC approximation error. Its forward NeuTra\ngradient is (Z\\nabla F(\\phi)), and the fresh base reverse term is the gradient\nof the stated pullback objective. Under the\nusual additional stochastic-approximation and expressivity assumptions, a\npopulation stationary point can correspond to a Gaussian pullback. No claim of\nfinite-run mode discovery or optimizer convergence follows without further\nbounds.\n\n#### Proof\n\nAssumptions 1--3 make each proposal block a well-defined measure with a finite\nsecond moment and invoke Proposition 4 for its LEDH part. Assumption 4 invokes\nPropositions 5--7, so replay estimates the same unnormalized target integral\nrather than a stale normalized empirical measure. Assumption 5 invokes\nProposition 9 for the ideal bridge recursion. Assumption 6 gives the standard\nchange-of-variables identities for (T_\\phi) and permits the forward and\nreverse derivative interchanges. Linearity combines the block estimates and\nfresh-base estimates; the unknown (Z) is a positive scale on the pure forward\ngradient. The remaining convergence statement is conditional on the explicitly\nlisted stochastic-approximation, mixing, and expressivity hypotheses. `QED`\n\n### Proposed implementation sequence\n\nThe proposition gives a concrete, staged route rather than a default change.\n\n1. **Proposal contract.** Keep the canonical LEDH-PFPF route and its analytical\n   recursive score under the repository's current Contract-E policy. Add a\n   per-proposal artifact containing the pre-flow density, post-flow transition,\n   observation density, covariance state, pseudo-time matrices, determinant\n   product, and support declaration.\n2. **Dual-cap role.** Use the LM/trust-region and dual-cap operations to control\n   local proposal construction and finite reset conditioning. Record cap-active\n   fractions, derivative minima, feasibility margins, and post-reset moments.\n   Do not call the reset output IID or use its cap derivative as a missing\n   single-particle density determinant.\n3. **Full-support safety.** Add a repository-owned broad component in the\n   parameter chart (for example a heavy-tailed transformed mixture) with an\n   explicit density. Retain it with \\(\\epsilon\\geq\\epsilon_{\\min}\\) and audit\n   the score-class second moment. Include mode-seeded components only as\n   additional mixture components, never as the sole support.\n4. **Replay.** Replace frozen normalized row replay by either:\n   - deterministic-mixture/AMIS reweighting over all retained proposal\n     components, with proposal metadata and recomputable log densities; or\n   - a fresh known-density/SMC-U block whose total mass is carried without\n     per-block normalization.\n   A fixed-capacity buffer may evict rows only if the resulting estimator and\n   target are redefined/proved; arbitrary experience-replay eviction is not\n   valid evidence.\n5. **Bridge and mutation.** Run a separate tempered SMC lane from the safe\n   reference to the target. Use LEDH as a stage proposal, then an invariant\n   mutation kernel. Tune the bridge increments by a declared stage ESS rule,\n   while treating ESS as a tuning diagnostic rather than a posterior proof.\n6. **NeuTra training.** Keep the reverse objective on fresh Gaussian base draws.\n   Feed the forward objective only from the valid mass-carrying lane. Calibrate\n   the relative forward/reverse scale; do not infer it from normalized replay\n   losses. Enforce the repository's batch-native GPU training policy.\n7. **Admission tests.** Before HMC, require affine-map density identities,\n   finite-support/mixture checks, unnormalized integral checks on a tractable\n   target, independent two-mode coverage tests, held-out pullback moments, and\n   the canonical sequential HMC gates. A short whitening screen is explanatory,\n   not an admission criterion by itself.\n\n## 11. What would falsify the route\n\nThe conditional route should be rejected or repaired if any of the following is\nobserved:\n\n- a claim-bearing LEDH step has a singular or incorrectly signed determinant;\n- the covariance used to build the local flow is not the covariance carried by\n  the source-faithful UKF/EKF lifecycle;\n- the post-cap proposal density is used without a support declaration and a\n  matching density calculation;\n- replay rows have no recoverable proposal identity or mixture denominator;\n- the safe component fails the target/score second-moment check;\n- bridge mutation kernels are not invariant for their declared stage target;\n- independent audit particles show missing mode mass despite the claimed\n  global-density result; or\n- the learned transport is not a diffeomorphism, so its reported pullback is\n  not the claimed density.\n\nThese are correctness vetoes, not merely poor-performance observations. Poor\nwhitening with all identities intact would instead be evidence that the current\nproposal family, capacity, schedule, or optimizer is inadequate and would trigger\na scoped repair study.\n\n## 12. Final answer to the question\n\n**Can dual-cap/trust-region LEDH-PFPF-GenUT help?** Yes. It is a credible local\nproposal-conditioning and variance-control component, and PF-PF's determinant\ncorrection can make that proposal density-correctable when the map is genuinely\ninvertible.\n\n**Does it solve the present density-unfaithfulness and replay problem alone?**\nNo. The implemented caps are bounded-support finite-cloud operations, GenUT\nmatches only selected moments, and the current normalized replay remains a\nfinite ratio estimator. None of those facts implies a target density or global\nmode coverage.\n\n**Is there a solution in principle?** Yes, conditionally: exact proposal-density\nbookkeeping plus a full-support defensive component, deterministic-mixture or\nunnormalized replay, and tempered invariant mutation. This is a new combined\nalgorithmic route whose assumptions must be tested; it is not established by the\nexisting artifacts.\n\n**What should happen next?** Preserve dual-cap/trust-region as an opt-in\nproposal candidate, implement the proposal/replay/bridge contracts in separate\nreviewed phases, and block NeuTra/HMC promotion until the density and independent\nmode-coverage gates pass. If the requirement is a guarantee from the dual-cap\nreset alone, the mathematically correct answer is that no such guarantee exists.\n\n## References and local provenance\n\n1. D. Ebeigbe et al., *A Generalized Unscented Transformation for Probability\n   Distributions*, arXiv:2104.01958, https://arxiv.org/abs/2104.01958, and\n   https://pmc.ncbi.nlm.nih.gov/articles/PMC8043458/. Local copy:\n   `.localresources/papers/ebeigbe-et-al-genut-2104.01958.txt`.\n2. Y. Li and M. Coates, *Particle Filtering with Invertible Particle Flow*,\n   arXiv:1607.08799, https://arxiv.org/abs/1607.08799. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/li-coates-2017-particle-filtering-invertible-flow.txt`.\n3. J.-M. Cornuet et al., *Adaptive Multiple Importance Sampling*,\n   arXiv:0907.1254, https://arxiv.org/abs/0907.1254. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/cornuet-et-al-2009-amis.txt`.\n4. T. Hesterberg, *Weighted Average Importance Sampling and Defensive Mixture\n   Distributions*, Technometrics 37 (1995),\n   https://doi.org/10.1080/00401706.1995.10484303. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/hesterberg-1995-defensive-mixture.txt`.\n5. P. Fearnhead and B. M. Taylor, *An Adaptive Sequential Monte Carlo Sampler*,\n   arXiv:1005.1193, https://arxiv.org/abs/1005.1193. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/fearnhead-taylor-2013-adaptive-smc.txt`.\n6. M. Gerber and N. Chopin, *Sequential Quasi-Monte Carlo*, arXiv:1402.4039,\n   https://arxiv.org/abs/1402.4039. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/gerber-chopin-2015-sqmc.txt`.\n7. S. Reich, *A non-parametric ensemble transform method for Bayesian\n   inference*, arXiv:1210.0375, https://arxiv.org/abs/1210.0375. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/reich-2013-ensemble-transform.txt`.\n8. A. S. S. Neal, *Annealed Importance Sampling* (2001), and Del\n   Moral--Doucet SMC-sampler sources are retained in\n   `.localresources/papers/multimodal_hmc/` and are used for the bridge boundary,\n   not as evidence for a finite-run mode guarantee.\n",
+        "status": "extracted"
+      }
+    ],
+    "schema": "applied_math_claim_ir",
+    "source_ids": [
+      "6eb3a3822393c74d53073c08818be3ad51edebebdfefb36f901467c6de705459"
+    ],
+    "version": "1.1"
+  },
+  "claim_ir_validation_errors": [],
+  "coverage": {
+    "all_obligations_have_disposition": true,
+    "disposition_counts": {
+      "not_checkable": 12
+    },
+    "selected_count": 12,
+    "total_count": 12,
+    "unresolved_count": 12
+  },
+  "equation_blocks": [],
+  "evidence_packets": [
+    {
+      "anchor": {
+        "line_end": 796,
+        "line_start": 1,
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-mathematical-note-2026-08-24.md",
+        "sha256": "6eb3a3822393c74d53073c08818be3ad51edebebdfefb36f901467c6de705459",
+        "source_id": "6eb3a3822393c74d5307"
+      },
+      "authentication_state": "parser_candidate_only",
+      "id": "packet:source:6eb3a3822393c74d5307",
+      "kind": "source_text",
+      "raw_text": "# LEDH-PFPF-GenUT dual-cap and trust-region methods for the q=20 NeuTra problem\n\nDate: 2026-08-24  \nStatus: `CONDITIONAL_ROUTE_POSSIBLE_CURRENT_ROUTE_NOT_ADMISSIBLE`\n\n## Executive verdict\n\nYes, the LEDH-PFPF-GenUT dual-cap/trust-region construction can help, but only\nat one layer of the problem. It is useful as a numerically controlled local\nproposal and finite-cloud shape correction. It can reduce ill-conditioned\nhigher-moment updates, preserve selected empirical first/second moments after\nthe reset, and make a local LEDH proposal closer to the observation geometry.\n\nIt does **not**, by itself, do any of the following:\n\n- turn GenUT sigma points into IID draws from a density;\n- prove that the capped cloud has the target density;\n- provide a full-support normalizing flow;\n- remove finite-particle self-normalization bias from replay;\n- create mass in a mode absent from the proposal support; or\n- prove Gaussian whitening of a learned NeuTra pullback.\n\nThere is a conditional solution if the dual-cap route is embedded in a larger\nmeasure-correct construction: use a genuinely invertible, density-evaluable\nLEDH map for proposal generation; retain a defensive full-support proposal;\nuse unnormalized mass-carrying blocks or deterministic-mixture (AMIS) weights\nfor replay; and use a tempered SMC sequence with invariant mutation kernels for\nmode traversal. The current artifacts and code do not establish all of these\nassumptions. Therefore the dual-cap/trust-region route should remain a\nproposal-candidate, not a NeuTra/HMC admission route.\n\nThe strongest negative conclusion is also precise:\n\n> If the required claim is \"dual-cap GenUT alone turns the existing finite\n> replay cloud into a density-faithful, globally mode-covering IID Gaussian\n> whitening map,\" there is no such guarantee, and the claim is mathematically\n> false in general.\n\nThe remainder gives the derivations, the useful conditional route, and the\ntests required before implementation or promotion.\n\n## 1. Target and notation\n\nLet the current q=20 parameter target be represented by an unnormalized density\n\n\\[\n  \\widetilde\\pi(\\theta) > 0, \\qquad\n  Z = \\int \\widetilde\\pi(\\theta)\\,d\\theta \\in (0,\\infty), \\qquad\n  \\pi(\\theta)=Z^{-1}\\widetilde\\pi(\\theta).\n\\]\n\nThe target here is the repository's declared UKF-defined q=20 target. It is not\nautomatically the exact nonlinear state-space posterior. Let \\(\\rho(z)\\) be the\nstandard Gaussian density on \\(\\mathbb R^d\\), and let \\(T_\\phi\\) denote a\ncandidate NeuTra map. A density-level claim requires \\(T_\\phi\\) to be a\n\\(C^1\\) diffeomorphism (or a carefully declared alternative chart):\n\n\\[\n q_\\phi(\\theta)\n =\\rho(T_\\phi^{-1}(\\theta))\n   \\left|\\det D T_\\phi^{-1}(\\theta)\\right|.\n\\]\n\nFor a weighted source cloud write\n\n\\[\n X=\\{(x_n,w_n)\\}_{n=1}^N,\\qquad w_n\\geq 0,\\qquad \\sum_n w_n=1,\n\\]\n\nwith\n\n\\[\n \\mu_X=\\sum_n w_nx_n,\\qquad\n \\Sigma_X=\\sum_n w_n(x_n-\\mu_X)(x_n-\\mu_X)^\\top.\n\\]\n\nThe Contract-E/OT reset and the dual-cap correction produce an equal-weight\ncloud \\(Y=\\{y_n\\}_{n=1}^N\\). This is a finite empirical representation. It is\nnot a density unless an additional sampling law and density evaluation rule are\nspecified.\n\n## 2. Literature survey and exact relevance\n\nThe survey was restricted to primary technical sources. Local copies of the\nmaterial papers are stored under\n`.localresources/papers/ledh_replay_solution_20260824/`; existing local copies\nof Neal AIS, Del Moral--Doucet SMC samplers, Parno--Marzouk transport maps, and\nthe Ebeigbe GenUT paper is retained at\n`.localresources/papers/ebeigbe-et-al-genut-2104.01958.txt`.\n\n| Source | What the source actually establishes | Use for this problem | Boundary |\n|---|---|---|---|\n| Ebeigbe et al., *A Generalized Unscented Transformation for Probability Distributions*, arXiv:2104.01958, Secs. III--V | A (2d+1) sigma-point rule can match mean/covariance and selected diagonal skewness/kurtosis under feasibility conditions; constraints can sacrifice exact higher moments | Justifies selected-moment local shape control and the feasibility diagnostics | A sigma-point quadrature rule is not an IID density representation; constrained moments are not all retained |\n| Li and Coates, *Particle Filtering with Invertible Particle Flow*, arXiv:1607.08799, Sec. IV and Algorithm 1 | A discretized LEDH map can be made invertible under step-size/regularity conditions; the proposal density then uses the pre-flow density and the map Jacobian, and the PF-PF weight includes post-flow transition and observation factors | Supplies the correct density-correction contract for an LEDH proposal | It does not make a Gaussian/local-linear flow exact for a nonlinear target; a later non-invertible cap is outside the identity |\n| Cornuet et al., *Adaptive Multiple Importance Sampling*, arXiv:0907.1254, Secs. 2--5 | Recycle all past samples by recomputing weights with the deterministic mixture of all proposal densities; adaptive convergence needs additional conditions | Direct answer to experience-replay weighting | Keeping old normalized weights, or silently dropping proposal components, is not AMIS |\n| Hesterberg, *Weighted Average Importance Sampling and Defensive Mixture Distributions*, Technometrics 37 (1995), Sec. 6 | A positive defensive mixture can bound ratios when the target is a mixture component; more generally it supplies coverage relative to a safe component and yields a second-moment bound conditional on integrability | Provides the full-support safety component | Support alone does not imply finite variance, and the unknown target cannot simply be inserted as a sampled component |\n| Neal, *Annealed Importance Sampling* (2001), and Del Moral--Doucet SMC samplers | A sequence of intermediate measures can connect an easy law to a difficult target through incremental weights and mutation | Supplies a bridge for separated modes | A finite schedule and finite mutation budget do not prove mode mixing |\n| Fearnhead and Taylor, *An Adaptive Sequential Monte Carlo Sampler*, arXiv:1005.1193 | Adaptive, target-invariant MCMC kernels can be tuned within an SMC sequence under stated assumptions | Supports a mutation/tuning lane after proposal generation | It does not repair a wrong proposal density or a biased replay denominator |\n| Gerber and Chopin, *Sequential Quasi-Monte Carlo*, arXiv:1402.4039 | Randomized low-discrepancy particle constructions can improve integration error under regularity and bounded-weight assumptions | Useful variance reduction for the base-noise lane | RQMC cannot create support or guarantee discovery of a missed mode |\n| Reich, *A non-parametric ensemble transform method for Bayesian inference*, arXiv:1210.0375 | A finite weighted-to-equal ensemble transform is consistent in a large-ensemble limit under its assumptions | Explains why OT/Contract-E can be a useful representation reset | The finite transform is not a proposal-density change of variables and is not exact at finite (N) |\n\nThe source distinction matters: GenUT and ensemble transforms address finite\nquadrature/representation; Li--Coates addresses proposal correction; AMIS and\ndefensive mixtures address sampling measure and weight stability; tempering and\nmutation address global exploration. No single source supplies all four.\n\nFor reproducibility, the technical statements above were checked against these\nlocal text anchors (line numbers refer to the stored `pdftotext` files):\n\n- GenUT: `.localresources/papers/ebeigbe-et-al-genut-2104.01958.txt:84-95,114-164`\n  (constraint count, selected diagonal moments, and constrained second-order\n  accuracy).\n- PF-PF: `.localresources/papers/ledh_replay_solution_20260824/li-coates-2017-particle-filtering-invertible-flow.txt:236-270`\n  (proposal density, Jacobian, weight, and the non-invertible-flow warning).\n- AMIS: `.localresources/papers/ledh_replay_solution_20260824/cornuet-et-al-2009-amis.txt:68-110,208-222,428-465`\n  (deterministic mixture, recycling, and adaptive-convergence caveat).\n- Defensive mixture: `.localresources/papers/ledh_replay_solution_20260824/hesterberg-1995-defensive-mixture.txt:295-340`\n  (bounded weight and support/coverage discussion).\n- Adaptive SMC: `.localresources/papers/ledh_replay_solution_20260824/fearnhead-taylor-2013-adaptive-smc.txt:269-300,620-640`\n  (invariant mutation and assumptions for adaptation).\n- SQMC: `.localresources/papers/ledh_replay_solution_20260824/gerber-chopin-2015-sqmc.txt:230-245,638-650`\n  (regularity-dependent rates and explicit transition-map requirement).\n- Ensemble transform: `.localresources/papers/ledh_replay_solution_20260824/reich-2013-ensemble-transform.txt:100-170`\n  (finite weighted-to-equal transform and its large-ensemble framing).\n\n## 3. What the local implementation actually computes\n\nThe following source anchors were inspected.\n\n1. `bayesfilter/highdim/genut_shape_lm_tf.py:121-167` implements the smooth\n   row-RMS cap\n   \\[\n     u\\mapsto u\\left(1+\\frac{\\|u\\|^2/d}{\\rho^2}\\right)^{-1/2}\n   \\]\n   and its total JVP. It also reports Pearson and finite-particle feasibility\n   margins; those are necessary diagnostics, not realizability theorems.\n2. `bayesfilter/highdim/dual_cap_genut_primal_tf.py:193-245` computes weighted\n   source moments, standardizes an equal-weight reset cloud, performs diagonal\n   and pairwise corrections, applies the coordinate cap, restandardizes, and\n   restores the source mean and Cholesky covariance.\n3. In that same file, lines 235--242 apply\n   \\[\n     g_{b,p}(u)=u\\left(1+(u/b)^p\\right)^{-1/p}\n   \\]\n   coordinatewise. The implementation reports cap activity and the post-cap\n   covariance residual; it does not evaluate a joint proposal density for this\n   cloud operation.\n4. `bayesfilter/highdim/genut_guided_proposal_tf.py:900-1045` applies the\n   Contract-E reset and then the dual-cap/trust-region shape operation. The\n   PF-PF importance logits are formed earlier in\n   `ledh_pfpf_genut_initial_rqmc_tf.py:500-527` and subsequent transition blocks\n   before the reset output is used for the next equal-weight representation.\n   Thus the current log determinant belongs to the LEDH proposal map; it is not\n   the determinant of the later OT/GenUT cloud transformation.\n5. The local monograph\n   `docs/fable-rewrite/monograph/chapters/ch19c_dpf_implementation_literature.tex:156-183,230-342`\n   records the PF-PF ratio, the particle-specific LEDH determinant product, the\n   UKF/EKF covariance lifecycle, and the warning that all density terms must be\n   evaluated on the same pre/post-flow path. Its section\n   `:477-512` explicitly separates proposal correction from exact nonlinear\n   filtering.\n6. The q=20 replay note\n   `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-mathematical-note-2026-08-21.md:298-388`\n   already classifies the stored normalized SMC populations as finite empirical\n   blocks, not as an unnormalized unbiased target-measure estimator.\n\nThese facts prevent a category error: a stable equal-weight cloud after a\nreset is not automatically the density from which its rows were sampled.\n\n## 4. Moment retention is not density retention\n\n### Proposition 1 (selected moments do not identify a density)\n\nSuppose two probability measures have the same first four scalar moments. They\nneed not be the same measure, and therefore matching mean, variance, skewness,\nand kurtosis cannot establish density faithfulness or IID sampling.\n\n#### Proof\n\nLet (P) be the standard normal law. Let (Q) put mass (2/3) at (0) and\nmass (1/6) at each of (+\\sqrt 3) and (-\\sqrt 3). Both laws have\n\n\\[\n E[X]=0,\\quad E[X^2]=1,\\quad E[X^3]=0,\\quad E[X^4]=3.\n\\]\n\nThey are nevertheless different: (P) is absolutely continuous and (Q) is\ndiscrete. Hence equality of those four moments does not imply equality of\nmeasures. In several dimensions, product versions give the same counterexample\nfor marginal moments, and additional cross-moments are still insufficient in\ngeneral. A finite GenUT cloud supplies only finitely many constraints, whereas\nthe target density is an infinite-dimensional object. `QED`\n\nThe GenUT source makes the same dimensional point in a constructive way: with\n(2d+1) points it targets selected diagonal components rather than the full\nthird- and fourth-order tensors. The local dual-cap route adds pairwise moment\ndirections, but remains a finite correction of a finite cloud.\n\n### Proposition 2 (what affine restoration does prove)\n\nLet `Y` be an equal-weight cloud with finite mean and positive-definite sample\ncovariance `C_Y`. Let `\\mu_X,\\Sigma_X=L L^\\top` be the weighted source mean\nand covariance. Define\n\n\\[\n  \\widehat Y_n=\\mu_X+L C_Y^{-1/2}(y_n-\\bar y).\n\\]\n\nThen the equal-weight mean and covariance of `\\widehat Y` are exactly\n\\(\\mu_X\\) and \\(\\Sigma_X\\), up to the chosen matrix square-root convention.\n\n#### Proof\n\nThe centered equal-weight mean is zero by construction. Its covariance is\n\n\\[\n L C_Y^{-1/2} C_Y C_Y^{-1/2}L^\\top\n = L L^\\top=\\Sigma_X.\n\\]\n\nThis is a finite empirical identity. It says nothing about the distribution of\nthe rows beyond those two moments, and it does not restore moments altered by a\nnonlinear cap unless those moments are recomputed and corrected afterward.\n`QED`\n\nThis is the valid mathematical interpretation of the local \"variance retaining\"\nclaim: first and second empirical moments can be restored. It is not a claim of\nvariance-preserving density transport.\n\n## 5. Trust-region caps are stable finite maps, not global normalizing flows\n\n### Proposition 3 (support of the implemented smooth caps)\n\nFor `d >= 1`, define the row-RMS cap used by the local code,\n\n\\[\n C_\\rho(u)=u\\left(1+\\frac{\\|u\\|^2}{d\\rho^2}\\right)^{-1/2},\n \\qquad \\rho>0.\n\\]\n\nThen `C_\\rho` is `C^1`, injective along each ray, and\n\n\\[\n \\|C_\\rho(u)\\|<\\sqrt d\\,\\rho.\n\\]\n\nLikewise, for even `p >= 2`,\n\n\\[\n g_{b,p}(u)=u\\left(1+(u/b)^p\\right)^{-1/p},\n \\qquad b>0,\n\\]\n\nis `C^1`, strictly increasing, and satisfies `|g_{b,p}(u)| < b`.\nNeither map is a surjection from \\(\\mathbb R^d\\) to \\(\\mathbb R^d\\).\n\n#### Proof\n\nFor the radial map, write (r=\\|u\\|). Its radial magnitude is\n\n\\[\n h(r)=\\frac{r}{\\sqrt{1+r^2/(d\\rho^2)}}.\n\\]\n\nDifferentiation gives\n\n\\[\n h'(r)=\\left(1+\\frac{r^2}{d\\rho^2}\\right)^{-3/2}>0,\n \\qquad \\lim_{r\\to\\infty}h(r)=\\sqrt d\\,\\rho.\n\\]\n\nThus it is smooth and monotone on each ray but has a bounded image. For the\ncoordinate map, set (s=(u/b)^p\\geq0). Direct differentiation gives\n\n\\[\n g'_{b,p}(u)=(1+s)^{-1/p-1}>0,\n \\qquad \\lim_{u\\to\\pm\\infty}g_{b,p}(u)=\\pm b.\n\\]\n\nThe image bounds prove non-surjectivity. A normalizing flow on an unconstrained\nparameter space requires a bijection between the declared supports (or an\nexplicit bounded-support base and inverse chart). A bounded cap alone is not\nsuch a flow. `QED`\n\n### Consequence for the current route\n\nThe cap may be differentiated, and its derivative may be included in a\n**finite-cloud JVP**, as the local implementation does. But if one claims a\nproposal density after the cap, one must specify the law before the cap, the\nsupport-restricted pushforward density, and the joint dependence introduced by\nrestandardizing the whole cloud. The current PF-PF determinant does not include\nthat joint cloud operation. A cap-active fraction or a small covariance residual\ntherefore cannot certify density faithfulness.\n\nThe cap can be used safely in either of two ways:\n\n1. as an internal bounded update of a proposal **parameter** while the actual\n   sampled proposal remains a separately density-evaluable full-support law; or\n2. as a component of a declared bounded-support proposal whose density and\n   support are evaluated explicitly, with a defensive full-support mixture\n   component retained for the target.\n\nIt must not be silently appended to the Li--Coates map while retaining the old\nlog determinant.\n\n## 6. PF-PF correction: what LEDH can make exact\n\n### Proposition 4 (change of variables for an invertible LEDH proposal)\n\nLet `q_0` be a density on `\\mathbb R^d`, and let `\\Phi` be a `C^1`\ndiffeomorphism with nonzero determinant. If `X ~ q_0` and `Y = \\Phi(X)`,\nthen\n\n\\[\n q_1(y)=q_0(\\Phi^{-1}(y))\n       \\left|\\det D\\Phi^{-1}(y)\\right|.\n\\]\n\nFor any integrable `f`,\n\n\\[\n E_{q_0}\\left[\n   \\frac{\\widetilde\\pi(\\Phi(X))\\,|\\det D\\Phi(X)|}{q_0(X)}\n   f(\\Phi(X))\n \\right]\n =\\int \\widetilde\\pi(y)f(y)\\,dy.\n\\]\n\n#### Proof\n\nThe first identity is the change-of-variables theorem. For the second, set\n`y=\\Phi(x)`:\n\n\\[\n \\int q_0(x)\\frac{\\widetilde\\pi(\\Phi(x))|\\det D\\Phi(x)|}{q_0(x)}\n f(\\Phi(x))\\,dx\n =\\int \\widetilde\\pi(y)f(y)\\,dy.\n\\]\n\n`QED`\n\nFor the discrete LEDH map in Li--Coates, each pseudo-time step is an affine\nmap\n\n\\[\n x_{j+1}=(I+\\varepsilon_jA_j)x_j+\\varepsilon_jb_j,\n\\]\n\nso, when every factor is nonsingular,\n\n\\[\n |\\det D\\Phi|=\n \\prod_j|\\det(I+\\varepsilon_jA_j)|.\n\\]\n\nThe corresponding PF-PF weight must contain, on the same path,\n\n\\[\n \\widetilde w_i\\propto\n \\frac{p(x_i^{\\rm post}\\mid x_{i}^{\\rm prev})\n       p(y\\mid x_i^{\\rm post})\n       |\\det D\\Phi_i(x_i^{\\rm pre})|}\n      {q_0(x_i^{\\rm pre}\\mid x_i^{\\rm prev},y)}\n      w_i^{\\rm prev}.\n\\]\n\nThis is exactly the source-faithful part of LEDH-PFPF. It restores the\nproposal-to-target ratio **for the declared invertible proposal**. It does not\nremove local-linearization, numerical integration, covariance-closure, or\nfinite-particle error.\n\n### Corollary 4.1 (why the current post-flow reset is outside the identity)\n\nSuppose the sampled proposal is `Y = \\Phi(X)`, but the stored equal-weight\ncloud is then replaced by `R(Y_{1:N})`, where `R` is the Contract-E/OT plus\nGenUT dual-cap operation depending on all `N` rows. The determinant in\nProposition 4 is the determinant of `\\Phi`, not a density correction for\n`R`. Treating `R(Y_{1:N})` as if it were IID from `q_1` is therefore\nwrong relative to the density claim unless a separate joint empirical-map\ntheorem and density evaluation are supplied.\n\n#### Proof\n\nProposition 4 applies to a single-point map `\\Phi:\\mathbb R^d\\to\\mathbb R^d`.\nThe reset `R` takes an entire cloud in `(\\mathbb R^d)^N`, includes\nweighted OT and global restandardization, and generally changes all rows when\none row changes. Its Jacobian would be a joint (Nd\\times Nd) object, and its\noutput law is an empirical transformation rather than the single-point\npushforward (q_1). The current code records no such joint determinant and\nforms PF-PF weights before this reset. Thus the old determinant cannot certify\nthe post-reset density. `QED`\n\n## 7. Replay: the measure must be fixed before rows are reused\n\n### Definition 1 (known-density deterministic-mixture block)\n\nAt block (b), freeze proposal densities (r_{b1},\\ldots,r_{bH}) before\ndrawing. Draw (n_{bh}) rows from (r_{bh}), let\n\n\\[\n N_b=\\sum_h n_{bh},\\qquad\n \\alpha_{bh}=n_{bh}/N_b,\\qquad\n m_b(\\theta)=\\sum_h\\alpha_{bh}r_{bh}(\\theta).\n\\]\n\nFor a fixed integrable function (f), define\n\n\\[\n \\widehat\\gamma_b(f)=\n \\frac1{N_b}\\sum_h\\sum_{i=1}^{n_{bh}}\n \\frac{\\widetilde\\pi(X_{bhi})}{m_b(X_{bhi})}f(X_{bhi}).\n\\]\n\nThe proposal definitions, allocation fractions, map determinants, and evaluated\n\\(\\log m_b\\) must remain attached to the block.\n\n### Proposition 5 (conditional unbiasedness of a mass-carrying block)\n\nIf the proposals are selected from past history but frozen before the block is\ndrawn, then\n\n\\[\n E[\\widehat\\gamma_b(f)\\mid\\text{past, frozen proposals}]\n =\\int\\widetilde\\pi(\\theta)f(\\theta)\\,d\\theta.\n\\]\n\n#### Proof\n\nBy independence within each stratum and linearity,\n\n\\[\n\\begin{aligned}\n E[\\widehat\\gamma_b(f)\\mid\\cdots]\n &=\\sum_h\\alpha_{bh}\n   \\int r_{bh}(\\theta)\\frac{\\widetilde\\pi(\\theta)}{m_b(\\theta)}f(\\theta)d\\theta\\\\\n &=\\int\\left[\\sum_h\\alpha_{bh}r_{bh}(\\theta)\\right]\n   \\frac{\\widetilde\\pi(\\theta)}{m_b(\\theta)}f(\\theta)d\\theta\\\\\n &=\\int\\widetilde\\pi(\\theta)f(\\theta)d\\theta.\n\\end{aligned}\n\\]\n\n`QED`\n\nFor the forward NeuTra objective `F(\\phi)=\\mathrm{KL}(\\pi\\Vert q_\\phi)`,\nwith `s_\\phi(\\theta)=\\nabla_\\phi\\log q_\\phi(\\theta)`,\n\n\\[\n \\nabla_\\phi F(\\phi)=-E_\\pi[s_\\phi(\\theta)],\n \\qquad\n -\\widehat\\gamma_b(s_\\phi)\n \\text{ targets } Z\\nabla_\\phi F(\\phi).\n\\]\n\nThe unknown `Z` changes the scale but not the stationary set of the pure\nforward term. It does matter when that term is combined with a reverse term, so\nthe relative scale must then be estimated or tuned explicitly.\n\n### Proposition 6 (why normalized-only replay is not an unbiased repair)\n\nLet a block produce unnormalized weights `U_i` and normalized weights\n`W_i=U_i/\\sum_jU_j`. The estimator `\\sum_iW_if(X_i)` is a ratio estimator and\nis not generally unbiased for `E_\\pi[f]` at finite `N`. Replacing one finite\nnormalized block by another, or averaging infinitely many independent fixed-size\nnormalized blocks, does not remove the finite-(N) ratio bias in general.\n\n#### Proof\n\nAt `N=1`, `W_1=1` regardless of `U_1`, so the estimator has expectation\n(E_r[f(X)]), which differs from (E_\\pi[f]) whenever (r\\ne\\pi) on (f). For\nfixed (N), averaging independent blocks converges by the law of large numbers\nto the expectation of this ratio estimator, not generally to the target\nexpectation. `QED`\n\nThis is the precise status of the existing six 100-particle normalized SMC\npopulations: they can support a finite empirical training objective and a\nlarge-(N) consistency hypothesis, but not a finite-sample unbiasedness claim.\n\n### Proposition 7 (AMIS-compatible experience replay)\n\nSuppose samples are retained from proposal components (q_0,\\ldots,q_t), with\nsample counts (N_0,\\ldots,N_t). Define the deterministic-mixture denominator\n\n\\[\n \\bar q_t(\\theta)=\n \\frac{\\sum_{\\ell=0}^tN_\\ell q_\\ell(\\theta)}\n      {\\sum_{\\ell=0}^tN_\\ell}.\n\\]\n\nReweight **every retained sample** (X_{\\ell i}) by\n\n\\[\n U_{\\ell i}^{(t)}=\n \\frac{\\widetilde\\pi(X_{\\ell i})}{\\bar q_t(X_{\\ell i})},\n\\]\n\nnot by its old (\\widetilde\\pi/q_\\ell) ratio. For a proposal schedule frozen\nbefore all draws, the resulting deterministic-mixture estimator is the\nordinary importance estimator for the stratified mixture and has the same\nunnormalized target expectation as Proposition 5.\n\n#### Proof\n\nThe pooled sample is stratified from the components with fractions\n(N_\\ell/\\sum_jN_j). Applying Proposition 5 with those fractions gives the\nidentity. The denominator must include every component because the pooled\nsampling law is the mixture, not the component that happened to generate a\nparticular row. `QED`\n\nIf proposals are adapted from previous rows, the proposal schedule is random\nand dependent on the sample history. AMIS provides a route for this dependence,\nbut its convergence result requires tail and adaptation conditions; the simple\nconditional-unbiasedness proof above no longer applies automatically. A bounded\nreplay buffer can therefore be valid only if it either:\n\n- retains enough proposal metadata to recompute the full historical mixture;\n- uses a separately proved finite-window target and labels that target; or\n- emits an unnormalized block with a proof like Proposition 5.\n\nArbitrary row eviction with frozen old normalized weights is not one of these\nroutes.\n\n## 8. Defensive support and tempering for modes\n\n### Proposition 8 (defensive mixture bound)\n\nLet (q_t) and (r_{\\rm safe}) be densities, with (r_{\\rm safe}) satisfying\n\n\\[\n r_{\\rm safe}(\\theta)>0\\quad\\text{whenever}\\quad\n \\widetilde\\pi(\\theta)>0,\n\\]\n\nand define\n\n\\[\n m_t(\\theta)=(1-\\epsilon_t)q_t(\\theta)\n                 +\\epsilon_t r_{\\rm safe}(\\theta),\n \\qquad 0<\\epsilon_{\\min}\\leq\\epsilon_t\\leq1.\n\\]\n\nThen `m_t` covers the target support and, for any `f`,\n\n\\[\n \\int\\frac{\\widetilde\\pi(\\theta)^2f(\\theta)^2}{m_t(\\theta)}d\\theta\n \\leq\n \\frac1{\\epsilon_{\\min}}\n \\int\\frac{\\widetilde\\pi(\\theta)^2f(\\theta)^2}\n                 {r_{\\rm safe}(\\theta)}d\\theta.\n\\]\n\n#### Proof\n\nThe mixture inequality `m_t\\geq\\epsilon_{\\min}r_{\\rm safe}` gives the support\nstatement and, after taking reciprocals, the displayed second-moment bound.\nFiniteness of the right-hand integral is an additional assumption; support\ncoverage alone does not establish it. `QED`\n\nThis is the mathematically useful version of defensive replay. A broad\nStudent-t or transformed heavy-tailed component can protect sign/mode regions,\nbut its tail scale and mixture weight must be audited against the actual target\nand score class. Hesterberg's stronger bounded-weight statement applies when\nthe target itself is a mixture component; that is not available merely because\nthe target density can be evaluated.\n\n### Proposition 9 (tempered bridge and mutation)\n\nLet `r_0` be a full-support reference density and define\n\n\\[\n \\gamma_\\beta(\\theta)=\n r_0(\\theta)^{1-\\beta}\\widetilde\\pi(\\theta)^\\beta,\n \\qquad 0=\\beta_0<\\cdots<\\beta_L=1.\n\\]\n\nAt stage `\\ell`, the incremental potential is\n\n\\[\n G_\\ell(\\theta)=\n \\frac{\\gamma_{\\beta_{\\ell+1}}(\\theta)}\n      {\\gamma_{\\beta_\\ell}(\\theta)}\n =\\exp\\left[(\\beta_{\\ell+1}-\\beta_\\ell)\n        (\\log\\widetilde\\pi(\\theta)-\\log r_0(\\theta))\\right].\n\\]\n\nIf resampling is applied to these potentials and the subsequent kernel\n`K_\\ell` leaves `\\pi_{\\beta_{\\ell+1}}\\propto\\gamma_{\\beta_{\\ell+1}}`\ninvariant, the ideal Feynman--Kac recursion targets the stated bridge sequence.\n\n#### Proof\n\nMultiplication by `G_\\ell` changes the unnormalized measure\n`\\gamma_{\\beta_\\ell}` into `\\gamma_{\\beta_{\\ell+1}}`. An invariant mutation\nkernel preserves the normalized measure after that update. Induction over\n`\\ell` gives the sequence. Finite-particle resampling and imperfect mixing\nintroduce the usual SMC approximation error, but do not change the formal target\nsequence. `QED`\n\nThe bridge can make mode traversal more plausible because the reference and\ntarget are connected through intermediate energy landscapes. It does not prove\nthat a finite run crosses a sign boundary. If a mode region (A) has reference\nmass (p_A), even independent reference draws only give the elementary bound\n\n\\[\n \\Pr(\\text{at least one hit in }n\\text{ draws})=1-(1-p_A)^n;\n\\]\n\nwhen (p_A) is unknown or exponentially small, no finite deterministic mode\ncoverage guarantee follows. Mutation kernels and bridge diagnostics must report\nactual cross-mode transitions and stage-wise mass, not merely ESS.\n\n## 9. RQMC and OT: useful variance controls with explicit limits\n\nRandomized QMC can reduce integration error when the inverse-CDF/transition map\nand weight functions satisfy the regularity assumptions in Gerber--Chopin. It\ndoes not change the target measure or supply an absent support component. Thus\nRQMC should be applied to the safe base-noise and mutation lanes only after the\nproposal density is correct.\n\nThe Contract-E/OT reset is likewise useful for constructing a well-conditioned\nequal-weight representation. Reich's ensemble-transform result supports a\nlarge-ensemble consistency interpretation, not a finite-(N) density identity.\nThe reset should therefore be recorded as a representation layer after the\nproposal-corrected weighted cloud, not as a replacement for proposal-density\ncorrection.\n\n## 10. A conditional solution architecture\n\n### Proposition 10 (conditional validity of the combined route)\n\nAssume the following.\n\n1. **Target and support.** The target is measurable with (0<Z<\\infty), and a\n   full-support (r_{\\rm safe}) satisfies the second-moment condition in\n   Proposition 8 for the forward score class.\n2. **LEDH proposal.** Every claim-bearing LEDH map is a (C^1) diffeomorphism\n   on the declared proposal support; every pseudo-time factor is nonsingular;\n   the actual pre-flow density, post-flow transition, observation, covariance\n   lifecycle, and matching determinant are evaluated together.\n3. **Cap boundary.** The dual-cap/trust-region operation is either (a) used only\n   to choose parameters of the actual proposal, with the actual density still\n   evaluated, or (b) given an explicit bounded-support pushforward density and\n   mixed with (r_{\\rm safe}). It is not silently treated as a full-support\n   normalizing flow.\n4. **Replay.** Retained rows use the full deterministic-mixture denominator,\n   or each block is an SMC-U/known-density mass-carrying block. Proposal choices\n   are frozen before the rows to which the unbiasedness statement is applied.\n5. **Modes.** The bridge in Proposition 9 uses valid incremental weights and\n   mutation kernels invariant for each bridge target. The claimed mode result is\n   limited to consistency/asymptotic statements unless mixing bounds are proved.\n6. **NeuTra.** (T_\\phi) is a genuine diffeomorphism in the admitted family,\n   differentiation/integration interchange is justified, and optimization uses\n   fresh base draws for the reverse term and valid mass-carrying blocks for the\n   forward term.\n\nThen the proposal/replay blocks target the stated unnormalized integrals, and\nthe ideal bridge recursion targets its declared sequence; a finite-particle\nimplementation has the usual SMC approximation error. Its forward NeuTra\ngradient is (Z\\nabla F(\\phi)), and the fresh base reverse term is the gradient\nof the stated pullback objective. Under the\nusual additional stochastic-approximation and expressivity assumptions, a\npopulation stationary point can correspond to a Gaussian pullback. No claim of\nfinite-run mode discovery or optimizer convergence follows without further\nbounds.\n\n#### Proof\n\nAssumptions 1--3 make each proposal block a well-defined measure with a finite\nsecond moment and invoke Proposition 4 for its LEDH part. Assumption 4 invokes\nPropositions 5--7, so replay estimates the same unnormalized target integral\nrather than a stale normalized empirical measure. Assumption 5 invokes\nProposition 9 for the ideal bridge recursion. Assumption 6 gives the standard\nchange-of-variables identities for (T_\\phi) and permits the forward and\nreverse derivative interchanges. Linearity combines the block estimates and\nfresh-base estimates; the unknown (Z) is a positive scale on the pure forward\ngradient. The remaining convergence statement is conditional on the explicitly\nlisted stochastic-approximation, mixing, and expressivity hypotheses. `QED`\n\n### Proposed implementation sequence\n\nThe proposition gives a concrete, staged route rather than a default change.\n\n1. **Proposal contract.** Keep the canonical LEDH-PFPF route and its analytical\n   recursive score under the repository's current Contract-E policy. Add a\n   per-proposal artifact containing the pre-flow density, post-flow transition,\n   observation density, covariance state, pseudo-time matrices, determinant\n   product, and support declaration.\n2. **Dual-cap role.** Use the LM/trust-region and dual-cap operations to control\n   local proposal construction and finite reset conditioning. Record cap-active\n   fractions, derivative minima, feasibility margins, and post-reset moments.\n   Do not call the reset output IID or use its cap derivative as a missing\n   single-particle density determinant.\n3. **Full-support safety.** Add a repository-owned broad component in the\n   parameter chart (for example a heavy-tailed transformed mixture) with an\n   explicit density. Retain it with \\(\\epsilon\\geq\\epsilon_{\\min}\\) and audit\n   the score-class second moment. Include mode-seeded components only as\n   additional mixture components, never as the sole support.\n4. **Replay.** Replace frozen normalized row replay by either:\n   - deterministic-mixture/AMIS reweighting over all retained proposal\n     components, with proposal metadata and recomputable log densities; or\n   - a fresh known-density/SMC-U block whose total mass is carried without\n     per-block normalization.\n   A fixed-capacity buffer may evict rows only if the resulting estimator and\n   target are redefined/proved; arbitrary experience-replay eviction is not\n   valid evidence.\n5. **Bridge and mutation.** Run a separate tempered SMC lane from the safe\n   reference to the target. Use LEDH as a stage proposal, then an invariant\n   mutation kernel. Tune the bridge increments by a declared stage ESS rule,\n   while treating ESS as a tuning diagnostic rather than a posterior proof.\n6. **NeuTra training.** Keep the reverse objective on fresh Gaussian base draws.\n   Feed the forward objective only from the valid mass-carrying lane. Calibrate\n   the relative forward/reverse scale; do not infer it from normalized replay\n   losses. Enforce the repository's batch-native GPU training policy.\n7. **Admission tests.** Before HMC, require affine-map density identities,\n   finite-support/mixture checks, unnormalized integral checks on a tractable\n   target, independent two-mode coverage tests, held-out pullback moments, and\n   the canonical sequential HMC gates. A short whitening screen is explanatory,\n   not an admission criterion by itself.\n\n## 11. What would falsify the route\n\nThe conditional route should be rejected or repaired if any of the following is\nobserved:\n\n- a claim-bearing LEDH step has a singular or incorrectly signed determinant;\n- the covariance used to build the local flow is not the covariance carried by\n  the source-faithful UKF/EKF lifecycle;\n- the post-cap proposal density is used without a support declaration and a\n  matching density calculation;\n- replay rows have no recoverable proposal identity or mixture denominator;\n- the safe component fails the target/score second-moment check;\n- bridge mutation kernels are not invariant for their declared stage target;\n- independent audit particles show missing mode mass despite the claimed\n  global-density result; or\n- the learned transport is not a diffeomorphism, so its reported pullback is\n  not the claimed density.\n\nThese are correctness vetoes, not merely poor-performance observations. Poor\nwhitening with all identities intact would instead be evidence that the current\nproposal family, capacity, schedule, or optimizer is inadequate and would trigger\na scoped repair study.\n\n## 12. Final answer to the question\n\n**Can dual-cap/trust-region LEDH-PFPF-GenUT help?** Yes. It is a credible local\nproposal-conditioning and variance-control component, and PF-PF's determinant\ncorrection can make that proposal density-correctable when the map is genuinely\ninvertible.\n\n**Does it solve the present density-unfaithfulness and replay problem alone?**\nNo. The implemented caps are bounded-support finite-cloud operations, GenUT\nmatches only selected moments, and the current normalized replay remains a\nfinite ratio estimator. None of those facts implies a target density or global\nmode coverage.\n\n**Is there a solution in principle?** Yes, conditionally: exact proposal-density\nbookkeeping plus a full-support defensive component, deterministic-mixture or\nunnormalized replay, and tempered invariant mutation. This is a new combined\nalgorithmic route whose assumptions must be tested; it is not established by the\nexisting artifacts.\n\n**What should happen next?** Preserve dual-cap/trust-region as an opt-in\nproposal candidate, implement the proposal/replay/bridge contracts in separate\nreviewed phases, and block NeuTra/HMC promotion until the density and independent\nmode-coverage gates pass. If the requirement is a guarantee from the dual-cap\nreset alone, the mathematically correct answer is that no such guarantee exists.\n\n## References and local provenance\n\n1. D. Ebeigbe et al., *A Generalized Unscented Transformation for Probability\n   Distributions*, arXiv:2104.01958, https://arxiv.org/abs/2104.01958, and\n   https://pmc.ncbi.nlm.nih.gov/articles/PMC8043458/. Local copy:\n   `.localresources/papers/ebeigbe-et-al-genut-2104.01958.txt`.\n2. Y. Li and M. Coates, *Particle Filtering with Invertible Particle Flow*,\n   arXiv:1607.08799, https://arxiv.org/abs/1607.08799. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/li-coates-2017-particle-filtering-invertible-flow.txt`.\n3. J.-M. Cornuet et al., *Adaptive Multiple Importance Sampling*,\n   arXiv:0907.1254, https://arxiv.org/abs/0907.1254. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/cornuet-et-al-2009-amis.txt`.\n4. T. Hesterberg, *Weighted Average Importance Sampling and Defensive Mixture\n   Distributions*, Technometrics 37 (1995),\n   https://doi.org/10.1080/00401706.1995.10484303. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/hesterberg-1995-defensive-mixture.txt`.\n5. P. Fearnhead and B. M. Taylor, *An Adaptive Sequential Monte Carlo Sampler*,\n   arXiv:1005.1193, https://arxiv.org/abs/1005.1193. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/fearnhead-taylor-2013-adaptive-smc.txt`.\n6. M. Gerber and N. Chopin, *Sequential Quasi-Monte Carlo*, arXiv:1402.4039,\n   https://arxiv.org/abs/1402.4039. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/gerber-chopin-2015-sqmc.txt`.\n7. S. Reich, *A non-parametric ensemble transform method for Bayesian\n   inference*, arXiv:1210.0375, https://arxiv.org/abs/1210.0375. Local copy:\n   `.localresources/papers/ledh_replay_solution_20260824/reich-2013-ensemble-transform.txt`.\n8. A. S. S. Neal, *Annealed Importance Sampling* (2001), and Del\n   Moral--Doucet SMC-sampler sources are retained in\n   `.localresources/papers/multimodal_hmc/` and are used for the bridge boundary,\n   not as evidence for a finite-run mode guarantee.\n"
+    }
+  ],
+  "execution": {
+    "backend_execution": "not_requested",
+    "source_edits": false,
+    "specialist_side_effects": false
+  },
+  "extractions": [],
+  "findings": [],
+  "metadata": {
+    "contract": "applied_math_audit",
+    "schema_version": "1.0"
+  },
+  "mode": "screen",
+  "non_claims": [
+    {
+      "code": "pdf_equations_not_certified",
+      "text": "PDF extraction and normalized objects do not certify faithful mathematical recovery."
+    },
+    {
+      "code": "obligation_coverage_not_solution",
+      "text": "Accounting for an obligation does not solve it or prove the paper wrong."
+    },
+    {
+      "code": "specialist_diagnostics_not_semantic_equivalence",
+      "text": "Specialist diagnostics do not establish that code and paper express the same scientific model."
+    },
+    {
+      "code": "single_case_not_general_recall",
+      "text": "One document case cannot establish general error-detection recall or precision."
+    },
+    {
+      "code": "no_claim_promotion",
+      "text": "This function does not authorize source edits, publication, release, or scientific claim promotion."
+    },
+    {
+      "code": "dynare_optional_adapter",
+      "text": "DynareMCP is an optional specialist and is not required for non-Dynare papers."
+    }
+  ],
+  "obligations": [
+    {
+      "backend": "pending",
+      "description": "Check algebra, calculus, transformations, and limiting cases.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "algebra_calculus",
+      "id": "obligation:algebra_calculus",
+      "matched_terms": [
+        "derivation",
+        "optimization"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check definitions, indexing, symbol identity, and undefined notation.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "notation_definitions",
+      "id": "obligation:notation_definitions",
+      "matched_terms": [
+        "definition",
+        "notation"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check dimensions, units, scales, frequencies, and measurement conventions.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "dimensions_units",
+      "id": "obligation:dimensions_units",
+      "matched_terms": [
+        "rate"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check timing, conditioning, information sets, and event order.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "timing_conditioning",
+      "id": "obligation:timing_conditioning",
+      "matched_terms": [
+        "expect"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check objectives, constraints, first-order conditions, and boundary cases.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "optimization",
+      "id": "obligation:optimization",
+      "matched_terms": [
+        "objective",
+        "constraint"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check probability, likelihood, normalization, support, and uncertainty language.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "probability_statistics",
+      "id": "obligation:probability_statistics",
+      "matched_terms": [
+        "posterior",
+        "probability",
+        "credible",
+        "draws"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check estimands, identification conditions, treatment definitions, and causal claim boundaries.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "identification_causality",
+      "id": "obligation:identification_causality",
+      "matched_terms": [
+        "identif"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check expansion points, retained order, linearization, and approximation domains.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "approximation_linearization",
+      "id": "obligation:approximation_linearization",
+      "matched_terms": [
+        "linear",
+        "lineariz",
+        "approx"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check aggregation, ownership, stock-flow identities, and decomposition.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "accounting_aggregation",
+      "id": "obligation:accounting_aggregation",
+      "matched_terms": [
+        "flow"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check algorithm steps, convergence, initialization, stopping, and numerical evidence.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "algorithm_numerics",
+      "id": "obligation:algorithm_numerics",
+      "matched_terms": [
+        "algorithm",
+        "converg",
+        "sample"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check whether claims are supported by the cited source, code, data, or displayed result.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "claim_evidence",
+      "id": "obligation:claim_evidence",
+      "matched_terms": [
+        "claim",
+        "evidence",
+        "source",
+        "code",
+        "data"
+      ],
+      "status": "selected"
+    },
+    {
+      "backend": "pending",
+      "description": "Check missing definitions, equations, external dependencies, and reconstruction closure.",
+      "disposition": "not_checkable",
+      "evidence_refs": [],
+      "family": "document_completeness",
+      "id": "obligation:document_completeness",
+      "matched_terms": [
+        "available"
+      ],
+      "status": "selected"
+    }
+  ],
+  "relation_hypotheses": [],
+  "response_mode": "compact",
+  "routes": [],
+  "semantic_checks": [],
+  "semantic_profiles": [],
+  "semantic_validation_errors": [],
+  "source": {
+    "code_count": 0,
+    "data_count": 0,
+    "records": [
+      {
+        "bytes": 36909,
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-ledh-pfpf-genut-dual-cap-trust-region-mathematical-note-2026-08-24.md",
+        "sha256": "6eb3a3822393c74d53073c08818be3ad51edebebdfefb36f901467c6de705459",
+        "source_kind": "document_or_code",
+        "suffix": ".md"
+      }
+    ],
+    "source_count": 1
+  },
+  "source_discovery": [
+    {
+      "candidates": [
+        {
+          "bytes": 133597,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-dpf-filter-oracle-comparison-target-route-registry-2026-06-08.json",
+          "role": "data_or_config",
+          "sha256": "d7810f02e972550445cc3aa41d34a490d2273b61e56aa3ba005872418c68b96b"
+        },
+        {
+          "bytes": 70018,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-dpf-ledh-pfpf-alg1-ukf-ledh-pfpf-ot-rerun-registry-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "c61512996378b5dbb833f44dbbd0fa6f9f13495005638356a23ca47ba28ea73b"
+        },
+        {
+          "bytes": 55244,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-dpf-ledh-pfpf-ot-scalable-ot-self-contained-survey-paper-2026-06-17.tex",
+          "role": "source",
+          "sha256": "59591ef8d11e10da47bf6c18005099aae757f2b61d668b234c852ef16ccd6c44"
+        },
+        {
+          "bytes": 13005,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-adapter-fixtures-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "8e53b50ab31f55f1ee8ec25b6b32eba2ae00e820dcb44a1a98814d44d7b16a80"
+        },
+        {
+          "bytes": 6863,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-adapter-schema-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "0652cfdf396cf06cc08650f0dbdcdb0121bc8c0f076fb34b2b486eeffce6d853"
+        },
+        {
+          "bytes": 32807,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-deterministic-filter-coverage-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "06ca8ebcd63d1f3cd99f7574588efea9e7d0e5690076a06ded56d2f0f6a80626"
+        },
+        {
+          "bytes": 10176,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-deterministic-filter-smoke-payloads-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "bc452be46e223c7bee547a24b6959beed31ff6bcfa48944167393ae9d8c4ef9d"
+        },
+        {
+          "bytes": 12361,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-dpf-filter-coverage-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "568ffbfbbdd5a6dceab56b2e10175ef1be8acc113161e3594dbe5a12e9905f5b"
+        },
+        {
+          "bytes": 6244,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-dpf-filter-smoke-payloads-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "fd07d37208f3034a5057a276038aa42f4d2637589f41b726d49192215b1aaa73"
+        },
+        {
+          "bytes": 4919,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-dpf-minimal-matrix-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "9107eaec037285d00f06350edc77fb034072222116310df907156c2600ff47ad"
+        },
+        {
+          "bytes": 10758,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-generalized-sv-testing-spec-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "30ea6bc644877edea4a96ca0353d410cc8f9e3d13c84980be8ed61e8c0c81f3c"
+        },
+        {
+          "bytes": 14152,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-gradient-semantics-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "81e1f70ab3d0dcfa70a7e03694de3468842ff88d8a85fede9b42aadd1fe3315e"
+        },
+        {
+          "bytes": 10865,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-adapter-status-matrix-2026-06-11.csv",
+          "role": "data_or_config",
+          "sha256": "9b7ac3de28599af76a49736ab9aff53712bb9dd3f4c05382f9938e04a35f4fda"
+        },
+        {
+          "bytes": 2222,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-blocker-closure-status-2026-06-11.csv",
+          "role": "data_or_config",
+          "sha256": "98a47900ac639b92a9a556ef0daeb7ed22f5a6ec957eaabe148c8b4ed5cdb824"
+        },
+        {
+          "bytes": 25405,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-blocker-closure-status-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "416e781d9772641703831e72c3e1864c7c60c14f4a47d3e4dc391a02ed1d49de"
+        },
+        {
+          "bytes": 44173,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-blocker-fix-gates-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "3cf79f3caacd4c92d9a6777fb46a1bc560eeccd3ffc683984841fa301479bce6"
+        },
+        {
+          "bytes": 11748,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-gradient-error-matrix-2026-06-10.csv",
+          "role": "data_or_config",
+          "sha256": "35d158cd78d49ad691899bb4b434b5fc7ce085b70a2505a5548c964d5e7a2436"
+        },
+        {
+          "bytes": 223155,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-matrices-2026-06-10.json",
+          "role": "data_or_config",
+          "sha256": "d57b7edd367b22d9610a2a5983e10947cc0a17e30376019cefd7af4e350d494b"
+        },
+        {
+          "bytes": 1457,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-synthetic-dataset-manifest-2026-06-11.csv",
+          "role": "data_or_config",
+          "sha256": "ac700b4c1e6a1d056671cce2f15b5c41f37a33d10dddfc4cce2e7312928b5253"
+        },
+        {
+          "bytes": 27710,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-synthetic-dataset-manifest-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "ff0685e503f5caffbff8ede1685dabddec3c0be35a75ffb73481e7effc902afd"
+        },
+        {
+          "bytes": 23110,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-synthetic-truth-capability-crosswalk-2026-06-11.csv",
+          "role": "data_or_config",
+          "sha256": "122cb99258175302d9e7b56e5432f28330dd7afcd6b234c30db0b0f2bbe7017b"
+        },
+        {
+          "bytes": 177080,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-synthetic-truth-contract-2026-06-11.json",
+          "role": "data_or_config",
+          "sha256": "01bb52c8f0a89ab230b3148ad8303f808ffe903e29cbcb23e3db059bfba96fe2"
+        },
+        {
+          "bytes": 11989,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8-value-error-matrix-2026-06-10.csv",
+          "role": "data_or_config",
+          "sha256": "a614fb6a00ae20feecd67b4ca847ed1c973871311668153e3625e93cb1fdc82d"
+        },
+        {
+          "bytes": 9183,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-curvature-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "b469829a5baac58ed0d6950a9bd0c08fb34762c0ae07a27aa3d715aeaffc9e68"
+        },
+        {
+          "bytes": 82101,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-numeric-results-2026-06-12.json",
+          "role": "data_or_config",
+          "sha256": "99e5b3931a639646be41a6454f99242e79e2dc1ccbb2c05b18507378b088080f"
+        },
+        {
+          "bytes": 7293,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-score-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "ac8655928d90d083d1fbf8d2639d55226dabe7948edf73c1eda163425551ef15"
+        },
+        {
+          "bytes": 12978,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-status-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "46bc48bb4d6103a3f8c1ef3fb6dde19ce21d80951a4e48c5a1f7ff77547c6813"
+        },
+        {
+          "bytes": 6106,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-stochastic-uncertainty-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "d61c2e5f40d6d8d60587470500b0438e2d309930a4b50fa16982be60ff2613e1"
+        },
+        {
+          "bytes": 6379,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8b-value-table-2026-06-12.csv",
+          "role": "data_or_config",
+          "sha256": "1f68dbe6e2b5275c5791e13f7b421a8ebcc713edbed39b707a4f4f85378f07d7"
+        },
+        {
+          "bytes": 11154,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-curvature-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "d2d8af6748e176edbe6d84d6cea9c42a46df6c274541147985674378ba85f660"
+        },
+        {
+          "bytes": 96785,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-numeric-results-2026-06-13.json",
+          "role": "data_or_config",
+          "sha256": "c2980092917c62752fc6a707f63b9bf18b3cb865a6a1742d65118b12d563a4e3"
+        },
+        {
+          "bytes": 8740,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-score-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "bf56ad6ede525283bca5723e75dcadad1cd03bd5485375d9c22db44c17acc88d"
+        },
+        {
+          "bytes": 15269,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-status-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "221e0c62ef3e58c465969d90a4a137a6c6cd6b301bb21c26d6d54524b240c66c"
+        },
+        {
+          "bytes": 10495,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-stochastic-uncertainty-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "a5747ca6e76a86f81986a82dd6163563ce0a2c14038e3130fe8cf06db7270442"
+        },
+        {
+          "bytes": 7682,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8c-value-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "ef1d1b1fb52c824d34b2ff0d7a7e3ae8f3f02cff4dc32d179831704c50d863ee"
+        },
+        {
+          "bytes": 10998,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-curvature-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "8f06cbfc019c72c33ff5a41f9d1901054fa43c75f94463bea8862905d63fa4d1"
+        },
+        {
+          "bytes": 113481,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-numeric-results-2026-06-13.json",
+          "role": "data_or_config",
+          "sha256": "72d1a76ec99a1451b06562cf02d5b5c247b9df714ea4cee25d04f11795250821"
+        },
+        {
+          "bytes": 11927,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-score-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "36704196b1f522a324303bafb1146ace7745f1b488cbad7f765c0f3dbe71086c"
+        },
+        {
+          "bytes": 14264,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-status-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "a020478d5c6d82aca52fa72cf234ecd6b0bda993342eab552e15f2114d563128"
+        },
+        {
+          "bytes": 16699,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-stochastic-uncertainty-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "fc880766d05841d1347a2de04deab8af874891765c564dda04b718b876749157"
+        },
+        {
+          "bytes": 8270,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8d-value-table-2026-06-13.csv",
+          "role": "data_or_config",
+          "sha256": "2bc589a1fc30689fea0e931db93d7936014778c4f3868341f8148ff90ce916a4"
+        },
+        {
+          "bytes": 7914,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase1-profile-cpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "601c296ccdf624f9069ed0ce65a75745fc95ef7ba468f5cb3a168e24dbee315b"
+        },
+        {
+          "bytes": 8187,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase1-profile-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "32134dae23bf502fd3a58b3a2b51a4197c6f7a112f0d81a667f0a6965850ca51"
+        },
+        {
+          "bytes": 4027,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2-looped-alg1-smoke-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "e72336d1eafbc3e368feeee2d0fcf77258dab5f44ee8f9535cd90b6cb7d79a1c"
+        },
+        {
+          "bytes": 3761,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2-vectorized-alg1-smoke-cpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "a3e516b4086edbb24bbc038770e164226b5413d00bb0ddd508a99025aca4f50b"
+        },
+        {
+          "bytes": 4035,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2-vectorized-alg1-smoke-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "df54ee91358f0532b5f0c1c64caca894bdd6b55fdf4b5da63a72d56e500ef0f5"
+        },
+        {
+          "bytes": 9129,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2b-sv-scalar-graph-prefix50-5seed-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "e0a5134320f145d60c407941140440de3e8c7e8f028105c6fff1ef1f63b6f678"
+        },
+        {
+          "bytes": 3901,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2b-sv-scalar-graph-smoke-cpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "99856395e54379c11f67b6f613bb9693ac560f6daae656ee534ffb6c9e0445d6"
+        },
+        {
+          "bytes": 4171,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase2b-sv-scalar-graph-smoke-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "1e0e7132ff5cc4dcf48d9370b2df24694711f1d5794a37c0a135c499800361d8"
+        },
+        {
+          "bytes": 1089,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase3-fixed-randomness-gradient-checks-cpu-2026-06-15.csv",
+          "role": "data_or_config",
+          "sha256": "71a76269e8245028ce27dfbdf8a1573cae34472562868135281561b4fade4961"
+        },
+        {
+          "bytes": 6693,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase3-fixed-randomness-gradient-checks-cpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "33fa7752075fb61314c66d9647e678be29ab3427181143fd3ed81370f1a6d63e"
+        },
+        {
+          "bytes": 1090,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase3-fixed-randomness-gradient-checks-gpu-2026-06-15.csv",
+          "role": "data_or_config",
+          "sha256": "ab2ef842a40f34dc34f2ed72f64c2ebca473a6ecb2906579b79bc7fb52782e5b"
+        },
+        {
+          "bytes": 6969,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase3-fixed-randomness-gradient-checks-gpu-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "76a6850dc46bfe1e5366fa381e3af9abcdf4aea9d949eecf878d579f61ed687b"
+        },
+        {
+          "bytes": 716,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase4-particle-tuning-selected-blocked-2026-06-15.csv",
+          "role": "data_or_config",
+          "sha256": "36c5c763480105fde751cc58cc27d707bf15b50f9c8b5f224488c8433049dd00"
+        },
+        {
+          "bytes": 1445,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase4-particle-tuning-stage0-2026-06-15.csv",
+          "role": "data_or_config",
+          "sha256": "4163e59f687c31c427e4ccb30db46ac5c6bd18eefa5e0bb9c67729396143e837"
+        },
+        {
+          "bytes": 36766,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8g-phase4-particle-tuning-stage0-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "70b80027ae6587c9cd29568e51f3cd141aac50949c980b7350b2c54bd2a88e35"
+        },
+        {
+          "bytes": 9935,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-artifact-index-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "fa007cf116113eb9bb6243b668ed2add3c5953f6b71355ae0cd623d7c19b8ce5"
+        },
+        {
+          "bytes": 9502,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase10-commit-boundary-manifest-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "76f2741103887586acbe4da115beda8354ab52150c0ac45991e466bc051509ae"
+        },
+        {
+          "bytes": 7864,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase3-scalar-sv-ot-cpu-smoke-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "d5175a1536a8db2d0b2096ca79c6df302c581f3420c109304f1791649f9bb575"
+        },
+        {
+          "bytes": 8089,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase3-scalar-sv-ot-gpu-smoke-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "b046f65c9af5a81d815df6349061cda7a2e61ef2b0f85eb521c258a2b61a6137"
+        },
+        {
+          "bytes": 13116,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase4-scalar-sv-ot-cpu-diagnostic-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "51c73118fd4a1296b32a0beb2fed8065a01cfdf5fbba86e1dbafb9c83c7398c5"
+        },
+        {
+          "bytes": 13375,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase4-scalar-sv-ot-gpu-diagnostic-2026-06-15.json",
+          "role": "data_or_config",
+          "sha256": "0cd65252813e98036600f0140a420a4e9237a7134cc7bf5de1aae782fafe7f5f"
+        },
+        {
+          "bytes": 1062,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase5-value-filtering-tuning-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "b484032e133d7b39d3054e3f5d2a2a2c0f7fdd253fce645a2f7750c850bd957a"
+        },
+        {
+          "bytes": 2523,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase5-value-filtering-tuning-stage0-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "62d7be79da5c6fed84b1dcaa466c78e1bd145a09a9b713565771166a197e8abd"
+        },
+        {
+          "bytes": 186951,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase5-value-filtering-tuning-stage0-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "b7648192db22af1a01b354963e5835f04b36ad6c0c25e1ec851ce5cc3404dd6d"
+        },
+        {
+          "bytes": 3061,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase6-ot-gradient-checks-gpu-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "a2632204211b5bed21cfabaeaf8d1c84b5fc40b4f98fa6081c0fc4890e6a09d0"
+        },
+        {
+          "bytes": 29716,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase6-ot-gradient-checks-gpu-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "e95525eecc7442027341189a1debfc880cd72720d0f6b06a7759b76831fa035b"
+        },
+        {
+          "bytes": 1802,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase7-gpu-performance-scaling-profile-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "fd91be8ed195b4caf1e8d84dad6d67f34451302c3da3d33c58b19d76510e6359"
+        },
+        {
+          "bytes": 126739,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase7-gpu-performance-scaling-profile-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "da01456e3582dc91512e76762c09328ce7b039e4bb1743da9640416c51c1c76c"
+        },
+        {
+          "bytes": 1058,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase7-gpu-performance-scaling-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "f3c3b5944d16af94e9018a57e54b41dc719408ef7a3648597694a523751b2f45"
+        },
+        {
+          "bytes": 727,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase8-hmc-tier0-smoke-gpu-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "e6aec575bfb63e7754a4a109ef581d0fa672814164181b481a1807482b1585ba"
+        },
+        {
+          "bytes": 10204,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8h-phase8-hmc-tier0-smoke-gpu-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "81b42790084d4f065afacbc50ea8db071bb67ec589f322cf3a763fbfadee5648"
+        },
+        {
+          "bytes": 7216,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-artifact-index-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "bb97c835b3086d9927cc503125dd17ad9366ad4473095cad8f12b10fd5bfc250"
+        },
+        {
+          "bytes": 2531,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-longer-prefix-particle-value-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "17d29e6f1dc0f1912b5d664495f408f7d354bd8845d2eef62b7933466913e266"
+        },
+        {
+          "bytes": 187431,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-longer-prefix-particle-value-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "4bed22651ec88cbc866bc275bc715a2fa2b1be4a81809ee5369e04f459c377b7"
+        },
+        {
+          "bytes": 1067,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-longer-prefix-particle-value-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "b71aaac332d87b057e9cbc925041de1fa5674d1ff51f68132c8582f607d56c0b"
+        },
+        {
+          "bytes": 1074,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-pilot-rung-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "ff5a2d8ff075d5275c4b64d8ef9af159f1dba52122b170115011cd9ac541556d"
+        },
+        {
+          "bytes": 66182,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-pilot-rung-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "1b8b4f5a2532f57120b67978fb0f59c73c7fa7464a3dfed79f89b93fc853f598"
+        },
+        {
+          "bytes": 811,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase1-pilot-rung-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "08d90f9487753267793a6860c0d42d5d7630ab57aecd88ed78cb40ca8a15ade5"
+        },
+        {
+          "bytes": 3053,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase2-gradient-h16-pilot-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "039324ab0f245208781d4820fec5e0d11ca0b04617c544a553b09d7d14ca0d9a"
+        },
+        {
+          "bytes": 30626,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase2-gradient-h16-pilot-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "60fc8127bb1a2de4c70cfe88a31c6d8026b598b3a2a5d64ca7cc9c59310735d3"
+        },
+        {
+          "bytes": 3050,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase2-gradient-h32-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "1a23f32adf1f3322d2cf9cf03f647ffcb251b15abe34fa7cf576db1d2bd8ae5e"
+        },
+        {
+          "bytes": 30600,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase2-gradient-h32-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "5eecad7db70eb8ebd6875e4bd6b83d1c37b9b6f480fdeb28b230c4e8fba95bea"
+        },
+        {
+          "bytes": 1080,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-adjacent-n10-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "e99f8d94cd42e5c58a3226870dc51b0f8cc51bd24470c52b9faff56f1a705da2"
+        },
+        {
+          "bytes": 66067,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-adjacent-n10-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "00906602b214ac6971c64464f23c92a784149668bcfaf56b399fb6888fe215e9"
+        },
+        {
+          "bytes": 552,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-adjacent-n10-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "9b9bb5c0d6a7804611cb54119725c476f4da3f170822ed00fff2ea1888ae3e4c"
+        },
+        {
+          "bytes": 1074,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-selected-n5-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "bb84a6eefd6e0c2175f0c876ab568e38baf1b10928ba7325f901ec1c62736cb8"
+        },
+        {
+          "bytes": 65691,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-selected-n5-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "cca5482aed221f80f43179ec17e98f8301544e6a4bee1be02c7344cefb834eca"
+        },
+        {
+          "bytes": 551,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase3-gpu-scaling-selected-n5-selected-blocked-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "5b72d2c6325e4505eae92c7abc42f79c782e5c7a3b01950e58837bedc889685d"
+        },
+        {
+          "bytes": 746,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase4-hmc-tier1-fixed-kernel-2026-06-16.csv",
+          "role": "data_or_config",
+          "sha256": "0453d5c2d82bcc6c448dbcf896a4ed6ed0e7e80cbc1de4f48f8a8765a851e4c7"
+        },
+        {
+          "bytes": 12326,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-phase4-hmc-tier1-fixed-kernel-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "52f8f05a4f8535fecd6986ea32c9dfd0193447e47aa5c765df832780029b1d58"
+        },
+        {
+          "bytes": 4090,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8i-repo-boundary-manifest-2026-06-16.json",
+          "role": "data_or_config",
+          "sha256": "34724606aa836b696995f5522893b1803cc22666ad1e87d4e0192367d98321b7"
+        },
+        {
+          "bytes": 982,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase2-bootstrap-sir-smoke-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "2c51c0287f76eef7de4801a6846c607110ec7bbb9728a5fdde31df0e686b0a0a"
+        },
+        {
+          "bytes": 1299,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase3-ledh-alg1-sir-smoke-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "7503f0acee52200a824dd4f4c302ebd79fdb79ff43a66cf21d890c9a329f6317"
+        },
+        {
+          "bytes": 1893,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase4-ot-ledh-sir-smoke-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "bf9b5ecb902c6f5f3ce01e68d92c23c10dc00ea1e521715cbda3c7da81a067b6"
+        },
+        {
+          "bytes": 1941,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5-sir-particle-tuning-2026-06-17.csv",
+          "role": "data_or_config",
+          "sha256": "cd0d0555e85b60bddb7eebd0c7f177160e2b8ff1bbb7a3b97e2e8bd051e1efaf"
+        },
+        {
+          "bytes": 31773,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5-sir-particle-tuning-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "371487bb2057f367c7d5a4333c93ceb9decdbc743bdadc47a56aad90afd474e6"
+        },
+        {
+          "bytes": 775,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5-sir-particle-tuning-selected-blocked-2026-06-17.csv",
+          "role": "data_or_config",
+          "sha256": "6db9ab70e17e8e012eac560e53fcff1d6b2535383cd0e74a65d7155d25b3bb28"
+        },
+        {
+          "bytes": 932,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5b-bootstrap-higher-count-2026-06-17.csv",
+          "role": "data_or_config",
+          "sha256": "f2098f38ec2050c5ec3d609a9ba21253089fcbcef7831179bd0fe6a20f96be56"
+        },
+        {
+          "bytes": 18020,
+          "discovery": "local_adjacent",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-filtering-value-gradient-benchmark-p8j-phase5b-bootstrap-higher-count-2026-06-17.json",
+          "role": "data_or_config",
+          "sha256": "45a23a58d5c824c9e6750c858c72af6acd01626f669ebabe112b5ec5de4d8998"
+        }
+      ],
+      "non_claim": "Candidate discovery does not establish that an artifact belongs to the paper or is authoritative.",
+      "root": "/home/ubuntu/python/BayesFilter/docs/plans",
+      "status": "candidates_found"
+    }
+  ],
+  "specialist_execution": [],
+  "specialist_policy": "none",
+  "status": "completed_with_limits",
+  "warnings": [
+    "No code paths supplied; implementation alignment remains not checked."
+  ]
+}

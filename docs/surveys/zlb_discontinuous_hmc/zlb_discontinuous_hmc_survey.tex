@@ -1,0 +1,2996 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=1.1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+
+\title{Bayesian Inference for Nonlinear Models with a Genuine Zero Lower
+Bound\\[0.6ex]\large A survey of exact and approximate sampling methods,
+with two case studies}
+\author{}
+\date{August 2026}
+
+\setcounter{tocdepth}{2}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+A zero (or effective) lower bound on nominal interest rates changes the
+geometry of a Bayesian inference problem in ways that the word
+``discontinuous'' hides more than it reveals. A censoring rule
+$i_t=\max\{\ell,i_t^\star\}$ is continuous with a kinked gradient; a
+deterministic solution map that selects between branches can create a genuine
+density jump; a stochastic regime yields a mixed discrete--continuous
+posterior; and a model whose equilibrium is not unique has no posterior at
+all until a selection law is specified. These four geometries call for
+different samplers, and misclassifying one as another is the most common
+design error in this literature. We survey the linear benchmark (OccBin and
+piecewise Kalman filtering), particle-filter likelihoods and particle MCMC,
+Hamiltonian Monte Carlo on kinked and piecewise-smooth targets, event-driven
+(reflection/refraction), discontinuous, and mixed variants of HMC, and
+pseudo-marginal and differentiable-particle-filter methods, deriving the key
+constructions rather than merely citing them. Two case studies apply the
+classification: a two-country shadow-rate term-structure model, whose
+hard-bound variant turns out to be a kink target with a tractable particle
+likelihood; and a small New Keynesian model with an occasionally binding
+policy rate, where the genuine discontinuity lives in the solution
+correspondence (nonexistence and multiplicity of verified paths) rather
+than in the max operator.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}\label{sec:intro}
+
+In a linearized New Keynesian model, a zero lower bound (ZLB), or effective
+lower bound (ELB), can be handled by solving two linear systems: one with the
+policy constraint slack and one with the constraint binding. OccBin and its
+successors iterate over a candidate sequence of regimes, apply a Kalman filter
+conditional on that sequence, and verify the inequalities afterwards
+(Guerrieri and Iacoviello 2015; Giovannini, Pfeiffer, and Ratto 2021). This
+approach is valuable and fast. Its reach, however, is set by the conditional
+Gaussian closure, which enters twice: once in the state transition and again
+in the likelihood recursion. What it computes is therefore the likelihood of
+a piecewise-linear Gaussian approximation, not of the nonlinear model.
+
+The question we pursue in this survey is therefore narrower and harder: how
+can we sample a posterior that retains an actual ZLB regime change in a
+nonlinear state-space model, while keeping the transition kernel exact for the
+model actually being estimated and making every approximation visible?
+
+Before anything else, the word ``discontinuous'' needs care, because it is
+routinely used for at least three different mathematical situations. The map
+\[
+ i_t=\max\{\ell,i_t^\star\}
+\]
+is continuous; it merely has a kink at \(i_t^\star=\ell\). A model with an
+explicit regime variable \(r_t\in\{n,b\}\), or a solver that selects between
+distinct equilibrium branches, can instead produce a mixed
+discrete-continuous target, or a genuine jump in the density. These are three
+different posterior geometries, and the modern Hamiltonian Monte Carlo (HMC)
+literature addresses them with three different tools:
+reflection/refraction HMC, discontinuous HMC, and mixed HMC. Treating all of
+them as one kind of nonsmoothness is the first design error a practitioner
+can make, and much of this survey is devoted to keeping them apart.
+
+The survey has four goals. First, it derives the linear benchmark, the
+piecewise-linear solution and its conditional Kalman likelihood, so that
+the reader can see precisely what the fast standard method computes and what
+it leaves out. Second, it derives the HMC kernels appropriate for
+piecewise-smooth and mixed-support targets. Third, it derives the nonlinear
+state-space likelihood and its particle approximation, which is what an exact
+method must ultimately integrate. Fourth, it turns the comparison into
+practice through two case studies: a shadow-rate term-structure model
+(Section~\ref{sec:shadow}) and a small New Keynesian model with an
+occasionally binding policy rate (Section~\ref{sec:nk}). Throughout, results
+stated by a paper are cited to that paper; deductions of our own are written
+in the notation introduced below and labelled as such.
+
+\section{A common model and notation}\label{sec:model}
+
+To compare methods that were developed in different literatures, we first fix
+a single notation broad enough to contain them all. Let \(\vartheta\) denote
+structural parameters, \(x_t\in\mathbb R^{d_x}\) the latent state, \(r_t\)
+the ZLB regime, \(\epsilon_t\) a structural shock, and \(y_t\) the
+observation. A general model is
+\begin{equation}\label{eq:1}
+\begin{aligned}
+ r_t &= \mathcal R(x_{t-1},\epsilon_t,\vartheta),\\
+ x_t &= F_{r_t}(x_{t-1},\epsilon_t,\vartheta),\\
+ y_t &\sim g_{r_t}(y_t\mid x_t,\vartheta).
+\end{aligned}
+\end{equation}
+
+For a monetary lower bound, define a shadow or notional nominal rate
+\(i_t^\star=\iota(x_{t-1},\epsilon_t,\vartheta)\) and a bound \(\ell\). The
+regime rule is
+\begin{equation}\label{eq:2}
+ r_t=n \iff i_t^\star>\ell,\qquad
+ r_t=b \iff i_t^\star\leq\ell,
+\end{equation}
+and the observed policy rate may be \(i_t=i_t^\star\) in regime \(n\) and
+\(i_t=\ell\) in regime \(b\). An equivalent complementarity form introduces a
+multiplier \(\lambda_t\geq0\):
+\begin{equation}\label{eq:3}
+ i_t-\ell\geq0,\qquad \lambda_t\geq0,\qquad
+ (i_t-\ell)\lambda_t=0.
+\end{equation}
+Equation \eqref{eq:3} says which inequality is true, but it does not by
+itself say how the rest of the equilibrium is solved. That distinction
+matters for inference: the likelihood is defined by the complete transition
+and observation law, not by the bound in isolation.
+
+The posterior over parameters, states, and regimes is
+\begin{equation}\label{eq:4}
+ \pi(\vartheta,x_{0:T},r_{1:T}\mid y_{1:T})
+ \propto p(\vartheta)p(x_0\mid\vartheta)
+ \prod_{t=1}^T p(r_t,x_t\mid x_{t-1},\vartheta)
+ g_{r_t}(y_t\mid x_t,\vartheta).
+\end{equation}
+
+A measure-theoretic caution is required before \eqref{eq:4} can be used as a
+density. The issue is that a density only exists relative to a dominating
+measure, and a deterministic map need not have one with respect to Lebesgue
+measure: if \(x_t\) is a deterministic function of \((x_{t-1},\epsilon_t)\)
+and the shock has fewer dimensions than the state,
+\(\dim\epsilon<\dim x\), then given \(x_{t-1}\) the state \(x_t\) is confined
+to a lower-dimensional manifold, so its conditional law puts all its mass on
+a Lebesgue-null set and no transition density exists; even when the
+dimensions match, a change-of-variables Jacobian is required. The clean
+primitive object is therefore not a density but the Markov transition kernel
+\begin{equation}\label{eq:4a}
+ K_\vartheta(x_{t-1},A,r)
+ =\int \mathbf 1\{\mathcal R(x_{t-1},\epsilon,\vartheta)=r\}\,
+       \mathbf 1\{F_r(x_{t-1},\epsilon,\vartheta)\in A\}\,
+       \phi_\vartheta(d\epsilon),
+\end{equation}
+and \(p(r_t,x_t\mid x_{t-1},\vartheta)\) in \eqref{eq:4} denotes a density of
+\(K_\vartheta\) with respect to an explicitly chosen dominating measure:
+Lebesgue in \(x_t\) times counting in \(r_t\) when the shock map is a smooth
+bijection onto its range. When it is not, the non-centered shock chart of
+\eqref{eq:56} is the natural default coordinate system: there the target is a
+density in \((\vartheta,x_0,\epsilon_{1:T})\) and no transition density is
+needed at all. A similar bookkeeping point arises at the initial condition.
+The factor \(p(x_0\mid\vartheta)\) in \eqref{eq:4} and the first-step factor
+\(p(X_1\mid\vartheta)\) used by the particle recursion \eqref{eq:12a} must be
+reconciled by adopting one of two conventions: either \(x_0\) is carried
+explicitly in every particle and \eqref{eq:12a} begins from the prior
+\(p(x_0\mid\vartheta)\) with a first transition draw, or the induced initial
+law \(p(x_1\mid\vartheta)=\int K_\vartheta(x_0,\cdot)\,
+p(x_0\mid\vartheta)\,dx_0\) is used and \(x_0\) is integrated out. Both are
+correct; mixing them double-counts or drops the initial condition.
+
+If the regimes are integrated out, the marginal likelihood is
+\begin{equation}\label{eq:5}
+ p(y_{1:T}\mid\vartheta)=
+ \int p(x_0\mid\vartheta)
+ \prod_{t=1}^T\sum_{r_t}p(r_t,x_t\mid x_{t-1},\vartheta)
+ g_{r_t}(y_t\mid x_t,\vartheta)\,dx_{0:T}.
+\end{equation}
+The summation in \eqref{eq:5}, or the corresponding nonlinear integral, is
+exactly the part that the piecewise Kalman filter avoids by conditioning on a
+verified regime path. Keeping that summation in view is what distinguishes
+the exact nonlinear methods of later sections from the linear benchmark of
+Section~\ref{sec:linear}.
+
+\subsection{Four different posterior geometries}\label{sec:geometries}
+
+What determines the sampling problem is the measure in \eqref{eq:4}, not the
+economic word ``regime''. Four cases must be kept separate, because each one
+calls for a different sampler, and one of them calls for no sampler at
+all, but for more modeling.
+
+First, a censored rule such as \(i_t=\max\{\ell,i_t^\star\}\) is continuous.
+If all other model equations and densities are continuous, the posterior is
+also continuous, although its gradient may jump at the kink. Ordinary
+Metropolized HMC remains a valid MCMC construction when the
+nondifferentiable set has Lebesgue measure zero, but an integrator that
+ignores the kink can be inefficient (Afshar and Domke 2015, p.~1). There is
+no potential-energy jump to refract across.
+
+Second, suppose a deterministic solution map produces different one-sided
+densities on the two sides of a boundary. Write all continuous unknowns as
+\(q\), let \(R(q)\) be the implied regime path, and let \(\pi_r(q)\) be the
+density obtained from branch \(r\), where every \(\pi_r\) is expressed in one
+named branch coordinate system; if different branches are naturally
+parameterized in different coordinates, the change-of-variables Jacobian
+into the common chart belongs inside \(\pi_r\). The joint density with
+respect to Lebesgue measure in \(q\) and counting measure in \(r\) is
+\begin{equation}\label{eq:5a}
+ \Pi(q,r)=\pi_r(q)\,\mathbf 1\{r=R(q)\}.
+\end{equation}
+The indicator in \eqref{eq:5a} has a sharp consequence: at fixed \(q\), every
+proposal \(r'\ne R(q)\) has zero target density. A regime-only Metropolis,
+mixed-HMC, or Gibbs move therefore cannot cross this deterministic boundary.
+One must instead move \(q\) across the boundary with an event-aware
+continuous kernel, make a joint \((q,r)\) proposal whose density and Jacobian
+are included, or integrate the states with a particle method. The one-sided
+potential jump that event-driven dynamics must account for is
+\begin{equation}\label{eq:5b}
+ \Delta U(q_b)=-\log \pi_{r^+}(q_b^+)+\log \pi_{r^-}(q_b^-),
+\end{equation}
+where \(q_b^-\) and \(q_b^+\) denote limits from the two regions. For a pure
+continuous \(\max\), these limits agree and \(\Delta U=0\), which recovers
+the first case.
+
+Third, if the statistical model assigns positive probabilities to both
+regimes, say \(p(r_t\mid r_{t-1},x_{t-1},\vartheta)>0\) for both
+values, then the posterior genuinely has mixed support. Mixed HMC and
+particle Gibbs are valid candidates in this case, because a discrete move can
+have positive target probability.
+
+Fourth, if a nonlinear equilibrium solver can return several solutions, an
+algorithmic tie-break such as ``first root found'' depends on solver order,
+so it assigns the competing solutions no probabilities, and the target
+remains undefined until the model supplies a solution-selection
+distribution. No sampler can draw from a distribution that has not been
+defined. We return to this issue at length in the New Keynesian
+case study of Section~\ref{sec:nk}.
+
+\section{What OccBin and piecewise Kalman filtering actually do}\label{sec:linear}
+
+Before developing exact nonlinear methods, we set out the linear benchmark in
+detail. Understanding precisely what the standard piecewise-linear machinery
+computes, and where its two Gaussian closures enter, is what allows us
+to say later, without hand-waving, what a nonlinear method adds.
+
+\subsection{The two-regime linear system}\label{sec:linear-tworegime}
+
+Guerrieri and Iacoviello (2015) write an occasionally binding constraint as a
+reference regime \(n\) and an alternative regime \(b\). After linearization
+around a common steady state, each regime has a linear rational-expectations
+system. In reduced state-space notation, a candidate regime path \(r_{1:T}\)
+gives
+\begin{equation}\label{eq:6}
+ x_t=T_{r_t}x_{t-1}+C_{r_t}+R_{r_t}\epsilon_t,
+ \qquad \epsilon_t\sim N(0,Q),
+\end{equation}
+\begin{equation}\label{eq:7}
+ y_t=Z_{r_t}x_t+D_{r_t}+u_t,
+ \qquad u_t\sim N(0,H_{r_t}).
+\end{equation}
+The matrices come from solving each regime's equations as a linear
+rational-expectations system, and the
+candidate path is accepted only when the implied inequalities agree with the
+regime labels; splicing arbitrary policy rules together would skip the
+expectations consistency that the solution step enforces.
+
+For a finite horizon, OccBin starts from a guessed regime path. It solves
+backward from a terminal date at which the reference regime is imposed
+forever, then simulates forward, checks the binding and slack inequalities,
+and updates the path. Repeating this map gives a fixed point when it
+converges. The method can have multiple fixed points; convergence of one
+iteration is not a proof of global uniqueness (Guerrieri and Iacoviello 2015,
+pp.~2--7).
+
+\subsection{The conditional Kalman likelihood}\label{sec:linear-kalman}
+
+Conditional on a verified regime path, the model \eqref{eq:6}--\eqref{eq:7}
+is time-varying but Gaussian, so the likelihood is available in closed form
+from the Kalman recursions. With filtered mean \(a_{t-1}\) and covariance
+\(P_{t-1}\), prediction is
+\begin{equation}\label{eq:8}
+ a_t^- =T_{r_t}a_{t-1}+C_{r_t},
+\qquad
+ P_t^- =T_{r_t}P_{t-1}T_{r_t}^{\mathsf T}+R_{r_t}QR_{r_t}^{\mathsf T}.
+\end{equation}
+The innovation and its covariance are
+\begin{equation}\label{eq:9}
+ v_t=y_t-Z_{r_t}a_t^- -D_{r_t},
+ \qquad
+ F_t=Z_{r_t}P_t^-Z_{r_t}^{\mathsf T}+H_{r_t}.
+\end{equation}
+The update is
+\begin{equation}\label{eq:10}
+ K_t=P_t^-Z_{r_t}^{\mathsf T}F_t^{-1},\qquad
+ a_t=a_t^-+K_tv_t,\qquad
+ P_t=P_t^- -K_tF_tK_t^{\mathsf T}.
+\end{equation}
+For observed components \(\mathcal O_t\), the conditional log likelihood is
+\begin{equation}\label{eq:11}
+ \log p(y_{1:T}\mid r_{1:T},\vartheta)
+ =-\frac12\sum_{t=1}^T
+ \left[|\mathcal O_t|\log(2\pi)+\log|F_t|+v_t^{\mathsf T}F_t^{-1}v_t\right].
+\end{equation}
+
+Giovannini, Pfeiffer, and Ratto (2021, pp.~5--11) make the regime path
+endogenous to the filter. Their piecewise Kalman filter (PKF) performs
+\eqref{eq:8}--\eqref{eq:10}, estimates shocks and smoothed states, calls an
+OccBin simulation to infer a new regime path, replaces the transition
+matrices accordingly, and iterates. Failed fixed-point convergence is treated
+as a bad parameter proposal. The publicly available Dynare implementation
+follows this structure: a standard Kalman update is followed by an OccBin
+solve, a new regime history, and a loop until the proposed and implied paths
+agree. We note this as corroborating implementation detail, not as a
+substitute for the paper's derivation.
+
+\subsection{Exactness conditional on a linearization}\label{sec:linear-limits}
+
+Exactness here is conditional in a strong sense. The PKF is exact for its
+conditional time-varying linear-Gaussian model, but the model itself is a
+piecewise-linear approximation. It omits precautionary
+effects and higher-order nonlinearities that alter the probability of future
+binding (Giovannini, Pfeiffer, and Ratto 2021, pp.~3--4, 26~ff.). OccBin also
+needs a reference regime, a finite path iteration, and a rule for resolving
+multiple fixed points. These are model and solver choices, not mere numerical
+details.
+
+The right role for the PKF in a nonlinear estimation exercise is that of a
+\emph{limiting benchmark}: when the nonlinear model is replaced by its
+verified piecewise-linear local representation, a correct nonlinear
+implementation should reproduce \eqref{eq:11}, the regime path, and the
+OccBin inequality checks. Passing this tie-out rules out a large class of
+bookkeeping errors shared by the two implementations; validating the
+nonlinear sampler on the model actually being estimated is the separate
+task of the sections that follow.
+
+\section{A nonlinear likelihood without regime smoothing}
+\label{sec:particle}
+
+What does it take to evaluate the marginal likelihood \eqref{eq:5} of the
+genuinely nonlinear model \eqref{eq:1} without smoothing the regime away?
+We answer in three stages: first with a generic particle filter, then with the
+conditionally optimal particle filter built for piecewise-linear ZLB dynamics,
+and finally with a family of branch-aware sigma-point constructions that sit
+between a single Gaussian filter and a fully particle-based one.
+
+\subsection{Generic particle filtering}
+\label{sec:pf-generic}
+
+Particle filtering approximates the sequence of filtering distributions by a
+weighted swarm of samples, and as a by-product delivers an unbiased estimator
+of the likelihood, the property on which all of the particle MCMC methods
+of Section~\ref{sec:pmcmc} rest. For the nonlinear transition in
+\eqref{eq:1}, we include the regime in the particle state when it is
+stochastic; when it is deterministic, we compute it from each proposed state
+and shock. Let $q_1(x_1\mid y_1,\vartheta)$ and
+$q_t(x_t\mid x_{t-1},y_t,\vartheta)$ be proposal densities. At $t=1$, draw
+$X_1^j\sim q_1$ and calculate
+\begin{equation}\label{eq:12a}
+ v_1^j=\frac{p(X_1^j\mid\vartheta)\,g(y_1\mid X_1^j,\vartheta)}
+ {q_1(X_1^j\mid y_1,\vartheta)},\qquad
+ W_1^j=\frac{v_1^j}{\sum_k v_1^k}.
+\end{equation}
+For $t\geq2$, resample an ancestor index
+$A_t^j\sim\operatorname{Categorical}(W_{t-1}^{1:M})$, draw
+$X_t^j\sim q_t(\cdot\mid X_{t-1}^{A_t^j},y_t,\vartheta)$, and set
+\begin{equation}\label{eq:12b}
+ v_t^j=\frac{p(X_t^j\mid X_{t-1}^{A_t^j},\vartheta)\,
+                  g(y_t\mid X_t^j,\vartheta)}
+ {q_t(X_t^j\mid X_{t-1}^{A_t^j},y_t,\vartheta)},\qquad
+ W_t^j=\frac{v_t^j}{\sum_kv_t^k}.
+\end{equation}
+The resample-propagate likelihood estimator is
+\begin{equation}\label{eq:13}
+ \widehat p(y_{1:T}\mid\vartheta)=
+ \prod_{t=1}^T\left(\frac1M\sum_{j=1}^M v_t^j\right).
+\end{equation}
+
+Why is \eqref{eq:13} unbiased? The argument is a single conditional
+expectation, iterated backward. Fix the particle system at time $t-1$, that
+is, condition on the particles $X_{t-1}^{1:M}$ and normalized weights
+$W_{t-1}^{1:M}$. Each incremental weight $v_t^j$ depends on two fresh random
+draws: the ancestor $A_t^j$ and the proposal draw $X_t^j$. Averaging first
+over the proposal draw cancels the proposal density,
+\[
+ \mathbb E\!\left[v_t^j \,\middle|\, A_t^j=k\right]
+ =\int \frac{p(x\mid X_{t-1}^{k},\vartheta)\,g(y_t\mid x,\vartheta)}
+            {q_t(x\mid X_{t-1}^{k},y_t,\vartheta)}\,
+       q_t(x\mid X_{t-1}^{k},y_t,\vartheta)\,dx
+ =p(y_t\mid X_{t-1}^{k},\vartheta),
+\]
+the one-step predictive density from particle $k$. Averaging next over the
+categorical ancestor draw gives
+$\mathbb E[v_t^j]=\sum_k W_{t-1}^k\,p(y_t\mid X_{t-1}^{k},\vartheta)$, which
+is exactly the particle approximation to the predictive integral
+$p(y_t\mid y_{1:t-1},\vartheta)$ weighted by the time-$(t-1)$ filter.
+Multiplying the per-period averages and repeating the conditional expectation
+backward to $t=1$ telescopes the product into the Feynman--Kac normalizing
+constant $p(y_{1:T}\mid\vartheta)$. Thus \eqref{eq:13} is nonnegative and
+unbiased under the usual support and integrability conditions (Andrieu,
+Doucet, and Holenstein 2010, Sec.~2.2; Aruoba et al. 2021, Sec.~6). One
+caution: unbiasedness does not survive the logarithm. By Jensen's inequality
+$\mathbb E[\log\widehat p]\leq\log p$, so the log-likelihood estimate is
+biased downward, and this bias is what particle MCMC constructions must
+handle at the level of the acceptance ratio rather than by averaging logs.
+
+\subsection{The piecewise-linear conditionally optimal particle filter}
+\label{sec:copf}
+
+A generic bootstrap-style filter can be arbitrarily inefficient near the
+bound, because blind proposals rarely land in the regime the data favor. The
+conditionally optimal particle filter (COPF) of Aruoba et al. (2021) fixes
+this for piecewise-linear ZLB dynamics by exploiting the regime structure in
+the proposal itself. Their canonical form uses continuous piecewise-linear
+decision rules,
+\begin{equation}\label{eq:14}
+ s_t=
+ \begin{cases}
+ \Phi_0(n)+\Phi_1(n)s_{t-1}+\Phi_\eta(n)\eta_t,&
+ \eta_{1,t}<\zeta(s_{t-1}),\\[2pt]
+ \Phi_0(b)+\Phi_1(b)s_{t-1}+\Phi_\eta(b)\eta_t,&
+ \eta_{1,t}\geq\zeta(s_{t-1}),
+ \end{cases}
+\end{equation}
+with a linear measurement equation. Conditional on a previous particle, the
+observation density is then a mixture of two truncated Gaussian integrals.
+Let $D_t^j(n)$ and $D_t^j(b)$ be the two regime contributions. Set
+\begin{equation}\label{eq:15}
+ \lambda_t^j=\frac{D_t^j(n)}{D_t^j(n)+D_t^j(b)}.
+\end{equation}
+The conditionally optimal proposal draws a regime with probability
+$\lambda_t^j$, draws the structural innovation from the corresponding
+truncated Gaussian, and assigns incremental weight
+\begin{equation}\label{eq:16}
+ \widetilde w_t^j=D_t^j(n)+D_t^j(b).
+\end{equation}
+
+The derivation is simply Bayes' rule. The optimal proposal is
+\begin{equation}\label{eq:17}
+ g_t^\star(s_t\mid y_t,s_{t-1})
+ \propto p(y_t\mid s_t)\,p(s_t\mid s_{t-1}),
+\end{equation}
+so the importance ratio, which is the normalizing constant of \eqref{eq:17}, is
+the predictive density $p(y_t\mid s_{t-1})$, which is exactly the sum in
+\eqref{eq:16}. With vanishing measurement error, one, two, or no regime
+solutions may explain a given observation; if every particle falls in the
+no-solution case, the likelihood estimate is zero (Aruoba et al. 2021,
+pp.~26--31).
+
+This construction is the closest existing bridge to nonlinear ZLB inference:
+it preserves an endogenous regime and avoids replacing the bound by a
+softplus. Its limitations are equally important. The transition is still a
+piecewise-linear approximation; the filter returns a likelihood value but no
+parameter gradients, so an HMC kernel needs a separate gradient
+construction; and when vanishing measurement error lets two regime
+solutions explain the same observation, both contributions belong in the
+mixture \eqref{eq:16}, since dropping one changes the predictive density
+and hence the likelihood.
+
+\subsection{A piecewise, truncated, and mixture UKF construction}
+\label{sec:ukf}
+
+Between a single Gaussian filter and a fully particle-based filter, the
+unscented Kalman filter (UKF) literature contains a useful intermediate
+family. Gaussian-sum filtering, which carries a weighted sum of Gaussian
+components and updates each component with a Kalman-type step, goes back to
+Alspach and Sorenson (1972). Within the sigma-point family, the truncated UKF
+conditions the Gaussian approximation on bounded-support measurement
+information (Garcia-Fernandez, Morelande, and Grajal 2012a), its mixture
+variant applies the truncated update componentwise while retaining a Gaussian
+mixture (Garcia-Fernandez, Morelande, and Grajal 2012b), and a UKF-aided
+Gaussian-sum filter combines both ingredients (Gokce and Kuzuoglu 2015). We
+cite these papers, and Alspach and Sorenson (1972), for orientation: we
+were unable to obtain their full texts, so every equation in this section is
+derived in our own notation rather than imported from them. Two
+constrained-UKF papers we did study in full round out the picture: Kandepu,
+Imsland, and Foss (2008, Secs.~II--III) project transformed sigma points onto
+the feasible region, and Teixeira et al. (2010, Secs.~4--5, Table~1)
+formulate interval-constrained unscented filtering, compare eight
+projection-, constraint-, and truncation-based UKF variants, and note that
+their motivating examples have multimodal densities. Together these methods
+suggest a principled construction: preserve the binding and nonbinding
+pieces explicitly, and defer exactness to a particle correction. None of
+them alone evaluates the exact nonlinear-ZLB likelihood, which is why the
+particle correction remains the final step.
+
+\subsubsection{Why an ordinary UKF loses a branch}
+\label{sec:ukf-branchloss}
+
+To see what goes wrong with a single-Gaussian filter at the bound, let $z_t$
+collect the uncertain variables that determine the next regime, for
+example $z_t=(x_{t-1}^{\mathsf T},\epsilon_t^{\mathsf T})^{\mathsf T}$,
+with a predictive approximation
+\begin{equation}\label{eq:18}
+ z_t\mid y_{1:t-1}\approx N(m_t,P_t).
+\end{equation}
+Let $D_b$ and $D_n$ denote the binding and nonbinding regions,
+\begin{equation}\label{eq:19}
+ D_b=\{z:b_t(z)\leq0\},
+ \qquad
+ D_n=\{z:b_t(z)>0\},
+ \qquad
+ b_t(z)=i_t^\star(z)-\ell .
+\end{equation}
+The exact predictive state density is a sum of integrals over these regions:
+\begin{equation}\label{eq:20}
+ p(x_t\mid y_{1:t-1})
+ =\sum_{r\in\{b,n\}}
+ \int_{D_r}p(x_t\mid z_t,r,\vartheta)\,
+       p(z_t\mid y_{1:t-1})\,dz_t .
+\end{equation}
+Even when $p(z_t\mid y_{1:t-1})$ is Gaussian, \eqref{eq:20} is generally not
+one Gaussian: conditioning on $D_r$ truncates the input, and the two maps
+$F_b$ and $F_n$ can produce different means and covariances, so the output is
+a two-component mixture at best. A conventional UKF instead propagates a
+single sigma-point cloud through a branch function and replaces the
+transformed distribution by its first two moments. That moment matching is a
+legitimate approximation in smooth problems, but here it discards branch
+mass, skewness, and multimodality exactly where the ZLB is informative. Nor
+is the issue fixed by evaluating the $\max$ function at each sigma point:
+the collapse to two moments happens regardless of how the points are mapped.
+
+\subsubsection{Exact branch probabilities and truncated moments for an
+affine boundary}
+\label{sec:ukf-truncmoments}
+
+Everything later in this section leans on one fully analytic building
+block, the affine case, which we derive carefully.
+Suppose
+\begin{equation}\label{eq:21}
+ b_t(z)=a^{\mathsf T}z-c,
+ \qquad z\sim N(m,P),
+ \qquad \sigma_b^2=a^{\mathsf T}Pa>0 .
+\end{equation}
+The scalar $u=a^{\mathsf T}z$ is $N(\mu_b,\sigma_b^2)$ with
+$\mu_b=a^{\mathsf T}m$, so the branch event depends on $z$ only through one
+Gaussian scalar. Define
+\begin{equation}\label{eq:22}
+ \gamma=\frac{c-\mu_b}{\sigma_b},
+ \qquad
+ \alpha_b=\Pr(b_t(z)\leq0)=\Phi(\gamma),
+ \qquad
+ \alpha_n=\Pr(b_t(z)>0)=1-\Phi(\gamma),
+\end{equation}
+where $\Phi$ and $\phi$ are the standard normal cdf and density.
+
+To derive the conditional moments, standardize $v=(u-\mu_b)/\sigma_b$, so the
+binding event is $v\leq\gamma$. The key elementary fact is that
+$\frac{d}{dv}\bigl[-\phi(v)\bigr]=v\,\phi(v)$, so $\phi$ is its own
+antiderivative up to the factor $v$. Direct integration then gives
+\begin{equation}\label{eq:23}
+ \mathbb E[v\mid v\leq\gamma]
+ =\frac{\int_{-\infty}^{\gamma}v\,\phi(v)\,dv}{\Phi(\gamma)}
+ =\frac{\bigl[-\phi(v)\bigr]_{-\infty}^{\gamma}}{\Phi(\gamma)}
+ =-\frac{\phi(\gamma)}{\Phi(\gamma)}.
+\end{equation}
+For the second moment, integrate by parts, writing
+$v^2\phi(v)=v\cdot v\phi(v)$ with antiderivative $-\phi$ for the second
+factor:
+\[
+ \int_{-\infty}^{\gamma}v^2\phi(v)\,dv
+ =\bigl[-v\,\phi(v)\bigr]_{-\infty}^{\gamma}
+  +\int_{-\infty}^{\gamma}\phi(v)\,dv
+ =\Phi(\gamma)-\gamma\,\phi(\gamma),
+\]
+so $\mathbb E[v^2\mid v\leq\gamma]=1-\gamma\lambda_b$ with
+$\lambda_b=\phi(\gamma)/\Phi(\gamma)$, and subtracting the squared mean
+$\lambda_b^2$ from \eqref{eq:23} gives
+\begin{equation}\label{eq:24}
+ \operatorname{Var}(v\mid v\leq\gamma)
+ =1-\lambda_b(\lambda_b+\gamma),
+ \qquad
+ \lambda_b=\frac{\phi(\gamma)}{\Phi(\gamma)}.
+\end{equation}
+For the nonbinding event $v>\gamma$, the same two calculations over
+$(\gamma,\infty)$ give
+\begin{equation}\label{eq:25}
+ \mathbb E[v\mid v>\gamma]=\lambda_n,
+ \qquad
+ \operatorname{Var}(v\mid v>\gamma)
+ =1-\lambda_n(\lambda_n-\gamma),
+ \qquad
+ \lambda_n=\frac{\phi(\gamma)}{1-\Phi(\gamma)}.
+\end{equation}
+
+It remains to lift these scalar moments back to the full vector $z$. Since
+$\operatorname{Cov}(z,u)=Pa$, the linear regression of $z$ on $u$ has
+coefficient $Pa/\sigma_b^2$, and the Gaussian conditioning identity
+decomposes $z$ into the scalar direction and an independent residual:
+\begin{equation}\label{eq:26}
+ z=m+\frac{Pa}{\sigma_b^2}(u-\mu_b)+\xi,
+ \qquad
+ \xi\perp u,
+ \qquad
+ \operatorname{Var}(\xi)=P-\frac{Paa^{\mathsf T}P}{\sigma_b^2}.
+\end{equation}
+Truncating the event $\{v\leq\gamma\}$ or $\{v>\gamma\}$ affects only the
+$u$-term in \eqref{eq:26}; the residual $\xi$ is independent of the event and
+keeps its moments. Substituting \eqref{eq:23}--\eqref{eq:25} into
+\eqref{eq:26} therefore yields the exact first two moments of each truncated
+branch:
+\begin{equation}\label{eq:27}
+ m_b=m-\frac{Pa}{\sigma_b}\lambda_b,
+ \qquad
+ P_b=P-\frac{Paa^{\mathsf T}P}{\sigma_b^2}\,
+             \lambda_b(\lambda_b+\gamma),
+\end{equation}
+\begin{equation}\label{eq:28}
+ m_n=m+\frac{Pa}{\sigma_b}\lambda_n,
+ \qquad
+ P_n=P-\frac{Paa^{\mathsf T}P}{\sigma_b^2}\,
+             \lambda_n(\lambda_n-\gamma).
+\end{equation}
+We emphasize that \eqref{eq:22}, \eqref{eq:27}, and \eqref{eq:28} are the
+exact moments of the original Gaussian law conditional on the branch event,
+not a heuristic projection, and they are therefore the correct starting
+point for a branch-aware sigma-point filter whenever the switching statistic
+is affine in the augmented state and shock.
+
+A word of practical advice before moving on: the Mills ratios
+$\lambda_b=\phi(\gamma)/\Phi(\gamma)$ and
+$\lambda_n=\phi(\gamma)/(1-\Phi(\gamma))$ underflow catastrophically in the
+tails when evaluated from $\Phi$ directly, since numerator and denominator
+both vanish at very different rates. The reader implementing these formulas
+should work in log-cdf, log-survival, and log-density arithmetic (or use an
+independently tested inverse-Mills-ratio routine), and should treat any
+variance clamp added near $\gamma\to\pm\infty$ as a roundoff safeguard, not
+as a substitute for stable probability evaluation.
+
+For a nonlinear switching statistic $b_t$, no such closed form exists. One
+can linearize $b_t$ at $m$ and reuse \eqref{eq:21}--\eqref{eq:28} with
+$a=\nabla b_t(m)$ and $c=a^{\mathsf T}m-b_t(m)$, but that is an approximation
+whose error grows with the curvature of the boundary inside the predictive
+ellipsoid. It also inherits a sigma-point blind spot: a standard
+$2d+1$-point set concentrated on the predictive mean can entirely miss a
+low-probability binding region, so the estimated $\alpha_b$ can be exactly
+zero even when the truth is small but positive. There are two defensible
+responses: split components along the estimated boundary normal, which
+refines the approximation, or apply the particle correction of
+Section~\ref{sec:ukf-proposal}, which restores exactness. Either way, the
+approximate and the exact ingredients should be kept clearly distinguished.
+
+\subsubsection{The pure censored policy-rate likelihood}
+\label{sec:ukf-censored}
+
+A single censored Gaussian observation already exhibits the mixture
+structure, with no UKF approximation at all, so we pause to work it out
+completely. Let the shadow rate be
+\begin{equation}\label{eq:29}
+ i_t^\star\sim N(\mu,\sigma^2),
+ \qquad i_t=\max\{\ell,i_t^\star\},
+ \qquad y_t=i_t+u_t,
+ \qquad u_t\sim N(0,V).
+\end{equation}
+The bound binds with probability
+\begin{equation}\label{eq:30}
+ \alpha_b=\Phi\!\left(\frac{\ell-\mu}{\sigma}\right),
+ \qquad
+ \alpha_n=1-\alpha_b.
+\end{equation}
+The censoring map $\max\{\ell,\cdot\}$ sends the entire lower tail of
+$i_t^\star$ to the single point $\ell$, so with no measurement error the
+distribution of $i_t$ has an atom of mass $\alpha_b$ at $\ell$ and a
+continuous upper tail:
+\begin{equation}\label{eq:31}
+ p(i_t)=\alpha_b\,\delta_\ell(i_t)
+ +\frac{1}{\sigma}\phi\!\left(\frac{i_t-\mu}{\sigma}\right)
+  \mathbf 1\{i_t>\ell\}.
+\end{equation}
+
+The atom is often hidden when a Gaussian observation error is present, but it
+does not disappear; it is merely convolved with the noise. To derive the
+observed density, note first that on the binding event $i_t=\ell$ exactly, so
+the binding contribution is $\alpha_b\,N(y_t;\ell,V)$. For the nonbinding
+contribution we must integrate $N(y_t;i,V)$ against the upper Gaussian tail
+of \eqref{eq:31}. The standard product-of-Gaussians identity does the work:
+the product of two Gaussian densities in $i$ is, after collecting the
+quadratic and linear terms in the exponent and completing the square, another
+Gaussian in $i$ times a factor free of $i$,
+\begin{equation}\label{eq:32}
+ N(y_t;i,V)\,N(i;\mu,\sigma^2)
+ =N(y_t;\mu,V+\sigma^2)\,N(i;\widetilde\mu_t,\widetilde\sigma^2),
+\end{equation}
+where matching coefficients gives the posterior-style precision-weighted
+quantities
+\begin{equation}\label{eq:33}
+ \widetilde\sigma^2=\frac{\sigma^2V}{\sigma^2+V},
+ \qquad
+ \widetilde\mu_t=\frac{V\mu+\sigma^2y_t}{\sigma^2+V}.
+\end{equation}
+The factor $N(y_t;\mu,V+\sigma^2)$ pulls out of the integral, and what
+remains is the mass that the Gaussian $N(\widetilde\mu_t,\widetilde\sigma^2)$
+assigns to $(\ell,\infty)$. Integrating \eqref{eq:32} over $i>\ell$ therefore
+gives the complete predictive density
+\begin{equation}\label{eq:34}
+ p(y_t)=
+ \alpha_b\,N(y_t;\ell,V)
+ +N(y_t;\mu,V+\sigma^2)
+  \left[1-\Phi\!\left(
+   \frac{\ell-\widetilde\mu_t}{\widetilde\sigma}\right)\right].
+\end{equation}
+The posterior probability that a given observation came from the binding
+branch follows from Bayes' rule:
+\begin{equation}\label{eq:35}
+ \Pr(b\mid y_t)=
+ \frac{\alpha_b\,N(y_t;\ell,V)}{p(y_t)}.
+\end{equation}
+
+Equation \eqref{eq:34} is the one-period analogue of the two-regime
+truncated-Gaussian mixture underlying the COPF of
+Section~\ref{sec:copf}. It also shows why replacing the max by a softplus is
+not an innocent numerical trick: the softplus removes the atom in
+\eqref{eq:31}, hence changes \eqref{eq:34}, and hence changes the likelihood
+itself, not merely its evaluation. In a DSGE model, the other observables and
+the state transition replace the scalar Gaussian factors in \eqref{eq:34},
+but the same branch decomposition remains.
+
+\subsubsection{Branchwise UKF update}
+\label{sec:ukf-branchwise}
+
+A full filtering step that carries both branches forward can now be
+assembled from the affine building block of
+Section~\ref{sec:ukf-truncmoments}. Suppose the filtering approximation before the next
+observation is a mixture
+\begin{equation}\label{eq:36}
+ p(z_t\mid y_{1:t-1})
+ \approx\sum_{j=1}^{J_{t-1}}\omega_{t-1,j}\,
+ N(z_t;m_{t-1,j},P_{t-1,j}),
+ \qquad \sum_j\omega_{t-1,j}=1.
+\end{equation}
+For each component $j$, calculate \eqref{eq:22}, \eqref{eq:27}, and
+\eqref{eq:28}, obtaining a branch component $(j,r)$ with prior mass
+\begin{equation}\label{eq:37}
+ \rho_{j,r}=\omega_{t-1,j}\,\alpha_{j,r},
+ \qquad r\in\{b,n\}.
+\end{equation}
+Use the branch-conditioned moments $(m_{j,r},P_{j,r})$ to form sigma points
+$\chi_{j,r}^{(k)}$ with mean and covariance weights $w_m^{(k)},w_c^{(k)}$,
+and propagate them through the branch-specific transition and observation
+maps:
+\begin{equation}\label{eq:38}
+ X_{j,r}^{(k)}=F_r(\chi_{j,r}^{(k)},\vartheta),
+ \qquad
+ Y_{j,r}^{(k)}=h_r(X_{j,r}^{(k)},\vartheta).
+\end{equation}
+If process and observation noises are included in the augmented sigma point,
+their covariances are already accounted for; otherwise add $Q_r$ and $V_r$
+below. The branch prediction is
+\begin{equation}\label{eq:39}
+ \bar x_{j,r}=\sum_k w_m^{(k)}X_{j,r}^{(k)},
+ \qquad
+ P^x_{j,r}=\sum_k w_c^{(k)}
+ (X_{j,r}^{(k)}-\bar x_{j,r})(X_{j,r}^{(k)}-\bar x_{j,r})^{\mathsf T}+Q_r,
+\end{equation}
+\begin{equation}\label{eq:40}
+ \bar y_{j,r}=\sum_k w_m^{(k)}Y_{j,r}^{(k)},
+\end{equation}
+\begin{equation}\label{eq:41}
+ S_{j,r}=\sum_k w_c^{(k)}
+ (Y_{j,r}^{(k)}-\bar y_{j,r})(Y_{j,r}^{(k)}-\bar y_{j,r})^{\mathsf T}+V_r,
+\end{equation}
+\begin{equation}\label{eq:42}
+ C_{j,r}=\sum_k w_c^{(k)}
+ (X_{j,r}^{(k)}-\bar x_{j,r})(Y_{j,r}^{(k)}-\bar y_{j,r})^{\mathsf T}.
+\end{equation}
+The Gaussian UKF predictive likelihood, branch gain, and updated component
+are
+\begin{equation}\label{eq:43}
+ \widehat L_{j,r}=N(y_t;\bar y_{j,r},S_{j,r}),
+ \qquad K_{j,r}=C_{j,r}S_{j,r}^{-1},
+\end{equation}
+\begin{equation}\label{eq:44}
+ m^+_{j,r}=\bar x_{j,r}+K_{j,r}(y_t-\bar y_{j,r}),
+ \qquad
+ P^+_{j,r}=P^x_{j,r}-K_{j,r}S_{j,r}K_{j,r}^{\mathsf T}.
+\end{equation}
+Bayes' rule combines the prior branch mass, the branch predictive
+likelihood, and the evidence normalizer:
+\begin{equation}\label{eq:45}
+ \widetilde\omega_{j,r}=\rho_{j,r}\widehat L_{j,r},
+ \qquad
+ Z_t=\sum_{j=1}^{J_{t-1}}\sum_{r\in\{b,n\}}\widetilde\omega_{j,r},
+ \qquad
+ \omega^+_{j,r}=\frac{\widetilde\omega_{j,r}}{Z_t}.
+\end{equation}
+Thus the branch-aware UKF approximation after observing $y_t$ is
+\begin{equation}\label{eq:46}
+ p(x_t\mid y_{1:t})
+ \approx\sum_{j,r}\omega^+_{j,r}\,
+ N(x_t;m^+_{j,r},P^+_{j,r}).
+\end{equation}
+
+If one insists on collapsing \eqref{eq:46} to a single Gaussian, the
+moment-preserving collapse is
+\begin{equation}\label{eq:47}
+ \bar m_t=\sum_{j,r}\omega^+_{j,r}m^+_{j,r},
+\end{equation}
+\begin{equation}\label{eq:48}
+ \bar P_t=\sum_{j,r}\omega^+_{j,r}
+ \left[P^+_{j,r}+
+ (m^+_{j,r}-\bar m_t)(m^+_{j,r}-\bar m_t)^{\mathsf T}\right].
+\end{equation}
+The second term in \eqref{eq:48} is the between-branch variance, and it does
+real work: dropping it makes the next period's
+threshold probability too small or too large whenever the binding and
+nonbinding components are well separated. Keeping all components, on the
+other hand, lets the mixture grow to as many as $2^t$ histories (the
+classical Gaussian-sum growth problem), so practical filters use pruning,
+merging, or an IMM-style moment collapse. Each of these operations changes
+the filtering density, so its effect belongs in the error budget of the run
+alongside the moment-matching step itself.
+
+\subsubsection{Relation to IMM-UKF and to deterministic ZLB support}
+\label{sec:ukf-imm}
+
+It is natural to ask how the branchwise construction relates to the classical
+multiple-model filters, and the answer depends critically on whether the
+regime is genuinely stochastic. For a stochastic Markov regime, the preceding
+construction becomes a multiple-model UKF. If
+$p(r_t=r\mid r_{t-1}=s)=\Pi_{sr}$, the mode-prediction probability is
+\begin{equation}\label{eq:49}
+ c_{t,r}=\sum_s\Pi_{sr}\mu_{t-1,s},
+ \qquad
+ \mu_{t-1,s\mid r}=\frac{\Pi_{sr}\mu_{t-1,s}}{c_{t,r}},
+\end{equation}
+and the IMM mixing mean and covariance supplied to the $r$-specific UKF are
+\begin{equation}\label{eq:50}
+ m_{t-1\mid r}=\sum_s\mu_{t-1,s\mid r}m_{t-1,s},
+\end{equation}
+\begin{equation}\label{eq:51}
+ P_{t-1\mid r}=\sum_s\mu_{t-1,s\mid r}
+ \left[P_{t-1,s}+
+ (m_{t-1,s}-m_{t-1\mid r})(m_{t-1,s}-m_{t-1\mid r})^{\mathsf T}\right].
+\end{equation}
+After the branchwise update, the mode probability is proportional to
+$c_{t,r}\widehat L_{t,r}$. Equation \eqref{eq:49} is Bayes' rule on the mode
+chain, and \eqref{eq:50}--\eqref{eq:51} apply the moment-preserving collapse
+\eqref{eq:47}--\eqref{eq:48} within each destination mode. This is the
+interacting-multiple-model (IMM) logic introduced for Markovian switching
+systems by Blom and Bar-Shalom (1988), here with UKF components in place of
+linear Kalman components. A constrained multiple-model UKF we examined
+applies the same Markov-jump structure with truncated noise supports and
+model-conditioned feasible regions (Zhang et al. 2020, Secs.~II--III).
+
+The deterministic ZLB is different, and the difference is exactly the
+support issue of \eqref{eq:5a}. There is no free $\Pi_{sr}$ to tune: the
+branch is $r_t=R(z_t)$, and at a fixed $z_t$ the other label has zero
+support. Equations \eqref{eq:49}--\eqref{eq:51} are therefore a valid
+approximation only if we deliberately introduce a stochastic regime law. For
+the original complementarity model, $\alpha_{j,r}$ in \eqref{eq:37} must be
+computed from the continuous predictive law, and the regime label must remain
+a derived quantity rather than a free state.
+
+\subsubsection{UKF proposals inside a corrected particle filter}
+\label{sec:ukf-proposal}
+
+Every construction in Section~\ref{sec:ukf} up to this point approximates the
+likelihood. The branchwise UKF becomes much more defensible when it proposes
+particles but does not define the likelihood by itself: the proposal can be
+crude, because importance weighting repairs it. Let
+$q_{t,j,r}(z_t\mid y_t)$ be a branch-conditioned UKF proposal supported on
+$D_r$, and let $\alpha_{j,r}$ be the branch-selection probability. Draw $r$
+with probability $\alpha_{j,r}$, then draw $z_t\sim q_{t,j,r}$. For a
+stochastic regime, the incremental importance weight is
+\begin{equation}\label{eq:52}
+ w_t=
+ \frac{p(r_t\mid r_{t-1},x_{t-1},\vartheta)\,
+       p(z_t\mid x_{t-1},r_t,\vartheta)\,
+       g_{r_t}(y_t\mid x_t,\vartheta)}
+      {\alpha_{j,r_t}\,
+       q_{t,j,r_t}(z_t\mid x_{t-1},y_t,\vartheta)}.
+\end{equation}
+For a deterministic regime, $r_t=R(z_t)$ is not an independently sampled
+variable. If the shock-augmented transition is used, the corresponding weight
+is
+\begin{equation}\label{eq:53}
+ w_t=
+ \frac{p(\epsilon_t\mid\vartheta)\,
+       g_{R(z_t)}(y_t\mid x_t,\vartheta)}
+      {\alpha_{j,R(z_t)}\,
+       q_{t,j,R(z_t)}(z_t\mid x_{t-1},y_t,\vartheta)},
+ \qquad x_t=F_{R(z_t)}(x_{t-1},\epsilon_t,\vartheta).
+\end{equation}
+Notice what does and does not enter these weights: the exact numerator and
+the proposal density determine $w_t$, while the UKF's Gaussian moment
+approximation appears only inside the proposal, where any error is corrected
+by the weight.
+
+One coordinate subtlety is implicit in \eqref{eq:53} and needs spelling out.
+The numerator density is written in the shock coordinate $\epsilon_t$, while
+the proposal density is written in the augmented coordinate $z_t$. The two
+are consistent only if either (a) the proposal draws the shock directly, so
+that $q$ is a density in $\epsilon_t$ (with $x_{t-1}$ fixed, the map
+$\epsilon_t\mapsto z_t$ is an affine embedding and both densities live in the
+same chart), or (b) the proposal density in $z_t$ is converted to the
+$\epsilon_t$ chart with the absolute Jacobian of the transformation. We
+recommend convention (a): propose shocks, derive states. Under either
+convention, and under the usual support and integrability conditions,
+inserting \eqref{eq:52} or \eqref{eq:53} into the particle estimator
+\eqref{eq:13} preserves the nonnegative unbiased likelihood property of
+Section~\ref{sec:pf-generic}. A UKF-only filter has no such correction; it
+remains an approximate Gaussian-sum likelihood.
+
+A precedent for this architecture is the iterative truncated unscented
+particle filter of Wang et al. (2020, Secs.~3.1--3.2, Algorithm~1). There an
+iterated-UKF update is truncated to the constraint region, the first two
+moments of the truncated density define a Gaussian proposal, and each
+particle is reweighted by the ratio of target factors to the proposal
+density. Two differences from \eqref{eq:52}--\eqref{eq:53} matter for the
+ZLB. First, their constraint region is exogenous, whereas the ZLB branch is
+selected by the model itself, which is why the branch probability
+$\alpha_{j,r}$ and the branch-specific maps $F_r,h_r$ appear in our weights.
+Second, their weight numerator uses a Gaussian approximation of the
+predictive density (their eq.~36), not the exact transition density, so
+their filter is a proposal-quality benchmark rather than an exactly weighted
+likelihood estimator; a filter whose likelihood estimate is to be trusted as
+unbiased must keep the exact shock density in the numerator, as in
+\eqref{eq:53}.
+
+The hierarchy that emerges is worth stating plainly. A split or truncated
+mixture UKF is a fast, useful diagnostic and a good proposal engine. A
+branch-corrected particle filter is the authoritative nonlinear likelihood.
+The COPF construction of Section~\ref{sec:copf} is the exact
+piecewise-linear benchmark. None of this, however, turns the UKF proposal
+into an exact source of HMC gradients: an HMC scheme must target either the
+corrected extended particle state or an explicitly acknowledged
+approximation (Sections~\ref{sec:hmc} and~\ref{sec:pmcmc}), and the
+shadow-rate case study of Section~\ref{sec:shadow} shows what these
+constructions become when the switching lives in the observation map
+rather than in the transition.
+
+\section{Ordinary HMC and how the lower bound changes its geometry}\label{sec:hmc}
+
+Hamiltonian Monte Carlo is the natural starting point for posterior sampling
+in high-dimensional latent-variable models, and understanding precisely where
+an occasionally binding constraint breaks its assumptions is the organizing
+question for the rest of this survey. For a smooth posterior
+$\pi(q)\propto e^{-U(q)}$, introduce momentum $p\sim e^{-K(p)}$, form the
+Hamiltonian $H=U+K$, and evolve the phase point by Hamilton's equations
+(Neal 2011, Sec.~5.2)
+\begin{equation}\label{eq:54}
+ \dot q=\nabla_pK(p),\qquad \dot p=-\nabla_qU(q).
+\end{equation}
+With Gaussian momentum $K(p)=\frac12p^{\mathsf T}M^{-1}p$, the leapfrog
+integrator discretizes \eqref{eq:54} as
+\begin{equation}\label{eq:55}
+ p\leftarrow p-\tfrac\epsilon2\nabla U(q),\quad
+ q\leftarrow q+\epsilon M^{-1}p,\quad
+ p\leftarrow p-\tfrac\epsilon2\nabla U(q).
+\end{equation}
+The leapfrog map is reversible and volume preserving, so a final Metropolis
+correction with acceptance probability $1\wedge e^{-\Delta H}$ exactly
+accounts for the integration error.
+
+An attractive way to deploy HMC on a nonlinear state-space model is to
+sample the parameters and the latent shocks jointly, sidestepping the filter
+entirely. Childers et al.\ (2022, pp.~10--16) pursue this idea: for a state
+equation $x_t=F(x_{t-1},\epsilon_t,\vartheta)$, the joint log posterior is,
+up to a constant,
+\begin{equation}\label{eq:56}
+ \log p(\vartheta,x_0,\epsilon_{1:T}\mid y)
+ =\log p(\vartheta)+\log p(x_0\mid\vartheta)
+ +\sum_{t=1}^T\left[\log p(\epsilon_t\mid\vartheta)
+ +\log g(y_t\mid x_t,\vartheta)\right].
+\end{equation}
+This can remove a costly nonlinear filter, but the price is that HMC must
+differentiate the complete simulation map $F$ composed over $T$ periods. Here
+the lower bound intrudes. A hard $\max$ is only piecewise differentiable:
+automatic differentiation happily supplies the derivative of whichever branch
+is active, but it reports no boundary event and no information about the
+kink. A branch-dependent equilibrium solver may in addition jump or be
+multi-valued across the boundary, and discrete resampling inside a particle
+filter changes ancestor indices discontinuously. Replacing the bound with a
+softplus restores smoothness, but by removing the censoring atom it changes
+the likelihood itself (Section~\ref{sec:ukf-censored} computes this exactly),
+so it defines a separate approximate model rather than a smooth route to the
+constrained one.
+
+\subsection{Validity of Metropolized HMC on a kinked target}\label{sec:kink-validity}
+
+What does a kink, a continuous potential with a
+discontinuous gradient, actually cost? In the two-country shadow-rate
+case study of Section~\ref{sec:shadow}, the target turns out to be continuous
+with a kinked gradient rather than discontinuous, so the validity of ordinary
+leapfrog HMC on such targets deserves a careful statement instead of a
+passing remark. We state and sketch the following, since we could not locate
+a reference at this level of generality; the assumptions are chosen to cover
+a continuous piecewise-quadratic-plus-smooth potential, which is exactly what
+a piecewise-affine observation map inside a Gaussian likelihood produces.
+
+\paragraph{Assumptions.}
+$U$ is continuous on $\mathbb R^d$; there is a closed Lebesgue-null set $N$
+arising from a finite (or locally finite) piecewise-regular partition of
+$\mathbb R^d$ (for the target of Section~\ref{sec:shadow}, a finite union
+of hyperplanes) such that $U$ is continuously differentiable on
+$\mathbb R^d\setminus N$ with $\nabla U$ locally bounded, the branch gradient
+on each piece is deterministic and single-valued, and a fixed boundary
+convention assigns a value on $N$; and $e^{-U}$ is integrable. These
+assumptions are \emph{not} satisfied merely because a potential is
+almost-everywhere differentiable: a potential evaluated through an implicit
+multi-root equilibrium solver, a state-dependent iteration count, or any
+branch rule that is not a fixed partition of $\mathbb R^d$ is outside this
+proposition until a separate theorem covers it.
+
+\paragraph{Claim.}
+Fix a step size $\epsilon$ and a step count $L$. The set of initial phase
+points $(q,p)$ whose leapfrog trajectory \eqref{eq:55} evaluates $\nabla U$
+at a point of $N$ has Lebesgue measure zero. Off this null set, the $L$-step
+leapfrog map is well defined, volume preserving, and reversible in the usual
+momentum-flip sense, so the Metropolized chain that accepts with probability
+$1\wedge e^{-\Delta H}$ leaves $\pi\propto e^{-U}$ invariant.
+
+\emph{Sketch.} Each half-kick $p\mapsto p-\tfrac\epsilon2\nabla U(q)$ at
+fixed $q\notin N$ and each drift $q\mapsto q+\epsilon M^{-1}p$ is a
+measure-preserving shear. The set of starting points that land on $N$ at a
+given substep is the preimage of a null set under a composition of
+measure-preserving maps defined off a null set, hence null; a finite union
+over the $2L+1$ substeps is null. Reversibility and volume preservation on
+the remaining full-measure set follow from the standard shear argument (Neal
+2011, Sec.~5.2), which nowhere uses smoothness across $N$. The
+piecewise-regular partition assumption is what makes the shear composition
+well defined off a null set; the argument is \emph{not} valid for an
+arbitrary nonsmooth composition merely because individual shears preserve
+measure. $\square$
+
+Validity is not efficiency. Crossing the kink inside a drift substep replaces
+the usual $O(\epsilon^3)$ local energy error by
+\begin{equation}\label{eq:56a}
+ \Delta H \;=\; O\!\left(\epsilon\,
+ \bigl\|\nabla U^{+}-\nabla U^{-}\bigr\|\right)
+\end{equation}
+at the crossing, where $\nabla U^{\pm}$ are the one-sided gradients, so
+acceptance degrades with the frequency of kink crossings and the size of the
+gradient jump. This is the inefficiency, not invalidity, observed by
+Afshar and Domke (2015, p.~1). Two consequences follow. First, the reflection
+and refraction machinery of Section~\ref{sec:event} degenerates on a kink:
+the potential jump in \eqref{eq:58} is $\Delta U=0$, so \eqref{eq:59} leaves
+the momentum unchanged, and event detection buys accuracy, never
+correctness. Second, for a continuous \emph{piecewise-quadratic} potential,
+the Hamiltonian flow is available in closed form on each piece; this is the
+construction of exact HMC for truncated multivariate Gaussians (Pakman and
+Paninski 2014, which we cite for orientation; we were unable to obtain the
+full text), and it is directly relevant to sampling the cell-restricted
+Gaussians of Section~\ref{sec:shadow-filter}. A boundary-exact integrator is
+therefore an optimization for the kinked case and a requirement only for a
+genuine density jump.
+
+\section{Reflection and refraction HMC for piecewise-smooth targets}\label{sec:event}
+
+When the target really does jump, so that the density, not merely its gradient, is
+discontinuous across a boundary, leapfrog's energy error at a crossing no
+longer vanishes with the step size, and the sampler needs an explicit event
+mechanism. The physical analogy is optics: a particle hitting an interface
+between media either refracts through it, losing kinetic energy equal to the
+potential jump, or reflects off it when it lacks the energy to cross.
+
+\subsection{The event calculation}\label{sec:event-calc}
+
+Let $U$ be smooth inside regions separated by an affine boundary with unit
+normal $\nu$. During a free-flight step, decompose the momentum into its
+normal and tangential parts,
+\begin{equation}\label{eq:57}
+ p_\perp=(p^{\mathsf T}\nu)\nu,
+ \qquad p_\parallel=p-p_\perp.
+\end{equation}
+At the boundary, define the potential jump $\Delta U=U(q^+)-U(q^-)$. Energy
+conservation across the event requires
+\begin{equation}\label{eq:58}
+ K(p^+)-K(p^-)=-\Delta U.
+\end{equation}
+For unit Gaussian mass, if $\|p_\perp\|^2>2\Delta U$ the trajectory has
+enough normal kinetic energy to pay the potential toll: it crosses the
+boundary with the rescaled normal momentum
+\begin{equation}\label{eq:59}
+ p_\perp^+=
+ \sqrt{\|p_\perp^-\|^2-2\Delta U}\,
+ \frac{p_\perp^-}{\|p_\perp^-\|};
+\end{equation}
+otherwise it reflects,
+\begin{equation}\label{eq:60}
+ p_\perp^+=-p_\perp^-.
+\end{equation}
+The tangential momentum is unchanged in both cases. Afshar and Domke (2015,
+pp.~2--4) detect the first affine-boundary intersection along the drift,
+apply \eqref{eq:59} or \eqref{eq:60}, continue the remaining flight, and
+repeat for later boundaries.
+
+One point about volume preservation is easy to get wrong and worth attaching
+to the right object. The reflection map \eqref{eq:60} is an orthogonal
+reflection with unit absolute Jacobian, but the refraction map \eqref{eq:59}
+\emph{in isolation} rescales the normal momentum by $s_-/s_+$ and is not
+volume preserving when $\Delta U\neq0$. What Afshar and Domke prove is that
+the \emph{assembled} flight--event--flight trajectory step is volume
+preserving and reversible: the momentum rescaling at the event is exactly
+cancelled by the change in the position leg traversed at the new speed, since
+compressing the normal velocity stretches (or shrinks) the set of positions
+reached in the remaining flight time by precisely the reciprocal factor.
+Combined with leapfrog away from boundaries, this gives detailed balance
+after the Metropolis correction (Afshar and Domke 2015, pp.~5--7).
+
+Equations \eqref{eq:57}--\eqref{eq:60} are stated for unit Gaussian mass and
+cannot be used verbatim in a preconditioned sampler. Any practical HMC
+implementation uses a positive-definite mass matrix $M$ with
+$K(p)=\tfrac12 p^{\mathsf T}M^{-1}p$, and the correct decomposition is then
+orthogonal in the $M^{-1}$ inner product, not the Euclidean one. For a
+boundary with (not necessarily unit) normal $n$, define
+\begin{equation}\label{eq:60a}
+ a=n^{\mathsf T}M^{-1}n,
+ \qquad
+ s_-=\frac{n^{\mathsf T}M^{-1}p_-}{\sqrt a}.
+\end{equation}
+For a potential jump $\Delta U$, the trajectory crosses when
+$s_-^2>2\Delta U$, with
+\begin{equation}\label{eq:60b}
+ s_+=\operatorname{sign}(s_-)\sqrt{s_-^2-2\Delta U},
+ \qquad
+ p_+=p_-+n\,\frac{s_+-s_-}{\sqrt a},
+\end{equation}
+and reflects otherwise with
+\begin{equation}\label{eq:60c}
+ p_+=p_--2n\,\frac{n^{\mathsf T}M^{-1}p_-}{n^{\mathsf T}M^{-1}n}.
+\end{equation}
+Both maps change only the momentum component along $M^{-1}n$, conserve
+$K(p)+U(q)$ across the event, and reduce to \eqref{eq:59}--\eqref{eq:60}
+when $M=I$ and $\|n\|=1$. Their Jacobians differ: the reflection
+\eqref{eq:60c} is an $M^{-1}$-orthogonal reflection with unit absolute
+Jacobian, while the refraction \eqref{eq:60b} alone has absolute Jacobian
+$|s_-/s_+|\neq1$ for $\Delta U\neq0$, and volume preservation again holds
+only for the composed flight--event--flight step, for the same
+cancellation reason as above. A correctness test must therefore target the
+composed trajectory map (or account for the event Jacobian explicitly in the
+acceptance ratio), never the isolated refraction. An implementation must
+additionally fix the boundary orientation convention (the sign of $n$ and
+hence of $\Delta U$) and the treatment of exact-equality and grazing events
+($s_-^2=2\Delta U$ or $s_-=0$), and should be exercised with dense and
+diagonal nonidentity metrics, not only with $M=I$.
+
+\subsection{What transfers to a ZLB}\label{sec:event-zlb}
+
+This method is a good match when the posterior in the sampled variables is
+piecewise smooth and the switching surfaces are explicit affine boundaries,
+or at least surfaces whose first intersection with a trajectory can be found
+reliably. A nonlinear endogenous regime solver raises the bar. In that case
+the boundary is an implicit surface
+\begin{equation}\label{eq:61}
+ b(q)=0,
+\end{equation}
+and a trajectory needs (i) a first-root solver for $b(q(t))$, (ii) the
+correct one-sided values of the full log posterior, and (iii) an argument
+that the selected equilibrium branch is single-valued at the event. The
+Metropolis correction absorbs integration error relative to a well-defined
+target; when a root search fails or the solver lands on a different fixed
+point, the two one-sided posterior values in \eqref{eq:5b} are no longer
+defined, so the problem statement itself, and not the sampler, is what needs
+repair.
+
+\section{Discontinuous HMC with Laplace momentum}\label{sec:dhmc}
+
+Reflection--refraction HMC pays for every boundary crossing individually.
+When a discrete or ordinal variable is embedded into the continuous state,
+the trajectory may cross hundreds of density jumps per proposal, and a
+different momentum distribution turns out to make each crossing dramatically
+cheaper.
+
+\subsection{Embedding an ordinal regime}\label{sec:dhmc-embed}
+
+Nishimura, Dunson, and Lu (2020, pp.~366--368) embed an integer parameter $N$
+in a real variable $\widetilde N$:
+\begin{equation}\label{eq:62}
+ N=n \iff \widetilde N\in(a_n,a_{n+1}],\qquad
+ \widetilde\pi(\widetilde n)=
+ \sum_n\frac{\pi_N(n)}{a_{n+1}-a_n}
+ \mathbf 1\{a_n<\widetilde n\leq a_{n+1}\}.
+\end{equation}
+The interval length in the denominator is essential: it is the Jacobian-like
+factor that makes the total embedded mass of each interval equal to
+$\pi_N(n)$, so that integrating $\widetilde\pi$ over $(a_n,a_{n+1}]$ recovers
+the original probability. The embedding also imposes an ordering on the
+discrete values; an arbitrary ordering can place high-probability values in
+separated intervals, and energy-conserving dynamics may then mix poorly
+between the resulting modes.
+
+\subsection{Why Gaussian momentum is expensive, and the Laplace alternative}\label{sec:dhmc-laplace}
+
+When a Gaussian-momentum trajectory crosses many density jumps, every
+crossing must be located and corrected as in Section~\ref{sec:event-calc}.
+For a discrete coordinate with posterior uncertainty of hundreds of units,
+that means hundreds of target evaluations per trajectory. Nor can one simply
+ignore the jumps and let the Metropolis step clean up: the leapfrog error at
+a jump does not vanish as $\epsilon\to0$, because the unaccounted potential
+change is finite regardless of the step size (Nishimura, Dunson, and Lu 2020,
+pp.~367--370).
+
+Choose instead independent Laplace momentum,
+\begin{equation}\label{eq:63}
+ K(p)=\sum_i |p_i|/m_i,
+\qquad
+ \dot q_i=m_i^{-1}\operatorname{sign}(p_i).
+\end{equation}
+The velocity now depends only on the sign of the momentum, not its
+magnitude, so the position update over a step is known in advance regardless
+of how much kinetic energy the coordinate loses along the way. For
+coordinate $i$, propose the endpoint
+\begin{equation}\label{eq:64}
+ q_i^\star=q_i+\epsilon m_i^{-1}\operatorname{sign}(p_i),
+\qquad
+ \Delta U=U(q^\star)-U(q).
+\end{equation}
+If $|p_i|/m_i>\Delta U$, accept the endpoint and reduce the momentum by the
+potential increase,
+\begin{equation}\label{eq:65}
+ p_i\leftarrow p_i-\operatorname{sign}(p_i)m_i\Delta U;
+\end{equation}
+otherwise keep $q_i$ and reflect the momentum, $p_i\leftarrow-p_i$. The
+coordinate maps are applied sequentially in a randomly permuted order; the
+random permutation is needed for reversibility in distribution. Nishimura
+et al.\ prove that the coordinate map is volume preserving and reversible
+almost everywhere, and that the assembled integrator is valid with a final
+Metropolis correction (Nishimura, Dunson, and Lu 2020, pp.~371--374). They
+also randomize the step size to avoid a fixed-grid reducibility problem.
+
+The algorithm is attractive for an explicit regime coordinate because a
+single endpoint likelihood evaluation in \eqref{eq:64} can cross several
+ordinal intervals at once; this is exactly the economy that Gaussian
+momentum lacks. It is a poor fit for a solver that hides a complicated
+regime path inside one black-box function: the endpoint energy difference
+$\Delta U$ is meaningful only if both endpoints evaluate the same
+well-defined posterior, the density of the model actually being
+estimated, and all branch ambiguity in the solver is resolved.
+
+\section{Mixed HMC for an explicit regime path}\label{sec:mixed}
+
+Embedding a discrete variable into the real line, as in
+Section~\ref{sec:dhmc-embed}, forces an ordering that may not exist
+naturally. Zhou's mixed HMC (2020, pp.~2--4) instead retains the discrete
+variable as genuinely discrete. Let $z$ be discrete, $q$ continuous, and
+$\pi(z,q)\propto e^{-U(z,q)}$. Attach to each discrete coordinate $j$ a
+clock $s_j$ living on a flat torus and a discrete momentum $p_j^D$. The
+continuous coordinates evolve by ordinary Hamiltonian dynamics; when a clock
+reaches its boundary, the sampler proposes $\widetilde z$ from an
+irreducible single-site proposal $Q_j(\widetilde z\mid z)$ and treats the
+move as an event. Define
+\begin{equation}\label{eq:66}
+ \Delta E=\log\frac{\pi(z,q)Q_j(\widetilde z\mid z)}
+                         {\pi(\widetilde z,q)Q_j(z\mid\widetilde z)}.
+\end{equation}
+For a kinetic energy $k_j^D(p_j^D)$, the discrete move is accepted (the
+trajectory ``crosses'') with the momentum changed so that
+\begin{equation}\label{eq:67}
+ k_j^D(p_j^{D,+})=k_j^D(p_j^{D,-})-\Delta E
+\end{equation}
+when the right-hand side is nonnegative; otherwise the momentum reflects
+and $z$ is kept. This is the refraction--reflection rule of
+Section~\ref{sec:event-calc} transplanted to a discrete jump, with the
+proposal-corrected energy difference \eqref{eq:66} playing the role of
+$\Delta U$. The continuous coordinates are advanced by a reversible
+volume-preserving integrator, and a final Metropolis correction gives
+invariance of the joint distribution. Note that the theorem depends on the
+proposal ratio appearing in \eqref{eq:66}, not on a conditional Gibbs draw.
+
+For a \emph{stochastic} ZLB path, one can set $z=r_{1:T}$, the full regime
+path, or use a blocked path proposal. Equation \eqref{eq:66} then includes
+the complete regime-path probability and the nonlinear state-space
+likelihood. This is conceptually clean but can be expensive: changing one
+regime indicator may require re-solving a long state path to evaluate the
+new likelihood. For the deterministic indicator of \eqref{eq:5a}, by
+contrast, the regime path is a function of the continuous state, a
+regime-only proposal has zero support, and this construction does not apply
+at all. Either way, the method presupposes an explicit probability law over
+regime paths, including a stance on multiple equilibrium paths, before
+the energy difference in \eqref{eq:66} is even defined.
+
+\section{Smooth categorical relaxations and nonsmooth energies}\label{sec:relaxations}
+
+If exact discrete dynamics are too expensive, one can instead smooth the
+discreteness away and run ordinary HMC on the relaxed target, accepting
+that the relaxed posterior is not the original one. The Concrete /
+Gumbel-softmax method (Torgander, Magnusson, and Wallin 2024, pp.~2--3) maps
+categorical probabilities to a continuous simplex variable. As the
+temperature $\tau\to0$, the variable becomes nearly one-hot, but the
+transformed posterior develops steep geometry: gradients with respect to
+simplex coordinates can diverge near zero, and the temperature direction
+becomes ill-conditioned. It is therefore a useful relaxation baseline, not
+an exact categorical or ZLB sampler, and any comparison against it should
+report the temperature used and the induced posterior discrepancy.
+
+A different smoothing tradition targets nonsmooth but continuous energies.
+Chaari et al.'s nonsmooth HMC (2016, pp.~1--5) uses subgradients or a
+proximity operator
+\begin{equation}\label{eq:68}
+ \operatorname{prox}_{\phi}(x)=
+ \arg\min_y\left\{\phi(y)+\tfrac12\|y-x\|^2\right\}
+\end{equation}
+for convex nondifferentiable energies such as an $\ell_1$ penalty. The
+distinction of Section~\ref{sec:kink-validity} applies here with full force:
+the proximity operator \eqref{eq:68} is built for convex \emph{continuous}
+energies, whose nondifferentiability is a kink, whereas a density
+discontinuity is a finite jump in $U$ that no subgradient or proximal
+smoothing removes, and an equilibrium regime selection is a modeling choice,
+not an energy. Prox-HMC therefore enters the ZLB problem exactly when one
+deliberately chooses a convex nonsmooth approximation of the constrained
+model.
+
+\section{Particle MCMC, pseudo-marginal HMC, and differentiable state-space HMC}\label{sec:pmcmc}
+
+Every gradient method above struggles with the same obstacle: at
+the zero lower bound the exact likelihood is an integral over latent paths
+whose integrand is only piecewise smooth. Particle methods attack the problem
+from the opposite direction. Rather than smoothing the model, they replace the
+intractable likelihood by an unbiased Monte Carlo estimate and then build a
+Markov chain that is \emph{exactly} invariant for the posterior despite the
+estimation noise. What follows develops that construction, asks when it can
+be combined with Hamiltonian dynamics, and examines what modern
+``differentiable'' particle filters do and do not deliver.
+
+\subsection{Particle MCMC's exact extended target}\label{sec:pm-target}
+
+One disarmingly simple identity carries the whole construction. Let $u$ collect \emph{all} random variables
+consumed by a run of the particle filter, every proposal draw and every
+resampling variable, with joint density $m_\vartheta(u)$, and let
+$\widehat L(\vartheta,u)\geq 0$ be the resulting likelihood estimate. The
+standard particle filter is unbiased:
+\begin{equation}\label{eq:69}
+ \int \widehat L(\vartheta,u)\,m_\vartheta(u)\,du = L(\vartheta).
+\end{equation}
+Now consider the \emph{extended} target on the pair $(\vartheta,u)$,
+\begin{equation}\label{eq:70}
+ \bar\pi(\vartheta,u) \propto p(\vartheta)\,\widehat L(\vartheta,u)\,m_\vartheta(u).
+\end{equation}
+Integrating \eqref{eq:70} over $u$ and applying \eqref{eq:69} shows that its
+$\vartheta$-marginal is exactly $p(\vartheta)L(\vartheta)$: the posterior we
+actually want, with no bias from the finite particle count. This is the
+pseudo-marginal identity underlying particle MCMC (Andrieu, Doucet, and
+Holenstein 2010). Its practical force is that a Metropolis--Hastings chain
+targeting \eqref{eq:70}, in which each proposed $\vartheta'$ comes with a fresh
+filter run $u'$ and the acceptance ratio uses the \emph{estimated} likelihoods,
+is a valid MCMC algorithm for the exact posterior. The estimation noise is
+part of an enlarged state space on which the chain is exact, not an
+approximation error left over in the parameter marginal.
+
+\subsection{What pseudo-marginal HMC additionally requires}\label{sec:pmhmc}
+
+Given \eqref{eq:70}, it is tempting to go further: if we can evaluate
+$\log\widehat L(\vartheta,u)$, why not differentiate it and run HMC on the
+extended target? Alenl\"ov, Doucet, and Lindsten (2021, Secs.~2--3) construct
+exactly such an extended Hamiltonian, and their analysis makes precise what the
+shortcut demands. The construction requires, explicitly:
+\begin{enumerate}
+\item a nonnegative unbiased estimator $\widehat L(\vartheta,U)$;
+\item auxiliary variables $U\sim N(0,I)$;
+\item continuous differentiability of the map
+      $(\vartheta,U)\mapsto\widehat L(\vartheta,U)$; and
+\item pointwise evaluability of $\nabla\log\widehat L(\vartheta,U)$.
+\end{enumerate}
+Under these conditions the algorithm is exact for the extended target, and as
+the number of importance samples grows the trajectories approach those of ideal
+HMC on the marginal. The catch is condition (iii). Alenl\"ov, Doucet, and
+Lindsten note explicitly that ordinary particle-filter likelihoods typically
+\emph{fail} it: a multinomial resampling index changes discontinuously when a
+uniform random number crosses a cumulative-weight threshold, so
+$\widehat L$ is discontinuous in $(\vartheta,U)$ even when the underlying model
+is smooth.
+
+The consequence for ZLB inference is sharp. An unbiased bootstrap particle
+filter supports particle Metropolis--Hastings via the identity of
+Section~\ref{sec:pm-target}, while pseudo-marginal HMC additionally needs
+condition (iii), which resampling breaks. A differentiable resampling scheme
+or a transport-based relaxation can restore
+condition (iii), but the repair is not free: the gradient of a smoothed or
+transport-resampled computation is either an approximation, or the exact
+gradient of a \emph{different} extended target; and it remains the latter
+only once that target's full law and Metropolis correction have been written
+down. Pseudo-marginal HMC therefore rests on a separately constructed
+differentiable extended estimator, a genuine design task beyond a working
+particle Metropolis--Hastings sampler. The correlated pseudo-marginal method
+(Deligiannidis, Doucet, and Pitt
+2018) addresses a different axis: it improves particle Metropolis--Hastings
+mixing by correlating
+successive $U$ draws. That makes it the right variance-reduction comparator,
+while the differentiability repair that pseudo-marginal HMC needs must come
+from the resampling scheme itself.
+
+\subsection{Joint latent-state HMC}\label{sec:joint-hmc}
+
+Instead of marginalizing the states by particle filtering, one can sample
+$(\vartheta,x_0,\epsilon_{1:T})$ directly, using the joint density
+\eqref{eq:56}. This avoids a particle likelihood altogether and works well for
+smooth nonlinear models (Childers et al.\ 2022, pp.~10--16). At the ZLB,
+however, the structure of the joint density changes with the regime treatment.
+With a stochastic explicit regime path, \eqref{eq:56} becomes a mixed target:
+the state transition and observation density are piecewise in $r_t$, and the
+discrete path needs a transition kernel that actually has support on regime
+changes. With a deterministic regime, the density instead concentrates on the
+support described in \eqref{eq:5a}, and the discontinuity migrates into the
+continuous coordinates. Joint HMC thus supplies the continuous-coordinate
+component of a complete sampler for this problem class; the regime treatment
+determines what has to be composed with it.
+
+\subsection{Particle Gibbs and ancestor sampling}\label{sec:pgas}
+
+Particle Gibbs takes yet another route: instead of estimating the marginal
+likelihood, it samples an entire latent trajectory as a Gibbs block. Given a
+reference path $x'_{1:T}$, conditional sequential Monte Carlo runs a particle
+filter in which one particle is pinned to that path. Plain particle Gibbs has a
+well-known pathology: when the particle genealogy collapses, the sampled path
+tends to retain its early ancestors, so mixing over the early part of the
+trajectory stalls. Particle Gibbs with ancestor sampling (PGAS) repairs this by
+resampling the fixed particle's ancestor at each time step (Lindsten, Jordan,
+and Sch\"on 2014, Secs.~3--5).
+
+For a Markov state-space model, one PGAS sweep is implementable as follows. At
+$t=1$, draw particles $1{:}M-1$ from the initial proposal, set $X_1^M=x'_1$,
+and weight all $M$ particles. For each $t=2{:}T$:
+\begin{enumerate}
+\item For $j<M$, draw $A_t^j\sim\operatorname{Categorical}(W_{t-1})$ and
+      propagate $X_t^j$ from the proposal in \eqref{eq:12b}.
+\item Set $X_t^M=x'_t$, but draw its ancestor with probabilities
+\begin{equation}\label{eq:70a}
+ \Pr(A_t^M=j)\propto W_{t-1}^j\,
+ p(x'_t\mid X_{t-1}^j,\vartheta).
+\end{equation}
+\item Recompute the importance weights. At $T$, draw a terminal particle from
+      $W_T$ and trace its ancestors to obtain the new path.
+\end{enumerate}
+Equation \eqref{eq:70a} is the Markov simplification of the general ancestor
+weight, which multiplies the old particle weight by the ratio of the target
+density after and before attaching the fixed future to a candidate past.
+Lindsten, Jordan, and Sch\"on prove that this kernel leaves the joint smoothing
+distribution invariant for \emph{every} particle count; their proof interprets
+the sweep as a partially collapsed Gibbs update on an extended particle system
+(Lindsten, Jordan, and Sch\"on 2014, Algorithm~2 and Theorem~1).
+
+How does this apply at the bound? For a deterministic ZLB, the particle state
+is the continuous state or shock path, and the regime $r_t=R(q)$ is derived
+from it; PGAS then mixes over paths, and the regime sequence follows. For a
+stochastic regime, one takes $(r_t,x_t)$ as the particle state, and PGAS mixes
+over regimes and states jointly. What PGAS does \emph{not} license is an
+independent update of a deterministic, zero-support regime label: if the regime
+is a function of the continuous path, there is no separate coordinate to
+resample.
+
+\subsection{What differentiable particle filters do and do not supply}\label{sec:dpf}
+
+Two recent lines of work make particle filters interact with automatic
+differentiation, and each delivers something precise but different.
+
+\'Scibior and Wood keep the ordinary particle filter's forward values entirely
+unchanged but insert stop-gradient weight ratios, so that automatic
+differentiation of the resulting computation returns the Fisher-identity score
+estimator associated with the particle genealogy (\'Scibior and Wood 2021,
+Algorithm~1 and Sec.~3). Poyiadjis, Doucet, and Singh derive the underlying
+path-space and forward-smoothing score estimators and show their different cost
+and variance growth (Poyiadjis, Doucet, and Singh 2011, Secs.~2--3). The
+estimator is consistent as the particle count grows. At any finite particle
+count, however, the score carries Monte Carlo noise, so feeding it to a
+leapfrog integrator as if it were the deterministic force of the marginal
+log likelihood produces a stochastic-gradient chain whose invariant
+distribution is no longer covered by the usual HMC exactness proof.
+
+Corenflos et al.\ instead replace discrete resampling with a differentiable
+entropy-regularized optimal-transport map. This changes the finite-particle
+forward algorithm itself and introduces a regularization parameter; their
+consistency analysis requires the particle count to grow \emph{and} the
+regularization to shrink (Corenflos et al.\ 2021, Sec.~4).
+
+Both constructions are important comparison methods. Exact use of either
+inside HMC requires the full pseudo-marginal discipline of
+Section~\ref{sec:pmhmc}: an explicitly written extended target, random numbers held
+fixed during each reversible trajectory, and a Metropolis energy computed for
+that same extended density. Inserting either gradient as a noisy force into
+ordinary HMC skips all three steps and with them the exactness proof.
+
+\section{What the literature supports}\label{sec:synthesis}
+
+Standing back from the individual methods, the literature surveyed so far
+supports a layered architecture for anyone designing Bayesian inference at an
+occasionally binding bound. The four layers are connected but have different
+jobs, and much practical grief comes from asking one layer to do another's
+work.
+
+\textbf{Layer A: a verified linear benchmark.} Implement OccBin-style piecewise
+path iteration and the conditional Kalman likelihood \eqref{eq:8}--\eqref{eq:11},
+and validate them against a published example and against synthetic data with
+known regime paths. This layer looks pedestrian, but it is where timing
+conventions, inequality signs, likelihood normalization, missing observations,
+and multiple-fixed-point diagnostics get established; errors here propagate
+invisibly into every later layer.
+
+\textbf{Layer B: a nonlinear likelihood authority.} Implement the bootstrap
+particle filter \eqref{eq:12a}--\eqref{eq:13} and, where the decision rules are
+piecewise linear and continuous, the Aruoba et al.\ conditionally optimal
+special case. The bootstrap filter handles any simulable nonlinear transition;
+the conditionally optimal filter is the low-variance bridge for
+piecewise-linear continuous decision rules. Particle Metropolis--Hastings then
+supplies, via \eqref{eq:70}, a finite-particle extended target whose parameter
+marginal is the exact posterior: the ``ground truth'' sampler against which
+faster methods are judged.
+
+\textbf{Layer C: deterministic complementarity.} Here the regime is the derived
+quantity $R(q)$, not an independent unknown. The safe starting point is
+joint-state random-walk or slice updates and particle MCMC. Event-aware HMC
+should be added only after the complete nonlinear solution map supplies a
+first-boundary oracle and both one-sided posterior values at a crossing.
+Within one region, a fixed-branch HMC update explores efficiently; crossing
+into the other regime, however, requires moving the continuous state across
+the boundary, because by \eqref{eq:5a} a proposal that changes only the
+regime label has zero target density.
+
+\textbf{Layer D: stochastic or explicitly selected regimes.} When both regime
+values carry positive probability, alternate fixed-path HMC with PGAS or
+another valid discrete Metropolis kernel. Zhou's mixed HMC becomes an
+acceleration candidate only after this simpler composition has been checked
+against exact enumeration on a toy model: its clock changes update timing, not
+the target distribution, so agreement on a small exactly solvable case is the
+right admission test.
+
+Throughout, the Concrete-relaxation and softplus routes of
+Section~\ref{sec:relaxations} should be understood as approximation arms. In
+particular, the shadow-rate case study of Section~\ref{sec:shadow} uses a smooth
+softplus bound and is therefore a useful comparator for the hard-bound methods,
+not evidence about genuinely discontinuous semantics.
+
+The two case studies later in this survey instantiate these layers in
+complementary ways. The two-country shadow-rate model of Section~\ref{sec:shadow} is a
+hard-bound observation-map kink target: Layer B specializes to the bootstrap
+particle-filter likelihood of Section~\ref{sec:shadow-filter}, with the ideal cell
+decomposition \eqref{eq:84}--\eqref{eq:87} as its proposal and diagnostic
+layer; Layer C specializes to joint kinked-target HMC under the validity
+conditions of Section~\ref{sec:kink-validity}; and Layers A and D do not apply to that
+model as specified. The New Keynesian model of Section~\ref{sec:nk} is the converse:
+Layers A, C, and D carry the weight, the genuine discontinuity lives in the
+solution correspondence and its selection rule (Section~\ref{sec:nk-mult}), and Layer D
+becomes available exactly when selection is made stochastic
+(Section~\ref{sec:nk-sunspot}).
+
+\section{Exact targets and implementable transition kernels}\label{sec:targets}
+
+A method is only as well specified as the object it targets, so we
+now write those objects down. For each of the three regime treatments (deterministic
+threshold, stochastic regime, and multiple equilibria) we state the exact
+posterior density and a transition kernel that provably preserves it. Being
+explicit here pays off later: many subtle errors in bound-aware samplers are
+errors about \emph{which} distribution is being sampled, not about the
+dynamics.
+
+\subsection{Deterministic threshold target}\label{sec:target-det}
+
+Let $q=(\vartheta,x_0,\epsilon_{1:T})$, recursively define
+$r_t=\mathcal R(x_{t-1},\epsilon_t,\vartheta)$ and
+$x_t=F_{r_t}(x_{t-1},\epsilon_t,\vartheta)$, and assume this solution is
+unique. Because the regime is a deterministic function of $q$, the posterior is
+a density on the continuous variables alone:
+\begin{equation}\label{eq:71}
+ \Pi_D(q)\propto p(\vartheta)\,p(x_0\mid\vartheta)
+ \prod_{t=1}^T p(\epsilon_t\mid\vartheta)\,
+ g_{r_t(q)}\bigl(y_t\mid x_t(q),\vartheta\bigr).
+\end{equation}
+
+An event-aware HMC step for \eqref{eq:71} proceeds as follows. Inside a region
+with fixed $r_{1:T}$, differentiate the same finite program that evaluates
+\eqref{eq:71}: the gradient of the density actually being computed, not of a
+surrogate. At the first event $b_k(q(t))=0$ along the trajectory, evaluate the
+two one-sided values of the \emph{complete} posterior, compute the potential
+jump \eqref{eq:5b}, and apply the general-mass event maps \eqref{eq:60b} or
+\eqref{eq:60c}; the simpler maps \eqref{eq:59}/\eqref{eq:60} apply only in the
+unit-mass special case. Continue the flight for the unused part of the position
+step. At the end of the trajectory, reverse the momentum and accept with
+\begin{equation}\label{eq:72}
+ \alpha_D=1\wedge\exp\{H(q,p)-H(q',p')\}.
+\end{equation}
+
+This full step is implementable only under real conditions: the event locator
+must return the \emph{earliest} crossing; the branch solver must be
+deterministic and single-valued on each side of the boundary; and the
+\emph{composed} flight--event--flight trajectory map must be reversible and
+volume preserving (or the event Jacobian must be accounted for explicitly in
+the acceptance ratio). Since the isolated refraction map rescales the normal
+momentum (Section~\ref{sec:event-calc}), volume preservation holds only for
+the composed map, so the composition is what a correctness test must
+exercise. If any of these conditions is missing, particle
+Metropolis--Hastings using \eqref{eq:13}, or a non-gradient joint-state kernel,
+remains the exact baseline.
+
+\subsection{Stochastic mixed target}\label{sec:target-stoch}
+
+If regimes carry genuine transition mass, the regime path is an unknown in its
+own right and the joint target is instead
+\begin{equation}\label{eq:73}
+ \Pi_S(\vartheta,x_{0:T},r_{1:T})\propto
+ p(\vartheta)\,p(x_0\mid\vartheta)
+ \prod_{t=1}^T p(r_t\mid r_{t-1},x_{t-1},\vartheta)\,
+ p(x_t\mid x_{t-1},r_t,\vartheta)\,
+ g_{r_t}(y_t\mid x_t,\vartheta).
+\end{equation}
+
+A transparent first kernel composes two invariant updates:
+\begin{enumerate}
+\item Hold $r_{1:T}$ fixed and apply ordinary Metropolized HMC to
+      $(\vartheta,x_{0:T})$, using the gradient of $\log\Pi_S$. With the
+      regime path frozen, the target is smooth in the continuous coordinates,
+      so standard HMC theory applies.
+\item Hold the continuous variables fixed and update one regime, a regime
+      block, or the whole latent path with Metropolis, forward-filter
+      backward-sampling, or PGAS. For a proposal $Q(r'\mid r,q)$, a
+      regime-only move is accepted with
+\begin{equation}\label{eq:74}
+ \alpha_R=1\wedge
+ \frac{\Pi_S(q,r')\,Q(r\mid r',q)}
+      {\Pi_S(q,r)\,Q(r'\mid r,q)}.
+\end{equation}
+\end{enumerate}
+Each component preserves $\Pi_S$, so their composition does as well; this is
+the standard Metropolis-within-Gibbs argument, and it requires no smoothness
+across regime changes. Mixed HMC replaces the second component by the clock
+dynamics \eqref{eq:66}--\eqref{eq:67} and interleaves it with the first. One
+refinement deserves flagging: if a regime proposal jointly transforms the
+continuous coordinates, say to keep an economic constraint satisfied after
+the regime flips, then the move is no longer discrete-only, and its reverse
+proposal density and the absolute Jacobian of the continuous transformation
+must be added to \eqref{eq:74}.
+
+\subsection{Multiple equilibria}\label{sec:target-multi}
+
+Finally, suppose the model admits multiple solutions
+$s_t\in\mathcal S(x_{t-1},\epsilon_t,\vartheta)$ at some states, as
+occasionally binding constraint models genuinely can. Then one must specify a
+selection mass $p(s_t\mid x_{t-1},\epsilon_t,\vartheta)$ and either include
+$s_t$ as a latent variable in \eqref{eq:73} or integrate it out. Without that
+mass, neither \eqref{eq:71} nor \eqref{eq:73} is a defined target: the
+likelihood of the data is simply not determined by the structural parameters.
+Supplying the selection mass is therefore part of the economic model
+specification; the sampler's job begins only once the target it must draw
+from exists.
+
+The two case studies that follow instantiate these abstract targets:
+Section~\ref{sec:shadow} develops a two-country shadow-rate term-structure model whose
+bound enters through the observation map, and Section~\ref{sec:nk} develops a small New
+Keynesian model whose bound enters through the solution correspondence itself.
+
+\section{Case study I: a two-country shadow-rate term-structure model}
+\label{sec:shadow}
+
+Near a lower bound on nominal rates, observed yield curves flatten and
+compress against the bound while the economically meaningful latent
+state, the ``shadow'' curve that would prevail in the absence of the
+bound, keeps moving. A yield pinned at the bound for two years is
+consistent with a shadow rate slightly below it or far below it, and
+distinguishing those two situations is exactly what monetary-policy
+analysis at the bound requires. We therefore want Bayesian inference on
+the latent shadow factors and the model parameters from bounded yield
+observations, and this is a state-space problem in which the bound
+enters the observation map as a censoring nonlinearity. This case study
+builds a concrete two-country shadow-rate term-structure model from
+scratch, places it in the literature, and then applies the machinery of
+the preceding sections: which posterior geometry the model has, which
+filters and samplers are exact for which version of it, and where the
+smooth approximation that makes gradient-based sampling easy stops
+being innocent.
+
+\subsection{The model}
+\label{sec:shadow-model}
+
+The latent state is
+\(x_t=(x_t^{d\mathsf T},x_t^{f\mathsf T},x_t^{b\mathsf T})^{\mathsf T}
+\in\mathbb R^8\): domestic (\(d\)) and foreign (\(f\)) dynamic
+Nelson--Siegel (DNS) factor triples (level, slope, curvature) and
+two directed FX-basis factors. The transition is a stationary Gaussian
+VAR(1) toward a long-run mean,
+\begin{equation}\label{eq:75}
+ x_t=(I-\Phi)\bar\theta+\Phi x_{t-1}+\eta_t,
+ \qquad \eta_t\sim N(0,Q),
+\end{equation}
+and in the working example below the estimated parameters \(\vartheta\)
+are components of \(\bar\theta\) together with grouped log
+measurement-noise scales, while \(\Phi\), \(Q\), and the initial
+covariance are held fixed: a deliberately small nine-parameter chart
+that keeps attention on the bound rather than on the VAR dynamics. The
+shadow instantaneous forward curve of country \(c\in\{d,f\}\) at horizon
+\(s\) is affine in that country's factors with a fixed decay
+\(\lambda_c\):
+\begin{equation}\label{eq:76}
+ f_c(s;x)=a_c(s)^{\mathsf T}x^c,
+ \qquad
+ a_c(s)=\bigl(1,\;e^{-\lambda_c s},\;\lambda_c s\,e^{-\lambda_c s}
+ \bigr)^{\mathsf T}.
+\end{equation}
+
+The bound is imposed on the \emph{forward} curve, not on yields
+directly. This is the Krippner-style architectural choice, and
+Section~\ref{sec:shadow-lit} explains why it matters; for now, the point is
+that a yield is a maturity average of forwards, so bounding forwards
+and then averaging produces a different, and economically more
+natural, object than bounding the average. The bound enters through
+one of two scalar maps applied to the forward curve, the hard censoring
+map and its softplus smoothing,
+\begin{equation}\label{eq:77}
+ m_\ell(u)=\max\{\ell,u\},
+ \qquad
+ s_{\ell,\alpha}(u)=\ell+\alpha\log\!\left(1+e^{(u-\ell)/\alpha}\right),
+ \qquad \alpha>0.
+\end{equation}
+The working example uses \(s_{\ell,\alpha}\) exclusively, with
+per-country constants
+\((\lambda_d,\ell_d,\alpha_d)=(0.65,\,0,\,1.5\times10^{-3})\) and
+\((\lambda_f,\ell_f,\alpha_f)=(0.45,\,-0.005,\,1.0\times10^{-3})\); the
+foreign bound is a negative effective lower bound, and \(\alpha\) is a
+fixed model constant, not an estimated parameter. Observed zero-coupon
+yields are maturity averages of the bounded forward curve. The integral
+has no closed form once the softplus (or the max) is inside it, so it
+is evaluated by an order-\(K\) Gauss--Legendre rule on \([0,1]\) (the
+working example fixes \(K=40\)):
+\begin{equation}\label{eq:78}
+ y_c(\tau_i;x)=\frac1{\tau_i}\int_0^{\tau_i}
+ s_{\ell_c,\alpha_c}\bigl(f_c(u;x)\bigr)\,du
+ \;\approx\;\sum_{k=1}^{K}w_k\,
+ s_{\ell_c,\alpha_c}\bigl(f_c(\tau_i v_k;x)\bigr),
+\end{equation}
+with six maturities per country. Quadrature is used because the
+integrand is smooth and cheap, and a fixed high-order rule keeps the
+observation map deterministic in \(x\), an essential property once
+we start differentiating through it. The sole FX observation is the raw
+log forward with observed log spot subtracted, tied to the two yield
+curves and the basis factors by the covered-interest-parity identity
+\begin{equation}\label{eq:79}
+ \log F_t(\tau)-\log S_t=\tau\bigl(
+ y_d(\tau;x_t)-y_f(\tau;x_t)+b(\tau;x_t^b)\bigr),
+\end{equation}
+where \(b(\tau;\cdot)\) is affine in the basis factors. All measurement
+noise is diagonal Gaussian with grouped scales.
+
+In the implementation we studied, the active inference route evaluates
+the marginal likelihood of \eqref{eq:75}--\eqref{eq:79} with a
+square-root unscented Kalman filter and runs HMC and NeuTra-HMC over
+the nine-parameter chart against that filter's value and score. Two
+facts about that route follow immediately, and they frame everything
+in this case study. First, the resulting posterior is a
+\emph{smooth-model} posterior: \(s_{\ell,\alpha}\) is \(C^\infty\), so
+no discontinuity of any kind is present in the model actually being
+estimated. Second, the UKF likelihood is itself a deterministic,
+well-defined function of the parameters, so HMC on it is exact
+\emph{for that target}; the open question is its distance from the
+exact-model likelihood, which Section~\ref{sec:shadow-filter} and
+Section~\ref{sec:shadow-routes} address.
+
+\subsection{Where this sits in the shadow-rate literature}
+\label{sec:shadow-lit}
+
+Where does this design sit in the shadow-rate term-structure family? It is a
+reduced-form member of that family, and the survey's earlier machinery maps
+onto the family precisely. Black (1995) introduced the observation that currency makes
+the nominal short rate an option, \(r_t=\max\{0,r_t^\star\}\) (we cite
+this for orientation; we were unable to obtain the full text). Krippner
+(2012, Secs.~1--2) made the multi-factor Gaussian case tractable by
+bounding the \emph{forward} curve (the ZLB forward is the shadow
+forward plus a closed-form currency-option effect) and obtaining
+yields by elementary numerical integration of the bounded forward
+curve; our working example follows exactly this
+bounded-forward-then-integrate architecture with the softplus in place
+of Krippner's Gaussian-based map. Priebsch (2013) developed the
+cumulant-based arbitrage-free approximation for the same class. Wu and
+Xia (2016, Sec.~2.3, eqs.~(6)--(8)) write the one-period forward
+observation as
+\(\underline r+\sigma^Q\,g\!\left((a_n+b_n^{\mathsf T}X_t-\underline r)/
+\sigma^Q\right)\) with the closed-form \(g(z)=z\Phi(z)+\phi(z)\) and
+estimate by extended Kalman filtering, noting that monotonicity of
+\(g\) keeps the likelihood surface well behaved. Christensen and
+Rudebusch (2015, Appendix~B) estimate arbitrage-free shadow-rate
+Nelson--Siegel models with the extended Kalman filter built on the
+discretized Ornstein--Uhlenbeck transition, literally the
+\((I-e^{-K\Delta})\theta+e^{-K\Delta}X_{t-1}\) form of \eqref{eq:75}.
+Kim and Priebsch (2013, Sec.~4, eqs.~(8)--(9)) replace the extended
+filter with the \emph{unscented} Kalman filter for
+quasi-maximum-likelihood estimation, documenting that first-order
+linearization can be numerically unstable; every earlier zero-bound
+study they name (Ichiue--Ueno, Kim--Singleton, and the 2013
+Christensen--Rudebusch draft) had used the extended filter. Lemke
+and Vladu (2017) estimate a euro-area shadow-rate model with a
+time-varying, estimated lower bound using the extended filter. Finally,
+Opschoor and van der Wel (2024, Secs.~2.1--2.3, eqs.~(2)--(7)) build
+the reduced-form smooth shadow-rate DNS model closest to our working
+example: AR(1) DNS factors, a lower bound applied through a smooth
+approximation of the max (their menu is the Gaussian-based map
+\(f_G(z)=z\Phi(z)+\phi(z)\), the softplus \(f_S\), and an
+inverse-exponential map, each with a sharpness scaling) and two-step
+least-squares estimation, with nonlinear state-space estimation via the
+extended Kalman filter noted as the alternative.
+
+Three points of contrast matter for what follows. First, Opschoor and
+van der Wel bound the \emph{yield} directly,
+\(y^Z(\tau)=r_{LB}+f(y(\tau)-r_{LB})\), whereas Krippner-type models,
+our working example among them, bound the \emph{forward} curve and
+integrate. The two choices differ: by pointwise convexity,
+\begin{equation}\label{eq:80}
+ \sum_{k}w_k\max\{\ell,\,a(s_k)^{\mathsf T}x\}
+ \;\geq\;
+ \max\Bigl\{\ell,\;\sum_{k}w_k\,a(s_k)^{\mathsf T}x\Bigr\},
+\end{equation}
+with equality only when the forward curve does not cross the bound
+inside the maturity, so forward-level censoring produces weakly higher
+yields near the bound and the two models are not reparameterizations of
+each other. Second, Opschoor and van der Wel defend smoothing as an
+\emph{economic} specification (yields empirically leave the bound
+gradually), which licenses reading \(\alpha\) as a structural
+smooth-transition constant rather than as a numerical tolerance;
+Section~\ref{sec:shadow-softplus} keeps both readings apart. Third, the
+domain-standard estimators in this line are all single-Gaussian
+moment-closure filters (extended or unscented), exactly the object
+whose branch-mass deficiency Section~\ref{sec:ukf-branchloss} quantifies; none
+of the shadow-rate papers we examined in this line uses a mixture,
+particle, or exactly weighted likelihood, and none samples the
+posterior with gradient MCMC. That statement must, however, be scoped
+to the closure-filter line: outside it, Pericoli and Taboga (2018,
+Secs.~2, 4--5) estimate a Black-type max shadow-rate model
+(\(r_t=\max\{\bar r_t,\,a+bX_t\}\) with a time-varying bound) by fully
+Bayesian data-augmentation MCMC, blockwise random-walk Metropolis
+over parameters \emph{and} the entire latent factor path, with no
+Gaussian moment-closure filter of any kind, using a neural-network
+bond-pricing surrogate trained to sub-basis-point accuracy; their
+``nearly exact'' refers to that pricing approximation, not to the
+sampler. The exact-likelihood (closure-free) route in this literature
+is therefore already occupied. A UKF-plus-HMC route can claim a
+gradient-sampler frontier within the closure-filter family, but not a
+likelihood-fidelity frontier; the exact constructions below are
+measured against Pericoli--Taboga's closure-free standard, not merely
+against the filtering papers.
+
+\subsection{A ladder of three targets and the geometry of the
+hard-bound variants}
+\label{sec:shadow-ladder}
+
+``Exact'' is meaningless without naming what it is relative
+to, and this model admits three natural versions that are
+\emph{different posteriors}. We name them once and use the names
+throughout: \(\mathcal S_1\), the smooth softplus model, i.e.\ the finite
+program of \eqref{eq:77}--\eqref{eq:78} with \(K=40\) quadrature of the
+softplus map, the model of Section~\ref{sec:shadow-model} exactly as
+specified; \(\mathcal C_1\), the finite hard-max model, the same
+nodes and weights with \(s_{\ell,\alpha}\) replaced by \(m_\ell\); and
+\(\mathcal C_0\), the continuous-maturity hard model, the integral
+\(\tau_i^{-1}\int_0^{\tau_i} m_{\ell_c}(f_c(u;x))\,du\) evaluated by
+root-bracketed integration to a stated tolerance. Table~\ref{tab:ladder}
+summarizes the ladder.
+
+\begin{table}[htbp]\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.16\textwidth}XX@{}}
+\toprule
+Variant & Definition & In what sense inference under it is exact \\
+\midrule
+\(\mathcal S_1\) (smooth softplus model) &
+The finite program of \eqref{eq:77}--\eqref{eq:78}: \(K=40\)
+Gauss--Legendre quadrature of the softplus-bounded forward curve. &
+Smooth-model inference: any exact filter or sampler is exact for the
+softplus posterior, never for a hard-bound posterior
+(Section~\ref{sec:shadow-softplus}). \\
+\(\mathcal C_1\) (finite hard-max model) &
+The same quadrature nodes and weights with \(s_{\ell,\alpha}\)
+replaced by the hard max \(m_\ell\). &
+Exact relative to the finite hard-quadrature model: the bound is hard
+but maturity averaging is the fixed \(K\)-node rule. \\
+\(\mathcal C_0\) (continuous-maturity hard model) &
+The continuous integral
+\(\tau_i^{-1}\int_0^{\tau_i} m_{\ell_c}(f_c(u;x))\,du\), evaluated by
+root-bracketed integration to a stated tolerance. &
+Exact relative to the declared integral and tolerance: the bound and
+the maturity average are both taken at the level of the continuous
+model. \\
+\bottomrule
+\end{tabularx}
+\caption{The ladder of three model variants. Each is a different
+posterior; every likelihood, sampler, and result in this case study is
+stated relative to one of them.}\label{tab:ladder}
+\end{table}
+
+\(\mathcal C_1\) is the natural first hard-bound counterfactual: it
+changes exactly one operation in the smooth model. But \(\mathcal C_0\)
+and \(\mathcal C_1\) are different posteriors, for a structural reason
+rather than a numerical one. Under a simple
+transverse root of the bound gap, the moving-boundary terms of the
+\(\mathcal C_0\) integral cancel because the two integrand branches
+agree at the crossing, so \(y_c^{\mathcal C_0}(\tau_i;x)\) is
+continuously differentiable in \(x\) there, whereas the finite
+pointwise-max sum of \(\mathcal C_1\) has kinks whenever any node
+crosses the bound. Tangencies, endpoint roots, and an identically bound
+curve are separate cases requiring their own treatment in the
+\(\mathcal C_0\) integration scheme. Root-aware \(\mathcal C_0\)
+evaluation and a \(\mathcal C_0\)-versus-\(\mathcal C_1\)
+discretization sensitivity experiment are prerequisites before any
+event- or kink-aware HMC design should be adopted as the final
+hard-ZLB architecture; we specify that experiment here without
+running it.
+
+Replace \(s_{\ell,\alpha}\) by \(m_\ell\) in \eqref{eq:78} to obtain
+\(\mathcal C_1\). Each yield becomes a nonnegatively weighted sum of
+maxima of affine functions of the state,
+\begin{equation}\label{eq:81}
+ y_c^{\max}(\tau_i;x)=\sum_{k=1}^{K}w_k
+ \max\bigl\{\ell_c,\;a_c(s_{ik})^{\mathsf T}x^c\bigr\},
+ \qquad s_{ik}=\tau_i v_k,
+\end{equation}
+which is continuous, convex, and piecewise affine in \(x^c\). The FX
+row \eqref{eq:79} is then a difference of such functions plus an affine
+basis term: continuous and piecewise affine, though no longer convex.
+The complete observation map \(h\) is continuous and piecewise affine
+with kinks on the hyperplane arrangement
+\(\bigcup_{c,i,k}\{x:a_c(s_{ik})^{\mathsf T}x^c=\ell_c\}\), a
+Lebesgue-null set. Because the transition \eqref{eq:75} is a fixed
+linear-Gaussian map with no branch, and the observation noise is
+full-support Gaussian, the joint posterior over \((\vartheta,x_{0:T})\),
+equivalently over \((\vartheta,x_0,\eta_{1:T})\) in the
+non-centered chart of \eqref{eq:56}, is continuous, is smooth off a
+finite hyperplane arrangement, and has no atoms and no density jumps.
+In the classification of Section~\ref{sec:geometries} this is geometry one: a
+kink target, not a jump target. Consequently ordinary Metropolized
+leapfrog HMC is valid on the \(\mathcal C_1\) target by
+Section~\ref{sec:kink-validity}, the refraction machinery of Section~\ref{sec:event}
+degenerates (\(\Delta U=0\)), and discontinuous or mixed HMC address
+structure that this model simply does not have. (The \(\mathcal C_0\)
+target is smoother still at transverse roots, per the ladder discussion
+above; the geometry-one classification covers both hard-bound
+variants.)
+
+The classification is a statement about the model as specified, and it
+is fragile in three specific directions, each of which a modeler may
+adopt deliberately. If the factor dynamics switch at the bound (a
+binding-dependent \(\Phi\) or \(Q\)), the transition acquires a
+genuine branch and the target moves to geometry two, with everything
+that Section~\ref{sec:geometries}, Section~\ref{sec:event}, and Section~\ref{sec:target-det}
+say about deterministic jumps. If a policy rate is added as an
+observation \emph{without} measurement error,
+\(i_t=\max\{\ell,f_c(0;x_t)\}\) observed exactly, the observation law
+acquires an atom at \(\ell\) and the likelihood becomes the censored
+mixture of Section~\ref{sec:ukf-censored} with \(V\to0\). And if the lower
+bound \(\ell\) is estimated, as in Lemke and Vladu (2017), the kink
+location becomes parameter-dependent, which leaves continuity intact
+but makes the kink arrangement move with \(\vartheta\). A modeler must
+decide which of these extensions, if any, is in play; the geometry
+claim above holds for none of them automatically.
+
+One structural lemma sharpens everything downstream. Fix \(x^c\) and
+write the bound gap along the horizon as
+\begin{equation}\label{eq:82}
+ g(s)=f_c(s;x)-\ell_c=(L-\ell_c)+e^{-\lambda_c s}(S+C\lambda_c s),
+ \qquad
+ g'(s)=\lambda_c e^{-\lambda_c s}\bigl(C-S-C\lambda_c s\bigr),
+\end{equation}
+with \((L,S,C)=x^c\). If \(L-\ell_c=0\), \(S=0\), and \(C=0\), the gap
+is identically zero and the curve sits exactly on the bound at every
+horizon; this degenerate case must be handled by convention (it is a
+Lebesgue-null event under the Gaussian predictive, though synthetic
+test cases can be constructed to land on it). Away from it, the bracket
+in \(g'\) is affine in \(s\), so \(g'\) changes sign at most once;
+\(g\) is monotone or single-peaked/troughed on \((0,\infty)\) and
+therefore has \emph{at most two zeros}. The binding set
+\(\{s:f_c(s;x)\leq\ell_c\}\) along any Nelson--Siegel forward curve is
+an interval, the complement of an interval, empty, or everything. Two
+consequences follow. The reachable binding patterns over the pooled
+quadrature horizons \(\{s_{ik}\}\) are \emph{interval patterns},
+\(O(\text{grid}^2)\) many rather than \(2^{\text{grid}}\); and the
+per-country kink cells in factor space are polyhedra cut by constraints
+whose normals \(a_c(s)\) span at most that country's three factor
+dimensions, so per-country cell probabilities reduce to at most
+three-dimensional Gaussian integrals. The \emph{joint} two-country cell
+probability required by the evidence decomposition below is generically
+six-dimensional: the FX row and the measurement update correlate the
+two factor blocks, so the joint mass factorizes into two
+three-dimensional integrals only if a factorization of the relevant
+covariance is proved for the case at hand.
+
+\subsection{An exact cell identity and the bootstrap filter that carries
+the likelihood}
+\label{sec:shadow-filter}
+
+Because the observation map of \(\mathcal C_1\) is exactly affine on each
+polyhedral cell of the kink arrangement, a beautiful idea suggests itself:
+the one-step filtering problem should decompose exactly over cells into
+conjugate Gaussian updates. This
+section develops that identity in full, because it is genuinely exact and
+it organizes everything one can know about the model's local structure,
+and then explains why three specific obstacles keep it from being
+an implementable exact algorithm. The pedagogical arc is deliberate:
+first the ideal identity, then precisely where it breaks, then the
+robust alternative that actually carries the inferential weight. That
+alternative is the plain bootstrap particle filter, and we state it
+first so the reader knows where the argument lands.
+
+For \(\mathcal C_1\), the workhorse likelihood estimator is the
+\textbf{bootstrap particle filter}: per particle, draw the state from
+the exact Gaussian transition and weight by the exact observation
+density,
+\begin{equation}\label{eq:82a}
+ x_t^j\sim N\bigl((I-\Phi)\bar\theta+\Phi x_{t-1}^{A_t^j},\,Q\bigr),
+ \qquad
+ v_t^j=N\bigl(y_t;\,h_{\max}(x_t^j),\,R\bigr),
+\end{equation}
+where \(h_{\max}\) stacks the \(\mathcal C_1\) yield rows
+\eqref{eq:81} and the FX row \eqref{eq:79}. Both operations are
+available in closed form, the estimator \eqref{eq:13} is nonnegative
+and unbiased under the standard support and integrability conditions
+of Section~\ref{sec:pf-generic}, and PMMH then carries the ordinary
+particle-MCMC extended-target guarantee of Section~\ref{sec:pm-target}. This
+route is less elegant than the cell decomposition but is implementable
+today, unbiased for the named finite model, and its Monte Carlo variance is
+directly measurable from likelihood replicates.
+
+Now the ideal. Conditional on a binding pattern \(B\), an assignment
+of bind/slack to every quadrature horizon, the observation map is
+affine, \(h_B(x)=H_Bx+d_B\), on the polyhedral cell
+\begin{equation}\label{eq:83}
+ C_B=\bigl\{x:\;a_c(s_{ik})^{\mathsf T}x^c\leq\ell_c\ \text{for}\
+ (c,i,k)\in B,\ \ >\ell_c\ \text{otherwise}\bigr\}.
+\end{equation}
+Let the one-step predictive be Gaussian,
+\(x_t\mid\mathcal F\sim N(m,P)\); this is exactly true per particle, since
+\eqref{eq:75} gives
+\(x_t\mid x_{t-1}\sim N((I-\Phi)\bar\theta+\Phi x_{t-1},Q)\). The exact
+one-step posterior and evidence then decompose over cells with no
+approximation:
+\begin{equation}\label{eq:84}
+ p(x_t\mid y_t,\mathcal F)\;\propto\;
+ \sum_{B}\mathbf 1\{x_t\in C_B\}\,
+ N\!\bigl(y_t;H_Bm+d_B,\,S_B\bigr)\,
+ N\!\bigl(x_t;m_B^+,P_B^+\bigr),
+\end{equation}
+where each cell carries the standard conjugate update
+\begin{equation}\label{eq:85}
+ S_B=H_BPH_B^{\mathsf T}+R,\quad
+ K_B=PH_B^{\mathsf T}S_B^{-1},\quad
+ m_B^+=m+K_B(y_t-H_Bm-d_B),\quad
+ P_B^+=P-K_BS_BK_B^{\mathsf T},
+\end{equation}
+in which \(S_B\) is invertible for every cell because the measurement
+covariance \(R\) is positive definite and \(H_BPH_B^{\mathsf T}\) is
+positive semidefinite, and the exact evidence is the polyhedrally
+truncated mixture mass
+\begin{equation}\label{eq:86}
+ p(y_t\mid\mathcal F)=\sum_B Z_B,
+ \qquad
+ Z_B=N\!\bigl(y_t;H_Bm+d_B,\,S_B\bigr)\,
+ \Pr_{x\sim N(m_B^+,P_B^+)}\!\bigl(x\in C_B\bigr).
+\end{equation}
+Equations \eqref{eq:84}--\eqref{eq:86} are the hard-bound
+observation-map counterpart of the branch-split update
+\eqref{eq:36}--\eqref{eq:45}: the branch structure has moved from the
+transition maps \(F_r\) into the observation cells \(C_B\), the
+truncated moments of \eqref{eq:21}--\eqref{eq:28} reappear whenever a
+single constraint dominates, and by the crossing lemma of
+Section~\ref{sec:shadow-ladder} the sum over \(B\) runs over interval patterns
+only.
+
+Inside a particle filter the identity yields an \emph{ideal} fully
+adapted construction. Per particle \(j\) with ancestor \(x_{t-1}^j\),
+the predictive is exactly Gaussian, so \eqref{eq:84}--\eqref{eq:86}
+hold exactly with
+\((m,P)=((I-\Phi)\bar\theta+\Phi x_{t-1}^j,\,Q)\), and the
+conditionally optimal proposal is, in the ideal,
+\begin{equation}\label{eq:87}
+ q^\star(x_t\mid x_{t-1}^j,y_t)=p(x_t\mid x_{t-1}^j,y_t),
+ \qquad
+ v_t^j=p(y_t\mid x_{t-1}^j)=\sum_B Z_B\bigl(x_{t-1}^j\bigr),
+\end{equation}
+sampled by drawing a cell with probability \(\propto Z_B\), then
+drawing from the cell-restricted Gaussian
+\(N(m_B^+,P_B^+)\mathbf 1_{C_B}\). The point-independence of the
+incremental weight \eqref{eq:87} is the fully adapted property of
+\eqref{eq:12b}--\eqref{eq:13}, and \emph{if} every \(Z_B\) is computed
+exactly and the cell-restricted draw is exact, the resulting likelihood
+estimator is nonnegative and unbiased for the \(\mathcal C_1\) model by
+the argument of Section~\ref{sec:pf-generic}.
+
+So why is this not the algorithm of record? Three specific reasons,
+each a numerical obstacle rather than a conceptual flaw. First,
+the cell masses \(\Pr_{x\sim N(m_B^+,P_B^+)}(x\in C_B)\) are
+multivariate Gaussian polytope probabilities, generically
+six-dimensional across the two correlated factor blocks per the
+crossing-lemma discussion, and these are numerical computations in
+the sense of Genz and Bretz (2009), not closed-form operations.
+Second, restricting the sum to patterns with ``non-negligible'' mass is
+a \emph{pruning approximation}: dropping any cell changes
+\(\sum_B Z_B\), the cell-selection probabilities, and the weight, so
+the result is exact only if the omitted masses are certified to be
+exactly zero. Third, exact draws from the cell-restricted Gaussian are
+themselves nontrivial: rejection sampling is exact in principle but can
+be unusably inefficient in the tails; the exact piecewise-quadratic HMC
+of Pakman and Paninski (2014) supplies an \emph{invariant kernel} for
+the truncated Gaussian, not an independent exact draw after a finite
+trajectory, so substituting one trajectory for an exact draw changes
+the proposal law and forfeits the constant weight \eqref{eq:87}; and
+Botev's (2017) minimax-tilting method is the modern benchmark for both
+the probabilities and the draws but carries its own numerical error,
+which must be quantified and folded into the proposal before any
+exactness language attaches to a cell implementation. A related
+limitation applies beyond the particle setting: \eqref{eq:84}--\eqref{eq:86}
+do \emph{not} give a closed-form multi-step filter, because propagating
+a cell-restricted Gaussian through \eqref{eq:75} leaves the Gaussian
+family, so an exact density filter must carry a growing
+truncated-mixture representation, and any pruning or moment collapse
+\eqref{eq:47}--\eqref{eq:48} is a declared approximation, exactly as in
+Section~\ref{sec:ukf-branchwise}.
+
+The resolution is the one already announced: until those numerical
+components are controlled, the cell construction is a \emph{proposal
+and diagnostic layer} (an implementation that prunes cells or
+approximates draws must use its actual proposal density and the
+corresponding importance ratio in \eqref{eq:12b}, not the ideal
+constant weight \eqref{eq:87}), while the bootstrap route
+\eqref{eq:82a} carries the likelihood. This positioning is the Aruoba
+et al.\ conditionally-optimal construction transplanted from a
+piecewise-linear transition to a hard-bound observation map: simpler
+here because the transition never branches, but gated on the same
+numerical error control.
+
+The Tobit line of the censored-filtering literature sits on the other
+side of a noise-ordering distinction that decides its relevance here.
+In the Tobit-type-1 measurement model surveyed
+by Geng et al.\ (2021), censoring is applied \emph{after} the noise,
+\(y=\max\{c,\,Hx+u\}\), which produces an atom at the censoring limit
+and is the setting of the Tobit Kalman filter (Allik et al.\ 2016; we
+cite this from metadata, having been unable to obtain the full text).
+Our model's yields add noise \emph{after} the max, so they have no
+atom, and the mixture structure lives in the state, not in the
+observation support. The two orderings coincide only in the exactly
+observed policy-rate extension of Section~\ref{sec:shadow-ladder}, which is
+where the Tobit machinery would become the right reference.
+
+\subsection{The softplus route: bias bounds and two readings of
+\texorpdfstring{$\alpha$}{alpha}}
+\label{sec:shadow-softplus}
+
+How far is the smooth model \(\mathcal S_1\) from the hard model
+\(\mathcal C_1\)? The pointwise gap between the two scalar maps is
+explicit:
+\begin{equation}\label{eq:88}
+ 0\;<\;s_{\ell,\alpha}(u)-m_\ell(u)
+ =\alpha\log\!\left(1+e^{-|u-\ell|/\alpha}\right)
+ \;\leq\;\alpha\log 2,
+\end{equation}
+with the maximum attained exactly at the kink and exponential decay
+away from it: at \(|u-\ell|\geq5\alpha\) the gap is below
+\(6.8\times10^{-3}\,\alpha\). Averaging \eqref{eq:88} through the
+quadrature \eqref{eq:78} bounds the yield gap uniformly,
+\begin{equation}\label{eq:89}
+ 0\;<\;y_c^{\alpha}(\tau_i;x)-y_c^{\max}(\tau_i;x)\;\leq\;\alpha_c\log 2,
+\end{equation}
+and the bound is attained only when the whole forward path sits at the
+kink; in general the gap is \(\alpha\log2\) times the quadrature mass
+within \(O(\alpha)\) of the bound plus an exponentially small
+remainder. With the working example's constants the worst-case yield
+gaps are \(1.04\times10^{-3}\) (domestic) and \(0.69\times10^{-3}\)
+(foreign) in annualized rate units, roughly ten and seven basis
+points. The gap is moreover \emph{one-signed}: softplus
+yields always exceed hard-censoring yields, so fitted factors and
+long-run means absorb a systematic downward shift near binding rather
+than symmetric noise. The per-observation log-likelihood perturbation
+obeys
+\begin{equation}\label{eq:90}
+ \bigl|\log N(y;h_\alpha,R)-\log N(y;h_{\max},R)\bigr|
+ \;\leq\;
+ \bigl\|R^{-1/2}(y-h_{\max})\bigr\|\,
+ \bigl\|R^{-1/2}\Delta\bigr\|
+ +\tfrac12\bigl\|R^{-1/2}\Delta\bigr\|^2,
+\end{equation}
+with \(0\le\Delta_i\le\alpha\log2\) componentwise, which is small per
+observation. The signed difference itself is, for
+\(\Delta=h_\alpha-h_{\max}\),
+\begin{equation}\label{eq:90a}
+ \log N(y;h_\alpha,R)-\log N(y;h_{\max},R)
+ =(y-h_{\max})^{\mathsf T}R^{-1}\Delta
+ -\tfrac12\,\Delta^{\mathsf T}R^{-1}\Delta,
+\end{equation}
+and this can take \emph{either sign} even though the map shift
+\(\Delta\) is one-sided on the yield rows: the sign depends on the
+residual \(y-h_{\max}\), and the FX row's \(\Delta\) component is a
+domestic-minus-foreign combination that can itself be signed either
+way. In summary: the \emph{mean-map}
+discrepancy is one-sided and may induce a systematic fitted-factor
+adjustment near binding, while the likelihood and posterior
+perturbations take either sign and should be reported as computed signed
+quantities under
+\eqref{eq:90}--\eqref{eq:90a}.
+With measurement-error standard deviations of a few basis points,
+a ten-basis-point systematic map gap is not negligible relative to the
+noise scale, and \eqref{eq:90}--\eqref{eq:90a} quantify it in exactly the
+units, log-likelihood, in which it affects inference.
+
+One might hope to shrink the gap by sharpening \(\alpha\), but this is
+not free for gradient samplers. The scalar curvature is
+\begin{equation}\label{eq:91}
+ s_{\ell,\alpha}''(u)=\frac{\sigma(z)\bigl(1-\sigma(z)\bigr)}{\alpha}
+ \leq\frac1{4\alpha},
+ \qquad z=\frac{u-\ell}{\alpha},
+\end{equation}
+so the observation Hessian acquires ridges of height \(O(1/\alpha)\)
+concentrated in an \(O(\alpha)\)-neighborhood of the kink, and leapfrog
+stability suggests a local step size \(\epsilon=O(\sqrt\alpha)\) there.
+That scaling is a local stability heuristic under a fixed metric and
+comparable posterior curvature, not a universal necessity theorem: the
+binding step size depends on the chart, the mass matrix, the
+trajectory, and how much time the sampler spends near the bound. The
+qualitative conclusion survives the qualification: the \(\alpha\to0\)
+limit of the smooth route is \emph{harder} for HMC than the
+\(\mathcal C_1\) hard-bound model itself, whose one-sided curvature is
+bounded and whose kink cost is the \(O(\epsilon)\) energy error of
+\eqref{eq:56a}. Sharpening the softplus to approximate the hard bound
+is the wrong direction; the right choices are either a genuinely smooth
+model or the exact machinery of Section~\ref{sec:shadow-filter}.
+
+That leaves two defensible readings of \(\alpha\), and they support
+different claims. Read as a \emph{numerical approximation} to the hard-ZLB model,
+\(\alpha\) needs an error protocol: report
+\eqref{eq:89}--\eqref{eq:90} alongside binding fractions, rerun matched
+synthetic-data estimations at \(\alpha/2\) and \(2\alpha\) (in our
+experiments this is implemented by re-running matched synthetic-data
+estimations at halved and doubled \(\alpha\)), and require the
+posterior functionals of interest to move by less than their Monte
+Carlo uncertainty before any hard-ZLB language is used. Read as a
+\emph{structural smooth-transition model} in the sense argued
+empirically by Opschoor and van der Wel (2024), whose evidence is that
+yields leave the bound gradually and the smooth map may therefore be the
+better description,
+\(\alpha\) is a model constant or even an estimable parameter, no bias
+language applies, and every claim must name the smooth model as the
+target. The hybrid to avoid, under both readings, is sampling the smooth
+model while describing the result as inference under the ZLB: the two
+posteriors differ by exactly the gaps computed above.
+
+\subsection{Identification at the bound}
+\label{sec:shadow-ident}
+
+Complicating the likelihood's geometry is not the only thing the bound
+does; it also erodes what the data can say. Differentiating \eqref{eq:78} gives the
+yield sensitivity to the factors,
+\begin{equation}\label{eq:92}
+ \frac{\partial y_c(\tau_i;x)}{\partial x^c}
+ =\sum_{k=1}^{K}w_k\,
+ \sigma\!\left(\frac{f_c(s_{ik};x)-\ell_c}{\alpha_c}\right)
+ a_c(s_{ik}),
+\end{equation}
+with the logistic factors replaced by indicators
+\(\mathbf 1\{f>\ell\}\) in the \(\mathcal C_1\) hard-bound model. When
+the forward curve sits far below the bound over the horizons that
+matter for maturity \(\tau_i\), the corresponding rows of the
+observation Jacobian \(J\) vanish, and the per-period observed Fisher
+information \(J^{\mathsf T}R^{-1}J\) about the shadow factors
+degenerates in exactly the binding directions. During a long binding
+spell the shadow-factor posterior is driven by the prior and the
+transition \eqref{eq:75} alone, and the long-run means \(\bar\theta\)
+of the binding country are informed only through occasional excursions
+of the forward curve above the bound. This is the formal counterpart of
+two empirical findings: Bauer and Rudebusch (2016) document that
+shadow-rate estimates are highly sensitive to the assumed lower-bound
+value and to model specification, and Christensen and Rudebusch (2015)
+report the same sensitivity for shadow-rate paths. The practical
+consequences are direct. Priors on \(\bar\theta\) do real work during
+binding spells, so reporting them is part of reporting the result. And the
+identification degeneracy makes the sampler ill-conditioned in exactly the same
+directions: the HMC mass matrix appropriate to binding-era geometry is
+very different from the one appropriate off the bound, so step-size and
+mass-matrix tuning performed on off-bound data, or on another
+model, horizon, or particle count, will not transfer to binding
+regimes and must be redone for the configuration actually being run.
+Any empirical claim from this model therefore comes with identification
+diagnostics along the binding directions, since those directions are where
+the data stop speaking and the prior takes over.
+
+\subsection{Five routes and what each delivers}
+\label{sec:shadow-routes}
+
+We can now assemble the case study's conclusions as a menu of five
+inference routes. They differ in which target on the ladder of
+Table~\ref{tab:ladder} they address and in the strength of the
+guarantee they carry, not merely in cost; Table~\ref{tab:routes}
+summarizes.
+
+\begin{table}[htbp]\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.16\textwidth}XX@{}}
+\toprule
+Route & Target & What inference under this route delivers \\
+\midrule
+(i) SR-UKF marginal likelihood + HMC/NeuTra &
+The UKF likelihood as a stated approximate functional of
+\(\mathcal S_1\) &
+Exact MCMC for its own target, the UKF likelihood rather than the model
+likelihood; this mirrors the estimator of Kim and Priebsch (2013). Its
+single-Gaussian closure discards branch mass exactly as in
+Section~\ref{sec:ukf-branchloss}; its distance from route (iii) on matched
+binding scenarios is a required diagnostic, not an assumption. \\
+(ii) Softplus model with any exact filter/sampler &
+\(\mathcal S_1\) &
+Legitimate as a structural model (the Opschoor--van der Wel reading)
+or as an approximation under the \eqref{eq:89}--\eqref{eq:90a}
+protocol; never a hard-ZLB claim by itself. \\
+(iii) Bootstrap hard-bound particle filter \eqref{eq:82a} + PMMH &
+\(\mathcal C_1\) &
+The likelihood workhorse: exact Gaussian transition draws, exact
+observation-density weights, a nonnegative unbiased estimator, and
+exact extended-target MCMC by Section~\ref{sec:pm-target}. Delivers valid
+inference for the finite hard-quadrature posterior. Supports PMMH, not
+pseudo-marginal HMC, absent the differentiability conditions of
+Section~\ref{sec:pmhmc}; correlated pseudo-marginal (Deligiannidis, Doucet,
+and Pitt 2018) is the variance/mixing comparator, not a
+differentiability fix. \\
+(iv) Joint \((\vartheta,x_0,\eta_{1:T})\) HMC on \(\mathcal C_1\) &
+The \(\mathcal C_1\) model, sampled in the non-centered chart of
+\eqref{eq:56} &
+Valid by Section~\ref{sec:kink-validity} because the target is a continuous
+piecewise-quadratic-plus-smooth kink target; needs no filter at all.
+Gradient cost is one simulation sweep, and the linear-Gaussian prior
+structure supplies the natural preconditioner. Kink crossings cost
+acceptance per \eqref{eq:56a}, not correctness. \\
+(v) Cell-adapted fully adapted proposal
+\eqref{eq:84}--\eqref{eq:87} inside a particle filter &
+\(\mathcal C_1\) &
+Conditional: delivers exact fully adapted filtering only once the
+Genz--Bretz polytope-probability and Botev truncated-draw components
+are benchmarked and carried with quantified numerical error; with
+pruning or approximate draws it must use its actual proposal density
+and importance ratio, and until then it is a proposal/diagnostic layer
+for route (iii). \\
+\bottomrule
+\end{tabularx}
+\caption{Five inference routes for the two-country shadow-rate model,
+the ladder target each addresses, and what inference under each
+delivers.}\label{tab:routes}
+\end{table}
+
+The branch-split mixture UKF of Section~\ref{sec:ukf} remains what it was
+there: a fast diagnostic and a proposal ingredient, with the likelihood of
+record carried by route (iii). Routes (iii) and (iv) target the same
+\(\mathcal C_1\) model and must agree within Monte Carlo error on
+synthetic data; that cross-check is the cheapest end-to-end
+correctness test available for this model, and it is executable at
+small parameter-recovery scale before any full-data run. The
+continuous-maturity target \(\mathcal C_0\) enters through the
+discretization sensitivity experiment of Section~\ref{sec:shadow-ladder}
+before any event- or kink-aware design is adopted.
+
+\section{Case study II: a New Keynesian model with an occasionally binding policy rate}
+\label{sec:nk}
+
+Our second case study turns from term structures to the model class that
+motivates most of the ZLB estimation literature: a small New Keynesian economy
+whose policy rate is truncated at a lower bound and whose equilibrium is
+computed by a piecewise-linear method. Likelihoods built on such solutions are
+folklore-famous for being ``spiky'': practitioners report jagged likelihood
+surfaces, optimizers that stall on cliffs, and gradient-based samplers that
+reject in bursts. It is tempting to blame the $\max$ operator in the policy
+rule. The analysis of this section shows that the blame is misplaced. With a
+unique verified solution, the piecewise-linear ZLB model is a \emph{kink}
+target in states and shocks: continuous, piecewise smooth, and well within
+the reach of the methods of Section~\ref{sec:hmc}. The genuine discontinuities
+practitioners meet come from the solution \emph{correspondence},
+nonexistence and multiplicity of verified regime paths, and from the
+selection rule imposed on it. We derive this claim in full on the smallest
+model that exhibits it, then draw out what it implies for how an estimation
+exercise must be posed.
+
+\subsection{Solution operators for the piecewise-linear class}
+\label{sec:nk-solvers}
+
+Take the benchmark model class: the three-equation New Keynesian model with a
+Taylor rule truncated at the bound, written in the notation of
+\eqref{eq:1}--\eqref{eq:3} and solved by a piecewise-linear method. Three
+solution operators dominate the literature. OccBin (Guerrieri and Iacoviello
+2015, Sec.~2) guesses a regime path, solves the two linear systems backward
+from a terminal reference-regime date, simulates forward, and iterates until
+the implied inequalities verify the guess; the conditional filtering
+counterpart of this construction is \eqref{eq:6}--\eqref{eq:11}. Holden (2016)
+reformulates the bound as anticipated news shocks added to the unconstrained
+linear solution and implements the search in DynareOBC; the anticipated-shock
+route originates with Holden and Paetz (2012), whom we cite for orientation.
+Boehl (2022) derives a closed-form expression for the whole trajectory given
+the guessed spell durations, which reduces the iteration to a fast search over
+two integers. All three produce, when they converge to a verified path, the
+same object: a solution that is linear on each regime cell of the state-shock
+space.
+
+Holden (2023, Secs.~2--3) supplies the algebra that makes the solution
+correspondence analyzable; pause on it, because it converts a
+vague worry about ``convergence failures'' into a precise mathematical
+question. Stack the bound violations of the unconstrained solution into
+$q\in\mathbb R^{T}$ and let $M\in\mathbb R^{T\times T}$ collect the responses
+of the bounded variable to unit news shocks; imposing the bound over a horizon
+of $T$ periods is the linear complementarity problem
+\begin{equation}\label{eq:93}
+ y\geq0,\qquad q+My\geq0,\qquad y^{\mathsf T}(q+My)=0,
+\end{equation}
+whose solution $y$ gives the news-shock loadings that hold the variable at the
+bound during the binding spell. Existence and uniqueness of the verified path
+are exactly existence and uniqueness for \eqref{eq:93}; Holden's central
+result is that the solution is unique for \emph{every} $q$ if and only if $M$
+is a P-matrix (all principal minors positive), and that standard New Keynesian
+models fail this condition, having multiple perfect-foresight paths that
+escape the bound.
+
+The P-matrix property is a uniqueness result at each parameter point, and
+continuity of the solution map is a separate question about how the solution
+moves \emph{between} points. Pointwise uniqueness of the LCP solution does
+not by itself establish that the solution map
+$\vartheta\mapsto y(q(\vartheta),M(\vartheta))$ is continuous. The usable
+regularity statement is parametric: for a \emph{fixed finite horizon} $T$ and
+terminal condition, with $q(\vartheta)$ and $M(\vartheta)$ continuous on a
+stated parameter domain over which $M(\vartheta)$ remains a P-matrix, the
+unique LCP solution is continuous in $\vartheta$ by standard parametric-LCP
+regularity. Any of a changing horizon, a changed terminal condition, or loss
+of the P-matrix property on the domain voids the conclusion and can create
+genuine discontinuity even under pointwise uniqueness; an estimation exercise
+should therefore state which of these conditions has been verified, and on
+which domain.
+
+\subsection{A fully derived multiplicity example and the discontinuity mechanism}
+\label{sec:nk-mult}
+
+Holden's (2023, Sec.~2.2) lagged-response economy is the smallest model that
+shows the mechanism, and we reproduce it in full because the rest of the
+case study leans on it. The Fisher equation with a constant real rate $r>0$
+and a truncated Taylor rule with lagged response give
+\begin{equation}\label{eq:94}
+ r+\pi_{t+1}=i_t=\max\{0,\;r+\phi\pi_t-\psi\pi_{t-1}\},
+ \qquad \phi-\psi>1,\ \psi\in(0,1),
+\end{equation}
+with $\pi_0$ given. Away from the bound the stable solution is
+$\pi_t=A\pi_{t-1}$ with $A^{2}-\phi A+\psi=0$; taking $\phi=2$ for
+transparency, $A=1-\sqrt{1-\psi}\in(0,1)$ and the useful identity
+$A(\phi-A)=\psi$ holds. Holden shows the economy can be at the bound for at
+most the first period on any path that escapes, so $\pi_2=A\pi_1$, and
+substituting into \eqref{eq:94} at $t=1$ leaves a scalar instance of
+\eqref{eq:93}:
+\begin{equation}\label{eq:95}
+ 0=\max\bigl\{-r-A\pi_1,\;(\phi-A)\pi_1-\psi\pi_0\bigr\}.
+\end{equation}
+Both branches can be solved explicitly. The slack branch gives the fundamental
+solution $\pi_1^{\mathrm f}=\psi\pi_0/(\phi-A)$, admissible when
+$r+A\pi_1^{\mathrm f}\geq0$, that is when $\pi_0\geq-r/A^{2}$ by the identity
+above. The binding branch gives $\pi_1^{\mathrm b}=-r/A$, admissible when
+$(\phi-A)\pi_1^{\mathrm b}\leq\psi\pi_0$, which is the \emph{same} condition
+$\pi_0\geq-r/A^{2}$. Therefore
+\begin{equation}\label{eq:96}
+\begin{aligned}
+ \pi_0>-\frac{r}{A^{2}}&:\ \text{two solutions},\\
+ \pi_0=-\frac{r}{A^{2}}&:\ \text{one},\\
+ \pi_0<-\frac{r}{A^{2}}&:\ \text{none returning to the standard steady state}.
+\end{aligned}
+\end{equation}
+
+Multiplicity here covers an open half-line of
+initial states rather than a knife-edge, and Holden proves it becomes pervasive in richer New Keynesian
+models. Now observe where the discontinuity actually sits. Each branch map is
+\emph{continuous} in $(\pi_0,r,\psi)$ ($\pi_1^{\mathrm f}$ is linear in
+$\pi_0$, $\pi_1^{\mathrm b}$ is constant), so the discontinuity is created
+entirely by \emph{selection}: any deterministic rule $\sigma$ that picks a
+branch defines a transition kernel
+\begin{equation}\label{eq:97}
+ \pi_1=T_{\sigma(\pi_0,\vartheta)}(\pi_0,\vartheta),
+ \qquad
+ T_{\mathrm f}\neq T_{\mathrm b}\ \text{on the whole multiplicity region},
+\end{equation}
+which jumps by an $O(1)$ amount wherever $\sigma$ switches branch. A
+likelihood built on \eqref{eq:97} inherits that jump in the state, and,
+because the multiplicity boundary $-r/A(\psi)^{2}$ and any solver-dependent
+selection move with $\vartheta$, also in the parameters. This is the formal
+content of the folklore that piecewise-linear ZLB likelihoods ``spike'': the
+spike is not caused by the $\max$, whose solution branches are individually
+continuous, but by an undeclared, possibly solver-order-dependent selection
+rule on a positive-measure multiplicity region, plus outright nonexistence
+below the threshold. In the taxonomy of Section~\ref{sec:geometries} the object is
+geometry four until a selection law is declared; after a deterministic
+declaration it is geometry two along the selection switch set; and only the
+stochastic completion of the next subsection makes it geometry three, where
+the mixed-support kernels of Section~\ref{sec:mixed} and Section~\ref{sec:pgas} legitimately
+apply.
+
+\subsection{The stochastic completion and the sunspot literature}
+\label{sec:nk-sunspot}
+
+What is the statistically coherent repair? Make selection part of the model.
+Attach to every multiplicity region a probability law over its branches
+(in \eqref{eq:95}, a probability $p_t$ of the bound branch, possibly Markov in
+a latent sunspot state $s_t$), and the target becomes the mixed-support
+posterior \eqref{eq:73} with $p(s_t\mid s_{t-1},x_{t-1},\vartheta)>0$ on both
+branches. The construction machinery for linear models under indeterminacy is
+well established: Lubik and Schorfheide (2003) show that under indeterminacy
+the endogenous forecast errors are not uniquely determined by fundamentals,
+and sunspot shocks enter as additional structural disturbances with estimable
+loadings. The published instance for the ZLB itself is Aruoba, Cuba-Borda, and
+Schorfheide (2018), which we cite for orientation, having been unable to
+obtain the full text; they build a New Keynesian model whose
+targeted-inflation and deflation regimes are selected by a Markov sunspot and
+estimate it with a particle filter; Holden (2023) explicitly contrasts his
+within-steady-state multiplicity with that steady-state-switching literature.
+The consequence for inference is structural: the sunspot completion is the
+\emph{only} reading under which regime-path Gibbs, PGAS, or mixed HMC are
+valid, because only there does the regime have positive conditional
+probability on both values; under a deterministic selection they collapse to
+the zero-support situation of \eqref{eq:5a}.
+
+\subsection{Estimation baselines}
+\label{sec:nk-baselines}
+
+Three filter families define current estimation practice for this class, and
+all are approximations relative to the particle authority of
+Section~\ref{sec:particle}. The piecewise Kalman filter of Section~\ref{sec:linear} conditions
+on the verified regime path. Boehl and Strobel (2023) estimate medium-scale
+ELB models with an ensemble Kalman filter (ensemble members updated by
+linear shifting rather than reweighting) on top of the Boehl (2022) solver,
+and compare against the inversion filter; like every Gaussian-closure method,
+the EnKF inherits the branch-mass deficiency of Section~\ref{sec:ukf-branchloss} at
+the bound, now with sampling noise on top. Holden (2017) proposes an extended
+skew-t cubature Kalman filter with dynamic state-space reduction, tracking
+third and fourth moments precisely because the Gaussian closure loses the
+censoring asymmetry. A serious estimation exercise in this class should
+therefore report the piecewise Kalman filter, an ensemble Kalman filter arm,
+an inversion-filter arm (Cuba-Borda, Guerrieri, Iacoviello, and Zhong 2019,
+cited here for orientation), and the bootstrap particle filter on the same
+data sets, with the particle route as the authority, mirroring the route
+comparison of Section~\ref{sec:shadow-routes} in the first case study.
+
+\subsection{Designing an estimation exercise}
+\label{sec:nk-design}
+
+For this model class, then, the posterior is not
+even well-defined until a number of modeling choices, usually left implicit
+in software defaults, have been made explicit. We spell them
+out, in the notation of \eqref{eq:1}--\eqref{eq:3}, because each one changes
+the target rather than merely the algorithm.
+
+First, the bound and the truncated policy rule themselves: which variable is
+bounded, at what level, and how the notional rule behaves while the bound
+binds (in particular, whether it responds to lagged states, which is exactly
+what generated multiplicity in Section~\ref{sec:nk-mult}). Second, the expectation
+formation and the terminal condition: perfect foresight over what horizon,
+returning to which reference regime. The parametric-LCP regularity result of
+Section~\ref{sec:nk-solvers} holds for a fixed horizon and terminal condition,
+so changing either mid-estimation changes the continuity properties
+of the likelihood along with it. Third, the solution operator and its verification loop:
+whichever of the OccBin, news-shock, or closed-form iterations is used, the
+estimated object is the \emph{verified} path, and an unverified guess accepted
+by a lenient stopping rule is a different, and discontinuously different,
+object.
+
+Fourth, the uniqueness domain: the LCP matrix $M$ of \eqref{eq:93} for the
+chosen horizon, with a computed P-matrix verdict on the parameter region the
+posterior will actually explore, so that the domain on which the solution is
+unique is known rather than hoped. Fifth, a selection law on every
+multiplicity region (deterministic and stated, or stochastic with its
+sunspot process), since \eqref{eq:97} shows that the likelihood jumps
+wherever an unstated selection switches branch. Sixth, the value the
+likelihood assigns on nonexistence regions, where no verified path returns to
+the steady state: zero, a penalty, or an enlarged model in which such
+histories have positive probability; each choice produces a different
+posterior and a different support. Seventh, the measurement equation and error
+structure, which determine whether the state-level kinks and jumps analyzed
+above survive into the observed-data likelihood at all.
+
+Finally, the design should include a deliberately tiny version of the model,
+small enough that the regime path can be enumerated exhaustively,
+on which the piecewise Kalman filter, the ensemble arm, and the particle
+authority can be compared against exact enumeration. Once these choices are
+frozen, the geometry classification of Section~\ref{sec:geometries} can be executed on
+the model actually being estimated rather than on its informal description,
+and the guidance of Section~\ref{sec:guidance} applies.
+
+\section{Solver-induced and code-induced discontinuities}
+\label{sec:solver}
+
+Discontinuity in the \emph{model} is only half the story. A second,
+independent family lives in the \emph{evaluation} of the model, and it matters
+for gradient samplers even when the intended target is smooth. The distinction
+is worth keeping sharp: a model-level jump changes the target and belongs to
+Section~\ref{sec:geometries} and Section~\ref{sec:targets}; an evaluation-level branch leaves
+the intended target smooth but makes the \emph{computed} log density or its
+gradient discontinuous.
+
+Three mechanisms recur in practice. First, matrix-function kernels with
+integer branch decisions: automatic differentiation of a matrix exponential
+evaluated by Pad\'e approximation with scaling-and-squaring inherits the
+integer scaling count, which jumps at norm thresholds; in one production
+implementation we examined, the derivative is computed with the scaling
+integer frozen, precisely because no smooth-derivative claim holds across the
+branch. At such a branch the \emph{value} is continuous up to the
+approximation tolerance while the automatic derivative can jump by a finite
+amount. Second, factorization conventions: QR and SVD sign and ordering
+choices, and square-root filter downdates near rank changes, are
+branch-discontinuous functions of their inputs even though the objects they
+represent vary smoothly. Third, almost-everywhere gradients: reverse-mode
+differentiation of $\max$, elementwise selection, absolute values, and sorting
+picks one subgradient at ties, which is harmless for validity by
+Section~\ref{sec:kink-validity} \emph{provided the value is continuous}.
+
+The HMC consequences separate cleanly along that proviso. If the computed log
+density is continuous and only its computed gradient jumps at evaluation
+branches, then the situation is exactly the kink case: the Metropolis
+correction keeps the intended target invariant, and the cost is the
+$O(\epsilon\|\Delta\nabla U\|)$ acceptance penalty of \eqref{eq:56a} at branch
+crossings. If the computed \emph{value} itself jumps (a solver switching
+branches beyond its tolerance, an iteration truncated by a state-dependent
+stopping rule, a fixed-point loop finding a different verified path), then
+the sampler is targeting a discontinuous computed density it does not know
+about: rejections concentrate on branch boundaries, apparent reversibility
+holds only up to the jump size, and no diagnostic inside the sampler
+separates this from a genuine model jump. The requirement for serious runs is
+therefore stated at the evaluation level:
+\begin{equation}\label{eq:98}
+ \sup_{\text{branch boundaries}}
+ \bigl|\log\widehat p_{\,\text{branch}\,1}-\log\widehat p_{\,\text{branch}\,2}\bigr|
+ \;\ll\;1
+\end{equation}
+in Metropolis energy units, verified by test, together with branch-stable
+derivative implementations (the fixed-scaling matrix-exponential treatment
+above is the template), deterministic tie-breaking, and value-continuity tests
+across every known integer branch: scaling orders, factorization signs,
+regime-path verification loops, and truncation horizons. These are testing
+obligations on the likelihood code, not sampler tuning knobs, and the guidance
+of the next section assumes they pass.
+
+\section{Practical guidance}
+\label{sec:guidance}
+
+We close the technical development with advice to a reader planning Bayesian
+inference for a ZLB model. The ordering below matters because each
+stage exists to make a later stage interpretable, and each stage leans on
+the ladder of standard test models assembled in
+Table~\ref{tab:testmodels}.
+
+\subsection*{Define the target and its geometry first}
+
+Before any sampler code, write the model in the notation of
+\eqref{eq:1}--\eqref{eq:3}, identify whether the object is a kink, a density
+jump, or an explicit discrete path in the taxonomy of Section~\ref{sec:geometries},
+and specify how multiple equilibrium solutions are treated.
+Section~\ref{sec:shadow} carries this out for the shadow-rate term-structure case
+study; Section~\ref{sec:nk-design} lists what the exercise must pin down for the New
+Keynesian case, including a computed LCP uniqueness verdict and a stated
+selection law. Nothing downstream can compensate for skipping this step: a
+sampler cannot be validated against a target that has not been defined.
+
+\subsection*{A ladder of standard test models}
+\label{sec:testmodels}
+
+Every stage below presupposes a reference problem whose answer is known by
+means independent of the code being tested. The literature has converged on
+a reasonably stable set of such problems, and it is worth assembling them in
+one place, organized by where the independent answer comes from: a closed
+form, exact enumeration, a published reference implementation, or agreement
+between methods that are exact for different reasons. Table~\ref{tab:testmodels}
+summarizes the ladder; the paragraphs that follow say what each rung
+isolates.
+
+\begin{table}[htbp]\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.34\textwidth}X@{}}
+\toprule
+\textbf{Tier} & \textbf{Model} & \textbf{Independent answer and what it isolates} \\
+\midrule
+0 & Linear-Gaussian state-space model & Kalman filter likelihood in closed form; every particle, sigma-point, and joint-HMC route must reproduce it before a bound is introduced \\
+\addlinespace
+0 & Conjugate parameter posterior (known states) & Analytic posterior; calibrates the parameter sampler in isolation \\
+\addlinespace
+1 & Scalar censored-observation model, \eqref{eq:29}--\eqref{eq:35} & Closed-form mixture likelihood; atom versus smoothed-bound handling, branch masses \\
+\addlinespace
+1 & Affine-boundary truncated Gaussian & Closed-form moments \eqref{eq:21}--\eqref{eq:28}; unit tests for every truncation step \\
+\addlinespace
+1 & Truncated multivariate Gaussian sampling & Pakman and Paninski (2014) exact HMC and Botev (2017) tilting as reference draws; cell-restricted proposals \\
+\addlinespace
+2 & Two-state switching linear-Gaussian model, horizon $T\le 12$ & Exact likelihood and smoothing by enumerating all $2^{T}$ regime paths; PF unbiasedness, PGAS invariance, mixed-HMC path moves \\
+\addlinespace
+2 & Univariate nonlinear growth model (Gordon, Salmond, and Smith 1993) & Dense-grid numerical filter; the canonical particle-filter stress case: severe nonlinearity and multimodality \\
+\addlinespace
+3 & One-factor shadow-rate model (Gorovoi and Linetsky 2004) & Closed-form bond prices under a hard bound; analytic anchor for the case study of Section~\ref{sec:shadow} \\
+\addlinespace
+3 & One-node quadrature reduction of $\mathcal C_1$ & Collapses to the Tier-1 censored-scalar likelihood; exact posterior by low-dimensional grid integration \\
+\addlinespace
+3 & Lagged-rule economy, \eqref{eq:94}--\eqref{eq:96} & Analytic multiplicity boundary $-r/A^{2}$; detection of nonexistence and selection-rule discontinuities \\
+\addlinespace
+3 & Published OccBin examples (Guerrieri and Iacoviello 2015) & Dynare reference output; regime-path and piecewise-Kalman bookkeeping \\
+\addlinespace
+3 & Small-scale NK ZLB model (Aruoba et al.\ 2021) & Published COPF likelihood comparisons; conditionally optimal proposal correctness \\
+\addlinespace
+4 & Joint-distribution tests (Geweke 2004) & Compares two simulators of the same joint law; needs no analytic posterior \\
+\addlinespace
+4 & Simulation-based calibration (Talts et al.\ 2018) & Rank-uniformity of the true parameter under the fitted posterior across simulated data sets \\
+\bottomrule
+\end{tabularx}
+\caption{A ladder of standard test models for verifying ZLB inference
+algorithms, ordered by the source of the independent answer.}
+\label{tab:testmodels}
+\end{table}
+
+The tiers are ordered so that each new difficulty enters alone. Tier~0
+contains no bound at all: on a linear-Gaussian model the Kalman filter gives
+the exact marginal likelihood, so a bootstrap filter must match it in
+expectation at every particle count, a sigma-point filter must match it to
+rounding, and joint HMC on the non-centered chart of \eqref{eq:56} must
+reproduce the analytic posterior. A route that fails here has a bookkeeping
+error that no ZLB machinery will fix, which is why this rung comes first
+even though it exercises nothing specific to the bound.
+
+Tier~1 introduces the bound in the smallest closed-form settings. The
+scalar censored-observation model derived in \eqref{eq:29}--\eqref{eq:35} has
+a two-term mixture likelihood in closed form, so it separates cleanly the
+questions of atom handling, branch-mass computation, and the bias introduced
+by smoothing the bound: evaluating the softplus variant on the same data
+measures the likelihood gap of \eqref{eq:90}--\eqref{eq:90a} directly against
+truth. The affine-boundary truncated moments \eqref{eq:21}--\eqref{eq:28}
+serve as unit tests for every truncation step inside a filter, and exact
+truncated-Gaussian samplers give reference draws against which any
+cell-restricted proposal can be tested for distributional correctness rather
+than merely for support.
+
+Tier~2 replaces closed forms with exact enumeration. In a two-state
+switching linear-Gaussian model with a short horizon, conditioning on each
+of the $2^{T}$ regime paths reduces the model to
+\eqref{eq:6}--\eqref{eq:11}, so the exact likelihood and the exact smoothing
+distribution are finite sums. This is the natural place to verify that the
+particle estimator \eqref{eq:13} is unbiased in repeated sampling, that PGAS
+leaves the path posterior invariant, that mixed-HMC path moves accept at the
+rates the enumeration predicts, and that a deterministic-regime variant of
+the same model rejects regime-only proposals exactly as the support
+calculation of Section~\ref{sec:targets} requires. The univariate nonlinear
+growth model of Gordon, Salmond, and Smith (1993), with a dense-grid
+numerical filter as reference, then adds severe nonlinearity and
+multimodality; it contains no bound, but it is the standard stress case for
+particle-filter variance and resampling behavior, and a filter that degrades
+unexpectedly there will degrade near a binding spell too.
+
+Tier~3 is specific to the lower bound. The one-factor shadow-rate model of
+Gorovoi and Linetsky (2004) prices bonds in closed form under a hard bound,
+which makes it the natural analytic anchor for the term-structure case
+study: the quadrature, censoring, and filtering layers of
+Section~\ref{sec:shadow-model} can each be checked against prices that
+involve none of them. In the other direction, reducing the $\mathcal C_1$
+working example to a single quadrature node makes each yield a censored
+affine function of the factors, so the Tier-1 machinery applies verbatim and
+the exact posterior is available by grid integration over the low-dimensional
+factor space; the bootstrap-filter and joint-HMC routes of
+Section~\ref{sec:shadow-routes} must agree with that grid before they are
+trusted at $K=40$. On the New Keynesian side, the lagged-rule economy of
+\eqref{eq:94}--\eqref{eq:96} has an analytic multiplicity boundary, so it
+tests something no smooth benchmark can: whether the estimation code
+detects nonexistence, reports multiplicity, and implements the declared
+selection rule rather than an accidental solver-order-dependent one. The
+published OccBin examples and the small-scale New Keynesian model of Aruoba
+et al.\ (2021) close the tier with reference implementations for the
+piecewise-linear path iteration and the conditionally optimal proposal.
+
+Tier~4 tests the sampler as a whole and needs no analytic posterior.
+Geweke's (2004) joint-distribution test compares two simulators of the same
+joint law of parameters and data, one by construction and one through the
+posterior sampler, and detects errors anywhere in the chain; simulation-based
+calibration (Talts et al.\ 2018) checks that the rank of the true parameter
+within the fitted posterior is uniform across data sets simulated from the
+prior. Both apply unchanged to ZLB models, and both are particularly
+valuable here because they exercise the binding and nonbinding regions in
+prior proportion, including the mixed and boundary cases a hand-picked test
+set tends to miss. A practical suite runs the ladder in order, promotes a
+route only when every applicable rung passes, and keeps the rungs as
+regression tests thereafter, since the solver-branch failures of
+Section~\ref{sec:solver} have a way of reappearing after unrelated changes.
+
+\subsection*{Validate a linear benchmark}
+
+Reproduce a published piecewise-linear regime path and the corresponding
+piecewise-Kalman likelihood, using Dynare/OccBin output as the natural
+reference, and compare
+every innovation, covariance, regime inequality, and log-likelihood
+contribution on synthetic data. The point is not that the linear method is
+the final answer (Section~\ref{sec:linear-limits} explains why it cannot be) but that
+agreement on the same object rules out an entire class of bookkeeping errors
+before nonlinear machinery obscures them. If the verification fixed point is
+not unique on the test data, record it: it is direct evidence about the
+model's solution correspondence, the object Section~\ref{sec:nk-mult} shows
+drives the estimation difficulties.
+
+\subsection*{Build a particle likelihood authority}
+
+Implement the bootstrap particle filter of Section~\ref{sec:pf-generic}, retaining
+particle ancestry and likelihood replicates, together with PGAS and the
+conditional-optimal special case of Section~\ref{sec:copf} where it applies. Check the
+likelihood estimator against exact enumeration in a deliberately tiny model,
+then measure its variance across particle counts. For a hard-bound
+observation-map model such as the $\mathcal{C}_1$ target of Section~\ref{sec:shadow},
+the bootstrap hard-bound filter is the natural authority; adapted-proposal and
+moment-closure constructions, the cell decomposition and the branch-split
+mixture UKF of Section~\ref{sec:ukf}, are proposal and diagnostic layers to be unit
+tested against the affine closed forms of Section~\ref{sec:linear-kalman}, not
+replacement authorities. Sensitivity of the posterior to the choice between
+nearby model variants (for instance the continuous-maturity versus discrete
+hard-max variants of Section~\ref{sec:shadow-ladder}) belongs here, before any
+kink-aware sampler design is selected, because it determines whether that
+design effort is even aimed at a stable object. A differentiable
+particle-filter route should be treated as diagnostic until its extended
+target and Hamiltonian correction have been derived, per Section~\ref{sec:dpf}.
+
+\subsection*{Only then, target-specific exact kernels}
+
+Which exact kernel to build depends on the support structure established in the first
+stage, and evidence does not transfer between the cases. For a stochastic
+regime model, implement fixed-path HMC plus Metropolis or PGAS path moves
+(Section~\ref{sec:pgas}, Section~\ref{sec:joint-hmc}) and validate the invariant distribution
+against exact enumeration. For a deterministic threshold model, implement a
+non-gradient joint-state or particle-MCMC baseline and verify that regime-only
+moves are rejected exactly as the support calculation of Section~\ref{sec:targets}
+predicts; a sampler that accepts them is sampling a different target. For a
+continuous kink target, the pseudo-marginal and joint-HMC routes of
+Section~\ref{sec:pmcmc} are both exact, and their agreement on matched synthetic data
+sets is the natural acceptance criterion; solver-branch value-continuity
+tests per Section~\ref{sec:solver} are a precondition for trusting any gradient route.
+
+\subsection*{Event-aware HMC only for a genuine switching surface}
+
+Reflection/refraction and discontinuous HMC (Section~\ref{sec:event}, Section~\ref{sec:dhmc})
+earn their complexity only when the first stage has identified an explicit
+continuous switching surface with a genuine density jump across it. In that
+case, test first-crossing accuracy, one-sided full-posterior evaluation,
+energy conservation at reflections and refractions, reversibility, and
+behavior under boundary grazing. If the boundary locator fails on the actual
+model, the event mechanism has no boundary to work with, and smoothing the
+surface to rescue it substitutes a different target, as
+Section~\ref{sec:relaxations} makes precise; the approach itself has to be
+abandoned or the boundary representation repaired.
+
+\subsection*{Test value continuity before trusting gradients}
+
+Finally, at every scale, the evaluation-level tests of Section~\ref{sec:solver},
+the branch-boundary bound \eqref{eq:98}, branch-stable derivatives, and
+deterministic tie-breaking, are prerequisites for interpreting any
+gradient-based sampler's diagnostics. Without them, a rejection cluster is
+uninterpretable: it may be model geometry, or it may be a solver branch the
+sampler was never told about.
+
+\section{Conclusions and limits}
+\label{sec:conclusion}
+
+The literature gives useful exact building blocks, not a finished
+nonlinear-ZLB HMC methodology. OccBin and the piecewise Kalman filter solve
+the conditional linear problem. Aruoba et al. show how a piecewise-linear
+regime mixture can support an efficient particle likelihood. Afshar--Domke and
+Nishimura--Dunson--Lu show how Hamiltonian motion can cross true energy
+discontinuities; Zhou shows how to preserve a mixed discrete-continuous target
+without an artificial ordinal embedding. Childers et al. show the efficiency
+of joint latent-state HMC for smooth differentiable state-space models, while
+Alenl\"ov et al. state the additional conditions needed for pseudo-marginal
+HMC.
+
+The defensible direction is therefore conditional on the model's support. A
+deterministic ZLB calls for a linear piecewise-Kalman benchmark, a nonlinear
+particle authority, and eventually an event-aware continuous kernel. A
+stochastic regime calls for a mixed target, fixed-path HMC, and PGAS or mixed
+HMC. Softplus and Concrete relaxations are useful comparison arms but change
+the target.
+
+The two case studies sharpen this conditional into two concrete programs. For
+the shadow-rate term-structure model of Section~\ref{sec:shadow}, the hard-bound
+observation-map construction defines a ladder of targets whose hard-bound
+variants are continuous kink targets: the exact routes are the bootstrap
+hard-bound particle filter with PMMH and joint kinked-target HMC, which must
+agree on matched synthetic data; the fully adapted cell decomposition is a
+proposal and diagnostic layer conditional on controlled polytope-probability
+and truncated-draw numerics; the softplus and UKF routes remain declared
+approximations with stated bias bounds and a sensitivity protocol; and the
+closure-filter shadow-rate line from Black through Krippner, Wu--Xia,
+Kim--Priebsch, Christensen--Rudebusch, and Opschoor--van der Wel is the domain
+benchmark family, with Pericoli and Taboga's closure-free data-augmentation
+MCMC the standard against which any likelihood-fidelity claim must be
+measured. For the New Keynesian model of Section~\ref{sec:nk}, the worked
+linear-complementarity analysis shows the genuine discontinuity lives in the
+solution correspondence, nonexistence and pervasive multiplicity of
+verified paths, so the first modeling act must be a declared selection law,
+deterministic or sunspot-stochastic, and the mixed-support kernels apply only
+under the stochastic completion.
+
+A final limitation: no literature survey
+establishes the posterior correctness of any particular implementation; that
+requires the validation program sketched in Section~\ref{sec:guidance}: a defined
+target, a tied-out linear benchmark, a particle authority checked against
+enumeration, exact kernels validated against that authority, and
+value-continuity tests on the evaluation code, all carried out on the model
+actually being estimated.
+
+
+\section*{References}
+\addcontentsline{toc}{section}{References}
+\begin{list}{}{\setlength{\leftmargin}{2em}\setlength{\itemindent}{-2em}\setlength{\itemsep}{2pt}\setlength{\parsep}{0pt}}
+
+\item Afshar, Hadi Mohasel, and Justin Domke. 2015. ``Reflection, Refraction, and Hamiltonian Monte Carlo.'' \emph{Advances in Neural Information Processing Systems} 28: 3007--3015. \url{http://hdl.handle.net/1885/103828}.
+
+\item Alenl\"ov, Johan, Arnaud Doucet, and Fredrik Lindsten. 2021. ``Pseudo-Marginal Hamiltonian Monte Carlo.'' \emph{Journal of Machine Learning Research} 22(141): 1--45. \url{https://jmlr.org/papers/v22/19-486.html}.
+
+\item Allik, Bethany, Cory Miller, Michael J. Piovoso, and Ryan Zurakowski. 2016. ``The Tobit Kalman Filter: An Estimator for Censored Measurements.'' \emph{IEEE Transactions on Control Systems Technology} 24(1): 365--371. \url{https://doi.org/10.1109/TCST.2015.2432155}.
+
+\item Alspach, Daniel L., and Harold W. Sorenson. 1972. ``Nonlinear Bayesian Estimation Using Gaussian Sum Approximations.'' \emph{IEEE Transactions on Automatic Control} 17(4): 439--448. \url{https://doi.org/10.1109/TAC.1972.1100034}.
+
+\item Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein. 2010. ``Particle Markov Chain Monte Carlo Methods.'' \emph{Journal of the Royal Statistical Society: Series B} 72(3): 269--342. \url{https://doi.org/10.1111/j.1467-9868.2009.00736.x}.
+
+\item Aruoba, S. Bora\u{g}an, Pablo Cuba-Borda, Kenji Higa-Flores, Frank Schorfheide, and Sergio Villalvazo. 2021. ``Piecewise-Linear Approximations and Filtering for DSGE Models with Occasionally Binding Constraints.'' Federal Reserve Bank of Philadelphia Working Paper 20-13. \url{https://doi.org/10.21799/frbp.wp.2020.13}.
+
+\item Aruoba, S. Bora\u{g}an, Pablo Cuba-Borda, and Frank Schorfheide. 2018. ``Macroeconomic Dynamics Near the ZLB: A Tale of Two Countries.'' \emph{Review of Economic Studies} 85(1): 87--118. \url{https://doi.org/10.1093/restud/rdx027}.
+
+\item Bauer, Michael D., and Glenn D. Rudebusch. 2016. ``Monetary Policy Expectations at the Zero Lower Bound.'' \emph{Journal of Money, Credit and Banking} 48(7): 1439--1465. \url{https://doi.org/10.1111/jmcb.12338}.
+
+\item Black, Fischer. 1995. ``Interest Rates as Options.'' \emph{Journal of Finance} 50(5): 1371--1376. \url{https://doi.org/10.1111/j.1540-6261.1995.tb05182.x}.
+
+\item Blom, Henk A. P., and Yaakov Bar-Shalom. 1988. ``The Interacting Multiple Model Algorithm for Systems with Markovian Switching Coefficients.'' \emph{IEEE Transactions on Automatic Control} 33(8): 780--783. \url{https://doi.org/10.1109/9.1299}.
+
+\item Boehl, Gregor. 2022. ``Efficient Solution and Computation of Models with Occasionally Binding Constraints.'' \emph{Journal of Economic Dynamics and Control} 143: 104523. \url{https://doi.org/10.1016/j.jedc.2022.104523}.
+
+\item Boehl, Gregor, and Felix Strobel. 2023. ``Estimation of DSGE Models with the Effective Lower Bound.'' \emph{Journal of Economic Dynamics and Control} 158: 104784. \url{https://doi.org/10.1016/j.jedc.2023.104784}.
+
+\item Botev, Zdravko I. 2017. ``The Normal Law Under Linear Restrictions: Simulation and Estimation via Minimax Tilting.'' \emph{Journal of the Royal Statistical Society: Series B} 79(1): 125--148. \url{https://doi.org/10.1111/rssb.12162}. [Cited from publication metadata.]
+
+\item Cha\^ari, Lotfi, Jean-Yves Tourneret, Caroline Chaux, and Hadj Batatia. 2016. ``A Hamiltonian Monte Carlo Method for Non-Smooth Energy Sampling.'' \emph{IEEE Transactions on Signal Processing} 64(21): 5585--5594. \url{https://doi.org/10.1109/TSP.2016.2585120}.
+
+\item Childers, David, Jes\'us Fern\'andez-Villaverde, Jesse Perla, Christopher Rackauckas, and Peifan Wu. 2022. ``Differentiable State-Space Models and Hamiltonian Monte Carlo Estimation.'' NBER Working Paper 30573. \url{https://doi.org/10.3386/w30573}.
+
+\item Christensen, Jens H. E., and Glenn D. Rudebusch. 2015. ``Estimating Shadow-Rate Term Structure Models with Near-Zero Yields.'' \emph{Journal of Financial Econometrics} 13(2): 226--259. \url{https://doi.org/10.1093/jjfinec/nbu010}.
+
+\item Cuba-Borda, Pablo, Luca Guerrieri, Matteo Iacoviello, and Molin Zhong. 2019. ``Likelihood Evaluation of Models with Occasionally Binding Constraints.'' \emph{Journal of Applied Econometrics} 34(7): 1073--1085. \url{https://doi.org/10.1002/jae.2733}. [Cited from publication metadata.]
+
+\item Corenflos, Adrien, James Thornton, George Deligiannidis, and Arnaud Doucet. 2021. ``Differentiable Particle Filtering via Entropy-Regularized Optimal Transport.'' \emph{Proceedings of the 38th International Conference on Machine Learning}, PMLR 139: 2100--2111. \url{https://proceedings.mlr.press/v139/corenflos21a.html}.
+
+\item Deligiannidis, George, Arnaud Doucet, and Michael K. Pitt. 2018. ``The Correlated Pseudomarginal Method.'' \emph{Journal of the Royal Statistical Society: Series B} 80(5): 839--870. \url{https://doi.org/10.1111/rssb.12280}. [Cited from publication metadata.]
+
+\item Garc\'ia-Fern\'andez, \'Angel F., Mark R. Morelande, and Jes\'us Grajal. 2012a. ``Truncated Unscented Kalman Filtering.'' \emph{IEEE Transactions on Signal Processing} 60(7): 3372--3386. \url{https://doi.org/10.1109/TSP.2012.2193393}.
+
+\item Garc\'ia-Fern\'andez, \'Angel F., Mark R. Morelande, and Jes\'us Grajal. 2012b. ``Mixture Truncated Unscented Kalman Filtering.'' In \emph{Proceedings of the 15th International Conference on Information Fusion (FUSION)}, 479--486. Singapore.
+
+\item Geng, Hang, Hongjian Liu, Lifeng Ma, and Xiaojian Yi. 2021. ``Multi-Sensor Filtering Fusion Meets Censored Measurements Under a Constrained Network Environment: Advances, Challenges and Prospects.'' \emph{International Journal of Systems Science} 52(16): 3410--3436. \url{https://doi.org/10.1080/00207721.2021.2005178}.
+
+\item Genz, Alan, and Frank Bretz. 2009. \emph{Computation of Multivariate Normal and t Probabilities}. Lecture Notes in Statistics 195. Berlin: Springer. \url{https://doi.org/10.1007/978-3-642-01689-9}. [Cited from publication metadata.]
+
+\item Geweke, John. 2004. ``Getting It Right: Joint Distribution Tests of Posterior Simulators.'' \emph{Journal of the American Statistical Association} 99(467): 799--804. \url{https://doi.org/10.1198/016214504000001132}. [Cited from publication metadata.]
+
+\item Giovannini, Massimo, Philipp Pfeiffer, and Marco Ratto. 2021. ``Efficient and Robust Inference of Models with Occasionally Binding Constraints.'' JRC Working Papers in Economics and Finance 2021/3. \url{https://hdl.handle.net/10419/249365}.
+
+\item Gokce, Murat, and Mustafa Kuzuoglu. 2015. ``Unscented Kalman Filter-Aided Gaussian Sum Filter.'' \emph{IET Radar, Sonar \& Navigation} 9(5): 589--599. \url{https://doi.org/10.1049/iet-rsn.2014.0088}.
+
+\item Gordon, Neil J., David J. Salmond, and Adrian F. M. Smith. 1993. ``Novel Approach to Nonlinear/Non-Gaussian Bayesian State Estimation.'' \emph{IEE Proceedings F (Radar and Signal Processing)} 140(2): 107--113. \url{https://doi.org/10.1049/ip-f-2.1993.0015}. [Cited from publication metadata.]
+
+\item Gorovoi, Viatcheslav, and Vadim Linetsky. 2004. ``Black's Model of Interest Rates as Options, Eigenfunction Expansions and Japanese Interest Rates.'' \emph{Mathematical Finance} 14(1): 49--78. \url{https://doi.org/10.1111/j.0960-1627.2004.00181.x}. [Cited from publication metadata.]
+
+\item Guerrieri, Luca, and Matteo Iacoviello. 2015. ``OccBin: A Toolkit for Solving Dynamic Models with Occasionally Binding Constraints Easily.'' \emph{Journal of Monetary Economics} 70: 22--38. \url{https://doi.org/10.1016/j.jmoneco.2014.08.005}.
+
+\item Holden, Tom D. 2016. ``Computation of Solutions to Dynamic Models with Occasionally Binding Constraints.'' Unpublished working paper, University of Surrey. \url{https://github.com/tholden/dynareOBC}.
+
+\item Holden, Tom D., and Michael Paetz. 2012. ``Efficient Simulation of DSGE Models with Inequality Constraints.'' Quantitative Macroeconomics Working Papers 21207b, Hamburg University. [Cited from publication metadata; the original anticipated-shock approach.]
+
+\item Holden, Tom D. 2017. ``Tractable Estimation and Smoothing of Highly Nonlinear Dynamic State-Space Models.'' Unpublished working paper, University of Surrey.
+
+\item Holden, Tom D. 2023. ``Existence and Uniqueness of Solutions to Dynamic Models with Occasionally Binding Constraints.'' \emph{Review of Economics and Statistics} 105(6): 1481--1499. \url{https://doi.org/10.1162/rest_a_01122}.
+
+\item Kandepu, Rambabu, Lars Imsland, and Bjarne A. Foss. 2008. ``Constrained State Estimation Using the Unscented Kalman Filter.'' In \emph{Proceedings of the 16th Mediterranean Conference on Control and Automation}, 1453--1458. Ajaccio: IEEE. \url{https://doi.org/10.1109/MED.2008.4602001}.
+
+\item Kim, Don H., and Marcel Priebsch. 2013. ``Estimation of Multi-Factor Shadow-Rate Term Structure Models.'' Preliminary draft, October 9. Washington: Board of Governors of the Federal Reserve System.
+
+\item Krippner, Leo. 2012. ``Modifying Gaussian Term Structure Models When Interest Rates Are Near the Zero Lower Bound.'' Reserve Bank of New Zealand Discussion Paper DP2012/02.
+
+\item Lemke, Wolfgang, and Andreea Liliana Vladu. 2017. ``Below the Zero Lower Bound: A Shadow-Rate Term Structure Model for the Euro Area.'' ECB Working Paper No. 1991. Frankfurt: European Central Bank.
+
+\item Lindsten, Fredrik, Michael I. Jordan, and Thomas B. Sch\"on. 2014. ``Particle Gibbs with Ancestor Sampling.'' \emph{Journal of Machine Learning Research} 15: 2145--2184. \url{https://jmlr.org/papers/v15/lindsten14a.html}.
+
+\item Lubik, Thomas A., and Frank Schorfheide. 2003. ``Computing Sunspot Equilibria in Linear Rational Expectations Models.'' \emph{Journal of Economic Dynamics and Control} 28(2): 273--285. \url{https://doi.org/10.1016/S0165-1889(02)00153-7}.
+
+\item Neal, Radford M. 2011. ``MCMC Using Hamiltonian Dynamics.'' In \emph{Handbook of Markov Chain Monte Carlo}, edited by Steve Brooks, Andrew Gelman, Galin L. Jones, and Xiao-Li Meng, 113--162. Chapman and Hall/CRC. \url{https://doi.org/10.1201/b10905-6}.
+
+\item Nishimura, Akihiko, David B. Dunson, and Jianfeng Lu. 2020. ``Discontinuous Hamiltonian Monte Carlo for Discrete Parameters and Discontinuous Likelihoods.'' \emph{Biometrika} 107(2): 365--380. \url{https://doi.org/10.1093/biomet/asz083}.
+
+\item Opschoor, Daan, and Michel van der Wel. 2024. ``A Smooth Shadow-Rate Dynamic Nelson-Siegel Model for Yields at the Zero Lower Bound.'' \emph{Journal of Business \& Economic Statistics} 43(2): 298--311. \url{https://doi.org/10.1080/07350015.2024.2365779}.
+
+\item Pakman, Ari, and Liam Paninski. 2014. ``Exact Hamiltonian Monte Carlo for Truncated Multivariate Gaussians.'' \emph{Journal of Computational and Graphical Statistics} 23(2): 518--542. \url{https://doi.org/10.1080/10618600.2013.788448}.
+
+\item Pericoli, Marcello, and Marco Taboga. 2018. ``Nearly Exact Bayesian Estimation of Non-Linear No-Arbitrage Term-Structure Models.'' Banca d'Italia Temi di discussione (Working Papers) 1189, September 2018. [We cite the 2018 working-paper version.]
+
+\item Poyiadjis, George, Arnaud Doucet, and Sumeetpal S. Singh. 2011. ``Particle Approximations of the Score and Observed Information Matrix in State Space Models with Application to Parameter Estimation.'' \emph{Biometrika} 98(1): 65--80. \url{https://doi.org/10.1093/biomet/asq062}.
+
+\item Priebsch, Marcel A. 2013. ``Computing Arbitrage-Free Yields in Multi-Factor Gaussian Shadow-Rate Term Structure Models.'' Finance and Economics Discussion Series 2013-63. Washington: Board of Governors of the Federal Reserve System. \url{https://doi.org/10.17016/feds.2013.63}.
+
+\item \'Scibior, Adam, and Frank Wood. 2021. ``Differentiable Particle Filtering without Modifying the Forward Pass.'' arXiv:2106.10314v2. \url{https://arxiv.org/abs/2106.10314}.
+
+\item Talts, Sean, Michael Betancourt, Daniel Simpson, Aki Vehtari, and Andrew Gelman. 2018. ``Validating Bayesian Inference Algorithms with Simulation-Based Calibration.'' arXiv:1804.06788. \url{https://arxiv.org/abs/1804.06788}. [Cited from publication metadata.]
+
+\item Teixeira, Bruno O. S., Leonardo A. B. T\^orres, Luis A. Aguirre, and Dennis S. Bernstein. 2010. ``On Unscented Kalman Filtering with State Interval Constraints.'' \emph{Journal of Process Control} 20(1): 45--57. \url{https://doi.org/10.1016/j.jprocont.2009.10.007}.
+
+\item Torgander, Jakob, M\aa{}ns Magnusson, and Jonas Wallin. 2024. ``Hamiltonian Monte Carlo with Categorical Parameters Using the Concrete Distribution.'' Workshop at the 6th Symposium on Advances in Approximate Bayesian Inference, non-archival, 1--12.
+
+\item van der Merwe, Rudolph, Arnaud Doucet, Nando de Freitas, and Eric A. Wan. 2000. ``The Unscented Particle Filter.'' In \emph{Advances in Neural Information Processing Systems} 13: 584--590.
+
+\item Wang, Yanbo, Fasheng Wang, Jianjun He, and Fuming Sun. 2020. ``Iterative Truncated Unscented Particle Filter.'' \emph{Information} 11(4): 214. \url{https://doi.org/10.3390/info11040214}.
+
+\item Wu, Jing Cynthia, and Fan Dora Xia. 2016. ``Measuring the Macroeconomic Impact of Monetary Policy at the Zero Lower Bound.'' \emph{Journal of Money, Credit and Banking} 48(2--3): 253--291. \url{https://doi.org/10.1111/jmcb.12300}.
+
+\item Zhang, Hongwei, Xiaohu Zhang, Weixin Xie, and Xia Yang. 2020. ``Constrained Multiple Model UK Filter.'' In \emph{Proceedings of the 15th IEEE International Conference on Signal Processing (ICSP)}, 48--51. Beijing: IEEE. \url{https://doi.org/10.1109/ICSP48669.2020.9320991}.
+
+\item Zhou, Guangyao. 2020. ``Mixed Hamiltonian Monte Carlo for Mixed Discrete and Continuous Variables.'' \emph{Advances in Neural Information Processing Systems} 33. \url{https://arxiv.org/abs/1909.04852}.
+
+\end{list}
+
+
+\end{document}

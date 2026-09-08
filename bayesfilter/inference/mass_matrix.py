@@ -7,6 +7,7 @@ are materialized only for fail-closed validation and artifact metadata.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import tensorflow as tf
@@ -56,6 +57,141 @@ def regularize_covariance(covariance: Any, *, jitter: float = 1e-9) -> tf.Tensor
     dimension = tf.shape(matrix, out_type=tf.int32)[0]
     return matrix + tf.cast(jitter_value, matrix.dtype) * tf.eye(
         dimension, dtype=matrix.dtype
+    )
+
+
+def structured_covariance_from_empirical(
+    covariance: Any,
+    *,
+    blocks: Sequence[Mapping[str, Any]] | None = None,
+    diagonal: bool = False,
+    shrinkage: float = 0.10,
+    eigenvalue_floor: float = 1.0e-6,
+    max_condition_number: float = 1.0e6,
+    source: str = "discarded_pilot_empirical_covariance",
+) -> MassMatrixResult:
+    """Project a discarded-pilot covariance to diagonal or fixed blocks.
+
+    This is the BayesFilter-owned structural-mass constructor.  It first
+    projects the empirical covariance onto either a diagonal family or a
+    caller-declared, complete block partition, then shrinks each block toward
+    its diagonal and clamps covariance eigenvalues.  The function does not
+    estimate a center, run HMC, or decide whether pilot evidence is sufficient;
+    callers must make those provenance and campaign decisions before invoking
+    it.
+    """
+
+    empirical = _square_tensor(covariance, "empirical covariance")
+    if not _scalar_bool(tf.reduce_all(tf.math.is_finite(empirical))):
+        raise ValueError("empirical covariance must be finite")
+    dimension = _scalar_int(tf.shape(empirical, out_type=tf.int32)[0])
+    if dimension == 0:
+        raise ValueError("empirical covariance must have positive dimension")
+    use_diagonal = bool(diagonal)
+    if use_diagonal and blocks is not None:
+        raise ValueError("diagonal and blocks are mutually exclusive")
+    if not use_diagonal and blocks is None:
+        raise ValueError("blocks are required unless diagonal=True")
+    weight = float(shrinkage)
+    floor = float(eigenvalue_floor)
+    condition_cap = float(max_condition_number)
+    if not _python_finite(weight) or not 0.0 <= weight <= 1.0:
+        raise ValueError("shrinkage must be finite and in [0, 1]")
+    if not _python_finite(floor) or floor <= 0.0:
+        raise ValueError("eigenvalue_floor must be positive and finite")
+    if not _python_finite(condition_cap) or condition_cap <= 1.0:
+        raise ValueError("max_condition_number must be finite and greater than one")
+    source_label = str(source)
+    if not source_label:
+        raise ValueError("source must be non-empty")
+
+    if use_diagonal:
+        normalized_blocks = tuple(
+            {"name": f"coordinate_{index}", "start": index, "stop": index + 1}
+            for index in range(dimension)
+        )
+        family = "diagonal"
+    else:
+        normalized: list[dict[str, Any]] = []
+        cursor = 0
+        for index, item in enumerate(tuple(blocks or ())):
+            if not isinstance(item, Mapping):
+                raise TypeError("every structural block must be a mapping")
+            name = str(item.get("name", f"block_{index}"))
+            start = int(item.get("start", -1))
+            stop = int(item.get("stop", -1))
+            if not name or start != cursor or stop <= start or stop > dimension:
+                raise ValueError(
+                    "structural blocks must be named, contiguous, ordered, and in bounds"
+                )
+            normalized.append({"name": name, "start": start, "stop": stop})
+            cursor = stop
+        if cursor != dimension:
+            raise ValueError("structural blocks must form a complete partition")
+        normalized_blocks = tuple(normalized)
+        family = "structural_block"
+
+    regularized_blocks: list[tf.Tensor] = []
+    raw_block_eigenvalues: list[float] = []
+    regularized_block_eigenvalues: list[float] = []
+    for block in normalized_blocks:
+        start = int(block["start"])
+        stop = int(block["stop"])
+        empirical_block = empirical[start:stop, start:stop]
+        raw = 0.5 * (empirical_block + tf.linalg.matrix_transpose(empirical_block))
+        diagonal_target = tf.linalg.diag(tf.linalg.diag_part(raw))
+        shrunk = (1.0 - weight) * raw + weight * diagonal_target
+        shrunk = 0.5 * (shrunk + tf.linalg.matrix_transpose(shrunk))
+        values, vectors = tf.linalg.eigh(shrunk)
+        if not _scalar_bool(tf.reduce_all(tf.math.is_finite(values))):
+            raise ValueError("structured covariance eigenvalues must be finite")
+        raw_values = tuple(float(value) for value in values.numpy().tolist())
+        raw_block_eigenvalues.extend(raw_values)
+        largest = max(_scalar_float(tf.reduce_max(values)), floor)
+        effective_floor = max(floor, largest / condition_cap)
+        regularized_values = tf.maximum(
+            values, tf.constant(effective_floor, dtype=tf.float64)
+        )
+        regularized_block_eigenvalues.extend(
+            float(value) for value in regularized_values.numpy().tolist()
+        )
+        regularized = tf.matmul(
+            vectors * regularized_values[tf.newaxis, :],
+            vectors,
+            transpose_b=True,
+        )
+        regularized_blocks.append(
+            0.5 * (regularized + tf.linalg.matrix_transpose(regularized))
+        )
+
+    projected = tf.linalg.LinearOperatorBlockDiag(
+        tuple(tf.linalg.LinearOperatorFullMatrix(block) for block in regularized_blocks)
+    ).to_dense()
+
+    report = {
+        "method": "empirical_covariance_structural_projection_shrinkage_eigen_clamp",
+        "numerical_backend": "tensorflow",
+        "family": family,
+        "blocks": normalized_blocks,
+        "shrinkage": weight,
+        "requested_eigenvalue_floor": floor,
+        "max_condition_number": condition_cap,
+        "raw_min_block_eigenvalue": float(min(raw_block_eigenvalues)),
+        "regularized_min_block_eigenvalue": float(
+            min(regularized_block_eigenvalues)
+        ),
+        "regularized_max_block_eigenvalue": float(
+            max(regularized_block_eigenvalues)
+        ),
+        "cross_block_entries_zero": True,
+    }
+    return MassMatrixResult(
+        covariance=projected,
+        source=source_label,
+        matrix_kind=family,
+        jitter=0.0,
+        eigenvalue_floor=floor,
+        regularization_report=report,
     )
 
 
@@ -284,5 +420,6 @@ __all__ = [
     "covariance_from_precision",
     "regularize_covariance",
     "regularize_precision",
+    "structured_covariance_from_empirical",
     "whitening_from_covariance",
 ]

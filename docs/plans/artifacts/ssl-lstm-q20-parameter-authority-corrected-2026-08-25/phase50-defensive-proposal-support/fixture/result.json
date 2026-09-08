@@ -1,0 +1,70 @@
+{
+  "depth_steps": 8,
+  "diagnostics": {
+    "beta_one_acceptance_rate": 0.3579864501953125,
+    "beta_one_broad_component_fraction": 0.4974212646484375,
+    "beta_one_max_abs_ratio": 159.88629268658673,
+    "beta_one_max_abs_residual": 0.0,
+    "beta_one_movement_count": 23461,
+    "beta_zero_acceptance_rate": 0.6591949462890625,
+    "beta_zero_broad_component_fraction": 0.498138427734375,
+    "beta_zero_max_abs_ratio": 130.59485856602117,
+    "beta_zero_max_abs_residual": 0.0,
+    "beta_zero_movement_count": 43201
+  },
+  "dimension": 1,
+  "formula": {
+    "acceptance": "min(1, exp(bridge(x')-bridge(x)+log r(x)-log r(x')))",
+    "base_proposal": "q(x)=Normal(0,1)",
+    "beta_one": "V(x')-V(x)+log r(x)-log r(x')",
+    "beta_zero": "log q(x')-log q(x)+log r(x)-log r(x')",
+    "bridge": "(1-beta) log q(x)+beta V(x)",
+    "support_component": "s(x)=Normal(0,4^2)",
+    "support_proposal": "r(x)=(1-rho)q(x)+rho*s(x)"
+  },
+  "gates": {
+    "acceptance_rates_in_unit_interval": true,
+    "beta_one_has_movement": true,
+    "beta_one_ratio_is_nontrivial": true,
+    "beta_zero_has_movement": true,
+    "beta_zero_ratio_is_nontrivial": true,
+    "broad_component_fraction_in_expected_band": true,
+    "depth_step_count": true,
+    "finite_states_and_ratios": true,
+    "q_base_r_correction_beta_one": true,
+    "q_base_r_correction_beta_zero": true
+  },
+  "nonclaims": [
+    "A finite fixture is not an invariance proof for q=20.",
+    "No posterior, whitening, HMC, or LEDH claim."
+  ],
+  "role": "finite_q_base_r_proposal_independent_mh_algebra_fixture",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase50_fixture_2026_08_26.py --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase50-defensive-proposal-support/fixture",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "gpu_hidden_intentionally": true,
+    "jit_compile": true,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase50_fixture_2026_08_26.py",
+    "source_sha256": {
+      "plan": "cf32af75451990786d0b314c6794d058711c35d33f6cb27a7a9ec9853c41b445",
+      "runner": "fc2037c0bc2c85c9952b1906626157370178b72138f5d5cb82bad1959e4c57b8"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 0.6551598490332253
+  },
+  "sample_count": 8192,
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_defensive_support_fixture.v1",
+  "seed": [
+    20260826,
+    5001
+  ],
+  "status": "PASS_V3_2_DEFENSIVE_SUPPORT_FIXTURE",
+  "support_rho": 0.5,
+  "support_std": 4.0
+}

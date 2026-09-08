@@ -1,0 +1,106 @@
+{
+  "fixture_evidence_only": true,
+  "manifest": {
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "jit_compile": true,
+    "logical_gpus": [],
+    "phase": 1,
+    "physical_gpus": [],
+    "program": "docs/plans/bayesfilter-ssl-lstm-q20-particle-authority-master-program-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "seed_domains": {
+      "known_mass": [
+        20260825,
+        101
+      ],
+      "metadata": [
+        20260825,
+        303
+      ],
+      "mutation": [
+        20260825,
+        202
+      ]
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 0.7257252589915879
+  },
+  "nonclaims": [
+    "No q=20 SMC/SMC-U route was executed.",
+    "No finite fixture proves global mode discovery, posterior correctness, or IID whitening.",
+    "The mutation and tail checks are finite diagnostics, not general theorems."
+  ],
+  "results": {
+    "affine_density_identity": {
+      "max_abs_log_density_residual": 8.881784197001252e-16,
+      "nonclaim": "This does not establish q=20 LEDH invertibility or determinant completeness.",
+      "role": "M3 affine density contract fixture",
+      "status": "PASS"
+    },
+    "defensive_tail": {
+      "epsilon": 0.2,
+      "epsilon_min": 0.2,
+      "estimated_score_second_moment": 0.9517148387509046,
+      "grid_count": 20001,
+      "minimum_mixture_density": 0.00022159242059690044,
+      "nonclaim": "Finite grid evidence does not prove global integrability for the q=20 score class.",
+      "role": "defensive-support and tail-integrability fixture",
+      "status": "PASS"
+    },
+    "frozen_protocol_hash": {
+      "changed_hash": "d116f52b1c1b0aa3f8136dae936ef8db745af4f7c65403794aab0497d500c07a",
+      "exact_replay": true,
+      "hash": "f86679e0d5c969427e4fc8cb54db9e9fb863497140fbca8ec97a16c34e114c98",
+      "material_change_detected": true,
+      "replay_hash": "f86679e0d5c969427e4fc8cb54db9e9fb863497140fbca8ec97a16c34e114c98",
+      "role": "M0 frozen-law hard-veto fixture",
+      "status": "PASS"
+    },
+    "known_density_mass": {
+      "estimated_negative_functional": 0.8638916015625,
+      "estimated_unnormalized_mass": 1.75,
+      "expected_negative_functional": 0.875,
+      "expected_unnormalized_mass": 1.75,
+      "mass_abs_error": 0.0,
+      "negative_functional_abs_error": 0.0111083984375,
+      "nonclaim": "Finite Monte Carlo agreement is not a q=20 SMC-U proof.",
+      "proposal": "the normalized two-mode target itself",
+      "role": "M0 known-density unnormalized-mass fixture",
+      "sample_count": 4096,
+      "status": "PASS"
+    },
+    "mode_missing_transform": {
+      "bridge_fraction": 0.453125,
+      "input_mean": 5.0,
+      "input_negative_fraction": 0.0,
+      "nonclaim": "Moment restoration does not identify a density or recover a missing mode.",
+      "output_mean": 5.204170427930421e-16,
+      "output_negative_fraction": 0.5,
+      "output_variance": 25.490000000000002,
+      "role": "finite-moment bridge explanatory fixture",
+      "status": "PASS"
+    },
+    "mutation_invariance": {
+      "mean_abs_error": 0.019219935061517337,
+      "nonclaim": "A finite moment probe is not an invariance proof for q=20 kernels.",
+      "rho": 0.75,
+      "role": "M0 mutation invariant-target diagnostic",
+      "sample_count": 4096,
+      "second_moment_abs_error": 0.03295751325276286,
+      "status": "PASS"
+    },
+    "replay_metadata_parity": {
+      "changed_metadata_hash": "b679b90ad8e426a0b7b7b15a4a9638f7d11e5c7adc9979c5706e7f454fb8f962",
+      "material_change_detected": true,
+      "max_abs_log_density_residual": 0.0,
+      "metadata_hash": "fa3a0d4877732bec00b07c5ba2f19c15193c9c791a882e064b477b00f43099fc",
+      "role": "replay metadata parity hard-veto fixture",
+      "status": "PASS"
+    }
+  },
+  "schema": "bayesfilter.particle_authority.contract_receipt.v1",
+  "status": "PASS"
+}

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
@@ -16,6 +17,7 @@ from typing import Any
 
 import tensorflow as tf
 import tensorflow_probability as tfp
+from tensorflow_probability.python.mcmc import simple_step_size_adaptation as _tfp_step_size
 
 from bayesfilter.inference.batched_value_score import (
     FixedTransportValueScoreAdapter,
@@ -76,6 +78,17 @@ class FixedTransportFullChainConfig:
     tuning_policy: FixedTransportHMCPolicy
     target_scope: str
     chain_execution_mode: str
+    maximum_candidate_step_size: float | None = None
+
+    def __post_init__(self) -> None:
+        cap = self.maximum_candidate_step_size
+        if cap is not None:
+            cap = float(cap)
+            if not math.isfinite(cap) or cap <= 0.0:
+                raise ValueError(
+                    "maximum_candidate_step_size must be finite and positive"
+                )
+            object.__setattr__(self, "maximum_candidate_step_size", cap)
 
     @property
     def adaptation_policy(self) -> str:
@@ -90,6 +103,8 @@ class FixedTransportFullChainConfig:
 
 
 RunFullChainFn = Callable[[Any, Any, FixedTransportFullChainConfig], Any]
+FullChainRunHook = Callable[[Any, Any, FixedTransportFullChainConfig], None]
+FullChainResultHook = Callable[[Any, Any, FixedTransportFullChainConfig, Any], None]
 
 
 def fixed_transport_shared_scalar_step_size(value: Any, *, label: str) -> tf.Tensor:
@@ -109,6 +124,72 @@ def fixed_transport_shared_scalar_step_size(value: Any, *, label: str) -> tf.Ten
     return tf.identity(flattened[0])
 
 
+def fixed_transport_capped_step_size_setter(
+    maximum_candidate_step_size: float,
+) -> Callable[[Any, Any], Any]:
+    """Build the BayesFilter-owned dual-averaging step-size setter.
+
+    TFP's dual-averaging kernel reports an unconstrained proposal in
+    ``new_step_size`` and calls this setter immediately before the next HMC
+    transition.  The cap is therefore applied at the mechanics boundary, not
+    by a model client filtering candidate rows after the run.  The setter
+    preserves scalar or nested/per-chain step-size structures.
+    """
+
+    cap = float(maximum_candidate_step_size)
+    if not math.isfinite(cap) or cap <= 0.0:
+        raise ValueError("maximum_candidate_step_size must be finite and positive")
+    cap_tensor = tf.constant(cap, dtype=tf.float64)
+
+    def setter(kernel_results: Any, new_step_size: Any) -> Any:
+        bounded = tf.nest.map_structure(
+            lambda value: tf.minimum(tf.cast(value, cap_tensor.dtype), cap_tensor),
+            new_step_size,
+        )
+        return _tfp_step_size.hmc_like_step_size_setter_fn(kernel_results, bounded)
+
+    return setter
+
+
+def fixed_transport_step_size_telemetry(
+    kernel_results: Any,
+    *,
+    maximum_candidate_step_size: float | None,
+) -> Mapping[str, Any]:
+    """Return requested/applied epsilon telemetry from adaptive kernel results."""
+
+    requested = tf.nest.map_structure(
+        lambda value: tf.cast(value, tf.float64), kernel_results.new_step_size
+    )
+    applied = tf.nest.map_structure(
+        lambda value: tf.cast(value, tf.float64),
+        _tfp_step_size.hmc_like_step_size_getter_fn(kernel_results.inner_results),
+    )
+    requested_flat = tf.nest.flatten(requested)
+    applied_flat = tf.nest.flatten(applied)
+    if len(requested_flat) != len(applied_flat):
+        raise ValueError("requested/applied step-size structures disagree")
+    requested_max = tf.reduce_max(tf.concat([tf.reshape(v, (-1,)) for v in requested_flat], axis=0))
+    applied_max = tf.reduce_max(tf.concat([tf.reshape(v, (-1,)) for v in applied_flat], axis=0))
+    applied_min = tf.reduce_min(tf.concat([tf.reshape(v, (-1,)) for v in applied_flat], axis=0))
+    payload: dict[str, Any] = {
+        "step_size": applied,
+        "requested_step_size": requested,
+        "applied_step_size": applied,
+        "requested_step_size_max": requested_max,
+        "applied_step_size_max": applied_max,
+        "applied_step_size_min": applied_min,
+    }
+    if maximum_candidate_step_size is None:
+        payload["step_size_cap_applied"] = tf.zeros_like(applied_max, dtype=tf.bool)
+    else:
+        cap_tensor = tf.constant(float(maximum_candidate_step_size), tf.float64)
+        payload["maximum_candidate_step_size"] = cap_tensor
+        payload["step_size_cap_applied"] = requested_max > cap_tensor
+        payload["step_size_cap_within_bound"] = applied_max <= cap_tensor
+    return payload
+
+
 def fixed_transport_terminal_step_size(trace: Mapping[str, Any]) -> tf.Tensor:
     """Return one unambiguous adapted epsilon from the terminal trace row.
 
@@ -118,9 +199,10 @@ def fixed_transport_terminal_step_size(trace: Mapping[str, Any]) -> tf.Tensor:
     last element: that can turn a per-chain disagreement into a fake scalar.
     """
 
-    if "step_size" not in trace:
+    trace_key = "applied_step_size" if "applied_step_size" in trace else "step_size"
+    if trace_key not in trace:
         raise ValueError("adaptation trace does not contain step_size")
-    values = tf.cast(tf.convert_to_tensor(trace["step_size"]), tf.float64)
+    values = tf.cast(tf.convert_to_tensor(trace[trace_key]), tf.float64)
     if values.shape.rank == 0:
         terminal = values
     else:
@@ -128,6 +210,78 @@ def fixed_transport_terminal_step_size(trace: Mapping[str, Any]) -> tf.Tensor:
     return fixed_transport_shared_scalar_step_size(
         terminal, label="terminal adapted step_size"
     )
+
+
+def _step_size_diagnostics_from_trace(
+    trace: Mapping[str, Any],
+    *,
+    maximum_candidate_step_size: float | None,
+) -> Mapping[str, Any]:
+    """Summarize adaptive requested/applied epsilon telemetry outside the graph."""
+
+    requested = trace.get("requested_step_size")
+    applied = trace.get("applied_step_size", trace.get("step_size"))
+    if requested is None or applied is None:
+        return {
+            "step_size_cap_telemetry_complete": False,
+            "step_size_cap_within_bound": False if maximum_candidate_step_size is not None else None,
+            "step_size_cap_applied": None,
+            "requested_step_size_max": None,
+            "applied_step_size_max": None,
+            "applied_step_size_min": None,
+        }
+    requested_values = tf.reshape(tf.cast(tf.convert_to_tensor(requested), tf.float64), (-1,))
+    applied_values = tf.reshape(tf.cast(tf.convert_to_tensor(applied), tf.float64), (-1,))
+    requested_max = tf.reduce_max(requested_values)
+    applied_max = tf.reduce_max(applied_values)
+    applied_min = tf.reduce_min(applied_values)
+    payload: dict[str, Any] = {
+        "step_size_cap_telemetry_complete": True,
+        "requested_step_size_max": float(requested_max.numpy()),
+        "applied_step_size_max": float(applied_max.numpy()),
+        "applied_step_size_min": float(applied_min.numpy()),
+        "applied_step_size_all_finite": bool(tf.reduce_all(tf.math.is_finite(applied_values)).numpy()),
+        "requested_step_size_all_finite": bool(tf.reduce_all(tf.math.is_finite(requested_values)).numpy()),
+    }
+    if maximum_candidate_step_size is None:
+        payload["step_size_cap_within_bound"] = None
+        payload["step_size_cap_applied"] = False
+    else:
+        cap = float(maximum_candidate_step_size)
+        payload["maximum_candidate_step_size"] = cap
+        payload["step_size_cap_within_bound"] = bool(
+            tf.reduce_all(applied_values <= tf.constant(cap, tf.float64)).numpy()
+        )
+        payload["step_size_cap_applied"] = bool(
+            tf.reduce_any(requested_values > tf.constant(cap, tf.float64)).numpy()
+        )
+    return payload
+
+
+def _fixed_step_size_diagnostics(
+    step_size: Any,
+    *,
+    maximum_candidate_step_size: float | None,
+) -> Mapping[str, Any]:
+    """Summarize a fixed-kernel epsilon against the optional mechanics cap."""
+
+    value = float(tf.cast(tf.convert_to_tensor(step_size), tf.float64).numpy())
+    payload: dict[str, Any] = {
+        "step_size_cap_telemetry_complete": True,
+        "requested_step_size_max": value,
+        "applied_step_size_max": value,
+        "applied_step_size_min": value,
+        "applied_step_size_all_finite": bool(tf.math.is_finite(tf.constant(value, tf.float64)).numpy()),
+        "requested_step_size_all_finite": bool(tf.math.is_finite(tf.constant(value, tf.float64)).numpy()),
+        "step_size_cap_applied": False,
+    }
+    if maximum_candidate_step_size is None:
+        payload["step_size_cap_within_bound"] = None
+    else:
+        cap = float(maximum_candidate_step_size)
+        payload["maximum_candidate_step_size"] = cap
+        payload["step_size_cap_within_bound"] = value <= cap
+    return payload
 
 
 class FixedTransportReusableRunner:
@@ -190,7 +344,12 @@ class FixedTransportReusableRunner:
         if divergence is not None:
             trace["divergence"] = divergence
         if adaptive:
-            trace["step_size"] = kernel_results.new_step_size
+            trace.update(
+                fixed_transport_step_size_telemetry(
+                    kernel_results,
+                    maximum_candidate_step_size=self.config.maximum_candidate_step_size,
+                )
+            )
         if self.config.target_status_trace_policy == "per_chain_step":
             if bool(getattr(self.adapter, "target_status_invalid_rows_become_nonfinite", False)):
                 valid = tf.logical_and(
@@ -218,12 +377,18 @@ class FixedTransportReusableRunner:
             )
             kernel: Any = hmc
             if config.tuning_policy.uses_dual_averaging:
+                setter = None
+                if config.maximum_candidate_step_size is not None:
+                    setter = fixed_transport_capped_step_size_setter(
+                        config.maximum_candidate_step_size
+                    )
                 kernel = tfp.mcmc.DualAveragingStepSizeAdaptation(
                     hmc,
                     num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
                     target_accept_prob=tf.constant(
                         config.tuning_policy.target_accept_prob, dtype=state.dtype
                     ),
+                    **({"step_size_setter_fn": setter} if setter is not None else {}),
                 )
             return tfp.mcmc.sample_chain(
                 num_results=config.num_results,
@@ -273,6 +438,16 @@ class FixedTransportReusableRunner:
         leapfrog_tensor = tf.convert_to_tensor(num_leapfrog_steps, tf.int32)
         if seed_tensor.shape != (2,) or step_tensor.shape.rank != 0 or leapfrog_tensor.shape.rank != 0:
             raise ValueError("seed, step_size, and num_leapfrog_steps must be scalar contracts")
+        step_value = float(step_tensor.numpy())
+        if not bool(tf.math.is_finite(step_tensor).numpy()) or step_value <= 0.0:
+            raise ValueError("step_size must be finite and positive")
+        if (
+            self.config.maximum_candidate_step_size is not None
+            and step_value > self.config.maximum_candidate_step_size
+        ):
+            raise ValueError(
+                "step_size exceeds maximum_candidate_step_size"
+            )
         if int(leapfrog_tensor.numpy()) <= 0:
             raise ValueError("num_leapfrog_steps must be positive")
         started = time.perf_counter()
@@ -285,8 +460,22 @@ class FixedTransportReusableRunner:
             terminal = fixed_transport_terminal_step_size(trace)
             diagnostics["final_step_size"] = terminal
             diagnostics["final_step_size_finite"] = tf.math.is_finite(terminal)
+            diagnostics.update(
+                _step_size_diagnostics_from_trace(
+                    trace,
+                    maximum_candidate_step_size=self.config.maximum_candidate_step_size,
+                )
+            )
+        else:
+            diagnostics.update(
+                _fixed_step_size_diagnostics(
+                    step_tensor,
+                    maximum_candidate_step_size=self.config.maximum_candidate_step_size,
+                )
+            )
         diagnostics["target_accept_prob"] = self.config.tuning_policy.target_accept_prob
         diagnostics["num_adaptation_steps"] = self.config.tuning_policy.num_adaptation_steps
+        diagnostics["maximum_candidate_step_size"] = self.config.maximum_candidate_step_size
         trace_count = self.tracing_count
         metadata = {
             "runtime": "tfp.mcmc.sample_chain",
@@ -316,6 +505,144 @@ def build_fixed_transport_reusable_runner(
     """Build one reusable dynamic-epsilon/dynamic-``L`` runner."""
 
     return FixedTransportReusableRunner(adapter, initial_state_template, config)
+
+
+class FixedTransportReusableRunnerPool:
+    """Cache compiled runners by the genuinely static full-chain contract.
+
+    A tuning campaign varies the current state, stateless seed, step size, and
+    leapfrog count repeatedly. Rebuilding ``tf.function`` for those values
+    recompiles an otherwise identical HMC graph. This pool keeps those four
+    values as tensor inputs and creates a new runner only when a static loop
+    budget, adaptation policy, trace schema, XLA mode, or target changes.
+
+    One pool is deliberately bound to one adapter object and one state shape.
+    Matching signatures are not enough to reuse a traced closure across two
+    independently constructed targets.
+    """
+
+    def __init__(
+        self,
+        *,
+        before_run: FullChainRunHook | None = None,
+        after_run: FullChainResultHook | None = None,
+    ) -> None:
+        self._before_run = before_run
+        self._after_run = after_run
+        self._adapter: Any | None = None
+        self._adapter_signature: str | None = None
+        self._state_shape: tuple[int, int] | None = None
+        self._runners: dict[str, FixedTransportReusableRunner] = {}
+
+    @staticmethod
+    def _static_config_payload(
+        config: FixedTransportFullChainConfig,
+    ) -> Mapping[str, Any]:
+        payload = dict(config.signature_payload())
+        for dynamic_name in ("step_size", "num_leapfrog_steps", "seed"):
+            payload.pop(dynamic_name, None)
+        return payload
+
+    def _bind_campaign(self, adapter: Any, state: tf.Tensor) -> None:
+        shape = tuple(int(dim) for dim in state.shape)
+        if len(shape) != 2:
+            raise ValueError("reusable runner pool requires rank-2 state")
+        signature = fixed_transport_base_adapter_signature(adapter)
+        if self._adapter is None:
+            self._adapter = adapter
+            self._adapter_signature = signature
+            self._state_shape = shape
+            return
+        if adapter is not self._adapter:
+            raise ValueError(
+                "reusable runner pool cannot cross adapter object boundaries"
+            )
+        if signature != self._adapter_signature:
+            raise ValueError("reusable runner pool adapter signature changed")
+        if shape != self._state_shape:
+            raise ValueError("reusable runner pool state shape changed")
+
+    def __call__(
+        self,
+        adapter: Any,
+        initial_state: Any,
+        config: FixedTransportFullChainConfig,
+    ) -> Any:
+        if not isinstance(config, FixedTransportFullChainConfig):
+            raise TypeError("config must be FixedTransportFullChainConfig")
+        if config.chain_execution_mode != "tf_function":
+            raise ValueError(
+                "reusable runner pool requires chain_execution_mode='tf_function'"
+            )
+        state = tf.cast(tf.convert_to_tensor(initial_state), tf.float64)
+        self._bind_campaign(adapter, state)
+        adapter_scope = getattr(adapter, "target_scope", None)
+        if adapter_scope is not None and str(adapter_scope) != config.target_scope:
+            raise ValueError("reusable runner pool target_scope mismatch")
+        if self._before_run is not None:
+            self._before_run(adapter, state, config)
+        static_payload = self._static_config_payload(config)
+        static_signature = fixed_transport_stable_hash(static_payload)
+        runner = self._runners.get(static_signature)
+        if runner is None:
+            runner = build_fixed_transport_reusable_runner(adapter, state, config)
+            self._runners[static_signature] = runner
+        elif runner.program_signature != fixed_transport_stable_hash(
+            {
+                "schema": "bayesfilter.fixed_transport_reusable_runner.v1",
+                "adapter_signature": self._adapter_signature,
+                "state_shape": self._state_shape,
+                "state_dtype": "float64",
+                "static_config": static_payload,
+                "dynamic_inputs": (
+                    "current_state",
+                    "seed",
+                    "step_size",
+                    "num_leapfrog_steps",
+                ),
+            }
+        ):
+            raise RuntimeError("reusable runner pool program signature mismatch")
+        result = runner.run(
+            current_state=state,
+            seed=config.seed,
+            step_size=config.step_size,
+            num_leapfrog_steps=config.num_leapfrog_steps,
+        )
+        if self._after_run is not None:
+            self._after_run(adapter, state, config, result)
+        return result
+
+    def evidence(self) -> Mapping[str, Any]:
+        """Return auditable call and trace counts for every static graph."""
+
+        runners = tuple(
+            {
+                "static_config_signature": static_signature,
+                "program_signature": runner.program_signature,
+                "call_count": runner.call_count,
+                "tracing_count": runner.tracing_count,
+                "static_config": self._static_config_payload(runner.config),
+            }
+            for static_signature, runner in sorted(self._runners.items())
+        )
+        tracing_counts = tuple(row["tracing_count"] for row in runners)
+        return {
+            "schema": "bayesfilter.fixed_transport_reusable_runner_pool.v1",
+            "adapter_signature": self._adapter_signature,
+            "state_shape": self._state_shape,
+            "runner_count": len(runners),
+            "total_call_count": sum(int(row["call_count"]) for row in runners),
+            "all_runners_traced_exactly_once": bool(runners)
+            and all(count == 1 for count in tracing_counts),
+            "dynamic_inputs": (
+                "current_state",
+                "seed",
+                "step_size",
+                "num_leapfrog_steps",
+            ),
+            "runners": runners,
+        }
 
 
 def fixed_transport_base_adapter_signature(adapter: Any) -> str:
@@ -553,6 +880,14 @@ def run_fixed_transport_full_chain_tfp_hmc(
     from bayesfilter.inference.hmc import FullChainHMCRunResult
 
     state = tf.cast(tf.convert_to_tensor(initial_state), tf.float64)
+    step_value = float(config.step_size)
+    if not math.isfinite(step_value) or step_value <= 0.0:
+        raise ValueError("step_size must be finite and positive")
+    if (
+        config.maximum_candidate_step_size is not None
+        and step_value > config.maximum_candidate_step_size
+    ):
+        raise ValueError("step_size exceeds maximum_candidate_step_size")
     target = reviewed_value_score_target_fn(adapter, dtype=state.dtype, require_batched=True)
     hmc = tfp.mcmc.HamiltonianMonteCarlo(
         target_log_prob_fn=target,
@@ -561,12 +896,18 @@ def run_fixed_transport_full_chain_tfp_hmc(
     )
     kernel: Any = hmc
     if config.tuning_policy.uses_dual_averaging:
+        setter = None
+        if config.maximum_candidate_step_size is not None:
+            setter = fixed_transport_capped_step_size_setter(
+                config.maximum_candidate_step_size
+            )
         kernel = tfp.mcmc.DualAveragingStepSizeAdaptation(
             hmc,
             num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
             target_accept_prob=tf.constant(
                 config.tuning_policy.target_accept_prob, state.dtype
             ),
+            **({"step_size_setter_fn": setter} if setter is not None else {}),
         )
 
     def trace_fn(chain_state: Any, kernel_results: Any) -> Mapping[str, Any]:
@@ -584,7 +925,12 @@ def run_fixed_transport_full_chain_tfp_hmc(
         if divergence is not None:
             trace["divergence"] = divergence
         if adaptive:
-            trace["step_size"] = kernel_results.new_step_size
+            trace.update(
+                fixed_transport_step_size_telemetry(
+                    kernel_results,
+                    maximum_candidate_step_size=config.maximum_candidate_step_size,
+                )
+            )
         if (
             config.target_status_trace_policy == "per_chain_step"
             and bool(
@@ -625,8 +971,23 @@ def run_fixed_transport_full_chain_tfp_hmc(
         final_step = fixed_transport_terminal_step_size(trace)
         diagnostics["final_step_size"] = final_step
         diagnostics["final_step_size_finite"] = tf.math.is_finite(final_step)
+    if config.tuning_policy.uses_dual_averaging:
+        diagnostics.update(
+            _step_size_diagnostics_from_trace(
+                trace,
+                maximum_candidate_step_size=config.maximum_candidate_step_size,
+            )
+        )
+    else:
+        diagnostics.update(
+            _fixed_step_size_diagnostics(
+                config.step_size,
+                maximum_candidate_step_size=config.maximum_candidate_step_size,
+            )
+        )
     diagnostics["target_accept_prob"] = config.tuning_policy.target_accept_prob
     diagnostics["num_adaptation_steps"] = config.tuning_policy.num_adaptation_steps
+    diagnostics["maximum_candidate_step_size"] = config.maximum_candidate_step_size
     return FullChainHMCRunResult(
         samples=samples,
         trace=trace,
@@ -651,11 +1012,16 @@ def run_fixed_transport_full_chain_tfp_hmc(
 __all__ = [
     "FixedTransportFullChainConfig",
     "FixedTransportHMCPolicy",
+    "FixedTransportReusableRunnerPool",
+    "FullChainResultHook",
+    "FullChainRunHook",
     "RunFullChainFn",
     "build_fixed_transport_value_score_adapter",
     "fixed_transport_base_adapter_signature",
+    "fixed_transport_capped_step_size_setter",
     "fixed_transport_json_ready",
     "fixed_transport_stable_hash",
+    "fixed_transport_step_size_telemetry",
     "fixed_transport_target_status_diagnostics",
     "fixed_transport_tensor_diagnostics",
     "fixed_transport_shared_scalar_step_size",

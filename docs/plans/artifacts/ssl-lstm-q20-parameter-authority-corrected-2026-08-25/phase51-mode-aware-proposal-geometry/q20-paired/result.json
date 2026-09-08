@@ -1,0 +1,1719 @@
+{
+  "calibration_particles": 64,
+  "defensive_epsilon": 0.2,
+  "device": {
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        },
+        {
+          "device": "/physical_device:GPU:1",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile_mutation": true,
+    "jit_compile_target": true,
+    "logical_devices": [
+      "/device:GPU:0",
+      "/device:GPU:1"
+    ],
+    "physical_devices": [
+      "/physical_device:GPU:0",
+      "/physical_device:GPU:1"
+    ],
+    "tf32_enabled": true
+  },
+  "fixture_required": true,
+  "fresh_rows_used_for_selection": false,
+  "fresh_rows_used_for_training": false,
+  "geometry_artifact_sha256": "dc3dd7b84566867bc49c11ad16f50778d21457adbb398a17c2a75f3c3b461eeb",
+  "geometry_component_law": "s_geom(theta)=0.5*N(m_minus,kappa^2*C_minus)+0.5*N(m_plus,kappa^2*C_plus)",
+  "geometry_rho": 0.5,
+  "geometry_scale": 2.0,
+  "hmc_launched": false,
+  "measure": "theta_R4",
+  "mh_steps": 8,
+  "mode_axis": 2,
+  "nonclaims": [
+    "Identity and mode-aware-geometry clouds are finite diagnostics, not IID or posterior proofs.",
+    "Acceptance, ESS, mode mass, root count, and spread differences are descriptive only.",
+    "No HMC, convergence, exhaustive mode discovery, canonical LEDH, whitening, superiority, or default claim."
+  ],
+  "particles": 256,
+  "phase47_boundary_sha256": "0a3d3008a279603fff4b67e18af46d5074fc357fe2b4f5481093332b7e2fe690",
+  "phase49_report_branch": "depth8_does_not_reduce_variability",
+  "phase49_report_sha256": "9afb3c79423a3293a5cc7040059fd7adb8f8a543cef25fca102a7f1ca18e021d",
+  "phase50_report_branch": "support_broadened_does_not_reduce_variability",
+  "phase50_report_sha256": "6b1801c0716e81c1879f0d54b09b43cc213a9e589136d002fc5fc8d25b811c74",
+  "pilot_receipts_distinct": true,
+  "plan_version": "v3.3-mode-aware-proposal-geometry",
+  "proposal_law": "r_geom(theta)=(1-rho)q(theta)+rho*s_geom(theta)",
+  "replicates": [
+    {
+      "identity": {
+        "arm": "identity",
+        "final_summary": {
+          "coordinate_max": [
+            10.526773128272103,
+            8.073807162482174,
+            0.9815678933040916,
+            5.163222569399587
+          ],
+          "coordinate_min": [
+            -9.185052944827184,
+            -5.91466270365066,
+            -1.007247145658703,
+            -3.0839833120695594
+          ],
+          "covariance": [
+            [
+              20.982042425122803,
+              0.6594963016610078,
+              0.13410005841352124,
+              -0.24661818511526823
+            ],
+            [
+              0.6594963016610078,
+              5.963710576464883,
+              -0.0057722625306310645,
+              -0.8406425690139544
+            ],
+            [
+              0.1341000584135213,
+              -0.0057722625306310575,
+              0.34529083109960507,
+              0.018382253697755518
+            ],
+            [
+              -0.24661818511526823,
+              -0.8406425690139544,
+              0.018382253697755476,
+              2.118625589526508
+            ]
+          ],
+          "covariance_offdiag_max_abs": 0.8406425690139544,
+          "negative_mode_fraction": 0.4462231562998148,
+          "root_count": 130,
+          "theta_mean": [
+            -0.41555015439679627,
+            -0.0017393367496061733,
+            0.023448367915138227,
+            0.286533395797923
+          ],
+          "theta_mean_0": -0.41555015439679627,
+          "weighted_ess_fraction": 0.9698815606086202
+        },
+        "final_tensors": {
+          "final_roots": {
+            "bytes": 1036,
+            "dtype": "int32",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/identity/identity-final-roots.tftensor",
+            "sha256": "76a70329717971560d7d8aee989308d8d93706b3a1d0b43901787f87df25f83f",
+            "shape": [
+              256
+            ]
+          },
+          "final_theta": {
+            "bytes": 8208,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/identity/identity-final-theta.tftensor",
+            "sha256": "29ddc8c83687a3e52250009e80dc4410aff786f8f6737d7b63ed2e2f5ee53ef6",
+            "shape": [
+              256,
+              4
+            ]
+          },
+          "final_weights": {
+            "bytes": 2060,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/identity/identity-final-weights.tftensor",
+            "sha256": "97d990889bde79b4834f522c70a7c7053e8b5d6efd2eb24e843de5fc62a846d5",
+            "shape": [
+              256
+            ]
+          }
+        },
+        "gates": {
+          "all_invalid_candidates_rejected": true,
+          "all_status_valid": true,
+          "final_shape_N_by_4": true,
+          "finite_summary": true,
+          "finite_theta": true,
+          "finite_weights": true
+        },
+        "independent_seed_offset": 30000,
+        "kernel": "identity",
+        "mh_steps": 8,
+        "nonclaims": [
+          "Finite mutation clouds are not posterior or IID draws.",
+          "Acceptance and geometry-proposal differences are descriptive only.",
+          "No HMC, whitening, exhaustive mode discovery, canonical LEDH, superiority, or default claim."
+        ],
+        "replicate_seed": [
+          20260826,
+          4806
+        ],
+        "stages": [
+          {
+            "all_current_status_valid": true,
+            "beta": 0.2,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.6652095577129585,
+            "pre_resampling_maximum_weight": 0.009942946187505911,
+            "previous_beta": 0.0,
+            "resampled": true,
+            "stage_index": 0,
+            "unique_root_count_after_resampling": 171
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.4,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9344141853227913,
+            "pre_resampling_maximum_weight": 0.006612887404996819,
+            "previous_beta": 0.2,
+            "resampled": true,
+            "stage_index": 1,
+            "unique_root_count_after_resampling": 151
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.6,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9627339048991893,
+            "pre_resampling_maximum_weight": 0.00618086462445826,
+            "previous_beta": 0.4,
+            "resampled": true,
+            "stage_index": 2,
+            "unique_root_count_after_resampling": 141
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.8,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9688745863210358,
+            "pre_resampling_maximum_weight": 0.005948973631472788,
+            "previous_beta": 0.6,
+            "resampled": true,
+            "stage_index": 3,
+            "unique_root_count_after_resampling": 130
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 1.0,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "terminal_identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9698815606086202,
+            "pre_resampling_maximum_weight": 0.005743856606998057,
+            "previous_beta": 0.8,
+            "resampled": false,
+            "stage_index": 4,
+            "unique_root_count_after_resampling": 130
+          }
+        ],
+        "status": "PASS_V3_3_MUTATION_ARM"
+      },
+      "initial_tensors": {
+        "components": {
+          "bytes": 1036,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/initial-proposal-components.tftensor",
+          "sha256": "f9ef7813e4784cbb69e22523764aee1af7924c083a8bd7389d097545fb227ae6",
+          "shape": [
+            256
+          ]
+        },
+        "proposal_q": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/initial-proposal-q-log-theta.tftensor",
+          "sha256": "81592934c74bd61896ef6f347e6d518990aa027d37f9e2a5c291be84fe5eaee0",
+          "shape": [
+            256
+          ]
+        },
+        "proposal_r": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/initial-proposal-r-log-theta.tftensor",
+          "sha256": "95932c00b4aa0cf49ad0d661444f1b135ff88e8ab3c51d61d281bef4a2340c88",
+          "shape": [
+            256
+          ]
+        },
+        "roots": {
+          "bytes": 1036,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/initial-roots.tftensor",
+          "sha256": "b5a64f17e3ed56e75186ac41d3a717ec0c38c02594af6f17084db6b5c7a0f422",
+          "shape": [
+            256
+          ]
+        },
+        "target": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/initial-target-log-theta.tftensor",
+          "sha256": "4ed2f1cc8688aeadcff262adff9c060fb95156324446c0d2bc7d7b503ff18b46",
+          "shape": [
+            256
+          ]
+        },
+        "theta": {
+          "bytes": 8208,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/initial-theta.tftensor",
+          "sha256": "7d2a42a169c541a79f1e61fb95a60ca05abab957428dcbe3935b524babbd7758",
+          "shape": [
+            256,
+            4
+          ]
+        }
+      },
+      "mode_aware_geometry_mh": {
+        "arm": "mode_aware_geometry_mh",
+        "final_summary": {
+          "coordinate_max": [
+            12.346557424084939,
+            9.522438545059567,
+            1.1228403583239146,
+            4.900087137857941
+          ],
+          "coordinate_min": [
+            -13.62224876008967,
+            -8.569032920580446,
+            -1.0371006241290623,
+            -5.7323400886230536
+          ],
+          "covariance": [
+            [
+              17.236163383258788,
+              -0.0916507930043198,
+              0.10909584558594734,
+              -0.528595619768234
+            ],
+            [
+              -0.09165079300431994,
+              10.426969452230846,
+              0.3561446139026475,
+              -0.27984178661333514
+            ],
+            [
+              0.10909584558594732,
+              0.35614461390264746,
+              0.3872542273626996,
+              0.16856507914109842
+            ],
+            [
+              -0.5285956197682341,
+              -0.2798417866133354,
+              0.16856507914109836,
+              3.8747719576680715
+            ]
+          ],
+          "covariance_offdiag_max_abs": 0.5285956197682341,
+          "negative_mode_fraction": 0.4835850460359143,
+          "root_count": 149,
+          "theta_mean": [
+            0.6301910880160891,
+            -0.36654873106882135,
+            0.016694738008741054,
+            -0.08768834742993303
+          ],
+          "theta_mean_0": 0.6301910880160891,
+          "weighted_ess_fraction": 0.8335461348521617
+        },
+        "final_tensors": {
+          "final_roots": {
+            "bytes": 1036,
+            "dtype": "int32",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/mode-aware-geometry-mh/mode_aware_geometry_mh-final-roots.tftensor",
+            "sha256": "2e34168d10eed4a6deccc6ee0775bdc8376bf5db95e8b6eae402360f5acf0abc",
+            "shape": [
+              256
+            ]
+          },
+          "final_theta": {
+            "bytes": 8208,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/mode-aware-geometry-mh/mode_aware_geometry_mh-final-theta.tftensor",
+            "sha256": "27700120feab3daaa584170912c8c794dd1c40fe50b26862cf4e803961f288c9",
+            "shape": [
+              256,
+              4
+            ]
+          },
+          "final_weights": {
+            "bytes": 2060,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-01/mode-aware-geometry-mh/mode_aware_geometry_mh-final-weights.tftensor",
+            "sha256": "d1b8c934409e1ef2123a87809038a00d7d209303df567cdc3ec09d9052f07d39",
+            "shape": [
+              256
+            ]
+          }
+        },
+        "gates": {
+          "all_invalid_candidates_rejected": true,
+          "all_status_valid": true,
+          "final_shape_N_by_4": true,
+          "finite_summary": true,
+          "finite_theta": true,
+          "finite_weights": true
+        },
+        "independent_seed_offset": 30000,
+        "kernel": "independent_mh",
+        "mh_steps": 8,
+        "nonclaims": [
+          "Finite mutation clouds are not posterior or IID draws.",
+          "Acceptance and geometry-proposal differences are descriptive only.",
+          "No HMC, whitening, exhaustive mode discovery, canonical LEDH, superiority, or default claim."
+        ],
+        "replicate_seed": [
+          20260826,
+          4806
+        ],
+        "stages": [
+          {
+            "all_current_status_valid": true,
+            "beta": 0.2,
+            "mutation": {
+              "acceptance_rate": 0.3916015625,
+              "accepted_count": 802,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.498046875,
+              "candidate_safe_fraction": 0.109375,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -1628.748804958853,
+              "mean_displacement": 2.8124124607679817,
+              "move_fraction": 0.3916015625,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.6652095577129585,
+            "pre_resampling_maximum_weight": 0.009942946187505911,
+            "previous_beta": 0.0,
+            "resampled": true,
+            "stage_index": 0,
+            "unique_root_count_after_resampling": 171
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.4,
+            "mutation": {
+              "acceptance_rate": 0.3154296875,
+              "accepted_count": 646,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.50390625,
+              "candidate_safe_fraction": 0.1015625,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -3449.6974843336457,
+              "mean_displacement": 2.0998948975424483,
+              "move_fraction": 0.3154296875,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9207798783867559,
+            "pre_resampling_maximum_weight": 0.009971433742711006,
+            "previous_beta": 0.2,
+            "resampled": true,
+            "stage_index": 1,
+            "unique_root_count_after_resampling": 159
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.6,
+            "mutation": {
+              "acceptance_rate": 0.28515625,
+              "accepted_count": 584,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.50244140625,
+              "candidate_safe_fraction": 0.1044921875,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -2148.5564919412022,
+              "mean_displacement": 2.017970274463849,
+              "move_fraction": 0.28515625,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9121620209977973,
+            "pre_resampling_maximum_weight": 0.015021756162883527,
+            "previous_beta": 0.4,
+            "resampled": true,
+            "stage_index": 2,
+            "unique_root_count_after_resampling": 154
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.8,
+            "mutation": {
+              "acceptance_rate": 0.251953125,
+              "accepted_count": 516,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.50048828125,
+              "candidate_safe_fraction": 0.1015625,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -3198.565668066312,
+              "mean_displacement": 1.775982015368846,
+              "move_fraction": 0.251953125,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9232586541667536,
+            "pre_resampling_maximum_weight": 0.010736725919805883,
+            "previous_beta": 0.6,
+            "resampled": true,
+            "stage_index": 3,
+            "unique_root_count_after_resampling": 149
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 1.0,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "terminal_identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.8335461348521622,
+            "pre_resampling_maximum_weight": 0.016622528666973127,
+            "previous_beta": 0.8,
+            "resampled": false,
+            "stage_index": 4,
+            "unique_root_count_after_resampling": 149
+          }
+        ],
+        "status": "PASS_V3_3_MUTATION_ARM"
+      },
+      "paired": {
+        "identity_initial_tensor_hash": "7d2a42a169c541a79f1e61fb95a60ca05abab957428dcbe3935b524babbd7758",
+        "independent_seed_offset": 30000,
+        "initial_tensor_hash": "7d2a42a169c541a79f1e61fb95a60ca05abab957428dcbe3935b524babbd7758",
+        "mode_aware_geometry_initial_tensor_hash": "7d2a42a169c541a79f1e61fb95a60ca05abab957428dcbe3935b524babbd7758",
+        "phase47_identity_final_tensors_reproduced": true,
+        "phase47_initial_cloud_reproduced": true,
+        "phase47_initial_tensor_hash": "7d2a42a169c541a79f1e61fb95a60ca05abab957428dcbe3935b524babbd7758",
+        "resampling_seed_offset": 1000,
+        "same_initial_cloud": true,
+        "same_resampling_seeds": true
+      },
+      "pilot_m0_seed": [
+        20260826,
+        4806
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-01",
+      "pilot_sha256": "bd6ec185f4682e82345be2b450b2a90c9773395cc43743da4217908bd579c43f",
+      "replicate": 1
+    },
+    {
+      "identity": {
+        "arm": "identity",
+        "final_summary": {
+          "coordinate_max": [
+            11.092429833485916,
+            9.478612126150523,
+            0.8290758512535583,
+            4.378008504195902
+          ],
+          "coordinate_min": [
+            -8.582245888305875,
+            -7.0025383296638415,
+            -0.91980448991214,
+            -5.478978323868758
+          ],
+          "covariance": [
+            [
+              15.492388611674368,
+              -1.677396302884368,
+              -0.11086996747082574,
+              -1.0555635279382924
+            ],
+            [
+              -1.6773963028843677,
+              5.2188940484612125,
+              0.04058327614938274,
+              -0.432839932994218
+            ],
+            [
+              -0.11086996747082571,
+              0.040583276149382765,
+              0.38008286752822257,
+              0.23738430242661257
+            ],
+            [
+              -1.055563527938292,
+              -0.432839932994218,
+              0.23738430242661257,
+              1.9783449649886713
+            ]
+          ],
+          "covariance_offdiag_max_abs": 1.677396302884368,
+          "negative_mode_fraction": 0.6109744613998329,
+          "root_count": 109,
+          "theta_mean": [
+            -0.41615897274007746,
+            -0.3903893878512493,
+            -0.10541014796006551,
+            0.15150053142302794
+          ],
+          "theta_mean_0": -0.41615897274007746,
+          "weighted_ess_fraction": 0.9300097451752558
+        },
+        "final_tensors": {
+          "final_roots": {
+            "bytes": 1036,
+            "dtype": "int32",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/identity/identity-final-roots.tftensor",
+            "sha256": "47c6f54e80777b75957d705833c05930365df2ba1af07e73bc40d138906ae375",
+            "shape": [
+              256
+            ]
+          },
+          "final_theta": {
+            "bytes": 8208,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/identity/identity-final-theta.tftensor",
+            "sha256": "bbcda7f9bf00dc006216e86edb6cfd6eed2d5bc28e8a3c99ed375fdb5ee69a86",
+            "shape": [
+              256,
+              4
+            ]
+          },
+          "final_weights": {
+            "bytes": 2060,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/identity/identity-final-weights.tftensor",
+            "sha256": "3c569d9d9a8fe3091fb3a3514b83479b1a78a798aff545777d843668493ec181",
+            "shape": [
+              256
+            ]
+          }
+        },
+        "gates": {
+          "all_invalid_candidates_rejected": true,
+          "all_status_valid": true,
+          "final_shape_N_by_4": true,
+          "finite_summary": true,
+          "finite_theta": true,
+          "finite_weights": true
+        },
+        "independent_seed_offset": 30000,
+        "kernel": "identity",
+        "mh_steps": 8,
+        "nonclaims": [
+          "Finite mutation clouds are not posterior or IID draws.",
+          "Acceptance and geometry-proposal differences are descriptive only.",
+          "No HMC, whitening, exhaustive mode discovery, canonical LEDH, superiority, or default claim."
+        ],
+        "replicate_seed": [
+          20260826,
+          4807
+        ],
+        "stages": [
+          {
+            "all_current_status_valid": true,
+            "beta": 0.2,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.6269636288845228,
+            "pre_resampling_maximum_weight": 0.012361668155058276,
+            "previous_beta": 0.0,
+            "resampled": true,
+            "stage_index": 0,
+            "unique_root_count_after_resampling": 166
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.4,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9101533867114445,
+            "pre_resampling_maximum_weight": 0.007716300235083004,
+            "previous_beta": 0.2,
+            "resampled": true,
+            "stage_index": 1,
+            "unique_root_count_after_resampling": 142
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.6,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9337500406296806,
+            "pre_resampling_maximum_weight": 0.007015676981052436,
+            "previous_beta": 0.4,
+            "resampled": true,
+            "stage_index": 2,
+            "unique_root_count_after_resampling": 122
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.8,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9334980149147591,
+            "pre_resampling_maximum_weight": 0.006537071718464327,
+            "previous_beta": 0.6,
+            "resampled": true,
+            "stage_index": 3,
+            "unique_root_count_after_resampling": 109
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 1.0,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "terminal_identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.930009745175256,
+            "pre_resampling_maximum_weight": 0.006092837411680587,
+            "previous_beta": 0.8,
+            "resampled": false,
+            "stage_index": 4,
+            "unique_root_count_after_resampling": 109
+          }
+        ],
+        "status": "PASS_V3_3_MUTATION_ARM"
+      },
+      "initial_tensors": {
+        "components": {
+          "bytes": 1036,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/initial-proposal-components.tftensor",
+          "sha256": "1a76e73997857d6f2d8ff081c5c29a1bcf690d96deae7c3ac3fd18b66eb4f995",
+          "shape": [
+            256
+          ]
+        },
+        "proposal_q": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/initial-proposal-q-log-theta.tftensor",
+          "sha256": "4da1e52ad731efd7c896f9a5871249a8bf79a270b81814117281c0f2226ac9d2",
+          "shape": [
+            256
+          ]
+        },
+        "proposal_r": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/initial-proposal-r-log-theta.tftensor",
+          "sha256": "017345c566ec2292b81a5ac7a2c6c0a0c4e7c2e63490a5e71e099c44b68a8d73",
+          "shape": [
+            256
+          ]
+        },
+        "roots": {
+          "bytes": 1036,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/initial-roots.tftensor",
+          "sha256": "b5a64f17e3ed56e75186ac41d3a717ec0c38c02594af6f17084db6b5c7a0f422",
+          "shape": [
+            256
+          ]
+        },
+        "target": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/initial-target-log-theta.tftensor",
+          "sha256": "414b6950fe84dddd4aff6de732c45ede242baa394db27b6f699eb699678416b6",
+          "shape": [
+            256
+          ]
+        },
+        "theta": {
+          "bytes": 8208,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/initial-theta.tftensor",
+          "sha256": "dcabcf404321092659c949ff7517697144e4cd3d5e10410ea740f9419521865a",
+          "shape": [
+            256,
+            4
+          ]
+        }
+      },
+      "mode_aware_geometry_mh": {
+        "arm": "mode_aware_geometry_mh",
+        "final_summary": {
+          "coordinate_max": [
+            12.346557424084939,
+            9.522438545059567,
+            1.1264518999557218,
+            4.900087137857941
+          ],
+          "coordinate_min": [
+            -12.440228740998693,
+            -9.046673794438526,
+            -1.0371006241290623,
+            -5.7323400886230536
+          ],
+          "covariance": [
+            [
+              21.057354706130607,
+              2.036622934055045,
+              0.22511625381294764,
+              -0.971456337225361
+            ],
+            [
+              2.0366229340550444,
+              11.287781830826331,
+              0.5874399571147871,
+              -1.346560167221163
+            ],
+            [
+              0.2251162538129476,
+              0.5874399571147871,
+              0.3729479190287179,
+              -0.04272473278075439
+            ],
+            [
+              -0.9714563372253607,
+              -1.3465601672211633,
+              -0.042724732780754386,
+              3.4705755205688753
+            ]
+          ],
+          "covariance_offdiag_max_abs": 2.036622934055045,
+          "negative_mode_fraction": 0.46107095689330724,
+          "root_count": 144,
+          "theta_mean": [
+            1.3606949892303146,
+            0.48962376266783225,
+            0.03362894128051424,
+            -0.3420216815352809
+          ],
+          "theta_mean_0": 1.3606949892303146,
+          "weighted_ess_fraction": 0.5752908426283005
+        },
+        "final_tensors": {
+          "final_roots": {
+            "bytes": 1036,
+            "dtype": "int32",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/mode-aware-geometry-mh/mode_aware_geometry_mh-final-roots.tftensor",
+            "sha256": "32969e6252bbb16726548b0ad1bb006aa7d172bc76f320f2d6d6b2eb65a23f9b",
+            "shape": [
+              256
+            ]
+          },
+          "final_theta": {
+            "bytes": 8208,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/mode-aware-geometry-mh/mode_aware_geometry_mh-final-theta.tftensor",
+            "sha256": "1d989f536b061e9ba18a41b44922c9e88733239a2fc27a68b358c3ceee8488af",
+            "shape": [
+              256,
+              4
+            ]
+          },
+          "final_weights": {
+            "bytes": 2060,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-02/mode-aware-geometry-mh/mode_aware_geometry_mh-final-weights.tftensor",
+            "sha256": "55bf57044b819409fc6677671e34ad3f2452b6181c4b4a4bc28a6976767107b3",
+            "shape": [
+              256
+            ]
+          }
+        },
+        "gates": {
+          "all_invalid_candidates_rejected": true,
+          "all_status_valid": true,
+          "final_shape_N_by_4": true,
+          "finite_summary": true,
+          "finite_theta": true,
+          "finite_weights": true
+        },
+        "independent_seed_offset": 30000,
+        "kernel": "independent_mh",
+        "mh_steps": 8,
+        "nonclaims": [
+          "Finite mutation clouds are not posterior or IID draws.",
+          "Acceptance and geometry-proposal differences are descriptive only.",
+          "No HMC, whitening, exhaustive mode discovery, canonical LEDH, superiority, or default claim."
+        ],
+        "replicate_seed": [
+          20260826,
+          4807
+        ],
+        "stages": [
+          {
+            "all_current_status_valid": true,
+            "beta": 0.2,
+            "mutation": {
+              "acceptance_rate": 0.39208984375,
+              "accepted_count": 803,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.50048828125,
+              "candidate_safe_fraction": 0.1025390625,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -1628.748804958853,
+              "mean_displacement": 2.7776168177646245,
+              "move_fraction": 0.39208984375,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.6269636288845228,
+            "pre_resampling_maximum_weight": 0.012361668155058276,
+            "previous_beta": 0.0,
+            "resampled": true,
+            "stage_index": 0,
+            "unique_root_count_after_resampling": 166
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.4,
+            "mutation": {
+              "acceptance_rate": 0.31396484375,
+              "accepted_count": 643,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.49951171875,
+              "candidate_safe_fraction": 0.103515625,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -3449.072116171253,
+              "mean_displacement": 2.0860178849531295,
+              "move_fraction": 0.31396484375,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9183372506591785,
+            "pre_resampling_maximum_weight": 0.007655943066188356,
+            "previous_beta": 0.2,
+            "resampled": true,
+            "stage_index": 1,
+            "unique_root_count_after_resampling": 155
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.6,
+            "mutation": {
+              "acceptance_rate": 0.2890625,
+              "accepted_count": 592,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.49658203125,
+              "candidate_safe_fraction": 0.1044921875,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -2146.6387636809104,
+              "mean_displacement": 1.99535318541774,
+              "move_fraction": 0.2890625,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9548060909824745,
+            "pre_resampling_maximum_weight": 0.00826835051369387,
+            "previous_beta": 0.4,
+            "resampled": true,
+            "stage_index": 2,
+            "unique_root_count_after_resampling": 149
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.8,
+            "mutation": {
+              "acceptance_rate": 0.24755859375,
+              "accepted_count": 507,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.5078125,
+              "candidate_safe_fraction": 0.099609375,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -3198.565668066312,
+              "mean_displacement": 1.7848060786085564,
+              "move_fraction": 0.24755859375,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9301430669315107,
+            "pre_resampling_maximum_weight": 0.00958566892470275,
+            "previous_beta": 0.6,
+            "resampled": true,
+            "stage_index": 3,
+            "unique_root_count_after_resampling": 144
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 1.0,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "terminal_identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.5752908426283005,
+            "pre_resampling_maximum_weight": 0.049067681867816786,
+            "previous_beta": 0.8,
+            "resampled": false,
+            "stage_index": 4,
+            "unique_root_count_after_resampling": 144
+          }
+        ],
+        "status": "PASS_V3_3_MUTATION_ARM"
+      },
+      "paired": {
+        "identity_initial_tensor_hash": "dcabcf404321092659c949ff7517697144e4cd3d5e10410ea740f9419521865a",
+        "independent_seed_offset": 30000,
+        "initial_tensor_hash": "dcabcf404321092659c949ff7517697144e4cd3d5e10410ea740f9419521865a",
+        "mode_aware_geometry_initial_tensor_hash": "dcabcf404321092659c949ff7517697144e4cd3d5e10410ea740f9419521865a",
+        "phase47_identity_final_tensors_reproduced": true,
+        "phase47_initial_cloud_reproduced": true,
+        "phase47_initial_tensor_hash": "dcabcf404321092659c949ff7517697144e4cd3d5e10410ea740f9419521865a",
+        "resampling_seed_offset": 1000,
+        "same_initial_cloud": true,
+        "same_resampling_seeds": true
+      },
+      "pilot_m0_seed": [
+        20260826,
+        4807
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-02",
+      "pilot_sha256": "263716a629da62c92b0432beb2162e84b41391b2d5ab2cdb713a194e6b4de9a8",
+      "replicate": 2
+    },
+    {
+      "identity": {
+        "arm": "identity",
+        "final_summary": {
+          "coordinate_max": [
+            15.647999026536302,
+            6.399796700178858,
+            0.9146052440273592,
+            4.149793519538497
+          ],
+          "coordinate_min": [
+            -14.557247276071504,
+            -6.032419037586641,
+            -1.0076358211220122,
+            -3.383063733007772
+          ],
+          "covariance": [
+            [
+              17.647869577027024,
+              -0.9453415419775971,
+              0.05878470342101405,
+              0.014707531927805663
+            ],
+            [
+              -0.9453415419775976,
+              5.194656503289956,
+              0.16583811132539808,
+              -0.13029983906432308
+            ],
+            [
+              0.058784703421014106,
+              0.16583811132539808,
+              0.37928474245266064,
+              0.011343245680649757
+            ],
+            [
+              0.01470753192780544,
+              -0.13029983906432305,
+              0.011343245680649759,
+              1.7688732613166431
+            ]
+          ],
+          "covariance_offdiag_max_abs": 0.9453415419775976,
+          "negative_mode_fraction": 0.5271286235769748,
+          "root_count": 121,
+          "theta_mean": [
+            0.8399820908378651,
+            0.02457536715628677,
+            -0.004888100479159529,
+            0.07933016139607155
+          ],
+          "theta_mean_0": 0.8399820908378651,
+          "weighted_ess_fraction": 0.9700708948582569
+        },
+        "final_tensors": {
+          "final_roots": {
+            "bytes": 1036,
+            "dtype": "int32",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/identity/identity-final-roots.tftensor",
+            "sha256": "2bd237fcf43f5723e754ca3ed9e1f64ea87c3121ca0a929b2422c7f1567be0a9",
+            "shape": [
+              256
+            ]
+          },
+          "final_theta": {
+            "bytes": 8208,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/identity/identity-final-theta.tftensor",
+            "sha256": "59e46d5c9dbc1a3a3ca917d1b4fd8e49cce75095d7da494cb015ed1c8eccfd8f",
+            "shape": [
+              256,
+              4
+            ]
+          },
+          "final_weights": {
+            "bytes": 2060,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/identity/identity-final-weights.tftensor",
+            "sha256": "79108f2011afb93f61e7c4650032f3456638c9a04ddbc0b289819b5f903734e9",
+            "shape": [
+              256
+            ]
+          }
+        },
+        "gates": {
+          "all_invalid_candidates_rejected": true,
+          "all_status_valid": true,
+          "final_shape_N_by_4": true,
+          "finite_summary": true,
+          "finite_theta": true,
+          "finite_weights": true
+        },
+        "independent_seed_offset": 30000,
+        "kernel": "identity",
+        "mh_steps": 8,
+        "nonclaims": [
+          "Finite mutation clouds are not posterior or IID draws.",
+          "Acceptance and geometry-proposal differences are descriptive only.",
+          "No HMC, whitening, exhaustive mode discovery, canonical LEDH, superiority, or default claim."
+        ],
+        "replicate_seed": [
+          20260826,
+          4808
+        ],
+        "stages": [
+          {
+            "all_current_status_valid": true,
+            "beta": 0.2,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.6234237343243038,
+            "pre_resampling_maximum_weight": 0.010617816897656335,
+            "previous_beta": 0.0,
+            "resampled": true,
+            "stage_index": 0,
+            "unique_root_count_after_resampling": 167
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.4,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9274937826819127,
+            "pre_resampling_maximum_weight": 0.006688797755700502,
+            "previous_beta": 0.2,
+            "resampled": true,
+            "stage_index": 1,
+            "unique_root_count_after_resampling": 143
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.6,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9591173829819337,
+            "pre_resampling_maximum_weight": 0.006191663920194256,
+            "previous_beta": 0.4,
+            "resampled": true,
+            "stage_index": 2,
+            "unique_root_count_after_resampling": 133
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.8,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.9687632199528746,
+            "pre_resampling_maximum_weight": 0.0059709563386288285,
+            "previous_beta": 0.6,
+            "resampled": true,
+            "stage_index": 3,
+            "unique_root_count_after_resampling": 121
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 1.0,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "terminal_identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.970070894858256,
+            "pre_resampling_maximum_weight": 0.005785688035079566,
+            "previous_beta": 0.8,
+            "resampled": false,
+            "stage_index": 4,
+            "unique_root_count_after_resampling": 121
+          }
+        ],
+        "status": "PASS_V3_3_MUTATION_ARM"
+      },
+      "initial_tensors": {
+        "components": {
+          "bytes": 1036,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/initial-proposal-components.tftensor",
+          "sha256": "7f9612d181f3124368da7e7ca0d9e581f68a926209f7034ed75ea7f12d25fec4",
+          "shape": [
+            256
+          ]
+        },
+        "proposal_q": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/initial-proposal-q-log-theta.tftensor",
+          "sha256": "071c56658a86742f07339c2e22e9f98c5b1f2b1d3c79674b82fc9db9abb6edd7",
+          "shape": [
+            256
+          ]
+        },
+        "proposal_r": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/initial-proposal-r-log-theta.tftensor",
+          "sha256": "56d5991a06a79954fe11739618b4101679e36040d1d3988ca6431896b6b7b5f0",
+          "shape": [
+            256
+          ]
+        },
+        "roots": {
+          "bytes": 1036,
+          "dtype": "int32",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/initial-roots.tftensor",
+          "sha256": "b5a64f17e3ed56e75186ac41d3a717ec0c38c02594af6f17084db6b5c7a0f422",
+          "shape": [
+            256
+          ]
+        },
+        "target": {
+          "bytes": 2060,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/initial-target-log-theta.tftensor",
+          "sha256": "e4c2d12d0a51ee06ec0d54029bc62c5a09f7c78e213387f33ff81983b9fa0ac2",
+          "shape": [
+            256
+          ]
+        },
+        "theta": {
+          "bytes": 8208,
+          "dtype": "float64",
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/initial-theta.tftensor",
+          "sha256": "596925d24c093dadfecb0dbbc5c75012d88128c405f218047a976ca27f3752f5",
+          "shape": [
+            256,
+            4
+          ]
+        }
+      },
+      "mode_aware_geometry_mh": {
+        "arm": "mode_aware_geometry_mh",
+        "final_summary": {
+          "coordinate_max": [
+            12.346557424084939,
+            9.522438545059567,
+            1.0447855436225966,
+            4.070487755257832
+          ],
+          "coordinate_min": [
+            -8.96274114954805,
+            -7.5535907617988896,
+            -1.0371006241290623,
+            -5.7323400886230536
+          ],
+          "covariance": [
+            [
+              20.341543339637333,
+              2.035704364798973,
+              0.31778927235317617,
+              -0.23401656227915768
+            ],
+            [
+              2.035704364798973,
+              11.537165589380717,
+              0.5278568982330359,
+              -1.387543518934249
+            ],
+            [
+              0.31778927235317617,
+              0.5278568982330359,
+              0.36745689466171827,
+              -0.07026047282419193
+            ],
+            [
+              -0.2340165622791578,
+              -1.387543518934249,
+              -0.07026047282419193,
+              3.602862297600212
+            ]
+          ],
+          "covariance_offdiag_max_abs": 2.035704364798973,
+          "negative_mode_fraction": 0.4763119413394554,
+          "root_count": 144,
+          "theta_mean": [
+            1.389330274504698,
+            0.5886411196588511,
+            0.01689232528208253,
+            -0.28386618626384397
+          ],
+          "theta_mean_0": 1.389330274504698,
+          "weighted_ess_fraction": 0.5670867075748042
+        },
+        "final_tensors": {
+          "final_roots": {
+            "bytes": 1036,
+            "dtype": "int32",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/mode-aware-geometry-mh/mode_aware_geometry_mh-final-roots.tftensor",
+            "sha256": "c6b5683802689d6d68157b2236c55b21dfcdeeb5546275fb687eb7b3c858f43b",
+            "shape": [
+              256
+            ]
+          },
+          "final_theta": {
+            "bytes": 8208,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/mode-aware-geometry-mh/mode_aware_geometry_mh-final-theta.tftensor",
+            "sha256": "91931c12853d8a64be358b9b130c68c9b0f3db07d48282287ac9795520b92a19",
+            "shape": [
+              256,
+              4
+            ]
+          },
+          "final_weights": {
+            "bytes": 2060,
+            "dtype": "float64",
+            "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired/replicate-03/mode-aware-geometry-mh/mode_aware_geometry_mh-final-weights.tftensor",
+            "sha256": "4c8e395e6edd5e3a5c53001c668ea90c836b8be3a8496ea0e6ae1e29b2e586e7",
+            "shape": [
+              256
+            ]
+          }
+        },
+        "gates": {
+          "all_invalid_candidates_rejected": true,
+          "all_status_valid": true,
+          "final_shape_N_by_4": true,
+          "finite_summary": true,
+          "finite_theta": true,
+          "finite_weights": true
+        },
+        "independent_seed_offset": 30000,
+        "kernel": "independent_mh",
+        "mh_steps": 8,
+        "nonclaims": [
+          "Finite mutation clouds are not posterior or IID draws.",
+          "Acceptance and geometry-proposal differences are descriptive only.",
+          "No HMC, whitening, exhaustive mode discovery, canonical LEDH, superiority, or default claim."
+        ],
+        "replicate_seed": [
+          20260826,
+          4808
+        ],
+        "stages": [
+          {
+            "all_current_status_valid": true,
+            "beta": 0.2,
+            "mutation": {
+              "acceptance_rate": 0.39697265625,
+              "accepted_count": 813,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.5146484375,
+              "candidate_safe_fraction": 0.09912109375,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -1628.748804958853,
+              "mean_displacement": 2.955398901654483,
+              "move_fraction": 0.39697265625,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.6234237343243038,
+            "pre_resampling_maximum_weight": 0.010617816897656335,
+            "previous_beta": 0.0,
+            "resampled": true,
+            "stage_index": 0,
+            "unique_root_count_after_resampling": 167
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.4,
+            "mutation": {
+              "acceptance_rate": 0.314453125,
+              "accepted_count": 644,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.49755859375,
+              "candidate_safe_fraction": 0.107421875,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -3459.916374833583,
+              "mean_displacement": 2.0946238214763,
+              "move_fraction": 0.314453125,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9299460690090495,
+            "pre_resampling_maximum_weight": 0.0069854229218822865,
+            "previous_beta": 0.2,
+            "resampled": true,
+            "stage_index": 1,
+            "unique_root_count_after_resampling": 160
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.6,
+            "mutation": {
+              "acceptance_rate": 0.30078125,
+              "accepted_count": 616,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.49755859375,
+              "candidate_safe_fraction": 0.09912109375,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -2147.959394865567,
+              "mean_displacement": 2.0643784627031305,
+              "move_fraction": 0.30078125,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9521303204098406,
+            "pre_resampling_maximum_weight": 0.008257290640510147,
+            "previous_beta": 0.4,
+            "resampled": true,
+            "stage_index": 2,
+            "unique_root_count_after_resampling": 153
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 0.8,
+            "mutation": {
+              "acceptance_rate": 0.25,
+              "accepted_count": 512,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.49951171875,
+              "candidate_safe_fraction": 0.09814453125,
+              "invalid_candidate_count": 0,
+              "kernel": "independent_mh",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": -3198.565668066312,
+              "mean_displacement": 1.8296775171946023,
+              "move_fraction": 0.25,
+              "steps": 8
+            },
+            "pre_resampling_ess_fraction": 0.9112949586857666,
+            "pre_resampling_maximum_weight": 0.013705351436290801,
+            "previous_beta": 0.6,
+            "resampled": true,
+            "stage_index": 3,
+            "unique_root_count_after_resampling": 144
+          },
+          {
+            "all_current_status_valid": true,
+            "beta": 1.0,
+            "mutation": {
+              "acceptance_rate": 0.0,
+              "accepted_count": 0,
+              "accepted_invalid_count": 0,
+              "candidate_geometry_fraction": 0.0,
+              "candidate_safe_fraction": 0.0,
+              "invalid_candidate_count": 0,
+              "kernel": "terminal_identity",
+              "log_alpha_max": 0.0,
+              "log_alpha_min": 0.0,
+              "mean_displacement": 0.0,
+              "move_fraction": 0.0,
+              "steps": 0
+            },
+            "pre_resampling_ess_fraction": 0.5670867075748042,
+            "pre_resampling_maximum_weight": 0.049323240363517304,
+            "previous_beta": 0.8,
+            "resampled": false,
+            "stage_index": 4,
+            "unique_root_count_after_resampling": 144
+          }
+        ],
+        "status": "PASS_V3_3_MUTATION_ARM"
+      },
+      "paired": {
+        "identity_initial_tensor_hash": "596925d24c093dadfecb0dbbc5c75012d88128c405f218047a976ca27f3752f5",
+        "independent_seed_offset": 30000,
+        "initial_tensor_hash": "596925d24c093dadfecb0dbbc5c75012d88128c405f218047a976ca27f3752f5",
+        "mode_aware_geometry_initial_tensor_hash": "596925d24c093dadfecb0dbbc5c75012d88128c405f218047a976ca27f3752f5",
+        "phase47_identity_final_tensors_reproduced": true,
+        "phase47_initial_cloud_reproduced": true,
+        "phase47_initial_tensor_hash": "596925d24c093dadfecb0dbbc5c75012d88128c405f218047a976ca27f3752f5",
+        "resampling_seed_offset": 1000,
+        "same_initial_cloud": true,
+        "same_resampling_seeds": true
+      },
+      "pilot_m0_seed": [
+        20260826,
+        4808
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-03",
+      "pilot_sha256": "71c4fc984a9797b7b8d616617db292e4dd6c5cf63de8c128ab40accd4ff1d249",
+      "replicate": 3
+    }
+  ],
+  "role": "paired_identity_vs_mode_aware_geometry_mh_finite_support_diagnostic",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase51_2026_08_26.py --pilot-root-1 docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-01 --pilot-root-2 docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-02 --pilot-root-3 docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase47-invariant-mutation/pilot-03 --fixture-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/fixture --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/q20-paired",
+    "cuda_visible_devices": null,
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "gpu_memory_growth_verified": true,
+    "jit_compile": true,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase51_2026_08_26.py",
+    "source_sha256": {
+      "fixture": "0b4eb76e15cbcd45be8763497c70116947ffc7cf0a275f7ceb484a28f844b4f5",
+      "geometry": "dc3dd7b84566867bc49c11ad16f50778d21457adbb398a17c2a75f3c3b461eeb",
+      "importance_module": "8b0687c79db8acedd3fa472024e487b8a4059463c9e46ceadef1bfba1e75c2bb",
+      "phase47_boundary": "0a3d3008a279603fff4b67e18af46d5074fc357fe2b4f5481093332b7e2fe690",
+      "phase49_report": "9afb3c79423a3293a5cc7040059fd7adb8f8a543cef25fca102a7f1ca18e021d",
+      "phase50_report": "6b1801c0716e81c1879f0d54b09b43cc213a9e589136d002fc5fc8d25b811c74",
+      "pilot_1": "bd6ec185f4682e82345be2b450b2a90c9773395cc43743da4217908bd579c43f",
+      "pilot_2": "263716a629da62c92b0432beb2162e84b41391b2d5ab2cdb713a194e6b4de9a8",
+      "pilot_3": "71c4fc984a9797b7b8d616617db292e4dd6c5cf63de8c128ab40accd4ff1d249",
+      "plan": "db904ed9eba9d5639b506c1178f04b7b59bb217a57fabae7e76c97650f9cd4a1",
+      "runner": "f5d674bee95c8b127a34ce6bd8aad187e316da0342f578d3e52834a62b3c8c01",
+      "smc_module": "1b40d05548861f51669a70bfade9a5a0056eea1bab874cccca407d74b5a3e61e",
+      "target_module": "fa58ef208800054af81a684190cdf07cb2f7a294bef3d620877bb0334e4e98ca"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 5558.908471248986
+  },
+  "safe_std": 2.0,
+  "schedule": [
+    0.0,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0
+  ],
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_mode_aware_geometry_boundary.v1",
+  "status": "PASS_V3_3_MODE_AWARE_GEOMETRY_BOUNDARY",
+  "target_adapter_signature": "a8be6c212eb2a74ef926ccb9279871805949cae6e00c312a12525141638166f3",
+  "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278",
+  "terminal_resampling": false
+}

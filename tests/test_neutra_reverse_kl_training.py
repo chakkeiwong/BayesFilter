@@ -11,13 +11,24 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
+from bayesfilter.inference import (
+    PURE_BOUNDED_NEUTRA_FAMILY,
+    PURE_PAPER_NEUTRA_FAMILY,
+    pure_bounded_neutra_config,
+    pure_paper_neutra_config as public_pure_paper_neutra_config,
+)
+from bayesfilter.inference.neutra_artifacts import (
+    InvalidNeuTraArtifact,
+    finalize_dense_iaf_neutra_artifact_payload,
+    load_frozen_neutra_artifact,
+)
 from bayesfilter.inference.neutra_training import (
     NEUTRA_TRAINING_NONCLAIMS,
     NeuTraReverseKLTrainer,
     NeuTraTrainerConfig,
     NeuTraTrainingError,
     preflight_neutra_affine_chart,
+    pure_paper_neutra_config,
     ssl_lstm_pure_neutra_config,
 )
 
@@ -649,6 +660,7 @@ def test_pure_paper_recipe_uses_piecewise_lr_no_clipping_and_all_kernel_init() -
         jit_compile=False,
     )
     trainer = NeuTraReverseKLTrainer(Target(), config)
+    assert "paper_piecewise_boundaries" not in config.manifest_payload()
     output_kernels = (trainer.variables[4], trainer.variables[10], trainer.variables[16])
     assert all(bool(tf.reduce_any(tf.not_equal(value, 0.0)).numpy()) for value in output_kernels)
     assert float(trainer.learning_rate_at(0).numpy()) == pytest.approx(1.0e-2)
@@ -691,3 +703,417 @@ def test_pure_paper_recipe_uses_piecewise_lr_no_clipping_and_all_kernel_init() -
     )
     with pytest.raises(NeuTraTrainingError, match="paper_piecewise"):
         restored.set_learning_rate(1.0e-3)
+
+
+def test_pure_paper_recipe_accepts_manifest_bound_schedule_boundaries() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: "2" * 64
+        config = type(
+            "Config",
+            (),
+            {
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                }
+            },
+        )()
+
+    values = dict(
+        dimension=2,
+        initial_output_shift=(0.3, -0.2),
+        initial_output_scale_log=(-1.2, -0.8),
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature="2" * 64,
+        s_max=2.0,
+        learning_rate=1.0e-2,
+        learning_rate_schedule="paper_piecewise",
+        paper_piecewise_boundaries=(99, 399),
+        gradient_clip_mode="none",
+        kernel_initialization="paper_variance_scaling",
+        scale_transform="identity",
+        epsilon=1.0e-8,
+        jit_compile=False,
+    )
+    config = ssl_lstm_pure_neutra_config(**values)
+    trainer = NeuTraReverseKLTrainer(Target(), config)
+
+    assert config.manifest_payload()["paper_piecewise_boundaries"] == [99, 399]
+    assert float(trainer.learning_rate_at(0).numpy()) == pytest.approx(1.0e-2)
+    assert float(trainer.learning_rate_at(99).numpy()) == pytest.approx(1.0e-2)
+    assert float(trainer.learning_rate_at(100).numpy()) == pytest.approx(1.0e-3)
+    assert float(trainer.learning_rate_at(399).numpy()) == pytest.approx(1.0e-3)
+    assert float(trainer.learning_rate_at(400).numpy()) == pytest.approx(1.0e-4)
+
+    state = trainer.state_payload()
+    restored = NeuTraReverseKLTrainer(Target(), config)
+    restored.restore_state(state)
+    assert restored.state_payload()["state_hash"] == state["state_hash"]
+
+    extended_config = NeuTraTrainerConfig(
+        **{**config.__dict__, "paper_piecewise_boundaries": (9, 19, 29)}
+    )
+    extended = NeuTraReverseKLTrainer(Target(), extended_config)
+    assert extended_config.manifest_payload()["paper_piecewise_boundaries"] == [
+        9,
+        19,
+        29,
+    ]
+    for iteration, expected_rate in (
+        (9, 1.0e-2),
+        (10, 1.0e-3),
+        (20, 1.0e-4),
+        (30, 1.0e-5),
+    ):
+        assert float(extended.learning_rate_at(iteration).numpy()) == pytest.approx(
+            expected_rate
+        )
+
+    for invalid in ((99, 99), (100, 99), (-1,), (99.0, 399), (True, 399)):
+        with pytest.raises(ValueError, match="paper_piecewise_boundaries"):
+            NeuTraTrainerConfig(
+                **{**config.__dict__, "paper_piecewise_boundaries": invalid}
+            )
+    with pytest.raises(ValueError, match="requires paper_piecewise"):
+        NeuTraTrainerConfig(
+            **{
+                **config.__dict__,
+                "learning_rate_schedule": "adaptive_constant",
+            }
+        )
+
+
+def test_restore_accepts_only_history_preserving_paper_schedule_extension() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: "2" * 64
+        config = type(
+            "Config",
+            (),
+            {
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                }
+            },
+        )()
+
+    base_values = dict(
+        dimension=2,
+        initial_output_shift=(0.3, -0.2),
+        initial_output_scale_log=(-1.2, -0.8),
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature="2" * 64,
+        s_max=2.0,
+        learning_rate=1.0e-2,
+        learning_rate_schedule="paper_piecewise",
+        paper_piecewise_boundaries=(99, 399),
+        gradient_clip_mode="none",
+        kernel_initialization="paper_variance_scaling",
+        scale_transform="identity",
+        epsilon=1.0e-8,
+        jit_compile=False,
+    )
+    saved_trainer = NeuTraReverseKLTrainer(
+        Target(), ssl_lstm_pure_neutra_config(**base_values)
+    )
+    saved_trainer.step.assign(500)
+    assert saved_trainer.optimizer is not None
+    saved_trainer.optimizer.iterations.assign(500)
+    state = saved_trainer.state_payload()
+
+    prospective_config = ssl_lstm_pure_neutra_config(
+        **{**base_values, "paper_piecewise_boundaries": (99, 399, 499)}
+    )
+    prospective = NeuTraReverseKLTrainer(Target(), prospective_config)
+    with pytest.raises(NeuTraTrainingError, match="config mismatch"):
+        prospective.restore_state(state)
+    prospective.restore_state(state, allow_paper_schedule_extension=True)
+    assert int(prospective.step.numpy()) == 500
+    assert int(prospective.optimizer.iterations.numpy()) == 500
+    for restored_value, saved_value in zip(
+        prospective.variables, saved_trainer.variables
+    ):
+        np.testing.assert_array_equal(restored_value.numpy(), saved_value.numpy())
+    for restored_value, saved_value in zip(
+        prospective.optimizer.variables, saved_trainer.optimizer.variables
+    ):
+        np.testing.assert_array_equal(restored_value.numpy(), saved_value.numpy())
+    assert float(prospective.learning_rate_at(499).numpy()) == pytest.approx(1.0e-4)
+    assert float(prospective.learning_rate_at(500).numpy()) == pytest.approx(1.0e-5)
+
+    rejected_configs = (
+        {**base_values, "paper_piecewise_boundaries": (99, 399, 498)},
+        {**base_values, "paper_piecewise_boundaries": (99, 499, 599)},
+        {**base_values, "paper_piecewise_boundaries": (99,)},
+        {
+            **base_values,
+            "paper_piecewise_boundaries": (99, 399, 499),
+            "initialization_seed": (7, 8),
+        },
+    )
+    for rejected_values in rejected_configs:
+        rejected = NeuTraReverseKLTrainer(
+            Target(), ssl_lstm_pure_neutra_config(**rejected_values)
+        )
+        with pytest.raises(NeuTraTrainingError, match="config mismatch"):
+            rejected.restore_state(state, allow_paper_schedule_extension=True)
+
+
+def test_generic_pure_paper_family_uses_dimension_width_and_no_affine() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: "2" * 64
+        config = type(
+            "Config",
+            (),
+            {
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                }
+            },
+        )()
+
+    config = pure_paper_neutra_config(
+        dimension=2,
+        initial_output_shift=(0.3, -0.2),
+        initial_output_scale_log=(-1.2, -0.8),
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature="2" * 64,
+        jit_compile=False,
+    )
+    assert public_pure_paper_neutra_config is pure_paper_neutra_config
+    assert config.family == PURE_PAPER_NEUTRA_FAMILY
+    trainer = NeuTraReverseKLTrainer(Target(), config)
+    assert config.hidden_layers == (2, 2)
+    assert config.gradient_clip_mode == "none"
+    assert config.scale_transform == "identity"
+    assert float(trainer.learning_rate_at(0).numpy()) == pytest.approx(1.0e-2)
+    with pytest.raises(ValueError, match="preset mismatch"):
+        NeuTraTrainerConfig(
+            **{
+                **config.__dict__,
+                "learning_rate_schedule": "adaptive_constant",
+                "learning_rate": 1.0e-3,
+                "gradient_clip_mode": "per_variable",
+                "kernel_initialization": "legacy_zero_output",
+                "scale_transform": "bounded_tanh",
+            }
+        )
+    payload = trainer.frozen_transport_payload(
+        transport_id="generic-pure-paper-test",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["procedure"] == "bayesfilter_pure_paper_dense_iaf_v1"
+    assert [component["kind"] for component in payload["components"]] == [
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+    ]
+    assert not payload["fixed_translation"]
+    assert not payload["fixed_output_scale"]
+    assert not payload["fixed_output_factor"]
+    for field, value in (
+        ("fixed_translation", [0.0, 0.0]),
+        ("fixed_output_scale", [1.0, 1.0]),
+        ("fixed_output_factor", [[1.0, 0.0], [0.0, 1.0]]),
+    ):
+        tampered = dict(payload)
+        tampered[field] = value
+        tampered = finalize_dense_iaf_neutra_artifact_payload(tampered)
+        with pytest.raises(InvalidNeuTraArtifact, match="must not contain fixed affine"):
+            load_frozen_neutra_artifact(
+                tampered,
+                expected_target_signature=TARGET_SIGNATURE,
+            )
+
+    bounded_scale = copy.deepcopy(payload)
+    dense_component = next(
+        component
+        for component in bounded_scale["components"]
+        if component["kind"] == "dense_autoregressive_iaf"
+    )
+    dense_component["scale_transform"] = "bounded_tanh"
+    dense_component["s_max"] = 5.0
+    bounded_scale = finalize_dense_iaf_neutra_artifact_payload(bounded_scale)
+    with pytest.raises(InvalidNeuTraArtifact, match="scale transform mismatch"):
+        load_frozen_neutra_artifact(
+            bounded_scale,
+            expected_target_signature=TARGET_SIGNATURE,
+        )
+
+    before = tuple(variable.numpy().copy() for variable in trainer.variables)
+    initial_final_bias = before[-1].copy()
+    trainer.train_step(_base_rows())
+    assert all(variable.trainable for variable in trainer.variables)
+    assert any(
+        not np.array_equal(old, variable.numpy())
+        for old, variable in zip(before, trainer.variables)
+    )
+    assert not np.array_equal(initial_final_bias, trainer.variables[-1].numpy())
+    loaded = load_frozen_neutra_artifact(
+        payload,
+        expected_target_signature=TARGET_SIGNATURE,
+    )
+    z = tf.constant([[0.2, -0.4], [1.0, -1.0]], tf.float64)
+    np.testing.assert_allclose(
+        loaded.transport.inverse_theta_to_z_batch(
+            loaded.transport.forward_z_to_theta_batch(z)
+        ).numpy(),
+        z.numpy(),
+        rtol=0.0,
+        atol=2e-12,
+    )
+
+
+def test_pure_bounded_family_contract_and_scale_envelope() -> None:
+    class Target(DiagonalGaussianTarget):
+        parameter_dim = 2
+        parameter_names = ("x", "y")
+        target_signature = lambda self: TARGET_SIGNATURE
+        adapter_signature = lambda self: "2" * 64
+        config = type(
+            "Config",
+            (),
+            {
+                "signature_payload": lambda self: {
+                    "parameter_transform": {
+                        "orientation": "identity",
+                        "inverse_orientation": "identity",
+                    }
+                }
+            },
+        )()
+
+    initial_scale = (math.log(0.002), math.log(0.004))
+    config = pure_bounded_neutra_config(
+        dimension=2,
+        initial_output_shift=(0.3, -0.2),
+        initial_output_scale_log=initial_scale,
+        target_parameter_names=("x", "y"),
+        target_signature=TARGET_SIGNATURE,
+        target_adapter_signature="2" * 64,
+        s_max=6.5,
+        jit_compile=False,
+    )
+    assert config.family == PURE_BOUNDED_NEUTRA_FAMILY
+    assert config.hidden_layers == (2, 2)
+    assert config.scale_transform == "bounded_tanh"
+    assert config.manifest_payload()["scale_transform"] == "bounded_tanh"
+    with pytest.raises(ValueError, match="s_max must exceed"):
+        pure_bounded_neutra_config(
+            dimension=2,
+            initial_output_shift=(0.3, -0.2),
+            initial_output_scale_log=initial_scale,
+            target_parameter_names=("x", "y"),
+            target_signature=TARGET_SIGNATURE,
+            target_adapter_signature="2" * 64,
+            s_max=6.0,
+            jit_compile=False,
+        )
+
+    trainer = NeuTraReverseKLTrainer(Target(), config)
+    z = tf.constant(
+        [[-100.0, 100.0], [-10.0, 10.0], [0.0, 0.0], [10.0, -10.0]],
+        tf.float64,
+    )
+    scale_log = trainer.transport.scale_log(z)
+    assert bool(tf.reduce_all(tf.math.is_finite(scale_log)).numpy())
+    assert float(tf.reduce_max(tf.abs(scale_log)).numpy()) <= config.s_max + 2.0e-12
+    assert bool(tf.reduce_all(tf.math.is_finite(tf.exp(scale_log))).numpy())
+    theta, logdet = trainer.forward_and_logdet(z)
+    assert bool(tf.reduce_all(tf.math.is_finite(theta)).numpy())
+    assert bool(tf.reduce_all(tf.math.is_finite(logdet)).numpy())
+
+    @tf.function(jit_compile=True)
+    def compiled(values):
+        output, output_logdet = trainer.forward_and_logdet(values)
+        return output, output_logdet, trainer.transport.scale_log(values)
+
+    try:
+        compiled_theta, compiled_logdet, compiled_scale_log = compiled(z)
+    except (tf.errors.InvalidArgumentError, tf.errors.UnimplementedError) as exc:
+        pytest.fail(f"bounded pure NeuTra XLA contract failed: {exc}")
+    np.testing.assert_allclose(compiled_theta.numpy(), theta.numpy(), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(compiled_logdet.numpy(), logdet.numpy(), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(
+        compiled_scale_log.numpy(), scale_log.numpy(), rtol=1e-10, atol=1e-10
+    )
+
+    payload = trainer.frozen_transport_payload(
+        transport_id="pure-bounded-contract-test",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["procedure"] == "bayesfilter_pure_bounded_dense_iaf_v1"
+    dense_components = [
+        component
+        for component in payload["components"]
+        if component["kind"] == "dense_autoregressive_iaf"
+    ]
+    assert len(dense_components) == 3
+    assert all(component["scale_transform"] == "bounded_tanh" for component in dense_components)
+    assert all(component["s_max"] == pytest.approx(6.5) for component in dense_components)
+    assert all(component["kind"] not in {"affine", "affine_dense"} for component in payload["components"])
+    loaded = load_frozen_neutra_artifact(payload, expected_target_signature=TARGET_SIGNATURE)
+    np.testing.assert_allclose(
+        loaded.transport.inverse_theta_to_z_batch(
+            loaded.transport.forward_z_to_theta_batch(z)
+        ).numpy(),
+        z.numpy(),
+        rtol=0.0,
+        atol=3.0e-10,
+    )
+    target_score = -theta
+    expected_score = loaded.transport.pullback_score_batch(z, target_score)
+    expected_score += loaded.transport.log_abs_det_jacobian_score_batch(z)
+    with tf.GradientTape() as tape:
+        tape.watch(z)
+        tape_theta, tape_logdet = loaded.transport.forward_z_to_theta_batch(z), loaded.transport.log_abs_det_jacobian_batch(z)
+        transformed = -0.5 * tf.reduce_sum(tf.square(tape_theta), axis=-1) + tape_logdet
+    direct_score = tape.gradient(transformed, z, output_gradients=tf.ones_like(transformed))
+    np.testing.assert_allclose(expected_score.numpy(), direct_score.numpy(), rtol=2e-9, atol=2e-9)
+
+    missing_scale_transform = copy.deepcopy(payload)
+    for component in missing_scale_transform["components"]:
+        if component["kind"] == "dense_autoregressive_iaf":
+            component.pop("scale_transform", None)
+    missing_scale_transform = finalize_dense_iaf_neutra_artifact_payload(missing_scale_transform)
+    with pytest.raises(InvalidNeuTraArtifact, match="declaration missing"):
+        load_frozen_neutra_artifact(
+            missing_scale_transform,
+            expected_target_signature=TARGET_SIGNATURE,
+        )
+
+    bad_initialization = copy.deepcopy(payload)
+    bad_initialization["initial_output_scale_log"] = [-7.0, -7.0]
+    bad_initialization = finalize_dense_iaf_neutra_artifact_payload(bad_initialization)
+    with pytest.raises(InvalidNeuTraArtifact, match="represent initialization"):
+        load_frozen_neutra_artifact(
+            bad_initialization,
+            expected_target_signature=TARGET_SIGNATURE,
+        )
+
+    affine_tamper = copy.deepcopy(payload)
+    affine_tamper["fixed_translation"] = [0.0, 0.0]
+    affine_tamper = finalize_dense_iaf_neutra_artifact_payload(affine_tamper)
+    with pytest.raises(InvalidNeuTraArtifact, match="must not contain fixed affine"):
+        load_frozen_neutra_artifact(affine_tamper, expected_target_signature=TARGET_SIGNATURE)

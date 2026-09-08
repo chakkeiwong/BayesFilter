@@ -1,0 +1,94 @@
+{
+  "defensive_epsilon": 0.2,
+  "depth_steps": 8,
+  "diagnostics": {
+    "base_covariance_eigenvalues": [
+      [
+        0.43786796564403574,
+        0.8621320343559642
+      ],
+      [
+        0.44384471871911707,
+        0.8561552812808833
+      ]
+    ],
+    "beta_one_acceptance_rate": 0.5384674072265625,
+    "beta_one_geometry_component_fraction": 0.502288818359375,
+    "beta_one_max_abs_ratio": 61.00667143432031,
+    "beta_one_max_abs_residual": 0.0,
+    "beta_one_movement_count": 35289,
+    "beta_zero_acceptance_rate": 0.769866943359375,
+    "beta_zero_geometry_component_fraction": 0.5014190673828125,
+    "beta_zero_max_abs_ratio": 4.0774694695254645,
+    "beta_zero_max_abs_residual": 0.0,
+    "beta_zero_movement_count": 50454,
+    "geometry_covariance_eigenvalues": [
+      [
+        1.751471862576143,
+        3.4485281374238568
+      ],
+      [
+        1.7753788748764683,
+        3.424621125123533
+      ]
+    ]
+  },
+  "dimension": 2,
+  "formula": {
+    "acceptance": "min(1,exp(bridge(x')-bridge(x)+log r_geom(x)-log r_geom(x')))",
+    "base_proposal": "q=(1-epsilon)*0.5*(N(m_minus,C_minus)+N(m_plus,C_plus))+epsilon*N(center,2^2*I)",
+    "bridge": "(1-beta)*log q+beta*V",
+    "candidate_proposal": "r_geom=(1-rho)*q+rho*s_geom",
+    "geometry_component": "s_geom=0.5*N(m_minus,kappa^2*C_minus)+0.5*N(m_plus,kappa^2*C_plus)"
+  },
+  "gates": {
+    "acceptance_rates_in_unit_interval": true,
+    "beta_one_has_movement": true,
+    "beta_one_ratio_is_nontrivial": true,
+    "beta_zero_has_movement": true,
+    "beta_zero_ratio_is_nontrivial": true,
+    "depth_step_count": true,
+    "finite_states_densities_and_ratios": true,
+    "full_covariances_are_spd": true,
+    "geometry_component_fraction_in_expected_band": true,
+    "normalized_mixture_weights": true,
+    "q_base_r_geometry_correction_beta_one": true,
+    "q_base_r_geometry_correction_beta_zero": true
+  },
+  "geometry_rho": 0.5,
+  "geometry_scale": 2.0,
+  "nonclaims": [
+    "A finite two-dimensional fixture is not an invariance proof for q=20.",
+    "The fixture covariances are algebra fixtures, not SSL-LSTM posterior covariances.",
+    "No posterior, whitening, HMC, or LEDH claim."
+  ],
+  "plan_version": "v3.3-mode-aware-proposal-geometry",
+  "role": "finite_full_covariance_q_base_r_geometry_independent_mh_algebra_fixture",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase51_fixture_2026_08_26.py --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/fixture",
+    "cuda_visible_devices": "-1",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "gpu_hidden_intentionally": true,
+    "jit_compile": true,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase51_fixture_2026_08_26.py",
+    "source_sha256": {
+      "plan": "db904ed9eba9d5639b506c1178f04b7b59bb217a57fabae7e76c97650f9cd4a1",
+      "runner": "c16cbd2f10a917da665574cbae574e535eaff201380679a4c45ca3ba847d4c6a"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 1.3550787739804946
+  },
+  "safe_std": 2.0,
+  "sample_count": 8192,
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_mode_aware_geometry_fixture.v1",
+  "seed": [
+    20260826,
+    5101
+  ],
+  "status": "PASS_V3_3_MODE_AWARE_GEOMETRY_FIXTURE"
+}

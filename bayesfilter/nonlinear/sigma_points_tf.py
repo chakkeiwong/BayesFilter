@@ -1,4 +1,9 @@
-"""TensorFlow SVD/eigen sigma-point value filters."""
+"""Historical TensorFlow SVD/eigen sigma-point value filters.
+
+The explicit principal-root selector remains available for reproducibility and
+comparison. The repository default SR-UKF route is direct-factor and is
+implemented separately in ``factor_srukf_tf``.
+"""
 
 from __future__ import annotations
 
@@ -521,7 +526,7 @@ def _backend_rule(backend: TFSigmaPointValueBackend) -> TFSigmaPointRuleName:
 
 def _backend_role(backend: TFSigmaPointValueBackend) -> str:
     if backend == "tf_principal_sqrt_ukf":
-        return "strict_spd_promoted"
+        return "historical_reference_only"
     if backend == "tf_svd_ukf":
         return "historical_diagnostic_only"
     return "standard"
@@ -576,10 +581,10 @@ def tf_svd_sigma_point_filter(
         "min_innovation_eigen_gap": raw_diagnostics["min_innovation_eigen_gap"],
         "backend_role": _backend_role(backend),
         "factorization": (
-            "principal_square_root" if backend == "tf_principal_sqrt_ukf" else "tf.linalg.eigh"
+            "historical_principal_square_root" if backend == "tf_principal_sqrt_ukf" else "tf.linalg.eigh"
         ),
         "derivative_status_reason": (
-            "strict-SPD principal-square-root backend promoted for value path"
+            "historical principal-square-root backend retained for explicit reference comparisons"
             if backend == "tf_principal_sqrt_ukf"
             else (
                 "historical eigenderivative UKF path retained for diagnostics only"

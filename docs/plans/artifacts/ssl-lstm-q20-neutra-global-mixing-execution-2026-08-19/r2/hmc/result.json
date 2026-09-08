@@ -1,0 +1,540 @@
+{
+  "budget": {
+    "authorization": "user_incremental_18_hours_2026-08-20",
+    "closeout_reserve_seconds": 180.0,
+    "external_hmc_cap_seconds": 61200,
+    "historical_prior_campaign_gpu_wall_seconds": 12499.045,
+    "historical_wall_subtracted_from_incremental_grant": false,
+    "incremental_campaign_wall_cap_seconds": 64800.0,
+    "internal_hmc_cap_seconds": 61020.0,
+    "predictive_reserve_seconds": 3600.0,
+    "prior_hmc_result": {
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc/result.json",
+      "sha256": "714a51ef0f7179fced5e3e2972217b36e72ca017740b7173372f35f781d16402",
+      "status": "UNDER_BUDGETED_HMC"
+    }
+  },
+  "campaign_generation": "r2_incremental_18h_continuation",
+  "candidate_attempts": [
+    {
+      "candidate_order_role": "answer_path_compute_feasibility_only_not_candidate_ranking",
+      "candidate_schedule_index": 0,
+      "identity": {
+        "arm_id": "primary-seed-2-width-64-stages-3-lr-3e-04",
+        "seed": 2,
+        "state_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/arms/primary-seed-2-width-64-stages-3-lr-3e-04/best-state.json",
+        "state_sha256": "7630610759309a3ee6239e9f4365c6b54d9766d4e809248bc4f6daae2855d9d9",
+        "training_state_hash": "daae791d070eb9a59b349c2083d5b8f8a403ce5638c3419aa65a5cade509e144",
+        "transport_manifest": {
+          "activation": "tanh",
+          "config": {
+            "activation": "tanh",
+            "beta1": 0.9,
+            "beta2": 0.999,
+            "dimension": 4,
+            "epsilon": 1e-07,
+            "gradient_clip_norm": 10.0,
+            "hidden_layers": [
+              64,
+              64
+            ],
+            "initialization_scale": 0.02,
+            "initialization_seed": [
+              20260819,
+              1002
+            ],
+            "jit_compile": true,
+            "learning_rate": 0.0003,
+            "permutation_policy": "full_reverse",
+            "s_max": 2.0,
+            "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+            "stage_s_max": [],
+            "stage_scale_linear_skip": [],
+            "stage_unbounded_scale_linear": [],
+            "stages": 3
+          },
+          "frozen_identity": {
+            "checkpoint_sha256": "7630610759309a3ee6239e9f4365c6b54d9766d4e809248bc4f6daae2855d9d9",
+            "training_state_hash": "daae791d070eb9a59b349c2083d5b8f8a403ce5638c3419aa65a5cade509e144",
+            "transport_tensor_hash": "80521d22b635f8acc582608eb889f454b1db5164d4d22ae3da202eb3601ea0e6"
+          },
+          "hidden_layers": [
+            64,
+            64
+          ],
+          "parameter_dim": 4,
+          "permutation_policy": "full_reverse",
+          "resolved_stage_s_max": [
+            2.0,
+            2.0,
+            2.0
+          ],
+          "resolved_stage_scale_linear_skip": [
+            false,
+            false,
+            false
+          ],
+          "resolved_stage_unbounded_scale_linear": [
+            false,
+            false,
+            false
+          ],
+          "s_max": 2.0,
+          "schema": "bayesfilter.neutra.weighted_dense_iaf_frozen.v1",
+          "stage_s_max": [],
+          "stage_scale_linear_skip": [],
+          "stage_unbounded_scale_linear": [],
+          "stages": 3,
+          "transport_id": "weighted_dense_iaf_frozen"
+        },
+        "transport_tensor_hash": "80521d22b635f8acc582608eb889f454b1db5164d4d22ae3da202eb3601ea0e6"
+      },
+      "initial_state": [
+        [
+          -0.05628257571016518,
+          0.14813908245519603,
+          0.5638212412773446,
+          -0.2459585615244469
+        ],
+        [
+          -0.26536103463762595,
+          -0.4551266249285027,
+          -0.6641565561574118,
+          -0.42935152601335774
+        ],
+        [
+          -0.006282575710165175,
+          0.14813908245519603,
+          0.5638212412773446,
+          -0.2459585615244469
+        ],
+        [
+          -0.31536103463762594,
+          -0.4551266249285027,
+          -0.6641565561574118,
+          -0.42935152601335774
+        ]
+      ],
+      "mechanics": null,
+      "num_leapfrog_steps": 5,
+      "passed": false,
+      "selected_kernel": null,
+      "selected_tuning_scope": null,
+      "sequential": null,
+      "status": "TUNING_NO_VIABLE_KERNEL",
+      "transport_seed": 2,
+      "tuning_attempts": [
+        {
+          "elapsed_wall_seconds": 14039.305982638994,
+          "final_kernel_hash": null,
+          "final_status": "no_viable_candidate",
+          "hard_vetoes": [
+            "verification_modern_rank_folded_rhat_failed"
+          ],
+          "leapfrog_order_index": 0,
+          "num_leapfrog_steps": 5,
+          "ordered_stop_rule": "first complete singleton-grid verification pass",
+          "passed": false,
+          "remaining_wall_seconds_after": 46976.051896862,
+          "remaining_wall_seconds_before": 61015.358128921,
+          "repair_triggers": [],
+          "resource_budget_calls": [
+            {
+              "actual_call_seconds": 306.93148672999814,
+              "allowed": true,
+              "canary_hmc_call_seconds": 771.3013279580045,
+              "canary_leapfrog_transitions": 640,
+              "closeout_reserve_seconds": 180.0,
+              "minimum_followup_leapfrog_transitions": 0,
+              "num_burnin_steps": 32,
+              "num_leapfrog_steps": 5,
+              "num_results": 16,
+              "overrun_allowance": 1.25,
+              "predicted_call_seconds": 361.54749748031463,
+              "predicted_minimum_answer_path_seconds": 361.54749748031463,
+              "remaining_internal_hmc_wall_seconds": 61015.352803017,
+              "requested_leapfrog_transitions": 240,
+              "role": "engineering_next_call_resource_veto_only",
+              "whole_path_gate_applied": false
+            },
+            {
+              "actual_call_seconds": 540.6509636720002,
+              "allowed": true,
+              "canary_hmc_call_seconds": 771.3013279580045,
+              "canary_leapfrog_transitions": 640,
+              "closeout_reserve_seconds": 180.0,
+              "minimum_followup_leapfrog_transitions": 0,
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 5,
+              "num_results": 64,
+              "overrun_allowance": 1.25,
+              "predicted_call_seconds": 602.579162467191,
+              "predicted_minimum_answer_path_seconds": 602.579162467191,
+              "remaining_internal_hmc_wall_seconds": 60708.413478783,
+              "requested_leapfrog_transitions": 400,
+              "role": "engineering_next_call_resource_veto_only",
+              "whole_path_gate_applied": false
+            },
+            {
+              "actual_call_seconds": 13188.640688813,
+              "allowed": true,
+              "canary_hmc_call_seconds": 771.3013279580045,
+              "canary_leapfrog_transitions": 640,
+              "closeout_reserve_seconds": 180.0,
+              "minimum_followup_leapfrog_transitions": 20400,
+              "num_burnin_steps": 64,
+              "num_leapfrog_steps": 5,
+              "num_results": 2000,
+              "overrun_allowance": 1.25,
+              "predicted_call_seconds": 15546.54239165353,
+              "predicted_minimum_answer_path_seconds": 46278.07967748027,
+              "remaining_internal_hmc_wall_seconds": 60167.75106187801,
+              "requested_leapfrog_transitions": 10320,
+              "role": "engineering_whole_path_resource_veto_only",
+              "whole_path_gate_applied": true
+            }
+          ],
+          "resource_refusal": null,
+          "schema": "bayesfilter.ssl_lstm.q20_neutra_ordered_tuning_attempt.v1",
+          "scope": "ssl_lstm_q20_neutra_global_mixing_continuation:seed-2:L-5",
+          "seeds": {
+            "screen": [
+              20260820,
+              42000
+            ],
+            "tune": [
+              20260820,
+              32000
+            ],
+            "verification": [
+              20260820,
+              52000
+            ]
+          },
+          "transport_seed": 2,
+          "tuning_artifact": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r2/hmc/candidate-01-seed-2-L-05/tuning/L-05/tuning-result.json",
+          "tuning_artifact_sha256": "b9006654df5fe52a44c1057dc52646ab403de427afdc8b0bfe56e780575987fe"
+        }
+      ],
+      "wall_seconds": 14039.312083800993
+    },
+    {
+      "candidate_order_role": "answer_path_compute_feasibility_only_not_candidate_ranking",
+      "candidate_schedule_index": 1,
+      "identity": {
+        "arm_id": "primary-seed-3-width-64-stages-3-lr-3e-04",
+        "seed": 3,
+        "state_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/arms/primary-seed-3-width-64-stages-3-lr-3e-04/best-state.json",
+        "state_sha256": "ba59d4cfbd36c80676cfafb621fa4ae642e4f8d93f206cb4f54cbdbe15524ae5",
+        "training_state_hash": "f5cf33c32917c84e7202e696bc7dded0038d10cc0bf4a6930c949aa35a98ab5d",
+        "transport_manifest": {
+          "activation": "tanh",
+          "config": {
+            "activation": "tanh",
+            "beta1": 0.9,
+            "beta2": 0.999,
+            "dimension": 4,
+            "epsilon": 1e-07,
+            "gradient_clip_norm": 10.0,
+            "hidden_layers": [
+              64,
+              64
+            ],
+            "initialization_scale": 0.02,
+            "initialization_seed": [
+              20260819,
+              1003
+            ],
+            "jit_compile": true,
+            "learning_rate": 0.0003,
+            "permutation_policy": "full_reverse",
+            "s_max": 2.0,
+            "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+            "stage_s_max": [],
+            "stage_scale_linear_skip": [],
+            "stage_unbounded_scale_linear": [],
+            "stages": 3
+          },
+          "frozen_identity": {
+            "checkpoint_sha256": "ba59d4cfbd36c80676cfafb621fa4ae642e4f8d93f206cb4f54cbdbe15524ae5",
+            "training_state_hash": "f5cf33c32917c84e7202e696bc7dded0038d10cc0bf4a6930c949aa35a98ab5d",
+            "transport_tensor_hash": "6b121482239922d343425f092880a53c51757a531c5f256fd22a328e42879355"
+          },
+          "hidden_layers": [
+            64,
+            64
+          ],
+          "parameter_dim": 4,
+          "permutation_policy": "full_reverse",
+          "resolved_stage_s_max": [
+            2.0,
+            2.0,
+            2.0
+          ],
+          "resolved_stage_scale_linear_skip": [
+            false,
+            false,
+            false
+          ],
+          "resolved_stage_unbounded_scale_linear": [
+            false,
+            false,
+            false
+          ],
+          "s_max": 2.0,
+          "schema": "bayesfilter.neutra.weighted_dense_iaf_frozen.v1",
+          "stage_s_max": [],
+          "stage_scale_linear_skip": [],
+          "stage_unbounded_scale_linear": [],
+          "stages": 3,
+          "transport_id": "weighted_dense_iaf_frozen"
+        },
+        "transport_tensor_hash": "6b121482239922d343425f092880a53c51757a531c5f256fd22a328e42879355"
+      },
+      "initial_state": [
+        [
+          -0.04913215159584298,
+          0.16604924518376063,
+          0.5198179682264907,
+          -0.34218757847223036
+        ],
+        [
+          -0.27348570288177665,
+          -0.46697367165569853,
+          -0.5938467930519205,
+          -0.38620441852278614
+        ],
+        [
+          0.0008678484041570247,
+          0.16604924518376063,
+          0.5198179682264907,
+          -0.34218757847223036
+        ],
+        [
+          -0.32348570288177664,
+          -0.46697367165569853,
+          -0.5938467930519205,
+          -0.38620441852278614
+        ]
+      ],
+      "mechanics": null,
+      "num_leapfrog_steps": 3,
+      "passed": false,
+      "selected_kernel": null,
+      "selected_tuning_scope": null,
+      "sequential": null,
+      "status": "TUNING_NO_VIABLE_KERNEL",
+      "transport_seed": 3,
+      "tuning_attempts": [
+        {
+          "elapsed_wall_seconds": 9235.52504444,
+          "final_kernel_hash": null,
+          "final_status": "no_viable_candidate",
+          "hard_vetoes": [
+            "verification_modern_rank_folded_rhat_failed"
+          ],
+          "leapfrog_order_index": 1,
+          "num_leapfrog_steps": 3,
+          "ordered_stop_rule": "first complete singleton-grid verification pass",
+          "passed": false,
+          "remaining_wall_seconds_after": 37739.811048032,
+          "remaining_wall_seconds_before": 46975.33627025,
+          "repair_triggers": [],
+          "resource_budget_calls": [
+            {
+              "actual_call_seconds": 192.2170120630035,
+              "allowed": true,
+              "canary_hmc_call_seconds": 771.3013279580045,
+              "canary_leapfrog_transitions": 640,
+              "closeout_reserve_seconds": 180.0,
+              "minimum_followup_leapfrog_transitions": 0,
+              "num_burnin_steps": 32,
+              "num_leapfrog_steps": 3,
+              "num_results": 16,
+              "overrun_allowance": 1.25,
+              "predicted_call_seconds": 216.92849848818878,
+              "predicted_minimum_answer_path_seconds": 216.92849848818878,
+              "remaining_internal_hmc_wall_seconds": 46975.333938776996,
+              "requested_leapfrog_transitions": 144,
+              "role": "engineering_next_call_resource_veto_only",
+              "whole_path_gate_applied": false
+            },
+            {
+              "actual_call_seconds": 344.2671831619955,
+              "allowed": true,
+              "canary_hmc_call_seconds": 771.3013279580045,
+              "canary_leapfrog_transitions": 640,
+              "closeout_reserve_seconds": 180.0,
+              "minimum_followup_leapfrog_transitions": 0,
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 3,
+              "num_results": 64,
+              "overrun_allowance": 1.25,
+              "predicted_call_seconds": 361.54749748031463,
+              "predicted_minimum_answer_path_seconds": 361.54749748031463,
+              "remaining_internal_hmc_wall_seconds": 46783.108973115,
+              "requested_leapfrog_transitions": 240,
+              "role": "engineering_next_call_resource_veto_only",
+              "whole_path_gate_applied": false
+            },
+            {
+              "actual_call_seconds": 8698.92539276299,
+              "allowed": true,
+              "canary_hmc_call_seconds": 771.3013279580045,
+              "canary_leapfrog_transitions": 640,
+              "closeout_reserve_seconds": 180.0,
+              "minimum_followup_leapfrog_transitions": 12240,
+              "num_burnin_steps": 64,
+              "num_leapfrog_steps": 3,
+              "num_results": 2000,
+              "overrun_allowance": 1.25,
+              "predicted_call_seconds": 9327.925434992118,
+              "predicted_minimum_answer_path_seconds": 27766.847806488164,
+              "remaining_internal_hmc_wall_seconds": 46438.833617104,
+              "requested_leapfrog_transitions": 6192,
+              "role": "engineering_whole_path_resource_veto_only",
+              "whole_path_gate_applied": true
+            }
+          ],
+          "resource_refusal": null,
+          "schema": "bayesfilter.ssl_lstm.q20_neutra_ordered_tuning_attempt.v1",
+          "scope": "ssl_lstm_q20_neutra_global_mixing_continuation:seed-3:L-3",
+          "seeds": {
+            "screen": [
+              20260820,
+              43100
+            ],
+            "tune": [
+              20260820,
+              33100
+            ],
+            "verification": [
+              20260820,
+              53001
+            ]
+          },
+          "transport_seed": 3,
+          "tuning_artifact": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r2/hmc/candidate-02-seed-3-L-03/tuning/L-03/tuning-result.json",
+          "tuning_artifact_sha256": "c98fb6167e82c6644257bb1aedc52e1b120ba3770ddd6472c83c322174c28a95"
+        }
+      ],
+      "wall_seconds": 9235.526111562009
+    }
+  ],
+  "candidate_kernel_order": [
+    {
+      "num_leapfrog_steps": 5,
+      "transport_seed": 2
+    },
+    {
+      "num_leapfrog_steps": 3,
+      "transport_seed": 3
+    }
+  ],
+  "candidate_order_role": "answer_path_compute_feasibility_only_not_candidate_ranking",
+  "decision": "NO_HMC_CANDIDATE_ADMITTED",
+  "dtype": "float64",
+  "git": {
+    "commit": "5699dafec23de9549a8092bec638997e7973593c",
+    "dirty": true
+  },
+  "hmc_phase_wall_seconds": 23280.603976539,
+  "immutable_prior_hmc_baseline": {
+    "artifact_hashes": {
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc/artifact-hashes.json",
+      "sha256": "0a91e920c71f7067af1bd227761b6360f1e9a037a92add8699cc83dee982c41a"
+    },
+    "corrected_historical_gpu_wall_seconds": 12499.045,
+    "result": {
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc/result.json",
+      "sha256": "714a51ef0f7179fced5e3e2972217b36e72ca017740b7173372f35f781d16402"
+    },
+    "root": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc",
+    "runner": {
+      "path": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_hmc_2026_08_19.py",
+      "sha256": "c7356ab715a334cecb60b41f4b55ad1bcd8a92d694dfad2b15fa7dfb519f2ba7"
+    },
+    "subtracted_from_incremental_grant": false
+  },
+  "incremental_gpu_wall_seconds": 23280.603976539,
+  "jit_compile": true,
+  "managed_session_trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "tuning acceptance does not establish convergence",
+    "unrun leapfrog lengths or fallback candidates are not failures",
+    "known-sign traversal does not prove exhaustive mode discovery",
+    "no sampler superiority, predictive equivalence, scientific validity, or default readiness"
+  ],
+  "passed": false,
+  "plan": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-neutra-global-mixing-continuation-plan-2026-08-20.md",
+    "sha256": "8dfaaab35c4f62bdb2d92e22dd55f63fda83d9e6799ab7c277b5ca1667a8559a"
+  },
+  "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+  "pooling_across_candidates_or_mode_locked_chains": false,
+  "requested_physical_device_selector": "1",
+  "retained_posterior_archive": null,
+  "route_policy": {
+    "canonical_policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "classified_route_count": 41,
+    "current_route": {
+      "active_entry_points": [
+        "_execute"
+      ],
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "path": "docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_continuation_2026_08_20.py",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Current bounded SSL-LSTM q=20 continuation with canonical sequential admission, anti-pooling diagnostics, and resource-only affordability stops.",
+      "required_symbols": [
+        "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
+        "run_sequential_neutra_hmc"
+      ]
+    },
+    "discovered_route_count": 41,
+    "ledger_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/c0/route_ledger.json",
+    "ledger_sha256": "8c16a5389990f2f8c2b79d9546ac5e14f3365089b0754442924e3eada8937700",
+    "passed": true
+  },
+  "runner": {
+    "path": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_continuation_2026_08_20.py",
+    "sha256": "eeef1880cb26a7649ccf76230b909518fa1ca4a3e94e3bbc35e38de654d57723"
+  },
+  "schema": "bayesfilter.ssl_lstm.q20_neutra_global_mixing_hmc.v1",
+  "selected_candidate": null,
+  "status": "HMC_NO_CANDIDATE_ADMITTED",
+  "tf32_enabled": false,
+  "training_inputs": {
+    "artifact_hashes": {
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/artifact-hashes.json",
+      "sha256": "01af201e2350c58dcfd85e3e2a0e5d298584b752bf5df1441f2e47b4a3c6da90"
+    },
+    "manifest": {
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/manifest.json",
+      "sha256": "556e34a3ad9975c10cd5db327fbff2b0c71f82f46da4b840eb1ed11b7f6f1c76"
+    },
+    "result": {
+      "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/result.json",
+      "sha256": "886a617eb60895bc97bc6530b74ef9e2578abee64771992fb29495c471cd92c7"
+    }
+  },
+  "visible_logical_gpus": [
+    "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+  ]
+}

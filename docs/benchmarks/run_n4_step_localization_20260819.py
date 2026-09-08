@@ -12,10 +12,10 @@ import os, sys, time
 # --detach: self-daemonize before TF import; output -> LOG (classifier-
 # outage mitigation: plain allowlisted foreground launch returns at once).
 LOG = "/tmp/n4_step_localization.log"
-if "--detach" in sys.argv and os.fork() > 0:
+if __name__ == "__main__" and "--detach" in sys.argv and os.fork() > 0:
     print(f"detached; output -> {LOG}")
     sys.exit(0)
-if "--detach" in sys.argv:
+if __name__ == "__main__" and "--detach" in sys.argv:
     os.setsid()
     fd = os.open(LOG, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
     os.dup2(fd, 1); os.dup2(fd, 2)
@@ -71,18 +71,19 @@ def case_with_steps(n, seed):
     return adapter, tf.constant(ys, DTYPE), steps
 
 
-for n, rows in ((2, 8192), (4, 8192)):
-    adapter, ys, kalman_steps = case_with_steps(n, 42 + n)
-    config = EngineConfig(basis_degree=12, rank=6, row_count=rows, sweeps=3,
-        ridge=1e-10, tau=1e-6, coordinate_half_width=3.0, seed=91000 + 10 * n + 6,
-        row_design="sobol")
-    t0 = time.time()
-    value, diags = run_value_filter_branch_axis_xla(adapter, ys, config)
-    print(f"\nn={n} rows={rows} total_gap={abs(float(value.numpy()) - sum(kalman_steps)):.3e} "
-          f"wall={time.time()-t0:.0f}s", flush=True)
-    print(f"{'t':>2} {'tt_incr':>12} {'kalman':>12} {'err':>10} {'fit_rms':>9} {'gram_cond':>10}")
-    for d, k in zip(diags, kalman_steps):
-        err = d["log_increment"] - k
-        print(f"{d['time_index']:>2} {d['log_increment']:>12.6f} {k:>12.6f} {err:>+10.4f} "
-              f"{d['weighted_fit_rms']:>9.2e} {d.get('gram_condition', float('nan')):>10.2e}",
-              flush=True)
+if __name__ == "__main__":
+    for n, rows in ((2, 8192), (4, 8192)):
+        adapter, ys, kalman_steps = case_with_steps(n, 42 + n)
+        config = EngineConfig(basis_degree=12, rank=6, row_count=rows, sweeps=3,
+            ridge=1e-10, tau=1e-6, coordinate_half_width=3.0, seed=91000 + 10 * n + 6,
+            row_design="sobol")
+        t0 = time.time()
+        value, diags = run_value_filter_branch_axis_xla(adapter, ys, config)
+        print(f"\nn={n} rows={rows} total_gap={abs(float(value.numpy()) - sum(kalman_steps)):.3e} "
+              f"wall={time.time()-t0:.0f}s", flush=True)
+        print(f"{'t':>2} {'tt_incr':>12} {'kalman':>12} {'err':>10} {'fit_rms':>9} {'gram_cond':>10}")
+        for d, k in zip(diags, kalman_steps):
+            err = d["log_increment"] - k
+            print(f"{d['time_index']:>2} {d['log_increment']:>12.6f} {k:>12.6f} {err:>+10.4f} "
+                  f"{d['weighted_fit_rms']:>9.2e} {d.get('gram_condition', float('nan')):>10.2e}",
+                  flush=True)

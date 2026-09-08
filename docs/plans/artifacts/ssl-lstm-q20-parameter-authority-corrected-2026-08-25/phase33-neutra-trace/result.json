@@ -1,0 +1,1063 @@
+{
+  "arms": {
+    "compact": {
+      "audit": {
+        "row_count": 12,
+        "status_code": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "transformed_status_code": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "transformed_valid": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "valid": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "config": {
+        "activation": "tanh",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "dimension": 4,
+        "epsilon": 1e-07,
+        "gradient_clip_norm": 10.0,
+        "hidden_layers": [
+          16,
+          16
+        ],
+        "initialization_scale": 0.02,
+        "initialization_seed": [
+          20260825,
+          3301
+        ],
+        "jit_compile": true,
+        "learning_rate": 0.001,
+        "permutation_policy": "full_reverse",
+        "s_max": 2.0,
+        "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+        "stage_s_max": [],
+        "stage_scale_linear_skip": [],
+        "stage_unbounded_scale_linear": [],
+        "stages": 2
+      },
+      "gates": {
+        "audit_score_finite": true,
+        "audit_target_finite": true,
+        "audit_target_status_valid": true,
+        "batch_shape_N_by_4": true,
+        "batch_size_gt_one": true,
+        "finite_training_and_validation": true,
+        "training_trace_nonempty": true,
+        "transformed_score_finite": true,
+        "transformed_target_finite": true,
+        "transformed_target_status_valid": true,
+        "transport_logdet_roundtrip": true,
+        "transport_parity_finite": true,
+        "transport_roundtrip": true,
+        "xla_configured": true
+      },
+      "nonclaims": [
+        "The fixed normalized M0 bank is not an unnormalized SMC-U ledger.",
+        "Short one-seed training and latent moments are descriptive, not whitening or posterior proofs.",
+        "No HMC, convergence, predictive, mode-discovery, or default-readiness claim."
+      ],
+      "parity": {
+        "finite": true,
+        "logdet_roundtrip_max_abs": 1.3877787807814457e-17,
+        "roundtrip_max_abs": 2.220446049250313e-16
+      },
+      "state_hash": "85163197e965b403f62b7ca6c0387053db4eccfbfb618e5897f390801ba4bbac",
+      "status": "PASS_NEUTRA_BOUNDARY_CANDIDATE",
+      "training_trace": [
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 37.013536845805625,
+            "loss": 21.344309851926717,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 1
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.105492576194355,
+          "validation_latent_mean_max_abs": 1.5908127171855115,
+          "validation_loss": 12.10284365249494
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.837548128032836,
+            "loss": 21.266818826380174,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 2
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0966897558536934,
+          "validation_latent_mean_max_abs": 1.585516320056323,
+          "validation_loss": 12.066047829790394
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.66064260129741,
+            "loss": 21.188635470283103,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 3
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0877216576701008,
+          "validation_latent_mean_max_abs": 1.5801456735195158,
+          "validation_loss": 12.028832459374248
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.48272330279982,
+            "loss": 21.1097335078915,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 4
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0785680580149837,
+          "validation_latent_mean_max_abs": 1.5746893995594493,
+          "validation_loss": 11.991092501000727
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.30367697360148,
+            "loss": 21.029978996223555,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 5
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0692049501576184,
+          "validation_latent_mean_max_abs": 1.5691377261822952,
+          "validation_loss": 11.95275120792633
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.12332282247881,
+            "loss": 20.949253697393118,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 6
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.059608966564922,
+          "validation_latent_mean_max_abs": 1.5634808087988956,
+          "validation_loss": 11.91373407336289
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.941483958742545,
+            "loss": 20.8674459399195,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 7
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0497567143325113,
+          "validation_latent_mean_max_abs": 1.5577090846577393,
+          "validation_loss": 11.873968945718966
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.757984495612504,
+            "loss": 20.78444513540156,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 8
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0396231076988394,
+          "validation_latent_mean_max_abs": 1.5518131074383772,
+          "validation_loss": 11.8333832530707
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.572655705244415,
+            "loss": 20.700142767979564,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 9
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0291814719425183,
+          "validation_latent_mean_max_abs": 1.5457832603725958,
+          "validation_loss": 11.79190265236709
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.385331478451626,
+            "loss": 20.61443043785974,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 10
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0184043451697793,
+          "validation_latent_mean_max_abs": 1.5396096802009938,
+          "validation_loss": 11.749451638484036
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.19584644338121,
+            "loss": 20.52719949425272,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 11
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0072638721888145,
+          "validation_latent_mean_max_abs": 1.5332822447747338,
+          "validation_loss": 11.705954088962692
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.00403589480684,
+            "loss": 20.438341227623805,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 12
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9957318063261733,
+          "validation_latent_mean_max_abs": 1.52679058214234,
+          "validation_loss": 11.66133341880765
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 34.80973616974093,
+            "loss": 20.347747060184542,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 13
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9837795204810127,
+          "validation_latent_mean_max_abs": 1.520124090897034,
+          "validation_loss": 11.61551283894786
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 34.612785235017704,
+            "loss": 20.2553089260904,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 14
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9713780588087464,
+          "validation_latent_mean_max_abs": 1.5132719688833716,
+          "validation_loss": 11.568415732615046
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 34.413023489150284,
+            "loss": 20.16091983345474,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 15
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9584982652052965,
+          "validation_latent_mean_max_abs": 1.5062232492865069,
+          "validation_loss": 11.5199661768366
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 34.210294749174686,
+            "loss": 20.064474606727533,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 16
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.945110983811853,
+          "validation_latent_mean_max_abs": 1.498966843766398,
+          "validation_loss": 11.470089596143158
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 34.00444735777219,
+            "loss": 19.965870769155053,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 17
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9311873046972103,
+          "validation_latent_mean_max_abs": 1.4914915925720693,
+          "validation_loss": 11.418713514887495
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999996,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 33.79533537192539,
+            "loss": 19.86500953046566,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 18
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9166988443194455,
+          "validation_latent_mean_max_abs": 1.483786321672342,
+          "validation_loss": 11.365768394635921
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 33.58281981169143,
+            "loss": 19.761796863375295,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 19
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9016180595780727,
+          "validation_latent_mean_max_abs": 1.4758399069744277,
+          "validation_loss": 11.311188553484833
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 33.36676995000922,
+            "loss": 19.65614465693041,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 20
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.885918596642535,
+          "validation_latent_mean_max_abs": 1.4676413457110729,
+          "validation_loss": 11.254913166528851
+        }
+      ],
+      "validation": {
+        "effective_sample_size_fraction": 0.9932107135669186,
+        "latent_weighted_covariance": [
+          [
+            1.2420882525021806,
+            -0.4888286681446739,
+            1.885918596642535,
+            1.0013554895115382
+          ],
+          [
+            -0.488828668144674,
+            0.3780436843444865,
+            -0.6952412656592063,
+            -0.8046244022651768
+          ],
+          [
+            1.885918596642535,
+            -0.6952412656592063,
+            3.0357561651143565,
+            0.9462909715529475
+          ],
+          [
+            1.0013554895115382,
+            -0.8046244022651768,
+            0.9462909715529475,
+            6.3226960285701885
+          ]
+        ],
+        "latent_weighted_mean": [
+          1.1502878830497962,
+          -0.06702184175554338,
+          1.4676413457110729,
+          0.7041185461926643
+        ],
+        "loss": 11.254913166528851,
+        "maximum_normalized_weight": 0.0932608700867258
+      }
+    },
+    "wide_low_lr": {
+      "audit": {
+        "row_count": 12,
+        "status_code": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "transformed_status_code": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "transformed_valid": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "valid": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "config": {
+        "activation": "tanh",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "dimension": 4,
+        "epsilon": 1e-07,
+        "gradient_clip_norm": 10.0,
+        "hidden_layers": [
+          32,
+          32
+        ],
+        "initialization_scale": 0.02,
+        "initialization_seed": [
+          20260825,
+          3302
+        ],
+        "jit_compile": true,
+        "learning_rate": 0.0005,
+        "permutation_policy": "full_reverse",
+        "s_max": 2.0,
+        "schema": "bayesfilter.neutra.weighted_forward_kl_config.v1",
+        "stage_s_max": [],
+        "stage_scale_linear_skip": [],
+        "stage_unbounded_scale_linear": [],
+        "stages": 2
+      },
+      "gates": {
+        "audit_score_finite": true,
+        "audit_target_finite": true,
+        "audit_target_status_valid": true,
+        "batch_shape_N_by_4": true,
+        "batch_size_gt_one": true,
+        "finite_training_and_validation": true,
+        "training_trace_nonempty": true,
+        "transformed_score_finite": true,
+        "transformed_target_finite": true,
+        "transformed_target_status_valid": true,
+        "transport_logdet_roundtrip": true,
+        "transport_parity_finite": true,
+        "transport_roundtrip": true,
+        "xla_configured": true
+      },
+      "nonclaims": [
+        "The fixed normalized M0 bank is not an unnormalized SMC-U ledger.",
+        "Short one-seed training and latent moments are descriptive, not whitening or posterior proofs.",
+        "No HMC, convergence, predictive, mode-discovery, or default-readiness claim."
+      ],
+      "parity": {
+        "finite": true,
+        "logdet_roundtrip_max_abs": 6.938893903907228e-18,
+        "roundtrip_max_abs": 4.440892098500626e-16
+      },
+      "state_hash": "08bd4ab03354d371f26a0fce52c1ee31ef36f417e60abae35f28400f609cdb20",
+      "status": "PASS_NEUTRA_BOUNDARY_CANDIDATE",
+      "training_trace": [
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999996,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 37.01385381047698,
+            "loss": 21.344309851926717,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 1
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.1096134543455065,
+          "validation_latent_mean_max_abs": 1.5933401987856384,
+          "validation_loss": 12.12041953650115
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.92489233729374,
+            "loss": 21.30501648411554,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 2
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.1049652432020163,
+          "validation_latent_mean_max_abs": 1.5905893274106695,
+          "validation_loss": 12.10126236063898
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.835300552637584,
+            "loss": 21.265198451859,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 3
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.100189648237114,
+          "validation_latent_mean_max_abs": 1.5877836029111636,
+          "validation_loss": 12.081723785621742
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.74483551113365,
+            "loss": 21.224783417796452,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 4
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.095277487902063,
+          "validation_latent_mean_max_abs": 1.5849195459585141,
+          "validation_loss": 12.061760652999624
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.65342400030988,
+            "loss": 21.18371513818996,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 5
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0902160686968965,
+          "validation_latent_mean_max_abs": 1.5819931321469487,
+          "validation_loss": 12.041334561566924
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.56098027102041,
+            "loss": 21.141938031691417,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 6
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.084993415937747,
+          "validation_latent_mean_max_abs": 1.579000410655409,
+          "validation_loss": 12.020407612167995
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.467418232683265,
+            "loss": 21.099396290982888,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 7
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0795972076460427,
+          "validation_latent_mean_max_abs": 1.5759373330379267,
+          "validation_loss": 11.998941658311068
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.37265013840947,
+            "loss": 21.056032516178355,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 8
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.074013492589735,
+          "validation_latent_mean_max_abs": 1.572799220197138,
+          "validation_loss": 11.976895970170194
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.27658621237235,
+            "loss": 21.01178654291976,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 9
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.068227004627288,
+          "validation_latent_mean_max_abs": 1.5695807776038426,
+          "validation_loss": 11.954226378905293
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.1791334031003,
+            "loss": 20.966595424761557,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 10
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0622216801891753,
+          "validation_latent_mean_max_abs": 1.5662764201233665,
+          "validation_loss": 11.930886400000542
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 36.08019751222411,
+            "loss": 20.920394784847286,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 11
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.055980995644393,
+          "validation_latent_mean_max_abs": 1.5628805399902572,
+          "validation_loss": 11.906828513805529
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.9796838454214,
+            "loss": 20.873119142649394,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 12
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0494878403298338,
+          "validation_latent_mean_max_abs": 1.5593873893362884,
+          "validation_loss": 11.882003969791873
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.000000000000002,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.877497091851545,
+            "loss": 20.824701763740705,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 13
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0427246350732253,
+          "validation_latent_mean_max_abs": 1.5557910617499762,
+          "validation_loss": 11.856362984442487
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.773541467812834,
+            "loss": 20.775074806710613,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 14
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0356733609625075,
+          "validation_latent_mean_max_abs": 1.552085490721887,
+          "validation_loss": 11.829855049878084
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.667720694438735,
+            "loss": 20.72416929943337,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 15
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0283154776618786,
+          "validation_latent_mean_max_abs": 1.5482644390581606,
+          "validation_loss": 11.802429044258561
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.559938229439936,
+            "loss": 20.67191521343929,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 16
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.020631844342398,
+          "validation_latent_mean_max_abs": 1.544321500576045,
+          "validation_loss": 11.774032894016804
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.45009732803304,
+            "loss": 20.618241526544494,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 17
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.0126026787302593,
+          "validation_latent_mean_max_abs": 1.5402501149132728,
+          "validation_loss": 11.744613498345998
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.33810129251275,
+            "loss": 20.563076415345048,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 18
+          },
+          "validation_latent_covariance_max_abs_offdiag": 2.004207614573688,
+          "validation_latent_mean_max_abs": 1.5360435888987694,
+          "validation_loss": 11.71411705462427
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 10.0,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.22385430176402,
+            "loss": 20.506347829653986,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 19
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9954258851186601,
+          "validation_latent_mean_max_abs": 1.5316951205306846,
+          "validation_loss": 11.682489616864686
+        },
+        {
+          "training": {
+            "clipped_gradient_norm": 9.999999999999998,
+            "clipping_applied": true,
+            "effective_sample_size_fraction": 0.9752464818589539,
+            "gradient_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "gradient_norm": 35.10726266113479,
+            "loss": 20.447984378561493,
+            "loss_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "maximum_normalized_weight": 0.03034438481331054,
+            "step": 20
+          },
+          "validation_latent_covariance_max_abs_offdiag": 1.9862365699791393,
+          "validation_latent_mean_max_abs": 1.5271978245800883,
+          "validation_loss": 11.649677705807584
+        }
+      ],
+      "validation": {
+        "effective_sample_size_fraction": 0.9932107135669186,
+        "latent_weighted_covariance": [
+          [
+            1.3119200853938702,
+            -0.49124787540033127,
+            1.9862365699791393,
+            1.0594011951359705
+          ],
+          [
+            -0.49124787540033127,
+            0.361198616024256,
+            -0.6964692583914671,
+            -0.8067307972234489
+          ],
+          [
+            1.9862365699791393,
+            -0.6964692583914672,
+            3.1877556778506704,
+            0.9979365722439909
+          ],
+          [
+            1.0594011951359708,
+            -0.8067307972234489,
+            0.9979365722439911,
+            6.634492247155168
+          ]
+        ],
+        "latent_weighted_mean": [
+          1.2041111929405655,
+          -0.0892407165930347,
+          1.5271978245800883,
+          0.7457205830846899
+        ],
+        "loss": 11.649677705807584,
+        "maximum_normalized_weight": 0.0932608700867258
+      }
+    }
+  },
+  "authority": {
+    "m0_protocol_hash": "a1f0f0493bb8bd594923b61ee9a92f3c8dcb72a612b64ad675b9ab7ff4723631",
+    "measure": "theta_R4",
+    "parameter_dim": 4,
+    "pilot_sha256": "faa8d8cfcd9e7a6d2286908af2562085455da49994376e382636ab37a0f43c6a",
+    "root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase28-fresh-theta-pilot",
+    "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278"
+  },
+  "batch_size": 40,
+  "device": {
+    "global_jit_setting": "",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        },
+        {
+          "device": "/physical_device:GPU:1",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile_per_function": true,
+    "logical_devices": [
+      "/device:GPU:0",
+      "/device:GPU:1"
+    ],
+    "physical_devices": [
+      "/physical_device:GPU:0",
+      "/physical_device:GPU:1"
+    ],
+    "tf32_enabled": true
+  },
+  "dtype": "float64",
+  "hmc_launched": false,
+  "nonclaims": [
+    "The normalized M0 bank is a fixed empirical training measure, not an unnormalized SMC-U ledger.",
+    "Short one-seed loss and latent moments do not establish IID whitening or posterior correctness.",
+    "No HMC, convergence, predictive, mode-discovery, or default-readiness claim."
+  ],
+  "role": "gpu_xla_batch_native_theta_transport_candidate_screen",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase31_2026_08_25.py --authority-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase28-fresh-theta-pilot --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase33-neutra-trace --steps 20 --seed 20260825 3301",
+    "cuda_visible_devices": "unset",
+    "git_commit": "e39913b024485f75ff1706da8a0e89e1c312e171",
+    "git_dirty": true,
+    "gpu_memory_growth_verified": true,
+    "jit_compile": true,
+    "logical_gpus": [
+      "/device:GPU:0",
+      "/device:GPU:1"
+    ],
+    "physical_gpus": [
+      "/physical_device:GPU:0",
+      "/physical_device:GPU:1"
+    ],
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/run_ssl_lstm_q20_parameter_authority_corrected_phase31_2026_08_25.py",
+    "seed": [
+      20260825,
+      3301
+    ],
+    "source_sha256": {
+      "authority_pilot": "faa8d8cfcd9e7a6d2286908af2562085455da49994376e382636ab37a0f43c6a",
+      "gpu_module": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+      "plan": "ed78ff6d8dc98e67aba94608c9bfa31e0ca7aa0dcb6078f23b7c87c94383284c",
+      "runner": "e057f4bece2a40d44d561f41e2b3157e4b5e2cf9327c6a78e8f7be1e781cc27c",
+      "target_module": "fa58ef208800054af81a684190cdf07cb2f7a294bef3d620877bb0334e4e98ca",
+      "training_module": "ec0a15059e6c335c27e8b5cb5ea6160ef3488e53436fd77e0031a053a0ed0b2b"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 35.091979518008884
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_neutra_boundary.v1",
+  "split": {
+    "audit": 12,
+    "audit_sign_counts": {
+      "negative_axis2": 6,
+      "positive_axis2": 6
+    },
+    "selection_frozen_before_audit": true,
+    "train": 40,
+    "validation": 12
+  },
+  "status": "PASS_NEUTRA_BOUNDARY_ROLE_LIMITED"
+}

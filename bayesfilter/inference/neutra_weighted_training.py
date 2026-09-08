@@ -624,7 +624,11 @@ class WeightedForwardKLNeuTraTrainer:
         self._compiled_validation = tf.function(
             self._validation_impl,
             jit_compile=bool(config.jit_compile),
-            reduce_retracing=True,
+            # Validation can be called on fixed but different partitions
+            # (for example a 12-row holdout and a 256-row independent audit).
+            # Shape relaxation would erase the static row count required by
+            # _rank2/_weights and fail on the second partition.
+            reduce_retracing=False,
         )
 
     def forward_and_logdet(self, latent: Any) -> tuple[tf.Tensor, tf.Tensor]:
