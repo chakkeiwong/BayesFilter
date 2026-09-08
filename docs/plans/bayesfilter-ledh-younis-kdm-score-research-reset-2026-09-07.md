@@ -2,7 +2,7 @@
 
 Date: 2026-09-07
 
-Status: PHASE4A_GPU_REPAIRED_TF32_VETO_ORACLE_RUNNER_PASS_TIMING_REVISED; SMALL_CELL_PILOT_COMPLETED; NO_PROMOTION_EVIDENCE; BROAD_LADDER_PAUSED; PHASE4B_MATH_BLOCKED
+Status: PHASE4A_NO_PROMOTION_EVIDENCE; PHASE4B_REFERENCE_IMPLEMENTED_AND_CORRECTNESS_GATED; PHASE4B_SCORE_QUALITY_PENDING; BROAD_LADDER_PAUSED
 
 This plan corrects the research question after the earlier
 Fisher/FFBSm/PaRIS rewrite proposal. The earlier proposal is preserved as
@@ -30,7 +30,7 @@ authorized by this plan.
 | Field | Frozen statement |
 |---|---|
 | Main question | Does Younis-style KDM reduce score error or score variance for the actual LEDH-OT-GenUT dual-cap program? |
-| Candidate mechanism | Phase 4A tests exact Gaussian kernelization of the observation factor with full reset feedback; Phase 4B may later test Younis's fixed-proposal importance-weighted mixture gradient after its complete sequential proposal law is derived. |
+| Candidate mechanism | Phase 4A tests exact Gaussian kernelization of the observation factor with full reset feedback; Phase 4B tests the now-derived fixed-proposal, all-components mixture-resampling gradient after Contract-E. |
 | Expected failure mode | Positive bandwidth changes the finite state measure; a full-dimensional kernel leaves a degenerate DSGE support; mixture-density gradients can hide an all-pairs interaction; stopping a cloud, weight, or bandwidth tangent yields a partial derivative. |
 | Primary promotion criterion | A candidate must pass zero-bandwidth parity, finite-difference derivative parity for its declared positive-bandwidth program, and a predeclared score-error comparison at equal compute on an oracle case. |
 | Promotion veto | Non-finite or support-invalid states, a target change while the route is advertised as unchanged, omitted derivative terms, hidden quadratic work, stale scope settings, or failed endpoint mechanics. |
@@ -96,10 +96,16 @@ The zero-bandwidth object is the atom measure. Any h or B that is positive
 on a nontrivial direction defines a different measure unless an exact
 correction is supplied.
 
-The experiment uses three explicit target labels. `ATOM-FINITE` is the
+The experiment uses four active target labels and one superseded diagnostic
+label. `ATOM-FINITE` is the
 canonical scalar `L_0^N` produced by the existing finite LEDH-OT-GenUT
 program. `KDM-FINITE` is the scalar obtained after a declared positive-
-bandwidth operation; its derivative is `d L_h^N / d theta`. `MODEL-IS` is an
+bandwidth observation operation; its derivative is `d L_h^N / d theta`.
+`RESKDM-IWSG-FINITE` is the combined fixed-anchor program that applies the full
+mixture resampler after Contract-E and carries its state, raw `r/N` importance
+weight, and covariance-mark outputs into the next transition.
+`RESKDM-SN-FINITE` is the superseded variant that prematurely normalizes the
+ratios; it has a different finite normalizer and derivative. `MODEL-IS` is an
 importance-sampling estimator whose proposal may be a KDM but whose density
 ratio targets the underlying one-step state-space factor. A `MODEL-IS` ratio
 can preserve the model normalizer in expectation when its support and density
@@ -114,6 +120,8 @@ The local full texts are
 
 - docs/papers/differentiable/Differentiable and stable long-range tracking of multiple posterior modes Younis(23).pdf
 - docs/papers/differentiable/Learning to be smooth An end-to-end differentiable particle smoother Younis(24).pdf
+- `.localresources/code/younis-mdpf-neurips-2023`, official author code at
+  commit `b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18`
 
 The checked technical anchors are:
 
@@ -121,6 +129,7 @@ The checked technical anchors are:
 |---|---|---|
 | Younis--Sudderth 2023, Sec. 2.2, Eq. (4) | A weighted Dirac cloud is represented by a continuous kernel mixture and can be resampled from that mixture. | This changes the finite state measure used after resampling. |
 | Younis--Sudderth 2023, Sec. 4, Eqs. (14)--(15) | IWSG fixes a proposal at the current parameter value and differentiates mixture importance weights rather than moving sampled locations. | The derivative is for a mixture expectation under the paper's objective, not automatically for an atom-based LEDH value. |
+| Official author code, `kde_particle_filter.py:738-748,927-934` at commit `b0e2fd5` | The raw gradient-injection factor is multiplied by next-step factors before posterior normalization. | Premature self-normalization changes a generative finite normalizer even when posterior weights agree. |
 | Younis--Sudderth 2023, App. B.1 | Mixture-gradient training evaluates mixture interactions and is quadratic in particle count. | The linear inference cost cannot be transferred to a score path that differentiates the mixture. |
 | Younis--Sudderth 2024, Secs. 2.3 and 4, Eqs. (6)--(7), (17)--(23) | MDPF/MDPS use Gaussian mixtures, stratified mixture resampling, and an importance-weighted two-filter construction. | MDPS is a future-data smoother and its training/gradient path has all-pairs mixture work; it is not the online LEDH score. |
 
@@ -128,7 +137,7 @@ The papers study learned discriminative tracking and smoothing. They do not
 prove that KDM removes finite-particle bias in a generative parameter score,
 and they do not analyze OT, LEDH flow, GenUT moments, or dual-cap constraints.
 Any adaptation to this repository is therefore classified as a new
-extension, even when the mixture and IWSG algebra is source-faithful.
+extension, even when individual mixture and IWSG operations match the source.
 
 ## The mathematical boundary
 
@@ -332,7 +341,7 @@ calibration data. This is a hypothesis to test, not a presumed repair.
 
 ### 5. Full Younis MDPF/MDPS
 
-The source-faithful all-components mixture gradient is a reference
+The source-matched all-components mixture gradient is a reference
 implementation only. It is expected to be O(N^2) per mixture-gradient
 evaluation and O(TN^2) for a sequential gradient. Sparse neighborhoods,
 random features, or low-rank approximations would be new algorithms and must
@@ -436,13 +445,16 @@ is `KDM-FINITE` kernelized observation weighting.  It is not a full Younis
 mixture-density particle filter because it does not propagate each mixture
 component's conditional posterior mean and covariance.
 
-Phase 4B is the complete fixed-anchor `MODEL-IS` mixture-resampling reference.
-It is mathematically blocked until the component cloud, covariance/support,
-sampling law, ancestry semantics, complete proposal, matching numerator,
-LEDH map/Jacobian, sequential anchor, and posterior/reset payload have all
-been derived.  The conditional density and anchored weight helpers do not by
-themselves define that algorithm.  No Phase 4B code may substitute a sampled
-component density, omit all-pairs terms, or invent an unstated proposal.
+Phase 4B is the complete fixed-anchor `RESKDM-IWSG-FINITE` mixture-resampling
+reference. Its component cloud, common full-rank bandwidth, covariance-mark
+extension, stratified sampling law, marginalized proposal, fixed anchor,
+raw incoming-weight recurrence, and post-Contract-E insertion are now derived
+and implemented. A source/code audit caught and repaired an earlier premature
+self-normalization; that prior route is `RESKDM-SN-FINITE`. The current route
+is a changed finite program, not a `MODEL-IS` theorem and not
+the derivative of `ATOM-FINITE`. No implementation may substitute a
+sampled-component density, omit all-pairs terms, or invent an unstated
+proposal.
 
 ### Phase 5: oracle and DSGE validation
 
@@ -520,7 +532,7 @@ The Phase 1 diagnostic implementation is
 `source_aligned_extension_diagnostic_only`.  The global and conditional
 mixture evaluators expose log density, responsibilities, complete cloud/weight/
 covariance tangents, rank/normalization validity, and an explicit all-pairs
-counter.  The source-aligned IWSG evaluator has no sample-location tangent and
+counter.  The source-matched IWSG evaluator has no sample-location tangent and
 keeps the proposal log density fixed at the supplied anchor.  The conditional
 KDM kernel is labelled as a proposal-density evaluator, not a model-score
 estimator.  The anchored `MODEL-IS` helper is
@@ -664,16 +676,16 @@ The plan was checked before implementation for:
 - an unexamined default: bandwidth rank, proposal anchor, kernel geometry,
   and all-pairs reference status are recorded above.
 
-The audit passes for documentation, bounded diagnostics, and Phase 4A
-engineering on the reference/no-TF32 arms. The trusted-GPU calibration
+The audit passes for documentation, bounded diagnostics, Phase 4A engineering,
+and Phase 4B reference correctness on the reference/no-TF32 arms. The trusted-GPU calibration
 records a TF32 identity/parity veto, so the plan does not authorize a
 production port or establish score-error improvement. The documentation review, bounded Phase 0A registry repair,
 Phase 1 algebra diagnostic, Phase 2A controlled normalizer/trace gate,
-Phase 2B fixed-chart support gate, Phase 3 no-feedback auxiliary, and Phase 4A
-CPU/XLA mechanics are complete. Phase 4B remains mathematically blocked. The
-immediate next action is a code-level TF32 repair evaluation or an explicit
-no-TF32/float64 route decision; the score-error pilot remains held until that
-gate passes.
+Phase 2B fixed-chart support gate, Phase 3 no-feedback auxiliary, Phase 4A
+CPU/XLA mechanics, and Phase 4B reference correctness gates are complete.
+Phase 4B score-quality work is pending a fresh campaign amendment; the
+implementation smokes do not answer that question. The active numerical
+setting remains float32 without TF32, with float64 as the reference arm.
 
 ## Phase 0 execution record
 
@@ -828,7 +840,7 @@ CPU-only reference evidence and does not compare score error or variance.
 
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
 |---|---|---|---|---|---|
-| Retain Phase 4A as a full-feedback diagnostic | Shared-executor identity, zero-bandwidth trajectory parity, total finite differences, Gaussian-factor identity, PSD/support checks, covariance-carry call-chain identity, and executable endpoint checks | Engineering gates pass on float64/float32 without TF32; TF32 identity/parity remains vetoed; Phase 4B remains math-blocked | The powered `N=32,T=5` cell had a wide interval and descriptively higher KDM-FINITE MSE | Compare the complete rho curve against both ATOM-FINITE and the Kalman oracle on the same held-out paths before spending a larger compile budget | No promotion, default, DSGE, HMC, or full-Younis claim |
+| Retain Phase 4A as a full-feedback diagnostic | Shared-executor identity, zero-bandwidth trajectory parity, total finite differences, Gaussian-factor identity, PSD/support checks, covariance-carry call-chain identity, and executable endpoint checks | Engineering gates pass on float64/float32 without TF32; TF32 identity/parity remains vetoed | Attempt 05 inspected the complete rho curve; every positive bandwidth had worse point MSE and rho=1.6 was statistically worse | Do not retune the consumed holdout; require fresh data and a new rationale for any Phase 4A continuation | No promotion, default, DSGE, HMC, or full-Younis claim |
 
 ## Decision
 
@@ -836,18 +848,22 @@ The research direction is now Younis KDM applied to the real LEDH-OT-GenUT
 dual-cap trust-region program. The current canonical total derivative remains
 the baseline. A KDM sidecar may help only if it is either an explicitly
 changed finite program or a demonstrably target-preserving auxiliary estimator.
-Phase 1 through Phase 4A have supplied the tested algebraic, endpoint,
-fixed-chart, auxiliary, and full-feedback kernelized-observation foundation.
+Phase 1 through Phase 4B have supplied the tested algebraic, endpoint,
+fixed-chart, auxiliary, full-feedback observation, and full-mixture resampling
+reference foundation.
 The Contract-E covariance-carry call-chain bug was repaired and passed the
 focused CPU suite; the repaired GPU/XLA gate confirms float64 and float32
 without TF32 and rejects the TF32 arm at the declared identity thresholds.
-The first powered score-error pilot selected `rho=0.8` but produced 4.84%
-higher validation MSE than ATOM-FINITE, with a bootstrap interval crossing
-zero.  This is a promotion veto for the tested scope, not a rejection of the
+The authoritative Phase 4A all-bandwidth result selected `rho=0.8` but
+produced 4.84% higher validation MSE than ATOM-FINITE, with a bootstrap
+interval crossing zero. Every positive bandwidth had a worse point MSE, and
+`rho=1.6` was statistically worse. This is a promotion veto for the tested
+scope, not a rejection of the
 research direction.  This is not a port of Nemeth, Scibior--Wood, PaRIS, or
-Del Moral. The
-exact all-pairs Phase 4B route must wait for its complete proposal derivation
-rather than being approximated silently.
+Del Moral. The exact all-pairs Phase 4B reference is now implemented under its
+own `RESKDM-IWSG-FINITE` target; its model-score quality remains untested. The
+earlier GPU derivative evidence for `RESKDM-SN-FINITE` does not certify this
+repaired score route.
 
 ## Current execution checkpoint (2026-09-08)
 
@@ -867,8 +883,9 @@ plus first execution, followed by 0.232 seconds per warm execution and 31 MB
 peak GPU memory.  Therefore the old six-row/0.10 GPU-hour campaign budget is
 superseded.  The small-cell pilot is complete and is recorded in
 `docs/plans/results/bayesfilter-ledh-younis-kdm-phase4a-campaign-result-20260908.md`.
-The broad ladder remains paused.  The next step is a focused same-stream
-diagnostic of all candidate bandwidths against both the atom endpoint and the
-oracle, followed by a fresh budget decision.  The registered `batch_fused`
+The broad ladder remains paused. The Phase 4A same-stream all-bandwidth
+diagnostic is complete and its holdout is consumed. The next scientific step
+is a fresh, adequately powered Phase 4B LGSSM comparison after freezing the
+covariance-mark ablation and comparator ladder. The registered `batch_fused`
 and NeuTra lanes remain a separate canonical-conformance blocker because they
 still bypass Contract-E, GenUT, and the dual caps.

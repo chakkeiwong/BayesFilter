@@ -1,6 +1,6 @@
 # Phase 4A.5 Campaign Amendment
 
-**Status:** REVISED_AFTER_REPAIRED_TIMING; SMALL_CELL_PILOT_COMPLETED; NO_PROMOTION_EVIDENCE; BROAD_LADDER_PAUSED  
+**Status:** REVISED_AFTER_REPAIRED_TIMING; AUTHORITATIVE_ALL_RHO_ATTEMPT05_COMPLETE; NO_PROMOTION_EVIDENCE; BROAD_LADDER_PAUSED  
 **Parent plan:** [bayesfilter-ledh-younis-kdm-phase4-integrated-plan-2026-09-07.md](bayesfilter-ledh-younis-kdm-phase4-integrated-plan-2026-09-07.md)
 
 ## Skeptical audit and supersession
@@ -20,9 +20,10 @@ runner attempt was deliberately withheld until the synthetic observations were
 corrected to draw the declared stationary initial state; no research artifact
 was created from the rejected generator.
 
-The authorized small-cell pilot is now complete.  The powered `N=32,T=5`,
-float32/no-TF32 run used 20 calibration and 100 validation paths, selected
-`rho=0.8`, and produced `NO_PROMOTION_EVIDENCE`: KDM-FINITE had 4.84% higher
+The authorized small-cell pilot is now complete. The authoritative Attempt 05
+`N=32,T=5`, float32/no-TF32 run used 20 calibration and 100 validation paths,
+retained all prespecified bandwidths, selected `rho=0.8`, and produced
+`NO_PROMOTION_EVIDENCE`: KDM-FINITE had 4.84% higher
 validation score MSE than ATOM-FINITE, with a paired bootstrap interval that
 crossed zero.  The full result is recorded in
 `docs/plans/results/bayesfilter-ledh-younis-kdm-phase4a-campaign-result-20260908.md`.
@@ -124,7 +125,7 @@ Estimated wall time (serial, with XLA compile):   ~15 minutes
 5. ✅ Calibration and validation use disjoint path/stream discipline.
 6. ✅ Paired score MSE and bootstrap calculation are preserved in row-level
    artifacts.
-7. ✅ Small-cell pilot completed; the promotion criterion failed and the broad
+7. ✅ Small-cell all-bandwidth pilot completed; the promotion criterion failed and the broad
    ladder is paused.
 
 ## Repair and retry policy
@@ -136,16 +137,13 @@ Within this campaign:
 
 ## Next actions
 
-1. Run a focused same-stream diagnostic over the complete rho grid at the
-   already compiled small cell, comparing every candidate to both ATOM-FINITE
-   and the Kalman oracle.  Keep this diagnostic separate from tuning and do not
-   spend the superseded broad-ladder budget.
-2. Use that table to decide whether the observed loss is finite-particle atom
-   error, positive-bandwidth bias, or a route-level implementation issue.  A
-   larger `N,T` cell requires its own compile probe and a new evidence contract.
-3. Keep Phase 4B blocked until the complete Younis mixture proposal law,
-   support measure, numerator, ancestry rule, and anchored derivative are
-   written and independently reviewed.
-4. Repair or quarantine the registered `batch_fused`/NeuTra lane separately;
+1. Treat Attempt 05's complete rho table as consumed holdout evidence. Any
+   further Phase 4A cell requires fresh data, a prospective power calculation,
+   and a new compile budget.
+2. Use the repaired `RESKDM-IWSG-FINITE` reference for the next separately
+   planned paired LGSSM campaign only after its covariance-mark ablation and
+   heuristic comparator set are frozen. The earlier `RESKDM-SN-FINITE` smoke
+   is a different target and cannot certify the repaired derivative.
+3. Repair or quarantine the registered `batch_fused`/NeuTra lane separately;
    its current reduced recurrence bypasses Contract-E, GenUT, and the dual
    caps and cannot support a canonical full-algorithm claim.

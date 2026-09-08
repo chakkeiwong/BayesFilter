@@ -1,7 +1,7 @@
 # Phase 4: Integrated Younis-KDM Score Investigation
 
 Date: 2026-09-07  
-Status: `PHASE4A_GPU_REPAIRED; TF32_VETO_CONFIRMED; ORACLE_AND_RUNNER_PASS; TIMING_SCOPE_REVISED; SMALL_CELL_PILOT_COMPLETED; NO_PROMOTION_EVIDENCE; BROAD_LADDER_PAUSED; PHASE4B_MATH_BLOCKED`  
+Status: `PHASE4A_NO_PROMOTION_EVIDENCE; PHASE4B_REFERENCE_IMPLEMENTED_AND_CORRECTNESS_GATED; PHASE4B_SCORE_QUALITY_PENDING; BROAD_LADDER_PAUSED`  
 Governing reset:
 `docs/plans/bayesfilter-ledh-younis-kdm-score-research-reset-2026-09-07.md`
 
@@ -111,11 +111,23 @@ must likewise specify all of the following before code is written:
    Contract-E and the dual-cap correction.
 
 The previous conditional expression `q_KDM(x | J,y)` did not define items
-1--4. Choosing those objects arbitrarily would yield a valid importance ratio
-for an invented proposal, not a faithful implementation of the intended
-research mechanism. Phase 4B is therefore mathematically blocked pending a
-separate derivation. Existing density and anchored-weight primitives remain
-diagnostic only.
+1--4. Choosing those objects arbitrarily would have yielded a valid importance
+ratio for an invented proposal, not the intended research mechanism. The
+separate Phase 4B plan now resolves those choices: the combined reference uses
+the uniform Contract-E output as the component cloud, a common full-rank
+Gaussian bandwidth, stratified component labels, a fully marginalized mixture
+density, fixed anchor samples and denominators, raw `r/N` IWSG weights, and two
+explicit UKF covariance-mark policies. Its label is `RESKDM-IWSG-FINITE`, not
+`MODEL-IS`, because it defines the total derivative of a new finite sequential
+program rather than an unbiased model-normalizer theorem.
+
+The first implementation prematurely normalized the ratios before the next
+PF--PF factor. That route correctly differentiated a different
+`RESKDM-SN-FINITE` scalar, but it was wrong relative to the raw IWSG mechanism
+in Younis 2023 Eqs. (14)--(15) and the released author code at commit
+`b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18`. The repaired route carries
+`log(r/N)` and the uncentered `d log r` into the next normalizer and normalizes
+only the resulting posterior weights.
 
 For any fixed-anchor `MODEL-IS` implementation, the denominator and sampling
 law are constant in the derivative. The finite estimator of a normalizer and
@@ -134,7 +146,7 @@ formula.
 | Exact oracle | Independent Kalman value and analytical score for a nondegenerate LGSSM. |
 | Primary baseline | The actual single-cloud canonical analytical endpoint with `reset_policy=contract_e` and both owner dual-cap mechanisms active. |
 | Candidate 4A | Full-feedback `kernelized_observation_weighting` sharing the canonical executor; label `KDM-FINITE`. |
-| Candidate 4B | Not yet authorized; requires the nine-item proposal derivation above; label `MODEL-IS`. |
+| Candidate 4B | `RESKDM-IWSG-FINITE`: the repaired fixed-anchor all-components raw-IWSG resampling reference after Contract-E and both caps. It is a changed finite program, not `MODEL-IS`; `RESKDM-SN-FINITE` is a superseded diagnostic. |
 | Engineering pass | Zero-bandwidth full-trajectory identity, positive-bandwidth finite-difference agreement, Gaussian-factor identity, PSD/support checks, and executable call-chain identity. |
 | Research promotion criterion | On untouched paired paths, the predeclared confidence interval for the change in squared score error is below zero and below the practical threshold, with MCSE small relative to the effect. |
 | Promotion veto | Any wrong target label, missing tangent, model-factor mismatch, nonfinite value, invalid covariance/support, changed canonical default, stale tuning scope, failed full-trajectory zero-bandwidth identity, or heuristic underperformance in a salient condition. |
@@ -188,8 +200,9 @@ The plan was challenged for the required failure classes.
 - **Hidden target change:** positive `B` is always `KDM-FINITE`; only the
   explicit zero branch may claim canonical identity.
 - **Incomplete KDM posterior:** Phase 4A is named kernelized observation
-  weighting and is not represented as a full Younis MDPF. Phase 4B remains
-  blocked until the complete proposal law is derived.
+  weighting and is not represented as a full Younis MDPF. Phase 4B now has a
+  complete declared combined proposal law, while its covariance-mark carry is
+  explicitly identified as a BayesFilter extension.
 - **Unfair comparison:** paths, fixed streams, particle count, horizon, dtype,
   flow/reset settings, and reported compute are paired. Equal wall time is
   reported as a separate efficiency comparison rather than silently changing
@@ -204,9 +217,9 @@ The plan was challenged for the required failure classes.
   path-by-stream score vectors, not only averages, so paired intervals, bias,
   variance, and MCSE can be recomputed.
 
-The audit passes for Phase 4A implementation and focused engineering checks.
-It does not authorize Phase 4B code or a broad multi-cell research campaign
-yet.  The
+The audit passes for Phase 4A and Phase 4B reference implementation and
+focused engineering checks. It does not turn either implementation smoke into
+score-quality evidence or authorize an unplanned broad campaign. The
 existing `batch_fused` file is separately registered but its current endpoint
 returns `children` directly after the UKF update and does not execute
 Contract-E, GenUT, or the dual caps.  It is therefore not a full canonical
@@ -297,26 +310,37 @@ validation:    untouched paths and streams, paired interval plus MCSE
 
 The actual replication counts must be chosen from a pilot variance estimate
 or a predeclared minimum-detectable-effect calculation. “Enough power” cannot
-be replaced by an arbitrary seed count. Holdout data never tune `rho`.  The
-The campaign runner is implemented.  A bounded one-cell pilot has now run with
-disjoint calibration and validation paths.  The powered `N=32,T=5`,
-float32/no-TF32 cell selected `rho=0.8`, but KDM-FINITE had 4.84% higher
+be replaced by an arbitrary seed count. Holdout data never tune `rho`. The
+campaign runner is implemented. A bounded one-cell Phase 4A pilot has now
+run with disjoint calibration and validation paths. In the authoritative
+all-bandwidth Attempt 05, the `N=32,T=5`, float32/no-TF32 cell selected
+`rho=0.8`, but KDM-FINITE had 4.84% higher
 validation score MSE than ATOM-FINITE; its paired bootstrap interval crossed
 zero, so the ranking is descriptive only and the promotion criterion failed.
 The complete result and row-level artifacts are in
 `docs/plans/results/bayesfilter-ledh-younis-kdm-phase4a-campaign-result-20260908.md`
-and `docs/benchmarks/artifacts/ledh_younis_kdm_phase4_20260908/campaign-attempt03-n32t5-powered-f32/`.
+and `docs/benchmarks/artifacts/ledh_younis_kdm_phase4_20260908/campaign-attempt05-n32t5-all-rho-f32-current/`.
 The old six-row timing estimate is superseded by the repaired `N=128,T=20`
 compile probe and is not a current campaign budget.
 
 ### 4B. Complete mixture reference
 
-Write the nine-item mathematical proposal specification, update the LaTeX
-note, and repeat the skeptical audit. Only then implement the exact all-pairs
-mixture sampler/density, target numerator, anchored derivative, Contract-E
-reset, and dual-cap continuation. Sparse, nearest-neighbor, low-rank, or
-sampled-component-only variants are later approximations and cannot stand in
-for this reference.
+The nine-item proposal specification, LaTeX derivation, skeptical audit, exact
+all-pairs mixture sampler/density, fixed-anchor derivative, post-Contract-E
+insertion, covariance-mark carry, and incoming-weight recurrence are now
+implemented. A source/code audit found and repaired premature
+self-normalization of the IWSG ratios; the CPU reference gates pass for raw
+`r/N` weights and for both responsibility-mean and fixed-label covariance-mark
+policies. The prior GPU smokes certify only the superseded self-normalized
+scalar and must be rerun. Sparse, nearest-neighbor, low-rank, and
+sampled-component-only variants remain prohibited substitutes.
+The next Phase 4B step is an adequately powered paired LGSSM campaign under a
+fresh amendment. That campaign must be two-dimensional: the formerly proposed
+scalar fixture makes the pairwise GenUT correction a structural no-op and was
+rejected by the resumed skeptical audit. The new matrix Kalman oracle,
+fixed-stream bootstrap comparator, and canonical cap-trace diagnostics pass
+focused CPU checks; implementation success alone does not establish score
+quality.
 
 ### 5. DSGE extension
 
@@ -329,11 +353,17 @@ own tuning scope and observation-factor derivation.
 ## Current decision
 
 Retain Phase 4A as a fully differentiated, full-feedback diagnostic using the
-shared canonical engine, but do not promote it: the powered small-cell pilot
-did not meet the score-error criterion.  The next discriminating diagnostic is
-same-stream comparison of the complete rho curve against both ATOM-FINITE and
-the Kalman oracle before any larger compile budget is spent.  Do not call the
-route a full Younis filter.  Do not code Phase 4B until its proposal law is
-complete.  The registered `batch_fused`/NeuTra lane remains a separate
+shared canonical engine, but do not promote it: the authoritative small-cell
+all-bandwidth result did not meet the score-error criterion. Retain Phase 4B as
+the implemented, separately labelled `RESKDM-IWSG-FINITE` all-components
+reference; its exact derivative is established only for that fixed-anchor
+finite scalar. The superseded `RESKDM-SN-FINITE` route is not the Younis raw
+IWSG normalizer.
+The next discriminating step is a prospective paired LGSSM campaign comparing
+it with ATOM-FINITE, the Kalman oracle, a bootstrap PF score, and the Phase 4A
+candidate, including the covariance-mark ablation. Its frozen first scope is
+`D=2,N=32,T=5`, followed by `D=2,N=64,T=20` only within the declared compute
+budget; a scalar score campaign cannot answer the full-algorithm question. The registered
+`batch_fused`/NeuTra lane remains a separate
 implementation-conformance blocker because it still bypasses Contract-E,
 GenUT, and the dual caps; no KDM result repairs that blocker.

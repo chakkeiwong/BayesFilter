@@ -26,12 +26,8 @@ from bayesfilter.highdim.ledh_younis_kdm_tf import (
 
 Tensor = tf.Tensor
 
-INTEGRATED_OBSERVATION_ROUTE_ID = (
-    "ledh_younis_kdm_integrated_observation_weighting_v1"
-)
-INTEGRATED_OBSERVATION_CLASSIFICATION = (
-    "kdm_finite_full_feedback_diagnostic_only"
-)
+INTEGRATED_OBSERVATION_ROUTE_ID = "ledh_younis_kdm_integrated_observation_weighting_v1"
+INTEGRATED_OBSERVATION_CLASSIFICATION = "kdm_finite_full_feedback_diagnostic_only"
 INTEGRATED_OBSERVATION_SEMANTICS = (
     "post_ledh_pre_observation_gaussian_measure_convolution_v1"
 )
@@ -94,27 +90,17 @@ def linear_gaussian_kdm_observation_factors(
     observation_matrix = tf.convert_to_tensor(observation_matrix, dtype)
     d_observation_matrix = tf.convert_to_tensor(d_observation_matrix, dtype)
     observation_covariance = tf.convert_to_tensor(observation_covariance, dtype)
-    d_observation_covariance = tf.convert_to_tensor(
-        d_observation_covariance, dtype
-    )
+    d_observation_covariance = tf.convert_to_tensor(d_observation_covariance, dtype)
     observation = tf.convert_to_tensor(observation, dtype)
 
     particle_count = int(states.shape[0])
     state_dimension = int(states.shape[1])
     observation_dimension = int(observation.shape[0])
     tf.ensure_shape(d_states, [particle_count, state_dimension])
-    tf.ensure_shape(
-        bandwidths, [particle_count, state_dimension, state_dimension]
-    )
-    tf.ensure_shape(
-        d_bandwidths, [particle_count, state_dimension, state_dimension]
-    )
-    tf.ensure_shape(
-        observation_matrix, [observation_dimension, state_dimension]
-    )
-    tf.ensure_shape(
-        d_observation_matrix, [observation_dimension, state_dimension]
-    )
+    tf.ensure_shape(bandwidths, [particle_count, state_dimension, state_dimension])
+    tf.ensure_shape(d_bandwidths, [particle_count, state_dimension, state_dimension])
+    tf.ensure_shape(observation_matrix, [observation_dimension, state_dimension])
+    tf.ensure_shape(d_observation_matrix, [observation_dimension, state_dimension])
     tf.ensure_shape(
         observation_covariance,
         [observation_dimension, observation_dimension],
@@ -146,40 +132,26 @@ def linear_gaussian_kdm_observation_factors(
         tf.ones([particle_count], dtype),
     )
     bandwidth_symmetric = bandwidth_symmetry_error <= tolerance * bandwidth_scale
-    d_bandwidth_symmetric = (
-        d_bandwidth_symmetry_error <= tolerance * d_bandwidth_scale
-    )
+    d_bandwidth_symmetric = d_bandwidth_symmetry_error <= tolerance * d_bandwidth_scale
     symmetric_bandwidths = 0.5 * (bandwidths + bandwidth_transpose)
-    symmetric_d_bandwidths = 0.5 * (
-        d_bandwidths + d_bandwidth_transpose
-    )
+    symmetric_d_bandwidths = 0.5 * (d_bandwidths + d_bandwidth_transpose)
     bandwidth_eigenvalues = tf.linalg.eigvalsh(symmetric_bandwidths)
-    minimum_bandwidth_eigenvalue = tf.reduce_min(
-        bandwidth_eigenvalues, axis=-1
-    )
+    minimum_bandwidth_eigenvalue = tf.reduce_min(bandwidth_eigenvalues, axis=-1)
     bandwidth_psd = minimum_bandwidth_eigenvalue >= -tolerance * bandwidth_scale
 
     if bandwidth_is_zero:
         bandwidth_branch_valid = tf.reduce_all(
             tf.abs(symmetric_bandwidths) <= tolerance, axis=[-2, -1]
-        ) & tf.reduce_all(
-            tf.abs(symmetric_d_bandwidths) <= tolerance, axis=[-2, -1]
-        )
+        ) & tf.reduce_all(tf.abs(symmetric_d_bandwidths) <= tolerance, axis=[-2, -1])
     else:
         # A mixed discrete/continuous component family is valid.  The KDM
         # branch only requires that the collection is not the all-zero atom
         # limit; individual PSD components may have zero bandwidth.
-        any_nonzero_bandwidth = tf.reduce_any(
-            tf.abs(symmetric_bandwidths) > tolerance
-        )
-        bandwidth_branch_valid = tf.fill(
-            [particle_count], any_nonzero_bandwidth
-        )
+        any_nonzero_bandwidth = tf.reduce_any(tf.abs(symmetric_bandwidths) > tolerance)
+        bandwidth_branch_valid = tf.fill([particle_count], any_nonzero_bandwidth)
 
     covariance_transpose = tf.linalg.matrix_transpose(observation_covariance)
-    d_covariance_transpose = tf.linalg.matrix_transpose(
-        d_observation_covariance
-    )
+    d_covariance_transpose = tf.linalg.matrix_transpose(d_observation_covariance)
     covariance_symmetry_error = tf.reduce_max(
         tf.abs(observation_covariance - covariance_transpose)
     )
@@ -194,18 +166,12 @@ def linear_gaussian_kdm_observation_factors(
         tf.reduce_max(tf.abs(d_observation_covariance)),
         tf.constant(1.0, dtype),
     )
-    covariance_symmetric = (
-        covariance_symmetry_error <= tolerance * covariance_scale
-    )
+    covariance_symmetric = covariance_symmetry_error <= tolerance * covariance_scale
     d_covariance_symmetric = (
         d_covariance_symmetry_error <= tolerance * d_covariance_scale
     )
-    symmetric_covariance = 0.5 * (
-        observation_covariance + covariance_transpose
-    )
-    symmetric_d_covariance = 0.5 * (
-        d_observation_covariance + d_covariance_transpose
-    )
+    symmetric_covariance = 0.5 * (observation_covariance + covariance_transpose)
+    symmetric_d_covariance = 0.5 * (d_observation_covariance + d_covariance_transpose)
     minimum_observation_eigenvalue = tf.reduce_min(
         tf.linalg.eigvalsh(symmetric_covariance)
     )
@@ -213,18 +179,14 @@ def linear_gaussian_kdm_observation_factors(
         minimum_observation_eigenvalue > tolerance * covariance_scale
     )
 
-    effective_covariances = (
-        symmetric_covariance[tf.newaxis, :, :]
-        + tf.einsum(
-            "od,ndf,pf->nop",
-            observation_matrix,
-            symmetric_bandwidths,
-            observation_matrix,
-        )
+    effective_covariances = symmetric_covariance[tf.newaxis, :, :] + tf.einsum(
+        "od,ndf,pf->nop",
+        observation_matrix,
+        symmetric_bandwidths,
+        observation_matrix,
     )
     effective_covariances = 0.5 * (
-        effective_covariances
-        + tf.linalg.matrix_transpose(effective_covariances)
+        effective_covariances + tf.linalg.matrix_transpose(effective_covariances)
     )
     effective_d_covariances = (
         symmetric_d_covariance[tf.newaxis, :, :]
@@ -248,8 +210,7 @@ def linear_gaussian_kdm_observation_factors(
         )
     )
     effective_d_covariances = 0.5 * (
-        effective_d_covariances
-        + tf.linalg.matrix_transpose(effective_d_covariances)
+        effective_d_covariances + tf.linalg.matrix_transpose(effective_d_covariances)
     )
     effective_scale = tf.maximum(
         tf.reduce_max(tf.abs(effective_covariances), axis=[-2, -1]),
@@ -258,9 +219,7 @@ def linear_gaussian_kdm_observation_factors(
     minimum_effective_eigenvalue = tf.reduce_min(
         tf.linalg.eigvalsh(effective_covariances), axis=-1
     )
-    effective_spd = (
-        minimum_effective_eigenvalue > tolerance * effective_scale
-    )
+    effective_spd = minimum_effective_eigenvalue > tolerance * effective_scale
 
     finite = (
         _finite_except_leading(states)
@@ -293,16 +252,16 @@ def linear_gaussian_kdm_observation_factors(
     )
     factors = tf.linalg.cholesky(safe_covariances)
     means = tf.einsum("od,nd->no", observation_matrix, states)
-    d_means = tf.einsum(
-        "od,nd->no", d_observation_matrix, states
-    ) + tf.einsum("od,nd->no", observation_matrix, d_states)
+    d_means = tf.einsum("od,nd->no", d_observation_matrix, states) + tf.einsum(
+        "od,nd->no", observation_matrix, d_states
+    )
     residual = observation[tf.newaxis, :] - means
-    solved = tf.linalg.triangular_solve(
-        factors, residual[..., tf.newaxis], lower=True
-    )[..., 0]
-    precision_residual = tf.linalg.cholesky_solve(
-        factors, residual[..., tf.newaxis]
-    )[..., 0]
+    solved = tf.linalg.triangular_solve(factors, residual[..., tf.newaxis], lower=True)[
+        ..., 0
+    ]
+    precision_residual = tf.linalg.cholesky_solve(factors, residual[..., tf.newaxis])[
+        ..., 0
+    ]
     log_determinant = 2.0 * tf.reduce_sum(
         tf.math.log(tf.linalg.diag_part(factors)), axis=-1
     )
@@ -322,9 +281,8 @@ def linear_gaussian_kdm_observation_factors(
         factors, effective_d_covariances
     )
     covariance_trace = tf.linalg.trace(solved_covariance_tangent)
-    d_log_factor = (
-        tf.reduce_sum(precision_residual * d_means, axis=-1)
-        + 0.5 * (covariance_quadratic - covariance_trace)
+    d_log_factor = tf.reduce_sum(precision_residual * d_means, axis=-1) + 0.5 * (
+        covariance_quadratic - covariance_trace
     )
 
     nan = tf.cast(float("nan"), dtype)
@@ -337,16 +295,10 @@ def linear_gaussian_kdm_observation_factors(
         ),
         "component_valid": component_valid,
         "valid": tf.reduce_all(component_valid),
-        "minimum_bandwidth_eigenvalue": tf.reduce_min(
-            minimum_bandwidth_eigenvalue
-        ),
+        "minimum_bandwidth_eigenvalue": tf.reduce_min(minimum_bandwidth_eigenvalue),
         "minimum_observation_eigenvalue": minimum_observation_eigenvalue,
-        "minimum_effective_eigenvalue": tf.reduce_min(
-            minimum_effective_eigenvalue
-        ),
-        "maximum_bandwidth_symmetry_error": tf.reduce_max(
-            bandwidth_symmetry_error
-        ),
+        "minimum_effective_eigenvalue": tf.reduce_min(minimum_effective_eigenvalue),
+        "maximum_bandwidth_symmetry_error": tf.reduce_max(bandwidth_symmetry_error),
         "maximum_bandwidth_tangent_symmetry_error": tf.reduce_max(
             d_bandwidth_symmetry_error
         ),
@@ -411,12 +363,8 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
     particle_count = int(initial_states.shape[0])
     state_dimension = int(initial_states.shape[1])
     observation_dimension = int(observations.shape[1])
-    tf.ensure_shape(
-        observation_matrix, [observation_dimension, state_dimension]
-    )
-    tf.ensure_shape(
-        d_observation_matrix, [observation_dimension, state_dimension]
-    )
+    tf.ensure_shape(observation_matrix, [observation_dimension, state_dimension])
+    tf.ensure_shape(d_observation_matrix, [observation_dimension, state_dimension])
     tf.ensure_shape(
         bandwidths,
         [horizon, particle_count, state_dimension, state_dimension],
@@ -451,25 +399,17 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
         base_log_factor: Tensor,
         d_base_log_factor: Tensor,
     ) -> tuple[Tensor, Tensor]:
-        expected_observation = tf.einsum(
-            "od,nd->no", observation_matrix, points
-        )
-        expected_observation_tangent = (
-            tf.einsum("od,nd->no", d_observation_matrix, points)
-            + tf.einsum("od,nd->no", observation_matrix, d_points)
-        )
+        expected_observation = tf.einsum("od,nd->no", observation_matrix, points)
+        expected_observation_tangent = tf.einsum(
+            "od,nd->no", d_observation_matrix, points
+        ) + tf.einsum("od,nd->no", observation_matrix, d_points)
         actual_observation = model.observation_fn(points)
-        actual_observation_tangent = model.observation_tangent_fn(
-            points, d_points
-        )
+        actual_observation_tangent = model.observation_tangent_fn(points, d_points)
         observation_map_value_error = tf.reduce_max(
             tf.abs(actual_observation - expected_observation)
         )
         observation_map_tangent_error = tf.reduce_max(
-            tf.abs(
-                actual_observation_tangent
-                - expected_observation_tangent
-            )
+            tf.abs(actual_observation_tangent - expected_observation_tangent)
         )
         observation_map_value_scale = tf.maximum(
             tf.reduce_max(tf.abs(actual_observation)),
@@ -510,12 +450,8 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
             bandwidth_is_zero=True,
             covariance_tolerance=covariance_tolerance,
         )
-        value_error = tf.reduce_max(
-            tf.abs(atom["log_factor"] - base_log_factor)
-        )
-        tangent_error = tf.reduce_max(
-            tf.abs(atom["d_log_factor"] - d_base_log_factor)
-        )
+        value_error = tf.reduce_max(tf.abs(atom["log_factor"] - base_log_factor))
+        tangent_error = tf.reduce_max(tf.abs(atom["d_log_factor"] - d_base_log_factor))
         value_scale = tf.maximum(
             tf.reduce_max(tf.abs(base_log_factor)), tf.constant(1.0, dtype)
         )
@@ -570,14 +506,16 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
         atom_value_errors.append(value_error)
         atom_tangent_errors.append(tangent_error)
         observation_map_value_errors.append(observation_map_value_error)
-        observation_map_tangent_errors.append(
-            observation_map_tangent_error
-        )
+        observation_map_tangent_errors.append(observation_map_tangent_error)
         observation_map_valid.append(
-            (observation_map_value_error
-             <= model_tolerance_tensor * observation_map_value_scale)
-            & (observation_map_tangent_error
-               <= model_tolerance_tensor * observation_map_tangent_scale)
+            (
+                observation_map_value_error
+                <= model_tolerance_tensor * observation_map_value_scale
+            )
+            & (
+                observation_map_tangent_error
+                <= model_tolerance_tensor * observation_map_tangent_scale
+            )
         )
         return result["log_factor"], result["d_log_factor"]
 
@@ -596,25 +534,16 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
     factor_valid = tf.stack([record["valid"] for record in factor_records])
     atom_identity_valid_tensor = tf.stack(atom_identity_valid)
     observation_map_valid_tensor = tf.stack(observation_map_valid)
+    higher_moment_valid_tensor = tf.stack(
+        [step["higher_moment_valid"] for step in trace]
+    )
     minimum_bandwidth_eigenvalue = tf.reduce_min(
-        tf.stack(
-            [
-                record["minimum_bandwidth_eigenvalue"]
-                for record in factor_records
-            ]
-        )
+        tf.stack([record["minimum_bandwidth_eigenvalue"] for record in factor_records])
     )
     minimum_effective_eigenvalue = tf.reduce_min(
-        tf.stack(
-            [
-                record["minimum_effective_eigenvalue"]
-                for record in factor_records
-            ]
-        )
+        tf.stack([record["minimum_effective_eigenvalue"] for record in factor_records])
     )
-    target_label = (
-        ATOM_FINITE_TARGET if bandwidth_is_zero else KDM_FINITE_TARGET
-    )
+    target_label = ATOM_FINITE_TARGET if bandwidth_is_zero else KDM_FINITE_TARGET
     return {
         "route_id": INTEGRATED_OBSERVATION_ROUTE_ID,
         "route_classification": INTEGRATED_OBSERVATION_CLASSIFICATION,
@@ -631,18 +560,15 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
             & tf.reduce_all(factor_valid)
             & tf.reduce_all(atom_identity_valid_tensor)
             & tf.reduce_all(observation_map_valid_tensor)
+            & tf.reduce_all(higher_moment_valid_tensor)
         ),
         "atom_identity_valid": atom_identity_valid_tensor,
         "observation_map_valid": observation_map_valid_tensor,
         "kernel_feedback_into_reset": tf.constant(True),
         "complete_mixture_posterior": tf.constant(False),
         "bandwidth_is_zero": tf.constant(bool(bandwidth_is_zero)),
-        "atom_factor_value_error_max": tf.reduce_max(
-            tf.stack(atom_value_errors)
-        ),
-        "atom_factor_tangent_error_max": tf.reduce_max(
-            tf.stack(atom_tangent_errors)
-        ),
+        "atom_factor_value_error_max": tf.reduce_max(tf.stack(atom_value_errors)),
+        "atom_factor_tangent_error_max": tf.reduce_max(tf.stack(atom_tangent_errors)),
         "observation_map_value_error_max": tf.reduce_max(
             tf.stack(observation_map_value_errors)
         ),
@@ -651,9 +577,7 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
         ),
         "minimum_bandwidth_eigenvalue": minimum_bandwidth_eigenvalue,
         "minimum_effective_eigenvalue": minimum_effective_eigenvalue,
-        "effective_model_tolerance": tf.constant(
-            effective_model_tolerance, dtype
-        ),
+        "effective_model_tolerance": tf.constant(effective_model_tolerance, dtype),
         "effective_covariance_tolerance": factor_records[0][
             "effective_covariance_tolerance"
         ],
@@ -787,6 +711,9 @@ def make_integrated_linear_gaussian_kdm_kernel(
             covariance_tolerance=covariance_tolerance,
         )
         trace = result["trace"]
+        higher_moment_valid_tensor = tf.stack(
+            [step["higher_moment_valid"] for step in trace]
+        )
         return {
             "value": result["value"],
             "score": result["score"],
@@ -798,13 +725,9 @@ def make_integrated_linear_gaussian_kdm_kernel(
                 [step["posterior_weights"] for step in trace]
             ),
             "pre_flow": tf.stack([step["pre_flow"] for step in trace]),
-            "d_pre_flow": tf.stack(
-                [step["d_pre_flow"] for step in trace]
-            ),
+            "d_pre_flow": tf.stack([step["d_pre_flow"] for step in trace]),
             "children": tf.stack([step["children"] for step in trace]),
-            "d_children": tf.stack(
-                [step["d_children"] for step in trace]
-            ),
+            "d_children": tf.stack([step["d_children"] for step in trace]),
             "prior_observation_logits": tf.stack(
                 [step["prior_observation_logits"] for step in trace]
             ),
@@ -817,27 +740,21 @@ def make_integrated_linear_gaussian_kdm_kernel(
             "d_observation_log_density": tf.stack(
                 [step["d_observation_log_density"] for step in trace]
             ),
-            "posterior_logits": tf.stack(
-                [step["posterior_logits"] for step in trace]
-            ),
+            "posterior_logits": tf.stack([step["posterior_logits"] for step in trace]),
             "d_posterior_logits": tf.stack(
                 [step["d_posterior_logits"] for step in trace]
             ),
             "predicted_covariances": tf.stack(
                 [step["predicted_covariances"] for step in trace]
             ),
-            "post_covariances": tf.stack(
-                [step["post_covariances"] for step in trace]
-            ),
+            "post_covariances": tf.stack([step["post_covariances"] for step in trace]),
             "covariances_after_reset": tf.stack(
                 [step["covariances_after_reset"] for step in trace]
             ),
             "d_covariances_after_reset": tf.stack(
                 [step["d_covariances_after_reset"] for step in trace]
             ),
-            "reset_transport": tf.stack(
-                [step["reset_transport"] for step in trace]
-            ),
+            "reset_transport": tf.stack([step["reset_transport"] for step in trace]),
             "d_reset_transport": tf.stack(
                 [step["d_reset_transport"] for step in trace]
             ),
@@ -850,38 +767,79 @@ def make_integrated_linear_gaussian_kdm_kernel(
             "d_states_after_reset": tf.stack(
                 [step["d_states_after_reset"] for step in trace]
             ),
-            "atom_factor_value_error_max": result[
-                "atom_factor_value_error_max"
-            ],
-            "atom_factor_tangent_error_max": result[
-                "atom_factor_tangent_error_max"
-            ],
+            "higher_moment_valid": higher_moment_valid_tensor,
+            "higher_moment_pairwise_configured": tf.stack(
+                [step["higher_moment_pairwise_configured"] for step in trace]
+            ),
+            "higher_moment_pairwise_target_mask": tf.stack(
+                [step["higher_moment_pairwise_target_mask"] for step in trace]
+            ),
+            "higher_moment_maximum_pairwise_pre_cap_particle_rms": tf.stack(
+                [
+                    step["higher_moment_maximum_pairwise_pre_cap_particle_rms"]
+                    for step in trace
+                ]
+            ),
+            "higher_moment_maximum_pairwise_post_cap_particle_rms": tf.stack(
+                [
+                    step["higher_moment_maximum_pairwise_post_cap_particle_rms"]
+                    for step in trace
+                ]
+            ),
+            "higher_moment_minimum_pairwise_particle_cap_scale": tf.stack(
+                [
+                    step["higher_moment_minimum_pairwise_particle_cap_scale"]
+                    for step in trace
+                ]
+            ),
+            "higher_moment_maximum_coordinatewise_pre_cap_absolute": tf.stack(
+                [
+                    step["higher_moment_maximum_coordinatewise_pre_cap_absolute"]
+                    for step in trace
+                ]
+            ),
+            "higher_moment_maximum_coordinatewise_post_cap_absolute": tf.stack(
+                [
+                    step["higher_moment_maximum_coordinatewise_post_cap_absolute"]
+                    for step in trace
+                ]
+            ),
+            "higher_moment_mean_coordinatewise_cap_displacement": tf.stack(
+                [
+                    step["higher_moment_mean_coordinatewise_cap_displacement"]
+                    for step in trace
+                ]
+            ),
+            "higher_moment_fraction_coordinatewise_cap_active": tf.stack(
+                [
+                    step["higher_moment_fraction_coordinatewise_cap_active"]
+                    for step in trace
+                ]
+            ),
+            "higher_moment_minimum_coordinatewise_cap_derivative": tf.stack(
+                [
+                    step["higher_moment_minimum_coordinatewise_cap_derivative"]
+                    for step in trace
+                ]
+            ),
+            "atom_factor_value_error_max": result["atom_factor_value_error_max"],
+            "atom_factor_tangent_error_max": result["atom_factor_tangent_error_max"],
             "observation_map_value_error_max": result[
                 "observation_map_value_error_max"
             ],
             "observation_map_tangent_error_max": result[
                 "observation_map_tangent_error_max"
             ],
-            "minimum_bandwidth_eigenvalue": result[
-                "minimum_bandwidth_eigenvalue"
-            ],
-            "minimum_effective_eigenvalue": result[
-                "minimum_effective_eigenvalue"
-            ],
-            "effective_model_tolerance": result[
-                "effective_model_tolerance"
-            ],
-            "effective_covariance_tolerance": result[
-                "effective_covariance_tolerance"
-            ],
+            "minimum_bandwidth_eigenvalue": result["minimum_bandwidth_eigenvalue"],
+            "minimum_effective_eigenvalue": result["minimum_effective_eigenvalue"],
+            "effective_model_tolerance": result["effective_model_tolerance"],
+            "effective_covariance_tolerance": result["effective_covariance_tolerance"],
         }
 
     kernel.route_id = INTEGRATED_OBSERVATION_ROUTE_ID
     kernel.route_classification = INTEGRATED_OBSERVATION_CLASSIFICATION
     kernel.operation_semantics = INTEGRATED_OBSERVATION_SEMANTICS
-    kernel.target_label = (
-        ATOM_FINITE_TARGET if bandwidth_is_zero else KDM_FINITE_TARGET
-    )
+    kernel.target_label = ATOM_FINITE_TARGET if bandwidth_is_zero else KDM_FINITE_TARGET
     kernel.bandwidth_is_zero = bool(bandwidth_is_zero)
     kernel.jit_compile = bool(jit_compile)
     kernel.complete_mixture_posterior = False

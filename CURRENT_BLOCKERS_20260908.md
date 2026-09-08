@@ -1,167 +1,94 @@
 # BayesFilter Current Blockers - 2026-09-08
 
-## Status Overview
+Branch: `ledh-refactor-with-policy-fix`
+Baseline checkpoint: `76f09a6d`
 
-**Branch:** `ledh-refactor-with-policy-fix`  
-**Recent work:** Phase 4A KDM campaign completed with negative result  
-**Dense vs streaming investigation:** Completed - resolved as FP noise, no action needed
+## Current scientific status
 
----
+The canonical single-cloud LEDH--OT--GenUT Contract-E dual-cap endpoint has an
+analytical total directional derivative for its executed finite scalar,
+`ATOM-FINITE`. Phase 4A is also fully differentiated for its different
+kernelized-observation scalar, `KDM-FINITE`, but the authoritative Attempt 05
+LGSSM result gives no promotion evidence: every positive bandwidth has worse
+point MSE than ATOM-FINITE on the consumed holdout, and `rho=1.6` is
+statistically worse.
 
-## Active Blockers
+Phase 4B is no longer blocked by an unspecified mixture law. The separate
+`RESKDM-IWSG-FINITE` reference now implements the complete fixed-anchor,
+all-components Gaussian-mixture resampling operation after Contract-E and both
+GenUT caps. Its analytical derivative matches finite differences of that
+declared scalar on CPU, and its state, raw `r/N` weight, and covariance-mark
+outputs reach the next PF--PF step. A source and official-code audit found that
+the first implementation had prematurely self-normalized those ratios. That
+older route differentiated `RESKDM-SN-FINITE`, not the intended raw IWSG
+normalizer. This does not establish that the repaired route estimates the
+exact model score better.
 
-### 1. **batch_fused / NeuTra Lane Conformance** ⚠️ HIGH PRIORITY
+## Active blockers
 
-**Status:** Implementation-conformance blocker  
-**Location:** `bayesfilter/highdim/ledh_canonical_batch_fused_tf.py`  
-**Issue:** The batch_fused lane bypasses Contract-E, GenUT, and dual caps
+### 1. Phase 4B score quality
 
-**Details:**
-- The current `canonical_batch_fused_value_score` returns `children` directly after UKF update
-- Does NOT execute:
-  - Contract-E covariance reset
-  - GenUT moment restoration  
-  - Dual-cap trust-region correction
-- This means it's not computing the same target as the canonical lane
-- Tests pass but only verify batch mechanics, not full conformance
+Status: scientific evidence missing, not an implementation failure.
 
-**Why it matters:**
-- batch_fused is the NeuTra-eligible training lane
-- NeuTra training requires batch-native execution (no Python row loops)
-- Can't use this lane for HMC until it computes the actual canonical target
+The existing float64 and float32/no-TF32 GPU/XLA smokes predate the raw-ratio
+repair and certify only `RESKDM-SN-FINITE`. Fresh smokes are required for the
+repaired route. No paired Kalman-oracle campaign has measured bias, variance,
+or MSE for `RESKDM-IWSG-FINITE`. The next
+campaign must use fresh calibration and validation paths, a prospective power
+calculation, the bootstrap PF and Phase 4A comparators, and a prespecified
+responsibility-mean versus selected-label covariance-mark ablation.
 
-**Referenced in:**
-- [phase4-integrated-plan:337-339](docs/plans/bayesfilter-ledh-younis-kdm-phase4-integrated-plan-2026-09-07.md#L337-L339)
-- [score-research-reset:872-873](docs/plans/bayesfilter-ledh-younis-kdm-score-research-reset-2026-09-07.md#L872-L873)
+### 2. Degenerate DSGE support
 
-**Fix required:**
-1. Add Contract-E reset to batch_fused lane
-2. Add GenUT correction
-3. Add dual-cap trust-region
-4. Maintain batch-native execution (no row loops)
-5. Add parity test vs single-cloud canonical with all corrections
+Status: not implemented for Phase 4B.
 
-**Complexity:** HIGH - must preserve batch-native semantics while adding stateful corrections
+The current Phase 4B reference uses a full-rank common Gaussian bandwidth in
+an ordinary LGSSM. A DSGE route needs a density with respect to the stochastic
+innovation/chart measure and the total derivative of any parameter-dependent
+chart, support map, or Jacobian. An ambient full-rank kernel is wrong for a
+degenerate transition.
 
----
+### 3. Batch-fused and NeuTra conformance
 
-### 2. **Phase 4B Mathematical Specification** 🔬 RESEARCH BLOCKED
+Status: separate implementation-conformance blocker.
 
-**Status:** PHASE4B_MATH_BLOCKED  
-**Issue:** Proposal law incomplete
+`bayesfilter/highdim/ledh_canonical_batch_fused_tf.py` still bypasses the full
+Contract-E, GenUT, and dual-cap recurrence. Its passing batch tests establish
+batch mechanics, not equivalence to the canonical algorithm. It cannot support
+canonical, NeuTra-training, or HMC claims until a batch-native full recurrence
+and executable parity test exist.
 
-**Details:**
-- Phase 4B would test full-mixture IWSG resampling (complete Younis method)
-- Requires complete sequential proposal law before implementation
-- Phase 4A (observation weighting only) showed NO_PROMOTION_EVIDENCE
-- No point in Phase 4B until Phase 4A would have passed
+### 4. Numerical admission scope
 
-**Referenced in:**
-- [phase4b-plan](docs/plans/bayesfilter-ledh-younis-kdm-phase4b-resampling-reference-plan-2026-09-08.md)
-- Status line: `IMPLEMENTATION AUTHORIZED; CORRECTNESS GATES BEFORE CAMPAIGN`
+Phase 4A remains vetoed under TF32 by its identity/parity thresholds. Phase 4B
+has been checked only in float64 and float32 with TF32 disabled. Neither route
+has HMC or production admission evidence.
 
-**Current decision:** PAUSED - Phase 4A negative result suggests Phase 4B unlikely to help
+## Resolved issues
 
----
+- The original partial/conditional derivative was wrong relative to the stated
+  total-score claim. The canonical endpoint now carries state, weight,
+  covariance, observation-Jacobian, covariance-density, reset, and cap
+  dependencies through the actual recurrence.
+- Contract-E covariance carry is wired through the reset and consumed by the
+  next UKF prediction.
+- The Phase 4B proposal law, ancestry rule, denominator, and finite target are
+  explicit. The active target is `RESKDM-IWSG-FINITE`, not `ATOM-FINITE`,
+  `MODEL-IS`, or the superseded `RESKDM-SN-FINITE`.
+- The raw IWSG correction now enters the next normalizer as `log(r/N)` with
+  uncentered tangent `d log r`. Posterior normalization occurs after the next
+  model factors, matching Younis Eqs. (14)--(15) and the released author code.
+- The sequential Phase 4B API now enforces the common-bandwidth assumption in
+  the LaTeX document and rejects asymmetric bandwidth/covariance-mark values
+  or tangents rather than silently changing them.
+- The dense-versus-streaming discrepancy was diagnosed as floating-point
+  order sensitivity in the tested setting; it is not an active KDM blocker.
 
-### 3. **Dense vs Streaming Transport Discrepancy** ✅ RESOLVED
+## Next step
 
-**Status:** Investigated and explained (FP noise, not a bug)  
-**Artifact:** [DENSE_VS_STREAMING_INVESTIGATION.md](DENSE_VS_STREAMING_INVESTIGATION.md)
-
-**Finding:**
-- Mean difference: +0.15 (streaming - dense)
-- Std dev: 0.85 (5.7× larger than mean)
-- Range: -1.57 to +1.46 across 16 seeds
-- **Root cause:** FP32/TF32 non-associative arithmetic over 20 time steps
-
-**Resolution:**
-- Use streaming with K=N≤3000 (complies with chunk rule)
-- Document that modes differ by ~1 unit (pure FP noise)
-- Don't mix dense and streaming in same comparison
-
-**No action required** - this is expected FP behavior, not a blocker.
-
----
-
-## Recently Completed (Not Blockers)
-
-### ✅ Phase 4A KDM Campaign
-- **Completed:** 2026-09-08
-- **Result:** NO_PROMOTION_EVIDENCE
-- **Verdict:** Kernelized observation weighting does not reduce score error vs Kalman oracle
-- **Decision:** No further Phase 4A work justified; canonical LEDH score remains baseline
-- **Artifact:** [results/ledh_younis_kdm_phase4a_campaign_result_20260908.md](results/ledh_younis_kdm_phase4a_campaign_result_20260908.md)
-
-### ✅ Contract-E Covariance Carry Bug
-- **Fixed:** 2026-09-07
-- **Issue:** Covariance wasn't being transported through Contract-E reset
-- **Fix:** Added covariance carry with same transport as state
-- **Tests:** All canonical endpoints pass with covariance carry
-
-### ✅ SQMC Rerun with Corrected Filter
-- **Completed:** 2026-09-07
-- **Artifact:** `docs/benchmarks/artifacts/sqmc-rerun-corrected-filter-20260906/`
-
----
-
-## Priority Order for Unblocking
-
-### 1. **Fix batch_fused conformance** (if NeuTra training is needed)
-   - **Owner decision required:** Is NeuTra training a near-term priority?
-   - **If yes:** Implement Contract-E + GenUT + dual-cap in batch_fused
-   - **If no:** Document as deferred, continue with single-cloud canonical
-
-### 2. **Close out Phase 4 work** (documentation)
-   - Commit Phase 4A negative result
-   - Archive Phase 4B as PAUSED pending new evidence
-   - Update master plan status
-
-### 3. **Other research directions?**
-   - What's the next scientific question after Phase 4?
-   - Are there other LEDH improvements to investigate?
-
----
-
-## Questions for Owner
-
-1. **Is NeuTra training a priority?** If so, batch_fused conformance is urgent.
-
-2. **What's the next research direction?** Phase 4 is complete (negative result).
-
-3. **Are there outstanding DSGE or HMC validation tasks?**
-
-4. **Should Phase 4 code be merged to main, or stay on branch?**
-
----
-
-## Files Modified (Not Committed)
-
-```
-M bayesfilter/highdim/ledh_canonical_score_tf.py
-M bayesfilter/highdim/ledh_younis_kdm_tf.py
-M docs/plans/bayesfilter-ledh-younis-kdm-phase4-integrated-plan-2026-09-07.md
-M docs/plans/bayesfilter-ledh-younis-kdm-score-research-reset-2026-09-07.md
-
-?? DENSE_VS_STREAMING_INVESTIGATION.md
-?? analyze_systematic_claim.py
-?? bayesfilter/highdim/ledh_kalman_oracle_tf.py
-?? bayesfilter/highdim/ledh_younis_kdm_lgssm_reference_tf.py
-?? docs/plans/bayesfilter-ledh-younis-kdm-phase4a-campaign-amendment-20260908.md
-?? docs/plans/bayesfilter-ledh-younis-kdm-phase4b-resampling-reference-plan-2026-09-08.md
-?? docs/plans/phase4a_campaign_approval_request_20260908.md
-?? results/ledh_younis_kdm_phase4a_campaign_result_20260908.md
-?? results/phase4a_implementation_complete_20260908.md
-```
-
-**Decision needed:** Commit Phase 4A work? Archive to separate branch?
-
----
-
-## Summary
-
-**One real blocker:** batch_fused conformance (if NeuTra is priority)  
-**One research blocker:** Phase 4B (paused after 4A negative result)  
-**One resolved non-issue:** Dense vs streaming (FP noise)
-
-**Main question:** What's next after Phase 4?
+Rerun the repaired Phase 4B GPU/XLA smokes for both covariance-mark policies.
+Then write the paired LGSSM campaign amendment, audit its power and comparator
+design, and run the smallest adequately powered cell. Do not port
+the route, extend it to DSGE, or use it in HMC before that score-quality result.
+Batch-fused conformance remains an independent engineering program and is not
+repaired by any KDM result.

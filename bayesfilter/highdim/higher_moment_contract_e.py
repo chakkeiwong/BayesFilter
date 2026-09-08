@@ -328,9 +328,9 @@ def affine_restore_cloud_jvp(
         centered,
         centered_tangent,
     )
-    output = target_mean[None, :] + tf.linalg.matmul(
-        standardized, target_chol, transpose_b=True
-    )
+    # Keep the broadcast add rank-one so TensorFlow's float32 matmul fusion
+    # does not reinterpret a [1, D] tensor as an invalid bias.
+    output = tf.linalg.matmul(standardized, target_chol, transpose_b=True) + target_mean
     output_tangent = (
         target_mean_tangent[None, :, :]
         + tf.einsum("nip,ji->njp", standardized_tangent, target_chol)
@@ -1470,9 +1470,9 @@ def higher_moment_shape_jvp(
         standardized_tangent = (
             standardized_derivative[:, :, None] * standardized_pre_cap_tangent
         )
-    raw_output = mean[None, :] + tf.linalg.matmul(
-        standardized, target_chol, transpose_b=True
-    )
+    # See ``affine_restore_cloud_jvp``: a rank-one bias is required by the
+    # float32 fused matmul kernel.
+    raw_output = tf.linalg.matmul(standardized, target_chol, transpose_b=True) + mean
     raw_output_tangent = (
         mean_tangent[None, :, :]
         + tf.einsum("nip,ji->njp", standardized_tangent, target_chol)

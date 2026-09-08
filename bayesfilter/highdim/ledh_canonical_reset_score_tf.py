@@ -197,9 +197,8 @@ def _sinkhorn_contract_e_reset_core(
     affine = tf.linalg.matrix_transpose(solved)
     d_affine = tf.linalg.matrix_transpose(d_solved)
 
-    particles = target_mean[None, :] + tf.linalg.matmul(
-        centered_inj, affine, transpose_b=True
-    )
+    # Use a rank-one bias; float32 matmul fusion rejects a [1, D] bias tensor.
+    particles = tf.linalg.matmul(centered_inj, affine, transpose_b=True) + target_mean
     d_particles = (
         d_target_mean[None, :]
         + tf.linalg.matmul(d_centered_inj, affine, transpose_b=True)

@@ -1,5 +1,20 @@
 # Phase 4A Execution Summary — 2026-09-08
 
+## Current status
+
+This file contains historical pre-repair timing and campaign planning
+material. The authoritative Phase 4A result is the all-bandwidth Attempt 05
+under docs/benchmarks/artifacts/ledh_younis_kdm_phase4_20260908/campaign-attempt05-n32t5-all-rho-f32-current/.
+It selected rho=0.8, found 4.84% higher validation MSE than ATOM-FINITE,
+and found no positive point-MSE gain for any prespecified positive bandwidth.
+The broad Phase 4A ladder is paused. Phase 4B is no longer a mathematical
+blocker: its separately labelled `RESKDM-IWSG-FINITE` reference is implemented
+and has passed bounded CPU correctness checks. A source and author-code audit
+found that the earlier GPU-smoked implementation computed the distinct
+`RESKDM-SN-FINITE` derivative by prematurely normalizing IWSG ratios; those
+smokes must be rerun for the repaired route. Its score quality remains
+unevaluated.
+
 **Governing plan:** [docs/plans/bayesfilter-ledh-younis-kdm-phase4-integrated-plan-2026-09-07.md](../bayesfilter-ledh-younis-kdm-phase4-integrated-plan-2026-09-07.md)  
 **Reset:** [docs/plans/bayesfilter-ledh-younis-kdm-score-research-reset-2026-09-07.md](../bayesfilter-ledh-younis-kdm-score-research-reset-2026-09-07.md)
 
@@ -10,12 +25,13 @@ covariance-carry repair and are retained as historical provenance only.  They
 must not be used as the current budget or readiness statement.  The repaired
 `N=128,T=20`, float64/XLA/no-TF32 probe required `296.1017 s` for compile plus
 first execution, `0.2318 s` per warm execution, and `31,457,280` peak GPU
-bytes.  The powered `N=32,T=5`, float32/no-TF32 pilot then completed with
-`NO_PROMOTION_EVIDENCE`: KDM-FINITE was descriptively `4.84%` worse than
-ATOM-FINITE and its paired bootstrap interval crossed zero.  See
+bytes. The authoritative Attempt 05 `N=32,T=5`, float32/no-TF32
+all-bandwidth result completed with `NO_PROMOTION_EVIDENCE`: KDM-FINITE at the
+selected bandwidth was descriptively `4.84%` worse than ATOM-FINITE, and its
+paired bootstrap interval crossed zero. See
 [`bayesfilter-ledh-younis-kdm-phase4a-campaign-result-20260908.md`](bayesfilter-ledh-younis-kdm-phase4a-campaign-result-20260908.md)
 and the complete artifact directory
-`docs/benchmarks/artifacts/ledh_younis_kdm_phase4_20260908/campaign-attempt03-n32t5-powered-f32/`.
+`docs/benchmarks/artifacts/ledh_younis_kdm_phase4_20260908/campaign-attempt05-n32t5-all-rho-f32-current/`.
 
 The broad ladder is paused.  The TF32 arm also remains vetoed by the repaired
 identity gate; only float64 or float32 without TF32 is eligible for further
@@ -86,11 +102,11 @@ N=512 T=50 rho=0.2 → 340 ms/row  (peak 550 MB)
 
 All configurations valid. Peak GPU memory 550 MB (4% of available 13.5 GB). Total steady-state time for 6 rows: 1.46 seconds.
 
-### ⬜ Phase 4A.5: Calibration and untouched validation (Ready for approval)
+### ⬜ Phase 4A.5: Calibration and untouched validation (Completed; no promotion)
 
 **Campaign amendment:** [docs/plans/bayesfilter-ledh-younis-kdm-phase4a-campaign-amendment-20260908.md](../docs/plans/bayesfilter-ledh-younis-kdm-phase4a-campaign-amendment-20260908.md)
 
-**Status:** All implementation gates complete, pending campaign approval
+**Status:** Small-cell all-bandwidth campaign completed; no promotion evidence
 
 **Completed implementation:**
 - ✅ Kalman oracle baseline (3/3 tests passed)
@@ -104,21 +120,23 @@ All configurations valid. Peak GPU memory 550 MB (4% of available 13.5 GB). Tota
 
 ## Current Checkpoint
 
-Phase 4A engineering (steps 4A.1–4A.4) is complete. The integrated endpoint:
+Phase 4A engineering (steps 4A.1–4A.4) and the bounded small-cell campaign
+are complete. The integrated endpoint:
 - ✅ Shares the canonical executor (no copy of LEDH recurrence)
 - ✅ Differentiates the complete Gaussian factor with `dx`, `dC`, `dR`, `dB`
 - ✅ Passes zero-bandwidth atom-identity gates
 - ✅ Feeds changed weights through Contract-E and dual caps (full feedback)
 - ✅ Compiles under GPU/XLA with FP32-no-TF32
-- ✅ Runs deterministically with acceptable steady-state timing
+- ✅ Runs deterministically with recorded steady-state timing
 
-The route is ready for the serious calibration/validation campaign (step 4A.5) once the Kalman oracle, paired score MSE, and runner implementation are complete.
+The route is not promoted. The consumed Attempt 05 holdout gives no positive
+bandwidth a point-MSE advantage and does not support a new default.
 
 ## What Phase 4A Does NOT Establish
 
 - Does not show lower model-score error (that's the 4A.5 question)
 - Does not establish HMC readiness, production readiness, or default promotion
-- Does not implement the complete Younis mixture-density particle filter (Phase 4B, mathematically blocked)
+- Does not implement the complete Younis mixture-density particle filter (Phase 4B is a separate route)
 - Does not prove DSGE validity or degenerate-support correctness
 - The KDM-FINITE target is a new scalar; zero-bandwidth parity does not make positive bandwidth equal to ATOM-FINITE
 
@@ -129,4 +147,4 @@ The route is ready for the serious calibration/validation campaign (step 4A.5) o
 - Timing pilot: [results/ledh_younis_kdm_phase4a_timing_pilot_20260907/timing.json](ledh_younis_kdm_phase4a_timing_pilot_20260907/timing.json)
 - Implementation: [bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py](../bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py)
 - Git branch: `ledh-refactor-with-policy-fix`
-- Git commit: 21d5870f (at timing pilot completion)
+- Current source checkpoint: 76f09a6d plus the subsequent Phase 4B audit changes

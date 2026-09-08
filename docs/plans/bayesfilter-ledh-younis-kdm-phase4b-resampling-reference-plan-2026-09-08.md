@@ -1,7 +1,7 @@
 # Phase 4B: Full-Mixture IWSG Resampling Reference
 
 Date: 2026-09-08  
-Status: `IMPLEMENTATION AUTHORIZED; CORRECTNESS GATES BEFORE CAMPAIGN`  
+Status: `RAW-IWSG REFERENCE REPAIRED; CPU GATES PASS; GPU RERUN AND SCORE CAMPAIGN PENDING`  
 Scope: diagnostic research route only; no canonical, HMC, DSGE, or default promotion
 
 ## Research intent
@@ -18,7 +18,7 @@ The targets are therefore separate:
 
 - `ATOM-FINITE`: the unchanged canonical finite value and its exact analytical
   total derivative for a fixed stream;
-- `RESKDM-FINITE`: Contract-E and both GenUT correction caps followed by
+- `RESKDM-IWSG-FINITE`: Contract-E and both GenUT correction caps followed by
   fixed-anchor, full-mixture IWSG resampling, with its own exact analytical
   total derivative; and
 - the exact Kalman value and score on the linear-Gaussian fixture, which judge
@@ -35,11 +35,20 @@ The local primary sources are:
 - `docs/papers/differentiable/Differentiable and stable long-range tracking of multiple posterior modes Younis(23).pdf`, Section 2.2, Eq. (4), Section 4, Eqs. (14)--(15), and Appendix B.1; and
 - `docs/papers/differentiable/Learning to be smooth An end-to-end differentiable particle smoother Younis(24).pdf`, Sections 2.1 and 2.3, Eqs. (4), (6)--(7), and the computational-requirements discussion.
 
+The official author implementation is stored locally at
+`.localresources/code/younis-mdpf-neurips-2023`, commit
+`b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18`. Its active importance-sampling
+route forms an unnormalized gradient-injection factor at
+`src/models/kde_particle_filter/kde_particle_filter.py:738-748`, multiplies it
+by the next dynamics and measurement weights at lines 927-928, and normalizes
+only the resulting posterior weights at lines 930-934.
+
 The source-supported operation samples from the complete continuous mixture,
 holds the sample location fixed in the IWSG derivative, evaluates the
 marginalized mixture density rather than the sampled component density, and
-incurs all-pairs work during gradient computation. Stratified component
-selection is used in the 2024 paper.
+incurs all-pairs work during gradient computation. The source importance
+correction is raw, not self-normalized before the next factor. Stratified
+component selection is used in the 2024 paper.
 
 The following are BayesFilter extensions, not claims from those papers:
 
@@ -64,7 +73,7 @@ locations `c_i`, covariance marks `P_i`, and uniform component weights
 m_theta(z_j) = sum_i alpha_i k_B(z_j - c_i)
 q_0(z_j)     = m_theta0(z_j)
 r_j(theta)   = m_theta(z_j) / q_0(z_j)
-w_j(theta)   = r_j(theta) / sum_l r_l(theta).
+eta_j(theta) = r_j(theta) / N.
 ~~~
 
 At the anchor, stratified component uniforms and Gaussian noises generate
@@ -76,18 +85,23 @@ component responsibility is
 gamma_ji = alpha_i k_B(z_j-c_i) / m_theta(z_j).
 ~~~
 
-Every cloud, component-weight, and bandwidth tangent enters `d log m`. The
-normalized outgoing log-weight tangent is
+Every cloud, component-weight, and bandwidth tangent enters `d log m`. The raw
+outgoing log-weight tangent is
 
 ~~~text
-d log w_j = d log m_theta(z_j) - sum_l w_l d log m_theta(z_l).
+d log eta_j = d log r_j = d log m_theta(z_j).
 ~~~
 
-Those log weights and their tangents are incoming terms in the next PF--PF
-normalizer. This is essential: the current canonical executor hard-codes the
-uniform incoming term because Contract-E normally resets it. Phase 4B must
-generalize that internal recurrence while proving bit-level or declared-
-tolerance parity for every canonical caller.
+Those log weights and their uncentered tangents are incoming terms in the next
+PF--PF normalizer. The posterior weights are normalized only after multiplying
+by the next transition, flow-Jacobian, proposal, and observation factors. This
+is essential: prematurely replacing `eta_j` by `r_j/sum_l r_l` subtracts
+`d log((1/N) sum_l r_l)` from the next log-normalizer score. It leaves the next
+posterior weights unchanged but defines a different finite scalar,
+`RESKDM-SN-FINITE`. The current canonical executor hard-codes the uniform
+incoming term because Contract-E normally resets it. Phase 4B must generalize
+that internal recurrence while proving bit-level or declared-tolerance parity
+for every canonical caller.
 
 Younis particles do not carry UKF covariance marks. Phase 4B defines the mark
 as the conditional mean of the augmented component mark given the fixed sample:
@@ -104,19 +118,25 @@ location. This choice is an extension and must be ablated against fixed-label
 mark carry before any scientific promotion.
 
 The analytical derivative to be implemented is the total derivative of the
-fixed-anchor replay scalar `L_resKDM^N(theta; xi, z0, q0)`. It is not the total
+fixed-anchor replay scalar `L_resKDM,IWSG^N(theta; xi, z0, q0)`. It is not the total
 derivative of the random sampling map, is not `d L_0^N/d theta`, and is not the
 joint likelihood-ratio identity for an arbitrary nonlinear function of all N
 draws. The Younis papers do not prove it unbiased for the generative model
 score; the Kalman experiment tests that empirical question.
 
+The shared analytical executor returns one total directional derivative per
+call. That is the complete score for the scalar LGSSM used here. A
+multi-parameter score requires one direction-set model call per coordinate,
+which is the repository's canonical convention but is not yet an executed
+Phase 4B campaign path.
+
 ## Research question guardian
 
 | Item | Predeclared role |
 |---|---|
-| Main question | Does `RESKDM-FINITE` reduce paired exact-model score error relative to `ATOM-FINITE`? |
+| Main question | Does `RESKDM-IWSG-FINITE` reduce paired exact-model score error relative to `ATOM-FINITE`? |
 | Candidate mechanism | Full-marginal IWSG resampling may propagate information through a smooth density rather than only through deterministic reset locations. |
-| Expected failure mode | Positive bandwidth adds bias, normalized IWSG weights become unstable, or invented covariance-mark transport harms the next UKF step. |
+| Expected failure mode | Positive bandwidth adds bias, raw IWSG corrections have high variance, or invented covariance-mark transport harms the next UKF step. |
 | Promotion criterion | On untouched validation paths, the paired 95% interval for mean squared-score-error difference (`candidate - canonical`) is below zero and its upper endpoint is at most `-0.10 * canonical MSE`. |
 | Promotion veto | Any heuristic comparator has lower conditional MSE, or candidate bias magnitude is larger without a compensating, statistically supported MSE reduction. |
 | Continuation veto | Wrong target label, analytical/finite-difference failure, anchor replay failure, omitted all-pairs term, invalid covariance/support, non-finite output, broken canonical parity, or exhausted campaign budget. |
@@ -148,9 +168,11 @@ salient group blocks promotion.
 
 | Choice | Provenance | Failure mode | Earliest diagnostic | Status |
 |---|---|---|---|---|
-| Contract-E plus both GenUT caps | Repository owner policy | A reduced lane silently omits the requested algorithm | Endpoint call-chain and cap-activity test | Frozen baseline |
+| Contract-E plus both GenUT caps | Repository owner policy | A reduced lane silently omits the requested algorithm | Endpoint call-chain, nonzero off-diagonal target mask, pairwise-step displacement, and cap diagnostics | Frozen baseline |
+| Two-dimensional transition-first LGSSM | Required to exercise off-diagonal GenUT moments and both caps | A scalar fixture passes while the pairwise correction is a structural no-op | Exact matrix Kalman derivative, spectral-radius check, and executed trace | Frozen campaign fixture |
 | Post-reset KDM insertion | Research question plus source/reset incompatibility | Defines a new scalar and is mislabelled canonical | Route identity and value-difference test | Explicit extension |
 | Full marginalized mixture | Younis 2023 Eqs. (14)--(15) | Selected-component shortcut biases/misses gradients | Permutation and all-component perturbation tests | Required source operation |
+| Raw ratio divided by N | Younis 2023 Eqs. (14)--(15) and author code commit `b0e2fd5`, lines 738--748 and 927--934 | Premature self-normalization changes the finite normalizer and score | Nonzero raw tangent-sum regression and direct next-normalizer wiring test | Required source operation |
 | Fixed sample/proposal during replay | Younis IWSG | Re-anchoring changes the finite scalar | Byte/equality replay and denominator-stop tests | Required source operation |
 | Stratified labels | Younis 2024 Eq. (4) and Section 2.1 | Incorrect strata or endpoint uniforms | Deterministic boundary fixtures | Required source operation |
 | Common SPD `B=rho^2 Q` | Phase 4A warm start, not a source default | Wrong scale or anisotropy rejects the idea for tuning reasons | Fresh calibration grid and Cholesky margin | Hypothesis |
@@ -173,7 +195,8 @@ that returns:
 - full marginalized log density and tangent;
 - every `N x N` responsibility and responsibility tangent;
 - fixed-proposal log ratios;
-- normalized IWSG log weights and tangents;
+- raw IWSG log weights and uncentered tangents, plus separately named
+  self-normalized diagnostics;
 - Rao--Blackwellized covariance marks and complete tangents;
 - finite/SPD/normalization validity; and
 - the exact pair count.
@@ -188,7 +211,8 @@ Add a repository-internal post-reset transform hook to
 `_value_and_analytical_score_impl`. Carry incoming log weights and their
 tangents as explicit recurrent state. The canonical wrapper supplies no hook
 and continues to set the same uniform constant after Contract-E. The Phase 4B
-hook supplies KDM states, covariance marks, log weights, and tangents.
+hook supplies KDM states, covariance marks, raw `log(r/N)` weights, and
+uncentered `d log r` tangents.
 
 Executable parity must compare the canonical endpoint before and after this
 change for value, score, reset states, covariance carry, and trace. A wiring
@@ -216,15 +240,18 @@ required:
 
 - all dependency blocks jointly and separately against centered finite
   differences;
-- responsibility rows and normalized outgoing weights sum to one, with zero
-  tangent sums;
+- responsibility rows and diagnostic self-normalized weights sum to one, with
+  zero tangent sums;
+- raw outgoing weights equal `1/N` at the anchor while their tangent sum is
+  generally nonzero, and the incoming tangent equals `d log m` rather than its
+  centered version;
 - component permutation equivariance;
 - perturbing any nonselected component changes a sample's mixture tangent;
 - anchor ratios equal one and anchor outgoing weights are uniform;
 - replay at the anchor exactly reproduces the anchor finite program;
 - `T=2` finite differences of the complete replay scalar agree with the
   analytical score;
-- state, weight, and covariance paths each affect the second normalizer under
+- state, raw-weight, and covariance paths each affect the second normalizer under
   isolated ablations;
 - canonical endpoint parity with no hook;
 - invalid SPD, proposal, normalization, shape, or non-finite inputs fail
@@ -237,13 +264,16 @@ remains analytical.
 
 ### 5. GPU/XLA implementation smoke
 
-After CPU reference gates pass, run one escalated managed-session GPU smoke at
-`D=2, N=8, T=2`, float64/no-TF32 and one float32/no-TF32 parity arm. The
+After CPU reference gates pass, run escalated managed-session GPU smokes at
+`D=2, N=8, T=2`, float64/no-TF32 and float32/no-TF32 for each of the two
+covariance-mark policies. The
 two-dimensional fixture is required so the pairwise GenUT correction is an
 executed operation rather than a vacuous configuration flag. Enable and
 verify memory growth before device initialization. Record compile-plus-first
 call, warm-call time, allocator peak, device, XLA, dtype, TF32 state, route ID,
-source hashes, and anchor/replay residuals in a new versioned directory.
+source hashes, anchor/replay residuals, off-diagonal target-mask count,
+pairwise pre/post-cap displacement, pairwise cap scale, and coordinate-cap
+activity in a new versioned directory.
 
 This smoke answers compilation and call-chain questions only. It is not used
 to select bandwidth or interpret score quality.
@@ -251,14 +281,45 @@ to select bandwidth or interpret score quality.
 ### 6. Bounded calibration, power, and untouched validation
 
 Only after all implementation gates pass, create a campaign amendment with the
-exact command and source hashes. The initial scopes are `(N,T)=(32,5)` and
-`(64,20)` in the scalar stationary LGSSM. Calibration and validation path seeds
-are disjoint; particle streams are paired across every comparator.
+exact command and source hashes. The campaign uses the following
+two-dimensional, transition-first LGSSM with one scalar parameter `theta`:
+
+~~~text
+A(theta) = [[0,    0.12], [-0.08, 0.10]]
+           + theta * [[1, 0], [0, 0.7]],       theta0 = 0.72,
+H        = [[1, 0.25], [-0.15, 0.9]],
+Q        = [[0.12, 0.025], [0.025, 0.09]],
+R        = [[0.22, 0.035], [0.035, 0.18]],
+P0       = [[0.8, 0.12], [0.12, 0.6]],        m0 = [0, 0].
+~~~
+
+Thus `x_t=A(theta)x_{t-1}+epsilon_t`, `y_t=H x_t+nu_t`, and
+`x_{-1}~N(m0,P0)`. At `theta0`, `A` has spectral radius below one. The exact
+oracle analytically differentiates the full matrix Kalman recursion with
+`dA/dtheta=diag(1,0.7)`; finite differences and an independent scalar reduction
+are implementation gates. The canonical endpoint receives initial particles
+drawn from `N(m0,P0)` and the Algorithm-1 particle-local initial covariance
+mark `P0`. This is the declared canonical initialization, not a change to the
+Kalman model.
+
+The initial scopes are `(D,N,T)=(2,32,5)` and `(2,64,20)`, evaluated in that
+order. The second scope runs only if no continuation veto fires and the
+45-GPU-minute campaign budget remains. Calibration, power-pilot, and validation
+path seeds are mutually disjoint; observation paths and every compatible
+particle stream are paired across comparators. The atom baseline calls the
+registered public `canonical_value_and_analytical_score` endpoint. The Phase 4A
+zero-bandwidth wrapper is checked against it but is not substituted for it.
 
 Calibration evaluates `rho in {0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.2, 1.6}`
-on at least 40 paths per scope. The selected bandwidth and covariance-mark
-policy are frozen before validation. A separate 30-path variance pilot on
-unused seeds estimates the paired standard deviation. For practical effect
+on 40 paths per scope for both Phase 4B covariance-mark policies and for the
+Phase 4A observation-convolution comparator. The selected Phase 4B
+`(rho,mark-policy)` pair and the selected Phase 4A `rho` are frozen before
+validation. The bootstrap comparator uses the same initial particles and
+process noises, fixed systematic-resampling offsets, and its exact analytical
+derivative conditional on the realized piecewise-constant ancestor indices.
+It is a heuristic comparator, not an unbiased discrete-resampling score claim.
+A separate 30-path variance pilot on unused seeds estimates the paired standard
+deviation. For practical effect
 `delta = 0.10 * canonical calibration MSE`, the validation count is
 
 ~~~text
@@ -269,7 +330,12 @@ rounded up to the next multiple of 20, with minimum 100 and maximum 500 per
 scope. If the cap is insufficient for 80% nominal power, the scope is reported
 underpowered and cannot promote. Validation uses a paired bootstrap interval
 and reports mean error, variance, MSE, MCSE, and intervals without ranking from
-point estimates alone.
+point estimates alone. The median absolute exact score on calibration paths
+freezes the low/high-score split. Every implemented heuristic is reported in
+both groups; a Phase 4B loss to any heuristic in either group vetoes promotion.
+The no-feedback control-variate row is recorded as `not implemented` unless its
+conditional-zero-mean construction is derived before calibration; no ad hoc
+coefficient is fitted.
 
 Maximum campaign budget: two scopes, 40 calibration paths per bandwidth, 30
 power-pilot paths, 500 validation paths, two implementation retries, 45 GPU
@@ -292,8 +358,8 @@ The plan was checked against the required failure modes before implementation:
   positive bandwidth gets its own calibration and is not compared using a
   setting selected on validation data.
 - Hidden assumption: bandwidth geometry, covariance-mark transport, fixed
-  anchors, dtype, TF32, and all-pairs complexity are recorded as hypotheses or
-  requirements above.
+  anchors, initial particle/covariance semantics, model matrices, dtype, TF32,
+  and all-pairs complexity are recorded as hypotheses or requirements above.
 - Stale context: the authoritative Phase 4A result is Attempt 05 on current
   source hashes; the older Attempt 03 wording “powered” is retired.
 - Environment mismatch: CPU reference tests explicitly hide CUDA; all GPU/XLA
@@ -303,13 +369,29 @@ The plan was checked against the required failure modes before implementation:
 - Call-chain omission: incoming log weights and their tangents are named
   recurrent state and tested at the next normalizer, not inferred from a local
   mixture helper.
+- Raw-versus-normalized source mismatch: the author paper and code now anchor
+  the raw `r/N` ordering, and a regression vetoes the previously implemented
+  premature normalization. The old route is labelled `RESKDM-SN-FINITE`.
 - Nonlinear IWSG overclaim: the result is the total derivative of the declared
   fixed-anchor finite replay program only. No joint-expectation unbiasedness or
   equality to `ATOM-FINITE` is claimed.
+- Vacuous pairwise correction: the original Step 6 scalar fixture contradicted
+  Step 5 and could not exercise off-diagonal GenUT moments. Execution was
+  paused; the campaign is now frozen to the two-dimensional matrix fixture
+  above, and the actual trace must expose its off-diagonal target mask and
+  pairwise/cap diagnostics.
 
-The audit passes for Steps 1--5. Step 6 is conditional on a separate campaign
-amendment after the implementation artifacts exist; no long score-quality run
-is launched from this plan alone.
+The original audit did not pass twice: it missed that normalizing `r_j` before the
+next likelihood changes the finite log normalizer even though the posterior
+softmax is unchanged. The paper-and-author-code call-chain audit on 8 September
+2026 found that defect. The plan and code were revised to raw `r_j/N`
+semantics. A resumed audit then found the scalar-campaign contradiction above;
+the matrix Kalman oracle, fixed-stream bootstrap comparator, and retained
+higher-moment diagnostics now pass focused CPU tests. Steps 1--4 now pass
+again. Step 5 requires fresh GPU/XLA artifacts,
+because the earlier smokes certified only `RESKDM-SN-FINITE`. Step 6 remains
+conditional on a separate campaign amendment after the repaired implementation
+artifacts exist; no score-quality run may reuse the superseded smokes.
 
 ## Required result record
 
@@ -319,8 +401,48 @@ The implementation result must report, in separate ledgers:
 |---|---|
 | Engineering correctness | Local primitive, anchor/replay, recurrent wiring, canonical parity, and XLA status |
 | Numerical validity | Finite-difference errors, SPD/normalization margins, dtype/TF32 differences, and non-finite vetoes |
-| Scientific interpretation | Not evaluated until the powered paired campaign; no score-improvement language from tests or smoke |
+| Scientific interpretation | Not evaluated until an adequately powered paired campaign; no score-improvement language from tests or smoke |
 
 It must also list every discrepancy between this plan, the LaTeX equations,
 and the executed call chain. An empty discrepancy list requires executable
 evidence; prose inspection alone is recorded as `not checked`.
+
+## Implementation checkpoint
+
+Steps 1--4 are complete after three material plan/code discrepancies were
+repaired. First, the sequential API admitted component-specific bandwidths
+although the declared reference requires one common bandwidth per time.
+Second, covariance and bandwidth tangents could be silently symmetrized rather
+than rejected. Third, and most importantly, the initial route normalized the
+raw IWSG ratios before the next PF--PF factor. That third implementation was a
+correct total derivative of `RESKDM-SN-FINITE`, but it was wrong relative to
+the intended Younis raw-IWSG normalizer. The public anchor/replay signatures now
+require `[T,D,D]` common bandwidths, fail closed on asymmetric values or
+tangents, carry `log(r/N)` and `d log r` into the next normalizer, and preserve
+component labels for the fixed-label covariance-mark comparator.
+
+The focused CPU suite proves joint and one-at-a-time derivatives, normalized
+responsibility diagnostics, raw and self-normalized ratio identities,
+component permutation, all-component influence, anchor/replay identity, the
+complete two-step finite derivative for both covariance-mark policies,
+canonical no-hook parity, state/weight/covariance recurrence,
+common-bandwidth shape, invalid-label rejection, and other invalid-input
+rejection. It also proves that the raw weight-tangent sum is generally nonzero
+and that the next PF--PF step receives that uncentered tangent.
+It also proves that the two-dimensional analytical Kalman score matches
+centered finite differences and reduces to the independent scalar recursion,
+that the fixed-index bootstrap score matches the finite bootstrap program when
+ancestor indices remain unchanged, and that the executed canonical trace has a
+nonzero off-diagonal pairwise mask and nonzero pairwise correction displacement.
+
+The prior float64 and float32/no-TF32 GPU/XLA smokes predate the raw-ratio
+repair. They remain evidence that the shared shape and XLA call chain compiled,
+but they certify only the superseded `RESKDM-SN-FINITE` derivative. Step 5 must
+be rerun for `RESKDM-IWSG-FINITE` and for both covariance-mark policies before
+Step 6. These are engineering and numerical results, not evidence of lower
+model-score error.
+
+Step 6 remains pending. It requires a fresh campaign amendment because its
+calibration/validation data, power calculation, covariance-mark ablation, and
+compute budget are scientific choices that are not answered by implementation
+smokes.
