@@ -1,9 +1,35 @@
 # Phase 4A.5 Campaign Amendment
 
-**Status:** READY for approval  
+**Status:** REVISED_AFTER_REPAIRED_TIMING; SMALL_CELL_PILOT_COMPLETED; NO_PROMOTION_EVIDENCE; BROAD_LADDER_PAUSED  
 **Parent plan:** [bayesfilter-ledh-younis-kdm-phase4-integrated-plan-2026-09-07.md](bayesfilter-ledh-younis-kdm-phase4-integrated-plan-2026-09-07.md)
 
-## Timing pilot outcome
+## Skeptical audit and supersession
+
+The original timing/budget paragraph below was written against an older,
+pre-repair artifact and is retained only as history.  It is not an execution
+budget.  The current repaired probe at `N=128,T=20`, float64, XLA, TF32
+disabled took `296.1017 s` for compile plus first execution, `0.2318 s` per
+warm execution, and `31,457,280` peak GPU bytes.  The old six-row estimate of
+30--40 second compiles and 0.10 GPU-hours is therefore stale relative to the
+current call chain.  The campaign must begin with a small-cell compile/variance
+pilot and must not infer N=512/T=50 feasibility from the stale estimate.
+
+The runner, independent Kalman reference, disjoint split logic, and paired
+bootstrap calculation are implemented and pass focused CPU tests.  The first
+runner attempt was deliberately withheld until the synthetic observations were
+corrected to draw the declared stationary initial state; no research artifact
+was created from the rejected generator.
+
+The authorized small-cell pilot is now complete.  The powered `N=32,T=5`,
+float32/no-TF32 run used 20 calibration and 100 validation paths, selected
+`rho=0.8`, and produced `NO_PROMOTION_EVIDENCE`: KDM-FINITE had 4.84% higher
+validation score MSE than ATOM-FINITE, with a paired bootstrap interval that
+crossed zero.  The full result is recorded in
+`docs/plans/results/bayesfilter-ledh-younis-kdm-phase4a-campaign-result-20260908.md`.
+The broad ladder is paused; the historical budget below is not an execution
+authorization.
+
+## Historical pre-repair timing note
 
 Timing pilot: [results/ledh_younis_kdm_phase4a_timing_pilot_20260907/timing.json](../../results/ledh_younis_kdm_phase4a_timing_pilot_20260907/timing.json)
 
@@ -24,7 +50,7 @@ N=512 T=50 rho=0.2 → 340 ms/row  (peak 550 MB)
 
 All 6 configurations passed validity checks. The atom branch (rho=0) is slower than positive bandwidth for larger configurations due to additional boundary checks.
 
-## Proposed calibration scope
+## Historical proposed calibration scope (superseded)
 
 Once the timing pilot completes, the calibration scope will be:
 
@@ -45,7 +71,7 @@ total rows:    3 × 3 × 9 × replications = 81 × replications
 - The selected rho is specific to Phase 4A (kernelized observation, full feedback, diagnostic route only).
 - Oracle comparison measures score accuracy, not posterior quality or computational cost relative to the canonical baseline.
 
-## Proposed validation scope
+## Historical proposed validation scope (superseded)
 
 After calibration selects one rho per (N, T) cell, run untouched validation on those 9 configurations:
 
@@ -64,7 +90,7 @@ total rows:     9 × replications
 - Does not establish DSGE validity, mixture-model readiness, or Phase 4B feasibility.
 - Does not tune or re-select rho — holdout data never tune hyperparameters.
 
-## Resource budget
+## Historical resource budget (superseded)
 
 Based on timing pilot extrapolation across the full intended ladder:
 
@@ -88,15 +114,18 @@ Estimated wall time (serial, with XLA compile):   ~15 minutes
 
 **Replication justification:** 10 replications per configuration is conservative for a bounded diagnostic campaign where the primary goal is to verify that the Phase 4A endpoint runs without divergence and produces finite oracle-comparison scores. Statistical ranking between rho values is secondary to establishing basic viability. A serious production campaign would require variance-driven power calculations.
 
-## Hard gates before campaign launch
+## Pilot gate record
 
-1. ✅ CPU reference analytical score passes (9/9 tests)
-2. ✅ GPU/XLA readiness gate passes (FP32-no-TF32)
-3. ✅ Timing pilot completes with realistic budget estimates (0.10 GPU-hours for 10 replications)
-4. ⬜ Calibration and validation runner implements disjoint path/stream discipline
-5. ⬜ Oracle Kalman baseline implemented and tested
-6. ⬜ Paired score MSE computation verified
-7. ⬜ This amendment approved
+1. ✅ CPU reference analytical score and covariance-carry tests pass.
+2. ✅ Complete GPU/XLA endpoint passes float64 and float32 without TF32.
+3. ✅ The repaired timing probe is recorded; the older six-row estimate is
+   superseded by the 296.10-second `N=128,T=20` compile probe.
+4. ✅ Independent scalar Kalman reference and runner pass focused tests.
+5. ✅ Calibration and validation use disjoint path/stream discipline.
+6. ✅ Paired score MSE and bootstrap calculation are preserved in row-level
+   artifacts.
+7. ✅ Small-cell pilot completed; the promotion criterion failed and the broad
+   ladder is paused.
 
 ## Repair and retry policy
 
@@ -107,20 +136,16 @@ Within this campaign:
 
 ## Next actions
 
-The timing pilot is complete and budgets are established. The remaining implementation tasks before campaign launch are:
-
-1. **Implement Kalman oracle baseline** — For a linear-Gaussian state-space model, compute the exact analytical log-likelihood and its score using the Kalman filter and smoother. This is the primary oracle for Phase 4A score comparisons.
-
-2. **Implement calibration/validation runner** — A runner that:
-   - Generates disjoint observation paths and random streams for calibration vs validation
-   - Runs Phase 4A integrated endpoint and Kalman oracle on paired paths
-   - Computes paired score MSE for each (N, T, rho) configuration
-   - Selects best rho per (N, T) cell on calibration data
-   - Reports paired confidence intervals on validation data
-   - Preserves path-by-stream score vectors (not only averages) for recomputation
-
-3. **Verify paired score MSE computation** — Unit test the paired-difference and MSE logic before campaign launch.
-
-4. **Request approval** — Present this amendment with concrete budgets (0.15 GPU-hour cap, 1000 row cap, 10 replications) for user authorization.
-
-After approval, the campaign launches and runs to completion under the declared budget. Results will inform whether Phase 4A kernelized observation weighting reduces score error relative to the Kalman oracle, which is a necessary (but not sufficient) condition for considering it further.
+1. Run a focused same-stream diagnostic over the complete rho grid at the
+   already compiled small cell, comparing every candidate to both ATOM-FINITE
+   and the Kalman oracle.  Keep this diagnostic separate from tuning and do not
+   spend the superseded broad-ladder budget.
+2. Use that table to decide whether the observed loss is finite-particle atom
+   error, positive-bandwidth bias, or a route-level implementation issue.  A
+   larger `N,T` cell requires its own compile probe and a new evidence contract.
+3. Keep Phase 4B blocked until the complete Younis mixture proposal law,
+   support measure, numerator, ancestry rule, and anchored derivative are
+   written and independently reviewed.
+4. Repair or quarantine the registered `batch_fused`/NeuTra lane separately;
+   its current reduced recurrence bypasses Contract-E, GenUT, and the dual
+   caps and cannot support a canonical full-algorithm claim.

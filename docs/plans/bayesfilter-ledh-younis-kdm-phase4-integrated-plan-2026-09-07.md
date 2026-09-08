@@ -1,7 +1,7 @@
 # Phase 4: Integrated Younis-KDM Score Investigation
 
 Date: 2026-09-07  
-Status: `PHASE4A_IMPLEMENTED_COVARIANCE_REPAIRED; GPU_RERUN_PENDING; PHASE4B_MATH_BLOCKED; NO_RESEARCH_RUN_YET`  
+Status: `PHASE4A_GPU_REPAIRED; TF32_VETO_CONFIRMED; ORACLE_AND_RUNNER_PASS; TIMING_SCOPE_REVISED; SMALL_CELL_PILOT_COMPLETED; NO_PROMOTION_EVIDENCE; BROAD_LADDER_PAUSED; PHASE4B_MATH_BLOCKED`  
 Governing reset:
 `docs/plans/bayesfilter-ledh-younis-kdm-score-research-reset-2026-09-07.md`
 
@@ -205,12 +205,22 @@ The plan was challenged for the required failure classes.
   variance, and MCSE can be recomputed.
 
 The audit passes for Phase 4A implementation and focused engineering checks.
-It does not authorize Phase 4B code or a serious research campaign yet.  The
+It does not authorize Phase 4B code or a broad multi-cell research campaign
+yet.  The
 existing `batch_fused` file is separately registered but its current endpoint
 returns `children` directly after the UKF update and does not execute
 Contract-E, GenUT, or the dual caps.  It is therefore not a full canonical
 lane and is excluded from the Phase 4A experiment and NeuTra claims until a
 dedicated repair replaces that reduced recurrence and its parity gates pass.
+
+The repaired GPU evidence is now recorded.  Float64 and float32 without TF32
+pass the complete endpoint smoke; the repaired float32 TF32 arm still fails the
+declared value/score/state/weight parity thresholds, so TF32 remains vetoed for
+this diagnostic route.  The first current-shape timing probe (`N=128,T=20`,
+float64, XLA, no TF32) required `296.10 s` for compile plus first execution,
+then `0.232 s` per warm execution and `31,457,280` peak GPU bytes.  The older
+six-row timing note claiming 30--40 second compiles and a 0.10 GPU-hour total
+does not describe the repaired code and is not used for a budget.
 
 ## Execution sequence
 
@@ -272,9 +282,10 @@ not evidence that the complete endpoint compiled.
 
 ### 4A.5 Calibration and untouched validation
 
-First run a bounded timing smoke to set an honest row budget. Then issue a
-separate serious-campaign amendment with exact scopes and total GPU-hour/row
-limits. The intended ladder, subject to that timing result, is:
+Use the current bounded campaign runner only after a small-cell compile and
+variance pilot.  Any larger cell requires its own compile probe and a fresh
+versioned output directory; no N=512/T=50 claim follows from the superseded
+timing note.  Calibration and validation use disjoint paths and streams:
 
 ```text
 horizon:       5, 20, 50
@@ -286,7 +297,17 @@ validation:    untouched paths and streams, paired interval plus MCSE
 
 The actual replication counts must be chosen from a pilot variance estimate
 or a predeclared minimum-detectable-effect calculation. “Enough power” cannot
-be replaced by an arbitrary seed count. Holdout data never tune `rho`.
+be replaced by an arbitrary seed count. Holdout data never tune `rho`.  The
+The campaign runner is implemented.  A bounded one-cell pilot has now run with
+disjoint calibration and validation paths.  The powered `N=32,T=5`,
+float32/no-TF32 cell selected `rho=0.8`, but KDM-FINITE had 4.84% higher
+validation score MSE than ATOM-FINITE; its paired bootstrap interval crossed
+zero, so the ranking is descriptive only and the promotion criterion failed.
+The complete result and row-level artifacts are in
+`docs/plans/results/bayesfilter-ledh-younis-kdm-phase4a-campaign-result-20260908.md`
+and `docs/benchmarks/artifacts/ledh_younis_kdm_phase4_20260908/campaign-attempt03-n32t5-powered-f32/`.
+The old six-row timing estimate is superseded by the repaired `N=128,T=20`
+compile probe and is not a current campaign budget.
 
 ### 4B. Complete mixture reference
 
@@ -307,8 +328,12 @@ own tuning scope and observation-factor derivation.
 
 ## Current decision
 
-Implement Phase 4A as a fully differentiated, full-feedback diagnostic using
-the shared canonical engine. Do not call it a full Younis filter. Do not code
-Phase 4B until its proposal law is complete. Do not run a serious campaign
-until the fixed-shape complete endpoint passes and a timing/power pilot yields
-a bounded campaign amendment.
+Retain Phase 4A as a fully differentiated, full-feedback diagnostic using the
+shared canonical engine, but do not promote it: the powered small-cell pilot
+did not meet the score-error criterion.  The next discriminating diagnostic is
+same-stream comparison of the complete rho curve against both ATOM-FINITE and
+the Kalman oracle before any larger compile budget is spent.  Do not call the
+route a full Younis filter.  Do not code Phase 4B until its proposal law is
+complete.  The registered `batch_fused`/NeuTra lane remains a separate
+implementation-conformance blocker because it still bypasses Contract-E,
+GenUT, and the dual caps; no KDM result repairs that blocker.

@@ -24,8 +24,12 @@ Tensor = tf.Tensor
 ROUTE_ID = "ledh_younis_kdm_algebra_diagnostic_v1"
 ROUTE_CLASSIFICATION = "source_aligned_extension_diagnostic_only"
 ANCHORED_MODEL_IS_ROUTE_ID = "ledh_younis_kdm_anchored_model_is_diagnostic_v1"
+FULL_MIXTURE_RESAMPLING_ROUTE_ID = (
+    "ledh_younis_kdm_full_mixture_resampling_reference_v1"
+)
 ATOM_FINITE_TARGET = "ATOM-FINITE"
 KDM_FINITE_TARGET = "KDM-FINITE"
+RESKDM_FINITE_TARGET = "RESKDM-FINITE"
 MODEL_IS_TARGET = "MODEL-IS"
 AUXILIARY_ROUTE_ID = "ledh_younis_kdm_auxiliary_no_feedback_v1"
 AUXILIARY_ROLE = "diagnostic_auxiliary_frozen_canonical_trajectory"
@@ -208,6 +212,14 @@ def _batched_gaussian_mixture_core(
         "log_density": finite_log_density,
         "responsibilities": finite_responsibilities,
         "d_log_density": finite_tangent,
+        "d_log_component": tf.where(
+            row_valid[tf.newaxis, :, tf.newaxis],
+            d_log_component,
+            tf.fill(
+                tf.shape(d_log_component),
+                tf.cast(float("nan"), values.dtype),
+            ),
+        ),
         "component_log_density": tf.where(
             row_valid[:, tf.newaxis],
             component_log_density,
@@ -308,6 +320,238 @@ def make_gaussian_kdm_kernel(
 
     kernel.route_id = ROUTE_ID
     kernel.target_label = KDM_FINITE_TARGET
+    return kernel
+
+
+def make_full_mixture_iwsg_resampling_kernel(
+    *,
+    particle_count: int,
+    dimension: int,
+    direction_count: int = 1,
+    dtype: tf.dtypes.DType | str = tf.float64,
+    rank_tolerance: float = 1.0e-12,
+    normalization_tolerance: float = 1.0e-8,
+    symmetry_tolerance: float = 1.0e-8,
+    jit_compile: bool = True,
+) -> Callable[..., Mapping[str, Tensor]]:
+    """Create the exact full-mixture fixed-anchor IWSG resampling primitive.
+
+    The fixed samples have no tangent input. Each sample is evaluated against
+    every component; the supplied proposal density is an anchor constant. UKF
+    covariance marks are transported by the complete mixture responsibilities,
+    including both responsibility and source-mark tangents.
+    """
+
+    particle_count = _static_positive("particle_count", particle_count)
+    dimension = _static_positive("dimension", dimension)
+    direction_count = _static_positive("direction_count", direction_count)
+    dtype = _dtype_from_value(dtype)
+    if (
+        float(rank_tolerance) <= 0.0
+        or float(normalization_tolerance) <= 0.0
+        or float(symmetry_tolerance) <= 0.0
+    ):
+        raise ValueError("resampling tolerances must be positive")
+    rank_tolerance_tensor = tf.constant(float(rank_tolerance), dtype)
+    normalization_tolerance_tensor = tf.constant(
+        float(normalization_tolerance), dtype
+    )
+    symmetry_tolerance_tensor = tf.constant(float(symmetry_tolerance), dtype)
+
+    @tf.function(
+        input_signature=[
+            tf.TensorSpec([particle_count, dimension], dtype),
+            tf.TensorSpec([particle_count], dtype),
+            tf.TensorSpec([particle_count, dimension], dtype),
+            tf.TensorSpec([particle_count, dimension, dimension], dtype),
+            tf.TensorSpec([particle_count, dimension, dimension], dtype),
+            tf.TensorSpec([particle_count], dtype),
+            tf.TensorSpec([direction_count, particle_count], dtype),
+            tf.TensorSpec(
+                [direction_count, particle_count, dimension], dtype
+            ),
+            tf.TensorSpec(
+                [direction_count, particle_count, dimension, dimension], dtype
+            ),
+            tf.TensorSpec(
+                [direction_count, particle_count, dimension, dimension], dtype
+            ),
+        ],
+        jit_compile=bool(jit_compile),
+        autograph=False,
+        reduce_retracing=True,
+    )
+    def kernel(
+        samples: Tensor,
+        component_weights: Tensor,
+        component_means: Tensor,
+        bandwidth_covariances: Tensor,
+        covariance_marks: Tensor,
+        proposal_log_density: Tensor,
+        d_component_weights: Tensor,
+        d_component_means: Tensor,
+        d_bandwidth_covariances: Tensor,
+        d_covariance_marks: Tensor,
+    ) -> Mapping[str, Tensor]:
+        weights_b = tf.broadcast_to(
+            component_weights[tf.newaxis, :],
+            [particle_count, particle_count],
+        )
+        means_b = tf.broadcast_to(
+            component_means[tf.newaxis, :, :],
+            [particle_count, particle_count, dimension],
+        )
+        bandwidths_b = tf.broadcast_to(
+            bandwidth_covariances[tf.newaxis, :, :, :],
+            [particle_count, particle_count, dimension, dimension],
+        )
+        d_weights_b = tf.broadcast_to(
+            d_component_weights[:, tf.newaxis, :],
+            [direction_count, particle_count, particle_count],
+        )
+        d_means_b = tf.broadcast_to(
+            d_component_means[:, tf.newaxis, :, :],
+            [direction_count, particle_count, particle_count, dimension],
+        )
+        d_bandwidths_b = tf.broadcast_to(
+            d_bandwidth_covariances[:, tf.newaxis, :, :, :],
+            [
+                direction_count,
+                particle_count,
+                particle_count,
+                dimension,
+                dimension,
+            ],
+        )
+        density = _batched_gaussian_mixture_core(
+            samples,
+            weights_b,
+            means_b,
+            bandwidths_b,
+            tf.zeros(
+                [direction_count, particle_count, dimension], dtype
+            ),
+            d_weights_b,
+            d_means_b,
+            d_bandwidths_b,
+            rank_tolerance=rank_tolerance_tensor,
+            normalization_tolerance=normalization_tolerance_tensor,
+        )
+
+        log_ratio = density["log_density"] - proposal_log_density
+        log_weight_normalizer = tf.reduce_logsumexp(log_ratio)
+        normalized_log_weights = log_ratio - log_weight_normalizer
+        normalized_weights = tf.exp(normalized_log_weights)
+        d_log_weight_normalizer = tf.reduce_sum(
+            normalized_weights[tf.newaxis, :] * density["d_log_density"],
+            axis=1,
+        )
+        d_normalized_log_weights = (
+            density["d_log_density"] - d_log_weight_normalizer[:, tf.newaxis]
+        )
+        d_normalized_weights = (
+            normalized_weights[tf.newaxis, :] * d_normalized_log_weights
+        )
+
+        responsibilities = density["responsibilities"]
+        d_responsibilities = responsibilities[tf.newaxis, :, :] * (
+            density["d_log_component"]
+            - density["d_log_density"][:, :, tf.newaxis]
+        )
+        transported_covariance_marks = tf.einsum(
+            "ji,iab->jab", responsibilities, covariance_marks
+        )
+        d_transported_covariance_marks = tf.einsum(
+            "kji,iab->kjab", d_responsibilities, covariance_marks
+        ) + tf.einsum(
+            "ji,kiab->kjab", responsibilities, d_covariance_marks
+        )
+
+        transposed_marks = tf.linalg.matrix_transpose(covariance_marks)
+        symmetric_marks = 0.5 * (covariance_marks + transposed_marks)
+        mark_scale = tf.maximum(
+            tf.reduce_max(tf.abs(symmetric_marks), axis=[-2, -1]),
+            tf.ones([particle_count], dtype),
+        )
+        mark_symmetry_error = tf.reduce_max(
+            tf.abs(covariance_marks - transposed_marks), axis=[-2, -1]
+        )
+        mark_minimum_eigenvalue = tf.reduce_min(
+            tf.linalg.eigvalsh(symmetric_marks), axis=-1
+        )
+        mark_valid = (
+            _finite_rows(covariance_marks)
+            & _finite_tangents_per_row(d_covariance_marks)
+            & (mark_symmetry_error <= symmetry_tolerance_tensor * mark_scale)
+            & (mark_minimum_eigenvalue > rank_tolerance_tensor * mark_scale)
+        )
+        proposal_valid = tf.math.is_finite(proposal_log_density)
+        all_valid = (
+            tf.reduce_all(density["valid"])
+            & tf.reduce_all(proposal_valid)
+            & tf.reduce_all(mark_valid)
+            & tf.reduce_all(tf.math.is_finite(log_ratio))
+            & tf.reduce_all(tf.math.is_finite(d_responsibilities))
+            & tf.reduce_all(tf.math.is_finite(transported_covariance_marks))
+            & tf.reduce_all(tf.math.is_finite(d_transported_covariance_marks))
+        )
+        nan = tf.cast(float("nan"), dtype)
+
+        def checked(value: Tensor) -> Tensor:
+            return tf.where(all_valid, value, tf.fill(tf.shape(value), nan))
+
+        return {
+            "log_density": density["log_density"],
+            "d_log_density": density["d_log_density"],
+            "component_log_density": density["component_log_density"],
+            "d_log_component": density["d_log_component"],
+            "responsibilities": responsibilities,
+            "d_responsibilities": checked(d_responsibilities),
+            "log_ratio": checked(log_ratio),
+            "normalized_log_weights": checked(normalized_log_weights),
+            "normalized_weights": checked(normalized_weights),
+            "d_normalized_log_weights": checked(d_normalized_log_weights),
+            "d_normalized_weights": checked(d_normalized_weights),
+            "transported_covariance_marks": checked(
+                transported_covariance_marks
+            ),
+            "d_transported_covariance_marks": checked(
+                d_transported_covariance_marks
+            ),
+            "anchor_log_ratio_error": tf.reduce_max(tf.abs(log_ratio)),
+            "responsibility_row_sum_error": tf.reduce_max(
+                tf.abs(
+                    tf.reduce_sum(responsibilities, axis=1)
+                    - tf.ones([particle_count], dtype)
+                )
+            ),
+            "weight_sum_error": tf.abs(
+                tf.reduce_sum(normalized_weights) - tf.ones([], dtype)
+            ),
+            "weight_tangent_sum_error": tf.reduce_max(
+                tf.abs(tf.reduce_sum(d_normalized_weights, axis=1))
+            ),
+            "minimum_bandwidth_eigenvalue": tf.reduce_min(
+                density["minimum_eigenvalue"]
+            ),
+            "minimum_source_mark_eigenvalue": tf.reduce_min(
+                mark_minimum_eigenvalue
+            ),
+            "source_mark_symmetry_error": tf.reduce_max(mark_symmetry_error),
+            "valid_rows": density["valid"] & proposal_valid,
+            "source_marks_valid": mark_valid,
+            "valid": all_valid,
+            "complexity_pair_count": density["complexity_pair_count"],
+        }
+
+    kernel.route_id = FULL_MIXTURE_RESAMPLING_ROUTE_ID
+    kernel.target_label = RESKDM_FINITE_TARGET
+    kernel.route_classification = "all_components_iwsg_reference_only"
+    kernel.sample_tangent_policy = "fixed_anchor_samples_no_location_tangent_v1"
+    kernel.proposal_policy = "fixed_anchor_marginal_mixture_density_v1"
+    kernel.covariance_mark_policy = (
+        "responsibility_conditional_mean_no_scatter_v1"
+    )
     return kernel
 
 
@@ -1457,13 +1701,16 @@ __all__ = [
     "ATOM_FINITE_TARGET",
     "AUXILIARY_ROLE",
     "AUXILIARY_ROUTE_ID",
+    "FULL_MIXTURE_RESAMPLING_ROUTE_ID",
     "KDM_FINITE_TARGET",
     "MODEL_IS_TARGET",
+    "RESKDM_FINITE_TARGET",
     "ROUTE_ID",
     "ROUTE_CLASSIFICATION",
     "atom_expectation",
     "canonical_linear_gaussian_kdm_auxiliary",
     "make_conditional_gaussian_kdm_kernel",
+    "make_full_mixture_iwsg_resampling_kernel",
     "make_gaussian_kdm_kernel",
     "make_iwsg_kernel",
     "make_linear_gaussian_kdm_normalizer_kernel",

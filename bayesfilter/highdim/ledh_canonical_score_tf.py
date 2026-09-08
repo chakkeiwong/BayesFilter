@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Mapping
 
 import tensorflow as tf
 
@@ -74,6 +74,19 @@ def _value_and_analytical_score_impl(
     return_trace: bool = False,
     observation_factor_override: Callable[
         [int, Tensor, Tensor, Tensor, Tensor, Tensor], tuple[Tensor, Tensor]
+    ]
+    | None = None,
+    post_reset_transform: Callable[
+        [int, Tensor, Tensor, Tensor, Tensor],
+        tuple[
+            Tensor,
+            Tensor,
+            Tensor,
+            Tensor,
+            Tensor,
+            Tensor,
+            Mapping[str, Tensor],
+        ],
     ]
     | None = None,
     reset_policy: str = "none",
@@ -149,6 +162,10 @@ def _value_and_analytical_score_impl(
             "an observation-factor override currently supports only "
             "annealed_stages=1"
         )
+    if post_reset_transform is not None and reset_policy != "contract_e":
+        raise ValueError("a post-reset transform requires reset_policy='contract_e'")
+    if post_reset_transform is not None and annealed_stages != 1:
+        raise ValueError("a post-reset transform currently requires annealed_stages=1")
     horizon = int(observations.shape[0])
     dim = int(initial_states.shape[1])
     count = tf.shape(initial_states)[0]
@@ -185,6 +202,11 @@ def _value_and_analytical_score_impl(
     d_states = tf.zeros_like(states)
     covariances = initial_covariances
     d_covariances = tf.zeros_like(covariances)
+    uniform_log_weights = -tf.math.log(tf.cast(count, dtype)) * tf.ones(
+        [count], dtype
+    )
+    incoming_log_weights = uniform_log_weights
+    d_incoming_log_weights = tf.zeros_like(uniform_log_weights)
     total = tf.zeros([], dtype)
     d_total = tf.zeros([], dtype)
     trace = [] if return_trace else None
@@ -198,6 +220,8 @@ def _value_and_analytical_score_impl(
     for time_index in range(horizon):
         observation = observations[time_index]
         noise = noises[time_index]
+        step_incoming_log_weights = incoming_log_weights
+        d_step_incoming_log_weights = d_incoming_log_weights
 
         # S1: UKF predict with chained covariance tangent
         (
@@ -425,9 +449,7 @@ def _value_and_analytical_score_impl(
             proposal_log, d_proposal_log = _transition_density(
                 pre_flow, d_pre_flow, anchors, d_anchors
             )
-            weights_log = -tf.math.log(tf.cast(count, dtype)) * tf.ones(
-                [count], dtype
-            )
+            weights_log = step_incoming_log_weights
             prior_observation_logits = (
                 weights_log
                 + transition_log
@@ -435,7 +457,8 @@ def _value_and_analytical_score_impl(
                 - proposal_log
             )
             d_prior_observation_logits = (
-                d_transition_log
+                d_step_incoming_log_weights
+                + d_transition_log
                 + d_log_det
                 - d_proposal_log
             )
@@ -483,6 +506,7 @@ def _value_and_analytical_score_impl(
         )
         reset_transport = tf.eye(count, dtype=dtype)
         d_reset_transport = tf.zeros_like(reset_transport)
+        post_reset_record: Mapping[str, Tensor] = {}
         if reset_policy == "contract_e":
             from bayesfilter.highdim.ledh_canonical_reset_score_tf import (
                 sinkhorn_contract_e_reset_triple_with_tangent,
@@ -542,14 +566,35 @@ def _value_and_analytical_score_impl(
                 reset_covariances,
                 d_reset_covariances,
             )
+            incoming_log_weights = uniform_log_weights
+            d_incoming_log_weights = tf.zeros_like(uniform_log_weights)
+            if post_reset_transform is not None:
+                (
+                    states,
+                    d_states,
+                    covariances,
+                    d_covariances,
+                    incoming_log_weights,
+                    d_incoming_log_weights,
+                    post_reset_record,
+                ) = post_reset_transform(
+                    time_index,
+                    states,
+                    d_states,
+                    covariances,
+                    d_covariances,
+                )
         else:
             states, d_states = children, d_children
             covariances, d_covariances = post_covs, d_post_covs
+            incoming_log_weights = uniform_log_weights
+            d_incoming_log_weights = tf.zeros_like(uniform_log_weights)
 
         if trace is not None:
-            trace.append(
-                {
+            step_record = {
                     "time_index": time_index,
+                    "incoming_log_weights": step_incoming_log_weights,
+                    "d_incoming_log_weights": d_step_incoming_log_weights,
                     "pre_flow": pre_flow,
                     "d_pre_flow": d_pre_flow,
                     "children": children,
@@ -568,6 +613,7 @@ def _value_and_analytical_score_impl(
                     "d_posterior_logits": d_logits,
                     "observation": observation,
                     "predicted_covariances": predicted_covs,
+                    "d_predicted_covariances": d_predicted_covs,
                     "post_covariances": post_covs,
                     "covariances_after_reset": covariances,
                     "d_covariances_after_reset": d_covariances,
@@ -575,8 +621,11 @@ def _value_and_analytical_score_impl(
                     "d_reset_transport": d_reset_transport,
                     "states_after_reset": states,
                     "d_states_after_reset": d_states,
+                    "outgoing_log_weights": incoming_log_weights,
+                    "d_outgoing_log_weights": d_incoming_log_weights,
                 }
-            )
+            step_record.update(post_reset_record)
+            trace.append(step_record)
 
     score = d_total[None] if with_score else None
     if trace is not None:
@@ -638,6 +687,7 @@ def canonical_value_and_analytical_score(
         with_score=with_score,
         return_trace=return_trace,
         observation_factor_override=None,
+        post_reset_transform=None,
         reset_policy=reset_policy,
         reset_design=reset_design,
         reset_epsilon=reset_epsilon,

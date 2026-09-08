@@ -2,7 +2,7 @@
 
 Date: 2026-09-07
 
-Status: PHASE4A_COVARIANCE_REPAIRED_GPU_RERUN_PENDING; PHASE4B_MATH_BLOCKED; NO RESEARCH CAMPAIGN YET
+Status: PHASE4A_GPU_REPAIRED_TF32_VETO_ORACLE_RUNNER_PASS_TIMING_REVISED; SMALL_CELL_PILOT_COMPLETED; NO_PROMOTION_EVIDENCE; BROAD_LADDER_PAUSED; PHASE4B_MATH_BLOCKED
 
 This plan corrects the research question after the earlier
 Fisher/FFBSm/PaRIS rewrite proposal. The earlier proposal is preserved as
@@ -828,7 +828,7 @@ CPU-only reference evidence and does not compare score error or variance.
 
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
 |---|---|---|---|---|---|
-| Retain Phase 4A as a full-feedback diagnostic | Shared-executor identity, zero-bandwidth trajectory parity, total finite differences, Gaussian-factor identity, PSD/support checks, covariance-carry call-chain identity, and executable endpoint checks | TF32 identity/parity veto remains to be rerun after the covariance repair; Phase 4B remains math-blocked | Whether kernelized observation weighting reduces model-score MSE at equal compute is untested | Rerun the repaired GPU/XLA gate, then run the bounded timing/power gate before freezing a serious LGSSM campaign | No evidence yet that KDM helps the score; Phase 4A is not a full Younis MDPF |
+| Retain Phase 4A as a full-feedback diagnostic | Shared-executor identity, zero-bandwidth trajectory parity, total finite differences, Gaussian-factor identity, PSD/support checks, covariance-carry call-chain identity, and executable endpoint checks | Engineering gates pass on float64/float32 without TF32; TF32 identity/parity remains vetoed; Phase 4B remains math-blocked | The powered `N=32,T=5` cell had a wide interval and descriptively higher KDM-FINITE MSE | Compare the complete rho curve against both ATOM-FINITE and the Kalman oracle on the same held-out paths before spending a larger compile budget | No promotion, default, DSGE, HMC, or full-Younis claim |
 
 ## Decision
 
@@ -839,11 +839,36 @@ changed finite program or a demonstrably target-preserving auxiliary estimator.
 Phase 1 through Phase 4A have supplied the tested algebraic, endpoint,
 fixed-chart, auxiliary, and full-feedback kernelized-observation foundation.
 The Contract-E covariance-carry call-chain bug was repaired and passed the
-focused CPU suite; its GPU/XLA calibration must now be rerun because the
-finite program changed.  The earlier trusted-GPU calibration found a TF32
-identity/parity veto, so the repaired run may either confirm that veto or
-provide evidence for a code-level repair.  Only after that gate is resolved
-does the timing and power gate run. This is not a port of Nemeth,
-Scibior--Wood, PaRIS, or Del Moral. The
+focused CPU suite; the repaired GPU/XLA gate confirms float64 and float32
+without TF32 and rejects the TF32 arm at the declared identity thresholds.
+The first powered score-error pilot selected `rho=0.8` but produced 4.84%
+higher validation MSE than ATOM-FINITE, with a bootstrap interval crossing
+zero.  This is a promotion veto for the tested scope, not a rejection of the
+research direction.  This is not a port of Nemeth, Scibior--Wood, PaRIS, or
+Del Moral. The
 exact all-pairs Phase 4B route must wait for its complete proposal derivation
 rather than being approximated silently.
+
+## Current execution checkpoint (2026-09-08)
+
+The Contract-E covariance-carry repair has passed the focused CPU suite and the
+repaired complete endpoint passes float64 and float32/no-TF32 GPU/XLA smoke.
+The TF32 arm still fails the predeclared parity veto, so the active numerical
+setting is float32 with TF32 disabled (with float64 retained as a reference
+arm).  The independent scalar AR(1) Kalman value/score reference and the
+disjoint calibration/validation runner now pass local compile and focused
+tests.  A corrected observation generator now samples the declared stationary
+initial state; the earlier zero-initial-state generator was rejected before any
+campaign run.
+
+The repaired timing probe is materially slower to compile than the stale
+pre-repair estimate: `N=128,T=20` atom required 296.10 seconds for XLA compile
+plus first execution, followed by 0.232 seconds per warm execution and 31 MB
+peak GPU memory.  Therefore the old six-row/0.10 GPU-hour campaign budget is
+superseded.  The small-cell pilot is complete and is recorded in
+`docs/plans/results/bayesfilter-ledh-younis-kdm-phase4a-campaign-result-20260908.md`.
+The broad ladder remains paused.  The next step is a focused same-stream
+diagnostic of all candidate bandwidths against both the atom endpoint and the
+oracle, followed by a fresh budget decision.  The registered `batch_fused`
+and NeuTra lanes remain a separate canonical-conformance blocker because they
+still bypass Contract-E, GenUT, and the dual caps.
