@@ -65,8 +65,8 @@ def main():
     routes_config = [
         ('repaired_permutation', 1),  # Already complete
         ('iid_dual_cap', 3),
-        ('previous_inverse_cdf', 4),
-        ('repaired_fixed_previous_controls', 5),
+        ('previous_inverse_cdf', 6),  # Restarted run
+        ('repaired_fixed_previous_controls', 7),  # Final run
     ]
 
     print("="*80)
