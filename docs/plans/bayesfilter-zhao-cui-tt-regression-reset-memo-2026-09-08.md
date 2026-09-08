@@ -7,6 +7,7 @@ Branch: `zhao-cui-tt-regression-20260908`
 Remote: `git@github.com:chakkeiwong/BayesFilter.git`  
 Current-main base: `d2124d425b0ea0ae0e3e5f4246bd6b03ff8a2170`  
 Recovery source: `21d5870f8320ba03ef017315ef3c62638e789fef`  
+Reset import commit: `24e6389a4eba1ce76f230dc9bfe6bd9a57592999`  
 Scope: Zhao-Cui/C2 tensor-train regression and observation-informed proposal work only
 
 ## 1. Reset decision
@@ -248,7 +249,11 @@ The following checks must be completed before the reset status changes to
 - [x] Changed Python sources compile.
 - [x] Focused CPU-only integration and call-chain tests pass.
 - [x] Reset result and exact commands are added below.
-- [ ] Reset commit is pushed to the dedicated remote branch.
+- [x] Reset commit is pushed to the dedicated remote branch.
+
+The reset import commit and its upstream were both verified as
+`24e6389a4eba1ce76f230dc9bfe6bd9a57592999` immediately after push. The final
+memo closeout is a documentation-only descendant of that tested import.
 
 ## 12. Focused verification record
 
