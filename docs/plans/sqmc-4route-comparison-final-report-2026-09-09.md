@@ -92,11 +92,30 @@ All 6 pairwise comparisons are **INDISTINGUISHABLE** (95% CI includes zero):
 
 ---
 
+## Score (Gradient) Comparison
+
+All routes also produce **indistinguishable score magnitudes**:
+
+| Route | Mean L2 Norm | Std | Range |
+|---|---|---|---|
+| previous_inverse_cdf | 543.51 | 403.90 | [139.61, 947.41] |
+| repaired_permutation | 454.94 | 270.83 | [184.11, 725.77] |
+| iid_dual_cap | 378.89 | 283.55 | [95.34, 662.44] |
+| repaired_fixed_previous_controls | 275.58 | 191.59 | [83.99, 467.17] |
+
+**Range across routes:** 267.93  
+**Typical within-route std:** 287.47  
+**Ratio:** 1.07× (seed variation > route variation)
+
+**Verdict:** Score magnitudes are also **statistically indistinguishable**. Seed-to-seed variation dominates.
+
+---
+
 ## Key Findings
 
-1. **No statistically distinguishable differences:** All 4 routes perform equivalently at N=1008
-2. **Seed variation dominates:** Within-route std (~0.7) is 4.7× larger than between-route range (0.15)
-3. **Empirical ranking:** iid_dual_cap slightly ahead, but not statistically significant
+1. **No statistically distinguishable differences:** All 4 routes perform equivalently at N=1008 (both value and score)
+2. **Seed variation dominates:** Within-route std is larger than between-route range for both value and score
+3. **Empirical ranking:** iid_dual_cap slightly ahead on value, but not statistically significant; score rankings differ
 4. **Practical implication:** Any route is acceptable; default choice should prioritize code simplicity and testing coverage
 
 ---
