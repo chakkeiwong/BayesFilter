@@ -75,17 +75,22 @@ class ToyPotentialAdapter:
 
         Parameters
         ----------
-        theta : tf.Tensor, shape [batch, P]
+        theta : tf.Tensor, shape [P] or [batch, P]
             Parameter values
 
         Returns
         -------
-        value : tf.Tensor, shape [batch]
+        value : tf.Tensor, shape [] or [batch]
             Log probability = -U(θ)
-        grad : tf.Tensor, shape [batch, P]
+        grad : tf.Tensor, shape [P] or [batch, P]
             Gradient = damping_scale * (-∇U(θ))
         """
         theta = tf.cast(theta, self.dtype)
+
+        # Handle both scalar and batch inputs
+        is_scalar = theta.shape.rank == 1
+        if is_scalar:
+            theta = theta[tf.newaxis, :]  # [P] -> [1, P]
 
         # U(θ) = 0.5 * θᵀ Σ⁻¹ θ
         # Vectorized: [batch, P] @ [P, P] @ [P, batch] -> [batch, batch] diag -> [batch]
@@ -96,6 +101,10 @@ class ToyPotentialAdapter:
         # Vectorized: [batch, P] @ [P, P] -> [batch, P]
         grad_u = tf.einsum("bp,pq->bq", theta, self.sigma_inv)
         grad = self.damping_scale * (-grad_u)  # gradient of log prob = -∇U
+
+        if is_scalar:
+            value = tf.squeeze(value, axis=0)  # [1] -> []
+            grad = tf.squeeze(grad, axis=0)    # [1, P] -> [P]
 
         return value, grad
 
@@ -134,24 +143,25 @@ class DualAdapterSurrogateForce:
         self.damped_adapter = ToyPotentialAdapter(sigma_inv, damping_scale=damping_scale, dtype=dtype)
         self.dtype = dtype
 
-    def log_prob_and_grad(self, theta: tf.Tensor) -> BatchValueScoreResult:
+    def log_prob_and_grad(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         """Compute exact value and damped force.
 
         Parameters
         ----------
-        theta : tf.Tensor, shape [batch, P]
+        theta : tf.Tensor, shape [P] or [batch, P]
             Parameter values
 
         Returns
         -------
-        BatchValueScoreResult
-            value: exact log probability [batch]
-            score: damped gradient [batch, P]
+        value : tf.Tensor, shape [] or [batch]
+            Exact log probability
+        force : tf.Tensor, shape [P] or [batch, P]
+            Damped gradient
         """
         value, _ = self.exact_adapter.log_prob_and_grad(theta)
         _, force = self.damped_adapter.log_prob_and_grad(theta)
 
-        return BatchValueScoreResult(value=value, score=force)
+        return value, force
 
 
 __all__ = [

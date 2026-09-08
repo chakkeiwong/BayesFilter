@@ -88,58 +88,87 @@ def test_t2_endpoint_energy_conservation():
     assert delta_h < 0.1, f"Energy conservation failed: ΔH = {delta_h}"
 
 
-def test_t3_acceptance_simplified():
-    """T3: Simplified acceptance check across damping scales.
+def test_t3_acceptance_rate_with_hmc():
+    """T3: Measure actual HMC acceptance rate across damping ladder.
 
-    Since TFP HMC doesn't support custom gradients easily, we verify the
-    mechanics by checking that:
-    1. Exact gradient (damping=1.0) produces valid proposals
-    2. Damped gradient (damping=0.1) produces weaker but still valid proposals
-    3. Force magnitude scales with damping
+    This is the REAL T3 promotion criterion test.
+    Uses reviewed_value_score_target_fn to wire damped force into TFP HMC.
 
-    Full surrogate-force HMC integration will be tested in Phase 3.
+    Promotion criterion: acceptance ≥ 0.2 at damping 0.1
     """
+    from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
+
     sigma_inv = np.diag([1.0, 0.25, 1.0 / 9.0])
 
+    results = {}
+
     for damping in [1.0, 0.5, 0.1]:
-        adapter = DualAdapterSurrogateForce(sigma_inv, damping_scale=damping, dtype=DTYPE)
+        # Create dual adapter: exact value, damped force
+        adapter = DualAdapterSurrogateForce(
+            sigma_inv,
+            damping_scale=damping,
+            dtype=DTYPE
+        )
 
-        # Test multiple θ points
-        theta_test = tf.constant([
-            [1.0, 0.0, 0.0],
-            [0.0, 2.0, 0.0],
-            [0.0, 0.0, 3.0],
-            [1.0, 1.0, 1.0],
-        ], DTYPE)
+        # Wrap with reviewed_value_score_target_fn for TFP HMC
+        # This uses the adapter's force for leapfrog, but TFP thinks it's autodiffing
+        target_log_prob_fn = reviewed_value_score_target_fn(
+            adapter,
+            dtype=DTYPE,
+            require_batched=False,  # TFP HMC uses scalar chains
+        )
 
-        result = adapter.log_prob_and_grad(theta_test)
+        # Run short HMC chain
+        num_results = 100
+        num_burnin_steps = 50
 
-        # Check value is finite and reasonable
-        assert tf.reduce_all(tf.math.is_finite(result.value))
+        # Initial state: slightly off center
+        initial_state = tf.constant([1.0, 0.5, -0.5], dtype=DTYPE)
 
-        # Check force is finite
-        assert tf.reduce_all(tf.math.is_finite(result.score))
+        # HMC kernel with step size tuned for this potential
+        step_size = 0.1
+        num_leapfrog_steps = 10
 
-        # Check force magnitude scales with damping
-        force_norm = tf.norm(result.score, axis=1)
-        mean_force_norm = float(tf.reduce_mean(force_norm))
+        kernel = tfp.mcmc.HamiltonianMonteCarlo(
+            target_log_prob_fn=target_log_prob_fn,
+            step_size=step_size,
+            num_leapfrog_steps=num_leapfrog_steps,
+        )
 
-        # At θ far from origin, force should be non-zero
-        assert mean_force_norm > 0.01, f"Force too small at damping={damping}"
+        # Run chain
+        @tf.function
+        def run_chain():
+            return tfp.mcmc.sample_chain(
+                num_results=num_results,
+                num_burnin_steps=num_burnin_steps,
+                current_state=initial_state,
+                kernel=kernel,
+                trace_fn=lambda _, pkr: pkr.is_accepted,
+                seed=tf.constant([20260908, int(damping * 10)], dtype=tf.int32),
+            )
 
-        print(f"\nDamping={damping:.1f}: mean ||force|| = {mean_force_norm:.4f}")
+        samples, is_accepted = run_chain()
 
-    # Additional check: force should scale linearly with damping
-    adapter_1 = DualAdapterSurrogateForce(sigma_inv, damping_scale=1.0, dtype=DTYPE)
-    adapter_01 = DualAdapterSurrogateForce(sigma_inv, damping_scale=0.1, dtype=DTYPE)
+        # Compute acceptance rate
+        acceptance_rate = float(tf.reduce_mean(tf.cast(is_accepted, DTYPE)))
+        results[damping] = acceptance_rate
 
-    theta = tf.constant([[1.0, 2.0, 3.0]], DTYPE)
-    result_1 = adapter_1.log_prob_and_grad(theta)
-    result_01 = adapter_01.log_prob_and_grad(theta)
+        print(f"\nDamping={damping:.1f}: acceptance rate = {acceptance_rate:.3f}")
 
-    ratio = float(tf.norm(result_01.score) / tf.norm(result_1.score))
-    assert 0.08 < ratio < 0.12, f"Force scaling ratio {ratio:.3f} not close to 0.1"
-    print(f"\nForce scaling check: ratio = {ratio:.3f} (expected ~0.1)")
+    # Verify promotion criterion
+    assert results[0.1] >= 0.2, (
+        f"Promotion criterion FAILED: acceptance at damping=0.1 is {results[0.1]:.3f}, "
+        f"required ≥ 0.2"
+    )
+
+    # Additional sanity checks
+    assert results[1.0] > results[0.5], "Higher damping should not increase acceptance"
+    assert results[0.5] > results[0.1], "Higher damping should not increase acceptance"
+
+    print("\n✅ T3 PASSED: All acceptance rates meet criteria")
+    print(f"   damping=1.0: {results[1.0]:.3f}")
+    print(f"   damping=0.5: {results[0.5]:.3f}")
+    print(f"   damping=0.1: {results[0.1]:.3f} (≥ 0.2 required)")
 
 
 def test_t4_force_norm_diagnostic():
