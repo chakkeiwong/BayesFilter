@@ -32,7 +32,7 @@ four with trust-region tuning artifacts from 2026-09-02/03).
 |---|---|---|---|
 | **0** | Policy repair (pfor removal) | complete | ✅ DONE 2026-09-04 |
 | **1** | Route identity baselines | 0.5 day | ⏳ INCOMPLETE (deferred to 2B Step 5) |
-| **2A** | Toy potential mechanics | 0.5 day | ⏳ INCOMPLETE (T3 missing) |
+| **2A** | Toy potential mechanics | 0.5 day | ✅ COMPLETE 2026-09-09 |
 | **2B** | Engine unification | 6–9 days | 📋 NEXT |
 | **2C** | Contract-integrity test suite | 2–3 days | ⏸️ BLOCKED on 2B |
 | **3** | Damping derivation + calibration | 1–2 days | ⏸️ BLOCKED on 2C |
