@@ -456,8 +456,8 @@ def _result_markdown(result: Mapping) -> str:
     decision = result["decision"]
     return f"""# C2 n=4 Frozen-State Stage 2 Result
 
-**Date:** 2026-08-28  
-**Status:** {decision['status']}  
+**Date:** 2026-08-28
+**Status:** {decision['status']}
 **Decision:** {decision['headline']}
 
 The unchanged attempt05 configuration was fitted once through t=4. Full fitted

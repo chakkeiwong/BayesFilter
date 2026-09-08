@@ -270,8 +270,8 @@ def _result_markdown(result: Mapping[str, object]) -> str:
     )
     return f"""# C2 n=4 Frozen-Target Stage 1 Result
 
-**Date:** 2026-08-28  
-**Status:** {decision['status']}  
+**Date:** 2026-08-28
+**Status:** {decision['status']}
 **Plan:** `docs/plans/bayesfilter-n4-root-cause-diagnostic-plan-2026-08-28.md`
 
 ## Result
