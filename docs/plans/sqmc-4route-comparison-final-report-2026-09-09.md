@@ -96,18 +96,20 @@ All 6 pairwise comparisons are **INDISTINGUISHABLE** (95% CI includes zero):
 
 All routes also produce **indistinguishable score magnitudes**:
 
-| Route | Mean L2 Norm | Std | Range |
+| Route | Mean L2 Norm | Within-Route Std |
 |---|---|---|---|
-| previous_inverse_cdf | 543.51 | 403.90 | [139.61, 947.41] |
-| repaired_permutation | 454.94 | 270.83 | [184.11, 725.77] |
-| iid_dual_cap | 378.89 | 283.55 | [95.34, 662.44] |
-| repaired_fixed_previous_controls | 275.58 | 191.59 | [83.99, 467.17] |
+| previous_inverse_cdf | 543.51 | 403.90 |
+| repaired_permutation | 454.94 | 270.83 |
+| iid_dual_cap | 378.89 | 283.55 |
+| repaired_fixed_previous_controls | 275.58 | 191.59 |
 
 **Range across routes:** 267.93  
 **Typical within-route std:** 287.47  
 **Ratio:** 1.07× (seed variation > route variation)
 
-**Verdict:** Score magnitudes are also **statistically indistinguishable**. Seed-to-seed variation dominates.
+**Verdict:** Score magnitudes are also **statistically indistinguishable**. Seed-to-seed variation dominates route-to-route variation.
+
+**Note:** Score magnitude has no "better" direction - it's a measured quantity, not an objective. The point is that all routes produce comparable gradient estimates with similar variability.
 
 ---
 
@@ -115,8 +117,9 @@ All routes also produce **indistinguishable score magnitudes**:
 
 1. **No statistically distinguishable differences:** All 4 routes perform equivalently at N=1008 (both value and score)
 2. **Seed variation dominates:** Within-route std is larger than between-route range for both value and score
-3. **Empirical ranking:** iid_dual_cap slightly ahead on value, but not statistically significant; score rankings differ
-4. **Practical implication:** Any route is acceptable; default choice should prioritize code simplicity and testing coverage
+3. **Value ranking (higher is better):** iid_dual_cap slightly ahead (-681.83), but not statistically significant
+4. **Score variability:** All routes show comparable gradient estimation variability; no route is systematically more stable
+5. **Practical implication:** Any route is acceptable; default choice should prioritize code simplicity and testing coverage
 
 ---
 
