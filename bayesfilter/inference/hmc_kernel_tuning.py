@@ -4557,6 +4557,17 @@ class _HMCPhase7FixedKernelVerificationOutcome:
         )
 
 
+def _phase7_direct_queue_acceptance_conflict(
+    candidate_results: Sequence[Mapping[str, Any]], repair_directions: Sequence[str],
+) -> bool:
+    """Preserve disagreement within chains as well as between candidates."""
+    return len(set(repair_directions)) > 1 or any(
+        isinstance(result.get("acceptance_evidence"), Mapping)
+        and result["acceptance_evidence"].get("acceptance_decision") == "inconclusive_conflict"
+        for result in candidate_results
+    )
+
+
 @dataclass(frozen=True, repr=False)
 class _HMCPhase7DirectCandidateQueueResult:
     """Private aggregate preserving per-candidate states without public leakage."""
@@ -4658,11 +4669,10 @@ class _HMCPhase7DirectCandidateQueueResult:
             raise ValueError("passed direct queue requires an admitted outcome")
         if status == "repair_or_retry" and self.repair_outcome is None:
             raise ValueError("repairing direct queue requires a finite repair outcome")
-        conflict = len(directions) > 1
+        conflict = _phase7_direct_queue_acceptance_conflict(results, directions)
         conflict_trigger = "verification_acceptance_inconclusive_conflict"
-        if conflict and (
-            status != "repair_or_retry"
-            or role != "verification_acceptance_conflict"
+        if conflict and status == "repair_or_retry" and (
+            role != "verification_acceptance_conflict"
             or conflict_trigger not in self.repair_triggers
         ):
             raise ValueError("direct queue repair conflict is not classified truthfully")
@@ -4670,7 +4680,7 @@ class _HMCPhase7DirectCandidateQueueResult:
             role == "verification_acceptance_conflict"
             or conflict_trigger in self.repair_triggers
         ):
-            raise ValueError("direct queue claims a repair conflict without opposed directions")
+            raise ValueError("direct queue claims a repair conflict without supporting acceptance evidence")
         if status == "hard_veto" and not self.hard_vetoes:
             raise ValueError("hard-veto direct queue requires a shared veto")
         if self.private_handoff_only is not True:
@@ -4700,7 +4710,9 @@ class _HMCPhase7DirectCandidateQueueResult:
 
     @property
     def repair_direction_conflict(self) -> bool:
-        return len(self.repair_directions) > 1
+        return self.final_status == "repair_or_retry" and _phase7_direct_queue_acceptance_conflict(
+            self.candidate_results, self.repair_directions,
+        )
 
     def private_diagnostics(self) -> Mapping[str, Any]:
         representative = self.representative_outcome
@@ -11160,6 +11172,7 @@ def run_hmc_fixed_mass_step_stage(
         windowed_stage,
         attempt_state=_attempt_state,
     )
+    qualified_step_size_upper_bound = _fixed_mass_step_upper_bound(windowed_stage)
     target_trajectory = float(geometry.target_trajectory_length)
     # Every Phase 5 policy consumes the same frozen Phase 4 metric coordinates.
     phase4_adapter = _phase4_latent_adapter_for_step_stage(
@@ -11318,6 +11331,7 @@ def run_hmc_fixed_mass_step_stage(
             initial_state_factory=initial_state_factory,
             config=cfg,
             initial_step=initial_step,
+            qualified_step_size_upper_bound=qualified_step_size_upper_bound,
             target_scope=target_scope,
             target_trajectory=target_trajectory,
             anchor_l=round_anchor_l,
@@ -21593,6 +21607,7 @@ def _fixed_mass_step_stage_ladder_config(
     target_scope: str,
     attempt_budget_policy: _HMCAttemptBudgetPolicy | None = None,
     attempt_state: _HMCPhaseAttemptState | None = None,
+    qualified_step_size_upper_bound: float | None = None,
 ) -> FixedMassHMCTuningBudgetLadderConfig:
     if attempt_budget_policy is None:
         budget_schedule = _FIXED_MASS_STAGE_TEST_BUDGET_SCHEDULE
@@ -21604,6 +21619,17 @@ def _fixed_mass_step_stage_ladder_config(
         tune_num_results = _FIXED_MASS_STAGE_TUNE_NUM_RESULTS
         screen_num_results = attempt_budget_policy.phase5_screen_num_results
         screen_num_burnin_steps = attempt_budget_policy.phase5_screen_burnin_steps
+    repair_max_step = (
+        None if attempt_state is None else attempt_state.verification_repair_max_step_size
+    )
+    bracket_state = None if attempt_state is None else attempt_state.fixed_mass_bracket_state
+    if qualified_step_size_upper_bound is not None:
+        if attempt_state is not None and attempt_state.selected_num_leapfrog_steps != num_leapfrog_steps:
+            repair_max_step, bracket_state = None, None
+        repair_max_step = (
+            qualified_step_size_upper_bound if repair_max_step is None
+            else min(repair_max_step, qualified_step_size_upper_bound)
+        )
     return FixedMassHMCTuningBudgetLadderConfig(
         budget_schedule=budget_schedule,
         initial_step_size=float(initial_step),
@@ -21620,12 +21646,9 @@ def _fixed_mass_step_stage_ladder_config(
             config.step_repair_high_acceptance_ladder_max_factor
         ),
         repair_nonfinite_proposal_screen=config.repair_nonfinite_proposal_screen,
-        step_repair_max_step_size=None
-        if attempt_state is None
-        else attempt_state.verification_repair_max_step_size,
-        initial_fixed_mass_bracket_state=None
-        if attempt_state is None
-        else attempt_state.fixed_mass_bracket_state,
+        step_repair_max_step_size=repair_max_step,
+        step_size_upper_bound=qualified_step_size_upper_bound,
+        initial_fixed_mass_bracket_state=bracket_state,
         tune_num_results=tune_num_results,
         screen_num_results=screen_num_results,
         screen_num_burnin_steps=screen_num_burnin_steps,
@@ -21642,6 +21665,44 @@ def _fixed_mass_step_stage_ladder_config(
         incall_progress_heartbeat_s=config.incall_progress_heartbeat_s,
         source=config.source,
     )
+
+
+def _fixed_mass_step_upper_bound(windowed_stage: HMCWindowedMassStageResult) -> float | None:
+    """Recover the qualified bound in the final, not historical, metric."""
+    operational = windowed_stage.operational_warmup_result
+    if operational is None:
+        return None
+    if not operational.windows:
+        raise ValueError("qualified step bound requires a final warmup window")
+    window = operational.windows[-1]
+    final = operational.final_kernel_state
+    metric_changed = (
+        window.metric_decision is not None and window.metric_decision.update_applied
+    )
+    coordinate_signature = (
+        window.next_coordinate_signature if metric_changed
+        else window.coordinate_signature_used
+    )
+    metric_signature = (
+        window.next_metric_signature if metric_changed else window.metric_signature_used
+    )
+    if (
+        coordinate_signature != final.transform.signature
+        or metric_signature != final.momentum_metric.signature
+    ):
+        raise ValueError("qualified step bound has stale final metric coordinates")
+    if metric_changed:
+        qualification = window.next_reasonable_epsilon
+        if qualification is None or not qualification.passed:
+            raise ValueError("changed metric requires a fresh qualified step bound")
+        bound = qualification.selected_step_size
+    else:
+        bound = window.step_size_upper_bound
+    if bound is None or not 0.0 < float(bound) < float("inf"):
+        raise ValueError("qualified step bound must be finite and positive")
+    if final.epsilon is None or not 0.0 < float(final.epsilon) <= float(bound):
+        raise ValueError("final epsilon exceeds its qualified step bound")
+    return float(bound)
 
 
 def _fixed_mass_step_initial_step(
@@ -21799,6 +21860,7 @@ def _joint_l_epsilon_ladder_config(
     seed_offset: int,
     attempt_budget_policy: "_HMCAttemptBudgetPolicy | None" = None,
     attempt_state: "_HMCPhaseAttemptState | None" = None,
+    qualified_step_size_upper_bound: float | None = None,
 ) -> FixedMassHMCTuningBudgetLadderConfig:
     ladder_config = _fixed_mass_step_stage_ladder_config(
         config,
@@ -21807,6 +21869,7 @@ def _joint_l_epsilon_ladder_config(
         target_scope=target_scope,
         attempt_budget_policy=attempt_budget_policy,
         attempt_state=attempt_state,
+        qualified_step_size_upper_bound=qualified_step_size_upper_bound,
     )
     return dataclasses.replace(
         ladder_config,
@@ -22304,6 +22367,7 @@ def _run_joint_l_epsilon_grid_round(
     private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
     shared_runner_cache: dict[str, Any] | None = None,
     shared_runner_contract_payloads: dict[str, Mapping[str, Any]] | None = None,
+    qualified_step_size_upper_bound: float | None = None,
 ) -> Mapping[str, Any]:
     candidates: list[Mapping[str, Any]] = []
     ladders_by_candidate_index: dict[int, FixedMassHMCTuningBudgetLadderResult] = {}
@@ -22372,6 +22436,7 @@ def _run_joint_l_epsilon_grid_round(
             seed_offset=seed_offset,
             attempt_budget_policy=attempt_budget_policy,
             attempt_state=attempt_state,
+            qualified_step_size_upper_bound=qualified_step_size_upper_bound,
         )
 
         def forward_ladder_progress(stage: str, payload: Mapping[str, Any]) -> None:
@@ -25356,7 +25421,9 @@ def _run_phase7_direct_candidate_queue(
     elif shared_hard_vetoes:
         final_status = "hard_veto"
         diagnostic_role = "hard_veto"
-    elif repair_outcome is not None and len(set(repair_directions)) > 1:
+    elif repair_outcome is not None and _phase7_direct_queue_acceptance_conflict(
+        candidate_results, repair_directions,
+    ):
         final_status = "repair_or_retry"
         diagnostic_role = "verification_acceptance_conflict"
         representative_outcome = repair_outcome

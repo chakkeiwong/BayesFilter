@@ -443,6 +443,93 @@ coordinate binding.  It belongs to the fixed-transport route only when an
 actual frozen transport supplies Equations~\eqref{eq:bf-fixed-transport-hmc-target}
 and~\eqref{eq:bf-fixed-transport-hmc-score}.
 
+\section{Candidate-set validation and nomination}
+\label{sec:bf-fixed-transport-candidate-selection}
+
+When several frozen fixed transports or training restarts are available, use
+the public candidate-set protocol rather than writing a client-local selector.
+The public entry point is
+\path{select_fixed_transport_candidate_set} from
+\path{bayesfilter.inference}. A caller supplies candidate identifiers and
+provenance, a validation callback that executes one fresh fixed-kernel rung,
+and, optionally, a score callback that returns finite lower-is-better scalar
+values. Tune each frozen transport independently with
+\path{tune_fixed_transport_hmc_kernel} before constructing these candidates;
+the candidate-set function is not another tuner.
+
+The protocol calls the validation callback sequentially for each candidate's
+declared rungs. A hard failure stops that candidate's later rungs but does not
+stop other candidates. Every candidate that passes all rungs is retained in
+\path{viable_candidates}; the optional \path{selected_candidate} is only a
+descriptive nomination. Omit \path{score_candidate} to return the viable set
+without choosing a nominee. The caller owns draw persistence: archive validation
+draws as validation evidence, separately from subsequent estimation draws.
+BayesFilter neither discards nor promotes them. Exceptions from the callback
+propagate as execution failures, rather than silently rejecting a transport.
+
+The experimental hard-screen configuration requires finite observations, valid
+target status, movement in every chain, no reported native divergences, and
+the declared R-hat, bulk-ESS, tail-ESS, and MCSE/standard-deviation limits.
+Callers may change those thresholds with
+\path{FixedTransportCandidateSelectionConfig}, but the result must preserve
+the configuration and its provenance. Training quality, whitening, or
+efficiency metrics belong in the caller's score callback; they are not hidden
+inside BayesFilter.
+
+The convenience settings (two rungs, R-hat at most 1.01, bulk ESS at least
+400, tail ESS at least 200, and mean MCSE/SD at most 0.10) are experimental
+screens, not universal convergence defaults. The callback, not the selector,
+chooses chain counts, sample counts, seeds, and fresh starts. For example,
+two independent 500-draw-per-chain rungs are separate checks, not an implicit
+1,000-draw continuation of the same Markov chains. A caller-owned scheduler
+may place different candidates on different devices; each worker should call
+this API for its candidate's full rung sequence. The selector itself is serial
+and does not create processes or assign GPUs.
+
+Use \path{fixed_transport_candidate_diagnostics} to construct an observation
+from TensorFlow draws shaped [draw, chain, parameter], matching-coordinate
+starts, and the runner's mechanics telemetry. It reports rank and folded
+R-hat, bulk/tail ESS, movement, finiteness and target status, and mean MCSE.
+This is a post-chain eager reporting boundary, not a transition kernel. Mean
+MCSE/SD uses the ESS of the unranked draws: with positive sample standard
+deviation $s$ and mean ESS $N_{\mathrm{eff}}$, its estimate is
+$(s/\sqrt{N_{\mathrm{eff}}})/s=1/\sqrt{N_{\mathrm{eff}}}$.
+Rank-normalized bulk ESS does not estimate the same quantity. Name the actual
+sample coordinates: diagnostics on transport coordinates are not diagnostics
+on every nonlinear model-parameter transformation.
+
+Required observation keys are \path{all_finite}, \path{target_status_valid},
+\path{all_chain_movement}, \path{native_divergence_count}, \path{max_rhat},
+\path{min_bulk_ess}, \path{min_tail_ess}, and \path{max_mcse_sd_ratio}.
+Unavailable divergence telemetry must be identified explicitly; an available
+count must be nonnegative and integral. Missing target status fails the screen.
+Use \path{score_metadata} to preserve score ordering, receipt provenance and
+uncertainty limitations. A nomination remains descriptive even when the
+ordering is deterministic.
+
+\begin{longtable}{p{0.27\textwidth}p{0.33\textwidth}p{0.31\textwidth}}
+\toprule
+Diagnostic role & BayesFilter meaning & What it does not establish \\
+\midrule
+\endfirsthead
+\toprule
+Diagnostic role & BayesFilter meaning & What it does not establish \\
+\midrule
+\endhead
+Hard screen & Rejects a candidate or stops its later rungs. & Posterior truth or method superiority. \\
+\addlinespace
+Caller nomination score & Orders candidates that passed all hard screens. & A statistically supported ranking without uncertainty evidence. \\
+\addlinespace
+R-hat/ESS/MCSE & Generic viability and precision diagnostics. & A universal transport-quality score. \\
+\addlinespace
+P-value & Optional caller diagnostic under a specified test and sample size. & A default distance-to-Gaussian or HMC-quality ordering. \\
+\bottomrule
+\end{longtable}
+
+The complete runnable fixture is
+\path{docs/examples/fixed_transport_candidate_selection.py}. It is an
+interface example, not a posterior or performance claim.
+
 \section{Artifacts, failures, and conclusions}
 
 Before consuming a tuning result, a caller checks that the public route has

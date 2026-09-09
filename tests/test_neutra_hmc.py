@@ -418,3 +418,31 @@ def test_batched_gaussian_cpu_xla_smoke() -> None:
     assert run["samples"].shape == (16, 4, 2)
     assert run["diagnostics"]["health_passed"] is True
     assert run["config"]["chain_count"] == 4
+
+
+def test_batched_program_uses_one_explicit_signature_for_repeated_shapes() -> None:
+    class GaussianAdapter:
+        @staticmethod
+        def log_prob_and_grad(theta):
+            values = tf.convert_to_tensor(theta, tf.float64)
+            return -0.5 * tf.reduce_sum(tf.square(values), axis=-1), -values
+
+    program = neutra_hmc._build_batched_hmc_program(
+        adapter=GaussianAdapter(),
+        num_results=2,
+        num_burnin_steps=0,
+        step_size=0.4,
+        num_leapfrog_steps=2,
+        state_shape=(4, 2),
+        jit_compile=True,
+    )
+    assert tuple(program.input_signature) == (
+        tf.TensorSpec((4, 2), tf.float64),
+        tf.TensorSpec((2,), tf.int32),
+    )
+
+    state = tf.zeros((4, 2), tf.float64)
+    program(state, tf.constant((20260906, 1), tf.int32))
+    program(state, tf.constant((20260906, 2), tf.int32))
+
+    assert program.experimental_get_tracing_count() == 1

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import secrets
 import time
@@ -535,6 +536,7 @@ class FullChainHMCConfig:
     tuning_policy: str | HMCTuningPolicy | None = None
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
+    step_size_upper_bound: float | None = None
 
     def __post_init__(self) -> None:
         for name in ("num_results", "num_burnin_steps", "num_leapfrog_steps"):
@@ -546,6 +548,11 @@ class FullChainHMCConfig:
         if not np.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
         object.__setattr__(self, "step_size", step_size)
+        if self.step_size_upper_bound is not None:
+            bound = float(self.step_size_upper_bound)
+            if not math.isfinite(bound) or bound <= 0.0 or step_size > bound:
+                raise ValueError("step_size_upper_bound must be finite, positive, and bound step_size")
+            object.__setattr__(self, "step_size_upper_bound", bound)
         seed = tuple(int(item) for item in self.seed)
         if len(seed) != 2:
             raise ValueError("seed must contain exactly two integers")
@@ -631,6 +638,8 @@ class FullChainHMCConfig:
             "adaptation_policy": self.adaptation_policy,
             "tuning_policy": self.tuning_policy.payload(),
             "target_scope": self.target_scope,
+            **({"step_size_upper_bound": self.step_size_upper_bound}
+               if self.step_size_upper_bound is not None else {}),
         }
 
 
@@ -2623,6 +2632,45 @@ def _validated_hmc_runtime_inputs(
     return state_tensor, seed_tensor, step_tensor
 
 
+def _hmc_dual_averaging_kernel(inner_kernel: Any, config: FullChainHMCConfig, step_size: Any) -> Any:
+    """Keep a qualified tuning ceiling on consumed and exported epsilon.
+
+    The optional bound is tied to the caller's frozen coordinates and metric.
+    It constrains adaptation only; it does not change the target or remove the
+    Metropolis correction. The unbounded route retains TFP's exact defaults.
+    """
+    import tensorflow as tf
+    import tensorflow_probability as tfp
+    from tensorflow_probability.python.internal import unnest
+
+    step = tf.convert_to_tensor(step_size)
+    parameters = dict(
+        inner_kernel=inner_kernel,
+        num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
+        target_accept_prob=tf.constant(config.tuning_policy.target_accept_prob, step.dtype),
+    )
+    if config.step_size_upper_bound is None:
+        return tfp.mcmc.DualAveragingStepSizeAdaptation(**parameters)
+    bound = tf.constant(config.step_size_upper_bound, step.dtype)
+
+    def bounded_step_setter(kernel_results: Any, new_step_size: Any) -> Any:
+        return unnest.replace_innermost(
+            kernel_results, step_size=tf.minimum(new_step_size, bound)
+        )
+
+    class BoundedDualAveraging(tfp.mcmc.DualAveragingStepSizeAdaptation):
+        def one_step(self, current_state, previous_kernel_results, seed=None):
+            next_state, results = super().one_step(current_state, previous_kernel_results, seed=seed)
+            return next_state, results._replace(new_step_size=tf.minimum(results.new_step_size, bound))
+
+    parameters.update(
+        inner_kernel=inner_kernel.copy(step_size=tf.minimum(step, bound)),
+        step_size_setter_fn=bounded_step_setter,
+        shrinkage_target=tf.minimum(10.0 * step, bound),
+    )
+    return BoundedDualAveraging(**parameters)
+
+
 def _fixed_hmc_kernel(
     *,
     target_log_prob_fn: Callable[[Any], Any],
@@ -2832,14 +2880,7 @@ class ReusableFullChainHMCRunner:
                 num_leapfrog_steps=leapfrog_count,
             )
             if config.tuning_policy.uses_dual_averaging:
-                kernel = tfm.DualAveragingStepSizeAdaptation(
-                    inner_kernel=kernel,
-                    num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
-                    target_accept_prob=tf.constant(
-                        config.tuning_policy.target_accept_prob,
-                        dtype=current_state.dtype,
-                    ),
-                )
+                kernel = _hmc_dual_averaging_kernel(kernel, config, step_size)
             return tfm.sample_chain(
                 num_results=config.num_results,
                 num_burnin_steps=config.num_burnin_steps,
@@ -5525,14 +5566,9 @@ def run_full_chain_tfp_hmc(
         num_leapfrog_steps=config.num_leapfrog_steps,
     )
     if config.tuning_policy.uses_dual_averaging:
-        kernel = tfm.DualAveragingStepSizeAdaptation(
-            inner_kernel=kernel,
-            num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
-            target_accept_prob=tf.constant(
-                config.tuning_policy.target_accept_prob,
-                dtype=state.dtype,
-            ),
-    )
+        kernel = _hmc_dual_averaging_kernel(
+            kernel, config, tf.constant(config.step_size, dtype=state.dtype)
+        )
     trace_fn = _trace_fn_for_config(config, adapter=adapter)
     runner_build_start = time.perf_counter()
     runner = _build_sample_chain_runner(config, kernel, trace_fn, state)

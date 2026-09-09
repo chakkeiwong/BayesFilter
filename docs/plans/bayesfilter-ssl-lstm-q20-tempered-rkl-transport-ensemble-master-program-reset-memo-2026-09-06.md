@@ -1,0 +1,507 @@
+# Master-program reset memo: q=20 factor admission and reboot recovery
+
+Date: 2026-09-06  
+Updated: 2026-09-09 (Asia/Shanghai)  
+Status: `M4_P0_GPU_RUNNING_P1_AUTO_AFTER_READINESS`  
+Governing master: `docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-master-program-2026-09-02.md`  
+Latest runtime result: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-result-2026-09-09.md`  
+Active cap amendment: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-8h-amendment-plan-2026-09-09.md`  
+Factor plan: `docs/plans/bayesfilter-ssl-lstm-q20-factor-route-fresh-tuning-admission-plan-2026-09-04.md`  
+Active executable-readiness plan: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-executable-readiness-phase0-plan-2026-09-06.md`
+Completed GPU continuation: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-plan-2026-09-09.md`
+Validated parallel-tuning plan: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-parallel-tuning-execution-plan-2026-09-07.md`
+Latest engineering result: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-result-2026-09-09.md`
+
+## September 9 approved eight-hour amendment
+
+The owner approves **28,800 seconds per arm** and a fresh **86,400 aggregate
+GPU-worker-second** budget. The prepared campaign root is
+`docs/plans/artifacts/ssl-lstm-q20-phase9b-recovery-runtime-2026-09-09/campaign-24gpuh-20260909T135803Z/`.
+The previous four-hour campaign and ledger remain immutable historical evidence;
+their unused time is not transferred. GPU execution started at
+**2026-09-09 16:00:10 UTC** (September 10, 00:00:10 Asia/Shanghai) in service
+`bayesfilter-q20-phase9b-24gpuh-20260909.service`, coordinator PID 704521.
+At 16:04:50 UTC the factor worker PID 704530 runs fresh tuning on non-display
+GPU 0, with its chart committed and nine tuning calls complete. GPU 1 was at
+64% launch utilization; strict queues and the display GPU is untouched. Device
+availability controls actual concurrency. Memory growth is verified before
+logical-device initialization. The first wave reserves 7,200 seconds; unsettled
+live time is not a zero-spend claim.
+
+The prior measured strict reserve-inclusive forecast, 16,202.12 seconds, fits
+the eight-hour cap. This removes the old resource arithmetic blocker, but the
+actual P1 consumer now delegates to the checkpoint-aware parallel coordinator.
+Prepared-ledger adoption, interrupted initialization, third/fourth/first-retained
+chunk replay, cumulative archive continuation, budget and route-policy checks
+pass (128 CPU tests). The HMC kernel and full sampled-state telemetry are
+unchanged; status reuse is optional future work, not a prerequisite. The prepared
+root is now initialized and the actual P1 entrypoint runs with `--campaign-root`
+and `--resume`. It performs fresh canary/runtime/health, issues current-source
+Phase 0 readiness, and automatically enters bounded P1 if affordable. No P2 or
+posterior promotion follows automatically.
+
+Live amendment result:
+`docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-8h-amendment-result-2026-09-09.md`.
+Do not edit frozen amendment code/plan while workers run. Update this memo and
+the result instead. Candidate warmup/R-hat failure is terminal for that attempt,
+not permission to retry the same statistical test until it passes.
+
+Active plan: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-8h-amendment-plan-2026-09-09.md`.
+
+## September 9 terminal state and next repair (historical four-hour run)
+
+The requested work is complete: cap raised to **14,400 seconds per arm**, both
+real mid-call SIGKILL canaries pass exact resumed sample/full-trace equality,
+and both arms complete two actual 500-transition calls with all required
+sampled-state health checks passing. The terminal CPU suite passes 152 tests;
+independent verification checks 34 checkpoint bundles and 372 tensors. Full
+runtime, source, memory and cleanup evidence is preserved under
+
+`docs/plans/artifacts/ssl-lstm-q20-phase9b-recovery-runtime-2026-09-09/campaign-10gpuh-20260908T192200Z/`.
+
+Read `terminal-summary.json`, `postrun-verification-r1.json` and the result note
+before any further execution. **No campaign GPU worker remains. Do not rerun
+the completed canary/runtime/profile commands.** The executed plans and the
+runtime-stage `validated-result.json` remain frozen historical snapshots;
+their earlier pending wording or pre-profile budget is not current status.
+
+| Current quantity | Factor | Strict |
+|---|---:|---:|
+| First / repeated 500-transition call, seconds | 1,398.57 / 1,413.21 | 2,140.30 / 2,129.13 |
+| Six chunks including fresh setup and observed overhead, seconds | 9,305.42 | 14,040.61 |
+| With interruption reserve and cleanup grace, seconds | 10,751.04 | 16,202.12 |
+| Fits four hours with reserve | Yes | **No** |
+
+The forecasts are descriptive, not confidence bounds. Strict exceeds the
+reserve-inclusive arm ceiling by 1,802.12 seconds. The conservative fresh
+two-arm reserve-inclusive total is 26,953.15 seconds, also above the remaining
+balance. The separate 36,000-second campaign has consumed
+**11,352.55558313601 seconds (3.153487662 GPU-hours)** including failed attempts
+and profiling, leaving **24,647.44441686399 seconds (6.846512338 GPU-hours)**
+with zero reserved. Both older ledgers remain unchanged and their balances
+must not be combined with this one.
+
+P0-I/J checks pass for the checkpoint-aware route and P0-K localization is
+complete. Status evaluation costs about another target value/score evaluation
+on both saved endpoint banks. **The next step is a source-equivalent accepted-
+state status-reuse repair**, with rejection/status/trajectory tests, a bounded
+GPU parity/recovery canary and fresh full-controller timings. No optimization
+or cap clearance is established by isolated component timings. Every attempt
+must fit the remaining ledger; do not quietly omit the interruption reserve or
+raise the cap. P0-L also needs the actual P1 consumer wired to the tested
+checkpoint path and refreshed source/readiness evidence before it can close.
+**P1/P2 remain blocked and no posterior sampling has been launched.**
+
+Recovery resumes committed stages/chunks and replays the unfinished unit, not
+a live CUDA instruction pointer. The GPU canary uses eight-transition chunks;
+the full runtime uses 500, so up to one full chunk can require recomputation.
+Unfinished tuning/training stages are replayed as stages. Do not claim universal
+instruction-point, hardware/disk-loss or legacy-entrypoint recovery.
+
+Both required full health screens pass, but strict has finite extreme energy
+errors; these remain explanatory under the predeclared policy. Native TFP
+divergences and proposed-state scores are unexposed, not zero or verified.
+The scalar innovation eigen-gap's positive-infinity sentinel is documented in
+the result. This does not establish convergence, chart quality or superiority.
+
+The grid, timeout, queue/sibling and telemetry-inspector repairs are recorded
+in the result and grid-repair note. Preserve source migrations r1/r2, all
+failed attempts and original stream identities. The September 6--8 sections
+below are historical wherever they describe pending measurements, old arm caps,
+missing funding or an earlier current/next execution state.
+
+## September 8 parallel-tuning continuation (historical)
+
+**Completed:** the two-worker GPU/XLA smoke and fresh factor/strict tuning wave
+both passed on non-display GPUs 1 and 0. Display GPU 2 was not used. The
+validated campaign root is
+`docs/plans/artifacts/ssl-lstm-q20-phase9b-parallel-tuning-2026-09-08/campaign-4gpuh-20260908T090200Z/`.
+Both arms measured eight pairs, retained viable indices 0 and 2, and selected
+epsilon 0.055 / L=3 with fresh heldout verification. No statistical ranking,
+posterior result, or full P1 readiness conclusion follows.
+
+The 14,400-second ledger consumed **844.217169 aggregate worker-seconds** and
+has **13,555.782831 seconds (3.765495 GPU-hours)** unused. All four worker
+settlements are unique; reserved time is zero; all worker PIDs have exited.
+No retry was required. `validated_result_summary.json` and `gpu-after.json`
+preserve verification and cleanup evidence. The old readiness ledger is
+unchanged. The next justified work is full-controller instrumentation and
+bounded cost localization for P0-I/J/K/L; P1 and P2 remain blocked. Keep the
+parallel plan and executed sources at their recorded identities until any
+new bounded stage or source-equivalent repair is documented.
+
+The serial execution gap now has an integrated tuning-only diagnostic at
+`docs/benchmarks/run_ssl_lstm_q20_phase9b_parallel_tuning_2026_09_08.py`.
+Its parent launches complete factor/strict tuning jobs in separate Python
+processes, with one UUID per worker and no shared TensorFlow state. It prefers
+eligible non-display GPUs, queues excess jobs, and uses display only when none
+of the non-display GPUs is eligible. Memory admission includes a 4 GiB peak
+estimate plus 5 GiB headroom; growth is verified before expensive work.
+
+CPU-only tests verify real subprocess overlap, cleanup, result reconciliation,
+and single-parent budget settlement. They do not demonstrate q=20 multi-GPU
+performance or numerical equivalence. Candidate pairs inside each worker and
+the old readiness/P1 sampler remain serial. The old campaign balance remains
+183.799655 seconds. The user has now authorized a **new 14,400-GPU-second
+(four aggregate GPU-hour) campaign** for tuning validation. Reserve 600
+GPU-seconds for the two-worker startup smoke, 7,200 for the first fresh
+factor/strict tuning wave, and initially 6,600 for local repair/retry. Actual
+worker lifetimes are charged and unused reservations released. No passing
+Phase 0 closeout exists. Parallelizing tuning alone cannot resolve the factor controller's
+8,314-second six-chunk forecast. Preserve P0-I/J/K/L, P1, and P2 blockers and do
+not reuse old charts/tuning/draws as fresh evidence.
+
+The sections below preserve September 6--7 history. Their old pending-probe,
+3,307.39-second launch, and ledger-initialization wording is superseded by this
+September 8 section and must not be executed as current instructions.
+
+## Purpose
+
+This memo is the recovery anchor after a process or machine reboot. It records
+the last valid scientific state, the evidence that supports that state, the
+artifacts that must be preserved, and the only work that may be proposed next.
+It does not authorize a new long experiment. A future agent must read this
+memo, the governing master, and the factor result before inspecting or running
+the q=20 program.
+
+## September 6--7 terminal state (historical)
+
+Terminal execution update, September 7: PID `203299` was the bounded runtime
+diagnostic on non-display physical GPU 1 and is now stopped. Output:
+`docs/plans/artifacts/ssl-lstm-q20-phase9b-executable-readiness-2026-09-06/runtime-diagnostic-20260907T143204Z/`.
+The actual start is `2026-09-07T14:34:25.180687Z`; the directory suffix is
+only an attempt label. Exit was confirmed at `2026-09-07T15:27:28.771055Z`.
+The shared ledger charged 3,183.590345 seconds plus the historical 1,832.61-
+second estimate: 5,016.200345 seconds spent, 183.799655 remaining, zero reserved.
+Do not repeat the former allocation or treat earlier uninitialized-ledger
+descriptions as current state.
+Audit r13, 52 focused checks, 73 broader checks, and 6 route-policy checks
+passed; these are overlapping CPU suites, not GPU validity evidence.
+The deadline supervisor and parent settlement completed and their receipts are
+preserved. First/steady factor calls took 1,360.86/1,390.70 seconds; the minimum
+six-chunk factor forecast before overhead is 8,314.36 seconds versus the
+2,600-second arm cap. The strict arm is incomplete; full trace/startup evidence
+also needs repair. No P1 launchable closeout exists. Additional serious GPU
+work requires an explicit compute allocation, not another approval token.
+
+Current next work is the detailed P0-I through P0-L repair in the Phase 0 plan:
+interruption-safe records, startup memory verification, full trace checks, a
+bounded per-transition profile, and an affordable complete schedule. No current
+result rejects the target, factor backend, or research direction. Earlier
+sections below preserve the pre-launch history; this terminal update and the
+latest result govern resumption.
+
+The active M4-P0 continuation remains open for its runtime diagnostic and
+complete-schedule reconciliation. The owner has authorized bounded continuation
+within the existing campaign cap and has replaced GPU-0-only placement with
+`bayesfilter_non_display_first_load40_headroom5g_v1`: eligible non-display GPUs
+are preferred at utilization `<=40%` and free memory `>=5,120 MiB`, with an
+eligible display GPU used only as fallback. The prior GPU-0 occupancy check is
+historical resource evidence. P1 and P2 remain blocked until their respective
+gates pass. The completed factor campaign below is unchanged.
+
+The source-synchronized factor campaign is complete and independently audited:
+
+- Profile: `phase9a_factor_tuning_full_source_sync_v1`.
+- Attempt: `source-sync-20260905T203000Z`.
+- Target signature: `9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278`.
+- Backend: `tensorflow_eigh_strict_factor_cached`.
+- Coverage: all six `(chart, beta)` scopes, all eight declared `(epsilon, L)`
+  pairs per scope, six factor-bound handoffs, held-out checks, and the Phase
+  9A transition mechanics controller.
+- Runtime: GPU0, TensorFlow 2.20.0, XLA and TF32 enabled, memory growth
+  verified before device initialization.
+- Wall time: `3551.299326295033` seconds, below the source-sync cap of 4000 s.
+- Allocator peak: `1402668544` bytes.
+- Git revision recorded by the manifest:
+  `2dae412e450a5b44f46e375b810a7ad81aa78aeb`; the working tree was dirty.
+
+The narrow decision is:
+
+`PROMOTED_Q20_PHASE9_NUMERICAL_BACKEND`
+
+The factor eigensystem backend is admitted for a separately planned q=20
+Phase 9B candidate lane. The strict backend remains the explicit comparator and
+fallback. The generic public API default has not changed.
+
+## Authoritative artifacts
+
+The durable receipt directory is:
+
+`docs/plans/artifacts/ssl-lstm-q20-factor-route-fresh-tuning-2026-09-04/source-sync-20260905T203000Z/`
+
+Required files and hashes:
+
+| File | Required status | SHA-256 |
+|---|---|---|
+| `run_manifest.json` | `PASS_PHASE9A_SCOPE_PREFLIGHT` | `e0225382192ceb9da1e075cb9c7a91ed424e2c5c67adcfec7a0f34c05003a4e1` |
+| `source-sync-audit.json` | `PASS_FACTOR_SOURCE-SYNC_AUDIT` | `9848779a1fe1611f3b3acfb666bec8b08bef6a42296fe30e84d3762d892c5933` |
+| `run_start.json` | source-synchronized launch record | recorded in the receipt directory |
+
+The result note contains the complete attempt ledger, scope table, decision
+table, inference-status table, red-team analysis, and the terminal audit. Do
+not reconstruct scope results from logs or merge partial attempts into this
+receipt.
+
+## What the evidence does and does not show
+
+The selected and held-out calls were finite and moving under the declared
+mechanics rules, and the transition controller had one compiled trace with no
+hard controller veto. This supports only the numerical-backend admission.
+
+The following remain open repair triggers:
+
+- selected acceptance is extreme in several scopes (`0.99995`, `0.99987`,
+  `0.23315`, and `0.27253` are representative values);
+- the short mechanics receipt has maximum folded R-hat `3.3187` under a
+  deliberately permissive threshold of `100` and only four retained draws per
+  chain;
+- centered log-density and pullback-score residuals are very large (chart 0
+  RMS `535.98`, chart 1 RMS `661.94`, with maximum pullback RMS/coordinate
+  `1438.64` and `2551.14`);
+- TensorFlow emitted retracing warnings while independent trainer instances
+  were constructed, even though the reusable per-scope transition trace passed;
+  and
+- the tuning and transition streams are short mechanics streams, not posterior
+  samples.
+
+Therefore Phase 9B is still blocked. No current artifact establishes IID
+Gaussian whitening, a well-trained NeuTra map, posterior correctness,
+convergence, exhaustive mode discovery, sampler superiority, high-dimensional
+scaling, production readiness, or a repository-wide default change.
+
+## Preserved failed attempts
+
+These attempts are historical evidence and must not be combined with the
+successful receipt or reused as tuning/confirmation data:
+
+1. `full-attempt-20260904T185852Z`: stopped at chart 0, beta 0.5 after
+   `1617.6309049129486` s with nonfinite proposed values, no movement, and raw
+   NaN/Inf receipt serialization failures.
+2. `r2-attempt-20260905T095452Z`: completed the six scopes but rejected the
+   final manifest hash because raw NaN values were not normalized.
+3. `r2-attempt-20260905T190500Z`: stopped before tuning because the source
+   closure had changed during the concurrent HMC interface repair.
+
+The source-synchronized run was deliberately launched with fresh seeds and the
+current source closure. No old handoff, checkpoint, scope record, or partial
+call was silently promoted.
+
+## September 6--7 budget and execution boundary (historical)
+
+The factor plan declares an aggregate serious-GPU budget of 11,800 material
+seconds. Its ledger reported approximately 4,126.89 seconds before the final
+source-synchronized run; that run consumed `3551.299326295033` seconds. The
+accounting remainder is therefore approximately `575.59` seconds. This is not
+authorization for a new material run and is not enough for Phase 9B. Treat the
+factor campaign as closed unless a new reviewed plan declares a new budget and
+fresh output root.
+
+The active P1/readiness campaign is separate: its authorized total is 5,200
+seconds, with an estimated 1,832.61 seconds consumed by historical attempts
+and at most 3,367.39 nominal seconds remaining. Both the diagnostic and P1
+consume the same ledger. No reviewed allocation currently funds both jobs
+under the available forecast; a cap increase needs user approval. Do not
+transfer the closed factor campaign's 11,800-second budget or interpret GPU
+availability as a budget decision. Historical spending remains an estimate
+even after it is recorded in the durable ledger.
+
+No process was active at memo creation. Do not resume an interrupted shell,
+reuse a stale PID, or launch the old M3/M3P/M3Q replay scripts. The old GPU
+10000 performance plan remains subordinate historical evidence; its pending
+strict canary is not an implicit next command.
+
+## Worktree and source-closure rules
+
+The working tree contains concurrent HMC tuning-guide/interface repairs as well
+as the factor runner, auditor, tests, plans, and receipt files. Preserve all
+user and agent changes. Do not run `git reset`, `git checkout`, destructive
+cleanup, broad formatting, or a source-closure bypass. The source-synchronized
+manifest is bound to the executable closure at its launch; changing source
+files requires a new attempt and a new manifest rather than editing the old
+hash.
+
+## Reboot recovery checklist
+
+For the current continuation, first inspect the September 9 campaign's
+`terminal-summary.json`, settled `campaign_budget_ledger.json`, source migration
+r2, runtime manifests and cleanup receipt. Compare source hashes before reusing
+any checkpoint; corruption or mismatched scientific identity is a real stop.
+There is no pending runtime worker or automatic P1 resume command. The checklist
+below additionally preserves the earlier factor-admission prerequisite; it is
+not sufficient by itself to reopen P1.
+
+After reboot, perform only these read-only checks before proposing new work:
+
+```bash
+cd /home/ubuntu/python/BayesFilter
+git status --short
+/home/ubuntu/anaconda3/envs/tfgpu/bin/python -m json.tool \
+  docs/plans/artifacts/ssl-lstm-q20-factor-route-fresh-tuning-2026-09-04/source-sync-20260905T203000Z/run_manifest.json \
+  >/dev/null
+/home/ubuntu/anaconda3/envs/tfgpu/bin/python -m json.tool \
+  docs/plans/artifacts/ssl-lstm-q20-factor-route-fresh-tuning-2026-09-04/source-sync-20260905T203000Z/source-sync-audit.json \
+  >/dev/null
+sha256sum \
+  docs/plans/artifacts/ssl-lstm-q20-factor-route-fresh-tuning-2026-09-04/source-sync-20260905T203000Z/run_manifest.json \
+  docs/plans/artifacts/ssl-lstm-q20-factor-route-fresh-tuning-2026-09-04/source-sync-20260905T203000Z/source-sync-audit.json
+```
+
+Compare the printed hashes with the table above. If a file is missing,
+modified, or unparsable, stop and classify the artifact problem before any
+scientific interpretation. Do not regenerate the receipt in place.
+
+## Phase 9B P1 execution update
+
+The reviewed P1 subplan was attempted three times on 2026-09-06 under fresh
+output roots. The first two attempts reproduced a chart-object indexing defect.
+The third repaired that defect, completed factor tuning, and then exposed an
+incorrect shared-controller callback contract. No complete sequential arm,
+retained posterior stream, strict comparator result, or P1 pass exists. The
+terminal repair result is
+`docs/plans/bayesfilter-ssl-lstm-q20-phase9b-p1-sequential-canary-result-2026-09-06.md`.
+
+The next runtime step requires a fresh trusted placement inventory and the
+owner-authorized bounded diagnostic, not a blind GPU retry. The repaired runner must use the current P1 audit
+receipt, retain its fresh output-root rule, and preserve the following
+requirements:
+
+- long per-chain warmup and cumulative retained sampling under
+  `bayesfilter_neutra_sequential_hmc_v1`, with warmup excluded from posterior
+  estimates;
+- modern split/folded R-hat, bulk and tail ESS, MCSE, finite-state/status,
+  movement, energy, and divergence checks;
+- chart-quality and pullback-score thresholds, including a decision for the
+  large residuals already observed;
+- independent calibration, held-out, and confirmation seeds and a fresh output
+  root;
+- physical HMC, strict single-chart, replica-exchange, and factor multi-chart
+  comparator arms as applicable;
+- retracing and steady-state compilation diagnostics; and
+- downstream posterior/reference and mode-travel checks with uncertainty
+  analysis.
+
+The focused regression passed on CPU. The measured first sequential chunk took
+approximately 1,423 seconds after tuning; three attempts consumed an estimated
+1,832.61 seconds, leaving approximately 3,367.39 nominal seconds in the P1
+budget. The minimum schedule needs six chunks per arm and therefore cannot fit
+the existing 2,600-second arm cap under that forecast. Separate compile and
+steady-state timing is now the next bounded diagnostic, with an initial maximum
+of approximately 3,307.39 seconds after a 60-second settlement margin. A
+passing mechanics receipt alone cannot open Phase 9B.
+
+## M4-P0 executable-readiness activation
+
+The remaining work is now explicitly organized as Phase 0 rather than treated
+as an informal P1 retry. The active plan is
+`docs/plans/bayesfilter-ssl-lstm-q20-phase9b-executable-readiness-phase0-plan-2026-09-06.md`.
+It is a technical entry gate and carries no posterior claim.
+
+Its required blocker closure is:
+
+1. verify the repaired runner's actual shared-controller callback, chart/axis,
+   MCSE, archive, seed, failure, and output-root contracts;
+2. add an explicit stable TensorFlow input signature to the shared batched HMC
+   program, or record a reviewed exception with bounded retracing and resource
+   checks;
+3. classify the new Phase 9B paths in the NeuTra route policy and preserve the
+   unrelated legacy audit findings rather than silently making them active;
+4. separate compile, first-call, steady-state, tuning, and serialization costs
+   for both factor and strict arms;
+5. replace timestamp-only retry arithmetic with a persistent campaign budget
+   ledger; and
+6. produce a valid GPU memory-growth, XLA, TF32, device, allocator, source, and
+   environment receipt.
+
+No material P1 GPU command is valid until the Phase 0 closeout, a rotated P1
+source-only audit, and a complete-schedule budget forecast all pass. The old
+P1 attempts remain preserved and cannot be merged into the next run.
+
+## Phase 0 initial execution record
+
+The initial non-GPU checks on September 6, 2026 are:
+
+- the focused P1 runner suite passed with `6 passed`;
+- Python compilation for the controller, P1 runner, and auditors passed;
+- `git diff --check` passed;
+- the earlier rotated P1 source-only audit `r4` passed, followed by `r8` after
+  the first executable-readiness repairs; and
+- the full NeuTra route-policy test initially failed on unclassified new and
+  legacy paths, which were subsequently classified and rechecked.
+
+The September 6 static repairs covered the controller signature,
+route-policy classifications, persistent campaign ledger, source-owned
+readiness diagnostic, and source-only P1 audit `r8`. The trusted GPU probe
+then failed closed because GPU 0 is occupied by `/usr/NX/bin/nxnode.bin`, PID
+`6826`. No BayesFilter GPU process was launched, and GPU 1 was not substituted.
+
+The September 6 blocked receipt is
+`docs/plans/artifacts/ssl-lstm-q20-phase9b-executable-readiness-2026-09-06/gpu-preflight-blocked-20260906/run_manifest.json`.
+The exact Phase 0 result is
+`docs/plans/bayesfilter-ssl-lstm-q20-phase9b-executable-readiness-phase0-result-2026-09-06.md`.
+
+## September 7 pre-launch resumption history
+
+The source audit found and repaired missing P1 executable-closeout enforcement,
+a circular diagnostic prerequisite, incomplete compile/steady timing records,
+and a diagnostic ledger that would renew the allowance per output directory.
+Both launchers now share the historical-debit ledger, and the diagnostic
+settles the full attempt once on success or failure. Its receipts also retain
+Python/conda/host/platform/GPU-environment provenance and the managed-session
+trust basis. Per-chain movement is required on both controller calls.
+
+The standalone readiness regression passed with `12 passed`. After the current
+placement and identity-binding repair, the runner and plan must use the fresh
+passing source audit
+`docs/plans/artifacts/ssl-lstm-q20-phase9b-p1-sequential-canary-2026-09-05/p1-plan-audit-20260907-r13/run_manifest.json`.
+The combined focused suite passed with `72 passed, 191 warnings in 8.60s`;
+the full route-policy suite passed with `6 passed in 2.10s`. Compilation and
+`git diff --check` passed. The Phase 0 result preserves commands and logs; GPUs
+were deliberately hidden for these engineering tests. The live campaign ledger
+has not been initialized because no runtime diagnostic or P1 retry has launched.
+
+The last trusted probe is
+`docs/plans/artifacts/ssl-lstm-q20-phase9b-executable-readiness-2026-09-06/resumption-20260907/gpu-probe.json`.
+It returned `requested_gpu_compute_busy:0` at `2026-09-07T07:45:41Z`; the
+accompanying process snapshot identifies `/usr/NX/bin/nxnode.bin`, PID `6826`,
+using 312 MiB. Do not kill that process or any display/other-user process. A
+fresh inventory must be collected immediately before the diagnostic.
+
+The static validation is being refreshed after the multi-GPU integration. Run
+the two-arm diagnostic with the explicit `3,307.39`-second allocation, reconcile
+the measured complete schedule against the remaining budget, and issue M4-P0
+closeout if all required evidence passes. The closeout must precede P1, not the
+diagnostic that supplies its measurements. A fresh GPU selection alone is
+insufficient.
+P1 and P2 remain blocked; neither blocker rejects the target, factor backend,
+strict comparator, or research direction.
+
+## Recovery stop conditions
+
+Stop and request a new direction only if the target, data, bridge, hardware
+class, privacy boundary, scientific contract, or campaign budget would change;
+the durable receipt cannot be verified; a required source or dependency is
+missing; or a new plan cannot state a valid evidence contract. A failed
+candidate or localized harness issue within an authorized future campaign is a
+repair trigger, not evidence against the transport research direction.
+
+## Authority order after reboot
+
+1. Repository `AGENTS.md` and owner directives.
+2. The governing master program and this reset memo.
+3. The active M4-P0 executable-readiness plan named by the master.
+4. The reviewed P1 subplan, after the M4-P0 entry gate passes.
+5. The factor result and source-synchronized manifest/audit.
+6. Source code and focused tests consistent with the active plan.
+7. Older plans, logs, and partial attempts as historical evidence only.
+
+The rebooted session must inspect the service, ledger and latest stage receipts
+before reporting live state. At the latest documented snapshot it was:
+
+`M4_P0_GPU_RUNNING_P1_AUTO_AFTER_READINESS`
+
+Resume the initialized campaign with the same P1 entrypoint and `--resume` only
+if no coordinator remains. Never create another budget/root to bypass an active
+reservation. The transient service survives this session, not necessarily a host
+reboot; after reboot recreate a trusted service with a fresh console log and the
+same campaign root. Committed work replays and unfinished units recompute.

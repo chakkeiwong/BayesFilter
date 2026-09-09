@@ -340,6 +340,32 @@ For a valid batched target, the operational algorithm is:
  seeds, settings, telemetry, hashes, and wall time.
 \end{enumerate}
 
+\section{Selecting among frozen transports}
+\label{sec:bf-neutra-candidate-selection}
+
+Training restarts are candidate transports, not automatically permanent
+estimation arms. After each transport has been frozen and independently bound
+to the same target, call the generic candidate-set protocol from
+Section~\ref{sec:bf-fixed-transport-candidate-selection}. BayesFilter owns
+the fixed-kernel validation rungs, candidate-local rejection, generic hard
+screens, and retention of every viable transport. The client owns training
+receipts, transport provenance, and the declared score used to nominate among
+viable candidates.
+
+The recommended sequence is: tune each transport under the same fixed-kernel
+policy; validate each retained handoff on fresh, disjoint seeds; run later
+rungs only for candidates that pass earlier rungs; retain all candidates that
+pass; and nominate one only after recording the score ordering and its
+uncertainty status. A low reverse-KL or good whitening receipt can nominate a
+candidate, but it does not prove global Gaussianity, posterior correctness, or
+sampler superiority. Likewise, R-hat is a validity screen and tie-breaker only
+when the caller explicitly declares that role.
+
+Do not rank restarts solely by training loss, silently discard viable
+candidates, or treat a p-value as a universal quality score. The candidate
+receipt must say whether the ordering is descriptive or statistically
+supported and must preserve the hard vetoes for every rejected candidate.
+
 \section{Convergence and scientific diagnostics}
 \label{sec:bf-neutra-hmc-protocol}
 

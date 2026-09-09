@@ -34,6 +34,39 @@ At this revision the capability-registry schema is
 `bayesfilter.hmc_tuning_runner_binding.v2`, and the ordinary fixed-kernel
 handoff threshold is defined by `HMC_TUNING_ORDINARY_RHAT_THRESHOLD`.
 
+## Qualified Step-Size Handoff
+
+The ordinary per-L ladder carries the operational warmup's final-metric step
+bound into `FullChainHMCConfig.step_size_upper_bound`. This optional runtime
+field bounds both consumed dual-averaging steps and the exported adapted step;
+`step_repair_max_step_size` alone only limits subsequent directional repairs.
+Reusable-runner cache identity includes the bound. If warmup changes metric
+coordinates, the next stage requires the corresponding fresh epsilon
+qualification. An acceptance bracket for one L is not evidence for another L.
+
+These are tuning safeguards, not a proof that the ceiling is the largest stable
+step or that a posterior has converged. Configurations without an upper bound
+retain the unbounded TFP policy. Focused CPU regressions are in
+`tests/test_hmc_step_bound_handoff.py`; this repair adds no GPU/XLA readiness
+claim and does not alter the Metropolis correction.
+
+## Selecting Among Frozen Training Restarts
+
+Tune each transport independently with `tune_fixed_transport_hmc_kernel`.
+Then use `select_fixed_transport_candidate_set` from `bayesfilter.inference`
+to retain all candidates that pass fresh candidate-local validation rungs.
+Supply `validate_rung(candidate, rung)` and optionally `score_candidate`;
+without a score callback the API returns the viable set without a nominee.
+`fixed_transport_candidate_diagnostics` converts TensorFlow draws and runner
+telemetry into the required scalar observations. The guide's HMC tuning and
+NeuTra chapters describe the screens and draw policy; the runnable synthetic
+fixture is `docs/examples/fixed_transport_candidate_selection.py`.
+
+This is a validation/nomination protocol, not an artifact-authority tuner or
+a replacement for sequential retained sampling. Thresholds are experimental;
+draws remain caller-managed validation evidence, and any nomination is
+descriptive unless a separate uncertainty analysis supports a stronger claim.
+
 ## Route Decision
 
 First identify the target measure, score or proposal field, and coordinate

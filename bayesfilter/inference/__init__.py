@@ -139,6 +139,10 @@ __all__ = [
     "FixedTransportCandidateRefinementConfig",
     "FixedTransportCandidateRefinementResult",
     "refine_fixed_transport_hmc_candidates",
+    "FIXED_TRANSPORT_CANDIDATE_SELECTION_SCHEMA",
+    "FixedTransportCandidateSelectionConfig",
+    "select_fixed_transport_candidate_set",
+    "fixed_transport_candidate_diagnostics",
     "StagedFixedKernelHMCConfig",
     "StagedFixedKernelHMCResult",
     "run_staged_fixed_kernel_hmc_estimation",
@@ -567,6 +571,7 @@ _EXPORT_MODULES = (
     "bayesfilter.inference.hmc_budget_ladder",
     "bayesfilter.inference.fixed_transport_hmc_tuning",
     "bayesfilter.inference.fixed_transport_hmc_candidate_discovery_tf",
+    "bayesfilter.inference.fixed_transport_candidate_selection",
     "bayesfilter.inference.staged_fixed_kernel_hmc",
     "bayesfilter.inference.frozen_kernel_validation",
     "bayesfilter.inference.hmc_tuning_dispatch",
@@ -605,6 +610,10 @@ _EXPORT_MODULES = (
 )
 
 _DIRECT_EXPORTS = {
+    "FIXED_TRANSPORT_CANDIDATE_SELECTION_SCHEMA": "bayesfilter.inference.fixed_transport_candidate_selection",
+    "FixedTransportCandidateSelectionConfig": "bayesfilter.inference.fixed_transport_candidate_selection",
+    "select_fixed_transport_candidate_set": "bayesfilter.inference.fixed_transport_candidate_selection",
+    "fixed_transport_candidate_diagnostics": "bayesfilter.inference.fixed_transport_candidate_diagnostics_tf",
     "BoundRetainedHMCArchiveConfig": "bayesfilter.inference.hmc_tuning_dispatch",
     "BoundRetainedHMCArchiveResult": "bayesfilter.inference.hmc_tuning_dispatch",
     "BoundRetainedHMCArchiveRunner": "bayesfilter.inference.hmc_tuning_dispatch",

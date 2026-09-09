@@ -371,13 +371,14 @@ def run_batched_hmc(
 ) -> Mapping[str, Any]:
     """Run all chains in one fixed-size TensorFlow/TFP HMC invocation."""
 
-    state, chain_count, _ = _validated_initial_state(initial_state)
+    state, chain_count, dimension = _validated_initial_state(initial_state)
     compiled = _build_batched_hmc_program(
         adapter=adapter,
         num_results=int(config.num_results),
         num_burnin_steps=int(config.num_burnin_steps),
         step_size=float(config.step_size),
         num_leapfrog_steps=int(config.num_leapfrog_steps),
+        state_shape=(chain_count, dimension),
         jit_compile=bool(config.jit_compile),
     )
     started = time.monotonic()
@@ -400,9 +401,14 @@ def _build_batched_hmc_program(
     num_burnin_steps: int,
     step_size: float,
     num_leapfrog_steps: int,
+    state_shape: tuple[int, int],
     jit_compile: bool,
 ) -> Callable[[tf.Tensor, tf.Tensor], Any]:
     """Build one reusable fixed-size batched HMC program."""
+
+    state_shape = tuple(int(item) for item in state_shape)
+    if len(state_shape) != 2 or any(item <= 0 for item in state_shape):
+        raise NeuTraHMCError("state_shape must contain two positive dimensions")
 
     target = reviewed_value_score_target_fn(adapter, dtype=tf.float64, require_batched=True)
     kernel = tfp.mcmc.HamiltonianMonteCarlo(
@@ -423,7 +429,16 @@ def _build_batched_hmc_program(
             result["target_status"] = telemetry(state)
         return result
 
-    @tf.function(jit_compile=bool(jit_compile), reduce_retracing=True)
+    input_signature = (
+        tf.TensorSpec(shape=state_shape, dtype=tf.float64),
+        tf.TensorSpec(shape=(2,), dtype=tf.int32),
+    )
+
+    @tf.function(
+        input_signature=input_signature,
+        jit_compile=bool(jit_compile),
+        autograph=False,
+    )
     def compiled(current_state: tf.Tensor, seed: tf.Tensor):
         return tfp.mcmc.sample_chain(
             num_results=int(num_results),
@@ -497,9 +512,7 @@ def _summarize_batched_hmc_output(
         ),
         "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
         "all_states_moved": bool(
-            tf.reduce_all(
-                tf.reduce_any(tf.not_equal(samples[-1], initial_state), axis=-1)
-            ).numpy()
+            tf.reduce_all(_chain_moved(initial_state, samples)).numpy()
         ),
         "elapsed_seconds": float(elapsed_seconds),
         "jit_compile": bool(config.jit_compile),
@@ -541,6 +554,7 @@ def _run_shared_sequential_neutra_hmc(
     archive_callback: ArchiveCallback | None = None,
     target_status_summary_fn: TargetStatusSummaryCallback | None = None,
     budget_check: Callable[[int], bool | None] | None = None,
+    checkpoint_store: Any | None = None,
 ) -> Mapping[str, Any]:
     """Retain warm-up and sample cumulatively until declared gates or caps."""
 
@@ -556,6 +570,7 @@ def _run_shared_sequential_neutra_hmc(
         raise NeuTraHMCError("provide only one of model_transform or raw_transform")
     transform_fn = model_transform or raw_transform or (lambda values: values)
     programs: dict[int, Callable[[tf.Tensor, tf.Tensor], Any]] = {}
+    checkpoint_index = 0
 
     def transform(samples: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(transform_fn(samples), tf.float64)
@@ -566,6 +581,7 @@ def _run_shared_sequential_neutra_hmc(
         return values
 
     def run_chunk(active_results: int, seed: tuple[int, int]) -> Mapping[str, Any]:
+        nonlocal checkpoint_index
         active = int(active_results)
         if active not in programs:
             programs[active] = _build_batched_hmc_program(
@@ -574,6 +590,7 @@ def _run_shared_sequential_neutra_hmc(
                 num_burnin_steps=0,
                 step_size=config.step_size,
                 num_leapfrog_steps=config.num_leapfrog_steps,
+                state_shape=(chain_count, dimension),
                 jit_compile=config.jit_compile,
             )
         chunk_config = BatchedHMCConfig(
@@ -588,7 +605,21 @@ def _run_shared_sequential_neutra_hmc(
             ),
         )
         started = time.monotonic()
-        samples, trace = programs[active](state, tf.constant(seed, tf.int32))
+        if checkpoint_store is None:
+            samples, trace = programs[active](state, tf.constant(seed, tf.int32))
+        else:
+            checkpoint_inputs = {
+                "adapter_signature": str(adapter.adapter_signature()),
+                "config": config.payload(chain_count=chain_count),
+                "active_results": active,
+                "seed": seed,
+                "initial_state_sha256": checkpoint_store.tensor_hash(state),
+            }
+            samples, trace = checkpoint_store.run(
+                f"chunk-{checkpoint_index:06d}", checkpoint_inputs,
+                lambda: programs[active](state, tf.constant(seed, tf.int32)),
+            )
+            checkpoint_index += 1
         return _summarize_batched_hmc_output(
             initial_state=state,
             samples=samples,
@@ -805,6 +836,23 @@ def _run_shared_sequential_neutra_hmc(
             )
         cumulative_archives = cumulative or None
 
+    program_evidence = []
+    if checkpoint_store is not None:
+        for active, program in programs.items():
+            trace_count = int(program.experimental_get_tracing_count())
+            hlo = (
+                str(program.experimental_get_compiler_ir(
+                    state, tf.constant(config.warmup_seed, tf.int32)
+                )(stage="hlo"))
+                if config.jit_compile and trace_count > 0 else None
+            )
+            program_evidence.append({
+                "num_results": active, "tracing_count": trace_count,
+                "jit_compile": bool(config.jit_compile),
+                "hlo_sha256": None if hlo is None else hashlib.sha256(hlo.encode()).hexdigest(),
+                "input_signature": tuple({"shape": item.shape.as_list(), "dtype": item.dtype.name}
+                                         for item in program.input_signature),
+            })
     passed = bool(warmup_passed and retained_passed and not hard_vetoes)
     return {
         "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
@@ -820,6 +868,7 @@ def _run_shared_sequential_neutra_hmc(
             not warmup_passed and warmup_count >= config.warmup_max_results
         ),
         "warmup_results_per_chain": warmup_count,
+        "checkpoint_program_evidence": tuple(program_evidence),
         "warmup_check_count": len(warmup_checks),
         "warmup_checks": tuple(warmup_checks),
         "retained_passed": retained_passed,
@@ -1313,6 +1362,7 @@ def run_retained_neutra_hmc_continuation(
                 num_burnin_steps=0,
                 step_size=config.step_size,
                 num_leapfrog_steps=config.num_leapfrog_steps,
+                state_shape=(chain_count, dimension),
                 jit_compile=config.jit_compile,
             )
         seed = sequential_chunk_seed(config.retained_seed, chunk_index)

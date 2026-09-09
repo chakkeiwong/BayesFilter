@@ -140,6 +140,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
     initial_fixed_mass_bracket_state: Mapping[str, Any] | None = None
     incall_progress_heartbeat_s: float | None = None
     source: str = "bayesfilter.inference.hmc_budget_ladder"
+    step_size_upper_bound: float | None = None
 
     def __post_init__(self) -> None:
         budgets = tuple(int(item) for item in self.budget_schedule)
@@ -152,6 +153,11 @@ class FixedMassHMCTuningBudgetLadderConfig:
         if not np.isfinite(initial_step) or initial_step <= 0.0:
             raise ValueError("initial_step_size must be positive and finite")
         object.__setattr__(self, "initial_step_size", initial_step)
+        if self.step_size_upper_bound is not None:
+            bound = float(self.step_size_upper_bound)
+            if not 0.0 < bound < float("inf") or initial_step > bound:
+                raise ValueError("step_size_upper_bound must be finite, positive, and bound initial_step_size")
+            object.__setattr__(self, "step_size_upper_bound", bound)
         leapfrog = int(self.num_leapfrog_steps)
         if leapfrog <= 0:
             raise ValueError("num_leapfrog_steps must be positive")
@@ -354,6 +360,8 @@ class FixedMassHMCTuningBudgetLadderConfig:
                 self.step_repair_high_acceptance_ladder_max_factor
             ),
             "step_repair_max_step_size": self.step_repair_max_step_size,
+            **({"step_size_upper_bound": self.step_size_upper_bound}
+               if self.step_size_upper_bound is not None else {}),
             "repair_nonfinite_proposal_screen": self.repair_nonfinite_proposal_screen,
             "tune_num_results": self.tune_num_results,
             "screen_num_results": self.screen_num_results,
@@ -753,6 +761,12 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
     )
     runner_route_events: list[Mapping[str, Any]] = []
     initial_bracket_state = config.initial_fixed_mass_bracket_state
+    if (
+        initial_bracket_state is not None
+        and config.step_size_upper_bound is not None
+        and float(initial_bracket_state["next_step_size"]) > config.step_size_upper_bound
+    ):
+        raise ValueError("initial bracket step exceeds qualified step_size_upper_bound")
     pending_repair_screen_step: float | None = (
         None
         if initial_bracket_state is None
@@ -1559,6 +1573,7 @@ def _tune_config(
     )
     return FullChainHMCConfig(
         num_results=config.tune_num_results,
+        step_size_upper_bound=config.step_size_upper_bound,
         num_burnin_steps=int(budget),
         step_size=float(step),
         num_leapfrog_steps=config.num_leapfrog_steps,
@@ -2769,6 +2784,11 @@ def _with_directional_step_repair_diagnostics(
         raise ValueError("directional repair next step must be positive and finite")
     unclamped_next_step = next_step
     max_step = config.step_repair_max_step_size
+    if config.step_size_upper_bound is not None:
+        max_step = (
+            config.step_size_upper_bound if max_step is None
+            else min(max_step, config.step_size_upper_bound)
+        )
     step_ceiling_applied = False
     if max_step is not None and next_step > float(max_step):
         next_step = float(max_step)
