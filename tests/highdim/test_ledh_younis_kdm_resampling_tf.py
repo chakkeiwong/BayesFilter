@@ -492,6 +492,11 @@ def test_sequential_anchor_replay_and_total_tangent_match():
     assert tuple(anchor_kernel.input_signature[5].shape) == (2, 2, 2)
     assert bool(anchor["valid"].numpy())
     assert int(anchor["pair_count"].numpy()) == 2 * 8 * 8
+    # N strata and N uniform mixture masses select each component exactly once.
+    # This is the sampling law used in the note's small-bandwidth argument.
+    np.testing.assert_array_equal(
+        anchor["component_indices"].numpy(), np.tile(np.arange(8), (2, 1))
+    )
     assert np.all(anchor["higher_moment_valid"].numpy())
     assert np.all(anchor["higher_moment_pairwise_configured"].numpy())
     np.testing.assert_array_equal(

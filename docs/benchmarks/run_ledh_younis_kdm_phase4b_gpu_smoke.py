@@ -170,6 +170,96 @@ def _maximum_absolute(value: tf.Tensor) -> float:
     return _float(tf.reduce_max(tf.abs(value)))
 
 
+def _invalid_input_checks(anchor_kernel, replay_kernel, shared, fixture, anchor):
+    """Check rejection at the compiled consumer, including its status output.
+
+    XLA can discard graph Assert operations. Returned boolean diagnostics are
+    therefore part of this endpoint's contract and must be checked on the host.
+    These controls reuse the already compiled kernels and do not change any
+    accepted calculation.
+    """
+    dtype = fixture["theta"].dtype
+    last = int(fixture["observations"].shape[0]) - 1
+    anchor_inputs = (*shared, fixture["stratified_uniforms"], fixture["kdm_noises"])
+    replay_inputs = (
+        *shared,
+        anchor["fixed_samples"],
+        anchor["fixed_proposal_log_densities"],
+        anchor["component_indices"],
+    )
+    controls = (
+        ("non_spd_bandwidth", replay_kernel, replay_inputs, 5, [[last, 0, 0]], [-1.0]),
+        (
+            "asymmetric_bandwidth_tangent",
+            replay_kernel,
+            replay_inputs,
+            6,
+            [[last, 0, 1]],
+            [0.125],
+        ),
+        ("invalid_component_label", replay_kernel, replay_inputs, 9, [[last, 0]], [-1]),
+        (
+            "nonfinite_proposal",
+            replay_kernel,
+            replay_inputs,
+            8,
+            [[last, 0]],
+            [float("nan")],
+        ),
+        (
+            "invalid_stratified_uniform",
+            anchor_kernel,
+            anchor_inputs,
+            7,
+            [[last, 0]],
+            [1.25],
+        ),
+        (
+            "invalid_higher_moment_trajectory",
+            replay_kernel,
+            replay_inputs,
+            4,
+            [[last, 0]],
+            [float("nan")],
+        ),
+    )
+    rows = []
+    for name, kernel, original, argument_index, indices, updates in controls:
+        inputs = list(original)
+        update_dtype = tf.int32 if argument_index == 9 else dtype
+        inputs[argument_index] = tf.tensor_scatter_nd_update(
+            inputs[argument_index], indices, tf.constant(updates, update_dtype)
+        )
+        try:
+            result = kernel(*inputs)
+            valid = bool(result["valid"].numpy())
+            higher_moment_valid = bool(
+                tf.reduce_all(result["higher_moment_valid"]).numpy()
+            )
+            rows.append(
+                {
+                    "case": name,
+                    "rejected": not valid,
+                    "returned_valid": valid,
+                    "higher_moment_valid": higher_moment_valid,
+                    "value_finite": bool(tf.math.is_finite(result["value"]).numpy()),
+                    "score_finite": bool(
+                        tf.reduce_all(tf.math.is_finite(result["score"])).numpy()
+                    ),
+                    "rejection_mechanism": "returned_valid_flag",
+                }
+            )
+        except tf.errors.InvalidArgumentError:
+            rows.append(
+                {
+                    "case": name,
+                    "rejected": True,
+                    "rejection_mechanism": "tensorflow_invalid_argument",
+                }
+            )
+    return rows
+
+
 def _run(args: argparse.Namespace) -> dict[str, Any]:
     memory_policy = configure_tensorflow_gpu_memory_growth(tf, require_gpu=True)
     # Several route modules create TensorFlow tensors at import time.  Keep
@@ -323,7 +413,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             )
         )
     )
-    pass_status = bool(
+    invalid_input_checks = _invalid_input_checks(
+        anchor_kernel, replay_kernel, shared, fixture, anchor
+    )
+    pass_status = all(row["rejected"] for row in invalid_input_checks) and bool(
         (
             anchor["valid"]
             & replay["valid"]
@@ -344,7 +437,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     memory = tf.config.experimental.get_memory_info("GPU:0")
     logical_gpus = [device.name for device in tf.config.list_logical_devices("GPU")]
     return {
-        "schema": "bayesfilter.ledh_younis_kdm_phase4b_gpu_smoke.v4",
+        "schema": "bayesfilter.ledh_younis_kdm_phase4b_gpu_smoke.v5",
         "status": "PASS" if pass_status else "FAIL",
         "scientific_status": "IMPLEMENTATION_SMOKE_ONLY_NO_SCORE_QUALITY_CLAIM",
         "target_label": RESKDM_IWSG_FINITE_TARGET,
@@ -359,6 +452,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         "score_output_semantics": SCORE_OUTPUT_SEMANTICS,
         "source_scope": SOURCE_SCOPE,
         "scope": {"dimension": 2, "particle_count": 8, "horizon": 2},
+        "invalid_input_checks": invalid_input_checks,
         "settings": {
             "dtype": dtype.name,
             "tf32_enabled": bool(
