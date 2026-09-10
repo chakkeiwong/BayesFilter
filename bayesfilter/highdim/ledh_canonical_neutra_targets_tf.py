@@ -18,10 +18,11 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable, Mapping
 
 import tensorflow as tf
 
+from bayesfilter.highdim.ledh_alg1_contract import LEDH_PRODUCTION_PROGRAM_V1
 from bayesfilter.highdim.ledh_canonical_batch_fused_tf import (
     PerPointScoreModel,
     canonical_batch_fused_value_score,
@@ -43,16 +44,20 @@ class CanonicalNeuTraTarget:
     substeps: int
     data_id: str
     algorithm_id: str
+    reset_design: Tensor
+    score_kwargs: Mapping[str, Any]
 
     def target_signature(self) -> str:
         payload = {
-            "schema": "bayesfilter.canonical_neutra_target.v1",
+            "schema": "bayesfilter.canonical_neutra_target.v2",
             "model_id": self.model_id,
             "algorithm_id": self.algorithm_id,
             "data_id": self.data_id,
             "observations_sha256": _tensor_hash(self.observations),
             "initial_sha256": _tensor_hash(self.initial_states),
             "noises_sha256": _tensor_hash(self.noises),
+            "reset_design_sha256": _tensor_hash(self.reset_design),
+            "score_kwargs": dict(self.score_kwargs),
             "substeps": self.substeps,
         }
         return hashlib.sha256(
@@ -71,6 +76,8 @@ class CanonicalNeuTraTarget:
             self.noises,
             self.observations,
             substeps=self.substeps,
+            reset_design=self.reset_design,
+            **self.score_kwargs,
         )
 
 
@@ -187,6 +194,13 @@ def make_canonical_neutra_target(
     initial_covariances = initial_covariance_scale * tf.eye(
         dimension, batch_shape=[particle_count], dtype=DTYPE
     )
+    reset_basis = tf.concat(
+        [tf.eye(dimension, dtype=DTYPE), -tf.eye(dimension, dtype=DTYPE)],
+        axis=0,
+    )
+    reset_repeats = (particle_count + 2 * dimension - 1) // (2 * dimension)
+    reset_design = tf.tile(reset_basis, [reset_repeats, 1])[:particle_count]
+    score_kwargs = dict(LEDH_PRODUCTION_PROGRAM_V1["score"])
 
     return CanonicalNeuTraTarget(
         model_id=name,
@@ -198,7 +212,12 @@ def make_canonical_neutra_target(
         noises=process_noise,
         substeps=substeps,
         data_id=data_id,
-        algorithm_id="ledh_canonical_pfpf_ot_ukf_analytical_v1",
+        algorithm_id=(
+            "ledh_canonical_pfpf_ot_contract_e_dual_cap_"
+            "trust_region_analytical_v2"
+        ),
+        reset_design=reset_design,
+        score_kwargs=score_kwargs,
     )
 
 

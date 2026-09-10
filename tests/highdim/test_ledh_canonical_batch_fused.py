@@ -256,3 +256,243 @@ def test_fused_multi_direction_graph_compilable():
     assert bool(tf.reduce_all(tf.math.is_finite(value)).numpy())
     assert bool(tf.reduce_all(tf.math.is_finite(score)).numpy())
 
+
+_FULL_UNION = {
+    "reset_policy": "contract_e",
+    "reset_epsilon": 2.0,
+    "reset_sinkhorn_steps": 8,
+    "reset_balance_steps": 8,
+    "reset_ridge": 1.0e-5,
+    "correction_steps": 2,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 1.0e-3,
+    "correction_lm_scale_floor": 1.0e-6,
+    "correction_trust_radius": 0.1,
+    "pairwise_steps": 2,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.98,
+    "coordinate_cap_power": 8,
+}
+
+
+def _reset_design(n: int) -> tf.Tensor:
+    basis = np.concatenate([np.eye(2), -np.eye(2)])
+    return tf.constant(np.tile(basis, (n // 4, 1)), DTYPE)
+
+
+def test_full_union_batch_size_one_multi_direction_parity():
+    initial, covs, noises, observations = _fixture(211, n=16, horizon=2)
+    design = _reset_design(16)
+    theta = tf.constant([0.6], DTYPE)
+    value_ref, score_ref = canonical_value_and_analytical_score(
+        _single_model(),
+        theta,
+        initial,
+        covs,
+        noises,
+        observations,
+        flow_substeps=10,
+        with_score=True,
+        reset_design=design,
+        **_FULL_UNION,
+    )
+    directions = tf.constant([[[1.0], [0.5], [0.25]]], DTYPE)
+    value, score, diagnostics = canonical_batch_fused_value_score(
+        _fused_model(),
+        theta[None, :],
+        directions,
+        initial,
+        covs,
+        noises,
+        observations,
+        substeps=10,
+        reset_design=design,
+        **_FULL_UNION,
+    )
+
+    np.testing.assert_allclose(value[0].numpy(), value_ref.numpy(), rtol=5.0e-7)
+    np.testing.assert_allclose(
+        score[0].numpy(),
+        score_ref[0].numpy() * directions[0, :, 0].numpy(),
+        rtol=5.0e-7,
+        atol=2.0e-12,
+    )
+    assert bool(diagnostics["program_valid"][0].numpy())
+
+
+def test_full_union_rows_are_isolated_for_multiple_directions():
+    initial, covs, noises, observations = _fixture(223, n=16, horizon=2)
+    design = _reset_design(16)
+    theta = tf.constant([[0.45], [0.8], [1.05]], DTYPE)
+    directions = tf.constant(
+        [[[1.0], [0.5]], [[0.25], [1.0]], [[0.75], [0.4]]], DTYPE
+    )
+    baseline_value, baseline_score, _ = canonical_batch_fused_value_score(
+        _fused_model(),
+        theta,
+        directions,
+        initial,
+        covs,
+        noises,
+        observations,
+        substeps=8,
+        reset_design=design,
+        **_FULL_UNION,
+    )
+
+    for changed_row in range(3):
+        changed_theta = tf.tensor_scatter_nd_add(
+            theta, [[changed_row, 0]], [tf.constant(0.17, DTYPE)]
+        )
+        changed_value, changed_score, _ = canonical_batch_fused_value_score(
+            _fused_model(),
+            changed_theta,
+            directions,
+            initial,
+            covs,
+            noises,
+            observations,
+            substeps=8,
+            reset_design=design,
+            **_FULL_UNION,
+        )
+        assert not np.array_equal(
+            changed_value[changed_row].numpy(), baseline_value[changed_row].numpy()
+        )
+        for row in range(3):
+            if row == changed_row:
+                continue
+            np.testing.assert_array_equal(
+                changed_value[row].numpy(), baseline_value[row].numpy()
+            )
+            np.testing.assert_array_equal(
+                changed_score[row].numpy(), baseline_score[row].numpy()
+            )
+
+
+def test_full_union_is_tf_function_compilable():
+    initial, covs, noises, observations = _fixture(227, n=16, horizon=2)
+    design = _reset_design(16)
+
+    @tf.function(autograph=False)
+    def compiled(theta, directions):
+        return canonical_batch_fused_value_score(
+            _fused_model(),
+            theta,
+            directions,
+            initial,
+            covs,
+            noises,
+            observations,
+            substeps=8,
+            reset_design=design,
+            **_FULL_UNION,
+        )
+
+    value, score, diagnostics = compiled(
+        tf.constant([[0.6], [0.9]], DTYPE),
+        tf.constant([[[1.0], [0.5]], [[0.25], [1.0]]], DTYPE),
+    )
+    assert value.shape == (2,)
+    assert score.shape == (2, 2)
+    assert bool(tf.reduce_all(diagnostics["program_valid"]).numpy())
+
+
+def test_annealed_full_union_multi_direction_parity_and_row_isolation():
+    initial, covs, noises, observations = _fixture(229, n=16, horizon=2)
+    design = _reset_design(16)
+    theta = tf.constant([[0.55], [0.85]], DTYPE)
+    directions = tf.constant([[[1.0], [0.4]], [[0.25], [1.0]]], DTYPE)
+    annealed = {"annealed_stages": 3, "annealed_seed": 29}
+
+    values, scores, diagnostics = canonical_batch_fused_value_score(
+        _fused_model(),
+        theta,
+        directions,
+        initial,
+        covs,
+        noises,
+        observations,
+        substeps=8,
+        reset_design=design,
+        **_FULL_UNION,
+        **annealed,
+    )
+
+    for row in range(2):
+        value_ref, score_ref = canonical_value_and_analytical_score(
+            _single_model(),
+            theta[row],
+            initial,
+            covs,
+            noises,
+            observations,
+            flow_substeps=8,
+            with_score=True,
+            reset_design=design,
+            **_FULL_UNION,
+            **annealed,
+        )
+        np.testing.assert_allclose(values[row].numpy(), value_ref.numpy(), rtol=1.0e-12)
+        np.testing.assert_allclose(
+            scores[row].numpy(),
+            score_ref[0].numpy() * directions[row, :, 0].numpy(),
+            rtol=1.0e-12,
+            atol=2.0e-12,
+        )
+
+    changed_theta = tf.tensor_scatter_nd_add(
+        theta, [[1, 0]], [tf.constant(0.19, DTYPE)]
+    )
+    changed_values, changed_scores, changed_diagnostics = (
+        canonical_batch_fused_value_score(
+            _fused_model(),
+            changed_theta,
+            directions,
+            initial,
+            covs,
+            noises,
+            observations,
+            substeps=8,
+            reset_design=design,
+            **_FULL_UNION,
+            **annealed,
+        )
+    )
+    np.testing.assert_array_equal(changed_values[0].numpy(), values[0].numpy())
+    np.testing.assert_array_equal(changed_scores[0].numpy(), scores[0].numpy())
+    assert not np.array_equal(changed_values[1].numpy(), values[1].numpy())
+    assert bool(tf.reduce_all(diagnostics["program_valid"]).numpy())
+    assert bool(tf.reduce_all(changed_diagnostics["program_valid"]).numpy())
+
+
+def test_annealed_full_union_is_tf_function_compilable():
+    initial, covs, noises, observations = _fixture(233, n=16, horizon=2)
+    design = _reset_design(16)
+
+    @tf.function(autograph=False)
+    def compiled(theta, directions):
+        return canonical_batch_fused_value_score(
+            _fused_model(),
+            theta,
+            directions,
+            initial,
+            covs,
+            noises,
+            observations,
+            substeps=8,
+            reset_design=design,
+            annealed_stages=3,
+            annealed_seed=31,
+            **_FULL_UNION,
+        )
+
+    values, scores, diagnostics = compiled(
+        tf.constant([[0.6], [0.9]], DTYPE),
+        tf.constant([[[1.0], [0.5]], [[0.25], [1.0]]], DTYPE),
+    )
+    assert values.shape == (2,)
+    assert scores.shape == (2, 2)
+    assert bool(tf.reduce_all(diagnostics["program_valid"]).numpy())
+

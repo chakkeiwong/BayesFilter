@@ -1,197 +1,91 @@
-# Phase 2B Step 1: Characterisation Tests
+# Phase 2B Step 1 Characterisation Result
 
-**Date:** 2026-09-09  
+**Date:** 2026-09-11  
 **Branch:** `surrogate-hmc`  
-**Parent Program:** [ledh-surrogate-hmc-unified-program-2026-09-06.md](ledh-surrogate-hmc-unified-program-2026-09-06.md)  
-**Status:** IN_PROGRESS
+**Parent:** [LEDH Surrogate-Force HMC Unified Program](ledh-surrogate-hmc-unified-program-2026-09-06.md)  
+**Status:** COMPLETE AFTER REPAIR
 
----
+## Purpose
 
-## Goal
+Freeze supported pre-refactor behavior before the single-cloud and fused-batch
+LEDH programs are unified, including feature-off variants and B/K isolation.
 
-Create golden-master fixtures and characterisation tests to lock down current `canonical_value_and_analytical_score` behavior before refactoring in Phase 2B Step 3.
+## Binding evidence
 
----
+### Parameter-sensitive configuration matrix
 
-## Deliverables
+`tests/highdim/test_ledh_configuration_regression.py` uses a nonlinear model
+whose transition depends on theta and freezes eight representative programs:
 
-### 1. Golden-Master Fixtures
+- reset-none, one stage;
+- reset-none, annealed;
+- Contract-E with all higher-moment controls off;
+- diagonal correction without trust radius;
+- diagonal correction with trust radius;
+- pairwise correction;
+- coordinate cap (full reference configuration);
+- annealed full composition.
 
-**Test matrix:**
-- T ∈ {1, 2, 3, 10, 50}
-- N ∈ {6, 64, 1008}
-- d ∈ {2, 3}
-- K (directions) ∈ {1, 2, 5}
-- dtype ∈ {float64, float32}
-- `annealed_stages` ∈ {1, 8}
+It also proves:
 
-**Total configurations:** 5 × 3 × 2 × 3 × 2 × 2 = 360 fixtures
+- `with_score=False` leaves the value bitwise unchanged;
+- nested controls are exact no-ops when their parent mechanism is disabled;
+- adjacent active configurations execute observably different programs; and
+- disabled dual-cap/trust configurations cannot be labeled production.
 
-**Tuned controls (from 2026-09-03 LGSSM tuning):**
-```python
-reset_policy="contract_e"
-reset_epsilon=2.0
-reset_sinkhorn_steps=8
-reset_balance_steps=8
-reset_ridge=1e-05
-correction_steps=4
-correction_strength=0.2
-correction_lm_damping=0.001
-correction_lm_scale_floor=1e-06
-correction_trust_radius=0.1
-pairwise_steps=4
-pairwise_strength=0.02
-pairwise_rms_cap=2.0
-coordinate_cap=0.98
-coordinate_cap_power=8
-flow_substeps=24
-```
+Result: **19 passed** on 2026-09-11.
 
-**Storage:**
-- Directory: `tests/highdim/fixtures/ledh_golden_master_20260909/`
-- Format: JSON, one file per configuration
-- Naming: `golden_T{T}_N{N}_d{d}_K{K}_{dtype}_anneal{annealed_stages}.json`
+### Fused B/K row isolation
 
-**Content per fixture:**
-```json
-{
-  "schema": "ledh_golden_master_v1",
-  "config": { ... },
-  "inputs": {
-    "theta": [...],
-    "initial_states": [...],
-    "initial_covariances": [...],
-    "noises": [...],
-    "observations": [...]
-  },
-  "outputs": {
-    "value": ...,
-    "score": [...],
-    "diagnostics": { ... }
-  },
-  "generation_metadata": {
-    "git_commit": "...",
-    "timestamp": "...",
-    "python_version": "...",
-    "tensorflow_version": "...",
-    "seed": ...
-  }
-}
-```
+`tests/highdim/test_ledh_row_independence.py` exercises B in `{1,2,4}` and K in
+`{1,2,5}` through the actual fused API. It checks identical-row equality and
+that perturbing one theta row leaves every other row's value and K scores
+bitwise unchanged.
 
-### 2. Row-Independence Tests
+This test exposed a pre-existing defect: `[B,K,N,P]` directions were directly
+reshaped to `[K,B*N,P]`, interleaving B and K when both exceeded one. The repair
+transposes to `[K,B,N,P]` before flattening and fixes rank-2 per-row validity.
 
-Test at B ∈ {1, 2, 4} with distinct θ rows:
-- **Identical rows** → identical outputs (bitwise)
-- **Distinct rows** → distinct outputs
-- **Row isolation** → Row `i` output unchanged by row `j` perturbation
+`tests/highdim/test_ledh_canonical_batch_fused.py` continues to cover B=1
+single-cloud parity, graph tracing, K-vs-swept parity, and rank-2 compatibility.
 
-This catches the principal design risk: naive flattening that mixes clouds across θ rows.
+Combined result after repair: **40 passed** across configuration regression,
+row isolation, and existing fused tests.
 
-### 3. Capability-Matrix Tests
+## Supplemental legacy fixture campaign
 
-One test per union capability:
-- Contract-E reset
-- Dual-cap correction
-- Trust-region correction
-- Pairwise correction
-- Annealed stages
-- Multi-direction tangent (K > 1)
+The local `tests/highdim/fixtures/ledh_golden_master_20260909/` campaign is not a
+binding gate:
 
-### 4. Tolerance Policy
+- 327 of the declared 360 files exist; 33 generation cases failed or are absent;
+- JSON fixtures are ignored by Git and therefore are not portable CI evidence;
+- the fixture transition ignores theta, so score sensitivity is not exercised;
+- its `direction_count` axis passes a rank-2 tensor to the single-cloud API and
+  does not represent the fused API's K-direction contract; and
+- it stores trace key names rather than the declared full diagnostic payload.
 
-- Golden-master: rtol=1e-12 (float64), rtol=1e-6 (float32)
-- Post-refactor: same tolerance (no regression allowed)
-- Cross-lane parity (different lanes): rtol=5e-4 (not applicable here)
+The existing files may still detect incidental value drift, but they cannot be
+used to claim Step 1 completeness. The compact nonlinear matrix supersedes them
+as the binding pre-refactor baseline.
 
----
+## Tolerance policy
 
-## Implementation
+- Same-lane float64 pre/post parity: rtol `1e-12`, atol `0`.
+- Float32 checks must use a recorded tolerance appropriate to the route.
+- Exact row isolation and inactive-control identity: bitwise equality.
+- Cross-lane parity may use rtol `5e-4` only for operation-order differences;
+  it never replaces same-lane baselines.
 
-### Step 1.1: Fixture Generator Script
+## Exit status
 
-**File:** `tests/highdim/generate_golden_master_fixtures.py`
+- [x] Parameter-sensitive supported-configuration baselines
+- [x] Feature-off and inactive-control semantics
+- [x] Production-label fail-closed behavior
+- [x] Fused B/K row isolation
+- [x] Existing fused parity and graph tests
+- [x] Legacy fixture limitations classified
+- [x] Refactor contract written
+- [x] Per-row reduction derivation written
 
-Creates all 360 fixtures by:
-1. Loading tuned controls
-2. Creating LGSSM model (d=2 or d=3)
-3. Generating deterministic inputs from fixed seeds
-4. Running `canonical_value_and_analytical_score`
-5. Serializing outputs to JSON
-
-**Estimated time:** 2-3 hours (generation + validation)
-
-### Step 1.2: Characterisation Test Suite
-
-**File:** `tests/highdim/test_ledh_golden_master.py`
-
-Parametrized pytest that:
-1. Discovers all fixture files
-2. Loads each fixture
-3. Recreates inputs
-4. Runs `canonical_value_and_analytical_score`
-5. Compares outputs to fixture (rtol=1e-12 for float64)
-
-**Estimated time:** 1-2 hours
-
-### Step 1.3: Row-Independence Tests
-
-**File:** `tests/highdim/test_ledh_row_independence.py`
-
-Three test classes:
-- `test_identical_rows_produce_identical_outputs`
-- `test_distinct_rows_produce_distinct_outputs`
-- `test_row_isolation` (row i unchanged by row j perturbation)
-
-**Estimated time:** 2-3 hours
-
-### Step 1.4: Capability-Matrix Tests
-
-**File:** `tests/highdim/test_ledh_capability_matrix.py`
-
-Each capability gets one focused test exercising that feature.
-
-**Estimated time:** 1-2 hours
-
----
-
-## Exit Criterion
-
-All tests pass against unmodified `canonical_value_and_analytical_score`:
-- ✅ 360 golden-master fixtures generated
-- ✅ All golden-master tests pass (rtol=1e-12 for float64)
-- ✅ All row-independence tests pass
-- ✅ All capability-matrix tests pass
-
----
-
-## Timeline
-
-- **Day 1 (2026-09-09):** 
-  - Morning: Fixture generator script + generate fixtures
-  - Afternoon: Golden-master test suite
-- **Day 2 (2026-09-10):**
-  - Morning: Row-independence tests
-  - Afternoon: Capability-matrix tests + documentation
-
-**Total:** 1-2 days
-
----
-
-## Notes
-
-- Keep fixture files small by using short horizons (T=1,2,3) for most cases
-- Use deterministic seeds for reproducibility
-- Document any numerical issues (e.g., Cholesky failures at extreme settings)
-- Golden-master tolerance is strict (1e-12) — refactor must match exactly
-
----
-
-## Status Tracking
-
-- [ ] Step 1.1: Fixture generator script
-- [ ] Step 1.2: Characterisation test suite
-- [ ] Step 1.3: Row-independence tests
-- [ ] Step 1.4: Capability-matrix tests
-- [ ] Documentation complete
-- [ ] All tests pass
+Full-union B/K row isolation remains a mandatory implementation gate after the
+shared engine first carries Contract-E and higher-moment controls.

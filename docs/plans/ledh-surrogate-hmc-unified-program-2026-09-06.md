@@ -187,13 +187,51 @@ deletion of the duplicate.
    segment reductions under `[B,N] → [B*N]` flattening. A naive port mixes
    clouds across θ rows; this is invisible at B=1.
 
-3. **Capability-matrix tests:** one test per union capability, each exercised
-   through the lane that currently supports it.
+3. **Configuration non-regression matrix.** Freeze the behavior of every
+   supported switch state, not only the all-features-on route. The matrix is
+   hierarchical rather than a full Cartesian product:
+   - `reset_policy="none"` with one-stage and annealed execution (diagnostic
+     variants; never production-labeled);
+   - Contract-E reset with higher-moment correction disabled;
+   - diagonal correction with trust radius zero and nonzero;
+   - pairwise correction disabled and enabled;
+   - coordinate cap disabled and enabled while a correction family is active;
+   - one-stage and annealed Contract-E compositions;
+   - score disabled and enabled, with identical values;
+   - batch sizes B in {1, 2, 4} and direction ranks K in {1, 2, 5} where the
+     current lane supports them.
 
-4. **Tolerance policy:** golden-master comparisons at rtol 1e-12 (float64). The
-   loose 5e-4 tolerance is for cross-lane parity, not pre/post-refactor.
+   Nested controls are not independent switches: correction, pairwise, and
+   coordinate-cap controls are inactive outside Contract-E; trust radius is
+   inactive when diagonal correction has zero steps; pairwise RMS cap is
+   inactive when pairwise correction has zero steps. Tests must pin these
+   no-effect semantics as well as active semantics. An off configuration is a
+   labeled diagnostic/variant route, not the production program.
 
-**Exit:** The full suite passes against unmodified code.
+4. **Capability and row-isolation tests.** Before extraction, exercise each
+   capability through the lane that currently implements it: the full
+   Contract-E family through `single_cloud`, and B/K row semantics through
+   `batch_fused`. After the shared kernel first carries the full union, rerun
+   row-isolation at B in {1, 2, 4} for each valid configuration family. Assert:
+   - identical rows produce identical outputs;
+   - distinct rows produce distinct outputs;
+   - row `i` is unchanged by perturbing row `j`.
+
+   This staged gate avoids pretending that the old fused lane already supports
+   Contract-E while still protecting its existing batch behavior. Full-union
+   row isolation is a Step 3 extraction gate, not evidence available from the
+   pre-unification code.
+
+5. **Tolerance policy:** exact same-lane fixtures use rtol 1e-12 (float64) and
+   the recorded float32 tolerance; cross-lane parity may use 5e-4 only where
+   operation-order differences are unavoidable and must never replace the
+   same-lane golden-master gate.
+
+**Exit:** Pre-refactor fixtures and focused configuration baselines pass on the
+unmodified code; the current fused lane's existing batch/K tests pass. The 33
+missing production fixtures and any generation failures must be classified and
+resolved or explicitly removed from the declared matrix before Step 1 is called
+complete. Full-union row isolation remains a mandatory Step 3 gate.
 
 ### Step 2: Refactor contract (0.5 day)
 

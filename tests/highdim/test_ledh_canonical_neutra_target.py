@@ -55,7 +55,14 @@ def test_austria_canonical_signature_is_fresh_and_stable():
         "4845e7322685e19650024e5886e47d89c8b9c4b70c5d36a639c9b1218d39b5c3"
     )
     assert signature != historical_bootstrap_signature
-    assert target_a.algorithm_id == "ledh_canonical_pfpf_ot_ukf_analytical_v1"
+    assert target_a.algorithm_id == (
+        "ledh_canonical_pfpf_ot_contract_e_dual_cap_trust_region_analytical_v2"
+    )
+    assert target_a.score_kwargs["reset_policy"] == "contract_e"
+    assert target_a.score_kwargs["correction_steps"] == 4
+    assert target_a.score_kwargs["pairwise_steps"] == 4
+    assert target_a.score_kwargs["coordinate_cap"] == 0.98
+    assert target_a.reset_design.shape == (126, 18)
 
 
 def test_austria_canonical_score_direction_routes():

@@ -526,17 +526,17 @@ def _value_and_analytical_score_impl(
                 ridge=reset_ridge,
             )
             if correction_steps > 0 or pairwise_steps > 0:
-                from bayesfilter.highdim.higher_moment_contract_e import (
-                    higher_moment_shape_jvp,
+                from bayesfilter.highdim.ledh_unified_correction_tf import (
+                    batched_higher_moment_shape_jvp,
                 )
 
-                corrected = higher_moment_shape_jvp(
-                    children,
-                    step_weights,
-                    d_children[:, :, None],
-                    d_step_weights[:, None],
-                    reset_states,
-                    d_reset_states[:, :, None],
+                batched_corrected = batched_higher_moment_shape_jvp(
+                    children[None, ...],
+                    step_weights[None, ...],
+                    d_children[None, None, ...],
+                    d_step_weights[None, None, ...],
+                    reset_states[None, ...],
+                    d_reset_states[None, None, ...],
                     correction_steps=correction_steps,
                     strength=correction_strength,
                     floor=1.0e-5,
@@ -550,6 +550,14 @@ def _value_and_analytical_score_impl(
                     coordinatewise_standardized_cap=coordinate_cap,
                     coordinatewise_standardized_cap_power=coordinate_cap_power,
                 )
+                corrected = {
+                    key: (
+                        tf.transpose(value[:, 0], [1, 2, 0])
+                        if key == "particles_tangent"
+                        else value[0]
+                    )
+                    for key, value in batched_corrected.items()
+                }
                 tf.debugging.assert_equal(
                     corrected["valid"],
                     True,

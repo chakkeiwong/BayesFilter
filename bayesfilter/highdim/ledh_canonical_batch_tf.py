@@ -1,23 +1,11 @@
-"""Canonical LEDH batch lane (P5): batch-native value + analytical score.
+"""Compatibility batch adapter over the canonical single-cloud score lane.
 
-Registered claim-bearing batch entry point. Batch semantics per the NeuTra
-batch-native rule: the leading theta-batch dimension is preserved through
-transport, target evaluation, and score computation. Implementation
-strategy (recorded): the per-row program IS the single-cloud canonical
-program — the batch lane maps the gated single-cloud implementation over
-theta rows with identical arithmetic, which guarantees batch-size-1 parity
-by construction and keeps ONE semantic authority (anti-fork rule).
+This entry point preserves the historical ``NonlinearScoreModel`` API. Rows are
+executed by TensorFlow control flow rather than a Python loop, so graph size no
+longer scales by duplicating the finite program once per batch row. The fused
+``PerPointScoreModel`` lane remains the NeuTra-eligible batch backend.
 
-NEUTRA ELIGIBILITY (honest limitation, AGENTS.md batch-native rule): a
-Python row loop is a PARITY/REFERENCE implementation and is NOT eligible
-as a NeuTra TRAINING backend — the batching rule forbids row-mapped scalar
-targets for optimizer updates. Before the P7 NeuTra rebind, a fused
-batch-tensor implementation must land and pass these same parity gates;
-until then this entry point is claim-bearing for value/score evaluation
-and parity, not for NeuTra training. Conformance G-3 tracks this cell.
-
-NO autodiff (C-9): the score is the analytical recursion of
-``ledh_canonical_score_tf``.
+NO autodiff (C-9): every row uses the canonical analytical recursion.
 """
 
 from __future__ import annotations
@@ -43,12 +31,11 @@ def canonical_batch_value_score(
     substeps: int | None = None,
     flow_substeps: int | None = None,
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
-    """Batched value/score: theta [B, P] -> value [B], score [B, P].
+    """Evaluate the single-cloud authority for each theta row.
 
-    Frozen inputs (initial cloud, noises, observations) are shared across
-    rows, matching the NeuTra target contract.  ``substeps`` is the historical
-    batch-lane spelling; ``flow_substeps`` is accepted as the authority's
-    spelling.  Supplying both is allowed only when they agree.
+    ``theta`` has shape ``[B,1]`` and frozen simulation inputs are shared across
+    rows. ``tf.map_fn`` traces one row program and executes it as TensorFlow
+    control flow; it is a compatibility adapter, not the fused training lane.
     """
 
     if substeps is None:
@@ -64,20 +51,18 @@ def canonical_batch_value_score(
     theta = tf.convert_to_tensor(theta)
     if theta.shape.rank != 2:
         raise ValueError("canonical batch lane requires theta of rank 2")
-    batch_size = int(theta.shape[0])
-    parameter_count = int(theta.shape[1])
-    if parameter_count != 1:
+    parameter_count = theta.shape[1]
+    if parameter_count is None:
+        raise ValueError("theta parameter count must be statically known")
+    if int(parameter_count) != 1:
         raise ValueError(
-            "P5 slice supports one parameter direction per call; "
-            "multi-parameter models loop directions (as the score "
-            "definition prescribes)"
+            "compatibility batch lane supports one parameter direction; "
+            "use canonical_batch_fused_value_score for explicit directions"
         )
 
-    values = []
-    scores = []
-    valids = []
-    for row in range(batch_size):
-        row_theta = theta[row]
+    dtype = theta.dtype
+
+    def evaluate_row(row_theta: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         value, score = canonical_value_and_analytical_score(
             model,
             row_theta,
@@ -88,15 +73,20 @@ def canonical_batch_value_score(
             flow_substeps=substeps,
             with_score=True,
         )
-        values.append(value)
-        scores.append(score)
-        valids.append(
-            tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score))
-        )
-    value_batch = tf.stack(values)
-    score_batch = tf.stack(scores)
-    valid_batch = tf.stack(valids)
-    nan = tf.cast(float("nan"), value_batch.dtype)
+        valid = tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score))
+        return value, score, valid
+
+    value_batch, score_batch, valid_batch = tf.map_fn(
+        evaluate_row,
+        theta,
+        fn_output_signature=(
+            tf.TensorSpec([], dtype),
+            tf.TensorSpec([1], dtype),
+            tf.TensorSpec([], tf.bool),
+        ),
+        parallel_iterations=1,
+    )
+    nan = tf.cast(float("nan"), dtype)
     return (
         tf.where(valid_batch, value_batch, nan),
         tf.where(valid_batch[:, None], score_batch, nan),

@@ -154,6 +154,15 @@ class EntryPoint:
     notes: str = ""
 
 
+# Reduction-bearing score stages shared by the single-cloud and fused-batch
+# adapters. Governance tests treat this tuple as the closed ownership ledger:
+# an unlisted LEDH unified module or an endpoint bypassing these stages fails.
+UNIFIED_SCORE_STAGE_MODULES: tuple[str, ...] = (
+    "bayesfilter.highdim.ledh_unified_reset_tf",
+    "bayesfilter.highdim.ledh_unified_correction_tf",
+)
+
+
 ENTRY_POINTS: tuple[EntryPoint, ...] = (
     EntryPoint(
         lane="single_cloud",
@@ -252,16 +261,19 @@ LEDH_PRODUCTION_PROGRAM_V1 = {
     # reset design is scope-shaped and supplied by the runner
     "score": {
         "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
         "reset_sinkhorn_steps": 8,
         "reset_balance_steps": 8,
         "correction_steps": 4,
         "correction_strength": 0.2,
         "correction_lm_damping": 1.0e-2,
+        "correction_lm_scale_floor": 1.0e-4,
         "correction_trust_radius": 0.5,
         "pairwise_steps": 4,
         "pairwise_strength": 0.02,
         "pairwise_rms_cap": 2.0,
         "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8,
     },
 }
 

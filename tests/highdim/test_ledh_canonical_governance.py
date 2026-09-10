@@ -17,6 +17,11 @@ CANONICAL_MODULES = (
     "bayesfilter/highdim/ledh_flow_perparticle_tf.py",
     "bayesfilter/highdim/ledh_canonical_score_tf.py",
     "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+    "bayesfilter/highdim/ledh_canonical_batch_tf.py",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py",
+    "bayesfilter/highdim/ledh_unified_reset_tf.py",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py",
 )
 
 AUTODIFF_PATTERN = re.compile(
@@ -83,6 +88,60 @@ def test_g1_registered_entry_points_resolve():
                 f"{entry.lane}: {entry.module}.{entry.callable_name}"
             )
     assert not unresolved, f"unresolved LEDH entry points (G-1): {unresolved}"
+
+
+def test_g1_unified_score_stage_ledger_is_closed():
+    """Every unified score-stage module is declared in the ownership ledger."""
+
+    from bayesfilter.highdim.ledh_alg1_contract import (
+        UNIFIED_SCORE_STAGE_MODULES,
+    )
+
+    declared = {module.split(".")[-1] + ".py" for module in UNIFIED_SCORE_STAGE_MODULES}
+    discovered = {
+        path.name
+        for path in (REPO / "bayesfilter/highdim").glob("ledh_unified*_tf.py")
+    }
+    assert discovered == declared, (
+        f"unified score-stage ledger drift: discovered={sorted(discovered)}, "
+        f"declared={sorted(declared)}"
+    )
+    for module_name in UNIFIED_SCORE_STAGE_MODULES:
+        importlib.import_module(module_name)
+
+
+def test_g1_score_endpoints_route_shared_reduction_stages():
+    """Single and fused endpoints must reach the same reset/correction owners."""
+
+    single = (
+        REPO / "bayesfilter/highdim/ledh_canonical_score_tf.py"
+    ).read_text(encoding="utf-8")
+    fused = (
+        REPO / "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py"
+    ).read_text(encoding="utf-8")
+    reset_adapter = (
+        REPO / "bayesfilter/highdim/ledh_canonical_reset_score_tf.py"
+    ).read_text(encoding="utf-8")
+
+    assert "ledh_canonical_reset_score_tf" in single
+    assert "ledh_unified_reset_tf" in reset_adapter
+    assert "ledh_unified_correction_tf" in single
+    assert "ledh_canonical_score_tf" in fused
+    assert "canonical_value_and_analytical_score" in fused
+
+
+def test_batch_claim_paths_ban_python_fanout_and_pfor_apis():
+    """Batch endpoints use TensorFlow control flow, never Python row/K fanout."""
+
+    forbidden = re.compile(r"tf\.vectorized_map|tensorflow\.vectorized_map|\bpfor\s*\(")
+    offenders = []
+    for relative in (
+        "bayesfilter/highdim/ledh_canonical_batch_tf.py",
+        "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
+    ):
+        if forbidden.search((REPO / relative).read_text(encoding="utf-8")):
+            offenders.append(relative)
+    assert not offenders, f"pfor/vectorized-map APIs in batch claim paths: {offenders}"
 
 
 def test_production_program_registry_wiring():
