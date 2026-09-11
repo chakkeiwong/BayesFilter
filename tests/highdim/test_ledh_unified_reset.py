@@ -142,3 +142,63 @@ def test_total_tangents_match_finite_difference():
                 rtol=4.0e-6,
                 atol=4.0e-8,
             )
+
+
+def test_analytical_tangents_match_autodiff_oracle():
+    """Phase 2C oracle gate: batched Contract-E reset JVP vs autodiff."""
+    values = _batched_inputs(batch_size=2, direction_count=1)
+    analytical = _run(values)
+
+    def primal_fn(children, covs, weights, design):
+        result = batched_sinkhorn_contract_e_reset_triple_with_tangent(
+            children,
+            tf.zeros_like(values[1][:1]),
+            covs,
+            tf.zeros_like(values[3][:1]),
+            weights,
+            tf.zeros_like(values[5][:1]),
+            design,
+            **KWARGS,
+        )
+        return tf.concat(
+            [
+                tf.reshape(result[0], [-1]),
+                tf.reshape(result[2], [-1]),
+                tf.reshape(result[4], [-1]),
+            ],
+            axis=0,
+        )
+
+    # Oracle: forward-mode autodiff on primal path
+    children = tf.identity(values[0])
+    covs = tf.identity(values[2])
+    weights = tf.identity(values[4])
+    design = values[6]
+
+    children_dir = values[1][0]
+    covs_dir = values[3][0]
+    weights_dir = values[5][0]
+
+    with tf.autodiff.ForwardAccumulator(
+        primals=[children, covs, weights],
+        tangents=[children_dir, covs_dir, weights_dir]
+    ) as acc:
+        primal_out = primal_fn(children, covs, weights, design)
+    oracle_tangent = acc.jvp(primal_out)
+
+    # Unpack analytical tangents
+    analytical_packed = tf.concat(
+        [
+            tf.reshape(analytical[1][0], [-1]),
+            tf.reshape(analytical[3][0], [-1]),
+            tf.reshape(analytical[5][0], [-1]),
+        ],
+        axis=0,
+    )
+
+    np.testing.assert_allclose(
+        analytical_packed.numpy(),
+        oracle_tangent.numpy(),
+        rtol=1.0e-6,
+        atol=1.0e-8,
+    )

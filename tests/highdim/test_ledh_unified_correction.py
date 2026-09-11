@@ -162,3 +162,48 @@ def test_shared_correction_traces_under_tf_function():
     assert result["particles"].shape == (2, 16, 2)
     assert result["particles_tangent"].shape == (2, 2, 16, 2)
     assert bool(tf.reduce_all(result["valid"]).numpy())
+
+
+def test_analytical_tangents_match_autodiff_oracle():
+    """Phase 2C oracle gate: batched higher-moment correction JVP vs autodiff."""
+    values = _inputs(batch_size=2, direction_count=1)
+    config = CONFIGS["full"]
+    analytical = batched_higher_moment_shape_jvp(*values, **config)
+
+    def primal_fn(source, weights, points):
+        result = batched_higher_moment_shape_jvp(
+            source,
+            weights,
+            tf.zeros_like(values[2][:1]),
+            tf.zeros_like(values[3][:1]),
+            points,
+            tf.zeros_like(values[5][:1]),
+            **config,
+        )
+        return tf.reshape(result["particles"], [-1])
+
+    # Oracle: forward-mode autodiff on primal path
+    source = tf.identity(values[0])
+    weights = tf.identity(values[1])
+    points = tf.identity(values[4])
+
+    source_dir = values[2][0]
+    weights_dir = values[3][0]
+    points_dir = values[5][0]
+
+    with tf.autodiff.ForwardAccumulator(
+        primals=[source, weights, points],
+        tangents=[source_dir, weights_dir, points_dir]
+    ) as acc:
+        primal_out = primal_fn(source, weights, points)
+    oracle_tangent = acc.jvp(primal_out)
+
+    # Unpack analytical tangents (particles only)
+    analytical_tangent = tf.reshape(analytical["particles_tangent"][0], [-1])
+
+    np.testing.assert_allclose(
+        analytical_tangent.numpy(),
+        oracle_tangent.numpy(),
+        rtol=1.0e-6,
+        atol=1.0e-8,
+    )
