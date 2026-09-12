@@ -646,6 +646,85 @@ benefit.
 
 ---
 
+## Design Property: The Baseline Is Inside The Grid (recorded 2026-09-13)
+
+The warm-start baseline controls (`epsilon 8.0, sinkhorn 8, balance 8,
+diagonal 0.2, pairwise 0.02`) are **grid index 28** of 54 — verified by
+reconstructing `_tuning_grid()` ordering. Two consequences that constrain how any
+tuning output may be read, both now enforced in
+`docs/benchmarks/analyze_sqmc_pilot_frontier.py` rather than left to prose:
+
+1. **Tuning cannot lose by construction.** Because the baseline is itself a
+   candidate, the Pareto frontier necessarily contains a baseline-or-better point
+   *on the tuning seeds*. "Frontier L2 below baseline L2" is therefore guaranteed
+   up to seed noise and is **not** evidence of a tuning benefit. If the selected
+   config is ever *worse* than baseline, that means the baseline was
+   constraint-rejected or dominated on another objective, and must be inspected
+   rather than reported as an improvement.
+
+2. **Winner's curse.** Taking the argmin over 54 configurations scored on four
+   seeds biases the selected L2 downward. The selected config's tuning-seed L2 is
+   a biased-low estimate of its true L2 and must not be quoted as the tuning
+   improvement. The unbiased read requires the disjoint claim seeds in Phase 3,
+   which is the specific reason Phase 3 exists and why its seed-disjointness is
+   enforced at runtime.
+
+---
+
+## Budget Reconciliation Against Measured Throughput (2026-09-13)
+
+The plan's Phase 2 budget was an estimate made before any cell had run. Measured
+throughput on the 4080 SUPER contradicts it and the plan is corrected here.
+
+**Measured:** pilot start 03:40:30, six configs complete by 04:05:08 →
+**~4.1 min per configuration** at 4 seeds, i.e. **~1.03 min per seed-cell**
+(each seed-cell = 5 directional score evaluations at T=20, N=1008, float64).
+
+| Stage | Cells | Measured projection | Plan estimate |
+|---|---|---|---|
+| 2.1 pilot (1 route, 54 configs, 4 seeds) | 216 | **~3.7 h** | 1-2 h |
+| 2.2 full as specified (4 routes, 54 configs, 16 seeds) | 3,456 | **~59 h** | 8-12 h |
+
+Phase 2.2 as written is **~5x over its stated budget**. Launching it unchanged
+would consume roughly 60 GPU-hours, which exceeds what the plan authorised and is
+not justified by the evidence the stage would produce.
+
+**This is a budget finding, not a scientific failure.** It does not invalidate
+the harness, the target, the oracle, or the pilot. Under the campaign
+repair-and-retry rule the target, method, promotion criteria, vetoes and hardware
+class are unchanged; only the stage sizing needs revision, and a materially
+expanded compute request would need explicit approval rather than being absorbed
+silently.
+
+### Revised Phase 2.2 options (owner decision)
+
+- **Option R-1 — fewer tuning seeds (4 instead of 16).** 864 cells, **~15 h**.
+  Defensible on the design: tuning-seed selection is a *nomination* step whose
+  output is validated on disjoint claim seeds in Phase 3, so extra tuning seeds
+  buy precision in a quantity that is never itself claimed. Cheapest change,
+  keeps the full grid.
+- **Option R-2 — evidence-driven grid reduction.** Use the completed pilot to
+  identify which control dimensions actually move L2 beyond seed noise, drop the
+  inert dimensions, then tune the reduced grid. Requires the pilot to finish
+  first; reduction is then justified by measurement rather than by convenience.
+- **Option R-3 — R-1 and R-2 combined.** Lands inside the original 8-12 h
+  envelope.
+- **Option R-4 — one route only.** Complete Phases 2.1→3→4 for `iid_dual_cap`
+  and defer the other three routes. Yields a complete, honest answer for one
+  route instead of a partial answer for four.
+
+**Interim course taken:** finish the pilot, then run Phase 3 on the pilot's
+selected config (2 arms × 16 claim seeds ≈ 33 cells, **~35 min**). That produces
+the campaign's actual scientific answer for `iid_dual_cap` — *does exact-scope
+tuning beat warm-start on unseen seeds* — at negligible cost and without
+pre-committing 60 GPU-hours. The Phase 2.2 sizing decision is then made with the
+pilot's measured control sensitivity in hand rather than in advance.
+
+**Not concluded from the interim course:** a single-route Phase 3 result carries
+no route-comparison claim, and the three untuned routes remain unaddressed.
+
+---
+
 ## Changelog
 
 - 2026-09-09: Austria SIR 16-seed comparison complete (all routes indistinguishable)
