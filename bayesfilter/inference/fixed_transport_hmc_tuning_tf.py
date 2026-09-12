@@ -42,6 +42,7 @@ from bayesfilter.inference.tuning_contract import (
     HMCTuningScope,
     require_active_hmc_tuning_route,
 )
+from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig
 
 
 FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS: tuple[str, ...] = (
@@ -844,10 +845,11 @@ def tune_fixed_transport_hmc_kernel(
     base_adapter: Any,
     fixed_transport: Any,
     initial_position: Any,
-    config: FixedTransportHMCKernelTuningConfig | None = None,
+    config: FixedTransportHMCKernelTuningConfig | HMCControllerConfig | None = None,
     output_dir: str | Path | None = None,
     run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
     passthrough_exceptions: tuple[type[Exception], ...] = (),
+    candidate_set_adapter: Any | None = None,
 ) -> FixedTransportHMCKernelTuningResult:
     """Tune fixed-length TFP HMC and verify a frozen identity-`z` kernel.
 
@@ -860,6 +862,29 @@ def tune_fixed_transport_hmc_kernel(
     route_record = require_active_hmc_tuning_route(
         "tune_fixed_transport_hmc_kernel"
     )
+    if isinstance(config, HMCControllerConfig):
+        if candidate_set_adapter is None:
+            raise ValueError(
+                "HMCControllerConfig requires a repository-issued candidate-set adapter"
+            )
+        if getattr(candidate_set_adapter, "adapter_kind", None) != "fixed_transport":
+            raise ValueError(
+                "fixed-transport candidate-set tuning requires a fixed_transport adapter"
+            )
+        if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
+            raise ValueError(
+                "candidate-set tuning does not accept a custom fixed-transport runner"
+            )
+        from bayesfilter.inference.hmc_tuning_dispatch import tune_hmc_kernel
+
+        return tune_hmc_kernel(
+            adapter=candidate_set_adapter,
+            initial_position=initial_position,
+            config=config,
+            output_dir=output_dir,
+            candidate_set_adapter=candidate_set_adapter,
+            _candidate_set_route_kind="fixed_transport",
+        )
     cfg = config or FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
         step_size_candidates=(0.05, 0.1, 0.2),

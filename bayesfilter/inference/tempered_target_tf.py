@@ -312,12 +312,28 @@ class GaussianLikelihoodBridge:
         target_signature_fn = getattr(component_target, "target_signature", None)
         if not callable(target_signature_fn):
             raise TemperedBridgeError("component_target must expose target_signature")
+        component_signature_member = getattr(
+            component_target, "adapter_signature", None
+        )
+        if callable(component_signature_member):
+            component_adapter_signature = str(component_signature_member())
+        elif component_signature_member is None:
+            # Older generic fixtures do not expose a component identity.  Keep
+            # that fact explicit instead of fabricating a backend identity.
+            component_adapter_signature = None
+        else:
+            component_adapter_signature = str(component_signature_member)
+        if component_adapter_signature == "":
+            raise TemperedBridgeError(
+                "component_target adapter_signature must be non-empty when present"
+            )
         self.component_target = component_target
         self.prior_center = center
         self.prior_variance = variance
         self.bridge_id = str(bridge_id)
         self.jit_compile = bool(jit_compile)
         self._target_signature = str(target_signature_fn())
+        self._component_target_adapter_signature = component_adapter_signature
         facts = dict(source_facts)
         declared_dim = facts.get("parameter_dim")
         if declared_dim is None or int(declared_dim) != int(center.shape[0]):
@@ -339,6 +355,9 @@ class GaussianLikelihoodBridge:
                 "source facts target_signature does not match component target"
             )
         facts["target_signature"] = self._target_signature
+        facts["component_target_adapter_signature"] = (
+            self._component_target_adapter_signature
+        )
         self._source_facts = facts
         self._compiled: dict[int, Any] = {}
         self._receipt = build_q20_properness_receipt(
@@ -357,6 +376,12 @@ class GaussianLikelihoodBridge:
         return self._target_signature
 
     @property
+    def component_target_adapter_signature(self) -> str | None:
+        """Return the component identity bound into this bridge, if any."""
+
+        return self._component_target_adapter_signature
+
+    @property
     def signature(self) -> str:
         return self._signature
 
@@ -372,6 +397,9 @@ class GaussianLikelihoodBridge:
             "schema": TEMPERED_BRIDGE_SCHEMA,
             "bridge_id": self.bridge_id,
             "target_signature": self._target_signature,
+            "component_target_adapter_signature": (
+                self._component_target_adapter_signature
+            ),
             "prior_center": self.prior_center.numpy().tolist(),
             "prior_variance": self.prior_variance,
             "parameter_dim": self.parameter_dim,
@@ -509,6 +537,9 @@ class FixedBetaBridgeAdapter:
             "bridge_signature": self.bridge.signature,
             "bridge_id": self.bridge.bridge_id,
             "target_signature": self.bridge.target_signature,
+            "component_target_adapter_signature": (
+                self.bridge.component_target_adapter_signature
+            ),
             "target_scope": self.target_scope,
             "beta": self.beta,
             "parameter_dim": self.parameter_dim,

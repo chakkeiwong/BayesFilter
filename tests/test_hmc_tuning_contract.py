@@ -60,6 +60,16 @@ def test_fixed_transport_candidate_helpers_are_diagnostic_only(name: str) -> Non
         require_active_hmc_tuning_route(name)
 
 
+def test_legacy_fixed_transport_selector_is_discoverable_but_not_authoritative() -> None:
+    record = hmc_tuning_route_record("select_fixed_transport_candidate_set")
+
+    assert record.role == "diagnostic"
+    assert record.replacement == "tune_hmc_kernel"
+    assert record.artifact_authority is False
+    with pytest.raises(ValueError, match="not active"):
+        require_active_hmc_tuning_route(record.interface_name)
+
+
 @pytest.mark.parametrize(
     "name",
     (

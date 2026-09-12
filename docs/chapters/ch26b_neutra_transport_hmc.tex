@@ -328,9 +328,10 @@ For a valid batched target, the operational algorithm is:
  biases, masks, affine lift, target signature, and training-state hash.
  \item Construct \eqref{eq:bf-neutra-transported-target} from the frozen map.
  Check trainable/frozen parity, finite values, scores, and target telemetry.
- \item Screen fixed HMC pairs $(\epsilon,L)$ with disjoint seeds.  Acceptance
- and short-chain ESS nominate candidates; finite states, target health, energy
- errors, and modern R-hat may veto them.
+ \item Screen a broad set of fixed HMC pairs $(\epsilon,L)$ with disjoint
+ seeds through the shared candidate controller.  Acceptance and short-chain
+ ESS are explanatory or nomination diagnostics; finite states, target health,
+ energy errors, and modern R-hat may veto individual members.
  \item Retain warm-up chunks separately until the warm-up gate passes or the
  cap is reached.  Never pool warm-up into posterior summaries.
  \item Accumulate fresh retained chunks until the joint R-hat, ESS, and health
@@ -339,6 +340,35 @@ For a valid batched target, the operational algorithm is:
  apply the predeclared scientific diagnostic.  Archive all three coordinates,
  seeds, settings, telemetry, hashes, and wall time.
 \end{enumerate}
+
+\section{Selecting among frozen transports}
+\label{sec:bf-neutra-candidate-selection}
+
+Training restarts are candidate transports, not automatically permanent
+estimation arms. After each transport has been frozen and independently bound
+to the same target, prepare one immutable scope and run the shared candidate-set
+controller described in Section~\ref{sec:bf-fixed-transport-candidate-selection}.
+BayesFilter owns the fixed-kernel validation rungs, candidate-local rejection,
+generic hard screens, and retention of every viable transport. The client owns
+training receipts, transport provenance, and the declared score used to
+nominate among viable candidates. A separate frozen transport is a separate
+scope; its states and verification receipts never enter another scope's queue.
+
+The recommended sequence is: freeze the transport and scope; measure the broad
+fixed-kernel grid; validate every retained pair on fresh, disjoint seeds; create
+same-$(L)$ epsilon children only from typed directional evidence; verify each
+child independently; retain all candidates that pass; and nominate one only
+after recording the score ordering and its uncertainty status. A low reverse-KL
+or good whitening receipt can nominate a candidate, but it does not prove global
+Gaussianity, posterior correctness, or sampler superiority. Likewise, R-hat is
+a validity screen and tie-breaker only when the caller explicitly declares that
+role. An inconclusive result remains pending or receives a declared evidence
+extension; it does not silently replace $L$.
+
+Do not rank restarts solely by training loss, silently discard viable
+candidates, or treat a p-value as a universal quality score. The candidate
+receipt must say whether the ordering is descriptive or statistically
+supported and must preserve the hard vetoes for every rejected candidate.
 
 \section{Convergence and scientific diagnostics}
 \label{sec:bf-neutra-hmc-protocol}

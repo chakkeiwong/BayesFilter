@@ -32,6 +32,18 @@ _CHAIN_COUNT = 4
 _DTYPE = tf.float64
 
 
+def _xla_execution_fields(use_xla: bool) -> dict[str, str]:
+    if use_xla:
+        return {
+            "xla_qualification": "requires_external_qualification",
+            "xla_mode": "requested_full_chain_compilation",
+        }
+    return {
+        "xla_qualification": "not_required_for_non_xla_execution",
+        "xla_mode": "disabled_unless_separately_qualified",
+    }
+
+
 def _nonempty(value: Any, name: str) -> str:
     text = str(value).strip()
     if not text:
@@ -316,8 +328,8 @@ class TensorFlowHMCKernelTuningConfig:
             raise ValueError("TensorFlow tuning requires chain_execution_mode='tf_function'")
         if self.target_status_trace_policy != "none":
             raise ValueError("TensorFlow bound tuning currently requires target status none")
-        if self.use_xla:
-            raise ValueError("TensorFlow bound tuning has not qualified XLA")
+        if not isinstance(self.use_xla, bool):
+            raise ValueError("use_xla must be a Python bool")
         if not isinstance(self.acceptance_policy, FourChainMeanBandAcceptancePolicy):
             raise TypeError(
                 "acceptance_policy must be FourChainMeanBandAcceptancePolicy"
@@ -448,8 +460,7 @@ class TensorFlowHMCKernelTuningConfig:
             "handoff_eligibility": "result_dependent_candidate_screen",
             "fresh_rhat_verification": "not_part_of_tuning_handoff",
             "rhat_role": "retained_explanatory_only",
-            "xla_qualification": "not_required_for_non_xla_execution",
-            "xla_mode": "disabled_unless_separately_qualified",
+            **_xla_execution_fields(self.use_xla),
             "nonclaims": (
                 "diagnostic_only results cannot issue a tuning handoff",
                 "candidate handoff authorizes only the same frozen mechanics",
@@ -492,8 +503,7 @@ class TensorFlowHMCKernelTuningConfig:
             ),
             "fresh_rhat_verification": "not_part_of_tuning_handoff",
             "rhat_role": "retained_explanatory_only",
-            "xla_qualification": "not_required_for_non_xla_execution",
-            "xla_mode": "disabled_unless_separately_qualified",
+            **_xla_execution_fields(payload["use_xla"]),
         }
         for name, expected in expected_execution_fields.items():
             if payload.get(name) != expected:
@@ -917,7 +927,7 @@ def _build_tuning_graph(
             tf.TensorSpec([dimension], _DTYPE),
         ),
         autograph=False,
-        jit_compile=False,
+        jit_compile=config.use_xla,
         reduce_retracing=True,
     )
     def run(initial_position: tf.Tensor, parameter_scales: tf.Tensor) -> Mapping[str, tf.Tensor]:
@@ -1389,8 +1399,7 @@ def _write_tuning_artifact(
             "handoff_eligibility": "result_dependent_candidate_screen",
             "fresh_rhat_verification": "not_part_of_tuning_handoff",
             "rhat_role": "retained_explanatory_only",
-            "xla_qualification": "not_required_for_non_xla_execution",
-            "xla_mode": "disabled_unless_separately_qualified",
+            **_xla_execution_fields(result.config.use_xla),
             "reports_posterior_convergence": False,
             "reports_sampler_superiority": False,
         },
@@ -1427,16 +1436,15 @@ def load_tensorflow_hmc_tuning_result(
         raise ValueError("TensorFlow mechanics artifact must declare handoff support")
     if payload.get("handoff_eligibility") != "result_dependent_candidate_screen":
         raise ValueError("TensorFlow artifact has inconsistent handoff eligibility")
+    config = TensorFlowHMCKernelTuningConfig.from_payload(payload["config"])
     expected_execution_fields = {
         "fresh_rhat_verification": "not_part_of_tuning_handoff",
         "rhat_role": "retained_explanatory_only",
-        "xla_qualification": "not_required_for_non_xla_execution",
-        "xla_mode": "disabled_unless_separately_qualified",
+        **_xla_execution_fields(config.use_xla),
     }
     for name, expected in expected_execution_fields.items():
         if payload.get(name) != expected:
             raise ValueError(f"TensorFlow mechanics artifact has invalid {name}")
-    config = TensorFlowHMCKernelTuningConfig.from_payload(payload["config"])
     if payload.get("artifact_role") != config.evidence_role:
         raise ValueError("TensorFlow artifact role does not match its config")
     if not isinstance(runner_binding, HMCTuningRunnerBinding):
@@ -1658,6 +1666,8 @@ def _load_retained_continuation(
         raise ValueError("retained continuation binding hash mismatch")
     if payload.get("same_bound_transition_as_tuning") is not True:
         raise ValueError("retained continuation changed the bound transition")
+    if payload.get("use_xla", False) is not tuning.config.use_xla:
+        raise ValueError("retained continuation compilation mode mismatch")
     if tuning.artifact_manifest_path is None:
         raise ValueError("retained continuation requires a durable tuning manifest")
     previous_tuning = Path(str(payload.get("tuning_manifest", ""))).resolve()
@@ -1755,8 +1765,10 @@ class BoundRetainedHMCArchiveRunner:
             config=tuning.config,
         )
 
-        @tf.function(input_signature=(), autograph=False, jit_compile=False)
-        def execute() -> tuple[tf.Tensor, ...]:
+        @tf.function(
+            input_signature=(), autograph=False, jit_compile=tuning.config.use_xla
+        )
+        def execute() -> Mapping[str, tf.Tensor]:
             chunk = _run_tensor_steps(
                 kernel=kernel,
                 initial_state=tf.identity(initial_state),
@@ -1791,69 +1803,39 @@ class BoundRetainedHMCArchiveRunner:
                 ),
                 axis=0,
             )
-            writes = (
-                tf.io.write_file(
-                    str(sample_path), tf.io.serialize_tensor(raw_samples)
-                ),
-                tf.io.write_file(
-                    str(log_accept_path),
-                    tf.io.serialize_tensor(chunk.log_accept_ratio),
-                ),
-                tf.io.write_file(
-                    str(divergence_path), tf.io.serialize_tensor(chunk.divergence)
-                ),
-                tf.io.write_file(
-                    str(fallback_path),
-                    tf.io.serialize_tensor(chunk.force_fallback),
-                ),
-                tf.io.write_file(
-                    str(delta_h_path), tf.io.serialize_tensor(chunk.delta_h)
-                ),
-                tf.io.write_file(
-                    str(accepted_path),
-                    tf.io.serialize_tensor(chunk.is_accepted),
-                ),
-                tf.io.write_file(
-                    str(initial_chain_path), tf.io.serialize_tensor(initial_state)
-                ),
-                tf.io.write_file(
-                    str(final_raw_path), tf.io.serialize_tensor(final_raw)
-                ),
-                tf.io.write_file(
-                    str(final_chain_path),
-                    tf.io.serialize_tensor(chunk.final_state),
-                ),
-                tf.io.write_file(
-                    str(health_summary_path),
-                    tf.io.serialize_tensor(health_summary),
-                ),
-                tf.io.write_file(
-                    str(health_passed_path),
-                    tf.io.serialize_tensor(decision.passed),
-                ),
-            )
-            with tf.control_dependencies(writes):
-                return (
-                    tf.identity(initial_state),
-                    tf.identity(final_raw),
-                    tf.identity(chunk.final_state),
-                    tf.identity(decision.chain_means),
-                    tf.identity(decision.overall_mean),
-                    tf.identity(divergence_count),
-                    tf.identity(fallback_count),
-                    tf.identity(decision.passed),
-                )
+            return {
+                "raw_samples": raw_samples,
+                "log_accept_ratio": chunk.log_accept_ratio,
+                "divergence": chunk.divergence,
+                "force_fallback": chunk.force_fallback,
+                "delta_h": chunk.delta_h,
+                "is_accepted": chunk.is_accepted,
+                "initial_chain_state": tf.identity(initial_state),
+                "final_raw_state": final_raw,
+                "final_chain_state": chunk.final_state,
+                "chain_means": decision.chain_means,
+                "overall_mean": decision.overall_mean,
+                "divergence_count": divergence_count,
+                "fallback_count": fallback_count,
+                "health_summary": health_summary,
+                "health_passed": decision.passed,
+            }
 
-        (
-            archived_initial,
-            final_raw,
-            final_chain,
-            chain_means,
-            overall_mean,
-            divergence_count,
-            fallback_count,
-            health_passed,
-        ) = execute()
+        values = execute()
+        for artifact_path, tensor_value in (
+            (sample_path, values["raw_samples"]),
+            (log_accept_path, values["log_accept_ratio"]),
+            (divergence_path, values["divergence"]),
+            (fallback_path, values["force_fallback"]),
+            (delta_h_path, values["delta_h"]),
+            (accepted_path, values["is_accepted"]),
+            (initial_chain_path, values["initial_chain_state"]),
+            (final_raw_path, values["final_raw_state"]),
+            (final_chain_path, values["final_chain_state"]),
+            (health_summary_path, values["health_summary"]),
+            (health_passed_path, values["health_passed"]),
+        ):
+            tf.io.write_file(str(artifact_path), tf.io.serialize_tensor(tensor_value))
         tensor_records = {
             path.name: {"sha256": _sha256(path), "serialization": "tf.io.serialize_tensor"}
             for path in (
@@ -1900,18 +1882,20 @@ class BoundRetainedHMCArchiveRunner:
                 ),
                 "returned_sample_tensor": False,
                 "numerical_backend": "tensorflow_only",
+                "use_xla": tuning.config.use_xla,
+                **_xla_execution_fields(tuning.config.use_xla),
                 "reports_posterior_convergence": False,
             },
         )
         return BoundRetainedHMCArchiveResult(
-            initial_chain_state=archived_initial,
-            final_raw_state=final_raw,
-            final_chain_state=final_chain,
-            chain_acceptance_means=chain_means,
-            overall_acceptance_mean=overall_mean,
-            divergence_count=divergence_count,
-            force_fallback_count=fallback_count,
-            health_passed=health_passed,
+            initial_chain_state=values["initial_chain_state"],
+            final_raw_state=values["final_raw_state"],
+            final_chain_state=values["final_chain_state"],
+            chain_acceptance_means=values["chain_means"],
+            overall_acceptance_mean=values["overall_mean"],
+            divergence_count=values["divergence_count"],
+            force_fallback_count=values["fallback_count"],
+            health_passed=values["health_passed"],
             archive_manifest_path=str(manifest_path),
             binding_hash=self.runner_binding.binding_hash,
         )

@@ -1,5 +1,4 @@
 """Public dispatch for ordinary and typed TensorFlow HMC tuning."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,6 +23,7 @@ from bayesfilter.inference.tuning_contract import (
     HMCTuningRunnerBinding,
     require_active_hmc_tuning_route,
 )
+from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig
 
 
 def tune_hmc_kernel(
@@ -38,10 +38,50 @@ def tune_hmc_kernel(
     diagnostic_callback: Any | None = None,
     verification_checkpoint_writer_config: Any | None = None,
     runner_binding: HMCTuningRunnerBinding | None = None,
+    candidate_set_adapter: Any | None = None,
+    _candidate_set_route_kind: str = "ordinary",
 ) -> Any:
-    """Run the active public tuner selected by its typed configuration."""
+    """Run the public tuner or the shared typed candidate-set controller.
+
+    The candidate-set branch is an explicit migration path.  It is selected
+    only with ``HMCControllerConfig`` and a repository-issued typed adapter;
+    existing numerical defaults remain unchanged until their qualification
+    gates pass.
+    """
 
     require_active_hmc_tuning_route("tune_hmc_kernel")
+    if isinstance(config, HMCControllerConfig):
+        if candidate_set_adapter is None:
+            raise ValueError(
+                "HMCControllerConfig requires a repository-issued candidate-set adapter"
+            )
+        if getattr(candidate_set_adapter, "adapter_kind", None) != _candidate_set_route_kind:
+            raise ValueError(
+                f"{_candidate_set_route_kind} candidate-set tuning requires a matching adapter"
+            )
+        if any(
+            value is not None
+            for value in (
+                negative_hessian,
+                initial_covariance,
+                parameter_scales,
+                diagnostic_callback,
+                verification_checkpoint_writer_config,
+                runner_binding,
+            )
+        ):
+            raise ValueError(
+                "candidate-set tuning does not accept legacy or TensorFlow stage options"
+            )
+        from bayesfilter.inference.hmc_candidate_set_adapters import (
+            run_typed_hmc_candidate_set,
+        )
+
+        return run_typed_hmc_candidate_set(
+            candidate_set_adapter,
+            config,
+            output_dir=output_dir,
+        )
     if isinstance(config, TensorFlowHMCKernelTuningConfig):
         unsupported = {
             "negative_hessian": negative_hessian,
@@ -104,5 +144,6 @@ __all__ = [
     "TensorFlowHMCKernelTuningResult",
     "build_retained_bound_hmc_archive_runner_from_tuning_result",
     "load_tensorflow_hmc_tuning_result",
+    "HMCControllerConfig",
     "tune_hmc_kernel",
 ]

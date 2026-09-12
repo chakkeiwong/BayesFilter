@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import platform
 import signal
@@ -28,9 +29,15 @@ ROOT = Path(__file__).resolve().parents[2]
 PLAN = ROOT / "docs/plans/bayesfilter-ssl-lstm-q20-phase9a-fresh-tuning-preflight-subplan-2026-08-31.md"
 REPAIR_PLAN = ROOT / "docs/plans/bayesfilter-ssl-lstm-q20-phase9a-chart1-beta0-program-repair-subplan-2026-09-01.md"
 FULL_REPLAY_PLAN = ROOT / "docs/plans/bayesfilter-ssl-lstm-q20-phase9a-full-replay-performance-subplan-2026-09-01.md"
+GPU10000_REPLAY_PLAN = ROOT / "docs/plans/bayesfilter-ssl-lstm-q20-gpu-replay-batching-eigh-reuse-plan-2026-09-04.md"
+GPU10000_RESULT_NOTE = "docs/plans/bayesfilter-ssl-lstm-q20-gpu-replay-batching-eigh-reuse-result-2026-09-04.md"
+FACTOR_TUNING_PLAN = ROOT / "docs/plans/bayesfilter-ssl-lstm-q20-factor-route-fresh-tuning-admission-plan-2026-09-04.md"
+FACTOR_TUNING_RESULT_NOTE = "docs/plans/bayesfilter-ssl-lstm-q20-factor-route-fresh-tuning-admission-result-2026-09-04.md"
 C5_MANIFEST = ROOT / "docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-08-30/c5-freeze/attempt-02/freeze_manifest.json"
 EXPECTED_TARGET_SIGNATURE = "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278"
-EXPECTED_BACKEND = "tensorflow_eigh_strict"
+STRICT_BACKEND = "tensorflow_eigh_strict"
+FACTOR_BACKEND = "tensorflow_eigh_strict_factor_cached"
+ALLOWED_PROFILE_BACKENDS = (STRICT_BACKEND, FACTOR_BACKEND)
 SCHEMA = "bayesfilter.ssl_lstm_q20.tempered_rkl_phase9a_fresh_tuning_preflight.v2"
 BETAS = (0.0, 0.5, 1.0)
 COMPONENT_IDS = ("phase9a-chart-0", "phase9a-chart-1")
@@ -74,6 +81,7 @@ class _Phase9AProfile:
     scope_start: int | None = None
     scope_limit: int | None = None
     material_cap_seconds: float = MATERIAL_CAP_SECONDS
+    principal_sqrt_backend: str = STRICT_BACKEND
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -108,6 +116,7 @@ class _Phase9AProfile:
             "scope_start": self.scope_start,
             "scope_limit": self.scope_limit,
             "material_cap_seconds": self.material_cap_seconds,
+            "principal_sqrt_backend": self.principal_sqrt_backend,
         }
 
 
@@ -341,6 +350,149 @@ _FULL_REPLAY_PROFILE = replace(
     material_cap_seconds=7800.0,
 )
 
+# The original full-replay profiles are closed historical evidence.  This
+# continuation has a new plan, fresh seed namespaces, and an explicit
+# 10,000-second full-replay cap; it must not silently revive the old profile.
+_GPU10000_REPLAY_CANARY_PROFILE = replace(
+    _FULL_REPLAY_CANARY_PROFILE,
+    profile_id="phase9a_full_replay_canary_gpu10000_v1",
+    plan_path=GPU10000_REPLAY_PLAN,
+    initialization_roots=((20260904, 91001), (20260904, 91002)),
+    preflight_roots=((20260904, 91101), (20260904, 91102)),
+    training_roots=((20260904, 91201), (20260904, 91202)),
+    tuning_roots=(
+        (20260904, 91301),
+        (20260904, 91302),
+        (20260904, 91303),
+        (20260904, 91304),
+        (20260904, 91305),
+        (20260904, 91306),
+    ),
+    transition_root=(20260904, 91401),
+    reliability_root=(20260904, 91501),
+    material_cap_seconds=1800.0,
+)
+
+_GPU10000_REPLAY_PROFILE = replace(
+    _FULL_REPLAY_PROFILE,
+    profile_id="phase9a_full_replay_gpu10000_v1",
+    plan_path=GPU10000_REPLAY_PLAN,
+    initialization_roots=((20260904, 92001), (20260904, 92002)),
+    preflight_roots=((20260904, 92101), (20260904, 92102)),
+    training_roots=((20260904, 92201), (20260904, 92202)),
+    tuning_roots=(
+        (20260904, 92301),
+        (20260904, 92302),
+        (20260904, 92303),
+        (20260904, 92304),
+        (20260904, 92305),
+        (20260904, 92306),
+    ),
+    transition_root=(20260904, 92401),
+    reliability_root=(20260904, 92501),
+    material_cap_seconds=10000.0,
+)
+
+# These profiles are the only source-owned factor-route launches.  They use
+# fresh seed namespaces and cannot consume strict-route checkpoints or tuning
+# artifacts because backend identity is included at every restore/handoff
+# boundary.
+_FACTOR_TUNING_CANARY_PROFILE = replace(
+    _GPU10000_REPLAY_CANARY_PROFILE,
+    profile_id="phase9a_factor_tuning_canary_v1",
+    plan_path=FACTOR_TUNING_PLAN,
+    initialization_roots=((20260904, 93001), (20260904, 93002)),
+    preflight_roots=((20260904, 93101), (20260904, 93102)),
+    training_roots=((20260904, 93201), (20260904, 93202)),
+    tuning_roots=(
+        (20260904, 93301),
+        (20260904, 93302),
+        (20260904, 93303),
+        (20260904, 93304),
+        (20260904, 93305),
+        (20260904, 93306),
+    ),
+    transition_root=(20260904, 93401),
+    reliability_root=(20260904, 93501),
+    principal_sqrt_backend=FACTOR_BACKEND,
+    material_cap_seconds=1800.0,
+)
+
+_FACTOR_TUNING_PROFILE = replace(
+    _GPU10000_REPLAY_PROFILE,
+    profile_id="phase9a_factor_tuning_full_v1",
+    plan_path=FACTOR_TUNING_PLAN,
+    initialization_roots=((20260904, 94001), (20260904, 94002)),
+    preflight_roots=((20260904, 94101), (20260904, 94102)),
+    training_roots=((20260904, 94201), (20260904, 94202)),
+    tuning_roots=(
+        (20260904, 94301),
+        (20260904, 94302),
+        (20260904, 94303),
+        (20260904, 94304),
+        (20260904, 94305),
+        (20260904, 94306),
+    ),
+    transition_root=(20260904, 94401),
+    reliability_root=(20260904, 94501),
+    principal_sqrt_backend=FACTOR_BACKEND,
+    material_cap_seconds=10000.0,
+)
+
+# R2 repairs the localized chart/proposal-scale failure identified on the
+# frozen scope-1 chart.  The narrow grid is measured on that chart at
+# 0.055--0.075; it keeps the same eight-pair joint-grid evidence and both
+# replicated selection/held-out screens, but uses a bounded draw count so all
+# six scopes fit under the remaining campaign budget.
+_FACTOR_TUNING_R2_PROFILE = replace(
+    _FACTOR_TUNING_PROFILE,
+    profile_id="phase9a_factor_tuning_full_r2_v1",
+    initialization_roots=((20260905, 97001), (20260905, 97002)),
+    preflight_roots=((20260905, 97101), (20260905, 97102)),
+    training_roots=((20260905, 97201), (20260905, 97202)),
+    tuning_roots=(
+        (20260905, 97301),
+        (20260905, 97302),
+        (20260905, 97303),
+        (20260905, 97304),
+        (20260905, 97305),
+        (20260905, 97306),
+    ),
+    transition_root=(20260905, 97401),
+    reliability_root=(20260905, 97501),
+    max_step_size=0.1,
+    step_size_candidates=(0.055, 0.060, 0.070, 0.075),
+    initial_step_size=0.060,
+    selection_num_results=8,
+    selection_num_burnin_steps=2,
+    verification_num_results=8,
+    verification_num_burnin_steps=2,
+    material_cap_seconds=8400.0,
+)
+
+# The source-synchronized continuation is opened after the HMC tuning
+# interface/registry repair changed the executable source-closure identity.
+# It keeps the R2 numerical contract while using a fresh namespace and the
+# measured aggregate-budget remainder.
+_FACTOR_TUNING_SOURCE_SYNC_PROFILE = replace(
+    _FACTOR_TUNING_R2_PROFILE,
+    profile_id="phase9a_factor_tuning_full_source_sync_v1",
+    initialization_roots=((20260905, 98001), (20260905, 98002)),
+    preflight_roots=((20260905, 98101), (20260905, 98102)),
+    training_roots=((20260905, 98201), (20260905, 98202)),
+    tuning_roots=(
+        (20260905, 98301),
+        (20260905, 98302),
+        (20260905, 98303),
+        (20260905, 98304),
+        (20260905, 98305),
+        (20260905, 98306),
+    ),
+    transition_root=(20260905, 98401),
+    reliability_root=(20260905, 98501),
+    material_cap_seconds=4000.0,
+)
+
 _PROFILES = {
     _HISTORICAL_PROFILE.profile_id: _HISTORICAL_PROFILE,
     _CHART1_BETA0_REPAIR_PROFILE.profile_id: _CHART1_BETA0_REPAIR_PROFILE,
@@ -349,6 +501,12 @@ _PROFILES = {
     _CHART1_BETA0_FRESH_PROFILE.profile_id: _CHART1_BETA0_FRESH_PROFILE,
     _FULL_REPLAY_CANARY_PROFILE.profile_id: _FULL_REPLAY_CANARY_PROFILE,
     _FULL_REPLAY_PROFILE.profile_id: _FULL_REPLAY_PROFILE,
+    _GPU10000_REPLAY_CANARY_PROFILE.profile_id: _GPU10000_REPLAY_CANARY_PROFILE,
+    _GPU10000_REPLAY_PROFILE.profile_id: _GPU10000_REPLAY_PROFILE,
+    _FACTOR_TUNING_CANARY_PROFILE.profile_id: _FACTOR_TUNING_CANARY_PROFILE,
+    _FACTOR_TUNING_PROFILE.profile_id: _FACTOR_TUNING_PROFILE,
+    _FACTOR_TUNING_R2_PROFILE.profile_id: _FACTOR_TUNING_R2_PROFILE,
+    _FACTOR_TUNING_SOURCE_SYNC_PROFILE.profile_id: _FACTOR_TUNING_SOURCE_SYNC_PROFILE,
 }
 
 
@@ -407,13 +565,39 @@ def _resolve_profile(
             raise Phase9AError(
                 "chart1 beta-0 repair profiles are pinned to --scope-start 3 --scope-limit 1"
             )
-    if base.profile_id == _FULL_REPLAY_CANARY_PROFILE.profile_id:
+    if base.profile_id in {
+        _FULL_REPLAY_CANARY_PROFILE.profile_id,
+        _GPU10000_REPLAY_CANARY_PROFILE.profile_id,
+        _FACTOR_TUNING_CANARY_PROFILE.profile_id,
+    }:
         if (start, limit) != (3, 1):
             raise Phase9AError(
                 "Phase 9A full-replay canary is pinned to --scope-start 3 --scope-limit 1"
             )
-    if not (0.0 < float(base.material_cap_seconds) <= 7800.0):
-        raise Phase9AError("profile material cap must lie in (0,7800] seconds")
+    if base.profile_id in {
+        _FACTOR_TUNING_PROFILE.profile_id,
+        _FACTOR_TUNING_R2_PROFILE.profile_id,
+        _FACTOR_TUNING_SOURCE_SYNC_PROFILE.profile_id,
+    }:
+        if (start, limit) != (0, SCOPE_COUNT):
+            raise Phase9AError(
+                "Phase 9A factor full profile is pinned to all six scopes"
+            )
+    if base.principal_sqrt_backend not in ALLOWED_PROFILE_BACKENDS:
+        raise Phase9AError("profile selects an unsupported principal-sqrt backend")
+    factor_profiles = {
+        _FACTOR_TUNING_CANARY_PROFILE.profile_id,
+        _FACTOR_TUNING_PROFILE.profile_id,
+        _FACTOR_TUNING_R2_PROFILE.profile_id,
+        _FACTOR_TUNING_SOURCE_SYNC_PROFILE.profile_id,
+    }
+    expected_backend = (
+        FACTOR_BACKEND if base.profile_id in factor_profiles else STRICT_BACKEND
+    )
+    if base.principal_sqrt_backend != expected_backend:
+        raise Phase9AError("profile/backend ownership mismatch")
+    if not (0.0 < float(base.material_cap_seconds) <= 10000.0):
+        raise Phase9AError("profile material cap must lie in (0,10000] seconds")
     return replace(base, scope_start=start, scope_limit=limit)
 
 if str(ROOT) not in sys.path:
@@ -460,7 +644,11 @@ def _json_ready(value: Any) -> Any:
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):
         return [_json_ready(item) for item in value]
-    if isinstance(value, (str, int, float, bool)) or value is None:
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return {"__nonfinite__": value.__repr__()}
+        return value
+    if isinstance(value, (str, int, bool)) or value is None:
         return value
     if hasattr(value, "numpy"):
         return _json_ready(value.numpy())
@@ -471,12 +659,43 @@ def _json_ready(value: Any) -> Any:
     return str(value)
 
 
+def _artifact_json_ready(value: Any) -> Any:
+    """Serialize diagnostics while making nonfinite numerics explicit.
+
+    Runtime validity checks remain fail-closed.  This boundary exists only so
+    a failed numerical call can leave an inspectable receipt instead of losing
+    the call record when ``allow_nan=False`` rejects a raw NaN/Inf.
+    """
+
+    if isinstance(value, Mapping):
+        return {
+            str(key): _artifact_json_ready(item) for key, item in value.items()
+        }
+    if isinstance(value, (tuple, list)):
+        return [_artifact_json_ready(item) for item in value]
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return {"__nonfinite__": value.__repr__()}
+        return value
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if hasattr(value, "numpy"):
+        return _artifact_json_ready(value.numpy())
+    if hasattr(value, "tolist"):
+        return _artifact_json_ready(value.tolist())
+    if hasattr(value, "item"):
+        return _artifact_json_ready(value.item())
+    return str(value)
+
+
 def _write_json(path: Path, value: Mapping[str, Any]) -> None:
     if path.exists():
         raise Phase9AError(f"refusing to overwrite artifact: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps(_json_ready(value), sort_keys=True, indent=2, allow_nan=False)
+        json.dumps(
+            _artifact_json_ready(value), sort_keys=True, indent=2, allow_nan=False
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -544,7 +763,7 @@ def _scope(
     return {
         "data_identity": f"ssl-lstm-q20:{EXPECTED_TARGET_SIGNATURE}",
         "target_signature": EXPECTED_TARGET_SIGNATURE,
-        "bridge_backend": EXPECTED_BACKEND,
+        "bridge_backend": profile.principal_sqrt_backend,
         "dtype": "float64",
         "backend": "tensorflow_tfp_gpu",
         "jit_compile": True,
@@ -561,6 +780,7 @@ def _scope(
         },
         "training_updates_per_level": TRAIN_UPDATES_PER_LEVEL,
         "profile_id": profile.profile_id,
+        "principal_sqrt_backend": profile.principal_sqrt_backend,
         "tuning_policy": "measured_joint_grid_v1",
         "phase_role": "phase9a_mechanics_preflight_only",
     }
@@ -584,6 +804,7 @@ def _check_prerequisites(profile: _Phase9AProfile) -> Mapping[str, Any]:
             "path": str(profile.plan_path.relative_to(ROOT)),
             "sha256": _sha256(profile.plan_path),
             "profile_id": profile.profile_id,
+            "principal_sqrt_backend": profile.principal_sqrt_backend,
         },
         "c5_freeze": {
             "path": str(C5_MANIFEST.relative_to(ROOT)),
@@ -619,6 +840,7 @@ def _checkpoint_scope(
             f"phase9a-{component_id}-beta-{beta:g}-preflight"
         ],
         "profile_id": profile.profile_id,
+        "principal_sqrt_backend": profile.principal_sqrt_backend,
     }
 
 
@@ -752,7 +974,18 @@ def _build_fresh_chart(
         # verifies the tensors, but deliberately does not invent an HMC
         # identity; bind that identity from the repository-issued checkpoint
         # before the adapter is constructed.
-        restored = restore_trainable_transport_checkpoint(checkpoint)
+        restored = restore_trainable_transport_checkpoint(
+            checkpoint,
+            expected_context={
+                "component_id": component_id,
+                "beta": float(beta),
+                "bridge_signature": str(bridge.signature),
+                "target_signature": EXPECTED_TARGET_SIGNATURE,
+                "checkpoint_scope": _checkpoint_scope(
+                    component_id, beta, chart_index, profile
+                ),
+            },
+        )
         restored_binder = getattr(restored, "bind_frozen_identity", None)
         if not callable(restored_binder):
             raise Phase9AError(
@@ -929,27 +1162,42 @@ def _tune_scope(
         metadata = metadata_value if isinstance(metadata_value, Mapping) else {}
         before_count = int(pool_before.get("runner_count", 0))
         after_count = int(pool_after.get("runner_count", 0))
-        _write_json(
-            call_root / f"call-{call_index:03d}-complete.json",
-            {
-                "schema": "bayesfilter.ssl_lstm_q20.phase9a.full_chain_call_complete.v1",
-                "status": "PASS_FULL_CHAIN_CALL",
-                "profile_id": profile.profile_id,
-                "scope_index": scope_index,
-                "call_index": call_index,
-                "elapsed_seconds": time.monotonic() - started_call,
-                "config": config_payload,
-                "diagnostics": diagnostics,
-                "runner_pool": pool_after,
-                "runner_created_on_call": after_count > before_count,
-                "sample_chain_call_seconds": metadata.get("sample_chain_call_s"),
-                "timing_role": (
-                    "first_trace_or_compile_included"
-                    if after_count > before_count
-                    else "steady_state_reused_runner"
-                ),
-            },
-        )
+        complete_payload = {
+            "schema": "bayesfilter.ssl_lstm_q20.phase9a.full_chain_call_complete.v1",
+            "status": "PASS_FULL_CHAIN_CALL",
+            "profile_id": profile.profile_id,
+            "scope_index": scope_index,
+            "call_index": call_index,
+            "elapsed_seconds": time.monotonic() - started_call,
+            "config": config_payload,
+            "diagnostics": diagnostics,
+            "runner_pool": pool_after,
+            "runner_created_on_call": after_count > before_count,
+            "sample_chain_call_seconds": metadata.get("sample_chain_call_s"),
+            "timing_role": (
+                "first_trace_or_compile_included"
+                if after_count > before_count
+                else "steady_state_reused_runner"
+            ),
+        }
+        try:
+            _write_json(call_root / f"call-{call_index:03d}-complete.json", complete_payload)
+        except Exception as exc:  # noqa: BLE001 - preserve a post-call receipt.
+            _write_json(
+                call_root / f"call-{call_index:03d}-serialization-failure.json",
+                {
+                    "schema": "bayesfilter.ssl_lstm_q20.phase9a.full_chain_call_serialization_failure.v1",
+                    "status": "FAIL_FULL_CHAIN_CALL_ARTIFACT_SERIALIZATION",
+                    "profile_id": profile.profile_id,
+                    "scope_index": scope_index,
+                    "call_index": call_index,
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                    "elapsed_seconds": time.monotonic() - started_call,
+                    "numerical_call_returned": True,
+                },
+            )
+            raise
         return result_value
 
     setattr(timed_run, "evidence", runner_pool.evidence)
@@ -1214,7 +1462,7 @@ def _write_run_start(
                 range(profile.scope_start or 0, (profile.scope_start or 0) + (profile.scope_limit or SCOPE_COUNT))
             ),
             "target_signature": EXPECTED_TARGET_SIGNATURE,
-            "principal_sqrt_backend": EXPECTED_BACKEND,
+            "principal_sqrt_backend": profile.principal_sqrt_backend,
             "gpu_environment": {
                 "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
                 "tf_force_gpu_allow_growth": os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH", ""),
@@ -1259,6 +1507,9 @@ def _write_failure_manifest(
             "scope_start": profile.scope_start if profile is not None else None,
             "scope_limit": profile.scope_limit if profile is not None else None,
             "target_signature": EXPECTED_TARGET_SIGNATURE,
+            "principal_sqrt_backend": (
+                profile.principal_sqrt_backend if profile is not None else None
+            ),
             "git": _git_payload(),
             "elapsed_seconds": elapsed,
             "run_start_path": str(start_path) if start_path.is_file() else None,
@@ -1326,7 +1577,9 @@ def _run(args: argparse.Namespace) -> int:
     from bayesfilter.inference.tempered_target_tf import make_q20_tempered_bridge
 
     bridge = make_q20_tempered_bridge(
-        20, jit_compile=True, principal_sqrt_backend=EXPECTED_BACKEND
+        20,
+        jit_compile=True,
+        principal_sqrt_backend=profile.principal_sqrt_backend,
     )
     if str(bridge.target_signature) != EXPECTED_TARGET_SIGNATURE:
         raise Phase9AError("q=20 target signature changed")
@@ -1380,6 +1633,7 @@ def _run(args: argparse.Namespace) -> int:
                 "chart_index": chart_index,
                 "beta": beta,
                 "target_signature": EXPECTED_TARGET_SIGNATURE,
+                "principal_sqrt_backend": profile.principal_sqrt_backend,
                 "tuning_policy": "measured_joint_grid_v1",
                 "declared_pair_count": len(profile.step_size_candidates)
                 * len(profile.leapfrog_grid),
@@ -1409,6 +1663,7 @@ def _run(args: argparse.Namespace) -> int:
                 "scope_index": scope_index,
                 "chart_index": chart_index,
                 "beta": beta,
+                "principal_sqrt_backend": profile.principal_sqrt_backend,
                 "tuning_policy": "measured_joint_grid_v1",
                 "completed_at_unix": time.time(),
                 "elapsed_seconds": max(0.0, time.time() - scope_started_at),
@@ -1471,7 +1726,10 @@ def _run(args: argparse.Namespace) -> int:
         "tensorflow": str(tf.__version__),
         "bridge_signature": str(bridge.signature),
         "properness_receipt": bridge.properness_receipt.payload(),
-        "principal_sqrt_backend": EXPECTED_BACKEND,
+        "principal_sqrt_backend": profile.principal_sqrt_backend,
+        "component_target_adapter_signature": (
+            bridge.component_target_adapter_signature
+        ),
         "protocol": {"betas": list(BETAS), "component_ids": list(COMPONENT_IDS), "gamma": [0.5, 0.5]},
         "prerequisites": prerequisites,
         "route_scan": route_scan,
@@ -1499,9 +1757,15 @@ def _run(args: argparse.Namespace) -> int:
             "docs/plans/bayesfilter-ssl-lstm-q20-phase9a-chart1-beta0-program-repair-result-2026-09-01.md"
             if profile.plan_path == REPAIR_PLAN
             else (
-                "docs/plans/bayesfilter-ssl-lstm-q20-phase9a-full-replay-performance-result-2026-09-02.md"
+                FACTOR_TUNING_RESULT_NOTE
+                if profile.plan_path == FACTOR_TUNING_PLAN
+                else "docs/plans/bayesfilter-ssl-lstm-q20-phase9a-full-replay-performance-result-2026-09-02.md"
                 if profile.plan_path == FULL_REPLAY_PLAN
-                else "docs/plans/bayesfilter-ssl-lstm-q20-phase9a-fresh-tuning-preflight-result-2026-08-31.md"
+                else (
+                    GPU10000_RESULT_NOTE
+                    if profile.plan_path == GPU10000_REPLAY_PLAN
+                    else "docs/plans/bayesfilter-ssl-lstm-q20-phase9a-fresh-tuning-preflight-result-2026-08-31.md"
+                )
             )
         ),
         "charts": chart_records,

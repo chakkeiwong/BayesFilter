@@ -55,26 +55,32 @@ promoted beyond reference or diagnostic use.
 \section{Promoted Fixed-Trajectory Tuning Algorithm}
 \label{sec:bf-promoted-fixed-trajectory-hmc-tuning}
 
-BayesFilter's promoted one-call tuning tool uses fixed-trajectory HMC rather
-than a single one-dimensional search over the integration time.  The algorithm
-is deliberately conservative:
+BayesFilter's promoted tuning lifecycle uses fixed-trajectory HMC rather than a
+single one-dimensional search over integration time.  Ordinary coordinates and
+one frozen nonlinear transport prepare different scopes, but both pass the
+same candidate-set controller.  The controller is deliberately explicit:
 
 \begin{enumerate}
   \item Build an initial mass matrix from posterior, pilot, or local covariance
     information.
   \item Regularize that covariance toward a symmetric positive-definite matrix;
     if dense regularization is not credible, use a recorded diagonal fallback.
-  \item Choose an initial grid of leapfrog counts \(L\).
-  \item For each \(L\), tune the step size \(\epsilon\) using bounded HMC
-    screens and the target acceptance rule.
-  \item Select the best pair \((L,\epsilon)\) using finite-value diagnostics,
-    acceptance, trajectory-window membership, and hard-veto checks.
-  \item If the selected \(L\) lies on a grid boundary, repair the grid upward or
-    downward and repeat the screen.
-  \item Run one final local grid around the selected pair.
-  \item Freeze \((L,\epsilon)\), update the mass matrix moderately from a
-    windowed draw, and repeat only while the repair loop records meaningful
-    progress and an attempt slot remains.
+  \item Choose a broad, finite grid of leapfrog counts \(L\), with its
+    coverage rationale and proposal budget recorded in the scope.
+  \item Qualify one or more step-size proposals independently for every \(L\),
+    measure every resulting pair with the same frozen geometry, and retain all
+    non-vetoed candidates.
+  \item Advance the complete measured cohort through declared validation and
+    fresh verification stages.  A passing candidate does not end the cohort.
+  \item Use acceptance and mixing diagnostics to classify evidence.  A typed
+    one-sided directional result may create a new child with the same \(L\),
+    mass, target, start bank, and warmup protocol; the child receives fresh
+    verification before not-yet-admitted work for another \(L\).
+  \item Treat an inconclusive result as pending evidence or an extension.  It
+    does not silently switch \(L\), overwrite its parent, or nominate an
+    unmeasured multiplied/divided step size.
+  \item Return the verified set and immutable parent/child records.  A
+    descriptive nominee is optional and never removes another verified member.
 \end{enumerate}
 
 The step-size search and the trajectory length must refer to the same HMC
@@ -113,15 +119,15 @@ decision, not permission to weaken target-domain assertions or replace the
 declared target.
 
 This procedure is a tuning and diagnostics policy, not a posterior-validity
-proof.  A passing tuner means that BayesFilter found a finite fixed HMC kernel
-that survived its route-specific fresh verification.  For the ordinary default
-runner, that handoff also requires the configured minimum retained draws and
-finite rank-normalized split and folded split \(\widehat R\) values no greater
-than 1.01.  The threshold is a tuning-handoff diagnostic; it does not establish
-posterior convergence.  Chapter~\ref{ch:bf-hmc-tuning-interfaces} gives the
-public interfaces and the exact distinction between tuning evidence and
-retained-chain evidence.  Scientific validity, sampler superiority, default
-readiness, and GPU readiness require separate evidence.
+proof.  A passing member means that its own fixed HMC kernel survived the
+declared fresh verification.  The result also records incomplete campaign
+states: \path{repair\_budget\_exhausted} means a required directional repair
+was identified but could not be funded, while \path{partial\_budget} means
+other required work remains.  Neither status is a scientific rejection.
+Chapter~\ref{ch:bf-hmc-tuning-interfaces} gives the public interfaces and the
+exact distinction between tuning evidence and retained-chain evidence.
+Scientific validity, sampler superiority, default readiness, and GPU readiness
+require separate evidence.
 
 \section{Public And Private Handoffs}
 \label{sec:bf-hmc-public-private-handoffs}

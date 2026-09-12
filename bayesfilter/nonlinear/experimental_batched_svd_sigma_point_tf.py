@@ -3,8 +3,13 @@
 This module is intentionally not exported from ``bayesfilter.nonlinear`` while
 the batch-over-parameters contract is being tested. The principal-root route
 is historical/reference-only; the repository default is the direct-factor
-SR-UKF contract. The leading batch axis
-indexes independent model parameter proposals; time remains sequential.
+SR-UKF contract. The leading batch axis indexes independent model parameter
+proposals; time remains sequential.
+
+``tensorflow_eigh_strict_cached`` and
+``tensorflow_eigh_strict_factor_cached`` are opt-in diagnostic backends. They
+test two eigensystem-reuse strategies; neither is a default or claim-bearing
+backend without parity and timing evidence.
 """
 
 from __future__ import annotations
@@ -56,6 +61,8 @@ TFPrincipalSqrtBackend = Literal[
     "compiled_custom_op",
     "tensorflow_eigh",
     "tensorflow_eigh_strict",
+    "tensorflow_eigh_strict_cached",
+    "tensorflow_eigh_strict_factor_cached",
     "tensorflow_newton_schulz",
 ]
 
@@ -628,6 +635,73 @@ def _tensorflow_strict_principal_sqrt(covariance: tf.Tensor) -> tf.Tensor:
     return factor
 
 
+def _tensorflow_strict_cached_factor_eigensystem(
+    covariance_eigenvalues: tf.Tensor,
+    covariance_eigenvectors: tf.Tensor,
+    roundoff_repaired: tf.Tensor,
+    classified_invalid: tf.Tensor,
+    singular_floor: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Build a strict root from the already-computed covariance eigensystem.
+
+    The strict classifier sends valid rows through ``C + rho I`` and
+    roundoff-repaired rows through ``C + 2 rho I``.  A scalar identity shift
+    leaves the eigenvectors unchanged, so a second ``eigh`` is unnecessary on
+    this opt-in path.  Invalid rows use the same scalar replacement matrix as
+    the baseline and therefore receive an identity eigensystem explicitly.
+    """
+
+    covariance_eigenvalues = tf.convert_to_tensor(covariance_eigenvalues, tf.float64)
+    covariance_eigenvectors = tf.convert_to_tensor(covariance_eigenvectors, tf.float64)
+    roundoff_repaired = tf.convert_to_tensor(roundoff_repaired, tf.bool)
+    classified_invalid = tf.convert_to_tensor(classified_invalid, tf.bool)
+    singular_floor = tf.convert_to_tensor(singular_floor, tf.float64)
+    repair_floor = tf.maximum(
+        singular_floor,
+        tf.constant(_PRINCIPAL_SQRT_ROUNDOFF_TOLERANCE, tf.float64),
+    )
+    shift = repair_floor * (
+        tf.constant(1.0, tf.float64) + tf.cast(roundoff_repaired, tf.float64)
+    )
+    replacement_scale = tf.maximum(repair_floor, tf.constant(1.0, tf.float64))
+    factor_eigenvalues = covariance_eigenvalues + shift[:, tf.newaxis]
+    factor_eigenvalues = tf.where(
+        classified_invalid[:, tf.newaxis],
+        tf.fill(tf.shape(factor_eigenvalues), replacement_scale),
+        factor_eigenvalues,
+    )
+    dimension = covariance_eigenvalues.shape[-1]
+    if dimension is None:
+        raise ValueError("cached strict factor requires a static eigensystem dimension")
+    identity = tf.eye(int(dimension), dtype=tf.float64)[tf.newaxis, :, :]
+    factor_eigenvectors = tf.where(
+        classified_invalid[:, tf.newaxis, tf.newaxis],
+        identity,
+        covariance_eigenvectors,
+    )
+    factor = factor_eigenvectors @ tf.linalg.diag(
+        tf.sqrt(factor_eigenvalues)
+    ) @ tf.linalg.matrix_transpose(factor_eigenvectors)
+    return factor, factor_eigenvalues, factor_eigenvectors
+
+
+def _tensorflow_strict_factor_cached_eigensystem(
+    safe_covariance: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Compute the strict factor basis once for reuse by its derivative solve.
+
+    ``safe_covariance`` is exactly the matrix passed to the strict root path.
+    Its eigensystem therefore constructs the same factor as the strict root;
+    the returned basis can also diagonalize that factor in exact arithmetic.
+    This narrower reuse strategy avoids substituting the raw covariance basis.
+    """
+
+    values, vectors = tf.linalg.eigh(tf.convert_to_tensor(safe_covariance, tf.float64))
+    factor_values = tf.sqrt(values)
+    factor = vectors @ tf.linalg.diag(factor_values) @ tf.linalg.matrix_transpose(vectors)
+    return factor, values, vectors
+
+
 def _tensorflow_newton_schulz_principal_sqrt(covariance: tf.Tensor) -> tf.Tensor:
     """Return an XLA-native SPD principal root with fixed graph structure."""
 
@@ -677,6 +751,25 @@ def _tensorflow_strict_symmetric_sylvester_solve(
     return tf.einsum("bia,bpac,bjc->bpij", vectors, scaled, vectors)
 
 
+def _tensorflow_strict_cached_symmetric_sylvester_solve(
+    factor_covariance_eigenvalues: tf.Tensor,
+    factor_eigenvectors: tf.Tensor,
+    rhs: tf.Tensor,
+) -> tf.Tensor:
+    """Solve a symmetric Sylvester equation in a cached covariance basis."""
+
+    covariance_values = tf.convert_to_tensor(
+        factor_covariance_eigenvalues, tf.float64
+    )
+    values = tf.sqrt(covariance_values)
+    vectors = tf.convert_to_tensor(factor_eigenvectors, tf.float64)
+    rhs = tf.convert_to_tensor(rhs, tf.float64)
+    projected = tf.einsum("bia,bpij,bjc->bpac", vectors, rhs, vectors)
+    denominator = values[:, :, tf.newaxis] + values[:, tf.newaxis, :]
+    scaled = projected / denominator[:, tf.newaxis, :, :]
+    return tf.einsum("bia,bpac,bjc->bpij", vectors, scaled, vectors)
+
+
 def _principal_sqrt_factor(
     covariance: tf.Tensor,
     *,
@@ -687,6 +780,12 @@ def _principal_sqrt_factor(
     if factor_backend == "tensorflow_eigh":
         return _tensorflow_native_principal_sqrt(covariance)
     if factor_backend == "tensorflow_eigh_strict":
+        return _tensorflow_strict_principal_sqrt(covariance)
+    if factor_backend == "tensorflow_eigh_strict_cached":
+        # The checked helpers use the cached eigensystem directly.  Keep a
+        # strict fallback here for callers that only provide the covariance.
+        return _tensorflow_strict_principal_sqrt(covariance)
+    if factor_backend == "tensorflow_eigh_strict_factor_cached":
         return _tensorflow_strict_principal_sqrt(covariance)
     if factor_backend == "tensorflow_newton_schulz":
         return _tensorflow_newton_schulz_principal_sqrt(covariance)
@@ -704,6 +803,12 @@ def _symmetric_sylvester_factor_solve(
     if factor_backend in ("tensorflow_eigh", "tensorflow_newton_schulz"):
         return _tensorflow_native_symmetric_sylvester_solve(factor, rhs)
     if factor_backend == "tensorflow_eigh_strict":
+        return _tensorflow_strict_symmetric_sylvester_solve(factor, rhs)
+    if factor_backend == "tensorflow_eigh_strict_cached":
+        # No covariance eigensystem is available at this API boundary (for
+        # example the reverse cotangent helper), so retain strict semantics.
+        return _tensorflow_strict_symmetric_sylvester_solve(factor, rhs)
+    if factor_backend == "tensorflow_eigh_strict_factor_cached":
         return _tensorflow_strict_symmetric_sylvester_solve(factor, rhs)
     raise ValueError(f"unknown principal sqrt backend: {factor_backend!r}")
 
@@ -946,9 +1051,9 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
         ),
     )
     (
-        eigenvalues,
+        solver_eigenvalues,
         floored,
-        eigenvectors,
+        solver_eigenvectors,
         _implemented_covariance,
         psd_projection_residual,
     ) = _batched_psd_eigh(eigensolver_covariance, singular_floor)
@@ -956,8 +1061,8 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
     # Restore nonfinite evidence after the safe solve so the row still fails closed.
     eigenvalues = tf.where(
         finite_covariance[:, tf.newaxis],
-        eigenvalues,
-        tf.fill(tf.shape(eigenvalues), tf.constant(float("nan"), tf.float64)),
+        solver_eigenvalues,
+        tf.fill(tf.shape(solver_eigenvalues), tf.constant(float("nan"), tf.float64)),
     )
     psd_projection_residual = tf.where(
         finite_covariance,
@@ -996,7 +1101,7 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
     eigenvectors = tf.where(
         classified_invalid[:, tf.newaxis, tf.newaxis],
         identity_eigenvectors,
-        eigenvectors,
+        solver_eigenvectors,
     )
     active_floors = tf.zeros(tf.shape(eigenvalues)[0], dtype=tf.int32)
     roundoff_repair_count = tf.cast(roundoff_repaired, tf.int32)
@@ -1056,25 +1161,52 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
         eigenvalues = tf.identity(safe_eigenvalues)
         floored = tf.identity(tf.maximum(safe_eigenvalues, singular_floor))
         eigenvectors = tf.identity(eigenvectors)
+        solver_eigenvalues = tf.identity(solver_eigenvalues)
+        solver_eigenvectors = tf.identity(solver_eigenvectors)
         safe_covariance = tf.identity(safe_covariance)
 
     covariance_valid_or_repaired_mask = tf.logical_not(classified_invalid)
     valid_derivative_mask = tf.logical_not(combined_classified_invalid)
     valid_derivative_parameter_mask = valid_derivative_mask[:, tf.newaxis]
-    factor = _principal_sqrt_factor(
-        safe_covariance,
-        factor_backend=factor_backend,
-    )
     safe_d_covariance = tf.where(
         combined_classified_invalid[:, tf.newaxis, tf.newaxis, tf.newaxis],
         tf.zeros_like(d_covariance),
         tf.where(tf.math.is_finite(d_covariance), d_covariance, tf.zeros_like(d_covariance)),
     )
-    d_factor = _symmetric_sylvester_factor_solve(
-        factor,
-        safe_d_covariance,
-        factor_backend=factor_backend,
-    )
+    if factor_backend == "tensorflow_eigh_strict_cached":
+        factor, factor_eigenvalues, factor_eigenvectors = (
+            _tensorflow_strict_cached_factor_eigensystem(
+                solver_eigenvalues,
+                solver_eigenvectors,
+                roundoff_repaired,
+                classified_invalid,
+                singular_floor,
+            )
+        )
+        d_factor = _tensorflow_strict_cached_symmetric_sylvester_solve(
+            factor_eigenvalues,
+            factor_eigenvectors,
+            safe_d_covariance,
+        )
+    elif factor_backend == "tensorflow_eigh_strict_factor_cached":
+        factor, factor_eigenvalues, factor_eigenvectors = (
+            _tensorflow_strict_factor_cached_eigensystem(safe_covariance)
+        )
+        d_factor = _tensorflow_strict_cached_symmetric_sylvester_solve(
+            factor_eigenvalues,
+            factor_eigenvectors,
+            safe_d_covariance,
+        )
+    else:
+        factor = _principal_sqrt_factor(
+            safe_covariance,
+            factor_backend=factor_backend,
+        )
+        d_factor = _symmetric_sylvester_factor_solve(
+            factor,
+            safe_d_covariance,
+            factor_backend=factor_backend,
+        )
     implemented_covariance = _symmetrize(factor @ tf.linalg.matrix_transpose(factor))
     psd_projection_residual = tf.linalg.norm(
         implemented_covariance - covariance,
@@ -1219,16 +1351,16 @@ def _checked_batched_principal_sqrt_factor_value(
         ),
     )
     (
-        eigenvalues,
+        solver_eigenvalues,
         _floored,
-        eigenvectors,
+        solver_eigenvectors,
         _implemented_covariance,
         psd_projection_residual,
     ) = _batched_psd_eigh(eigensolver_covariance, singular_floor)
     eigenvalues = tf.where(
         finite_covariance[:, tf.newaxis],
-        eigenvalues,
-        tf.fill(tf.shape(eigenvalues), tf.constant(float("nan"), tf.float64)),
+        solver_eigenvalues,
+        tf.fill(tf.shape(solver_eigenvalues), tf.constant(float("nan"), tf.float64)),
     )
     psd_projection_residual = tf.where(
         finite_covariance,
@@ -1267,7 +1399,7 @@ def _checked_batched_principal_sqrt_factor_value(
     eigenvectors = tf.where(
         classified_invalid[:, tf.newaxis, tf.newaxis],
         identity_eigenvectors,
-        eigenvectors,
+        solver_eigenvectors,
     )
     structural_null_covariance_residual = tf.zeros(
         tf.shape(eigenvalues)[0],
@@ -1296,12 +1428,29 @@ def _checked_batched_principal_sqrt_factor_value(
             tf.maximum(safe_eigenvalues, singular_floor)
         )
         eigenvectors = tf.identity(eigenvectors)
+        solver_eigenvalues = tf.identity(solver_eigenvalues)
+        solver_eigenvectors = tf.identity(solver_eigenvectors)
         safe_covariance = tf.identity(safe_covariance)
 
-    factor = _principal_sqrt_factor(
-        safe_covariance,
-        factor_backend=factor_backend,
-    )
+    if factor_backend == "tensorflow_eigh_strict_cached":
+        factor, _factor_eigenvalues, _factor_eigenvectors = (
+            _tensorflow_strict_cached_factor_eigensystem(
+                solver_eigenvalues,
+                solver_eigenvectors,
+                roundoff_repaired,
+                classified_invalid,
+                singular_floor,
+            )
+        )
+    elif factor_backend == "tensorflow_eigh_strict_factor_cached":
+        factor, _factor_eigenvalues, _factor_eigenvectors = (
+            _tensorflow_strict_factor_cached_eigensystem(safe_covariance)
+        )
+    else:
+        factor = _principal_sqrt_factor(
+            safe_covariance,
+            factor_backend=factor_backend,
+        )
     implemented_covariance = _symmetrize(
         factor @ tf.linalg.matrix_transpose(factor)
     )
