@@ -28,7 +28,12 @@ from pathlib import Path
 from typing import Any, Dict
 
 # Grid index of the warm-start baseline controls, verified against _tuning_grid().
-BASELINE_GRID_INDEX = 28
+# The grid was reduced from 54 to 18 configurations after the Sinkhorn/balance
+# step dimension was measured to be scientifically inert, which moved the
+# baseline from index 28 to index 10.  The analyser falls back to a controls
+# search if this index does not hold the baseline, so a future grid change
+# degrades to a warning rather than a silent mislabel.
+BASELINE_GRID_INDEX = 10
 
 BASELINE_CONTROLS = {
     "reset_epsilon": 8.0,

@@ -159,37 +159,44 @@ def _reset_design(particle_count: int, dimension: int) -> tf.Tensor:
 def _tuning_grid() -> List[Dict]:
     """Define tuning grid for SQMC controls.
 
-    Coarse grid targeting ~50 configurations:
-    - 3 Sinkhorn epsilon values
-    - 3 Sinkhorn/balance step combinations (coupled)
-    - 3 diagonal correction strengths
-    - 2 pairwise correction strengths
+    3 Sinkhorn epsilon x 3 diagonal strengths x 2 pairwise strengths
+    = 18 configurations.
 
-    Total: 3 × 3 × 3 × 2 = 54 configurations
+    The Sinkhorn/balance step count is NOT swept.  It was originally a third grid
+    dimension with settings (4,4), (8,8), (16,16), which made the grid 54
+    configurations.  Direct measurement of the reset core
+    (`docs/benchmarks/check_sinkhorn_step_sensitivity.py`) shows that dimension is
+    scientifically inert at every grid epsilon: the Sinkhorn marginals are already
+    converged at the smallest setting (row error ~1e-16), so extra iterations
+    refine the transport only at the ~1e-11 level -- roughly nine orders of
+    magnitude below the control effects on score L2 (~1e-2) and ten orders below
+    per-seed L2 noise (~1.7e-1).  The abandoned 54-cell pilot log confirmed this
+    end to end at full scale: rows differing only in step count printed identical
+    L2 and cosine.  Sweeping it triples cost and adds no decision-relevant
+    information.
+
+    The retained setting is (8,8), the UNTUNED baseline's own value, which keeps
+    the baseline controls inside the grid and so preserves the baseline-in-grid
+    self-check used by analyze_sqmc_pilot_frontier.py.
     """
     grid = []
 
-    # Sinkhorn/balance parameters (coupled - same steps for both)
     epsilon_values = [4.0, 8.0, 16.0]
-    step_pairs = [(4, 4), (8, 8), (16, 16)]  # (sinkhorn, balance)
-
-    # Correction parameters
     diag_strengths = [0.1, 0.15, 0.2]
-    pair_strengths = [0.02, 0.03]  # Narrower range, 0.02 is current default
+    pair_strengths = [0.02, 0.03]  # 0.02 is the baseline value
 
     for epsilon in epsilon_values:
-        for sinkhorn_steps, balance_steps in step_pairs:
-            for diag_strength in diag_strengths:
-                for pair_strength in pair_strengths:
-                    grid.append({
-                        'reset_epsilon': epsilon,
-                        'reset_sinkhorn_steps': sinkhorn_steps,
-                        'reset_balance_steps': balance_steps,
-                        'correction_strength': diag_strength,
-                        'correction_steps': 4,  # Fixed at current default
-                        'pairwise_strength': pair_strength,
-                        'pairwise_steps': 4,  # Fixed at current default
-                    })
+        for diag_strength in diag_strengths:
+            for pair_strength in pair_strengths:
+                grid.append({
+                    'reset_epsilon': epsilon,
+                    'reset_sinkhorn_steps': 8,  # inert dimension, baseline value
+                    'reset_balance_steps': 8,
+                    'correction_strength': diag_strength,
+                    'correction_steps': 4,  # Fixed at current default
+                    'pairwise_strength': pair_strength,
+                    'pairwise_steps': 4,  # Fixed at current default
+                })
 
     return grid
 
