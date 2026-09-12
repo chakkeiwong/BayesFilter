@@ -696,6 +696,55 @@ class are unchanged; only the stage sizing needs revision, and a materially
 expanded compute request would need explicit approval rather than being absorbed
 silently.
 
+### Finding: one third of the grid was inert (resolved 2026-09-13)
+
+The first pilot attempt was stopped at 13/54 because its own log exposed a defect
+in the grid design. Rows differing **only** in `(reset_sinkhorn_steps,
+reset_balance_steps)` printed identical L2 and cosine to every displayed decimal,
+with a clean period of 6 — precisely the block size of the step dimension.
+
+Direct measurement of the reset core
+(`docs/benchmarks/check_sinkhorn_step_sensitivity.py`, CPU-only) settles the
+mechanism. `_sinkhorn_contract_e_reset_core` runs `sinkhorn_steps +
+balance_steps` iterations of a single fixed-point loop. At the smallest grid
+setting the Sinkhorn marginals are **already converged** (row error ~1e-16,
+column TV ~1e-7), so further iterations refine the transport only at ~1e-11 and
+its tangent at ~1e-9:
+
+| epsilon | steps vs (4,4) | transport delta | tangent delta |
+|---|---|---|---|
+| 4.0 | (8,8) | 1.07e-11 | 2.38e-09 |
+| 4.0 | (16,16) | 3.21e-11 | 7.15e-09 |
+| 8.0 | (8,8) | 3.51e-12 | 6.57e-10 |
+| 16.0 | (16,16) | 4.90e-12 | 7.13e-10 |
+
+Those deltas are ~9 orders of magnitude below the control effects on score L2
+(~1e-2) and ~10 below per-seed L2 noise (~1.7e-1). The dimension is **numerically
+nonzero but scientifically inert**: it cannot change which configuration is
+selected.
+
+**A methodological note on the check itself.** Its first verdict used an absolute
+`1e-12` tolerance and reported SENSITIVE — which tested *bit-identity*, not
+decision relevance, and would have justified retaining a useless dimension. The
+threshold is now `MATERIAL_DELTA = 1e-6`, justified against the measured control
+effect and noise scale. This is the same error class as D-4: a tolerance chosen
+without reference to the quantity it is supposed to discriminate.
+
+**Resolution.** The grid is now **18 configurations** (3 epsilon × 3 diagonal × 2
+pairwise), with the step count fixed at `(8,8)` — the baseline's own value, which
+keeps the baseline controls inside the grid and preserves the baseline-in-grid
+self-check. The baseline moved from index 28 to **index 10**.
+
+**Scope limit on the inertness claim.** Measured at the grid's epsilon values, on
+a Gaussian cloud, at N=120, in float64. It does not license removing the step
+controls from the API, nor assuming inertness at other epsilon, other cloud
+geometry, or in float32/TF32 where the noise floor differs.
+
+**Budget consequence.** Phase 2.2 drops from 3,456 cells (~59 h) to 1,152 cells
+(~20 h); combined with 4 tuning seeds it is 288 cells (~5 h), back inside the
+plan's original 8-12 h envelope. The abandoned log is preserved at
+`/tmp/sqmc_pilot_run_ABANDONED_54grid.log`.
+
 ### Revised Phase 2.2 options (owner decision)
 
 - **Option R-1 — fewer tuning seeds (4 instead of 16).** 864 cells, **~15 h**.
