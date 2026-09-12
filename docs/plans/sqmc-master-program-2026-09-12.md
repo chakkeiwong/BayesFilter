@@ -725,6 +725,95 @@ no route-comparison claim, and the three untuned routes remain unaddressed.
 
 ---
 
+## Open Gap: Heuristic Dominance Gate Not Applied (recorded 2026-09-13)
+
+The governing policy requires the Heuristic Dominance Gate before interpreting or
+reporting any optimised or otherwise complex method. **This campaign has not
+applied it.** The omission is recorded here as an open gap rather than quietly
+left out, because it is exactly the failure mode the gate was written to catch:
+every internal check passes while the question "is the complex machinery beating
+the cheap alternative at all?" is never asked.
+
+What the campaign currently compares:
+- SQMC ancestry routes against **each other** (two complex methods), and
+- SQMC analytical score against the **exact Kalman oracle** (distance-to-oracle).
+
+The second is the certifying metric and it is genuinely strong — on this target an
+exact oracle is computable, so distance-to-oracle is available and is reported.
+What is missing is the adversary set: nothing establishes that the LEDH transport
+machinery (flow, Contract-E reset, dual-cap correction, trust region) earns its
+cost against a cheap transport-free alternative.
+
+### Constructed adversary set (not yet run)
+
+Derived from the structure of this problem, not cited from a template:
+
+1. **Exact Kalman score** — the oracle. Already in place as the comparator.
+   Certifying metric; on a linear-Gaussian target it is cheap and exact.
+2. **Finite differences on the SQMC value** — no analytical tangent machinery at
+   all. Tests whether the analytical score path buys accuracy over simply
+   differencing the value it already computes.
+3. **Bootstrap PF at equal N** — `bootstrap_lgssm_fixed_stream_value_and_directional_score`
+   already exists in `ledh_younis_kdm_lgssm_reference_tf.py`. Transport-free at
+   the same particle count.
+4. **Bootstrap PF at equal wall-clock** — the sharp adversary. Transport is the
+   dominant per-cell cost, so a transport-free filter can afford many more
+   particles for the same time. If a bootstrap PF at equal wall-clock reaches
+   comparable distance-to-oracle, the transport machinery is not earning its cost
+   *on this target*.
+5. **Transport at reduced N, cost-matched** — the converse direction of (4).
+
+**Estimand caveat that must travel with (3) and (4):** the bootstrap reference's
+own docstring states it returns "the total derivative of that finite fixed-stream
+bootstrap program, not an unbiased score identity for discrete resampling." It is
+therefore a legitimate adversary for *how close to the oracle score a
+transport-free program gets*, but it must never be described as computing the same
+estimand as the canonical analytical score. Comparing the two requires saying
+plainly that the estimands differ.
+
+### Salient situations for conditional evaluation
+
+The gate requires evaluation *conditional on* salient situations, not pooled
+averages. For this target:
+- **low vs high observation noise** (`r_scale`) — where the filter is
+  informative vs diffuse;
+- **near-unit-root vs strongly mean-reverting** `phi` — where transport quality
+  should matter most;
+- **short vs long horizon** — where per-step error accumulates;
+- **low vs high particle count** — where transport should pay off or not.
+
+The current campaign evaluates one parameter point (`theta = [0.9, 0.8, 0.7, 0.6,
+0.8]`) at one horizon and one N, so it cannot satisfy the conditional requirement
+even if the adversaries were run.
+
+### Status and consequence
+
+**Not run. Not scheduled inside the current budget.** The gate is a promotion
+veto, so its absence means:
+
+- No claim that the LEDH transport route is a good way to estimate this score may
+  be made from this campaign, regardless of how the TUNED-vs-UNTUNED comparison
+  turns out.
+- The tuning result remains meaningful in its own narrow terms — *does exact-scope
+  tuning beat warm-start controls within this route* — because both arms use the
+  same machinery, so the comparison is internally valid.
+- Per the policy, the relative comparison between complex methods (routes) stays
+  uninterpretable as progress until the adversary set is cleared.
+
+A separate, cheap experiment plan should run adversaries (2), (3) and (4) at the
+current parameter point before any transport-vs-alternative claim is made. Item
+(4) is the one most likely to be informative and is inexpensive relative to the
+59 h Phase 2.2 estimate.
+
+**Honest framing of the LGSSM target:** on a linear-Gaussian model the exact
+Kalman filter is both cheap and exact, so a particle method is not the method of
+choice for this model on its own merits. LGSSM is used here as a *test target*
+where ground truth is computable, for machinery intended for nonlinear models.
+That is a legitimate use, but it means favourable LGSSM results transfer to the
+nonlinear case only by argument, never automatically.
+
+---
+
 ## Changelog
 
 - 2026-09-09: Austria SIR 16-seed comparison complete (all routes indistinguishable)
