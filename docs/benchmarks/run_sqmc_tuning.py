@@ -2,6 +2,7 @@
 """SQMC Tuning: Exact-scope grid search for 3D LGSSM T=20 N=1008.
 
 This script produces repository-issued tuning artifacts for each SQMC route.
+Uses Pareto-optimal multi-objective selection from established tools.
 """
 
 import json
@@ -11,6 +12,7 @@ import time
 import hashlib
 from datetime import datetime
 from typing import Dict, List, Tuple
+from dataclasses import dataclass
 
 import numpy as np
 import tensorflow as tf
@@ -18,8 +20,52 @@ import tensorflow as tf
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
+# Add ~/python for multi-objective tools
+sys.path.insert(0, '/home/chakwong/python/src')
+
 from bayesfilter.highdim.ledh_canonical_models_tf import diagonal_lgssm_canonical_model
 from bayesfilter.highdim.ledh_kalman_oracle_tf import kalman_oracle_value_and_score
+
+# Import Pareto dominance tools
+from common_utils.tf_multiobjective.population_switching import nondominated
+
+
+@dataclass
+class ConfigEvaluation:
+    """Evaluation entry for Pareto analysis."""
+    config_idx: int
+    objectives: tuple  # (L2, 1-cosine, rel_norm, fisher, hmc) - all minimize
+    controls: dict
+    mean_cosine: float
+    mean_l2: float
+    mean_rel_norm: float
+    mean_fisher: float
+    mean_hmc: float
+    valid_fraction: float
+
+    @property
+    def replica_id(self):
+        return self.config_idx
+
+    @property
+    def candidate_id(self):
+        return str(self.config_idx)
+
+    @property
+    def method(self):
+        return 'grid_search'
+
+    @property
+    def parameters(self):
+        return self.controls
+
+    @property
+    def valid(self):
+        return self.valid_fraction > 0.5
+
+    def checked(self):
+        """Required for nondominated() API."""
+        return self
 
 
 def _frozen_observations(horizon: int) -> tf.Tensor:
@@ -67,6 +113,79 @@ def _tuning_grid() -> List[Dict]:
                     })
 
     return grid
+
+
+def find_pareto_optimal(grid_results: List[Dict], tuning_seeds: List[int]) -> List[ConfigEvaluation]:
+    """
+    Find Pareto-optimal configurations using established dominance tools.
+
+    Args:
+        grid_results: List of dicts with per-config seed_results
+        tuning_seeds: List of seed values
+
+    Returns:
+        List of Pareto-optimal ConfigEvaluation entries
+    """
+
+    entries = []
+
+    for config_idx, config_result in enumerate(grid_results):
+        # Get valid seeds
+        valid_seeds = [r for r in config_result['seed_results'] if r['valid']]
+
+        if len(valid_seeds) == 0:
+            continue
+
+        # Compute mean metrics
+        mean_cosine = np.mean([r['cosine_similarity'] for r in valid_seeds])
+        mean_l2 = np.mean([r['score_l2_error'] for r in valid_seeds])
+        mean_rel_norm = np.mean([r['relative_norm_error'] for r in valid_seeds])
+
+        fisher_errors = [r['fisher_scaled_errors'] for r in valid_seeds if r['fisher_scaled_errors']]
+        if fisher_errors:
+            mean_fisher = np.mean([np.mean(fs) for fs in fisher_errors])
+            max_fisher = max(max(fs) for fs in fisher_errors)
+        else:
+            mean_fisher = 0.0
+            max_fisher = 0.0
+
+        mean_hmc = np.mean([r['induced_hmc_error'] for r in valid_seeds])
+
+        # Apply hard constraints (vetoes)
+        if mean_cosine < 0.9995:
+            continue  # Direction quality veto
+        if mean_rel_norm > 0.05:
+            continue  # Magnitude quality veto
+        if max_fisher > 1.0:
+            continue  # Component quality veto
+
+        # Compute objectives (all minimize)
+        objectives = (
+            mean_l2,  # L2 error
+            1.0 - mean_cosine,  # Direction error (minimize means maximize cosine)
+            mean_rel_norm,  # Magnitude error
+            mean_fisher,  # Fisher-scaled balance
+            mean_hmc,  # HMC parameter error
+        )
+
+        # Create evaluation entry
+        entry = ConfigEvaluation(
+            config_idx=config_idx,
+            objectives=objectives,
+            controls=config_result['controls'],
+            mean_cosine=mean_cosine,
+            mean_l2=mean_l2,
+            mean_rel_norm=mean_rel_norm,
+            mean_fisher=mean_fisher,
+            mean_hmc=mean_hmc,
+            valid_fraction=config_result['valid_fraction'],
+        )
+        entries.append(entry)
+
+    # Find Pareto frontier using established function
+    pareto_optimal = nondominated(entries, absolute_tolerance=1e-12)
+
+    return pareto_optimal
 
 
 def _evaluate_controls(
@@ -170,15 +289,19 @@ def _evaluate_controls(
         # Hard vetoes
         if cosine_sim < 0.9995:
             tuning_score = float('inf')
+            veto_reason = 'cosine_veto'
         elif rel_norm_error > 0.05:
             tuning_score = float('inf')
+            veto_reason = 'rel_norm_veto'
         elif any(fs > 1.0 for fs in fisher_scaled):
             tuning_score = float('inf')
+            veto_reason = 'fisher_veto'
         else:
             # Primary: L2 error, Secondary: Fisher-scaled and HMC error
             fisher_penalty = 0.1 * np.mean(fisher_scaled)
             hmc_penalty = 0.1 * induced_hmc_error
             tuning_score = score_l2 + fisher_penalty + hmc_penalty
+            veto_reason = None
 
         return {
             'valid': True,
@@ -188,6 +311,7 @@ def _evaluate_controls(
             'fisher_scaled_errors': fisher_scaled,
             'induced_hmc_error': float(induced_hmc_error),
             'tuning_score': float(tuning_score),
+            'veto_reason': veto_reason,
             'value': float(result['value']),
         }
 
@@ -200,6 +324,7 @@ def _evaluate_controls(
             'fisher_scaled_errors': [],
             'induced_hmc_error': float('inf'),
             'tuning_score': float('inf'),
+            'veto_reason': 'exception',
             'error': str(e),
         }
 
@@ -283,30 +408,61 @@ def tune_route(
             'valid_fraction': valid_count / len(tuning_seeds),
             'mean_score_l2': float(mean_l2),
             'mean_cosine_similarity': float(mean_cos),
+            'mean_relative_norm_error': float(np.mean([r['relative_norm_error'] for r in valid_results])),
+            'mean_fisher_scaled': float(np.mean([np.mean(r['fisher_scaled_errors']) for r in valid_results if r['fisher_scaled_errors']])),
+            'mean_hmc_error': float(np.mean([r['induced_hmc_error'] for r in valid_results])),
             'mean_tuning_score': float(mean_tuning_score),
+            'veto_counts': {
+                'cosine': sum(1 for r in seed_results if r.get('veto_reason') == 'cosine_veto'),
+                'rel_norm': sum(1 for r in seed_results if r.get('veto_reason') == 'rel_norm_veto'),
+                'fisher': sum(1 for r in seed_results if r.get('veto_reason') == 'fisher_veto'),
+                'exception': sum(1 for r in seed_results if r.get('veto_reason') == 'exception'),
+            },
             'seed_results': seed_results,
         })
 
-    # Find best configuration (minimize multi-objective tuning score)
-    valid_configs = [r for r in grid_results if r['valid_fraction'] > 0.5 and r['mean_tuning_score'] < float('inf')]
+    # Pareto-optimal selection using established tools
+    print(f"\n{'='*80}")
+    print(f"PARETO ANALYSIS")
+    print(f"{'='*80}\n")
 
-    if not valid_configs:
-        print("\n⚠️  NO VALID CONFIGURATIONS FOUND")
-        print("All configurations either failed validity or violated multi-objective constraints")
-        print("(cosine < 0.9995, rel_norm > 0.05, or Fisher-scaled > 1.0)")
+    pareto_optimal = find_pareto_optimal(grid_results, tuning_seeds)
+
+    if not pareto_optimal:
+        print("⚠️  NO PARETO-OPTIMAL CONFIGURATIONS FOUND")
+        print("All configurations either failed validity or violated hard constraints")
+        print("\nHard constraints:")
+        print("  - Cosine similarity >= 0.9995")
+        print("  - Relative norm error <= 0.05")
+        print("  - All Fisher-scaled errors <= 1.0")
         return None
 
-    # Sort by multi-objective tuning score
-    valid_configs.sort(key=lambda x: x['mean_tuning_score'])
-    best = valid_configs[0]
+    print(f"Pareto frontier: {len(pareto_optimal)} configurations\n")
 
-    print(f"\n{'='*80}")
-    print(f"BEST CONFIGURATION")
+    # Display Pareto frontier
+    for i, entry in enumerate(pareto_optimal):
+        print(f"Config {i+1}/{len(pareto_optimal)} (grid index {entry.config_idx}):")
+        print(f"  L2 error: {entry.objectives[0]:.4f}")
+        print(f"  Direction error (1-cosine): {entry.objectives[1]:.7f}")
+        print(f"  Rel norm error: {entry.objectives[2]:.4f}")
+        print(f"  Mean Fisher-scaled: {entry.objectives[3]:.4f}")
+        print(f"  Induced HMC error: {entry.objectives[4]:.6f}")
+        print()
+
+    # Select best by lexicographic ordering (L2 primary)
+    best_entry = min(pareto_optimal, key=lambda e: e.objectives)
+    best = grid_results[best_entry.config_idx]
+
     print(f"{'='*80}")
-    print(f"Tuning score: {best['mean_tuning_score']:.4f}")
-    print(f"Score L2 error: {best['mean_score_l2']:.4f}")
-    print(f"Cosine similarity: {best['mean_cosine_similarity']:.6f}")
-    print(f"Valid fraction: {best['valid_fraction']:.2%}")
+    print(f"SELECTED (lexicographic: L2 primary, then direction, magnitude, fisher, hmc)")
+    print(f"{'='*80}")
+    print(f"Grid index: {best_entry.config_idx}")
+    print(f"L2 error: {best_entry.mean_l2:.4f}")
+    print(f"Cosine similarity: {best_entry.mean_cosine:.6f}")
+    print(f"Relative norm error: {best_entry.mean_rel_norm:.4f}")
+    print(f"Mean Fisher-scaled: {best_entry.mean_fisher:.4f}")
+    print(f"Induced HMC error: {best_entry.mean_hmc:.6f}")
+    print(f"Valid fraction: {best_entry.valid_fraction:.2%}")
     print()
     print("Controls:")
     for k, v in best['controls'].items():
@@ -330,20 +486,39 @@ def tune_route(
         'tuning_seeds': tuning_seeds,
         'tuning_date': datetime.now().isoformat(),
         'git_commit': os.popen('git rev-parse HEAD').read().strip(),
-        'tuning_metric': 'multi_objective',
-        'tuning_objective': 'minimize L2 error while maintaining cosine >= 0.9995, rel_norm <= 0.05, Fisher-scaled <= 1.0',
-        'veto_criteria': {
-            'cosine_similarity': 0.9995,
-            'relative_norm_error': 0.05,
-            'fisher_scaled_max': 1.0,
+        'tuning_method': 'pareto_optimal_grid_search',
+        'tuning_objective': 'Find Pareto-optimal configs minimizing (L2, 1-cosine, rel_norm, fisher, hmc)',
+        'selection_criterion': 'Lexicographic ordering from Pareto frontier (L2 primary)',
+        'hard_constraints': {
+            'cosine_similarity_min': 0.9995,
+            'relative_norm_error_max': 0.05,
+            'fisher_scaled_error_max': 1.0,
         },
+        'pareto_tools': 'common_utils.tf_multiobjective.population_switching.nondominated',
         'best_controls': best['controls'],
         'best_metrics': {
-            'mean_tuning_score': best['mean_tuning_score'],
-            'mean_score_l2_error': best['mean_score_l2'],
-            'mean_cosine_similarity': best['mean_cosine_similarity'],
-            'valid_fraction': best['valid_fraction'],
+            'mean_score_l2_error': best_entry.mean_l2,
+            'mean_cosine_similarity': best_entry.mean_cosine,
+            'mean_relative_norm_error': best_entry.mean_rel_norm,
+            'mean_fisher_scaled': best_entry.mean_fisher,
+            'mean_induced_hmc_error': best_entry.mean_hmc,
+            'valid_fraction': best_entry.valid_fraction,
         },
+        'pareto_frontier_size': len(pareto_optimal),
+        'pareto_frontier': [
+            {
+                'config_idx': entry.config_idx,
+                'controls': entry.controls,
+                'objectives': {
+                    'l2_error': entry.objectives[0],
+                    'direction_error': entry.objectives[1],
+                    'rel_norm_error': entry.objectives[2],
+                    'fisher_scaled': entry.objectives[3],
+                    'hmc_error': entry.objectives[4],
+                },
+            }
+            for entry in pareto_optimal
+        ],
         'grid_size': len(grid),
         'all_results': grid_results,
     }
