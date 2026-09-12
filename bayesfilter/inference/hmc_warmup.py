@@ -15,9 +15,9 @@ import math
 import sys
 import time
 from dataclasses import dataclass, field, replace
+from functools import lru_cache
+from numbers import Integral
 from typing import Any, Callable, Mapping, Sequence
-
-import numpy as np
 
 from bayesfilter.hmc_route_contract import (
     HMC_ROUTE_CONTRACT_VERSION,
@@ -41,7 +41,11 @@ from bayesfilter.inference.hmc_tuning import (
     build_windowed_warmup_schedule,
 )
 from bayesfilter.inference.hmc_verification import (
+    _all_close,
+    _all_finite,
     _evaluate_retained_target_health,
+    _float64_tensor,
+    _is_boolean_scalar,
     target_status_telemetry_has_failure,
 )
 from bayesfilter.inference.posterior_adapter import (
@@ -386,10 +390,10 @@ def _json_ready(value: Any) -> Any:
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):
         return [_json_ready(item) for item in value]
-    if isinstance(value, np.ndarray):
+    if callable(getattr(value, "tolist", None)):
         return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if callable(getattr(value, "numpy", None)):
+        return _json_ready(value.numpy())
     return value
 
 
@@ -399,10 +403,7 @@ def _strict_integer(
     name: str,
     minimum: int | None = None,
 ) -> int:
-    if isinstance(value, (bool, np.bool_)) or not isinstance(
-        value,
-        (int, np.integer),
-    ):
+    if _is_boolean_scalar(value) or not isinstance(value, Integral):
         raise ValueError(f"{name} must be an integer scalar")
     result = int(value)
     if minimum is not None and result < minimum:
@@ -1718,11 +1719,12 @@ class MetricAdequacyDecision:
             raise ValueError("unsupported metric adequacy outcome")
         covariance = None
         if self.covariance is not None:
-            covariance = np.asarray(self.covariance, dtype=float).copy()
-            if covariance.ndim != 2 or covariance.shape[0] != covariance.shape[1]:
+            covariance = _float64_tensor(self.covariance)
+            if covariance.shape.rank != 2 or covariance.shape[0] != covariance.shape[1]:
                 raise ValueError("adequate covariance must be square")
-            if not np.all(np.isfinite(covariance)):
+            if not _all_finite(covariance):
                 raise ValueError("adequate covariance must be finite")
+            covariance = covariance.numpy()
             covariance.setflags(write=False)
         if outcome in {
             "no_update_insufficient_metric_evidence",
@@ -2260,6 +2262,7 @@ class _AffineWarmupAdapter:
             runtime_backend=self.runtime_backend,
             evidence_path=base.evidence_path,
             target_scope=self.target_scope,
+            score_provenance=base.score_provenance,
             nonclaims=OPERATIONAL_WARMUP_NONCLAIMS,
         )
 
@@ -2318,7 +2321,7 @@ class _AffineWarmupAdapter:
         if not callable(classifier):
             return False
         result = classifier(error)
-        if not isinstance(result, (bool, np.bool_)):
+        if not _is_boolean_scalar(result):
             raise TypeError("classify_target_exception must return a boolean")
         return bool(result)
 
@@ -2356,7 +2359,7 @@ def _evaluate_phase7_engineering_probe_target_health(
     that existing authority once per row and aggregates its closed result.
     """
 
-    candidate_array = np.asarray(candidates, dtype=float)
+    candidate_array = _float64_tensor(candidates)
     shared_reasons: list[str] = []
     candidate_reasons: list[str] = []
     value_finite_count = 0
@@ -2408,9 +2411,9 @@ class ReasonableEpsilonAttempt:
 
     def __post_init__(self) -> None:
         step = float(self.step_size)
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("reasonable-epsilon step_size must be positive and finite")
-        if not isinstance(self.finite, (bool, np.bool_)):
+        if not _is_boolean_scalar(self.finite):
             raise ValueError("reasonable-epsilon finite flag must be boolean")
         finite = bool(self.finite)
         mean = self.mean_acceptance_probability
@@ -2418,7 +2421,7 @@ class ReasonableEpsilonAttempt:
             if mean is None:
                 raise ValueError("finite reasonable-epsilon attempt requires acceptance")
             mean = float(mean)
-            if not np.isfinite(mean) or not 0.0 <= mean <= 1.0:
+            if not math.isfinite(mean) or not 0.0 <= mean <= 1.0:
                 raise ValueError("reasonable-epsilon acceptance must lie inside [0, 1]")
         elif mean is not None:
             raise ValueError("nonfinite reasonable-epsilon attempt must normalize to None")
@@ -2447,7 +2450,7 @@ class ReasonableEpsilonAttempt:
             minimum = mean if minimum is None else float(minimum)
             maximum = mean if maximum is None else float(maximum)
             if (
-                not np.all(np.isfinite((minimum, maximum)))
+                not all(math.isfinite(value) for value in (minimum, maximum))
                 or not 0.0 <= minimum <= mean <= maximum <= 1.0
             ):
                 raise ValueError("reasonable-epsilon probe acceptance range is invalid")
@@ -2513,11 +2516,11 @@ class ReasonableEpsilonResult:
                 raise ValueError("passed reasonable-epsilon result requires a step")
             selected = float(selected)
             if (
-                not np.isfinite(selected)
+                not math.isfinite(selected)
                 or selected <= 0.0
                 or not attempts[-1].usable
                 or attempts[-1].mean_acceptance_probability is None
-                or not np.isclose(selected, attempts[-1].step_size, rtol=0.0, atol=0.0)
+                or selected != attempts[-1].step_size
             ):
                 raise ValueError("selected reasonable epsilon lacks final finite evidence")
         elif status == "externally_qualified":
@@ -2526,7 +2529,7 @@ class ReasonableEpsilonResult:
                     "externally qualified epsilon requires one selected step and no probes"
                 )
             selected = float(selected)
-            if not np.isfinite(selected) or selected <= 0.0:
+            if not math.isfinite(selected) or selected <= 0.0:
                 raise ValueError("externally qualified epsilon must be positive and finite")
         elif selected is not None:
             raise ValueError("inconclusive reasonable-epsilon result cannot select a step")
@@ -2569,23 +2572,34 @@ def find_reasonable_epsilon(
     momentum_probe_count: int = 1,
     target_status_trace_policy: str = "none",
     jit_compile: bool = False,
+    hard_veto_nonfinite: bool = False,
     _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
     _g2_seed_key_prefix: str | None = None,
     _g2_seed_base_key: str | None = None,
 ) -> ReasonableEpsilonResult:
-    """Bracket epsilon using the fixed trajectory that will consume it."""
+    """Bracket epsilon using the fixed trajectory that will consume it.
+
+    The strict fixed-L repair sets ``hard_veto_nonfinite=True``: a failed
+    target, score, acceptance, proposal, or displacement terminates the
+    bracket, instead of halving epsilon and retrying a failed trajectory.
+    """
 
     import tensorflow as tf
     import tensorflow_probability as tfp
+    from bayesfilter.inference.fixed_l_finite_bracket import (
+        FixedLFiniteBracketError,
+        classify_tuning_exception,
+        finite_transition_health,
+    )
 
     step = float(initial_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("initial_step_size must be positive and finite")
     attempt_limit = _strict_integer(max_attempts, name="max_attempts", minimum=1)
     lower = float(lower_acceptance)
     upper = float(upper_acceptance)
     if (
-        not np.all(np.isfinite((lower, upper)))
+        not all(math.isfinite(value) for value in (lower, upper))
         or not 0.0 < lower < upper < 1.0
     ):
         raise ValueError("reasonable-epsilon acceptance bracket must lie inside (0, 1)")
@@ -2608,7 +2622,7 @@ def find_reasonable_epsilon(
         minimum=1,
     )
     target_status_policy = _target_status_policy(target_status_trace_policy)
-    state = tf.convert_to_tensor(current_state, dtype=tf.float64)
+    state = _float64_tensor(current_state)
     if (
         state.shape.rank is None
         or state.shape.rank < 1
@@ -2692,7 +2706,7 @@ def find_reasonable_epsilon(
             raise RuntimeError(
                 "target exception classifier failed during epsilon search"
             ) from exc
-        if not isinstance(result, (bool, np.bool_)):
+        if not _is_boolean_scalar(result):
             raise TypeError("classify_target_exception must return a boolean")
         return bool(result)
 
@@ -2737,6 +2751,11 @@ def find_reasonable_epsilon(
                     tf.constant(proposal_seed, dtype=tf.int32)
                 )
             except tf.errors.InvalidArgumentError as exc:
+                if hard_veto_nonfinite:
+                    raise FixedLFiniteBracketError(
+                        classify_tuning_exception(adapter, exc), str(exc),
+                        num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
+                    ) from exc
                 if not is_declared_target_domain_failure(exc):
                     raise RuntimeError(
                         "unclassified TensorFlow InvalidArgumentError during "
@@ -2746,6 +2765,11 @@ def find_reasonable_epsilon(
                 health_failure_list.append("target_domain_execution_failure")
                 break
             except tf.errors.InternalError as exc:
+                if hard_veto_nonfinite:
+                    raise FixedLFiniteBracketError(
+                        classify_tuning_exception(adapter, exc), str(exc),
+                        num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
+                    ) from exc
                 if (
                     "covariance must be positive definite" not in str(exc)
                     or not is_declared_target_domain_failure(exc)
@@ -2757,13 +2781,36 @@ def find_reasonable_epsilon(
                 health_failure_list.append("target_domain_execution_failure")
                 break
             except tf.errors.OpError as exc:
+                if hard_veto_nonfinite:
+                    raise FixedLFiniteBracketError(
+                        "tensorflow", str(exc), num_leapfrog_steps=leapfrog_steps,
+                        consumed_epsilon=step,
+                    ) from exc
                 raise RuntimeError(
                     "reasonable-epsilon HMC proposal execution failed"
                 ) from exc
             except Exception as exc:  # noqa: BLE001 - non-target runner failure is fatal.
+                if hard_veto_nonfinite:
+                    raise FixedLFiniteBracketError(
+                        classify_tuning_exception(adapter, exc), str(exc),
+                        num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
+                    ) from exc
                 raise RuntimeError(
                     "reasonable-epsilon HMC proposal execution failed"
                 ) from exc
+            if hard_veto_nonfinite:
+                health = finite_transition_health(state, next_results)
+                log_accept_value = getattr(next_results, "log_accept_ratio", None)
+                health["acceptance_finite"] = (
+                    log_accept_value is not None
+                    and bool(tf.reduce_all(tf.math.is_finite(log_accept_value)))
+                )
+                failed = tuple(name for name, passed in health.items() if not bool(passed))
+                if failed:
+                    raise FixedLFiniteBracketError(
+                        "nonfinite_trajectory", ", ".join(failed),
+                        num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
+                    )
             log_accept = tf.convert_to_tensor(next_results.log_accept_ratio, tf.float64)
             retained_finite = bool(
                 _all_finite_tensors((next_state,))
@@ -2802,11 +2849,16 @@ def find_reasonable_epsilon(
                 if proposal_failed:
                     health_failure_list.append("target_status_telemetry_failure")
         mean_accept = (
-            float(np.mean(acceptance_probabilities))
+            float(tf.reduce_mean(_float64_tensor(acceptance_probabilities)).numpy())
             if finite and len(acceptance_probabilities) == probe_count
             else None
         )
         health_failures = tuple(dict.fromkeys(health_failure_list))
+        if hard_veto_nonfinite and (not finite or health_failures):
+            raise FixedLFiniteBracketError(
+                "target_domain", "fixed-L target status failed",
+                num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
+            )
         attempt = ReasonableEpsilonAttempt(
             step_size=step,
             mean_acceptance_probability=mean_accept,
@@ -2830,19 +2882,19 @@ def find_reasonable_epsilon(
             next_step = (
                 step * 2.0
                 if low_acceptance_step is None
-                else float(np.sqrt(step * low_acceptance_step))
+                else math.sqrt(step * low_acceptance_step)
             )
         else:
             low_acceptance_step = step
             next_step = (
                 step * 0.5
                 if high_acceptance_step is None
-                else float(np.sqrt(step * high_acceptance_step))
+                else math.sqrt(step * high_acceptance_step)
             )
         if (
-            not np.isfinite(next_step)
+            not math.isfinite(next_step)
             or next_step <= 0.0
-            or np.isclose(next_step, step, rtol=1.0e-12, atol=0.0)
+            or _all_close(next_step, step, rtol=1.0e-12, atol=0.0)
         ):
             break
         step = next_step
@@ -2885,12 +2937,153 @@ def _target_status_failed(
     if not isinstance(payload, Mapping):
         raise TypeError("target_status_telemetry must return a mapping")
     return target_status_telemetry_has_failure(
-        {
-            key: np.asarray(value.numpy() if hasattr(value, "numpy") else value)
-            for key, value in payload.items()
-        },
+        payload,
         expected_shape=expected_shape,
     )
+
+
+def _validate_operational_window_trace(
+    *,
+    trace: Mapping[str, Any],
+    expected_draw_count: int,
+    step_size_upper_bound: float,
+    target_status_trace_policy: str,
+) -> Mapping[str, Any]:
+    """Validate one warmup window's TF trace before Python metadata packaging.
+
+    The trace fields are the post-transition values emitted by the TFP
+    window runner. TensorFlow owns finite masks, the bounded-step invariant,
+    Metropolis acceptance summaries, divergence counts, and target-status
+    counts; Python only materializes the returned scalar metadata. A failure
+    here is a hard window veto, so moving these reductions through NumPy could
+    silently break traced execution or turn nonfinite evidence into metadata.
+    """
+
+    import tensorflow as tf
+
+    draw_count = _strict_integer(
+        expected_draw_count,
+        name="expected_draw_count",
+        minimum=1,
+    )
+    policy = _target_status_policy(target_status_trace_policy)
+    expected_shape = (draw_count,)
+    log_accept = tf.cast(tf.convert_to_tensor(trace["log_accept_ratio"]), tf.float64)
+    target_values = tf.cast(tf.convert_to_tensor(trace["target_log_prob"]), tf.float64)
+    step_trace = tf.cast(tf.convert_to_tensor(trace["step_size"]), tf.float64)
+    proposed_step_trace = tf.cast(
+        tf.convert_to_tensor(trace["proposed_step_size"]),
+        tf.float64,
+    )
+    consumed_step_trace = tf.cast(
+        tf.convert_to_tensor(trace["consumed_step_size"]),
+        tf.float64,
+    )
+    accepted = tf.convert_to_tensor(trace["is_accepted"])
+    if accepted.dtype != tf.bool:
+        raise ValueError("operational warmup is_accepted must be boolean")
+    if any(
+        value.shape != expected_shape
+        for value in (
+            log_accept, target_values, step_trace, proposed_step_trace,
+            consumed_step_trace, accepted,
+        )
+    ):
+        raise ValueError("operational warmup trace arrays are misaligned")
+    finite_trace = tf.reduce_all(
+        tf.concat(
+            (
+                tf.reshape(tf.math.is_finite(log_accept), [-1]),
+                tf.reshape(tf.math.is_finite(target_values), [-1]),
+                tf.reshape(tf.math.is_finite(step_trace), [-1]),
+                tf.reshape(tf.math.is_finite(proposed_step_trace), [-1]),
+                tf.reshape(tf.math.is_finite(consumed_step_trace), [-1]),
+            ),
+            axis=0,
+        )
+    )
+    if not bool(finite_trace.numpy()):
+        raise ValueError("operational warmup produced a nonfinite trace")
+    upper_bound = tf.constant(float(step_size_upper_bound), dtype=tf.float64)
+    invalid_step = tf.reduce_any(
+        tf.concat(
+            (
+                step_trace <= 0.0,
+                proposed_step_trace <= 0.0,
+                consumed_step_trace <= 0.0,
+                consumed_step_trace > upper_bound * (1.0 + 1.0e-12),
+            ),
+            axis=0,
+        )
+    )
+    if bool(invalid_step.numpy()):
+        raise ValueError("operational warmup produced an invalid bounded step")
+    epsilon_end = float(tf.reshape(step_trace, [-1])[-1].numpy())
+    divergence = None
+    divergence_count = None
+    divergence_status = "not_exposed_by_kernel"
+    if "divergence" in trace:
+        divergence = tf.convert_to_tensor(trace["divergence"])
+        if divergence.dtype != tf.bool or divergence.shape != expected_shape:
+            raise ValueError("operational warmup divergence must be an aligned boolean trace")
+        divergence_count = int(tf.reduce_sum(tf.cast(divergence, tf.int32)).numpy())
+        divergence_status = "available"
+    target_status_failure_count = None
+    if policy == "per_chain_step":
+        target_status_trace = trace.get("target_status_telemetry")
+        if target_status_trace is None:
+            raise ValueError("operational warmup target-status trace is missing")
+        try:
+            target_status_failed = target_status_telemetry_has_failure(
+                target_status_trace,
+                expected_shape=expected_shape,
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "operational warmup target-status trace is invalid"
+            ) from exc
+        status = tf.convert_to_tensor(target_status_trace["status_code"])
+        valid = tf.cast(
+            tf.convert_to_tensor(
+                target_status_trace["valid_pre_regularized_score"]
+            ),
+            tf.bool,
+        )
+        target_status_failure_count = int(
+            tf.reduce_sum(
+                tf.cast(
+                    tf.logical_or(
+                        tf.not_equal(status, 0),
+                        tf.logical_not(valid),
+                    ),
+                    tf.int32,
+                )
+            ).numpy()
+        )
+        if target_status_failed:
+            raise ValueError("operational warmup target-status telemetry vetoed a window")
+    return {
+        "log_accept_ratio": log_accept,
+        "is_accepted": accepted,
+        "target_log_prob": target_values,
+        "step_size_trace": step_trace,
+        "proposed_step_size_trace": proposed_step_trace,
+        "consumed_step_size_trace": consumed_step_trace,
+        "epsilon_end": epsilon_end,
+        "mean_acceptance_probability": float(
+            tf.reduce_mean(tf.exp(tf.minimum(log_accept, 0.0))).numpy()
+        ),
+        "binary_acceptance_rate": float(
+            tf.reduce_mean(tf.cast(accepted, tf.float64)).numpy()
+        ),
+        "max_abs_log_accept_energy_proxy": float(
+            tf.reduce_max(tf.abs(log_accept)).numpy()
+        ),
+        "divergence": divergence,
+        "divergence_count": divergence_count,
+        "divergence_status": divergence_status,
+        "target_status_failure_count": target_status_failure_count,
+    }
 
 
 @dataclass(frozen=True)
@@ -2954,35 +3147,34 @@ class OperationalWarmupWindowResult:
         epsilon_start = float(self.epsilon_start)
         epsilon_end = float(self.epsilon_end)
         if (
-            not np.all(np.isfinite((epsilon_start, epsilon_end)))
+            not math.isfinite(epsilon_start)
+            or not math.isfinite(epsilon_end)
             or epsilon_start <= 0.0
             or epsilon_end <= 0.0
         ):
             raise ValueError("warmup epsilon endpoints must be positive and finite")
 
-        final_latent = np.asarray(self.final_latent_state, dtype=float).copy()
-        final_theta = np.asarray(self.final_canonical_theta, dtype=float).copy()
-        latent_draws = np.asarray(self.adaptation_latent_states, dtype=float).copy()
-        theta_draws = np.asarray(self.adaptation_canonical_states, dtype=float).copy()
-        log_accept = np.asarray(self.log_accept_ratio, dtype=float).copy()
-        accepted_input = np.asarray(self.is_accepted)
-        if not np.issubdtype(accepted_input.dtype, np.bool_):
+        import tensorflow as tf
+
+        final_latent = _float64_tensor(self.final_latent_state)
+        final_theta = _float64_tensor(self.final_canonical_theta)
+        latent_draws = _float64_tensor(self.adaptation_latent_states)
+        theta_draws = _float64_tensor(self.adaptation_canonical_states)
+        log_accept = _float64_tensor(self.log_accept_ratio)
+        accepted_input = tf.convert_to_tensor(self.is_accepted)
+        if accepted_input.dtype != tf.bool:
             raise ValueError("is_accepted must be boolean")
-        accepted = accepted_input.astype(bool, copy=True)
-        target_value = np.asarray(self.target_log_prob, dtype=float).copy()
-        step_trace = np.asarray(self.step_size_trace, dtype=float).copy()
-        proposed_step_trace = np.asarray(
-            self.proposed_step_size_trace, dtype=float
-        ).copy()
-        consumed_step_trace = np.asarray(
-            self.consumed_step_size_trace, dtype=float
-        ).copy()
+        accepted = accepted_input
+        target_value = _float64_tensor(self.target_log_prob)
+        step_trace = _float64_tensor(self.step_size_trace)
+        proposed_step_trace = _float64_tensor(self.proposed_step_size_trace)
+        consumed_step_trace = _float64_tensor(self.consumed_step_size_trace)
         step_upper_bound = float(self.step_size_upper_bound)
-        dimension = int(final_latent.size)
+        dimension = int(tf.size(final_latent).numpy())
         expected_draw_shape = (self.window.length, dimension)
         expected_trace_shape = (self.window.length,)
         if (
-            final_latent.ndim != 1
+            final_latent.shape.rank != 1
             or dimension <= 0
             or final_theta.shape != (dimension,)
             or latent_draws.shape != expected_draw_shape
@@ -3006,44 +3198,63 @@ class OperationalWarmupWindowResult:
             proposed_step_trace,
             consumed_step_trace,
         )
-        if any(not np.all(np.isfinite(array)) for array in arrays):
+        if any(not _all_finite(array) for array in arrays):
             raise ValueError("operational warmup window arrays must be finite")
         if (
-            not np.isfinite(step_upper_bound)
+            not math.isfinite(step_upper_bound)
             or step_upper_bound <= 0.0
-            or np.any(step_trace <= 0.0)
-            or np.any(proposed_step_trace <= 0.0)
-            or np.any(consumed_step_trace <= 0.0)
-            or np.any(step_trace > step_upper_bound * (1.0 + 1.0e-12))
-            or np.any(consumed_step_trace > step_upper_bound * (1.0 + 1.0e-12))
+            or bool(tf.reduce_any(step_trace <= 0.0).numpy())
+            or bool(tf.reduce_any(proposed_step_trace <= 0.0).numpy())
+            or bool(tf.reduce_any(consumed_step_trace <= 0.0).numpy())
+            or bool(
+                tf.reduce_any(
+                    step_trace > step_upper_bound * (1.0 + 1.0e-12)
+                ).numpy()
+            )
+            or bool(
+                tf.reduce_any(
+                    consumed_step_trace > step_upper_bound * (1.0 + 1.0e-12)
+                ).numpy()
+            )
         ):
             raise ValueError("operational warmup step ceiling is invalid")
-        if not np.allclose(
+        if not _all_close(
             step_trace,
-            np.minimum(proposed_step_trace, step_upper_bound),
+            tf.minimum(proposed_step_trace, step_upper_bound),
             rtol=1.0e-12,
             atol=0.0,
         ):
             raise ValueError("bounded step trace does not match proposed step and ceiling")
-        if not np.allclose(final_latent, latent_draws[-1], rtol=0.0, atol=0.0):
+        if not _all_close(final_latent, latent_draws[-1], rtol=0.0, atol=0.0):
             raise ValueError("final latent state must equal the last warmup draw")
-        if not np.allclose(final_theta, theta_draws[-1], rtol=0.0, atol=0.0):
+        if not _all_close(final_theta, theta_draws[-1], rtol=0.0, atol=0.0):
             raise ValueError("final canonical state must equal the last warmup draw")
 
         mean_acceptance = float(self.mean_acceptance_probability)
         binary_acceptance = float(self.binary_acceptance_rate)
         proxy = float(self.max_abs_log_accept_energy_proxy)
-        expected_mean = float(np.mean(np.exp(np.minimum(log_accept, 0.0))))
-        expected_binary = float(np.mean(accepted))
-        expected_proxy = float(np.max(np.abs(log_accept)))
+        expected_mean = float(
+            tf.reduce_mean(tf.exp(tf.minimum(log_accept, 0.0))).numpy()
+        )
+        expected_binary = float(tf.reduce_mean(tf.cast(accepted, tf.float64)).numpy())
+        expected_proxy = float(tf.reduce_max(tf.abs(log_accept)).numpy())
         if (
-            not np.all(np.isfinite((mean_acceptance, binary_acceptance, proxy)))
+            not all(
+                math.isfinite(value)
+                for value in (mean_acceptance, binary_acceptance, proxy)
+            )
             or not 0.0 <= mean_acceptance <= 1.0
             or not 0.0 <= binary_acceptance <= 1.0
             or proxy < 0.0
-            or not np.isclose(mean_acceptance, expected_mean, rtol=1.0e-12, atol=1.0e-12)
-            or not np.isclose(binary_acceptance, expected_binary, rtol=1.0e-12, atol=1.0e-12)
-            or not np.isclose(proxy, expected_proxy, rtol=1.0e-12, atol=1.0e-12)
+            or not _all_close(
+                mean_acceptance, expected_mean, rtol=1.0e-12, atol=1.0e-12
+            )
+            or not _all_close(
+                binary_acceptance, expected_binary, rtol=1.0e-12, atol=1.0e-12
+            )
+            or not _all_close(
+                proxy, expected_proxy, rtol=1.0e-12, atol=1.0e-12
+            )
         ):
             raise ValueError("operational warmup acceptance summary is inconsistent")
 
@@ -3096,7 +3307,7 @@ class OperationalWarmupWindowResult:
                 or not isinstance(next_reasonable, ReasonableEpsilonResult)
                 or not next_reasonable.passed
                 or next_reasonable.selected_step_size is None
-                or not np.isclose(
+                or not _all_close(
                     epsilon_end,
                     next_reasonable.selected_step_size,
                     rtol=1.0e-12,
@@ -3109,7 +3320,12 @@ class OperationalWarmupWindowResult:
             for item in (next_coordinate, next_metric, next_reasonable)
         ):
             raise ValueError("no-update warmup window carries a false handoff")
-        elif not np.isclose(epsilon_end, step_trace[-1], rtol=1.0e-12, atol=0.0):
+        elif not _all_close(
+            epsilon_end,
+            float(step_trace[-1].numpy()),
+            rtol=1.0e-12,
+            atol=0.0,
+        ):
             raise ValueError("warmup epsilon endpoint does not match its step trace")
 
         residual_names = (
@@ -3124,7 +3340,7 @@ class OperationalWarmupWindowResult:
                     raise ValueError("state_map_residual is required")
                 continue
             normalized = float(value)
-            if not np.isfinite(normalized) or not 0.0 <= normalized <= 1.0e-10:
+            if not math.isfinite(normalized) or not 0.0 <= normalized <= 1.0e-10:
                 raise ValueError(f"{name} violates the coordinate-map tolerance")
             object.__setattr__(self, name, normalized)
         generation = _strict_integer(
@@ -3145,10 +3361,11 @@ class OperationalWarmupWindowResult:
                 minimum=1,
             )
         runtime = float(self.runtime_s)
-        if not np.isfinite(runtime) or runtime < 0.0:
+        if not math.isfinite(runtime) or runtime < 0.0:
             raise ValueError("runtime_s must be finite and nonnegative")
 
-        for array in (*arrays, accepted):
+        host_arrays = tuple(array.numpy() for array in (*arrays, accepted))
+        for array in host_arrays:
             array.setflags(write=False)
         object.__setattr__(self, "transition_count_before_window", before)
         object.__setattr__(self, "transition_count_after_window", after)
@@ -3167,16 +3384,16 @@ class OperationalWarmupWindowResult:
             target_status_failure_count,
         )
         object.__setattr__(self, "max_abs_log_accept_energy_proxy", proxy)
-        object.__setattr__(self, "final_latent_state", final_latent)
-        object.__setattr__(self, "final_canonical_theta", final_theta)
-        object.__setattr__(self, "adaptation_latent_states", latent_draws)
-        object.__setattr__(self, "adaptation_canonical_states", theta_draws)
-        object.__setattr__(self, "log_accept_ratio", log_accept)
-        object.__setattr__(self, "is_accepted", accepted)
-        object.__setattr__(self, "target_log_prob", target_value)
-        object.__setattr__(self, "step_size_trace", step_trace)
-        object.__setattr__(self, "proposed_step_size_trace", proposed_step_trace)
-        object.__setattr__(self, "consumed_step_size_trace", consumed_step_trace)
+        object.__setattr__(self, "final_latent_state", host_arrays[0])
+        object.__setattr__(self, "final_canonical_theta", host_arrays[1])
+        object.__setattr__(self, "adaptation_latent_states", host_arrays[2])
+        object.__setattr__(self, "adaptation_canonical_states", host_arrays[3])
+        object.__setattr__(self, "log_accept_ratio", host_arrays[4])
+        object.__setattr__(self, "is_accepted", host_arrays[9])
+        object.__setattr__(self, "target_log_prob", host_arrays[5])
+        object.__setattr__(self, "step_size_trace", host_arrays[6])
+        object.__setattr__(self, "proposed_step_size_trace", host_arrays[7])
+        object.__setattr__(self, "consumed_step_size_trace", host_arrays[8])
         object.__setattr__(self, "step_size_upper_bound", step_upper_bound)
         object.__setattr__(self, "next_coordinate_signature", next_coordinate)
         object.__setattr__(self, "next_metric_signature", next_metric)
@@ -3186,6 +3403,12 @@ class OperationalWarmupWindowResult:
         object.__setattr__(self, "runtime_s", runtime)
 
     def public_payload(self) -> Mapping[str, Any]:
+        import tensorflow as tf
+
+        step_trace = _float64_tensor(self.step_size_trace)
+        proposed_step_trace = _float64_tensor(self.proposed_step_size_trace)
+        consumed_step_trace = _float64_tensor(self.consumed_step_size_trace)
+        upper_bound = tf.constant(self.step_size_upper_bound, dtype=tf.float64)
         return {
             "window": self.window.payload(),
             "transition_count_before_window": self.transition_count_before_window,
@@ -3202,18 +3425,20 @@ class OperationalWarmupWindowResult:
             "target_status_failure_count": self.target_status_failure_count,
             "max_abs_log_accept_energy_proxy": self.max_abs_log_accept_energy_proxy,
             "step_size_upper_bound": self.step_size_upper_bound,
-            "maximum_bounded_next_step_size": float(np.max(self.step_size_trace)),
+            "maximum_bounded_next_step_size": float(tf.reduce_max(step_trace).numpy()),
             "maximum_proposed_step_size": float(
-                np.max(self.proposed_step_size_trace)
+                tf.reduce_max(proposed_step_trace).numpy()
             ),
             "maximum_consumed_step_size": float(
-                np.max(self.consumed_step_size_trace)
+                tf.reduce_max(consumed_step_trace).numpy()
             ),
             "step_ceiling_hit_count": int(
-                np.sum(
-                    self.proposed_step_size_trace
-                    > self.step_size_upper_bound * (1.0 + 1.0e-12)
-                )
+                tf.reduce_sum(
+                    tf.cast(
+                        proposed_step_trace > upper_bound * (1.0 + 1.0e-12),
+                        tf.int32,
+                    )
+                ).numpy()
             ),
             "metric_decision": None
             if self.metric_decision is None
@@ -3242,7 +3467,7 @@ def _start_bank_optional_nonnegative_float(
     if value is None:
         return None
     result = float(value)
-    if not np.isfinite(result) or result < 0.0:
+    if not math.isfinite(result) or result < 0.0:
         raise ValueError(f"{name} must be finite and nonnegative when present")
     return result
 
@@ -3296,7 +3521,7 @@ class _StartBankScopeDiagnostic:
             minimum=0,
         )
         separation = float(self.minimum_relative_separation)
-        if not np.isfinite(separation) or separation <= 0.0:
+        if not math.isfinite(separation) or separation <= 0.0:
             raise ValueError(
                 "start-bank minimum_relative_separation must be finite and positive"
             )
@@ -3336,11 +3561,11 @@ class _StartBankScopeDiagnostic:
                     name=f"start-bank {name}",
                 ),
             )
-        if not isinstance(self.finite_status, (bool, np.bool_)):
+        if not _is_boolean_scalar(self.finite_status):
             raise TypeError("start-bank finite_status must be boolean")
-        if not isinstance(self.selection_attempted, (bool, np.bool_)):
+        if not _is_boolean_scalar(self.selection_attempted):
             raise TypeError("start-bank selection_attempted must be boolean")
-        if not isinstance(self.selection_succeeded, (bool, np.bool_)):
+        if not _is_boolean_scalar(self.selection_succeeded):
             raise TypeError("start-bank selection_succeeded must be boolean")
         selected_count = _strict_integer(
             self.selected_row_count,
@@ -3507,9 +3732,9 @@ class _StartBankAssessment:
             raise TypeError(
                 "diagnostic must be a concrete start-bank scope diagnostic"
             )
-        states = np.asarray(self.canonical_states, dtype=float).copy()
-        reference = np.asarray(self.reference_states, dtype=float).copy()
-        if states.ndim != 2 or reference.shape != states.shape:
+        states = _float64_tensor(self.canonical_states)
+        reference = _float64_tensor(self.reference_states)
+        if states.shape.rank != 2 or reference.shape != states.shape:
             raise ValueError(
                 "start-bank assessment arrays must be aligned rank-2 matrices"
             )
@@ -3517,14 +3742,16 @@ class _StartBankAssessment:
             _strict_integer(index, name="start-bank selected row index", minimum=0)
             for index in self.selected_row_indices
         )
-        if any(index >= states.shape[0] for index in indices):
+        if any(index >= int(states.shape[0]) for index in indices):
             raise ValueError("start-bank assessment selected row index is out of range")
         if len(indices) != self.diagnostic.selected_row_count:
             raise ValueError("start-bank assessment selected row count is inconsistent")
-        states.setflags(write=False)
-        reference.setflags(write=False)
-        object.__setattr__(self, "canonical_states", states)
-        object.__setattr__(self, "reference_states", reference)
+        canonical_states = states.numpy().copy()
+        reference_states = reference.numpy().copy()
+        canonical_states.setflags(write=False)
+        reference_states.setflags(write=False)
+        object.__setattr__(self, "canonical_states", canonical_states)
+        object.__setattr__(self, "reference_states", reference_states)
         object.__setattr__(self, "selected_row_indices", indices)
 
     def public_payload(self) -> Mapping[str, Any]:
@@ -3663,7 +3890,7 @@ class Phase7EngineeringProbeBankConfig:
         count = _strict_integer(self.chain_count, name="chain_count", minimum=1)
         if count != 4:
             raise ValueError("Phase 7 engineering probe bank requires four chains")
-        if isinstance(self.covariance_multiplier, (bool, np.bool_)):
+        if _is_boolean_scalar(self.covariance_multiplier):
             raise ValueError("covariance_multiplier must be positive and finite")
         multiplier = float(self.covariance_multiplier)
         if not math.isfinite(multiplier) or multiplier <= 0.0:
@@ -4378,11 +4605,12 @@ class _Phase7EngineeringProbeBankBuild:
             raise ValueError("private P4-E bank requires a passing qualification")
         arrays = []
         for name in ("canonical_theta", "final_latent", "standard_normal_offsets"):
-            array = np.asarray(getattr(self, name), dtype=float).copy()
+            array = _float64_tensor(getattr(self, name))
             if array.shape != (4, self.qualification.dimension):
                 raise ValueError(f"{name} must have the qualified bank shape")
-            if not np.all(np.isfinite(array)):
+            if not _all_finite(array):
                 raise ValueError(f"{name} must be finite")
+            array = array.numpy()
             array.setflags(write=False)
             arrays.append(array)
         object.__setattr__(self, "canonical_theta", arrays[0])
@@ -4421,14 +4649,14 @@ def _phase7_engineering_probe_bank_content_signature(
     target_signature: str,
     config_signature: str,
 ) -> str:
-    array = np.ascontiguousarray(np.asarray(canonical_theta, dtype=np.float64))
+    array = _float64_tensor(canonical_theta).numpy()
     digest = hashlib.sha256()
     digest.update(PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID.encode("ascii"))
     digest.update(str(transform_signature).encode("ascii"))
     digest.update(str(target_signature).encode("ascii"))
     digest.update(str(config_signature).encode("ascii"))
     digest.update(str(array.shape).encode("ascii"))
-    digest.update(array.tobytes())
+    digest.update(memoryview(array).tobytes(order="C"))
     return digest.hexdigest()
 
 
@@ -4916,7 +5144,7 @@ def build_phase7_engineering_probe_bank(
             pairwise_distinct=True,
         )
 
-    canonical_array = np.asarray(canonical.numpy(), dtype=float)
+    canonical_array = canonical.numpy()
     content_builder = (
         _phase7_engineering_probe_bank_content_signature
         if _content_signature_fn is None
@@ -5194,7 +5422,7 @@ def _build_postfreeze_private_start_bank(
     _target_health_fn: Callable[[Any], Mapping[str, Any]] | None = None,
     _p4_action_tracker: _G2P4BoundaryActionTracker | None = None,
 ) -> tuple[
-    np.ndarray,
+    Any,
     _StartBankQualificationDiagnostic | None,
     _Phase7EngineeringProbeBankQualification | None,
     str,
@@ -5288,6 +5516,8 @@ class OperationalWindowedWarmupResult:
     route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION
 
     def __post_init__(self) -> None:
+        import tensorflow as tf
+
         if not isinstance(self.config, WindowedMassAdaptationConfig):
             raise TypeError("config must be WindowedMassAdaptationConfig")
         if not isinstance(self.final_kernel_state, KernelState):
@@ -5325,7 +5555,7 @@ class OperationalWindowedWarmupResult:
                 or window.dual_averaging_generation != applied_updates
                 or window.runner_generation != applied_updates
                 or expected_epsilon is None
-                or not np.isclose(
+                or not _all_close(
                     window.epsilon_start,
                     expected_epsilon,
                     rtol=1.0e-12,
@@ -5344,12 +5574,12 @@ class OperationalWindowedWarmupResult:
                 expected_metric = str(window.next_metric_signature)
                 applied_updates += 1
             expected_epsilon = window.epsilon_end
-        bank = np.asarray(self.private_start_bank_theta, dtype=float).copy()
-        if bank.ndim != 2 or bank.shape[0] != 4:
+        bank = _float64_tensor(self.private_start_bank_theta)
+        if bank.shape.rank != 2 or bank.shape[0] != 4:
             raise ValueError("private start bank must contain four rank-2 rows")
         if bank.shape[1] != self.final_kernel_state.transform.dimension:
             raise ValueError("private start bank dimension mismatch")
-        if not np.all(np.isfinite(bank)):
+        if not _all_finite(bank):
             raise ValueError("private start bank must be finite")
         qualification = self.start_bank_qualification
         bank_policy_id = str(self.private_start_bank_policy_id)
@@ -5407,19 +5637,19 @@ class OperationalWindowedWarmupResult:
             or final_state.momentum_metric.signature != expected_metric
             or final_state.adaptation_generation != applied_updates
             or final_state.epsilon is None
-            or not np.isclose(
+            or not _all_close(
                 final_state.epsilon,
                 float(expected_epsilon),
                 rtol=1.0e-12,
                 atol=0.0,
             )
-            or not np.allclose(
+            or not _all_close(
                 final_state.canonical_theta,
                 windows[-1].final_canonical_theta,
                 rtol=1.0e-12,
                 atol=1.0e-12,
             )
-            or not np.allclose(
+            or not _all_close(
                 final_state.active_latent,
                 windows[-1].final_latent_state,
                 rtol=1.0e-12,
@@ -5428,36 +5658,35 @@ class OperationalWindowedWarmupResult:
         ):
             raise ValueError("operational warmup final kernel lineage is invalid")
         if bank_policy_id == _START_BANK_POLICY_ID:
-            scale = max(float(np.linalg.norm(np.std(bank, axis=0))), 1.0)
+            scale = max(
+                float(tf.linalg.norm(tf.math.reduce_std(bank, axis=0)).numpy()),
+                1.0,
+            )
             tolerance = 1.0e-10 * scale
-            pairwise = np.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
+            pairwise = tf.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
+            upper = tf.range(4)[:, None] < tf.range(4)[None, :]
             if (
-                not np.allclose(
+                not _all_close(
                     bank[-1],
                     final_state.canonical_theta,
                     rtol=1.0e-10,
                     atol=1.0e-10,
                 )
-                or np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance)
+                or bool(tf.reduce_any(tf.boolean_mask(pairwise, upper) <= tolerance).numpy())
             ):
                 raise ValueError(
                     "legacy private start bank must be dispersed and include the endpoint"
                 )
         else:
-            final_latent = np.asarray(
-                final_state.transform.theta_to_latent(bank).numpy(),
-                dtype=float,
-            )
-            round_trip = np.asarray(
-                final_state.transform.latent_to_theta(final_latent).numpy(),
-                dtype=float,
-            )
-            pairwise = np.linalg.norm(
+            final_latent = final_state.transform.theta_to_latent(bank)
+            round_trip = final_state.transform.latent_to_theta(final_latent)
+            pairwise = tf.linalg.norm(
                 final_latent[:, None, :] - final_latent[None, :, :], axis=-1
             )
+            upper = tf.range(4)[:, None] < tf.range(4)[None, :]
             if (
-                not np.allclose(round_trip, bank, rtol=1.0e-10, atol=1.0e-10)
-                or np.any(pairwise[np.triu_indices(4, k=1)] <= 0.0)
+                not _all_close(round_trip, bank, rtol=1.0e-10, atol=1.0e-10)
+                or bool(tf.reduce_any(tf.boolean_mask(pairwise, upper) <= 0.0).numpy())
             ):
                 raise ValueError("P4-E private start bank transform invariant failed")
         seed_root = _strict_seed(self.seed_root, name="seed_root")
@@ -5473,8 +5702,9 @@ class OperationalWindowedWarmupResult:
             or route_contract_version != HMC_ROUTE_CONTRACT_VERSION
         ):
             raise ValueError("operational warmup route identity is invalid")
-        if not np.isfinite(elapsed) or elapsed < 0.0:
+        if not math.isfinite(elapsed) or elapsed < 0.0:
             raise ValueError("elapsed_s must be finite and nonnegative")
+        bank = bank.numpy().copy()
         bank.setflags(write=False)
         object.__setattr__(self, "initial_coordinate_signature", initial_signature)
         object.__setattr__(self, "windows", windows)
@@ -5498,7 +5728,9 @@ class OperationalWindowedWarmupResult:
 
     @property
     def private_start_bank_signature(self) -> str:
-        digest = hashlib.sha256(np.ascontiguousarray(self.private_start_bank_theta).tobytes())
+        digest = hashlib.sha256(
+            memoryview(self.private_start_bank_theta).tobytes(order="C")
+        )
         digest.update(self.final_kernel_state.transform.signature.encode("ascii"))
         digest.update(self.private_start_bank_policy_id.encode("ascii"))
         if self.engineering_probe_bank_qualification is not None:
@@ -5627,7 +5859,7 @@ class OperationalWindowedWarmupCloseout:
             or completed_segment_count < 0
             or planned_segment_count <= 0
             or completed_segment_count >= planned_segment_count
-            or not np.isfinite(elapsed)
+            or not math.isfinite(elapsed)
             or elapsed < 0.0
         ):
             raise ValueError("operational closeout counters must be nonnegative")
@@ -5770,7 +6002,7 @@ def run_operational_windowed_warmup(
         )
     config = normalize_operational_warmup_config(config)
     target_accept = float(target_accept_prob)
-    if not np.isfinite(target_accept) or not 0.0 < target_accept < 1.0:
+    if not math.isfinite(target_accept) or not 0.0 < target_accept < 1.0:
         raise ValueError("target_accept_prob must be finite and in (0, 1)")
     initial_bound = (
         None
@@ -5778,7 +6010,7 @@ def run_operational_windowed_warmup(
         else float(initial_step_size_upper_bound)
     )
     if initial_bound is not None and (
-        not np.isfinite(initial_bound)
+        not math.isfinite(initial_bound)
         or initial_bound <= 0.0
         or float(initial_step_size) > initial_bound * (1.0 + 1.0e-12)
     ):
@@ -5794,10 +6026,10 @@ def run_operational_windowed_warmup(
         raise ValueError("initial step qualification source requires an upper bound")
     if initial_bound is not None and not qualification_source:
         raise ValueError("initial step upper bound requires qualification provenance")
-    theta = np.asarray(initial_canonical_theta, dtype=float)
-    if theta.shape != (initial_transform.dimension,) or not np.all(np.isfinite(theta)):
+    theta = _float64_tensor(initial_canonical_theta)
+    if theta.shape != (initial_transform.dimension,) or not _all_finite(theta):
         raise ValueError("initial_canonical_theta must be one finite transform vector")
-    latent = np.asarray(initial_transform.theta_to_latent(theta).numpy(), dtype=float)
+    latent = initial_transform.theta_to_latent(theta)
     metric = MomentumMetric.identity_for(initial_transform)
     kernel_state = KernelState(
         canonical_theta=theta,
@@ -5922,7 +6154,7 @@ def run_operational_windowed_warmup(
         (window.length + segment_size - 1) // segment_size for window in windows
     )
     results: list[OperationalWarmupWindowResult] = []
-    canonical_history: list[np.ndarray] = []
+    canonical_history: list[Any] = []
     transition_count = 0
     start = time.perf_counter()
     active_adaptive_kernel: Any | None = None
@@ -6231,11 +6463,11 @@ def run_operational_windowed_warmup(
             *segment_traces,
         )
         runtime_s = time.perf_counter() - window_start
-        latent_draws = np.asarray(latent_draws_tensor.numpy(), dtype=float)
-        if not np.all(np.isfinite(latent_draws)):
+        latent_draws = latent_draws_tensor
+        if not _all_finite(latent_draws):
             raise ValueError("operational warmup produced nonfinite latent states")
-        canonical_draws = np.asarray(active_transform.latent_to_theta(latent_draws).numpy())
-        if not np.all(np.isfinite(canonical_draws)):
+        canonical_draws = active_transform.latent_to_theta(latent_draws)
+        if not _all_finite(canonical_draws):
             raise ValueError("operational warmup produced nonfinite canonical states")
         emit_stage(
             "stage_complete",
@@ -6251,7 +6483,7 @@ def run_operational_windowed_warmup(
         )
         target_health = _evaluate_retained_target_health(
             adapter=active_adapter,
-            samples=latent_draws,
+            samples=latent_draws_tensor,
             target_status_trace_policy=target_status_policy,
         )
         if target_health["shared_invalidity_reasons"]:
@@ -6264,86 +6496,37 @@ def run_operational_windowed_warmup(
             window=window,
             stage_started=stage_started,
         )
-        log_accept = np.asarray(trace["log_accept_ratio"].numpy(), dtype=float)
-        if not np.all(np.isfinite(log_accept)):
-            raise ValueError("operational warmup produced nonfinite log acceptance")
-        target_values = np.asarray(trace["target_log_prob"].numpy(), dtype=float)
-        if not np.all(np.isfinite(target_values)):
-            raise ValueError("operational warmup produced nonfinite target values")
-        step_trace = np.asarray(trace["step_size"].numpy(), dtype=float)
-        proposed_step_trace = np.asarray(
-            trace["proposed_step_size"].numpy(), dtype=float
+        trace_health = _validate_operational_window_trace(
+            trace=trace,
+            expected_draw_count=window.length,
+            step_size_upper_bound=window_step_upper_bound,
+            target_status_trace_policy=target_status_policy,
         )
-        consumed_step_trace = np.asarray(
-            trace["consumed_step_size"].numpy(), dtype=float
-        )
-        if (
-            not np.all(np.isfinite(step_trace))
-            or not np.all(np.isfinite(proposed_step_trace))
-            or not np.all(np.isfinite(consumed_step_trace))
-            or np.any(step_trace <= 0.0)
-            or np.any(proposed_step_trace <= 0.0)
-            or np.any(consumed_step_trace <= 0.0)
-            or np.any(
-                consumed_step_trace
-                > window_step_upper_bound * (1.0 + 1.0e-12)
+        log_accept = trace_health["log_accept_ratio"]
+        target_values = trace_health["target_log_prob"]
+        step_trace = trace_health["step_size_trace"]
+        proposed_step_trace = trace_health["proposed_step_size_trace"]
+        consumed_step_trace = trace_health["consumed_step_size_trace"]
+        epsilon_end = trace_health["epsilon_end"]
+        accepted = trace_health["is_accepted"]
+        mean_accept = trace_health["mean_acceptance_probability"]
+        binary_accept = trace_health["binary_acceptance_rate"]
+        divergence_count = trace_health["divergence_count"]
+        divergence_status = trace_health["divergence_status"]
+        target_status_failure_count = trace_health["target_status_failure_count"]
+        if target_status_failure_count != target_health[
+            "target_status_failure_count"
+        ]:
+            raise ValueError(
+                "operational warmup target-status trace disagrees with retained states"
             )
-        ):
-            raise ValueError("operational warmup produced an invalid bounded step")
-        epsilon_end = float(np.reshape(step_trace, [-1])[-1])
-        accepted = np.asarray(trace["is_accepted"].numpy(), dtype=bool)
-        mean_accept = float(np.mean(np.exp(np.minimum(log_accept, 0.0))))
-        binary_accept = float(np.mean(accepted))
-        if "divergence" in trace:
-            divergence_count = int(np.sum(np.asarray(trace["divergence"].numpy(), bool)))
-            divergence_status = "available"
-        else:
-            divergence_count = None
-            divergence_status = "not_exposed_by_kernel"
-        target_status_failure_count = None
-        if target_status_policy == "per_chain_step":
-            target_status_trace = trace.get("target_status_telemetry")
-            if target_status_trace is None:
-                raise ValueError("operational warmup target-status trace is missing")
-            target_status_numpy = {
-                key: np.asarray(value.numpy() if hasattr(value, "numpy") else value)
-                for key, value in target_status_trace.items()
-            }
-            try:
-                target_status_failed = target_status_telemetry_has_failure(
-                    target_status_numpy,
-                    expected_shape=(window.length,),
-                )
-            except (TypeError, ValueError) as exc:
-                raise ValueError(
-                    "operational warmup target-status trace is invalid"
-                ) from exc
-            status = np.asarray(target_status_numpy["status_code"])
-            valid = np.asarray(
-                target_status_numpy["valid_pre_regularized_score"],
-                dtype=bool,
-            )
-            target_status_failure_count = int(np.sum((status != 0) | (~valid)))
-            if target_status_failure_count != target_health[
-                "target_status_failure_count"
-            ]:
-                raise ValueError(
-                    "operational warmup target-status trace disagrees with retained states"
-                )
-            if target_status_failed:
-                raise ValueError(
-                    "operational warmup target-status telemetry vetoed a window"
-                )
 
-        final_latent = np.asarray(latent_draws[-1], dtype=float)
-        final_theta = np.asarray(canonical_draws[-1], dtype=float)
+        final_latent = latent_draws[-1]
+        final_theta = canonical_draws[-1]
         map_residual = float(
-            np.max(
-                np.abs(
-                    np.asarray(active_transform.latent_to_theta(final_latent).numpy())
-                    - final_theta
-                )
-            )
+            tf.reduce_max(
+                tf.abs(active_transform.latent_to_theta(final_latent) - final_theta)
+            ).numpy()
         )
         metric_decision = None
         next_transform = active_transform
@@ -6361,7 +6544,7 @@ def run_operational_windowed_warmup(
                 window=window,
             )
             metric_decision = assess_metric_covariance(
-                latent_draws.reshape((-1, active_transform.dimension)),
+                tf.reshape(latent_draws, (-1, active_transform.dimension)),
                 shrinkage=config.mass_shrinkage,
             )
             emit_stage(
@@ -6451,24 +6634,25 @@ def run_operational_windowed_warmup(
                     stage="metric_candidate_affine_parity",
                     window=window,
                 )
-                averaged_log_step = np.asarray(
-                    final_kernel_results.log_averaging_step[0], dtype=float
+                averaged_log_step = tf.reshape(
+                    tf.convert_to_tensor(
+                        final_kernel_results.log_averaging_step[0], dtype=tf.float64
+                    ),
+                    [-1],
                 )
-                candidate_epsilon_start = float(
-                    np.exp(np.reshape(averaged_log_step, [-1])[-1])
-                )
+                candidate_epsilon_start = float(tf.exp(averaged_log_step[-1]).numpy())
                 try:
-                    mapped_latent = np.asarray(
-                        candidate_transform.theta_to_latent(final_theta).numpy(),
-                        dtype=float,
-                    )
+                    mapped_latent = candidate_transform.theta_to_latent(final_theta)
                     candidate_adapter = _AffineWarmupAdapter(
                         base_adapter=adapter,
                         transform=candidate_transform,
                         target_scope=target_scope,
                     )
-                    base_value, base_score = adapter.log_prob_and_grad(
-                        tf.convert_to_tensor(final_theta, dtype=tf.float64)
+                    # The scalar-chain endpoint must honor a rank-2 target's
+                    # interface, just as both affine adapters already do.
+                    base_value, base_score, _ = _call_value_score_with_batch_rank_bridge(
+                        adapter,
+                        tf.convert_to_tensor(final_theta, dtype=tf.float64),
                     )
                     old_value, old_score = active_adapter.log_prob_and_grad(
                         tf.convert_to_tensor(final_latent, dtype=tf.float64)
@@ -6476,47 +6660,18 @@ def run_operational_windowed_warmup(
                     new_value, new_score = candidate_adapter.log_prob_and_grad(
                         tf.convert_to_tensor(mapped_latent, dtype=tf.float64)
                     )
-                    base_value_array = np.asarray(base_value.numpy(), dtype=float)
                     candidate_value_residual = float(
                         max(
-                            np.max(
-                                np.abs(
-                                    np.asarray(old_value.numpy()) - base_value_array
-                                )
-                            ),
-                            np.max(
-                                np.abs(
-                                    np.asarray(new_value.numpy()) - base_value_array
-                                )
-                            ),
+                            tf.reduce_max(tf.abs(old_value - base_value)).numpy(),
+                            tf.reduce_max(tf.abs(new_value - base_value)).numpy(),
                         )
                     )
-                    expected_old_score = np.asarray(
-                        active_transform.theta_score_to_latent_score(
-                            base_score
-                        ).numpy(),
-                        dtype=float,
-                    )
-                    expected_new_score = np.asarray(
-                        candidate_transform.theta_score_to_latent_score(
-                            base_score
-                        ).numpy(),
-                        dtype=float,
-                    )
+                    expected_old_score = active_transform.theta_score_to_latent_score(base_score)
+                    expected_new_score = candidate_transform.theta_score_to_latent_score(base_score)
                     candidate_score_residual = float(
                         max(
-                            np.max(
-                                np.abs(
-                                    np.asarray(old_score.numpy())
-                                    - expected_old_score
-                                )
-                            ),
-                            np.max(
-                                np.abs(
-                                    np.asarray(new_score.numpy())
-                                    - expected_new_score
-                                )
-                            ),
+                            tf.reduce_max(tf.abs(old_score - expected_old_score)).numpy(),
+                            tf.reduce_max(tf.abs(new_score - expected_new_score)).numpy(),
                         )
                     )
                     if (
@@ -6529,7 +6684,6 @@ def run_operational_windowed_warmup(
                 except (
                     TypeError,
                     ValueError,
-                    np.linalg.LinAlgError,
                     tf.errors.InvalidArgumentError,
                 ) as exc:
                     metric_decision = _rejected_metric_candidate(
@@ -6654,16 +6808,11 @@ def run_operational_windowed_warmup(
         if not metric_update_applied:
             previous_kernel_results = final_kernel_results
 
-        mapped_latent = np.asarray(
-            next_transform.theta_to_latent(final_theta).numpy(), dtype=float
-        )
+        mapped_latent = next_transform.theta_to_latent(final_theta)
         state_map_residual = float(
-            np.max(
-                np.abs(
-                    np.asarray(next_transform.latent_to_theta(mapped_latent).numpy())
-                    - final_theta
-                )
-            )
+            tf.reduce_max(
+                tf.abs(next_transform.latent_to_theta(mapped_latent) - final_theta)
+            ).numpy()
         )
 
         results.append(
@@ -6681,7 +6830,9 @@ def run_operational_windowed_warmup(
                 native_divergence_count=divergence_count,
                 target_status_trace_policy=target_status_policy,
                 target_status_failure_count=target_status_failure_count,
-                max_abs_log_accept_energy_proxy=float(np.max(np.abs(log_accept))),
+                max_abs_log_accept_energy_proxy=trace_health[
+                    "max_abs_log_accept_energy_proxy"
+                ],
                 final_latent_state=final_latent,
                 final_canonical_theta=final_theta,
                 adaptation_latent_states=latent_draws,
@@ -6712,8 +6863,8 @@ def run_operational_windowed_warmup(
                 runtime_s=runtime_s,
             )
         )
-        canonical_history.extend(
-            np.asarray(canonical_draws, dtype=float).reshape((-1, active_transform.dimension))
+        canonical_history.append(
+            tf.reshape(canonical_draws, (-1, active_transform.dimension))
         )
         transition_count += window.length
         kernel_state = KernelState(
@@ -6738,9 +6889,11 @@ def run_operational_windowed_warmup(
         epsilon,
         evidence_status="metric_and_step_frozen",
     )
-    history = np.asarray(results[-1].adaptation_canonical_states, dtype=float).reshape(
-        (-1, initial_transform.dimension)
+    history = tf.reshape(
+        _float64_tensor(results[-1].adaptation_canonical_states),
+        (-1, initial_transform.dimension),
     )
+    all_window_history = tf.concat(canonical_history, axis=0)
     (
         bank,
         start_bank_qualification,
@@ -6757,7 +6910,7 @@ def run_operational_windowed_warmup(
         _p4_action_tracker=_g2_p4_action_tracker,
         adapter=adapter,
         final_window_history=history,
-        all_window_history=canonical_history,
+        all_window_history=all_window_history,
         engineering_probe_config=engineering_probe_config,
         target_status_trace_policy=target_status_policy,
     )
@@ -6786,7 +6939,7 @@ def build_private_start_bank(
     *,
     reference_transform: AffineCoordinateTransform | None = None,
     minimum_relative_separation: float = 1.0e-4,
-) -> np.ndarray:
+) -> Any:
     """Select canonical starts with material separation in reference geometry."""
 
     assessment = _assess_private_start_bank(
@@ -6807,23 +6960,29 @@ def _assess_private_start_bank(
 ) -> _StartBankAssessment:
     """Run the existing selector calculation without materializing its bank."""
 
-    states = np.asarray(canonical_states, dtype=float)
-    if states.ndim != 2 or states.shape[0] < 4 or not np.all(np.isfinite(states)):
+    import tensorflow as tf
+
+    try:
+        states = _float64_tensor(canonical_states)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("start bank source must contain at least four finite states") from exc
+    if (
+        states.shape.rank != 2
+        or states.shape[0] < 4
+        or not bool(tf.reduce_all(tf.math.is_finite(states)).numpy())
+    ):
         raise ValueError("start bank source must contain at least four finite states")
     if reference_transform is not None and not isinstance(
         reference_transform, AffineCoordinateTransform
     ):
         raise TypeError("reference_transform must be an AffineCoordinateTransform")
     separation = float(minimum_relative_separation)
-    if not np.isfinite(separation) or separation <= 0.0:
+    if not math.isfinite(separation) or separation <= 0.0:
         raise ValueError("minimum_relative_separation must be finite and positive")
     reference = (
         states
         if reference_transform is None
-        else np.asarray(
-            reference_transform.theta_to_latent(states).numpy(),
-            dtype=float,
-        )
+        else reference_transform.theta_to_latent(states)
     )
     return _assess_prepared_start_bank(
         states,
@@ -6835,7 +6994,7 @@ def _assess_private_start_bank(
 
 def _finite_nonnegative_or_none(value: Any) -> float | None:
     result = float(value)
-    return result if np.isfinite(result) and result >= 0.0 else None
+    return result if math.isfinite(result) and result >= 0.0 else None
 
 
 def _start_bank_distance_summary(
@@ -6843,59 +7002,100 @@ def _start_bank_distance_summary(
     *,
     tolerance: float,
 ) -> tuple[float | None, float | None, int]:
-    values = np.asarray(distances, dtype=float).reshape(-1)
-    count = int(np.sum(values <= tolerance))
-    if values.size == 0 or not np.all(np.isfinite(values)):
+    import tensorflow as tf
+
+    values = tf.reshape(_float64_tensor(distances), [-1])
+    count = int(tf.reduce_sum(tf.cast(values <= tolerance, tf.int32)).numpy())
+    if int(tf.size(values).numpy()) == 0 or not bool(
+        tf.reduce_all(tf.math.is_finite(values)).numpy()
+    ):
         return None, None, count
-    return float(np.min(values)), float(np.max(values)), count
+    return float(tf.reduce_min(values).numpy()), float(tf.reduce_max(values).numpy()), count
+
+
+@lru_cache(maxsize=1)
+def _start_bank_geometry_and_eligibility():
+    """Cache the chronological greedy selector with shape-polymorphic inputs.
+
+    This is the original endpoint-first rule, not a clustering algorithm.
+    A single TF loop keeps the quadratic pair checks off the Python/eager
+    boundary. XLA qualification is separate from this non-XLA migration.
+    """
+
+    import tensorflow as tf
+
+    @tf.function(input_signature=[
+        tf.TensorSpec((None, None), tf.float64),
+        tf.TensorSpec((), tf.float64),
+    ], jit_compile=False)
+    def select(reference, separation):
+        row_count = tf.shape(reference)[0]
+        std_norm = tf.linalg.norm(tf.math.reduce_std(reference, axis=0))
+        sqrt_dimension = tf.sqrt(tf.cast(tf.shape(reference)[1], tf.float64))
+        scale = tf.where(std_norm > sqrt_dimension, std_norm, sqrt_dimension)
+        tolerance = separation * scale
+        distances = tf.linalg.norm(reference[:, None, :] - reference[None, :, :], axis=-1)
+        endpoint_close = distances[:-1, -1] <= tolerance
+
+        def visit(index, eligible, excluded):
+            compatible = tf.reduce_all(tf.logical_or(
+                tf.logical_not(eligible), distances[index] > tolerance,
+            ))
+            endpoint_eligible = tf.logical_not(endpoint_close[index])
+            include = tf.logical_and(endpoint_eligible, compatible)
+            eligible = tf.tensor_scatter_nd_update(eligible, [[index]], [include])
+            excluded += tf.cast(tf.logical_and(endpoint_eligible, tf.logical_not(compatible)), tf.int32)
+            return index + 1, eligible, excluded
+
+        _, eligible, prior_excluded = tf.while_loop(
+            lambda index, *_: index < row_count - 1,
+            visit, (tf.constant(0), tf.zeros((row_count,), tf.bool), tf.constant(0)),
+        )
+        return (
+            std_norm, scale, tolerance, distances,
+            tf.boolean_mask(tf.range(row_count), eligible),
+            tf.reduce_sum(tf.cast(endpoint_close, tf.int32)), prior_excluded,
+        )
+
+    return select
 
 
 def _assess_prepared_start_bank(
-    states: np.ndarray,
-    reference: np.ndarray,
+    states: Any,
+    reference: Any,
     *,
     minimum_relative_separation: float,
     scope: str,
 ) -> _StartBankAssessment:
     """Preserve the selector's endpoint-first chronological greedy ordering."""
 
-    sqrt_dimension = float(np.sqrt(states.shape[1]))
-    reference_std_norm = float(np.linalg.norm(np.std(reference, axis=0)))
-    reference_scale = max(
-        sqrt_dimension,
-        reference_std_norm,
-    )
-    tolerance = minimum_relative_separation * reference_scale
-    endpoint_index = states.shape[0] - 1
-    eligible_indices: list[int] = []
-    endpoint_exclusion_count = 0
-    prior_eligible_exclusion_count = 0
-    for index in range(endpoint_index):
-        if np.linalg.norm(reference[index] - reference[endpoint_index]) <= tolerance:
-            endpoint_exclusion_count += 1
-            continue
-        if all(
-            np.linalg.norm(reference[index] - reference[existing]) > tolerance
-            for existing in eligible_indices
-        ):
-            eligible_indices.append(index)
-        else:
-            prior_eligible_exclusion_count += 1
+    import tensorflow as tf
 
-    endpoint_distances = np.linalg.norm(
-        reference[:endpoint_index] - reference[endpoint_index],
-        axis=-1,
+    states = _float64_tensor(states)
+    reference = _float64_tensor(reference)
+    sqrt_dimension = math.sqrt(int(states.shape[1]))
+    (
+        std_norm, scale, absolute_tolerance, all_pair_matrix,
+        eligible, endpoint_excluded, prior_excluded,
+    ) = _start_bank_geometry_and_eligibility()(
+        reference, _float64_tensor(minimum_relative_separation)
     )
+    reference_std_norm = float(std_norm.numpy())
+    reference_scale = float(scale.numpy())
+    tolerance = float(absolute_tolerance.numpy())
+    endpoint_index = states.shape[0] - 1
+    eligible_indices = eligible.numpy().tolist()
+    endpoint_exclusion_count = int(endpoint_excluded.numpy())
+    prior_eligible_exclusion_count = int(prior_excluded.numpy())
+
+    endpoint_distances = all_pair_matrix[:endpoint_index, endpoint_index]
     endpoint_minimum, endpoint_maximum, endpoint_close_count = (
         _start_bank_distance_summary(endpoint_distances, tolerance=tolerance)
     )
-    all_pair_matrix = np.linalg.norm(
-        reference[:, None, :] - reference[None, :, :],
-        axis=-1,
-    )
-    all_pair_distances = all_pair_matrix[
-        np.triu_indices(states.shape[0], k=1)
-    ]
+    row_indices = tf.range(tf.shape(reference)[0])[:, None]
+    column_indices = tf.range(tf.shape(reference)[0])[None, :]
+    upper_triangle = row_indices < column_indices
+    all_pair_distances = tf.boolean_mask(all_pair_matrix, upper_triangle)
     all_pair_minimum, all_pair_maximum, all_pair_close_count = (
         _start_bank_distance_summary(all_pair_distances, tolerance=tolerance)
     )
@@ -6905,15 +7105,17 @@ def _assess_prepared_start_bank(
     selection_succeeded = False
     failure_code = "insufficient_greedy_eligible"
     if selection_attempted:
-        selected = np.linspace(0, len(eligible_indices) - 1, 3, dtype=int)
-        bank_indices = [eligible_indices[index] for index in selected] + [
-            endpoint_index
-        ]
-        reference_bank = reference[bank_indices]
-        pairwise = np.linalg.norm(
-            reference_bank[:, None, :] - reference_bank[None, :, :], axis=-1
-        )
-        if np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance):
+        selected = (0, (len(eligible_indices) - 1) // 2, len(eligible_indices) - 1)
+        bank_indices = [eligible_indices[index] for index in selected] + [endpoint_index]
+        pairwise = tf.gather(tf.gather(all_pair_matrix, bank_indices), bank_indices, axis=1)
+        bank_row_indices = tf.range(4)[:, None]
+        bank_column_indices = tf.range(4)[None, :]
+        if bool(
+            tf.reduce_any(
+                tf.boolean_mask(pairwise, bank_row_indices < bank_column_indices)
+                <= tolerance
+            ).numpy()
+        ):
             failure_code = "post_selection_pairwise_failure"
         else:
             selection_succeeded = True
@@ -6929,7 +7131,8 @@ def _assess_prepared_start_bank(
         reference_scale=_finite_nonnegative_or_none(reference_scale),
         absolute_tolerance=_finite_nonnegative_or_none(tolerance),
         finite_status=bool(
-            np.all(np.isfinite(states)) and np.all(np.isfinite(reference))
+            bool(tf.reduce_all(tf.math.is_finite(states)).numpy())
+            and bool(tf.reduce_all(tf.math.is_finite(reference)).numpy())
         ),
         pre_endpoint_candidate_count=endpoint_index,
         endpoint_exclusion_count=endpoint_exclusion_count,
@@ -6955,7 +7158,7 @@ def _assess_prepared_start_bank(
 
 
 def _shadow_start_bank_failure_diagnostic(
-    states: np.ndarray | None,
+    states: Any | None,
     *,
     minimum_relative_separation: float,
     failure_code: str,
@@ -6966,12 +7169,15 @@ def _shadow_start_bank_failure_diagnostic(
     finite_status = False
     sqrt_dimension: float | None = None
     if states is not None:
-        finite_status = bool(np.all(np.isfinite(states)))
-        if states.ndim >= 1:
-            rows = int(states.shape[0])
-        if states.ndim == 2:
-            dimension = int(states.shape[1])
-            sqrt_dimension = float(np.sqrt(dimension))
+        import tensorflow as tf
+
+        tensor = _float64_tensor(states)
+        finite_status = bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy())
+        if tensor.shape.rank is not None and tensor.shape.rank >= 1:
+            rows = int(tensor.shape[0])
+        if tensor.shape.rank == 2:
+            dimension = int(tensor.shape[1])
+            sqrt_dimension = math.sqrt(dimension)
     if finite_status_override is not None:
         finite_status = bool(finite_status_override)
     return _StartBankScopeDiagnostic(
@@ -7009,36 +7215,38 @@ def _best_effort_shadow_start_bank_scope(
 ) -> _StartBankScopeDiagnostic:
     """Assess accumulated history without allowing shadow errors to escape."""
 
+    import tensorflow as tf
+
     separation = float(minimum_relative_separation)
     try:
-        states = np.asarray(canonical_states, dtype=float)
+        states = _float64_tensor(canonical_states)
     except Exception:  # noqa: BLE001 - fixed bounded shadow failure code.
         return _shadow_start_bank_failure_diagnostic(
             None,
             minimum_relative_separation=separation,
             failure_code="shadow_input_conversion_failure",
         )
-    if states.ndim != 2 or states.shape[0] < 4:
+    if states.shape.rank != 2 or states.shape[0] < 4:
         return _shadow_start_bank_failure_diagnostic(
             states,
             minimum_relative_separation=separation,
             failure_code="shadow_invalid_shape",
         )
-    if not np.all(np.isfinite(states)):
+    if not bool(tf.reduce_all(tf.math.is_finite(states)).numpy()):
         return _shadow_start_bank_failure_diagnostic(
             states,
             minimum_relative_separation=separation,
             failure_code="shadow_nonfinite_source",
         )
     try:
-        reference = (
+        reference_value = (
             states
             if reference_transform is None
-            else np.asarray(
-                reference_transform.theta_to_latent(states).numpy(),
-                dtype=float,
-            )
+            else reference_transform.theta_to_latent(states)
         )
+        if hasattr(reference_value, "numpy") and not tf.is_tensor(reference_value):
+            reference_value = reference_value.numpy()
+        reference = _float64_tensor(reference_value)
     except Exception:  # noqa: BLE001 - fixed bounded shadow failure code.
         return _shadow_start_bank_failure_diagnostic(
             states,
@@ -7053,7 +7261,7 @@ def _best_effort_shadow_start_bank_scope(
             failure_code="shadow_reference_conversion_failure",
             finite_status_override=False,
         )
-    if not np.all(np.isfinite(reference)):
+    if not bool(tf.reduce_all(tf.math.is_finite(reference)).numpy()):
         return _shadow_start_bank_failure_diagnostic(
             states,
             minimum_relative_separation=separation,
@@ -7079,7 +7287,7 @@ def _materialize_private_start_bank(
     assessment: _StartBankAssessment,
     *,
     qualification: _StartBankQualificationDiagnostic | None = None,
-) -> np.ndarray:
+) -> Any:
     if type(assessment) is not _StartBankAssessment:
         raise TypeError("assessment must be a concrete start-bank assessment")
     if (
@@ -7094,9 +7302,12 @@ def _materialize_private_start_bank(
         if qualification is not None:
             setattr(error, _START_BANK_DIAGNOSTIC_ATTRIBUTE, qualification)
         raise error
-    bank = assessment.canonical_states[
-        list(assessment.selected_row_indices)
-    ].astype(float, copy=True)
+    import tensorflow as tf
+
+    bank = tf.gather(
+        _float64_tensor(assessment.canonical_states),
+        list(assessment.selected_row_indices),
+    ).numpy().copy()
     bank.setflags(write=False)
     return bank
 
@@ -7117,24 +7328,24 @@ def _compose_base_transform_with_nested_estimate(
 ) -> tuple[PositionCovarianceEstimate, AffineCoordinateTransform]:
     """Return the exact covariance estimate and its composed transform."""
 
-    nested_center = np.asarray(nested_artifact.position, dtype=float)
-    nested_factor = np.asarray(nested_artifact.factor, dtype=float)
+    import tensorflow as tf
+
+    nested_center = _float64_tensor(nested_artifact.position)
+    nested_factor = _float64_tensor(nested_artifact.factor)
     if nested_center.shape != (base_transform.dimension,):
         raise ValueError("nested artifact center dimension mismatch")
     if nested_factor.shape != (base_transform.dimension, base_transform.dimension):
         raise ValueError("nested artifact factor dimension mismatch")
-    canonical_center = np.asarray(
-        base_transform.latent_to_theta(nested_center).numpy(), dtype=float
-    )
-    canonical_factor = base_transform.factor @ nested_factor
-    canonical_covariance = canonical_factor @ canonical_factor.T
+    canonical_center = base_transform.latent_to_theta(nested_center)
+    canonical_factor = tf.matmul(_float64_tensor(base_transform.factor), nested_factor)
+    canonical_covariance = tf.matmul(canonical_factor, canonical_factor, transpose_b=True)
     estimate = PositionCovarianceEstimate(
         center=canonical_center,
         covariance=canonical_covariance,
         source_coordinate_signature=str(source_coordinate_signature),
         estimator_family="historical_nested_affine_composition",
         state_count=max(1, base_transform.dimension),
-        effective_rank=int(np.linalg.matrix_rank(canonical_covariance)),
+        effective_rank=int(tf.linalg.matrix_rank(canonical_covariance).numpy()),
         regularization_report={
             "method": "exact_forward_affine_composition",
             "base_coordinate_signature": base_transform.signature,
@@ -7151,14 +7362,15 @@ def _compose_base_transform_with_nested_estimate(
         factor=canonical_factor,
         covariance_signature=estimate.signature,
     )
-    probe = np.stack(
-        [np.zeros(base_transform.dimension), np.linspace(-0.2, 0.3, base_transform.dimension)]
+    probe = tf.stack(
+        [tf.zeros(base_transform.dimension, tf.float64),
+         tf.linspace(tf.constant(-0.2, tf.float64), tf.constant(0.3, tf.float64), base_transform.dimension)]
     )
     nested_theta = base_transform.latent_to_theta(
         nested_artifact.build_latent_transform().latent_to_position(probe)
     )
     direct_theta = transform.latent_to_theta(probe)
-    if not np.allclose(nested_theta, direct_theta, rtol=1.0e-10, atol=1.0e-10):
+    if not _all_close(nested_theta, direct_theta, rtol=1.0e-10, atol=1.0e-10):
         raise ValueError("forward operational compatibility composition failed")
     return estimate, transform
 
@@ -7194,26 +7406,22 @@ def compose_operational_transform_in_base_coordinates(
     Phase 5 adapters then recovers exactly the final canonical transform.
     """
 
-    from bayesfilter.inference.hmc import PrecomputedMassArtifact
     import tensorflow as tf
+
+    from bayesfilter.inference.hmc import PrecomputedMassArtifact
 
     if base_transform.dimension != final_transform.dimension:
         raise ValueError("base and final transform dimensions must match")
     base_factor = tf.convert_to_tensor(base_transform.factor, dtype=tf.float64)
     final_factor = tf.convert_to_tensor(final_transform.factor, dtype=tf.float64)
-    center_delta = tf.convert_to_tensor(
-        final_transform.center - base_transform.center,
-        dtype=tf.float64,
-    )
-    nested_center = tf.linalg.triangular_solve(
+    center_delta = _float64_tensor(final_transform.center) - _float64_tensor(base_transform.center)
+    nested_center = tf.linalg.solve(
         base_factor,
         center_delta[:, None],
-        lower=True,
     )[:, 0]
-    nested_factor = tf.linalg.triangular_solve(
+    nested_factor = tf.linalg.solve(
         base_factor,
         final_factor,
-        lower=True,
     )
     nested_covariance = tf.matmul(nested_factor, nested_factor, transpose_b=True)
     tf.debugging.assert_all_finite(

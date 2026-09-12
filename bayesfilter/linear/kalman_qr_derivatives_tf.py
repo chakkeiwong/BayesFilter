@@ -161,6 +161,123 @@ def _validate_batched_static_score_shapes(
         )
 
 
+def _validate_batched_static_factor_score_shapes(
+    *,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_factor: tf.Tensor,
+    transition_noise_factor: tf.Tensor,
+    observation_noise_factor: tf.Tensor,
+    d_initial_state_mean: tf.Tensor,
+    d_initial_state_factor: tf.Tensor,
+    d_transition_offset: tf.Tensor,
+    d_transition_matrix: tf.Tensor,
+    d_transition_noise_factor: tf.Tensor,
+    d_observation_offset: tf.Tensor,
+    d_observation_matrix: tf.Tensor,
+    d_observation_noise_factor: tf.Tensor,
+) -> None:
+    """Fail closed for the factor-native batched-static QR score contract.
+
+    The covariance inputs deliberately do not appear here.  A factor-native
+    caller may provide a rectangular square root, and the filter must consume
+    that factor directly rather than materializing ``L L.T`` before its first
+    QR update.
+    """
+
+    expected_ranks = {
+        "initial_state_mean": (initial_state_mean, 2),
+        "transition_offset": (transition_offset, 2),
+        "transition_matrix": (transition_matrix, 3),
+        "observation_offset": (observation_offset, 2),
+        "observation_matrix": (observation_matrix, 3),
+        "initial_state_factor": (initial_state_factor, 3),
+        "transition_noise_factor": (transition_noise_factor, 3),
+        "observation_noise_factor": (observation_noise_factor, 3),
+        "d_initial_state_mean": (d_initial_state_mean, 3),
+        "d_initial_state_factor": (d_initial_state_factor, 4),
+        "d_transition_offset": (d_transition_offset, 3),
+        "d_transition_matrix": (d_transition_matrix, 4),
+        "d_transition_noise_factor": (d_transition_noise_factor, 4),
+        "d_observation_offset": (d_observation_offset, 3),
+        "d_observation_matrix": (d_observation_matrix, 4),
+        "d_observation_noise_factor": (d_observation_noise_factor, 4),
+    }
+    for name, (tensor, rank) in expected_ranks.items():
+        if tensor.shape.rank != rank:
+            raise ValueError(f"{name} must have rank {rank} for factor-native QR score")
+
+    batch_size = tf.shape(initial_state_mean)[0]
+    parameter_dim = tf.shape(d_initial_state_mean)[1]
+    for name, tensor in (
+        ("transition_offset", transition_offset),
+        ("transition_matrix", transition_matrix),
+        ("observation_offset", observation_offset),
+        ("observation_matrix", observation_matrix),
+        ("initial_state_factor", initial_state_factor),
+        ("transition_noise_factor", transition_noise_factor),
+        ("observation_noise_factor", observation_noise_factor),
+        ("d_initial_state_mean", d_initial_state_mean),
+        ("d_initial_state_factor", d_initial_state_factor),
+        ("d_transition_offset", d_transition_offset),
+        ("d_transition_matrix", d_transition_matrix),
+        ("d_transition_noise_factor", d_transition_noise_factor),
+        ("d_observation_offset", d_observation_offset),
+        ("d_observation_matrix", d_observation_matrix),
+        ("d_observation_noise_factor", d_observation_noise_factor),
+    ):
+        tf.debugging.assert_equal(
+            tf.shape(tensor)[0],
+            batch_size,
+            message=f"{name} batch dimension must match initial_state_mean",
+        )
+        if name.startswith("d_"):
+            tf.debugging.assert_equal(
+                tf.shape(tensor)[1],
+                parameter_dim,
+                message=f"{name} parameter dimension must match d_initial_state_mean",
+            )
+
+    tf.debugging.assert_equal(
+        tf.shape(initial_state_factor)[1],
+        tf.shape(initial_state_mean)[1],
+        message="initial_state_factor state dimension must match initial_state_mean",
+    )
+    tf.debugging.assert_equal(
+        tf.shape(transition_noise_factor)[1],
+        tf.shape(initial_state_mean)[1],
+        message="transition_noise_factor state dimension must match initial_state_mean",
+    )
+    tf.debugging.assert_equal(
+        tf.shape(observation_noise_factor)[1],
+        tf.shape(observation_offset)[1],
+        message="observation_noise_factor observation dimension must match observation_offset",
+    )
+    tf.debugging.assert_equal(
+        tf.shape(transition_matrix)[1],
+        tf.shape(initial_state_mean)[1],
+        message="transition_matrix state dimension must match initial_state_mean",
+    )
+    tf.debugging.assert_equal(
+        tf.shape(observation_matrix)[1],
+        tf.shape(observation_offset)[1],
+        message="observation_matrix observation dimension must match observation_offset",
+    )
+    tf.debugging.assert_equal(
+        tf.shape(observation_matrix)[2],
+        tf.shape(initial_state_mean)[1],
+        message="observation_matrix state dimension must match initial_state_mean",
+    )
+    tf.debugging.assert_equal(
+        tf.shape(observation_noise_factor)[2],
+        tf.shape(observation_offset)[1],
+        message="observation_noise_factor must be square for jitter-compatible score",
+    )
+
+
 def _batched_qr_positive(matrix: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
     """Batched thin QR with a positive diagonal in the triangular factor."""
 
@@ -2031,93 +2148,96 @@ def tf_qr_sqrt_kalman_score(
     return log_likelihood, score
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
-def tf_qr_sqrt_kalman_score_batched_static(
+@tf.function(reduce_retracing=True)
+def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
     transition_matrix: tf.Tensor,
-    transition_covariance: tf.Tensor,
+    transition_noise_factor: tf.Tensor,
     observation_offset: tf.Tensor,
     observation_matrix: tf.Tensor,
-    observation_covariance: tf.Tensor,
+    observation_noise_factor: tf.Tensor,
     initial_state_mean: tf.Tensor,
-    initial_state_covariance: tf.Tensor,
+    initial_state_factor: tf.Tensor,
     d_initial_state_mean: tf.Tensor,
-    d_initial_state_covariance: tf.Tensor,
+    d_initial_state_factor: tf.Tensor,
     d_transition_offset: tf.Tensor,
     d_transition_matrix: tf.Tensor,
-    d_transition_covariance: tf.Tensor,
+    d_transition_noise_factor: tf.Tensor,
     d_observation_offset: tf.Tensor,
     d_observation_matrix: tf.Tensor,
-    d_observation_covariance: tf.Tensor,
+    d_observation_noise_factor: tf.Tensor,
     jitter: tf.Tensor | float = 0.0,
     jitter_updates_filtered_covariance: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    """Batched-static QR square-root Kalman log likelihood and score.
+    """Evaluate a batched analytic QR score from native covariance factors.
 
     The leading dimension is an independent batch/proposal axis ``B``.  The
     derivative tensors carry a separate parameter axis ``P``.  This kernel is
     batch-native over ``B`` and does not call the scalar score kernel per row.
+    Process, initial-state, and observation factors enter the QR recursion
+    directly.  Only predicted and innovation covariances needed for the
+    Kalman gain and score algebra are reconstructed locally after QR.
     """
 
     dtype = _score_dtype(
         observations,
         transition_offset,
         transition_matrix,
-        transition_covariance,
+        transition_noise_factor,
         observation_offset,
         observation_matrix,
-        observation_covariance,
+        observation_noise_factor,
         initial_state_mean,
-        initial_state_covariance,
+        initial_state_factor,
         d_initial_state_mean,
-        d_initial_state_covariance,
+        d_initial_state_factor,
         d_transition_offset,
         d_transition_matrix,
-        d_transition_covariance,
+        d_transition_noise_factor,
         d_observation_offset,
         d_observation_matrix,
-        d_observation_covariance,
+        d_observation_noise_factor,
         jitter,
-        context="batched-static QR score inputs",
+        context="factor-native batched-static QR score inputs",
     )
     y = _as_observation_matrix(observations, dtype)
     n_timesteps = tf.shape(y)[0]
     transition_offset = _to_tensor(transition_offset, dtype)
     transition_matrix = _to_tensor(transition_matrix, dtype)
-    transition_covariance = _to_tensor(transition_covariance, dtype)
+    transition_noise_factor = _to_tensor(transition_noise_factor, dtype)
     observation_offset = _to_tensor(observation_offset, dtype)
     observation_matrix = _to_tensor(observation_matrix, dtype)
-    observation_covariance = _to_tensor(observation_covariance, dtype)
+    observation_noise_factor = _to_tensor(observation_noise_factor, dtype)
     mean0 = _to_tensor(initial_state_mean, dtype)
-    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
+    initial_state_factor = _to_tensor(initial_state_factor, dtype)
 
     dmean0 = _to_tensor(d_initial_state_mean, dtype)
-    d_initial_state_covariance = _to_tensor(d_initial_state_covariance, dtype)
+    d_initial_state_factor = _to_tensor(d_initial_state_factor, dtype)
     d_transition_offset = _to_tensor(d_transition_offset, dtype)
     d_transition_matrix = _to_tensor(d_transition_matrix, dtype)
-    d_transition_covariance = _to_tensor(d_transition_covariance, dtype)
+    d_transition_noise_factor = _to_tensor(d_transition_noise_factor, dtype)
     d_observation_offset = _to_tensor(d_observation_offset, dtype)
     d_observation_matrix = _to_tensor(d_observation_matrix, dtype)
-    d_observation_covariance = _to_tensor(d_observation_covariance, dtype)
+    d_observation_noise_factor = _to_tensor(d_observation_noise_factor, dtype)
 
-    _validate_batched_static_score_shapes(
+    _validate_batched_static_factor_score_shapes(
         transition_offset=transition_offset,
         transition_matrix=transition_matrix,
-        transition_covariance=transition_covariance,
         observation_offset=observation_offset,
         observation_matrix=observation_matrix,
-        observation_covariance=observation_covariance,
         initial_state_mean=mean0,
-        initial_state_covariance=initial_state_covariance,
+        initial_state_factor=initial_state_factor,
+        transition_noise_factor=transition_noise_factor,
+        observation_noise_factor=observation_noise_factor,
         d_initial_state_mean=dmean0,
-        d_initial_state_covariance=d_initial_state_covariance,
+        d_initial_state_factor=d_initial_state_factor,
         d_transition_offset=d_transition_offset,
         d_transition_matrix=d_transition_matrix,
-        d_transition_covariance=d_transition_covariance,
+        d_transition_noise_factor=d_transition_noise_factor,
         d_observation_offset=d_observation_offset,
         d_observation_matrix=d_observation_matrix,
-        d_observation_covariance=d_observation_covariance,
+        d_observation_noise_factor=d_observation_noise_factor,
     )
 
     batch_size = tf.shape(mean0)[0]
@@ -2129,36 +2249,56 @@ def tf_qr_sqrt_kalman_score_batched_static(
     jitter_tensor = _to_tensor(jitter, dtype)
     two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
 
-    covariance_factor0, dcovariance_factor0 = _batched_cholesky_factor_first_derivatives(
-        initial_state_covariance,
-        d_initial_state_covariance,
-        jitter=0.0,
+    covariance_factor0 = initial_state_factor
+    dcovariance_factor0 = d_initial_state_factor
+    transition_covariance_factor = transition_noise_factor
+    dtransition_covariance_factor = d_transition_noise_factor
+
+    # A nonzero observation jitter is represented as extra square-root columns
+    # in the QR stack.  The repaired Phase 9 path passes zero jitter, so its
+    # native observation factor remains untouched and is never recovered from
+    # a reconstructed covariance matrix.
+    jitter_check = tf.debugging.assert_non_negative(
+        jitter_tensor,
+        message="factor-native QR score jitter must be nonnegative",
     )
-    transition_covariance_factor, dtransition_covariance_factor = (
-        _batched_cholesky_factor_first_derivatives(
-            transition_covariance,
-            d_transition_covariance,
-            jitter=0.0,
+    with tf.control_dependencies([jitter_check]):
+        jitter_tensor = tf.identity(jitter_tensor)
+    jitter_factor = tf.sqrt(jitter_tensor) * obs_identity
+    zero_jitter_derivative = tf.zeros(
+        (batch_size, parameter_dim, obs_dim, obs_dim),
+        dtype=dtype,
+    )
+    jittered_observation_stack = tf.concat(
+        (observation_noise_factor, jitter_factor),
+        axis=2,
+    )
+    jittered_observation_derivative_stack = tf.concat(
+        (d_observation_noise_factor, zero_jitter_derivative),
+        axis=3,
+    )
+    jittered_observation_factor, jittered_dobservation_factor, _ = (
+        _batched_stack_qr_lower_factor_first_derivatives(
+            jittered_observation_stack,
+            jittered_observation_derivative_stack,
         )
     )
-    observation_covariance_factor, dobservation_covariance_factor = (
-        _batched_cholesky_factor_first_derivatives(
-            observation_covariance + jitter_tensor * obs_identity,
-            d_observation_covariance,
-            jitter=0.0,
-        )
+    observation_covariance_factor = tf.cond(
+        tf.equal(jitter_tensor, tf.constant(0.0, dtype=dtype)),
+        lambda: observation_noise_factor,
+        lambda: jittered_observation_factor,
+    )
+    dobservation_covariance_factor = tf.cond(
+        tf.equal(jitter_tensor, tf.constant(0.0, dtype=dtype)),
+        lambda: d_observation_noise_factor,
+        lambda: jittered_dobservation_factor,
     )
     if jitter_updates_filtered_covariance:
         observation_update_covariance_factor = observation_covariance_factor
         dobservation_update_covariance_factor = dobservation_covariance_factor
     else:
-        observation_update_covariance_factor, dobservation_update_covariance_factor = (
-            _batched_cholesky_factor_first_derivatives(
-                observation_covariance,
-                d_observation_covariance,
-                jitter=0.0,
-            )
-        )
+        observation_update_covariance_factor = observation_noise_factor
+        dobservation_update_covariance_factor = d_observation_noise_factor
 
     score0 = tf.zeros((batch_size, parameter_dim), dtype=dtype)
     log_likelihood0 = tf.zeros((batch_size,), dtype=dtype)
@@ -2377,6 +2517,158 @@ def tf_qr_sqrt_kalman_score_batched_static(
         parallel_iterations=1,
     )
     return log_likelihood, score
+
+
+@tf.function(jit_compile=True, reduce_retracing=True)
+def tf_qr_sqrt_kalman_score_batched_static(
+    observations: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_covariance: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_covariance: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_covariance: tf.Tensor,
+    d_initial_state_mean: tf.Tensor,
+    d_initial_state_covariance: tf.Tensor,
+    d_transition_offset: tf.Tensor,
+    d_transition_matrix: tf.Tensor,
+    d_transition_covariance: tf.Tensor,
+    d_observation_offset: tf.Tensor,
+    d_observation_matrix: tf.Tensor,
+    d_observation_covariance: tf.Tensor,
+    jitter: tf.Tensor | float = 0.0,
+    jitter_updates_filtered_covariance: bool = True,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Compatibility wrapper for the covariance-input batched QR score.
+
+    Historical callers provide covariance matrices.  This wrapper preserves
+    that API and its XLA contract, while the repaired factor-native kernel
+    below owns the actual filtering recursion.
+    """
+
+    dtype = _score_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        d_initial_state_mean,
+        d_initial_state_covariance,
+        d_transition_offset,
+        d_transition_matrix,
+        d_transition_covariance,
+        d_observation_offset,
+        d_observation_matrix,
+        d_observation_covariance,
+        jitter,
+        context="batched-static QR covariance compatibility inputs",
+    )
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    d_transition_covariance = _to_tensor(d_transition_covariance, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
+    d_initial_state_covariance = _to_tensor(d_initial_state_covariance, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    d_observation_covariance = _to_tensor(d_observation_covariance, dtype)
+    initial_state_factor, d_initial_state_factor = _batched_cholesky_factor_first_derivatives(
+        initial_state_covariance,
+        d_initial_state_covariance,
+        jitter=0.0,
+    )
+    transition_noise_factor, d_transition_noise_factor = (
+        _batched_cholesky_factor_first_derivatives(
+            transition_covariance,
+            d_transition_covariance,
+            jitter=0.0,
+        )
+    )
+    observation_noise_factor, d_observation_noise_factor = (
+        _batched_cholesky_factor_first_derivatives(
+            observation_covariance,
+            d_observation_covariance,
+            jitter=0.0,
+        )
+    )
+    return _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+        observations=observations,
+        transition_offset=transition_offset,
+        transition_matrix=transition_matrix,
+        transition_noise_factor=transition_noise_factor,
+        observation_offset=observation_offset,
+        observation_matrix=observation_matrix,
+        observation_noise_factor=observation_noise_factor,
+        initial_state_mean=initial_state_mean,
+        initial_state_factor=initial_state_factor,
+        d_initial_state_mean=d_initial_state_mean,
+        d_initial_state_factor=d_initial_state_factor,
+        d_transition_offset=d_transition_offset,
+        d_transition_matrix=d_transition_matrix,
+        d_transition_noise_factor=d_transition_noise_factor,
+        d_observation_offset=d_observation_offset,
+        d_observation_matrix=d_observation_matrix,
+        d_observation_noise_factor=d_observation_noise_factor,
+        jitter=jitter,
+        jitter_updates_filtered_covariance=jitter_updates_filtered_covariance,
+    )
+
+
+@tf.function(reduce_retracing=True)
+def tf_qr_sqrt_kalman_score_factors_batched_static(
+    observations: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_noise_factor: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_noise_factor: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_factor: tf.Tensor,
+    d_initial_state_mean: tf.Tensor,
+    d_initial_state_factor: tf.Tensor,
+    d_transition_offset: tf.Tensor,
+    d_transition_matrix: tf.Tensor,
+    d_transition_noise_factor: tf.Tensor,
+    d_observation_offset: tf.Tensor,
+    d_observation_matrix: tf.Tensor,
+    d_observation_noise_factor: tf.Tensor,
+    jitter: tf.Tensor | float = 0.0,
+    jitter_updates_filtered_covariance: bool = True,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Non-XLA factor-native batched QR log likelihood and analytic score.
+
+    ``transition_noise_factor``, ``initial_state_factor``, and
+    ``observation_noise_factor`` are consumed directly.  The function does
+    not Cholesky-factorize or otherwise reconstruct any input covariance.
+    This non-XLA entry point is intentional for the Gate 1 numerical repair;
+    target-only XLA qualification remains a separate, future claim.
+    """
+
+    return _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+        observations=observations,
+        transition_offset=transition_offset,
+        transition_matrix=transition_matrix,
+        transition_noise_factor=transition_noise_factor,
+        observation_offset=observation_offset,
+        observation_matrix=observation_matrix,
+        observation_noise_factor=observation_noise_factor,
+        initial_state_mean=initial_state_mean,
+        initial_state_factor=initial_state_factor,
+        d_initial_state_mean=d_initial_state_mean,
+        d_initial_state_factor=d_initial_state_factor,
+        d_transition_offset=d_transition_offset,
+        d_transition_matrix=d_transition_matrix,
+        d_transition_noise_factor=d_transition_noise_factor,
+        d_observation_offset=d_observation_offset,
+        d_observation_matrix=d_observation_matrix,
+        d_observation_noise_factor=d_observation_noise_factor,
+        jitter=jitter,
+        jitter_updates_filtered_covariance=jitter_updates_filtered_covariance,
+    )
 
 
 def tf_qr_linear_gaussian_score(

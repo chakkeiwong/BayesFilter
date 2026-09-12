@@ -49,6 +49,9 @@ __all__ = [
     "BackendParityResult",
     "BackendParityRow",
     "BUDGET_LADDER_NONCLAIMS",
+    "BATCHED_LOCAL_CENTER_NONCLAIMS",
+    "BatchedLocalCenterConfig",
+    "BatchedLocalCenterResult",
     "BOOTSTRAP_SCREEN_NONCLAIMS",
     "BatchValueScoreMetadata",
     "BatchValueScoreResult",
@@ -64,6 +67,9 @@ __all__ = [
     "FixedCenterCurvatureFit",
     "FixedCenterCurvatureResult",
     "FixedCenterCurvatureThresholds",
+    "POSTERIOR_CURVATURE_REFINEMENT_NONCLAIMS",
+    "PosteriorCurvatureRefinementConfig",
+    "PosteriorCurvatureRefinementResult",
     "POSTERIOR_LOCAL_INITIALIZER_NONCLAIMS",
     "PosteriorLocalInitializerConfig",
     "PosteriorLocalInitializerResult",
@@ -402,7 +408,9 @@ __all__ = [
     "estimate_iterative_quadratic_map_covariance",
     "estimate_sequential_map_covariance",
     "fit_fixed_center_curvature",
+    "fit_dense_score_precision_tf",
     "initialize_posterior_local_location_scale",
+    "refine_posterior_local_curvature",
     "initialize_hmc_kernel_geometry",
     "normalize_hmc_tuning_policy",
     "orchestrate_generic_hmc_tuning",
@@ -532,6 +540,7 @@ __all__ = [
     "expand_same_epsilon_neighbor_guards",
     "fixed_metric_search_seed",
     "locate_block_coordinate_center",
+    "locate_batched_local_center",
     "locate_joint_center",
     "locate_joint_center_staged",
     "minimum_latent_ess",
@@ -551,6 +560,7 @@ __all__ = [
 ]
 
 _EXPORT_MODULES = (
+    "bayesfilter.inference.batched_local_center",
     "bayesfilter.inference.hmc_stage_resume",
     "bayesfilter.inference.hmc_operational_broad_grid",
     "bayesfilter.inference.hmc_uncertainty_retuning",
@@ -585,6 +595,8 @@ _EXPORT_MODULES = (
     "bayesfilter.inference.quadratic_map_covariance",
     "bayesfilter.inference.factor_correlation_geometry",
     "bayesfilter.inference.fixed_center_curvature",
+    "bayesfilter.inference.score_curvature_tf",
+    "bayesfilter.inference.posterior_curvature_refinement",
     "bayesfilter.inference.posterior_local_initializer",
     "bayesfilter.inference.fixed_kernel_arm",
     "bayesfilter.inference.hmc_fixed_metric_grid_search",
@@ -605,6 +617,23 @@ _EXPORT_MODULES = (
 )
 
 _DIRECT_EXPORTS = {
+    "BATCHED_LOCAL_CENTER_NONCLAIMS": "bayesfilter.inference.batched_local_center",
+    "BatchedLocalCenterConfig": "bayesfilter.inference.batched_local_center",
+    "BatchedLocalCenterResult": "bayesfilter.inference.batched_local_center",
+    "locate_batched_local_center": "bayesfilter.inference.batched_local_center",
+    "POSTERIOR_CURVATURE_REFINEMENT_NONCLAIMS": (
+        "bayesfilter.inference.posterior_curvature_refinement"
+    ),
+    "PosteriorCurvatureRefinementConfig": (
+        "bayesfilter.inference.posterior_curvature_refinement"
+    ),
+    "PosteriorCurvatureRefinementResult": (
+        "bayesfilter.inference.posterior_curvature_refinement"
+    ),
+    "refine_posterior_local_curvature": (
+        "bayesfilter.inference.posterior_curvature_refinement"
+    ),
+    "fit_dense_score_precision_tf": "bayesfilter.inference.score_curvature_tf",
     "BoundRetainedHMCArchiveConfig": "bayesfilter.inference.hmc_tuning_dispatch",
     "BoundRetainedHMCArchiveResult": "bayesfilter.inference.hmc_tuning_dispatch",
     "BoundRetainedHMCArchiveRunner": "bayesfilter.inference.hmc_tuning_dispatch",

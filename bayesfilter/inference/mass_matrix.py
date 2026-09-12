@@ -288,7 +288,7 @@ def regularize_precision(
     asymmetry_max_abs = _scalar_float(tf.reduce_max(tf.abs(asymmetry)))
     symmetric = 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
     dimension = tf.shape(symmetric, out_type=tf.int32)[0]
-    jittered = symmetric + tf.cast(jitter_value, symmetric.dtype) * tf.eye(
+    jittered = symmetric + tf.constant(jitter_value, dtype=symmetric.dtype) * tf.eye(
         dimension, dtype=symmetric.dtype
     )
     raw_eigvals, eigvecs = tf.linalg.eigh(jittered)
@@ -307,7 +307,7 @@ def regularize_precision(
     if floor <= 0.0:
         floor = _FLOAT64_EPSILON
 
-    floor_tensor = tf.cast(floor, raw_eigvals.dtype)
+    floor_tensor = tf.constant(floor, dtype=raw_eigvals.dtype)
     regularized_eigvals = tf.maximum(raw_eigvals, floor_tensor)
     regularized = tf.matmul(
         eigvecs * regularized_eigvals[tf.newaxis, :],

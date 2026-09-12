@@ -19,22 +19,25 @@ policy.
 
 from __future__ import annotations
 
+import array
 import dataclasses
 import hashlib
 import inspect
 import json
 import math
 import os
+import struct
+import sys
 import threading
 import time
 import uuid
+import zipfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from numbers import Integral
 from pathlib import Path
 from typing import Any, Mapping
-
-import numpy as np
 
 from bayesfilter.inference.batched_value_score import (
     _call_mapping_with_batch_rank_bridge,
@@ -141,6 +144,10 @@ from bayesfilter.inference.hmc_warmup import (
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptanceEvidence,
     HMCAcceptancePolicy,
+    _all_close,
+    _all_finite,
+    _float64_tensor,
+    _is_boolean_scalar,
     evaluate_hmc_acceptance_evidence,
     hmc_acceptance_evidence_from_payload,
 )
@@ -329,12 +336,12 @@ def _validate_engineering_probe_covariance_multiplier(
 ) -> float | None:
     if value is None:
         return None
-    if isinstance(value, (bool, np.bool_)):
+    if _is_boolean_scalar(value):
         raise ValueError(
             "engineering_probe_covariance_multiplier must be positive and finite"
         )
     multiplier = float(value)
-    if not np.isfinite(multiplier) or multiplier <= 0.0:
+    if not math.isfinite(multiplier) or multiplier <= 0.0:
         raise ValueError(
             "engineering_probe_covariance_multiplier must be positive and finite"
         )
@@ -867,6 +874,7 @@ ORDINARY_ENGINEERING_JOINT_L_EPSILON_POLICY_ID = (
 _ORDINARY_RUNTIME_NUMPY_POLICY_BLOCKER = (
     "ordinary_runtime_numpy_policy_pending"
 )
+_ORDINARY_RUNTIME_BACKEND_POLICY_ID = "ordinary_tf_tfp_runtime_v1"
 
 
 def resolve_ordinary_hmc_selection_policy(
@@ -1191,7 +1199,7 @@ class HMCGeometryScaledBudgetTimingPolicy:
             "emergency_reserve_s",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value < 0.0:
+            if not math.isfinite(value) or value < 0.0:
                 raise ValueError(f"{name} must be finite and non-negative")
             object.__setattr__(self, name, value)
         if self.dimension_factor <= 0.0:
@@ -1237,7 +1245,7 @@ class HMCGeometryScaledBudgetTimingPolicy:
         normalized: dict[str, float] = {}
         for stage, value in multipliers.items():
             multiplier = float(value)
-            if not np.isfinite(multiplier) or multiplier <= 0.0:
+            if not math.isfinite(multiplier) or multiplier <= 0.0:
                 raise ValueError("stage time multipliers must be positive and finite")
             normalized[str(stage)] = multiplier
         object.__setattr__(self, "stage_time_budget_multiplier", normalized)
@@ -1310,7 +1318,7 @@ class HMCGeometryScaledBudgetTimingPolicy:
             "condition_log10": (
                 None
                 if condition_number is None
-                else float(np.log10(max(1.0, condition_number)))
+                else float(math.log10(max(1.0, condition_number)))
             ),
             "effective_dimension": effective_dimension,
             "effective_dimension_ratio": effective_dimension / float(dimension),
@@ -1334,14 +1342,14 @@ class HMCGeometryScaledBudgetTimingPolicy:
         condition_log10 = (
             0.0
             if condition_number is None
-            else max(0.0, float(np.log10(max(1.0, float(condition_number)))))
+            else max(0.0, math.log10(max(1.0, float(condition_number))))
         )
         condition_pressure = 1.0 + self.condition_log10_weight * condition_log10
         anisotropy_ratio = float(dimension) / max(1.0, float(effective_dimension))
-        if not np.isfinite(anisotropy_ratio) or anisotropy_ratio < 1.0:
+        if not math.isfinite(anisotropy_ratio) or anisotropy_ratio < 1.0:
             anisotropy_ratio = 1.0
         anisotropy_pressure = 1.0 + self.anisotropy_sqrt_weight * (
-            np.sqrt(anisotropy_ratio) - 1.0
+            math.sqrt(anisotropy_ratio) - 1.0
         )
         clipped = int(regularization_counts.get("clipped_eigenvalue_count", 0))
         nonpositive = int(
@@ -1360,9 +1368,8 @@ class HMCGeometryScaledBudgetTimingPolicy:
             * float(regularization_pressure)
         )
         return float(
-            np.clip(
-                multiplier,
-                self.min_geometry_multiplier,
+            min(
+                max(multiplier, self.min_geometry_multiplier),
                 self.max_geometry_multiplier,
             )
         )
@@ -1385,7 +1392,7 @@ class HMCGeometryScaledBudgetTimingPolicy:
             mass_artifact=mass_artifact,
         )
         base_uncapped = int(
-            np.ceil(
+            math.ceil(
                 self.dimension_factor
                 * float(dimension)
                 * float(summary["geometry_multiplier"])
@@ -1451,9 +1458,9 @@ class HMCGeometryScaledBudgetTimingPolicy:
             mass_artifact=mass_artifact,
         )
         raw_results = int(
-            np.ceil(
+            math.ceil(
                 self.bootstrap_sqrt_dimension_factor
-                * np.sqrt(float(summary["dimension"]))
+                * math.sqrt(float(summary["dimension"]))
                 * float(summary["geometry_multiplier"])
             )
         )
@@ -1463,7 +1470,7 @@ class HMCGeometryScaledBudgetTimingPolicy:
                 max(self.bootstrap_min_results, raw_results),
             )
         )
-        burnin = max(1, int(np.ceil(results * self.bootstrap_burnin_fraction)))
+        burnin = max(1, int(math.ceil(results * self.bootstrap_burnin_fraction)))
         return {
             "screen_num_results": results,
             "screen_num_burnin_steps": burnin,
@@ -1601,7 +1608,7 @@ class HMCStagedTimeoutPolicy:
         budgets: dict[str, float] = {}
         for stage, value in stage_budgets.items():
             budget = float(value)
-            if not np.isfinite(budget) or budget <= 0.0:
+            if not math.isfinite(budget) or budget <= 0.0:
                 raise ValueError("stage budgets must be positive and finite")
             budgets[str(stage)] = budget
         provenance_source = (
@@ -1615,10 +1622,10 @@ class HMCStagedTimeoutPolicy:
         if set(provenance) != set(budgets):
             raise ValueError("stage_budget_provenance must cover every stage budget")
         cap = float(self.global_cap_s)
-        if not np.isfinite(cap) or cap <= 0.0:
+        if not math.isfinite(cap) or cap <= 0.0:
             raise ValueError("global_cap_s must be positive and finite")
         reserve = float(self.reserve_s)
-        if not np.isfinite(reserve) or reserve < 0.0:
+        if not math.isfinite(reserve) or reserve < 0.0:
             raise ValueError("reserve_s must be finite and non-negative")
         if reserve >= cap:
             raise ValueError("reserve_s must be smaller than global_cap_s")
@@ -1626,7 +1633,7 @@ class HMCStagedTimeoutPolicy:
         if max_rounds < 0:
             raise ValueError("max_enlargement_rounds_per_stage must be non-negative")
         multiplier = float(self.enlargement_multiplier)
-        if not np.isfinite(multiplier) or multiplier <= 1.0:
+        if not math.isfinite(multiplier) or multiplier <= 1.0:
             raise ValueError("enlargement_multiplier must be finite and greater than 1")
         source = str(self.source)
         if not source:
@@ -1690,55 +1697,73 @@ def _geometry_policy_eigenvalues(
     dimension: int,
     mass_artifact: PrecomputedMassArtifact | None,
     eigen_summary: Mapping[str, Any],
-) -> np.ndarray:
+) -> Any:
+    import tensorflow as tf
+
     raw = eigen_summary.get("eigenvalues")
     if raw is not None:
         try:
-            values = np.asarray(tuple(raw), dtype=float)
+            values = tf.reshape(
+                tf.convert_to_tensor(tuple(raw), dtype=tf.float64), [-1]
+            )
         except TypeError:
-            values = np.asarray((), dtype=float)
-        if values.shape == (int(dimension),) and np.all(np.isfinite(values)):
-            return np.maximum(values, 1.0e-300)
+            values = tf.zeros((0,), dtype=tf.float64)
+        if values.shape == (int(dimension),) and bool(
+            tf.reduce_all(tf.math.is_finite(values)).numpy()
+        ):
+            return tf.maximum(values, tf.constant(1.0e-300, dtype=tf.float64))
     if mass_artifact is not None:
-        covariance = np.asarray(mass_artifact.covariance, dtype=float)
+        covariance = tf.convert_to_tensor(mass_artifact.covariance, dtype=tf.float64)
         if covariance.shape == (int(dimension), int(dimension)):
-            values = np.linalg.eigvalsh(0.5 * (covariance + covariance.T))
-            if np.all(np.isfinite(values)):
-                return np.maximum(values, 1.0e-300)
-    return np.ones(int(dimension), dtype=float)
+            values = tf.linalg.eigvalsh(
+                0.5 * (covariance + tf.transpose(covariance))
+            )
+            if bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
+                return tf.maximum(values, tf.constant(1.0e-300, dtype=tf.float64))
+    return tf.ones((int(dimension),), dtype=tf.float64)
 
 
 def _geometry_policy_condition_number(
     *,
-    eigenvalues: np.ndarray,
+    eigenvalues: Any,
     eigen_summary: Mapping[str, Any],
 ) -> float | None:
+    import tensorflow as tf
+
     raw_condition = eigen_summary.get("condition_number")
     if raw_condition is not None:
         try:
             condition = float(raw_condition)
         except (TypeError, ValueError):
             condition = float("nan")
-        if np.isfinite(condition) and condition >= 1.0:
+        if math.isfinite(condition) and condition >= 1.0:
             return condition
-    values = np.asarray(eigenvalues, dtype=float)
-    positive = values[np.isfinite(values) & (values > 0.0)]
-    if positive.size == 0:
+    values = tf.reshape(tf.convert_to_tensor(eigenvalues, dtype=tf.float64), [-1])
+    positive = tf.boolean_mask(
+        values, tf.logical_and(tf.math.is_finite(values), values > 0.0)
+    )
+    if int(tf.size(positive).numpy()) == 0:
         return None
-    condition = float(np.max(positive) / np.min(positive))
-    return condition if np.isfinite(condition) and condition >= 1.0 else None
+    condition = float((tf.reduce_max(positive) / tf.reduce_min(positive)).numpy())
+    return condition if math.isfinite(condition) and condition >= 1.0 else None
 
 
-def _geometry_policy_effective_dimension(eigenvalues: np.ndarray) -> float:
-    values = np.asarray(eigenvalues, dtype=float)
-    values = values[np.isfinite(values) & (values > 0.0)]
-    if values.size == 0:
+def _geometry_policy_effective_dimension(eigenvalues: Any) -> float:
+    import tensorflow as tf
+
+    values = tf.reshape(tf.convert_to_tensor(eigenvalues, dtype=tf.float64), [-1])
+    values = tf.boolean_mask(
+        values, tf.logical_and(tf.math.is_finite(values), values > 0.0)
+    )
+    if int(tf.size(values).numpy()) == 0:
         return 1.0
-    total = float(np.sum(values))
-    squared_total = float(np.sum(np.square(values)))
-    if not np.isfinite(total) or not np.isfinite(squared_total) or squared_total <= 0.0:
+    total = float(tf.reduce_sum(values).numpy())
+    squared_total = float(tf.reduce_sum(tf.square(values)).numpy())
+    if not math.isfinite(total) or not math.isfinite(squared_total) or squared_total <= 0.0:
         return 1.0
-    return float(np.clip((total * total) / squared_total, 1.0, values.size))
+    return float(
+        min(max((total * total) / squared_total, 1.0), int(tf.size(values).numpy()))
+    )
 
 
 def _geometry_policy_regularization_counts(
@@ -2019,14 +2044,14 @@ def _validate_trajectory_window_multiplier(
     name: str,
 ) -> float:
     multiplier = float(value)
-    if not np.isfinite(multiplier) or multiplier <= 0.0:
+    if not math.isfinite(multiplier) or multiplier <= 0.0:
         raise ValueError(f"{name} must be positive and finite")
     return multiplier
 
 
 def _validate_step_repair_multiplier(value: Any, *, name: str) -> float:
     multiplier = float(value)
-    if not np.isfinite(multiplier) or multiplier <= 1.0:
+    if not math.isfinite(multiplier) or multiplier <= 1.0:
         raise ValueError(f"{name} must be finite and greater than 1")
     return multiplier
 
@@ -2049,7 +2074,7 @@ def _validate_nonnegative_perf_counter_or_none(
     if value is None:
         return None
     perf_counter = float(value)
-    if not np.isfinite(perf_counter) or perf_counter < 0.0:
+    if not math.isfinite(perf_counter) or perf_counter < 0.0:
         raise ValueError(f"{name} must be finite and non-negative")
     return perf_counter
 
@@ -2101,7 +2126,7 @@ def _trajectory_window_bounds(
     upper_multiplier: float,
 ) -> tuple[float, float]:
     target = float(target_trajectory)
-    if not np.isfinite(target) or target <= 0.0:
+    if not math.isfinite(target) or target <= 0.0:
         raise ValueError("target trajectory length must be positive and finite")
     lower, upper = _validate_trajectory_window_multipliers(
         lower_multiplier,
@@ -2117,7 +2142,7 @@ def _trajectory_window_relation(
     tau_max: float,
 ) -> str:
     tau = float(trajectory_length)
-    if not np.isfinite(tau) or tau <= 0.0:
+    if not math.isfinite(tau) or tau <= 0.0:
         return "invalid_trajectory_length"
     lower = float(tau_min)
     upper = float(tau_max)
@@ -2139,7 +2164,7 @@ def _trajectory_window_payload(
 ) -> Mapping[str, Any]:
     step = float(step_size)
     leapfrog = int(num_leapfrog_steps)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("trajectory window step_size must be positive and finite")
     if leapfrog <= 0:
         raise ValueError("trajectory window num_leapfrog_steps must be positive")
@@ -2162,8 +2187,8 @@ def _trajectory_window_payload(
         "max_leapfrog_steps": max_l,
         "leapfrog_at_max": leapfrog == max_l,
         "leapfrog_exceeds_max": leapfrog > max_l,
-        "required_leapfrog_for_tau_floor": int(np.ceil(tau_min / step)),
-        "tau_floor_feasible_at_step": int(np.ceil(tau_min / step)) <= max_l,
+        "required_leapfrog_for_tau_floor": math.ceil(tau_min / step),
+        "tau_floor_feasible_at_step": math.ceil(tau_min / step) <= max_l,
     }
 
 RunFullChainFn = Callable[[Any, Any, FullChainHMCConfig], FullChainHMCRunResult]
@@ -2401,19 +2426,19 @@ class HMCGeometryInitializationConfig:
     def __post_init__(self) -> None:
         scaling = float(self.geometry_scaling_c)
         guard = float(self.stability_guard)
-        if not np.isfinite(scaling) or scaling <= 0.0:
+        if not math.isfinite(scaling) or scaling <= 0.0:
             raise ValueError("geometry_scaling_c must be positive and finite")
-        if not np.isfinite(guard) or guard <= 0.0:
+        if not math.isfinite(guard) or guard <= 0.0:
             raise ValueError("stability_guard must be positive and finite")
         jitter = float(self.covariance_jitter)
-        if not np.isfinite(jitter) or jitter < 0.0:
+        if not math.isfinite(jitter) or jitter < 0.0:
             raise ValueError("covariance_jitter must be finite and non-negative")
         floor = (
             None
             if self.eigenvalue_floor is None
             else float(self.eigenvalue_floor)
         )
-        if floor is not None and (not np.isfinite(floor) or floor < 0.0):
+        if floor is not None and (not math.isfinite(floor) or floor < 0.0):
             raise ValueError("eigenvalue_floor must be finite and non-negative")
         condition = (
             None
@@ -2421,7 +2446,7 @@ class HMCGeometryInitializationConfig:
             else float(self.max_condition_number)
         )
         if condition is not None and (
-            not np.isfinite(condition) or condition <= 1.0
+            not math.isfinite(condition) or condition <= 1.0
         ):
             raise ValueError("max_condition_number must be finite and greater than 1")
         max_l = _validate_max_leapfrog_steps(self.max_leapfrog_steps)
@@ -2503,14 +2528,14 @@ class HMCGeometryInitializationResult:
         if self.mass_artifact.dimension != dimension:
             raise ValueError("mass artifact dimension mismatch")
         step = float(self.initial_step_size)
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("initial_step_size must be positive and finite")
         leapfrogs = int(self.initial_num_leapfrog_steps)
         raw_leapfrogs = int(self.unclamped_num_leapfrog_steps)
         if leapfrogs <= 0 or raw_leapfrogs <= 0:
             raise ValueError("leapfrog counts must be positive")
         trajectory = float(self.target_trajectory_length)
-        if not np.isfinite(trajectory) or trajectory <= 0.0:
+        if not math.isfinite(trajectory) or trajectory <= 0.0:
             raise ValueError("target_trajectory_length must be positive and finite")
         mass_signature = str(self.mass_artifact_signature)
         if not mass_signature:
@@ -2588,7 +2613,7 @@ class HMCBootstrapScreenConfig:
 
     def __post_init__(self) -> None:
         target = float(self.target_accept_prob)
-        if not np.isfinite(target) or not 0.0 < target < 1.0:
+        if not math.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
         object.__setattr__(self, "target_accept_prob", target)
         acceptance_band = _validate_band(self.acceptance_band, name="acceptance_band")
@@ -2686,7 +2711,7 @@ class HMCBootstrapRepairRound:
         object.__setattr__(self, "round_index", int(self.round_index))
         object.__setattr__(self, "seed", _validate_seed(self.seed))
         step = float(self.step_size)
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("step_size must be positive and finite")
         object.__setattr__(self, "step_size", step)
         leapfrogs = int(self.num_leapfrog_steps)
@@ -2696,7 +2721,7 @@ class HMCBootstrapRepairRound:
         object.__setattr__(self, "num_leapfrog_steps", leapfrogs)
         object.__setattr__(self, "unclamped_num_leapfrog_steps", raw_leapfrogs)
         trajectory = float(self.target_trajectory_length)
-        if not np.isfinite(trajectory) or trajectory <= 0.0:
+        if not math.isfinite(trajectory) or trajectory <= 0.0:
             raise ValueError("target_trajectory_length must be positive and finite")
         object.__setattr__(self, "target_trajectory_length", trajectory)
         object.__setattr__(self, "leapfrog_clamped", bool(self.leapfrog_clamped))
@@ -2903,7 +2928,7 @@ class HMCWindowedMassStageConfig:
             raise ValueError("algorithm_id must be non-empty")
         object.__setattr__(self, "algorithm_id", algorithm_id)
         target = float(self.target_accept_prob)
-        if not np.isfinite(target) or not 0.0 < target < 1.0:
+        if not math.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
         object.__setattr__(self, "target_accept_prob", target)
         object.__setattr__(self, "seed", _validate_seed(self.seed))
@@ -2966,7 +2991,7 @@ class HMCWindowedMassStageConfig:
             else float(self.public_timeout_budget_s)
         )
         if timeout_budget is not None and (
-            not np.isfinite(timeout_budget) or timeout_budget <= 0.0
+            not math.isfinite(timeout_budget) or timeout_budget <= 0.0
         ):
             raise ValueError("public_timeout_budget_s must be positive and finite")
         object.__setattr__(self, "public_timeout_budget_s", timeout_budget)
@@ -2976,7 +3001,7 @@ class HMCWindowedMassStageConfig:
             else float(self.public_timeout_started_perf_counter_s)
         )
         if timeout_started is not None and (
-            not np.isfinite(timeout_started) or timeout_started < 0.0
+            not math.isfinite(timeout_started) or timeout_started < 0.0
         ):
             raise ValueError(
                 "public_timeout_started_perf_counter_s must be finite and non-negative"
@@ -3423,7 +3448,7 @@ class HMCFixedMassStepStageConfig:
         windowed_algorithm_for_selection_algorithm(algorithm_id)
         object.__setattr__(self, "algorithm_id", algorithm_id)
         target = float(self.target_accept_prob)
-        if not np.isfinite(target) or not 0.0 < target < 1.0:
+        if not math.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
         object.__setattr__(self, "target_accept_prob", target)
         object.__setattr__(
@@ -3533,7 +3558,7 @@ class HMCFixedMassStepStageConfig:
             else float(self.public_timeout_budget_s)
         )
         if timeout_budget is not None and (
-            not np.isfinite(timeout_budget) or timeout_budget <= 0.0
+            not math.isfinite(timeout_budget) or timeout_budget <= 0.0
         ):
             raise ValueError("public_timeout_budget_s must be positive and finite")
         object.__setattr__(self, "public_timeout_budget_s", timeout_budget)
@@ -3543,7 +3568,7 @@ class HMCFixedMassStepStageConfig:
             else float(self.public_timeout_started_perf_counter_s)
         )
         if timeout_started is not None and (
-            not np.isfinite(timeout_started) or timeout_started < 0.0
+            not math.isfinite(timeout_started) or timeout_started < 0.0
         ):
             raise ValueError(
                 "public_timeout_started_perf_counter_s must be finite and non-negative"
@@ -3586,7 +3611,7 @@ class HMCFixedMassStepStageConfig:
             if self.incall_progress_heartbeat_s is None
             else float(self.incall_progress_heartbeat_s)
         )
-        if heartbeat is not None and (not np.isfinite(heartbeat) or heartbeat <= 0.0):
+        if heartbeat is not None and (not math.isfinite(heartbeat) or heartbeat <= 0.0):
             raise ValueError("incall_progress_heartbeat_s must be positive and finite")
         object.__setattr__(self, "incall_progress_heartbeat_s", heartbeat)
         source = str(self.source)
@@ -3854,7 +3879,7 @@ class _HMCPhase5CandidateRecord:
                 if value is not None or finite:
                     raise ValueError(f"unobserved {value_name} must be None/nonfinite")
             elif finite:
-                if value is None or not np.isfinite(float(value)):
+                if value is None or not math.isfinite(float(value)):
                     raise ValueError(f"finite {value_name} requires a finite value")
                 object.__setattr__(self, value_name, float(value))
             elif value is not None:
@@ -4239,7 +4264,7 @@ class _HMCPhase7FixedKernelVerificationInput:
                 raise ValueError(f"{name} must be non-empty")
             object.__setattr__(self, name, value)
         step = float(self.step_size)
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("Phase 7 verification step size must be positive and finite")
         object.__setattr__(self, "step_size", step)
         leapfrog = int(self.num_leapfrog_steps)
@@ -4852,7 +4877,7 @@ class HMCFixedMassStepStageResult:
                 raise ValueError(f"{name} must be non-empty")
             object.__setattr__(self, name, value)
         initial_step = float(self.initial_step_size)
-        if not np.isfinite(initial_step) or initial_step <= 0.0:
+        if not math.isfinite(initial_step) or initial_step <= 0.0:
             raise ValueError("initial_step_size must be positive and finite")
         object.__setattr__(self, "initial_step_size", initial_step)
         leapfrog = int(self.fixed_num_leapfrog_steps)
@@ -5409,7 +5434,7 @@ def _phase5_normalize_optional_number(
         value = float(raw_value)
     except (TypeError, ValueError):
         return None, True, False
-    if not np.isfinite(value):
+    if not math.isfinite(value):
         return None, True, False
     return value, True, True
 
@@ -5850,7 +5875,7 @@ class HMCFrozenStepTrajectoryStageConfig:
 
     def __post_init__(self) -> None:
         target = float(self.target_accept_prob)
-        if not np.isfinite(target) or not 0.0 < target < 1.0:
+        if not math.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
         object.__setattr__(self, "target_accept_prob", target)
         object.__setattr__(
@@ -5905,7 +5930,7 @@ class HMCFrozenStepTrajectoryStageConfig:
             else float(self.public_timeout_budget_s)
         )
         if timeout_budget is not None and (
-            not np.isfinite(timeout_budget) or timeout_budget <= 0.0
+            not math.isfinite(timeout_budget) or timeout_budget <= 0.0
         ):
             raise ValueError("public_timeout_budget_s must be positive and finite")
         object.__setattr__(self, "public_timeout_budget_s", timeout_budget)
@@ -5915,7 +5940,7 @@ class HMCFrozenStepTrajectoryStageConfig:
             else float(self.public_timeout_started_perf_counter_s)
         )
         if timeout_started is not None and (
-            not np.isfinite(timeout_started) or timeout_started < 0.0
+            not math.isfinite(timeout_started) or timeout_started < 0.0
         ):
             raise ValueError(
                 "public_timeout_started_perf_counter_s must be finite and non-negative"
@@ -6047,7 +6072,7 @@ class HMCFrozenStepTrajectoryStageResult:
                 raise ValueError(f"{name} must be non-empty")
             object.__setattr__(self, name, value)
         step = float(self.frozen_step_size)
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("frozen_step_size must be positive and finite")
         object.__setattr__(self, "frozen_step_size", step)
         fixed_l = int(self.fixed_bootstrap_num_leapfrog_steps)
@@ -6291,7 +6316,7 @@ class HMCTuneVerifyRepairLoopConfig:
             verification_bracket_policy,
         )
         target = float(self.target_accept_prob)
-        if not np.isfinite(target) or not 0.0 < target < 1.0:
+        if not math.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
         object.__setattr__(self, "target_accept_prob", target)
         acceptance_band = _validate_band(self.acceptance_band, name="acceptance_band")
@@ -6446,7 +6471,7 @@ class HMCTuneVerifyRepairLoopConfig:
             else float(self.public_timeout_budget_s)
         )
         if timeout_budget is not None and (
-            not np.isfinite(timeout_budget) or timeout_budget <= 0.0
+            not math.isfinite(timeout_budget) or timeout_budget <= 0.0
         ):
             raise ValueError("public_timeout_budget_s must be positive and finite")
         object.__setattr__(self, "public_timeout_budget_s", timeout_budget)
@@ -6456,7 +6481,7 @@ class HMCTuneVerifyRepairLoopConfig:
             else float(self.public_timeout_started_perf_counter_s)
         )
         if timeout_started is not None and (
-            not np.isfinite(timeout_started) or timeout_started < 0.0
+            not math.isfinite(timeout_started) or timeout_started < 0.0
         ):
             raise ValueError(
                 "public_timeout_started_perf_counter_s must be finite and non-negative"
@@ -6515,7 +6540,7 @@ class HMCTuneVerifyRepairLoopConfig:
             if self.incall_progress_heartbeat_s is None
             else float(self.incall_progress_heartbeat_s)
         )
-        if heartbeat is not None and (not np.isfinite(heartbeat) or heartbeat <= 0.0):
+        if heartbeat is not None and (not math.isfinite(heartbeat) or heartbeat <= 0.0):
             raise ValueError("incall_progress_heartbeat_s must be positive and finite")
         object.__setattr__(self, "incall_progress_heartbeat_s", heartbeat)
         source = str(self.source)
@@ -6527,6 +6552,7 @@ class HMCTuneVerifyRepairLoopConfig:
         return {
             "algorithm_id": self.algorithm_id,
             "ordinary_selection_policy": _ordinary_selection_policy_payload(self),
+            "runtime_backend_policy": _ORDINARY_RUNTIME_BACKEND_POLICY_ID,
             "operational_budget_policy_id": self.operational_budget_policy_id,
             "operational_candidate_handoff_policy": (
                 self.operational_candidate_handoff_policy
@@ -7024,7 +7050,7 @@ class HMCKernelTuningConfig:
                 )
         object.__setattr__(self, "preset", preset)
         target = float(self.target_accept_prob)
-        if not np.isfinite(target) or not 0.0 < target < 1.0:
+        if not math.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
         object.__setattr__(self, "target_accept_prob", target)
         acceptance_band = _validate_band(self.acceptance_band, name="acceptance_band")
@@ -7195,20 +7221,20 @@ class HMCKernelTuningConfig:
                 "require_operational_update is incompatible with fixed_identity"
             )
         scaling = float(self.geometry_scaling_c)
-        if not np.isfinite(scaling) or scaling <= 0.0:
+        if not math.isfinite(scaling) or scaling <= 0.0:
             raise ValueError("geometry_scaling_c must be positive and finite")
         guard = float(self.stability_guard)
-        if not np.isfinite(guard) or guard <= 0.0:
+        if not math.isfinite(guard) or guard <= 0.0:
             raise ValueError("stability_guard must be positive and finite")
         jitter = float(self.covariance_jitter)
-        if not np.isfinite(jitter) or jitter < 0.0:
+        if not math.isfinite(jitter) or jitter < 0.0:
             raise ValueError("covariance_jitter must be finite and non-negative")
         floor = (
             None
             if self.eigenvalue_floor is None
             else float(self.eigenvalue_floor)
         )
-        if floor is not None and (not np.isfinite(floor) or floor < 0.0):
+        if floor is not None and (not math.isfinite(floor) or floor < 0.0):
             raise ValueError("eigenvalue_floor must be finite and non-negative")
         condition = (
             None
@@ -7216,7 +7242,7 @@ class HMCKernelTuningConfig:
             else float(self.max_condition_number)
         )
         if condition is not None and (
-            not np.isfinite(condition) or condition <= 1.0
+            not math.isfinite(condition) or condition <= 1.0
         ):
             raise ValueError("max_condition_number must be finite and greater than 1")
         object.__setattr__(self, "geometry_scaling_c", scaling)
@@ -7239,7 +7265,7 @@ class HMCKernelTuningConfig:
             else float(self.public_timeout_budget_s)
         )
         if timeout_budget is not None and (
-            not np.isfinite(timeout_budget) or timeout_budget <= 0.0
+            not math.isfinite(timeout_budget) or timeout_budget <= 0.0
         ):
             raise ValueError("public_timeout_budget_s must be positive and finite")
         object.__setattr__(self, "public_timeout_budget_s", timeout_budget)
@@ -7308,7 +7334,7 @@ class HMCKernelTuningConfig:
             if self.incall_progress_heartbeat_s is None
             else float(self.incall_progress_heartbeat_s)
         )
-        if heartbeat is not None and (not np.isfinite(heartbeat) or heartbeat <= 0.0):
+        if heartbeat is not None and (not math.isfinite(heartbeat) or heartbeat <= 0.0):
             raise ValueError("incall_progress_heartbeat_s must be positive and finite")
         object.__setattr__(self, "incall_progress_heartbeat_s", heartbeat)
         source = str(self.source)
@@ -7381,6 +7407,7 @@ class HMCKernelTuningConfig:
             "schema": "bayesfilter.hmc_kernel_tuning_config.v1",
             "algorithm_id": self.algorithm_id,
             "ordinary_selection_policy": _ordinary_selection_policy_payload(self),
+            "runtime_backend_policy": _ORDINARY_RUNTIME_BACKEND_POLICY_ID,
             "operational_budget_policy_id": self.operational_budget_policy_id,
             "operational_evidence_policy": self.operational_evidence_policy,
             "operational_candidate_handoff_policy": (
@@ -8342,6 +8369,15 @@ def _require_claim_bearing_tuning_policy(
             "claim-bearing replay requires repository-owned tuning_config; "
             "policy fields alone cannot grant authority"
         )
+    # Pre-migration artifacts remain blocked even if someone removes their old
+    # blocker list. Both descriptions must bind the repaired TF/TFP backend;
+    # subsequent geometry, kernel and target checks still govern actual replay.
+    if any(payload.get("runtime_backend_policy") != _ORDINARY_RUNTIME_BACKEND_POLICY_ID
+           for payload in (config_payload, resolved)):
+        raise ValueError(
+            "claim-bearing replay backend identity is historical or mismatched: "
+            + _ORDINARY_RUNTIME_NUMPY_POLICY_BLOCKER
+        )
     algorithm_id = str(config_payload.get("algorithm_id", ""))
     if not algorithm_id:
         raise ValueError(
@@ -8380,8 +8416,7 @@ def _require_claim_bearing_tuning_policy(
         )
     expected_blockers = tuple(
         dict.fromkeys(
-            (_ORDINARY_RUNTIME_NUMPY_POLICY_BLOCKER,)
-            + tuple(
+            tuple(
                 str(item)
                 for item in expected_ordinary_policy.get("claim_bearing_blockers", ())
                 if str(item)
@@ -9227,14 +9262,14 @@ def initialize_hmc_kernel_geometry(
         config=cfg,
     )
     omega = _curvature_frequencies(
-        covariance=np.asarray(mass_artifact.covariance, dtype=float),
+        covariance=mass_artifact.covariance,
         precision=hint.precision_for_formula,
     )
     target_trajectory = _target_trajectory_length(omega)
     epsilon = _initial_step_size(omega, dimension=dimension, config=cfg)
-    unclamped_l = int(np.ceil(target_trajectory / epsilon))
+    unclamped_l = int(math.ceil(target_trajectory / epsilon))
     leapfrogs = int(
-        np.clip(unclamped_l, _GEOMETRY_MIN_LEAPFROG, cfg.max_leapfrog_steps)
+        min(max(unclamped_l, _GEOMETRY_MIN_LEAPFROG), cfg.max_leapfrog_steps)
     )
     mass_signature = _mass_artifact_signature(mass_artifact)
     return HMCGeometryInitializationResult(
@@ -9551,6 +9586,15 @@ def run_hmc_bootstrap_screen(
                     }
                 )
             diagnostics = _bootstrap_error_diagnostics(exc)
+            if diagnostics.get("first_failure") is not None and _private_diagnostic_callback is not None:
+                try:
+                    _private_diagnostic_callback(
+                        "first_hmc_failure",
+                        {"stage": "bootstrap", "round_index": round_index,
+                         "first_failure": diagnostics["first_failure"]},
+                    )
+                except Exception as artifact_error:
+                    diagnostics["first_failure"]["artifact_write_error"] = repr(artifact_error)
         (
             classification,
             diagnostic_role,
@@ -9828,6 +9872,8 @@ def _operational_windowed_mass_capture(
 ]:
     """Run R3 and build a deliberately non-operational v1 compatibility view."""
 
+    import tensorflow as tf
+
     _base_estimate, base_transform = transform_from_precomputed_mass_artifact(
         geometry.mass_artifact,
         source_coordinate_signature=geometry.mass_artifact_signature,
@@ -9839,9 +9885,9 @@ def _operational_windowed_mass_capture(
         source_coordinate_signature=_mass_artifact_signature(stage_mass_artifact),
     )
     initial_theta = (
-        np.asarray(active_transform.center, dtype=float)
+        _float64_tensor(active_transform.center)
         if attempt_state is None or attempt_state.canonical_theta_state is None
-        else np.asarray(attempt_state.canonical_theta_state, dtype=float)
+        else _float64_tensor(attempt_state.canonical_theta_state)
     )
     trajectory_policy = WarmupTrajectoryPolicy(
         int(mass_window_seed_kernel["num_leapfrog_steps"]),
@@ -10016,28 +10062,26 @@ def _operational_windowed_mass_capture(
         if effective_config.mass_policy == "fixed_identity"
         else compatibility_mass
     )
-    canonical_draws = np.concatenate(
+    canonical_draws = tf.concat(
         [
-            np.asarray(window.adaptation_canonical_states, dtype=float).reshape(
+            tf.reshape(_float64_tensor(window.adaptation_canonical_states),
                 (-1, geometry.target_dimension)
             )
             for window in operational_result.windows
         ],
         axis=0,
     )
-    original_latent_draws = np.asarray(
-        base_transform.theta_to_latent(canonical_draws).numpy(), dtype=float
+    original_latent_draws = base_transform.theta_to_latent(canonical_draws)
+    log_accept_ratio = tf.concat(
+        [_float64_tensor(window.log_accept_ratio) for window in operational_result.windows], axis=0,
     )
-    log_accept_ratio = np.concatenate(
-        [window.log_accept_ratio for window in operational_result.windows]
-    ).astype(float, copy=False)
-    acceptance_probability = np.exp(np.minimum(log_accept_ratio, 0.0))
-    binary_acceptance = np.concatenate(
-        [window.is_accepted for window in operational_result.windows]
-    ).astype(bool, copy=False)
-    target_log_prob = np.concatenate(
-        [window.target_log_prob for window in operational_result.windows]
-    ).astype(float, copy=False)
+    acceptance_probability = tf.exp(tf.minimum(log_accept_ratio, 0.0))
+    binary_acceptance = tf.concat(
+        [tf.convert_to_tensor(window.is_accepted) for window in operational_result.windows], axis=0,
+    )
+    target_log_prob = tf.concat(
+        [_float64_tensor(window.target_log_prob) for window in operational_result.windows], axis=0,
+    )
     policy = HMCTuningPolicy.windowed_mass_adaptation(
         num_adaptation_steps=effective_config.warmup_steps,
         target_accept_prob=config.target_accept_prob,
@@ -10102,7 +10146,7 @@ def _operational_windowed_mass_capture(
             "error_message": None,
             "exception_details_exposed": False,
         }
-    binary_trace = binary_acceptance.astype(float, copy=False)
+    binary_trace = tf.cast(binary_acceptance, tf.float64)
     capture = {
         "warmup_draws": original_latent_draws,
         "acceptance_trace": binary_trace,
@@ -10110,7 +10154,7 @@ def _operational_windowed_mass_capture(
         "log_accept_ratio": log_accept_ratio,
         "target_log_prob": target_log_prob,
         "runtime_s": operational_result.elapsed_s,
-        "runtime_finite": bool(np.isfinite(operational_result.elapsed_s)),
+        "runtime_finite": math.isfinite(operational_result.elapsed_s),
         "samples_shape": tuple(original_latent_draws.shape),
         "acceptance_shape": tuple(binary_trace.shape),
         "log_accept_shape": tuple(log_accept_ratio.shape),
@@ -10120,13 +10164,13 @@ def _operational_windowed_mass_capture(
         "finite_sample_count": int(original_latent_draws.shape[0]),
         "nonfinite_sample_count": 0,
         "raw_diagnostics": {
-            "accepted_decision_count": int(np.sum(binary_acceptance)),
-            "acceptance_decision_count": int(binary_acceptance.size),
+            "accepted_decision_count": int(tf.reduce_sum(tf.cast(binary_acceptance, tf.int32)).numpy()),
+            "acceptance_decision_count": int(tf.size(binary_acceptance).numpy()),
             "acceptance_trace_decision_count": int(binary_acceptance.shape[0]),
             "acceptance_raw_chain_count": 1,
             "raw_acceptance_shape": tuple(binary_acceptance.shape),
             "acceptance_decision_source": "operational_window_binary_trace",
-            "mean_acceptance_probability": float(np.mean(acceptance_probability)),
+            "mean_acceptance_probability": float(tf.reduce_mean(acceptance_probability).numpy()),
             "operational_metric_update_count": operational_result.operational_metric_update_count,
             "target_status_trace_policy": operational_result.target_status_trace_policy,
             "target_status_failure_count": sum(
@@ -10655,7 +10699,7 @@ def run_hmc_windowed_mass_stage(
                                 "schema": "bayesfilter.phase7_boundary_state_summary_private.v1",
                                 "summary_only": True,
                                 "initial_state_shape": tuple(
-                                    int(dim) for dim in np.shape(hmc_adapter.initial_position())
+                                    int(dim) for dim in _float64_tensor(hmc_adapter.initial_position()).shape
                                 ),
                                 "raw_state_included": False,
                                 "raw_samples_included": False,
@@ -12518,7 +12562,7 @@ def run_hmc_frozen_step_trajectory_stage(
                 route_name="frozen_step_trajectory_scoped_reusable_runner",
                 route_scope="frozen_step_trajectory_candidate_screen",
                 adapter=trajectory_adapter,
-                initial_state=np.zeros(adapted_mass.dimension, dtype=float),
+                initial_state=_float64_tensor((0.0,) * adapted_mass.dimension),
                 config=screen_config,
                 hmc_adapter_signature=trajectory_hmc_signature,
                 target_dimension=windowed_stage.target_dimension,
@@ -15648,25 +15692,32 @@ def run_hmc_start_bank_diagnostic(
 @dataclass(frozen=True)
 class _GeometryHint:
     kind: str
-    covariance: np.ndarray
-    precision_for_formula: np.ndarray
+    covariance: Any
+    precision_for_formula: Any
     report: Mapping[str, Any]
 
 
-def _validate_position(position: Any) -> np.ndarray:
-    array = np.asarray(position, dtype=float)
-    if array.ndim != 1:
+def _validate_position(position: Any) -> Any:
+    import tensorflow as tf
+
+    try:
+        array = _float64_tensor(position)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("initial_position must be a numeric vector") from exc
+    if array.shape.rank != 1:
         raise ValueError("initial_position must be a one-dimensional vector")
     if array.shape[0] <= 0:
         raise ValueError("initial_position must be non-empty")
-    if not np.all(np.isfinite(array)):
-        raise ValueError("initial_position must be finite")
-    return array.copy()
+    try:
+        tf.debugging.assert_all_finite(array, "initial_position must be finite")
+    except tf.errors.InvalidArgumentError as exc:
+        raise ValueError("initial_position must be finite") from exc
+    return array
 
 
 def _select_geometry_hint(
     *,
-    position: np.ndarray,
+    position: Any,
     negative_hessian: Any | None,
     initial_covariance: Any | None,
     parameter_scales: Any | None,
@@ -15716,11 +15767,13 @@ def _hint_from_value(
     *,
     kind: str,
     value: Any,
-    position: np.ndarray,
+    position: Any,
     config: HMCGeometryInitializationConfig,
     supplied: Mapping[str, bool],
     failures: tuple[Mapping[str, Any], ...],
 ) -> _GeometryHint:
+    import tensorflow as tf
+
     dimension = int(position.shape[0])
     if kind == "negative_hessian":
         precision = _validate_matrix(value, dimension=dimension, name=kind)
@@ -15753,18 +15806,26 @@ def _hint_from_value(
         }
         return _GeometryHint(
             kind=kind,
-            covariance=np.asarray(artifact.covariance, dtype=float),
-            precision_for_formula=np.linalg.pinv(np.asarray(artifact.covariance, dtype=float)),
+            covariance=tf.convert_to_tensor(artifact.covariance, dtype=tf.float64),
+            precision_for_formula=tf.linalg.pinv(
+                tf.convert_to_tensor(artifact.covariance, dtype=tf.float64),
+                rcond=tf.constant(1.0e-15, dtype=tf.float64),
+            ),
             report=report,
         )
     if kind == "initial_covariance":
         covariance = _validate_matrix(value, dimension=dimension, name=kind)
-        covariance = covariance + config.covariance_jitter * np.eye(dimension)
+        covariance = covariance + config.covariance_jitter * tf.eye(
+            dimension, dtype=tf.float64
+        )
         _validate_spd(covariance, name=kind)
         return _GeometryHint(
             kind=kind,
             covariance=covariance,
-            precision_for_formula=np.linalg.pinv(covariance),
+            precision_for_formula=tf.linalg.pinv(
+                covariance,
+                rcond=tf.constant(1.0e-15, dtype=tf.float64),
+            ),
             report={
                 "selected_hint": kind,
                 "hint_precedence": (
@@ -15784,18 +15845,27 @@ def _hint_from_value(
             },
         )
     if kind == "parameter_scales":
-        scales = np.asarray(value, dtype=float)
+        try:
+            scales = _float64_tensor(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("parameter_scales must be numeric") from exc
         if scales.shape != (dimension,):
             raise ValueError("parameter_scales shape must match initial_position")
-        if not np.all(np.isfinite(scales)):
-            raise ValueError("parameter_scales must be finite")
-        if np.any(scales <= 0.0):
+        try:
+            tf.debugging.assert_all_finite(scales, "parameter_scales must be finite")
+        except tf.errors.InvalidArgumentError as exc:
+            raise ValueError("parameter_scales must be finite") from exc
+        if bool(tf.reduce_any(scales <= 0.0).numpy()):
             raise ValueError("parameter_scales must be positive")
-        covariance = np.diag(scales**2) + config.covariance_jitter * np.eye(dimension)
+        covariance = tf.linalg.diag(tf.square(scales)) + config.covariance_jitter * tf.eye(
+            dimension, dtype=tf.float64
+        )
         return _GeometryHint(
             kind=kind,
             covariance=covariance,
-            precision_for_formula=np.diag(1.0 / np.diag(covariance)),
+            precision_for_formula=tf.linalg.diag(
+                1.0 / tf.linalg.diag_part(covariance)
+            ),
             report={
                 "selected_hint": kind,
                 "hint_precedence": (
@@ -15819,15 +15889,17 @@ def _hint_from_value(
 
 def _identity_hint(
     *,
-    position: np.ndarray,
+    position: Any,
     supplied: Mapping[str, bool],
     failures: tuple[Mapping[str, Any], ...],
 ) -> _GeometryHint:
+    import tensorflow as tf
+
     dimension = int(position.shape[0])
     return _GeometryHint(
         kind="identity",
-        covariance=np.eye(dimension),
-        precision_for_formula=np.eye(dimension),
+        covariance=tf.eye(dimension, dtype=tf.float64),
+        precision_for_formula=tf.eye(dimension, dtype=tf.float64),
         report={
             "selected_hint": "identity",
             "hint_precedence": (
@@ -15845,26 +15917,37 @@ def _identity_hint(
     )
 
 
-def _validate_matrix(value: Any, *, dimension: int, name: str) -> np.ndarray:
-    matrix = np.asarray(value, dtype=float)
+def _validate_matrix(value: Any, *, dimension: int, name: str) -> Any:
+    import tensorflow as tf
+
+    try:
+        matrix = _float64_tensor(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be numeric") from exc
     if matrix.shape != (dimension, dimension):
         raise ValueError(f"{name} shape must match initial_position dimension")
-    if not np.all(np.isfinite(matrix)):
-        raise ValueError(f"{name} must be finite")
-    return 0.5 * (matrix + matrix.T)
+    try:
+        tf.debugging.assert_all_finite(matrix, f"{name} must be finite")
+    except tf.errors.InvalidArgumentError as exc:
+        raise ValueError(f"{name} must be finite") from exc
+    return 0.5 * (matrix + tf.transpose(matrix))
 
 
-def _validate_spd(matrix: np.ndarray, *, name: str) -> None:
-    eigenvalues = np.linalg.eigvalsh(matrix)
-    if not np.all(np.isfinite(eigenvalues)):
-        raise ValueError(f"{name} eigenvalues must be finite")
-    if np.any(eigenvalues <= 0.0):
+def _validate_spd(matrix: Any, *, name: str) -> None:
+    import tensorflow as tf
+
+    eigenvalues = tf.linalg.eigvalsh(_float64_tensor(matrix))
+    try:
+        tf.debugging.assert_all_finite(eigenvalues, f"{name} eigenvalues must be finite")
+    except tf.errors.InvalidArgumentError as exc:
+        raise ValueError(f"{name} eigenvalues must be finite") from exc
+    if bool(tf.reduce_any(eigenvalues <= 0.0).numpy()):
         raise ValueError(f"{name} must be positive definite")
 
 
 def _build_mass_artifact(
     *,
-    position: np.ndarray,
+    position: Any,
     adapter_signature: str,
     hint: _GeometryHint,
     config: HMCGeometryInitializationConfig,
@@ -15890,59 +15973,91 @@ def _build_mass_artifact(
 
 def _curvature_frequencies(
     *,
-    covariance: np.ndarray,
-    precision: np.ndarray,
-) -> np.ndarray:
-    eigenvalues_c, eigenvectors_c = np.linalg.eigh(0.5 * (covariance + covariance.T))
-    if not np.all(np.isfinite(eigenvalues_c)) or np.any(eigenvalues_c <= 0.0):
+    covariance: Any,
+    precision: Any,
+) -> Any:
+    import tensorflow as tf
+
+    covariance_tensor = _float64_tensor(covariance)
+    precision_tensor = _float64_tensor(precision)
+    eigenvalues_c, eigenvectors_c = tf.linalg.eigh(
+        0.5 * (covariance_tensor + tf.transpose(covariance_tensor))
+    )
+    if bool(tf.reduce_any(~tf.math.is_finite(eigenvalues_c)).numpy()) or bool(
+        tf.reduce_any(eigenvalues_c <= 0.0).numpy()
+    ):
         raise ValueError("covariance square-root eigenvalues must be finite and positive")
-    factor = eigenvectors_c @ np.diag(np.sqrt(eigenvalues_c)) @ eigenvectors_c.T
-    scaled = factor @ precision @ factor
-    scaled = 0.5 * (scaled + scaled.T)
-    eigenvalues = np.linalg.eigvalsh(scaled)
-    if not np.all(np.isfinite(eigenvalues)):
+    factor = tf.matmul(
+        tf.matmul(eigenvectors_c, tf.linalg.diag(tf.sqrt(eigenvalues_c))),
+        tf.transpose(eigenvectors_c),
+    )
+    scaled = tf.matmul(tf.matmul(factor, precision_tensor), factor)
+    scaled = 0.5 * (scaled + tf.transpose(scaled))
+    eigenvalues = tf.linalg.eigvalsh(scaled)
+    if bool(tf.reduce_any(~tf.math.is_finite(eigenvalues)).numpy()):
         raise ValueError("mass-scaled curvature eigenvalues must be finite")
-    eigenvalues = np.maximum(eigenvalues, 1.0e-16)
-    return np.sqrt(eigenvalues)
+    return tf.sqrt(tf.maximum(eigenvalues, tf.constant(1.0e-16, tf.float64)))
 
 
-def _target_trajectory_length(omega: np.ndarray) -> float:
-    median = float(np.median(omega))
-    if not np.isfinite(median) or median <= 0.0:
+def _curvature_median(omega: Any) -> float:
+    import tensorflow as tf
+
+    omega_tensor = tf.reshape(_float64_tensor(omega), [-1])
+    if int(omega_tensor.shape[0]) <= 0:
+        raise ValueError("curvature frequencies must be non-empty")
+    sorted_omega = tf.sort(omega_tensor)
+    count = int(sorted_omega.shape[0])
+    median_tensor = (
+        sorted_omega[count // 2]
+        if count % 2
+        else 0.5 * (sorted_omega[count // 2 - 1] + sorted_omega[count // 2])
+    )
+    return float(median_tensor.numpy())
+
+
+def _target_trajectory_length(omega: Any) -> float:
+    median = _curvature_median(omega)
+    if not math.isfinite(median) or median <= 0.0:
         raise ValueError("median curvature frequency must be positive and finite")
-    return float(np.pi / (2.0 * median))
+    return float(math.pi / (2.0 * median))
 
 
 def _initial_step_size(
-    omega: np.ndarray,
+    omega: Any,
     *,
     dimension: int,
     config: HMCGeometryInitializationConfig,
 ) -> float:
-    rms = float(np.sqrt(np.mean(np.square(omega))))
-    max_omega = float(np.max(omega))
-    if not np.isfinite(rms) or rms <= 0.0:
+    import tensorflow as tf
+
+    omega_tensor = tf.reshape(_float64_tensor(omega), [-1])
+    rms = float(tf.sqrt(tf.reduce_mean(tf.square(omega_tensor))).numpy())
+    max_omega = float(tf.reduce_max(omega_tensor).numpy())
+    if not math.isfinite(rms) or rms <= 0.0:
         raise ValueError("rms curvature frequency must be positive and finite")
-    if not np.isfinite(max_omega) or max_omega <= 0.0:
+    if not math.isfinite(max_omega) or max_omega <= 0.0:
         raise ValueError("max curvature frequency must be positive and finite")
     dimension_scale = float(dimension) ** (-0.25)
     scaled = config.geometry_scaling_c * dimension_scale / rms
     stable = config.stability_guard * 2.0 / max_omega
     step = float(min(scaled, stable))
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("formula-derived initial step size must be positive and finite")
     return step
 
 
-def _curvature_report(omega: np.ndarray) -> Mapping[str, Any]:
+def _curvature_report(omega: Any) -> Mapping[str, Any]:
+    import tensorflow as tf
+
+    omega_tensor = tf.reshape(_float64_tensor(omega), [-1])
     return {
-        "omega_min": float(np.min(omega)),
-        "omega_median": float(np.median(omega)),
-        "omega_rms": float(np.sqrt(np.mean(np.square(omega)))),
-        "omega_max": float(np.max(omega)),
-        "omega_count": int(omega.shape[0]),
-        "finite": bool(np.all(np.isfinite(omega))),
-        "positive": bool(np.all(omega > 0.0)),
+        "omega_min": float(tf.reduce_min(omega_tensor).numpy()),
+        "omega_median": _curvature_median(omega_tensor),
+        "omega_rms": float(tf.sqrt(tf.reduce_mean(tf.square(omega_tensor))).numpy()),
+        "omega_max": float(tf.reduce_max(omega_tensor).numpy()),
+        "omega_count": int(omega_tensor.shape[0]),
+        "finite": bool(tf.reduce_all(tf.math.is_finite(omega_tensor)).numpy()),
+        "positive": bool(tf.reduce_all(omega_tensor > 0.0).numpy()),
     }
 
 
@@ -16016,6 +16131,7 @@ class _BootstrapFixedMassLatentValueScoreAdapter:
             runtime_backend=self.runtime_backend,
             evidence_path=base_capability.evidence_path if preserve_xla else None,
             target_scope=self.target_scope,
+            score_provenance=base_capability.score_provenance,
             nonclaims=nonclaims,
         )
 
@@ -16246,7 +16362,7 @@ def _validate_fixed_mass_step_stage_inputs(
         raise ValueError("fixed-mass step stage requires adapted mass signature")
     if windowed_stage.candidate_step_size is None:
         raise ValueError("fixed-mass step stage requires candidate step size")
-    if not np.isfinite(float(windowed_stage.candidate_step_size)):
+    if not math.isfinite(float(windowed_stage.candidate_step_size)):
         raise ValueError("fixed-mass step candidate step must be finite")
     if float(windowed_stage.candidate_step_size) <= 0.0:
         raise ValueError("fixed-mass step candidate step must be positive")
@@ -16323,7 +16439,7 @@ def _validate_frozen_step_trajectory_stage_inputs(
     if stable_config_hash(fixed_mass_step_stage.selected_step_payload) != fixed_mass_step_stage.selected_step_hash:
         raise ValueError("frozen-step trajectory selected step hash mismatch")
     selected_step = float(fixed_mass_step_stage.selected_step_payload.get("step_size"))
-    if not np.isfinite(selected_step) or selected_step <= 0.0:
+    if not math.isfinite(selected_step) or selected_step <= 0.0:
         raise ValueError("frozen-step trajectory selected step must be positive")
     selected_payload_l = int(
         fixed_mass_step_stage.selected_step_payload.get("num_leapfrog_steps", 0)
@@ -17069,16 +17185,14 @@ def _public_resolved_policy_payload(
     policy_blockers = tuple(
         str(item) for item in ordinary_policy.get("claim_bearing_blockers", ())
     )
-    # The ordinary implementation currently imports/uses NumPy in runtime
-    # tuning paths.  Keep this blocker independent of the descriptive policy
-    # so a future policy repair cannot accidentally erase the backend gate.
-    policy_blockers = tuple(
-        dict.fromkeys(
-            (_ORDINARY_RUNTIME_NUMPY_POLICY_BLOCKER,) + policy_blockers
-        )
-    )
+    # Ordinary numerical work now uses TF/TFP; host copies only materialize
+    # artifacts and scalar decisions. Backend eligibility grants no target,
+    # verification, XLA or scientific authority. Replay checks this identity
+    # against config so historical blocked artifacts cannot silently upgrade.
+    policy_blockers = tuple(dict.fromkeys(policy_blockers))
     return {
         "schema": "bayesfilter.hmc_resolved_tuning_policy.v1",
+        "runtime_backend_policy": _ORDINARY_RUNTIME_BACKEND_POLICY_ID,
         "interface_name": "tune_hmc_kernel",
         "config_variant": str(config_variant),
         "preset": None if preset is None else str(preset),
@@ -17114,13 +17228,15 @@ def _mass_matrix_private_summary(
     mass_hash: str,
     mass_npz_filename: str,
 ) -> Mapping[str, Any]:
-    covariance = np.asarray(mass_artifact.covariance, dtype=float)
-    diagonal = np.diag(covariance)
-    eigenvalues = np.linalg.eigvalsh(0.5 * (covariance + covariance.T))
-    finite = bool(np.all(np.isfinite(covariance)) and np.all(np.isfinite(eigenvalues)))
-    positive = bool(finite and np.all(eigenvalues > 0.0))
+    import tensorflow as tf
+
+    covariance = _float64_tensor(mass_artifact.covariance)
+    diagonal = tf.linalg.diag_part(covariance)
+    eigenvalues = tf.linalg.eigvalsh(0.5 * (covariance + tf.transpose(covariance)))
+    finite = _all_finite(covariance) and _all_finite(eigenvalues)
+    positive = finite and bool(tf.reduce_all(eigenvalues > 0.0).numpy())
     if positive:
-        condition_number = float(np.max(eigenvalues) / np.min(eigenvalues))
+        condition_number = float((tf.reduce_max(eigenvalues) / tf.reduce_min(eigenvalues)).numpy())
     else:
         condition_number = None
     return {
@@ -17129,19 +17245,43 @@ def _mass_matrix_private_summary(
         "mass_npz_filename": str(mass_npz_filename),
         "dimension": int(mass_artifact.dimension),
         "covariance_shape": tuple(int(dim) for dim in covariance.shape),
-        "factor_shape": tuple(int(dim) for dim in np.shape(mass_artifact.factor)),
+        "factor_shape": tuple(int(dim) for dim in _float64_tensor(mass_artifact.factor).shape),
         "finite": finite,
         "positive_definite": positive,
-        "eigen_min": None if not finite else float(np.min(eigenvalues)),
-        "eigen_max": None if not finite else float(np.max(eigenvalues)),
+        "eigen_min": None if not finite else float(tf.reduce_min(eigenvalues).numpy()),
+        "eigen_max": None if not finite else float(tf.reduce_max(eigenvalues).numpy()),
         "condition_number": condition_number,
-        "diagonal_min": float(np.min(diagonal)),
-        "diagonal_max": float(np.max(diagonal)),
-        "diagonal_mean": float(np.mean(diagonal)),
+        "diagonal_min": float(tf.reduce_min(diagonal).numpy()),
+        "diagonal_max": float(tf.reduce_max(diagonal).numpy()),
+        "diagonal_mean": float(tf.reduce_mean(diagonal).numpy()),
         "covariance_source": mass_artifact.covariance_source,
         "regularization_report": dict(mass_artifact.regularization_report),
         "nonclaims": mass_artifact.nonclaims,
     }
+
+
+def _write_float64_mass_npz(path: Path, tensors: Mapping[str, Any]) -> None:
+    """Write standard little-endian NPY v1.0 members without NumPy runtime.
+
+    Only float64 mass arrays cross this host artifact boundary. TensorFlow
+    performs conversion; the standard library packs the already computed
+    values. Existing NPZ readers retain position/covariance/factor compatibility.
+    """
+
+    import tensorflow as tf
+
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED) as archive:
+        for name, value in tensors.items():
+            tensor = _float64_tensor(value)
+            shape = tuple(int(size) for size in tensor.shape)
+            header = repr({"descr": "<f8", "fortran_order": False, "shape": shape}).encode("latin1")
+            padding = (-(10 + len(header) + 1)) % 64
+            header += b" " * padding + b"\n"
+            prefix = b"\x93NUMPY\x01\x00" + struct.pack("<H", len(header))
+            values = array.array("d", tf.reshape(tensor, (-1,)).numpy().tolist())
+            if sys.byteorder != "little":
+                values.byteswap()
+            archive.writestr(f"{name}.npy", prefix + header + values.tobytes())
 
 
 def _write_private_mass_matrix_artifact(
@@ -17160,12 +17300,11 @@ def _write_private_mass_matrix_artifact(
     ).strip("_")
     filename = f"mass_{safe_label}_{mass_hash[:16]}.npz"
     path = private_dir / filename
-    np.savez(
-        path,
-        position=np.asarray(mass_artifact.position, dtype=float),
-        covariance=np.asarray(mass_artifact.covariance, dtype=float),
-        factor=np.asarray(mass_artifact.factor, dtype=float),
-    )
+    _write_float64_mass_npz(path, {
+        "position": mass_artifact.position,
+        "covariance": mass_artifact.covariance,
+        "factor": mass_artifact.factor,
+    })
     return _mass_matrix_private_summary(
         mass_artifact,
         mass_hash=mass_hash,
@@ -18184,7 +18323,7 @@ def _bootstrap_public_summary(
             _scalar_or_none(round_result.diagnostics.get("runtime_s"))
             for round_result in rounds
         )
-        if runtime is not None and bool(np.isfinite(runtime))
+        if runtime is not None and bool(math.isfinite(runtime))
     )
     timing_scopes = tuple(
         str(scope)
@@ -18256,7 +18395,7 @@ def _bootstrap_acceptance_relation(
     acceptance_band: tuple[float, float],
 ) -> str:
     acceptance = _scalar_or_none(value)
-    if acceptance is None or not np.isfinite(acceptance):
+    if acceptance is None or not math.isfinite(acceptance):
         return "missing_or_nonfinite"
     lower, upper = acceptance_band
     if acceptance < lower:
@@ -18555,7 +18694,7 @@ class _HMCAttemptBudgetPolicy:
         object.__setattr__(self, "geometry_budget_summary", geometry_summary)
         uncapped = (
             int(
-                np.ceil(
+                math.ceil(
                     float(formula_parameters.get("dimension_factor", 20.0))
                     * float(self.target_dimension)
                     * float(geometry_summary.get("geometry_multiplier", 1.0))
@@ -20300,20 +20439,22 @@ class _HMCPhaseAttemptState:
         object.__setattr__(self, "mass_artifact_signature", mass_signature)
         canonical_theta = None
         if self.canonical_theta_state is not None:
-            canonical_theta = np.asarray(self.canonical_theta_state, dtype=float).copy()
-            if canonical_theta.ndim != 1 or not np.all(np.isfinite(canonical_theta)):
+            canonical_tensor = _float64_tensor(self.canonical_theta_state)
+            if canonical_tensor.shape.rank != 1 or not _all_finite(canonical_tensor):
                 raise ValueError("canonical_theta_state must be one-dimensional and finite")
+            canonical_theta = canonical_tensor.numpy()
             canonical_theta.setflags(write=False)
         object.__setattr__(self, "canonical_theta_state", canonical_theta)
         start_bank = None
         if self.private_start_bank_theta is not None:
-            start_bank = np.asarray(self.private_start_bank_theta, dtype=float).copy()
+            bank_tensor = _float64_tensor(self.private_start_bank_theta)
             if (
-                start_bank.ndim != 2
-                or start_bank.shape[0] != 4
-                or not np.all(np.isfinite(start_bank))
+                bank_tensor.shape.rank != 2
+                or bank_tensor.shape[0] != 4
+                or not _all_finite(bank_tensor)
             ):
                 raise ValueError("private_start_bank_theta must contain four finite rows")
+            start_bank = bank_tensor.numpy()
             if canonical_theta is not None and start_bank.shape[1] != canonical_theta.shape[0]:
                 raise ValueError("private start bank dimension must match canonical state")
             start_bank.setflags(write=False)
@@ -20329,7 +20470,7 @@ class _HMCPhaseAttemptState:
         object.__setattr__(self, "private_start_bank_theta", start_bank)
         object.__setattr__(self, "private_start_bank_signature", start_bank_signature)
         step = None if self.selected_step_size is None else float(self.selected_step_size)
-        if step is not None and (not np.isfinite(step) or step <= 0.0):
+        if step is not None and (not math.isfinite(step) or step <= 0.0):
             raise ValueError("attempt handoff selected_step_size must be positive")
         object.__setattr__(self, "selected_step_size", step)
         step_hash = None if self.selected_step_hash is None else str(self.selected_step_hash)
@@ -20439,7 +20580,7 @@ class _HMCPhaseAttemptState:
             if self.verification_acceptance_rate is None
             else float(self.verification_acceptance_rate)
         )
-        if acceptance is not None and not np.isfinite(acceptance):
+        if acceptance is not None and not math.isfinite(acceptance):
             raise ValueError("verification_acceptance_rate must be finite when provided")
         object.__setattr__(self, "verification_acceptance_rate", acceptance)
         relation = str(self.verification_acceptance_relation)
@@ -20475,7 +20616,7 @@ class _HMCPhaseAttemptState:
             if self.verification_repair_step_size is None
             else float(self.verification_repair_step_size)
         )
-        if repair_step is not None and (not np.isfinite(repair_step) or repair_step <= 0.0):
+        if repair_step is not None and (not math.isfinite(repair_step) or repair_step <= 0.0):
             raise ValueError("verification_repair_step_size must be positive and finite")
         repair_hash = (
             None
@@ -20492,7 +20633,7 @@ class _HMCPhaseAttemptState:
             else float(self.verification_repair_max_step_size)
         )
         if repair_max_step is not None and (
-            not np.isfinite(repair_max_step) or repair_max_step <= 0.0
+            not math.isfinite(repair_max_step) or repair_max_step <= 0.0
         ):
             raise ValueError("verification_repair_max_step_size must be positive and finite")
         object.__setattr__(self, "verification_repair_max_step_size", repair_max_step)
@@ -20519,7 +20660,7 @@ class _HMCPhaseAttemptState:
         if any(item not in {"lower_epsilon", "higher_epsilon"} for item in direction_history):
             raise ValueError("repair_direction_history contains an invalid direction")
         step_history = tuple(float(item) for item in self.repaired_step_history)
-        if any(not np.isfinite(item) or item <= 0.0 for item in step_history):
+        if any(not math.isfinite(item) or item <= 0.0 for item in step_history):
             raise ValueError("repaired_step_history must contain positive finite values")
         if len(direction_history) != len(step_history):
             raise ValueError("repair direction and step histories must have equal length")
@@ -20569,7 +20710,7 @@ class _HMCPhaseAttemptState:
                 not direction_history
                 or direction_history[-1] != repair_direction
                 or not step_history
-                or not np.isclose(step_history[-1], repair_step, rtol=1.0e-12, atol=0.0)
+                or not _all_close(step_history[-1], repair_step, rtol=1.0e-12, atol=0.0)
             ):
                 raise ValueError("applied repair is missing append-only repair history")
         if (
@@ -20743,7 +20884,7 @@ def _coerce_phase7_fixed_mass_bracket_state(
 
 def _phase7_positive_finite_or_none(value: Any) -> float | None:
     scalar = _scalar_or_none(value)
-    if scalar is None or not np.isfinite(scalar) or scalar <= 0.0:
+    if scalar is None or not math.isfinite(scalar) or scalar <= 0.0:
         return None
     return float(scalar)
 
@@ -21652,7 +21793,7 @@ def _fixed_mass_step_initial_step(
     operational = windowed_stage.operational_warmup_result
     if operational is not None:
         step = operational.final_kernel_state.epsilon
-        if step is None or not np.isfinite(step) or step <= 0.0:
+        if step is None or not math.isfinite(step) or step <= 0.0:
             raise ValueError("operational warmup did not produce a current epsilon")
         return float(step)
     if (
@@ -21670,7 +21811,7 @@ def _fixed_mass_step_initial_step(
 
 def _fixed_mass_step_initial_state_factory(
     dimension: int,
-) -> Callable[[tuple[int, int], str, int, int, float], np.ndarray]:
+) -> Callable[[tuple[int, int], str, int, int, float], Any]:
     dim = int(dimension)
     if dim <= 0:
         raise ValueError("initial state dimension must be positive")
@@ -21681,8 +21822,10 @@ def _fixed_mass_step_initial_state_factory(
         _round_index: int,
         _budget: int,
         _step: float,
-    ) -> np.ndarray:
-        return np.zeros(dim, dtype=float)
+    ) -> Any:
+        import tensorflow as tf
+
+        return tf.zeros(dim, dtype=tf.float64).numpy()
 
     return factory
 
@@ -21693,7 +21836,7 @@ def _operational_fixed_mass_initial_state_factory(
     expected_signature: str,
     transform_signature: str,
     call_state: dict[str, int] | None = None,
-) -> Callable[[tuple[int, int], str, int, int, float], np.ndarray]:
+) -> Callable[[tuple[int, int], str, int, int, float], Any]:
     """Return a copy-only factory for the validated P4-E start bank.
 
     The bank is already in the final fixed-mass latent coordinates.  Each
@@ -21702,16 +21845,18 @@ def _operational_fixed_mass_initial_state_factory(
     operational evidence.  Raw bank values never enter a public payload.
     """
 
-    bank = np.asarray(start_bank, dtype=float)
-    if bank.ndim != 2 or bank.shape[0] != 4 or bank.shape[1] <= 0:
+    import tensorflow as tf
+
+    bank = _float64_tensor(start_bank)
+    if bank.shape.rank != 2 or bank.shape[0] != 4 or bank.shape[1] <= 0:
         raise ValueError("operational start bank must have shape (4, dimension)")
-    if not np.all(np.isfinite(bank)):
+    if not _all_finite(bank):
         raise ValueError("operational start bank must be finite")
     expected = str(expected_signature)
     transform = str(transform_signature)
     if not expected or not transform:
         raise ValueError("operational start-bank signatures must be non-empty")
-    frozen = np.array(bank, copy=True)
+    frozen = tf.identity(bank)
     state = call_state if call_state is not None else {"call_count": 0}
 
     def factory(
@@ -21720,8 +21865,8 @@ def _operational_fixed_mass_initial_state_factory(
         _round_index: int,
         _budget: int,
         _step: float,
-    ) -> np.ndarray:
-        candidate = np.array(frozen, copy=True)
+    ) -> Any:
+        candidate = tf.identity(frozen).numpy()
         observed = private_start_bank_content_signature(candidate, transform)
         if observed != expected:
             raise ValueError("operational start-bank signature changed")
@@ -21755,16 +21900,13 @@ def _joint_l_epsilon_anchor_l(
             if target_trajectory_length is not None
             else float("nan")
         )
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("final adapted step size must be finite and positive")
-        if not np.isfinite(target) or target <= 0.0:
+        if not math.isfinite(target) or target <= 0.0:
             raise ValueError("target trajectory length must be finite and positive")
         return int(
-            np.clip(
-                np.ceil(target / step),
-                _GEOMETRY_MIN_LEAPFROG,
-                _validate_max_leapfrog_steps(max_leapfrog_steps),
-            )
+            min(_validate_max_leapfrog_steps(max_leapfrog_steps),
+                max(_GEOMETRY_MIN_LEAPFROG, math.ceil(target / step)))
         )
     anchor = int(selected_kernel["num_leapfrog_steps"])
     if anchor <= 0:
@@ -21783,10 +21925,10 @@ def _joint_l_epsilon_grid_values(
         raise ValueError("joint L/epsilon grid anchor must be positive")
     max_l = _validate_max_leapfrog_steps(max_leapfrog_steps)
     values = [
-        int(np.clip(anchor + int(offset), _GEOMETRY_MIN_LEAPFROG, max_l))
+        min(max_l, max(_GEOMETRY_MIN_LEAPFROG, anchor + int(offset)))
         for offset in offsets
     ]
-    values.append(int(np.clip(anchor, _GEOMETRY_MIN_LEAPFROG, max_l)))
+    values.append(min(max_l, max(_GEOMETRY_MIN_LEAPFROG, anchor)))
     return tuple(sorted(dict.fromkeys(values)))
 
 
@@ -21810,6 +21952,17 @@ def _joint_l_epsilon_ladder_config(
     )
     return dataclasses.replace(
         ladder_config,
+        require_finite_trajectory_bracket=(
+            config.algorithm_id == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+        ),
+        initial_fixed_mass_bracket_state=(
+            None if config.algorithm_id == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+            else ladder_config.initial_fixed_mass_bracket_state
+        ),
+        repair_nonfinite_proposal_screen=(
+            False if config.algorithm_id == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+            else ladder_config.repair_nonfinite_proposal_screen
+        ),
         tune_seed_base=_round_seed(ladder_config.tune_seed_base, int(seed_offset)),
         screen_seed_base=_round_seed(ladder_config.screen_seed_base, int(seed_offset)),
     )
@@ -21854,7 +22007,7 @@ def _joint_l_epsilon_ladder_candidate_payload(
     minimum_step_size_for_tau_floor = None
     required_leapfrog_for_tau_floor = None
     tau_floor_feasible_at_step = None
-    if selected_step is not None and np.isfinite(float(selected_step)) and float(selected_step) > 0.0:
+    if selected_step is not None and math.isfinite(float(selected_step)) and float(selected_step) > 0.0:
         trajectory_window = _trajectory_window_payload(
             step_size=float(selected_step),
             num_leapfrog_steps=int(num_leapfrog_steps),
@@ -22283,7 +22436,7 @@ def _run_joint_l_epsilon_grid_round(
     *,
     adapter: Any,
     adapted_mass: PrecomputedMassArtifact,
-    initial_state_factory: Callable[[tuple[int, int], str, int, int, float], np.ndarray],
+    initial_state_factory: Callable[[tuple[int, int], str, int, int, float], Any],
     config: HMCFixedMassStepStageConfig,
     initial_step: float,
     target_scope: str,
@@ -22786,7 +22939,7 @@ def _required_selected_step_size(
     if step is None:
         raise ValueError("frozen-step trajectory requires selected step size")
     value = float(step)
-    if not np.isfinite(value) or value <= 0.0:
+    if not math.isfinite(value) or value <= 0.0:
         raise ValueError("frozen-step trajectory selected step must be positive")
     return value
 
@@ -22805,10 +22958,10 @@ def _frozen_step_trajectory_candidate_generation(
     policy = _validate_handoff_screen_policy(handoff_screen_policy)
     phase23_policy = _phase23_nomination_policy_active(policy)
     step = float(selected_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("selected_step_size must be positive and finite")
     target = float(geometry.target_trajectory_length)
-    if not np.isfinite(target) or target <= 0.0:
+    if not math.isfinite(target) or target <= 0.0:
         raise ValueError("target trajectory length must be positive and finite")
     max_l = _validate_max_leapfrog_steps(max_leapfrog_steps)
     tau_min, tau_max = _trajectory_window_bounds(
@@ -22816,10 +22969,10 @@ def _frozen_step_trajectory_candidate_generation(
         lower_multiplier=float(trajectory_window_lower_multiplier),
         upper_multiplier=float(trajectory_window_upper_multiplier),
     )
-    center = int(np.ceil(target / step))
+    center = int(math.ceil(target / step))
     if center <= 0:
         raise ValueError("formula-derived trajectory center L must be positive")
-    tau_floor_l = int(np.ceil(tau_min / step))
+    tau_floor_l = int(math.ceil(tau_min / step))
     raw_candidates_list = [
         center + int(offset) for offset in _FROZEN_STEP_TRAJECTORY_CANDIDATE_OFFSETS
     ]
@@ -22855,7 +23008,7 @@ def _frozen_step_trajectory_candidate_generation(
         min(max_l, center + _FROZEN_STEP_TRAJECTORY_CENTER_SLACK),
     )
     clamped = tuple(
-        int(np.clip(item, _GEOMETRY_MIN_LEAPFROG, local_max))
+        min(local_max, max(_GEOMETRY_MIN_LEAPFROG, item))
         for item in raw_candidates
     )
     candidates = tuple(sorted(dict.fromkeys(clamped)))
@@ -22934,7 +23087,7 @@ def _phase5_selected_pair_candidate_generation(
     policy = _validate_handoff_screen_policy(handoff_screen_policy)
     phase23_policy = _phase23_nomination_policy_active(policy)
     step = float(selected_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("selected_step_size must be positive and finite")
     selected_l = int(selected_num_leapfrog_steps)
     if selected_l <= 0:
@@ -22943,7 +23096,7 @@ def _phase5_selected_pair_candidate_generation(
     if selected_l > max_l:
         raise ValueError("selected_num_leapfrog_steps exceeds max_leapfrog_steps")
     target = float(geometry.target_trajectory_length)
-    if not np.isfinite(target) or target <= 0.0:
+    if not math.isfinite(target) or target <= 0.0:
         raise ValueError("target trajectory length must be positive and finite")
     tau_min, tau_max = _trajectory_window_bounds(
         target,
@@ -23078,6 +23231,8 @@ def _frozen_step_trajectory_screen_config(
         target_status_trace_policy=config.target_status_trace_policy,
         target_scope=target_scope,
         chain_execution_mode=config.chain_execution_mode,
+        capture_first_failure=config.chain_execution_mode == "tf_function" and not config.use_xla,
+        failure_capture_role="sampling",
     )
 
 
@@ -23778,12 +23933,14 @@ def _phase7_verification_initial_state(
     phase4_adapter: Any,
     verification_adapter: Any,
     verification_hmc_signature: str,
-) -> tuple[np.ndarray, Mapping[str, Any]]:
+) -> tuple[Any, Mapping[str, Any]]:
     """Map the frozen canonical start bank through both active affine layers."""
+
+    import tensorflow as tf
 
     operational = windowed_stage.operational_warmup_result
     if operational is None:
-        return np.zeros(windowed_stage.target_dimension, dtype=float), {
+        return tf.zeros(windowed_stage.target_dimension, dtype=tf.float64).numpy(), {
             "source": "historical_compatibility_zero_template",
             "count": 4,
             "frozen_post_warmup_bank_consumed": False,
@@ -23795,42 +23952,38 @@ def _phase7_verification_initial_state(
         # The ordinary broad route uses the checked post-warmup bank produced
         # by operational warmup. Map that bank through both frozen affine
         # layers and verify its identity before any per-L epsilon ladder runs.
-        canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
+        canonical = _float64_tensor(operational.private_start_bank_theta)
         if canonical.shape != (4, windowed_stage.target_dimension):
             raise ValueError("operational verification start bank shape mismatch")
-        if not np.all(np.isfinite(canonical)):
+        if not _all_finite(canonical):
             raise ValueError("operational verification start bank must be finite")
         source_signature = str(
             getattr(operational, "private_start_bank_signature", "")
         )
         if not source_signature:
             raise ValueError("operational verification start bank signature is missing")
-        phase4_latent = np.asarray(
-            phase4_adapter.transform.position_to_latent(canonical), dtype=float
+        phase4_latent = _float64_tensor(
+            phase4_adapter.transform.position_to_latent(canonical)
         )
-        verification_latent = np.asarray(
+        verification_latent = _float64_tensor(
             verification_adapter.transform.position_to_latent(phase4_latent),
-            dtype=float,
         )
-        round_trip_phase4 = np.asarray(
-            verification_adapter.latent_to_position(verification_latent), dtype=float
+        round_trip_phase4 = _float64_tensor(
+            verification_adapter.latent_to_position(verification_latent)
         )
-        round_trip_theta = np.asarray(
-            phase4_adapter.latent_to_position(round_trip_phase4), dtype=float
+        round_trip_theta = _float64_tensor(
+            phase4_adapter.latent_to_position(round_trip_phase4)
         )
-        operational_latent = np.asarray(
-            operational.final_kernel_state.transform.theta_to_latent(canonical).numpy(),
-            dtype=float,
-        )
-        if not np.allclose(
+        operational_latent = operational.final_kernel_state.transform.theta_to_latent(canonical)
+        if not _all_close(
             round_trip_phase4, phase4_latent, rtol=1.0e-10, atol=1.0e-10
         ):
             raise ValueError("verification nested start-bank transform did not round trip")
-        if not np.allclose(
+        if not _all_close(
             round_trip_theta, canonical, rtol=1.0e-10, atol=1.0e-10
         ):
             raise ValueError("verification canonical start bank did not round trip")
-        if not np.allclose(
+        if not _all_close(
             verification_latent,
             operational_latent,
             rtol=1.0e-10,
@@ -23843,7 +23996,7 @@ def _phase7_verification_initial_state(
             verification_latent,
             operational.final_kernel_state.transform.signature,
         )
-        return verification_latent, {
+        return verification_latent.numpy(), {
             "source": "operational_post_warmup_start_bank_v2",
             "policy_id": policy_id,
             "source_signature": source_signature,
@@ -23915,33 +24068,30 @@ def _phase7_verification_initial_state(
         != operational.final_kernel_state.transform.signature
     ):
         raise ValueError("operational Phase 7 P4-E transform lineage mismatch")
-    canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
+    canonical = _float64_tensor(operational.private_start_bank_theta)
     if canonical.shape != (4, windowed_stage.target_dimension):
         raise ValueError("operational verification start bank shape mismatch")
     source_signature = operational.private_start_bank_signature
     if not source_signature:
         raise ValueError("operational verification start bank signature is missing")
-    phase4_latent = np.asarray(
-        phase4_adapter.transform.position_to_latent(canonical), dtype=float
+    phase4_latent = _float64_tensor(
+        phase4_adapter.transform.position_to_latent(canonical)
     )
-    verification_latent = np.asarray(
-        verification_adapter.transform.position_to_latent(phase4_latent), dtype=float
+    verification_latent = _float64_tensor(
+        verification_adapter.transform.position_to_latent(phase4_latent)
     )
-    round_trip_phase4 = np.asarray(
-        verification_adapter.latent_to_position(verification_latent), dtype=float
+    round_trip_phase4 = _float64_tensor(
+        verification_adapter.latent_to_position(verification_latent)
     )
-    round_trip_theta = np.asarray(
-        phase4_adapter.latent_to_position(round_trip_phase4), dtype=float
+    round_trip_theta = _float64_tensor(
+        phase4_adapter.latent_to_position(round_trip_phase4)
     )
-    operational_latent = np.asarray(
-        operational.final_kernel_state.transform.theta_to_latent(canonical).numpy(),
-        dtype=float,
-    )
-    if not np.allclose(round_trip_phase4, phase4_latent, rtol=1.0e-10, atol=1.0e-10):
+    operational_latent = operational.final_kernel_state.transform.theta_to_latent(canonical)
+    if not _all_close(round_trip_phase4, phase4_latent, rtol=1.0e-10, atol=1.0e-10):
         raise ValueError("verification nested start-bank transform did not round trip")
-    if not np.allclose(round_trip_theta, canonical, rtol=1.0e-10, atol=1.0e-10):
+    if not _all_close(round_trip_theta, canonical, rtol=1.0e-10, atol=1.0e-10):
         raise ValueError("verification canonical start bank did not round trip")
-    if not np.allclose(
+    if not _all_close(
         verification_latent,
         operational_latent,
         rtol=1.0e-10,
@@ -23952,7 +24102,7 @@ def _phase7_verification_initial_state(
         verification_latent,
         operational.final_kernel_state.transform.signature,
     )
-    return verification_latent, {
+    return verification_latent.numpy(), {
         "source": "phase7_engineering_probe_bank_v1",
         "policy_id": PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID,
         "source_signature": source_signature,
@@ -24306,7 +24456,7 @@ def _phase7_historical_verification_input(
         raise ValueError("Phase 7 historical verification requires selected L")
     if (
         int(trajectory_payload.get("num_leapfrog_steps", 0)) != int(leapfrog)
-        or float(trajectory_payload.get("step_size", np.nan)) != step
+        or float(trajectory_payload.get("step_size", float("nan"))) != step
         or str(trajectory_payload.get("selected_step_hash", "")) != selected_step_hash
         or str(trajectory_payload.get("target_scope", "")) != scope
         or str(
@@ -25538,6 +25688,8 @@ def _run_phase7_injected_final_verification(
         target_status_trace_policy=config.target_status_trace_policy,
         target_scope=verification_input.target_scope,
         chain_execution_mode=config.chain_execution_mode,
+        capture_first_failure=config.chain_execution_mode == "tf_function" and not config.use_xla,
+        failure_capture_role="verification",
     )
     runner_cache: dict[str, Any] = {}
     runner_contract_payloads: dict[str, Mapping[str, Any]] = {}
@@ -25555,7 +25707,7 @@ def _run_phase7_injected_final_verification(
             route_name="phase7_final_verification_scoped_reusable_runner",
             route_scope="phase7_fresh_fixed_kernel_verification",
             adapter=verification_adapter,
-            initial_state=np.zeros(adapted_mass.dimension, dtype=float),
+            initial_state=_float64_tensor((0.0,) * adapted_mass.dimension),
             config=verification_config,
             hmc_adapter_signature=verification_hmc_signature,
             target_dimension=verification_input.target_dimension,
@@ -25707,7 +25859,7 @@ def _run_phase7_sequential_rhat_final_verification(
     )
     verifier = None
     verifier_error: Exception | None = None
-    verification_initial_state = np.zeros(adapted_mass.dimension, dtype=float)
+    verification_initial_state = _float64_tensor((0.0,) * adapted_mass.dimension)
     start_bank_summary: Mapping[str, Any] = {
         "source": "unavailable",
         "count": 0,
@@ -26075,7 +26227,7 @@ def _finalize_phase7_fixed_kernel_verification(
         in {"direct_phase5_candidate", "operational_selection_v2"}
         and final_status == "repair_or_retry"
         and acceptance is not None
-        and np.isfinite(acceptance)
+        and math.isfinite(acceptance)
     ):
         repair_evidence = {
             **dict(verification_input.source_identity),
@@ -26186,7 +26338,7 @@ def _classify_phase7_acceptance_evidence_verification(
     screen_error: Exception | None,
     callback_result: FixedMassHMCTuningBudgetCallbackResult,
 ) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
-    """Classify operational verification from role-separated v3 evidence."""
+    """Classify operational verification from role-separated v5 evidence."""
 
     if screen_error is not None:
         return (
@@ -26214,36 +26366,31 @@ def _classify_phase7_acceptance_evidence_verification(
         )
     if evidence.evidence_validity == "valid":
         raw_retained_count = diagnostics.get("retained_sample_count")
-        if raw_retained_count is not None:
-            retained_count = _strict_scalar_int_or_none(raw_retained_count)
-            if retained_count is None:
-                return (
-                    "hard_veto",
-                    "shared_invalidity",
-                    ("verification_retained_sample_count_invalid",),
-                    (),
-                )
-            evidence_count = (
-                evidence.usable_decisions_per_chain
-                + evidence.excluded_remainder_per_chain
+        retained_count = _strict_scalar_int_or_none(raw_retained_count)
+        if retained_count is None:
+            return (
+                "hard_veto", "shared_invalidity",
+                ("verification_retained_sample_count_invalid",), (),
             )
-            if retained_count != evidence_count:
-                return (
-                    "hard_veto",
-                    "shared_invalidity",
-                    ("verification_acceptance_evidence_count_mismatch",),
-                    (),
-                )
-        reported_acceptance = _scalar_or_none(diagnostics.get("acceptance_rate"))
+        evidence_count = (
+            evidence.usable_decisions_per_chain
+            + evidence.excluded_remainder_per_chain
+        )
+        if retained_count != evidence_count:
+            return (
+                "hard_veto", "shared_invalidity",
+                ("verification_acceptance_evidence_count_mismatch",), (),
+            )
+        reported_acceptance = _strict_finite_scalar_or_none(diagnostics.get("acceptance_rate"))
+        if reported_acceptance is None:
+            return (
+                "hard_veto", "shared_invalidity",
+                ("verification_acceptance_missing_or_nonfinite",), (),
+            )
         if (
-            reported_acceptance is not None
-            and evidence.pooled_mean is not None
-            and not np.isclose(
-                reported_acceptance,
-                evidence.pooled_mean,
-                rtol=1.0e-12,
-                atol=1.0e-12,
-            )
+            evidence.pooled_mean is not None
+            and abs(reported_acceptance - evidence.pooled_mean)
+            > 1.0e-12 + 1.0e-12 * abs(evidence.pooled_mean)
         ):
             return (
                 "hard_veto",
@@ -26855,7 +27002,7 @@ def _phase7_operational_verified_bracket_repair_handoff_payload(
         if (
             verification_input.seed_policy
             != _PHASE7_OPERATIONAL_BRACKET_MIDPOINT_SEED_POLICY
-            or not np.isclose(
+            or not _all_close(
                 verification_input.step_size,
                 prior_bracket["midpoint_step_size"],
                 rtol=1.0e-12,
@@ -26933,7 +27080,7 @@ def _phase7_operational_verified_bracket_repair_handoff_payload(
             or incoming_state.verification_repair_step_hash is None
             or verification_input.seed_policy
             != _PHASE7_OPERATIONAL_REPAIR_SEED_POLICY
-            or not np.isclose(
+            or not _all_close(
                 verification_input.step_size,
                 incoming_state.verification_repair_step_size,
                 rtol=1.0e-12,
@@ -27136,11 +27283,7 @@ def _phase7_verification_repair_handoff_payload(
                 else "higher_epsilon"
             )
             directional_factor = float(
-                np.clip(
-                    config.step_repair_factor,
-                    config.step_repair_min_directional_factor,
-                    2.0,
-                )
+                min(2.0, max(config.step_repair_min_directional_factor, config.step_repair_factor))
             )
             repair_multiplier = (
                 1.0 / directional_factor
@@ -27183,7 +27326,7 @@ def _phase7_verification_repair_handoff_payload(
             }
         if repair_step_size is None or directional_factor is None or repair_direction is None:
             raise AssertionError("applied repair lost its typed mechanics")
-        if not np.isfinite(repair_step_size) or repair_step_size <= 0.0:
+        if not math.isfinite(repair_step_size) or repair_step_size <= 0.0:
             raise ValueError("verification repair step size must be positive and finite")
         repair_multiplier = repair_step_size / base_step
         next_direction_history = (*next_direction_history, repair_direction)
@@ -27357,8 +27500,8 @@ def _phase6_trajectory_feasible_step_interval(
     tau_min = float(window[0])
     tau_max = float(window[1])
     if (
-        not np.isfinite(tau_min)
-        or not np.isfinite(tau_max)
+        not math.isfinite(tau_min)
+        or not math.isfinite(tau_max)
         or tau_min <= 0.0
         or tau_max <= 0.0
         or tau_min > tau_max
@@ -27383,8 +27526,8 @@ def _phase6_trajectory_feasible_step_interval(
     lower = tau_min / float(max_l)
     upper = tau_max / float(min_l)
     if (
-        not np.isfinite(lower)
-        or not np.isfinite(upper)
+        not math.isfinite(lower)
+        or not math.isfinite(upper)
         or lower <= 0.0
         or upper <= 0.0
     ):
@@ -27401,7 +27544,7 @@ def _phase6_clamp_repair_step_to_feasible_tau(
     repair_step_size: float,
 ) -> tuple[float, Mapping[str, Any]]:
     step = float(repair_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("Phase 6 trajectory repair step size must be positive and finite")
     lower, upper, tau_min, tau_max = _phase6_trajectory_feasible_step_interval(
         config=config,
@@ -27417,8 +27560,8 @@ def _phase6_clamp_repair_step_to_feasible_tau(
             "step_floor_applied": False,
             "step_ceiling_applied": False,
         }
-    clamped = float(np.clip(step, lower, upper))
-    if not np.isfinite(clamped) or clamped <= 0.0:
+    clamped = float(min(upper, max(lower, step)))
+    if not math.isfinite(clamped) or clamped <= 0.0:
         raise ValueError(
             "Phase 6 trajectory tau-clamped repair step must be positive and finite"
         )
@@ -27443,7 +27586,7 @@ def _phase6_fixed_mass_bracket_state_payload(
     """Private handoff that makes the next fixed-mass stage screen directly."""
 
     step = float(repair_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("Phase 6 fixed-mass repair step must be positive and finite")
     if acceptance_relation == "above_acceptance_band":
         high_bound: float | None = step
@@ -27564,7 +27707,7 @@ def _phase6_trajectory_repair_handoff_payload(
                 float(selected_step_size) * 2.0,
                 minimum_step_size_for_tau_floor,
             )
-        if not np.isfinite(repair_step_size) or repair_step_size <= 0.0:
+        if not math.isfinite(repair_step_size) or repair_step_size <= 0.0:
             raise ValueError("Phase 6 trajectory tau repair step size must be positive and finite")
         acceptance_relations = tuple(
             _acceptance_relation_to_band(
@@ -27670,7 +27813,7 @@ def _phase6_trajectory_repair_handoff_payload(
             float(selected_step_size) / 2.0,
             maximum_step_size_for_tau_ceiling,
         )
-        if not np.isfinite(repair_step_size) or repair_step_size <= 0.0:
+        if not math.isfinite(repair_step_size) or repair_step_size <= 0.0:
             raise ValueError("Phase 6 trajectory tau-overreach repair step size must be positive and finite")
         acceptance_relations = tuple(
             _acceptance_relation_to_band(
@@ -27779,7 +27922,7 @@ def _phase6_trajectory_repair_handoff_payload(
                 else float(config.step_repair_high_acceptance_directional_factor)
             )
             repair_step_size = float(selected_step_size) * factor
-            if not np.isfinite(repair_step_size) or repair_step_size <= 0.0:
+            if not math.isfinite(repair_step_size) or repair_step_size <= 0.0:
                 raise ValueError(
                     "Phase 6 trajectory inside-window repair step size must be "
                     "positive and finite"
@@ -27867,7 +28010,7 @@ def _phase6_trajectory_repair_handoff_payload(
     relation = next(iter(unique_relations))
     factor = 0.5 if relation == "below_acceptance_band" else 2.0
     repair_step_size = float(selected_step_size) * factor
-    if not np.isfinite(repair_step_size) or repair_step_size <= 0.0:
+    if not math.isfinite(repair_step_size) or repair_step_size <= 0.0:
         raise ValueError("Phase 6 trajectory repair step size must be positive and finite")
     acceptance_values = tuple(
         float(candidate["diagnostics"]["acceptance_rate"])
@@ -28140,6 +28283,8 @@ def _windowed_stage_initial_mass_artifact(
     target_dimension: int,
     attempt_state: _HMCPhaseAttemptState | None = None,
 ) -> PrecomputedMassArtifact:
+    import tensorflow as tf
+
     dimension = int(target_dimension)
     if dimension <= 0:
         raise ValueError("target_dimension must be positive")
@@ -28155,8 +28300,8 @@ def _windowed_stage_initial_mass_artifact(
                 raise ValueError("Phase 7 carried mass artifact signature mismatch")
         return artifact
     return PrecomputedMassArtifact.from_covariance(
-        position=np.zeros(dimension),
-        covariance=np.eye(dimension),
+        position=tf.zeros(dimension, dtype=tf.float64),
+        covariance=tf.eye(dimension, dtype=tf.float64),
         adapter_signature=str(adapter_signature),
         position_role="latent_fixed_mass_origin",
         covariance_source="latent_identity_initial_mass",
@@ -28208,6 +28353,8 @@ def _windowed_stage_diagnostic_run_config(
         target_status_trace_policy=config.target_status_trace_policy,
         target_scope=target_scope,
         chain_execution_mode=config.chain_execution_mode,
+        capture_first_failure=config.chain_execution_mode == "tf_function" and not config.use_xla,
+        failure_capture_role="sampling",
     )
 
 
@@ -28232,10 +28379,13 @@ def _windowed_stage_chunk_run_config(
     )
 
 
-def _windowed_stage_valid_rows(chunk: FixedSizeHMCChunkRunResult, key: str) -> np.ndarray:
-    mask = np.asarray(_tensor_to_numpy(chunk.valid_mask), dtype=bool)
-    value = np.asarray(_tensor_to_numpy(chunk.trace[key]))
-    return value[mask]
+def _windowed_stage_valid_rows(chunk: FixedSizeHMCChunkRunResult, key: str) -> Any:
+    import tensorflow as tf
+
+    mask = tf.convert_to_tensor(chunk.valid_mask)
+    if mask.dtype != tf.bool:
+        raise ValueError("windowed chunk valid mask must be boolean")
+    return tf.boolean_mask(tf.convert_to_tensor(chunk.trace[key]), mask)
 
 
 def _windowed_stage_acceptance_capture(
@@ -28251,8 +28401,10 @@ def _windowed_stage_acceptance_capture(
     decisions remain available for provenance checks.
     """
 
-    raw = np.asarray(_tensor_to_numpy(value), dtype=float)
-    if raw.shape[:1] != (int(expected_steps),):
+    import tensorflow as tf
+
+    raw = _float64_tensor(value)
+    if raw.shape[:1] != (int(expected_steps),) or int(tf.size(raw).numpy()) == 0:
         return {
             "acceptance_trace": None,
             "raw_shape": tuple(int(dim) for dim in raw.shape),
@@ -28260,16 +28412,16 @@ def _windowed_stage_acceptance_capture(
             "accepted_decision_count": None,
             "binary_trace": False,
         }
-    if raw.ndim == 1:
+    if raw.shape.rank == 1:
         acceptance = raw
     else:
-        acceptance = np.mean(raw.reshape((int(expected_steps), -1)), axis=1)
-    finite = bool(np.all(np.isfinite(raw)) and np.all(np.isfinite(acceptance)))
-    binary = bool(np.all((raw == 0.0) | (raw == 1.0))) if finite else False
-    decision_count = int(raw.size)
-    accepted_count = int(np.sum(raw)) if binary else None
+        acceptance = tf.reduce_mean(tf.reshape(raw, (int(expected_steps), -1)), axis=1)
+    finite = _all_finite(raw) and _all_finite(acceptance)
+    binary = bool(tf.reduce_all((raw == 0.0) | (raw == 1.0)).numpy()) if finite else False
+    decision_count = int(tf.size(raw).numpy())
+    accepted_count = int(tf.reduce_sum(raw).numpy()) if binary else None
     return {
-        "acceptance_trace": acceptance.astype(float, copy=False),
+        "acceptance_trace": acceptance,
         "raw_shape": tuple(int(dim) for dim in raw.shape),
         "decision_count": decision_count,
         "accepted_decision_count": accepted_count,
@@ -28281,19 +28433,21 @@ def _windowed_stage_per_draw_trace(
     value: Any,
     *,
     expected_steps: int,
-) -> np.ndarray | None:
+) -> Any | None:
     """Reduce scalar or per-chain draw telemetry to a finite per-draw vector."""
 
-    raw = np.asarray(_tensor_to_numpy(value), dtype=float)
-    if raw.shape[:1] != (int(expected_steps),):
+    import tensorflow as tf
+
+    raw = _float64_tensor(value)
+    if raw.shape[:1] != (int(expected_steps),) or int(tf.size(raw).numpy()) == 0:
         return None
-    if raw.ndim == 1:
+    if raw.shape.rank == 1:
         reduced = raw
     else:
-        reduced = np.mean(raw.reshape((int(expected_steps), -1)), axis=1)
-    if not np.all(np.isfinite(raw)) or not np.all(np.isfinite(reduced)):
+        reduced = tf.reduce_mean(tf.reshape(raw, (int(expected_steps), -1)), axis=1)
+    if not _all_finite(raw) or not _all_finite(reduced):
         return None
-    return reduced.astype(float, copy=False)
+    return reduced
 
 
 def _windowed_stage_segmented_capture_payload(
@@ -28312,14 +28466,16 @@ def _windowed_stage_segmented_capture_payload(
 ) -> Mapping[str, Any]:
     """Run windowed-mass diagnostic draws as small state-carrying HMC chunks."""
 
+    import tensorflow as tf
+
     total_steps = int(windowed_config.warmup_steps)
     segment_size = max(1, min(_WINDOWED_MASS_SEGMENT_SIZE, total_steps))
     segment_count = _ceil_div(total_steps, segment_size)
     current_state = hmc_adapter.initial_position()
-    sample_segments: list[np.ndarray] = []
-    acceptance_segments: list[np.ndarray] = []
-    log_accept_segments: list[np.ndarray] = []
-    target_log_prob_segments: list[np.ndarray] = []
+    sample_segments: list[Any] = []
+    acceptance_segments: list[Any] = []
+    log_accept_segments: list[Any] = []
+    target_log_prob_segments: list[Any] = []
     finite_sample_count = 0
     nonfinite_sample_count = 0
     accepted_decision_count = 0
@@ -28401,8 +28557,8 @@ def _windowed_stage_segmented_capture_payload(
         current_state = chunk.final_state
         elapsed = time.perf_counter() - segment_start
         segment_elapsed.append(elapsed)
-        mask = np.asarray(_tensor_to_numpy(chunk.valid_mask), dtype=bool)
-        samples = np.asarray(_tensor_to_numpy(chunk.samples), dtype=float)[mask]
+        mask = tf.cast(tf.convert_to_tensor(_tensor_to_numpy(chunk.valid_mask)), tf.bool)
+        samples = tf.boolean_mask(_float64_tensor(_tensor_to_numpy(chunk.samples)), mask)
         sample_segments.append(samples)
         acceptance_capture = _windowed_stage_acceptance_capture(
             _windowed_stage_valid_rows(chunk, "is_accepted"),
@@ -28410,7 +28566,7 @@ def _windowed_stage_segmented_capture_payload(
         )
         acceptance_rows = acceptance_capture["acceptance_trace"]
         if acceptance_rows is not None:
-            acceptance_segments.append(np.asarray(acceptance_rows, dtype=float))
+            acceptance_segments.append(_float64_tensor(acceptance_rows))
         segment_decision_count = _int_or_none(acceptance_capture["decision_count"])
         segment_accepted_count = _int_or_none(
             acceptance_capture["accepted_decision_count"]
@@ -28438,9 +28594,9 @@ def _windowed_stage_segmented_capture_payload(
         )
         if target_log_prob_rows is not None:
             target_log_prob_segments.append(target_log_prob_rows)
-        finite_rows = np.all(np.isfinite(samples), axis=-1)
-        finite_sample_count += int(np.sum(finite_rows))
-        nonfinite_sample_count += int(np.sum(~finite_rows))
+        finite_rows = tf.reduce_all(tf.math.is_finite(samples), axis=-1)
+        finite_sample_count += int(tf.reduce_sum(tf.cast(finite_rows, tf.int32)))
+        nonfinite_sample_count += int(tf.reduce_sum(tf.cast(tf.logical_not(finite_rows), tf.int32)))
         _emit_windowed_mass_progress(
             progress_callback,
             "windowed_mass_segment_complete",
@@ -28455,24 +28611,24 @@ def _windowed_stage_segmented_capture_payload(
         )
 
     warmup_draws = (
-        np.concatenate(sample_segments, axis=0)
+        tf.concat(sample_segments, axis=0)
         if sample_segments
-        else np.empty((0, int(target_dimension)), dtype=float)
+        else tf.zeros((0, int(target_dimension)), dtype=tf.float64)
     )
     acceptance = (
-        np.concatenate(acceptance_segments, axis=0)
+        tf.concat(acceptance_segments, axis=0)
         if acceptance_segments
-        else np.empty((0,), dtype=float)
+        else tf.zeros((0,), dtype=tf.float64)
     )
     log_accept = (
-        np.concatenate(log_accept_segments, axis=0)
+        tf.concat(log_accept_segments, axis=0)
         if log_accept_segments
-        else np.empty((0,), dtype=float)
+        else tf.zeros((0,), dtype=tf.float64)
     )
     target_log_prob = (
-        np.concatenate(target_log_prob_segments, axis=0)
+        tf.concat(target_log_prob_segments, axis=0)
         if target_log_prob_segments
-        else np.empty((0,), dtype=float)
+        else tf.zeros((0,), dtype=tf.float64)
     )
     runtime_s = time.perf_counter() - run_start
     acceptance_rate = (
@@ -28514,7 +28670,7 @@ def _windowed_stage_segmented_capture_payload(
         "log_accept_ratio": log_accept,
         "target_log_prob": target_log_prob,
         "runtime_s": runtime_s,
-        "runtime_finite": bool(np.isfinite(runtime_s)),
+        "runtime_finite": bool(math.isfinite(runtime_s)),
         "samples_shape": tuple(int(dim) for dim in warmup_draws.shape),
         "acceptance_shape": tuple(int(dim) for dim in acceptance.shape),
         "log_accept_shape": tuple(int(dim) for dim in log_accept.shape),
@@ -28566,7 +28722,7 @@ def _windowed_stage_capture_payload(
     diagnostics = dict(run_result.diagnostics)
     trace = dict(run_result.trace)
     metadata = dict(run_result.metadata)
-    samples = np.asarray(_tensor_to_numpy(run_result.samples), dtype=float)
+    samples = _float64_tensor(_tensor_to_numpy(run_result.samples))
     raw_acceptance = _trace_array_or_none(trace, "is_accepted")
     acceptance_capture = (
         None
@@ -28613,7 +28769,7 @@ def _windowed_stage_capture_payload(
         "log_accept_ratio": log_accept,
         "target_log_prob": target_log_prob,
         "runtime_s": runtime_s,
-        "runtime_finite": runtime_s is not None and bool(np.isfinite(runtime_s)),
+        "runtime_finite": runtime_s is not None and bool(math.isfinite(runtime_s)),
         "samples_shape": tuple(int(dim) for dim in samples.shape),
         "acceptance_shape": None
         if acceptance is None
@@ -28647,7 +28803,7 @@ def _windowed_stage_capture_payload(
                 else acceptance_capture.get("decision_count"),
                 "acceptance_trace_decision_count": None
                 if acceptance is None
-                else int(np.asarray(acceptance).shape[0]),
+                else int(acceptance.shape[0]),
                 "acceptance_raw_chain_count": None
                 if acceptance_capture is None
                 or acceptance_capture.get("decision_count") is None
@@ -29049,10 +29205,10 @@ def _classify_windowed_stage_capture(
 def _valid_draw_matrix(value: Any, expected_steps: Any, target_dimension: Any) -> bool:
     if value is None or expected_steps is None or target_dimension is None:
         return False
-    array = np.asarray(value, dtype=float)
-    if array.shape != (int(expected_steps), int(target_dimension)):
+    array = _float64_tensor(value)
+    if int(expected_steps) <= 0 or int(target_dimension) <= 0 or array.shape != (int(expected_steps), int(target_dimension)):
         return False
-    return bool(np.all(np.isfinite(array)))
+    return _all_finite(array)
 
 
 def _valid_trace_vector(
@@ -29063,30 +29219,36 @@ def _valid_trace_vector(
 ) -> bool:
     if value is None or expected_steps is None:
         return False
-    array = np.asarray(value, dtype=float)
-    if array.shape != (int(expected_steps),):
+    import tensorflow as tf
+
+    array = _float64_tensor(value)
+    if int(expected_steps) <= 0 or array.shape != (int(expected_steps),):
         return False
-    if not np.all(np.isfinite(array)):
+    if not _all_finite(array):
         return False
     if bounds is not None:
         lower, upper = bounds
-        if np.any((array < lower) | (array > upper)):
+        if bool(tf.reduce_any((array < lower) | (array > upper)).numpy()):
             return False
     return True
 
 
 def _acceptance_trace_is_default_like(value: Any) -> bool:
+    import tensorflow as tf
+
     if value is None:
         return True
-    array = np.asarray(value, dtype=float)
-    if array.size == 0:
+    array = _float64_tensor(value)
+    if int(tf.size(array).numpy()) == 0:
         return True
-    return bool(np.allclose(array, array.reshape(-1)[0]))
+    return _all_close(array, tf.reshape(array, [-1])[0], rtol=1.0e-5, atol=1.0e-8)
 
 
 def _windowed_stage_acceptance_has_runtime_decision_support(
     capture: Mapping[str, Any],
 ) -> bool:
+    import tensorflow as tf
+
     expected_steps = capture.get("expected_steps")
     acceptance = capture.get("acceptance_trace")
     if not _valid_trace_vector(acceptance, expected_steps, bounds=(0.0, 1.0)):
@@ -29137,7 +29299,7 @@ def _windowed_stage_acceptance_has_runtime_decision_support(
         return False
     if accepted_count < 0 or accepted_count > decision_count:
         return False
-    array = np.asarray(acceptance, dtype=float)
+    array = _float64_tensor(acceptance)
     raw_shape = raw.get("raw_acceptance_shape")
     if raw_shape is None:
         chain_count = _int_or_none(raw.get("acceptance_raw_chain_count"))
@@ -29150,11 +29312,12 @@ def _windowed_stage_acceptance_has_runtime_decision_support(
             return False
         if not normalized_shape or normalized_shape[0] != int(expected_steps):
             return False
-        chain_count = int(np.prod(normalized_shape[1:])) if len(normalized_shape) > 1 else 1
+        chain_count = math.prod(normalized_shape[1:])
     if chain_count <= 0 or decision_count != int(expected_steps) * int(chain_count):
         return False
-    return bool(
-        np.isclose(float(np.sum(array)) * float(chain_count), float(accepted_count))
+    return _all_close(
+        tf.reduce_sum(array) * float(chain_count), float(accepted_count),
+        rtol=1.0e-5, atol=1.0e-8,
     )
 
 
@@ -29405,6 +29568,8 @@ def _bootstrap_screen_config(
         target_status_trace_policy=config.target_status_trace_policy,
         target_scope=target_scope,
         chain_execution_mode=config.chain_execution_mode,
+        capture_first_failure=config.chain_execution_mode == "tf_function" and not config.use_xla,
+        failure_capture_role="bootstrap_screen",
     )
 
 
@@ -29414,11 +29579,11 @@ def _bootstrap_leapfrog_payload(
     *,
     max_leapfrog_steps: int = _GEOMETRY_MAX_LEAPFROG,
 ) -> Mapping[str, Any]:
-    raw = int(np.ceil(float(target_trajectory) / float(step)))
+    raw = int(math.ceil(float(target_trajectory) / float(step)))
     if raw <= 0:
         raise ValueError("formula-derived bootstrap leapfrog count must be positive")
     max_l = _validate_max_leapfrog_steps(max_leapfrog_steps)
-    leapfrogs = int(np.clip(raw, _GEOMETRY_MIN_LEAPFROG, max_l))
+    leapfrogs = min(max_l, max(_GEOMETRY_MIN_LEAPFROG, raw))
     if leapfrogs == raw:
         clamp_direction = None
     elif raw < _GEOMETRY_MIN_LEAPFROG:
@@ -29460,6 +29625,8 @@ def _bootstrap_reusable_static_contract_payload(
         "target_dimension": int(target_dimension),
         "num_results": config.num_results,
         "num_burnin_steps": config.num_burnin_steps,
+        **({"capture_first_failure": True, "failure_capture_role": config.failure_capture_role}
+           if config.capture_first_failure else {}),
         "num_leapfrog_steps": config.num_leapfrog_steps,
         "use_xla": config.use_xla,
         "chain_execution_mode": config.chain_execution_mode,
@@ -29479,6 +29646,15 @@ def _bootstrap_diagnostics_payload(
     use_xla_requested: bool | None = None,
     compile_chain_with_xla: bool | None = None,
 ) -> Mapping[str, Any]:
+    """Summarize actual runner tensors before constructing host-side screen metadata.
+
+    Finite masks and extrema stay in TensorFlow. Nonempty sample and target
+    evidence is required: an empty reduction or absent target trace must never
+    make a failed/incomplete runner look healthy to candidate selection.
+    """
+
+    import tensorflow as tf
+
     diagnostics = dict(run_result.diagnostics)
     trace = dict(run_result.trace)
     metadata = dict(run_result.metadata)
@@ -29499,7 +29675,7 @@ def _bootstrap_diagnostics_payload(
     payload: dict[str, Any] = {
         "acceptance_rate": acceptance,
         "runtime_s": runtime_s,
-        "runtime_finite": runtime_s is not None and bool(np.isfinite(runtime_s)),
+        "runtime_finite": runtime_s is not None and math.isfinite(runtime_s),
         "use_xla": use_xla,
         "xla_requested": use_xla,
         "compile_chain_with_xla": jit_compile,
@@ -29530,27 +29706,33 @@ def _bootstrap_diagnostics_payload(
     }
     log_accept = None
     if "log_accept_ratio" in trace:
-        log_accept = np.asarray(_tensor_to_numpy(trace["log_accept_ratio"]), dtype=float)
-        finite = np.isfinite(log_accept)
-        payload["log_accept_ratio_finite"] = bool(np.all(finite))
+        log_accept = tf.cast(
+            tf.convert_to_tensor(trace["log_accept_ratio"], dtype_hint=tf.float64), tf.float64
+        )
+        finite = tf.math.is_finite(log_accept)
+        payload["log_accept_ratio_finite"] = bool(tf.logical_and(
+            tf.size(log_accept) > 0, tf.reduce_all(finite)
+        ).numpy())
+        finite_values = tf.boolean_mask(tf.reshape(log_accept, [-1]), tf.reshape(finite, [-1]))
         payload["max_abs_log_accept_ratio"] = (
-            None if not np.any(finite) else float(np.max(np.abs(log_accept[finite])))
+            None if not bool(tf.reduce_any(finite).numpy())
+            else float(tf.reduce_max(tf.abs(finite_values)).numpy())
         )
     target_log_prob = None
     if "target_log_prob" in trace:
-        target_log_prob = np.asarray(
-            _tensor_to_numpy(trace["target_log_prob"]),
-            dtype=float,
+        target_log_prob = tf.cast(
+            tf.convert_to_tensor(trace["target_log_prob"], dtype_hint=tf.float64), tf.float64
         )
-        payload["target_log_prob_finite"] = bool(
-            np.all(np.isfinite(target_log_prob))
-        )
-    samples = np.asarray(_tensor_to_numpy(run_result.samples), dtype=float)
-    finite_by_sample = np.all(np.isfinite(samples), axis=-1)
-    samples_all_finite = bool(np.all(finite_by_sample))
+        payload["target_log_prob_finite"] = bool(tf.logical_and(
+            tf.size(target_log_prob) > 0, tf.reduce_all(tf.math.is_finite(target_log_prob))
+        ).numpy())
+    samples = tf.cast(tf.convert_to_tensor(run_result.samples, dtype_hint=tf.float64), tf.float64)
+    samples_all_finite = bool(tf.logical_and(
+        tf.size(samples) > 0, tf.reduce_all(tf.math.is_finite(samples))
+    ).numpy())
     payload["samples_all_finite"] = samples_all_finite
     required_arrays_finite = bool(
-        samples_all_finite and payload["target_log_prob_finite"] is not False
+        samples_all_finite and payload["target_log_prob_finite"] is True
     )
     screen = screen_hmc_diagnostics(
         sample_chain_returned=True,
@@ -29574,12 +29756,16 @@ def _bootstrap_diagnostics_payload(
         "nonclaims": screen.nonclaims,
     }
     if target_log_prob is not None:
-        finite = target_log_prob[np.isfinite(target_log_prob)]
+        finite = tf.boolean_mask(
+            tf.reshape(target_log_prob, [-1]),
+            tf.reshape(tf.math.is_finite(target_log_prob), [-1]),
+        )
+        has_finite = bool((tf.size(finite) > 0).numpy())
         payload["target_log_prob_min"] = (
-            None if finite.size == 0 else float(np.min(finite))
+            float(tf.reduce_min(finite).numpy()) if has_finite else None
         )
         payload["target_log_prob_max"] = (
-            None if finite.size == 0 else float(np.max(finite))
+            float(tf.reduce_max(finite).numpy()) if has_finite else None
         )
     return payload
 
@@ -29610,6 +29796,8 @@ def _bootstrap_error_diagnostics(exc: Exception) -> Mapping[str, Any]:
     return {
         "error_type": type(exc).__name__,
         "error_message": message,
+        **({"first_failure": getattr(exc, "failure_record")}
+           if getattr(exc, "failure_record", None) is not None else {}),
         "failure_diagnostics_role": "diagnostic_exception_provenance_not_scientific_evidence",
         "acceptance_rate": None,
         "runtime_s": None,
@@ -29639,6 +29827,8 @@ def _public_failure_diagnostics(*, stage: str, exc: Exception) -> Mapping[str, A
         "stage": str(stage),
         "exception_type": type(exc).__name__,
         "exception_message": message,
+        **({"first_failure_captured": True}
+           if getattr(exc, "failure_record", None) is not None else {}),
         "role": "diagnostic_exception_provenance_not_scientific_evidence",
         "hmc_mechanics_exposed": False,
         "reports_posterior_convergence": False,
@@ -29668,6 +29858,8 @@ def _public_bootstrap_failure_diagnostics(
         "round_index": int(last_round.round_index),
         "exception_type": None if error_type is None else str(error_type),
         "exception_message": message,
+        **({"first_failure_captured": True}
+           if diagnostics.get("first_failure") is not None else {}),
         "hard_vetoes": tuple(str(veto) for veto in last_round.hard_vetoes),
         "repair_triggers": tuple(
             str(trigger) for trigger in last_round.repair_triggers
@@ -29741,7 +29933,7 @@ def _bootstrap_repair_action(
     low_acceptance_step: float | None = None,
     high_acceptance_step: float | None = None,
 ) -> str:
-    if acceptance is None or not np.isfinite(float(acceptance)):
+    if acceptance is None or not math.isfinite(float(acceptance)):
         return "no_repair_nonfinite_acceptance"
     if low_acceptance_step is not None and high_acceptance_step is not None:
         _validate_bootstrap_repair_bracket(
@@ -29762,10 +29954,10 @@ def _bootstrap_update_repair_bracket(
     low_acceptance_step: float | None,
     high_acceptance_step: float | None,
 ) -> tuple[float | None, float | None]:
-    if acceptance is None or not np.isfinite(float(acceptance)):
+    if acceptance is None or not math.isfinite(float(acceptance)):
         return low_acceptance_step, high_acceptance_step
     step = float(current_step)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("bootstrap repair bracket step must be positive and finite")
     if float(acceptance) < config.acceptance_band[0]:
         low_acceptance_step = step
@@ -29787,13 +29979,13 @@ def _validate_bootstrap_repair_bracket(
     low_step = float(low_acceptance_step)
     high_step = float(high_acceptance_step)
     if (
-        not np.isfinite(low_step)
+        not math.isfinite(low_step)
         or low_step <= 0.0
-        or not np.isfinite(high_step)
+        or not math.isfinite(high_step)
         or high_step <= 0.0
     ):
         raise ValueError("bootstrap repair bracket endpoints must be positive and finite")
-    if not np.log(high_step) < np.log(low_step):
+    if not math.log(high_step) < math.log(low_step):
         raise ValueError("bootstrap repair bracket endpoints must be ordered in log-step space")
 
 
@@ -29805,15 +29997,15 @@ def _repair_step_size(
     low_acceptance_step: float | None = None,
     high_acceptance_step: float | None = None,
 ) -> float:
-    if acceptance is None or not np.isfinite(float(acceptance)):
+    if acceptance is None or not math.isfinite(float(acceptance)):
         raise ValueError("finite acceptance is required for epsilon repair")
     if low_acceptance_step is not None and high_acceptance_step is not None:
         _validate_bootstrap_repair_bracket(
             low_acceptance_step=low_acceptance_step,
             high_acceptance_step=high_acceptance_step,
         )
-        repaired = float(np.exp(
-            0.5 * (np.log(float(low_acceptance_step)) + np.log(float(high_acceptance_step)))
+        repaired = float(math.exp(
+            0.5 * (math.log(float(low_acceptance_step)) + math.log(float(high_acceptance_step)))
         ))
     else:
         factor = (
@@ -29822,7 +30014,7 @@ def _repair_step_size(
             else config.step_repair_factor
         )
         repaired = float(current_step) * factor
-    if not np.isfinite(repaired) or repaired <= 0.0:
+    if not math.isfinite(repaired) or repaired <= 0.0:
         raise ValueError("repaired bootstrap step size must be positive and finite")
     return repaired
 
@@ -29873,7 +30065,7 @@ def _validate_band(values: Sequence[float], *, name: str) -> tuple[float, float]
     if len(values) != 2:
         raise ValueError(f"{name} must contain exactly two values")
     lower, upper = tuple(float(item) for item in values)
-    if not np.isfinite(lower) or not np.isfinite(upper):
+    if not math.isfinite(lower) or not math.isfinite(upper):
         raise ValueError(f"{name} values must be finite")
     if not 0.0 < lower <= upper < 1.0:
         raise ValueError(f"{name} must satisfy 0 < lower <= upper < 1")
@@ -29898,7 +30090,7 @@ def _string_tuple(values: Sequence[str] | str) -> tuple[str, ...]:
 
 def _finite_number(value: Any) -> bool:
     scalar = _scalar_or_none(value)
-    return scalar is not None and bool(np.isfinite(scalar))
+    return scalar is not None and math.isfinite(scalar)
 
 
 def _tensor_to_numpy(value: Any) -> Any:
@@ -29907,20 +30099,22 @@ def _tensor_to_numpy(value: Any) -> Any:
     return value
 
 
-def _trace_array_or_none(trace: Mapping[str, Any], key: str) -> np.ndarray | None:
+def _trace_array_or_none(trace: Mapping[str, Any], key: str) -> Any | None:
+    import tensorflow as tf
+
     if key not in trace:
         return None
-    return np.asarray(_tensor_to_numpy(trace[key]))
+    return tf.convert_to_tensor(_tensor_to_numpy(trace[key]))
 
 
 def _scalar_or_none(value: Any) -> float | None:
-    if value is None:
-        return None
-    array = np.asarray(_tensor_to_numpy(value))
-    if array.size == 0:
+    from bayesfilter.inference.hmc_budget_ladder import _last_metadata_entry
+
+    present, scalar = _last_metadata_entry(value)
+    if not present:
         return None
     try:
-        return float(array.reshape(-1)[-1])
+        return float(scalar)
     except (TypeError, ValueError):
         return None
 
@@ -29930,50 +30124,58 @@ def _int_or_none(value: Any) -> int | None:
     return None if scalar is None else int(scalar)
 
 
-def _strict_scalar_int_or_none(value: Any) -> int | None:
+def _singleton_metadata_value(value: Any) -> Any:
+    """Materialize exactly one metadata element without truncating arrays."""
+
     if value is None:
         return None
-    array = np.asarray(_tensor_to_numpy(value))
-    if array.size != 1:
+    while isinstance(value, (tuple, list)):
+        if len(value) != 1:
+            return None
+        value = value[0]
+    if isinstance(value, (bool, int, float, str, bytes)) or value is None:
+        return value
+    import tensorflow as tf
+
+    tensor = tf.convert_to_tensor(value)
+    if int(tf.size(tensor)) != 1:
         return None
-    scalar = array.reshape(()).item()
-    if isinstance(scalar, (bool, np.bool_)):
+    scalar = tf.reshape(tensor, []).numpy()
+    return scalar.item() if hasattr(scalar, "item") else scalar
+
+
+def _strict_scalar_int_or_none(value: Any) -> int | None:
+    scalar = _singleton_metadata_value(value)
+    if isinstance(scalar, bool):
         return None
-    return int(scalar) if isinstance(scalar, (int, np.integer)) else None
+    return int(scalar) if isinstance(scalar, Integral) else None
 
 
 def _strict_finite_scalar_or_none(value: Any) -> float | None:
-    if value is None:
-        return None
-    array = np.asarray(_tensor_to_numpy(value))
-    if array.size != 1:
-        return None
-    scalar = array.reshape(()).item()
-    if isinstance(scalar, (bool, np.bool_)):
+    scalar = _singleton_metadata_value(value)
+    if isinstance(scalar, bool):
         return None
     try:
         result = float(scalar)
     except (TypeError, ValueError, OverflowError):
         return None
-    return result if np.isfinite(result) else None
+    return result if math.isfinite(result) else None
 
 
 def _bool_or_none(value: Any) -> bool | None:
-    if value is None:
-        return None
-    array = np.asarray(_tensor_to_numpy(value))
-    if array.size == 0:
-        return None
-    return bool(array.reshape(-1)[-1])
+    from bayesfilter.inference.hmc_budget_ladder import _last_metadata_entry
+
+    present, scalar = _last_metadata_entry(value)
+    return bool(scalar) if present else None
 
 
 def _json_ready(value: Any) -> Any:
     if hasattr(value, "numpy"):
-        return _json_ready(value.numpy())
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+        value = value.numpy()
+    if hasattr(value, "tolist"):
+        value = value.tolist()
+    elif hasattr(value, "item"):
+        value = value.item()
     if isinstance(value, Mapping):
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):

@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Sequence
 
-import numpy as np
-
-from bayesfilter.inference.hmc_verification import HMCAcceptanceEvidence
+from bayesfilter.inference.hmc_verification import HMCAcceptanceEvidence, _all_close
 
 
 HMC_TUNING_STATES = (
@@ -175,14 +174,14 @@ class HMCStepRepair:
         if disposition not in allowed:
             raise ValueError("invalid step-repair disposition")
         base = float(self.base_step_size)
-        if not np.isfinite(base) or base <= 0.0:
+        if not math.isfinite(base) or base <= 0.0:
             raise ValueError("base_step_size must be positive and finite")
         lower, upper = self.bracket
         lower = None if lower is None else float(lower)
         upper = None if upper is None else float(upper)
-        if lower is not None and (not np.isfinite(lower) or lower <= 0.0):
+        if lower is not None and (not math.isfinite(lower) or lower <= 0.0):
             raise ValueError("step bracket lower bound is invalid")
-        if upper is not None and (not np.isfinite(upper) or upper <= 0.0):
+        if upper is not None and (not math.isfinite(upper) or upper <= 0.0):
             raise ValueError("step bracket upper bound is invalid")
         if lower is not None and upper is not None and lower > upper:
             raise ValueError("step bracket is inverted")
@@ -191,7 +190,7 @@ class HMCStepRepair:
                 raise ValueError("repair_step requires a directional repair")
             repaired = float(self.repaired_step_size)
             factor = float(self.factor)
-            if not np.isfinite(repaired) or repaired <= 0.0:
+            if not math.isfinite(repaired) or repaired <= 0.0:
                 raise ValueError("repaired_step_size must be positive and finite")
             expected_factor = (
                 repaired / base
@@ -199,10 +198,10 @@ class HMCStepRepair:
                 else base / repaired
             )
             if (
-                not np.isfinite(factor)
+                not math.isfinite(factor)
                 or factor <= 1.0
                 or factor > 2.0 + 1.0e-12
-                or not np.isclose(factor, expected_factor, rtol=1.0e-12, atol=0.0)
+                or not _all_close(factor, expected_factor, rtol=1.0e-12, atol=0.0)
             ):
                 raise ValueError("repair factor must equal the realized directional ratio")
             if lower is not None and repaired < lower:
@@ -319,7 +318,7 @@ def aggregate_step_repair(
             left != right for left, right in zip(history, history[1:])
         )
         repeated_direction = bool(history and history[-1] == direction)
-        configured_factor = float(np.clip(repair_factor, 1.25, 2.0))
+        configured_factor = min(max(float(repair_factor), 1.25), 2.0)
         multiplier = (
             1.0 / configured_factor
             if direction == "lower_epsilon"
@@ -334,7 +333,7 @@ def aggregate_step_repair(
         history_steps = tuple(float(item) for item in repaired_step_history)
         negligible = abs(repaired / float(base_step_size) - 1.0) < 0.01
         identical = any(
-            np.isclose(repaired, item, rtol=1.0e-12, atol=0.0)
+            _all_close(repaired, item, rtol=1.0e-12, atol=0.0)
             for item in history_steps
         )
         if alternations >= 2 or (repeated_direction and identical) or negligible:
@@ -391,7 +390,7 @@ def aggregate_bracketed_step_repair(
     if not records:
         raise ValueError("repair aggregation requires evidence")
     base = float(base_step_size)
-    if not np.isfinite(base) or base <= 0.0:
+    if not math.isfinite(base) or base <= 0.0:
         raise ValueError("base_step_size must be positive and finite")
     lower, upper = empirical_bracket
     lower = _positive_bound_or_none(lower, name="empirical bracket lower bound")
@@ -455,9 +454,9 @@ def aggregate_bracketed_step_repair(
             verification_reserved=verification_reserved,
         )
 
-    configured_factor = float(np.clip(repair_factor, 1.25, 2.0))
+    configured_factor = min(max(float(repair_factor), 1.25), 2.0)
     if one_sided_bound_support and lower is not None and upper is not None:
-        repaired = float(np.exp(0.5 * (np.log(lower) + np.log(upper))))
+        repaired = math.exp(0.5 * (math.log(lower) + math.log(upper)))
     elif direction == "higher_epsilon":
         repaired = base * configured_factor
     else:
@@ -468,7 +467,7 @@ def aggregate_bracketed_step_repair(
         repaired = min(repaired, upper)
 
     history_steps = tuple(float(item) for item in repaired_step_history)
-    if any(not np.isfinite(item) or item <= 0.0 for item in history_steps):
+    if any(not math.isfinite(item) or item <= 0.0 for item in history_steps):
         raise ValueError("repaired_step_history must be positive and finite")
     history_directions = tuple(str(item) for item in direction_history)
     if any(
@@ -480,7 +479,7 @@ def aggregate_bracketed_step_repair(
         raise ValueError("repair direction and step histories must have equal length")
     negligible = abs(repaired / base - 1.0) < 0.01
     repeated = any(
-        np.isclose(repaired, item, rtol=1.0e-12, atol=0.0)
+        _all_close(repaired, item, rtol=1.0e-12, atol=0.0)
         for item in history_steps
     )
     if negligible or repeated:
@@ -534,7 +533,7 @@ def aggregate_step_veto_bracket_repair(
         tuple(sorted(item.engineering_invalidity_reasons)) for item in records
     )
     base = float(base_step_size)
-    if not np.isfinite(base) or base <= 0.0:
+    if not math.isfinite(base) or base <= 0.0:
         raise ValueError("base_step_size must be positive and finite")
     lower, upper = empirical_bracket
     lower = _positive_bound_or_none(lower, name="empirical bracket lower bound")
@@ -597,7 +596,7 @@ def _positive_bound_or_none(value: float | None, *, name: str) -> float | None:
     if value is None:
         return None
     bound = float(value)
-    if not np.isfinite(bound) or bound <= 0.0:
+    if not math.isfinite(bound) or bound <= 0.0:
         raise ValueError(f"{name} must be positive and finite")
     return bound
 

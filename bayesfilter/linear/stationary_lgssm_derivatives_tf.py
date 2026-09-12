@@ -13,11 +13,13 @@ solves and Frechet derivatives.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.linear.stack_qr_tf import batched_stack_qr_lower
 from bayesfilter.linear.types_tf import (
     TFLinearGaussianStateSpace,
     TFLinearGaussianStateSpaceFirstDerivatives,
@@ -118,6 +120,248 @@ def continuous_lyapunov_first_derivatives_tf(
     )
     d_omega = 0.5 * (d_omega + tf.linalg.matrix_transpose(d_omega))
     return omega, d_omega
+
+
+def stationary_discrete_lyapunov_factor_doubling_tf(
+    *,
+    transition: Any,
+    d_transition: Any,
+    process_factor: Any,
+    d_process_factor: Any,
+    tolerance: float = 1.0e-12,
+    max_doublings: int = 64,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, dict[str, tf.Tensor]]:
+    """Solve a stationary discrete Lyapunov equation in factor form.
+
+    The target equation is
+
+    ``P = F P F' + Q`` with ``Q = L_Q L_Q'``.
+
+    This is CIP monograph Chapter 16, ``eq:kf_lyapunov``: its ``Phi`` is
+    ``transition`` and its stationary ``P_infty`` is represented by the
+    returned factor. ``Q`` is an innovation covariance per observation period,
+    not an annual diffusion covariance; time conversion precedes this solve.
+
+    At doubling level ``N`` the accumulated covariance is represented by
+    ``P_N = L_N L_N'`` and the remaining transition power is ``F_N = F**N``.
+    The update
+
+    ``L_2N = qr_lower([L_N, F_N L_N])`` and ``F_2N = F_N F_N``
+
+    doubles the number of represented innovation terms without reconstructing
+    ``Q`` or ``P`` before factorization.  Derivatives are propagated through
+    the same QR and matrix-product identities.  The returned ``tail_factor``
+    is ``F_N L_N`` for the first omitted block at the final level; callers can
+    use the explicit convergence diagnostics to distinguish a converged
+    stationary factor from a bounded-iteration failure.
+
+    This is deliberately a non-XLA bounded TensorFlow loop.  The factor path
+    is intended for numerically sensitive target evaluation; no jitter,
+    covariance floor, clipping, or support relaxation is applied.
+    """
+
+    if not math.isfinite(float(tolerance)) or float(tolerance) <= 0.0:
+        raise ValueError("tolerance must be finite and positive")
+    if int(max_doublings) <= 0:
+        raise ValueError("max_doublings must be positive")
+
+    transition = tf.convert_to_tensor(transition, dtype=tf.float64)
+    d_transition = tf.convert_to_tensor(d_transition, dtype=tf.float64)
+    process_factor = tf.convert_to_tensor(process_factor, dtype=tf.float64)
+    d_process_factor = tf.convert_to_tensor(d_process_factor, dtype=tf.float64)
+    if transition.shape.rank != 3 or process_factor.shape.rank != 3:
+        raise ValueError("transition and process_factor must have shape [B,N,N]")
+    if d_transition.shape.rank != 4 or d_process_factor.shape.rank != 4:
+        raise ValueError("derivatives must have shape [B,P,N,N]")
+    if transition.shape[1] is None or transition.shape[2] is None:
+        raise ValueError("state dimensions must be statically known")
+    if transition.shape[1] != transition.shape[2]:
+        raise ValueError("transition must be square")
+    expected_spatial = (transition.shape[1], transition.shape[2])
+    if tuple(process_factor.shape[1:]) != expected_spatial:
+        raise ValueError("process_factor has incompatible spatial dimensions")
+    if tuple(d_transition.shape[2:]) != expected_spatial:
+        raise ValueError("d_transition has incompatible spatial dimensions")
+    if tuple(d_process_factor.shape[2:]) != expected_spatial:
+        raise ValueError("d_process_factor has incompatible spatial dimensions")
+    if d_transition.shape[0] != transition.shape[0] or d_process_factor.shape[0] != transition.shape[0]:
+        raise ValueError("derivative and value batch dimensions must match")
+    if d_transition.shape[1] != d_process_factor.shape[1]:
+        raise ValueError("derivative parameter dimensions must match")
+
+    finite_checks = [
+        tf.debugging.assert_all_finite(transition, "transition contains NaN or Inf"),
+        tf.debugging.assert_all_finite(d_transition, "d_transition contains NaN or Inf"),
+        tf.debugging.assert_all_finite(process_factor, "process_factor contains NaN or Inf"),
+        tf.debugging.assert_all_finite(
+            d_process_factor,
+            "d_process_factor contains NaN or Inf",
+        ),
+        tf.debugging.assert_greater(
+            tf.linalg.diag_part(process_factor),
+            tf.zeros_like(tf.linalg.diag_part(process_factor)),
+            message="process_factor must have positive diagonal",
+        ),
+    ]
+    with tf.control_dependencies(finite_checks):
+        transition = tf.identity(transition)
+        d_transition = tf.identity(d_transition)
+        process_factor = tf.identity(process_factor)
+        d_process_factor = tf.identity(d_process_factor)
+
+    stationary_factor = process_factor
+    d_stationary_factor = d_process_factor
+    transition_power = transition
+    d_transition_power = d_transition
+
+    def tail_for(
+        factor: tf.Tensor,
+        derivative_factor: tf.Tensor,
+        power: tf.Tensor,
+        derivative_power: tf.Tensor,
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        tail = power @ factor
+        d_tail = (
+            tf.einsum("bij,bpjk->bpik", power, derivative_factor)
+            + tf.einsum("bpij,bjk->bpik", derivative_power, factor)
+        )
+        scale = tf.maximum(
+            tf.linalg.norm(factor, axis=[-2, -1]),
+            tf.constant(1.0e-300, tf.float64),
+        )
+        tail_metric = tf.linalg.norm(tail, axis=[-2, -1]) / scale
+        derivative_metric = tf.reduce_max(
+            tf.linalg.norm(d_tail, axis=[-2, -1]) / scale[:, tf.newaxis],
+            axis=1,
+        )
+        metric = tf.maximum(tail_metric, derivative_metric)
+        return tail, d_tail, metric
+
+    tail_factor, d_tail_factor, tail_metric = tail_for(
+        stationary_factor,
+        d_stationary_factor,
+        transition_power,
+        d_transition_power,
+    )
+    converged = tf.reduce_all(tail_metric <= tf.cast(tolerance, tf.float64))
+    step = tf.constant(0, tf.int32)
+    max_steps = tf.constant(int(max_doublings), tf.int32)
+
+    def cond(
+        step_value: tf.Tensor,
+        _factor: tf.Tensor,
+        _d_factor: tf.Tensor,
+        _power: tf.Tensor,
+        _d_power: tf.Tensor,
+        _tail: tf.Tensor,
+        _d_tail: tf.Tensor,
+        _metric: tf.Tensor,
+        converged_value: tf.Tensor,
+    ) -> tf.Tensor:
+        return tf.logical_and(
+            step_value < max_steps,
+            tf.logical_not(converged_value),
+        )
+
+    def body(
+        step_value: tf.Tensor,
+        factor: tf.Tensor,
+        d_factor: tf.Tensor,
+        power: tf.Tensor,
+        d_power: tf.Tensor,
+        _tail: tf.Tensor,
+        _d_tail: tf.Tensor,
+        _metric: tf.Tensor,
+        _converged: tf.Tensor,
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+        propagated = power @ factor
+        d_propagated = (
+            tf.einsum("bij,bpjk->bpik", power, d_factor)
+            + tf.einsum("bpij,bjk->bpik", d_power, factor)
+        )
+        stack = tf.concat((factor, propagated), axis=2)
+        d_stack = tf.concat((d_factor, d_propagated), axis=3)
+        factor2, d_factor2, _diagnostics = batched_stack_qr_lower(
+            stack,
+            d_stack,
+            compute_covariance_diagnostics=False,
+            relative_pivot_tolerance=0.0,
+        )
+        power2 = power @ power
+        d_power2 = (
+            tf.einsum("bpij,bjk->bpik", d_power, power)
+            + tf.einsum("bij,bpjk->bpik", power, d_power)
+        )
+        tail2, d_tail2, metric2 = tail_for(
+            factor2,
+            d_factor2,
+            power2,
+            d_power2,
+        )
+        converged2 = tf.reduce_all(metric2 <= tf.cast(tolerance, tf.float64))
+        return (
+            step_value + 1,
+            factor2,
+            d_factor2,
+            power2,
+            d_power2,
+            tail2,
+            d_tail2,
+            metric2,
+            converged2,
+        )
+
+    (
+        step,
+        stationary_factor,
+        d_stationary_factor,
+        transition_power,
+        d_transition_power,
+        tail_factor,
+        d_tail_factor,
+        tail_metric,
+        converged,
+    ) = tf.while_loop(
+        cond,
+        body,
+        (
+            step,
+            stationary_factor,
+            d_stationary_factor,
+            transition_power,
+            d_transition_power,
+            tail_factor,
+            d_tail_factor,
+            tail_metric,
+            converged,
+        ),
+        maximum_iterations=int(max_doublings),
+        parallel_iterations=1,
+    )
+    derivative_tail_metric = tf.reduce_max(
+        tf.linalg.norm(d_tail_factor, axis=[-2, -1])
+        / tf.maximum(
+            tf.linalg.norm(stationary_factor, axis=[-2, -1]),
+            tf.constant(1.0e-300, tf.float64),
+        )[:, tf.newaxis],
+        axis=1,
+    )
+    diagnostics = {
+        "lyapunov_converged": converged,
+        "lyapunov_row_converged": tail_metric <= tf.cast(tolerance, tf.float64),
+        "lyapunov_doubling_steps": step,
+        "lyapunov_tail_relative_norm": tail_metric,
+        "lyapunov_derivative_tail_relative_norm": derivative_tail_metric,
+    }
+    return (
+        stationary_factor,
+        d_stationary_factor,
+        transition_power,
+        d_transition_power,
+        tail_factor,
+        d_tail_factor,
+        diagnostics,
+    )
 
 
 def matrix_exponential_frechet_tf(

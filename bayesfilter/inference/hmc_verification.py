@@ -8,9 +8,46 @@ a bounded TF/TFP run; the immutable decision types are added in repair R4.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
+import math
+from numbers import Integral
 from typing import Any, Mapping
 
-import numpy as np
+
+def _float64_tensor(value: Any) -> Any:
+    import tensorflow as tf
+
+    if tf.is_tensor(value):
+        return tf.cast(value, tf.float64)
+    return tf.convert_to_tensor(value, dtype=tf.float64)
+
+
+def _all_finite(value: Any) -> bool:
+    import tensorflow as tf
+
+    return bool(tf.reduce_all(tf.math.is_finite(_float64_tensor(value))))
+
+
+def _all_close(actual: Any, expected: Any, *, rtol: float, atol: float) -> bool:
+    """Replay boundary with the original asymmetric reference tolerance."""
+
+    import tensorflow as tf
+
+    actual_tensor = _float64_tensor(actual)
+    expected_tensor = _float64_tensor(expected)
+    return bool(tf.reduce_all(
+        tf.abs(actual_tensor - expected_tensor) <= atol + rtol * tf.abs(expected_tensor)
+    ))
+
+
+def _is_boolean_scalar(value: Any) -> bool:
+    if isinstance(value, bool):
+        return True
+    return (
+        getattr(value, "shape", None) == ()
+        and str(getattr(value, "dtype", None)) == "bool"
+        and not hasattr(value, "__len__")
+    )
 
 
 ACCEPTANCE_DECISIONS = (
@@ -96,6 +133,27 @@ TARGET_STATUS_TELEMETRY_FIELDS = (
 )
 
 
+def _finite_tensor_mask(value: Any) -> Any:
+    """Return an elementwise finite mask without moving tensor data to NumPy."""
+
+    import tensorflow as tf
+
+    tensor = tf.convert_to_tensor(value)
+    if tensor.dtype.is_floating or tensor.dtype.is_integer:
+        return tf.math.is_finite(tensor) if tensor.dtype.is_floating else tf.ones_like(
+            tensor,
+            dtype=tf.bool,
+        )
+    if tensor.dtype.is_complex:
+        return tf.logical_and(
+            tf.math.is_finite(tf.math.real(tensor)),
+            tf.math.is_finite(tf.math.imag(tensor)),
+        )
+    if tensor.dtype.is_bool:
+        return tf.ones_like(tensor, dtype=tf.bool)
+    raise TypeError("finite tensor checks require a numeric or boolean tensor")
+
+
 def target_status_telemetry_has_failure(
     telemetry: Mapping[str, Any],
     *,
@@ -124,34 +182,38 @@ def target_status_telemetry_has_failure(
         if all(optional_present)
         else TARGET_STATUS_TELEMETRY_CORE_FIELDS
     )
-    arrays = {key: np.asarray(telemetry[key]) for key in active_fields}
-    if any(value.shape != expected_shape for value in arrays.values()):
+    import tensorflow as tf
+
+    tensors = {key: tf.convert_to_tensor(telemetry[key]) for key in active_fields}
+    expected_tensor_shape = tf.TensorShape(expected_shape)
+    if any(value.shape != expected_tensor_shape for value in tensors.values()):
         raise ValueError("target_status_telemetry fields must match the chain-step shape")
-    status = arrays["status_code"]
-    valid = arrays["valid_pre_regularized_score"]
-    floors = arrays["floor_count_value"]
-    if not np.issubdtype(status.dtype, np.integer) or np.issubdtype(
-        status.dtype, np.bool_
-    ):
+    status = tensors["status_code"]
+    valid = tensors["valid_pre_regularized_score"]
+    floors = tensors["floor_count_value"]
+    if not status.dtype.is_integer or status.dtype.is_bool:
         raise ValueError("target status_code must be integer-valued")
-    if not np.issubdtype(valid.dtype, np.bool_):
+    if not valid.dtype.is_bool:
         raise ValueError("target valid_pre_regularized_score must be boolean")
-    if not np.issubdtype(floors.dtype, np.integer) or np.issubdtype(
-        floors.dtype, np.bool_
-    ):
+    if not floors.dtype.is_integer or floors.dtype.is_bool:
         raise ValueError("target floor_count_value must be integer-valued")
     status_nonvalid = (status != 0) | (~valid)
-    valid_entries = ~status_nonvalid
-    if np.any(floors[valid_entries] < 0):
+    if bool(
+        tf.reduce_any(tf.logical_and(~status_nonvalid, floors < 0)).numpy()
+    ):
         raise ValueError("valid target floor_count_value must be nonnegative")
     for name in TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS:
-        if name not in arrays:
+        if name not in tensors:
             continue
-        if not np.issubdtype(arrays[name].dtype, np.number):
+        value = tensors[name]
+        if not value.dtype.is_numeric:
             raise ValueError(f"target {name} must be numeric")
-        if not np.all(np.isfinite(arrays[name][valid_entries])):
+        finite = _finite_tensor_mask(value)
+        if bool(
+            tf.reduce_any(tf.logical_and(~status_nonvalid, ~finite)).numpy()
+        ):
             raise ValueError(f"valid target {name} must be finite")
-    return bool(np.any(status_nonvalid))
+    return bool(tf.reduce_any(status_nonvalid).numpy())
 
 
 def _evaluate_retained_target_health(
@@ -174,8 +236,15 @@ def _evaluate_retained_target_health(
         raise ValueError(
             "target_status_trace_policy must be 'none' or 'per_chain_step'"
         )
-    array = np.asarray(samples, dtype=float)
-    if array.ndim not in {2, 3} or array.shape[0] == 0 or array.shape[-1] == 0:
+    import tensorflow as tf
+
+    sample_tensor = tf.cast(tf.convert_to_tensor(samples), tf.float64)
+    sample_rank = sample_tensor.shape.rank
+    if (
+        sample_rank not in {2, 3}
+        or sample_tensor.shape[0] == 0
+        or sample_tensor.shape[-1] == 0
+    ):
         return {
             "shared_invalidity_reasons": ("shared_schema_invalid",),
             "candidate_data_invalidity_reasons": (),
@@ -184,7 +253,7 @@ def _evaluate_retained_target_health(
             "target_status_failure_count": None,
             "evaluated_draw_count": 0,
         }
-    if not np.all(np.isfinite(array)):
+    if not bool(tf.reduce_all(_finite_tensor_mask(sample_tensor)).numpy()):
         return {
             "shared_invalidity_reasons": ("nonfinite_retained_samples",),
             "candidate_data_invalidity_reasons": (),
@@ -216,8 +285,6 @@ def _evaluate_retained_target_health(
             "evaluated_draw_count": 0,
         }
 
-    import tensorflow as tf
-
     value_finite = True
     score_finite = True
     status_failure_count = 0
@@ -230,19 +297,17 @@ def _evaluate_retained_target_health(
     )
 
     def evaluate_value_score(
-        values: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray, Mapping[str, Any] | None]:
-        tensor = tf.convert_to_tensor(values, dtype=tf.float64)
+        values: Any,
+    ) -> tuple[Any, Any, Mapping[str, Any] | None]:
+        tensor = tf.cast(tf.convert_to_tensor(values), tf.float64)
         if supports_combined:
             value, score, status = adapter.log_prob_and_grad_status(tensor)
         else:
             value, score = evaluator(tensor)
             status = None
-        return (
-            np.asarray(value.numpy() if hasattr(value, "numpy") else value, dtype=float),
-            np.asarray(score.numpy() if hasattr(score, "numpy") else score, dtype=float),
-            status,
-        )
+        return tf.cast(tf.convert_to_tensor(value), tf.float64), tf.cast(
+            tf.convert_to_tensor(score), tf.float64
+        ), status
 
     supports_draw_batch = bool(
         getattr(adapter, "supports_retained_draw_batch", False)
@@ -257,13 +322,14 @@ def _evaluate_retained_target_health(
         if supports_draw_batch or supports_flat_batch
         else 1
     )
-    for start in range(0, int(array.shape[0]), batch_draws):
-        chunk = array[start : start + batch_draws]
+    sample_shape = tuple(int(item) for item in sample_tensor.shape)
+    for start in range(0, sample_shape[0], batch_draws):
+        chunk = sample_tensor[start : start + batch_draws]
         callback_values = (
             chunk
             if supports_draw_batch
             else (
-                chunk.reshape((-1, chunk.shape[-1]))
+                tf.reshape(chunk, (-1, chunk.shape[-1]))
                 if supports_flat_batch
                 else chunk[0]
             )
@@ -281,21 +347,19 @@ def _evaluate_retained_target_health(
             score_finite = False
             shared.append("shared_callback_invalid")
             break
-        if (
-            value_array.shape != callback_value_shape
-            or score_array.shape != callback_values.shape
-        ):
+        if value_array.shape != tf.TensorShape(callback_value_shape) or score_array.shape != callback_values.shape:
             shared.append("target_value_score_shape_invalid")
             break
         if supports_flat_batch:
-            value_array = value_array.reshape(expected_value_shape)
-            score_array = score_array.reshape(chunk.shape)
-        chunk_value_finite = bool(np.all(np.isfinite(value_array)))
-        chunk_score_finite = bool(np.all(np.isfinite(score_array)))
+            value_array = tf.reshape(value_array, expected_value_shape)
+            score_array = tf.reshape(score_array, chunk.shape)
+        chunk_value_finite = bool(tf.reduce_all(_finite_tensor_mask(value_array)).numpy())
+        chunk_score_finite = bool(tf.reduce_all(_finite_tensor_mask(score_array)).numpy())
         if not chunk_value_finite or not chunk_score_finite:
             # Refine only the first failing chunk. Count unique logical draws,
             # not the diagnostic callback invocations used for localization.
-            for offset, draw in enumerate(chunk):
+            for offset in range(int(chunk.shape[0])):
+                draw = chunk[offset]
                 draw_expected_shape = tuple(int(item) for item in draw.shape[:-1])
                 try:
                     draw_value, draw_score, _draw_status = evaluate_value_score(draw)
@@ -312,8 +376,12 @@ def _evaluate_retained_target_health(
                     evaluated += offset
                     shared.append("target_value_score_shape_invalid")
                     break
-                draw_value_finite = bool(np.all(np.isfinite(draw_value)))
-                draw_score_finite = bool(np.all(np.isfinite(draw_score)))
+                draw_value_finite = bool(
+                    tf.reduce_all(_finite_tensor_mask(draw_value)).numpy()
+                )
+                draw_score_finite = bool(
+                    tf.reduce_all(_finite_tensor_mask(draw_score)).numpy()
+                )
                 if not draw_value_finite or not draw_score_finite:
                     evaluated += offset + 1
                     value_finite = draw_value_finite
@@ -336,24 +404,22 @@ def _evaluate_retained_target_health(
                 shared.append("shared_callback_invalid")
                 break
             try:
-                status_arrays = {
-                    key: np.asarray(
-                        item.numpy() if hasattr(item, "numpy") else item
-                    )
-                    for key, item in status_payload.items()
-                }
                 if target_status_telemetry_has_failure(
-                    status_arrays,
+                    status_payload,
                     expected_shape=callback_value_shape,
                 ):
                     if batch_draws == 1:
-                        status = status_arrays["status_code"]
-                        valid = status_arrays[
-                            "valid_pre_regularized_score"
-                        ].astype(bool, copy=False)
-                        status_failure_count += int(
-                            np.sum((status != 0) | (~valid))
+                        status = tf.convert_to_tensor(status_payload["status_code"])
+                        valid = tf.convert_to_tensor(
+                            status_payload["valid_pre_regularized_score"],
+                            dtype=tf.bool,
                         )
+                        status_failure_count += int(
+                            tf.reduce_sum(
+                                tf.cast((status != 0) | (~valid), tf.int32)
+                            ).numpy()
+                        )
+                        evaluated += int(chunk.shape[0])
                         # Keep scanning the retained draws so the public
                         # count reflects all logical failures, not only the
                         # first one encountered.
@@ -377,14 +443,8 @@ def _evaluate_retained_target_health(
                             shared.append("shared_callback_invalid")
                             break
                         try:
-                            draw_arrays = {
-                                key: np.asarray(
-                                    item.numpy() if hasattr(item, "numpy") else item
-                                )
-                                for key, item in draw_payload.items()
-                            }
                             draw_failed = target_status_telemetry_has_failure(
-                                draw_arrays,
+                                draw_payload,
                                 expected_shape=draw_expected_shape,
                             )
                         except (AttributeError, TypeError, ValueError):
@@ -393,12 +453,17 @@ def _evaluate_retained_target_health(
                             break
                         if draw_failed:
                             draw_failure_found = True
-                            status = draw_arrays["status_code"]
-                            valid = draw_arrays[
-                                "valid_pre_regularized_score"
-                            ].astype(bool, copy=False)
+                            status = tf.convert_to_tensor(
+                                draw_payload["status_code"]
+                            )
+                            valid = tf.convert_to_tensor(
+                                draw_payload["valid_pre_regularized_score"],
+                                dtype=tf.bool,
+                            )
                             status_failure_count += int(
-                                np.sum((status != 0) | (~valid))
+                                tf.reduce_sum(
+                                    tf.cast((status != 0) | (~valid), tf.int32)
+                                ).numpy()
                             )
                             continue
                     if shared:
@@ -440,10 +505,7 @@ def _evaluate_retained_target_health(
 def _strict_scalar_integer(value: Any, *, name: str) -> int:
     """Return an actual scalar integer without truncating malformed payloads."""
 
-    if isinstance(value, (bool, np.bool_)) or not isinstance(
-        value,
-        (int, np.integer),
-    ):
+    if isinstance(value, bool) or not isinstance(value, Integral):
         raise ValueError(f"{name} must be an integer scalar")
     return int(value)
 
@@ -469,7 +531,7 @@ class HMCAcceptancePolicy:
         target = float(self.target)
         practical = tuple(float(item) for item in self.practical_region)
         repair = tuple(float(item) for item in self.repair_region)
-        if not np.isfinite(target):
+        if not math.isfinite(target):
             raise ValueError("target must be finite")
         if len(practical) != 2 or not 0.0 < practical[0] < practical[1] < 1.0:
             raise ValueError("practical_region must be ordered inside (0, 1)")
@@ -480,8 +542,8 @@ class HMCAcceptancePolicy:
                 "target must lie in practical_region and practical_region in repair_region"
             )
         if not (
-            np.isclose(target, 0.5 * sum(practical), rtol=0.0, atol=1.0e-12)
-            and np.isclose(target, 0.5 * sum(repair), rtol=0.0, atol=1.0e-12)
+            abs(target - 0.5 * sum(practical)) <= 1.0e-12
+            and abs(target - 0.5 * sum(repair)) <= 1.0e-12
         ):
             raise ValueError(
                 "practical_region and repair_region must be centered on target"
@@ -500,7 +562,7 @@ class HMCAcceptancePolicy:
             raise ValueError("R0-R8 acceptance policy supports only a 90% interval")
         for name in ("min_movement_rate", "max_repeated_state_fraction"):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or not 0.0 <= value <= 1.0:
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be finite and inside [0, 1]")
             object.__setattr__(self, name, value)
         for name in (
@@ -508,7 +570,7 @@ class HMCAcceptancePolicy:
             "max_abs_log_accept_energy_proxy",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value < 0.0:
+            if not math.isfinite(value) or value < 0.0:
                 raise ValueError(f"{name} must be finite and nonnegative")
             object.__setattr__(self, name, value)
         object.__setattr__(self, "target", target)
@@ -633,8 +695,8 @@ class HMCAcceptanceEvidence:
             raise ValueError("invalid native divergence status")
         if self.native_divergence_count is None:
             divergence_count = None
-        elif isinstance(self.native_divergence_count, (int, np.integer)) and not isinstance(
-            self.native_divergence_count, (bool, np.bool_)
+        elif isinstance(self.native_divergence_count, Integral) and not isinstance(
+            self.native_divergence_count, bool
         ):
             divergence_count = int(self.native_divergence_count)
         else:
@@ -682,7 +744,7 @@ class HMCAcceptanceEvidence:
         interval = None
         if self.chain_mean_uncertainty_interval is not None:
             interval = tuple(float(item) for item in self.chain_mean_uncertainty_interval)
-            if len(interval) != 2 or not np.all(np.isfinite(interval)):
+            if len(interval) != 2 or not all(math.isfinite(item) for item in interval):
                 raise ValueError("uncertainty interval must contain two finite values")
             if interval[0] > interval[1] or interval[0] < 0.0 or interval[1] > 1.0:
                 raise ValueError("uncertainty interval must be ordered inside [0, 1]")
@@ -696,13 +758,13 @@ class HMCAcceptanceEvidence:
             if method != _CHAIN_MEAN_UNCERTAINTY_METHOD:
                 raise ValueError("unsupported chain-mean uncertainty method")
             level = float(level) if level is not None else float("nan")
-            if not np.isfinite(level) or not 0.0 < level < 1.0:
+            if not math.isfinite(level) or not 0.0 < level < 1.0:
                 raise ValueError("uncertainty level must be inside (0, 1)")
         object.__setattr__(self, "chain_mean_uncertainty_method", method)
         object.__setattr__(self, "chain_mean_uncertainty_level", level)
         if self.pooled_mean is not None:
             pooled_mean = float(self.pooled_mean)
-            if not np.isfinite(pooled_mean):
+            if not math.isfinite(pooled_mean):
                 raise ValueError("pooled_mean must be finite when provided")
             object.__setattr__(self, "pooled_mean", pooled_mean)
         if self.pooled_mean is not None and not 0.0 <= self.pooled_mean <= 1.0:
@@ -716,7 +778,7 @@ class HMCAcceptanceEvidence:
             "path_return_fraction_by_chain",
         ):
             values = tuple(float(item) for item in getattr(self, name))
-            if not np.all(np.isfinite(values)):
+            if not all(math.isfinite(item) for item in values):
                 raise ValueError(f"{name} must contain only finite values")
             object.__setattr__(self, name, values)
         if any(not 0.0 <= item <= 1.0 for item in self.chain_means):
@@ -732,7 +794,7 @@ class HMCAcceptanceEvidence:
         realized_rate = self.realized_acceptance_rate
         if realized_rate is not None:
             realized_rate = float(realized_rate)
-            if not np.isfinite(realized_rate) or not 0.0 <= realized_rate <= 1.0:
+            if not math.isfinite(realized_rate) or not 0.0 <= realized_rate <= 1.0:
                 raise ValueError("realized_acceptance_rate must lie inside [0, 1]")
         object.__setattr__(self, "realized_acceptance_rate", realized_rate)
         if any(item < 0.0 for item in self.normalized_return_displacement_by_chain):
@@ -740,7 +802,7 @@ class HMCAcceptanceEvidence:
         block_means = tuple(
             tuple(float(item) for item in row) for row in self.block_means_by_chain
         )
-        if any(not np.all(np.isfinite(row)) for row in block_means):
+        if any(not all(math.isfinite(item) for item in row) for row in block_means):
             raise ValueError("block_means_by_chain must contain only finite values")
         if any(any(not 0.0 <= item <= 1.0 for item in row) for row in block_means):
             raise ValueError("block_means_by_chain must lie inside [0, 1]")
@@ -1075,9 +1137,9 @@ def _validate_hmc_acceptance_evidence_v4_payload(
         raise ValueError("legacy v4 acceptance decision is unsupported")
     if payload.get("decision") != decision:
         raise ValueError("legacy v4 acceptance decision alias is inconsistent")
-    if not isinstance(payload.get("passed"), (bool, np.bool_)):
+    if not _is_boolean_scalar(payload.get("passed")):
         raise ValueError("legacy v4 acceptance passed flag is malformed")
-    if not isinstance(payload.get("promotion_eligible"), (bool, np.bool_)):
+    if not _is_boolean_scalar(payload.get("promotion_eligible")):
         raise ValueError("legacy v4 promotion flag is malformed")
     if payload.get("passed") is not payload.get("promotion_eligible"):
         raise ValueError("legacy v4 promotion flags are inconsistent")
@@ -1091,7 +1153,7 @@ def _validate_hmc_acceptance_evidence_v4_payload(
     interval = payload.get("chain_mean_uncertainty_interval")
     if interval is not None:
         values = tuple(float(item) for item in interval)
-        if len(values) != 2 or not np.all(np.isfinite(values)):
+        if len(values) != 2 or not all(math.isfinite(item) for item in values):
             raise ValueError("legacy v4 uncertainty interval is malformed")
         if values[0] > values[1] or values[0] < 0.0 or values[1] > 1.0:
             raise ValueError("legacy v4 uncertainty interval is malformed")
@@ -1187,27 +1249,28 @@ def evaluate_hmc_acceptance_evidence(
     they never bypass the v3 role model or supply a repair direction.
     """
 
+    import tensorflow as tf
+
     if not isinstance(policy, HMCAcceptancePolicy):
         raise TypeError("policy must be HMCAcceptancePolicy")
-    sample_array = np.asarray(samples, dtype=float)
-    log_accept = np.asarray(log_accept_ratio, dtype=float)
-    accepted_input = np.asarray(is_accepted)
-    if not np.issubdtype(accepted_input.dtype, np.bool_):
+    sample_array = _float64_tensor(samples)
+    log_accept = _float64_tensor(log_accept_ratio)
+    accepted = tf.convert_to_tensor(is_accepted)
+    if accepted.dtype != tf.bool:
         raise TypeError("is_accepted must be boolean")
-    accepted = accepted_input.astype(bool, copy=False)
-    target_value = None if target_log_prob is None else np.asarray(target_log_prob, dtype=float)
-    if sample_array.ndim == 2:
+    target_value = None if target_log_prob is None else _float64_tensor(target_log_prob)
+    if sample_array.shape.rank == 2:
         sample_array = sample_array[:, None, :]
-    if log_accept.ndim == 1:
+    if log_accept.shape.rank == 1:
         log_accept = log_accept[:, None]
-    if accepted.ndim == 1:
+    if accepted.shape.rank == 1:
         accepted = accepted[:, None]
-    if target_value is not None and target_value.ndim == 1:
+    if target_value is not None and target_value.shape.rank == 1:
         target_value = target_value[:, None]
     if (
-        sample_array.ndim != 3
-        or log_accept.ndim != 2
-        or accepted.ndim != 2
+        sample_array.shape.rank != 3
+        or log_accept.shape.rank != 2
+        or accepted.shape.rank != 2
         or sample_array.shape[:2] != log_accept.shape
         or log_accept.shape != accepted.shape
         or (target_value is not None and target_value.shape != log_accept.shape)
@@ -1241,14 +1304,14 @@ def evaluate_hmc_acceptance_evidence(
         ),
         allowed=_CANDIDATE_DATA_INVALIDITY_REASON_CODES,
     )
-    if not np.all(np.isfinite(sample_array)):
+    if not _all_finite(sample_array):
         shared_from_provenance += ("nonfinite_retained_samples",)
     candidate_invalidity = list(local_from_provenance)
     if not divergence_provenance_valid:
         candidate_invalidity.append("native_divergence_provenance_inconsistent")
-    if not np.all(np.isfinite(log_accept)):
+    if not _all_finite(log_accept):
         candidate_invalidity.append("nonfinite_log_accept_ratio")
-    if target_value is not None and not np.all(np.isfinite(target_value)):
+    if target_value is not None and not _all_finite(target_value):
         candidate_invalidity.append("nonfinite_target_log_prob")
     shared = tuple(dict.fromkeys((*declared_shared, *shared_from_provenance)))
     if shared:
@@ -1268,13 +1331,17 @@ def evaluate_hmc_acceptance_evidence(
             engineering_invalidity_reasons=tuple(dict.fromkeys(candidate_invalidity)),
         )
 
-    acceptance_probability = np.exp(np.minimum(log_accept, 0.0))
-    realized_acceptance_rate_by_chain = np.mean(accepted, axis=0)
-    realized_acceptance_rate = float(np.mean(realized_acceptance_rate_by_chain))
-    movement, repeated, normalized_return, path_return = _movement_summaries(
-        sample_array
+    summary = _acceptance_summary_function()(
+        sample_array, log_accept, accepted,
+        tf.constant(policy.block_count, tf.int32),
+        tf.constant(policy.min_decisions_per_chain, tf.int32),
+        tf.constant(policy.chain_count, tf.int32),
+        tf.constant(policy.max_abs_log_accept_energy_proxy, tf.float64),
     )
-    proxy = _signed_proxy_summary(log_accept, policy)
+    realized_acceptance_rate_by_chain = summary["realized_by_chain"]
+    realized_acceptance_rate = float(summary["realized"])
+    movement, repeated, normalized_return, path_return = summary["movement"]
+    proxy = _signed_proxy_summary(log_accept, policy, summary=summary["proxy"])
     proxy_exceeded = (
         proxy["max_abs_log_accept_energy_proxy"]
         > policy.max_abs_log_accept_energy_proxy
@@ -1340,11 +1407,11 @@ def evaluate_hmc_acceptance_evidence(
         return HMCAcceptanceEvidence(
             evidence_validity="valid",
             acceptance_decision="inconclusive_evidence",
-            pooled_mean=float(np.mean(acceptance_probability)),
+            pooled_mean=float(summary["pooled"]),
             chain_mean_uncertainty_interval=None,
             chain_mean_uncertainty_method=None,
             chain_mean_uncertainty_level=None,
-            chain_means=tuple(float(item) for item in np.mean(acceptance_probability, axis=0)),
+            chain_means=tuple(float(item) for item in summary["chain_means"]),
             block_means_by_chain=(),
             realized_acceptance_rate=realized_acceptance_rate,
             realized_acceptance_rate_by_chain=tuple(
@@ -1375,19 +1442,9 @@ def evaluate_hmc_acceptance_evidence(
     block_size = usable // policy.block_count
     if block_size < policy.min_block_size:
         raise AssertionError("minimum decision gate failed to imply minimum block size")
-    truncated = acceptance_probability[:usable]
-    block_means = np.stack(
-        [
-            np.mean(
-                truncated[index * block_size : (index + 1) * block_size],
-                axis=0,
-            )
-            for index in range(policy.block_count)
-        ],
-        axis=1,
-    )
-    chain_means = np.mean(block_means, axis=1)
-    pooled = float(np.mean(chain_means))
+    block_means = summary["block_means"]
+    chain_means = summary["chain_means"]
+    pooled = float(summary["pooled"])
     interval = _chain_mean_uncertainty_interval(
         chain_means,
         policy=policy,
@@ -1444,54 +1501,125 @@ def evaluate_hmc_acceptance_evidence(
 
 
 def _movement_summaries(
-    samples: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    if samples.shape[0] < 2:
-        missing = np.empty(0, dtype=float)
+    samples: Any,
+) -> tuple[Any, Any, Any, Any]:
+    import tensorflow as tf
+
+    samples = _float64_tensor(samples)
+
+    def unavailable() -> tuple[Any, Any, Any, Any]:
+        missing = tf.zeros([0], tf.float64)
         return missing, missing, missing, missing
-    displacement = samples[1:] - samples[:-1]
-    scale_by_coordinate = np.std(samples, axis=0)
-    threshold = np.maximum(1.0e-12, 1.0e-10 * scale_by_coordinate)
-    movement_by_coordinate = np.mean(
-        np.abs(displacement) > threshold[None, :, :],
-        axis=0,
-    )
-    movement = np.min(movement_by_coordinate, axis=-1)
-    repeated = 1.0 - movement
-    scale = np.linalg.norm(scale_by_coordinate, axis=-1)
-    normalized_return = np.linalg.norm(samples[-1] - samples[0], axis=-1) / np.maximum(
-        scale, 1.0e-12
-    )
-    path_return = _path_return_fraction_by_chain(samples)
-    return movement, repeated, normalized_return, path_return
 
-
-def _path_return_fraction_by_chain(samples: np.ndarray) -> np.ndarray:
-    available_lags = tuple(lag for lag in _PATH_RETURN_LAGS if samples.shape[0] > lag)
-    if not available_lags:
-        return np.empty(0, dtype=float)
-    center = np.mean(samples, axis=0, keepdims=True)
-    fractions = []
-    for lag in available_lags:
-        current = samples[lag:]
-        lagged = samples[:-lag]
-        distance = np.linalg.norm(current - lagged, axis=-1)
-        centered_current = current - center
-        centered_lagged = lagged - center
-        state_scale = np.maximum(
-            np.maximum(
-                np.linalg.norm(centered_current, axis=-1),
-                np.linalg.norm(centered_lagged, axis=-1),
-            ),
-            1.0,
+    def available() -> tuple[Any, Any, Any, Any]:
+        displacement = samples[1:] - samples[:-1]
+        scale_by_coordinate = tf.math.reduce_std(samples, axis=0)
+        threshold = tf.maximum(
+            tf.constant(1.0e-12, tf.float64), 1.0e-10 * scale_by_coordinate
         )
-        threshold = _PATH_RETURN_ATOL + _PATH_RETURN_RTOL * state_scale
-        fractions.append(np.mean(distance <= threshold, axis=0))
-    return np.max(np.stack(fractions, axis=0), axis=0)
+        movement_by_coordinate = tf.reduce_mean(
+            tf.cast(tf.abs(displacement) > threshold[None, :, :], tf.float64), axis=0
+        )
+        movement = tf.reduce_min(movement_by_coordinate, axis=-1)
+        repeated = 1.0 - movement
+        scale = tf.linalg.norm(scale_by_coordinate, axis=-1)
+        normalized_return = tf.linalg.norm(samples[-1] - samples[0], axis=-1) / tf.maximum(
+            scale, 1.0e-12
+        )
+        return movement, repeated, normalized_return, _path_return_fraction_by_chain(samples)
+
+    return tf.cond(tf.shape(samples)[0] >= 2, available, unavailable)
+
+
+def _path_return_fraction_by_chain(samples: Any) -> Any:
+    """Maximum lag-2 through lag-16 recurrence, with one bounded graph body."""
+
+    import tensorflow as tf
+
+    samples = _float64_tensor(samples)
+    draw_count = tf.shape(samples)[0]
+
+    def available() -> Any:
+        center = tf.reduce_mean(samples, axis=0, keepdims=True)
+
+        def lag_fraction(lag: Any, maximum: Any) -> tuple[Any, Any]:
+            current = samples[lag:]
+            lagged = samples[:-lag]
+            distance = tf.linalg.norm(current - lagged, axis=-1)
+            state_scale = tf.maximum(
+                tf.maximum(
+                    tf.linalg.norm(current - center, axis=-1),
+                    tf.linalg.norm(lagged - center, axis=-1),
+                ),
+                1.0,
+            )
+            threshold = _PATH_RETURN_ATOL + _PATH_RETURN_RTOL * state_scale
+            fraction = tf.reduce_mean(tf.cast(distance <= threshold, tf.float64), axis=0)
+            return lag + 1, tf.maximum(maximum, fraction)
+
+        _, maximum = tf.while_loop(
+            lambda lag, maximum: (lag <= max(_PATH_RETURN_LAGS)) & (lag < draw_count),
+            lag_fraction,
+            (tf.constant(min(_PATH_RETURN_LAGS)), tf.zeros([tf.shape(samples)[1]], tf.float64)),
+        )
+        return maximum
+
+    return tf.cond(draw_count > min(_PATH_RETURN_LAGS), available, lambda: tf.zeros([0], tf.float64))
+
+
+@lru_cache(maxsize=1)
+def _acceptance_summary_function() -> Any:
+    """Cache the CPU/non-XLA checkpoint arithmetic, polymorphic only in sizes.
+
+    alpha=exp(min(log_accept_ratio,0)); four equal temporal blocks summarize
+    each independent chain. The host wrapper owns role classification and
+    serialization, and rejects empty/nonfinite inputs before calling this graph.
+    These discarded tuning summaries do not measure posterior convergence.
+    """
+
+    import tensorflow as tf
+
+    @tf.function(input_signature=(
+        tf.TensorSpec([None, None, None], tf.float64),
+        tf.TensorSpec([None, None], tf.float64),
+        tf.TensorSpec([None, None], tf.bool),
+        tf.TensorSpec([], tf.int32),
+        tf.TensorSpec([], tf.int32),
+        tf.TensorSpec([], tf.int32),
+        tf.TensorSpec([], tf.float64),
+    ), autograph=False, jit_compile=False)
+    def summarize(samples, log_accept, accepted, blocks, minimum, chains, proxy_limit):
+        probability = tf.exp(tf.minimum(log_accept, 0.0))
+        draw_count = tf.shape(log_accept)[0]
+
+        def complete():
+            usable = draw_count // blocks * blocks
+            block_means = tf.transpose(tf.reduce_mean(
+                tf.reshape(probability[:usable], [blocks, usable // blocks, chains]), axis=1
+            ))
+            return tf.reduce_mean(block_means, axis=1), block_means
+
+        means, block_means = tf.cond(
+            (draw_count >= minimum) & (tf.shape(log_accept)[1] == chains),
+            complete,
+            lambda: (tf.reduce_mean(probability, axis=0), tf.zeros([0, 0], tf.float64)),
+        )
+        realized_by_chain = tf.reduce_mean(tf.cast(accepted, tf.float64), axis=0)
+        return {
+            "chain_means": means,
+            "pooled": tf.reduce_mean(means),
+            "block_means": block_means,
+            "realized_by_chain": realized_by_chain,
+            "realized": tf.reduce_mean(realized_by_chain),
+            "movement": _movement_summaries(samples),
+            "proxy": _signed_proxy_tensors(log_accept, proxy_limit),
+        }
+
+    return summarize
 
 
 def _chain_mean_uncertainty_interval(
-    chain_means: np.ndarray,
+    chain_means: Any,
     *,
     policy: HMCAcceptancePolicy,
 ) -> tuple[float, float]:
@@ -1502,21 +1630,24 @@ def _chain_mean_uncertainty_interval(
     compatibility interval; it is not a convergence or posterior interval.
     """
 
-    values = np.asarray(chain_means, dtype=float)
-    if values.ndim != 1 or values.size != policy.chain_count:
+    import tensorflow as tf
+
+    values = _float64_tensor(chain_means)
+    if values.shape.rank != 1 or values.shape[0] != policy.chain_count:
         raise ValueError("chain-mean interval requires exactly four chain means")
-    if not np.all(np.isfinite(values)):
+    if not _all_finite(values):
         raise ValueError("chain means must be finite for uncertainty calculation")
-    pooled = float(np.mean(values))
-    sample_sd = float(np.std(values, ddof=1))
+    pooled_tensor = tf.reduce_mean(values)
+    pooled = float(pooled_tensor)
+    sample_sd = tf.sqrt(tf.reduce_sum(tf.square(values - pooled_tensor)) / (policy.chain_count - 1))
     half_width = (
         policy.student_critical_value
         * sample_sd
-        / np.sqrt(float(values.size))
+        / tf.sqrt(tf.cast(policy.chain_count, tf.float64))
     )
     return (
-        max(0.0, pooled - half_width),
-        min(1.0, pooled + half_width),
+        max(0.0, pooled - float(half_width)),
+        min(1.0, pooled + float(half_width)),
     )
 
 
@@ -1560,20 +1691,23 @@ def _empty_acceptance_evidence(
 
 
 def _signed_proxy_summary(
-    log_accept_ratio: np.ndarray,
+    log_accept_ratio: Any,
     policy: HMCAcceptancePolicy,
+    *,
+    summary: Mapping[str, Any] | None = None,
 ) -> Mapping[str, Any]:
-    threshold = float(policy.max_abs_log_accept_energy_proxy)
-    negative_counts = np.sum(log_accept_ratio < -threshold, axis=0, dtype=np.int64)
-    positive_counts = np.sum(log_accept_ratio > threshold, axis=0, dtype=np.int64)
+    if summary is None:
+        summary = _signed_proxy_tensors(
+            _float64_tensor(log_accept_ratio), policy.max_abs_log_accept_energy_proxy
+        )
+    negative_counts = summary["negative"]
+    positive_counts = summary["positive"]
     draw_count = int(log_accept_ratio.shape[0])
     denominator = float(draw_count)
     return {
-        "min_log_accept_ratio": float(np.min(log_accept_ratio)),
-        "max_log_accept_ratio": float(np.max(log_accept_ratio)),
-        "max_abs_log_accept_energy_proxy": float(
-            np.max(np.abs(log_accept_ratio))
-        ),
+        "min_log_accept_ratio": float(summary["minimum"]),
+        "max_log_accept_ratio": float(summary["maximum"]),
+        "max_abs_log_accept_energy_proxy": float(summary["max_abs"]),
         "negative_proxy_exceedance_count_by_chain": tuple(
             int(item) for item in negative_counts
         ),
@@ -1589,15 +1723,25 @@ def _signed_proxy_summary(
     }
 
 
+def _signed_proxy_tensors(log_accept_ratio: Any, threshold: Any) -> Mapping[str, Any]:
+    import tensorflow as tf
+
+    return {
+        "minimum": tf.reduce_min(log_accept_ratio),
+        "maximum": tf.reduce_max(log_accept_ratio),
+        "max_abs": tf.reduce_max(tf.abs(log_accept_ratio)),
+        "negative": tf.reduce_sum(tf.cast(log_accept_ratio < -threshold, tf.int64), axis=0),
+        "positive": tf.reduce_sum(tf.cast(log_accept_ratio > threshold, tf.int64), axis=0),
+    }
+
+
 def _normalize_native_divergence_provenance(
     status: Any,
     count: Any,
 ) -> tuple[str, int | None, bool]:
     normalized_status = str(status)
     allowed_statuses = {"available", "not_exposed_by_kernel", "not_collected"}
-    count_is_integer = isinstance(count, (int, np.integer)) and not isinstance(
-        count, (bool, np.bool_)
-    )
+    count_is_integer = isinstance(count, Integral) and not isinstance(count, bool)
     normalized_count = int(count) if count_is_integer else None
     valid = (
         normalized_status in allowed_statuses
@@ -1669,7 +1813,7 @@ def _validate_signed_proxy_summary(evidence: HMCAcceptanceEvidence) -> None:
     rates = []
     for name in rate_names:
         values = tuple(float(item) for item in getattr(evidence, name))
-        if any(not np.isfinite(item) or not 0.0 <= item <= 1.0 for item in values):
+        if any(not math.isfinite(item) or not 0.0 <= item <= 1.0 for item in values):
             raise ValueError(f"{name} must lie inside [0, 1]")
         object.__setattr__(evidence, name, values)
         rates.append(values)
@@ -1677,11 +1821,11 @@ def _validate_signed_proxy_summary(evidence: HMCAcceptanceEvidence) -> None:
         raise ValueError("signed proxy extrema must be jointly available")
     if has_extrema:
         minimum, maximum, max_abs = (float(item) for item in extrema)
-        if not np.all(np.isfinite((minimum, maximum, max_abs))):
+        if not all(math.isfinite(item) for item in (minimum, maximum, max_abs)):
             raise ValueError("signed proxy extrema must be finite")
         if minimum > maximum or max_abs < 0.0:
             raise ValueError("signed proxy extrema are inconsistent")
-        if not np.isclose(max_abs, max(abs(minimum), abs(maximum)), rtol=1e-12, atol=1e-12):
+        if not _all_close(max_abs, max(abs(minimum), abs(maximum)), rtol=1e-12, atol=1e-12):
             raise ValueError("absolute proxy maximum does not match signed extrema")
         object.__setattr__(evidence, "min_log_accept_ratio", minimum)
         object.__setattr__(evidence, "max_log_accept_ratio", maximum)
@@ -1693,8 +1837,8 @@ def _validate_signed_proxy_summary(evidence: HMCAcceptanceEvidence) -> None:
         if draw_count <= 0:
             raise ValueError("signed proxy summaries require a positive draw count")
         for count_values, rate_values in zip(counts, rates):
-            expected_rates = np.asarray(count_values, dtype=float) / float(draw_count)
-            if not np.allclose(rate_values, expected_rates, rtol=1e-12, atol=1e-12):
+            expected_rates = _float64_tensor(count_values) / float(draw_count)
+            if not _all_close(rate_values, expected_rates, rtol=1e-12, atol=1e-12):
                 raise ValueError("signed proxy rates do not match their counts")
     elif any((*counts, *rates)):
         if any(values for values in (*counts, *rates)):
@@ -1705,20 +1849,23 @@ def _validate_valid_acceptance_summary(
     evidence: HMCAcceptanceEvidence,
     block_means: tuple[tuple[float, ...], ...],
 ) -> None:
+    import tensorflow as tf
+
     decision = evidence.acceptance_decision
     draw_count = (
         evidence.usable_decisions_per_chain
         + evidence.excluded_remainder_per_chain
     )
-    realized_counts = np.asarray(evidence.realized_acceptance_rate_by_chain) * draw_count
+    realized_rates = _float64_tensor(evidence.realized_acceptance_rate_by_chain)
+    realized_counts = realized_rates * draw_count
     if (
         evidence.realized_acceptance_rate is None
         or len(evidence.realized_acceptance_rate_by_chain) != len(evidence.chain_means)
         or draw_count <= 0
-        or not np.allclose(realized_counts, np.rint(realized_counts), rtol=0.0, atol=1e-12)
-        or not np.isclose(
+        or not _all_close(realized_counts, tf.round(realized_counts), rtol=0.0, atol=1e-12)
+        or not _all_close(
             evidence.realized_acceptance_rate,
-            np.mean(evidence.realized_acceptance_rate_by_chain),
+            tf.reduce_mean(realized_rates),
             rtol=1e-12,
             atol=1e-12,
         )
@@ -1747,17 +1894,17 @@ def _validate_valid_acceptance_summary(
         or evidence.excluded_remainder_per_chain >= evidence.policy.block_count
     ):
         raise ValueError("acceptance decision requires four-chain four-block evidence")
-    expected_chain_means = np.mean(np.asarray(block_means), axis=1)
-    expected_pooled = float(np.mean(expected_chain_means))
+    expected_chain_means = tf.reduce_mean(_float64_tensor(block_means), axis=1)
+    expected_pooled = float(tf.reduce_mean(expected_chain_means))
     expected_interval = _chain_mean_uncertainty_interval(
         expected_chain_means,
         policy=evidence.policy,
     )
-    if not np.allclose(evidence.chain_means, expected_chain_means, rtol=1e-12, atol=1e-12):
+    if not _all_close(evidence.chain_means, expected_chain_means, rtol=1e-12, atol=1e-12):
         raise ValueError("chain_means do not match block means")
-    if not np.isclose(evidence.pooled_mean, expected_pooled, rtol=1e-12, atol=1e-12):
+    if not _all_close(evidence.pooled_mean, expected_pooled, rtol=1e-12, atol=1e-12):
         raise ValueError("pooled_mean does not match chain means")
-    if not np.allclose(
+    if not _all_close(
         evidence.chain_mean_uncertainty_interval,
         expected_interval,
         rtol=1e-12,
@@ -1773,12 +1920,12 @@ def _validate_valid_acceptance_summary(
         policy=evidence.policy,
         pooled_mean=expected_pooled,
         chain_means=expected_chain_means,
-        block_means=np.asarray(block_means),
+        block_means=_float64_tensor(block_means),
         uncertainty_interval=expected_interval,
-        movement=np.asarray(evidence.movement_rate_by_chain),
-        repeated=np.asarray(evidence.repeated_state_fraction_by_chain),
-        normalized_return=np.asarray(evidence.normalized_return_displacement_by_chain),
-        path_return=np.asarray(evidence.path_return_fraction_by_chain),
+        movement=_float64_tensor(evidence.movement_rate_by_chain),
+        repeated=_float64_tensor(evidence.repeated_state_fraction_by_chain),
+        normalized_return=_float64_tensor(evidence.normalized_return_displacement_by_chain),
+        path_return=_float64_tensor(evidence.path_return_fraction_by_chain),
     )
     if decision != expected_decision:
         raise ValueError("decision is inconsistent with acceptance policy")
@@ -1794,12 +1941,12 @@ def _validate_v5_roles(evidence: HMCAcceptanceEvidence) -> None:
         expected_vetoes.append("native_divergence_positive")
     movement_failed, path_return_failed = _trajectory_pathology_flags(
         policy=evidence.policy,
-        movement=np.asarray(evidence.movement_rate_by_chain),
-        repeated=np.asarray(evidence.repeated_state_fraction_by_chain),
-        normalized_return=np.asarray(
+        movement=_float64_tensor(evidence.movement_rate_by_chain),
+        repeated=_float64_tensor(evidence.repeated_state_fraction_by_chain),
+        normalized_return=_float64_tensor(
             evidence.normalized_return_displacement_by_chain
         ),
-        path_return=np.asarray(evidence.path_return_fraction_by_chain),
+        path_return=_float64_tensor(evidence.path_return_fraction_by_chain),
     )
     expected_triggers = _repair_triggers_from_decision(
         evidence.acceptance_decision,
@@ -1884,9 +2031,11 @@ def summarize_hmc_tuning_telemetry(
 
     import tensorflow as tf
 
-    sample_tensor = tf.convert_to_tensor(samples, dtype=tf.float64)
-    log_accept = tf.convert_to_tensor(log_accept_ratio, dtype=tf.float64)
-    accepted = tf.convert_to_tensor(is_accepted, dtype=tf.bool)
+    sample_tensor = _float64_tensor(samples)
+    log_accept = _float64_tensor(log_accept_ratio)
+    accepted = tf.convert_to_tensor(is_accepted)
+    if accepted.dtype != tf.bool:
+        raise TypeError("is_accepted must be boolean")
     if sample_tensor.shape.rank == 2:
         sample_tensor = sample_tensor[:, tf.newaxis, :]
     elif sample_tensor.shape.rank != 3:
@@ -1903,6 +2052,49 @@ def summarize_hmc_tuning_telemetry(
         raise ValueError("telemetry draw and chain shapes must agree")
     if sample_tensor.shape[1] != log_accept.shape[1]:
         raise ValueError("sample and acceptance chain counts must agree")
+
+    return {
+        "schema": "bayesfilter.hmc_tuning_telemetry.v4",
+        **_telemetry_summary_function()(sample_tensor, log_accept, accepted),
+        "energy_proxy_role": "absolute_log_accept_ratio_not_hamiltonian_energy_error",
+        "diagnostic_roles": {
+            "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+            "binary_acceptance_rate": "explanatory_movement_diagnostic",
+            "movement_rate_by_chain": "promotion_veto_and_repair_trigger",
+            "path_return_fraction_by_chain": (
+                "promotion_veto_and_resonance_repair_trigger"
+            ),
+            "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+            "signed_log_accept_ratio_tails": "explanatory_alert_only",
+        },
+        "nonclaims": (
+            "bounded kernel-tuning telemetry only",
+            "absolute log acceptance is not native Hamiltonian energy error",
+            "no posterior convergence claim",
+        ),
+    }
+
+
+@lru_cache(maxsize=1)
+def _telemetry_summary_function() -> Any:
+    import tensorflow as tf
+
+    return tf.function(
+        _tuning_telemetry_tensors,
+        input_signature=(
+            tf.TensorSpec([None, None, None], tf.float64),
+            tf.TensorSpec([None, None], tf.float64),
+            tf.TensorSpec([None, None], tf.bool),
+        ),
+        autograph=False,
+        jit_compile=False,
+    )
+
+
+def _tuning_telemetry_tensors(sample_tensor: Any, log_accept: Any, accepted: Any) -> Mapping[str, Any]:
+    """Numeric post-run telemetry; nonfinite log ratios remain visible."""
+
+    import tensorflow as tf
 
     finite_log_accept = tf.math.is_finite(log_accept)
     acceptance_probability = tf.exp(tf.minimum(log_accept, 0.0))
@@ -1952,48 +2144,7 @@ def summarize_hmc_tuning_telemetry(
         movement_without_pairs,
     )
 
-    def path_return_with_pairs() -> Any:
-        center = tf.reduce_mean(sample_tensor, axis=0, keepdims=True)
-        fractions = []
-        for lag in _PATH_RETURN_LAGS:
-            def lag_fraction() -> Any:
-                current = sample_tensor[lag:]
-                lagged = sample_tensor[:-lag]
-                distance = tf.linalg.norm(current - lagged, axis=-1)
-                centered_current = current - center
-                centered_lagged = lagged - center
-                state_scale = tf.maximum(
-                    tf.maximum(
-                        tf.linalg.norm(centered_current, axis=-1),
-                        tf.linalg.norm(centered_lagged, axis=-1),
-                    ),
-                    tf.constant(1.0, tf.float64),
-                )
-                threshold = (
-                    tf.constant(_PATH_RETURN_ATOL, tf.float64)
-                    + tf.constant(_PATH_RETURN_RTOL, tf.float64) * state_scale
-                )
-                return tf.reduce_mean(
-                    tf.cast(distance <= threshold, tf.float64), axis=0
-                )
-
-            fractions.append(
-                tf.cond(
-                    draw_count > lag,
-                    lag_fraction,
-                    lambda: tf.zeros(
-                        tf.shape(sample_tensor, out_type=tf.int32)[1],
-                        tf.float64,
-                    ),
-                )
-            )
-        return tf.reduce_max(tf.stack(fractions, axis=0), axis=0)
-
-    path_return_fraction = tf.cond(
-        draw_count > min(_PATH_RETURN_LAGS),
-        path_return_with_pairs,
-        lambda: tf.zeros([0], tf.float64),
-    )
+    path_return_fraction = _path_return_fraction_by_chain(sample_tensor)
     finite_log_values = tf.boolean_mask(log_accept, finite_log_accept)
     finite_energy = tf.abs(finite_log_values)
     max_abs_log_accept = tf.cond(
@@ -2020,7 +2171,6 @@ def summarize_hmc_tuning_telemetry(
     )
     draw_count_float = tf.cast(draw_count, tf.float64)
     return {
-        "schema": "bayesfilter.hmc_tuning_telemetry.v4",
         "mean_acceptance_probability": tf.reduce_mean(acceptance_probability),
         "mean_acceptance_probability_by_chain": mean_acceptance_by_chain,
         "binary_acceptance_rate": tf.reduce_mean(tf.cast(accepted, tf.float64)),
@@ -2051,22 +2201,6 @@ def summarize_hmc_tuning_telemetry(
         "draw_count": draw_count,
         "chain_count": tf.shape(sample_tensor, out_type=tf.int32)[1],
         "movement_summary_available": draw_count > 1,
-        "energy_proxy_role": "absolute_log_accept_ratio_not_hamiltonian_energy_error",
-        "diagnostic_roles": {
-            "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
-            "binary_acceptance_rate": "explanatory_movement_diagnostic",
-            "movement_rate_by_chain": "promotion_veto_and_repair_trigger",
-            "path_return_fraction_by_chain": (
-                "promotion_veto_and_resonance_repair_trigger"
-            ),
-            "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
-            "signed_log_accept_ratio_tails": "explanatory_alert_only",
-        },
-        "nonclaims": (
-            "bounded kernel-tuning telemetry only",
-            "absolute log acceptance is not native Hamiltonian energy error",
-            "no posterior convergence claim",
-        ),
     }
 
 
@@ -2074,24 +2208,28 @@ def _acceptance_decision_from_summary(
     *,
     policy: HMCAcceptancePolicy,
     pooled_mean: float,
-    chain_means: np.ndarray,
-    block_means: np.ndarray,
+    chain_means: Any,
+    block_means: Any,
     uncertainty_interval: tuple[float, float],
-    movement: np.ndarray,
-    repeated: np.ndarray,
-    normalized_return: np.ndarray,
-    path_return: np.ndarray,
+    movement: Any,
+    repeated: Any,
+    normalized_return: Any,
+    path_return: Any,
 ) -> str:
+    import tensorflow as tf
+
+    chain_means = _float64_tensor(chain_means)
+    block_means = _float64_tensor(block_means)
     low, high = policy.practical_region
     repair_low, repair_high = policy.repair_region
     interval_low, interval_high = (float(item) for item in uncertainty_interval)
     low_supported = interval_high < low
     high_supported = interval_low > high
-    chain_conflict = bool(np.any(chain_means < low) and np.any(chain_means > high))
+    chain_conflict = bool(tf.reduce_any(chain_means < low) and tf.reduce_any(chain_means > high))
     temporal_block_conflict = bool(
-        np.any(
-            (np.min(block_means, axis=1) < low)
-            & (np.max(block_means, axis=1) > high)
+        tf.reduce_any(
+            (tf.reduce_min(block_means, axis=1) < low)
+            & (tf.reduce_max(block_means, axis=1) > high)
         )
     )
     movement_failed, path_return_failed = _trajectory_pathology_flags(
@@ -2120,7 +2258,7 @@ def _acceptance_decision_from_summary(
         and interval_high >= low
         and interval_low >= repair_low
         and interval_high <= repair_high
-        and bool(np.all((chain_means >= repair_low) & (chain_means <= repair_high)))
+        and bool(tf.reduce_all((chain_means >= repair_low) & (chain_means <= repair_high)))
     ):
         return "passed"
     return "inconclusive_evidence"
@@ -2129,15 +2267,21 @@ def _acceptance_decision_from_summary(
 def _trajectory_pathology_flags(
     *,
     policy: HMCAcceptancePolicy,
-    movement: np.ndarray,
-    repeated: np.ndarray,
-    normalized_return: np.ndarray,
-    path_return: np.ndarray,
+    movement: Any,
+    repeated: Any,
+    normalized_return: Any,
+    path_return: Any,
 ) -> tuple[bool, bool]:
+    import tensorflow as tf
+
+    movement = _float64_tensor(movement)
+    repeated = _float64_tensor(repeated)
+    normalized_return = _float64_tensor(normalized_return)
+    path_return = _float64_tensor(path_return)
     movement_failed = bool(
-        np.any(movement < policy.min_movement_rate)
-        or np.any(repeated > policy.max_repeated_state_fraction)
-        or np.any(normalized_return < policy.min_normalized_return_displacement)
+        tf.reduce_any(movement < policy.min_movement_rate)
+        or tf.reduce_any(repeated > policy.max_repeated_state_fraction)
+        or tf.reduce_any(normalized_return < policy.min_normalized_return_displacement)
     )
     # A stuck chain is trivially equal to itself at every lag. Reserve the
     # resonance label for recurrent paths that make real adjacent-state moves.
@@ -2146,8 +2290,8 @@ def _trajectory_pathology_flags(
         & (repeated <= policy.max_repeated_state_fraction)
     )
     path_return_failed = bool(
-        path_return.size
-        and np.any(
+        int(tf.size(path_return))
+        and tf.reduce_any(
             (path_return > _PATH_RETURN_MAX_FRACTION)
             & moving_chain
         )

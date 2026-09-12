@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import time
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
-
-import numpy as np
 
 from bayesfilter.inference.hmc_diagnostics import (
     HMCFailureClassification,
@@ -15,6 +15,7 @@ from bayesfilter.inference.hmc_diagnostics import (
     classify_hmc_screen,
 )
 from bayesfilter.inference.hmc_artifact_identity import mass_artifact_signature
+from bayesfilter.inference.hmc_verification import _all_finite, _float64_tensor
 
 
 HMC_TUNING_POLICY_LABELS = (
@@ -62,6 +63,7 @@ class HMCTuningPolicy:
         "no sampler superiority claim",
         "no default adaptation readiness claim",
     )
+    step_size_upper_bound: float | None = None
 
     def __post_init__(self) -> None:
         label = str(self.label)
@@ -82,7 +84,7 @@ class HMCTuningPolicy:
             else float(self.target_accept_prob)
         )
         if target_accept is not None:
-            if not np.isfinite(target_accept) or not (0.0 < target_accept < 1.0):
+            if not math.isfinite(target_accept) or not (0.0 < target_accept < 1.0):
                 raise ValueError("target_accept_prob must be finite and in (0, 1)")
         source = str(self.source)
         if not source:
@@ -97,6 +99,11 @@ class HMCTuningPolicy:
         object.__setattr__(self, "adaptation_policy", adaptation_policy)
         object.__setattr__(self, "num_adaptation_steps", steps)
         object.__setattr__(self, "target_accept_prob", target_accept)
+        if self.step_size_upper_bound is not None:
+            bound = float(self.step_size_upper_bound)
+            if not math.isfinite(bound) or bound <= 0.0 or label != "fixed_mass_dual_averaging":
+                raise ValueError("step_size_upper_bound requires finite positive fixed-mass dual averaging")
+            object.__setattr__(self, "step_size_upper_bound", bound)
         object.__setattr__(self, "source", source)
         object.__setattr__(self, "enabled", bool(self.enabled))
         object.__setattr__(self, "implemented", bool(self.implemented))
@@ -158,11 +165,13 @@ class HMCTuningPolicy:
         num_adaptation_steps: int,
         target_accept_prob: float,
         source: str,
+        step_size_upper_bound: float | None = None,
     ) -> "HMCTuningPolicy":
         """Alias-like reviewed policy for fixed-mass step-size adaptation."""
 
         return cls(
             label="fixed_mass_dual_averaging",
+            step_size_upper_bound=step_size_upper_bound,
             adaptation_policy="dual_averaging_step_size",
             num_adaptation_steps=num_adaptation_steps,
             target_accept_prob=target_accept_prob,
@@ -293,6 +302,7 @@ class HMCTuningPolicy:
             "adaptation_policy": self.adaptation_policy,
             "num_adaptation_steps": self.num_adaptation_steps,
             "target_accept_prob": self.target_accept_prob,
+            "step_size_upper_bound": self.step_size_upper_bound,
             "source": self.source,
             "enabled": self.enabled,
             "implemented": self.implemented,
@@ -329,7 +339,7 @@ class InitialStepBracketAttempt:
 
     def __post_init__(self) -> None:
         step_size = float(self.step_size)
-        if not np.isfinite(step_size) or step_size <= 0.0:
+        if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("bracket attempt step_size must be positive and finite")
         reason = str(self.reason)
         if not reason:
@@ -369,7 +379,7 @@ class InitialStepBracketResult:
             if self.selected_step_size is None
             else float(self.selected_step_size)
         )
-        if selected is not None and (not np.isfinite(selected) or selected <= 0.0):
+        if selected is not None and (not math.isfinite(selected) or selected <= 0.0):
             raise ValueError("selected_step_size must be positive and finite")
         nonclaims = tuple(str(item) for item in self.nonclaims)
         if not nonclaims:
@@ -515,17 +525,17 @@ class WindowedMassAdaptationConfig:
         if self.first_window_size < self.min_window_samples:
             raise ValueError("first_window_size must be at least min_window_samples")
         shrinkage = float(self.mass_shrinkage)
-        if not np.isfinite(shrinkage) or shrinkage < 0.0 or shrinkage > 1.0:
+        if not math.isfinite(shrinkage) or shrinkage < 0.0 or shrinkage > 1.0:
             raise ValueError("mass_shrinkage must be finite and in [0, 1]")
         jitter = float(self.covariance_jitter)
-        if not np.isfinite(jitter) or jitter < 0.0:
+        if not math.isfinite(jitter) or jitter < 0.0:
             raise ValueError("covariance_jitter must be finite and non-negative")
         floor = (
             None
             if self.eigenvalue_floor is None
             else float(self.eigenvalue_floor)
         )
-        if floor is not None and (not np.isfinite(floor) or floor < 0.0):
+        if floor is not None and (not math.isfinite(floor) or floor < 0.0):
             raise ValueError("eigenvalue_floor must be finite and non-negative")
         max_condition = (
             None
@@ -533,17 +543,17 @@ class WindowedMassAdaptationConfig:
             else float(self.max_condition_number)
         )
         if max_condition is not None and (
-            not np.isfinite(max_condition) or max_condition <= 1.0
+            not math.isfinite(max_condition) or max_condition <= 1.0
         ):
             raise ValueError("max_condition_number must be finite and greater than 1")
         step_floor = float(self.step_size_floor)
         step_ceiling = float(self.step_size_ceiling)
-        if not np.isfinite(step_floor) or step_floor <= 0.0:
+        if not math.isfinite(step_floor) or step_floor <= 0.0:
             raise ValueError("step_size_floor must be positive and finite")
-        if not np.isfinite(step_ceiling) or step_ceiling <= step_floor:
+        if not math.isfinite(step_ceiling) or step_ceiling <= step_floor:
             raise ValueError("step_size_ceiling must be finite and greater than floor")
         step_rate = float(self.step_adaptation_rate)
-        if not np.isfinite(step_rate) or step_rate < 0.0:
+        if not math.isfinite(step_rate) or step_rate < 0.0:
             raise ValueError("step_adaptation_rate must be finite and non-negative")
         mass_policy = str(self.mass_policy)
         if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
@@ -632,13 +642,15 @@ class WelfordCovarianceResult:
         count = int(self.count)
         if count <= 1:
             raise ValueError("Welford covariance requires at least two samples")
-        mean = np.asarray(self.mean, dtype=float).copy()
-        covariance = np.asarray(self.covariance, dtype=float).copy()
-        if mean.ndim != 1:
+        mean_tensor = _float64_tensor(self.mean)
+        covariance_tensor = _float64_tensor(self.covariance)
+        if mean_tensor.shape.rank != 1:
             raise ValueError("Welford mean must be one-dimensional")
-        if covariance.shape != (mean.shape[0], mean.shape[0]):
+        if covariance_tensor.shape != (mean_tensor.shape[0], mean_tensor.shape[0]):
             raise ValueError("Welford covariance shape must match mean dimension")
-        finite = bool(self.finite and np.all(np.isfinite(mean)) and np.all(np.isfinite(covariance)))
+        finite = bool(self.finite and _all_finite(mean_tensor) and _all_finite(covariance_tensor))
+        mean = mean_tensor.numpy()
+        covariance = covariance_tensor.numpy()
         mean.setflags(write=False)
         covariance.setflags(write=False)
         object.__setattr__(self, "count", count)
@@ -668,7 +680,7 @@ class WindowedMassUpdate:
 
     def __post_init__(self) -> None:
         shrinkage = float(self.shrinkage)
-        if not np.isfinite(shrinkage) or shrinkage < 0.0 or shrinkage > 1.0:
+        if not math.isfinite(shrinkage) or shrinkage < 0.0 or shrinkage > 1.0:
             raise ValueError("shrinkage must be finite and in [0, 1]")
         signature = str(self.mass_artifact_signature)
         if not signature:
@@ -732,11 +744,11 @@ class WindowedMassAdaptationResult:
         updates = tuple(self.mass_updates)
         step_trace = tuple(float(item) for item in self.step_size_trace)
         accept_trace = tuple(float(item) for item in self.acceptance_trace)
-        if not step_trace or not np.all(np.isfinite(step_trace)):
+        if not step_trace or not all(math.isfinite(value) for value in step_trace):
             raise ValueError("step_size_trace must be non-empty and finite")
         if any(step <= 0.0 for step in step_trace):
             raise ValueError("step_size_trace must be positive")
-        if not accept_trace or not np.all(np.isfinite(accept_trace)):
+        if not accept_trace or not all(math.isfinite(value) for value in accept_trace):
             raise ValueError("acceptance_trace must be non-empty and finite")
         if any(accept < 0.0 or accept > 1.0 for accept in accept_trace):
             raise ValueError("acceptance_trace must lie in [0, 1]")
@@ -818,7 +830,7 @@ class WindowedMassAdaptationResult:
             "diagnostics": {
                 "passed": self.passed,
                 "final_step_size": self.final_step_size,
-                "final_step_size_finite": bool(np.isfinite(self.final_step_size)),
+                "final_step_size_finite": bool(math.isfinite(self.final_step_size)),
                 "mass_update_count": len(self.mass_updates),
                 "semantic_checks": self.semantic_checks(),
                 "target_failure_classification": self.target_failure_classification,
@@ -837,7 +849,7 @@ class FixedTrajectoryTuningConfig:
     num_results: int = 16
     num_burnin_steps: int = 0
     seed: tuple[int, int] = (20260613, 5)
-    target_trajectory_length: float = float(np.pi)
+    target_trajectory_length: float = float(math.pi)
 
     def __post_init__(self) -> None:
         candidates = tuple(int(item) for item in self.num_leapfrog_step_candidates)
@@ -856,7 +868,7 @@ class FixedTrajectoryTuningConfig:
         if len(seed) != 2:
             raise ValueError("seed must contain exactly two integers")
         target = float(self.target_trajectory_length)
-        if not np.isfinite(target) or target <= 0.0:
+        if not math.isfinite(target) or target <= 0.0:
             raise ValueError("target_trajectory_length must be positive and finite")
         object.__setattr__(self, "num_leapfrog_step_candidates", candidates)
         object.__setattr__(self, "acceptance_band", (lower, upper))
@@ -893,19 +905,19 @@ class FixedTrajectoryCandidateResult:
 
     def __post_init__(self) -> None:
         step = float(self.step_size)
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("candidate step_size must be positive and finite")
         leapfrogs = int(self.num_leapfrog_steps)
         if leapfrogs <= 0:
             raise ValueError("candidate num_leapfrog_steps must be positive")
         trajectory = float(self.trajectory_length)
-        if not np.isfinite(trajectory) or trajectory <= 0.0:
+        if not math.isfinite(trajectory) or trajectory <= 0.0:
             raise ValueError("candidate trajectory_length must be positive and finite")
         acceptance = (
             None if self.acceptance_rate is None else float(self.acceptance_rate)
         )
         if acceptance is not None and (
-            not np.isfinite(acceptance) or acceptance < 0.0 or acceptance > 1.0
+            not math.isfinite(acceptance) or acceptance < 0.0 or acceptance > 1.0
         ):
             raise ValueError("candidate acceptance_rate must be in [0, 1]")
         outcome = str(self.outcome)
@@ -966,7 +978,7 @@ class FixedTrajectoryTuningResult:
         if not signature:
             raise ValueError("frozen_mass_artifact_signature must be non-empty")
         step = float(self.frozen_step_size)
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("frozen_step_size must be positive and finite")
         candidates = tuple(self.candidate_results)
         if not candidates:
@@ -984,7 +996,7 @@ class FixedTrajectoryTuningResult:
         if selected_steps is not None and selected_steps <= 0:
             raise ValueError("selected_num_leapfrog_steps must be positive")
         if selected_length is not None and (
-            not np.isfinite(selected_length) or selected_length <= 0.0
+            not math.isfinite(selected_length) or selected_length <= 0.0
         ):
             raise ValueError("selected_trajectory_length must be positive and finite")
         blocker = None if self.blocker_reason is None else str(self.blocker_reason)
@@ -1195,14 +1207,14 @@ def bracket_initial_step_size(
     """
 
     step = float(initial_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("initial_step_size must be positive and finite")
     attempts_count = int(max_attempts)
     if attempts_count <= 0:
         raise ValueError("max_attempts must be positive")
     contraction_value = float(contraction)
     if (
-        not np.isfinite(contraction_value)
+        not math.isfinite(contraction_value)
         or contraction_value <= 0.0
         or contraction_value >= 1.0
     ):
@@ -1361,29 +1373,52 @@ def build_windowed_warmup_schedule(
     return tuple(windows)
 
 
-def welford_covariance(samples: Any) -> WelfordCovarianceResult:
-    """Compute sample covariance with Welford's online recursion."""
+@lru_cache(maxsize=1)
+def _welford_covariance_kernel() -> Any:
+    """Reuse a TF graph for Welford's mean and centered second moment."""
 
-    array = np.asarray(samples, dtype=float)
-    if array.ndim != 2:
+    import tensorflow as tf
+
+    @tf.function(input_signature=[tf.TensorSpec((None, None), tf.float64)], jit_compile=False)
+    def compute(samples):
+        count = tf.shape(samples)[0]
+        dimension = tf.shape(samples)[1]
+
+        def update(index, mean, second_moment):
+            delta = samples[index] - mean
+            next_mean = mean + delta / tf.cast(index + 1, tf.float64)
+            next_moment = second_moment + delta[:, None] * (samples[index] - next_mean)[None, :]
+            return index + 1, next_mean, next_moment
+
+        _, mean, second_moment = tf.while_loop(
+            lambda index, *_: index < count,
+            update,
+            (tf.constant(0), tf.zeros([dimension], tf.float64), tf.zeros([dimension, dimension], tf.float64)),
+            parallel_iterations=1,
+        )
+        covariance = second_moment / tf.cast(count - 1, tf.float64)
+        return mean, 0.5 * (covariance + tf.transpose(covariance))
+
+    return compute
+
+
+def welford_covariance(samples: Any) -> WelfordCovarianceResult:
+    """Compute C = sum((x - mean)(x - mean)')/(n-1), not momentum M.
+
+    Preserve Welford's row-ordered recurrence in TF; only the immutable result
+    materializes host arrays. This diagnostic does not generate warmup draws.
+    """
+
+    array = _float64_tensor(samples)
+    if array.shape.rank != 2:
         raise ValueError("Welford samples must be a rank-2 array")
     if array.shape[0] <= 1:
         raise ValueError("Welford covariance requires at least two samples")
-    if not np.all(np.isfinite(array)):
+    if not _all_finite(array):
         raise ValueError("Welford samples must be finite")
-    mean = np.zeros(array.shape[1], dtype=float)
-    m2 = np.zeros((array.shape[1], array.shape[1]), dtype=float)
-    count = 0
-    for row in array:
-        count += 1
-        delta = row - mean
-        mean = mean + delta / count
-        delta2 = row - mean
-        m2 = m2 + np.outer(delta, delta2)
-    covariance = m2 / (count - 1)
-    covariance = 0.5 * (covariance + covariance.T)
+    mean, covariance = _welford_covariance_kernel()(array)
     return WelfordCovarianceResult(
-        count=count,
+        count=int(array.shape[0]),
         mean=mean,
         covariance=covariance,
         finite=True,
@@ -1409,10 +1444,10 @@ def validate_windowed_shrinkage_target(
         == int(target_payload["dimension"]),
         "adapter_signature_match": initial_payload["adapter_signature"]
         == target_payload["adapter_signature"],
-        "covariance_shape_match": np.asarray(initial_mass_artifact.covariance).shape
-        == np.asarray(shrinkage_target_mass_artifact.covariance).shape,
-        "factor_shape_match": np.asarray(initial_mass_artifact.factor).shape
-        == np.asarray(shrinkage_target_mass_artifact.factor).shape,
+        "covariance_shape_match": _float64_tensor(initial_mass_artifact.covariance).shape
+        == _float64_tensor(shrinkage_target_mass_artifact.covariance).shape,
+        "factor_shape_match": _float64_tensor(initial_mass_artifact.factor).shape
+        == _float64_tensor(shrinkage_target_mass_artifact.factor).shape,
         "coordinate_order_source": "adapter_signature",
         "initial_signature": initial_signature,
         "target_signature": target_signature,
@@ -1458,6 +1493,8 @@ def run_windowed_mass_adaptation_diagnostic(
     claiming posterior convergence or exact Stan equivalence.
     """
 
+    import tensorflow as tf
+
     if not isinstance(policy, HMCTuningPolicy):
         raise ValueError(
             "windowed mass adaptation requires a reviewed HMCTuningPolicy object"
@@ -1472,27 +1509,27 @@ def run_windowed_mass_adaptation_diagnostic(
     target_failure = _validate_target_failure_classification(
         target_failure_classification
     )
-    draws = np.asarray(warmup_draws, dtype=float)
-    if draws.ndim != 2:
+    draws = _float64_tensor(warmup_draws)
+    if draws.shape.rank != 2:
         raise ValueError("warmup_draws must be a rank-2 array")
     if draws.shape[0] != config.warmup_steps:
         raise ValueError("warmup_draws row count must equal config.warmup_steps")
     if draws.shape[1] != int(_mass_artifact_payload(initial_mass_artifact)["dimension"]):
         raise ValueError("warmup_draws dimension must match mass artifact dimension")
-    if not np.all(np.isfinite(draws)):
+    if not _all_finite(draws):
         raise ValueError("warmup_draws must be finite")
     step = float(initial_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("initial_step_size must be positive and finite")
     if acceptance_trace is None:
-        acceptance = np.full(config.warmup_steps, policy.target_accept_prob, dtype=float)
+        acceptance = tf.fill([config.warmup_steps], tf.constant(policy.target_accept_prob, tf.float64))
     else:
-        acceptance = np.asarray(acceptance_trace, dtype=float)
+        acceptance = _float64_tensor(acceptance_trace)
     if acceptance.shape != (config.warmup_steps,):
         raise ValueError("acceptance_trace length must equal config.warmup_steps")
-    if not np.all(np.isfinite(acceptance)):
+    if not _all_finite(acceptance):
         raise ValueError("acceptance_trace must be finite")
-    if np.any((acceptance < 0.0) | (acceptance > 1.0)):
+    if bool(tf.reduce_any((acceptance < 0.0) | (acceptance > 1.0)).numpy()):
         raise ValueError("acceptance_trace must lie in [0, 1]")
 
     target_artifact = (
@@ -1526,7 +1563,7 @@ def run_windowed_mass_adaptation_diagnostic(
         welford = welford_covariance(draws[window.start : window.end])
         covariance = _shrink_covariance(
             empirical_covariance=welford.covariance,
-            target_covariance=np.asarray(target_artifact.covariance, dtype=float),
+            target_covariance=target_artifact.covariance,
             shrinkage=config.mass_shrinkage,
         )
         previous_signature = current_signature
@@ -1582,13 +1619,13 @@ def production_leapfrog_count(
     max_leapfrog: int,
     min_leapfrog: int,
     *,
-    target_traj: float = float(np.pi),
+    target_traj: float = float(math.pi),
     epsilon_guard: float = 1.0e-12,
 ) -> tuple[int, int]:
     """Return production and theory leapfrog counts for a fixed trajectory."""
 
     step = float(step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("step_size must be positive and finite")
     max_l = int(max_leapfrog)
     min_l = int(min_leapfrog)
@@ -1598,11 +1635,11 @@ def production_leapfrog_count(
         raise ValueError("min_leapfrog must not exceed max_leapfrog")
     target = float(target_traj)
     guard = float(epsilon_guard)
-    if not np.isfinite(target) or target <= 0.0:
+    if not math.isfinite(target) or target <= 0.0:
         raise ValueError("target_traj must be positive and finite")
-    if not np.isfinite(guard) or guard <= 0.0:
+    if not math.isfinite(guard) or guard <= 0.0:
         raise ValueError("epsilon_guard must be positive and finite")
-    theory = int(np.ceil(target / max(step, guard)))
+    theory = int(math.ceil(target / max(step, guard)))
     production = min(theory, max_l)
     production = max(production, min_l)
     return int(production), int(theory)
@@ -1652,7 +1689,7 @@ def run_fixed_trajectory_tuning_diagnostic(
     if target_dimension <= 0:
         raise ValueError("frozen mass payload dimension must be positive")
     step = float(step)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("frozen step size must be positive and finite")
 
     lower, upper = config.acceptance_band
@@ -1732,9 +1769,10 @@ def run_gaussian_dual_averaging_diagnostic(
     if policy.num_adaptation_steps > int(num_burnin_steps):
         raise ValueError("num_adaptation_steps must not exceed num_burnin_steps")
     step = float(step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("step_size must be positive and finite")
 
+    import numpy as np
     import tensorflow as tf
     import tensorflow_probability as tfp
 
@@ -1850,17 +1888,20 @@ def _adapt_windowed_step_size(
     target_accept: float,
     config: WindowedMassAdaptationConfig,
 ) -> float:
-    log_step = np.log(float(step_size))
+    log_step = math.log(float(step_size))
     log_step += config.step_adaptation_rate * (float(accept) - float(target_accept))
-    clipped = np.clip(np.exp(log_step), config.step_size_floor, config.step_size_ceiling)
-    return float(clipped)
+    if log_step >= math.log(config.step_size_ceiling):
+        return config.step_size_ceiling
+    if log_step <= math.log(config.step_size_floor):
+        return config.step_size_floor
+    return math.exp(log_step)
 
 
 def _validate_acceptance_band(band: tuple[float, float]) -> tuple[float, float]:
     if len(tuple(band)) != 2:
         raise ValueError("acceptance_band must contain exactly two values")
     lower, upper = (float(band[0]), float(band[1]))
-    if not np.isfinite(lower) or not np.isfinite(upper):
+    if not math.isfinite(lower) or not math.isfinite(upper):
         raise ValueError("acceptance_band values must be finite")
     if not (0.0 < lower <= upper < 1.0):
         raise ValueError("acceptance_band must satisfy 0 < lower <= upper < 1")
@@ -1872,15 +1913,17 @@ def _shrink_covariance(
     empirical_covariance: Any,
     target_covariance: Any,
     shrinkage: float,
-) -> np.ndarray:
-    empirical = np.asarray(empirical_covariance, dtype=float)
-    target = np.asarray(target_covariance, dtype=float)
+) -> Any:
+    import tensorflow as tf
+
+    empirical = _float64_tensor(empirical_covariance)
+    target = _float64_tensor(target_covariance)
     if empirical.shape != target.shape:
         raise ValueError("empirical and target covariance shapes must match")
-    if not np.all(np.isfinite(empirical)) or not np.all(np.isfinite(target)):
+    if not _all_finite(empirical) or not _all_finite(target):
         raise ValueError("empirical and target covariance must be finite")
     value = (1.0 - float(shrinkage)) * empirical + float(shrinkage) * target
-    return 0.5 * (value + value.T)
+    return 0.5 * (value + tf.transpose(value))
 
 
 def _run_fixed_trajectory_candidate(
@@ -1892,6 +1935,13 @@ def _run_fixed_trajectory_candidate(
     acceptance_band: tuple[float, float],
     target_dimension: int,
 ) -> FixedTrajectoryCandidateResult:
+    """Historical Gaussian diagnostic for run_fixed_trajectory_tuning_diagnostic.
+
+    This N(0,I) fixture is independent of the model-facing ordinary tuner.
+    NumPy is used only to inspect its discarded diagnostic draws.
+    """
+
+    import numpy as np
     import tensorflow as tf
     import tensorflow_probability as tfp
 
@@ -1941,7 +1991,7 @@ def _run_fixed_trajectory_candidate(
         elif not log_accept_finite:
             outcome = "rejected_nonfinite_log_accept_ratio"
             vetoes = ("nonfinite_log_accept_ratio",)
-        elif not np.isfinite(acceptance_rate):
+        elif not math.isfinite(acceptance_rate):
             outcome = "blocked_missing_acceptance_diagnostic"
             vetoes = ("acceptance_rate_nonfinite",)
         elif acceptance_rate < lower:
@@ -2010,7 +2060,7 @@ def _rebuild_windowed_mass_artifact(
         max_condition_number=config.max_condition_number,
     )
     return PrecomputedMassArtifact.from_covariance(
-        position=np.asarray(base_mass_artifact.position, dtype=float),
+        position=base_mass_artifact.position,
         covariance=regularized_covariance,
         adapter_signature=base_mass_artifact.adapter_signature,
         position_role=base_mass_artifact.position_role,
@@ -2037,45 +2087,50 @@ def _regularize_windowed_covariance(
     jitter: float,
     eigenvalue_floor: float | None,
     max_condition_number: float | None,
-) -> tuple[np.ndarray, Mapping[str, Any]]:
-    matrix = np.asarray(covariance, dtype=float)
-    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+) -> tuple[Any, Mapping[str, Any]]:
+    """Apply the declared compatibility covariance floor, never reflect eigenvalues."""
+
+    import sys
+    import tensorflow as tf
+
+    matrix = _float64_tensor(covariance)
+    if matrix.shape.rank != 2 or matrix.shape[0] != matrix.shape[1]:
         raise ValueError("windowed covariance must be square")
-    if not np.all(np.isfinite(matrix)):
+    if not _all_finite(matrix):
         raise ValueError("windowed covariance must be finite")
     jitter_value = float(jitter)
-    if not np.isfinite(jitter_value) or jitter_value < 0.0:
+    if not math.isfinite(jitter_value) or jitter_value < 0.0:
         raise ValueError("covariance jitter must be finite and non-negative")
     floor = 0.0 if eigenvalue_floor is None else float(eigenvalue_floor)
-    if not np.isfinite(floor) or floor < 0.0:
+    if not math.isfinite(floor) or floor < 0.0:
         raise ValueError("covariance eigenvalue_floor must be finite and non-negative")
     max_condition = (
         None if max_condition_number is None else float(max_condition_number)
     )
     if max_condition is not None and (
-        not np.isfinite(max_condition) or max_condition <= 1.0
+        not math.isfinite(max_condition) or max_condition <= 1.0
     ):
         raise ValueError("covariance max_condition_number must be finite and greater than 1")
-    symmetric = 0.5 * (matrix + matrix.T)
-    jittered = symmetric + jitter_value * np.eye(symmetric.shape[0])
-    raw_eigvals, eigvecs = np.linalg.eigh(jittered)
-    if not np.all(np.isfinite(raw_eigvals)):
+    symmetric = 0.5 * (matrix + tf.transpose(matrix))
+    jittered = symmetric + jitter_value * tf.eye(symmetric.shape[0], dtype=tf.float64)
+    raw_eigvals, eigvecs = tf.linalg.eigh(jittered)
+    if not _all_finite(raw_eigvals):
         raise ValueError("windowed covariance eigenvalues must be finite")
-    positive_raw = raw_eigvals[raw_eigvals > 0.0]
+    maximum_raw = float(tf.reduce_max(raw_eigvals).numpy())
     if floor == 0.0:
-        if positive_raw.size == 0:
+        if maximum_raw <= 0.0:
             raise ValueError(
                 "windowed covariance must have a positive eigenvalue; "
                 "pass eigenvalue_floor"
             )
-        floor = max(floor, np.finfo(float).eps * max(1.0, float(np.max(positive_raw))))
+        floor = max(floor, sys.float_info.epsilon * max(1.0, maximum_raw))
     if max_condition is not None:
-        floor = max(floor, float(np.max(raw_eigvals)) / max_condition)
+        floor = max(floor, maximum_raw / max_condition)
     if floor <= 0.0:
-        floor = np.finfo(float).eps
-    regularized_eigvals = np.maximum(raw_eigvals, floor)
-    regularized = (eigvecs * regularized_eigvals) @ eigvecs.T
-    regularized = 0.5 * (regularized + regularized.T)
+        floor = sys.float_info.epsilon
+    regularized_eigvals = tf.maximum(raw_eigvals, floor)
+    regularized = tf.matmul(eigvecs * regularized_eigvals, eigvecs, transpose_b=True)
+    regularized = 0.5 * (regularized + tf.transpose(regularized))
     return regularized, {
         "covariance_regularization_method": "symmetric_eigendecomposition_floor",
         "covariance_jitter": jitter_value,
@@ -2084,12 +2139,12 @@ def _regularize_windowed_covariance(
         ),
         "effective_covariance_eigenvalue_floor": float(floor),
         "covariance_max_condition_number": max_condition,
-        "raw_covariance_min_eigenvalue": float(np.min(raw_eigvals)),
-        "raw_covariance_max_eigenvalue": float(np.max(raw_eigvals)),
-        "regularized_covariance_min_eigenvalue": float(np.min(regularized_eigvals)),
-        "regularized_covariance_max_eigenvalue": float(np.max(regularized_eigvals)),
+        "raw_covariance_min_eigenvalue": float(tf.reduce_min(raw_eigvals).numpy()),
+        "raw_covariance_max_eigenvalue": maximum_raw,
+        "regularized_covariance_min_eigenvalue": float(tf.reduce_min(regularized_eigvals).numpy()),
+        "regularized_covariance_max_eigenvalue": float(tf.reduce_max(regularized_eigvals).numpy()),
         "covariance_clipped_eigenvalue_count": int(
-            np.sum(regularized_eigvals > raw_eigvals)
+            tf.reduce_sum(tf.cast(regularized_eigvals > raw_eigvals, tf.int32)).numpy()
         ),
     }
 
@@ -2206,8 +2261,7 @@ def _normalize_payload(value: Any) -> Any:
         return {str(key): _normalize_payload(val) for key, val in value.items()}
     if isinstance(value, (tuple, list)):
         return [_normalize_payload(item) for item in value]
-    if isinstance(value, np.ndarray):
-        return _normalize_payload(value.tolist())
-    if isinstance(value, np.generic):
-        return value.item()
+    if type(value).__module__.startswith(("numpy", "tensorflow")):
+        host = value.numpy() if hasattr(value, "numpy") else value
+        return _normalize_payload(host.tolist())
     return value
