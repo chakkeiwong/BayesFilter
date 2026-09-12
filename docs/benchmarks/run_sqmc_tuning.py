@@ -28,11 +28,18 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 # Add ~/python for multi-objective tools
 sys.path.insert(0, '/home/chakwong/python/src')
 
-from bayesfilter.highdim.ledh_canonical_models_tf import diagonal_lgssm_canonical_model
-from bayesfilter.highdim.ledh_kalman_oracle_tf import kalman_oracle_value_and_score
 from bayesfilter.runtime.gpu_memory_policy import (
     configure_tensorflow_gpu_memory_growth,
 )
+
+# Memory growth must be enabled and verified BEFORE anything initializes the GPU
+# runtime.  Importing the bayesfilter.highdim model modules below initializes it,
+# so the policy is applied here at module scope rather than inside main().  This
+# fails closed per the repository TensorFlow GPU Memory Rule.
+_GPU_POLICY = dict(configure_tensorflow_gpu_memory_growth(tf, require_gpu=True))
+
+from bayesfilter.highdim.ledh_canonical_models_tf import diagonal_lgssm_canonical_model
+from bayesfilter.highdim.ledh_kalman_oracle_tf import kalman_oracle_value_and_score
 
 # The canonical LGSSM model adapter is float64-internal
 # (`ledh_canonical_models_tf.DTYPE`), and the UNTUNED baseline diagnostic ran
@@ -41,9 +48,8 @@ from bayesfilter.runtime.gpu_memory_policy import (
 # tuning scope under the LEDH per-scope rule.
 DTYPE = tf.float64
 
-# Populated by main() from the fail-closed GPU memory policy helper; recorded in
-# every tuning artifact.
-GPU_POLICY_RECORD: Dict = {}
+# Verified GPU memory policy, recorded in every tuning artifact.
+GPU_POLICY_RECORD: Dict = _GPU_POLICY
 
 # Hard constraints on the seed-AGGREGATED score quality, taken from the decision
 # framework in docs/plans/sqmc-oracle-principled-score-metrics-2026-09-11.md
@@ -713,13 +719,8 @@ def main():
         else:
             routes_to_run = ['iid_dual_cap', 'previous_inverse_cdf', 'repaired_permutation', 'repaired_permutation_ablation']
 
-    # GPU memory policy: fail closed per the repository TensorFlow GPU Memory
-    # Rule.  Silently ignoring a set_memory_growth failure is not acceptable for
-    # a serious run, and the verified policy must reach the artifact.
-    global GPU_POLICY_RECORD
-    GPU_POLICY_RECORD = dict(
-        configure_tensorflow_gpu_memory_growth(tf, require_gpu=True)
-    )
+    # GPU memory policy was applied and verified at module import, before the
+    # model modules initialized the GPU runtime (fail-closed).
     print(
         "✓ GPU memory growth verified: "
         f"{[row['device'] for row in GPU_POLICY_RECORD.get('physical_devices', ())]}"

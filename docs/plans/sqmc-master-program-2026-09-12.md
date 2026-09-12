@@ -511,23 +511,138 @@ ls docs/benchmarks/artifacts/sqmc-tuned-vs-untuned-comparison-20260912/ 2>/dev/n
 
 ---
 
+## Execution Record: Defects Found And Repaired (2026-09-13)
+
+The runner as planned could not execute a single cell. Five defects were found
+and repaired before the pilot grid ran. They are recorded here because three of
+them would have produced misleading results rather than a crash.
+
+### D-1 Runner called a non-existent API (crash)
+
+`run_sqmc_tuning.py` called `canonical_value_and_analytical_score` with
+`model_factory=`, `ancestry_route=`, `controls=`, `particle_count=`. The real
+signature is
+`(model, theta, initial_states, initial_covariances, noises, observations, ...)`.
+The runner also had to generate the per-route point sets itself (IID Gaussian vs
+`randomized_halton_joint`) and pass `ancestry_policy`, `reset_design`,
+`state_map_policy`, `hilbert_bits`. Repaired by mirroring the baseline runner
+`run_sqmc_oracle_characterization.py`.
+
+### D-2 Kalman oracle received the wrong object (crash)
+
+`diagonal_lgssm_canonical_model` returns `(model, set_score_direction)`, but it
+was passed directly to `kalman_oracle_value_and_score` as its
+`theta_to_lgssm_params` callable, which expects a parameter dict. Repaired with
+an explicit `_oracle_score` adapter that mirrors `_oracle` in the baseline
+runner, so the tuning comparator is the same exact reference the UNTUNED
+baseline used.
+
+### D-3 Wrong target data — comparability defect (silent)
+
+The runner generated its own observations from `np.random.RandomState(88001)`.
+The UNTUNED baseline used the frozen canonical target
+`_lgssm_frozen_observations()`. TUNED and UNTUNED cells would have been measured
+on **different data**, making every TUNED-vs-UNTUNED comparison invalid while
+still producing plausible-looking numbers. Repaired to consume the frozen
+canonical observations.
+
+### D-4 Hard constraint was a descriptive statistic — evidence defect (silent)
+
+The plan set `cosine >= 0.9995` as a hard veto. That number is the UNTUNED
+baseline's **two-seed observed mean**, not a correctness requirement. The
+principled-metrics decision framework states the required threshold is
+`cosine > 0.999`, with `< 0.99` as the "significantly wrong direction" boundary.
+
+A veto no-fire check (`docs/benchmarks/calibrate_sqmc_tuning_vetoes.py`) run on
+the known-good warm-start baseline showed the 0.9995 threshold **rejects 3 of 4
+baseline seeds**. Had the grid run with it, the Pareto frontier would have come
+back empty or near-empty and the correct reading — "the veto is miscalibrated" —
+would have been easy to misread as "no configuration is good enough."
+
+Two repairs:
+1. Thresholds now come from the principled-metrics decision framework
+   (`cosine >= 0.999`, `rel_norm <= 0.05`, `fisher <= 1.0`), declared as named
+   constants and recorded in every artifact with their source.
+2. Constraints are applied to the **seed-aggregated mean**, not to individual
+   draws. Per-seed cosine is noisy (baseline spans 0.9991682-0.9997341 across
+   four seeds), so a per-seed threshold rejects the baseline itself. Per-seed
+   cells now veto only on non-finite or raised results.
+
+This is the statistical-evidence-discipline failure the policy names directly: a
+descriptive two-seed statistic was promoted into a hard screen.
+
+### D-5 GPU memory policy did not fail closed (governance)
+
+The runner caught `set_memory_growth` failure and printed a warning, then
+continued — prohibited by the TensorFlow GPU Memory Rule, which requires serious
+runs to fail closed and record the verified policy. Repaired to call
+`configure_tensorflow_gpu_memory_growth(tf, require_gpu=True)`. Because
+importing `bayesfilter.highdim` initializes the GPU runtime, the call had to move
+to module scope **before** those imports; called from `main()` it always raised
+`Physical devices cannot be modified after being initialized`. The verified
+policy is now recorded in every artifact as `gpu_memory_policy`.
+
+Separately, `CUDA_DEVICE_ORDER=PCI_BUS_ID` was unset, so `CUDA_VISIBLE_DEVICES=1`
+selected the RTX 5080 rather than the intended 4080 SUPER. Now set explicitly;
+runs confirm `NVIDIA GeForce RTX 4080 SUPER, pci bus id 0000:09:00.0`.
+
+### Dtype decision
+
+The canonical LGSSM adapter is float64-internal (`ledh_canonical_models_tf.DTYPE`)
+and the UNTUNED baseline ran float64. Tuning therefore runs **float64**, so
+TUNED-vs-UNTUNED varies the controls only. This is a deliberate deviation from
+the repository float32/TF32 production execution target: a production-dtype arm
+is a separate tuning scope under the LEDH per-scope rule and carries no claim
+from this campaign. Recorded in each artifact as `backend: float64_gpu` with a
+`backend_note`.
+
+### Measured warm-start baseline (the real comparison target)
+
+Established by the calibration check — float64, frozen canonical target,
+`iid_dual_cap`, T=20, N=1008, seeds 50001-50004, warm-start controls
+(epsilon 8.0, sinkhorn 8, balance 8, diagonal 0.2, pairwise 0.02):
+
+| Metric | min | mean | max |
+|---|---|---|---|
+| Score L2 error | 1.3255 | **1.5058** | 1.7043 |
+| Cosine similarity | 0.9991682 | **0.9994670** | 0.9997341 |
+| Relative norm error | 0.0043 | 0.0142 | 0.0219 |
+| Fisher-scaled (max) | 0.4111 | 0.4657 | 0.5588 |
+
+This four-seed baseline supersedes the two-seed range (L2 1.31-1.75) as the
+reference for judging whether tuning improves L2. It is descriptive: four seeds
+with no uncertainty interval support no ranking claim.
+
+Pilot seeds were aligned to 50001-50004 so the pilot frontier is directly
+comparable to this baseline on the same seeds.
+
+---
+
 ## Current Status
 
-**Phase:** 2.1 Pilot Tuning  
-**Status:** ⏸️ READY FOR EXECUTION  
-**Blocker:** User approval  
-**Next action:** Execute pilot tuning command  
-**Estimated time:** 1-2 hours  
+**Phase:** 2.1 Pilot Tuning — EXECUTING  
+**Commit:** runner repairs at `d3362816`, GPU-policy import-order fix after it  
+**Grid:** 54 configurations × 4 seeds = 216 cells, route `iid_dual_cap`  
+**Log:** `/tmp/sqmc_pilot_run.log`  
+**Artifact:** `docs/tuning/sqmc-lgssm-t20-n1008-iid_dual_cap-20260912/tuning_artifact.json`
 
-**Command:**
+**Command being run:**
 ```bash
-cd /home/chakwong/BayesFilter/.claude/worktrees/kdm-score-campaign-20260909
+cd docs/benchmarks
 source ~/anaconda3/bin/activate tftwogpu
 export CUDA_VISIBLE_DEVICES=1
-python docs/benchmarks/run_sqmc_tuning.py --mode pilot
+python run_sqmc_tuning.py --mode pilot
 ```
 
-**Approval request:** "Execute Phase 1 pilot"
+**Pilot success criteria** (restated against the four-seed baseline):
+- Pareto frontier non-empty
+- Best frontier L2 materially below the baseline mean 1.5058
+- Aggregate cosine stays >= 0.999
+
+**What the pilot cannot establish:** four seeds without an uncertainty interval
+support no ranking or superiority claim. A frontier L2 below 1.5058 nominates
+tuning as worth the full campaign; it does not by itself demonstrate a tuning
+benefit.
 
 ---
 
