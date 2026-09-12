@@ -15,6 +15,11 @@ from typing import Dict, List, Tuple
 from dataclasses import dataclass
 
 import numpy as np
+
+# GPU memory policy: growth must be requested before TensorFlow initializes.
+os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
+os.environ.setdefault("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
+
 import tensorflow as tf
 
 # Add project root to path
@@ -25,6 +30,32 @@ sys.path.insert(0, '/home/chakwong/python/src')
 
 from bayesfilter.highdim.ledh_canonical_models_tf import diagonal_lgssm_canonical_model
 from bayesfilter.highdim.ledh_kalman_oracle_tf import kalman_oracle_value_and_score
+from bayesfilter.runtime.gpu_memory_policy import (
+    configure_tensorflow_gpu_memory_growth,
+)
+
+# The canonical LGSSM model adapter is float64-internal
+# (`ledh_canonical_models_tf.DTYPE`), and the UNTUNED baseline diagnostic ran
+# float64.  Tuning therefore runs float64 so the TUNED-vs-UNTUNED comparison
+# varies the controls only.  A float32/TF32 production-dtype arm is a separate
+# tuning scope under the LEDH per-scope rule.
+DTYPE = tf.float64
+
+# Populated by main() from the fail-closed GPU memory policy helper; recorded in
+# every tuning artifact.
+GPU_POLICY_RECORD: Dict = {}
+
+# Hard constraints on the seed-AGGREGATED score quality, taken from the decision
+# framework in docs/plans/sqmc-oracle-principled-score-metrics-2026-09-11.md
+# ("Direction test: cosine > 0.999 (required)"; "Magnitude test: relative norm
+# error < 5%"; "Fisher-scaled test: Err/sqrt|Oracle| < 0.5 acceptable, > 1.0 is
+# error-accumulation risk").  These are correctness floors, not tuning targets:
+# they reject a candidate whose gradients are unusable for HMC.  They are NOT
+# derived from the UNTUNED baseline's observed values -- see the no-fire
+# calibration in docs/benchmarks/calibrate_sqmc_tuning_vetoes.py.
+COSINE_VETO = 0.999
+REL_NORM_VETO = 0.05
+FISHER_VETO = 1.0
 
 # Import Pareto dominance tools
 from common_utils.tf_multiobjective.population_switching import nondominated
@@ -69,12 +100,54 @@ class ConfigEvaluation:
 
 
 def _frozen_observations(horizon: int) -> tf.Tensor:
-    """Return frozen observation sequence for LGSSM canonical."""
-    # Same sequence used in oracle comparison
-    obs_seed = 88001
-    rng = np.random.RandomState(obs_seed)
-    # 3D observations, T steps
-    return tf.constant(rng.randn(horizon, 3), dtype=tf.float64)
+    """Return the frozen canonical LGSSM observation sequence.
+
+    This MUST be the same frozen target the UNTUNED baseline diagnostic used
+    (`run_sqmc_oracle_characterization.py`), otherwise TUNED and UNTUNED cells
+    would be measured on different data and the comparison would be invalid.
+    """
+    from bayesfilter.highdim.ledh_canonical_neutra_targets_tf import (
+        _lgssm_frozen_observations,
+    )
+
+    return tf.cast(_lgssm_frozen_observations()[:horizon], DTYPE)
+
+
+def _oracle_score(observations: tf.Tensor, theta: tf.Tensor) -> tf.Tensor:
+    """Exact Kalman score for the canonical five-parameter diagonal LGSSM.
+
+    Mirrors `_oracle` in `run_sqmc_oracle_characterization.py` so the tuning
+    comparator is the same exact reference the UNTUNED baseline used.
+    """
+
+    observation_matrix = tf.constant(
+        [[1.0, 0.25, -0.15], [0.2, 1.1, 0.3], [-0.1, 0.35, 0.9]], DTYPE
+    )
+
+    def parameters(value: tf.Tensor) -> Dict[str, tf.Tensor]:
+        return {
+            'transition_matrix': tf.linalg.diag(value[:3]),
+            'process_covariance': tf.square(value[3]) * tf.eye(3, dtype=DTYPE),
+            'observation_matrix': observation_matrix,
+            'observation_covariance': tf.square(value[4]) * tf.eye(3, dtype=DTYPE),
+            'initial_mean': tf.zeros([3], DTYPE),
+            'initial_covariance': tf.eye(3, dtype=DTYPE),
+        }
+
+    oracle = kalman_oracle_value_and_score(
+        observations, theta, parameters, dtype=DTYPE
+    )
+    return oracle['score']
+
+
+def _reset_design(particle_count: int, dimension: int) -> tf.Tensor:
+    """Contract-E reset design matrix (mirrors the baseline runner's `_design`)."""
+    if particle_count % (2 * dimension):
+        raise ValueError("particle count must be divisible by 2 * state dimension")
+    base = tf.concat(
+        [tf.eye(dimension, dtype=DTYPE), -tf.eye(dimension, dtype=DTYPE)], axis=0
+    )
+    return tf.tile(base, [particle_count // (2 * dimension), 1])
 
 
 def _tuning_grid() -> List[Dict]:
@@ -151,12 +224,21 @@ def find_pareto_optimal(grid_results: List[Dict], tuning_seeds: List[int]) -> Li
 
         mean_hmc = np.mean([r['induced_hmc_error'] for r in valid_seeds])
 
-        # Apply hard constraints (vetoes)
-        if mean_cosine < 0.9995:
-            continue  # Direction quality veto
-        if mean_rel_norm > 0.05:
+        # Apply hard constraints to the SEED-AGGREGATED estimate.
+        #
+        # Thresholds come from the decision framework in
+        # `docs/plans/sqmc-oracle-principled-score-metrics-2026-09-11.md`
+        # ("When are scores good enough for HMC?"), NOT from the UNTUNED
+        # baseline's observed values.  An earlier revision used cosine >= 0.9995
+        # -- the baseline's two-seed observed MEAN -- as a hard veto; a no-fire
+        # calibration check (`calibrate_sqmc_tuning_vetoes.py`) showed that
+        # threshold fires on 3 of 4 seeds of the known-good baseline, i.e. a
+        # descriptive statistic had been promoted to a correctness criterion.
+        if mean_cosine < COSINE_VETO:
+            continue  # Direction quality veto (required for HMC)
+        if mean_rel_norm > REL_NORM_VETO:
             continue  # Magnitude quality veto
-        if max_fisher > 1.0:
+        if max_fisher > FISHER_VETO:
             continue  # Component quality veto
 
         # Compute objectives (all minimize)
@@ -201,60 +283,121 @@ def _evaluate_controls(
 ) -> Dict:
     """Evaluate one control configuration."""
 
-    # Build full controls dict
-    # For ablation variant, use conservative controls
-    if is_ablation:
-        full_controls = {
-            **controls,
-            'coordinate_cap': 0.97,  # Slightly more conservative
-            'coordinate_cap_power': 8,
-            'correction_lm_damping': 0.01,
-            'correction_lm_scale_floor': 0.0001,
-            'correction_trust_radius': 0.5,
-            'pairwise_rms_cap': 2.0,
-            'reset_policy': 'contract_e',
-            'reset_ridge': 1e-5,
-        }
-    else:
-        full_controls = {
-            **controls,
-            'coordinate_cap': 0.98,
-            'coordinate_cap_power': 8,
-            'correction_lm_damping': 0.01,
-            'correction_lm_scale_floor': 0.0001,
-            'correction_trust_radius': 0.5,
-            'pairwise_rms_cap': 2.0,
-            'reset_policy': 'contract_e',
-            'reset_ridge': 1e-5,
-        }
+    from bayesfilter.highdim.ledh_canonical_score_tf import canonical_value_and_analytical_score
+    from bayesfilter.highdim.sqmc_tf import randomized_halton_gaussian, randomized_halton_joint
 
-    # Import the executor function
-    from bayesfilter.highdim.ledh_canonical_score_tf import canonical_value_and_analytical_score as score_fn
+    # Map route to ancestry_policy
+    ancestry_map = {
+        'iid_dual_cap': 'existing_one_to_one',
+        'previous_inverse_cdf': 'hilbert_inverse_cdf',
+        'repaired_fixed_previous_controls': 'hilbert_permutation_one_to_one',
+        'repaired_permutation': 'hilbert_permutation_one_to_one',
+    }
+    ancestry_policy = ancestry_map.get(route, 'existing_one_to_one')
 
-    # Call canonical score executor
-    try:
-        result = score_fn(
-            model_factory=diagonal_lgssm_canonical_model,
-            observations=observations,
-            theta=theta,
-            ancestry_route=route,
-            controls=full_controls,
-            seed=seed,
-            horizon=horizon,
-            particle_count=particle_count,
-            dtype=tf.float32,  # Production target
+    # Generate initial states and process noise
+    dtype = DTYPE
+    if route == 'iid_dual_cap':
+        initial_states = tf.random.stateless_normal(
+            [particle_count, 3], [seed, 101], dtype=dtype
         )
+        process_noise = tf.stack([
+            tf.random.stateless_normal(
+                [particle_count, 3], [seed, 1001 + t], dtype=dtype
+            )
+            for t in range(horizon)
+        ])
+        ancestor_uniforms = tf.zeros([horizon, particle_count], dtype)
+    else:
+        initial_states = randomized_halton_gaussian(
+            num_particles=particle_count,
+            dimension=3,
+            seed=seed,
+            salt=301,
+            dtype=dtype,
+        )
+        process_rows = []
+        ancestor_rows = []
+        for t in range(horizon):
+            raw, ancestors, innovations = randomized_halton_joint(
+                num_particles=particle_count,
+                state_dimension=3,
+                seed=seed,
+                salt=3001 + t,
+                dtype=dtype,
+            )
+            process_rows.append(tf.math.ndtri(innovations))
+            ancestor_rows.append(ancestors)
+        process_noise = tf.stack(process_rows)
+        ancestor_uniforms = tf.stack(ancestor_rows)
 
-        # Check validity
-        if not result.get('finite', False) or not result.get('valid', False):
+    # Build model
+    model, set_score_direction = diagonal_lgssm_canonical_model(theta)
+
+    initial_covariances = tf.eye(3, batch_shape=[particle_count], dtype=dtype)
+    design = _reset_design(particle_count, 3)
+
+    # Evaluate score for each direction
+    try:
+        values = []
+        scores = []
+
+        for direction_idx in range(len(theta)):
+            set_score_direction(tf.one_hot(direction_idx, len(theta), dtype=dtype))
+
+            value, score = canonical_value_and_analytical_score(
+                model,
+                theta,
+                initial_states,
+                initial_covariances,
+                process_noise,
+                observations,
+                flow_substeps=8,
+                with_score=True,
+                reset_policy='contract_e',
+                reset_design=design,
+                reset_epsilon=controls['reset_epsilon'],
+                reset_sinkhorn_steps=controls['reset_sinkhorn_steps'],
+                reset_balance_steps=controls['reset_balance_steps'],
+                reset_ridge=1e-5,
+                correction_steps=controls['correction_steps'],
+                correction_strength=controls['correction_strength'],
+                correction_lm_damping=0.01,
+                correction_lm_scale_floor=0.0001,
+                correction_trust_radius=0.5,
+                pairwise_steps=controls['pairwise_steps'],
+                pairwise_strength=controls['pairwise_strength'],
+                pairwise_rms_cap=2.0,
+                coordinate_cap=0.98 if not is_ablation else 0.97,
+                coordinate_cap_power=8,
+                ancestry_policy=ancestry_policy,
+                process_ancestor_uniforms=ancestor_uniforms,
+                state_map_policy='adaptive_empirical',
+                hilbert_bits=12,
+            )
+
+            values.append(value)
+            scores.append(score[0])  # directional derivative for this direction
+
+        # One directional derivative per parameter -> full score vector (5,)
+        all_scores = tf.stack(scores)
+
+        # Check finiteness
+        if not tf.reduce_all(tf.math.is_finite(all_scores)):
             return {
                 'valid': False,
                 'score_l2_error': float('inf'),
                 'cosine_similarity': 0.0,
+                'relative_norm_error': float('inf'),
+                'fisher_scaled_errors': [],
+                'induced_hmc_error': float('inf'),
+                'tuning_score': float('inf'),
+                'veto_reason': 'non_finite',
+                'error': 'Non-finite scores',
             }
 
-        # Compute metrics vs oracle
-        sqmc_score = tf.constant(result['score'], dtype=tf.float64)
+        # Compute metrics vs oracle (convert to float64 for precision)
+        sqmc_score = tf.cast(all_scores, tf.float64)
 
         # L2 error
         score_l2 = tf.norm(sqmc_score - oracle_score).numpy()
@@ -285,23 +428,14 @@ def _evaluate_controls(
         else:
             induced_hmc_error = 0.0
 
-        # Multi-objective tuning score
-        # Hard vetoes
-        if cosine_sim < 0.9995:
-            tuning_score = float('inf')
-            veto_reason = 'cosine_veto'
-        elif rel_norm_error > 0.05:
-            tuning_score = float('inf')
-            veto_reason = 'rel_norm_veto'
-        elif any(fs > 1.0 for fs in fisher_scaled):
-            tuning_score = float('inf')
-            veto_reason = 'fisher_veto'
-        else:
-            # Primary: L2 error, Secondary: Fisher-scaled and HMC error
-            fisher_penalty = 0.1 * np.mean(fisher_scaled)
-            hmc_penalty = 0.1 * induced_hmc_error
-            tuning_score = score_l2 + fisher_penalty + hmc_penalty
-            veto_reason = None
+        # NOTE: per-seed cells carry NO threshold veto.  Per-seed cosine is a
+        # noisy single draw (the known-good baseline spans 0.99917-0.99973
+        # across four seeds), so vetoing individual draws would reject the
+        # baseline itself.  Threshold constraints are applied to the
+        # seed-aggregated estimate in `find_pareto_optimal`.  A per-seed cell is
+        # invalid only if it is non-finite or raised.
+        tuning_score = score_l2
+        veto_reason = None
 
         return {
             'valid': True,
@@ -312,7 +446,7 @@ def _evaluate_controls(
             'induced_hmc_error': float(induced_hmc_error),
             'tuning_score': float(tuning_score),
             'veto_reason': veto_reason,
-            'value': float(result['value']),
+            'value': float(values[0].numpy()),
         }
 
     except Exception as e:
@@ -344,17 +478,10 @@ def tune_route(
     print(f"{'='*80}\n")
 
     # Fixed LGSSM parameters
-    theta = tf.constant([0.9, 0.8, 0.7, 0.6, 0.8], dtype=tf.float64)
+    theta = tf.constant([0.9, 0.8, 0.7, 0.6, 0.8], dtype=DTYPE)
     observations = _frozen_observations(horizon)
 
-    # Compute oracle once (use float64 for oracle, convert SQMC scores to float64 for comparison)
-    oracle = kalman_oracle_value_and_score(
-        observations=observations,
-        theta=theta,
-        theta_to_lgssm_params=diagonal_lgssm_canonical_model,
-        dtype=tf.float64,
-    )
-    oracle_score = oracle['score']
+    oracle_score = _oracle_score(observations, theta)
 
     # Get tuning grid
     grid = _tuning_grid()
@@ -387,12 +514,20 @@ def tune_route(
         # Aggregate
         valid_count = sum(1 for r in seed_results if r['valid'])
         if valid_count == 0:
-            print("ALL INVALID")
+            # Report first error for debugging
+            first_error = next((r.get('error', 'unknown') for r in seed_results if not r['valid']), 'unknown')
+            print(f"ALL INVALID (error: {first_error[:50]}...)")
             grid_results.append({
                 'controls': controls,
                 'valid_fraction': 0.0,
                 'mean_score_l2': float('inf'),
                 'mean_cosine_similarity': 0.0,
+                'mean_relative_norm_error': float('inf'),
+                'mean_fisher_scaled': float('inf'),
+                'mean_hmc_error': float('inf'),
+                'mean_tuning_score': float('inf'),
+                'veto_counts': {'cosine': 0, 'rel_norm': 0, 'fisher': 0, 'exception': len(seed_results)},
+                'seed_results': seed_results,
             })
             continue
 
@@ -432,9 +567,10 @@ def tune_route(
         print("⚠️  NO PARETO-OPTIMAL CONFIGURATIONS FOUND")
         print("All configurations either failed validity or violated hard constraints")
         print("\nHard constraints:")
-        print("  - Cosine similarity >= 0.9995")
-        print("  - Relative norm error <= 0.05")
-        print("  - All Fisher-scaled errors <= 1.0")
+        print(f"  - Cosine similarity >= {COSINE_VETO}")
+        print(f"  - Relative norm error <= {REL_NORM_VETO}")
+        print(f"  - All Fisher-scaled errors <= {FISHER_VETO}")
+        print("(applied to the seed-aggregated mean)")
         return None
 
     print(f"Pareto frontier: {len(pareto_optimal)} configurations\n")
@@ -480,19 +616,32 @@ def tune_route(
         'horizon': horizon,
         'particle_count': particle_count,
         'dimensions': {'state': 3, 'observation': 3},
-        'backend': 'float32_tf32_gpu',
+        'backend': 'float64_gpu',
+        'backend_note': (
+            'float64 GPU, matching the UNTUNED baseline diagnostic dtype so the '
+            'TUNED-vs-UNTUNED comparison varies controls only. The repository '
+            'float32/TF32 production target is a separate tuning scope.'
+        ),
+        'observations_source': 'ledh_canonical_neutra_targets_tf._lgssm_frozen_observations',
         'chunk_policy': 'dpf_transport_exact_divisor_cap3000_v1',
         'reset_family': 'contract_e_genut_dual_cap',
         'tuning_seeds': tuning_seeds,
         'tuning_date': datetime.now().isoformat(),
         'git_commit': os.popen('git rev-parse HEAD').read().strip(),
+        'gpu_memory_policy': GPU_POLICY_RECORD,
         'tuning_method': 'pareto_optimal_grid_search',
         'tuning_objective': 'Find Pareto-optimal configs minimizing (L2, 1-cosine, rel_norm, fisher, hmc)',
         'selection_criterion': 'Lexicographic ordering from Pareto frontier (L2 primary)',
         'hard_constraints': {
-            'cosine_similarity_min': 0.9995,
-            'relative_norm_error_max': 0.05,
-            'fisher_scaled_error_max': 1.0,
+            'cosine_similarity_min': COSINE_VETO,
+            'relative_norm_error_max': REL_NORM_VETO,
+            'fisher_scaled_error_max': FISHER_VETO,
+            'applied_to': 'seed_aggregated_mean',
+            'threshold_source': (
+                'docs/plans/sqmc-oracle-principled-score-metrics-2026-09-11.md '
+                'decision framework; no-fire calibrated against the known-good '
+                'warm-start baseline via docs/benchmarks/calibrate_sqmc_tuning_vetoes.py'
+            ),
         },
         'pareto_tools': 'common_utils.tf_multiobjective.population_switching.nondominated',
         'best_controls': best['controls'],
@@ -552,7 +701,10 @@ def main():
         print("\n" + "="*80)
         print("PILOT MODE: Testing infrastructure")
         print("="*80)
-        tuning_seeds = [50001, 50002]  # Just 2 seeds
+        # 4 seeds, matching the baseline measured by
+        # calibrate_sqmc_tuning_vetoes.py so the pilot's Pareto frontier is
+        # directly comparable to the warm-start baseline on the same seeds.
+        tuning_seeds = [50001, 50002, 50003, 50004]
         routes_to_run = ['iid_dual_cap']  # Just 1 route
     else:
         tuning_seeds = list(range(50001, 50017))  # 16 seeds
@@ -561,15 +713,19 @@ def main():
         else:
             routes_to_run = ['iid_dual_cap', 'previous_inverse_cdf', 'repaired_permutation', 'repaired_permutation_ablation']
 
-    # Enable GPU memory growth
-    gpus = tf.config.list_physical_devices('GPU')
-    if gpus:
-        try:
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            print(f"✓ GPU memory growth enabled for {len(gpus)} device(s)")
-        except RuntimeError as e:
-            print(f"⚠️  GPU memory growth setup failed: {e}")
+    # GPU memory policy: fail closed per the repository TensorFlow GPU Memory
+    # Rule.  Silently ignoring a set_memory_growth failure is not acceptable for
+    # a serious run, and the verified policy must reach the artifact.
+    global GPU_POLICY_RECORD
+    GPU_POLICY_RECORD = dict(
+        configure_tensorflow_gpu_memory_growth(tf, require_gpu=True)
+    )
+    print(
+        "✓ GPU memory growth verified: "
+        f"{[row['device'] for row in GPU_POLICY_RECORD.get('physical_devices', ())]}"
+    )
+    logical_gpus = tf.config.list_logical_devices('GPU')
+    print(f"✓ Logical GPUs: {[d.name for d in logical_gpus]}")
 
     # Run tuning for each route
     for route in routes_to_run:
