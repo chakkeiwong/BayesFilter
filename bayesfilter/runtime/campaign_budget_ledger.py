@@ -351,6 +351,95 @@ class CampaignBudgetLedger:
             "remaining_seconds": self._remaining_from_payload(payload),
         }
 
+    def correct_settled_arm(
+        self,
+        *,
+        attempt_id: str,
+        arm: str,
+        measured_seconds: float,
+        status: str,
+        previous_status: str,
+        failure_class: str | None = None,
+        repair: str | None = None,
+    ) -> Mapping[str, Any]:
+        payload = dict(self.read())
+        measured = _finite_seconds(measured_seconds, "measured_seconds")
+        attempt_id = str(attempt_id).strip()
+        arm = str(arm).strip()
+        previous_status = str(previous_status).strip()
+        if not attempt_id or not arm or not previous_status:
+            raise CampaignBudgetLedgerError("settlement correction identity is invalid")
+        attempts = list(payload["attempts"])
+        attempt = next((item for item in attempts if item.get("attempt_id") == attempt_id), None)
+        if attempt is None:
+            raise CampaignBudgetLedgerError(f"attempt is not registered: {attempt_id}")
+        arm_rows = [item for item in attempt["arms"] if item.get("arm") == arm]
+        if len(arm_rows) != 1 or arm_rows[0].get("status") != previous_status:
+            raise CampaignBudgetLedgerError(
+                f"settlement correction does not match prior arm status: {attempt_id}:{arm}"
+            )
+        arm_row = arm_rows[0]
+        reservations = dict(payload["reservations"])
+        settled = [
+            item
+            for item in reservations.values()
+            if item.get("attempt_id") == attempt_id
+            and item.get("arm") == arm
+            and item.get("status") == "settled"
+        ]
+        reserved = sum(float(item["reserved_seconds"]) for item in settled)
+        if not settled or measured > reserved + 1e-9:
+            raise CampaignBudgetLedgerError("settlement correction exceeds settled reservation")
+        previous_measured = _finite_seconds(arm_row.get("measured_seconds"), "previous measured_seconds")
+        previous_released = _finite_seconds(arm_row.get("released_seconds"), "previous released_seconds")
+        released = max(0.0, reserved - measured)
+        payload["consumed_seconds"] = float(payload["consumed_seconds"]) + measured - previous_measured
+        payload["released_seconds"] = float(payload["released_seconds"]) + released - previous_released
+        arm_row.update(
+            {
+                "status": str(status),
+                "measured_seconds": measured,
+                "released_seconds": released,
+                "failure_class": failure_class,
+                "repair": repair,
+                "settled_at_utc": _utc_now(),
+            }
+        )
+        for item in settled:
+            item["measured_seconds_allocation"] = measured * float(item["reserved_seconds"]) / reserved
+            item["released_seconds"] = float(item["reserved_seconds"]) - item["measured_seconds_allocation"]
+            reservations[item["reservation_id"]] = item
+        attempt["consumed_seconds"] = float(attempt["consumed_seconds"]) + measured - previous_measured
+        attempt["released_seconds"] = float(attempt["released_seconds"]) + released - previous_released
+        payload["attempts"] = attempts
+        payload["reservations"] = reservations
+        payload["events"].append(
+            {
+                "event": "arm_settlement_corrected",
+                "attempt_id": attempt_id,
+                "arm": arm,
+                "at_utc": _utc_now(),
+                "previous_status": previous_status,
+                "previous_measured_seconds": previous_measured,
+                "previous_released_seconds": previous_released,
+                "status": str(status),
+                "measured_seconds": measured,
+                "reserved_seconds": reserved,
+                "released_seconds": released,
+                "repair": repair,
+                "remaining_seconds": self._remaining_from_payload(payload),
+            }
+        )
+        self._write(payload)
+        return {
+            "attempt_id": attempt_id,
+            "arm": arm,
+            "measured_seconds": measured,
+            "reserved_seconds": reserved,
+            "released_seconds": released,
+            "remaining_seconds": self._remaining_from_payload(payload),
+        }
+
     def finish_attempt(
         self,
         *,
@@ -424,8 +513,6 @@ class CampaignBudgetLedger:
         released = _finite_seconds(payload.get("released_seconds"), "released_seconds")
         if consumed + reserved > total + 1e-9:
             raise CampaignBudgetLedgerError("campaign ledger budget is overcommitted")
-        if released > consumed + reserved + total:
-            raise CampaignBudgetLedgerError("campaign ledger released budget is invalid")
         if not isinstance(payload.get("attempts"), list):
             raise CampaignBudgetLedgerError("campaign ledger attempts must be a list")
         if not isinstance(payload.get("reservations"), Mapping):

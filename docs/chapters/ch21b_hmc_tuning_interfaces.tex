@@ -40,8 +40,10 @@ the registry identifies the test that checks each behavioral statement.
 \section{Choose the route from the target}
 
 The decision starts with the probability measure, not with a convenient
-function name.  There are exactly two public tuners.  Each supported situation
-has one primary instruction and at most one weaker conditional alternative.
+function name.  There is one candidate-set lifecycle with preparation adapters
+for ordinary coordinates and frozen transports.  Each supported situation has
+one primary preparation instruction and at most one weaker conditional
+alternative.
 
 \begin{longtable}{p{0.25\textwidth}p{0.34\textwidth}p{0.32\textwidth}}
 \toprule
@@ -97,7 +99,8 @@ ordinary policy.  It does not let a model caller insert candidate grids, mass
 windows, tuning draw counts, a runner binding, a bare chain callback, or
 private handoff mechanics.
 
-The ordinary route performs the following linked stages:
+The ordinary route prepares one scope and then passes the following linked
+stages to the shared candidate controller:
 
 \begin{enumerate}
   \item initialize geometry and a positive-definite mass representation;
@@ -110,26 +113,27 @@ The ordinary route performs the following linked stages:
   \item evaluate one refinement barrier containing every untested floor and
     ceiling integer midpoint adjacent to a surviving primary value, again with
     an independent epsilon tune for every \(L\);
-  \item order eligible measured pairs deterministically for verification,
-    without treating that order as a statistical ranking; and
-  \item freeze the kernel and run fresh verification on draws not used for
-    candidate selection.
+  \item order the closed measured cohort deterministically without treating
+    that order as a statistical ranking; and
+  \item advance every retained member through fresh verification on draws not
+    used for candidate selection.  A passing member does not terminate the
+    remaining cohort.
 \end{enumerate}
 
 The geometry-derived trajectory target helps order viable candidates.  It does
 not construct the primary grid, eliminate a primary value before measurement,
 or trigger a second local \(L\) search after the broad barriers.
 
-Fresh verification consumes the eligible measured pairs directly and starts
-at most two candidates from the deterministic queue in one attempt.  A passing
-candidate ends tuning.  Otherwise, a consistent acceptance-direction signal
-may seed another complete attempt, but it cannot bypass mass adaptation or
-either broad-grid barrier; conflicting signals do not mutate epsilon.  The
-public configuration fixes
-\path{operational_verification_bracket_policy} at
-\path{single_repair}.  The old \path{one_verified_log_midpoint} procedure
-is accepted only by the explicitly selected historical shared-epsilon helper
-route and is not an ordinary public-tuner option.
+Fresh verification consumes all eligible measured pairs in the closed cohort.
+Directional evidence creates a new immutable same-$L$ child with a fresh
+verification stream and priority after already-reserved work.  Inconclusive
+evidence remains pending or receives a declared extension; it does not silently
+switch $L$.  Only a child with
+\path{qualified\_repair\_status=executed\_and\_verified} is replayable.  A
+computed or unfunded repair is recorded with
+\path{not\_executed\_with\_reason} and the typed budget status.  The old
+\path{one_verified_log_midpoint} procedure is a historical diagnostic and is
+not part of the recommended lifecycle.
 
 Each candidate binds the mass-artifact signature, target scope, coordinates, and
 metric signature.  A mass-signature change invalidates the selection and its
@@ -446,18 +450,26 @@ and~\eqref{eq:bf-fixed-transport-hmc-score}.
 \section{Candidate-set validation and nomination}
 \label{sec:bf-fixed-transport-candidate-selection}
 
-When several frozen fixed transports or training restarts are available, use
-the public candidate-set protocol rather than writing a client-local selector.
-The public entry point is
-\path{select_fixed_transport_candidate_set} from
-\path{bayesfilter.inference}. A caller supplies candidate identifiers and
-provenance, a validation callback that executes one fresh fixed-kernel rung,
-and, optionally, a score callback that returns finite lower-is-better scalar
-values. Tune each frozen transport independently with
-\path{tune_fixed_transport_hmc_kernel} before constructing these candidates;
-the candidate-set function is not another tuner.
+The recommended candidate-set protocol is the shared controller used after one
+scope has been prepared. A controller call measures a broad list of exact
+$(L,\epsilon)$ pairs, retains every non-vetoed member, and returns one
+scope-bound result. A frozen transport or ordinary target has its own scope;
+chain states, mass signatures, starts, and verification receipts never cross
+scope boundaries. When several frozen transports or training restarts are
+available, invoke the same procedure once per scope and use a read-only
+collection for reporting.
 
-The protocol calls the validation callback sequentially for each candidate's
+The older \path{select_fixed_transport_candidate_set} helper remains available
+only for diagnostic and historical payloads. It has no artifact authority,
+cannot run a second validation lifecycle for the active tuner, and must not be
+used as a replacement for the shared controller. A caller supplies candidate
+identifiers and provenance, a validation callback that executes one fresh
+fixed-kernel rung, and, optionally, a score callback that returns finite
+lower-is-better scalar values. Tune each frozen transport independently with
+\path{tune_fixed_transport_hmc_kernel} before constructing diagnostic
+payloads; the helper is not another tuner.
+
+The diagnostic helper calls the validation callback sequentially for each candidate's
 declared rungs. A hard failure stops that candidate's later rungs but does not
 stop other candidates. Every candidate that passes all rungs is retained in
 \path{viable_candidates}; the optional \path{selected_candidate} is only a
@@ -466,6 +478,17 @@ without choosing a nominee. The caller owns draw persistence: archive validation
 draws as validation evidence, separately from subsequent estimation draws.
 BayesFilter neither discards nor promotes them. Exceptions from the callback
 propagate as execution failures, rather than silently rejecting a transport.
+
+During the numerical-adapter migration, the two public dispatcher names can
+enter this same lifecycle explicitly with an issued
+\path{HMCControllerConfig} and \path{HMCTypedCandidateSetAdapter}. The ordinary
+\path{tune\_hmc\_kernel} entry requires an ordinary adapter; the fixed-transport
+entry is a compatibility wrapper that requires a fixed-transport adapter and
+delegates to the same controller. The bridge binds target preparation,
+transition, backend, dtype, and source-closure identities into the scope and
+candidate records, and writes only replayable mechanics evidence until the
+target-parity and TensorFlow/XLA qualification gates pass. It cannot issue a
+numerical handoff by itself.
 
 The experimental hard-screen configuration requires finite observations, valid
 target status, movement in every chain, no reported native divergences, and

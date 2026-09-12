@@ -195,6 +195,11 @@ def select_fixed_transport_candidate_set(
     selected = ordered[0] if ordered else None
     return {
         "schema": FIXED_TRANSPORT_CANDIDATE_SELECTION_SCHEMA,
+        "interface_kind": "diagnostic_helper",
+        "replacement": "tune_hmc_kernel",
+        "artifact_authority": False,
+        "replay_authority": False,
+        "numerical_handoff_authority": False,
         "config": policy.payload(),
         "candidate_rows": tuple(candidate_rows),
         "viable_candidates": tuple(viable),

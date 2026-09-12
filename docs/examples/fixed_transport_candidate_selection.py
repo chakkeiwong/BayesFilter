@@ -1,8 +1,9 @@
-"""Synthetic callback fixture; no training, tuning or HMC is executed.
+"""Diagnostic compatibility fixture; no training, tuning or HMC is executed.
 
-For a real run, replace validate_rung with a qualified fixed-kernel runner,
-archive its draws, and return fixed_transport_candidate_diagnostics using
-those draws, matching-coordinate starts, and recorded mechanics telemetry.
+The active workflow tunes each frozen transport in its own scope and returns a
+candidate-set result. This file exercises the retained legacy selector only so
+its non-authoritative payload remains readable. It must not be used to issue a
+kernel handoff or to schedule a second validation lifecycle.
 """
 
 from __future__ import annotations

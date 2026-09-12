@@ -70,7 +70,7 @@ def test_capability_registry_covers_routes_and_has_resolvable_evidence() -> None
     assert sum(
         record.interface_kind == "diagnostic_helper"
         for record in HMC_TUNING_INTERFACE_CAPABILITIES
-    ) == 13
+    ) == 15
     assert sum(
         record.interface_kind == "historical_helper"
         for record in HMC_TUNING_INTERFACE_CAPABILITIES
@@ -302,8 +302,11 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
         "TensorFlowHMCKernelTuningConfig",
         "independent epsilon",
         "survivor-midpoint barrier",
-        "exactly two public tuners",
-        "starts at most two candidates",
+        "one recommended candidate-set lifecycle",
+        "retain every viable member",
+        "qualified_repair_status",
+        "not_executed_with_reason",
+        "repair_budget_exhausted",
         "one implementation",
         "one_verified_log_midpoint",
         "audit inventory, not a menu",
@@ -382,6 +385,8 @@ def test_guide_rejects_the_observed_low_level_runner_misclassification() -> None
     assert "Acceptance by itself" not in guide
     assert "Do not treat acceptance alone as convergence or handoff evidence" in normalized
     assert "A failed verifier must have no final kernel" in normalized
+    assert "The exported `select_fixed_transport_candidate_set` name is retained solely" in normalized
+    assert "Then use `select_fixed_transport_candidate_set`" not in normalized
 
 
 def test_guide_binds_the_executable_ordinary_default_policy() -> None:
@@ -418,8 +423,8 @@ def test_guide_binds_the_executable_ordinary_default_policy() -> None:
     assert "one refinement barrier" in guide
     assert "both fail the public artifact-authority guard" in guide
     assert "claim_bearing_artifact_authority=True" in guide
-    assert "fixes `operational_verification_bracket_policy" in guide
-    assert "historical shared-epsilon" in guide
+    assert "remain compatibility identities for the legacy adapter" in guide
+    assert "one_verified_log_midpoint" in guide
 
 
 def test_ordinary_module_prose_names_one_broad_public_policy() -> None:

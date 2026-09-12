@@ -748,6 +748,33 @@ HMC_TUNING_ROUTE_REGISTRY: tuple[HMCTuningRouteRecord, ...] = (
         artifact_authority=True,
     ),
     HMCTuningRouteRecord(
+        interface_name="tune_hmc_candidate_set",
+        module="bayesfilter.inference.hmc_candidate_set_tuning",
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_hmc_kernel",
+        nonclaims=(
+            "pure controller boundary only until numerical adapters are qualified",
+            "cannot issue a canonical numerical handoff by itself",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+        ),
+    ),
+    HMCTuningRouteRecord(
+        interface_name="select_fixed_transport_candidate_set",
+        module="bayesfilter.inference.fixed_transport_candidate_selection",
+        role="diagnostic",
+        artifact_authority=False,
+        replacement="tune_hmc_kernel",
+        nonclaims=(
+            "diagnostic compatibility payload only",
+            "cannot issue a canonical numerical handoff",
+            "cannot schedule the active tuning lifecycle",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+        ),
+    ),
+    HMCTuningRouteRecord(
         interface_name="tune_hmc_kernel_robust_broad_grid",
         module="bayesfilter.inference.hmc_robust_broad_grid",
         role="diagnostic",

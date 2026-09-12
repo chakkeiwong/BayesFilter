@@ -42,6 +42,10 @@ def test_retains_all_viable_candidates_and_nominates_descriptively():
     assert result["selected_candidate"]["candidate_id"] == 2
     assert result["selected_candidate_index"] == 1
     assert result["statistical_ranking_supported"] is False
+    assert result["interface_kind"] == "diagnostic_helper"
+    assert result["artifact_authority"] is False
+    assert result["replay_authority"] is False
+    assert result["numerical_handoff_authority"] is False
     assert result["score_metadata"]["provenance"] == "test_fixture"
     assert "all_candidate_validation_draws_discarded" not in result
     assert result["validation_draws_policy"].startswith("caller_managed")
