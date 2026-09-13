@@ -9,9 +9,18 @@
 
 ## Research Question
 
-**Primary:** On LGSSM and Austria SIR models at N=1008, do different SQMC ancestry routes (IID, Hilbert inverse-CDF, Hilbert one-to-one permutation) produce statistically distinguishable analytical score quality for HMC?
+**Primary:** Across the canonical models at N=1008, do different SQMC ancestry routes (IID, Hilbert inverse-CDF, Hilbert one-to-one permutation, permutation ablation) produce statistically distinguishable analytical score quality for HMC, each at its own exact-scope tuned controls?
 
 **Secondary:** Can exact-scope tuning improve score quality (reduce L2 error while maintaining direction accuracy) over warm-start controls?
+
+> **SCOPE DEFECT, found 2026-09-14.** Until this revision the stated question said
+> "On LGSSM and Austria SIR models", but every declared phase, artifact path and
+> budget line in this program was **LGSSM-only**. The multi-model dimension existed
+> in the question and in the non-claims and nowhere in the plan, so the program as
+> written could not answer the question it stated. The full intended scope —
+> tuned 4-route comparison **per model** — is specified in
+> "Multi-Model Scope" below. What has actually been executed is the LGSSM
+> column of that matrix.
 
 ---
 
@@ -642,6 +651,89 @@ comparable to this baseline on the same seeds.
 
 **Execution log:** `/tmp/sqmc_full_campaign.log`  
 **Individual logs:** `/tmp/sqmc_campaign_logs/`
+
+---
+
+## Multi-Model Scope (the full intended program)
+
+The complete program is a **model × route** matrix: for every model, tune all four
+routes to their own exact-scope controls, then compare routes within that model.
+Per the LEDH per-scope tuning rule each cell is a separate tuning scope, so this
+is genuinely 4 tunings per model — not one tuning reused.
+
+Five canonical model factories exist in `ledh_canonical_models_tf.py`:
+`diagonal_lgssm_canonical_model`, `austria_sir_canonical_model`,
+`predator_prey_canonical_model`, `ksc_sv_canonical_model`,
+`generalized_sv_canonical_model`.
+
+### Status matrix
+
+| Model | dim | Exact oracle | 4-route tuned comparison | Status |
+|---|---|---|---|---|
+| Diagonal LGSSM | 3/3 | **Yes** — Kalman | Phases 2.1→4 | **executing** |
+| Austria SIR | 9 | No | — | untuned 16-seed value comparison only (Sep 9) |
+| Predator-Prey | 2 | No | — | not started |
+| KSC-SV | 1 | Not exact for native SV | — | oracle claim unresolved |
+| Generalized SV | — | No | — | not started |
+
+### The blocker is a reference, not a budget
+
+`kalman_oracle_value_and_score` is **linear-Gaussian only**
+(`kalman_filter_marginal_loglik` takes a transition matrix, process covariance,
+observation matrix and observation covariance — it has no nonlinear path). Every
+accuracy metric this program reports (L2, cosine, relative norm, Fisher-scaled,
+induced HMC error) is a **distance to that exact reference**. For the four
+nonlinear models there is currently no exact score to measure distance from, so
+the comparison method itself does not transfer.
+
+Two candidate references exist and neither is a drop-in:
+
+- **`oracle_forward_autodiff_score`** (`ledh_canonical_autodiff_oracle_tf.py`) is
+  documented as *"never claim-bearing; it exists to gate the P4 analytical score
+  derivations stage by stage."* It judges whether the analytical tangent matches
+  the JVP of **its own program**, which is an implementation-correctness check,
+  not accuracy against the true score. Using it as the accuracy reference would
+  measure self-consistency and silently relabel it as accuracy.
+- **KSC mixture-Kalman** was already rejected as an exact native-SV oracle by the
+  earlier v2 program: the implementation states it is not exact for native SV and
+  collapses the filtering mixture after every step. The model docstring adds an
+  equivalence gate (KSC must match actual-SV up to a theta-independent
+  observation-transform Jacobian, zero score difference), which is a
+  *consistency* condition between two parameterizations, again not an accuracy
+  reference.
+
+**Consequence.** Extending the tuned 4-route comparison to a nonlinear model
+requires first deciding what "closer to the truth" means there. Options, in
+increasing cost: (a) a converged high-N reference of the same estimator, treated
+explicitly as a reference-not-oracle with its own Monte Carlo error; (b) a
+long-run independent method (e.g. very large-N bootstrap PF) as a consensus
+reference; (c) restrict nonlinear-model comparison to *self-consistency and
+stability* metrics and drop accuracy claims. Each changes what the campaign can
+claim, so this is an owner decision and not something to pick silently.
+
+### Per-model cost, once a reference exists
+
+At measured throughput (~1.03 min per seed-cell, 18-config grid, 4 tuning seeds,
+16 claim seeds), one model's full column is:
+
+| Stage | Cells | Time |
+|---|---|---|
+| Tune 4 routes | 4 × 18 × 4 = 288 | ~5.0 h |
+| Phase 3 paired, 4 routes | 4 × 2 × 16 = 128 | ~2.2 h |
+| Phase 4 route comparison | 4 × 16 = 64 | ~1.1 h |
+| **Per model** | **480** | **~8.3 h** |
+
+Higher-dimensional models cost more per cell (Austria SIR is 9-dimensional vs
+LGSSM's 3), so the four remaining models are **well above** the ~33 h a naive
+4 × 8.3 h scaling suggests. The remaining models are therefore **out of scope for
+the current 16 h authorization**, independent of the reference problem.
+
+### What this means for the present campaign
+
+The executing campaign is the **LGSSM column** of the matrix, and its results
+must be reported as such. LGSSM is a test target chosen because ground truth is
+computable, for machinery intended for nonlinear models; a route ranking
+established there does not transfer to the nonlinear models by default.
 
 ---
 
