@@ -620,29 +620,42 @@ comparable to this baseline on the same seeds.
 
 ## Current Status
 
-**Phase:** 2.1 Pilot Tuning — EXECUTING  
-**Commit:** runner repairs at `d3362816`, GPU-policy import-order fix after it  
-**Grid:** 54 configurations × 4 seeds = 216 cells, route `iid_dual_cap`  
-**Log:** `/tmp/sqmc_pilot_run.log`  
-**Artifact:** `docs/tuning/sqmc-lgssm-t20-n1008-iid_dual_cap-20260912/tuning_artifact.json`
+**Phase:** Executing Phases 2.2 → 3 → 4 (full 4-route campaign)  
+**Started:** 2026-09-13 23:50 CST  
+**Estimated completion:** ~6.5 hours from start (~05:20 CST)  
+**Budget:** 16 hours authorized  
 
-**Command being run:**
-```bash
-cd docs/benchmarks
-source ~/anaconda3/bin/activate tftwogpu
-export CUDA_VISIBLE_DEVICES=1
-python run_sqmc_tuning.py --mode pilot
-```
+**Progress:**
+- Phase 2.1 pilot (iid_dual_cap): ✓ complete
+- Phase 3 (iid_dual_cap): ✓ complete — tuned beats baseline by 1.8% on disjoint seeds
+- Phase 2.2 (3 remaining routes): **in progress**
+  - previous_inverse_cdf: running (config 5/18)
+  - repaired_permutation: queued
+  - repaired_permutation_ablation: queued
+- Phase 3 (3 remaining routes): queued
+- Phase 4 (route comparison): queued
 
-**Pilot success criteria** (restated against the four-seed baseline):
-- Pareto frontier non-empty
-- Best frontier L2 materially below the baseline mean 1.5058
-- Aggregate cosine stays >= 0.999
+**Artifacts in progress:**
+- Tuning: `docs/tuning/sqmc-lgssm-t20-n1008-{route}-20260912/`
+- Phase 3: `docs/benchmarks/artifacts/sqmc-tuned-vs-untuned-lgssm-20260913/{route}_final/`
+- Phase 4: `docs/benchmarks/artifacts/sqmc-route-comparison-20260913/final/`
 
-**What the pilot cannot establish:** four seeds without an uncertainty interval
-support no ranking or superiority claim. A frontier L2 below 1.5058 nominates
-tuning as worth the full campaign; it does not by itself demonstrate a tuning
-benefit.
+**Execution log:** `/tmp/sqmc_full_campaign.log`  
+**Individual logs:** `/tmp/sqmc_campaign_logs/`
+
+---
+
+## What Phase 4 Will Establish
+
+Which route gives the lowest L2 error **at its own tuned controls** on the same claim seeds. This isolates the route choice while holding tuning effort constant — each route is compared at its best-found settings, not at a common baseline.
+
+**Not established by Phase 4:**
+- No statistical test of route superiority (no uncertainty intervals, no paired comparison across routes)
+- No cost comparison (routes may differ in per-seed wall-clock)
+- No production readiness or HMC convergence benefit
+- Does not satisfy the Heuristic Dominance Gate
+
+---
 
 ---
 
