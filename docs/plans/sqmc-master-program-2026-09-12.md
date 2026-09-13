@@ -671,45 +671,73 @@ Five canonical model factories exist in `ledh_canonical_models_tf.py`:
 | Model | dim | Exact oracle | 4-route tuned comparison | Status |
 |---|---|---|---|---|
 | Diagonal LGSSM | 3/3 | **Yes** — Kalman | Phases 2.1→4 | **executing** |
+| KSC-SV | 1 | **Yes** — dense Kalman | — | oracle available, comparison not started |
+| Generalized SV | 1 | **Yes** — via KSC-SV transform | — | oracle available, comparison not started |
+| Actual SV | 1 | **Yes** — via KSC-SV transform | — | oracle available, comparison not started |
 | Austria SIR | 9 | No | — | untuned 16-seed value comparison only (Sep 9) |
 | Predator-Prey | 2 | No | — | not started |
-| KSC-SV | 1 | Not exact for native SV | — | oracle claim unresolved |
-| Generalized SV | — | No | — | not started |
 
-### The blocker is a reference, not a budget
+**CORRECTION 2026-09-14.** An earlier revision of this table recorded the KSC-SV
+and generalized-SV oracle as unresolved. **That was wrong.** The SV oracle
+relationship was root-caused and fixed on 2026-08-23 and re-audited 2026-08-24;
+the resolution is consolidated in
+`docs/plans/sv-oracle-resolution-record-2026-09-14.md`. In short: KSC-SV observes
+\(z_t=\log y_t^2\), a **\(\theta\)-independent bijection** of \(|y_t|\), so across
+the SV family the **score is identical** and the **value differs by exactly the
+closed-form Jacobian constant** \(\sum_t \log(2/|y_t|)\). KSC-SV has a dense
+Kalman oracle, so that oracle transfers to generalized SV and actual SV — unchanged
+for the score, plus the Jacobian constant for the value. This is bound by the live
+gate `test_ksc_equals_actual_sv_up_to_constant`
+(`tests/highdim/test_ledh_canonical_models.py:346`).
 
-`kalman_oracle_value_and_score` is **linear-Gaussian only**
+The mistake came from reading `ksc_sv_canonical_model`'s "moment-matched Gaussian
+of the KSC log-chi-square mixture" plus the superseded v2-program phrase "not
+exact for native SV" as "no oracle exists". Those are different claims: the dense
+Kalman filter **is** exact for the KSC target; the mixture-vs-native-SV gap is a
+separate documented approximation of the KSC construction itself.
+
+### Which models have an accuracy reference
+
+Every accuracy metric this program reports (L2, cosine, relative norm,
+Fisher-scaled, induced HMC error) is a **distance to an exact reference**, so a
+model without one cannot be measured by this method.
+
+**Oracle available — comparison method transfers directly:**
+
+- **Diagonal LGSSM** — `kalman_oracle_value_and_score`, exact.
+- **KSC-SV** — dense Kalman on the transformed linear-Gaussian system.
+- **Generalized SV** and **actual SV** — the KSC-SV oracle transferred through the
+  \(\theta\)-independent \(\log y^2\) bijection: **score unchanged**, value plus
+  the closed-form Jacobian constant. See
+  `docs/plans/sv-oracle-resolution-record-2026-09-14.md`.
+
+That is **four** of the models, not one. Extending the tuned 4-route comparison to
+the SV family is a **budget** question, not a methodology question.
+
+**No exact reference — genuinely blocked:**
+
+- **Austria SIR** (9-D nonlinear RK4 dynamics)
+- **Predator-prey** (2-D nonlinear RK4 ecology)
+
+`kalman_oracle_value_and_score` is linear-Gaussian only
 (`kalman_filter_marginal_loglik` takes a transition matrix, process covariance,
-observation matrix and observation covariance — it has no nonlinear path). Every
-accuracy metric this program reports (L2, cosine, relative norm, Fisher-scaled,
-induced HMC error) is a **distance to that exact reference**. For the four
-nonlinear models there is currently no exact score to measure distance from, so
-the comparison method itself does not transfer.
+observation matrix and observation covariance — no nonlinear path), and neither of
+these two reduces to a linear-Gaussian system by a known transform.
 
-Two candidate references exist and neither is a drop-in:
+**`oracle_forward_autodiff_score`** does not fill the gap for them. It is
+documented as *"never claim-bearing; it exists to gate the P4 analytical score
+derivations stage by stage"* — it checks the analytical tangent against the JVP of
+**its own program**, which is implementation correctness, not accuracy against the
+true score. Using it as an accuracy reference would measure self-consistency and
+relabel it as accuracy. This is precisely the confusion recorded as an E-class
+recurrence in the SV history: self-consistency is not fidelity.
 
-- **`oracle_forward_autodiff_score`** (`ledh_canonical_autodiff_oracle_tf.py`) is
-  documented as *"never claim-bearing; it exists to gate the P4 analytical score
-  derivations stage by stage."* It judges whether the analytical tangent matches
-  the JVP of **its own program**, which is an implementation-correctness check,
-  not accuracy against the true score. Using it as the accuracy reference would
-  measure self-consistency and silently relabel it as accuracy.
-- **KSC mixture-Kalman** was already rejected as an exact native-SV oracle by the
-  earlier v2 program: the implementation states it is not exact for native SV and
-  collapses the filtering mixture after every step. The model docstring adds an
-  equivalence gate (KSC must match actual-SV up to a theta-independent
-  observation-transform Jacobian, zero score difference), which is a
-  *consistency* condition between two parameterizations, again not an accuracy
-  reference.
-
-**Consequence.** Extending the tuned 4-route comparison to a nonlinear model
-requires first deciding what "closer to the truth" means there. Options, in
-increasing cost: (a) a converged high-N reference of the same estimator, treated
-explicitly as a reference-not-oracle with its own Monte Carlo error; (b) a
-long-run independent method (e.g. very large-N bootstrap PF) as a consensus
-reference; (c) restrict nonlinear-model comparison to *self-consistency and
-stability* metrics and drop accuracy claims. Each changes what the campaign can
-claim, so this is an owner decision and not something to pick silently.
+**Consequence for those two models only.** Deciding what "closer to the truth"
+means there is an owner decision. Options, increasing cost: (a) a converged
+high-\(N\) reference of the same estimator, labelled reference-not-oracle with its
+own Monte Carlo error; (b) a very large-\(N\) independent method as a consensus
+reference; (c) restrict comparison to self-consistency and stability metrics and
+drop accuracy claims. Each changes what the campaign can claim.
 
 ### Per-model cost, once a reference exists
 
