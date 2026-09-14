@@ -841,6 +841,12 @@ def tune_fixed_transport_hmc_kernel(
     if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
         raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
     if isinstance(config, HMCControllerConfig):
+        extras = {"search_config": search_config, "execution_config": execution_config,
+                  "target_lineage": target_lineage, "source_paths": source_paths or None,
+                  "frozen_transport_payload": frozen_transport_payload}
+        supplied = [name for name, value in extras.items() if value is not None]
+        if supplied:
+            raise ValueError("an issued fixed-transport binding rejects redundant options: " + ", ".join(supplied))
         if candidate_set_adapter is None:
             raise ValueError("HMCControllerConfig requires a repository-issued candidate-set adapter")
         execution = getattr(candidate_set_adapter, "_execution_binding", None)
@@ -850,6 +856,8 @@ def tune_fixed_transport_hmc_kernel(
         return tune_hmc_kernel(adapter=base_adapter, initial_position=initial_position,
             config=config, candidate_set_adapter=candidate_set_adapter, output_dir=output_dir,
             _candidate_set_route_kind="fixed_transport", max_work_items=max_work_items)
+    if candidate_set_adapter is not None:
+        raise ValueError("candidate_set_adapter requires HMCControllerConfig")
     from bayesfilter.inference.hmc_candidate_set_public import run_shared_fixed_transport_tuning
     return run_shared_fixed_transport_tuning(base_adapter=base_adapter, fixed_transport=fixed_transport,
         initial_position=initial_position, config=config, output_dir=output_dir,

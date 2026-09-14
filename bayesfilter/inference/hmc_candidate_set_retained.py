@@ -10,6 +10,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from bayesfilter.inference.hmc_candidate_runtime import tuning_seed_inventory
+
 from bayesfilter.inference.hmc_candidate_set_artifacts import (
     candidate_set_result_payload, load_candidate_set_result_payload, require_verified_member,
 )
@@ -182,6 +184,15 @@ class HMCCandidateRetainedRunner:
     def num_leapfrog_steps(self) -> int:
         return self.candidate.leapfrog_steps
 
+    def _tuning_seeds(self) -> set[tuple[int, int]]:
+        works = {row["work_item_id"]: HMCWorkItem.from_payload(row)
+                 for row in self._result["work_items"]}
+        attempts = ((self._binding.work_seed(works[event["work_item_id"]]), event["chunk_index"])
+                    for event in self._result["accounting_events"]
+                    if event["event"] == "numerical_chunk_charged")
+        return tuning_seed_inventory(self._binding._evidence.values(), self._binding._partial.values(),
+                                     attempted_chunks=attempts)
+
     def run_sequential(self, *, config: Any, model_transform: Any = None, **kwargs: Any) -> Any:
         """Assess one explicitly selected member with the posterior controller.
 
@@ -195,8 +206,7 @@ class HMCCandidateRetainedRunner:
             raise ValueError("sequential sampling must preserve the verified candidate kernel")
         if config.jit_compile != self._binding.config.use_xla:
             raise ValueError("sequential execution must preserve the qualified XLA policy")
-        used_seeds = {tuple(e["seed"]) for e in self._binding._evidence.values()}
-        used_seeds.update(tuple(c["seed"]) for e in self._binding._evidence.values() for c in e.get("chunks", ()))
+        used_seeds = self._tuning_seeds()
         if tuple(config.warmup_seed) in used_seeds or tuple(config.retained_seed) in used_seeds:
             raise ValueError("posterior seeds must be fresh relative to tuning")
         if any(key in kwargs for key in ("adapter", "initial_state")):
@@ -260,6 +270,8 @@ class HMCCandidateRetainedRunner:
             raise ValueError("invalid retained seed history")
         for seed in seeds:
             _seed(seed)
+        if any(tuple(seed) in self._tuning_seeds() for seed in seeds):
+            raise ValueError("retained archive seeds must be fresh relative to all tuning chunks")
         if payload["predecessor"] is not None:
             parent = payload["predecessor"]
             previous, previous_endpoint = self._archive(parent["path"], seen | {resolved})
@@ -294,7 +306,7 @@ class HMCCandidateRetainedRunner:
             history = previous["seed_history"]
             predecessor = {"path": str(Path(previous_archive).resolve()), "content_hash": _sha256(previous),
                            "final_active_state_hash": previous["final_active_state"]["sha256"]}
-        tuning_seeds = {tuple(value["seed"]) for value in self._binding._evidence.values()}
+        tuning_seeds = self._tuning_seeds()
         if seed in tuning_seeds or list(seed) in history:
             raise ValueError("retained seed must be fresh relative to tuning and predecessor blocks")
         destination = Path(output_dir) / "retained_archive.json"

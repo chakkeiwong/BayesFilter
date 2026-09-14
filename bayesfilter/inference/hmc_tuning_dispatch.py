@@ -53,8 +53,11 @@ def tune_hmc_kernel(
 
     require_active_hmc_tuning_route("tune_hmc_kernel")
     if isinstance(config, HMCControllerConfig):
-        if search_config is not None or execution_config is not None:
-            raise ValueError("an issued candidate binding already freezes its execution and search inputs")
+        extras = {"search_config": search_config, "execution_config": execution_config,
+                  "target_lineage": target_lineage, "source_paths": source_paths or None}
+        supplied = [name for name, value in extras.items() if value is not None]
+        if supplied:
+            raise ValueError("an issued candidate binding rejects redundant options: " + ", ".join(supplied))
         if candidate_set_adapter is None:
             raise ValueError(
                 "HMCControllerConfig requires a repository-issued candidate-set adapter"
@@ -92,7 +95,6 @@ def tune_hmc_kernel(
         )
     if isinstance(config, TensorFlowHMCKernelTuningConfig):
         unsupported = {
-            "execution_config": execution_config,
             "candidate_set_adapter": candidate_set_adapter,
             "target_lineage": target_lineage,
             "source_paths": source_paths or None,
@@ -120,6 +122,7 @@ def tune_hmc_kernel(
             parameter_scales=parameter_scales,
             runner_binding=runner_binding,
             search_config=search_config,
+            execution_config=execution_config,
             max_work_items=max_work_items,
         )
 

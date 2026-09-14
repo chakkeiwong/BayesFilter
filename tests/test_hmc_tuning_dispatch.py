@@ -86,6 +86,8 @@ def _config() -> TensorFlowHMCKernelTuningConfig:
         budget_provenance="one-step interface diagnostic",
         initial_step_size_provenance="convenience diagnostic",
         geometry_provenance="unit parameter scales diagnostic",
+        use_xla=False,
+        non_xla_reason="tiny CPU dispatch/reference fixture",
         target_scope="tensorflow-dispatch-test",
         acceptance_policy=FourChainMeanBandAcceptancePolicy(
             overall_band=(0.0, 1.0),

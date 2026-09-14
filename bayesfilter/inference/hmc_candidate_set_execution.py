@@ -22,6 +22,8 @@ from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCInfrastructureFailure, HMCSharedInvalidity,
 )
 from bayesfilter.inference.hmc_verification import HMCAcceptancePolicy
+from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
+from bayesfilter.inference.hmc_candidate_runtime import chunk_seed, before_numerical_chunk
 
 EXECUTION_SCHEMA = "bayesfilter.hmc_candidate_execution.v1"
 _ISSUER = object()
@@ -126,12 +128,15 @@ class HMCCandidateExecutionConfig:
     chain_mode: str = "serial"
     chunk_max_results: int = 256
     preparation_elapsed_seconds: float = 0.0
+    pilot_num_results: int | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
             raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
         for name in ("measurement_num_results", "verification_num_results"):
             _positive_int(getattr(self, name), name, self.acceptance_policy.min_decisions_per_chain)
+        if self.pilot_num_results is not None:
+            _positive_int(self.pilot_num_results, "pilot_num_results", self.acceptance_policy.min_decisions_per_chain)
         _positive_int(self.num_warmup_steps, "num_warmup_steps", 0)
         _positive_int(self.chunk_max_results, "chunk_max_results")
         import math
@@ -148,7 +153,10 @@ class HMCCandidateExecutionConfig:
             raise ValueError("chain_mode must be serial or threaded")
 
     def payload(self) -> Mapping[str, Any]:
-        return {**asdict(self), "acceptance_policy": self.acceptance_policy.payload()}
+        payload = {**asdict(self), "acceptance_policy": self.acceptance_policy.payload()}
+        if self.pilot_num_results is None:
+            payload.pop("pilot_num_results")
+        return payload
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
@@ -172,6 +180,7 @@ def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping
              "hmc_candidate_set_execution", "hmc_candidate_set_retained",
              "hmc_candidate_set_adapters", "hmc_candidate_set_tuning",
              "hmc_candidate_set_checkpoint", "hmc_candidate_set_public", "hmc_candidate_set_position_field",
+             "hmc_candidate_decisions", "hmc_candidate_proposals", "hmc_candidate_runtime", "hmc_preparation",
              "hmc_candidate_set_artifacts", "hmc_verification", "hmc_convergence",
              "tuning_contract", "hmc_tuning_dispatch", "fixed_transport_hmc_tuning_tf",
              "posterior_adapter", "batched_value_score",
@@ -478,29 +487,28 @@ class HMCCandidateExecutionBinding:
             target_log_prob=trace["target_log_prob"][warmup:],
             native_divergence_status="available" if divergence is not None else "not_exposed_by_kernel",
             native_divergence_count=int(tf.reduce_sum(tf.cast(divergence, tf.int32))) if divergence is not None else None)
-        vetoes = tuple(dict.fromkeys((*failures, *evidence.engineering_invalidity_reasons)))
-        decision = evidence.acceptance_decision
-        if vetoes or evidence.evidence_validity != "valid" or decision == "unavailable":
-            decision = "failed"
-        elif decision == "passed" and not evidence.promotion_eligible:
-            decision = "inconclusive_evidence"
-        return {"decision": decision, "acceptance": evidence.pooled_mean,
-                "hard_vetoes": vetoes, "acceptance_evidence": evidence.payload(),
-                "evidence_validity": ("shared_execution_invalid" if "metropolis_state_mismatch" in failures
-                                      else evidence.evidence_validity),
+        decision = HMCCandidateDecision.from_evidence(evidence,
+            hard_vetoes=tuple(reason for reason in failures if reason != "native_divergence_positive"),
+            shared_invalidity="metropolis_state_mismatch" in failures)
+        return {**decision.payload(), "acceptance": evidence.pooled_mean,
+                "acceptance_evidence": evidence.payload(),
                 "engineering_invalidity_reasons": evidence.engineering_invalidity_reasons,
-                "promotion_vetoes": evidence.candidate_promotion_vetoes,
-                "repair_eligible": decision in {"repair_step_lower", "repair_step_higher"} and not vetoes,
                 "diagnostic_alerts": evidence.payload().get("diagnostic_alerts", ())}
 
     def work_count(self, work: HMCWorkItem) -> int:
+        if work.stage == "pilot" and self.config.pilot_num_results is not None:
+            return self.config.pilot_num_results * work.evidence_multiplier
         stage = "measurement" if work.stage == "pilot" else work.stage
         return getattr(self.config, stage + "_num_results") * work.evidence_multiplier
 
-    def work_cost(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord) -> Mapping[str, Any]:
-        transitions = (self.work_count(work) + self.config.num_warmup_steps) * int(self.initial_active_state.shape[0])
+    def work_cost(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord, *, remaining=True) -> Mapping[str, Any]:
+        count = self.work_count(work) + self.config.num_warmup_steps
+        if remaining:
+            count -= sum(chunk["count"] for chunk in self._partial.get(work.work_item_id, ()))
+        transitions = count * int(self.initial_active_state.shape[0])
         return {"transitions": transitions, "gradient_work": transitions * (candidate.leapfrog_steps + 1),
-                "cost_basis": "conservative_endpoint_gradient_work_estimate", "leapfrog_steps": candidate.leapfrog_steps}
+                "cost_basis": "conservative_endpoint_gradient_work_estimate", "leapfrog_steps": candidate.leapfrog_steps,
+                "charge_mode": "chunk"}
 
     def observe(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord) -> Mapping[str, Any]:
         import tensorflow as tf
@@ -521,21 +529,19 @@ class HMCCandidateExecutionBinding:
         state = (_tensor_from_payload(chunks[-1]["samples"])[-1] if chunks else self.initial_active_state)
         started = time.monotonic()
         while done < total:
-            if self._deadline is not None and time.monotonic() >= self._deadline:
-                raise HMCInfrastructureFailure("wall-time cap reached between numerical chunks")
             take = min(total - done, self.config.chunk_max_results)
-            chunk_seed = seed if not chunks else tuple(
-                int.from_bytes(hashlib.sha256(json.dumps([seed, len(chunks)]).encode()).digest()[i:i+4], "big")
-                & 0x7fffffff for i in (0, 4))
+            before_numerical_chunk(self, work, candidate, count=take,
+                                   chains=int(self.initial_active_state.shape[0]), index=len(chunks))
+            current_seed = chunk_seed(seed, len(chunks))
             chunk_started = time.monotonic()
             key = (candidate.leapfrog_steps, take)
             first_runner_call = key not in self._runners
             try:
-                result = self._run(candidate, state, take, chunk_seed)
+                result = self._run(candidate, state, take, current_seed)
             except (tf.errors.ResourceExhaustedError, tf.errors.UnavailableError,
                     tf.errors.DeadlineExceededError, tf.errors.AbortedError) as exc:
                 raise HMCInfrastructureFailure(type(exc).__name__ + ": " + str(exc)) from exc
-            chunk = {"count": take, "seed": chunk_seed, "initial_state": _tensor_payload(state),
+            chunk = {"count": take, "seed": current_seed, "initial_state": _tensor_payload(state),
                      "work": work.payload(), "binding_hash": self.binding_hash,
                      "samples": _tensor_payload(result.samples), "trace": _trace_payload(result.trace),
                      "samples_device": result.samples.device, "runtime": result.metadata,
@@ -559,7 +565,7 @@ class HMCCandidateExecutionBinding:
             "runtime": [chunk["runtime"] for chunk in chunks],
             "elapsed_seconds": sum(chunk["elapsed_seconds"] for chunk in chunks),
             "resume_call_elapsed_seconds": time.monotonic() - started,
-            "cost": self.work_cost(work, candidate),
+            "cost": self.work_cost(work, candidate, remaining=False),
             "chunks": [{key: chunk[key] for key in ("count", "seed", "elapsed_seconds",
                         "includes_first_runner_trace_or_compilation")} for chunk in chunks],
             "rhat_reporting_only": _report_rhat(samples[self.config.num_warmup_steps:]),

@@ -191,7 +191,8 @@ def test_default_policy_rejects_finite_out_of_band_acceptance_and_warmup_health(
     # A discarded warmup score failure still vetoes the candidate.
     trace["target_score_finite"] = tf.tensor_scatter_nd_update(trace["target_score_finite"], [[0,0]], [False])
     bad = binding.analyze(binding.initial_active_state, samples, trace)
-    assert bad["decision"] == "failed" and "nonfinite_target_score" in bad["hard_vetoes"]
+    assert not bad["promotion_eligible"] and "nonfinite_target_score" in bad["hard_vetoes"]
+    assert not bad["repair_eligible"]
 
 
 @pytest.mark.parametrize("damage", ["missing_evidence", "tensor", "endpoint", "config", "source", "target", "scope"])

@@ -195,6 +195,7 @@ def run_typed_hmc_candidate_set(
     output_dir: str | Path | None = None,
     max_work_items: int | None = None,
     _resume_controller: HMCTuningCandidateSetController | None = None,
+    _preparation_elapsed_seconds: float | None = None,
 ) -> HMCTypedCandidateSetRun:
     """Evaluate all controller work through one typed numerical adapter."""
 
@@ -253,9 +254,15 @@ def run_typed_hmc_candidate_set(
         if _resume_controller is None:
             seconds = (execution.config.preparation_elapsed_seconds if execution is not None
                        else runtime.preparation_elapsed_seconds)
+            if _preparation_elapsed_seconds is not None:
+                import math
+                if not math.isfinite(_preparation_elapsed_seconds) or _preparation_elapsed_seconds < 0:
+                    raise ValueError("preparation elapsed time must be finite and nonnegative")
+                seconds = max(seconds, _preparation_elapsed_seconds)
             controller._elapsed_seconds += seconds
             controller._accounting.append({"event": "preparation_elapsed", "seconds": seconds})
         runtime._checkpoint_callback = controller._save_checkpoint
+        runtime._charge_chunk = controller.charge_numerical_chunk
         runtime._deadline = (None if config.max_wall_time_seconds is None else
             time.monotonic() + max(0.0, config.max_wall_time_seconds - controller._elapsed_seconds))
     try:
@@ -264,6 +271,7 @@ def run_typed_hmc_candidate_set(
     finally:
         if runtime is not None:
             runtime._checkpoint_callback = None
+            runtime._charge_chunk = None
             runtime._deadline = None
     receipt = None
     if output_dir is not None:

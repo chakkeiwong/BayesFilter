@@ -1239,8 +1239,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         mass_policy="owned by the typed TensorFlow mechanics branch",
         step_size_policy="owned by the typed TensorFlow mechanics branch",
         trajectory_policy=(
-            "powers-of-two candidate screen owned by the typed TensorFlow mechanics "
-            "branch; not the ordinary broad-grid policy"
+            "shared broad L grid (3, 5, 9, 13, 18, 25) within the declared maximum; "
+            "explicit all-survivor and unresolved-interval refinement; retain every verified pair"
         ),
         fresh_verification_policy="fresh injected-runner fixed-kernel health and acceptance verification",
         ess_admission_policy="disabled for ordinary tuning admission",

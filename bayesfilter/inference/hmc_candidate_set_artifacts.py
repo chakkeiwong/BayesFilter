@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
+
 import hashlib
 import json
 from collections.abc import Mapping
@@ -247,15 +249,16 @@ def _validate_result_payload(
         decision = str(receipt.get("decision", ""))
         if not decision:
             raise ValueError("verification receipt decision is missing")
-        if (receipt.get("hard_vetoes") or receipt.get("promotion_vetoes")) and decision in passing_decisions:
-            raise ValueError("verified verification receipt contains a hard veto")
+        # A passing acceptance observation may belong to a rejected candidate.
+        # Validate its roles here; membership is checked independently below.
+        HMCCandidateDecision.from_observation(receipt)
         prior_ranges.append(draw_range)
         receipt_hash = _sha256(receipt)
         receipt_by_hash[receipt_hash] = receipt
     for candidate_id in verified:
         if not any(
             receipt.get("candidate_id") == candidate_id
-            and receipt.get("decision") in passing_decisions
+            and HMCCandidateDecision.from_observation(receipt).promotion_eligible
             and receipt.get("stage", "verification") == "verification"
             and not receipt.get("hard_vetoes") and not receipt.get("promotion_vetoes")
             and receipt.get("evidence_validity", "valid") == "valid"
@@ -356,6 +359,7 @@ def _validate_result_payload(
                 raise ValueError("work item repair identity mismatch")
 
     accounting = payload.get("accounting_events", ())
+    chunk_accounting = payload.get("search_state", {}).get("controller_policy_version", 0) >= 3
     if not isinstance(accounting, (tuple, list)):
         raise ValueError("candidate-set artifact has invalid accounting events")
     charged = 0
@@ -367,6 +371,14 @@ def _validate_result_payload(
         units = int(event.get("units", 0))
         if units < 0:
             raise ValueError("candidate-set accounting units must be non-negative")
+        if chunk_accounting and event.get("event") == "numerical_chunk_charged":
+            work = work_by_id.get(event.get("work_item_id"))
+            index, transitions = event.get("chunk_index"), event.get("transitions")
+            if (work is None or type(index) is not int or index < 0
+                    or type(transitions) is not int or transitions <= 0):
+                raise ValueError("invalid attempted chunk accounting identity or extent")
+            if event.get("gradient_work") != transitions * (by_id[work["candidate_id"]]["leapfrog_steps"] + 1):
+                raise ValueError("attempted chunk cost disagrees with candidate")
         if event.get("event") == "work_charged":
             charged += units
         elif event.get("event") == "reserve_allocated":
@@ -377,6 +389,11 @@ def _validate_result_payload(
         raise ValueError("candidate-set budget usage does not match accounting")
     if allocated - charged - released != reserved_budget:
         raise ValueError("candidate-set reserved budget does not match accounting")
+    if chunk_accounting:
+        work = sum(event.get("gradient_work", 0) for event in accounting
+                   if event.get("event") in {"numerical_work_reserved", "numerical_chunk_charged"})
+        if work != payload.get("search_state", {}).get("gradient_work"):
+            raise ValueError("gradient-work usage does not match attempted-work accounting")
 
 
 def candidate_set_result_payload(result: HMCTuningCandidateSetResult) -> Mapping[str, Any]:
@@ -398,6 +415,7 @@ def write_candidate_set_result(
         raise FileExistsError(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     payload = candidate_set_result_payload(result)
+    _validate_result_payload(payload)
     encoded = json.dumps(payload, indent=2, sort_keys=True, default=list) + "\n"
     temporary = destination.with_name(destination.name + ".tmp")
     temporary.write_text(encoded, encoding="utf-8")

@@ -18,6 +18,11 @@ from dataclasses import dataclass, field, replace
 import time
 from typing import Any, Literal
 
+from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
+from bayesfilter.inference.hmc_candidate_proposals import (
+    DirectionalEpsilonEvidence, directional_proposal, unresolved_interiors,
+)
+
 
 HMC_CANDIDATE_SET_TUNING_SCHEMA = "bayesfilter.hmc_candidate_set_tuning.v1"
 HMC_CANDIDATE_SET_RESULT_SCHEMA = "bayesfilter.hmc_candidate_set_result.v1"
@@ -33,6 +38,7 @@ REPAIR_REASONS = frozenset(
 )
 _DIRECTIONAL = {"repair_step_higher", "repair_step_lower"}
 _STAGE_ORDER = {"pilot": -1, "measurement": 0, "verification": 1}
+CONTROLLER_POLICY_VERSION = 3
 
 
 def _integer(value: Any, name: str, minimum: int = 1) -> int:
@@ -363,6 +369,12 @@ class HMCVerificationReceipt:
             raise ValueError("draw_range must be ordered and non-negative")
         if self.acceptance is not None and not math.isfinite(float(self.acceptance)):
             raise ValueError("acceptance must be finite when present")
+        self.decision_evidence
+
+    @property
+    def decision_evidence(self) -> HMCCandidateDecision:
+        return HMCCandidateDecision(self.decision, self.evidence_validity,
+            self.hard_vetoes, self.promotion_vetoes, self.repair_eligible)
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -384,6 +396,7 @@ class HMCVerificationReceipt:
             "promotion_vetoes": self.promotion_vetoes,
             "repair_eligible": self.repair_eligible,
             "diagnostic_alerts": self.diagnostic_alerts,
+            **self.decision_evidence.payload(),
             **({"numerical_evidence_hash": self.numerical_evidence_hash}
                if self.numerical_evidence_hash is not None else {}),
         }
@@ -392,6 +405,7 @@ class HMCVerificationReceipt:
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCVerificationReceipt":
         if payload.get("schema") != "bayesfilter.hmc_verification_receipt.v1":
             raise ValueError("unsupported HMC verification receipt schema")
+        HMCCandidateDecision.from_observation(payload)
         return cls(
             verification_attempt_id=payload["verification_attempt_id"],
             candidate_id=payload["candidate_id"],
@@ -765,19 +779,19 @@ class HMCTuningScopeCollection:
 
     @property
     def complete(self) -> bool:
-        if self.expected_scope_ids:
-            by_scope = {result.scope.scope_id: result for result in self.results}
-            return all(
-                scope_id in by_scope and by_scope[scope_id].completion_status == "complete"
-                for scope_id in self.expected_scope_ids
-            )
-        return all(result.completion_status == "complete" for result in self.results)
+        present = {result.scope.scope_id for result in self.results}
+        return (set(self.expected_scope_ids) <= present
+                and all(result.completion_status == "complete" for result in self.results))
 
-    def member(self, scope_id: str, candidate_id: str) -> HMCTuningCandidateRecord:
-        for result in self.results:
-            if result.scope.scope_id == scope_id:
-                return result.replay_candidate(candidate_id)
-        raise ValueError("scope is absent from the reporting collection")
+    def member(self, scope_id: str, candidate_id: str, *, search_id: str | None = None) -> HMCTuningCandidateRecord:
+        if not any(result.scope.scope_id == scope_id for result in self.results):
+            raise ValueError("scope is absent from the reporting collection")
+        matches = [result for result in self.results if result.scope.scope_id == scope_id
+                   and (search_id is None or result.scope.search_id == search_id)
+                   and any(c.candidate_id == candidate_id for c in result.candidates)]
+        if len(matches) != 1:
+            raise ValueError("candidate is absent or ambiguous in the scope/search collection")
+        return matches[0].replay_candidate(candidate_id)
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -799,7 +813,11 @@ class HMCTuningScopeCollection:
 
 
 class HMCInfrastructureFailure(RuntimeError):
-    """Adapter could not complete a work item and retry is disallowed."""
+    """Adapter could not complete work; preserve progress for bounded resume."""
+
+
+class HMCBudgetExhausted(HMCInfrastructureFailure):
+    """A cooperative deadline or attempted-work cap prevents the next chunk."""
 
 
 class HMCSharedInvalidity(RuntimeError):
@@ -852,6 +870,7 @@ class HMCTuningCandidateSetController:
         self._work_ordinal = 0
         self._verification_ordinal: dict[str, int] = {}
         self._active_cohort: tuple[str, ...] = ()
+        self._budget_deferred: set[str] = set()
         self._cohort_ordinal = 0
         self._available_units = config.total_budget_units
         self._spent_units = 0
@@ -876,7 +895,7 @@ class HMCTuningCandidateSetController:
 
         if payload.get("schema") != HMC_CANDIDATE_SET_RESULT_SCHEMA:
             raise ValueError("unsupported HMC candidate-set result schema")
-        if payload.get("search_state", {}).get("controller_policy_version") != 2:
+        if payload.get("search_state", {}).get("controller_policy_version") != CONTROLLER_POLICY_VERSION:
             raise ValueError("historical controller results are readable but cannot resume under a changed search policy")
         scope_payload = payload.get("scope")
         config_payload = payload.get("config")
@@ -912,6 +931,7 @@ class HMCTuningCandidateSetController:
         controller._work_ordinal = 0
         controller._verification_ordinal = {}
         controller._active_cohort = ()
+        controller._budget_deferred = set()
         controller._cohort_ordinal = 0
         controller._available_units = int(payload.get("remaining_budget_units", 0))
         controller._spent_units = int(payload.get("budget_used_units", 0))
@@ -1091,6 +1111,12 @@ class HMCTuningCandidateSetController:
         return next((c for c in self.candidates
                      if c.leapfrog_steps == leapfrog_steps and c.epsilon == epsilon), None)
 
+    def _directional_evidence(self, leapfrog_steps: int) -> tuple[DirectionalEpsilonEvidence, ...]:
+        latest = {receipt.candidate_id: receipt for receipt in self._receipts
+                  if receipt.exact_l == leapfrog_steps}
+        return tuple(DirectionalEpsilonEvidence(receipt.epsilon, receipt.decision, receipt.candidate_id)
+                     for receipt in latest.values() if receipt.decision_evidence.repair_eligible)
+
     def _refine_survivors(self) -> bool:
         if self._refinement_round >= self.config.refinement_rounds:
             return False
@@ -1103,6 +1129,12 @@ class HMCTuningCandidateSetController:
                 proposals.setdefault((candidate.leapfrog_steps, candidate.epsilon * factor), []).append(candidate.candidate_id)
             for steps in (*self.config.refinement_l_grid, *self.config.expansion_l_grid):
                 proposals.setdefault((steps, candidate.epsilon), []).append(candidate.candidate_id)
+        # Finite refinement also investigates unresolved directional intervals.
+        # It does not require a lucky first verified member to become reachable.
+        for steps in dict.fromkeys(c.leapfrog_steps for c in self.candidates):
+            visited = {c.epsilon for c in self.candidates if c.leapfrog_steps == steps}
+            for epsilon, parents in unresolved_interiors(self._directional_evidence(steps), visited):
+                proposals.setdefault((steps, epsilon), []).extend(parents)
         added = False
         lo, hi = self.scope.epsilon_domain
         for (steps, epsilon), parents in proposals.items():
@@ -1281,6 +1313,7 @@ class HMCTuningCandidateSetController:
                 work_id
                 for work_id in self._active_cohort
                 if self._work_items[work_id].status in {"pending", "interrupted"}
+                and work_id not in self._budget_deferred
             )
             if pending:
                 return pending
@@ -1289,6 +1322,7 @@ class HMCTuningCandidateSetController:
             work
             for work in self._work_items.values()
             if work.status in {"pending", "interrupted"}
+            and work.work_item_id not in self._budget_deferred
         ]
         if not ready:
             return ()
@@ -1310,7 +1344,8 @@ class HMCTuningCandidateSetController:
 
     def _cohort_closed(self) -> bool:
         return bool(self._active_cohort) and all(
-            self._work_items[work_id].status == "completed" for work_id in self._active_cohort
+            self._work_items[work_id].status == "completed" or work_id in self._budget_deferred
+            for work_id in self._active_cohort
         )
 
     def _materialize_deferred_repairs(self) -> None:
@@ -1373,30 +1408,10 @@ class HMCTuningCandidateSetController:
     def _parse_observation(self, raw: Mapping[str, Any]) -> Mapping[str, Any]:
         if not isinstance(raw, Mapping):
             raise TypeError("outcome provider must return a mapping")
-        decision = str(raw.get("decision", "passed"))
-        if decision not in {
-            "passed",
-            "acceptance_in_band",
-            "inconclusive_evidence",
-            "inconclusive_conflict",
-            "repair_step_higher",
-            "repair_step_lower",
-            "repair_trajectory",
-            "promotion_failed",
-            "failed",
-        }:
-            raise ValueError(f"unknown tuning decision: {decision}")
-        validity = raw.get("evidence_validity", "valid")
-        if validity == "shared_execution_invalid":
+        decision = HMCCandidateDecision.from_observation(raw)
+        if decision.evidence_validity == "shared_execution_invalid":
             raise HMCSharedInvalidity(str(raw.get("engineering_invalidity_reasons", raw)))
-        return {
-            **dict(raw),
-            "decision": decision,
-            "hard_vetoes": tuple(str(item) for item in raw.get("hard_vetoes", ())),
-            "promotion_vetoes": tuple(str(item) for item in raw.get("promotion_vetoes", ())),
-            "evidence_validity": validity,
-            "repair_eligible": raw.get("repair_eligible", decision in _DIRECTIONAL and not raw.get("hard_vetoes")),
-        }
+        return {**dict(raw), **decision.payload()}
 
     def _receipt(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord, observation: Mapping[str, Any]) -> HMCVerificationReceipt:
         attempt = work.verification_attempt_id or f"{work.work_item_id}:attempt"
@@ -1431,14 +1446,12 @@ class HMCTuningCandidateSetController:
             self._states[candidate.candidate_id] = "promotion_failed"
             self._accounting.append({"event": "repair_limit_exhausted", "candidate_id": candidate.candidate_id, "candidate_family_id": candidate.candidate_family_id})
             return
-        multiplier = self.scope.repair_factor if direction == "repair_step_higher" else 1.0 / self.scope.repair_factor
         lo, hi = self.scope.epsilon_domain
-        new_epsilon = min(hi, max(lo, candidate.epsilon * multiplier))
-        if self._find_pair(candidate.leapfrog_steps, new_epsilon) is not None:
-            # Opposite directional evidence is not a monotonicity guarantee.
-            # Test an unvisited geometric interior point instead of cycling.
-            new_epsilon = math.exp((math.log(candidate.epsilon) + math.log(new_epsilon)) / 2)
-        if (not lo <= new_epsilon <= hi or new_epsilon == candidate.epsilon
+        new_epsilon = directional_proposal(epsilon=candidate.epsilon, direction=direction,
+            evidence=self._directional_evidence(candidate.leapfrog_steps),
+            visited={c.epsilon for c in self.candidates if c.leapfrog_steps == candidate.leapfrog_steps},
+            domain=self.scope.epsilon_domain, factor=self.scope.repair_factor)
+        if (new_epsilon is None or not lo <= new_epsilon <= hi or new_epsilon == candidate.epsilon
                 or self._find_pair(candidate.leapfrog_steps, new_epsilon) is not None
                 or len(self._candidates) >= self.config.max_candidates):
             self._states[candidate.candidate_id] = "promotion_failed"
@@ -1500,7 +1513,8 @@ class HMCTuningCandidateSetController:
                 self._accounting.append({"event": "trajectory_proposed", "candidate_id": cid,
                                          "requesting_parent": candidate.candidate_id})
         elif (parsed["hard_vetoes"] or parsed["evidence_validity"] != "valid"
-              or decision in {"failed", "promotion_failed"} or promotion_blocked):
+              or decision in {"failed", "promotion_failed", "unavailable", *_DIRECTIONAL}
+              or promotion_blocked):
             self._states[candidate.candidate_id] = "promotion_failed"
         elif work.stage == "pilot":
             # A pilot observation only proposes a frozen measurement.
@@ -1547,6 +1561,24 @@ class HMCTuningCandidateSetController:
                           for w in result.work_items)
             self._checkpoint(replace(result, work_items=works))
 
+    def charge_numerical_chunk(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord,
+                               *, transitions: int, chunk_index: int) -> None:
+        """Charge an attempted native call before it can execute or be lost."""
+        gradient = _integer(transitions, "transitions") * (candidate.leapfrog_steps + 1)
+        if (self.config.max_gradient_work is not None
+                and self._gradient_work + gradient > self.config.max_gradient_work):
+            raise HMCBudgetExhausted("gradient-work cap prevents the next numerical chunk")
+        self._gradient_work += gradient
+        self._accounting.append({"event": "numerical_chunk_charged", "work_item_id": work.work_item_id,
+            "transitions": transitions, "gradient_work": gradient, "chunk_index": chunk_index,
+            "cost_basis": "conservative_attempted_native_chunk"})
+        self._save_checkpoint()
+
+    def _defer_unfunded_work(self, work: HMCWorkItem, reason: str) -> None:
+        self._budget_deferred.add(work.work_item_id)
+        self._accounting.append({"event": "work_budget_deferred", "work_item_id": work.work_item_id,
+                                 "candidate_id": work.candidate_id, "reason": reason})
+
     def run(self, outcome_provider: OutcomeProvider, *, max_work_items: int | None = None,
             checkpoint: Callable | None = None, work_cost: Callable | None = None) -> HMCTuningCandidateSetResult:
         """Dispatch closed cohorts with durable observations and bounded retries."""
@@ -1560,6 +1592,7 @@ class HMCTuningCandidateSetController:
         dispatched = 0
         self._infrastructure_paused = False
         self._stop_reason = None
+        self._budget_deferred = set()
         started = time.monotonic()
         elapsed_before = self._elapsed_seconds
         self._elapsed_clock = (elapsed_before, started)
@@ -1572,6 +1605,9 @@ class HMCTuningCandidateSetController:
                     self._retry_unfunded_proposals()
                 cohort = self._next_cohort()
                 if not cohort:
+                    if self._budget_deferred:
+                        self._stop_reason = "budget_bound"
+                        return self.result()
                     if self._refine_survivors():
                         continue
                     break
@@ -1584,18 +1620,22 @@ class HMCTuningCandidateSetController:
                     gradient = _integer(cost.get("gradient_work", 0), "gradient_work", 0)
                     elapsed = elapsed_before + time.monotonic() - started
                     if ((max_work_items is not None and dispatched >= max_work_items)
-                            or (self.config.max_gradient_work is not None and
-                                self._gradient_work + gradient > self.config.max_gradient_work)
                             or (self.config.max_wall_time_seconds is not None and
                                 elapsed >= self.config.max_wall_time_seconds)):
                         self._stop_reason = "budget_bound"
                         return self.result()
+                    if (self.config.max_gradient_work is not None
+                            and self._gradient_work + gradient > self.config.max_gradient_work):
+                        self._defer_unfunded_work(work, "remaining_gradient_work")
+                        continue
                     if not self._charge_work(work, candidate):
-                        self._stop_reason = "budget_bound"
-                        self._set_work(work, status="interrupted")
-                        return self.result()
-                    self._gradient_work += gradient
-                    self._accounting.append({"event": "numerical_work_reserved", "work_item_id": work_id, **cost})
+                        self._defer_unfunded_work(work, "remaining_call_units")
+                        continue
+                    chunk_charged = cost.get("charge_mode") == "chunk"
+                    if not chunk_charged:
+                        self._gradient_work += gradient
+                    self._accounting.append({"event": "numerical_work_quoted" if chunk_charged
+                                             else "numerical_work_reserved", "work_item_id": work_id, **cost})
                     self._set_work(work, status="running")
                     if work.repair_action_id is not None:
                         action = self._repairs[work.repair_action_id]
@@ -1611,8 +1651,10 @@ class HMCTuningCandidateSetController:
                         self._apply_observation(work, observation)
                     except (HMCSharedInvalidity, HMCInfrastructureFailure) as exc:
                         self._scope_invalid = isinstance(exc, HMCSharedInvalidity)
-                        self._infrastructure_paused = not self._scope_invalid
-                        self._stop_reason = "shared_invalidity" if self._scope_invalid else "paused_infrastructure"
+                        budget_stop = isinstance(exc, HMCBudgetExhausted)
+                        self._infrastructure_paused = not self._scope_invalid and not budget_stop
+                        self._stop_reason = ("shared_invalidity" if self._scope_invalid else
+                                             "budget_bound" if budget_stop else "paused_infrastructure")
                         self._accounting.append({"event": "execution_failure", "work_item_id": work_id,
                                                  "type": type(exc).__name__, "reason": str(exc)})
                         self._set_work(self._work_items[work_id], status="interrupted")
@@ -1692,7 +1734,8 @@ class HMCTuningCandidateSetController:
             reserved_budget_units=sum(self._candidate_reserves.values()),
             observations=tuple(self._observations),
             search_state={"refinement_round": self._refinement_round, "gradient_work": self._gradient_work,
-                          "elapsed_seconds": self._elapsed_seconds, "controller_policy_version": 2},
+                          "elapsed_seconds": self._elapsed_seconds,
+                          "controller_policy_version": CONTROLLER_POLICY_VERSION},
         )
 
 

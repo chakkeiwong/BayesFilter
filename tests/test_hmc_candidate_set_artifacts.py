@@ -144,7 +144,7 @@ def test_replay_rejects_inconclusive_receipt_relabelled_as_verified():
     payload["verification_receipts"] = receipts
     _rehash(payload)
 
-    with pytest.raises(ValueError, match="passing verification receipt"):
+    with pytest.raises(ValueError, match="passing verification receipt|decision aliases disagree"):
         require_verified_member(
             payload,
             scope_id=result.scope.scope_id,

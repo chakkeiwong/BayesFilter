@@ -92,8 +92,10 @@ its full-chain capability and the consumer must establish value/score fidelity.
 \label{sec:bf-fixed-transport-joint-tuning}
 \label{sec:bf-fixed-transport-candidate-selection}
 
-The ordinary convenience grid is $L\in\{3,5,9,13,18,25\}$, subject to the
-explicit maximum. An explicit \path{epsilon_by_l} may supply several proposals
+The ordinary convenience grid is $L\in\{3,5,9,13,18,25\}$, and its legacy
+preparation config fixes the maximum at 25. The proposal-field config declares
+its own maximum. Supplied initial, refinement and expansion grids must obey
+the applicable maximum. An explicit \path{epsilon_by_l} may supply several proposals
 at each $L$; \path{initial_epsilon} is a warm start when no grid is supplied.
 Every pair is measured independently. A shared numeric proposal at two values
 of $L$ transfers no acceptance evidence between them. The final-metric epsilon
@@ -110,8 +112,11 @@ deduplicated, and all proposals remain subject to candidate and work limits.
 The reciprocal convenience factors $(0.8,1.25)$ are hypotheses about useful
 nearby proposals, not universal numerical optima.
 
-Work proceeds in closed cohorts. Every admitted peer receives its reserved
-stage before a repair child enters the next cohort. A first pass does not
+Work proceeds in closed cohorts. Every funded admitted peer receives its reserved
+stage before a repair child enters the next cohort. A peer whose full required
+work cannot fit the remaining budget is explicitly deferred, permitting other
+affordable reserved work to finish. Its evidence allocation is preserved and
+the search remains incomplete. A first pass does not
 remove later candidates. Directional evidence creates an immutable child with
 the same $L$, mass, target, coordinates, and initial bank. The child has a new
 epsilon and must receive its own measurement and verification. A parent may
@@ -139,9 +144,12 @@ give the phase
 \end{equation}
 The trajectory phase is $L\vartheta(\epsilon)$. Near a return phase, acceptance
 can be high with little net movement. A multiplicative epsilon repair is thus
-another hypothesis to measure. On directional reversal, the controller may
-propose an unvisited geometric interior point instead of cycling through an
-already tested pair. It does not assume monotone acceptance.
+another hypothesis to measure. The controller remembers the latest valid
+directional evidence for each exact pair and prioritizes unvisited geometric
+interior points toward nearby opposing observations. It retains this evidence
+across restart. Finite refinement also investigates unresolved directional
+intervals when no original family survives. It does not assume monotone
+acceptance or infer a pass at an unmeasured point.
 When a proposal crosses the declared domain, its unvisited boundary can be
 measured before that direction is exhausted.
 
@@ -160,9 +168,17 @@ temporal blocks, and a 90\% compatibility interval. Its first allocation
 requires at least four blocks of sixteen decisions per chain. Acceptance,
 movement and numerical health have distinct roles. Finite accepted/proposed
 states and targets, endpoint score finiteness, momentum, Metropolis state
-consistency, declared target status, and available native divergence determine
+consistency and declared target status determine
 whether the numerical evidence is usable. Candidate-local failure rejects that
 pair; shared execution corruption stops the scope and disables all its replay.
+Available native divergence vetoes promotion of the current pair. When the
+acceptance evidence is valid and supports a directional repair, that veto does
+not prevent a newly measured child. Acceptance compatibility and promotion
+eligibility are separate typed fields, so a rejected pair's in-band acceptance
+receipt remains readable alongside its verified peers.
+Both routes check numerical health over discarded warmup as well. The
+proposal-field route checks finite states, log acceptance and energy errors
+before excluding warmup from acceptance statistics.
 
 $\widehat R$ is reporting-only during tuning. High, missing, nonfinite or
 failed-to-compute values cannot reject, rank, repair or delay a candidate.
@@ -287,12 +303,25 @@ runner binding. Their \path{controller_checkpoint.json} also references immutabl
 completed chunks, permitting restart within a longer evidence stage.
 Controller-only reload cannot create missing numerical evidence.
 
+Before frozen execution exists, \path{preparation_progress.json} records
+preparation phases, elapsed time and failures. Ordinary preparation checks time
+at available progress boundaries; proposal-field affine preparation is one
+compiled graph checked before and after its call. Failed preparation must be
+retried in a fresh directory. Numerical resume requires a frozen scope with
+the same source and controller policy; historical results remain readable when
+those identities change, but cannot be silently resumed under new rules.
+
 Call budgets count attempted work. Candidate reservations protect mandatory
 stages; extensions and retries can use remaining free budget. A separate
-transition-times-$(L+1)$ estimate accounts conservatively for gradient work,
-and elapsed time includes reported preparation. Numerical chunks are bounded
+transition-times-$(L+1)$ estimate accounts conservatively for gradient work.
+The scheduler quotes unfinished work, and each chunk is charged and checkpointed
+before its native call. Resume does not recharge saved completed chunks; an
+interrupted native call remains conservatively charged even when it returned
+no usable evidence. Elapsed time includes recorded preparation. Numerical chunks are bounded
 by \path{chunk_max_results}, whose convenience default is 256. Time limits are
 checked between chunks; Python cannot preempt a native operation or compilation.
+A hard process limit must be applied externally. When preparation and search
+time limits are both supplied, the smaller limit applies.
 The first-call timing includes any tracing/compilation rather than pretending
 that it measures steady-state kernel cost.
 
@@ -304,10 +333,33 @@ verification is required; its failed ancestor need not pass. Export with
 \path{runner.export(path)} and reconstruct with
 \path{load_hmc_candidate_retained_runner(path, adapter=original_target)}.
 Fresh retained blocks continue from the verified or preceding endpoint with
-frozen settings and fresh seeds. Tuning draws remain excluded.
+frozen settings and fresh seeds. Freshness checks include every tuning stage
+and chunk, attempted partial chunks and predecessor retained blocks. Attempted
+seeds are reconstructed from the durable work/accounting records after member
+export and reload, including failed native calls that returned no trace.
+Tuning draws remain excluded.
 \path{runner.run_sequential} connects the explicitly chosen member to the
 existing cumulative posterior controller, with diagnostics transformed into
 model coordinates. Posterior rejection does not change tuning membership.
+
+The status \path{complete} means the declared search reached terminal
+dispositions; its verified set may be empty. It does not prove the absence of a
+useful kernel. Reporting collections resolve explicit scope/search/member
+identities and require every included search to complete, independently of
+their ordering.
+
+Public option conflicts are rejected before numerical preparation. An issued
+binding rejects redundant search, execution, provenance or transport overrides.
+Automatic routes may accept the shared search and execution configs. For the
+proposal-field route, legacy \path{step_adaptation_results} supplies the
+fixed-pair pilot count, while \path{verification_results} supplies measurement
+and verification counts. An explicit \path{HMCCandidateExecutionConfig} replaces
+these allocations, with an optional \path{pilot_num_results}. Pilots never
+qualify a pair. The legacy adaptive selector remains historical. Config
+payloads label their legacy candidate-policy fields as historical helper
+metadata; the active result's shared configs determine candidate stages.
+Proposal-field execution defaults to XLA; a diagnostic exception supplies
+\path{non_xla_reason}.
 
 Retained-member files currently embed their evidence and check predecessor
 history. These mechanics tests do not qualify target-scale memory, restart

@@ -38,13 +38,18 @@ Import their constants rather than copying the strings.
 1. Prepare and freeze the target, geometry, coordinate transform, four-chain
    start bank, numerical backend, telemetry policy, and source dependencies.
 2. Declare broad L coverage and epsilon hypotheses. The ordinary convenience
-   grid is `(3, 5, 9, 13, 18, 25)`, subject to the explicit maximum. A supplied
+   grid is `(3, 5, 9, 13, 18, 25)`. The ordinary legacy config fixes its maximum
+   at 25; the position-field config declares its own maximum. Supplied initial,
+   refinement and expansion grids must obey the preparation config's maximum. A supplied
    `epsilon_by_l` may contain several epsilons at each L. `initial_epsilon` is
    a warm start when an explicit grid is unavailable; each L is still measured
    independently. An optional per-L pilot proposes a frozen pair and never
    qualifies it for replay.
-3. Measure every admitted exact pair. Close the current cohort before admitting
-   its repair children. A first passing member does not end the cohort.
+3. Measure every funded admitted exact pair. Close the current cohort before
+   admitting its repair children. A peer whose required work exceeds remaining
+   budget is explicitly deferred, allowing affordable mandatory work to finish.
+   Its evidence allocation is preserved, and the search remains incomplete.
+   A first passing member does not end the cohort.
 4. Give each measurement survivor its own fresh fixed-kernel verification.
    Measurement, verification, and evidence extensions use separate recorded
    streams. Neither adaptation nor tuning draws enter posterior estimates.
@@ -61,9 +66,11 @@ Import their constants rather than copying the strings.
 7. Refine around every surviving family when `refinement_rounds` is positive.
    Epsilon factors and additional L values are declared in
    `epsilon_refinement_factors`, `refinement_l_grid`, and `expansion_l_grid`.
-   Every exact setting is deduplicated. Opposite directional evidence can propose
-   an unvisited geometric interior epsilon; this is a new measured hypothesis,
-   not an assumption of monotone acceptance. Trajectory alerts can propose only
+   Every exact setting is deduplicated. Repairs remember the latest valid
+   directional evidence at each exact pair and prioritize unvisited geometric
+   interiors toward nearby opposing observations. Finite refinement also tests
+   unresolved directional intervals when no family survives. This proposes
+   measured hypotheses without assuming monotone acceptance. Trajectory alerts can propose only
    declared additional L values, as new candidates rather than same-L repairs.
 8. Retain all verified members. `verified_candidate_ids` is the complete set of
    members eligible for checked replay. `viable_candidate_ids` also includes
@@ -96,6 +103,7 @@ Finite acceptance alone does not qualify a kernel.
 | Valid acceptance evidence with no promotion veto | Qualifies the exact measured kernel; fresh verification remains required. |
 | Supported directional acceptance failure | Proposes a smaller or larger same-L child. |
 | Repeated states, insufficient movement or recurrence | Vetoes current promotion; may coexist with an eligible directional repair. |
+| Available native divergence | Vetoes current promotion; finite valid acceptance evidence can still support a directional child repair. |
 | Candidate-local invalid target, score or transition health | Rejects that candidate and preserves the reason. |
 | Corrupt shared execution or accepted-state consistency | Stops the scope and disables all its replayable members. |
 | Resource/runtime interruption | Preserves attempted work and pauses for unchanged-scope resume. |
@@ -106,8 +114,16 @@ The exact numerical binding checks accepted/proposed states and targets, endpoin
 score finiteness, momentum, Metropolis state consistency, native divergence when
 available, and declared target status. Target-specific intermediate integrator
 telemetry and the correctness of the target value/score require consumer evidence.
+Both execution routes check numerical health over discarded warmup too. The
+position-field route checks states, log acceptance and energy errors before
+excluding warmup from acceptance statistics.
 R-hat/ESS still belong in separate cumulative posterior assessment; tuning does
 not establish convergence.
+
+Acceptance compatibility and promotion eligibility are separate typed fields.
+An in-band acceptance receipt with a promotion veto is a valid record of a
+rejected setting. Writers and readers preserve it; a verified member still
+requires its own fresh verification with valid evidence and no veto.
 
 ## Public imports and execution
 
@@ -139,6 +155,26 @@ For automatic ordinary preparation, pass `HMCKernelTuningConfig` plus optional
 covariance in the same coordinates. The operational factory preserves both
 bootstrap and final affine layers and the actual post-warmup bank.
 
+Configuration types and conflicting options are checked before preparation.
+An issued numerical binding rejects redundant execution, search, lineage,
+source-path, or frozen-payload overrides; create a new binding when those inputs
+change. Automatic routes accept explicit `search_config` and `execution_config`.
+The latter owns candidate evidence counts and acceptance policy while its XLA
+and target-status settings must agree with preparation.
+
+On the position-field route, the legacy `step_adaptation_results` count supplies
+the fixed-pair pilot allocation when a pilot is enabled. It no longer invokes
+the historical adaptive candidate selector. `verification_results` supplies
+the measurement and verification allocations. An explicit
+`HMCCandidateExecutionConfig` replaces those stage allocations, with optional
+`pilot_num_results` (otherwise the measurement count). Pilot evidence never
+grants replay authority. The route uses batched chains and rejects threaded
+chain execution. Both preparation configs default to XLA; position-field
+non-XLA diagnostics must supply `non_xla_reason`.
+Historical candidate-policy fields in `TensorFlowHMCKernelTuningConfig.payload()`
+are explicitly labeled as metadata for the historical graph helper. The active
+result's shared search and execution configs determine candidate stages.
+
 GPU/XLA is the normal execution policy. Memory growth must be enabled before
 TensorFlow import and verified before GPU initialization. CPU and non-XLA
 settings are explicit small reference/debugging exceptions. The public ordinary
@@ -153,6 +189,15 @@ A new run requires a fresh output directory. Complete results are written to
 `tuning_checkpoint.json` is atomically updated, alongside `execution_spec.json`,
 immutable numerical evidence files, and completed numerical chunks. Failed and
 zero-verified searches preserve observations and explanations too.
+
+Before frozen candidate execution exists, `preparation_progress.json` records
+phases, elapsed time and any failure. Ordinary preparation checks deadlines
+between its available progress boundaries. Position-field affine preparation
+is one compiled graph, checked before and after the call. A failed preparation
+requires a fresh output directory for retry; it cannot be resumed as numerical
+candidate evidence. Source or search-policy changes also require a fresh run;
+historical controller results remain readable but cannot resume under a new
+controller policy.
 
 ```python
 continued = resume_hmc_candidate_set_tuning(
@@ -173,15 +218,28 @@ cannot manufacture missing numerical evidence.
 `total_budget_units` bounds dispatched attempts. The minimum candidate reserve
 covers its mandatory pilot/measurement/verification stages; later rungs and
 retries can use free budget without taking another admitted member's reservation.
-`max_gradient_work` bounds a conservative transition-times-(L+1) work estimate;
-it is not a measured count of every target invocation.
+`max_gradient_work` bounds a conservative transition-times-(L+1) work estimate.
+The scheduler quotes unfinished stage work; each numerical chunk is charged
+and checkpointed before its native call. Completed chunks are not charged
+again on resume. An interrupted native call remains conservatively charged
+even when it returned no usable chunk; invocation budgets charge its retry too.
+This is not a measured count of every target invocation. Unfundable work stays
+pending while other affordable reserved work may proceed.
 `max_wall_time_seconds` includes recorded preparation time and execution time.
 The numerical adapter uses chunks of at most `chunk_max_results` (convenience
 default 256), checks time between chunks, and records elapsed time including the
 first call's tracing/compilation. Native calls and compilation cannot be
-preempted by a Python deadline. Unfinished work reports `partial_budget` or
+preempted by a Python deadline; a hard process limit must be applied externally.
+When both preparation and search time limits are supplied, the smaller limit
+applies. Unfinished work reports `partial_budget` or
 `paused_infrastructure`, not `complete`. Budget-limited searches may still have
 verified members. `shared_invalidity` disables all replay.
+
+`complete` means that all work allowed by the declared search policy reached a
+terminal disposition. It can coexist with an empty verified set and does not
+prove that no viable kernel exists. `HMCTuningScopeCollection` resolves members
+across scope/search identities; its completeness requires all included searches
+to be complete and all explicitly expected scopes to be present.
 
 ## Retained sampling and posterior assessment
 
@@ -197,6 +255,10 @@ parent need not pass. Export a member with `runner.export(path)` and reload it
 with `load_hmc_candidate_retained_runner(path, adapter=original_target)`.
 `runner.run(..., previous_archive=...)` continues from the verified/predecessor
 endpoint with fresh seeds and frozen settings. Every block excludes tuning draws.
+Seed checks include every tuning stage's base seed, every completed numerical
+chunk and attempted partial chunk, as well as predecessor retained blocks.
+Attempted seeds are reconstructed from the durable work/accounting records after
+member export and reload, including native calls that failed without a trace.
 Current retained-member archives embed their evidence and validate predecessor
 history; target-scale memory and restart performance remain unqualified.
 

@@ -98,7 +98,11 @@ meaningful progress.  BayesFilter therefore separates:
 
 Current candidate-set tuning records attempted calls, reserved mandatory work,
 a conservative gradient-work estimate, and elapsed time including preparation.
-It checks the declared wall limit between bounded numerical chunks. The older
+It checks the declared wall limit at preparation progress boundaries and between
+bounded numerical chunks; native calls require an external process limit for
+hard preemption. Attempted chunks are charged before execution, including a
+failed native call; completed saved chunks are not charged again on resume.
+Unfundable peers remain pending while affordable reserved work can proceed. The older
 staged timeout settings belong to historical schedules. Neither kind of timeout
 is evidence against the posterior unless a predeclared continuation veto says
 so; incomplete searches preserve their evidence and remaining work.
