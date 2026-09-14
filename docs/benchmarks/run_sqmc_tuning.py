@@ -710,21 +710,32 @@ def main():
     horizon = 20
     particle_count = 1008
 
+    # `--mode` selects the SEED BUDGET only.  It must never override an explicit
+    # `--routes`: an earlier revision hardcoded routes_to_run=['iid_dual_cap'] in
+    # pilot mode, so `--mode pilot --routes previous_inverse_cdf` silently retuned
+    # iid_dual_cap and three "per-route" tuning runs produced bit-identical
+    # artifacts labelled with different route names.
     if args.mode == 'pilot':
         print("\n" + "="*80)
-        print("PILOT MODE: Testing infrastructure")
+        print("PILOT SEED BUDGET: 4 seeds")
         print("="*80)
         # 4 seeds, matching the baseline measured by
         # calibrate_sqmc_tuning_vetoes.py so the pilot's Pareto frontier is
         # directly comparable to the warm-start baseline on the same seeds.
         tuning_seeds = [50001, 50002, 50003, 50004]
-        routes_to_run = ['iid_dual_cap']  # Just 1 route
+        default_routes = ['iid_dual_cap']
     else:
         tuning_seeds = list(range(50001, 50017))  # 16 seeds
-        if args.routes:
-            routes_to_run = args.routes
-        else:
-            routes_to_run = ['iid_dual_cap', 'previous_inverse_cdf', 'repaired_permutation', 'repaired_permutation_ablation']
+        default_routes = [
+            'iid_dual_cap',
+            'previous_inverse_cdf',
+            'repaired_permutation',
+            'repaired_permutation_ablation',
+        ]
+
+    routes_to_run = args.routes if args.routes else default_routes
+    print(f"Routes to tune: {routes_to_run}")
+    print(f"Tuning seeds: {tuning_seeds}")
 
     # GPU memory policy was applied and verified at module import, before the
     # model modules initialized the GPU runtime (fail-closed).
@@ -739,12 +750,25 @@ def main():
     for route in routes_to_run:
         is_ablation = (route == 'repaired_permutation_ablation')
 
+        # Anchor artifact paths to the repository root, not the caller's cwd.
+        # Running from docs/benchmarks previously produced
+        # docs/benchmarks/docs/tuning/... which is not the declared location.
+        repo_root = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..')
+        )
+        tuning_root = os.path.join(repo_root, 'docs', 'tuning')
+
         if is_ablation:
             actual_route = 'repaired_permutation'
-            output_dir = f'docs/tuning/sqmc-lgssm-t20-n1008-repaired-permutation-ablation-20260912'
+            output_dir = os.path.join(
+                tuning_root,
+                'sqmc-lgssm-t20-n1008-repaired_permutation_ablation-20260912',
+            )
         else:
             actual_route = route
-            output_dir = f'docs/tuning/sqmc-lgssm-t20-n1008-{route}-20260912'
+            output_dir = os.path.join(
+                tuning_root, f'sqmc-lgssm-t20-n1008-{route}-20260912'
+            )
 
         result = tune_route(
             route=actual_route,
