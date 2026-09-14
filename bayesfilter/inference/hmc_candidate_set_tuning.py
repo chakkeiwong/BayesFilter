@@ -92,8 +92,13 @@ class HMCCandidateSetScope:
     epsilon_domain: tuple[float, float] = (1.0e-6, 2.0)
     repair_factor: float = 2.0
     max_repairs_per_family: int = 2
+    # None preserves historical mechanics records; numerical bindings require
+    # an explicit boolean, which becomes part of every candidate's identity.
+    use_xla: bool | None = None
 
     def __post_init__(self) -> None:
+        if self.use_xla is not None and type(self.use_xla) is not bool:
+            raise TypeError("use_xla must be an explicit boolean or None")
         for name in (
             "scope_id",
             "search_id",
@@ -146,6 +151,7 @@ class HMCCandidateSetScope:
             "epsilon_domain": self.epsilon_domain,
             "repair_factor": self.repair_factor,
             "max_repairs_per_family": self.max_repairs_per_family,
+            **({"use_xla": self.use_xla} if self.use_xla is not None else {}),
         }
 
     @classmethod
@@ -176,6 +182,7 @@ class HMCCandidateSetScope:
             epsilon_domain=tuple(payload.get("epsilon_domain", (1.0e-6, 2.0))),
             repair_factor=payload.get("repair_factor", 2.0),
             max_repairs_per_family=payload.get("max_repairs_per_family", 2),
+            use_xla=payload.get("use_xla"),
         )
 
 
@@ -204,6 +211,7 @@ class HMCTuningCandidateRecord:
     target_preparation_identity: str
     transition_identity: str
     candidate_record_hash: str
+    use_xla: bool | None = None
 
     @classmethod
     def create(
@@ -249,6 +257,7 @@ class HMCTuningCandidateRecord:
             "source_dependency_hash": scope.source_dependency_hash,
             "target_preparation_identity": scope.target_preparation_identity,
             "transition_identity": scope.transition_identity,
+            **({"use_xla": scope.use_xla} if scope.use_xla is not None else {}),
         }
         return cls(
             candidate_id=candidate_id,
@@ -272,6 +281,7 @@ class HMCTuningCandidateRecord:
             target_preparation_identity=scope.target_preparation_identity,
             transition_identity=scope.transition_identity,
             candidate_record_hash=_sha256(payload),
+            use_xla=scope.use_xla,
         )
 
     def payload(self) -> Mapping[str, Any]:
@@ -298,6 +308,7 @@ class HMCTuningCandidateRecord:
             "target_preparation_identity": self.target_preparation_identity,
             "transition_identity": self.transition_identity,
             "candidate_record_hash": self.candidate_record_hash,
+            **({"use_xla": self.use_xla} if self.use_xla is not None else {}),
         }
 
     @classmethod
@@ -333,6 +344,7 @@ class HMCVerificationReceipt:
     decision: str
     acceptance: float | None
     hard_vetoes: tuple[str, ...] = ()
+    numerical_evidence_hash: str | None = None
 
     def __post_init__(self) -> None:
         if self.draw_range[0] < 0 or self.draw_range[1] < self.draw_range[0]:
@@ -355,6 +367,8 @@ class HMCVerificationReceipt:
             "decision": self.decision,
             "acceptance": self.acceptance,
             "hard_vetoes": self.hard_vetoes,
+            **({"numerical_evidence_hash": self.numerical_evidence_hash}
+               if self.numerical_evidence_hash is not None else {}),
         }
 
     @classmethod
@@ -374,6 +388,7 @@ class HMCVerificationReceipt:
             decision=payload["decision"],
             acceptance=payload.get("acceptance"),
             hard_vetoes=tuple(payload.get("hard_vetoes", ())),
+            numerical_evidence_hash=payload.get("numerical_evidence_hash"),
         )
 
 
@@ -579,6 +594,16 @@ class HMCTuningCandidateSetResult:
             raise ValueError("shared-invalidity result cannot be replayed")
         if candidate_id not in self.verified_candidate_ids:
             raise ValueError("replay requires an explicitly verified candidate ID")
+        from bayesfilter.inference.hmc_candidate_set_artifacts import (
+            candidate_set_result_payload,
+            require_verified_member,
+        )
+
+        require_verified_member(
+            candidate_set_result_payload(self),
+            scope_id=self.scope.scope_id,
+            candidate_id=candidate_id,
+        )
         for candidate in self.candidates:
             if candidate.candidate_id == candidate_id:
                 if candidate.parent_candidate_id is not None:
@@ -1211,6 +1236,7 @@ class HMCTuningCandidateSetController:
             decision=str(observation["decision"]),
             acceptance=None if observation.get("acceptance") is None else float(observation["acceptance"]),
             hard_vetoes=tuple(observation["hard_vetoes"]),
+            numerical_evidence_hash=observation.get("numerical_evidence_hash"),
         )
 
     def _request_repair(self, candidate: HMCTuningCandidateRecord, receipt: HMCVerificationReceipt) -> None:
@@ -1295,9 +1321,17 @@ class HMCTuningCandidateSetController:
             action = self._repairs[action_id]
             if parsed["hard_vetoes"] or parsed["decision"] in {"failed", "promotion_failed"}:
                 self._repairs[action_id] = replace(action, execution_status="executed", verification_status="failed", qualified_repair_status="not_executed_with_reason", not_executed_reason="repair_verification_failed")
+                self._states[candidate.candidate_id] = "promotion_failed"
             elif parsed["decision"] in _DIRECTIONAL:
                 self._repairs[action_id] = replace(action, execution_status="executed", verification_status="pending", qualified_repair_status="not_executed_with_reason", not_executed_reason="repair_not_scheduled")
                 self._request_repair(candidate, receipt)
+            elif parsed["decision"] in {"inconclusive_evidence", "inconclusive_conflict"}:
+                self._states[candidate.candidate_id] = "validating"
+                self._repairs[action_id] = replace(
+                    action, execution_status="executed", verification_status="pending",
+                    qualified_repair_status="not_executed_with_reason",
+                    not_executed_reason="repair_verification_inconclusive",
+                )
             else:
                 self._repairs[action_id] = replace(action, execution_status="executed", verification_status="passed", qualified_repair_status="executed_and_verified", not_executed_reason=None)
                 self._states[candidate.candidate_id] = "verified"

@@ -1007,7 +1007,10 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "default runner supports none or per-chain-step; typed bindings must declare equivalent fail-closed endpoint evidence"
         ),
         runner_injection_policy=(
-            "default TFP runner for exact-score ordinary HMC; a repository-issued "
+            "HMCControllerConfig uses HMCCandidateExecutionBinding.typed_adapter "
+            "for numerical candidate sets and durable retained replay; callback "
+            "adapters alone remain mechanics-only. Default TFP runner for "
+            "exact-score ordinary compatibility HMC; a repository-issued "
             "HMCTuningRunnerBinding is accepted only with "
             "TensorFlowHMCKernelTuningConfig and is conditional mechanics evidence "
             "only; bare callables are forbidden"
@@ -1030,6 +1033,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         ),
         nonclaims=_PUBLIC_TUNER_NONCLAIMS,
         evidence_anchors=(
+            "tests/test_hmc_candidate_set_execution.py::test_member_export_reload_and_continuation_match_direct_runner",
+            "tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers",
             "tests/test_hmc_tuning_documentation_contract.py::test_ordinary_capability_matches_public_signature",
             "tests/test_hmc_kernel_tuning_public_api.py::test_public_tuner_accepts_high_rhat_tuning_diagnostic",
             "tests/test_hmc_kernel_tuning_public_api.py::test_public_ordinary_config_rejects_typed_runner_binding",
@@ -1067,7 +1072,9 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         ),
         target_status_telemetry="transformed target health and declared transition telemetry",
         runner_injection_policy=(
-            "scoped chain runner only after the frozen transformed adapter is built"
+            "HMCControllerConfig shares the numerical candidate evaluator and "
+            "retained bridge for supported frozen artifact codecs; compatibility "
+            "configurations scope the chain runner after building the transformed adapter"
         ),
         identity_bindings=(
             "base and transformed adapter signatures",
@@ -1351,6 +1358,22 @@ def hmc_tuning_capability_registry_payload() -> Mapping[str, Any]:
     return {
         "schema": HMC_TUNING_CAPABILITY_REGISTRY_SCHEMA,
         "interfaces": tuple(record.payload() for record in capabilities),
+        "candidate_set_retained_bridge": {
+            "schema": "bayesfilter.hmc_candidate_retained_member.v1",
+            "status": "supported_with_repository_numerical_binding",
+            "binding_factory": "bind_hmc_candidate_set_execution",
+            "preparation_factory": "bind_hmc_candidate_set_execution_from_preparation",
+            "builders": (
+                "build_retained_bound_hmc_archive_runner_from_candidate_set_result",
+                "build_retained_frozen_kernel_hmc_adapter_from_candidate_set_result",
+                "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result",
+            ),
+            "loader": "load_hmc_candidate_retained_runner",
+            "coordinates": ("ordinary_affine_mass", "frozen_affine_diag", "frozen_dense_iaf"),
+            "rhat_role": "reporting_only",
+            "callback_observations_can_grant_numerical_authority": False,
+            "posterior_convergence_authority": False,
+        },
     }
 
 

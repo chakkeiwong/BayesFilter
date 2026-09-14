@@ -10,6 +10,8 @@ from typing import Any
 
 from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMC_CANDIDATE_SET_RESULT_SCHEMA,
+    HMCCandidateSetScope,
+    HMCTuningCandidateRecord,
     HMCWorkItem,
     HMCTuningCandidateSetController,
     HMCTuningCandidateSetResult,
@@ -45,6 +47,7 @@ def _validate_result_payload(
     scope = payload.get("scope")
     if not isinstance(scope, Mapping) or not str(scope.get("scope_id", "")):
         raise ValueError("candidate-set artifact has invalid scope")
+    checked_scope = HMCCandidateSetScope.from_payload(scope)
     candidates = payload.get("candidates")
     states = payload.get("candidate_states")
     if not isinstance(candidates, (tuple, list)) or not isinstance(states, Mapping):
@@ -65,6 +68,7 @@ def _validate_result_payload(
         identity.pop("candidate_record_hash", None)
         if _sha256(identity) != supplied_hash:
             raise ValueError("candidate-set candidate record hash mismatch")
+        HMCTuningCandidateRecord.from_payload(checked_scope, candidate)
         by_id[candidate_id] = candidate
 
     state_by_id = {str(key): str(value) for key, value in states.items()}
@@ -294,6 +298,7 @@ def _validate_result_payload(
             "source_dependency_hash",
             "target_preparation_identity",
             "transition_identity",
+            "use_xla",
         ):
             if child.get(field) != parent.get(field) or child.get(field) != scope.get(field):
                 raise ValueError(f"repair {field} identity mismatch")

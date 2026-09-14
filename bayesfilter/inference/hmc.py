@@ -560,11 +560,16 @@ class FullChainHMCConfig:
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
     require_finite_transitions: bool = False
+    capture_candidate_health: bool = False
     capture_first_failure: bool = False
     failure_capture_role: str = "sampling"
     step_size_upper_bound: float | None = None
 
     def __post_init__(self) -> None:
+        if type(self.capture_candidate_health) is not bool:
+            raise TypeError("capture_candidate_health must be boolean")
+        if self.capture_candidate_health and self.trace_policy != "standard":
+            raise ValueError("candidate health requires the standard trace")
         if self.capture_first_failure and (
             self.use_xla or self.chain_execution_mode != "tf_function"
             or self.trace_policy != "standard"
@@ -576,11 +581,15 @@ class FullChainHMCConfig:
             raise ValueError("unsupported first-failure lifecycle role")
         if self.require_finite_transitions and (self.use_xla or self.trace_policy != "standard"):
             raise ValueError("finite-transition checks require non-XLA standard tracing")
-        for name in ("num_results", "num_burnin_steps", "num_leapfrog_steps"):
+        for name in ("num_results", "num_leapfrog_steps"):
             value = int(getattr(self, name))
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
             object.__setattr__(self, name, value)
+        burnin = int(self.num_burnin_steps)
+        if burnin < 0:
+            raise ValueError("num_burnin_steps must be nonnegative")
+        object.__setattr__(self, "num_burnin_steps", burnin)
         step_size = float(self.step_size)
         if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
@@ -666,6 +675,7 @@ class FullChainHMCConfig:
             "num_results": self.num_results,
             "num_burnin_steps": self.num_burnin_steps,
             **({"require_finite_transitions": True} if self.require_finite_transitions else {}),
+            **({"capture_candidate_health": True} if self.capture_candidate_health else {}),
             **({"capture_first_failure": True, "failure_capture_role": self.failure_capture_role}
                if self.capture_first_failure else {}),
             "step_size": self.step_size,
@@ -6582,9 +6592,51 @@ def _trace_fn_for_config(
     *,
     adapter: Any | None = None,
     _wrap_finite_checks: bool = True,
+    _wrap_candidate_health: bool = True,
 ) -> Callable[[Any, Any], Mapping[str, Any]]:
+    if config.capture_candidate_health and _wrap_candidate_health:
+        base_trace = _trace_fn_for_config(
+            config, adapter=adapter, _wrap_finite_checks=_wrap_finite_checks,
+            _wrap_candidate_health=False,
+        )
+
+        def candidate_health_trace(state: Any, kernel_results: Any) -> Mapping[str, Any]:
+            import tensorflow as tf
+
+            trace = dict(base_trace(state, kernel_results))
+            results = kernel_results.inner_results if config.require_finite_transitions else kernel_results
+            if config.tuning_policy.uses_dual_averaging:
+                results = results.inner_results
+            proposed = results.proposed_results
+            accepted = results.accepted_results
+            scores = tf.nest.flatten((proposed.grads_target_log_prob, accepted.grads_target_log_prob))
+            trace["target_score_finite"] = tf.reduce_all(tf.stack([
+                tf.reduce_all(tf.math.is_finite(score), axis=-1) for score in scores
+            ]), axis=0)
+            # Preserve proposals so the host can check displacement from the
+            # actual pre-transition state, including the first transition.
+            trace["proposed_state"] = results.proposed_state
+            initial_momentum = tf.nest.flatten(proposed.initial_momentum)
+            final_momentum = tf.nest.flatten(proposed.final_momentum)
+            if len(initial_momentum) != 1 or len(final_momentum) != 1:
+                raise ValueError("candidate health requires a single tensor state")
+            trace["initial_momentum"] = initial_momentum[0]
+            trace["final_momentum"] = final_momentum[0]
+            if config.target_status_trace_policy == "per_chain_step":
+                telemetry = adapter.target_status_telemetry(results.proposed_state)
+                if any(key not in telemetry for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS):
+                    raise ValueError("proposed target-status telemetry is incomplete")
+                trace["proposed_target_status_telemetry"] = {
+                    key: telemetry[key] for key in TARGET_STATUS_TELEMETRY_FIELDS if key in telemetry
+                }
+            return trace
+
+        return candidate_health_trace
     if config.require_finite_transitions and _wrap_finite_checks:
-        base_trace = _trace_fn_for_config(config, adapter=adapter, _wrap_finite_checks=False)
+        base_trace = _trace_fn_for_config(
+            config, adapter=adapter, _wrap_finite_checks=False,
+            _wrap_candidate_health=False,
+        )
 
         def checked_trace(state: Any, kernel_results: Any) -> Mapping[str, Any]:
             trace = dict(base_trace(state, kernel_results.inner_results))

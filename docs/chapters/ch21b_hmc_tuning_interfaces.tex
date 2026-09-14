@@ -16,8 +16,8 @@ it does not become a tuner when it dual-averages only the step size.  A
 \emph{stage helper} implements an internal or diagnostic part of the ladder,
 and direct use of it does not inherit public artifact authority.
 
-A \emph{tuning artifact} records scope-bound evidence for a selected fixed
-kernel.  Its draws are tuning draws, not retained posterior draws.  A
+A \emph{tuning artifact} records scope-bound evidence for fixed candidate
+kernels.  Its draws are tuning draws, not retained posterior draws.  A
 \emph{final handoff} consists of a replayable private kernel payload and a
 redacted public status record.  It exists only when the route's tested
 admission rule passes.
@@ -55,15 +55,17 @@ Situation & Primary instruction & Conditional alternative or stop \\
 \midrule
 \endhead
 Exact log target and matching exact score in ordinary coordinates &
-Use \code{tune\_hmc\_kernel} with \code{HMCKernelTuningConfig}; this is the
-broad-first ordinary procedure. & Reuse an admitted result only when its
-complete tuning scope is unchanged; otherwise retune. \\
+Prepare and bind the frozen affine geometry, then use
+\code{tune\_hmc\_kernel} with \path{HMCControllerConfig}. &
+\path{HMCKernelTuningConfig} remains a compatibility entry point for existing
+ordinary consumers. \\
 \addlinespace
 One frozen nonlinear transport with the exact Jacobian-corrected transformed
 value and matching score & Use
 \texttt{tune\_fixed\_\allowbreak transport\_hmc\_\allowbreak kernel} with the
-measured joint-grid policy. & The legacy directional policy is available only
-for mechanics debugging and cannot issue a verified handoff. \\
+shared \path{HMCControllerConfig} lifecycle and an executable frozen-transport
+binding. & The older measured joint-grid configuration remains a compatibility
+entry point. \\
 \addlinespace
 Deterministic position-only proposal field that is not the exact score, with an
 exact endpoint potential in the same coordinates & Build the repository
@@ -80,7 +82,7 @@ force, or partial derivative as a supported tuner. \\
 \bottomrule
 \end{longtable}
 
-An exact ordinary score uses the first row without a runner binding.  A
+An exact ordinary score uses the first row's exact value--score binding. A
 different deterministic proposal field uses the third row and retains its
 mechanics-only authority boundary.
 
@@ -88,7 +90,84 @@ The complete generated registry appears in
 Section~\ref{sec:bf-hmc-complete-interface-inventory}.  It is an audit
 inventory, not a menu of peer tuning procedures.
 
-\section{Ordinary-coordinate tuning}
+\section{Numerical candidate sets and retained sampling}
+
+The shared procedure is now executable through
+\path{HMCCandidateExecutionBinding}. In ordinary coordinates,
+\path{prepare_operational_windowed_mass_handoff} prepares the frozen metric;
+\path{bind_hmc_candidate_set_execution_from_preparation} revalidates that
+preparation and preserves its two affine layers and checked four-chain start
+bank. An already frozen mass may instead be supplied explicitly to
+\path{bind_hmc_candidate_set_execution}. That factory also accepts complete
+frozen diagonal-affine or dense-IAF transport artifacts. Nonlinear transport
+starts must be supplied in latent coordinates; the factory does not infer an
+inverse or accept an arbitrary proposal field as a transport.
+
+The caller declares measurement and fresh-verification counts, discarded
+warmup, a seed, target-status policy, and \path{HMCAcceptancePolicy} in
+\path{HMCCandidateExecutionConfig}. The acceptance policy uses four independent
+chain means and a 90\% compatibility interval, with at least four blocks of
+sixteen draws per chain. Finite acceptance alone is insufficient. Directional
+evidence proposes a new same-$L$ child; inconclusive evidence remains
+unverified. Movement, recurrence, native divergence when available, and
+numerical health can veto a candidate. $\widehat R$ is reported without being
+a tuning requirement.
+
+The typed adapter, obtained from \path{binding.typed_adapter}, executes each
+pair through the existing independent-chain TF/TFP runner. Epsilon is a runtime
+argument; $L$ and the draw count determine the reusable compiled graph.
+Measurement and verification have distinct stateless streams. Every transition
+is traced before the declared warmup is discarded. This exposes accepted and
+proposed states and target values, endpoint score finiteness, proposal
+displacements, and declared target-status telemetry. These checks assess
+numerical execution; the model still needs independent evidence that its value
+and score compute the claimed target.
+
+The public dispatcher receives the original model adapter and
+\path{binding.initial_active_state}. It rejects conflicting starts or target
+identity. The result retains every verified member. Choose a member explicitly
+by candidate ID and pass the result and the same binding to
+\path{build_retained_bound_hmc_archive_runner_from_candidate_set_result}.
+The frozen-adapter convenience
+\path{build_retained_frozen_kernel_hmc_adapter_from_candidate_set_result}
+uses the same validator and execution implementation. The additional
+\path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result}
+requires the target's full-chain XLA capability and GPU verification evidence;
+this establishes policy eligibility, not posterior convergence.
+
+The bridge recomputes acceptance and health evidence from the saved traces.
+The selected child's own fresh verification must pass. Its repair ancestry
+must be intact, but an ancestor may have failed before the next child repaired
+it. A callback's \path{qualification_status} label cannot substitute for these
+numerical records. The controller result remains record evidence; numerical
+authority is issued only when the result and execution binding agree.
+
+Before ending the process, call \path{runner.export(path)}. The manifest saves
+geometry, target and source identities, numerical policy, verification traces,
+and the verified endpoint. Reload it with
+\path{load_hmc_candidate_retained_runner(path, adapter=original_target)}.
+BayesFilter reconstructs the affine layers or transport. The consumer supplies
+the original model, complete model/data/prior identity, and source dependencies;
+the library also compares actual target values and scores at the stored starts.
+Version, device, TF32 and XLA changes invalidate automatic reuse.
+
+A retained call supplies its count, fresh seed, and a new output directory.
+For an extension, \path{previous_archive} names the preceding block. The runner
+checks the predecessor chain and starts at its final active state, rather than
+returning to the tuning endpoint. Keep predecessor files at their recorded
+paths. Archives contain active and model-coordinate samples, state endpoints,
+trace diagnostics and parent identity; they exclude tuning and warmup draws.
+Retained acceptance and $\widehat R$ remain diagnostics. A consumer's separate
+sequential convergence, ESS and scientific checks determine posterior admission.
+
+XLA defaults to enabled. CPU or non-XLA execution is an explicit mechanics
+exception, and GPU execution requires memory growth before initialization.
+The executable example \path{docs/examples/hmc_candidate_set_retained.py}
+demonstrates tuning, export, reload, continuation and a same-seed reference
+comparison on a known Gaussian. Its small budgets and widened test band are
+engineering fixtures, not general scientific settings.
+
+\section{Ordinary-coordinate compatibility configuration}
 
 The public import is
 \code{from bayesfilter.inference import HMCKernelTuningConfig,
@@ -99,8 +178,9 @@ ordinary policy.  It does not let a model caller insert candidate grids, mass
 windows, tuning draw counts, a runner binding, a bare chain callback, or
 private handoff mechanics.
 
-The ordinary route prepares one scope and then passes the following linked
-stages to the shared candidate controller:
+The automatic ordinary compatibility configuration prepares one scope and
+executes the following linked stages. Its legacy result type is distinct from
+the typed candidate-set result described above:
 
 \begin{enumerate}
   \item initialize geometry and a positive-definite mass representation;
@@ -482,16 +562,12 @@ draws as validation evidence, separately from subsequent estimation draws.
 BayesFilter neither discards nor promotes them. Exceptions from the callback
 propagate as execution failures, rather than silently rejecting a transport.
 
-During the numerical-adapter migration, the two public dispatcher names can
-enter this same lifecycle explicitly with an issued
+Both public dispatcher names enter the shared lifecycle with
 \path{HMCControllerConfig} and \path{HMCTypedCandidateSetAdapter}. The ordinary
-\path{tune\_hmc\_kernel} entry requires an ordinary adapter; the fixed-transport
-entry is a compatibility wrapper that requires a fixed-transport adapter and
-delegates to the same controller. The bridge binds target preparation,
-transition, backend, dtype, and source-closure identities into the scope and
-candidate records, and writes only replayable mechanics evidence until the
-target-parity and TensorFlow/XLA qualification gates pass. It cannot issue a
-numerical handoff by itself.
+entry requires an ordinary adapter; the fixed-transport wrapper requires a
+fixed-transport adapter. A callback-only adapter still produces controller
+mechanics evidence. The executable binding and retained bridge described above
+add the actual numerical traces and frozen state required for numerical replay.
 
 The experimental hard-screen configuration requires finite observations, valid
 target status, movement in every chain, no reported native divergences, and

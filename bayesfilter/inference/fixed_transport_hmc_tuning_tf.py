@@ -877,8 +877,11 @@ def tune_fixed_transport_hmc_kernel(
             )
         from bayesfilter.inference.hmc_tuning_dispatch import tune_hmc_kernel
 
+        execution = getattr(candidate_set_adapter, "_execution_binding", None)
+        if execution is not None:
+            execution.validate_transport(fixed_transport)
         return tune_hmc_kernel(
-            adapter=candidate_set_adapter,
+            adapter=base_adapter,
             initial_position=initial_position,
             config=config,
             output_dir=output_dir,

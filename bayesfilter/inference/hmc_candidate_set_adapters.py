@@ -63,6 +63,7 @@ class HMCTypedCandidateSetAdapter:
     target_preparation_identity: str
     transition_identity: str
     qualification_status: Literal["unqualified", "qualified"] = "unqualified"
+    _execution_binding: Any = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self._issuer_token is not _ADAPTER_ISSUER_TOKEN:
@@ -108,6 +109,7 @@ class HMCTypedCandidateSetAdapter:
             "transition_identity": self.transition_identity,
             "source_dependency_hash": self.source_dependency_hash,
             "qualification_status": self.qualification_status,
+            "execution_binding_hash": getattr(self._execution_binding, "binding_hash", None),
             "artifact_authority": False,
             "numerical_handoff_authority": False,
             "nonclaims": (

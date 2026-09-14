@@ -43,10 +43,7 @@ def tune_hmc_kernel(
 ) -> Any:
     """Run the public tuner or the shared typed candidate-set controller.
 
-    The candidate-set branch is an explicit migration path.  It is selected
-    only with ``HMCControllerConfig`` and a repository-issued typed adapter;
-    existing numerical defaults remain unchanged until their qualification
-    gates pass.
+    HMCControllerConfig selects the shared lifecycle with checked target/starts.
     """
 
     require_active_hmc_tuning_route("tune_hmc_kernel")
@@ -77,6 +74,9 @@ def tune_hmc_kernel(
             run_typed_hmc_candidate_set,
         )
 
+        execution = getattr(candidate_set_adapter, "_execution_binding", None)
+        if execution is not None:
+            execution.validate_dispatch_inputs(adapter, initial_position)
         return run_typed_hmc_candidate_set(
             candidate_set_adapter,
             config,

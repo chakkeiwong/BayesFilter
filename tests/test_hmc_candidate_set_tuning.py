@@ -104,6 +104,56 @@ def test_inconclusive_evidence_does_not_create_repair_or_switch_l():
     assert result.verified_candidate_ids == ()
 
 
+@pytest.mark.parametrize("decision", ["inconclusive_evidence", "inconclusive_conflict", "failed"])
+def test_repair_child_requires_a_passing_decision_in_live_and_durable_replay(decision):
+    from bayesfilter.inference.hmc_candidate_set_artifacts import (
+        candidate_set_result_payload, require_verified_member,
+    )
+
+    def outcome(work, candidate):
+        if work.stage == "verification":
+            return {"decision": "repair_step_higher" if candidate.parent_candidate_id is None else decision}
+        return {"decision": "passed"}
+
+    result = HMCTuningCandidateSetController(_scope(), _config(grid=(3,), epsilons=((3, (0.25,)),))).run(outcome)
+    child = result.candidates[-1]
+    assert result.verified_candidate_ids == ()
+    assert result.candidate_states[child.candidate_id] == (
+        "promotion_failed" if decision == "failed" else "validating"
+    )
+    for replay in (
+        lambda: result.replay_candidate(child.candidate_id),
+        lambda: require_verified_member(candidate_set_result_payload(result), scope_id=result.scope.scope_id, candidate_id=child.candidate_id),
+    ):
+        with pytest.raises(ValueError, match="verified"):
+            replay()
+
+
+def test_verified_grandchild_does_not_require_intermediate_repair_to_pass():
+    def outcome(work, candidate):
+        if work.stage == "verification" and candidate.epsilon < 1.0:
+            return {"decision": "repair_step_higher", "acceptance": 0.90}
+        return _pass(work, candidate)
+
+    result = HMCTuningCandidateSetController(_scope(), _config(grid=(3,), epsilons=((3, (0.25,)),))).run(outcome)
+    assert [action.qualified_repair_status for action in result.repair_actions] == [
+        "not_executed_with_reason", "executed_and_verified",
+    ]
+    child = result.replay_candidate(result.verified_candidate_ids[0])
+    assert child.epsilon == 1.0
+    assert child.leapfrog_steps == 3
+
+
+def test_live_replay_rejects_a_forged_verified_id_without_passing_receipt():
+    result = HMCTuningCandidateSetController(_scope(), _config()).run(
+        lambda work, candidate: {"decision": "inconclusive_evidence"},
+    )
+    candidate_id = result.candidates[0].candidate_id
+    forged = replace(result, verified_candidate_ids=(candidate_id,))
+    with pytest.raises(ValueError):
+        forged.replay_candidate(candidate_id)
+
+
 def test_reserve_release_and_child_allocation_are_separate_events():
     config = _config(repair_reserve_units=3)
     controller = HMCTuningCandidateSetController(_scope(), config)

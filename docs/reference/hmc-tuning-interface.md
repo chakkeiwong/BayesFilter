@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-12. The prose contract is exercised by
+Last checked: 2026-09-14. The prose contract is exercised by
 `tests/test_hmc_tuning_documentation_contract.py`; the route table is generated
 from the executable capability registry.
 
@@ -21,14 +21,15 @@ silently switching `L`. A computed repair is not a handoff: only
 `qualified_repair_status="executed_and_verified"` is replayable. Unfunded
 repairs carry `not_executed_with_reason` and typed `repair_budget_exhausted`.
 
-The current numerical entry points remain compatibility adapters while P2-P5
-qualify their shared wiring. Diagnostic and historical procedures have explicit
-helper kinds and no artifact authority. A chain runner or stage helper is not a
-complete tuner. Replayable artifact authority is distinct from
-scientific/promotion authority: the ordinary runtime currently carries a known
-NumPy-policy blocker, so its public result is explicitly non-admitting for
-claims, default promotion, and posterior admission until that debt is repaired
-or a reviewed exception is recorded.
+The shared controller now has a repository-owned TF/TFP numerical evaluator and
+a durable bridge for an explicitly verified member. Use
+`HMCCandidateExecutionBinding.typed_adapter` with `HMCControllerConfig` for this
+procedure. The older numerical configurations remain compatibility entry
+points. Diagnostic and historical procedures have explicit helper kinds and
+no artifact authority. A chain runner or stage helper is not a complete tuner.
+The ordinary runtime uses `ordinary_tf_tfp_runtime_v1`; historical NumPy-blocked
+artifacts remain blocked. Numerical replay authority does not establish
+posterior convergence or scientific validity.
 
 Use the package imports shown below. Implementation modules do not define a
 second ordinary tuner. Exported discovery, refinement, campaign, runner, and
@@ -83,8 +84,9 @@ at the controller boundary; they do not select a winner or mutate a candidate
 record. Use `write_candidate_set_result` for the atomic, checksummed mechanics
 result and `require_verified_member` for explicit scope/member replay. The
 controller artifact has replay authority for its own evidence but no numerical
-handoff or scientific artifact authority; a qualified TensorFlow/TFP adapter
-must still issue the public kernel artifact after P2-P5.
+handoff or scientific artifact authority. The numerical retained bridge checks
+the result together with its actual execution binding and saved verification
+traces before issuing a frozen runner.
 
 ```python
 from bayesfilter.inference import (
@@ -115,16 +117,96 @@ default. Any descriptive nomination is separate from replay authority and does
 not establish superiority. Resume consumes the persisted work-item order and
 attempt IDs rather than rebuilding the queue from acceptance values.
 
-The public dispatchers also accept this lifecycle explicitly during the
-adapter migration: pass an `HMCControllerConfig` together with a
+The public dispatchers accept this lifecycle with an `HMCControllerConfig` and a
 repository-issued `HMCTypedCandidateSetAdapter`. `tune_hmc_kernel` requires an
 ordinary adapter; `tune_fixed_transport_hmc_kernel` is a compatibility wrapper
 that requires a fixed-transport adapter and delegates to the same controller.
-The bridge writes only a replayable mechanics artifact. Its target-preparation
-identity, transition identity, backend, dtype, and source-closure hash are
-bound into the scope and candidate records. It is unqualified until the
-target-parity and TensorFlow/XLA gates in the migration plan pass, so the
-bridge cannot issue a numerical handoff by itself.
+The controller writes a replayable record artifact. Its target-preparation
+identity, transition identity, backend, dtype, XLA mode, and source-closure hash
+are bound into the scope and candidate records. The older
+`issue_hmc_candidate_set_adapter(observe=...)` callback is useful for controller
+mechanics tests; even `qualification_status="qualified"` cannot create the
+numerical evidence required by the retained bridge.
+
+## Numerical candidate evaluation and retained replay
+
+For an ordinary target, first prepare the frozen geometry with
+`prepare_operational_windowed_mass_handoff`. Pass its actual returned mapping
+to `bind_hmc_candidate_set_execution_from_preparation`. BayesFilter revalidates
+the preparation, preserves the bootstrap and final affine layers, and consumes
+the checked post-warmup four-chain bank. Do not reconstruct either layer in the
+consumer. For already frozen explicit geometry, use
+`bind_hmc_candidate_set_execution` with a `PrecomputedMassArtifact` or a full
+supported frozen NeuTra artifact. Supported transport codecs are frozen
+diagonal affine and dense IAF. Supply transport starts in latent coordinates
+with `start_coordinates="active"`; a nonlinear inverse is not inferred.
+
+Declare `HMCCandidateExecutionConfig` with measurement and verification counts,
+discarded warmup count, seed, `HMCAcceptancePolicy`, and target-status policy.
+Counts must satisfy the acceptance policy's minimum evidence. The default
+policy uses four independently seeded chains, four blocks of at least sixteen
+draws per chain, and a 90% interval across chain means. It distinguishes a
+passing acceptance screen, directional step repairs, and inconclusive
+evidence. Finite acceptance alone cannot pass. Movement, recurrence, available
+native divergence, and numerical health can veto a candidate. R-hat is
+reporting-only throughout this shared procedure.
+
+Each candidate executes its own epsilon and L through
+`build_independent_chain_tfp_hmc_runner`. Measurement and verification have
+distinct reproducible stateless streams. All transitions are traced, including
+discarded warmup: accepted and proposed states/targets, endpoint score
+finiteness, proposal displacement, and declared accepted/proposed target status
+are checked. These checks do not certify a model's mathematical value/score
+implementation or inspect unreported intermediate target regularization.
+The target's capability and health contract must be valid independently.
+
+Pass the original model adapter and `binding.initial_active_state` to the
+ordinary public dispatcher. Conflicting target or start arguments are rejected.
+All passing members remain in `run.result.verified_candidate_ids`; choose an
+explicit member for retained execution under the consumer's scientific plan.
+The three public conveniences use one validator and the same frozen runner:
+
+| Builder | Result and authority |
+| --- | --- |
+| `build_retained_bound_hmc_archive_runner_from_candidate_set_result` | Executable numerical archive runner; no posterior admission. |
+| `build_retained_frozen_kernel_hmc_adapter_from_candidate_set_result` | The same frozen runner and validation, with the adapter convenience name. |
+| `build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result` | Additionally requires the exact target's full-chain XLA capability and GPU execution evidence; eligibility still does not certify convergence or a scientific result. |
+
+Each takes only `candidate_set_result`, `candidate_id`, and `retained_binding`.
+It rejects missing numerical evidence, changed scope/settings/source/geometry,
+unverified members, and failed or inconclusive selected-child verification.
+Every ancestral repair link must be valid; an ancestor may have failed its
+acceptance screen before the next child repaired it. Live results need no
+artificial on-disk prerequisite when the complete binding is available.
+
+Call `runner.export(path)` before process exit. The manifest saves the full
+candidate result, frozen geometry, start bank, numerical traces and their
+checksums, policy, target probes, source hashes and verification endpoint.
+Reload with `load_hmc_candidate_retained_runner(path, adapter=original_target)`.
+The caller supplies the original model implementation; BayesFilter rebuilds the
+geometry and checks target values/scores at the bound starts. Complete model,
+data and prior identity remains the consumer's responsibility through the
+adapter signature, explicit `target_lineage`, and `source_paths`. This is
+research provenance, not authentication against an adversarial caller.
+
+Use `runner.run(num_results=..., seed=..., output_dir=...)` for the first retained
+block. A later call supplies `previous_archive=...`; it starts at that archive's
+final active state, checks the predecessor chain, and requires a seed not used
+by tuning or earlier retained blocks. Keep predecessor files available at their
+recorded paths. Archives never overwrite prior runs and contain active and
+model-coordinate draws, exact endpoints, trace evidence and parent identity.
+Tuning and warmup draws are excluded. Retained acceptance and R-hat are
+diagnostics; posterior admission requires the consumer's separate sequential
+convergence, ESS and scientific checks. Numerical-health failures block
+continuation, with failed traces preserved for diagnosis.
+
+XLA defaults to true. A non-XLA run needs an explicit `non_xla_reason`; CPU and
+non-XLA exceptions are mechanics-only. GPU launches must establish memory
+growth before initialization. Reload checks TensorFlow/TFP versions, device
+policy, TF32 mode and XLA settings; cross-environment migration is not silently
+allowed. See `docs/examples/hmc_candidate_set_retained.py` for an executable
+known-target example. Its small budgets are engineering fixtures, not
+target-independent scientific defaults.
 
 ## Reporting Across Frozen Transports
 
@@ -151,14 +233,14 @@ one weaker conditional alternative.
 
 | Situation | Primary instruction | Conditional alternative or stop |
 | --- | --- | --- |
-| Ordinary coordinates with an exact log target and matching exact score | Call `tune_hmc_kernel` with `HMCKernelTuningConfig`. This is the canonical broad-first ordinary procedure. | Reuse a previously admitted result only when its complete tuning scope is unchanged; otherwise retune. |
-| One frozen nonlinear transport with the exact Jacobian-corrected transformed value and matching score | Call `tune_fixed_transport_hmc_kernel` with `FixedTransportHMCKernelTuningConfig` and the measured joint-grid policy. | Use the legacy directional policy only for mechanics debugging. It cannot issue a verified handoff. |
+| Ordinary coordinates with an exact log target and matching exact score | Prepare with `prepare_operational_windowed_mass_handoff`, bind that preparation, then call `tune_hmc_kernel` with `HMCControllerConfig` and `binding.typed_adapter`. | The canonical broad-first ordinary procedure using `HMCKernelTuningConfig` remains available for existing consumers. |
+| One frozen nonlinear transport with the exact Jacobian-corrected transformed value and matching score | Bind a supported frozen artifact and latent starts, then use the shared `HMCControllerConfig` lifecycle through `tune_fixed_transport_hmc_kernel`. | Existing `FixedTransportHMCKernelTuningConfig` consumers retain the measured joint-grid compatibility route. |
 | A deterministic position-only proposal field that is not the exact score, with an exact endpoint potential in the same coordinates | Build a repository binding with `bind_neural_force_hmc_tuning_runner`, then call `tune_hmc_kernel` with `TensorFlowHMCKernelTuningConfig`. | This is mechanics/candidate evidence only. If artifact-authoritative tuning is required, stop: no supported alternative currently exists. |
 | A chain-mechanics smoke or historical replay | Call the specific runner or helper named by that test or replay record. | Never use its output as a tuning handoff. |
 | None of the contracts above applies | Stop. | Do not relabel a runner, helper, arbitrary force, or partial derivative as a supported tuner. |
 
-If the supplied field is the exact ordinary score, use the first row and do not
-construct a runner binding. If it is a different deterministic proposal field,
+If the supplied field is the exact ordinary score, use the first row's exact
+value/score binding. If it is a different deterministic proposal field,
 use the third row and retain its mechanics-only authority boundary.
 
 The registry is queryable without running a chain:
