@@ -6667,15 +6667,14 @@ class HMCTuneVerifyRepairAttempt:
                 raise ValueError("passed Phase 7 attempt cannot have hard vetoes")
             diagnostics = self.verification_diagnostics
             if diagnostics.get("sequential_rhat_verification") is True:
+                if diagnostics.get("rhat_role") != "tuning_explanatory_only":
+                    raise ValueError(
+                        "passed ordinary attempt requires tuning_explanatory_only "
+                        "R-hat role"
+                    )
                 if diagnostics.get("passed") is not True:
                     raise ValueError(
                         "passed Phase 7 attempt requires passed sequential verifier"
-                    )
-                if diagnostics.get(
-                    "all_finite_rhat_at_or_below_threshold"
-                ) is not True:
-                    raise ValueError(
-                        "passed Phase 7 attempt requires the sequential R-hat gate"
                     )
                 if diagnostics.get("cap_hit") is not False:
                     raise ValueError(
@@ -17999,6 +17998,10 @@ def _phase7_verification_public_summary(
             diagnostics.get("sequential_rhat_verification")
         ),
         "rhat_threshold": diagnostics.get("rhat_threshold"),
+        "rhat_role": diagnostics.get("rhat_role"),
+        "max_finite_rhat": diagnostics.get("max_finite_rhat"),
+        "finite_rhat_count": diagnostics.get("finite_rhat_count"),
+        "nonfinite_rhat_count": diagnostics.get("nonfinite_rhat_count"),
         "rhat_threshold_role": (
             config_payload.get("rhat_threshold_role")
             or (
@@ -19943,14 +19946,10 @@ def _phase7_terminal_phase6_repair_slot_exhausted_payload(
 def _phase7_should_retry_verification_only(
     attempt_state: "_HMCPhaseAttemptState | None",
 ) -> bool:
-    if attempt_state is None:
-        return False
-    return (
-        attempt_state.has_final_kernel_handoff
-        and attempt_state.verification_acceptance_relation == "inside_acceptance_band"
-        and attempt_state.verification_repair_trigger is None
-        and not attempt_state.verification_repair_applied
-    )
+    # Ordinary tuning does not spend another verification-only attempt chasing
+    # an R-hat threshold. Posterior convergence consumers invoke their own
+    # explicitly gated verifier and do not enter this Phase 7 loop.
+    return False
 
 
 def _phase7_should_run_operational_repair_verification(
@@ -19982,23 +19981,9 @@ def _phase7_should_prepare_verification_only_retry(
     handoff_state: "_HMCPhaseAttemptState | None",
     verification_diagnostics: Mapping[str, Any],
 ) -> bool:
-    triggers = tuple(str(item) for item in attempt_repair_triggers)
-    return (
-        str(attempt_status) == "repair_or_retry"
-        and str(attempt_role) == "verification_rhat_repair_trigger"
-        and not tuple(attempt_hard_vetoes)
-        and "verification_rhat_above_threshold_or_cap_hit" in triggers
-        and "verification_rhat_cap_hit" in triggers
-        and _PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER not in triggers
-        and handoff_state is not None
-        and _phase7_should_retry_verification_only(handoff_state)
-        and verification_diagnostics.get("sequential_rhat_verification") is True
-        and verification_diagnostics.get("cap_hit") is True
-        and verification_diagnostics.get("runtime_finite") is True
-        and verification_diagnostics.get("samples_all_finite") is True
-        and _verification_acceptance_log_health_passed(verification_diagnostics)
-        and _verification_target_value_health_passed(verification_diagnostics)
-    )
+    """Historical retry hook; ordinary tuning never retries solely for R-hat."""
+
+    return False
 
 
 def _phase7_verification_result_supports_verification_only_retry(
@@ -20010,41 +19995,9 @@ def _phase7_verification_result_supports_verification_only_retry(
     verify_hard_vetoes: Sequence[str],
     verify_repair_triggers: Sequence[str],
 ) -> bool:
-    """Return true only for valid verify-only retry outcomes.
+    """Historical retry hook; ordinary tuning never retries solely for R-hat."""
 
-    The retry path reuses a frozen kernel selected by a previous Phase 6 pass.
-    If a fresh verification of that same kernel later observes acceptance
-    outside the pass band, the next action is a private step-size repair, not
-    another verification-only retry. A successful verification-only pass still
-    counts as a valid verify-only outcome because no retuning stages were run.
-    """
-
-    triggers = tuple(str(item) for item in verify_repair_triggers)
-    acceptance_relation = _acceptance_relation_to_band(
-        verification_diagnostics.get("acceptance_rate"),
-        config.acceptance_band,
-    )
-    healthy = (
-        not tuple(verify_hard_vetoes)
-        and acceptance_relation == "inside_acceptance_band"
-        and _PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER not in triggers
-        and verification_diagnostics.get("sequential_rhat_verification") is True
-        and verification_diagnostics.get("runtime_finite") is True
-        and verification_diagnostics.get("samples_all_finite") is True
-        and _verification_acceptance_log_health_passed(verification_diagnostics)
-        and _verification_target_value_health_passed(verification_diagnostics)
-    )
-    if not healthy:
-        return False
-    if str(verify_status) == "passed":
-        return True
-    return (
-        str(verify_status) == "repair_or_retry"
-        and str(verify_role) == "verification_rhat_repair_trigger"
-        and "verification_rhat_above_threshold_or_cap_hit" in triggers
-        and "verification_rhat_cap_hit" in triggers
-        and verification_diagnostics.get("cap_hit") is True
-    )
+    return False
 
 
 def _emit_phase7_progress(
@@ -25767,6 +25720,7 @@ def _run_phase7_sequential_rhat_final_verification(
         min_retained_results_for_pass=min_retained_for_pass,
         chain_count=4,
         rhat_threshold=HMC_TUNING_ORDINARY_RHAT_THRESHOLD,
+        rhat_role="tuning_explanatory_only",
         acceptance_policy=acceptance_policy,
         use_xla=config.use_xla,
         target_scope=sequential_target_scope,
@@ -25904,6 +25858,7 @@ def _run_phase7_sequential_rhat_final_verification(
         diagnostics = dict(_bootstrap_error_diagnostics(run_error))
     if run_error is not None:
         diagnostics["sequential_rhat_verification"] = True
+        diagnostics["rhat_role"] = sequential_config.rhat_role
         diagnostics["rhat_threshold"] = HMC_TUNING_ORDINARY_RHAT_THRESHOLD
         diagnostics["check_interval"] = check_interval
         diagnostics["max_results"] = max_results
@@ -25916,11 +25871,7 @@ def _run_phase7_sequential_rhat_final_verification(
         diagnostics.get("all_finite_rhat_at_or_below_threshold") is True
         and retained_count_int < int(min_retained_for_pass)
     )
-    if rhat_passed_before_minimum:
-        diagnostics["all_finite_rhat_at_or_below_threshold"] = False
-        diagnostics["rhat_passed_before_minimum_retained_count"] = True
-    else:
-        diagnostics["rhat_passed_before_minimum_retained_count"] = False
+    diagnostics["rhat_passed_before_minimum_retained_count"] = rhat_passed_before_minimum
     diagnostics["verification_min_retained_results_for_pass"] = int(
         min_retained_for_pass
     )
@@ -25946,12 +25897,12 @@ def _run_phase7_sequential_rhat_final_verification(
         "minimum_retained_pass_gate_satisfied": bool(
             retained_count_int >= int(min_retained_for_pass)
         ),
-        "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
+        "rhat_threshold_role": "tuning_explanatory_only",
         "handoff_gate": (
-            "dependence_aware_acceptance_evidence_hard_health_minimum_draws_and_rhat"
+            "dependence_aware_acceptance_evidence_hard_health_minimum_draws"
         ),
         "stopping_rule": (
-            "stop_on_nonpromoting_acceptance_or_first_checkpoint_passing_acceptance_health_minimum_draws_and_rhat"
+            "stop_on_nonpromoting_acceptance_or_first_checkpoint_passing_acceptance_health_minimum_draws"
         ),
         "cap_rule": "stop_inconclusive_at_budget_policy_verification_num_results",
         "acceptance_policy": acceptance_policy.payload(),
@@ -25960,7 +25911,7 @@ def _run_phase7_sequential_rhat_final_verification(
             "finite_value_and_score_per_retained_chain_batch"
         ),
         "early_rhat_pass_before_minimum_retained_count": (
-            "continue_until_minimum_retained_count; both gates are required"
+            "R-hat is explanatory; minimum retained count remains required"
         ),
         "mechanics_publicized": False,
     }
@@ -25973,11 +25924,12 @@ def _run_phase7_sequential_rhat_final_verification(
         "semantic_source": "_run_phase7_sequential_rhat_final_verification",
         "route_nonclaims": (
             "sequential R-hat final verification uses fixed-size TF/TFP chunks",
-            "R-hat gates this fixed-kernel tuning handoff but does not prove retained posterior convergence",
+            "R-hat is explanatory only and does not gate this tuning handoff",
         ),
         "evidence_role": "fixed_kernel_tuning_admission",
         "promotion_role": "handoff_gate",
-        "stopping_rule_role": "required_with_acceptance_health_and_minimum_draws",
+        "stopping_rule_role": "acceptance_health_and_minimum_draws_only",
+        "rhat_role": "tuning_explanatory_only",
         "reports_posterior_convergence": False,
         "reports_sampler_superiority": False,
     }
@@ -25989,7 +25941,8 @@ def _run_phase7_sequential_rhat_final_verification(
         "num_burnin_steps": sequential_config.num_burnin_steps,
         "chain_count": sequential_config.chain_count,
         "rhat_threshold": sequential_config.rhat_threshold,
-        "rhat_threshold_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+        "rhat_threshold_role": "tuning_explanatory_only",
+        "rhat_role": sequential_config.rhat_role,
         "rhat_definition": (
             "max(rank-normalized split R-hat, "
             "folded rank-normalized split R-hat)"
@@ -26415,44 +26368,23 @@ def _classify_phase7_acceptance_evidence_verification(
             (),
         )
     if evidence.promotion_eligible:
-        rhat_passed = diagnostics.get("passed")
-        all_rhat_passed = diagnostics.get(
-            "all_finite_rhat_at_or_below_threshold"
-        )
-        cap_hit = diagnostics.get("cap_hit")
-        if not all(
-            isinstance(value, bool)
-            for value in (rhat_passed, all_rhat_passed, cap_hit)
+        # Completion checks describe tuning evidence, not the R-hat result.
+        if diagnostics.get("rhat_role") != "tuning_explanatory_only":
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_tuning_role_missing_or_invalid",),
+                (),
+            )
+        if (
+            diagnostics.get("passed") is not True
+            or diagnostics.get("cap_hit") is not False
         ):
             return (
                 "hard_veto",
                 "shared_invalidity",
-                ("verification_rhat_gate_missing_or_invalid",),
+                ("verification_completion_inconsistent",),
                 (),
-            )
-        if rhat_passed != all_rhat_passed or (rhat_passed and cap_hit):
-            return (
-                "hard_veto",
-                "shared_invalidity",
-                ("verification_rhat_gate_inconsistent",),
-                (),
-            )
-        if not rhat_passed:
-            if not cap_hit:
-                return (
-                    "hard_veto",
-                    "shared_invalidity",
-                    ("verification_rhat_failure_without_cap",),
-                    (),
-                )
-            return (
-                "repair_or_retry",
-                "verification_rhat_repair_trigger",
-                (),
-                (
-                    "verification_rhat_above_threshold_or_cap_hit",
-                    "verification_rhat_cap_hit",
-                ),
             )
         return (
             "passed",

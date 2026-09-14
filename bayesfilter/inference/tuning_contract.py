@@ -995,8 +995,10 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         ),
         fresh_verification_policy=(
             "fresh fixed-kernel verification; default TFP runner requires typed "
-            "acceptance, health, minimum draws, and rank-normalized split/folded "
-            f"R-hat at or below {HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}"
+            "acceptance, health, and minimum draws; rank-normalized split/folded "
+            f"R-hat is retained as an explanatory diagnostic with threshold "
+            f"metadata ({HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}), not a tuning "
+            "handoff gate"
         ),
         ess_admission_policy=(
             "disabled for ordinary tuning admission; retained posterior ESS is separate"
@@ -1029,7 +1031,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         nonclaims=_PUBLIC_TUNER_NONCLAIMS,
         evidence_anchors=(
             "tests/test_hmc_tuning_documentation_contract.py::test_ordinary_capability_matches_public_signature",
-            "tests/test_hmc_kernel_tuning_public_api.py::test_public_tuner_rejects_failed_sequential_rhat_handoff",
+            "tests/test_hmc_kernel_tuning_public_api.py::test_public_tuner_accepts_high_rhat_tuning_diagnostic",
             "tests/test_hmc_kernel_tuning_public_api.py::test_public_ordinary_config_rejects_typed_runner_binding",
             "tests/test_neural_force_hmc.py::test_typed_tuning_binding_rejects_identity_mass_fallback",
         ),

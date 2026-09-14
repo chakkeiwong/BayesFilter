@@ -48,8 +48,10 @@ from bayesfilter.inference import (
 
 At this revision the capability-registry schema is
 `bayesfilter.hmc_tuning_capability_registry.v2`, the runner-binding schema is
-`bayesfilter.hmc_tuning_runner_binding.v2`, and the ordinary fixed-kernel
-handoff threshold is defined by `HMC_TUNING_ORDINARY_RHAT_THRESHOLD`.
+`bayesfilter.hmc_tuning_runner_binding.v2`, and the ordinary verifier's
+diagnostic R-hat threshold is defined by
+`HMC_TUNING_ORDINARY_RHAT_THRESHOLD`. The threshold is not an ordinary tuning
+handoff requirement.
 
 ## Qualified Step-Size Handoff
 
@@ -371,12 +373,15 @@ stubbed binding is in
 [hmc_tuning_covariance_first.py](../examples/hmc_tuning_covariance_first.py).
 
 With the default TFP runner, final handoff requires finite health and acceptance
-diagnostics, the configured minimum tuning draws, and finite rank-normalized
-split and folded split R-hat values at or below
-`HMC_TUNING_ORDINARY_RHAT_THRESHOLD` (`1.01` at this revision). Bulk and tail
-ESS are disabled for ordinary tuning admission; retained posterior ESS is a
-separate check. Neither acceptance nor tuning R-hat proves retained posterior
-convergence.
+diagnostics and the configured minimum tuning draws. Rank-normalized split and
+folded split R-hat are still computed, serialized, and reported during tuning,
+but they are explanatory chain-mixing diagnostics: they do not select, reject,
+repair, or delay an ordinary candidate handoff. The
+`HMC_TUNING_ORDINARY_RHAT_THRESHOLD` value (`1.01` at this revision) is
+diagnostic metadata for this route, not a tuning gate. Bulk and tail ESS are
+disabled for ordinary tuning admission; retained posterior ESS and R-hat are
+separate posterior-validity checks. Neither acceptance nor tuning R-hat proves
+retained posterior convergence.
 
 The ordinary ladder currently imports NumPy and uses host numerical and
 serialization paths. This is BayesFilter-owned backend migration debt under

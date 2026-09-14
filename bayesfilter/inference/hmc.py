@@ -1000,9 +1000,10 @@ class SequentialRHatHMCVerificationConfig:
     The verifier runs a fixed-size TF/TFP HMC chunk repeatedly, computes
     dependence-aware acceptance evidence and rank-normalized split/folded R-hat
     on private traces after each checkpoint. Out-of-band acceptance returns a
-    repair decision immediately; promotion requires both acceptance evidence
-    and the R-hat gate after the minimum retained count.
-    It is a tuning-verification gate, not a posterior-convergence certificate.
+    repair decision immediately. ``rhat_role`` explicitly determines whether
+    the R-hat threshold is a pass requirement or an explanatory diagnostic.
+    The default remains the posterior/diagnostic gate for direct consumers;
+    ordinary tuning selects the explanatory-only role.
     """
 
     check_interval: int
@@ -1020,6 +1021,7 @@ class SequentialRHatHMCVerificationConfig:
     use_xla: bool = False
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
+    rhat_role: str = "posterior_gate"
 
     def __post_init__(self) -> None:
         check_interval = int(self.check_interval)
@@ -1074,6 +1076,12 @@ class SequentialRHatHMCVerificationConfig:
         if not np.isfinite(threshold) or threshold <= 1.0:
             raise ValueError("rhat_threshold must be finite and greater than 1")
         object.__setattr__(self, "rhat_threshold", threshold)
+        rhat_role = str(self.rhat_role)
+        if rhat_role not in {"posterior_gate", "tuning_explanatory_only"}:
+            raise ValueError(
+                "rhat_role must be 'posterior_gate' or 'tuning_explanatory_only'"
+            )
+        object.__setattr__(self, "rhat_role", rhat_role)
         if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
             raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
         object.__setattr__(self, "use_xla", bool(self.use_xla))
@@ -1100,6 +1108,7 @@ class SequentialRHatHMCVerificationConfig:
             "seed": self.seed,
             "chain_count": self.chain_count,
             "rhat_threshold": self.rhat_threshold,
+            "rhat_role": self.rhat_role,
             "acceptance_policy": self.acceptance_policy.payload(),
             "use_xla": self.use_xla,
             "chain_execution_mode": self.chain_execution_mode,
@@ -1145,7 +1154,7 @@ class RetainedSampleHMCArchiveRunResult:
 
 @dataclass(frozen=True)
 class SequentialRHatHMCVerificationResult:
-    """Public-safe result for sequential R-hat tuning verification."""
+    """Fixed-kernel evidence with an explicit R-hat diagnostic or gate role."""
 
     passed: bool
     cap_hit: bool
@@ -5267,7 +5276,10 @@ class SequentialRHatHMCVerifier:
             if (
                 acceptance_evidence.promotion_eligible
                 and minimum_retained_satisfied
-                and bool(final_rhat["passed"])
+                and (
+                    config.rhat_role == "tuning_explanatory_only"
+                    or bool(final_rhat["passed"])
+                )
             ):
                 passed = True
                 break
@@ -5295,7 +5307,7 @@ class SequentialRHatHMCVerifier:
             ),
             "chunk_count": len(chunk_summaries),
             "rhat_threshold": float(config.rhat_threshold),
-            "rhat_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+            "rhat_role": config.rhat_role,
             "rhat_definition": final_rhat["rhat_definition"],
             "max_finite_rhat": final_rhat["max_finite_rhat"],
             "max_rank_normalized_split_rhat": final_rhat[
@@ -5434,6 +5446,7 @@ class SequentialRHatHMCVerifier:
             "chunk_count": len(chunk_summaries),
             "chain_count": int(config.chain_count),
             "rhat_threshold": float(config.rhat_threshold),
+            "rhat_role": config.rhat_role,
             "rhat_definition": final_rhat["rhat_definition"],
             "max_rank_normalized_split_rhat": final_rhat[
                 "max_rank_normalized_split_rhat"

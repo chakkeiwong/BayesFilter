@@ -332,7 +332,7 @@ def test_sequential_verifier_fails_closed_when_modern_rhat_is_undefined(monkeypa
         "inconclusive_evidence"
     )
     assert result.diagnostics["rhat_role"] == (
-        "fixed_kernel_convergence_gate_not_candidate_ranking"
+        "posterior_gate"
     )
     assert result.diagnostics["rhat_definition"] == (
         "max(rank-normalized split R-hat, "
@@ -496,7 +496,8 @@ def test_sequential_verifier_rejects_mixed_divergence_coverage(monkeypatch) -> N
     ]
 
 
-def test_sequential_verifier_rejects_period_two_return_path(monkeypatch) -> None:
+@pytest.mark.parametrize("rhat_role", ["posterior_gate", "tuning_explanatory_only"])
+def test_sequential_verifier_rejects_period_two_return_path(monkeypatch, rhat_role) -> None:
     import bayesfilter.inference.hmc as hmc_module
 
     class _PeriodTwoChunkRunner:
@@ -551,6 +552,7 @@ def test_sequential_verifier_rejects_period_two_return_path(monkeypatch) -> None
             seed=(20260712, 72),
             chain_count=4,
             rhat_threshold=1.01,
+            rhat_role=rhat_role,
             target_scope="fixed_size_hmc_chunk_gaussian",
             chain_execution_mode="tf_function",
         ),
@@ -569,9 +571,7 @@ def test_sequential_verifier_rejects_period_two_return_path(monkeypatch) -> None
     assert result.diagnostics["tuning_repair_triggers"] == [
         "trajectory:repair_resonance"
     ]
-    assert result.diagnostics["rhat_role"] == (
-        "fixed_kernel_convergence_gate_not_candidate_ranking"
-    )
+    assert result.diagnostics["rhat_role"] == rhat_role
 
 
 @pytest.mark.parametrize(
@@ -721,8 +721,22 @@ def test_sequential_verifier_private_retained_health_is_phase7_opt_in(
         assert expected_reason in diagnostics["engineering_invalidity_reasons"]
 
 
+@pytest.mark.parametrize(
+    "rhat_role,rhat_state,minimum,expected_count,expected_pass",
+    [
+        ("posterior_gate", "well_mixed", 600, 600, True),
+        ("posterior_gate", "separated", 400, 600, False),
+        ("tuning_explanatory_only", "separated", 400, 400, True),
+        ("tuning_explanatory_only", "undefined", 400, 400, True),
+    ],
+)
 def test_sequential_rhat_verifier_respects_minimum_retained_results_for_pass(
     monkeypatch: pytest.MonkeyPatch,
+    rhat_role: str,
+    rhat_state: str,
+    minimum: int,
+    expected_count: int,
+    expected_pass: bool,
 ) -> None:
     import bayesfilter.inference.hmc as hmc_module
 
@@ -748,6 +762,8 @@ def test_sequential_rhat_verifier_respects_minimum_retained_results_for_pass(
                 seed=(20260713, self.call_count),
                 dtype=tf.float64,
             )
+            if rhat_state == "separated":
+                samples += tf.reshape(tf.constant([-30., -10., 10., 30.], tf.float64), (1, 4, 1))
             valid = tf.ones((draws,), dtype=tf.bool)
             diagnostics = {
                 "valid_sample_count": tf.constant(draws, dtype=tf.int32),
@@ -780,19 +796,29 @@ def test_sequential_rhat_verifier_respects_minimum_retained_results_for_pass(
             )
 
     monkeypatch.setattr(hmc_module, "FixedSizeHMCChunkRunner", _ScriptedChunkRunner)
+    if rhat_state == "undefined":
+        monkeypatch.setattr(
+            hmc_module,
+            "_rhat_summary_from_retained_samples",
+            lambda *_args, **_kwargs: {
+                **hmc_module._empty_rhat_summary(),
+                "nonfinite_rhat_count": 2,
+            },
+        )
     verifier = build_sequential_rhat_hmc_verifier(
         ReviewedBatchedGaussianAdapter(),
         tf.zeros((2,), dtype=tf.float64),
         SequentialRHatHMCVerificationConfig(
             check_interval=200,
             max_results=600,
-            min_retained_results_for_pass=600,
+            min_retained_results_for_pass=minimum,
             num_burnin_steps=0,
             step_size=0.05,
             num_leapfrog_steps=1,
             seed=(20260628, 1),
             chain_count=4,
             rhat_threshold=1.01,
+            rhat_role=rhat_role,
             target_scope="fixed_size_hmc_chunk_gaussian",
             chain_execution_mode="tf_function",
         ),
@@ -800,13 +826,24 @@ def test_sequential_rhat_verifier_respects_minimum_retained_results_for_pass(
 
     result = verifier.run()
 
-    assert result.passed is True
-    assert result.retained_sample_count == 600
-    assert result.chunk_count == 3
-    assert calls == [200, 200, 200]
-    assert result.diagnostics["min_retained_results_for_pass"] == 600
+    assert result.passed is expected_pass
+    assert result.cap_hit is (not expected_pass)
+    assert result.retained_sample_count == expected_count
+    assert result.chunk_count == expected_count // 200
+    assert calls == [200] * result.chunk_count
+    assert result.diagnostics["acceptance_evidence"]["promotion_eligible"] is True
+    assert result.diagnostics["min_retained_results_for_pass"] == minimum
     assert result.diagnostics["minimum_retained_pass_gate_satisfied"] is True
-    assert result.metadata["min_retained_results_for_pass"] == 600
+    assert result.metadata["min_retained_results_for_pass"] == minimum
+    assert result.diagnostics["rhat_role"] == rhat_role
+    assert result.metadata["rhat_role"] == rhat_role
+    assert verifier.config.signature_payload()["rhat_role"] == rhat_role
+    if rhat_state == "separated":
+        assert result.max_finite_rhat > 1.01
+        assert result.diagnostics["all_finite_rhat_at_or_below_threshold"] is False
+    elif rhat_state == "undefined":
+        assert result.max_finite_rhat is None
+        assert result.nonfinite_rhat_count == 2
 
 
 def test_sequential_rhat_verifier_stops_at_cap_when_rhat_fails(monkeypatch) -> None:

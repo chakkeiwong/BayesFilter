@@ -199,17 +199,17 @@ nor HMC.
 \lstinputlisting[language=Python,caption={Covariance-first ordinary-tuner handoff without chain execution.},label={lst:bf-hmc-tuning-covariance-first}]{examples/hmc_tuning_covariance_first.py}
 
 The default ordinary TFP verifier requires typed finite-state and acceptance
-evidence, the configured minimum retained tuning draws, and finite
-rank-normalized split and folded split \(\widehat R\) values at or below 1.01.
-Failure or exhaustion at that cap prevents the final handoff.  The value 1.01
-is the existing verifier setting restored at the admission boundary; this
-documentation work did not choose a new threshold.  Bulk and tail effective
-sample sizes are disabled for ordinary tuning admission.  They belong to
-subsequent retained-posterior assessment unless another reviewed route
-explicitly says otherwise.  Acceptance by itself never authorizes a handoff.
-The implementation anchor for the threshold is
-\code{HMC\_TUNING\_ORDINARY\_RHAT\_THRESHOLD}; consumers should import
-that constant rather than hard-code a copied number.
+evidence and the configured minimum retained tuning draws.  It also computes
+and records rank-normalized split and folded split \(\widehat R\), but those
+values are explanatory chain-mixing diagnostics during tuning: they do not
+select, reject, repair, or delay an ordinary candidate handoff.  The value
+1.01 remains serialized as diagnostic threshold metadata through
+\code{HMC\_TUNING\_ORDINARY\_RHAT\_THRESHOLD}; it is not an ordinary tuning
+gate.  Bulk and tail effective sample sizes are disabled for ordinary tuning
+admission.  R-hat, ESS, and MCSE belong to subsequent retained-posterior
+assessment unless another reviewed route explicitly assigns them a gate.
+Acceptance and tuning diagnostics by themselves never authorize a posterior
+claim.
 
 The ordinary tuning family still contains NumPy and host numerical and
 serialization paths.  This is BayesFilter-owned backend migration debt, so the
@@ -640,9 +640,11 @@ Missing identity, telemetry, nonfinite target, or inconsistent coordinates &
 Implementation or target-contract veto & Repair the smallest violated
 contract; do not interpret acceptance or tuning metrics. \\
 \addlinespace
-Finite candidate fails acceptance, movement, energy, or fresh
-\(\widehat R\) screen & Tuning-candidate failure & Use the declared bounded
-repair or retry budget.  The result does not reject HMC or the target. \\
+Finite candidate fails acceptance, movement, energy, or another declared
+tuning-health screen & Tuning-candidate failure & Use the declared bounded
+repair or retry budget.  R-hat reported during ordinary tuning is explanatory
+only; a posterior \(\widehat R\) screen is assessed after handoff under its
+own declared policy.  The result does not reject HMC or the target. \\
 \addlinespace
 Exact endpoint target or score is wrong for the claimed measure & Target
 invalidity & Correct the value and score contract before tuning. \\

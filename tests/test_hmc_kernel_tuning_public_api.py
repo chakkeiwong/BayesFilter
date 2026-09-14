@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 import os
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Mapping
@@ -295,8 +296,8 @@ def _loop_result_for_bootstrap(
     )
 
 
-def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult:
-    base = _loop_result(passed=False)
+def _loop_result_with_high_rhat_public_summary() -> HMCTuneVerifyRepairLoopResult:
+    base = _loop_result(passed=True)
     attempt = base.attempts[0]
     attempt = HMCTuneVerifyRepairAttempt(
         attempt_index=attempt.attempt_index,
@@ -323,18 +324,22 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "max_results": 64,
             "num_burnin_steps": 16,
             "chain_count": 4,
-            "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
+            "rhat_threshold_role": "tuning_explanatory_only",
             "step_size": 0.2,
             "num_leapfrog_steps": 8,
         },
         verification_diagnostics={
             "sequential_rhat_verification": True,
-            "passed": False,
+            "passed": True,
+            "rhat_role": "tuning_explanatory_only",
+            "max_finite_rhat": 1.8,
+            "finite_rhat_count": 2,
+            "nonfinite_rhat_count": 0,
             "rhat_threshold": 1.01,
             "check_interval": 64,
             "max_results": 64,
             "all_finite_rhat_at_or_below_threshold": False,
-            "cap_hit": True,
+            "cap_hit": False,
             "acceptance_rate": 0.70,
             "runtime_finite": True,
             "log_accept_ratio_finite": True,
@@ -353,13 +358,10 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "reports_posterior_convergence": False,
         },
         verification_callback_result=attempt.verification_callback_result,
-        final_status="repair_or_retry",
-        diagnostic_role="verification_rhat_repair_trigger",
+        final_status="passed",
+        diagnostic_role="dependence_aware_fixed_kernel_verification_passed",
         hard_vetoes=(),
-        repair_triggers=(
-            "verification_rhat_above_threshold_or_cap_hit",
-            "verification_rhat_cap_hit",
-        ),
+        repair_triggers=(),
         handoff_state_payload=attempt.handoff_state_payload,
     )
     return HMCTuneVerifyRepairLoopResult(
@@ -369,15 +371,12 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
         adapter_signature=base.adapter_signature,
         target_dimension=base.target_dimension,
         attempts=(attempt,),
-        final_status="repair_or_retry",
-        diagnostic_role="verification_rhat_repair_trigger",
+        final_status="passed",
+        diagnostic_role="dependence_aware_fixed_kernel_verification_passed",
         hard_vetoes=(),
-        repair_triggers=(
-            "verification_rhat_above_threshold_or_cap_hit",
-            "verification_rhat_cap_hit",
-        ),
-        final_kernel_payload=None,
-        final_kernel_hash=None,
+        repair_triggers=(),
+        final_kernel_payload=base.final_kernel_payload,
+        final_kernel_hash=base.final_kernel_hash,
         seed_report=base.seed_report,
         diagnostic_roles=base.diagnostic_roles,
     )
@@ -2286,13 +2285,33 @@ def test_public_artifact_exposes_phase7_public_timeout_before_windowed_mass_with
         assert forbidden not in text
 
 
-def test_public_tuner_rejects_failed_sequential_rhat_handoff(
+@pytest.mark.parametrize(
+    "overrides,message",
+    [
+        ({"rhat_role": None}, "requires tuning_explanatory_only"),
+        ({"rhat_role": "posterior_gate"}, "requires tuning_explanatory_only"),
+        ({"passed": False}, "requires passed sequential verifier"),
+        ({"cap_hit": True}, "cannot report a verification cap hit"),
+    ],
+)
+def test_passed_ordinary_attempt_requires_tuning_verifier_completion(
+    overrides: Mapping[str, Any], message: str,
+) -> None:
+    attempt = _loop_result_with_high_rhat_public_summary().attempts[0]
+    with pytest.raises(ValueError, match=message):
+        replace(
+            attempt,
+            verification_diagnostics={**attempt.verification_diagnostics, **overrides},
+        )
+
+
+def test_public_tuner_accepts_high_rhat_tuning_diagnostic(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     geometry = _geometry()
     bootstrap = _bootstrap_passed()
-    loop = _loop_result_with_rhat_cap_public_summary()
+    loop = _loop_result_with_high_rhat_public_summary()
     module = __import__("bayesfilter.inference.hmc_kernel_tuning", fromlist=[""])
     monkeypatch.setattr(module, "initialize_hmc_kernel_geometry", lambda **_kwargs: geometry)
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
@@ -2313,9 +2332,9 @@ def test_public_tuner_rejects_failed_sequential_rhat_handoff(
     phase7 = payload["phase7_public_summary"]
     attempt = phase7["attempt_summaries"][0]
     verification = attempt["stage_statuses"]["verification"]
-    assert result.final_status == "repair_or_retry"
-    assert result.final_kernel_hash is None
-    assert result.final_kernel_payload is None
+    assert result.final_status == "passed"
+    assert result.final_kernel_hash is not None
+    assert result.final_kernel_payload is not None
     assert phase7["attempt_count"] == 1
     assert attempt["attempt_index"] == 0
     assert attempt["budget_public_summary"]["public_budget_class"] == (
@@ -2324,11 +2343,15 @@ def test_public_tuner_rejects_failed_sequential_rhat_handoff(
     assert attempt["budget_public_summary"]["substage_budget_details_exposed"] is False
     assert verification["verification_policy"] == "sequential_rhat"
     assert verification["sequential_rhat_verification"] is True
-    assert verification["cap_hit"] is True
+    assert verification["cap_hit"] is False
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
+    assert verification["rhat_role"] == "tuning_explanatory_only"
+    assert verification["max_finite_rhat"] == 1.8
+    assert verification["finite_rhat_count"] == 2
+    assert verification["nonfinite_rhat_count"] == 0
     assert (
         verification["rhat_threshold_role"]
-        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
+        == "tuning_explanatory_only"
     )
     assert verification["acceptance_relation"] == "inside_acceptance_band"
     assert verification["acceptance_band_from_payload"] is True
