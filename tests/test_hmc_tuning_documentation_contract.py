@@ -411,10 +411,10 @@ def test_guide_binds_the_executable_ordinary_default_policy() -> None:
         "independent_epsilon_ladder_for_every_l"
     )
     assert policy["refinement_rounds"] == 1
-    assert resolved["claim_bearing_artifact_authority"] is False
-    assert resolved["claim_bearing_blocker"] == (
-        "ordinary_runtime_numpy_policy_pending"
-    )
+    assert resolved["claim_bearing_artifact_authority"] is True
+    assert resolved["claim_bearing_blocker"] is None
+    assert resolved["runtime_backend_policy"] == "ordinary_tf_tfp_runtime_v1"
+    assert config.payload()["runtime_backend_policy"] == resolved["runtime_backend_policy"]
 
     guide = " ".join(GUIDE_PATH.read_text(encoding="utf-8").split())
     assert "ordinary_hmc" in guide

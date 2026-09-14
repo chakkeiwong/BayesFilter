@@ -43,6 +43,7 @@ FIXED_TRANSPORT_NONCLAIMS = (
 
 _GRAPH_NATIVE_AUTHORITIES = frozenset(
     {
+        "analytical_manual",
         "graph_native",
         "reviewed_gradient_tape_xla_exception",
     }
@@ -65,6 +66,7 @@ class BatchValueScoreMetadata:
     value_score_authority: str
     runtime_backend: str
     target_scope: str | None
+    score_provenance: str = "unspecified"
     nonclaims: tuple[str, ...] = NONCLAIMS
 
 
@@ -359,6 +361,7 @@ def evaluate_batch_native_value_score(
             value_score_authority=capability.value_score_authority,
             runtime_backend=capability.runtime_backend,
             target_scope=capability.target_scope,
+            score_provenance=capability.score_provenance or "unspecified",
         ),
         diagnostics={
             "path": "batch_native_adapter_log_prob_and_grad",
@@ -367,6 +370,7 @@ def evaluate_batch_native_value_score(
             "accepted_target_xla_authority": bool(
                 capability.is_accepted_xla_hmc_authority
             ),
+            "score_provenance": capability.score_provenance,
             "full_chain_xla_diagnostic_ready": bool(
                 capability.full_chain_xla_diagnostic_ready
             ),
@@ -447,6 +451,7 @@ class LatentAffineBatchValueScoreAdapter:
             runtime_backend=self.runtime_backend,
             evidence_path=self.evidence_path,
             target_scope=self.target_scope,
+            score_provenance=base_capability.score_provenance,
             nonclaims=nonclaims,
         )
 
@@ -474,6 +479,17 @@ class LatentAffineBatchValueScoreAdapter:
             _call_value_score_with_batch_rank_bridge(self.base_adapter, theta)
         )
         return value_tensor, self.theta_score_to_latent_score(theta_score_tensor)
+
+    def classify_target_exception(self, error: BaseException) -> bool:
+        """Preserve declared target-domain failures through fixed-mass coordinates."""
+
+        classifier = getattr(self.base_adapter, "classify_target_exception", None)
+        if not callable(classifier):
+            return False
+        result = classifier(error)
+        if type(result) is not bool:
+            raise TypeError("classify_target_exception must return a boolean")
+        return result
 
     def target_status_telemetry(self, z: Any) -> Mapping[str, Any]:
         """Return base-target telemetry after applying the latent transform.
@@ -637,6 +653,7 @@ class FixedTransportValueScoreAdapter:
             "target_scope": self.target_scope,
             "base_target_scope": base_capability.target_scope,
             "value_score_authority": base_capability.value_score_authority,
+            "score_provenance": base_capability.score_provenance,
             "batch_native": self.batch_native,
             "batch_native_required": self.require_batch_native,
         }
@@ -651,6 +668,7 @@ class FixedTransportValueScoreAdapter:
             "fixed_transport_manifest_hash": self.transport_manifest_hash,
             "fixed_transport_manifest": self._transport_manifest,
             "value_score_authority": base_capability.value_score_authority,
+            "score_provenance": base_capability.score_provenance,
             "xla_hmc_ready": self.value_score_capability().xla_hmc_ready,
             "full_chain_xla_diagnostic_ready": (
                 self.value_score_capability().full_chain_xla_diagnostic_ready
@@ -689,6 +707,7 @@ class FixedTransportValueScoreAdapter:
             runtime_backend=self.runtime_backend,
             evidence_path=self.evidence_path,
             target_scope=self.target_scope,
+            score_provenance=base_capability.score_provenance,
             nonclaims=nonclaims,
         )
 

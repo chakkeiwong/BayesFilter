@@ -25,6 +25,7 @@ from bayesfilter.inference.factor_correlation_geometry import (
     fit_factor_correlation_score_geometry,
 )
 from bayesfilter.inference.hmc import PrecomputedMassArtifact
+from bayesfilter.inference.score_curvature_tf import fit_dense_score_precision_tf
 
 
 FIXED_CENTER_CURVATURE_NONCLAIMS = (
@@ -618,12 +619,12 @@ def _fit_dense_precision(
     projection_cap: float,
     require_raw_spd: bool,
 ) -> FixedCenterCurvatureFit:
-    train_z_tf = tf.convert_to_tensor(train_z, tf.float64)
-    response_tf = tf.convert_to_tensor(
-        center_score[None, :] - train_scores, tf.float64
+    shared_fit = fit_dense_score_precision_tf(
+        tf.convert_to_tensor(center_score, tf.float64),
+        tf.convert_to_tensor(train_z, tf.float64),
+        tf.convert_to_tensor(train_scores, tf.float64),
     )
-    raw_tf = tf.linalg.lstsq(train_z_tf, response_tf, fast=False)
-    raw_tf = 0.5 * (raw_tf + tf.transpose(raw_tf))
+    raw_tf = shared_fit["raw_precision"]
     raw_values_tf, vectors_tf = tf.linalg.eigh(raw_tf)
     raw = raw_tf.numpy()
     raw_values = raw_values_tf.numpy()

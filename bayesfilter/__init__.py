@@ -357,6 +357,7 @@ __all__ = [
     "continuous_lyapunov_first_derivatives_tf",
     "continuous_lyapunov_solution_tf",
     "diffusion_from_cholesky_first_derivatives_tf",
+    "stationary_discrete_lyapunov_factor_doubling_tf",
     "ensure_cpu_only_env",
     "evaluate_target_with_failure_policy",
     "evaluate_batch_native_value_score",
@@ -415,6 +416,8 @@ __all__ = [
     "stable_adapter_signature",
     "stationary_lgssm_first_derivative_coverage",
     "stationary_lgssm_from_continuous_first_derivatives_tf",
+    "tf_qr_sqrt_kalman_score_batched_static",
+    "tf_qr_sqrt_kalman_score_factors_batched_static",
     "stale_artifacts_match_exact",
     "stable_config_hash",
     "stale_match_payload",
@@ -841,6 +844,9 @@ _EXPORT_MODULES = {
     "diffusion_from_cholesky_first_derivatives_tf": (
         "bayesfilter.linear.stationary_lgssm_derivatives_tf"
     ),
+    "stationary_discrete_lyapunov_factor_doubling_tf": (
+        "bayesfilter.linear.stationary_lgssm_derivatives_tf"
+    ),
     "ensure_cpu_only_env": "bayesfilter.runtime",
     "evaluate_target_with_failure_policy": "bayesfilter.inference",
     "evaluate_batch_native_value_score": "bayesfilter.inference",
@@ -942,6 +948,12 @@ _EXPORT_MODULES = {
     ),
     "stationary_lgssm_from_continuous_first_derivatives_tf": (
         "bayesfilter.linear.stationary_lgssm_derivatives_tf"
+    ),
+    "tf_qr_sqrt_kalman_score_batched_static": (
+        "bayesfilter.linear.kalman_qr_derivatives_tf"
+    ),
+    "tf_qr_sqrt_kalman_score_factors_batched_static": (
+        "bayesfilter.linear.kalman_qr_derivatives_tf"
     ),
     "stale_artifacts_match_exact": "bayesfilter.runtime",
     "stable_config_hash": "bayesfilter.runtime",

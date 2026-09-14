@@ -179,3 +179,53 @@ attempt counts, public artifact test, and disabled retry hooks jointly cover
 that path. The weakest remaining evidence is downstream target execution:
 MacroFinance P18 was not rerun. No stochastic comparison or statistically
 supported ranking was performed.
+
+## Integration with updated main
+
+The initial repair was committed as `b027982a`. The normal push found newer
+remote work, so integration uses `29c6d2f4` as the additional baseline and
+preserves its TensorFlow backend migration. The historical NumPy-blocker
+statements above describe the original repair baseline; current ordinary
+backend admission is separately identified by `ordinary_tf_tfp_runtime_v1`.
+That upstream change does not qualify the typed candidate-set retained bridge.
+
+Pre-execution skeptical audit: upstream changed the verifier's numerical
+backend and ordinary policy metadata, but does not replace the R-hat role
+repair. The merge is automatic, and upstream paths do not overlap the twelve
+unrelated tracked dirty files. Recheck the ordinary verifier, public handoff,
+outer loop, candidate-set contracts, documentation, backend parity, replay
+authority, and step-bound handoff together. Pass requires the combined behavior
+and all focused regressions to agree; failures trigger a localized integration
+repair before push. Tests deliberately hide GPUs and cannot establish target-
+specific posterior validity, GPU/XLA readiness, or full P2/P3/P5 completion.
+Preserve the original evidence and record this check in a fresh validation
+directory. No new numerical default or research campaign is introduced.
+
+The first integration run passed 342 tests and exposed two outdated fixtures.
+The broad-grid scheduling fixture omitted upstream's new finite-transition
+trace fields and accidentally ran real numerical bracketing around a mocked
+chain runner. The bracket-transfer fixture expected same-L reuse even though
+the upstream ordinary route now requires fresh finite bracketing. Update the
+scheduling fixture with explicit synthetic finite evidence and an observed
+per-L bracket stub; check the ordinary fresh-bracket policy and the legacy
+same-L-only reuse policy separately. These are test-contract repairs, not a
+relaxation of runtime health or acceptance requirements. Preserve the failing
+run and rerun the focused integration suite after the fixture repairs.
+
+Integration result: **345 passed**, 3,001 dependency deprecation warnings,
+pytest elapsed 309.02 seconds. The bracket fixture also respects the actual
+warmup ceiling when constructing its synthetic per-L steps; its targeted
+checks pass for both ordinary and legacy policies. The final integration
+[manifest](artifacts/hmc-tuning-rhat-role-repair-2026-09-14/integration-20260914T090114Z/manifest.json)
+records the combined source hashes, both merge parents, exact twelve-file
+pytest command, environment, and process wall time. The preceding failed run
+remains preserved separately.
+
+The merged guidebook builds successfully; PDF page 415 was rendered and
+visually checked for both the R-hat explanation and updated ordinary backend
+description. The same three unrelated OBC citations remain unresolved. Route
+inventory and the change-specific diff check against remote `main` pass.
+Checksums confirm all twelve unrelated tracked dirty files are unchanged.
+The combined check closes the R-hat integration; numerical qualification and
+retained replay for typed candidate sets remain separate unfinished work,
+as detailed in the [MacroFinance memo review](bayesfilter-typed-candidate-retained-bridge-review-2026-09-14.md).

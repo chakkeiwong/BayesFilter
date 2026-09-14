@@ -11,6 +11,7 @@ from typing import Any, Literal, Protocol, runtime_checkable
 
 
 ValueScoreAuthority = Literal[
+    "analytical_manual",
     "graph_native",
     "gradient_tape_fallback",
     "reviewed_gradient_tape_xla_exception",
@@ -33,6 +34,7 @@ CompileMode = Literal["eager", "tf_function", "xla"]
 SeedPolicy = Literal["not_used", "stateless_required", "external"]
 
 _KNOWN_AUTHORITIES = {
+    "analytical_manual",
     "graph_native",
     "gradient_tape_fallback",
     "reviewed_gradient_tape_xla_exception",
@@ -41,6 +43,7 @@ _KNOWN_AUTHORITIES = {
     "unavailable",
 }
 _ACCEPTED_XLA_AUTHORITIES = {
+    "analytical_manual",
     "graph_native",
     "reviewed_gradient_tape_xla_exception",
 }
@@ -104,6 +107,7 @@ class ValueScoreCapability:
     target_scope: str | None = None
     nonclaims: tuple[str, ...] = ()
     full_chain_xla_diagnostic_ready: bool = False
+    score_provenance: str | None = None
 
     def __post_init__(self) -> None:
         authority = str(self.value_score_authority)
@@ -120,6 +124,25 @@ class ValueScoreCapability:
             "full_chain_xla_diagnostic_ready",
             bool(self.full_chain_xla_diagnostic_ready),
         )
+        if self.score_provenance is None:
+            provenance = (
+                "analytical_manual"
+                if authority == "analytical_manual"
+                else "unspecified"
+            )
+        else:
+            provenance = str(self.score_provenance)
+        if not provenance.strip():
+            raise ValueError("score_provenance must be non-empty")
+        if authority == "analytical_manual" and provenance != "analytical_manual":
+            raise ValueError(
+                "analytical_manual authority requires analytical_manual score provenance"
+            )
+        if provenance == "analytical_manual" and authority != "analytical_manual":
+            raise ValueError(
+                "analytical_manual score provenance requires analytical_manual authority"
+            )
+        object.__setattr__(self, "score_provenance", provenance)
         if self.evidence_path is not None:
             object.__setattr__(self, "evidence_path", str(self.evidence_path))
         if self.target_scope is not None:
@@ -145,6 +168,15 @@ class ValueScoreCapability:
             if not self.target_scope:
                 raise ValueError(
                     "reviewed tf.py_function finite-reject bridges require target_scope binding"
+                )
+        if authority == "analytical_manual" and self.xla_hmc_ready:
+            if not self.evidence_path:
+                raise ValueError(
+                    "analytical_manual XLA authority requires scoped evidence_path"
+                )
+            if not self.target_scope:
+                raise ValueError(
+                    "analytical_manual XLA authority requires target_scope binding"
                 )
         if self.full_chain_xla_diagnostic_ready:
             if not self.is_accepted_xla_hmc_authority:
@@ -173,6 +205,20 @@ class ValueScoreCapability:
         return bool(
             self.full_chain_xla_diagnostic_ready
             and self.is_accepted_xla_hmc_authority
+        )
+
+    @property
+    def is_analytical_manual_score(self) -> bool:
+        """Whether the score is explicitly declared analytical/manual."""
+        return self.score_provenance == "analytical_manual"
+
+    @property
+    def is_accepted_analytical_xla_hmc_authority(self) -> bool:
+        """Whether this capability is eligible for an analytical-only route."""
+        return bool(
+            self.is_accepted_xla_hmc_authority
+            and self.value_score_authority == "analytical_manual"
+            and self.is_analytical_manual_score
         )
 
 
@@ -440,6 +486,7 @@ class NonlinearSSMAdapterContract:
                 ),
                 "runtime_backend": self.value_score.runtime_backend,
                 "target_scope": self.value_score.target_scope,
+                "score_provenance": self.value_score.score_provenance,
             },
             "prior_term": self.prior_term,
             "likelihood_term": self.likelihood_term,
@@ -505,6 +552,7 @@ def _coerce_capability(capability: Any) -> ValueScoreCapability:
                 "full_chain_xla_diagnostic_ready",
                 False,
             ),
+            score_provenance=capability.get("score_provenance"),
         )
     raise TypeError("value_score_capability must be a ValueScoreCapability or mapping")
 
@@ -520,7 +568,7 @@ def validate_nonlinear_ssm_contract(
         raise TypeError("contract must be a NonlinearSSMAdapterContract")
     if require_xla_hmc_ready and not contract.xla_hmc_ready:
         raise InvalidNonlinearSSMContract(
-            "XLA HMC requires graph-native or reviewed value/score authority"
+            "XLA HMC requires an accepted value/score authority"
         )
     return contract
 

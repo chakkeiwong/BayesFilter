@@ -1,12 +1,16 @@
-"""Operational HMC diagnostics that avoid convergence claims."""
+"""TensorFlow reductions for operational HMC screens, not convergence claims.
+
+TensorFlow owns array arithmetic; Python materializes scalar/container summaries
+at the eager reporting boundary. Missing evidence cannot establish a screen
+pass. Absolute log acceptance is an explanatory proxy, not native divergence.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from collections.abc import Mapping
+import math
 from typing import Any
-
-import numpy as np
 
 
 @dataclass(frozen=True)
@@ -68,24 +72,26 @@ def summarize_hmc_diagnostics(
     split_rhat: Any | None = None,
     ess: Any | None = None,
 ) -> HMCDiagnosticSummary:
+    import tensorflow as tf
+
     acceptance_rate = None
     if is_accepted is not None:
-        accepted = np.asarray(is_accepted, dtype=bool)
-        acceptance_rate = float(np.mean(accepted)) if accepted.size else np.nan
+        accepted = tf.cast(tf.convert_to_tensor(is_accepted), tf.bool)
+        acceptance_rate = float(tf.reduce_mean(tf.cast(accepted, tf.float64)).numpy())
     if divergences is None:
         divergence_status = "unavailable"
         divergence_count = None
     else:
-        divergence_array = np.asarray(divergences, dtype=bool)
+        divergence_array = tf.cast(tf.convert_to_tensor(divergences), tf.bool)
         divergence_status = "available"
-        divergence_count = int(np.sum(divergence_array))
+        divergence_count = int(tf.reduce_sum(tf.cast(divergence_array, tf.int64)).numpy())
     rhat_values = _float_tuple(split_rhat)
     ess_values = _float_tuple(ess)
     finite_parts = []
     if acceptance_rate is not None:
-        finite_parts.append(np.isfinite(acceptance_rate))
-    finite_parts.extend(np.isfinite(value) for value in rhat_values)
-    finite_parts.extend(np.isfinite(value) for value in ess_values)
+        finite_parts.append(math.isfinite(acceptance_rate))
+    finite_parts.extend(math.isfinite(value) for value in rhat_values)
+    finite_parts.extend(math.isfinite(value) for value in ess_values)
     diagnostic_status = "finite" if all(finite_parts or [True]) else "nonfinite"
     return HMCDiagnosticSummary(
         acceptance_rate=acceptance_rate,
@@ -102,6 +108,10 @@ def summarize_log_accept_ratios(
     *,
     divergence_threshold: float = 1000.0,
 ) -> HMCLogAcceptSummary:
+    """Count finite ratios and absolute-threshold alerts without native-divergence claims."""
+
+    import tensorflow as tf
+
     if log_accept_ratio is None:
         return HMCLogAcceptSummary(
             finite_count=0,
@@ -112,13 +122,15 @@ def summarize_log_accept_ratios(
             divergence_criterion="unavailable",
             status="unavailable",
         )
-    values = np.asarray(log_accept_ratio, dtype=float)
-    finite_mask = np.isfinite(values)
-    finite_count = int(np.sum(finite_mask))
-    nonfinite_count = int(values.size - finite_count)
-    finite_values = values[finite_mask]
-    max_abs = None if finite_count == 0 else float(np.max(np.abs(finite_values)))
-    divergence_count = None if finite_count == 0 else int(np.sum(np.abs(finite_values) > float(divergence_threshold)))
+    values = tf.cast(tf.convert_to_tensor(log_accept_ratio, dtype_hint=tf.float64), tf.float64)
+    finite_mask = tf.math.is_finite(values)
+    finite_count = int(tf.reduce_sum(tf.cast(finite_mask, tf.int64)).numpy())
+    nonfinite_count = int(tf.size(values).numpy()) - finite_count
+    finite_values = tf.boolean_mask(tf.reshape(values, [-1]), tf.reshape(finite_mask, [-1]))
+    max_abs = None if finite_count == 0 else float(tf.reduce_max(tf.abs(finite_values)).numpy())
+    divergence_count = None if finite_count == 0 else int(
+        tf.reduce_sum(tf.cast(tf.abs(finite_values) > float(divergence_threshold), tf.int64)).numpy()
+    )
     return HMCLogAcceptSummary(
         finite_count=finite_count,
         nonfinite_count=nonfinite_count,
@@ -146,6 +158,10 @@ def screen_hmc_diagnostics(
     divergence_threshold: float = 1000.0,
     diagnostic_role: str = "bounded HMC screen",
 ) -> HMCScreenResult:
+    """Apply the existing bounded-screen vetoes to nonempty observed evidence."""
+
+    import tensorflow as tf
+
     log_accept = summarize_log_accept_ratios(
         log_accept_ratio,
         divergence_threshold=divergence_threshold,
@@ -164,13 +180,20 @@ def screen_hmc_diagnostics(
         unavailable.append("zero_divergences")
         checks["zero_divergences"] = False
     else:
-        divergence_array = np.asarray(divergences, dtype=bool)
-        checks["zero_divergences"] = int(np.sum(divergence_array)) == 0
+        divergence_array = tf.cast(tf.convert_to_tensor(divergences), tf.bool)
+        divergence_available = bool((tf.size(divergence_array) > 0).numpy())
+        if not divergence_available:
+            unavailable.append("zero_divergences")
+        checks["zero_divergences"] = divergence_available and not bool(
+            tf.reduce_any(divergence_array).numpy()
+        )
     if log_accept.status == "unavailable":
         unavailable.append("log_accept_nonfinite_count_zero")
         checks["log_accept_nonfinite_count_zero"] = False
     else:
-        checks["log_accept_nonfinite_count_zero"] = log_accept.nonfinite_count == 0
+        checks["log_accept_nonfinite_count_zero"] = (
+            log_accept.finite_count > 0 and log_accept.nonfinite_count == 0
+        )
     if acceptance_rate_by_chain is None:
         unavailable.extend(
             [
@@ -181,11 +204,17 @@ def screen_hmc_diagnostics(
         checks["acceptance_rate_by_chain_finite"] = False
         checks["acceptance_rate_by_chain_strictly_between_0_05_and_0_99"] = False
     else:
-        acceptance = np.asarray(acceptance_rate_by_chain, dtype=float)
-        finite_acceptance = bool(acceptance.size and np.all(np.isfinite(acceptance)))
+        acceptance = tf.cast(
+            tf.convert_to_tensor(acceptance_rate_by_chain, dtype_hint=tf.float64), tf.float64
+        )
+        finite_acceptance = bool(tf.logical_and(
+            tf.size(acceptance) > 0, tf.reduce_all(tf.math.is_finite(acceptance))
+        ).numpy())
         checks["acceptance_rate_by_chain_finite"] = finite_acceptance
         checks["acceptance_rate_by_chain_strictly_between_0_05_and_0_99"] = bool(
-            finite_acceptance and np.all((acceptance > 0.05) & (acceptance < 0.99))
+            finite_acceptance and bool(tf.reduce_all(
+                (acceptance > 0.05) & (acceptance < 0.99)
+            ).numpy())
         )
     optional_checks = {
         "fixed_kernel_used": fixed_kernel_used,
@@ -217,6 +246,8 @@ def classify_hmc_screen(
     num_leapfrog_steps: int | None = None,
     max_abs_log_accept_ratio: float | None = None,
 ) -> HMCFailureClassification:
+    import tensorflow as tf
+
     if hmc_error is not None:
         return HMCFailureClassification(
             failure_class="hmc_execution_error",
@@ -255,18 +286,18 @@ def classify_hmc_screen(
             next_repair="repair hard diagnostic failure before tuning or promotion claims",
         )
     acceptance = (
-        np.asarray(acceptance_rate_by_chain, dtype=float)
+        tf.cast(tf.convert_to_tensor(acceptance_rate_by_chain, dtype_hint=tf.float64), tf.float64)
         if acceptance_rate_by_chain is not None
-        else np.asarray([], dtype=float)
+        else tf.zeros([0], tf.float64)
     )
     acceptance_veto = "acceptance_rate_by_chain_strictly_between_0_05_and_0_99" in failed
     if (
         fixed_kernel_used
         and num_adaptation_steps_zero
-        and acceptance.size
-        and np.all(np.isfinite(acceptance))
+        and bool((tf.size(acceptance) > 0).numpy())
+        and bool(tf.reduce_all(tf.math.is_finite(acceptance)).numpy())
         and acceptance_veto
-        and np.all(acceptance >= 0.99)
+        and bool(tf.reduce_all(acceptance >= 0.99).numpy())
     ):
         return HMCFailureClassification(
             failure_class="fixed_kernel_conservative_acceptance_veto",
@@ -295,7 +326,11 @@ def classify_hmc_screen(
 def _float_tuple(values: Any | None) -> tuple[float, ...]:
     if values is None:
         return tuple()
-    return tuple(float(value) for value in np.asarray(values, dtype=float).ravel())
+
+    import tensorflow as tf
+
+    tensor = tf.cast(tf.convert_to_tensor(values, dtype_hint=tf.float64), tf.float64)
+    return tuple(tf.reshape(tensor, [-1]).numpy().tolist())
 
 
 def _screen_diagnostic_roles(checks: Mapping[str, bool]) -> Mapping[str, str]:

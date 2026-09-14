@@ -36,6 +36,11 @@ stage helpers remain diagnostics; they are not additional tuning choices.
 The generated capability table is an audit inventory, not a menu of supported
 tuning procedures.
 
+For fixed-center position initialization, see
+[posterior-local-geometry.md](posterior-local-geometry.md). That procedure
+estimates regional position geometry and is deliberately separate from HMC
+mass-matrix construction and tuning.
+
 Import and compare the schemas rather than copying their values:
 
 ```python
@@ -238,9 +243,10 @@ The route payload reports three separate roles: `operational_authority` for a
 stage route, `artifact_authority` for a replayable route artifact, and
 `scientific_promotion_authority` for a scientific/default claim. The first two
 are not evidence of the third. Inspect `result.payload()["resolved_policy"]`
-and require `claim_bearing_artifact_authority=True` only after the backend and
-target-specific evidence gates have passed; the current ordinary result sets
-it to `False` with blocker `ordinary_runtime_numpy_policy_pending`.
+and require `claim_bearing_artifact_authority=True` together with successful
+target-specific evidence. The current ordinary backend is eligible, but this
+policy flag alone does not establish a successful tuning result. Older results
+with `ordinary_runtime_numpy_policy_pending` cannot be retroactively admitted.
 
 The route can be inspected without constructing a chain:
 
@@ -383,10 +389,10 @@ disabled for ordinary tuning admission; retained posterior ESS and R-hat are
 separate posterior-validity checks. Neither acceptance nor tuning R-hat proves
 retained posterior convergence.
 
-The ordinary ladder currently imports NumPy and uses host numerical and
-serialization paths. This is BayesFilter-owned backend migration debt under
-`AGENTS.md`; until repaired, the ordinary public result is non-admitting for
-claim-bearing use. The separate TensorFlow-only proposal-field branch has two
+The ordinary ladder, warmup, selection and verification use TF/TFP numerical
+operations. Host materialization is limited to scalar control, immutable
+records, hashes and serialization; NumPy remains isolated in Gaussian
+diagnostic helpers and independent test oracles. The separate TensorFlow-only proposal-field branch has two
 evidence roles. `diagnostic_only` can never hand off. `candidate`
 may hand the same frozen transition to a retained pilot only when it selected a
 predeclared trajectory length, performed a rank-eligible valid metric update,
@@ -754,12 +760,15 @@ epsilon/L policy from the repository-owned `config` (or the durable
 caller-edited authority flag or blocker list cannot grant authority. They also
 require the persisted mechanics role to be `claim_bearing_retained`; a
 mechanics artifact cannot gain claim authority by changing a caller-side flag.
-The current ordinary route does not satisfy this gate: its result remains
-non-claim-bearing while the known NumPy runtime-policy blocker is unresolved.
+Both configuration and resolved policy must also identify
+`ordinary_tf_tfp_runtime_v1`. Missing or mismatched backend identities preserve
+the historical `ordinary_runtime_numpy_policy_pending` veto even when someone
+deletes the old blocker list. All subsequent target, geometry and kernel
+validation still applies.
 `admitted_kernel_mechanics_payload_from_tuning_result`
-therefore emits an explicit `mechanics_only` role,
+continues to emit an explicit `mechanics_only` role,
 `authority_status=mechanics_only_nonclaiming`, and the source `tuning_config`
-needed for a future repository-owned policy check.
+needed for the repository-owned policy check.
 
 Never infer compatibility from a matching schema string alone. Record the
 BayesFilter Git commit in the consumer, compare the current registry payload,

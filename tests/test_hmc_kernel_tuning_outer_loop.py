@@ -6286,6 +6286,8 @@ def test_operational_phase5_selection_repairs_through_empirical_midpoint(
 def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from bayesfilter.inference import hmc_warmup
+
     adapter, geometry, bootstrap = _operational_inputs()
     windowed = hmc_kernel_tuning.run_hmc_windowed_mass_stage(
         adapter=adapter,
@@ -6300,12 +6302,42 @@ def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
         _attempt_budget_policy=_operational_budget(),
     )
     calls: list[dict[str, Any]] = []
+    bracket_calls: list[tuple[int, tuple[int, int]]] = []
+    fixture_step_bound = hmc_kernel_tuning._fixed_mass_step_upper_bound(windowed)
+    assert fixture_step_bound is not None
+
+    def finite_bracket(**kwargs: Any):
+        # This fixture checks broad-grid scheduling, not numerical bracketing.
+        leapfrog = int(kwargs["num_leapfrog_steps"])
+        seed = tuple(kwargs["seed"])
+        bracket_calls.append((leapfrog, seed))
+        assert kwargs["hard_veto_nonfinite"] is True
+        step = min(
+            float(geometry.target_trajectory_length) / float(leapfrog),
+            fixture_step_bound,
+        )
+        return hmc_warmup.ReasonableEpsilonResult(
+            status="passed",
+            selected_step_size=step,
+            attempts=(hmc_warmup.ReasonableEpsilonAttempt(
+                step_size=step,
+                mean_acceptance_probability=0.70,
+                finite=True,
+                seed=seed,
+                num_leapfrog_steps=leapfrog,
+            ),),
+        )
+
+    monkeypatch.setattr(hmc_warmup, "find_reasonable_epsilon", finite_bracket)
 
     def operational_runner(_adapter: Any, initial_state: Any, config: Any):
         bank = np.asarray(initial_state, dtype=float)
         leapfrog = int(config.num_leapfrog_steps)
         uses_tuning = bool(config.tuning_policy.uses_dual_averaging)
-        tuned_step = float(geometry.target_trajectory_length) / float(leapfrog)
+        tuned_step = min(
+            float(geometry.target_trajectory_length) / float(leapfrog),
+            fixture_step_bound,
+        )
         calls.append(
             {
                 "role": "tune" if uses_tuning else "screen",
@@ -6336,6 +6368,13 @@ def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
                 "log_accept_ratio": np.log(probability),
                 "is_accepted": np.ones_like(probability, dtype=bool),
                 "target_log_prob": np.zeros_like(probability),
+                **{
+                    name: np.ones_like(probability, dtype=bool)
+                    for name in (
+                        "target_score_finite", "proposal_finite", "movement_finite",
+                        "proposed_target_finite", "accepted_target_finite",
+                    )
+                },
             },
         )
 
@@ -6365,6 +6404,8 @@ def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
     expected_l_values = ORDINARY_BROAD_PRIMARY_L_GRID + expected_refinement
 
     assert fixed.passed is True
+    assert tuple(leapfrog for leapfrog, _seed in bracket_calls) == expected_l_values
+    assert len({seed for _leapfrog, seed in bracket_calls}) == len(expected_l_values)
     assert tuple(call["num_leapfrog_steps"] for call in tune_calls) == expected_l_values
     assert tuple(call["num_leapfrog_steps"] for call in screen_calls) == expected_l_values
     assert len({call["seed"] for call in tune_calls}) == len(expected_l_values)

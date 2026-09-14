@@ -54,6 +54,8 @@ class NeuTraBatchTargetBinding:
     adapter_signature: str
     target_scope: str
     backend_id: str
+    value_score_authority: str
+    score_provenance: str
     method_name: str
     callable_module: str
     callable_qualname: str
@@ -92,6 +94,8 @@ class NeuTraBatchTargetBinding:
             "adapter_signature": self.adapter_signature,
             "target_scope": self.target_scope,
             "backend_id": self.backend_id,
+            "value_score_authority": self.value_score_authority,
+            "score_provenance": self.score_provenance,
             "method_name": self.method_name,
             "callable_module": self.callable_module,
             "callable_qualname": self.callable_qualname,
@@ -225,9 +229,10 @@ def bind_batch_native_neutra_target(
         source,
     )
     capability = value_score_capability(adapter)
-    if capability.value_score_authority != "graph_native":
+    if not capability.is_accepted_xla_hmc_authority:
         raise InvalidNeuTraBatchTarget(
-            "NeuTra batch target requires graph_native value/score authority"
+            "NeuTra batch target requires an accepted XLA value/score authority "
+            "and must be XLA ready"
         )
     if not capability.xla_hmc_ready:
         raise InvalidNeuTraBatchTarget("NeuTra batch target must be XLA ready")
@@ -245,6 +250,8 @@ def bind_batch_native_neutra_target(
         adapter_signature=adapter_signature,
         target_scope=str(capability.target_scope or type(adapter).__qualname__),
         backend_id=str(capability.runtime_backend),
+        value_score_authority=str(capability.value_score_authority),
+        score_provenance=str(capability.score_provenance),
         method_name=NEUTRA_BATCH_METHOD,
         callable_module=str(function.__module__),
         callable_qualname=str(function.__qualname__),
@@ -468,6 +475,18 @@ def _validate_binding_integrity(binding: NeuTraBatchTargetBinding) -> None:
         raise InvalidNeuTraBatchTarget("NeuTra batch binding was not repository-issued")
     if binding.schema != NEUTRA_BATCHING_SCHEMA:
         raise InvalidNeuTraBatchTarget("NeuTra batch binding schema mismatch")
+    current_capability = value_score_capability(binding._owner)
+    if (
+        current_capability.value_score_authority != binding.value_score_authority
+        or current_capability.score_provenance != binding.score_provenance
+    ):
+        raise InvalidNeuTraBatchTarget(
+            "NeuTra batch capability provenance changed after binding"
+        )
+    if not current_capability.is_accepted_xla_hmc_authority:
+        raise InvalidNeuTraBatchTarget(
+            "NeuTra batch binding no longer has accepted XLA authority"
+        )
     current = getattr(binding._owner, binding.method_name, None)
     if not inspect.ismethod(current) or current.__self__ is not binding._owner:
         raise InvalidNeuTraBatchTarget("NeuTra batch callable is no longer owner-bound")

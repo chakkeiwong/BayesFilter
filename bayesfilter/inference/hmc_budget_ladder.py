@@ -3,20 +3,20 @@
 This module owns a generic BayesFilter orchestration pattern: for one frozen
 mass artifact and one fixed leapfrog count, increase the dual-averaging budget
 until a fresh fixed-kernel screen passes or a fail-closed veto fires.  The HMC
-work is still delegated to :func:`run_full_chain_tfp_hmc`; conversions to Python
-or NumPy happen only after TensorFlow/TFP returns, for artifacting and
-classification.
+work is still delegated to :func:`run_full_chain_tfp_hmc`. Trace-health arithmetic
+and tensor metadata selection use TensorFlow; scalar control and serialization
+use Python. Other ordinary runtime modules still require separate migration.
 """
 
 from __future__ import annotations
 
-import time
+import math
+import sys
 import threading
+import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
-
-import numpy as np
 
 from bayesfilter.inference.batched_value_score import LatentAffineBatchValueScoreAdapter
 from bayesfilter.inference.hmc_artifact_identity import mass_artifact_signature
@@ -30,6 +30,10 @@ from bayesfilter.inference.hmc import (
     stable_adapter_signature,
 )
 from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
+from bayesfilter.inference.fixed_l_finite_bracket import (
+    FixedLFiniteBracketError,
+    classify_tuning_exception,
+)
 from bayesfilter.inference.posterior_adapter import (
     ValueScoreCapability,
     value_score_capability,
@@ -140,17 +144,27 @@ class FixedMassHMCTuningBudgetLadderConfig:
     initial_fixed_mass_bracket_state: Mapping[str, Any] | None = None
     incall_progress_heartbeat_s: float | None = None
     source: str = "bayesfilter.inference.hmc_budget_ladder"
+    require_finite_trajectory_bracket: bool = False
     step_size_upper_bound: float | None = None
 
     def __post_init__(self) -> None:
         budgets = tuple(int(item) for item in self.budget_schedule)
+        if self.require_finite_trajectory_bracket:
+            if self.tuning_trace_policy != "standard" or self.screen_trace_policy != "standard":
+                raise ValueError("fixed-L finite brackets require complete tune and screen traces")
+            if self.initial_fixed_mass_bracket_state is not None:
+                raise ValueError("fixed-L finite brackets cannot inherit shared epsilon state")
+            if self.repair_nonfinite_proposal_screen:
+                raise ValueError("fixed-L finite brackets forbid nonfinite proposal retries")
+            if self.use_xla:
+                raise ValueError("fixed-L finite brackets require separate XLA qualification")
         if not budgets:
             raise ValueError("budget_schedule must be non-empty")
         if any(item <= 0 for item in budgets):
             raise ValueError("budget_schedule values must be positive")
         object.__setattr__(self, "budget_schedule", budgets)
         initial_step = float(self.initial_step_size)
-        if not np.isfinite(initial_step) or initial_step <= 0.0:
+        if not math.isfinite(initial_step) or initial_step <= 0.0:
             raise ValueError("initial_step_size must be positive and finite")
         object.__setattr__(self, "initial_step_size", initial_step)
         if self.step_size_upper_bound is not None:
@@ -163,7 +177,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             raise ValueError("num_leapfrog_steps must be positive")
         object.__setattr__(self, "num_leapfrog_steps", leapfrog)
         target_accept = float(self.target_accept_prob)
-        if not np.isfinite(target_accept) or not 0.0 < target_accept < 1.0:
+        if not math.isfinite(target_accept) or not 0.0 < target_accept < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
         object.__setattr__(self, "target_accept_prob", target_accept)
         acceptance_band = _validate_band(self.acceptance_band, name="acceptance_band")
@@ -225,7 +239,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             if self.step_repair_max_step_size is None
             else float(self.step_repair_max_step_size)
         )
-        if max_step is not None and (not np.isfinite(max_step) or max_step <= 0.0):
+        if max_step is not None and (not math.isfinite(max_step) or max_step <= 0.0):
             raise ValueError("step_repair_max_step_size must be positive and finite")
         object.__setattr__(self, "step_repair_max_step_size", max_step)
         object.__setattr__(
@@ -243,7 +257,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             raise ValueError("extra_repair_screen_count must be non-negative")
         object.__setattr__(self, "extra_repair_screen_count", extra_repair_screens)
         stale_ratio = float(self.stale_bracket_bound_ratio)
-        if not np.isfinite(stale_ratio) or stale_ratio <= 1.0:
+        if not math.isfinite(stale_ratio) or stale_ratio <= 1.0:
             raise ValueError(
                 "stale_bracket_bound_ratio must be finite and greater than one"
             )
@@ -279,7 +293,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             object.__setattr__(self, "target_scope", str(self.target_scope))
         if self.step_stability_rtol is not None:
             rtol = float(self.step_stability_rtol)
-            if not np.isfinite(rtol) or rtol < 0.0:
+            if not math.isfinite(rtol) or rtol < 0.0:
                 raise ValueError("step_stability_rtol must be nonnegative and finite")
             object.__setattr__(self, "step_stability_rtol", rtol)
         object.__setattr__(
@@ -293,7 +307,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             else float(self.public_timeout_budget_s)
         )
         if timeout_budget is not None and (
-            not np.isfinite(timeout_budget) or timeout_budget <= 0.0
+            not math.isfinite(timeout_budget) or timeout_budget <= 0.0
         ):
             raise ValueError("public_timeout_budget_s must be positive and finite")
         object.__setattr__(self, "public_timeout_budget_s", timeout_budget)
@@ -303,7 +317,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             else float(self.public_timeout_started_perf_counter_s)
         )
         if timeout_started is not None and (
-            not np.isfinite(timeout_started) or timeout_started < 0.0
+            not math.isfinite(timeout_started) or timeout_started < 0.0
         ):
             raise ValueError(
                 "public_timeout_started_perf_counter_s must be finite and non-negative"
@@ -314,7 +328,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             timeout_started,
         )
         closeout_reserve = float(self.public_timeout_closeout_reserve_s)
-        if not np.isfinite(closeout_reserve) or closeout_reserve < 0.0:
+        if not math.isfinite(closeout_reserve) or closeout_reserve < 0.0:
             raise ValueError(
                 "public_timeout_closeout_reserve_s must be finite and non-negative"
             )
@@ -333,7 +347,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             if self.incall_progress_heartbeat_s is None
             else float(self.incall_progress_heartbeat_s)
         )
-        if heartbeat is not None and (not np.isfinite(heartbeat) or heartbeat <= 0.0):
+        if heartbeat is not None and (not math.isfinite(heartbeat) or heartbeat <= 0.0):
             raise ValueError("incall_progress_heartbeat_s must be positive and finite")
         object.__setattr__(self, "incall_progress_heartbeat_s", heartbeat)
         source = str(self.source)
@@ -384,6 +398,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             ),
             "public_timeout_closeout_reserve_s": self.public_timeout_closeout_reserve_s,
             "initial_fixed_mass_bracket_state": self.initial_fixed_mass_bracket_state,
+            "require_finite_trajectory_bracket": self.require_finite_trajectory_bracket,
             "initial_fixed_mass_bracket_state_available": (
                 self.initial_fixed_mass_bracket_state is not None
             ),
@@ -420,14 +435,14 @@ class FixedMassHMCTuningBudgetRound:
         object.__setattr__(self, "tune_seed", _validate_seed(self.tune_seed))
         object.__setattr__(self, "screen_seed", _validate_seed(self.screen_seed))
         initial_step = float(self.initial_step_size)
-        if not np.isfinite(initial_step) or initial_step <= 0.0:
+        if not math.isfinite(initial_step) or initial_step <= 0.0:
             raise ValueError("round initial_step_size must be positive and finite")
         object.__setattr__(self, "initial_step_size", initial_step)
         tuned_step = (
             None if self.tuned_step_size is None else float(self.tuned_step_size)
         )
         if tuned_step is not None and (
-            not np.isfinite(tuned_step) or tuned_step <= 0.0
+            not math.isfinite(tuned_step) or tuned_step <= 0.0
         ):
             raise ValueError("round tuned_step_size must be positive and finite")
         object.__setattr__(self, "tuned_step_size", tuned_step)
@@ -800,7 +815,7 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
         screen_seed = _round_seed(config.screen_seed_base, round_index)
         if pending_repair_screen_step is not None:
             repair_step = float(pending_repair_screen_step)
-            if not np.isfinite(repair_step) or repair_step <= 0.0:
+            if not math.isfinite(repair_step) or repair_step <= 0.0:
                 raise ValueError("pending repair screen step must be positive and finite")
             screen_config = _screen_config(
                 config,
@@ -930,7 +945,10 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                     completed=True,
                     error_type=type(exc).__name__,
                 )
-                screen_diagnostics = _error_diagnostics(exc)
+                screen_diagnostics = {
+                    **_error_diagnostics(exc, adapter=hmc_adapter),
+                    "lifecycle_stage": "verification",
+                }
             round_payload = {
                 "round_index": round_index,
                 "budget": budget,
@@ -1053,6 +1071,8 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
         )
         tune_result = None
         tune_error = None
+        finite_bracket = None
+        lifecycle_stage = "bracketing" if config.require_finite_trajectory_bracket else "dual_averaging"
         try:
             tune_deadline = _fixed_mass_public_timeout_preflight(
                 config,
@@ -1090,19 +1110,34 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                 )
                 final_status = "public_timeout_closeout"
                 break
-            _emit_budget_ladder_boundary_progress(
-                progress_callback,
-                stage="fixed_mass_ladder_tune_call_start",
-                role="tune",
-                round_index=round_index,
-                budget=budget,
-                config=tune_config,
-                route_category="reusable_runner" if use_reusable_route else "injected_runner",
-                started=True,
-                elapsed_s=0.0,
-                started_perf_counter_s=time.perf_counter(),
-            )
+            if config.require_finite_trajectory_bracket:
+                bracket_start = time.perf_counter()
+                _emit_budget_ladder_boundary_progress(
+                    progress_callback, stage="fixed_mass_ladder_finite_bracket_start",
+                    role="bracketing", round_index=round_index, budget=budget,
+                    config=tune_config, route_category="fixed_l_finite_bracket",
+                    started=True, elapsed_s=0.0, started_perf_counter_s=bracket_start,
+                )
+                tune_config, finite_bracket = _qualify_fixed_l_tune_config(
+                    config, adapter=hmc_adapter, current_state=tune_state,
+                    budget=budget, seed=tune_seed, step=current_step,
+                    target_scope=target_scope,
+                )
+                current_step = float(tune_config.step_size)
+                _emit_budget_ladder_boundary_progress(
+                    progress_callback, stage="fixed_mass_ladder_finite_bracket_complete",
+                    role="bracketing", round_index=round_index, budget=budget,
+                    config=tune_config, completed=True, route_category="fixed_l_finite_bracket",
+                    elapsed_s=time.perf_counter() - bracket_start,
+                )
+            lifecycle_stage = "dual_averaging"
             tune_start = time.perf_counter()
+            _emit_budget_ladder_boundary_progress(
+                progress_callback, stage="fixed_mass_ladder_tune_call_start", role="tune",
+                round_index=round_index, budget=budget, config=tune_config,
+                route_category="reusable_runner" if use_reusable_route else "injected_runner",
+                started=True, elapsed_s=0.0, started_perf_counter_s=tune_start,
+            )
             tune_result = _run_full_chain_with_optional_reusable_route(
                 run_full_chain=run_full_chain,
                 runner_cache=runner_cache,
@@ -1137,8 +1172,9 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
             tune_error = exc
             _emit_budget_ladder_boundary_progress(
                 progress_callback,
-                stage="fixed_mass_ladder_tune_call_error",
-                role="tune",
+                stage=("fixed_mass_ladder_finite_bracket_error" if lifecycle_stage == "bracketing"
+                       else "fixed_mass_ladder_tune_call_error"),
+                role="bracketing" if lifecycle_stage == "bracketing" else "tune",
                 round_index=round_index,
                 budget=budget,
                 config=tune_config,
@@ -1146,7 +1182,10 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                 completed=True,
                 error_type=type(exc).__name__,
             )
-            tune_diagnostics = dict(_error_diagnostics(exc))
+            tune_diagnostics = dict(_error_diagnostics(exc, adapter=hmc_adapter))
+            tune_diagnostics["lifecycle_stage"] = lifecycle_stage
+        if finite_bracket is not None:
+            tune_diagnostics["finite_trajectory_bracket"] = finite_bracket
         tuned_step = _positive_finite_or_none(tune_diagnostics.get("final_step_size"))
         tune_diagnostics["step_stability"] = _step_stability_payload(
             previous_step=current_step,
@@ -1291,7 +1330,10 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                 completed=True,
                 error_type=type(exc).__name__,
             )
-            screen_diagnostics = _error_diagnostics(exc)
+            screen_diagnostics = {
+                **_error_diagnostics(exc, adapter=hmc_adapter),
+                "lifecycle_stage": "verification",
+            }
         round_payload = {
             "round_index": round_index,
             "budget": budget,
@@ -1483,6 +1525,7 @@ class _FixedMassLatentValueScoreAdapter(LatentAffineBatchValueScoreAdapter):
             runtime_backend=self.runtime_backend,
             evidence_path=base_capability.evidence_path if preserve_xla else None,
             target_scope=self.target_scope,
+            score_provenance=base_capability.score_provenance,
             nonclaims=nonclaims,
         )
 
@@ -1565,11 +1608,13 @@ def _tune_config(
     seed: tuple[int, int],
     step: float,
     target_scope: str,
+    step_size_upper_bound: float | None = None,
 ) -> FullChainHMCConfig:
     policy = HMCTuningPolicy.fixed_mass_dual_averaging(
         num_adaptation_steps=int(budget),
         target_accept_prob=config.target_accept_prob,
         source=config.source,
+        step_size_upper_bound=step_size_upper_bound,
     )
     return FullChainHMCConfig(
         num_results=config.tune_num_results,
@@ -1582,9 +1627,63 @@ def _tune_config(
         trace_policy=config.tuning_trace_policy,
         target_status_trace_policy=config.target_status_trace_policy,
         tuning_policy=policy,
+        require_finite_transitions=config.require_finite_trajectory_bracket,
         target_scope=target_scope,
         chain_execution_mode=config.chain_execution_mode,
     )
+
+
+def _qualify_fixed_l_tune_config(
+    config: FixedMassHMCTuningBudgetLadderConfig,
+    *, adapter: Any, current_state: Any, budget: int, seed: tuple[int, int],
+    step: float, target_scope: str,
+) -> tuple[FullChainHMCConfig, Mapping[str, Any]]:
+    """Qualify this L/state/mass before its own fresh dual averaging ladder.
+
+    Use the existing reasonable-epsilon search at the *actual* fixed L with
+    strict failure semantics. Only finite acceptance feedback can nominate
+    another bracket evaluation; nonfinite evidence is terminal, never retried.
+    The upper bound is the largest actually finite step in this local bracket,
+    not a global stability assertion and not a bound inherited from another L.
+    """
+
+    from bayesfilter.inference.hmc_warmup import find_reasonable_epsilon
+
+    bracket_seed = _round_seed(seed, 17011)
+    bracket = find_reasonable_epsilon(
+        adapter=adapter, current_state=current_state, initial_step_size=step,
+        seed=bracket_seed, num_leapfrog_steps=config.num_leapfrog_steps,
+        max_attempts=20, hard_veto_nonfinite=True, jit_compile=False,
+        target_status_trace_policy=config.target_status_trace_policy,
+    )
+    if bracket.status != "passed" or bracket.selected_step_size is None:
+        raise FixedLFiniteBracketError(
+            "bayesfilter", "fixed-L finite bracket did not qualify",
+            num_leapfrog_steps=config.num_leapfrog_steps,
+            consumed_epsilon=step,
+        )
+    if not bracket.attempts or any(
+        attempt.num_leapfrog_steps != config.num_leapfrog_steps or not attempt.usable
+        for attempt in bracket.attempts
+    ):
+        raise FixedLFiniteBracketError("control_plane", "fixed-L bracket evidence is mismatched or incomplete")
+    ceiling = max(attempt.step_size for attempt in bracket.attempts)
+    selected_step = float(bracket.selected_step_size)
+    if not any(attempt.step_size == selected_step for attempt in bracket.attempts):
+        raise FixedLFiniteBracketError("control_plane", "selected epsilon was not evaluated by this L")
+    tuned_config = _tune_config(
+        config, budget=budget, seed=seed, step=selected_step,
+        target_scope=target_scope, step_size_upper_bound=ceiling,
+    )
+    return tuned_config, {
+        "policy": "fixed_l_finite_bracket_then_bounded_dual_averaging_v1",
+        "num_leapfrog_steps": config.num_leapfrog_steps,
+        "seed": bracket_seed,
+        "selected_step_size": selected_step,
+        "step_size_upper_bound": ceiling,
+        "attempts": tuple(attempt.payload() for attempt in bracket.attempts),
+        "future_trajectory_stability_proven": False,
+    }
 
 
 def _screen_config(
@@ -1602,6 +1701,7 @@ def _screen_config(
         seed=seed,
         use_xla=config.use_xla,
         trace_policy=config.screen_trace_policy,
+        require_finite_transitions=config.require_finite_trajectory_bracket,
         target_status_trace_policy=config.target_status_trace_policy,
         target_scope=target_scope,
         chain_execution_mode=config.chain_execution_mode,
@@ -1609,9 +1709,26 @@ def _screen_config(
 
 
 def _diagnostics_payload(run_result: FullChainHMCRunResult) -> Mapping[str, Any]:
+    import tensorflow as tf
+
+    from bayesfilter.inference.transition_health_tf import trace_health_payload
+
     diagnostics = dict(run_result.diagnostics)
     trace = dict(run_result.trace)
+    numerical_health = {}
+    for name in (
+        "target_score_finite", "proposal_finite", "movement_finite",
+        "proposed_target_finite", "accepted_target_finite",
+    ):
+        if name not in trace:
+            numerical_health[name] = None
+            continue
+        values = tf.convert_to_tensor(trace[name])
+        numerical_health[name] = bool(
+            values.dtype == tf.bool and tf.size(values) > 0 and tf.reduce_all(values)
+        )
     payload = {
+        **numerical_health,
         "acceptance_rate": _scalar_or_none(diagnostics.get("acceptance_rate")),
         "finite_sample_count": _int_or_none(diagnostics.get("finite_sample_count")),
         "nonfinite_sample_count": _int_or_none(diagnostics.get("nonfinite_sample_count")),
@@ -1649,27 +1766,22 @@ def _diagnostics_payload(run_result: FullChainHMCRunResult) -> Mapping[str, Any]
         },
     }
     if "log_accept_ratio" in trace:
-        log_accept = np.asarray(_tensor_to_numpy(trace["log_accept_ratio"]), dtype=float)
-        finite = np.isfinite(log_accept)
-        if np.any(finite):
+        statistics = trace_health_payload(trace["log_accept_ratio"])
+        if statistics["finite_count"]:
             payload["binary_acceptance_rate"] = payload["acceptance_rate"]
-            payload["acceptance_rate"] = float(
-                np.mean(np.exp(np.minimum(log_accept[finite], 0.0)))
-            )
+            payload["acceptance_rate"] = statistics["mean_acceptance_probability"]
             payload["acceptance_rate_semantics"] = (
                 "mean_metropolis_acceptance_probability"
             )
-        payload["log_accept_ratio_finite"] = bool(np.all(finite))
-        payload["max_abs_log_accept_ratio"] = (
-            None if not np.any(finite) else float(np.max(np.abs(log_accept[finite])))
-        )
+        payload["log_accept_ratio_finite"] = statistics["all_finite"]
+        payload["max_abs_log_accept_ratio"] = statistics["max_abs_finite"]
         payload["log_accept_ratio_diagnostic_source"] = "trace"
         payload["log_accept_ratio_summary"] = {
             "source": "trace",
             "available": True,
-            "finite_count": int(np.sum(finite)),
-            "nonfinite_count": int(np.sum(~finite)),
-            "total_count": int(log_accept.size),
+            "finite_count": statistics["finite_count"],
+            "nonfinite_count": statistics["nonfinite_count"],
+            "total_count": statistics["total_count"],
             "max_abs_finite": payload["max_abs_log_accept_ratio"],
         }
     else:
@@ -1687,19 +1799,15 @@ def _diagnostics_payload(run_result: FullChainHMCRunResult) -> Mapping[str, Any]
             )
             payload["max_abs_log_accept_ratio"] = summary["max_abs_finite"]
     if "target_log_prob" in trace:
-        target_log_prob = np.asarray(
-            _tensor_to_numpy(trace["target_log_prob"]),
-            dtype=float,
-        )
-        payload["target_log_prob_finite"] = bool(np.all(np.isfinite(target_log_prob)))
+        statistics = trace_health_payload(trace["target_log_prob"])
+        payload["target_log_prob_finite"] = statistics["all_finite"]
         payload["target_log_prob_diagnostic_source"] = "trace"
-        finite_target = np.isfinite(target_log_prob)
         payload["target_log_prob_summary"] = {
             "source": "trace",
             "available": True,
-            "finite_count": int(np.sum(finite_target)),
-            "nonfinite_count": int(np.sum(~finite_target)),
-            "total_count": int(target_log_prob.size),
+            "finite_count": statistics["finite_count"],
+            "nonfinite_count": statistics["nonfinite_count"],
+            "total_count": statistics["total_count"],
         }
     else:
         target_summary = _finite_count_summary_payload(
@@ -1717,47 +1825,32 @@ def _diagnostics_payload(run_result: FullChainHMCRunResult) -> Mapping[str, Any]
                 and target_summary["nonfinite_count"] == 0
             )
     if "proposed_target_log_prob" in trace:
-        proposed_target_log_prob = np.asarray(
-            _tensor_to_numpy(trace["proposed_target_log_prob"]),
-            dtype=float,
-        )
-        finite_proposed = np.isfinite(proposed_target_log_prob)
-        payload["proposed_target_log_prob_finite"] = bool(np.all(finite_proposed))
+        statistics = trace_health_payload(trace["proposed_target_log_prob"])
+        payload["proposed_target_log_prob_finite"] = statistics["all_finite"]
         payload["proposed_target_log_prob_diagnostic_source"] = "trace"
         payload["proposed_target_log_prob_summary"] = {
             "source": "trace",
             "available": True,
-            "finite_count": int(np.sum(finite_proposed)),
-            "nonfinite_count": int(np.sum(~finite_proposed)),
-            "total_count": int(proposed_target_log_prob.size),
-            "min_finite": None
-            if not np.any(finite_proposed)
-            else float(np.min(proposed_target_log_prob[finite_proposed])),
-            "max_finite": None
-            if not np.any(finite_proposed)
-            else float(np.max(proposed_target_log_prob[finite_proposed])),
+            "finite_count": statistics["finite_count"],
+            "nonfinite_count": statistics["nonfinite_count"],
+            "total_count": statistics["total_count"],
+            "min_finite": statistics["min_finite"],
+            "max_finite": statistics["max_finite"],
         }
     if "log_acceptance_correction" in trace:
-        correction = np.asarray(
-            _tensor_to_numpy(trace["log_acceptance_correction"]),
-            dtype=float,
-        )
-        finite_correction = np.isfinite(correction)
-        payload["log_acceptance_correction_finite"] = bool(np.all(finite_correction))
+        statistics = trace_health_payload(trace["log_acceptance_correction"])
+        payload["log_acceptance_correction_finite"] = statistics["all_finite"]
         payload["log_acceptance_correction_diagnostic_source"] = "trace"
         payload["log_acceptance_correction_summary"] = {
             "source": "trace",
             "available": True,
-            "finite_count": int(np.sum(finite_correction)),
-            "nonfinite_count": int(np.sum(~finite_correction)),
-            "total_count": int(correction.size),
-            "max_abs_finite": None
-            if not np.any(finite_correction)
-            else float(np.max(np.abs(correction[finite_correction]))),
+            "finite_count": statistics["finite_count"],
+            "nonfinite_count": statistics["nonfinite_count"],
+            "total_count": statistics["total_count"],
+            "max_abs_finite": statistics["max_abs_finite"],
         }
-    samples = np.asarray(_tensor_to_numpy(run_result.samples), dtype=float)
-    finite_by_sample = np.all(np.isfinite(samples), axis=-1)
-    payload["samples_all_finite"] = bool(np.all(finite_by_sample))
+    samples = tf.convert_to_tensor(run_result.samples, dtype_hint=tf.float64)
+    payload["samples_all_finite"] = bool(tf.size(samples) > 0 and tf.reduce_all(tf.math.is_finite(samples)))
     return payload
 
 
@@ -1788,18 +1881,18 @@ def _finite_count_summary_payload(
     }
     if max_abs_key is not None:
         max_abs = _scalar_or_none(diagnostics.get(max_abs_key))
-        if max_abs is None or not np.isfinite(max_abs):
+        if max_abs is None or not math.isfinite(max_abs):
             return None
         payload["max_abs_finite"] = float(max_abs)
     if min_key is not None:
         min_value = _scalar_or_none(diagnostics.get(min_key))
         payload["min_finite"] = (
-            None if min_value is None or not np.isfinite(min_value) else float(min_value)
+            None if min_value is None or not math.isfinite(min_value) else float(min_value)
         )
     if max_key is not None:
         max_value = _scalar_or_none(diagnostics.get(max_key))
         payload["max_finite"] = (
-            None if max_value is None or not np.isfinite(max_value) else float(max_value)
+            None if max_value is None or not math.isfinite(max_value) else float(max_value)
         )
     return payload
 
@@ -2383,6 +2476,10 @@ def _tune_hard_vetoes(
     tune_error: Exception | None,
 ) -> list[str]:
     vetoes: list[str] = []
+    if config.require_finite_trajectory_bracket:
+        for name in ("target_score_finite", "proposal_finite", "movement_finite", "proposed_target_finite", "accepted_target_finite"):
+            if diagnostics.get(name) is not True:
+                vetoes.append("tune_" + name + "_nonfinite_or_missing")
     if tune_error is not None:
         vetoes.append("tune_hmc_error")
     if diagnostics.get("acceptance_rate") is None or not _finite_number(
@@ -2427,6 +2524,10 @@ def _classify_screen_round(
     tuple[str, ...],
 ]:
     hard_vetoes: list[str] = []
+    if config.require_finite_trajectory_bracket:
+        for name in ("target_score_finite", "proposal_finite", "movement_finite", "proposed_target_finite", "accepted_target_finite"):
+            if screen_diagnostics.get(name) is not True:
+                hard_vetoes.append("screen_" + name + "_nonfinite_or_missing")
     if screen_error is not None:
         hard_vetoes.append("screen_hmc_error")
     acceptance = screen_diagnostics.get("acceptance_rate")
@@ -2556,15 +2657,15 @@ def _next_initial_step_after_screen_repair(
     classification: str,
 ) -> float:
     base_step = float(tuned_step)
-    if not np.isfinite(base_step) or base_step <= 0.0:
+    if not math.isfinite(base_step) or base_step <= 0.0:
         raise ValueError("finite positive tuned_step is required for repair handoff")
     previous_step = float(previous_initial_step)
-    if not np.isfinite(previous_step) or previous_step <= 0.0:
+    if not math.isfinite(previous_step) or previous_step <= 0.0:
         raise ValueError(
             "finite positive previous_initial_step is required for repair handoff"
         )
     ladder_step = previous_step if ladder_initial_step is None else float(ladder_initial_step)
-    if not np.isfinite(ladder_step) or ladder_step <= 0.0:
+    if not math.isfinite(ladder_step) or ladder_step <= 0.0:
         raise ValueError("finite positive ladder_initial_step is required for repair handoff")
     if classification not in {"acceptance_repair", "promotion_veto_repair"}:
         return base_step
@@ -2574,7 +2675,7 @@ def _next_initial_step_after_screen_repair(
         if repaired is not None:
             return repaired
     acceptance = _scalar_or_none(screen_diagnostics.get("acceptance_rate"))
-    if acceptance is None or not np.isfinite(acceptance):
+    if acceptance is None or not math.isfinite(acceptance):
         return base_step
     if acceptance < config.acceptance_band[0]:
         repaired = min(
@@ -2600,7 +2701,7 @@ def _next_initial_step_after_screen_repair(
             )
     else:
         return base_step
-    if not np.isfinite(repaired) or repaired <= 0.0:
+    if not math.isfinite(repaired) or repaired <= 0.0:
         raise ValueError("finite positive repaired step is required for repair handoff")
     return float(repaired)
 
@@ -2647,8 +2748,10 @@ def _mass_artifact_signature(mass_artifact: PrecomputedMassArtifact) -> str:
     return mass_artifact_signature(mass_artifact)
 
 
-def _error_diagnostics(exc: Exception) -> Mapping[str, Any]:
+def _error_diagnostics(exc: Exception, *, adapter: Any = None) -> Mapping[str, Any]:
     return {
+        "failure_class": classify_tuning_exception(adapter, exc),
+        "first_failure": getattr(exc, "failure_record", None),
         "error_type": type(exc).__name__,
         "error_message": str(exc),
         "acceptance_rate": None,
@@ -2674,7 +2777,7 @@ def _step_stability_payload(
             "rtol": None if rtol is None else float(rtol),
             "within_rtol": None,
         }
-    denominator = max(abs(float(previous_step)), np.finfo(float).tiny)
+    denominator = max(abs(float(previous_step)), sys.float_info.min)
     relative_change = abs(float(tuned_step) - float(previous_step)) / denominator
     within_rtol = None if rtol is None else bool(relative_change <= float(rtol))
     return {
@@ -2688,7 +2791,7 @@ def _step_stability_payload(
 
 def _directional_repair_tune_skip_diagnostics(step_size: float) -> Mapping[str, Any]:
     step = float(step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("directional repair screen step must be positive and finite")
     return {
         "adaptation_skipped_for_directional_repair_screen": True,
@@ -2713,13 +2816,13 @@ def _with_directional_step_repair_diagnostics(
     low_acceptance_step_upper_bound: float | None,
 ) -> tuple[Mapping[str, Any], float | None, float | None]:
     acceptance = _scalar_or_none(screen_diagnostics.get("acceptance_rate"))
-    if acceptance is None or not np.isfinite(acceptance):
+    if acceptance is None or not math.isfinite(acceptance):
         return dict(screen_diagnostics), high_acceptance_step_lower_bound, low_acceptance_step_upper_bound
     step = float(screened_step)
     previous = float(previous_initial_step)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("screened_step must be positive and finite")
-    if not np.isfinite(previous) or previous <= 0.0:
+    if not math.isfinite(previous) or previous <= 0.0:
         raise ValueError("previous_initial_step must be positive and finite")
     if config.acceptance_band[0] <= float(acceptance) <= config.acceptance_band[1]:
         return dict(screen_diagnostics), high_acceptance_step_lower_bound, low_acceptance_step_upper_bound
@@ -2765,7 +2868,7 @@ def _with_directional_step_repair_diagnostics(
     )
     if bracketed:
         next_step = float(
-            np.exp(0.5 * (np.log(float(high_bound)) + np.log(float(low_bound))))
+            math.exp(0.5 * (math.log(float(high_bound)) + math.log(float(low_bound))))
         )
         repair_action = "bracketed_log_step_midpoint_fixed_screen"
     elif relation == "above_acceptance_band":
@@ -2780,7 +2883,7 @@ def _with_directional_step_repair_diagnostics(
             previous / config.step_repair_min_directional_factor,
         )
         repair_action = "decrease_step_fixed_screen"
-    if not np.isfinite(next_step) or next_step <= 0.0:
+    if not math.isfinite(next_step) or next_step <= 0.0:
         raise ValueError("directional repair next step must be positive and finite")
     unclamped_next_step = next_step
     max_step = config.step_repair_max_step_size
@@ -2793,7 +2896,7 @@ def _with_directional_step_repair_diagnostics(
     if max_step is not None and next_step > float(max_step):
         next_step = float(max_step)
         step_ceiling_applied = True
-    if not np.isfinite(next_step) or next_step <= 0.0:
+    if not math.isfinite(next_step) or next_step <= 0.0:
         raise ValueError("clamped directional repair next step must be positive and finite")
     payload = {
         "schema": "bayesfilter.fixed_mass_directional_step_repair.v1",
@@ -2956,7 +3059,7 @@ def _validate_band(values: Sequence[float], *, name: str) -> tuple[float, float]
     if len(tuple(values)) != 2:
         raise ValueError(f"{name} must contain exactly two values")
     lower, upper = tuple(float(item) for item in values)
-    if not np.isfinite(lower) or not np.isfinite(upper):
+    if not math.isfinite(lower) or not math.isfinite(upper):
         raise ValueError(f"{name} values must be finite")
     if not 0.0 < lower <= upper < 1.0:
         raise ValueError(f"{name} must satisfy 0 < lower <= upper < 1")
@@ -2965,7 +3068,7 @@ def _validate_band(values: Sequence[float], *, name: str) -> tuple[float, float]
 
 def _validate_step_repair_multiplier(value: Any, *, name: str) -> float:
     multiplier = float(value)
-    if not np.isfinite(multiplier) or multiplier <= 1.0:
+    if not math.isfinite(multiplier) or multiplier <= 1.0:
         raise ValueError(f"{name} must be finite and greater than 1")
     return multiplier
 
@@ -2980,30 +3083,48 @@ def _string_tuple(values: Sequence[str] | str) -> tuple[str, ...]:
 
 def _positive_finite_or_none(value: Any) -> float | None:
     scalar = _scalar_or_none(value)
-    if scalar is None or not np.isfinite(scalar) or scalar <= 0.0:
+    if scalar is None or not math.isfinite(scalar) or scalar <= 0.0:
         return None
     return scalar
 
 
 def _finite_number(value: Any) -> bool:
     scalar = _scalar_or_none(value)
-    return scalar is not None and bool(np.isfinite(scalar))
+    return scalar is not None and math.isfinite(scalar)
 
 
-def _tensor_to_numpy(value: Any) -> Any:
-    if hasattr(value, "numpy"):
-        return value.numpy()
-    return value
+def _last_metadata_entry(value: Any) -> tuple[bool, Any]:
+    """Select one scalar from rectangular metadata without copying a tensor trace.
+
+    Native scalar/container values keep their Python precision. Tensor and
+    array inputs select the last flattened entry in TensorFlow before host
+    conversion. The flag distinguishes missing/empty input from a null entry.
+    This is eager host metadata handling, not an XLA target operation.
+    """
+    if value is None:
+        return False, None
+    while isinstance(value, (tuple, list)):
+        if not value:
+            return False, None
+        value = value[-1]
+    if value is None or isinstance(value, (bool, int, float, str, bytes)):
+        return True, value
+
+    import tensorflow as tf
+
+    flattened = tf.reshape(tf.convert_to_tensor(value), [-1])
+    if int(tf.size(flattened).numpy()) == 0:
+        return False, None
+    scalar = flattened[-1].numpy()
+    return True, scalar.item() if hasattr(scalar, "item") else scalar
 
 
 def _scalar_or_none(value: Any) -> float | None:
-    if value is None:
-        return None
-    array = np.asarray(_tensor_to_numpy(value))
-    if array.size == 0:
+    present, scalar = _last_metadata_entry(value)
+    if not present:
         return None
     try:
-        return float(array.reshape(-1)[-1])
+        return float(scalar)
     except (TypeError, ValueError):
         return None
 
@@ -3014,21 +3135,18 @@ def _int_or_none(value: Any) -> int | None:
 
 
 def _bool_or_none(value: Any) -> bool | None:
-    if value is None:
-        return None
-    array = np.asarray(_tensor_to_numpy(value))
-    if array.size == 0:
-        return None
-    return bool(array.reshape(-1)[-1])
+    present, scalar = _last_metadata_entry(value)
+    return bool(scalar) if present else None
 
 
 def _json_ready(value: Any) -> Any:
+    """Materialize JSON values without float casts that round large integer IDs."""
     if hasattr(value, "numpy"):
-        return _json_ready(value.numpy())
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+        value = value.numpy()
+    if hasattr(value, "tolist"):
+        value = value.tolist()
+    elif hasattr(value, "item"):
+        value = value.item()
     if isinstance(value, Mapping):
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):

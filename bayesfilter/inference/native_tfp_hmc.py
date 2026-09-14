@@ -28,7 +28,11 @@ from bayesfilter.inference.posterior_adapter import value_score_capability
 
 
 _REVIEWED_AUTHORITIES = frozenset(
-    {"graph_native", "reviewed_gradient_tape_xla_exception"}
+    {
+        "analytical_manual",
+        "graph_native",
+        "reviewed_gradient_tape_xla_exception",
+    }
 )
 _NONCLAIMS = (
     "fixed-kernel TFP engineering runner only",
@@ -282,6 +286,7 @@ def run_native_tfp_fixed_kernel_hmc(
         "initial_state_shape": tuple(int(dim) for dim in state.shape),
         "initial_state_dtype": state.dtype.name,
         "value_score_authority": capability.value_score_authority,
+        "score_provenance": capability.score_provenance,
         "target_scope": capability.target_scope,
         "adapter_signature": adapter_signature,
         "program_signature": _program_signature(
@@ -289,6 +294,7 @@ def run_native_tfp_fixed_kernel_hmc(
                 "adapter_signature": adapter_signature,
                 "capability": {
                     "value_score_authority": capability.value_score_authority,
+                    "score_provenance": capability.score_provenance,
                     "runtime_backend": capability.runtime_backend,
                     "target_scope": capability.target_scope,
                     "xla_hmc_ready": capability.xla_hmc_ready,
@@ -612,6 +618,7 @@ def run_native_tfp_independent_chains(
         "initial_state_shape": tuple(int(dim) for dim in state.shape),
         "initial_state_dtype": state.dtype.name,
         "value_score_authority": capability.value_score_authority,
+        "score_provenance": capability.score_provenance,
         "target_scope": capability.target_scope,
         "adapter_signature": adapter_signature,
         "capability": capability_payload,
@@ -1626,6 +1633,7 @@ def _sha256_file(path: Path) -> str:
 def _capability_payload(capability: Any) -> Mapping[str, Any]:
     return {
         "value_score_authority": capability.value_score_authority,
+        "score_provenance": capability.score_provenance,
         "runtime_backend": capability.runtime_backend,
         "target_scope": capability.target_scope,
         "xla_hmc_ready": capability.xla_hmc_ready,

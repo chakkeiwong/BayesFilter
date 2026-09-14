@@ -867,6 +867,7 @@ class HMCTransitionArchiveRunner:
             "config": self.config.signature_payload(),
             "adapter_signature": stable_adapter_signature(self.adapter),
             "value_score_authority": self.capability.value_score_authority,
+            "score_provenance": self.capability.score_provenance,
             "target_scope": self.capability.target_scope,
             "runner_build_seconds": self._runner_build_seconds,
             "call_seconds": call_seconds,
