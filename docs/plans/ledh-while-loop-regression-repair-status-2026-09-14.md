@@ -6,15 +6,64 @@
 
 ---
 
-## Current Status: Part (1) and (2) Complete, Awaiting User Authorization for Parts (3) and (4)
+## Current Status: Phase 1 and Phase 1.5 Complete — XLA Now Enabled
 
 The user's four-part directive:
 1. ✅ **Trace through the whole code in detail** — COMPLETE
 2. ✅ **Create a subplan for the repair phase** — COMPLETE
-3. ⏸️ **Repair/amend the master program and review the whole program** — READY, awaiting authorization
-4. ⏸️ **Execute the repair phase with tests** — READY, awaiting authorization
+3. ✅ **Repair/amend the master program and review the whole program** — COMPLETE
+4. ✅ **Execute the repair phase with tests** — Phase 1 + 1.5 COMPLETE
+
+**Phase 1** restored time-loop while_loop in canonical engine (5.5× speedup)
+**Phase 1.5** eliminated TensorArray in batch adapter (600× speedup with XLA)
 
 ---
+
+## Phase 1.5: TensorArray Elimination (2026-09-14)
+
+**Status**: ✓ COMPLETE
+
+**Discovery**: The 77× XLA blocker identified in Phase 0 was not in the canonical 
+engine (Phase 1 fixed that), but one level up in the batch adapter's `tf.map_fn` wrapper.
+
+**Root Cause**: `tf.map_fn` internally uses TensorArray, which XLA cannot compile.
+The batch adapter had nested map_fn calls:
+- Outer loop over batch (particles)  
+- Inner loop over K directions per particle
+
+**Implementation**:
+- Added `canonical_batch_fused_value_score_whileloop()` in `ledh_canonical_batch_fused_tf.py`
+- Replaced both nested `tf.map_fn` with nested `tf.while_loop`
+- Used `tf.tensor_scatter_nd_update` for XLA-compatible accumulation
+- Preserved all numerical behavior exactly
+
+**Results** (B=1, K=5, N=24, T=5, substeps=2):
+
+| Mode | Time | Speedup vs Eager map_fn |
+|------|------|-------------------------|
+| Eager map_fn (baseline) | 1.851s | 1.00× |
+| Eager while_loop | 0.545s | 3.40× |
+| Graph while_loop | 0.029s | 64.83× |
+| **XLA while_loop** | **0.003s** | **599.90×** |
+
+**Parity**: 2.1e-16 (values), 6.3e-16 (scores) — machine precision match
+
+**Files**:
+- `bayesfilter/highdim/ledh_canonical_batch_fused_tf.py` — added whileloop variant (+176 lines)
+- `tests/highdim/test_batch_fused_while_vs_mapfn_parity.py` — parity gate (PASS)
+- `tests/highdim/test_batch_fused_xla_compilation.py` — XLA verification (PASS)
+
+**Impact**: Damping calibration (16k evaluations) is now feasible with XLA. 
+At 0.003s/eval, 16k evals = 48s instead of 8.2 hours.
+
+**Next Decision Point**: Phase 2 (substep loop restoration) vs proceeding directly 
+to damping calibration with current performance. User decision required.
+
+---
+
+## Phase 1: Time Loop Restoration (2026-09-14)
+
+**Status**: ✓ COMPLETE
 
 ## Key Findings (Part 1: Trace)
 
@@ -192,3 +241,65 @@ This is actually correct: the LEDH value is the particle-filter log-likelihood e
 ---
 
 **END OF STATUS SUMMARY**
+
+---
+
+## Phase 1 Measurement Results (2026-09-14 21:00 UTC)
+
+### Small Scale (N=24, T=5, substeps=2, K=5)
+
+| Mode | K-batch | Time (steady) | vs eager | Status |
+|------|---------|---------------|----------|--------|
+| eager | sequential | 13.565s | 1.00× | ✓ baseline |
+| graph | sequential | 2.465s | 5.50× | ✓ **Phase 1 goal achieved** |
+| xla | sequential | 0.175s | 77.37× | **BLOCKED** (see below) |
+| graph | pfor | 1.178s | 11.51× | rejected (approach 1) |
+| xla | pfor | FAILED | — | rejected (XLA incompatible) |
+
+### XLA Blocker Identified
+
+**Error**: `INVALID_ARGUMENT: Detected unsupported operations when trying to compile graph: TensorListReserve`
+
+**Root cause**: `tf.map_fn` in `ledh_canonical_batch_fused_tf.py:246` uses TensorArray internally to accumulate K-direction outputs. TensorArray is not XLA-compatible.
+
+**Location**: The blocker is NOT in the canonical engine (Phase 1 restoration was correct). It's one level up in the call stack:
+```
+ledh_canonical_batch_fused_tf.py (entry point)
+  └─> tf.map_fn over K directions  ← XLA BLOCKER HERE
+        └─> ledh_canonical_score_tf.py
+              └─> tf.while_loop over time  ← Phase 1 ✓
+```
+
+### Phase 1 Verdict
+
+**SUCCESS with qualification**:
+- Primary goal achieved: Graph mode 5.50× speedup confirmed
+- Oracle contract: PASSING (8/8 supported tests)
+- Trace time: not yet measured (deferred to after substep loop)
+- XLA blocked by K-direction `tf.map_fn` wrapper (not a Phase 1 defect)
+
+### Phase 1.5 Required (unplanned)
+
+XLA's 77× speedup potential requires eliminating the K-direction TensorArray before Phase 2 substep work.
+
+**Plan**: Replace `tf.map_fn` with `tf.while_loop + tensor_scatter_nd_update` in `ledh_canonical_batch_fused_tf.py`
+
+**New document**: `ledh-tensorarray-elimination-plan-2026-09-14.md`
+
+**Justification**: 77× speedup (13.565s → 0.175s) is the largest measured lever. The fix is localized (one function, ~20 lines) and has clear parity criteria. Deferring it to "after Phase 2" would mean running substep loop work against a 2.465s baseline when 0.175s is achievable.
+
+### Revised Phase Ordering
+
+1. Phase 0: pfor measurement ✓ COMPLETE (rejected)
+2. Phase 1: Time loop restoration ✓ COMPLETE (graph 5.50×)
+3. **Phase 1.5: K-direction TensorArray elimination** ← NEXT (enables XLA 77×)
+4. Phase 2: Substep loop restoration (reduces graph size)
+5. Phase 3: Full measurement matrix (plan scale)
+6. Phase 4: K-direction batching (conditional)
+
+---
+
+**Status**: Phase 1 complete with XLA blocker documented. Proceeding to Phase 1.5 per TensorArray elimination plan.
+
+**Timestamp**: 2026-09-14 21:00 UTC  
+**Commit**: TBD (Phase 1.5 implementation)

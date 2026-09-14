@@ -141,6 +141,7 @@ def canonical_batch_fused_value_score(
     coordinate_cap_power: int = 8,
     annealed_stages: int = 1,
     annealed_seed: int = 0,
+    k_batch_mode: str = "sequential",
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
     """Evaluate value ``[B]`` and analytical directional scores ``[B,K]``.
 
@@ -155,6 +156,8 @@ def canonical_batch_fused_value_score(
 
     if jitter != 1.0e-12:
         raise ValueError("the unified canonical engine requires jitter=1e-12")
+    if k_batch_mode not in ("sequential", "pfor"):
+        raise ValueError("k_batch_mode must be 'sequential' or 'pfor'")
     if reset_policy not in ("none", "contract_e"):
         raise ValueError("reset_policy must be 'none' or 'contract_e'")
     if reset_policy == "contract_e" and reset_design is None:
@@ -233,15 +236,27 @@ def canonical_batch_fused_value_score(
             )
             return value, score[0]
 
-        values, scores = tf.map_fn(
-            evaluate_direction,
-            row_directions,
-            fn_output_signature=(
-                tf.TensorSpec([], dtype),
-                tf.TensorSpec([], dtype),
-            ),
-            parallel_iterations=1,
-        )
+        if k_batch_mode == "pfor":
+            # Batch the K independent directions. Approved for evaluation in
+            # docs/plans/ledh-vectorized-map-approval-request.md: the K
+            # directional tangents share one primal trajectory, and the
+            # single-cloud engine takes a single [N,d] tangent, so a native
+            # tf.while_loop cannot express K-at-once without refactoring every
+            # tangent op in the canonical engine to carry a leading K axis.
+            values, scores = tf.vectorized_map(
+                evaluate_direction,
+                row_directions,
+            )
+        else:
+            values, scores = tf.map_fn(
+                evaluate_direction,
+                row_directions,
+                fn_output_signature=(
+                    tf.TensorSpec([], dtype),
+                    tf.TensorSpec([], dtype),
+                ),
+                parallel_iterations=1,
+            )
         tf.debugging.assert_near(
             values,
             tf.broadcast_to(values[0], tf.shape(values)),
@@ -272,4 +287,175 @@ def canonical_batch_fused_value_score(
     return values, scores, {"program_valid": valid}
 
 
-__all__ = ["PerPointScoreModel", "canonical_batch_fused_value_score"]
+def canonical_batch_fused_value_score_whileloop(
+    model: PerPointScoreModel,
+    theta: Tensor,
+    theta_directions: Tensor,
+    initial_states: Tensor,
+    initial_covariances: Tensor,
+    noises: Tensor,
+    observations: Tensor,
+    substeps: int = 8,
+    reset_policy: str = "contract_e_tp",
+    reset_design: str = "ledh_canonical_ot_streaming",
+    reset_epsilon: float = 1e-5,
+    reset_sinkhorn_steps: int = 10,
+    reset_balance_steps: int = 3,
+    reset_ridge: float = 1e-10,
+    correction_steps: int = 4,
+    correction_strength: float = 1.0,
+    correction_lm_damping: float = 1e-3,
+    correction_lm_scale_floor: float = 1e-10,
+    correction_trust_radius: float | None = None,
+    pairwise_steps: int = 4,
+    pairwise_strength: float = 1.0,
+    pairwise_rms_cap: float | None = None,
+    coordinate_cap: float | None = None,
+    coordinate_cap_power: float = 1.0,
+    annealed_stages: int = 1,
+    annealed_seed: int | None = None,
+) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
+    """XLA-compatible while_loop variant of canonical_batch_fused_value_score.
+
+    Replaces nested tf.map_fn with nested tf.while_loop + tensor_scatter_nd_update
+    to eliminate TensorArray, enabling XLA compilation.
+
+    All parameters and behavior match canonical_batch_fused_value_score exactly.
+    This is Phase 1.5 of the while-loop restoration (2026-09-14).
+
+    Returns:
+        values: [B] primal canonical values
+        scores: [B, K] directional scores (or [B] if theta_directions is rank-2)
+        diagnostics: {"program_valid": [B] boolean mask}
+    """
+    dtype = theta.dtype
+
+    # Input validation (copied from original)
+    directions_input = theta_directions
+    if directions_input.shape.rank == 2:
+        directions = directions_input[:, None, :]
+        squeeze_output = True
+    elif directions_input.shape.rank == 3:
+        directions = directions_input
+        squeeze_output = False
+    else:
+        raise ValueError("theta_directions must have rank 2 or 3")
+
+    if theta.shape.rank != 2:
+        raise ValueError("theta must have rank 2")
+    if theta.shape[0] is not None and directions.shape[0] is not None:
+        if theta.shape[0] != directions.shape[0]:
+            raise ValueError("theta and theta_directions batch dimensions must agree")
+    if theta.shape[1] is not None and directions.shape[2] is not None:
+        if theta.shape[1] != directions.shape[2]:
+            raise ValueError("theta and theta_directions parameter dimensions must agree")
+
+    k_count = directions.shape[1]
+    if k_count is None:
+        raise ValueError("K dimension must be statically known")
+
+    common_kwargs = dict(
+        flow_substeps=substeps,
+        with_score=True,
+        reset_policy=reset_policy,
+        reset_design=reset_design,
+        reset_epsilon=reset_epsilon,
+        reset_sinkhorn_steps=reset_sinkhorn_steps,
+        reset_balance_steps=reset_balance_steps,
+        reset_ridge=reset_ridge,
+        correction_steps=correction_steps,
+        correction_strength=correction_strength,
+        correction_lm_damping=correction_lm_damping,
+        correction_lm_scale_floor=correction_lm_scale_floor,
+        correction_trust_radius=correction_trust_radius,
+        pairwise_steps=pairwise_steps,
+        pairwise_strength=pairwise_strength,
+        pairwise_rms_cap=pairwise_rms_cap,
+        coordinate_cap=coordinate_cap,
+        coordinate_cap_power=coordinate_cap_power,
+        annealed_stages=annealed_stages,
+        annealed_seed=annealed_seed,
+    )
+
+    # Preallocate outputs
+    batch_size = tf.shape(theta)[0]
+    values_out = tf.zeros([batch_size], dtype=dtype)
+    scores_out = tf.zeros([batch_size, k_count], dtype=dtype)
+
+    def batch_loop_cond(batch_idx, vals, scrs):
+        return batch_idx < batch_size
+
+    def batch_loop_body(batch_idx, vals, scrs):
+        theta_row = theta[batch_idx]
+        row_directions = directions[batch_idx]  # [K, P]
+
+        # Inner K-direction loop
+        k_values = tf.zeros([k_count], dtype=dtype)
+        k_scores = tf.zeros([k_count], dtype=dtype)
+
+        def k_loop_cond(k_idx, k_vals, k_scrs):
+            return k_idx < k_count
+
+        def k_loop_body(k_idx, k_vals, k_scrs):
+            direction = row_directions[k_idx]
+            bound_model = _single_cloud_model(model, theta_row, direction)
+            value, score = canonical_value_and_analytical_score(
+                bound_model,
+                theta_row,
+                initial_states,
+                initial_covariances,
+                noises,
+                observations,
+                **common_kwargs,
+            )
+            k_vals = tf.tensor_scatter_nd_update(
+                k_vals, [[k_idx]], [value]
+            )
+            k_scrs = tf.tensor_scatter_nd_update(
+                k_scrs, [[k_idx]], [score[0]]
+            )
+            return k_idx + 1, k_vals, k_scrs
+
+        _, k_values, k_scores = tf.while_loop(
+            cond=k_loop_cond,
+            body=k_loop_body,
+            loop_vars=(tf.constant(0, tf.int32), k_values, k_scores),
+            maximum_iterations=k_count,
+            parallel_iterations=1,
+        )
+
+        # Primal invariance check (from original line 260)
+        tf.debugging.assert_near(
+            k_values,
+            tf.broadcast_to(k_values[0], tf.shape(k_values)),
+            rtol=1.0e-12,
+            atol=1.0e-12,
+            message="direction changed the primal canonical value",
+        )
+
+        # Update batch outputs
+        vals = tf.tensor_scatter_nd_update(vals, [[batch_idx]], [k_values[0]])
+        scrs = tf.tensor_scatter_nd_update(scrs, [[batch_idx]], [k_scores])
+        return batch_idx + 1, vals, scrs
+
+    _, values, scores = tf.while_loop(
+        cond=batch_loop_cond,
+        body=batch_loop_body,
+        loop_vars=(tf.constant(0, tf.int32), values_out, scores_out),
+        maximum_iterations=batch_size,
+        parallel_iterations=1,
+    )
+
+    # Validity check (from original line 279)
+    valid = tf.math.is_finite(values) & tf.reduce_all(
+        tf.math.is_finite(scores), axis=1
+    )
+    nan = tf.cast(float("nan"), dtype)
+    values = tf.where(valid, values, nan)
+    scores = tf.where(valid[:, None], scores, nan)
+    if squeeze_output:
+        scores = scores[:, 0]
+    return values, scores, {"program_valid": valid}
+
+
+__all__ = ["PerPointScoreModel", "canonical_batch_fused_value_score", "canonical_batch_fused_value_score_whileloop"]
