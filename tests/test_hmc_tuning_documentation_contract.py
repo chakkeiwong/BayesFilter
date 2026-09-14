@@ -264,75 +264,21 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
     assert "docs/reference/hmc-tuning-interface.md" in agents
 
     for term in (
-        "tune_hmc_kernel",
-        "tune_fixed_transport_hmc_kernel",
-        "bind_neural_force_hmc_tuning_runner",
-        "run_full_chain_neural_force_hmc",
-        "fixed `M=I`, fixed `L=1`",
-        "artifact-authoritative fixed-transport policy",
-        "disabled for ordinary tuning admission",
-        "not a tuning gate",
-        "negative_hessian",
-        "initial_covariance",
-        "parameter_scales",
-        "explicit initial-position bank",
-        "initial_position_was_replicated=True",
-        "Durable typed TensorFlow replay",
-        "build_retained_bound_hmc_archive_runner_from_tuning_result",
-        "continuation_manifest",
-        "Durable ordinary replay",
-        "Replay roles and authority",
-        "build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload",
-        "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload",
-        "claim_bearing_blockers",
-        "caller-edited authority flag or blocker list cannot grant authority",
-        "tuning_config",
-        "mechanics_only_nonclaiming",
-        "admission_supported=False",
-        "posterior_admission_authority=False",
-        "same frozen transition",
-        "mass-signature change invalidates the selection and its calibration",
-        "retained R-hat and ESS are explanatory",
-        "short `interface_name`",
-        "do not transfer to this route",
-        "audit_ordinary_hmc_migration_surface.py",
-        "unknown_dynamic_import",
-        "unresolved_dynamic_attribute",
-        "canonical broad-first ordinary procedure",
-        "TensorFlowHMCKernelTuningConfig",
-        "independent epsilon",
-        "survivor-midpoint barrier",
-        "one recommended candidate-set lifecycle",
-        "retain every viable member",
-        "qualified_repair_status",
-        "not_executed_with_reason",
-        "repair_budget_exhausted",
-        "one implementation",
-        "one_verified_log_midpoint",
-        "audit inventory, not a menu",
-        "run_fixed_mass_step_tuning_diagnostic",
-        "run_windowed_mass_adaptation_diagnostic",
-        "run_fixed_trajectory_tuning_diagnostic",
-        "run_gaussian_dual_averaging_diagnostic",
-        "run_hmc_start_bank_diagnostic",
+        "HMCTuningCandidateSetController", "HMCTypedCandidateSetRun",
+        "verified_candidate_ids", "inconclusive_at_cap", "reporting-only",
+        "shared execution",
+        "resume_hmc_candidate_set_tuning", "resume_position_field_candidate_tuning",
+        "build_retained_bound_hmc_archive_runner_from_candidate_set_result",
+        "frozen_transport_payload", "epsilon_by_l", "evidence_rungs",
+        "negative_hessian", "initial_covariance", "parameter_scales",
+        "preparation", "chunk_max_results", "run_sequential",
     ):
-        assert term in normalized_guide
-    assert "prevents a deterministic non-score field" in normalized_guide
+        assert term.lower() in normalized_guide.lower()
     assert "\\label{eq:bf-neural-force-endpoint-correction}" in chapter
-    assert "artifact\\_authority" in chapter
-    assert "posterior\\_admission\\_authority" in chapter
-    assert "admission\\_supported" in chapter
-    assert "\\path{ordinary_hmc}" in chapter
-    assert "\\path{ordinary_broad_fixed_metric_selection_v1}" in chapter
-    assert "\\path{operational_paired_fixed_trajectory_selection_v3}" in chapter
-    assert "tuning epsilon independently for every" in chapter
-    assert "surviving primary value" in chapter
-    assert "public artifact-authority boundary rejects" in chapter
-    assert "frozen mechanics" in chapter
-    assert "Replay roles and claim authority" in chapter
-    assert "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload" in chapter
-    assert "artifact-authoritative fixed-transport tuning policy" in chapter
-    assert "not posterior convergence" in chapter
+    assert "\\label{eq:bf-fixed-transport-hmc-score}" in chapter
+    assert "reporting-only during tuning" in chapter
+    assert "inconclusive_at_cap" in chapter
+    assert "HMCTuningCandidateSetController" in chapter
 
 
 def test_examples_are_exact_listings_and_public_imports_resolve() -> None:
@@ -380,12 +326,10 @@ def test_guide_rejects_the_observed_low_level_runner_misclassification() -> None
     guide = GUIDE_PATH.read_text(encoding="utf-8")
     normalized = " ".join(guide.split())
 
-    assert "A chain runner or stage helper is not a complete tuner" in normalized
-    assert "It does not tune mass or choose `L`" in normalized
-    assert "Acceptance by itself" not in guide
-    assert "Do not treat acceptance alone as convergence or handoff evidence" in normalized
-    assert "A failed verifier must have no final kernel" in normalized
-    assert "The exported `select_fixed_transport_candidate_set` name is retained solely" in normalized
+    assert "A chain runner is not a tuner" in normalized
+    assert "Finite acceptance alone does not qualify a kernel" in normalized
+    assert "no exact-score retained-member authority" in normalized
+    assert "diagnostic helpers" in normalized
     assert "Then use `select_fixed_transport_candidate_set`" not in normalized
 
 
@@ -416,15 +360,15 @@ def test_guide_binds_the_executable_ordinary_default_policy() -> None:
     assert resolved["runtime_backend_policy"] == "ordinary_tf_tfp_runtime_v1"
     assert config.payload()["runtime_backend_policy"] == resolved["runtime_backend_policy"]
 
+    from bayesfilter.inference.hmc_candidate_set_public import _search
+    shared = _search(None, epsilon=.1, grid=ORDINARY_BROAD_PRIMARY_L_GRID)
+    assert shared.primary_l_grid == ORDINARY_BROAD_PRIMARY_L_GRID
+    assert shared.pilot_enabled and shared.refinement_rounds == 1
+    assert config.use_xla is True
     guide = " ".join(GUIDE_PATH.read_text(encoding="utf-8").split())
-    assert "ordinary_hmc" in guide
-    assert ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID in guide
-    assert "independent epsilon" in guide
-    assert "one refinement barrier" in guide
-    assert "both fail the public artifact-authority guard" in guide
-    assert "claim_bearing_artifact_authority=True" in guide
-    assert "remain compatibility identities for the legacy adapter" in guide
-    assert "one_verified_log_midpoint" in guide
+    assert "all verified members" in guide
+    assert "one pilot per L and one bounded refinement round" in guide
+    assert "nominee_id` is always `None`" in guide
 
 
 def test_ordinary_module_prose_names_one_broad_public_policy() -> None:

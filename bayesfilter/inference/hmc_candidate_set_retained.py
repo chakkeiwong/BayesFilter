@@ -15,7 +15,7 @@ from bayesfilter.inference.hmc_candidate_set_artifacts import (
 )
 from bayesfilter.inference.hmc_candidate_set_execution import (
     EXECUTION_SCHEMA, HMCCandidateExecutionBinding, _ISSUER, _json_copy, _positive_int,
-    _seed, _tensor_payload, _tensor_from_payload, _trace_payload, _trace_from_payload,
+    _seed, _tensor_payload, _tensor_from_payload, _trace_payload, _trace_from_payload, _report_rhat,
 )
 from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCTuningCandidateSetResult, HMCTuningCandidateRecord, HMCWorkItem, _sha256,
@@ -98,7 +98,7 @@ def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecut
         attempt = work.verification_attempt_id or work.work_item_id + ":attempt"
         if receipt["verification_attempt_id"] != attempt:
             raise ValueError("numerical evidence attempt mismatch")
-        count = getattr(binding.config, work.stage + "_num_results")
+        count = binding.work_count(work)
         warmup = binding.config.num_warmup_steps
         if receipt["draw_range"] != [warmup, warmup + count]:
             raise ValueError("numerical draw range mismatch")
@@ -112,15 +112,25 @@ def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecut
         analysis = binding.analyze(initial, samples, trace)
         if _json_copy(analysis) != numerical["analysis"]:
             raise ValueError("numerical evidence recomputation mismatch")
-        for key in ("decision", "acceptance", "hard_vetoes"):
+        if analysis["evidence_validity"] == "shared_execution_invalid":
+            raise ValueError("shared-invalid numerical evidence disables scope replay")
+        for key in ("decision", "acceptance", "hard_vetoes", "evidence_validity", "promotion_vetoes", "repair_eligible"):
             if _json_copy(analysis[key]) != receipt[key]:
                 raise ValueError("numerical receipt decision mismatch")
         if (candidate.candidate_id == candidate_id and work.stage == "verification"
-                and analysis["decision"] == "passed" and not analysis["hard_vetoes"]):
+                and analysis["decision"] == "passed" and not analysis["hard_vetoes"]
+                and not analysis["promotion_vetoes"] and analysis["evidence_validity"] == "valid"):
             endpoint = samples[-1]
     if endpoint is None:
         raise ValueError("selected member lacks passing fresh numerical verification")
     return payload, selected, endpoint
+
+
+def _run_sequential_member(*, binding, initial_state, model_transform, config, **kwargs):
+    """Delegate the checked member to the repository posterior controller."""
+    from bayesfilter.inference.neutra_hmc import run_sequential_neutra_hmc
+    return run_sequential_neutra_hmc(adapter=binding._active_adapter,
+        initial_state=initial_state, model_transform=model_transform, config=config, **kwargs)
 
 
 class HMCCandidateRetainedRunner:
@@ -163,6 +173,39 @@ class HMCCandidateRetainedRunner:
     @property
     def claim_eligible(self) -> bool:
         return self._claim_eligible
+
+    @property
+    def step_size(self) -> float:
+        return self.candidate.epsilon
+
+    @property
+    def num_leapfrog_steps(self) -> int:
+        return self.candidate.leapfrog_steps
+
+    def run_sequential(self, *, config: Any, model_transform: Any = None, **kwargs: Any) -> Any:
+        """Assess one explicitly selected member with the posterior controller.
+
+        Model diagnostics receive the reconstructed original coordinates. The
+        posterior controller owns discarded warmup and cumulative R-hat/ESS;
+        none of these diagnostics modifies tuning membership.
+        """
+        self._validate()
+        if (config.step_size != self.candidate.epsilon or
+                config.num_leapfrog_steps != self.candidate.leapfrog_steps):
+            raise ValueError("sequential sampling must preserve the verified candidate kernel")
+        if config.jit_compile != self._binding.config.use_xla:
+            raise ValueError("sequential execution must preserve the qualified XLA policy")
+        used_seeds = {tuple(e["seed"]) for e in self._binding._evidence.values()}
+        used_seeds.update(tuple(c["seed"]) for e in self._binding._evidence.values() for c in e.get("chunks", ()))
+        if tuple(config.warmup_seed) in used_seeds or tuple(config.retained_seed) in used_seeds:
+            raise ValueError("posterior seeds must be fresh relative to tuning")
+        if any(key in kwargs for key in ("adapter", "initial_state")):
+            raise ValueError("the verified member supplies the sequential adapter and initial state")
+        def transform(draws):
+            raw = self._binding.position_samples(draws)
+            return raw if model_transform is None else model_transform(raw)
+        return _run_sequential_member(binding=self._binding,
+            initial_state=self.initial_active_state, model_transform=transform, config=config, **kwargs)
 
     def export(self, path: str | Path) -> Path:
         """Persist geometry, complete candidate result, traces and verified state."""
@@ -272,8 +315,7 @@ class HMCCandidateRetainedRunner:
             "acceptance_reporting_only": {
                 "mean_probability": float(probability) if bool(tf.math.is_finite(probability)) else None,
                 "realized_rate": float(tf.reduce_mean(tf.cast(result.trace["is_accepted"], tf.float64)))},
-            "rhat_reporting_only": _rhat_summary_from_retained_samples(
-                result.samples, threshold=HMC_TUNING_ORDINARY_RHAT_THRESHOLD) if finite_samples else None,
+            "rhat_reporting_only": _report_rhat(result.samples) if finite_samples else None,
             "runtime": result.metadata,
             "posterior_convergence_authority": False,
             "warmup_draws_included": False, "tuning_draws_included": False}

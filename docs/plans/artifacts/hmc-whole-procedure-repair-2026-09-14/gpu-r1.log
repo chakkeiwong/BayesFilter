@@ -1,0 +1,42 @@
+2026-09-15 01:17:42.146512: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789406264.940727  831621 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30103 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:01:00.0, compute capability: 8.9
+I0000 00:00:1789406265.059424  831621 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x5d28252fbd00
+Traceback (most recent call last):
+  File "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-whole-procedure-repair-2026-09-14/gpu_smoke.py", line 43, in <module>
+    first=tune_hmc_kernel(adapter=target, initial_position=starts,
+        config=HMCKernelTuningConfig.smoke(mass_policy="fixed_identity",use_xla=True,
+    ...<2 lines>...
+        target_lineage={"model":"standard Gaussian","prior":"standard normal","data":"none"},
+        source_paths=[__file__],output_dir=root/'tuning',max_work_items=1)
+  File "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_dispatch.py", line 135, in tune_hmc_kernel
+    return run_shared_ordinary_tuning(
+        adapter=adapter,
+    ...<10 lines>...
+        max_work_items=max_work_items,
+    )
+  File "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_public.py", line 175, in run_shared_ordinary_tuning
+    binding = bind_hmc_candidate_set_execution(initial_position=starts, mass_artifact=mass,
+                                              target_scope=scope, **common)
+  File "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_execution.py", line 647, in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+        target_scope=target_scope, target_lineage=target_lineage, preparation={"source": "explicit_frozen_geometry"},
+        config=config, source_paths=source_paths, scope_id=scope_id, search_id=search_id,
+        epsilon_domain=epsilon_domain, repair_factor=repair_factor, max_repairs_per_family=max_repairs_per_family)
+  File "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_execution.py", line 600, in _issue_binding
+    start_bank_signature=_sha256(_tensor_payload(starts)), warmup_protocol=_sha256(numerical_policy),
+                                 ~~~~~~~~~~~~~~~^^^^^^^^
+  File "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_execution.py", line 71, in _tensor_payload
+    encoded = tf.io.serialize_tensor(tensor).numpy()
+              ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/ops/io_ops.py", line 214, in serialize_tensor
+    return gen_parsing_ops.serialize_tensor(tensor, name)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/ops/gen_parsing_ops.py", line 2244, in serialize_tensor
+    _ops.raise_from_not_ok_status(e, name)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/ops.py", line 6027, in raise_from_not_ok_status
+    raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.InvalidArgumentError: Could not satisfy device specification '/job:localhost/replica:0/task:0/device:GPU:0'. enable_soft_placement=0. Supported device types [CPU]. All available devices [/job:localhost/replica:0/task:0/device:GPU:0, /job:localhost/replica:0/task:0/device:CPU:0]. [Op:SerializeTensor] name: 

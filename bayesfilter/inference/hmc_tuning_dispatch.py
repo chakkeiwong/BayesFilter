@@ -40,6 +40,11 @@ def tune_hmc_kernel(
     runner_binding: HMCTuningRunnerBinding | None = None,
     candidate_set_adapter: Any | None = None,
     _candidate_set_route_kind: str = "ordinary",
+    search_config: HMCControllerConfig | None = None,
+    execution_config: Any | None = None,
+    target_lineage: Any | None = None,
+    source_paths: Any = (),
+    max_work_items: int | None = None,
 ) -> Any:
     """Run the public tuner or the shared typed candidate-set controller.
 
@@ -48,6 +53,8 @@ def tune_hmc_kernel(
 
     require_active_hmc_tuning_route("tune_hmc_kernel")
     if isinstance(config, HMCControllerConfig):
+        if search_config is not None or execution_config is not None:
+            raise ValueError("an issued candidate binding already freezes its execution and search inputs")
         if candidate_set_adapter is None:
             raise ValueError(
                 "HMCControllerConfig requires a repository-issued candidate-set adapter"
@@ -81,9 +88,14 @@ def tune_hmc_kernel(
             candidate_set_adapter,
             config,
             output_dir=output_dir,
+            max_work_items=max_work_items,
         )
     if isinstance(config, TensorFlowHMCKernelTuningConfig):
         unsupported = {
+            "execution_config": execution_config,
+            "candidate_set_adapter": candidate_set_adapter,
+            "target_lineage": target_lineage,
+            "source_paths": source_paths or None,
             "negative_hessian": negative_hessian,
             "initial_covariance": initial_covariance,
             "diagnostic_callback": diagnostic_callback,
@@ -99,13 +111,16 @@ def tune_hmc_kernel(
             )
         if runner_binding is None:
             raise ValueError("TensorFlow tuning requires a repository-issued binding")
-        return _run_tensorflow_hmc_tuning(
+        from bayesfilter.inference.hmc_candidate_set_position_field import run_shared_position_field_tuning
+        return run_shared_position_field_tuning(
             adapter=adapter,
             initial_position=initial_position,
             config=config,
             output_dir=output_dir,
             parameter_scales=parameter_scales,
             runner_binding=runner_binding,
+            search_config=search_config,
+            max_work_items=max_work_items,
         )
 
     if runner_binding is not None:
@@ -115,9 +130,13 @@ def tune_hmc_kernel(
             "uses the exact adapter score and BayesFilter's default TFP runner"
         )
 
-    from bayesfilter.inference.hmc_kernel_tuning import _run_canonical_hmc_tuning
+    if diagnostic_callback is not None or verification_checkpoint_writer_config is not None:
+        raise ValueError("legacy diagnostic/checkpoint callbacks are retired; shared tuning writes numerical checkpoints to output_dir")
+    if candidate_set_adapter is not None:
+        raise ValueError("candidate_set_adapter requires HMCControllerConfig")
+    from bayesfilter.inference.hmc_candidate_set_public import run_shared_ordinary_tuning
 
-    return _run_canonical_hmc_tuning(
+    return run_shared_ordinary_tuning(
         adapter=adapter,
         initial_position=initial_position,
         config=config,
@@ -125,9 +144,11 @@ def tune_hmc_kernel(
         negative_hessian=negative_hessian,
         initial_covariance=initial_covariance,
         parameter_scales=parameter_scales,
-        diagnostic_callback=diagnostic_callback,
-        verification_checkpoint_writer_config=verification_checkpoint_writer_config,
-        runner_binding=runner_binding,
+        search_config=search_config,
+        execution_config=execution_config,
+        target_lineage=target_lineage,
+        source_paths=source_paths,
+        max_work_items=max_work_items,
     )
 
 

@@ -11,6 +11,7 @@ import hashlib
 import inspect
 import json
 import os
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, fields, replace
 from pathlib import Path
@@ -18,11 +19,32 @@ from typing import Any
 
 from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCCandidateSetScope, HMCTuningCandidateRecord, HMCWorkItem, _sha256,
+    HMCInfrastructureFailure, HMCSharedInvalidity,
 )
 from bayesfilter.inference.hmc_verification import HMCAcceptancePolicy
 
 EXECUTION_SCHEMA = "bayesfilter.hmc_candidate_execution.v1"
 _ISSUER = object()
+
+
+def _report_rhat(samples: Any) -> Mapping[str, Any]:
+    """Optional diagnostics never control tuning or erase numerical evidence."""
+    import math
+    from bayesfilter.inference.hmc import _rhat_summary_from_retained_samples
+    from bayesfilter.inference.tuning_contract import HMC_TUNING_ORDINARY_RHAT_THRESHOLD
+    try:
+        result = _rhat_summary_from_retained_samples(samples, threshold=HMC_TUNING_ORDINARY_RHAT_THRESHOLD)
+        def finite(value):
+            if isinstance(value, Mapping):
+                return {k: finite(v) for k, v in value.items()}
+            if isinstance(value, (tuple, list)):
+                return [finite(v) for v in value]
+            if isinstance(value, float) and not math.isfinite(value):
+                return None
+            return value
+        return {**finite(result), "role": "reporting_only"}
+    except Exception as exc:
+        return {"role": "reporting_only", "unavailable_reason": type(exc).__name__ + ": " + str(exc)}
 
 
 def _runtime_policy() -> Mapping[str, Any]:
@@ -46,7 +68,8 @@ def _tensor_payload(value: Any) -> Mapping[str, Any]:
     import tensorflow as tf
 
     tensor = tf.convert_to_tensor(value)
-    encoded = tf.io.serialize_tensor(tensor).numpy()
+    with tf.device("/CPU:0"):
+        encoded = tf.io.serialize_tensor(tensor).numpy()
     return {"dtype": tensor.dtype.name, "shape": tensor.shape.as_list(),
             "tensor": base64.b64encode(encoded).decode("ascii"),
             "sha256": hashlib.sha256(encoded).hexdigest()}
@@ -58,7 +81,8 @@ def _tensor_from_payload(payload: Mapping[str, Any]) -> Any:
     encoded = base64.b64decode(payload["tensor"], validate=True)
     if hashlib.sha256(encoded).hexdigest() != payload["sha256"]:
         raise ValueError("tensor checksum mismatch")
-    tensor = tf.io.parse_tensor(encoded, out_type=tf.as_dtype(payload["dtype"]))
+    with tf.device("/CPU:0"):
+        tensor = tf.io.parse_tensor(encoded, out_type=tf.as_dtype(payload["dtype"]))
     if tensor.shape.as_list() != payload["shape"]:
         raise ValueError("tensor shape mismatch")
     return tensor
@@ -100,6 +124,8 @@ class HMCCandidateExecutionConfig:
     use_xla: bool = True
     non_xla_reason: str | None = None
     chain_mode: str = "serial"
+    chunk_max_results: int = 256
+    preparation_elapsed_seconds: float = 0.0
 
     def __post_init__(self) -> None:
         if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
@@ -107,6 +133,10 @@ class HMCCandidateExecutionConfig:
         for name in ("measurement_num_results", "verification_num_results"):
             _positive_int(getattr(self, name), name, self.acceptance_policy.min_decisions_per_chain)
         _positive_int(self.num_warmup_steps, "num_warmup_steps", 0)
+        _positive_int(self.chunk_max_results, "chunk_max_results")
+        import math
+        if not math.isfinite(self.preparation_elapsed_seconds) or self.preparation_elapsed_seconds < 0:
+            raise ValueError("preparation_elapsed_seconds must be finite and nonnegative")
         object.__setattr__(self, "seed", _seed(self.seed))
         if type(self.use_xla) is not bool:
             raise TypeError("use_xla must be boolean")
@@ -141,6 +171,7 @@ def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping
              "hmc_warmup", "hmc_tuning_state", "hmc_kernel_selection", "hmc_diagnostics",
              "hmc_candidate_set_execution", "hmc_candidate_set_retained",
              "hmc_candidate_set_adapters", "hmc_candidate_set_tuning",
+             "hmc_candidate_set_checkpoint", "hmc_candidate_set_public", "hmc_candidate_set_position_field",
              "hmc_candidate_set_artifacts", "hmc_verification", "hmc_convergence",
              "tuning_contract", "hmc_tuning_dispatch", "fixed_transport_hmc_tuning_tf",
              "posterior_adapter", "batched_value_score",
@@ -273,6 +304,9 @@ class HMCCandidateExecutionBinding:
             raise ValueError("target capability mismatch")
         self.binding_hash = _sha256(self._spec)
         self._evidence: dict[str, Mapping[str, Any]] = {}
+        self._partial: dict[str, list[Mapping[str, Any]]] = {}
+        self._checkpoint_callback = None
+        self._deadline = None
         self._runners: dict[tuple[int, int], Any] = {}
         self.validate()
 
@@ -444,48 +478,99 @@ class HMCCandidateExecutionBinding:
             target_log_prob=trace["target_log_prob"][warmup:],
             native_divergence_status="available" if divergence is not None else "not_exposed_by_kernel",
             native_divergence_count=int(tf.reduce_sum(tf.cast(divergence, tf.int32))) if divergence is not None else None)
-        vetoes = tuple(dict.fromkeys((*failures, *evidence.engineering_invalidity_reasons, *evidence.candidate_promotion_vetoes)))
+        vetoes = tuple(dict.fromkeys((*failures, *evidence.engineering_invalidity_reasons)))
         decision = evidence.acceptance_decision
-        if vetoes or evidence.evidence_validity != "valid" or decision in {"unavailable", "repair_trajectory"}:
+        if vetoes or evidence.evidence_validity != "valid" or decision == "unavailable":
             decision = "failed"
         elif decision == "passed" and not evidence.promotion_eligible:
             decision = "inconclusive_evidence"
         return {"decision": decision, "acceptance": evidence.pooled_mean,
-                "hard_vetoes": vetoes, "acceptance_evidence": evidence.payload()}
+                "hard_vetoes": vetoes, "acceptance_evidence": evidence.payload(),
+                "evidence_validity": ("shared_execution_invalid" if "metropolis_state_mismatch" in failures
+                                      else evidence.evidence_validity),
+                "engineering_invalidity_reasons": evidence.engineering_invalidity_reasons,
+                "promotion_vetoes": evidence.candidate_promotion_vetoes,
+                "repair_eligible": decision in {"repair_step_lower", "repair_step_higher"} and not vetoes,
+                "diagnostic_alerts": evidence.payload().get("diagnostic_alerts", ())}
+
+    def work_count(self, work: HMCWorkItem) -> int:
+        stage = "measurement" if work.stage == "pilot" else work.stage
+        return getattr(self.config, stage + "_num_results") * work.evidence_multiplier
+
+    def work_cost(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord) -> Mapping[str, Any]:
+        transitions = (self.work_count(work) + self.config.num_warmup_steps) * int(self.initial_active_state.shape[0])
+        return {"transitions": transitions, "gradient_work": transitions * (candidate.leapfrog_steps + 1),
+                "cost_basis": "conservative_endpoint_gradient_work_estimate", "leapfrog_steps": candidate.leapfrog_steps}
 
     def observe(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord) -> Mapping[str, Any]:
         import tensorflow as tf
-        from bayesfilter.inference.hmc import _rhat_summary_from_retained_samples
-        from bayesfilter.inference.tuning_contract import HMC_TUNING_ORDINARY_RHAT_THRESHOLD
 
-        self.validate()
+        try:
+            self.validate()
+        except ValueError as exc:
+            raise HMCSharedInvalidity(str(exc)) from exc
         if (work.candidate_id, work.candidate_record_hash) != (candidate.candidate_id, candidate.candidate_record_hash):
             raise ValueError("work item candidate mismatch")
-        if work.stage not in {"measurement", "verification"}:
+        if work.stage not in {"pilot", "measurement", "verification"}:
             raise ValueError("unsupported numerical work stage")
-        count = getattr(self.config, work.stage + "_num_results")
+        count = self.work_count(work)
         seed = self.work_seed(work)
-        result = self._run(candidate, self.initial_active_state, count + self.config.num_warmup_steps, seed)
-        analysis = self.analyze(self.initial_active_state, result.samples, result.trace)
-        rhat = (_rhat_summary_from_retained_samples(
-            result.samples[self.config.num_warmup_steps:], threshold=HMC_TUNING_ORDINARY_RHAT_THRESHOLD)
-            if bool(tf.reduce_all(tf.math.is_finite(result.samples)))
-            else {"unavailable_reason": "nonfinite_samples", "role": "reporting_only"})
+        total = count + self.config.num_warmup_steps
+        chunks = self._partial.setdefault(work.work_item_id, [])
+        done = sum(chunk["count"] for chunk in chunks)
+        state = (_tensor_from_payload(chunks[-1]["samples"])[-1] if chunks else self.initial_active_state)
+        started = time.monotonic()
+        while done < total:
+            if self._deadline is not None and time.monotonic() >= self._deadline:
+                raise HMCInfrastructureFailure("wall-time cap reached between numerical chunks")
+            take = min(total - done, self.config.chunk_max_results)
+            chunk_seed = seed if not chunks else tuple(
+                int.from_bytes(hashlib.sha256(json.dumps([seed, len(chunks)]).encode()).digest()[i:i+4], "big")
+                & 0x7fffffff for i in (0, 4))
+            chunk_started = time.monotonic()
+            key = (candidate.leapfrog_steps, take)
+            first_runner_call = key not in self._runners
+            try:
+                result = self._run(candidate, state, take, chunk_seed)
+            except (tf.errors.ResourceExhaustedError, tf.errors.UnavailableError,
+                    tf.errors.DeadlineExceededError, tf.errors.AbortedError) as exc:
+                raise HMCInfrastructureFailure(type(exc).__name__ + ": " + str(exc)) from exc
+            chunk = {"count": take, "seed": chunk_seed, "initial_state": _tensor_payload(state),
+                     "work": work.payload(), "binding_hash": self.binding_hash,
+                     "samples": _tensor_payload(result.samples), "trace": _trace_payload(result.trace),
+                     "samples_device": result.samples.device, "runtime": result.metadata,
+                     "elapsed_seconds": time.monotonic() - chunk_started,
+                     "includes_first_runner_trace_or_compilation": first_runner_call}
+            chunks.append(_json_copy(chunk))
+            state = result.samples[-1]
+            done += take
+            if self._checkpoint_callback is not None:
+                self._checkpoint_callback()
+        samples = tf.concat([_tensor_from_payload(chunk["samples"]) for chunk in chunks], axis=0)
+        traces = [_trace_from_payload(chunk["trace"]) for chunk in chunks]
+        trace = tf.nest.map_structure(lambda *parts: tf.concat(parts, axis=0), *traces)
+        analysis = self.analyze(self.initial_active_state, samples, trace)
         numerical = {
             "schema": "bayesfilter.hmc_candidate_numerical_evidence.v1",
             "binding_hash": self.binding_hash, "candidate": candidate.payload(), "work": work.payload(),
             "seed": seed, "initial_state": _tensor_payload(self.initial_active_state),
-            "samples": _tensor_payload(result.samples), "trace": _trace_payload(result.trace),
-            "analysis": analysis,
-            "samples_device": result.samples.device,
-            "rhat_reporting_only": rhat,
+            "samples": _tensor_payload(samples), "trace": _trace_payload(trace),
+            "analysis": analysis, "samples_device": chunks[-1]["samples_device"],
+            "runtime": [chunk["runtime"] for chunk in chunks],
+            "elapsed_seconds": sum(chunk["elapsed_seconds"] for chunk in chunks),
+            "resume_call_elapsed_seconds": time.monotonic() - started,
+            "cost": self.work_cost(work, candidate),
+            "chunks": [{key: chunk[key] for key in ("count", "seed", "elapsed_seconds",
+                        "includes_first_runner_trace_or_compilation")} for chunk in chunks],
+            "rhat_reporting_only": _report_rhat(samples[self.config.num_warmup_steps:]),
         }
         evidence_hash = _sha256(numerical)
         self._evidence[evidence_hash] = _json_copy(numerical)
+        self._partial.pop(work.work_item_id, None)
         return {**analysis, "numerical_evidence_hash": evidence_hash,
                 "stream_id": work.work_item_id + ":" + _sha256({"seed": seed}),
                 "draw_range": (self.config.num_warmup_steps, self.config.num_warmup_steps + count),
-                "seed_lineage": seed, "rhat_reporting_only": rhat}
+                "seed_lineage": seed, "rhat_reporting_only": numerical["rhat_reporting_only"]}
 
 
 def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial_active_state: Any,
@@ -507,12 +592,14 @@ def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial
     closure = _source_closure(adapter, source_paths)
     kind = "fixed_transport" if layers[0]["kind"] == "frozen_transport" else "ordinary"
     preparation_identity = _sha256({"layers": layers, "lineage": target_lineage, "preparation": preparation})
+    numerical_policy = dict(config.payload())
+    numerical_policy.pop("preparation_elapsed_seconds")
     transition_identity = _sha256({"runner": "independent_chain_tfp_fixed_hmc",
-                                    "config": config.payload(), "source": closure})
+                                    "config": numerical_policy, "source": closure})
     scope = HMCCandidateSetScope(
         scope_id=scope_id, search_id=search_id, target_signature=stable_adapter_signature(adapter),
         mass_signature=_sha256({"layers": layers}), coordinate_system=kind,
-        start_bank_signature=_sha256(_tensor_payload(starts)), warmup_protocol=_sha256(config.payload()),
+        start_bank_signature=_sha256(_tensor_payload(starts)), warmup_protocol=_sha256(numerical_policy),
         adapter_signature=stable_adapter_signature(active), source_dependency_hash=_sha256(closure),
         target_preparation_identity=preparation_identity, transition_identity=transition_identity,
         epsilon_domain=epsilon_domain, repair_factor=repair_factor, max_repairs_per_family=max_repairs_per_family,
@@ -571,7 +658,9 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
         epsilon_domain: tuple[float, float], repair_factor: float,
         max_repairs_per_family: int) -> HMCCandidateExecutionBinding:
     """Revalidate an operational windowed handoff and preserve both affine layers."""
-    from bayesfilter.inference.hmc_kernel_tuning import build_operational_fixed_mass_hmc_adapter
+    from bayesfilter.inference.hmc_kernel_tuning import (
+        build_operational_fixed_mass_hmc_adapter, _fixed_mass_step_upper_bound,
+    )
 
     _runtime_policy()
     geometry, windowed = preparation["geometry"], preparation["windowed_stage"]
@@ -582,15 +671,23 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
             raise ValueError("preparation handoff identity mismatch: " + key)
     if _tensor_payload(checked["initial_position"]) != _tensor_payload(preparation["initial_position"]):
         raise ValueError("preparation start bank mismatch")
+    upper = _fixed_mass_step_upper_bound(windowed)
+    if upper is None:
+        raise ValueError("operational preparation requires a final-metric epsilon bound")
+    domain = (epsilon_domain[0], min(epsilon_domain[1], upper))
+    final = windowed.operational_warmup_result.final_kernel_state
     binding = _issue_binding(adapter=adapter,
         layers=[{"kind": "bootstrap_mass", "artifact": geometry.mass_artifact.to_payload(include_arrays=True)},
                 {"kind": "fixed_mass", "artifact": checked["adapted_mass_artifact"].to_payload(include_arrays=True)}],
         initial_active_state=checked["initial_position"], target_scope=checked["target_scope"],
         target_lineage=target_lineage,
         preparation={"source": "operational_windowed_handoff", "geometry_hash": geometry.artifact_hash,
-                     "start_lineage": checked["start_lineage"], "final_adapter_signature": checked["final_adapter_signature"]},
+                     "start_lineage": checked["start_lineage"], "final_adapter_signature": checked["final_adapter_signature"],
+                     "epsilon_proposal_bound": {"upper": upper, "role": "proposal_safety_only",
+                         "coordinate_signature": final.transform.signature,
+                         "metric_signature": final.momentum_metric.signature}},
         config=config, source_paths=source_paths, scope_id=scope_id, search_id=search_id,
-        epsilon_domain=epsilon_domain, repair_factor=repair_factor, max_repairs_per_family=max_repairs_per_family)
+        epsilon_domain=domain, repair_factor=repair_factor, max_repairs_per_family=max_repairs_per_family)
     if binding.scope.adapter_signature != checked["final_adapter_signature"]:
         raise ValueError("reconstructed preparation adapter mismatch")
     return binding

@@ -119,7 +119,7 @@ def test_repair_child_requires_a_passing_decision_in_live_and_durable_replay(dec
     child = result.candidates[-1]
     assert result.verified_candidate_ids == ()
     assert result.candidate_states[child.candidate_id] == (
-        "promotion_failed" if decision == "failed" else "validating"
+        "promotion_failed" if decision == "failed" else "inconclusive_at_cap"
     )
     for replay in (
         lambda: result.replay_candidate(child.candidate_id),

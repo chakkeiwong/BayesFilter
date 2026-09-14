@@ -77,6 +77,7 @@ def _validate_result_payload(
         "proposal_budget_pending",
         "screened",
         "validating",
+        "inconclusive_at_cap",
         "promotion_failed",
         "verified",
     }
@@ -120,7 +121,7 @@ def _validate_result_payload(
         candidate["candidate_id"]
         for candidate in candidates
         if state_by_id[candidate["candidate_id"]]
-        in {"screened", "validating", "verified"}
+        in {"screened", "validating", "inconclusive_at_cap", "verified"}
     )
     if payload.get("completion_status") != "shared_invalidity" and viable != expected_viable:
         raise ValueError("candidate-set viable IDs do not match candidate states")
@@ -191,6 +192,8 @@ def _validate_result_payload(
             if attempt_id in work_by_attempt:
                 raise ValueError("duplicate verification work-item identity")
             work_by_attempt[attempt_id] = work
+        else:
+            work_by_attempt[work_id + ":attempt"] = work
         work_by_id[work_id] = work
         work_ordinals.add(checked_work.ordinal)
 
@@ -223,7 +226,7 @@ def _validate_result_payload(
         if (
             work is None
             or work.get("candidate_id") != candidate_id
-            or work.get("stage") != "verification"
+            or work.get("stage") != receipt.get("stage", "verification")
             or work.get("status") != "completed"
         ):
             raise ValueError("verification receipt has no matching work item")
@@ -244,9 +247,7 @@ def _validate_result_payload(
         decision = str(receipt.get("decision", ""))
         if not decision:
             raise ValueError("verification receipt decision is missing")
-        if receipt.get("hard_vetoes") and (
-            candidate_id in verified or decision in passing_decisions
-        ):
+        if (receipt.get("hard_vetoes") or receipt.get("promotion_vetoes")) and decision in passing_decisions:
             raise ValueError("verified verification receipt contains a hard veto")
         prior_ranges.append(draw_range)
         receipt_hash = _sha256(receipt)
@@ -255,6 +256,9 @@ def _validate_result_payload(
         if not any(
             receipt.get("candidate_id") == candidate_id
             and receipt.get("decision") in passing_decisions
+            and receipt.get("stage", "verification") == "verification"
+            and not receipt.get("hard_vetoes") and not receipt.get("promotion_vetoes")
+            and receipt.get("evidence_validity", "valid") == "valid"
             for receipt in receipts
             if isinstance(receipt, Mapping)
         ):
@@ -386,9 +390,12 @@ def candidate_set_result_payload(result: HMCTuningCandidateSetResult) -> Mapping
 def write_candidate_set_result(
     result: HMCTuningCandidateSetResult,
     path: str | Path,
+    *, checkpoint: bool = False,
 ) -> Mapping[str, Any]:
     """Write one atomic, checksummed result artifact."""
     destination = Path(path)
+    if destination.exists() and not checkpoint:
+        raise FileExistsError(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     payload = candidate_set_result_payload(result)
     encoded = json.dumps(payload, indent=2, sort_keys=True, default=list) + "\n"

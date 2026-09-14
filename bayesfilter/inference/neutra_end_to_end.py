@@ -29,8 +29,8 @@ from bayesfilter.inference.hmc_kernel_tuning import (
     build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
     HMCKernelTuningConfig,
     build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result,
-    tune_hmc_kernel,
 )
+from bayesfilter.inference.hmc_tuning_dispatch import tune_hmc_kernel
 from bayesfilter.inference.hmc_convergence import (
     RankNormalizedHMCThresholds,
     rank_normalized_hmc_diagnostics,
@@ -242,6 +242,8 @@ class EndToEndConfig:
     jit_compile: bool = True
     seed_offset: int = 0
 
+    selected_candidate_id: str | None = None
+
     def __post_init__(self) -> None:
         if int(self.screen_steps) <= 0 or int(self.final_steps) <= 0:
             raise ValueError("training steps must be positive")
@@ -280,6 +282,8 @@ class FrozenTransportValidationConfig:
     require_gpu: bool = True
     jit_compile: bool = True
     seed_offset: int = 0
+
+    selected_candidate_id: str | None = None
 
     def __post_init__(self) -> None:
         digest = str(self.expected_frozen_transport_sha256).lower()
@@ -712,7 +716,7 @@ def run_neutra_end_to_end_cell(
         root=root,
         config=config,
     )
-    if tuning.passed is not True:
+    if not tuning.result.verified_candidate_ids:
         result = _base_result(
             spec, root,
             {"passed": False, "selection": selection, "final": final, "parity": parity,
@@ -724,17 +728,22 @@ def run_neutra_end_to_end_cell(
         run_state.complete(result)
         return result
 
-    if tuning.final_kernel_payload is None:
-        raise NeuTraEndToEndError("public tuner passed without final kernel handoff")
-    tuned_adapter = _fixed_transport_adapter(
-        bound_adapter, loaded.transport, f"{spec.cell_id}:fixed_neutra_native_tuning"
-    )
-    replay = build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result(
-        adapter=tuned_adapter,
-        tuning_result=tuning,
-        initial_position=tf.zeros((spec.parameter_dim,), tf.float64),
-        target_scope=f"{spec.cell_id}:fixed_neutra_native_tuning",
-    )
+    if config.selected_candidate_id is None:
+        members = _export_verified_tuning_members(tuning, root)
+        result = _base_result(spec, root,
+            {"passed": False, "decision": "TUNING_CANDIDATE_SET_READY", "tuning": tuning.payload(),
+             "verified_member_archives": members,
+             "sampling_launched": False, "next_step": "Use an explicit verified member archive for frozen-transport posterior validation."},
+            memory_policy, started)
+        atomic_write_json(root / "result.json", result)
+        _write_manifest(root, spec, config, memory_policy, started)
+        run_state.complete(result)
+        return result
+    from bayesfilter.inference import build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result
+    replay = build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result(
+        candidate_set_result=tuning.result, candidate_id=config.selected_candidate_id,
+        retained_binding=tuning.adapter._execution_binding)
+    replay.export(root / "selected_candidate_member.json")
     _assert_public_tuning_contract(tuning, replay)
     run_state.update("sequential_sampling")
     initial = _initial_state(tf, spec, spec.initial_seed)
@@ -753,9 +762,7 @@ def run_neutra_end_to_end_cell(
         physical = spec.physical_transform(tf, raw)
         return tf.reshape(physical, shape)
 
-    sequential = run_sequential_neutra_hmc(
-        adapter=replay.adapter,
-        initial_state=initial,
+    sequential = replay.run_sequential(
         model_transform=model_transform,
         parameter_names=spec.parameter_names,
         config=_sequential_config(replay, spec),
@@ -876,7 +883,7 @@ def run_neutra_frozen_transport_validation_cell(
             raise NeuTraEndToEndError(
                 f"admitted kernel replay artifact does not exist: {replay_path}"
             )
-    if tuning is not None and tuning.passed is not True:
+    if tuning is not None and not tuning.result.verified_candidate_ids:
         result = _base_result(
             spec,
             root,
@@ -901,25 +908,27 @@ def run_neutra_frozen_transport_validation_cell(
             memory_policy=memory_policy,
             started=started,
             transport_input=transport_input,
-            tuning_seed=tuning.config.seed,
+            tuning_seed=tuning.adapter._execution_binding.config.seed,
             sequential_config=None,
             admitted_kernel_replay=None,
         )
         run_state.complete(result)
         return result
 
-    if config.tuning_only:
+    if config.tuning_only or (replay_path is None and config.selected_candidate_id is None):
         assert tuning is not None
+        members = _export_verified_tuning_members(tuning, root)
         result = _base_result(
             spec,
             root,
             {
-                "passed": bool(tuning.passed),
+                "passed": bool(tuning.result.verified_candidate_ids),
                 "decision": (
-                    "TUNING_ONLY_PASS" if tuning.passed else "TUNING_FAILED"
+                    "TUNING_ONLY_PASS" if tuning.result.verified_candidate_ids else "TUNING_FAILED"
                 ),
                 "frozen_transport_input": transport_input,
                 "tuning": tuning.payload(),
+                "verified_member_archives": members,
                 "sampling_launched": False,
                 "tuning_only": True,
                 "nonclaims": (
@@ -939,7 +948,7 @@ def run_neutra_frozen_transport_validation_cell(
             memory_policy=memory_policy,
             started=started,
             transport_input=transport_input,
-            tuning_seed=tuning.config.seed,
+            tuning_seed=tuning.adapter._execution_binding.config.seed,
             sequential_config=None,
             admitted_kernel_replay=None,
         )
@@ -952,30 +961,23 @@ def run_neutra_frozen_transport_validation_cell(
         f"{spec.cell_id}:fixed_neutra_native_tuning",
     )
     target_scope = f"{spec.cell_id}:fixed_neutra_native_tuning"
+    from bayesfilter.inference import (
+        build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result,
+        load_hmc_candidate_retained_runner,
+    )
     if replay_path is None:
         assert tuning is not None
-        mechanics = admitted_kernel_mechanics_payload_from_tuning_result(
-            adapter=tuned_adapter,
-            tuning_result=tuning,
-            initial_position=tf.zeros((spec.parameter_dim,), tf.float64),
-            target_signature=spec.target_signature,
-            target_scope=target_scope,
-            execution=execution,
-        )
-        replay_path = root / "admitted_kernel_mechanics.json"
-        atomic_write_json(replay_path, mechanics)
+        replay = build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result(
+            candidate_set_result=tuning.result, candidate_id=config.selected_candidate_id,
+            retained_binding=tuning.adapter._execution_binding)
+        replay_path = replay.export(root / "selected_candidate_member.json")
+        mechanics = {"mechanics_sha256": _file_sha256(replay_path), "candidate_id": replay.candidate.candidate_id}
     else:
         mechanics = _read_mapping(replay_path)
-    replay = build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
-        adapter=tuned_adapter,
-        mechanics_payload=mechanics,
-        initial_position=tf.zeros((spec.parameter_dim,), tf.float64),
-        target_signature=spec.target_signature,
-        target_scope=target_scope,
-        execution=execution,
-        target_accept_prob=0.70,
-        acceptance_band=(0.65, 0.75),
-    )
+        if mechanics.get("schema") == "bayesfilter.hmc_candidate_retained_member.v1":
+            replay = load_hmc_candidate_retained_runner(replay_path, adapter=tuned_adapter, claim_eligible=True)
+        else:
+            raise NeuTraEndToEndError("new posterior runs require a numerical candidate-member archive; older mechanics payloads are historical")
     if tuning is not None:
         _assert_public_tuning_contract(tuning, replay)
     sequential_config = _sequential_config(
@@ -1000,9 +1002,7 @@ def run_neutra_frozen_transport_validation_cell(
         return tf.reshape(physical, shape)
 
     run_state.update("sequential_sampling")
-    sequential = run_sequential_neutra_hmc(
-        adapter=replay.adapter,
-        initial_state=initial,
+    sequential = replay.run_sequential(
         model_transform=model_transform,
         parameter_names=spec.parameter_names,
         config=sequential_config,
@@ -1062,7 +1062,7 @@ def run_neutra_frozen_transport_validation_cell(
         memory_policy=memory_policy,
         started=started,
         transport_input=transport_input,
-        tuning_seed=(None if tuning is None else tuning.config.seed),
+        tuning_seed=(None if tuning is None else tuning.adapter._execution_binding.config.seed),
         sequential_config=sequential_config,
         admitted_kernel_replay={
             "path": str(replay_path),
@@ -1170,20 +1170,18 @@ def run_neutra_preflight_cell(
             "stage": "native_tuner_contract_completed",
             "cell_id": spec.cell_id,
             "recipe_id": recipe_id,
-            "tuner_passed": tiny_tuning.passed,
+            "tuner_passed": bool(tiny_tuning.result.verified_candidate_ids),
         },
     )
-    if tiny_tuning.geometry is None:
-        raise NeuTraEndToEndError("preflight public tuner did not emit geometry")
-    tuning_payload = _read_mapping(root / "tuning" / "hmc_kernel_tuning_result.json")
-    bootstrap_mechanics_passed = _preflight_bootstrap_mechanics_passed(
-        tuning_payload
+    tuning_payload = tiny_tuning.payload()
+    bootstrap_mechanics_passed = tiny_tuning.result.completion_status != "shared_invalidity" and any(
+        row["observation"].get("numerical_evidence_hash")
+        and row["observation"].get("evidence_validity") == "valid"
+        and not row["observation"].get("hard_vetoes")
+        for row in tiny_tuning.result.observations
     )
     if not bootstrap_mechanics_passed:
-        raise NeuTraEndToEndError(
-            "preflight public tuner did not prove real HMC mechanics: "
-            f"{tiny_tuning.hard_vetoes} / {tiny_tuning.repair_triggers}"
-        )
+        raise NeuTraEndToEndError("preflight tuner lacks numerically valid mechanics evidence")
     successful_rows = (tiny_tuning,)
     result = {
         "schema": "bayesfilter.neutra.all_models.preflight_result.v1",
@@ -1198,8 +1196,8 @@ def run_neutra_preflight_cell(
         "native_tuning_route_executed": True,
         "native_hmc_runner_executed": True,
         "bootstrap_hmc_mechanics_passed": bootstrap_mechanics_passed,
-        "candidate_tuning_passed": tiny_tuning.passed is True,
-        "candidate_tuning_final_status": tiny_tuning.final_status,
+        "candidate_tuning_passed": bool(tiny_tuning.result.verified_candidate_ids),
+        "candidate_tuning_final_status": tiny_tuning.result.final_status,
         "candidate_rejection_is_engineering_preflight_compatible": True,
         "successful_real_tuning_run_count": len(successful_rows),
         "native_tuning_scientific_pass_required": False,
@@ -1838,17 +1836,32 @@ def _native_tune(*, spec: CellSpec, adapter: Any, loaded: Any, root: Path, confi
             target_status_trace_policy="per_chain_step",
             source="bayesfilter.neutra_all_models_end_to_end.public_tuner",
         ),
+        target_lineage={"target_signature": spec.target_signature,
+                        "frozen_transport_artifact_signature": loaded.artifact_signature},
+        source_paths=[__file__],
         output_dir=root / "tuning",
     )
 
 
 def _assert_public_tuning_contract(result: Any, replay: Any) -> None:
-    if result.config.mass_policy != "fixed_identity":
-        raise NeuTraEndToEndError("public tuner mass policy is not fixed identity")
-    if result.config.target_accept_prob != 0.70 or result.config.acceptance_band != (0.65, 0.75):
-        raise NeuTraEndToEndError("public tuner acceptance policy drifted")
-    if replay.final_kernel_payload.get("mass_policy") != "fixed_identity":
-        raise NeuTraEndToEndError("replay handoff mass policy drifted")
+    if replay.candidate.candidate_id not in result.result.verified_candidate_ids:
+        raise NeuTraEndToEndError("posterior member is absent from the verified tuning set")
+    policy = result.adapter._execution_binding.config.acceptance_policy
+    if policy.target != .70 or policy.practical_region != (.65, .75):
+        raise NeuTraEndToEndError("public tuning acceptance policy drifted")
+    replay._validate()
+
+
+def _export_verified_tuning_members(tuning: Any, root: Path) -> Mapping[str, str]:
+    """Preserve every member so posterior selection never requires retuning."""
+    from bayesfilter.inference import build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result
+    members = {}
+    for index, cid in enumerate(tuning.result.verified_candidate_ids):
+        replay = build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result(
+            candidate_set_result=tuning.result, candidate_id=cid,
+            retained_binding=tuning.adapter._execution_binding)
+        members[cid] = str(replay.export(root / "verified_members" / f"member-{index:04d}.json"))
+    return members
 
 
 def _fixed_transport_adapter(

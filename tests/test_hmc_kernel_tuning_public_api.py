@@ -1,3 +1,7 @@
+"""Public configuration tests and explicitly invoked historical single-kernel regressions.
+
+Current numerical public integration is tested in test_hmc_whole_procedure_repair.
+"""
 from __future__ import annotations
 
 import inspect
@@ -38,6 +42,7 @@ from bayesfilter.inference.neural_force_hmc import (
 )
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning_module
+from bayesfilter.inference.hmc_kernel_tuning import _run_canonical_hmc_tuning
 from tests.test_hmc_kernel_tuning_fixed_mass_step import _ToyGaussianAdapter
 from tests.test_hmc_kernel_tuning_fixed_mass_step import _bootstrap as _passed_bootstrap
 from tests.test_hmc_kernel_tuning_fixed_mass_step import _geometry
@@ -809,7 +814,7 @@ def test_public_presets_construct_nonclaim_configs(factory: Any, preset: str) ->
     config = factory(target_scope="kernel_fixed_mass_step_toy_gaussian")
 
     assert config.preset == preset
-    assert config.use_xla is False
+    assert config.use_xla is (preset != "smoke")
     assert config.trajectory_window_lower_multiplier == pytest.approx(0.3)
     assert config.trajectory_window_upper_multiplier == pytest.approx(3.0)
     assert config.payload()["reports_posterior_convergence"] is False
@@ -982,11 +987,9 @@ def test_public_xla_runtime_parameter_rejects_eager_mode() -> None:
             use_xla=True,
         )
 
-    with pytest.raises(ValueError, match="XLA HMC requires"):
-        HMCKernelTuningConfig.smoke(
-            target_scope="kernel_fixed_mass_step_toy_gaussian",
-            use_xla=True,
-        )
+    assert HMCKernelTuningConfig.smoke(
+        target_scope="kernel_fixed_mass_step_toy_gaussian", use_xla=True,
+    ).chain_execution_mode == "tf_function"
 
 
 class _XLAReadyToyGaussianAdapter(_ToyGaussianAdapter):
@@ -1110,7 +1113,7 @@ def test_tune_hmc_kernel_runs_phase2_phase3_phase7_in_order(monkeypatch: pytest.
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", bootstrap_runner)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", loop_runner)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1202,12 +1205,13 @@ def test_public_progress_artifact_records_bootstrap_callback_before_bootstrap_re
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", bootstrap_runner)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.diagnostic(
             target_scope="kernel_fixed_mass_step_toy_gaussian",
             chain_execution_mode="eager",
+            use_xla=False,  # Explicit historical callback fixture.
             bootstrap_diagnostic_screen_num_results=1,
             bootstrap_diagnostic_screen_num_burnin_steps=1,
             bootstrap_max_repairs=0,
@@ -1249,7 +1253,7 @@ def test_phase3_non_promoting_preflight_calls_phase7(
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", loop_runner)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1288,7 +1292,7 @@ def test_serious_tuner_fails_closed_without_acceptance_promoted_bootstrap(
         raise AssertionError("serious tuning must not run after non-promoting bootstrap")
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", forbidden_loop)
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.serious(
@@ -1327,7 +1331,7 @@ def test_phase3_hard_veto_does_not_call_phase7(monkeypatch: pytest.MonkeyPatch) 
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", forbidden_loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1372,7 +1376,7 @@ def test_bootstrap_hard_veto_retains_round_diagnostics_and_skips_handoff(
         raise AssertionError("Phase 7 must not run after bootstrap hard veto")
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", forbidden_loop)
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1414,7 +1418,7 @@ def test_final_kernel_emitted_only_after_phase7_pass(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1440,7 +1444,7 @@ def test_bootstrap_exception_provenance_is_preserved_in_terminal_result(
     monkeypatch.setattr(module, "initialize_hmc_kernel_geometry", lambda **_kwargs: geometry)
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", failing_bootstrap)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1480,7 +1484,7 @@ def test_phase23_final_kernel_emitted_only_after_phase7_pass(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1510,7 +1514,7 @@ def test_output_artifact_is_sanitized_public_evidence(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1578,7 +1582,7 @@ def test_passed_public_artifact_separates_active_and_historical_repair_triggers(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1618,7 +1622,7 @@ def test_public_artifact_exposes_phase6_summary_without_candidate_grid_or_mechan
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1735,7 +1739,7 @@ def test_public_progress_exposes_resume_split_summary_without_mechanics(
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", loop_runner)
 
-    tune_hmc_kernel(
+    _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1896,7 +1900,7 @@ def test_one_call_private_tuning_ledger_records_mechanics_without_public_leak(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", bootstrap_runner)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", loop_runner)
 
-    tune_hmc_kernel(
+    _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1975,7 +1979,7 @@ def test_public_progress_exposes_pre_windowed_resume_split_unavailable_without_m
 
     monkeypatch.setattr(hmc_kernel_tuning_module.time, "perf_counter", fake_perf_counter)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.diagnostic(
@@ -2070,7 +2074,7 @@ def test_public_artifact_exposes_early_global_timeout_closeout_without_phase7_lo
 
     monkeypatch.setattr(hmc_kernel_tuning_module.time, "perf_counter", fake_perf_counter)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.diagnostic(
@@ -2164,7 +2168,7 @@ def test_public_artifact_exposes_windowed_mass_timeout_closeout_without_mechanic
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -2219,7 +2223,7 @@ def test_public_artifact_exposes_phase7_public_timeout_before_windowed_mass_with
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.diagnostic(
@@ -2317,7 +2321,7 @@ def test_public_tuner_accepts_high_rhat_tuning_diagnostic(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -2415,7 +2419,7 @@ def test_public_progress_artifact_survives_loop_error(
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", failing_loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -2484,7 +2488,7 @@ def test_public_progress_artifact_survives_internal_loop_substage_error(
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", failing_loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -2576,7 +2580,7 @@ def test_public_artifacts_include_sanitized_bootstrap_summary(
         ),
     )
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.standard(

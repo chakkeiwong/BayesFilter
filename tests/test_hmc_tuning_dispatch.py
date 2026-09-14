@@ -1,4 +1,4 @@
-"""Focused contracts for the public HMC tuning dispatcher."""
+"""Public dispatcher contracts and explicitly invoked historical graph/replay fixtures."""
 
 from __future__ import annotations
 
@@ -24,6 +24,8 @@ from bayesfilter.inference import (
 from bayesfilter.inference import hmc_kernel_tuning
 from bayesfilter.inference import hmc_tensorflow_tuning
 from bayesfilter.inference import hmc_tuning_dispatch
+from bayesfilter.inference import hmc_candidate_set_public
+from bayesfilter.inference.hmc_tensorflow_tuning import _run_tensorflow_hmc_tuning
 from bayesfilter.hmc_route_contract import (
     LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
 )
@@ -93,7 +95,7 @@ def _config() -> TensorFlowHMCKernelTuningConfig:
     )
 
 
-def test_legacy_dispatch_calls_private_implementation_once(
+def test_ordinary_dispatch_enters_shared_preparation_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     sentinel = object()
@@ -104,7 +106,7 @@ def test_legacy_dispatch_calls_private_implementation_once(
         return sentinel
 
     monkeypatch.setattr(
-        hmc_kernel_tuning, "_run_canonical_hmc_tuning", fake_implementation
+        hmc_candidate_set_public, "run_shared_ordinary_tuning", fake_implementation
     )
     result = hmc_tuning_dispatch.tune_hmc_kernel(
         adapter="adapter",
@@ -155,7 +157,9 @@ def test_tensorflow_config_limits_authority_to_mechanics_handoff() -> None:
     assert "np." not in dispatch_source
     assert "import numpy" not in numerical_source
     assert "np." not in numerical_source
-    assert len(dispatch_source.splitlines()) < 150
+    assert "_run_canonical_hmc_tuning(" not in dispatch_source
+    assert "run_shared_ordinary_tuning(" in dispatch_source
+    assert "run_shared_position_field_tuning(" in dispatch_source
     assert hmc_tensorflow_tuning.TensorFlowHMCKernelTuningConfig is (
         hmc_tuning_dispatch.TensorFlowHMCKernelTuningConfig
     )
@@ -163,7 +167,8 @@ def test_tensorflow_config_limits_authority_to_mechanics_handoff() -> None:
 
 def test_tensorflow_diagnostic_graph_smoke_cannot_issue_handoff() -> None:
     binding = _binding()
-    result = tune_hmc_kernel(
+    result = _run_tensorflow_hmc_tuning(
+        output_dir=None,
         adapter=_Adapter(),
         initial_position=tf.zeros([2], tf.float64),
         parameter_scales=tf.ones([2], tf.float64),
@@ -322,7 +327,8 @@ def test_candidate_requires_an_explicit_four_chain_initial_bank() -> None:
     )
 
     with pytest.raises(ValueError, match="explicit four-chain"):
-        tune_hmc_kernel(
+        _run_tensorflow_hmc_tuning(
+            output_dir=None,
             adapter=_Adapter(),
             initial_position=tf.zeros([2], tf.float64),
             parameter_scales=tf.ones([2], tf.float64),
@@ -337,7 +343,8 @@ def test_explicit_initial_bank_preserves_order_and_affine_reconstruction() -> No
         tf.float64,
     )
     scales = tf.constant([2.0, 3.0], tf.float64)
-    result = tune_hmc_kernel(
+    result = _run_tensorflow_hmc_tuning(
+        output_dir=None,
         adapter=_Adapter(),
         initial_position=bank,
         parameter_scales=scales,
@@ -385,7 +392,8 @@ def test_failed_search_reports_last_real_verification_not_synthetic_health() -> 
         **_explicit_diagnostic_numerics(),
     )
 
-    result = tune_hmc_kernel(
+    result = _run_tensorflow_hmc_tuning(
+        output_dir=None,
         adapter=_Adapter(),
         initial_position=tf.zeros([2], tf.float64),
         parameter_scales=tf.ones([2], tf.float64),
@@ -422,7 +430,7 @@ def test_candidate_artifact_reloads_and_runs_bound_retained_continuation(
         ),
         **_explicit_diagnostic_numerics(),
     )
-    result = tune_hmc_kernel(
+    result = _run_tensorflow_hmc_tuning(
         adapter=_Adapter(),
         initial_position=tf.constant(
             [[0.2, -0.3], [0.1, -0.2], [0.3, -0.4], [0.0, -0.1]],

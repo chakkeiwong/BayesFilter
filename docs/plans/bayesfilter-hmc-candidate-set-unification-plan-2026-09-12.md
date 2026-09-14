@@ -1,5 +1,23 @@
 # HMC candidate-set unification and guidebook rewrite
 
+## Current disposition: 2026-09-15
+
+The supported public ordinary, fixed-transport, and conditional position-field
+routes now use the shared candidate-set controller, including proposals,
+repairs, further evidence, retention, and restart. The active NeuTra consumer
+uses explicit members and the separate posterior controller. The tuning guide
+and book were rewritten to describe that implementation. R-hat is reporting-only
+during tuning. The [whole-procedure repair plan](bayesfilter-hmc-whole-procedure-repair-plan-2026-09-14.md)
+and [execution audit](bayesfilter-hmc-whole-procedure-repair-execution-audit-2026-09-14.md)
+are the current completion record and list the remaining target-specific limits.
+
+The September 12/R5 text below is preserved as historical planning context.
+Its statements that the numerical bridge and public/consumer migration are
+deferred no longer describe current library implementation. Target-scale
+qualification and a real MacroFinance campaign remain separate work.
+
+## Historical R5 plan
+
 Date: 2026-09-12.
 Status: revision R5 with the 2026-09-14 R-hat role correction.
 See `bayesfilter-hmc-tuning-rhat-role-repair-plan-2026-09-14.md`. R5 preserves the

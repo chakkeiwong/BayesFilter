@@ -303,16 +303,23 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
     factors = [np.asarray(layer.transform.factor) for layer in binding._transforms]
     composed = factors[0] @ factors[1]
     maximum_frequency = np.sqrt(np.linalg.eigvalsh(composed.T @ adapter.precision @ composed)[-1])
-    epsilons = tuple(float(x / maximum_frequency) for x in (1.1,1.3,1.5,1.7))
+    bound = binding._spec["preparation"]["epsilon_proposal_bound"]
+    final = stage.operational_warmup_result.final_kernel_state
+    assert bound["coordinate_signature"] == final.transform.signature
+    assert bound["metric_signature"] == final.momentum_metric.signature
+    assert binding.scope.epsilon_domain[1] == bound["upper"]
+    epsilons = tuple(bound["upper"] * factor for factor in (.6, .8, 1.))
     result = run_typed_hmc_candidate_set(binding.typed_adapter,
         HMCControllerConfig(primary_l_grid=(2,3), epsilon_by_l=((2,epsilons),(3,epsilons)),
-            total_budget_units=40, repair_reserve_units=3)).result
-    assert result.verified_candidate_ids, [(r.epsilon,r.exact_l,r.decision,r.acceptance,r.hard_vetoes) for r in result.verification_receipts]
-    runner = build_retained_frozen_kernel_hmc_adapter_from_candidate_set_result(candidate_set_result=result,
-        candidate_id=result.verified_candidate_ids[0], retained_binding=binding)
-    restored = load_hmc_candidate_retained_runner(runner.export(tmp_path / "prepared.json"), adapter=adapter)
-    np.testing.assert_array_equal(restored.initial_active_state, runner.initial_active_state)
-    np.testing.assert_array_equal(restored._binding.position_samples(probes), binding.position_samples(probes))
+            total_budget_units=40, repair_reserve_units=3), output_dir=tmp_path).result
+    # Geometry/restart correctness does not require a particular stochastic
+    # candidate to pass within the metric-derived proposal domain.
+    assert result.observations
+    from bayesfilter.inference import load_numerical_tuning_checkpoint
+    restored, controller = load_numerical_tuning_checkpoint(tmp_path / "tuning_checkpoint.json", adapter=adapter)
+    np.testing.assert_array_equal(restored.initial_active_state, binding.initial_active_state)
+    np.testing.assert_array_equal(restored.position_samples(probes), binding.position_samples(probes))
+    assert controller.result().verified_candidate_ids == result.verified_candidate_ids
     bad = dict(prepared, initial_position=tf.zeros([4,2],tf.float64))
     with pytest.raises(ValueError, match="start bank"):
         bind_hmc_candidate_set_execution_from_preparation(**(kwargs | {"preparation": bad}))

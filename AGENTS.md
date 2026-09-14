@@ -294,9 +294,12 @@ TensorFlow/TFP sequential controller under `bayesfilter.inference.neutra_hmc`.
   rank-normalized split and folded rank-normalized split R-hat. The default is
   at least 2,000 warm-up transitions per chain, latest 1,000-transition window,
   threshold `<=1.05`, and maximum 10,000 per chain.
-- Grow retained sampling cumulatively. Tuning admission uses modern R-hat
+- Grow retained sampling cumulatively. Posterior assessment uses modern R-hat
   `<=1.01`; confirmation additionally uses declared bulk/tail ESS and downstream
   posterior gates. The retained maximum is 10,000 per chain.
+- Kernel tuning retains every acceptance/health-qualified candidate. R-hat is
+  reporting-only during tuning, including unavailable or failed computations;
+  it cannot reject, rank, repair, or delay tuning candidates.
 - Apply finite state/target/log-acceptance, target-status, all-chain movement,
   and declared energy-error vetoes to every chunk. Acceptance is nomination or
   explanation only, never convergence evidence.

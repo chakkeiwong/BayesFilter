@@ -1,0 +1,151 @@
+PDF page 409
+Chapter 42
+
+HMC Tuning Interfaces
+
+HMC tuning determines which frozen kernels are suitable for further sampling. For each
+declared trajectory length L, BayesFilter measures proposed step sizes ϵ, independently
+verifies the surviving pairs, and retains every pair that passes. A failed pair can motivate
+another measured proposal. A passing pair does not end the search or establish posterior
+convergence.
+
+
+42.1       One candidate-set procedure
+The public functions tune_hmc_kernel and tune_fixed_transport_hmc_kernel share
+HMCTuningCandidateSetController. Both return HMCTypedCandidateSetRun, whose
+result contains the full HMCTuningCandidateSetResult. Their preparation differs with
+the target and coordinates; their candidate scheduling and retention do not.
+    Ordinary HMCKernelTuningConfig prepares a windowed mass matrix or an explicit
+identity metric. FixedTransportHMCKernelTuningConfig prepares identity mass in the
+coordinates of a reconstructable frozen transport. A caller with already prepared geom-
+etry supplies HMCControllerConfig and the numerical binding’s typed_adapter. The
+conditional TensorFlowHMCKernelTuningConfig proposal-field route also uses the shared
+scheduler, but retains its weaker mechanics authority.
+    The capability registry HMC_TUNING_INTERFACE_CAPABILITIES identifies the supported
+target and coordinate combinations. Chain runners, stage helpers, discovery routines,
+and historical selectors cannot independently issue new candidate-set tuning evidence.
+Unsupported legacy runner customizations fail before execution. Historical single-kernel
+results remain readable, with their original identities; they are not the result of the current
+procedure.
+            Listing 42.1: Inspecting supported target and coordinate routes.
+"""Select an HMC tuning route from BayesFilter’s capability registry."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from bayesfilter.inference import (
+
+
+                                            391
+
+
+PDF page 413
+42.3. BROAD SEARCH, REPAIRS, AND FURTHER EVIDENCE                                       395
+
+Here starts are represented as row vectors. Caller order is preserved. A diagnostic may
+explicitly replicate one start; candidate preparation requires its declared four-chain bank.
+Affine metric windows use L = 1 and the configured adaptation counts. Their proposals
+receive fresh fixed-kernel measurements.
+    The ordinary preparation config and numerical binding default to GPU/XLA exe-
+cution. TensorFlow memory growth is configured before device initialization. Small
+CPU/non-XLA checks are explicit reference or debugging exceptions. Execution policy
+does not qualify an arbitrary target: the binding still checks its full-chain capability and
+the consumer must establish value/score fidelity.
+
+
+42.3      Broad search, repairs, and further evidence
+The ordinary convenience grid is L ∈ {3, 5, 9, 13, 18, 25}, subject to the explicit maximum.
+An explicit epsilon_by_l may supply several proposals at each L; initial_epsilon is
+a warm start when no grid is supplied. Every pair is measured independently. A shared
+numeric proposal at two values of L transfers no acceptance evidence between them. The
+final-metric epsilon bound from operational preparation is a proposal safety bound, not
+cross-L qualification. Its final coordinate and metric signatures are retained with the
+bound, and direct preparation bindings intersect the requested domain with it.
+    The automatic preparation translation enables one pilot per L and one bounded refine-
+ment round. A direct controller config can disable these optional stages for an explicitly
+supplied grid. A pilot proposes a frozen pair; measurement and fresh verification qual-
+ify it. Refinement applies declared epsilon factors and additional L hypotheses to every
+surviving family. Exact pairs are deduplicated, and all proposals remain subject to candi-
+date and work limits. The reciprocal convenience factors (0.8, 1.25) are hypotheses about
+useful nearby proposals, not universal numerical optima.
+    Work proceeds in closed cohorts. Every admitted peer receives its reserved stage
+before a repair child enters the next cohort. A first pass does not remove later candi-
+dates. Directional evidence creates an immutable child with the same L, mass, target,
+coordinates, and initial bank. The child has a new epsilon and must receive its own mea-
+surement and verification. A parent may fail movement because an oversized step rejects
+nearly everything; that promotion veto does not suppress a supported smaller-epsilon
+repair. A trajectory alert can propose only declared additional L values, as separate
+candidates. It never silently changes an existing candidate’s L.
+    The distinction between proposal and evidence matters for fixed-length HMC. For a
+transition from x, the acceptance probability is
+
+                         a(ϵ, L | x) = E[min{1, exp(−∆H)} | x] .                     (42.3)
+
+The mean computed Metropolis probability and the realized accept/reject rate are dif-
+ferent finite-sample estimates of this quantity: conditional on a Metropolis probability
+a, a fresh uniform accept/reject draw has expectation a. Neither estimate measures con-
+vergence. For the unit harmonic oscillator, one leapfrog matrix has determinant one and
+trace 2 − ϵ2 . In the stable range its conjugate eigenvalues therefore give the phase
+
+                         ϑ(ϵ) = arccos(1 − ϵ2 /2),     0 < ϵ < 2.                    (42.4)
+
+The trajectory phase is Lϑ(ϵ). Near a return phase, acceptance can be high with little
+net movement. A multiplicative epsilon repair is thus another hypothesis to measure. On
+
+
+PDF page 419
+42.7. PERSISTENCE, RESOURCE LIMITS, AND REPLAY                                      401
+
+42.7      Persistence, resource limits, and replay
+verified_candidate_ids retains every verified member with no implicit nominee. viable_
+candidate_ids also includes validating and terminally inconclusive candidates; their in-
+dividual states must be inspected. A verified member remains usable when another
+candidate exhausts its budget, unless the scope itself is invalid. Descriptive differences
+among members do not establish a statistically supported ranking.
+    A fresh output directory preserves execution_spec.json, immutable numerical ev-
+idence and chunk files, and the atomic tuning_checkpoint.json. All observations, in-
+cluding failed measurements and zero-verified searches, are retained. Complete results use
+candidate_set_result.json and are never overwritten. Resource failures pause with
+their reason; unexpected exceptions preserve state and propagate. Optional diagnostic
+errors cannot erase completed numerical evidence.
+    resume_hmc_candidate_set_tuning reconstructs the same geometry, policy, evi-
+dence, candidates and work queue using the original target. It checks source and tar-
+get drift, tensor checksums, numerical versions, and scope identity. Position-field me-
+chanics separately preserve preparation and observations for resume_position_field_
+candidate_tuning, which also requires the original runner binding. Their controller_
+checkpoint.json also references immutable completed chunks, permitting restart within
+a longer evidence stage. Controller-only reload cannot create missing numerical evidence.
+    Call budgets count attempted work. Candidate reservations protect mandatory stages;
+extensions and retries can use remaining free budget. A separate transition-times-(L + 1)
+estimate accounts conservatively for gradient work, and elapsed time includes reported
+preparation. Numerical chunks are bounded by chunk_max_results, whose convenience
+default is 256. Time limits are checked between chunks; Python cannot preempt a native
+operation or compilation. The first-call timing includes any tracing/compilation rather
+than pretending that it measures steady-state kernel cost.
+    Select a member by explicit ID and supply its result and numerical binding to build_
+retained_bound_hmc_archive_runner_from_candidate_set_result. The two frozen-
+kernel variants share these checks, with the claim-eligible variant additionally requiring
+actual GPU/XLA evidence. A child’s own passing verification is required; its failed an-
+cestor need not pass. Export with runner.export(path) and reconstruct with load_
+hmc_candidate_retained_runner(path,adapter=original_target). Fresh retained
+blocks continue from the verified or preceding endpoint with frozen settings and fresh
+seeds. Tuning draws remain excluded. runner.run_sequential connects the explicitly
+chosen member to the existing cumulative posterior controller, with diagnostics trans-
+formed into model coordinates. Posterior rejection does not change tuning membership.
+    Retained-member files currently embed their evidence and check predecessor history.
+These mechanics tests do not qualify target-scale memory, restart latency, posterior con-
+vergence, or scientific validity. Consumer evidence must also establish complete target/-
+data/prior identity and any intermediate integrator telemetry required by that target.
+                   Listing 42.5: Ordinary candidate-set invocation.
+"""Small CPU/reference candidate-set example; no posterior or ranking claim."""
+from __future__ import annotations
+import os
+import sys
+from pathlib import Path
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
+os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")

@@ -6941,7 +6941,7 @@ class HMCKernelTuningConfig:
     terminal_phase6_repair_extra_attempts: int = 0
     seed: tuple[int, int] = (20260621, 8)
     chain_execution_mode: str = "tf_function"
-    use_xla: bool = False
+    use_xla: bool = True
     target_scope: str | None = None
     target_status_trace_policy: str = "none"
     mass_policy: str = "windowed_adaptive"
@@ -6968,6 +6968,11 @@ class HMCKernelTuningConfig:
     source: str = "bayesfilter.inference.tune_hmc_kernel"
 
     def __post_init__(self) -> None:
+        for name in ("max_leapfrog_steps", "bootstrap_max_repairs", "max_attempts",
+                     "terminal_phase6_repair_extra_attempts"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Integral):
+                raise ValueError(f"{name} must be an integer")
         algorithm_id = str(self.algorithm_id)
         if algorithm_id != ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID:
             raise ValueError(
@@ -7358,7 +7363,8 @@ class HMCKernelTuningConfig:
         payload: dict[str, Any] = {
             "preset": "smoke",
             "max_attempts": 1,
-            "chain_execution_mode": "eager",
+            "chain_execution_mode": "tf_function",
+            "use_xla": False,
             "source": "bayesfilter.inference.tune_hmc_kernel.smoke",
         }
         payload.update(overrides)

@@ -82,7 +82,7 @@ class FixedTransportHMCKernelTuningConfig:
 
     initial_step_size: float
     maximum_candidate_step_size: float | None = None
-    leapfrog_grid: tuple[int, ...] = (5, 10, 15, 20, 25)
+    leapfrog_grid: tuple[int, ...] = (3, 5, 9, 13, 18, 25)
     chain_count: int = 4
     initial_state_bank: tuple[tuple[float, ...], ...] = ()
     target_accept_prob: float = 0.70
@@ -141,7 +141,11 @@ class FixedTransportHMCKernelTuningConfig:
         if cap is not None:
             cap = _positive_float(cap, name="maximum_candidate_step_size")
         object.__setattr__(self, "maximum_candidate_step_size", cap)
-        leapfrogs = tuple(dict.fromkeys(int(value) for value in self.leapfrog_grid))
+        if any(type(value) is not int for value in self.leapfrog_grid):
+            raise ValueError("leapfrog_grid requires integer values")
+        leapfrogs = tuple(self.leapfrog_grid)
+        if len(set(leapfrogs)) != len(leapfrogs):
+            raise ValueError("leapfrog_grid must contain distinct values")
         if not leapfrogs or any(value < 2 for value in leapfrogs):
             raise ValueError("leapfrog_grid must contain integers greater than or equal to 2")
         object.__setattr__(self, "leapfrog_grid", leapfrogs)
@@ -241,17 +245,7 @@ class FixedTransportHMCKernelTuningConfig:
         if status_policy not in {"none", "per_chain_step"}:
             raise ValueError("target_status_trace_policy is invalid")
         object.__setattr__(self, "target_status_trace_policy", status_policy)
-        modern_verification_requested = bool(
-            self.require_modern_rank_normalized_verification
-            or self.report_modern_rank_normalized_verification
-        )
-        if modern_verification_requested:
-            if self.chain_count != 4:
-                raise ValueError("modern rank-normalized verification requires exactly four chains")
-            if self.verification_num_results < self.verification_min_retained_results_per_chain:
-                raise ValueError(
-                    "modern rank-normalized verification requires at least the configured retained results per chain"
-                )
+        # Optional R-hat reporting never increases tuning evidence allocations.
         rhat = float(self.verification_rhat_max)
         if not math.isfinite(rhat) or rhat <= 1.0:
             raise ValueError("verification_rhat_max must be finite and greater than 1")
@@ -293,22 +287,8 @@ class FixedTransportHMCKernelTuningConfig:
                     )
                 )
             steps = tuple(dict.fromkeys(steps))
-            if len(steps) < 2:
-                raise ValueError(
-                    "measured_joint_grid requires at least two distinct step_size_candidates"
-                )
-            if len(leapfrogs) < 2:
-                raise ValueError(
-                    "measured_joint_grid requires at least two distinct leapfrog values"
-                )
-            if selection_policy != "replicated_min_bulk_ess_per_gradient":
-                raise ValueError(
-                    "measured_joint_grid requires replicated_min_bulk_ess_per_gradient"
-                )
-            if int(self.selection_replications) < 2:
-                raise ValueError(
-                    "measured_joint_grid requires at least two selection replications"
-                )
+            if not steps:
+                steps = (step,)  # Explicit initial epsilon is a pilot hypothesis.
             if self.fixed_grid_num_leapfrog_steps is not None:
                 raise ValueError(
                     "fixed_grid_num_leapfrog_steps is diagnostic-only; measured_joint_grid uses leapfrog_grid"
@@ -841,6 +821,44 @@ def build_verified_fixed_transport_hmc_handoff_from_tuning_result(
 
 
 def tune_fixed_transport_hmc_kernel(
+    *, base_adapter: Any, fixed_transport: Any, initial_position: Any,
+    config: FixedTransportHMCKernelTuningConfig | HMCControllerConfig | None = None,
+    output_dir: str | Path | None = None,
+    run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
+    passthrough_exceptions: tuple[type[Exception], ...] = (),
+    candidate_set_adapter: Any | None = None,
+    frozen_transport_payload: Mapping[str, Any] | None = None,
+    search_config: HMCControllerConfig | None = None,
+    execution_config: Any | None = None, target_lineage: Any | None = None,
+    source_paths: Any = (), max_work_items: int | None = None,
+) -> Any:
+    """Prepare frozen transport coordinates and run the common candidate set.
+
+    Durable numerical replay requires the repository's frozen transport payload
+    or an already issued numerical binding. Custom callback runners are retired.
+    """
+    require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
+    if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
+        raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+    if isinstance(config, HMCControllerConfig):
+        if candidate_set_adapter is None:
+            raise ValueError("HMCControllerConfig requires a repository-issued candidate-set adapter")
+        execution = getattr(candidate_set_adapter, "_execution_binding", None)
+        if execution is not None:
+            execution.validate_transport(fixed_transport)
+        from bayesfilter.inference.hmc_tuning_dispatch import tune_hmc_kernel
+        return tune_hmc_kernel(adapter=base_adapter, initial_position=initial_position,
+            config=config, candidate_set_adapter=candidate_set_adapter, output_dir=output_dir,
+            _candidate_set_route_kind="fixed_transport", max_work_items=max_work_items)
+    from bayesfilter.inference.hmc_candidate_set_public import run_shared_fixed_transport_tuning
+    return run_shared_fixed_transport_tuning(base_adapter=base_adapter, fixed_transport=fixed_transport,
+        initial_position=initial_position, config=config, output_dir=output_dir,
+        frozen_transport_payload=frozen_transport_payload, search_config=search_config,
+        execution_config=execution_config, target_lineage=target_lineage,
+        source_paths=source_paths, max_work_items=max_work_items)
+
+
+def _run_historical_fixed_transport_hmc_tuning(
     *,
     base_adapter: Any,
     fixed_transport: Any,
@@ -1504,9 +1522,7 @@ def _run_replicated_efficiency_selection(
             maximum_rhat = _scalar_or_none(efficiency.get("max_rhat"))
         if (
             min_bulk_ess is None
-            or maximum_rhat is None
             or not math.isfinite(min_bulk_ess)
-            or not math.isfinite(maximum_rhat)
             or min_bulk_ess <= 0.0
         ):
             replication_vetoes.append("selection_efficiency_missing_or_nonfinite")
@@ -1971,13 +1987,7 @@ def _verification_diagnostics(
             if config.verification_coordinate_system == "hmc_coordinates"
             else _map_samples(adapter, samples)
         )
-    if require_modern:
-        modern = rank_normalized_split_rhat_summary(
-            raw, rhat_max=config.verification_rhat_max
-        )
-        payload["modern_rank_normalized_verification"] = modern
-        payload["modern_verification_coordinate_system"] = config.verification_coordinate_system
-    elif report_modern:
+    if require_modern or report_modern:
         try:
             modern = rank_normalized_split_rhat_summary(
                 raw, rhat_max=config.verification_rhat_max
@@ -2058,10 +2068,7 @@ def _classify_verification(
             hard.append("verification_target_status_telemetry_missing")
         elif bool(telemetry.get("telemetry_failure_veto")):
             hard.append("verification_target_status_telemetry_failure")
-    if require_modern:
-        modern = diagnostics.get("modern_rank_normalized_verification")
-        if not isinstance(modern, Mapping) or modern.get("passed") is not True:
-            hard.append("verification_modern_rank_folded_rhat_failed")
+    # R-hat is reporting-only, including for callers reading legacy options.
     if require_efficiency:
         efficiency = diagnostics.get("selection_efficiency_diagnostics")
         if (
@@ -2357,7 +2364,6 @@ def _select_candidates(
                                 "minimum_bulk_ess_per_declared_target_gradient"
                             ]
                         ),
-                        float(row["maximum_modern_rhat_across_replications"]),
                         int(row["num_leapfrog_steps"]),
                         float(row["step_size"]),
                         int(row["candidate_index"]),
@@ -2443,7 +2449,7 @@ def _select_candidates(
         "seed_ledger": seed_ledger,
         "selection_order": (
             "maximize minimum bulk ESS per declared target gradient; "
-            "minimize maximum modern R-hat; L; step size; candidate order"
+            "L; step size; candidate order"
             if config.selection_policy == "replicated_min_bulk_ess_per_gradient"
             else "minimize acceptance target distance; L; step size; candidate order"
         ),
@@ -2565,7 +2571,7 @@ def _diagnostic_roles() -> Mapping[str, str]:
         "native_divergence": "hard_veto_only_when_available_and_positive",
         "native_divergence_unavailable": "recorded_nonclaim_not_veto_not_zero",
         "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
-        "modern_rank_folded_rhat": "required_when_configured_handoff_promotion_screen",
+        "modern_rank_folded_rhat": "reporting_only_never_tuning_admission",
         "runtime": "explanatory_diagnostic",
     }
 

@@ -36,10 +36,9 @@ geometry error.
 \section{Geometry-Scaled Tuning Budgets}
 \label{sec:bf-geometry-scaled-tuning-budgets}
 
-Mass-matrix diagnostics also determine how much evidence a tuning stage needs
-before BayesFilter makes a repair decision.  A fixed number of samples is not a
-property of the model; it is a policy choice.  BayesFilter therefore records a
-public-safe geometry summary before serious HMC tuning:
+Mass-matrix diagnostics can inform preparation budgets. A fixed number of
+samples is a policy choice, not a property of the model. BayesFilter's geometry
+summary records:
 
 \begin{itemize}
   \item parameter dimension \(d\);
@@ -50,9 +49,8 @@ public-safe geometry summary before serious HMC tuning:
     raw eigenvalues, and diagonal fallback use.
 \end{itemize}
 
-The serious tuning budget uses this summary only to decide how much local
-tuning work to allocate.  In code, the central policy is
-\texttt{HMCGeometryScaledBudgetTimingPolicy}.  Its first attempt budget is
+Historical stage schedules use this summary to allocate local work through
+\texttt{HMCGeometryScaledBudgetTimingPolicy}. Its first attempt budget is
 \[
   B_0 =
   \operatorname{clamp}\left(
@@ -75,10 +73,13 @@ Bootstrap screens use a smaller square-root dimension rule,
 \]
 with burn-in chosen as a fixed fraction of the screen length.
 
-These formulas are not posterior convergence criteria.  They are a disciplined
-replacement for arbitrary constants: larger, more anisotropic, or more heavily
-regularized targets receive more local tuning evidence before BayesFilter
-decides whether a step-size, trajectory, or mass repair is making progress.
+These formulas are heuristics, not posterior convergence criteria. They explain
+historical stage budgets and the geometry-based preparation policies that remain
+available. The current candidate-set search freezes its own measurement and
+verification allocations and finite \path{evidence_rungs}. The convenience
+initial allocation comes from the acceptance policy's minimum block evidence;
+target-specific adequacy must still be checked. Geometry-derived preparation
+does not silently change that declared search allocation.
 
 \section{Timing And Progress}
 \label{sec:bf-hmc-timing-and-progress}
@@ -95,10 +96,12 @@ meaningful progress.  BayesFilter therefore separates:
     that the sampler has failed scientifically.
 \end{itemize}
 
-The staged timeout policy records emergency stage caps, a global cap, and a
-reserve.  Those numbers should be read as safety rails.  A scientific result
-note must not interpret an emergency cap as evidence against the posterior
-unless the predeclared continuation veto says so.
+Current candidate-set tuning records attempted calls, reserved mandatory work,
+a conservative gradient-work estimate, and elapsed time including preparation.
+It checks the declared wall limit between bounded numerical chunks. The older
+staged timeout settings belong to historical schedules. Neither kind of timeout
+is evidence against the posterior unless a predeclared continuation veto says
+so; incomplete searches preserve their evidence and remaining work.
 
 \section{Fixed-Center Score Curvature}
 \label{sec:bf-fixed-center-score-curvature}

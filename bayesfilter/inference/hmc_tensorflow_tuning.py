@@ -916,6 +916,7 @@ def _build_tuning_graph(
     config: TensorFlowHMCKernelTuningConfig,
     binding: HMCTuningRunnerBinding,
     adapter_signature: str,
+    *, preparation_only: bool = False,
 ) -> Any:
     dimension = config.parameter_dimension
     root_seed = tf.constant(config.seed, tf.int32)
@@ -1018,6 +1019,11 @@ def _build_tuning_graph(
             base_adapter_signature=adapter_signature,
             target_scope=config.target_scope,
         )
+        if preparation_only:
+            return {"center": center, "factor": factor, "covariance": covariance,
+                    "initial_active_state": state, "initial_step_size": step_size,
+                    "adaptation_divergence_count": adaptation_divergence_count,
+                    "adaptation_fallback_count": adaptation_fallback_count}
         candidate_selected = tf.constant(False)
         selected_index = tf.constant(-1, tf.int32)
         reported_index = tf.constant(-1, tf.int32)
