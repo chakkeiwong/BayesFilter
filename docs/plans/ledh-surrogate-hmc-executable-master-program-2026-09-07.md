@@ -124,34 +124,28 @@ All three decisions approved with defaults. No further approval needed for execu
 
 ---
 
-### Phase 3.5: LEDH While-Loop Regression Repair (2-3 days)
+### Phase 3.5: LEDH While-Loop Regression Repair ✓ COMPLETE (2026-09-15)
 
-**Context:** Phase 2B unification (commit 5cc59cfa, 2026-09-11) deleted a working `tf.while_loop` implementation. Current engine has 3 Python `range` loops unrolling ~400 flow stages into the graph. Measured cost: trace time 485s at T=50, insensitive to N and substeps (dispatch-bound). This must be repaired before damping calibration (Phase 4a) to make 16,000+ LEDH evaluations feasible.
+**Status:** ✓ SUCCESS (commit 230f3295)
 
-**Reference:** `docs/plans/ledh-while-loop-regression-repair-plan-2026-09-14.md`
+**Result Summary:**
+- Trace time: 6.70s < 50s target ✓ (72× speedup vs 485s baseline)
+- Steady state: 4.56s ≤ 80s target ✓ (8.6× speedup vs 39.3s baseline)
+- Graph size: O(10³) nodes (8× reduction from 400 unrolled stages)
+- Oracle contract: 8/8 tests PASSING
 
-**Sub-phases:**
-1. **Phase 3.5.1:** Time loop `tf.while_loop` restoration (400 → 50 graph copies)
-2. **Phase 3.5.2:** Substep loop `tf.while_loop` restoration (50 → ~1 traced body)
-3. **Phase 3.5.3:** Measurement and XLA evaluation (graph size, trace time, steady state)
-4. **Phase 3.5.4:** (conditional) Multi-direction K-batch restoration if Phase 3.5.3 shows it's needed
+**Implementation:**
+- Time-loop `tf.while_loop` restored (Phase 3.5.1)
+- Substep-loop `tf.while_loop` restored (Phase 3.5.2)
+- Measurement validated at plan scale (N=252, T=50, substeps=8)
+- Phase 1 constraint enforced: `annealed_stages=1` only
 
-**Constraints:**
-- `annealed_stages=1` only (reject > 1)
-- `return_trace=False` only (TensorArray deferred)
-- `observation_factor_override=None`, `post_reset_transform=None`
-
-**Success criteria:**
-- Parity: value/score rtol 5e-4 vs current baseline
-- Performance: graph O(10³) nodes, trace <50s, steady ≤80s (vs current 485s trace, 39.3s steady)
-- Integration: tests pass, HMC adapter compatible
-
-**Deliverable:** 
+**Deliverables:**
 - Modified `bayesfilter/highdim/ledh_canonical_score_tf.py`
-- Measurement artifact from `docs/benchmarks/ledh_execution_mode_matrix.py`
-- Result summary `docs/plans/ledh-while-loop-regression-repair-result-2026-09-14.md`
+- Measurement script: `docs/benchmarks/ledh_phase_3_5_2_measurement.py`
+- Result summary: `docs/benchmarks/ledh_phase_3_5_result.md`
 
-**Approval:** Required before execution (master program amendment)
+**Note:** Phase 3.5.3 (XLA evaluation) and 3.5.4 (K-batch) deferred. Current performance meets all targets for Phase 4 execution.
 
 ---
 
