@@ -1,0 +1,227 @@
+# q20 executable master repair and campaign
+
+Date: 2026-09-16 (Asia/Shanghai)
+Status: `REPAIRED_TESTED_READY_FOR_BOUNDED_EXECUTION`
+Authorization: owner requested the plan, review, complete repair, whole-program
+review and execution. Existing campaign/diagnostic limits remain binding.
+
+## Objective and scope
+
+Implement one executable master that governs the fixed q20/T30 four-parameter
+UKF-approximate posterior experiment from measured cost through training,
+verified kernels, posterior sampling, independent reference, comparison and
+confirmation. A terminal incomplete/under-budgeted result is valid execution;
+it is not a successful scientific result. No stage may substitute a smoke or
+an unavailable calculation for the required computation.
+
+Start from main `965ba2949244ee2a1d911515b6865c268a4af8d2` in
+`/tmp/BayesFilter-q20-master-repair-20260916`, branch
+`repair/q20-executable-master-20260916`. Copy only the updated q20 governing
+documents, saved q20 budget/evidence and required compiled Sylvester library.
+Preserve main's concurrent changes. Record the source inventory and integrate
+only reviewed repair changes. Reuse existing TensorFlow/TFP kernels, public
+candidate-set tuner and posterior controller; no NumPy runtime, new backend,
+pfor, package changes or financial-model change.
+
+The supporting design, parameter ledger and mathematical audit dated September
+15 remain the numerical specification. New operational/reference numbers below
+are labeled hypotheses and must appear in the executable configuration.
+
+## Research intent and evidence contract
+
+| Role | Requirement |
+| --- | --- |
+| Main question | Can adequately trained NeuTra and the charted tempered ensemble meet the declared posterior accuracy at useful total cost on the same observed data? |
+| Mechanism | Assessed batched reverse-KL learning, fixed learned charts, per-scope verified HMC, proper replica exchange and cumulative posterior precision. |
+| Baselines | Identity HMC, independently prepared classical HMC, plain NeuTra, physical replica exchange and charted ensemble. Matched physical start banks; comparable accuracy and total cost. |
+| Engineering criterion | Real CLI dispatch and connected fixtures exercise each computational stage and resume; deadlines cover native/import/compile work; no false success on unavailable evidence. |
+| Scientific criterion | Four physical means, twelve quantiles and the observation-weight sign probability meet declared MCSE, modern R-hat/ESS, reference and start-equivalence checks on fresh confirmation. |
+| Promotion veto | Unassessed learning, failed posterior check, missing/unqualified reference, inadequate matched comparison or invalid stochastic ranking. |
+| Continuation veto | Shared mathematical/target inconsistency, corrupted unrecoverable evidence, missing essential input, actual platform restriction or exhausted budget. |
+| Repair trigger | Candidate failure, consumer/configuration/checkpoint defect, local infrastructure failure or implicated uncalibrated setting. Preserve the failure and repair within scope/budget. |
+| Explanatory only | Training loss, clipping, acceptance, finite energy magnitude, preliminary geometry and timing. |
+| Nonconclusions | A successful command does not establish posterior accuracy, global mode coverage, a better method, or accuracy of the UKF approximation to the original latent model. |
+| Output | Versioned attempts beneath `docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/`, a persistent campaign ledger, exact source/environment/seeds/device/commands and terminal decision. |
+
+## Repair sequence and acceptance
+
+1. **Close actual HMC consumer defects.** Use the public capability registry.
+   Separate the signed negative log-acceptance reporting threshold from genuine
+   numerical vetoes. Preserve finite energy diagnostics without fabricating
+   NaN states. Exercise identity, classical and frozen-map tuning, explicit
+   verified-member consumption, physical-coordinate posterior quantities,
+   ensemble and physical replica exchange through the actual APIs. Fix any
+   additional shape, telemetry, seed, scope and checkpoint errors exposed.
+   Retained members start from their verified endpoints: confirmation with new
+   start banks must reverify the frozen kernel through the public procedure,
+   not override a retained member's private state or retune on confirmation.
+
+2. **Complete configuration and selection.** Validate every consumed numerical
+   field before target execution. Keep shortening available only to explicit
+   smoke fixtures. Separate numerical/source identity from changing remaining
+   budgets and output locations. Select trained charts by declared eligibility
+   and a deterministic operational ordering, retaining all viable alternatives;
+   do not claim a stochastic winner. Select an explicit verified kernel and
+   freeze all confirmation choices. Each method uses the same initial physical
+   banks before its own preparation/verification; recorded verification
+   endpoints may differ. Add explicit start-stratified posterior comparisons.
+
+3. **Implement reference and comparison computation.** The tensor-grid counts
+   in the old ledger are feasibility probes, not a certified quadrature rule.
+   Use independently seeded, full-support prior importance sampling as the
+   initial executable reference estimator. For theta drawn from the proper
+   normalized prior p0, posterior expectations are E_p0[L f]/E_p0[L]. The
+   source-bound bridge proves 0<L<=M. Thus weights have finite variance and
+   Gaussian-prior polynomial moments have finite weighted second moments.
+   Compute weighted means, quantiles, sign probability, weight concentration,
+   effective sample count and replicate uncertainty in TensorFlow. Repeated
+   independent banks assess numerical stability and quantify uncertainty;
+   these are asymptotic statistical checks, not certified global coverage.
+   Constant/unvisited event tails and concentrated weights cannot get zero
+   reference uncertainty. Record shared likelihood implementation explicitly:
+   this is an independent integration procedure, not an independent proof of
+   the likelihood. Check actual q20 value/score/batching separately.
+   Reference draws may not be reused for training, starts or confirmation.
+   Compare every named quantity using combined sampler/reference uncertainty
+   and the ledger's equivalence margins. Missing/unqualified reference stays
+   incomplete. No unconditional method superiority result from three runs.
+
+4. **Build stage dispatch and master state machine.** Thin CLI, reusable package
+   stage functions, serializable requests and one coordinator with no framework
+   import. Stages cover pricing, reference, training/assessment, tuning/member
+   freeze, sampling/replica exchange, comparison and confirmation. Each stage
+   writes its real result and prerequisite identities. The coordinator resumes
+   completed compatible stages and copies recoverable checkpoints to a fresh
+   attempt directory. Source/target changes reject resume. No silently skipped
+   missing mode and no stub receipt counted as a completed computation.
+
+5. **Enforce timing and account for complete cost.** The coordinator launches
+   numerical workers in separate process groups and measures from before
+   process creation until exit. A deadline terminates the entire owned group,
+   then records partial artifacts and consumed wall time even without a worker
+   receipt. A process lock prevents duplicate coordinators; ordinary JSON,
+   atomic replacement and versioned paths suffice. Recover stale running
+   attempts conservatively and never double-charge an already settled attempt.
+   All failures, import/compile time, validation and analysis count. Require a
+   complete-stage forecast before allocating training. Use measured work and
+   the declared schedule; unmeasured cost remains unresolved. Do not claim that
+   a two-update training probe priced scalar HMC or reference evaluation.
+
+6. **Connected acceptance and whole-program review.** Run CPU-hidden tiny
+   Gaussian fixtures through training, public tuning, members, both ensemble
+   variants, reference, comparison and confirmation dispatch. They use real
+   numerical kernels; stubs are allowed only in process-crash/deadline tests.
+   Include wrong scope, absent reference, unmet learning/precision, constant
+   events, timeout, interrupted resume, fresh starts and negative energy-role
+   tests. Review the entire CLI-to-result call graph, actual defaults,
+   scientific roles, source identity, seeds, budgets and failure exits. Fix
+   findings and rerun the affected checks. Record limitations accurately.
+
+7. **Execute the master.** Commit the reviewed source in the isolated checkout
+   and run the coordinator with the recovered existing allowance. A fresh
+   trusted GPU probe precedes GPU work; set and verify memory growth before
+   initialization, GPU/XLA remains the serious route. Begin bounded q20 pricing
+   and numerical diagnostics, then advance automatically only when the real
+   prerequisite/evidence/cost conditions pass. Preserve a waiting-for-resource,
+   candidate-failed, reference-unqualified or under-budgeted terminal state
+   rather than reclassifying it as scientific success. Local repairs/retries
+   within the stated contract need no new owner approval.
+
+## Numeric choices, budget and exceptions
+
+- Existing target, training ladder, means/quantiles/event tolerances and HMC
+  policy retain their ledger provenance. Add physical replica exchange to the
+  executable comparison inventory because the original design requires it.
+- Reference proposal is exactly the existing Gaussian prior, giving full
+  support with no learned proposal or truncation bias. Eight independent banks
+  and cumulative per-bank counts 1,024/4,096/16,384 are initial feasibility
+  hypotheses, not sufficient accuracy guarantees. Require reference MCSE no
+  greater than one third of each sampler allowance, the existing ESS floor
+  400 as a concentration screen, nondegenerate event tails and consistency
+  between successive banks/rungs. At the cap, report unqualified. Reference
+  quantile uncertainty and finite-size bias require explicit estimation and
+  stability checks. Pricing must determine whether this allocation is feasible.
+- Reference/start proposals are generated in batched stateless TensorFlow CPU
+  operations in the numerical worker. This bounded single-process exception
+  avoids forking an initialized accelerator runtime; target evaluation remains
+  batched on GPU. It creates no external training dataset. Record CPU placement,
+  generator/seed identity and the exception in the manifest.
+- Confirmation begins with the ledger's three independent systems per method;
+  that number cannot by itself establish a robust efficiency ranking. Freeze
+  choices before confirmation and use independent verification/start/sampling
+  streams for each system. Record cost including fresh kernel reverification.
+- The September 15 owner amendment leaves 135,275.83289109988 campaign seconds,
+  including 54,299.37991617 diagnostic seconds, before later work. Recover
+  measured later charges. Until incomplete old smoke timing is resolved,
+  retain the entire old 7,200-second repair allocation as an **encumbered upper
+  allowance**, not invented measured consumption; never add it back silently.
+  Routine current tests and workers are measured from this point and charged
+  additionally. This conservative hold avoids falsely renewing an allowance.
+- Existing per-arm ceiling is 28,800 seconds. Initial real-q20 diagnostic
+  attempts remain at most four, each 600 seconds including graceful termination.
+  A 5-second termination grace and 1-second supervisor poll are convenience
+  choices for cleanup/responsiveness, included within the external deadline.
+  A retained partial checkpoint does not create extra time. Numerical stage
+  reserves must fit both total remaining time and their applicable cap.
+- Forecast multiplier 2 is the inherited uncalibrated engineering margin. Record
+  observed ranges and compiler/setup costs separately. A forecast is not a
+  performance or completion guarantee. No required unpriced stage costs zero.
+
+## Skeptical plan review before implementation
+
+Reviewed against the actual CLI, training scheduler, HMC adapters, shared
+retained-member API, bridge properness proof and parameter ledger.
+
+| Risk found | Plan correction |
+| --- | --- |
+| Raising update counts or passing component tests leaves the call chain broken | Real connected numerical tests and complete CLI stage coverage in steps 1, 4 and 6. |
+| Finite energy magnitude has been silently promoted to a veto | Restore the documented signed reporting-only role and test that contract. |
+| A prior-grid estimate or training loss could masquerade as a reference | Actual independent full-support integration, uncertainty and concentration checks; explicit asymptotic/target-implementation limitations. |
+| An unqualified reference or failed candidate could stop the wrong research phase | Distinct scientific veto, candidate repair and continuation-veto statuses; retain unfinished evidence. |
+| Confirmation reuses a verification endpoint or changes a kernel | Fresh start banks and public reverification of the frozen exact pair, followed by separate warmup/retained streams. |
+| A weak or omitted comparator creates an unfair ensemble comparison | Physical replica exchange plus the original classical and NeuTra baselines, matched starts and downstream accuracy. |
+| Cooperative timeout omits compilation; a new root renews time | External process supervisor and one persistent ledger including failed work. |
+| Mutable main code and unavailable GPUs recreate old failures | Isolated committed source, explicit runtime provenance, fresh trusted placement and resource-wait status. |
+
+Verdict: `PROCEED_WITH_REPAIR_AND_BOUNDED_EXECUTION`. This is a self-review,
+not an independent reviewer endorsement. Remaining numerical choices are
+explicit hypotheses with early checks and nonclaims. Whole-program acceptance
+requires the connected tests and a separate terminal review after repairs.
+
+## Execution record
+
+Whole-program review amendment: the September 15 design requires the plain
+NeuTra baseline to train directly at beta one. The first implementation reused
+a continuation map, making the baseline wrong relative to that design. Repair
+the cohort into separately seeded `direct` and `continuation` schedules, price
+both, and reserve a separate direct-map tuning/confirmation scope. Every
+schedule retains its full width/LR/root inventory. This doubles the candidate
+inventory to 24, with 36 positive-temperature candidate scopes on the initial
+ladder. Direct candidates receive only beta-one updates. The reference remains
+reserved for final comparison. This correction preserves the stated method
+comparison rather than inventing a new baseline.
+
+Process forecasts include measured initialization/import/exit overhead and two
+termination-grace intervals per worker as an explicit conservative operational
+allowance. The supervisor's measured elapsed time remains the actual charge.
+Numerical qualification is tested through both an enclosing batched transition
+and the real public independent-chain serial runner, with rejected-proposal
+and target-status checks. Qualification does not establish posterior validity.
+
+Conditional capacity, LR, chart-count and temperature-ladder contrasts in the
+parameter ledger remain diagnostic-dependent research repairs. They must not
+be silently activated as a generic retry: diagnose the implicated hypothesis,
+write the concrete contrast and reprice it against the same ledger. The active
+master performs fixed-protocol HMC repairs and unchanged-protocol checkpoint
+retries; it reports the evidence requiring a new numerical contrast separately.
+
+Append actual commands, review findings, focused checks, commit, ledger and
+master outcome here and in the companion result. The latest trusted probe at
+2026-09-15 20:03:56 UTC returned `no_idle_policy_permitted_gpu`; this does not
+block implementation and does not establish future GPU availability.
+
+The whole-program self-review and connected test evidence are recorded in
+[bayesfilter-ssl-lstm-q20-executable-master-review-result-2026-09-16.md](bayesfilter-ssl-lstm-q20-executable-master-review-result-2026-09-16.md). The complete Gaussian master passed
+25 supervised numerical stages through confirmation and reused them on resume.
+Real q20 execution follows from the isolated committed source and recovered
+allowance; no scientific qualification follows from the fixture.

@@ -1,0 +1,58 @@
+.F
+=================================== FAILURES ===================================
+______________ test_actual_tuning_member_and_posterior[classical] ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-329/test_actual_tuning_member_and_1')
+method = 'classical'
+
+    @pytest.mark.parametrize("method", ["identity", "classical", "neutra"])
+    def test_actual_tuning_member_and_posterior(tmp_path, method):
+        config, bridge = protocol(), four_dimensional_bridge()
+        if method in {"identity", "classical"}:
+            config["tuning"]["initial_epsilon"] = 1.1
+        export = None
+        if method == "neutra":
+            trained = run_training_cohort(config, bridge, tmp_path / "training",
+                memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+            cohort = json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+            export = next(iter(cohort.values()))["exports"]["1.0"]
+        tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+        assert tuned["verified_members"], tuned
+        member = tuned["verified_members"][sorted(tuned["verified_members"])[0]]
+>       result = sample_member(config, bridge, tmp_path / "posterior", member_path=member, label=method)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_q20_master_integration.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:286: in sample_member
+    _write_posterior_result(root, result, config, bridge, label)
+bayesfilter/inference/q20_production_hmc.py:396: in _write_posterior_result
+    summary = posterior_summary(config, retained, target_signature=bridge.target_signature,
+bayesfilter/inference/q20_production_comparison.py:81: in posterior_summary
+    result["quantities"] = {} if retained is None else posterior_quantities_summary(config, retained)
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_production_comparison.py:44: in posterior_quantities_summary
+    report = precision_report(values, (*PARAMETERS, "positive_theta_2"), posterior_policy(config).precision)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_precision.py:189: in precision_report
+    mean = mean_precision(samples, method=policy.method, batch_size=policy.batch_size,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+samples = <tf.Tensor: shape=(0, 4, 5), dtype=float64, numpy=array([], shape=(0, 4, 5), dtype=float64)>
+
+    def mean_precision(samples: Any, *, method="autocorrelation", batch_size=None,
+                       min_batches=20, lugsail_r=3, lugsail_c=0.5, jit_compile=True):
+        """Return tensors for [draw, chain, quantity], preserving chain boundaries."""
+        values = tf.convert_to_tensor(samples, tf.float64)
+        if values.shape.rank != 3 or any(d is None for d in values.shape):
+            raise ValueError("precision samples require static [draw, chain, quantity]")
+        n, m, p = map(int, values.shape)
+        if n < 4 or m < 2 or p < 1:
+>           raise ValueError("precision requires four draws and at least two chains")
+E           ValueError: precision requires four draws and at least two chains
+
+bayesfilter/inference/hmc_precision.py:105: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior[classical]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed, 1343 warnings in 36.19s

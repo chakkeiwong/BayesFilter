@@ -1,16 +1,403 @@
 # Master-program reset memo: q=20 factor admission and reboot recovery
 
+## Governing update: executable master repaired, 2026-09-16
+
+Status: `REPAIRED_TESTED_READY_FOR_BOUNDED_EXECUTION`.
+The executable master now connects qualification, pricing, independent reference,
+separate direct/continuation training, current public tuning, all five posterior
+methods, development comparison and fresh-start confirmation. A complete
+known-target smoke passed 25 supervised worker stages and a zero-worker resume.
+See the [repair plan](bayesfilter-ssl-lstm-q20-executable-master-repair-plan-2026-09-16.md)
+and [whole-program review and execution record](bayesfilter-ssl-lstm-q20-executable-master-review-result-2026-09-16.md).
+
+Run from the isolated committed checkout
+`/tmp/BayesFilter-q20-master-repair-20260916` because main contains unrelated
+active work. The source-bound numerical state must stay in that checkout.
+The current CLI is `docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py`;
+`campaign` executes or resumes the same output root, and `status` reads its
+ledger. New roots require the recovered allowance record. The next real run
+is `docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/real-q20-r1/`.
+The final execution status will be recorded in the linked review result.
+
+The current allowance preserves the old 7200-second hold, subtracts 1306.97
+reported repair-test seconds and holds another 115 seconds for unmeasured
+startup/exit overhead. Before the real launch, available campaign time is
+126653.86289109988 seconds, including 45677.40991617 diagnostic seconds. No
+previous budget is renewed. GPU availability must be checked under trusted
+execution; the earlier no-idle-GPU result was not a security rejection.
+
+The latest tests establish connected execution, not q20 learning, whitening,
+posterior accuracy, method superiority or broad production readiness. The
+master preserves those evidence requirements and reports incomplete work.
+Candidate-specific contrasts remain repairs to diagnose and price under the
+existing campaign, not grounds to abandon the research direction.
+
+## Historical recovery audit — superseded by the governing update above
+
+All current/next-step statements below belong to their recorded older snapshot.
+They preserve the evidence that motivated this repair and must not select an
+older runner or override the governing update.
+
+Updated: 2026-09-16 (Asia/Shanghai)  
+Status: `PRODUCTION_REPAIR_INCOMPLETE_INTEGRATION_AND_LAUNCH_GAPS`
+
+## Current recovery instructions
+
+Start with the September 16 section of the
+[governing master](bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-master-program-2026-09-02.md).
+All older P0/P1 instructions below, including the final instruction to resume
+the old service, are historical. Do not automatically resume the old recovery
+runner as the production pipeline.
+
+The production training repair is on local `main` at
+`965ba2949244ee2a1d911515b6865c268a4af8d2` (one commit ahead of origin at this
+audit). It was developed on `main` in
+`/tmp/BayesFilter-q20-production-repair-20260915`; earlier audit work used
+`/tmp/BayesFilter-phase9b-tuning-telemetry`. Main contains unrelated concurrent
+changes, including pre-existing edits in this memo and the master. Preserve
+them. Use an isolated, inventoried source snapshot for future numerical runs.
+
+The current [CLI](../benchmarks/run_ssl_lstm_q20_production_2026_09_15.py) has
+only `validate`, `price`, `train`. There is no end-to-end executable master.
+Training/checkpoint/export tests pass on a tiny Gaussian; current public tuning,
+verified-member sampling and ensemble adapters have not passed a connected
+test. `sample_member` supplies a positive value to a required negative
+log-acceptance threshold, and the ensemble adds an undeclared finite-energy
+veto. The comparison module reports a missing reference rather than computing
+one. See the [corrected result](bayesfilter-ssl-lstm-q20-production-repair-result-2026-09-16.md).
+
+Resume engineering in this order:
+
+1. Repair the current HMC consumer contracts, connect and test the actual
+   training/export/public-tuning/verified-member/posterior/ensemble stages, and
+   implement explicit CLI dispatch with honest incomplete statuses.
+2. Enforce external launch deadlines and persistent aggregate cost accounting.
+   `price` ignores `--max-seconds`; `train` is only cooperatively bounded.
+   Initialization and compilation need an enclosing supervisor. Reconcile prior
+   spending and freeze the execution source before numerical work.
+3. Run the bounded trusted q20 GPU/XLA diagnostic under the existing repair
+   allocation, then price all remaining stages and implement/validate the
+   independent reference. Only a fully funded protocol may start the development
+   training grid; numerical and scientific checks retain their distinct roles.
+4. Execute qualified training, per-scope tuning, matched development comparisons
+   and fresh confirmation as specified by the master and numerical ledger.
+
+The saved budget is a September 15 snapshot: 135,275.83289109988 campaign
+seconds remaining, including 54,299.37991617 diagnostic seconds; later costs
+are not fully settled. The initial repair allocation is 7,200 aggregate worker
+seconds, with at most four real q20 GPU diagnostic attempts capped externally
+at 600 seconds each. These are existing limits, not new grants. The master
+links the recovered amendment and requires subsequent costs to be imported.
+
+The latest known GPU probe returned `no_idle_policy_permitted_gpu` at
+2026-09-16 00:48:21 Shanghai. Availability now is not checked by that receipt.
+No repaired q20 GPU training/HMC result exists. A fresh trusted probe is needed
+immediately before a diagnostic; no gateway or environment change follows
+from the historical availability result.
+
+Safe immediate metadata check, already passed on main:
+
+```bash
+/home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py validate
+```
+
+The owner's repair/retry authorization persists within the unchanged target
+and budget. These gaps require engineering and evidence, not another approval
+chain. No training loss, smoke, tuning receipt or GPU-ready result establishes
+q20 whitening, posterior coverage, a completed campaign or a method ranking.
+
+## Historical recovery record — superseded
+
+All “current”, “active”, budget and resume directions below describe earlier
+snapshots. They do not override the recovery instructions above.
+
 Date: 2026-09-06  
-Updated: 2026-09-09 (Asia/Shanghai)  
-Status: `M4_P0_GPU_RUNNING_P1_AUTO_AFTER_READINESS`  
+Updated: 2026-09-13 (Asia/Shanghai)  
+Status: `M4_P1_TERMINAL_FAILURE_SOURCE_CLOSURE_AND_STRICT_MOVEMENT_VETO`
 Governing master: `docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-master-program-2026-09-02.md`  
-Latest runtime result: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-result-2026-09-09.md`  
+Latest runtime result: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-8h-amendment-result-2026-09-09.md`  
 Active cap amendment: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-8h-amendment-plan-2026-09-09.md`  
 Factor plan: `docs/plans/bayesfilter-ssl-lstm-q20-factor-route-fresh-tuning-admission-plan-2026-09-04.md`  
 Active executable-readiness plan: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-executable-readiness-phase0-plan-2026-09-06.md`
 Completed GPU continuation: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-plan-2026-09-09.md`
 Validated parallel-tuning plan: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-parallel-tuning-execution-plan-2026-09-07.md`
 Latest engineering result: `docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-result-2026-09-09.md`
+
+## Current continuation state
+
+The September 12 P1 retry is terminally stopped, not done. Factor completed
+four warmup chunks but failed source-closure validation after the repository
+changed during execution. Strict completed four chunks but fired the preserved
+`chain_without_movement` veto in chunk 3 for chain 3 (zero movement); all
+sampled states, target values, and log-acceptance values were finite. Preserve
+both arms as failed evidence with separate classifications and keep P2 blocked.
+The next step is a source-freeze/provenance repair and focused regression,
+followed by a fresh versioned P1 attempt only after the closure guard passes.
+
+At **September 12, 18:47 Shanghai**, service
+`bayesfilter-q20-phase9b-p1-r2.service` is actively running bounded P1. Factor
+and strict passed the refreshed setup identity and are executing in parallel on
+non-display GPUs 1 and 0; display GPU 2 remains untouched. Both first P1
+chunks are in progress. P1 has no terminal result yet, and no posterior,
+convergence, ranking or default-readiness claim is authorized.
+
+The earlier r2 P1 launch failed at 14:06 Shanghai after 10.84 measured
+GPU-worker seconds total across both arms with
+`checkpoint identity changed`. The cause was that accounting repair changed
+the coordinator/ledger source closure while committed setup checkpoints still
+used the pre-repair setup identity. The source migration now binds that exact
+reusable setup identity, preserves current source identity for streams, and
+archives the stale readiness/execution records. All 80 focused recovery/ledger
+tests pass in 38.52 seconds, including six new setup-identity and
+successful-sibling reuse regressions; GPU devices were intentionally hidden.
+
+Phase 0 now passes for bounded P1. Both fresh training/tuning arms and actual
+SIGKILL/resume canaries complete. Factor and strict each complete two healthy
+500-transition-per-chain runtime chunks in 4,370.6522 and 6,639.4178 worker
+seconds. Their reserve-inclusive forecasts are 16,519.6636 and 25,283.0138
+seconds, within assigned allocations of 18,000 and 28,800 seconds. Evidence:
+r2 `runtime-complete.json` and `phase0-readiness.json`, status
+`PASS_CURRENT_SOURCE_PHASE0_FOR_BOUNDED_P1`. These forecasts and health
+screens establish bounded mechanics readiness, not convergence.
+
+Current ledger: 24,329.48797829113 consumed, 46,800 reserved, and
+15,270.51202170887 unreserved seconds. The active launch is
+`numerical-repairs/eigh-refinement-r2/launches/p1-d1884c1974/` under the
+original campaign ledger. Continue until P1 reaches a terminal screen or a
+declared veto; do not treat the reservation as spent compute.
+The total unspent balance before live settlement is 62,070.51202170887
+seconds. No P2 launch or new campaign allocation follows from this state.
+
+### Previous runtime snapshot
+
+Latest check: **September 12, 02:45 Shanghai**. Both arms completed fresh
+training/tuning and passed the actual interruption/resume canary with exact
+sample/trace equality. Both canaries reuse the first committed chunk and
+recompute the interrupted second. In r2 `launches/runtime-c355a7aa08/`, factor
+completes both 500-transition-per-chain runtime chunks and all health checks;
+strict passes its first chunk and is running its second. All three completed
+chunks have finite required values and valid target status. The active service
+continues unchanged. P1 has not started; wait for both full timing/health
+results and affordability before proceeding. No convergence claim follows.
+
+Ledger at this check: 13,308.582441157134 settled, 57,600 reserved, and
+15,491.41755884286 unreserved seconds. The completed factor runtime worker's
+4,370.652188197 seconds are not yet settled; runtime accounting settles after
+the wave. Preserve the live workers, source binding, original budget and
+eight-hour per-arm cap. There is no new completion-time guarantee.
+
+### Earlier launch snapshot
+
+The owner completed the reboot and requested continuation. Matching driver/
+NVML 580.178.04 is verified. The eight-sweep GPU/XLA diagnostic passes both
+32-row fixed banks, both original four-row endpoint checks and odd-dimensional
+sign controls. It costs 53.115703790001135 GPU-worker seconds; no invalid row
+remains on those inputs. Evidence:
+`launches/eight-sweep-gpu-validation-5c70410169/`. All 137 CPU regressions bind
+the same current sources. This is numerical equivalence, not sampler stability.
+
+Active migration: `source-migration.json` now binds the eight-sweep core to
+`numerical-repairs/eigh-refinement-r2/`. Archive/activation receipt:
+`runtime-health-diagnostic-20260911-r1/eight-sweep-migration-7a685780c8/`.
+It verifies 124 bundles/3,109 tensors and preserves original start/ledger
+bytes. Do not run either historical activation helper again or reuse r1
+setup/tuning/stream/completion receipts.
+
+Service `bayesfilter-q20-phase9b-eigh8-20260912-r1` is active from September 12,
+00:44:39 Shanghai. In r2 `launches/reference-67d95ab1f2/`, factor uses GPU 1 and
+strict GPU 0; both are non-display and start in parallel. Fresh setup/tuning
+is in progress. At 00:48, both charts have committed completed training and
+all six 32-row preflights at beta 0/0.5/1 pass. Both public tuners are active;
+completed calls inspected so far have finite required quantities and valid
+target status. Full runtime health remains pending. The service proceeds to actual SIGKILL/resume,
+two-arm runtime/health and affordable bounded P1, stopping on any declared
+veto. `Restart=no`; a failure requires inspection before a local repair/retry.
+
+Launch accounting: 9,523.699322834134 consumed, 7,200 reserved,
+69,676.30067716587 unreserved seconds. Unspent balance before settlement is
+76,876.30067716587 seconds (21.3545 GPU-hours). Keep the original ledger and
+28,800-second per-arm cap. Source and migration are frozen while workers run;
+only progress notes may change. Recompute forecasts from the eight-sweep
+runtime; old timings cannot establish completion time or affordability.
+
+### Historical pre-reboot state
+
+September 11, 15:36 Shanghai: no GPU worker is running. The loaded NVIDIA
+module (580.173.02) and installed NVML (580.178.04) still mismatch after a
+06:02 unattended driver upgrade. The host requests reboot; coordinate that
+with the operator rather than changing packages, reloading drivers or
+rebooting without approval. This happened after the 04:52 preflight failure
+and cannot explain it.
+
+CPU tracing reproduces the factor row 15 failure at time index 8 with exact
+instrumented/uninstrumented value and score equality. Four Jacobi sweeps leave
+too large an eigenpair residual on a positive-definite covariance. Eight
+sweeps pass without relaxing any threshold. Both complete 32-row banks now
+pass CPU/XLA against same-input native CPU reference (64/64 valid), with
+maximum likelihood residual 2.38742e-12 and scaled score residual 1.00143e-13.
+Evidence: `runtime-health-diagnostic-20260911-r1/preflight-eight-sweep-bank-r1/`.
+All **137 focused CPU regressions pass** in 121.77 seconds after the minimal
+eight-sweep edit; the new fixed-row tests reproduce both old failures.
+`git diff --check` passes. Earlier CPU timeouts are preserved, not interpreted as
+numerical outcomes.
+
+The old four-sweep source migration is stale. Do not run the old activation
+helper or resume `eigh-refinement-r1` against edited sources. After driver
+repair, validate the eight-sweep banks on GPU/XLA, create a fresh numerical
+migration and versioned namespace under the original ledger, then redo both
+arms' tuning, recovery and full runtime forecast. CPU evidence cannot replace
+those GPU checks. The ledger is unchanged: 9,470.583619044133 consumed, zero
+reserved, and 76,929.41638095587 aggregate GPU-worker seconds remaining.
+
+The read-only resume check confirms stale-source rejection before launch and
+byte preservation of the original start, ledger and migration. Current source
+snapshots and validation are in
+`runtime-health-diagnostic-20260911-r1/eight-sweep-validation-a8df05dcf2/`.
+
+The false-indefiniteness bug is in the GPU/XLA eigensolver, **not an actually
+indefinite saved covariance**. At the original failed endpoint, 60-digit
+arithmetic gives minimum eigenvalue 4.67714e-14 while the old solver gives
+-1.42567e-11. Its binary32 internal Jacobi cutoff is inadequate here in float64.
+The bridge correctly emits NaN after the erroneous invalid-row classification;
+the rejected proposal then gives the stored negative-infinite acceptance.
+No guard, tolerance, target, analytic derivative or final epsilon is relaxed.
+
+The preceding shared four-sweep binary64 refinement was implemented for strict
+and factor-cached principal-root paths. All 122 CPU regressions and the integrated
+GPU/XLA fixed-point diagnostic pass. Both paths return four valid rows and
+agree with the independent CPU reference within 7.11e-15 in likelihood and
+6.10e-15 in scaled analytic score. Evidence is
+`launches/candidate-diagnostic-a7e029690b/strict/` within the active campaign.
+Four sweeps and the residual check remain tested local hypotheses, not a
+universal accuracy claim.
+
+The preceding attempt resumes **both arms freshly** in
+`numerical-repairs/eigh-refinement-r1/` beneath
+`campaign-24gpuh-20260909T135803Z/`. That migration passes 135 combined
+CPU tests and preserves the original start/ledger; 101 bundles/2,697 tensors
+verify. Keep the original
+start/ledger/lock. Never label this serializer-only, reuse old setup/tuning/
+completion/canary receipts, or create another budget for the nested directory.
+Both fresh GPU workers start in parallel on non-display GPUs 0/1 at September
+11, 04:52:31 Shanghai, then fail beta-zero chart preflight before an optimizer
+update or tuning. The service stops at 04:52:55; no GPU worker is now active.
+Failed attempt: `launches/reference-b6ab845731/` in the numerical namespace.
+The subsequent fixed-bank localization and eight-sweep repair are recorded
+here; do not retry using different seeds or relaxed gates.
+Recovery/runtime/P1 remain pending. Original failed strict and successful factor evidence
+remain intact, but neither supplies current numerical-scope clearance.
+
+Settled budget: 9,470.583619044133 consumed, zero reserved,
+76,929.41638095587 aggregate seconds remaining; eight-hour per-arm ceiling.
+No P2, posterior admission, superiority or default-readiness claim. Read
+`bayesfilter-ssl-lstm-q20-phase9b-runtime-health-repair-2026-09-11.md` and the
+eight-hour amendment result before continuing. Earlier snapshots below are
+historical, not the current status or next command.
+
+## Historical snapshot: first invalid covariance localized
+
+The September 10 service stopped at **17:34:11 Asia/Shanghai**, after the
+serializer repair and both actual SIGKILL/resume canaries succeeded. Recovery
+has exact tensor/trace equality, first-chunk reuse and second-chunk replay.
+The subsequent `runtime-c48f1f0535` wave completed factor's two healthy
+500-transition calls but rejected strict's first committed chunk.
+
+Verified stored evidence: exactly one negative-infinite acceptance ratio at
+transition 159/chain 4 (one-based), no NaNs or positive infinities in acceptance,
+proposal rejected, sampled state unchanged. All sampled states/targets/status
+pass. The original full-health function independently reproduces
+`nonfinite_log_accept_ratio` and `nonfinite_delta_h`. These are actual runtime
+vetoes, not the old diagnostic-ESS serializer exception. Do not suppress them.
+
+Current investigation:
+`bayesfilter-ssl-lstm-q20-phase9b-runtime-health-repair-2026-09-11.md`;
+evidence: campaign `runtime-health-diagnostic-20260911-r1/`. Exact prefix and
+cached-gradient diagnostics now localize the first invalid evaluation to the
+second leapfrog of transition 159, chain 4. The finite parameter vector
+[-3.6130528940902975, -0.2409610860997648, 0.5636597915347656,
+0.7942885593780721] produces a placement-covariance minimum eigenvalue
+-1.4256699903299468e-11. The bridge's invalid-row NaN guard then contaminates
+momentum and the third position. Investigate the covariance recursion before
+choosing an equivalent numerical repair or fresh public scope-specific tuning.
+Never widen the tolerance, reuse failed runtime/P1 draws for tuning or overwrite the failed
+stream. The current migration permits only the previous wrapper-only repair;
+do not disguise a numerical change as serializer-only.
+
+The completed prefix in `launches/prefix-diagnostic-83873ea777/` matches every
+saved prefix sample, acceptance ratio/decision and sampled target bitwise.
+`launches/cached-gradient-diagnostic-2dededa013/` preserves the original initial
+gradient and finds the invalid second endpoint. Its preceding-transition
+control is exact; one unrelated finite L=3 acceptance ratio differs by about
+4e-16. The earlier one-step replays are not original-failure reproductions.
+No seed bug is established. The unlaunched retuning draft was withdrawn;
+the original serializer-repaired wrapper and migration are restored. Any new
+strict tuning needs fresh seeds, stream/completion paths and recovery canaries.
+
+Settled ledger: 9,269.455504760117 consumed, zero reserved,
+77,130.54449523988 remaining seconds. No GPU worker is active at this update.
+The active source closure is verified; 33 bundles/376 tensors verify and 56
+CPU regressions pass (`postrun-validation.json`). No new allocation is minted.
+P1 is not running. Preserve the
+successful factor sibling rather than recomputing it. Phase 0 and P1 remain
+incomplete; candidate rejection does not reject the research direction.
+
+Current result:
+`bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-8h-amendment-result-2026-09-09.md`.
+
+## Historical September 10 resumed state
+
+At **September 10, 2026, 08:23:01 UTC / 16:23:01 Asia/Shanghai**, execution
+resumes under user service `bayesfilter-q20-phase9b-serializer-20260910-r1.service`,
+coordinator PID 804934. Active attempt: `reference-4f43b85252`. Strict reruns
+only its uncommitted tuning on non-display GPU 1; the completed factor reference
+and both chart checkpoints are preserved and reused. Memory growth is verified
+before GPU initialization, and XLA compilation is observed. The display GPU
+is untouched by this launch. Independent later arms run in separate processes
+when their original comparator devices are eligible.
+
+The NaN is in candidate 1's tiny-window upper-tail ESS diagnostic, not evidence
+of nonfinite input draws or HMC target values in the saved artifact. Tagged
+nonfinite serialization and the public tuner's existing hash repair the failure
+without dropping the veto or reselecting the candidate. The patch passes 161
+CPU tests and reloads both the real finite factor checkpoint and a separate
+diagnostic round-trip of the actual strict artifact. An unlaunched draft that
+broke legacy tuple hashes is preserved separately; it is not the active repair.
+
+`source-migration.json` records the final wrapper-only repair. It preserves
+`campaign-start.json`, the frozen plan, original setup/stream identities, old
+attempts and spent accounting. Do not edit bound execution code while workers
+run. Validation and provenance are under
+`serializer-repair-validation-20260910-r1/` in the existing campaign; the new
+supervisor log is `supervisor-serializer-20260910-r1.log`.
+
+Pre-resume unspent balance: 84,212.35038186601 seconds (23.3923 GPU-hours).
+At 08:25 UTC, 3,600 seconds is reserved, 80,612.35038186601 remains unreserved,
+and the new live worker time is not yet settled. Do not add the reserved time
+to the remaining allocation or transfer older campaign balances. Continue
+strict reference, the true interruption/resume canaries, both full runtime and
+health measurements, Phase 0 closeout and bounded P1 if affordable. P2 and
+posterior promotion do not follow automatically. No reliable finish ETA yet.
+
+Repair plan: `bayesfilter-ssl-lstm-q20-phase9b-nonfinite-checkpoint-repair-2026-09-10.md`.
+Live result: `bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-8h-amendment-result-2026-09-09.md`.
+
+## Historical terminal state from ETA inspection
+
+The detached service stopped at 2026-09-09 16:36:39 UTC (September 10,
+00:36:39 Asia/Shanghai). Factor reference completed; strict completed public
+tuning but failed typed-checkpoint hashing on NaN diagnostic data. The public
+strict result selected candidate 0 and recorded a nonfinite-efficiency veto on
+candidate 1; preserve that veto when repairing serialization. This is not a
+budget/cap stop or a conclusion against the research direction.
+
+The ledger settles 2187.64961813399 seconds, reserves zero and retains
+84212.35038186601 seconds (23.3923 GPU-hours). Canary comparison, full runtime
+measurement and P1 remain unfinished. The run has no reliable finish ETA until
+repair and current timing. Next: lossless nonfinite typed-serialization repair,
+focused regressions, recorded source migration under the same allocation and
+resume unfinished work without rerunning the completed factor reference.
+Read the amendment result's terminal failure section; older running snapshots
+below do not describe the current service state.
 
 ## September 9 approved eight-hour amendment
 
@@ -498,7 +885,7 @@ repair trigger, not evidence against the transport research direction.
 The rebooted session must inspect the service, ledger and latest stage receipts
 before reporting live state. At the latest documented snapshot it was:
 
-`M4_P0_GPU_RUNNING_P1_AUTO_AFTER_READINESS`
+`M4_P0_STOPPED_STRICT_TUNING_CHECKPOINT_SERIALIZATION`
 
 Resume the initialized campaign with the same P1 entrypoint and `--resume` only
 if no coordinator remains. Never create another budget/root to bypass an active

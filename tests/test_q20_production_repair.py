@@ -33,7 +33,8 @@ def four_dimensional_bridge(jit_compile=False):
             valid = tf.reduce_all(tf.math.is_finite(theta), axis=1)
             return (-.5*tf.reduce_sum(delta**2, axis=1), -delta,
                     -.5*tf.reduce_sum((theta-center)**2, axis=1)/16., prior_score,
-                    {"status_code": tf.where(valid, 0, 1), "valid_pre_regularized_score": valid})
+                    {"status_code": tf.where(valid, 0, 1), "valid_pre_regularized_score": valid,
+                     "floor_count_value": tf.zeros_like(tf.cast(valid, tf.int32))})
     facts = {**_facts(), "parameter_dim": 4, "prior_variance": 16.}
     return GaussianLikelihoodBridge(FourDimensionalTarget(), prior_center=[.35, -.08, .65, .05],
                                     prior_variance=16., source_facts=facts, jit_compile=jit_compile)
@@ -48,7 +49,7 @@ def tiny_protocol():
     c["posterior"].update(warmup_min=64, warmup_window=64, warmup_chunk=64, warmup_max=128,
         warmup_rhat=1.5, retained_min=64, retained_chunk=64, retained_max=128,
         retained_rhat=1.5, bulk_ess=5., tail_ess=5., mean_mcse_sd=2., quantile_mcse_sd=2., event_mcse=1.)
-    c["tuning"].update(l_grid=[3], initial_epsilon=.3, practical_region=[.4,.9], repair_region=[.2,.99],
+    c["tuning"].update(l_grid=[3], initial_epsilon=.3, practical_region=[.5,.9], repair_region=[.41,.99],
         startup=8, pilot=64, measurement=64, verification=64, max_repairs_per_family=0,
         evidence_rungs=[1], total_budget_units=10, repair_reserve_units=3)
     validate_protocol(c)
@@ -73,7 +74,7 @@ def session(beta=.5):
 def test_protocol_shortcuts_fail_before_training():
     c = protocol_template()
     validate_protocol(c)
-    assert len(training_cohort(c)) == 12
+    assert len(training_cohort(c)) == 24
     for field, value in [("batch_size", 1), ("rungs", [2, 6]), ("beta_zero_updates", 2),
                          ("carry_optimizer_across_beta", False)]:
         broken = copy.deepcopy(c)
@@ -187,11 +188,13 @@ def test_learning_dispositions(base, inc, precise, cap, previous, expected):
 
 
 def test_production_entrypoint_has_explicit_modes_and_nonpromotion():
-    source = Path("docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py").read_text()
-    assert 'choices=("validate", "price", "train")' in source
-    assert "run_training_cohort" in source
-    assert "promotion_eligible" in source
-    assert "output directory must be fresh and versioned" in source
+    import subprocess,sys,json
+    result=subprocess.run([sys.executable,"docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py","validate"],
+                          check=True,capture_output=True,text=True)
+    report=json.loads(result.stdout)
+    assert set(report["stages"]) >= {"train","tune","sample","reference","compare","confirmation"}
+    assert report["promotion_eligible"] is False
+    assert report["budget_required_before_numerical_work"] is True
 
 
 def test_cohort_restart_runs_both_positive_temperatures(tmp_path):
@@ -204,8 +207,9 @@ def test_cohort_restart_runs_both_positive_temperatures(tmp_path):
     resumed = run_training_cohort(config, bridge, tmp_path/"resumed", resume=paused["checkpoint"], **kwargs)
     assert resumed["cohort_complete"]
     checkpoint = json.loads(Path(resumed["checkpoint"]).read_text())
-    for candidate in checkpoint["cohort"].values():
+    for name,candidate in checkpoint["cohort"].items():
         assert candidate["session"]["map"]["beta"] == 1.
-        assert candidate["session"]["iteration"] == 4
-        assert set(candidate["exports"]) == {"0.5", "1.0"}
-        assert len(candidate["assessments"]) == 4
+        direct=name.startswith("direct-")
+        assert candidate["session"]["iteration"] == (2 if direct else 4)
+        assert set(candidate["exports"]) == ({"1.0"} if direct else {"0.5", "1.0"})
+        assert len(candidate["assessments"]) == (2 if direct else 4)

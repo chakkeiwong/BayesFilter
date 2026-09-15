@@ -157,7 +157,7 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
         if method == "classical":
             from bayesfilter.inference.hmc_kernel_tuning import HMCKernelTuningConfig, prepare_operational_windowed_mass_handoff
             from bayesfilter.inference.hmc_candidate_set_execution import bind_hmc_candidate_set_execution_from_preparation
-            cfg = HMCKernelTuningConfig.serious(target_scope=label, use_xla=config["jit_compile"],
+            cfg = HMCKernelTuningConfig.serious(target_scope=adapter.target_scope, use_xla=config["jit_compile"],
                 chain_execution_mode="tf_function", target_status_trace_policy="per_chain_step",
                 metric_update_requirement="require_operational_update",
                 seed=scoped_seed(config, "classical-preparation", label),
@@ -169,19 +169,40 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
             from dataclasses import replace
             common["config"] = replace(execution, preparation_elapsed_seconds=time.monotonic()-started)
             binding = bind_hmc_candidate_set_execution_from_preparation(preparation=preparation, **common)
+            from bayesfilter.inference.hmc_candidate_set_execution import bind_hmc_candidate_set_execution_new_starts
+            binding = bind_hmc_candidate_set_execution_new_starts(binding=binding,
+                initial_position=starts, config=common["config"], scope_id=label,
+                search_id=common["search_id"], max_repairs_per_family=config["tuning"]["max_repairs_per_family"])
+            # Controller construction materializes epsilon_by_l. Replacing
+            # only initial_epsilon leaves that already-materialized cohort
+            # unchanged, outside the preparation's stability bound.
+            bounded_epsilon = max(binding.scope.epsilon_domain[0],
+                min(search.initial_epsilon, binding.scope.epsilon_domain[1]))
+            search = replace(search, initial_epsilon=bounded_epsilon,
+                             epsilon_by_l=())
         elif method == "identity":
             mass = PrecomputedMassArtifact(position=tf.zeros([bridge.parameter_dim], tf.float64),
                 covariance=tf.eye(bridge.parameter_dim, dtype=tf.float64), factor=tf.eye(bridge.parameter_dim, dtype=tf.float64),
                 adapter_signature=adapter.adapter_signature(), position_role="fixed_identity",
                 covariance_source="declared naive identity comparator")
             binding = bind_hmc_candidate_set_execution(initial_position=starts, mass_artifact=mass,
-                                                       target_scope=label, **common)
+                                                       target_scope=adapter.target_scope, **common)
         else:
             binding = bind_hmc_candidate_set_execution(initial_position=loaded.transport.inverse_theta_to_z_batch(starts),
-                frozen_transport_payload=record["frozen_transport"], start_coordinates="active", target_scope=label, **common)
-        run = tune_hmc_kernel(adapter=adapter, initial_position=binding.initial_active_state,
-            candidate_set_adapter=binding.typed_adapter, config=search,
-            output_dir=root / "tuning", max_work_items=max_work_items)
+                frozen_transport_payload=record["frozen_transport"], start_coordinates="active", target_scope=adapter.target_scope, **common)
+        if method == "neutra":
+            from bayesfilter.inference import tune_fixed_transport_hmc_kernel
+            run = tune_fixed_transport_hmc_kernel(base_adapter=adapter, fixed_transport=binding.fixed_transport,
+                initial_position=binding.initial_active_state, candidate_set_adapter=binding.typed_adapter,
+                config=search, output_dir=root / "tuning", max_work_items=max_work_items)
+        else:
+            run = tune_hmc_kernel(adapter=adapter, initial_position=binding.initial_active_state,
+                candidate_set_adapter=binding.typed_adapter, config=search,
+                output_dir=root / "tuning", max_work_items=max_work_items)
+    return _export_tuning_result(config, root, method, beta, label, run, binding)
+
+
+def _export_tuning_result(config, root, method, beta, label, run, binding):
     members = {}
     for candidate_id in run.result.verified_candidate_ids:
         member = build_retained_bound_hmc_archive_runner_from_candidate_set_result(
@@ -194,6 +215,48 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
               "ranking": "none; choose an explicit member", "production_qualified": False}
     write_json(root / "result.json", result)
     return result
+
+
+def reverify_member(config, bridge, root, *, parent_member_path, beta, label, initial_position):
+    """Fresh starts and evidence for the frozen exact kernel; no retuning."""
+    from dataclasses import replace
+    from bayesfilter.inference.hmc_candidate_set_execution import bind_hmc_candidate_set_execution_new_starts
+    from bayesfilter.inference import tune_fixed_transport_hmc_kernel
+    root = Path(root)
+    root.mkdir(parents=True, exist_ok=False)
+    adapter = bridge.fixed_beta_adapter(beta)
+    member = load_hmc_candidate_retained_runner(parent_member_path, adapter=adapter)
+    lineage = _check_member_protocol(member, config)
+    execution = replace(member._binding.config, seed=scoped_seed(config, "reverification", label),
+                        preparation_elapsed_seconds=0.)
+    binding = bind_hmc_candidate_set_execution_new_starts(binding=member._binding,
+        initial_position=initial_position, config=execution, scope_id=label,
+        search_id=digest([config, label, member.member_hash])[:20])
+    search = HMCControllerConfig(primary_l_grid=(member.num_leapfrog_steps,),
+        epsilon_by_l=((member.num_leapfrog_steps, (member.step_size,)),),
+        initial_epsilon=member.step_size, total_budget_units=config["tuning"]["total_budget_units"],
+        repair_reserve_units=1, max_candidates=1, pilot_enabled=False,
+        evidence_rungs=tuple(config["tuning"]["evidence_rungs"]),
+        max_wall_time_seconds=config["tuning"]["max_wall_seconds"])
+    common = dict(initial_position=binding.initial_active_state, config=search,
+                  candidate_set_adapter=binding.typed_adapter, output_dir=root / "tuning")
+    if lineage["method"] == "neutra":
+        run = tune_fixed_transport_hmc_kernel(base_adapter=adapter, fixed_transport=binding.fixed_transport, **common)
+    else:
+        run = tune_hmc_kernel(adapter=adapter, **common)
+    write_json(root / "frozen-parent.json", {"member_hash": member.member_hash,
+        "epsilon": member.step_size, "L": member.num_leapfrog_steps,
+        "physical_starts": tf.convert_to_tensor(initial_position).numpy().tolist(),
+        "selection": "frozen_exact_pair_reverification_only"})
+    return _export_tuning_result(config, root, lineage["method"], beta, label, run, binding)
+
+
+def _checkpoint_directory(root, previous):
+    import shutil
+    destination = Path(root) / "chunks"
+    if previous is not None:
+        shutil.copytree(previous, destination)
+    return destination
 
 
 def _check_member_protocol(member, config):
@@ -214,8 +277,8 @@ def sample_member(config, bridge, root, *, member_path, label, resume_chunks=Non
     kwargs = sequential_kwargs(config, label)
     policy = kwargs["assessment_policy"]
     controller = SequentialNeuTraHMCConfig(step_size=member.step_size, num_leapfrog_steps=member.num_leapfrog_steps,
-        jit_compile=config["jit_compile"], energy_error_log_accept_threshold=config["posterior"]["max_energy_error"], **kwargs)
-    chunks = Path(resume_chunks) if resume_chunks else root / "chunks"
+        jit_compile=config["jit_compile"], energy_error_log_accept_threshold=config["posterior"]["energy_log_accept_alert"], **kwargs)
+    chunks = _checkpoint_directory(root, resume_chunks)
     with DurableTensorCheckpoint(chunks, {"member": member.member_hash, "config": digest(config),
             "label": label, "names": list(PARAMETERS), "quantities": policy.quantities_id}) as store:
         result = run_hmc_posterior(member=member, config=controller, parameter_names=PARAMETERS,
@@ -224,7 +287,7 @@ def sample_member(config, bridge, root, *, member_path, label, resume_chunks=Non
     return result
 
 
-def build_member_physical_kernel(member, *, maximum_energy_error, state_shape):
+def build_member_physical_kernel(member, *, state_shape):
     """Verified candidate to the shared exact transition, preserving health vetoes."""
     from bayesfilter.inference.hmc_candidate_set_retained import HMCCandidateRetainedRunner
     from bayesfilter.inference.fixed_transport_hmc_mechanics_tf import build_fixed_transport_one_step_transition
@@ -232,27 +295,22 @@ def build_member_physical_kernel(member, *, maximum_energy_error, state_shape):
         raise TypeError("an actual verified candidate member is required")
     member._validate()
     adapter = member._binding._active_adapter
-    if not hasattr(adapter, "transport"):
-        raise ValueError("chart kernels require an actual frozen transport member")
-    transport = adapter.transport
     primitive = build_fixed_transport_one_step_transition(adapter, state_shape=state_shape,
         step_size=member.step_size, num_leapfrog_steps=member.num_leapfrog_steps,
-        use_xla=member._binding.config.use_xla)
+        use_xla=member._binding.config.use_xla, capture_health=True)
     @tf.function(input_signature=(tf.TensorSpec(state_shape, tf.float64), tf.TensorSpec([2], tf.int32)),
                  jit_compile=member._binding.config.use_xla, reduce_retracing=False)
     def kernel(physical, seed):
-        latent = transport.inverse_theta_to_z_batch(physical)
-        next_latent, accepted, log_accept, value, score = primitive(latent, seed)
-        next_physical = transport.forward_batch(next_latent)
-        healthy = (tf.reduce_all(tf.math.is_finite(log_accept)) & tf.reduce_all(tf.math.is_finite(value))
-                   & tf.reduce_all(tf.math.is_finite(score)) & tf.reduce_all(tf.math.is_finite(latent))
-                   & tf.reduce_all(tf.abs(log_accept) <= maximum_energy_error))
+        latent = member._binding.active_positions(physical)
+        next_latent, accepted, log_accept, value, score, healthy = primitive(latent, seed)
+        next_physical = member._binding.position_samples(next_latent)
         # Propagate a health failure to the enclosing all-temperature check.
         return tf.where(healthy, next_physical, tf.fill(state_shape, tf.constant(float("nan"), tf.float64)))
     return kernel
 
 
-def sample_ensemble(config, bridge, root, *, members_by_beta, label, resume_chunks=None):
+def sample_ensemble(config, bridge, root, *, members_by_beta, label, resume_chunks=None,
+                    physical_baseline=False, initial_by_beta=None):
     from bayesfilter.inference.tempered_transitions_tf import (
         FixedChartKernelMixture, BoundWithinTemperatureKernel, ProperBridgeReplicaExchange,
         ProperReplicaExchangeTransitionProgram,
@@ -261,7 +319,8 @@ def sample_ensemble(config, bridge, root, *, members_by_beta, label, resume_chun
     root.mkdir(parents=True, exist_ok=False)
     betas = config["training"]["betas"]
     expected = {str(beta) for beta in betas[1:]}
-    if set(members_by_beta) != expected or any(len(v) != config["ensemble"]["charts"] for v in members_by_beta.values()):
+    chart_count = 1 if physical_baseline else config["ensemble"]["charts"]
+    if set(members_by_beta) != expected or any(len(v) != chart_count for v in members_by_beta.values()):
         raise ValueError("ensemble needs K verified charts at every positive beta")
     bindings, all_members, starts = [], [], []
     shape = (config["posterior"]["chains"], bridge.parameter_dim)
@@ -278,21 +337,24 @@ def sample_ensemble(config, bridge, root, *, members_by_beta, label, resume_chun
                        for path in members_by_beta[str(beta)]]
             if len({m.member_hash for m in members}) != len(members):
                 raise ValueError("duplicate chart member is not an ensemble")
-            roots = [_check_member_protocol(m, config).get("chart_root") for m in members]
-            if None in roots or len(set(roots)) != len(roots):
+            lineages = [_check_member_protocol(m, config) for m in members]
+            roots = [row.get("chart_root") for row in lineages]
+            if not physical_baseline and (None in roots or len(set(roots)) != len(roots)):
                 raise ValueError("ensemble requires independently trained chart roots")
+            if physical_baseline and any(row["method"] != "classical" for row in lineages):
+                raise ValueError("physical replica exchange requires independently tuned classical kernels")
             if any(m._binding.config.use_xla != config["jit_compile"] for m in members):
                 raise ValueError("member XLA policy differs from ensemble")
             all_members.extend(members)
-            kernels = [build_member_physical_kernel(m, maximum_energy_error=config["posterior"]["max_energy_error"],
-                        state_shape=shape) for m in members]
+            kernels = [build_member_physical_kernel(m, state_shape=shape) for m in members]
             mixture = FixedChartKernelMixture(kernels, gamma=[1./len(kernels)]*len(kernels),
                                               chart_ids=[m.member_hash for m in members])
             kernel, signature = mixture.transition_state, mixture.selection.signature
             role = "verified_candidate_members_fixed_chart_mixture"
         bindings.append(BoundWithinTemperatureKernel(beta=beta, bridge_signature=bridge.signature,
             kernel_signature=signature, kernel=kernel, mechanics_role=role))
-        initial, receipt = draw_start_bank(config, bridge, beta, label)
+        initial, receipt = (draw_start_bank(config, bridge, beta, label) if initial_by_beta is None else
+                            (tf.convert_to_tensor(initial_by_beta[str(beta)], tf.float64), {"role": "matched_physical_starts"}))
         starts.append(initial)
         write_json(root / f"starts-beta{beta:g}.json", {**receipt, "positions": initial.numpy().tolist()})
     program = ProperReplicaExchangeTransitionProgram(ProperBridgeReplicaExchange(bridge, betas), bindings,
@@ -303,7 +365,7 @@ def sample_ensemble(config, bridge, root, *, members_by_beta, label, resume_chun
     from bayesfilter.inference.hmc_posterior_assessment import validate_sequential_seeds
     forbidden = set().union(*(member._tuning_seeds() for member in all_members))
     validate_sequential_seeds(controller, forbidden=forbidden)
-    chunks = Path(resume_chunks) if resume_chunks else root / "chunks"
+    chunks = _checkpoint_directory(root, resume_chunks)
     with DurableTensorCheckpoint(chunks, {"transition": program.transition_signature,
             "config": digest(config), "label": label, "initial": tf.io.serialize_tensor(initial["state"]).numpy().hex()}) as store:
         def transition(state, *, num_results, seed, stage):
@@ -331,6 +393,13 @@ def _write_posterior_result(root, result, config, bridge, label):
                                    result.get("private_retained_beta_one")))
     summary = posterior_summary(config, retained, target_signature=bridge.target_signature,
                                 label=label, sequential_passed=result["passed"])
+    if retained is not None:
+        import hashlib
+        data = tf.io.serialize_tensor(retained).numpy()
+        path = root / "retained.tensor"
+        path.write_bytes(data)
+        summary["retained_archive"] = {"path": str(path), "sha256": hashlib.sha256(data).hexdigest(),
+                                       "dtype": "float64", "shape": list(retained.shape)}
     public = _tensor_tree_python({k:v for k,v in result.items() if not k.startswith("private_")})
     write_json(root / "result.json", {"sequential": public, "summary": summary,
                "role": config["role"], "production_qualified": False,

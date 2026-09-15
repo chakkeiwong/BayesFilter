@@ -1,0 +1,146 @@
+....FF.......                                                            [100%]
+=================================== FAILURES ===================================
+___________ test_actual_chart_mixture_and_physical_replica_dispatch ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-332/test_actual_chart_mixture_and_0')
+
+    def test_actual_chart_mixture_and_physical_replica_dispatch(tmp_path):
+        from bayesfilter.inference.q20_master_stages import dispatch
+        config,bridge=protocol(),four_dimensional_bridge()
+        memory={"mode":"tiny_cpu_reference"}
+        trained=dispatch(config,bridge,tmp_path/"train",{"stage":"train","cooperative_seconds":120.},memory)
+        cohort=json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+        maps=[item["exports"] for item in cohort.values()]
+        chart_members,physical_members={},{}
+        for beta in config["training"]["betas"][1:]:
+            chart_members[str(beta)]=[]
+            for index,exports in enumerate(maps):
+                tuned=dispatch(config,bridge,tmp_path/f"chart-{beta}-{index}",
+                    {"stage":"tune","method":"neutra","beta":beta,
+                     "training_export":exports[str(beta)],"start_label":"matched"},memory)
+                assert tuned["verified_members"],tuned
+                chart_members[str(beta)].append(next(iter(tuned["verified_members"].values())))
+            classical=dispatch(config,bridge,tmp_path/f"classical-{beta}",
+                {"stage":"tune","method":"classical","beta":beta,"start_label":"matched"},memory)
+            assert classical["verified_members"],classical
+            physical_members[str(beta)]=[next(iter(classical["verified_members"].values()))]
+        for stage,members in (("ensemble",chart_members),("replica_exchange",physical_members)):
+>           result=dispatch(config,bridge,tmp_path/stage,{"stage":stage,"members_by_beta":members,
+                "label":stage,"start_label":"posterior-matched"},memory)
+
+tests/test_q20_master_integration.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_master_stages.py:112: in dispatch
+    sample_ensemble(config, bridge, root, members_by_beta=request["members_by_beta"],
+bayesfilter/inference/q20_production_hmc.py:381: in sample_ensemble
+    result = run_sequential_exact_transition(transition_program=transition,
+bayesfilter/inference/neutra_hmc.py:1118: in run_sequential_exact_transition
+    chunk = run_chunk(active, seed, "warmup")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/neutra_hmc.py:998: in run_chunk
+    result = transition_program(
+bayesfilter/inference/q20_production_hmc.py:375: in transition
+    return store.run(f"{stage}-{seed_list[0]}-{seed_list[1]}",
+bayesfilter/runtime/durable_tensor_checkpoint.py:188: in run
+    value = compute()
+            ^^^^^^^^^
+bayesfilter/inference/q20_production_hmc.py:380: in <lambda>
+    lambda: program(state, num_results=num_results, seed=seed, stage=stage))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/tempered_transitions_tf.py:1322: in __call__
+    ) = compiled(state, identities, transition_index, seed_tensor)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (<tf.Tensor 'initial_state:0' shape=(3, 4, 4) dtype=float64>, <tf.Tensor 'initial_identities:0' shape=(3, 4) dtype=int32>, <tf.Tensor 'initial_index:0' shape=() dtype=int64>, <tf.Tensor 'seed:0' shape=(2,) dtype=int32>)
+kwargs = {}
+
+    def autograph_handler(*args, **kwargs):
+      """Calls a converted version of original_func."""
+      try:
+        return api.converted_call(
+            original_func,
+            args,
+            kwargs,
+            options=converter.ConversionOptions(
+                recursive=True,
+                optional_features=autograph_options,
+                user_requested=True,
+            ))
+      except Exception as e:  # pylint:disable=broad-except
+        if hasattr(e, "ag_error_metadata"):
+>         raise e.ag_error_metadata.to_exception(e)
+E         tensorflow.python.framework.errors_impl.OperatorNotAllowedInGraphError: in user code:
+E         
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/tempered_transitions_tf.py", line 1174, in body  *
+E                 next_levels.append(
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/tempered_transitions_tf.py", line 1000, in transition  *
+E                 result = self.kernel(state, seed)
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/tempered_transitions_tf.py", line 180, in transition_state  *
+E                 return self._transition_tensor(state, seed)[0]
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/tempered_transitions_tf.py", line 167, in branch  *
+E                 result = tf.convert_to_tensor(kernel(current, branch_seed), tf.float64)
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/q20_production_hmc.py", line 304, in kernel  *
+E                 latent = member._binding.active_positions(physical)
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc_candidate_set_execution.py", line 420, in active_positions  *
+E                 state = transform.transform.position_to_latent(state)
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc.py", line 492, in position_to_latent  *
+E                 theta_array = self._validate_position_shape(theta)
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc.py", line 541, in _validate_position_shape  *
+E                 if not _all_finite(array):
+E             File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc_verification.py", line 28, in _all_finite  *
+E                 return bool(tf.reduce_all(tf.math.is_finite(_float64_tensor(value))))
+E         
+E             OperatorNotAllowedInGraphError: Using a symbolic `tf.Tensor` as a Python `bool` is not allowed. You can attempt the following resolutions to the problem: If you are running in Graph mode, use Eager execution mode or decorate this function with @tf.function. If you are using AutoGraph, you can try decorating this function with @tf.function. If that does not work, then you may be using an unsupported feature or your source code may not be visible to AutoGraph. See https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/limitations.md#access-to-source-code for more information.
+
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/autograph_util.py:52: OperatorNotAllowedInGraphError
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 9 calls to <bound method IndependentTemperedReverseKLTrainer._train_step_impl of <bayesfilter.inference.tempered_transport_ensemble_tf.IndependentTemperedReverseKLTrainer object at 0x799dac25a650>> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING  tensorflow:polymorphic_function.py:157 6 out of the last 10 calls to <bound method IndependentTemperedReverseKLTrainer._train_step_impl of <bayesfilter.inference.tempered_transport_ensemble_tf.IndependentTemperedReverseKLTrainer object at 0x799f0c699250>> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+__________ test_actual_pricing_dispatch_and_finite_complete_forecast ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-332/test_actual_pricing_dispatch_a0')
+
+    def test_actual_pricing_dispatch_and_finite_complete_forecast(tmp_path):
+        from bayesfilter.inference.q20_master_stages import dispatch
+        from bayesfilter.inference.q20_master_program import forecast_campaign
+        config,bridge=protocol(),four_dimensional_bridge()
+        config["training"]["pricing_batches"]=[8]
+        config["reference"].update(banks=4,rungs=[64,128],batch_size=32,ess_min=1.,minimum_tail_rows=1)
+>       priced=dispatch(config,bridge,tmp_path/"price",{"stage":"price"},{"mode":"tiny_cpu_reference"})
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_q20_master_integration.py:100: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_master_stages.py:86: in dispatch
+    return price_complete(config, bridge, root, memory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_master_stages.py:191: in price_complete
+    write_json(root / f"hmc-{beta}-{name}-{length}.json",rows[-1])
+bayesfilter/inference/q20_production_config.py:37: in write_json
+    with path.open("x" if exclusive else "w") as stream:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/pytest-of-ubuntu/pytest-332/test_actual_pricing_dispatch_a0/price/hmc-0.5-physical-3.json')
+mode = 'x', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileExistsError: [Errno 17] File exists: '/tmp/pytest-of-ubuntu/pytest-332/test_actual_pricing_dispatch_a0/price/hmc-0.5-physical-3.json'
+
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileExistsError
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_chart_mixture_and_physical_replica_dispatch
+FAILED tests/test_q20_master_integration.py::test_actual_pricing_dispatch_and_finite_complete_forecast
+2 failed, 11 passed, 9570 warnings in 212.85s (0:03:32)

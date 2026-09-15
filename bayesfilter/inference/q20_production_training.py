@@ -22,13 +22,8 @@ from bayesfilter.inference.tempered_transport_ensemble_tf import (
 
 def source_snapshot():
     """Ordinary checksums in addition to Git; includes uncommitted source."""
-    root = Path(__file__).resolve().parents[2]
-    # Conservatively bind library source, including lazy imports. Tests, result
-    # files and unrelated experiment scripts cannot change a training scope.
-    paths = sorted((root / "bayesfilter").rglob("*.py"))
-    paths += sorted((root / "bayesfilter" / "ops").glob("*.so"))
-    paths.append(root / "docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py")
-    return {str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
+    from bayesfilter.inference.q20_campaign_runtime import source_snapshot as snapshot
+    return snapshot(Path(__file__).resolve().parents[2])
 
 
 def training_config(config, candidate, *, batch_size=None):
@@ -160,11 +155,14 @@ def run_training_cohort(config, bridge, root, *, memory_policy, max_seconds, res
     for beta in config["training"]["betas"][1:]:
         for rung in config["training"]["rungs"]:
             for candidate in candidates:
+                if candidate["schedule"] == "direct" and beta != 1.:
+                    continue
                 item = cohort[candidate["id"]]
                 stored_beta = item["session"]["map"]["beta"]
                 if item["status"] == "failed" or stored_beta > beta:
                     continue
-                if stored_beta == beta and item["session"]["level_updates"] >= rung:
+                if stored_beta == beta and any(a["beta"] == beta and a["updates"] >= rung
+                                               for a in item["assessments"]):
                     continue
                 if stored_beta == beta and item["status"] == "plateau_nominee" and item["session"]["level_updates"] >= config["training"]["cohort_min_updates"]:
                     continue
@@ -207,8 +205,8 @@ def run_training_cohort(config, bridge, root, *, memory_policy, max_seconds, res
                 except Exception as error:
                     if session is not None:
                         item["session"] = session.checkpoint()
-                    item.update(status="failed", failure={"type": type(error).__name__, "message": str(error)})
-                    save("candidate_failed")
+                    item.update(failure={"type": type(error).__name__, "message": str(error)})
+                    save("interrupted_candidate")
                     # Infrastructure and programming errors invalidate the attempt;
                     # they are not evidence that a numerical candidate failed.
                     raise
@@ -237,8 +235,17 @@ def price_training(config, bridge, root, *, memory_policy, batches=None):
                     preflight_seed=scoped_seed(config, "pricing-preflight", width, batch, beta))
                 session.advance(config["budget"]["pricing_updates"], log_path=root / "updates.jsonl")
                 timings = [row["wall_seconds"] for row in session.history if row["beta"] == beta]
+                evaluation = HeldoutLoss(session.trainer.transport, bridge, beta,
+                                         batch_size=batch, jit_compile=config["jit_compile"])
+                validation_times = []
+                for repeat in range(2):
+                    began = time.monotonic()
+                    evaluation(2*batch, scoped_seed(config, "pricing-heldout", width, batch, beta, repeat)).numpy()
+                    validation_times.append(time.monotonic()-began)
                 rows.append({"width": width, "batch_size": batch, "beta": beta,
-                             "first_update_seconds": timings[0], "steady_update_seconds": max(timings[1:] or timings)})
+                             "first_update_seconds": timings[0], "steady_update_seconds": max(timings[1:] or timings),
+                             "heldout_first_seconds": validation_times[0],
+                             "heldout_seconds_per_batch": validation_times[1]/2})
                 write_json(root / f"price-w{width}-b{batch}-beta{beta:g}.json", rows[-1])
     result = {"config_hash": digest(config), "target_signature": bridge.target_signature,
               "sources": sources, "memory_policy": memory_policy, "rows": rows,
@@ -256,16 +263,22 @@ def training_quote(config, pricing):
     lower = upper = 0.
     for candidate in training_cohort(config):
         for beta in config["training"]["betas"][1:]:
+            if candidate["schedule"] == "direct" and beta != 1.:
+                continue
             row = indexed.get((candidate["width"], beta))
             if row is None:
                 raise ValueError("pricing lacks a requested width/batch/beta scope")
             lower += row["first_update_seconds"] + row["steady_update_seconds"] * config["training"]["cohort_min_updates"]
             upper += row["first_update_seconds"] + row["steady_update_seconds"] * config["training"]["rungs"][-1]
-    # Validation uses three maps at every look; update time conservatively
-    # prices value/score plus backwards/optimizer work. Include full bank ladder.
+    # Validation uses three separately compiled maps at each rung. Price their
+    # actual loss evaluation, including every planned sequential bank look.
     validation_batches = sum((n+batch-1)//batch for n in config["validation"]["bank_sizes"])
-    validation = sum(row["steady_update_seconds"] for row in indexed.values())
-    validation *= 3 * validation_batches * len(config["training"]["rungs"]) * len(config["training"]["roots"]) * len(config["training"]["learning_rates"])
+    validation = sum(indexed[(candidate["width"],beta)]["heldout_first_seconds"] +
+                     validation_batches*indexed[(candidate["width"],beta)]["heldout_seconds_per_batch"]
+                     for candidate in training_cohort(config)
+                     for beta in config["training"]["betas"][1:]
+                     if candidate["schedule"] == "continuation" or beta == 1.)
+    validation *= 3 * len(config["training"]["rungs"])
     factor = config["budget"]["forecast_safety_factor"]
     return {"minimum_cohort_seconds": factor*(lower+validation),
             "full_training_cap_seconds": factor*(upper+validation),

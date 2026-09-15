@@ -13,9 +13,9 @@ import math
 from pathlib import Path
 
 
-SCHEMA = "bayesfilter.q20.production_protocol.v1"
+SCHEMA = "bayesfilter.q20.production_protocol.v2"
 PARAMETERS = ("latent_mean_weight.0.0", "latent_mean_bias.0", "observation_weight.0.0", "observation_bias.0")
-METHODS = ("identity", "classical", "neutra", "ensemble")
+METHODS = ("identity", "classical", "neutra", "replica_exchange", "ensemble")
 
 
 def digest(value):
@@ -25,15 +25,23 @@ def digest(value):
 
 def frozen_scope_hash(config):
     """Confirmation reuses frozen development choices with fresh role seeds."""
-    return digest({**config, "role": "development"})
+    # Remaining wall-time balances and supervisor settings are accounting,
+    # not the numerical identity. Campaign resume still checks the full config.
+    return digest({k: ("development" if k == "role" else v)
+                   for k, v in config.items() if k not in {"budget", "execution"}})
 
 
 def write_json(path, payload, *, exclusive=True):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("x" if exclusive else "w") as stream:
-        json.dump(payload, stream, indent=2, sort_keys=True, allow_nan=False)
-        stream.write("\n")
+    encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    if exclusive and path.exists():
+        raise FileExistsError(path)
+    # A killed worker leaves a partial temporary file, never a published
+    # truncated checkpoint selected as the latest complete training state.
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(encoded)
+    temporary.replace(path)
 
 
 def protocol_template():
@@ -76,13 +84,19 @@ def protocol_template():
                       "bulk_ess": 400.0, "tail_ess": 400.0, "mean_mcse_sd": .02,
                       "quantile_mcse_sd": .05, "event_mcse": .01,
                       "quantiles": [.025, .5, .975], "event_coordinate": 2,
-                      "max_energy_error": 1000.0},
+                      "energy_log_accept_alert": -1000.0},
         "starts": {"max_proposals": 128, "per_sign": 2},
         "ensemble": {"charts": 2, "conditional_charts": 4,
                      "alternative_betas": [0.0, .25, .5, .75, 1.0]},
         "comparison": {"methods": list(METHODS), "mean_margin_sd": .10,
                        "quantile_margin_sd": .20, "event_margin": .05,
-                       "reference_error_fraction": 1.0 / 3.0},
+                       "reference_error_fraction": 1.0 / 3.0,
+                       "confirmation_replicates": 3, "interval_probability": .95},
+        "reference": {"banks": 8, "rungs": [1024, 4096, 16384],
+                      "batch_size": 32, "ess_min": 400., "minimum_tail_rows": 20},
+        "execution": {"poll_seconds": 1., "termination_grace_seconds": 5.,
+                      "diagnostic_attempt_seconds": 600., "diagnostic_attempts": 4,
+                      "pricing_transitions": 4, "stage_attempts": 2},
         "budget": {"campaign_remaining_seconds": 135275.83289109988,
                    "diagnostic_remaining_seconds": 54299.37991617,
                    "repair_allocation_seconds": 7200.0, "arm_cap_seconds": 28800.0,
@@ -161,6 +175,56 @@ def validate_protocol(config):
     for key, value in config["budget"].items():
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
             raise ValueError(f"invalid budget {key}")
+    # Values consumed by downstream stages must be checked here as well as at
+    # their public consumers; malformed metadata must not start a GPU worker.
+    for section in ("validation", "tuning", "posterior", "starts", "ensemble", "comparison", "reference", "execution"):
+        for key, value in config[section].items():
+            if isinstance(value, (float, int)) and (isinstance(value, bool) or not math.isfinite(value)):
+                raise ValueError(f"invalid finite {section}.{key}")
+    if p["energy_log_accept_alert"] >= 0:
+        raise ValueError("energy_log_accept_alert must be negative and reporting-only")
+    if p["event_coordinate"] != 2 or p["quantiles"] != [.025, .5, .975]:
+        raise ValueError("physical observation-weight event and declared quantiles are fixed")
+    for key in ("bulk_ess", "tail_ess", "mean_mcse_sd", "quantile_mcse_sd", "event_mcse"):
+        if p[key] <= 0:
+            raise ValueError(f"positive posterior {key} required")
+    if not 1 < p["retained_rhat"] <= p["warmup_rhat"]:
+        raise ValueError("invalid posterior R-hat thresholds")
+    for key in ("startup", "pilot", "measurement", "verification", "total_budget_units", "repair_reserve_units", "max_candidates", "chunk_max_results"):
+        if type(h[key]) is not int or h[key] < (0 if key == "startup" else 1):
+            raise ValueError(f"invalid tuning {key}")
+    if type(h["max_repairs_per_family"]) is not int or h["max_repairs_per_family"] < 0 or h["repair_factor"] <= 1:
+        raise ValueError("invalid tuning repair controls")
+    if any(type(x) is not int or x <= 0 for x in h["l_grid"] + h["evidence_rungs"]):
+        raise ValueError("positive integer tuning schedules required")
+    if len(set(h["l_grid"])) != len(h["l_grid"]) or h["max_wall_seconds"] <= 0:
+        raise ValueError("invalid tuning grid or time cap")
+    a, b = h["practical_region"]
+    c, d = h["repair_region"]
+    if not 0 < c <= a <= h["target_acceptance"] <= b <= d < 1:
+        raise ValueError("invalid nested acceptance intervals")
+    if abs((a+b)/2 - h["target_acceptance"]) > 1e-12 or abs((c+d)/2 - h["target_acceptance"]) > 1e-12:
+        raise ValueError("acceptance intervals must be centered on the target")
+    r = config["reference"]
+    if type(r["banks"]) is not int or r["banks"] < 2 or type(r["batch_size"]) is not int or r["batch_size"] < 2:
+        raise ValueError("reference requires multiple banks and batched evaluation")
+    if not r["rungs"] or sorted(set(r["rungs"])) != r["rungs"] or any(type(n) is not int or n % r["batch_size"] or n <= r["batch_size"] for n in r["rungs"]):
+        raise ValueError("reference rungs must increase and contain whole batches")
+    if r["ess_min"] <= 0 or type(r["minimum_tail_rows"]) is not int or r["minimum_tail_rows"] < 1:
+        raise ValueError("reference concentration and tail checks required")
+    for key, value in config["execution"].items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            raise ValueError(f"positive execution {key} required")
+    for key in ("diagnostic_attempts", "pricing_transitions", "stage_attempts"):
+        if type(config["execution"][key]) is not int:
+            raise ValueError(f"integer execution {key} required")
+    if config["execution"]["termination_grace_seconds"] >= config["execution"]["diagnostic_attempt_seconds"]:
+        raise ValueError("termination grace must fit deadline")
+    c = config["comparison"]
+    if any(c[k] <= 0 for k in ("mean_margin_sd", "quantile_margin_sd", "event_margin")) or not .5 < c["interval_probability"] < 1:
+        raise ValueError("invalid comparison margins or interval")
+    if type(c["confirmation_replicates"]) is not int or c["confirmation_replicates"] < (1 if config["role"] == "smoke" else 3):
+        raise ValueError("confirmation replication must follow declared protocol")
     return config
 
 
@@ -183,6 +247,7 @@ def scoped_seed(config, *labels):
 
 def training_cohort(config):
     t = config["training"]
-    return [{"id": f"w{width}-lr{lr:g}-r{root}", "width": width,
-             "learning_rate": lr, "root": root}
+    return [{"id": f"{schedule}-w{width}-lr{lr:g}-r{root}", "width": width,
+             "learning_rate": lr, "root": root, "schedule": schedule}
+            for schedule in ("direct", "continuation")
             for width in t["widths"] for lr in t["learning_rates"] for root in t["roots"]]

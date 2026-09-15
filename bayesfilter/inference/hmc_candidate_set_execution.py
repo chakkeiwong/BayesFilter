@@ -407,6 +407,24 @@ class HMCCandidateExecutionBinding:
             state = transform.latent_to_position(state)
         return tf.reshape(state, shape)
 
+    def active_positions(self, positions: Any) -> Any:
+        """Invert the issued frozen geometry without changing any layer."""
+        import tensorflow as tf
+        state = tf.convert_to_tensor(positions, tf.float64)
+        shape = state.shape
+        state = tf.reshape(state, [-1, shape[-1]])
+        for transform in self._transforms:
+            if hasattr(transform, "transport"):
+                state = transform.transport.inverse_theta_to_z_batch(state)
+            else:
+                # Geometry was validated when issued. Use tensor algebra here;
+                # the host-side affine convenience method tests Python bools
+                # and cannot run inside an enclosing XLA transition graph.
+                affine = transform.transform
+                state = tf.transpose(tf.linalg.solve(affine.factor,
+                    tf.transpose(state - affine.center)))
+        return tf.reshape(state, shape)
+
     def work_seed(self, work: HMCWorkItem) -> tuple[int, int]:
         digest = hashlib.sha256(json.dumps({
             "seed": self.config.seed, "scope": self.scope.payload(),
@@ -759,3 +777,29 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
     if binding.scope.adapter_signature != checked["final_adapter_signature"]:
         raise ValueError("reconstructed preparation adapter mismatch")
     return binding
+
+
+def bind_hmc_candidate_set_execution_new_starts(*, binding: HMCCandidateExecutionBinding,
+        initial_position: Any, config: HMCCandidateExecutionConfig,
+        scope_id: str, search_id: str, max_repairs_per_family: int = 0) -> HMCCandidateExecutionBinding:
+    """Issue an unverified scope with identical geometry and fresh physical starts.
+
+    This transfers no measurement or verification authority. The caller must
+    run the public tuner and obtain new verified members. It is useful for
+    independent confirmation of a preselected exact pair.
+    """
+    if not isinstance(binding, HMCCandidateExecutionBinding):
+        raise TypeError("an issued execution binding is required")
+    binding.validate()
+    if config.use_xla != binding.config.use_xla:
+        raise ValueError("new starts cannot change the qualified backend")
+    spec = binding._spec
+    return _issue_binding(adapter=binding._base_adapter, layers=spec["layers"],
+        initial_active_state=binding.active_positions(initial_position),
+        target_scope=spec["target_scope"], target_lineage=spec["target_lineage"],
+        preparation={"source": "unchanged_geometry_new_starts",
+                     "parent_binding_hash": binding.binding_hash,
+                     "epsilon_proposal_bound": spec["preparation"].get("epsilon_proposal_bound")},
+        config=config, source_paths=tuple(spec["source_closure"]), scope_id=scope_id,
+        search_id=search_id, epsilon_domain=binding.scope.epsilon_domain,
+        repair_factor=binding.scope.repair_factor, max_repairs_per_family=max_repairs_per_family)

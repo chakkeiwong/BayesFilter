@@ -1,7 +1,20 @@
 # q20 production program repair
 
 Date: 2026-09-15. Owner requested a thorough repair plan, review and execution.
-Status: `PLAN_REVIEWED_IMPLEMENTATION_PENDING`.
+Status: `PARTIALLY_IMPLEMENTED_MAIN_INTEGRATION_AND_LAUNCH_GAPS`.
+
+September 16 completion audit: the training repair is merged into local `main`
+at `965ba2949244ee2a1d911515b6865c268a4af8d2`. The private-checkout instructions
+below describe the original implementation, not a requirement to restart it.
+The [master's current section](bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-master-program-2026-09-02.md)
+now governs continuation. Steps 6–8 have not met their connected-execution and
+launch acceptance criteria; step 2 exposes only `validate`, `price`, `train`.
+The [corrected result](bayesfilter-ssl-lstm-q20-production-repair-result-2026-09-16.md)
+records verified components, concrete energy-contract defects, incomplete
+comparison/reference computation and missing whole-campaign supervision.
+The earlier statement that the software was ready for a development retry is
+withdrawn. Complete these requirements under the existing authorization before
+launching the serious training cohort.
 
 The q20 recovery runner trains only six updates, loses optimizer continuation,
 calls an obsolete tuning callback and omits the required posterior precision.
@@ -186,12 +199,6 @@ the actual measured development protocol and independent posterior evidence.
 
 ## Execution log
 
-Append implementation findings, revisions, commands and terminal result link
-here. Routine implementation choices within this plan require no new approval;
-platform GPU/tool permissions and genuine scientific-direction boundaries remain.
-
-## Execution log
-
 - 2026-09-15: isolated checkout created from main `5139f151` with the recorded
   shared HMC repair snapshot and strict q20 eigensolver prerequisite. The
   private tree includes the compiled Sylvester test library copied from the
@@ -217,6 +224,16 @@ platform GPU/tool permissions and genuine scientific-direction boundaries remain
   boundary; this is an environment availability result, not evidence against
   the q20 target or the repaired numerical route.
 
-Current software status: `REPAIRED_FOR_BOUNDED_DEVELOPMENT_RETRY`.
-Scientific status: `NOT_QUALIFIED`; training calibration, q20 GPU/XLA timing,
-public tuning, posterior precision, and an independent reference remain open.
+- 2026-09-16 completion audit: the final focused repair suite has **12 passed**,
+  including the Gaussian cohort/restart test; the earlier 11-test count preceded
+  that addition. Main's post-merge rerun passed in 14.72 seconds. The suite does
+  not exercise the new public tuning-to-posterior or ensemble consumers.
+- 2026-09-16 master recovery: preserve the interrupted CPU smoke as incomplete.
+  Its cooperative limit did not bound initialization/compilation; it was
+  manually interrupted, not stopped by a demonstrated hard deadline. The new
+  CLI's `price` mode does not consume `--max-seconds`. Complete external bounds
+  and aggregate accounting before numerical retries.
+
+Current software status: `PARTIALLY_IMPLEMENTED_MAIN_INTEGRATION_AND_LAUNCH_GAPS`.
+Scientific status: `NOT_QUALIFIED`. The master's ordered next work completes
+the existing plan; it neither changes the scientific target nor renews budget.

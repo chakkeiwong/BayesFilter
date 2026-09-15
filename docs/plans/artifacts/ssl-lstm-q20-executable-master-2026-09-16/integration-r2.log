@@ -1,0 +1,69 @@
+F
+=================================== FAILURES ===================================
+______________ test_actual_tuning_member_and_posterior[identity] _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-318/test_actual_tuning_member_and_0')
+method = 'identity'
+
+    @pytest.mark.parametrize("method", ["identity", "neutra"])
+    def test_actual_tuning_member_and_posterior(tmp_path, method):
+        config, bridge = protocol(), four_dimensional_bridge()
+        if method == "identity":
+            config["tuning"]["initial_epsilon"] = 1.1
+        export = None
+        if method == "neutra":
+            trained = run_training_cohort(config, bridge, tmp_path / "training",
+                memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+            cohort = json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+            export = next(iter(cohort.values()))["exports"]["1.0"]
+>       tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_q20_master_integration.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:177: in tune_scope
+    binding = bind_hmc_candidate_set_execution(initial_position=starts, mass_artifact=mass,
+bayesfilter/inference/hmc_candidate_set_execution.py:717: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:678: in _issue_binding
+    "source_closure": closure, "probe": _probe(active, starts,
+bayesfilter/inference/hmc_candidate_set_execution.py:252: in _probe
+    values, scores = zip(*(adapter.log_prob_and_grad(row) for row in tf.unstack(state)))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:252: in <genexpr>
+    values, scores = zip(*(adapter.log_prob_and_grad(row) for row in tf.unstack(state)))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/batched_value_score.py:479: in log_prob_and_grad
+    _call_value_score_with_batch_rank_bridge(self.base_adapter, theta)
+bayesfilter/inference/batched_value_score.py:155: in _call_value_score_with_batch_rank_bridge
+    value, score = base_adapter.log_prob_and_grad(base_theta)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/tempered_target_tf.py:577: in log_prob_and_grad
+    value, score, _status = self.log_prob_and_grad_status(theta)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/tempered_target_tf.py:588: in log_prob_and_grad_status
+    value, score, status = self.bridge.value_score_status(theta, self.beta)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/tempered_target_tf.py:423: in value_score_status
+    values = self._validate_theta(theta)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <bayesfilter.inference.tempered_target_tf.GaussianLikelihoodBridge object at 0x7fabe0d06900>
+theta = <tf.Tensor: shape=(4,), dtype=float64, numpy=array([-4.68098752,  3.64232993, -7.72289295,  1.38148761])>
+
+    def _validate_theta(self, theta: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(theta, tf.float64)
+        if values.shape.rank != 2 or values.shape[0] is None:
+>           raise TemperedBridgeError(
+                f"theta must have static rank-2 shape [batch,{self.parameter_dim}]"
+            )
+E           bayesfilter.inference.tempered_target_tf.TemperedBridgeError: theta must have static rank-2 shape [batch,4]
+
+bayesfilter/inference/tempered_target_tf.py:454: TemperedBridgeError
+----------------------------- Captured stderr call -----------------------------
+2026-09-16 04:14:21.674913: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior[identity]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 365 warnings in 3.81s
