@@ -140,3 +140,27 @@ artifact paths after the authorized launch. The recovered allowance subtracts
 all saved repair test durations and retains the entire old 7200-second hold.
 An explicit startup-overhead hold covers unmeasured process overhead; it is
 reserved money/time, not invented measured consumption. No budget is renewed.
+
+
+### Launch record
+
+The repair is committed on main as `6026b47a`. The numerical source was launched
+from isolated commit `98ea3860b9d14bf6c718b8fa4fa0faee869f6aaa`; all 141 integrated
+repair/evidence files match their isolated counterparts. Main's unrelated dirty
+work is preserved. Raw pytest logs retain original whitespace; code and written
+document whitespace checks pass.
+
+Trusted execution admitted this exact command from the isolated checkout:
+
+```bash
+/home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py campaign --config docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/protocol.json --budget-record docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/recovered-allowance.json --output-dir docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/real-q20-r1
+```
+
+The fresh readiness probe passed. The selected device is an RTX 4080 SUPER;
+the worker verifies memory growth before initialization. The real target
+signature is `9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278`.
+The first qualification attempt is bounded by 600 seconds from process creation,
+including native compilation and its termination grace. Its initial status is
+running; no qualification or training result is claimed at launch. The active
+ledger and receipts live in the isolated checkout at
+`docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/real-q20-r1/`.
