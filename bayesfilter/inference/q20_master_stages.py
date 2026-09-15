@@ -83,7 +83,8 @@ def dispatch(config, bridge, root, request, memory):
         from bayesfilter.inference.q20_hmc_qualification import qualify_bridge
         return qualify_bridge(config, bridge, root, betas=request.get("betas"))
     if stage == "price":
-        return price_complete(config, bridge, root, memory)
+        return price_complete(config, bridge, root, memory,
+            reservation_limit_seconds=request.get("reservation_limit_seconds"))
     if stage == "train":
         from bayesfilter.inference.q20_production_training import run_training_cohort
         return run_training_cohort(config, bridge, root, memory_policy=memory,
@@ -120,7 +121,7 @@ def dispatch(config, bridge, root, request, memory):
     raise ValueError("unknown executable master stage: " + stage)
 
 
-def price_complete(config, bridge, root, memory):
+def price_complete(config, bridge, root, memory, *, reservation_limit_seconds=None):
     """Measure real training, target, HMC/chart/exchange and preparation work.
 
     Tiny pricing maps measure work only; they are never exported as admitted
@@ -140,7 +141,16 @@ def price_complete(config, bridge, root, memory):
     from bayesfilter.inference.q20_production_config import scoped_seed
     root.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
-    priced = price_training(config, bridge, root / "training", memory_policy=memory)
+    priced = price_training(config, bridge, root / "training", memory_policy=memory,
+                            reservation_limit_seconds=reservation_limit_seconds)
+    if priced["status"] == "training_reservation_exceeds_allowance":
+        result = {"status": "unaffordable_under_declared_reservation", "config_hash": digest(config),
+            "sources": source_snapshot(), "training": priced, "training_quote": priced["reservation"],
+            "reservation_limit_seconds": reservation_limit_seconds,
+            "wall_seconds": time.monotonic()-started, "full_campaign_priced": False,
+            "production_qualified": False}
+        write_json(root / "result.json", result)
+        return result
     quote = training_quote(config, priced)
     shape = (config["posterior"]["chains"], bridge.parameter_dim)
     rows = []

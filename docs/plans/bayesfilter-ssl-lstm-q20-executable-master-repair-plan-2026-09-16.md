@@ -253,3 +253,52 @@ config therefore allows at most three initial diagnostic attempts. If those
 cannot finish the measured-cost prerequisite, preserve `MASTER_INCOMPLETE`;
 do not launch an underpriced training grid. All original campaign/diagnostic
 balances and the cumulative per-arm limit remain binding.
+
+### Measured-cost repair after r2
+
+The r2 master passed both real q20 GPU/XLA qualifications, then exhausted the
+600-second pricing attempt before all pricing scopes finished. Its settled
+charge is 1235.7968395520584 seconds. Remaining allowance is
+124709.27452363884 campaign seconds, including 43732.82154870897 diagnostic
+seconds. All four initial diagnostic attempts have now been consumed across
+r1/r2; this amendment is an explicit new allocation within those remaining
+balances, not renewal of the initial attempt allowance or the total budget.
+
+The pricing coordinator has a concrete planning defect: it insists on complete
+pricing even after measured components alone exceed the configured reservation
+limit. Width-16 batch-32 measurements already imply 810156.650776882 seconds
+under the existing training reservation formula. That formula reserves every
+heldout bank and rung and applies the declared factor of two. This is a
+conservative reservation, **not** a lower confidence bound on actual adaptive
+runtime. An early negative affordability decision needs no unmeasured cost to
+be filled in; a positive affordability decision still needs every required cost.
+
+Repair the coordinator to carry its immutable initial campaign allowance into
+pricing. After each completed training timing row, sum the nonnegative measured
+contributions to the existing reservation formula. Stop pricing with an explicit
+partial-cost result if that subtotal already exceeds the entire initial
+allowance, then report `UNDER_BUDGETED` before any reference/training/tuning
+stage. Missing costs remain listed as unmeasured. Keep the normal complete-cost
+route and exact scientific configuration unchanged. Share the reservation
+calculation between partial and complete pricing to avoid inconsistent formulas.
+
+Skeptical audit: this changes an engineering stop decision, not a scientific
+screen or target. A small timing sample is descriptive, so the result must say
+"unaffordable under the declared reservation rule", not "mathematically
+impossible within the budget". A changed remaining balance must not invalidate
+a cached request, hence use the immutable initial allowance for this early
+negative test. Keep actual remaining-budget checks for positive admission.
+Unsupported, duplicate, nonfinite or negative measurements must fail before
+they can manufacture an affordability verdict. The full pricing fixture must
+still reach its complete forecast when the early limit is absent or large.
+Verdict: proceed with this bounded accounting repair and its focused tests.
+
+Allocate at most 1800 seconds to three fresh-source GPU diagnostic attempts
+(two qualifications and the repaired pricing stage), each still capped at 600
+seconds, plus the separately measured focused regression work and one bounded
+readiness probe. Preserve r1/r2 and subtract every new charge. Source changes
+require fresh qualification; do not relabel the old receipts. The next output
+root is `real-q20-r3`. No further retry is authorized by this amendment after
+these three attempts. A cost deficit requires a revised executable cost plan
+or measured performance repair; it does not authorize weaker posterior checks,
+a smaller unassessed canary, additional total compute, or scientific promotion.

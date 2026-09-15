@@ -7,6 +7,31 @@ from bayesfilter.inference.q20_master_program import execute_master
 from bayesfilter.inference.q20_production_config import validate_protocol
 
 
+def test_real_pricing_worker_stops_early_and_resume_does_not_repeat(tmp_path):
+    from tests.test_q20_production_repair import tiny_protocol
+    config = tiny_protocol()
+    # Inflate the planned work, not the two actual pricing updates. This must
+    # stop after the first measured scope, before any expensive work starts.
+    config["training"].update(pricing_batches=[8], rungs=[100000, 200000],
+                              cohort_min_updates=100000)
+    validate_protocol(config)
+    kwargs = dict(repo=Path(__file__).resolve().parents[1], fixture=True,
+        allowance={"campaign_remaining_seconds":120., "diagnostic_remaining_seconds":100.})
+    root = tmp_path / "early-cost-stop"
+    result = execute_master(config, root, **kwargs)
+    assert result["status"] == "UNDER_BUDGETED", result
+    assert result["details"]["forecast"]["full_campaign_priced"] is False
+    before = json.loads((root / "campaign.json").read_text())
+    assert [a["stage"] for a in before["attempts"]] == ["price"]
+    receipt = json.loads(Path(before["stages"]["price"]["result_path"]).read_text())
+    assert len(receipt["result"]["training"]["rows"]) == 1
+    assert receipt["result"]["training_quote"]["missing_training_scopes"]
+    assert execute_master(config, root, **kwargs) == result
+    after = json.loads((root / "campaign.json").read_text())
+    assert before["attempts"] == after["attempts"]
+    assert before["spent_seconds"] == after["spent_seconds"]
+
+
 def test_master_runs_real_workers_and_confirmation_then_reuses_completed_stages(tmp_path):
     config=protocol()
     config["training"].update(betas=[0.,1.],pricing_batches=[8])

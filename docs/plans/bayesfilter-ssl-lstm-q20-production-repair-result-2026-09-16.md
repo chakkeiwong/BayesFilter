@@ -1,36 +1,43 @@
 # q20 production repair result
 
-## Governing update: executable master repaired, 2026-09-16
+## Governing update: executable master and measured cost, 2026-09-16
 
-Status: `REPAIRED_TESTED_READY_FOR_BOUNDED_EXECUTION`.
-The executable master now connects qualification, pricing, independent reference,
-separate direct/continuation training, current public tuning, all five posterior
-methods, development comparison and fresh-start confirmation. A complete
-known-target smoke passed 25 supervised worker stages and a zero-worker resume.
-See the [repair plan](bayesfilter-ssl-lstm-q20-executable-master-repair-plan-2026-09-16.md)
-and [whole-program review and execution record](bayesfilter-ssl-lstm-q20-executable-master-review-result-2026-09-16.md).
+Engineering status: `REPAIRED_TESTED_COST_STOP_READY`. The complete master is
+implemented and tested through 25 real supervised Gaussian-fixture stages and
+cached resume. The real q20 GPU/XLA run `real-q20-r2` passed both positive-beta
+qualifications, then timed out during pricing. Its terminal result is
+`MASTER_INCOMPLETE`; no full training cohort or posterior run was launched.
 
-Run from the isolated committed checkout
-`/tmp/BayesFilter-q20-master-repair-20260916` because main contains unrelated
-active work. The source-bound numerical state must stay in that checkout.
-The current CLI is `docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py`;
-`campaign` executes or resumes the same output root, and `status` reads its
-ledger. New roots require the recovered allowance record. The next real run
-is `docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/real-q20-r1/`.
-The final execution status will be recorded in the linked review result.
+The measured batch-32 timing records imply 1617749.0855 seconds (449.37 hours)
+under the current training reservation formula, before downstream reserves.
+That formula reserves all heldout-bank expansions and all training rungs, with
+a factor of two. It is a conservative planning requirement, not a statistical
+lower bound on actual adaptive runtime. The optimizer floor alone is about
+17.57 hours; the raw all-rung heldout reservation is about 207.11 hours.
 
-The current allowance preserves the old 7200-second hold, subtracts 1306.97
-reported repair-test seconds and holds another 115 seconds for unmeasured
-startup/exit overhead. Before the real launch, available campaign time is
-126653.86289109988 seconds, including 45677.40991617 diagnostic seconds. No
-previous budget is renewed. GPU availability must be checked under trusted
-execution; the earlier no-idle-GPU result was not a security rejection.
+A bounded accounting repair now stops pricing when measured positive
+contributions already exceed the initial campaign allowance. Positive admission
+still requires a complete forecast. Fourteen focused checks passed, including
+an actual pricing worker, zero-worker resume and the complete pricing route.
+The [plan](bayesfilter-ssl-lstm-q20-executable-master-repair-plan-2026-09-16.md)
+records the review and explicit follow-up allocation. See the
+[whole-program review and execution record](bayesfilter-ssl-lstm-q20-executable-master-review-result-2026-09-16.md).
 
-The latest tests establish connected execution, not q20 learning, whitening,
-posterior accuracy, method superiority or broad production readiness. The
-master preserves those evidence requirements and reports incomplete work.
-Candidate-specific contrasts remain repairs to diagnose and price under the
-existing campaign, not grounds to abandon the research direction.
+The next committed-source run is `real-q20-r3`, from the isolated checkout
+`/tmp/BayesFilter-q20-master-repair-20260916`, using
+`cost-stop-protocol.json` and `cost-stop-allowance.json` under
+`docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/`.
+The current CLI is `docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py`.
+The existing allowance, after r1/r2 and focused tests, is 124650.72741333082
+campaign seconds, including 43674.27443840095 diagnostic seconds. Prior holds
+remain deducted. The four initial diagnostics remain consumed; the plan
+allocates three further capped attempts within these same balances.
+
+GPU execution was admitted with verified memory growth. No current security
+rejection occurred. Real qualification establishes graph execution and checked
+numerics; it does not establish q20 learning, whitening, posterior accuracy,
+method superiority or production readiness. A cost deficit rejects the funded
+execution plan, not NeuTra as a research direction.
 
 ## Historical recovery audit — superseded by the governing update above
 

@@ -1,9 +1,10 @@
 # q20 executable master repair and whole-program review
 
 Date: 2026-09-16. Engineering status: `REPAIRED_AND_TESTED_FOR_BOUNDED_EXECUTION`.
-Research status: no repaired q20 posterior result yet. This is a skeptical
-self-review, not an independent endorsement. The authorized next action is
-execution from the isolated committed checkout.
+Research status: both q20 GPU/XLA qualification scopes passed in r2; no q20
+posterior result exists. The final section records the pricing timeout, measured
+cost deficit and repaired early affordability decision. This is a skeptical
+self-review, not an independent endorsement.
 
 The master now runs the complete fixed protocol: trusted device check,
 enclosing-graph and public-runner qualification, complete cost measurements,
@@ -177,3 +178,58 @@ passed again: 4 tests in 344.71 seconds. Qualification is now dispatched per
 positive temperature with a merged receipt that must cover the entire ladder.
 The fresh retry uses `retry-protocol.json` and `retry-allowance.json`; the three
 remaining initial diagnostic attempts and all prior spending are preserved.
+
+
+### r2 outcome and reviewed cost-stop repair
+
+The r2 source was `97d203fde1a2f3b795c6eb7e03c432c8fc22a47c`, integrated on
+main through `d0ea4fe6`. The exact command used the `campaign` mode with
+`retry-protocol.json`, `retry-allowance.json` and output `real-q20-r2` beneath
+the execution artifact root. It ran on host GPU 1, an RTX 4080 SUPER, with
+TensorFlow 2.20.0, GPU/XLA, float64 and verified memory growth before device
+initialization.
+
+| Stage | Outcome | Supervisor wall seconds |
+| --- | --- | ---: |
+| Trusted readiness | Passed | 3.5035833190 |
+| Beta 0.5 enclosing graph and public serial HMC runner | Passed | 320.0745517510 |
+| Beta 1 enclosing graph and public serial HMC runner | Passed | 316.5773860420 |
+| Full pricing | External timeout, exit 124; partial timing records preserved | 595.6413184400 |
+| Total | `MASTER_INCOMPLETE`, initial diagnostic attempts exhausted | 1235.7968395521 |
+
+The remaining balance after r2 was 124709.27452363884 campaign seconds,
+including 43732.82154870897 diagnostic seconds. A new focused regression
+consumed 58.54711030801991 seconds including startup and exit; 14 checks passed
+in pytest's 54.39 seconds. The recovered r3 balance is therefore
+124650.72741333082 campaign seconds and 43674.27443840095 diagnostic seconds.
+
+The timing rows cover every configured batch-32 width/positive-beta scope.
+Their declared training reservation is 1617749.0854983728 seconds (449.37 h):
+63267.25745440868 raw optimizer-floor seconds plus 745607.2852947777 raw
+all-rung heldout-reserve seconds, multiplied by two. The saved
+`r2-cost-reservation-review.json` identifies each input row by checksum.
+This is not a complete campaign price and not a statistical lower bound on
+runtime. Early adaptive stopping could reduce work. Nevertheless the existing
+reservation rule cannot admit this configuration against about 34.6 h remaining.
+
+Whole-program review found that pricing could continue until its deadline even
+once that negative affordability decision was available. The repaired shared
+cost calculation now checks each completed row, validates its scope and finite
+positive times, and emits a partial-cost deficit before unmeasured downstream
+work. The coordinator then reports `UNDER_BUDGETED`. It uses the immutable
+initial allowance so resume does not change the cached request. The full
+remaining-balance check remains required for positive admission. No numerical
+settings, model equations or scientific screens changed.
+
+The actual-worker regression confirms one pricing stage then no downstream
+stages, and an unchanged zero-worker resume. The existing complete pricing
+fixture still computes every cost and a finite complete forecast. The
+supervision and invalid-measurement regressions also passed. Review verdict:
+ready for the explicit r3 cost-stop execution under the amended plan, with
+fresh source qualification. No independent review endorsement is claimed.
+
+The r2 result invalidated the initial pricing allocation and exposed the cost
+reservation deficit; it did not invalidate the target, observed data, numerical
+qualification, or NeuTra mechanism. The next scientific work needs a funded
+validation/computation plan or measured performance repair. Shortening training
+back to an unassessed canary or weakening posterior precision is not justified.

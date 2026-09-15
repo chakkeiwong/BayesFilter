@@ -196,7 +196,20 @@ def _execute(campaign, *, fixture=False,stop_after=None):
                 combined["betas"].update(receipt["betas"])
             qualification=str(campaign.root/"qualification.json")
             atomic_json(qualification,{**combined,"checksum":digest(combined)})
-        pricing=stage("price",{"stage":"price"},diagnostic=True)
+        # This fixed limit preserves cached-request identity on resume. Exceeding
+        # the entire initial allowance is sufficient for an early rejection;
+        # positive admission below still checks the actual remaining balance.
+        pricing=stage("price",{"stage":"price",
+            "reservation_limit_seconds":campaign.state["campaign_limit"]},diagnostic=True)
+        if pricing["result"]["status"] == "unaffordable_under_declared_reservation":
+            quote={"status":"partial_costs_exceed_declared_reservation_limit",
+                "training_quote":pricing["result"]["training_quote"],
+                "reservation_limit_seconds":pricing["result"]["reservation_limit_seconds"],
+                "full_campaign_priced":False}
+            atomic_json(campaign.root/"forecast.json",quote)
+            return finish("UNDER_BUDGETED",forecast=quote,
+                unmet="measured training contributions exceed the declared reservation limit",
+                limitation="reservation rule, not a lower statistical bound on adaptive runtime")
         pricing["result"]["process_overhead_seconds"]=max(0.,pricing["supervisor_seconds"]-pricing["wall_seconds"])
         quote=forecast_campaign(config,pricing["result"])
         atomic_json(campaign.root/"forecast.json",quote)

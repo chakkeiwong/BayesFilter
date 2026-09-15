@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 import time
 
@@ -216,7 +217,12 @@ def run_training_cohort(config, bridge, root, *, memory_policy, max_seconds, res
     return save("complete")
 
 
-def price_training(config, bridge, root, *, memory_policy, batches=None):
+def price_training(config, bridge, root, *, memory_policy, batches=None,
+                   reservation_limit_seconds=None):
+    from bayesfilter.inference.q20_campaign_costs import training_reservation
+    if reservation_limit_seconds is not None and (
+            not math.isfinite(reservation_limit_seconds) or reservation_limit_seconds <= 0):
+        raise ValueError("pricing reservation limit must be finite and positive")
     root = Path(root)
     root.mkdir(parents=True, exist_ok=False)
     rows = []
@@ -247,6 +253,16 @@ def price_training(config, bridge, root, *, memory_policy, batches=None):
                              "heldout_first_seconds": validation_times[0],
                              "heldout_seconds_per_batch": validation_times[1]/2})
                 write_json(root / f"price-w{width}-b{batch}-beta{beta:g}.json", rows[-1])
+                reservation = training_reservation(config, rows)
+                if (reservation_limit_seconds is not None
+                        and reservation["minimum_cohort_seconds"] > reservation_limit_seconds):
+                    result = {"config_hash": digest(config), "target_signature": bridge.target_signature,
+                              "sources": sources, "memory_policy": memory_policy, "rows": rows,
+                              "status": "training_reservation_exceeds_allowance",
+                              "reservation": reservation, "reservation_limit_seconds": reservation_limit_seconds,
+                              "scalar_hmc_reference_pricing": "not_measured", "production_qualified": False}
+                    write_json(root / "pricing.json", result)
+                    return result
     result = {"config_hash": digest(config), "target_signature": bridge.target_signature,
               "sources": sources, "memory_policy": memory_policy, "rows": rows,
               "status": "training_priced", "scalar_hmc_reference_pricing": "not_measured",
@@ -258,31 +274,8 @@ def price_training(config, bridge, root, *, memory_policy, batches=None):
 def training_quote(config, pricing):
     if pricing["config_hash"] != digest(config) or pricing["sources"] != source_snapshot():
         raise ValueError("pricing scope changed")
-    batch = config["training"]["batch_size"]
-    indexed = {(row["width"], row["beta"]): row for row in pricing["rows"] if row["batch_size"] == batch}
-    lower = upper = 0.
-    for candidate in training_cohort(config):
-        for beta in config["training"]["betas"][1:]:
-            if candidate["schedule"] == "direct" and beta != 1.:
-                continue
-            row = indexed.get((candidate["width"], beta))
-            if row is None:
-                raise ValueError("pricing lacks a requested width/batch/beta scope")
-            lower += row["first_update_seconds"] + row["steady_update_seconds"] * config["training"]["cohort_min_updates"]
-            upper += row["first_update_seconds"] + row["steady_update_seconds"] * config["training"]["rungs"][-1]
-    # Validation uses three separately compiled maps at each rung. Price their
-    # actual loss evaluation, including every planned sequential bank look.
-    validation_batches = sum((n+batch-1)//batch for n in config["validation"]["bank_sizes"])
-    validation = sum(indexed[(candidate["width"],beta)]["heldout_first_seconds"] +
-                     validation_batches*indexed[(candidate["width"],beta)]["heldout_seconds_per_batch"]
-                     for candidate in training_cohort(config)
-                     for beta in config["training"]["betas"][1:]
-                     if candidate["schedule"] == "continuation" or beta == 1.)
-    validation *= 3 * len(config["training"]["rungs"])
-    factor = config["budget"]["forecast_safety_factor"]
-    return {"minimum_cohort_seconds": factor*(lower+validation),
-            "full_training_cap_seconds": factor*(upper+validation),
-            "forecast_safety_factor": factor, "factor_status": "engineering_hypothesis",
-            "full_campaign_priced": False,
-            "remaining_to_price": ["scalar_HMC", "classical_preparation", "ensemble", "reference", "repair"],
-            "status": "training_only_forecast"}
+    from bayesfilter.inference.q20_campaign_costs import training_reservation
+    result = training_reservation(config, pricing["rows"])
+    if result["missing_training_scopes"]:
+        raise ValueError("pricing lacks a requested width/batch/beta scope")
+    return result
