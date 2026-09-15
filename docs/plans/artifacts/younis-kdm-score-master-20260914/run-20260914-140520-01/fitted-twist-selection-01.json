@@ -1,0 +1,172 @@
+{
+  "candidates": [
+    {
+      "calibration_score_mse": 0.15341928026195523,
+      "candidate": "18c537c7f6fb45ec96bcdc11dbec7de2187062aaf970ebaebc3a380182c6409b",
+      "controls": {
+        "fit_floor_ratio": 0.01,
+        "fit_initial_variance": 4.0,
+        "fit_iterations": 2,
+        "fit_theta": [
+          0.62,
+          -0.8,
+          -0.6,
+          0.9,
+          0.25,
+          -0.3
+        ]
+      },
+      "validation_score_mse": 0.590468665560143
+    },
+    {
+      "calibration_score_mse": 0.31647769905734324,
+      "candidate": "2bf8b95832fc6e8292c961622df78a9ea91e021cf3dbdd97156e9ad753cb5800",
+      "controls": {
+        "fit_floor_ratio": 0.1,
+        "fit_initial_variance": 4.0,
+        "fit_iterations": 2,
+        "fit_theta": [
+          0.62,
+          -0.8,
+          -0.6,
+          0.9,
+          0.25,
+          -0.3
+        ]
+      },
+      "validation_score_mse": 0.7318810964957074
+    }
+  ],
+  "criterion": "calibration_mean_squared_error_to_exact_score",
+  "default_ready": false,
+  "evidence": [
+    {
+      "digest": "9bdf632b7ebd9e3483aac347033f9cccac80300e5fd9c91d665b2be4d9e72211",
+      "row": "fitted_twist_0_calibration_0"
+    },
+    {
+      "digest": "5c650e2069c13da87b7702bc10a59e06d52e4738e34df4f555bba84224afa7b4",
+      "row": "fitted_twist_0_calibration_1"
+    },
+    {
+      "digest": "6628be1f5fd8b47f27061597843d2d587cb86071e6fc1fb7e745fa824a3ae6ea",
+      "row": "fitted_twist_0_validation_0"
+    },
+    {
+      "digest": "03f24f4164f4c1d31c7aad41fafb286856fe768048267fdd3431530e6783d49f",
+      "row": "fitted_twist_0_validation_1"
+    },
+    {
+      "digest": "840d5a2a8313f9d053affd6372d1a301f1fab459e8bfe30781be21cc1d5fc9d1",
+      "row": "fitted_twist_1_calibration_0"
+    },
+    {
+      "digest": "bbcdd4e8fdaa6d5fdf592bc84f85d76a9a911bf057ff5e5422be5976905b819d",
+      "row": "fitted_twist_1_calibration_1"
+    },
+    {
+      "digest": "08e1014801cb06e558e52ae607f4d078a4bfc78fb5f047a802b212aa010c8b23",
+      "row": "fitted_twist_1_validation_0"
+    },
+    {
+      "digest": "5a40260b715f6c155d28510bd28af68f0663e96d0bfc68c645ac8aa61f6f08d3",
+      "row": "fitted_twist_1_validation_1"
+    }
+  ],
+  "evidence_class": "mechanics",
+  "issuer": "bayesfilter.score_study.tuning.issue_selection",
+  "partitions": {
+    "calibration": [
+      150
+    ],
+    "claim": [
+      170
+    ],
+    "validation": [
+      160
+    ]
+  },
+  "schema": "younis_score_offline_selection_v1",
+  "scope": {
+    "candidate_family": [
+      {
+        "fit_floor_ratio": 0.01,
+        "fit_initial_variance": 4.0,
+        "fit_iterations": 2,
+        "fit_theta": [
+          0.62,
+          -0.8,
+          -0.6,
+          0.9,
+          0.25,
+          -0.3
+        ]
+      },
+      {
+        "fit_floor_ratio": 0.1,
+        "fit_initial_variance": 4.0,
+        "fit_iterations": 2,
+        "fit_theta": [
+          0.62,
+          -0.8,
+          -0.6,
+          0.9,
+          0.25,
+          -0.3
+        ]
+      }
+    ],
+    "chunk_policy_id": "not_applicable",
+    "comparison_target": "model_score",
+    "estimator": "analytical_filter",
+    "model": "gaussian_all_parameters",
+    "parameter_dimension": 6,
+    "proposal": "fitted_twist",
+    "reset_contract_id": "not_applicable",
+    "settings": {
+      "control_family": "canonical_dual_cap_genut_contract_e_v1",
+      "data_theta": [
+        0.62,
+        -0.8,
+        -0.6,
+        0.9,
+        0.25,
+        -0.3
+      ],
+      "device": "CPU",
+      "dimension": 1,
+      "dtype": "float64",
+      "horizon": 3,
+      "jit_compile": true,
+      "observation_dimension": 1,
+      "particles": 16,
+      "prepared_data_regime": "affine_gaussian_six_parameter_v1",
+      "tf32": false,
+      "theta": [
+        0.62,
+        -0.8,
+        -0.6,
+        0.9,
+        0.25,
+        -0.3
+      ]
+    }
+  },
+  "selected_controls": {
+    "fit_floor_ratio": 0.01,
+    "fit_initial_variance": 4.0,
+    "fit_iterations": 2,
+    "fit_theta": [
+      0.62,
+      -0.8,
+      -0.6,
+      0.9,
+      0.25,
+      -0.3
+    ]
+  },
+  "source_fingerprint": "7b63f759e3049ebd5b9ff3a3067322bd4a79843f563ba1a5498e64366fe5651c",
+  "source_run": "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/fitted-twist-selection-cpu-01",
+  "statistically_supported_ranking": false,
+  "validation_status": "complete_finite_descriptive_only"
+}

@@ -1,0 +1,170 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amsthm,amssymb,mathtools}
+\usepackage{hyperref}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}[proposition]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\DeclareMathOperator{\diag}{diag}
+\newcommand{\R}{\mathbb R}
+\newcommand{\absdet}[1]{\left|\det\!\left(#1\right)\right|}
+\title{An Observation-Aware Conditional TT Proposal for Zhao--Cui Filtering}
+\author{Mathematical derivation and audit-ready specification}
+\date{2026-09-12}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note derives an observation-aware coordinate guide for the conditional
+tensor-train (TT) proposal used in Zhao--Cui Algorithm~3. The guide changes
+the coordinates in which the exact sequential target is fitted; it does not
+replace the transition or observation factors, and it does not replace the
+conditional TT density by a Gaussian approximation. Propositions establish
+the transformed density, its Jacobian, normalization of the conditional
+proposal, and exactness of the resulting importance-weight identity.
+\end{abstract}
+
+\section{Target and proposal contract}
+Let $c=(\theta,x_{t-1})\in\R^{d+m}$ and let $x=x_t\in\R^m$. Given
+$y_{1:t}$, define the unnormalized one-step target
+\begin{equation}\label{eq:target}
+ q_t(x,c)=\widehat\pi_{t-1}(c)\,f_t(x\mid c)\,g_t(y_t\mid x,\theta),
+\end{equation}
+where $\widehat\pi_{t-1}$ is the previous approximation, $f_t$ is the state
+transition density, and $g_t$ is the observation density. Zhao and Cui's
+Algorithm~3 draws $x$ conditionally on each retained $c$ and updates the
+particle weight with
+\begin{equation}\label{eq:weight}
+ \omega_t(x,c)=\frac{f_t(x\mid c)g_t(y_t\mid x,\theta)}
+ {\widehat p_t(x\mid c,y_{1:t})}.
+\end{equation}
+The denominator must be the density of the physical state actually drawn.
+
+\section{Observation-dependent affine guide}
+\begin{definition}[Affine guide]
+For each $c$ and $y_t$, let $m_t(c,y_t)\in\R^m$ and let
+$L_t(c,y_t)\in\R^{m\times m}$ be nonsingular. Define
+\begin{equation}\label{eq:guide}
+ G_t(u;c,y_t)=m_t(c,y_t)+L_t(c,y_t)u,\qquad u\in\R^m.
+\end{equation}
+The guide may be obtained from weighted particle moments, a standard UKF
+moment calculation, or a likelihood-weighted sigma-point projection. Those
+moment sources are distinct methods; the derivation below only requires the
+nonsingularity of $L_t$.
+\end{definition}
+
+\begin{proposition}[Pullback and Jacobian]
+\label{prop:pullback}
+For fixed $(c,y_t)$, the map $u\mapsto x=G_t(u;c,y_t)$ is a bijection and
+\begin{equation}\label{eq:pullback}
+ q_t^G(u,c)=q_t(G_t(u;c,y_t),c)\,\absdet{L_t(c,y_t)}.
+\end{equation}
+If the joint map is $\widetilde G_t(u,c)=(G_t(u;c,y_t),c)$, its Jacobian
+determinant is also $\det L_t(c,y_t)$.
+\end{proposition}
+\begin{proof}
+Nonsingularity gives the inverse
+$G_t^{-1}(x;c,y_t)=L_t(c,y_t)^{-1}(x-m_t(c,y_t))$. The ordinary change-of-
+variables formula gives~\eqref{eq:pullback}. The Jacobian of $\widetilde G_t$
+has block form
+\[
+ \begin{pmatrix}L_t&\partial_cG_t\\0&I\end{pmatrix},
+\]
+which is block triangular, so its determinant is $\det L_t$.
+\end{proof}
+
+\begin{proposition}[Conditional TT proposal]
+\label{prop:proposal}
+Suppose a nonnegative squared-TT approximation produces a normalized
+conditional density $\widehat p_t^G(u\mid c,y_{1:t})$. Define the physical
+proposal by pushing it through~\eqref{eq:guide}:
+\begin{equation}\label{eq:physical-proposal}
+ \widehat p_t(x\mid c,y_{1:t})
+ =\widehat p_t^G\!\left(G_t^{-1}(x;c,y_t)\mid c,y_{1:t}\right)
+   \absdet{L_t(c,y_t)}^{-1}.
+\end{equation}
+Then $\widehat p_t(\cdot\mid c,y_{1:t})$ is normalized and sampling
+$u\sim\widehat p_t^G$ followed by $x=G_t(u;c,y_t)$ has this density.
+\end{proposition}
+\begin{proof}
+Substitute $u=G_t^{-1}(x;c,y_t)$ in the change-of-variables formula. The
+factor $\absdet{L_t}^{-1}$ is the inverse Jacobian. Integrating~\eqref{eq:physical-proposal}
+over $x$ and changing variables back to $u$ gives integral one.
+\end{proof}
+
+\section{How the TT fit uses the observation}
+The TT regression target in guide coordinates is the exact pullback~\eqref{eq:pullback}.
+Equivalently, following Zhao--Cui's bridge construction, choose a positive
+bridge $\rho_t$ and a reference density $\eta$ for $u,c$, then fit
+\begin{equation}\label{eq:ratio}
+ q_{t,\rho}^G(u,c)=
+ \frac{q_t(G_t(u;c,y_t),c)}{\rho_t(G_t(u;c,y_t),c)}\,\eta(u,c).
+\end{equation}
+The fitted squared TT and its conditional KR rearrangement operate on this
+transformed object. The observation enters through $g_t$ in~\eqref{eq:target}
+and, when the guide is adaptive, through $m_t,L_t$ and the inverse map.
+
+\begin{proposition}[Exact importance correction]
+\label{prop:weights}
+Assume the previous approximation is the factor appearing in~\eqref{eq:target}
+and that the proposal is~\eqref{eq:physical-proposal}. Then the Algorithm~3
+increment~\eqref{eq:weight} is the Radon--Nikodym correction from the proposal
+joint density to the target joint density. In particular, omitting the
+Jacobian in~\eqref{eq:physical-proposal}, or dividing by a bare guide Gaussian,
+does not give the stated correction unless that omitted factor is identically
+one.
+\end{proposition}
+\begin{proof}
+The sampling density for $(c,x)$ is
+$\widehat\pi_{t-1}(c)\widehat p_t(x\mid c,y_{1:t})$. Dividing~\eqref{eq:target}
+by this density cancels $\widehat\pi_{t-1}$ and yields~\eqref{eq:weight}.
+Substitution of~\eqref{eq:physical-proposal} shows that the inverse Jacobian
+must be present in the denominator. Removing it changes the Radon--Nikodym
+derivative by $\absdet{L_t}$.
+\end{proof}
+
+\begin{proposition}[Observation-response requirement]
+\label{prop:response}
+If $m_t$ and $L_t$ are independent of $y_t$, then the guide itself cannot
+provide observation adaptation. If, additionally, the TT rows and fitted
+conditional are unchanged when $y_t$ changes, the resulting proposal is not
+observation-responsive even though the exact likelihood remains in the final
+weight.
+\end{proposition}
+\begin{proof}
+The map~\eqref{eq:guide} depends on the observation only through $m_t,L_t$.
+If those and the fitted conditional are unchanged, the distribution of the
+generated $x$ conditional on $c$ is unchanged. The likelihood can still alter
+the importance weight, but it has not altered the proposal.
+\end{proof}
+
+\section{Method status and audit boundary}
+The source-faithful baseline is Zhao--Cui's Gaussian bridge: weighted particle
+moments define a full-joint affine map, followed by fitting the transformed
+target-to-bridge ratio. Their tempered bridge is the source-supported nonlinear
+extension. A standard UKF is a comparator for constructing moments; it uses
+transformed observation sigma points and state--observation cross-covariance.
+Likelihood-softmax weighting of state sigma points is a separate extension.
+
+The present derivation proves the mathematical contract conditional on a
+nonsingular guide and a normalized TT conditional. It does not prove that UKF
+moments, the likelihood-weighted projection, or any finite TT rank gives a
+better filter. Those claims require executable response, round-trip, Jacobian,
+and replicated filtering tests.
+
+\begin{thebibliography}{9}
+\bibitem{zhaocui2024} Y. Zhao and T. Cui, ``Tensor-train methods for sequential
+state and parameter learning in state-space models,'' \emph{JMLR} 25 (2024),
+1--73. \href{https://www.jmlr.org/papers/v25/23-0743.html}{Official article}.
+\bibitem{julieruhlmann1997} S. J. Julier and J. K. Uhlmann, ``A new extension
+of the Kalman filter to nonlinear systems,'' Proc. SPIE 3068 (1997), 182--193,
+doi:10.1117/12.280797.
+\bibitem{cuidolgov2022} T. Cui and M. Dolgov, ``Deep composition of
+tensor-trains using squared inverse Rosenblatt transports,'' \emph{Foundations
+of Computational Mathematics} 22 (2022), 1261--1296,
+doi:10.1007/s10208-021-09537-5.
+\end{thebibliography}
+\end{document}

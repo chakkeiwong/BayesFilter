@@ -1,0 +1,220 @@
+--- baseline.tex
++++ corrected.tex
+@@ -24,7 +24,7 @@
+ \title{Younis Kernel Mixtures and Model-Score Estimation\\
+ From the LEDH--OT--GenUT Filter to Corrected Mixtures}
+ \author{BayesFilter research note}
+-\date{11 September 2026}
++\date{12 September 2026}
+ 
+ \begin{document}
+ \maketitle
+@@ -39,10 +39,13 @@
+ reference. The integrated derivatives pass their declared checks, but the
+ calibrated resampling construction has higher model-score mean squared error
+ than the canonical filter in both tested matrix-Gaussian scopes. We retain
+-these results and derive a different use of the same mixture ideas: construct
+-evaluable proposals, retain the original transition and observation densities
+-in the importance correction, and estimate the observed-data score by
+-averaging complete-data scores over possible ancestors. Selective pathwise
++these results and, for models with regular transition densities, derive a
++different use of the same mixture ideas: construct evaluable proposals,
++retain the original transition and observation densities in the importance
++correction, and estimate the observed-data score by averaging complete-data
++scores over possible ancestors. This smoothing recursion does not apply as
++written to degenerate DSGE transitions; their score construction remains
++unresolved. Selective pathwise
+ and importance-weight derivatives, valid control variates, and analytic
+ conditional integration supply additional variance-reduction candidates.
+ The note documents the implemented finite programs, the reasons for each
+@@ -970,20 +973,24 @@
+ acceptance assumptions \citep[Section 3.1, Algorithm 2; Section 3.2.4,
+ Theorem 10]{olsson2014paris}. Those assumptions do not hold automatically in
+ every repository model, particularly when transition densities are singular
+-or backward acceptance becomes small. Nevertheless, ``always quadratic''
+-was an incorrect reason to exclude it. The all-components IWSG experiments
+-already incurred quadratic work, making a measured comparison with
+-ancestor-averaged methods more relevant than that earlier exclusion suggests.
+-
+-The next direction therefore assigns different jobs to three components.
++or backward acceptance becomes small. ``Always quadratic'' was therefore an
++incorrect cost argument. Correcting that argument does not remove the
++structural obstruction from degenerate transitions: sampling backward
++ancestors cannot create transitions that the model forbids. A comparison
++with ancestor-averaged methods is a question for models whose transition and
++backward-conditioning assumptions hold.
++
++For those regular-transition models, a reference comparison assigns different
++jobs to three components.
+ An evaluable mixture proposes particles. The original model densities specify
+ their importance correction. A posterior-score recursion averages over the
+ ancestor uncertainty that remains. Selective pathwise and importance-weight
+ gradients are an additional way to reduce variance when mixture expectations
+-must be differentiated. This combination has not been tested here. It is
+-preferred as the next hypothesis because every component has a clear role in
+-the model-score calculation, not because the existing negative results prove
+-it will perform better.
++must be differentiated. This combination has not been tested here. Its
++components have explicit roles in the model-score calculation, but that
++does not make it a general solution for the degenerate DSGE target. The
++support obstruction in Section~\ref{sec:fisher-degenerate} must be resolved
++before proposing a score recursion for that target.
+ 
+ 
+ \section{Mixture proposals with the original model correction}
+@@ -1192,10 +1199,14 @@
+ \section{A model score that averages over ancestors}
+ \label{sec:fisher}
+ 
+-A good proposal improves the particle approximation, but a separate question
++A well-chosen proposal can improve the particle approximation, but a separate question
+ remains: which score should we compute from those particles? Differentiating
+ every operation of a chosen finite filter is one answer. Fisher's identity
+-supplies another, aimed directly at the observed-data score.
++supplies another, aimed directly at the observed-data score. The recursion
++below is a smoothing construction, even though its history averages are
++updated forward in time. It requires evaluable transition densities and a
++valid backward conditional. It does not apply as written to the degenerate
++DSGE transitions discussed in Section~\ref{sec:fisher-degenerate}.
+ 
+ Assume the initial, transition, and observation laws have differentiable
+ densities on a common dominating measure, and that differentiation may pass
+@@ -1313,6 +1324,66 @@
+ for replacing the exact ancestor sum by a controlled number of backward
+ draws; its acceptance cost, added variance, and support assumptions must be
+ measured in the actual model before choosing it over the exact reference.
++
++\subsection{Why degenerate transitions obstruct this recursion}
++\label{sec:fisher-degenerate}
++
++Consider a state equation with fewer independent shocks than state
++coordinates,
++\begin{align}
++ x_t&=A_\theta x_{t-1}+G_\theta\varepsilon_t,
++ \qquad \varepsilon_t\sim N(0,I_r),\\
++ \mathcal S_j&=A_\theta x_{t-1}^j+\operatorname{range}(G_\theta),
++ \qquad \operatorname{rank}(G_\theta)=r<d_x.
++ \label{eq:degenerate-ancestor-supports}
++\end{align}
++Here $x_t\in\R^{d_x}$, and $\mathcal S_j$ is the set of successors allowed
++by ancestor $j$. Each conditional transition is supported on that affine
++subspace and has no full-dimensional Lebesgue density. Thus
++\eqref{eq:backward-particle-probabilities} cannot be evaluated with ordinary
++ambient Gaussian densities. A pseudoinverse and pseudodeterminant alone do
++not repair it: a rank-aware density must also enforce the correct support.
++
++The AR(2) example in \eqref{eq:ar2-support-distinction} makes the failure
++concrete. A child drawn from ancestor $a$ satisfies
++$x_{t,2}=x_{t-1,1}^a$. At a fixed parameter, conditioning the finite mixture
++on this supporting line excludes every ancestor with a different first
++coordinate. If these coordinates are distinct, the compatible ancestor
++probabilities are
++\begin{equation}
++ b_t^{ji}=\mathbf 1\{j=a\}.
++ \label{eq:degenerate-ancestor-collapse}
++\end{equation}
++The proposed history average then collapses to the sampled genealogy. It
++does not recover the alternative histories needed to repair genealogical
++degeneracy. PaRIS changes how backward ancestors are sampled; it cannot
++give positive probability to these incompatible transitions.
++
++This obstruction concerns the conditional transitions between fixed
++particles. The exact predictive marginal can still be full dimensional
++after integrating over earlier continuous state uncertainty, as the same
++AR(2) example shows. That fact does not make the finite mixture of distinct
++conditional supports full dimensional. An ambient Gaussian proposal assigns
++zero probability to their union, so it cannot provide the exact importance
++correction for that finite singular mixture. Adding full-dimensional process
++noise changes the model; smoothing the finite predictive mixture into an
++ambient KDM changes the approximation. Neither operation establishes the
++displayed model-corrected recursion for the original degenerate transition.
++
++Innovation coordinates are a possible starting point for a different
++derivation. They require the joint likelihood to be written in those
++coordinates, including the initial law and the dependence of the state map
++on $\theta$. Substituting an innovation density for
++$f_\theta(x_t\mid x_{t-1})$ in the existing backward weights is not such a
++derivation. In particular, moving support contributes state-map derivatives
++to the observation factors, as \eqref{eq:moving-support-score} demonstrates.
++
++Some degenerate models admit an exact reduction to common stochastic
++coordinates, or another specially derived smoothing method. The obstruction
++therefore does not rule out every form of smoothing. It does rule out the
++ordinary all-ancestor recursion above as a general method for the degenerate
++DSGE target. A successful full-rank Gaussian comparison would establish no
++extension to that target, whose score construction remains unresolved.
+ 
+ \subsection{Using both past and future information}
+ 
+@@ -1574,10 +1645,13 @@
+ claim posterior readiness. The interface and capability registry were read
+ to keep the proposed downstream use consistent with the actual repository.
+ 
+-The practical order is therefore to check model identity and complete
+-initialization, establish a corrected mixture/Fisher reference, compare
+-selective gradient estimators where needed, and then investigate scalable
+-ancestor approximations or learned proposals. Control variates, analytic
++For models with regular transition densities, a reference study can check
++model identity and complete initialization, establish a corrected
++mixture/Fisher reference, compare selective gradient estimators where needed,
++and then investigate scalable ancestor approximations or learned proposals.
++For degenerate DSGE transitions, the first unresolved task is instead a
++score derivation that respects the deterministic dynamics and parameter
++dependence of their support. Control variates, analytic
+ integration, and increased integration effort should be evaluated alongside
+ that sequence. Further structural DSGE implementation remains deferred while
+ the existing repository models are checked; the support derivations below
+@@ -1586,6 +1660,11 @@
+ 
+ \section{Structural support and deferred extensions}
+ \label{sec:support}
++
++Section~\ref{sec:fisher-degenerate} explains why the proposed ordinary
++ancestor recursion is excluded for the degenerate DSGE target. The following
++examples separate that obstruction from the support of a filtering marginal
++and from possible coordinate-based constructions.
+ 
+ The relevant support belongs to the distribution being approximated.
+ Deterministic directions in a transition conditional on one ancestor do not,
+@@ -2118,8 +2197,13 @@
+ \section{The next discriminating comparison}
+ \label{sec:next-study}
+ 
+-The primary question is whether model-corrected mixture proposals and
+-ancestor averaging reduce model-score error at equal compute. Proposal
++For models with regular transition densities, the reference question is
++whether model-corrected mixture proposals and ancestor averaging reduce
++model-score error at equal compute. This is a restricted comparison, not an
++implementation plan for degenerate DSGE transitions. A method intended for
++that target must first pass the conditional-support analysis in
++Section~\ref{sec:fisher-degenerate}; more accurate results on full-rank
++Gaussian models cannot remove that obstruction. Proposal
+ quality, score construction, and mixture-gradient variance must be separated.
+ Otherwise a successful run could be attributed to the wrong mechanism, just
+ as a passing derivative check previously obscured a changed scalar.
+@@ -2136,10 +2220,12 @@
+ They are not score-quality campaigns or reasons to select a production
+ particle count.
+ 
+-The subsequent accuracy study should use a linear-Gaussian model with an
+-independent Kalman score, a short Gaussian-mixture model whose modes can be
+-enumerated exactly, and a scalar nonlinear model with a numerically converged
+-quadrature score. Kalman checks the basic integration and complete derivatives.
++The subsequent accuracy study should use a linear-Gaussian model with
++nondegenerate transitions and an independent Kalman score, a short
++Gaussian-mixture model with evaluable transition densities whose modes can be
++enumerated exactly, and a scalar nonlinear model with a regular transition
++density and a numerically converged quadrature score. Kalman checks the basic
++integration and complete derivatives.
+ The mixture model tests the separated modes that motivate Younis's method.
+ The nonlinear model tests how proposal approximation affects the result.
+ A one-step or unimodal success cannot establish the latter two properties.
+@@ -2235,7 +2321,7 @@
+ target independently to each row. None of the proposed new calculations is
+ promoted by this document.
+ 
+-The most useful next evidence is therefore modest but decisive: correct
++For the regular-transition comparison, the next evidence needed is correct
+ model-density weights and complete initialization, an independently checked
+ score recursion, and a powered comparison against simple alternatives. The
+ strongest alternative explanation for any improvement is better proposal

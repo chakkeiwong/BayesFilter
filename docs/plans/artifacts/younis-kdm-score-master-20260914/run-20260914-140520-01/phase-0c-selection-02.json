@@ -1,0 +1,200 @@
+{
+  "candidates": [
+    {
+      "calibration_score_mse": 1.206950627391706,
+      "candidate": "cfaf9e8d6e001b8528c98ace155edb6523476a5054d82887a5581c496b060927",
+      "controls": {
+        "coordinate_cap": 0.4,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_steps": 1,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.5,
+        "flow_substeps": 3,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 5,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 5
+      },
+      "validation_score_mse": 3.270397078761093
+    },
+    {
+      "calibration_score_mse": 1.103515797680786,
+      "candidate": "deaf6e03233a9351532520b8ec64d4a37bfabd8d0077428f574da3cd1ee9f39e",
+      "controls": {
+        "coordinate_cap": 0.4,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_steps": 1,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.5,
+        "flow_substeps": 2,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 3,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 3
+      },
+      "validation_score_mse": 3.1396105452380425
+    }
+  ],
+  "criterion": "calibration_mean_squared_error_to_exact_score",
+  "default_ready": false,
+  "evidence": [
+    {
+      "digest": "34b3b49a2f36dd613ab3b50320f405b83761d8c7bb656e97f5e45241fa32aaee",
+      "row": "calibration_d10_c0"
+    },
+    {
+      "digest": "b74d9aacd50cd20de4349d664d7a2aec85de847fee3f714b885c28a0f48f3d6c",
+      "row": "calibration_d10_c1"
+    },
+    {
+      "digest": "fe9f4935a79c03695c04bd1c2cc60e0c7811a70be5ab3c1c1ce667a5de27580c",
+      "row": "calibration_d11_c0"
+    },
+    {
+      "digest": "b2e486b334e593f4e84d378ffe0a2b64f281aec778a33949131eeca62263da0a",
+      "row": "calibration_d11_c1"
+    },
+    {
+      "digest": "870f29cb692c4786314646a81b14d359d0bf4aed9bcfdfeba30242a9e761a4a7",
+      "row": "validation_d20_c0"
+    },
+    {
+      "digest": "2d05345bae43b1184b536f2a4c2df80393243812f807ee1aedb2fdd831228204",
+      "row": "validation_d20_c1"
+    },
+    {
+      "digest": "f37ff1cc8a653bb1ac90cf4e4995a3811188e6310d32806d080a4efdc3d5f8dd",
+      "row": "validation_d21_c0"
+    },
+    {
+      "digest": "b09ffd2d12b3c0835c7cb28ddcb68e96bc66378723759a08ed693e50bfb98c9a",
+      "row": "validation_d21_c1"
+    }
+  ],
+  "evidence_class": "mechanics",
+  "issuer": "bayesfilter.score_study.tuning.issue_selection",
+  "partitions": {
+    "calibration": [
+      10,
+      11
+    ],
+    "claim": [
+      30,
+      31
+    ],
+    "validation": [
+      20,
+      21
+    ]
+  },
+  "schema": "younis_score_offline_selection_v1",
+  "scope": {
+    "candidate_family": [
+      {
+        "coordinate_cap": 0.4,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_steps": 1,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.5,
+        "flow_substeps": 2,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 3,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 3
+      },
+      {
+        "coordinate_cap": 0.4,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_steps": 1,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.5,
+        "flow_substeps": 3,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 5,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 5
+      }
+    ],
+    "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+    "comparison_target": "model_score",
+    "estimator": "analytical_filter",
+    "model": "gaussian_all_parameters",
+    "parameter_dimension": 6,
+    "proposal": "ledh",
+    "reset_contract_id": "contract_e_chol_v1",
+    "settings": {
+      "control_family": "canonical_dual_cap_genut_contract_e_v1",
+      "data_theta": [
+        0.62,
+        -0.8,
+        -0.6,
+        0.9,
+        0.25,
+        -0.3
+      ],
+      "device": "CPU",
+      "dimension": 2,
+      "dtype": "float64",
+      "horizon": 3,
+      "jit_compile": true,
+      "observation_dimension": 1,
+      "particles": 8,
+      "prepared_data_regime": "affine_gaussian_six_parameter_v1",
+      "tf32": false,
+      "theta": [
+        0.62,
+        -0.8,
+        -0.6,
+        0.9,
+        0.25,
+        -0.3
+      ]
+    }
+  },
+  "selected_controls": {
+    "coordinate_cap": 0.4,
+    "coordinate_cap_power": 8,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_trust_radius": 0.5,
+    "flow_substeps": 2,
+    "pairwise_rms_cap": 2.0,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "reset_balance_steps": 3,
+    "reset_epsilon": 2.0,
+    "reset_policy": "contract_e",
+    "reset_ridge": 1e-05,
+    "reset_sinkhorn_steps": 3
+  },
+  "source_fingerprint": "b162030639c5f109ebaf3c54e9a5b10e383d39bc27b8cd849fad344df19f822a",
+  "source_run": "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/tuning-cpu-02",
+  "statistically_supported_ranking": false,
+  "validation_status": "complete_finite_descriptive_only"
+}

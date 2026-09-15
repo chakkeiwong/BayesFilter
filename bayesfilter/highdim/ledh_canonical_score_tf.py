@@ -74,6 +74,8 @@ def _value_and_analytical_score_impl(
     *,
     flow_substeps: int = 24,
     with_score: bool,
+    initial_state_tangent: Tensor | None = None,
+    initial_covariance_tangent: Tensor | None = None,
     return_trace: bool = False,
     observation_factor_override: Callable[
         [int, Tensor, Tensor, Tensor, Tensor, Tensor], tuple[Tensor, Tensor]
@@ -202,12 +204,12 @@ def _value_and_analytical_score_impl(
 
     d_q = (
         model.process_covariance_tangent_fn(theta)
-        if model.process_covariance_tangent_fn is not None
+        if model.process_covariance_tangent_fn is not None and theta is not None
         else None
     )
     d_r = (
         model.observation_covariance_tangent_fn(theta)
-        if model.observation_covariance_tangent_fn is not None
+        if model.observation_covariance_tangent_fn is not None and theta is not None
         else None
     )
     d_process_chol = (
@@ -219,9 +221,15 @@ def _value_and_analytical_score_impl(
         else None
     )
     states = initial_states
-    d_states = tf.zeros_like(states)
+    d_states = (
+        tf.zeros_like(states) if initial_state_tangent is None
+        else tf.ensure_shape(tf.convert_to_tensor(initial_state_tangent, dtype=dtype), states.shape)
+    )
     covariances = initial_covariances
-    d_covariances = tf.zeros_like(covariances)
+    d_covariances = (
+        tf.zeros_like(covariances) if initial_covariance_tangent is None
+        else tf.ensure_shape(tf.convert_to_tensor(initial_covariance_tangent, dtype=dtype), covariances.shape)
+    )
     uniform_log_weights = -tf.math.log(tf.cast(count, dtype)) * tf.ones([count], dtype)
     incoming_log_weights = uniform_log_weights
     d_incoming_log_weights = tf.zeros_like(uniform_log_weights)
@@ -524,6 +532,8 @@ def canonical_value_and_analytical_score(
     *,
     flow_substeps: int = 24,
     with_score: bool,
+    initial_state_tangent: Tensor | None = None,
+    initial_covariance_tangent: Tensor | None = None,
     return_trace: bool = False,
     reset_policy: str = "none",
     reset_design: Tensor | None = None,
@@ -554,6 +564,11 @@ def canonical_value_and_analytical_score(
     preserving the canonical target and its default two-value return contract.
     ``reset_policy='none'`` remains a diagnostic slice; claim-bearing calls
     must explicitly select Contract-E and the required correction settings.
+
+    Supplied initial-state and covariance tangents carry dependence of a
+    parameterized initial law into the same analytical recursion. Omitting
+    them declares fixed initial inputs; it does not differentiate their
+    construction. Their direction must match the model tangent callbacks.
     """
 
     return _value_and_analytical_score_impl(
@@ -565,6 +580,8 @@ def canonical_value_and_analytical_score(
         observations,
         flow_substeps=flow_substeps,
         with_score=with_score,
+        initial_state_tangent=initial_state_tangent,
+        initial_covariance_tangent=initial_covariance_tangent,
         return_trace=return_trace,
         observation_factor_override=None,
         post_reset_transform=None,
@@ -586,6 +603,164 @@ def canonical_value_and_analytical_score(
         coordinate_cap_power=coordinate_cap_power,
         annealed_stages=annealed_stages,
         annealed_seed=annealed_seed,
+    )
+
+
+def _flow_substep_body_impl(
+    step_index: tf.Tensor,
+    actual: Tensor,
+    d_actual: Tensor,
+    auxiliary: Tensor,
+    d_auxiliary: Tensor,
+    log_det: Tensor,
+    d_log_det: Tensor,
+    model: NonlinearScoreModel,
+    prior_means: Tensor,
+    d_prior_means: Tensor,
+    predicted_covs: Tensor,
+    d_predicted_covs: Tensor,
+    observation: Tensor,
+    observation_covariance: Tensor,
+    d_observation_covariance: Tensor | None,
+    r_inv: Tensor,
+    d_r_inv: Tensor | None,
+    substeps: tf.Tensor,
+    eye: Tensor,
+    eps: Tensor,
+) -> tuple[tf.Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    """Single flow substep with analytical tangent.
+
+    Extracted body for tf.while_loop conversion (Phase 3.5.2).
+
+    Returns:
+        (step_index + 1, updated_actual, updated_d_actual, updated_auxiliary,
+         updated_d_auxiliary, updated_log_det, updated_d_log_det)
+    """
+    dtype = actual.dtype
+    step_int = tf.cast(step_index, tf.int32)
+    lam = tf.cast(step_index + 1, dtype) / tf.cast(substeps, dtype)
+    h_jac = model.observation_jacobian_fn(auxiliary)
+    d_h_jac = (
+        model.observation_jacobian_tangent_fn(auxiliary, d_auxiliary)
+        if model.observation_jacobian_tangent_fn is not None
+        else tf.zeros_like(h_jac)
+    )
+    php = tf.einsum("noi,nij,npj->nop", h_jac, predicted_covs, h_jac)
+    d_php = (
+        tf.einsum(
+            "noi,nij,npj->nop",
+            d_h_jac,
+            predicted_covs,
+            h_jac,
+        )
+        + tf.einsum(
+            "noi,nij,npj->nop",
+            h_jac,
+            d_predicted_covs,
+            h_jac,
+        )
+        + tf.einsum(
+            "noi,nij,npj->nop",
+            h_jac,
+            predicted_covs,
+            d_h_jac,
+        )
+    )
+    innovation_chol = tf.linalg.cholesky(lam * php + observation_covariance[None])
+    ph_t = tf.einsum("nij,noj->nio", predicted_covs, h_jac)
+    d_ph_t = tf.einsum("nij,noj->nio", d_predicted_covs, h_jac) + tf.einsum(
+        "nij,noj->nio", predicted_covs, d_h_jac
+    )
+    k_lam = tf.linalg.matrix_transpose(
+        tf.linalg.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(ph_t))
+    )
+    d_s = lam * d_php
+    if d_observation_covariance is not None:
+        d_s = d_s + d_observation_covariance[None]
+    term_one = tf.linalg.matrix_transpose(
+        tf.linalg.cholesky_solve(
+            innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
+        )
+    )
+    k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
+    term_two = tf.linalg.matrix_transpose(
+        tf.linalg.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(k_ds))
+    )
+    d_k_lam = term_one - term_two
+    a_matrix = -0.5 * tf.einsum("nio,noj->nij", k_lam, h_jac)
+    d_a_matrix = -0.5 * (
+        tf.einsum("nio,noj->nij", d_k_lam, h_jac)
+        + tf.einsum("nio,noj->nij", k_lam, d_h_jac)
+    )
+
+    h_val = model.observation_fn(auxiliary)
+    d_h_val = model.observation_tangent_fn(auxiliary, d_auxiliary)
+    residual_e = h_val - tf.einsum("noi,ni->no", h_jac, auxiliary)
+    d_residual_e = (
+        d_h_val
+        - tf.einsum("noi,ni->no", d_h_jac, auxiliary)
+        - tf.einsum("noi,ni->no", h_jac, d_auxiliary)
+    )
+    z_eff = observation[None, :] - residual_e
+    d_z_eff = -d_residual_e
+    r_inv_z_eff = tf.einsum("op,np->no", r_inv, z_eff)
+    d_r_inv_z_eff = tf.einsum("op,np->no", r_inv, d_z_eff)
+    if d_r_inv is not None:
+        d_r_inv_z_eff = d_r_inv_z_eff + tf.einsum("op,np->no", d_r_inv, z_eff)
+    phrz = tf.einsum("nio,no->ni", ph_t, r_inv_z_eff)
+    d_phrz = tf.einsum("nio,no->ni", d_ph_t, r_inv_z_eff) + tf.einsum(
+        "nio,no->ni", ph_t, d_r_inv_z_eff
+    )
+    a_phrz = tf.einsum("nij,nj->ni", a_matrix, phrz)
+    d_a_phrz = tf.einsum("nij,nj->ni", d_a_matrix, phrz) + tf.einsum(
+        "nij,nj->ni", a_matrix, d_phrz
+    )
+    a_mean = tf.einsum("nij,nj->ni", a_matrix, prior_means)
+    d_a_mean = tf.einsum("nij,nj->ni", d_a_matrix, prior_means) + tf.einsum(
+        "nij,nj->ni", a_matrix, d_prior_means
+    )
+    inner = phrz + lam * a_phrz + a_mean
+    d_inner = d_phrz + lam * d_a_phrz + d_a_mean
+    a_inner = tf.einsum("nij,nj->ni", a_matrix, inner)
+    d_a_inner = tf.einsum("nij,nj->ni", d_a_matrix, inner) + tf.einsum(
+        "nij,nj->ni", a_matrix, d_inner
+    )
+    b_vector = inner + 2.0 * lam * a_inner
+    d_b_vector = d_inner + 2.0 * lam * d_a_inner
+
+    new_actual = actual + eps * (
+        tf.einsum("nij,nj->ni", a_matrix, actual) + b_vector
+    )
+    new_d_actual = d_actual + eps * (
+        tf.einsum("nij,nj->ni", d_a_matrix, actual)
+        + tf.einsum("nij,nj->ni", a_matrix, d_actual)
+        + d_b_vector
+    )
+    new_auxiliary = auxiliary + eps * (
+        tf.einsum("nij,nj->ni", a_matrix, auxiliary) + b_vector
+    )
+    new_d_auxiliary = d_auxiliary + eps * (
+        tf.einsum("nij,nj->ni", d_a_matrix, auxiliary)
+        + tf.einsum("nij,nj->ni", a_matrix, d_auxiliary)
+        + d_b_vector
+    )
+    step_matrix = eye[None] + eps * a_matrix
+    q_factor, r_factor = tf.linalg.qr(step_matrix)
+    new_log_det = log_det + tf.reduce_sum(
+        tf.math.log(tf.abs(tf.linalg.diag_part(r_factor))), axis=1
+    )
+    q_transpose_d_a = tf.linalg.matmul(q_factor, d_a_matrix, transpose_a=True)
+    solved_d_a = tf.linalg.triangular_solve(r_factor, q_transpose_d_a, lower=False)
+    new_d_log_det = d_log_det + eps * tf.linalg.trace(solved_d_a)
+
+    return (
+        step_index + 1,
+        new_actual,
+        new_d_actual,
+        new_auxiliary,
+        new_d_auxiliary,
+        new_log_det,
+        new_d_log_det,
     )
 
 
@@ -616,125 +791,55 @@ def _flow_substeps_with_tangent(
     dtype = actual.dtype
     count = tf.shape(actual)[0]
     eps = tf.constant(1.0 / substeps, dtype=dtype)
+    substeps_tensor = tf.constant(substeps, dtype=tf.int32)
     auxiliary, d_auxiliary = prior_means, d_prior_means
     log_det = tf.zeros([count], dtype)
     d_log_det = tf.zeros([count], dtype)
-    for step_index in range(substeps):
-        lam = tf.constant((step_index + 1) / substeps, dtype=dtype)
-        h_jac = model.observation_jacobian_fn(auxiliary)
-        d_h_jac = (
-            model.observation_jacobian_tangent_fn(auxiliary, d_auxiliary)
-            if model.observation_jacobian_tangent_fn is not None
-            else tf.zeros_like(h_jac)
-        )
-        php = tf.einsum("noi,nij,npj->nop", h_jac, predicted_covs, h_jac)
-        d_php = (
-            tf.einsum(
-                "noi,nij,npj->nop",
-                d_h_jac,
-                predicted_covs,
-                h_jac,
-            )
-            + tf.einsum(
-                "noi,nij,npj->nop",
-                h_jac,
-                d_predicted_covs,
-                h_jac,
-            )
-            + tf.einsum(
-                "noi,nij,npj->nop",
-                h_jac,
-                predicted_covs,
-                d_h_jac,
-            )
-        )
-        innovation_chol = tf.linalg.cholesky(lam * php + observation_covariance[None])
-        ph_t = tf.einsum("nij,noj->nio", predicted_covs, h_jac)
-        d_ph_t = tf.einsum("nij,noj->nio", d_predicted_covs, h_jac) + tf.einsum(
-            "nij,noj->nio", predicted_covs, d_h_jac
-        )
-        k_lam = tf.linalg.matrix_transpose(
-            tf.linalg.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(ph_t))
-        )
-        d_s = lam * d_php
-        if d_observation_covariance is not None:
-            d_s = d_s + d_observation_covariance[None]
-        term_one = tf.linalg.matrix_transpose(
-            tf.linalg.cholesky_solve(
-                innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
-            )
-        )
-        k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
-        term_two = tf.linalg.matrix_transpose(
-            tf.linalg.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(k_ds))
-        )
-        d_k_lam = term_one - term_two
-        a_matrix = -0.5 * tf.einsum("nio,noj->nij", k_lam, h_jac)
-        d_a_matrix = -0.5 * (
-            tf.einsum("nio,noj->nij", d_k_lam, h_jac)
-            + tf.einsum("nio,noj->nij", k_lam, d_h_jac)
+
+    # Phase 3.5.2: tf.while_loop conversion for substep loop
+    def substep_cond(i, *_):
+        return i < substeps_tensor
+
+    def substep_body_wrapper(i, act, d_act, aux, d_aux, ld, d_ld):
+        return _flow_substep_body_impl(
+            i,
+            act,
+            d_act,
+            aux,
+            d_aux,
+            ld,
+            d_ld,
+            model,
+            prior_means,
+            d_prior_means,
+            predicted_covs,
+            d_predicted_covs,
+            observation,
+            observation_covariance,
+            d_observation_covariance,
+            r_inv,
+            d_r_inv,
+            substeps_tensor,
+            eye,
+            eps,
         )
 
-        h_val = model.observation_fn(auxiliary)
-        d_h_val = model.observation_tangent_fn(auxiliary, d_auxiliary)
-        residual_e = h_val - tf.einsum("noi,ni->no", h_jac, auxiliary)
-        d_residual_e = (
-            d_h_val
-            - tf.einsum("noi,ni->no", d_h_jac, auxiliary)
-            - tf.einsum("noi,ni->no", h_jac, d_auxiliary)
-        )
-        z_eff = observation[None, :] - residual_e
-        d_z_eff = -d_residual_e
-        r_inv_z_eff = tf.einsum("op,np->no", r_inv, z_eff)
-        d_r_inv_z_eff = tf.einsum("op,np->no", r_inv, d_z_eff)
-        if d_r_inv is not None:
-            d_r_inv_z_eff = d_r_inv_z_eff + tf.einsum("op,np->no", d_r_inv, z_eff)
-        phrz = tf.einsum("nio,no->ni", ph_t, r_inv_z_eff)
-        d_phrz = tf.einsum("nio,no->ni", d_ph_t, r_inv_z_eff) + tf.einsum(
-            "nio,no->ni", ph_t, d_r_inv_z_eff
-        )
-        a_phrz = tf.einsum("nij,nj->ni", a_matrix, phrz)
-        d_a_phrz = tf.einsum("nij,nj->ni", d_a_matrix, phrz) + tf.einsum(
-            "nij,nj->ni", a_matrix, d_phrz
-        )
-        a_mean = tf.einsum("nij,nj->ni", a_matrix, prior_means)
-        d_a_mean = tf.einsum("nij,nj->ni", d_a_matrix, prior_means) + tf.einsum(
-            "nij,nj->ni", a_matrix, d_prior_means
-        )
-        inner = phrz + lam * a_phrz + a_mean
-        d_inner = d_phrz + lam * d_a_phrz + d_a_mean
-        a_inner = tf.einsum("nij,nj->ni", a_matrix, inner)
-        d_a_inner = tf.einsum("nij,nj->ni", d_a_matrix, inner) + tf.einsum(
-            "nij,nj->ni", a_matrix, d_inner
-        )
-        b_vector = inner + 2.0 * lam * a_inner
-        d_b_vector = d_inner + 2.0 * lam * d_a_inner
+    initial_loop_vars = (
+        tf.constant(0, dtype=tf.int32),
+        actual,
+        d_actual,
+        auxiliary,
+        d_auxiliary,
+        log_det,
+        d_log_det,
+    )
 
-        new_actual = actual + eps * (
-            tf.einsum("nij,nj->ni", a_matrix, actual) + b_vector
-        )
-        d_actual = d_actual + eps * (
-            tf.einsum("nij,nj->ni", d_a_matrix, actual)
-            + tf.einsum("nij,nj->ni", a_matrix, d_actual)
-            + d_b_vector
-        )
-        new_auxiliary = auxiliary + eps * (
-            tf.einsum("nij,nj->ni", a_matrix, auxiliary) + b_vector
-        )
-        d_auxiliary = d_auxiliary + eps * (
-            tf.einsum("nij,nj->ni", d_a_matrix, auxiliary)
-            + tf.einsum("nij,nj->ni", a_matrix, d_auxiliary)
-            + d_b_vector
-        )
-        actual, auxiliary = new_actual, new_auxiliary
-        step_matrix = eye[None] + eps * a_matrix
-        q_factor, r_factor = tf.linalg.qr(step_matrix)
-        log_det += tf.reduce_sum(
-            tf.math.log(tf.abs(tf.linalg.diag_part(r_factor))), axis=1
-        )
-        q_transpose_d_a = tf.linalg.matmul(q_factor, d_a_matrix, transpose_a=True)
-        solved_d_a = tf.linalg.triangular_solve(r_factor, q_transpose_d_a, lower=False)
-        d_log_det += eps * tf.linalg.trace(solved_d_a)
+    _, actual, d_actual, auxiliary, d_auxiliary, log_det, d_log_det = tf.while_loop(
+        cond=substep_cond,
+        body=substep_body_wrapper,
+        loop_vars=initial_loop_vars,
+    )
+
     return actual, d_actual, log_det, d_log_det
 
 

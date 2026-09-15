@@ -1,0 +1,654 @@
+--- master-before.md
++++ younis-kdm-score-master-program-2026-09-14.md
+@@ -54,11 +54,32 @@
+ other sections unchecked; it did not approve those sections. The dependency,
+ tuning, and SGQF amendments are additional findings from this program review.
+ 
+-The [execution plan](younis-score-master-execution-plan-2026-09-14.md) turns
+-this specification into implementation packages E0--E7. Its first milestone
+-is a runnable baseline study; full active-method integration and scientific
+-comparison are later milestones. Every implementation package and scientific
+-phase now requires the repair and next-phase refresh procedure below.
++This master includes specification repair, implementation, testing, tuning,
++experimental execution, analysis, and between-phase repair. Phases 0A--0G
++below build the prerequisites for the scientific comparisons. Running the
++master begins with those development tasks; it does not require a separately
++executed implementation program. The former E0--E7 execution plan is
++superseded by the phases and dependencies in this document.
++
++The initial phases are performed by the supervising developer or agent with
++the repository's existing development tools. They build the coordinator that
++later runs numerical rows. They cannot require that coordinator to exist
++before starting. All phases, including implementation and terminal review,
++use the repair and next-phase refresh procedure in this master.
++
++### Program milestones and starting status
++
++| Milestone | Work inside this master | Completion evidence |
++|---|---|---|
++| Begin master execution | Read Phase 0's scientific requirements and start Phase 0A, followed by 0B and 0C. | Source/specification reconciliation and implementation work have begun; no pre-existing master CLI is required. |
++| Baseline study runs | Complete 0A--0C and applicable Phase 1 admission checks. | Real Gaussian baseline, oracle, scoped tuning, report, and repair/resume tests pass. An oracle-only or fake-endpoint smoke is insufficient. |
++| Active method matrix runs | Complete the applicable 0D--0G implementations and Phase 1 checks for every active family. | Actual method endpoints, controls, and reports execute under the required backend; missing integrations remain recorded as incomplete work. |
++| Research program completed | Execute applicable Phases 2--4C and 7--9, repairs, uncertainty analysis, and final dispositions. | Evidence supports the reported positive, negative, or unresolved result for every planned row. Software availability alone is not scientific completion. |
++
++At this amendment, the proposed coordinator/package/configuration paths are
++absent and numerical integration obligations remain open. They are work to
++perform in the master, not external preconditions for starting it. A missing
++method cannot be silently removed to declare the full matrix implemented.
+ 
+ ## Project implementation constraints
+ 
+@@ -149,6 +170,11 @@
+ 
+ ### Coordinator pseudocode
+ 
++This is the numerical scheduler to implement in Phase 0B. It operates after
++the initial development phases have created its services. Implementation and
++mathematical repair remain supervised master tasks; their tests and resulting
++capability status feed this scheduler.
++
+ ```text
+ load model_registry, target_registry, proposal_registry,
+      estimator_registry, tuning_registry
+@@ -158,6 +184,8 @@
+ phase_state = load_current_plans_dependencies_and_budget()
+ while task := next_ready_task(active_tasks, candidate_status, phase_state):
+     require_current_phase_plan_and_applicable_boundary_dispositions(task)
++    if task.requires_development:
++        complete_supervised_implementation_and_required_tests(task)
+     matrix = generate_eligible_rows(task, candidate_status, declared_scopes)
+     record_blocked_and_excluded_rows_with_reasons(task)
+     for row in matrix:
+@@ -366,6 +394,28 @@
+ declared scope.
+ 
+ ## Campaign envelope and stop rules
++
++### Initial implementation and validation allocation
++
++The first tranche of this master is Phases 0A--0C plus Phase 0F's
++deterministic mechanics. It includes implementation, tiny CPU reference
++checks, and a bounded GPU integration check. The initial engineering
++validation allocation is 12 CPU process-hours and 8 GPU device-hours,
++including compilation and failed runs, with at most 12 GPU launches.
++Reserve 2 of those GPU hours for repairs. These are planning allocations,
++not measured costs or scientific precision thresholds; use the first timing
++observation to reassess the remaining allocation and record exhaustion
++instead of weakening a check.
++
++Phase 0A pins the available interpreter/environment and exact commands for
++the next phase. It does not guess a conda environment or install packages.
++GPU checks use trusted/escalated access and verified memory growth; CPU
++references explicitly set `CUDA_VISIBLE_DEVICES=-1`. Later phase refreshes
++record their finite row counts, replications, compute caps, and attempt
++budgets before serious launches. Establishing those values is a task inside
++the master, not a request for a separate preparatory program.
++
++### Scientific comparison allocation
+ 
+ “Budget and time are not a problem” permits exhaustive coverage, but it does
+ not remove the need for a finite, reproducible campaign definition. The initial
+@@ -482,6 +532,12 @@
+ 
+ ## Phase 0: specification and oracle ladder
+ 
++This phase states the scientific specifications for the implementation phases
++that follow. Phases 0A--0C build and verify the catalogue, oracles, baselines,
++and tuning services specified here. Phase 0 does not assume those services
++already exist, and Gate A is issued only after the applicable implementations
++and tests pass.
++
+ ### 0.1 Build a model catalogue
+ 
+ Use a minimum ladder of:
+@@ -553,7 +609,322 @@
+ lookahead families, step sizes, and conditioning limits are hypotheses until
+ justified for this scope. Phase 8 performs final replication and cost analysis.
+ 
++### Implementation defaults and early diagnostics
++
++Apply this audit while implementing Phases 0A--0G. The later experiment plan
++refresh specifies target-specific values before the corresponding run;
++unexamined inherited settings cannot become defaults through a passing smoke.
++
++| Choice | Provenance and purpose | Failure mode and earliest check | Status |
++|---|---|---|---|
++| Regular Gaussian first | Phase 0; exact score separates target and implementation errors. | Apparent success hides missing initial-law derivatives; use a nonconstant-initialization fixture. | Reference baseline, not cross-model evidence. |
++| Canonical analytical LEDH/GenUT/Contract E | Current owner policy. | A simplified lane appears to pass; test the actual consumer and reset composition. | Required baseline identity, with correctness still to verify. |
++| Tiny smoke allocation and first-tranche caps | Master implementation allocation; make the first failure cheap and reserve repair time. | A smoke is misreported as a ranking, or compilation exhausts allocation; record no-ranking status and early timing. | Convenience allocation, not a scientific threshold. |
++| Existing tuning services and kernels | Repository reuse candidates. | Their API exists but cannot issue/consume the required scope; exercise the complete path. | Unverified until tested. |
++| Step sizes, bandwidths, ridges, twist families, and covariance controls | Selected derivations plus per-scope calibration. | Bias/robustness or target changes are concealed by numerical success; log realized choices and earliest validity/curve checks. | Hypotheses until justified, including off/zero settings. |
++| Statistical precision and oracle tolerances | Exact identities, dtype/scale analysis, reference convergence, and powered pilot. | Arbitrary cutoffs or replication-driven selection; validate error scale and freeze a valid uncertainty rule. | Must be specified in the refreshed run plan, never inferred from a successful smoke. |
++
++## Phase 0A: reconcile once, then build
++
++Entry: Phase 0's scientific requirements and the current checkout. This is the first implementation task of the master and needs no master CLI.
++
++1. Read the current canonical repair result and inspect the actual callable
++   interfaces. Record each capability as verified, unverified, blocked, or
++   deferred, with its first executable test. Refresh stale source claims.
++2. Reconcile the manuscript's smoothness requirement, deterministic versus
++   stochastic FD checks, and SGQF prediction/conditioning/reset description
++   with the amended master. Preserve the existing derivations and source
++   boundaries. Fix the malformed `,qquad`, build, and inspect the affected pages.
++3. Define the exact numerical return contract: log likelihood/value target,
++   derivative target, coordinate system, initial-law dependence, denominator,
++   proposal law, and oracle precision. Specify which outputs are model-score
++   estimates and which are derivatives of a different quantity.
++4. Inventory reuse before adding modules. Identify real production/candidate
++   baseline endpoints; diagnostic reference functions remain reference lanes.
++   Verify paper equations and author code for method-faithfulness claims when
++   their numerical implementation is selected. Do not wait for a new broad
++   literature survey to build the coordinator.
++
++Exit: no unresolved ambiguity about the first baseline's mathematical target
++or the 0B interface. Remaining method gaps have named tests and block only
++their dependent rows. Refresh 0B/0C using the current repair status.
++
++## Phase 0B: implement a small coordinator that cannot hide failures
++
++Entry: Phase 0A's target/return contract. This phase builds the infrastructure used by later numerical rows.
++
++Proposed new locations, to be reconciled with existing services in 0A:
++
++- `bayesfilter/highdim/score_study/`: typed study/row definitions, registry
++  validation, adapters, phase state, and report assembly;
++- `scripts/run_younis_score_master.py`: a thin CLI over those services;
++- `docs/plans/configs/younis_score/`: versioned baseline and later study inputs;
++- `tests/highdim/test_younis_score_master_*.py`: coordinator contract and
++  integration tests.
++
++These paths are planned deliverables, not existing executable commands.
++Keep Python standard-library scheduling, JSON, and provenance outside the
++numerical kernels. Use TensorFlow/TFP for candidate numerical calculations,
++tuning, and admission decisions. No NumPy runtime dependency is introduced.
++
++The CLI needs `validate`, `dry-run`, `run`, `resume`, and `report` actions.
++Validation and dry-run must enumerate both runnable rows and excluded rows
++with reasons without importing a GPU-initializing kernel. A run may not
++silently reduce the requested matrix. Resume checks the saved scientific
++specification, source dependencies, partitions, tuning scope, and completed
++results before reusing work.
++
++Code or mathematical repair remains work for the supervising developer or
++agent. The CLI records the changed revision and issue disposition, schedules
++declared regression/retry commands, and enforces the updated dependencies; it
++does not generate arbitrary source fixes or silently choose a new method.
++
++Implement separate fields for numerical validity, scientific candidate
++decision, and execution completion. A low-MSE failure, unavailable kernel,
++insufficient precision, and a deferred method are different states. Store
++paired randomness by model, dataset, particle replicate, perturbation, and
++coupling group, independent of scheduling order.
++
++Required tests include incompatible support/target rejection; stale tuning;
++missing initialization terms; missing active methods; deterministic row
++generation; repeated/resumed execution; bounded attempts; incomplete output
++rejection; preservation of failed attempts; and a blocked branch alongside an
++independent runnable branch. Test the repair/refresh transitions explicitly.
++A Phase 0B fake numerical endpoint can test scheduling, but its evidence must never
++be presented as a real particle-filter run.
++
++Exit: a synthetic failing task can be repaired and resumed with the right
++dependencies and artifacts. This establishes coordinator behavior only.
++
++Implement and test the following interface in this phase. The paths and
++commands describe deliverables to create, not code already implemented:
++
++```text
++python scripts/run_younis_score_master.py --study <baseline.json> --action validate
++python scripts/run_younis_score_master.py --study <baseline.json> --action dry-run
++python scripts/run_younis_score_master.py --study <baseline.json> --action run --output <new-run-directory>
++python scripts/run_younis_score_master.py --study <baseline.json> --action resume --output <existing-run-directory>
++python scripts/run_younis_score_master.py --study <baseline.json> --action report --output <existing-run-directory>
++```
++
++Replace placeholders with exact versioned paths when the phase creates its
++fixtures and study configuration; save actual commands in the manifest.
++Resume reads validated existing results and writes new attempts to fresh
++subdirectories without overwriting evidence. Phase 0C exercises this
++interface with real baseline endpoints. This CLI is an output of master
++execution, not a precondition for beginning Phase 0A.
++
++## Phase 0C: deliver a real baseline study before adding enhancements
++
++Entry: Phases 0A--0B for orchestration; baseline-specific numerical repairs are part of this phase. Independent reference fixtures may be developed while the coordinator is being built.
++
++Use scalar and multivariate regular LGSSMs. Include parameter effects on
++initial mean/covariance, transition, and observation parameters rather than
++only the existing transition-direction example. Verify the independent
++analytical Kalman oracle and explicit total derivatives. Same-finite-program
++parity and error against the exact model score are separate tests.
++
++Construct the initial cheap comparator set: bootstrap PF, UKF Gaussian
++approximation, and the analytically adapted Gaussian proposal where its
++density is available. Kalman is the error oracle. Add the canonical
++LEDH/GenUT/Contract E baseline only after its actual endpoint passes the
++required lifecycle, reset, determinant, and analytical-sensitivity checks.
++Keep approximation and finite-stream targets visible in every comparison.
++
++Build the tuning adapter and reports now. Each claim scope binds all master
++fields, including proposal/estimator controls, bandwidth, FD choices, dtype,
++TF32, horizon, particle count, and backend. Check the repository's actual
++tuning issuer and reject a caller-stamped identity. Tune on calibration and
++validation partitions; claim data and streams remain untouched until freeze.
++Mechanics smokes do not need statistical tuning and cannot support a quality
++claim.
++
++The report preserves raw dataset/replicate results, paired oracle errors,
++uncertainty, conditional heuristic tables, failures, oracle limitations, and
++cost. Test aggregation on independently known small examples, including
++shared versus independent particle noise and datasets with unequal numbers
++of successful replicates. Do not silently discard failures or treat particle
++replicates as independent observation datasets.
++
++Run CPU-only reference checks with `CUDA_VISIBLE_DEVICES=-1`. Verify candidate
++kernels separately on trusted GPU/XLA with stable signatures, analytical
++derivatives, verified memory growth, TF32 recorded, and canonical chunking.
++Autodiff is parity evidence only. Do not recover a missing capability through
++a scalar fallback, pfor, or a reduced LEDH fork.
++
++Exit: the same study specification drives a real baseline smoke, a scoped
++tuning/claim plumbing check, artifact aggregation, and an interrupted-run
++resume. The tiny claim-plumbing fixture carries explicit no-ranking status.
++All required baseline rows either pass or keep 0C incomplete; running only
++the oracle does not close this milestone. End with repair and refreshed 0D,
++0E, and 0F plans. A statistical baseline claim requires its own sufficiently
++powered run after this engineering exit.
++
++## Phase 0D: KDM/IWSG, control variates, and estimator combinations
++
++Entry: the Phase 0C baseline and the capabilities needed by the selected KDM row. Complete the shared executor repair here when it remains open; no external implementation program is required.
++
++First test frozen-mixture IWSG identities against analytic integration or exact
++small examples. Then vary independent clouds to separate conditional sampling
++variance from cloud variation. Fix trace/callback support and required
++analytical tangents in the shared canonical executor before integrated or
++resampling KDM runs. Compare scalar and every claimed batch/device lane through
++the consumer, including parameter-dependent initialization and bandwidth.
++
++Implement the actual KDM proposal density, physical numerator, component
++covariance lifecycle, and any OT/jitter law used. Check that samples and weight
++denominators describe the same distribution. Do not add an OT determinant
++without a corresponding density derivation or present a changed measure as
++the original filter.
++
++For an exact control variate, identify the sampling law and either a known
++center or an independent unbiased center estimate. Test the coefficient and
++center dependence conditions, account for center cost/variance, and report
++the unchanged mean of the baseline estimator. For two biased estimates,
++implement a separate calibration path using oracle error and held-out MSE;
++variance minimization alone does not determine the better combination.
++
++Exit: conditional identities and full-filter wiring pass independently; ratio
++bias and target distinctions remain explicit. A variance reduction result
++alone cannot close a model-score improvement claim. If centering is unknown,
++that exact-CV row remains blocked while a correctly labeled calibrated
++combination can still run.
++
++## Phase 0E: covariance alternatives and corrected proposals
++
++Entry: Phase 0C for the affected baseline. A KDM covariance provider also requires the relevant Phase 0D mixture-law tests; other providers need not wait for KDM.
++
++Implement one provider interface for prior/predicted moments, observation
++conditioning, persistent per-component state, reset/ancestry mapping, and
++analytical sensitivities. Integrate UKF first, then KDM and SGQF. A
++prediction-only replacement cannot stand in for a complete filtering
++covariance lifecycle. Test the actual moments and derivatives consumed by
++LEDH with linear-Gaussian exact moments and nonlinear stress examples.
++
++SGQF requires separate checks for signed integration weights versus sampling
++probabilities, projected covariance validity, sparse-grid point count,
++dimension/level growth, and the real GPU/XLA call chain. Existing standalone
++code does not certify that chain. Evaluate covariance safeguards explicitly;
++record any ridge, clipping, or damping as a numerics-altering choice and test
++its non-harm before promotion.
++
++For twisting/iAPF, start with a positive fixed one-step lookahead whose
++ancestor law, transition proposal, normalization integral, and weight
++correction can be derived and checked. Test a finite discrete example and a
++Gaussian example before fitted twists, including initialization, terminal
++factors, telescoping, and recovery of the untwisted law when the lookahead is
++constant. Inspect primary equations and author
++code for source-faithfulness claims. Fit on allowed calibration data and
++freeze before claim evaluation. Distinguish held-fixed learned controls from
++their explicitly parameter-dependent evaluations and include the latter's
++derivatives. An unknown required normalizer blocks that proposed correction.
++
++Exit: each provider/proposal has density and total-derivative tests and a
++consumer integration test. Better covariance or ESS alone is explanatory;
++score-MSE improvement still requires untouched evidence. An unrepairable
++within-scope proposal assumption rejects that row, not the rest of 0E.
++
++## Phase 0F: finite differences and error attribution
++
++Entry: Phase 0A for deterministic mechanics, implemented here on exact fixtures. Stochastic FD needs Phase 0C value endpoints; normalization and consistency studies need only the implemented estimator they assess.
++
++Move the already checked exact three-, five-, and eleven-point examples into
++maintained diagnostic tests. Include polynomial cancellation, smoothness
++counterexamples, rectangular direction recovery, deficient rank, parameter
++boundaries, and precision/conditioning checks. They may be developed before
++KDM or SGQF integration is complete.
++
++Implement the stochastic FD lane using verified value endpoints and an
++explicit coupling of replicas. Check that each replica has the correct
++marginal law; an OT coupling here is distinct from OT as a filter reset.
++Measure the stencil covariance and the full bias-square term, including the
++cross-term. Use a positive scale-aware step ladder and QR/SVD direction
++reconstruction. Do not require a universal U-curve or a stochastic slope equal
++to deterministic stencil order.
++
++Once eligible estimators exist, implement the value/derivative/ratio study
++and Phase 4B consistency diagnostics. Fit step sizes, combinations, and any
++diagnostic-based decision rule on calibration/validation only. Measure oracle
++error and diagnostic correlation with uncertainty on separate data. Unknown
++bias attribution limits interpretation; it does not invalidate a correctly
++measured held-out MSE comparison.
++
++Exit: exact mechanics, coupling, reconstruction, normalization targets, and
++partition checks pass. Approximate consistency remains evidence about the
++tested relationship, not proof of unbiasedness.
++
++## Phase 0G: implement model coverage, study configurations, and final reports
++
++Entry: the applicable Phase 0C baseline and the specific 0D--0F capabilities
++used by each study. Implement this phase in slices before each new model,
++regime, dimension/level, or method interaction is measured. It is not a
++requirement that every advanced method finish before any experiment begins.
++
++1. Implement regular nonlinear model adapters, data generators, derivative
++   inputs, and usable reference providers. Include the weakly nonlinear,
++   strongly curved, multimodal, long-horizon, and high-dimensional regimes
++   actually selected for the study. Check reference uncertainty and the full
++   adapter-to-kernel call chain. A missing oracle limits the allowed conclusion
++   and does not authorize inventing an accuracy certificate.
++2. Implement explicit study configurations for the baseline ladder,
++   single-factor changes, pairwise interactions, and the eligible larger
++   matrix. Bind each row to its target, support, method implementation,
++   tests, tuning scope, data/stream partitions, heuristic comparators, and
++   evidence role. Include failed-candidate repairs that the later study is
++   designed to discriminate; a failed single-factor arm cannot silently
++   delete its predeclared repair experiment.
++3. Implement capacity/timing measurement and bounded pilots before SGQF
++   dimension/level expansion and factorial launches. Capture compile time,
++   memory, point count, per-row costs, and failed attempts. The pilot updates
++   the next run's finite budget and cannot select claim observations.
++4. Implement report coverage for matched particle count and matched total
++   cost, including tuning, twist fitting, center estimation, additional FD
++   calls, compilation, and explicit amortization assumptions. Construct the
++   conditional heuristic tables and nested/paired uncertainty calculations
++   for each selected regime. Failed rows remain visible.
++5. Implement final replication and audit commands and their integration
++   tests before Phases 8--9. Test untouched-partition enforcement, complete
++   accounting for requested methods, and invalidation after a terminal
++   repair. Trace every scientific output back to its actual numerical
++   endpoint and source revision.
++
++Exit: each requested study has a validated configuration, actual model and
++method endpoints, reference status, measured feasibility, and tested report
++assembly. A tiny integration run establishes that this computation works;
++it does not establish the subsequent scientific comparison. Missing
++implementations keep their rows incomplete, with an explicit repair or
++blocked disposition. Refresh the applicable Phases 2--4C and 7--9 after the
++repair pass.
++
++### Implementation coverage and initial capability inventory
++
++The existing code below is input to Phase 0A's audit, not evidence that the
++new integrations have passed. Verify actual calls and tests before reuse.
++
++| Existing component | Implementation phase and required check |
++|---|---|
++| [Canonical scalar executor](../../bayesfilter/highdim/ledh_canonical_score_tf.py) and [ongoing loop repair](ledh-while-loop-regression-repair-plan-2026-09-14.md) | 0C/0D: preserve the shared canonical algorithm, repair initialization and required trace/callback capabilities, verify all affected consumer lanes. |
++| [KDM primitives](../../bayesfilter/highdim/ledh_younis_kdm_tf.py), [integrated route](../../bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py), and [resampling route](../../bayesfilter/highdim/ledh_younis_kdm_resampling_tf.py) | 0D: verify mixture laws, identities, covariances, corrections, and analytical consumer derivatives. |
++| [LGSSM reference](../../bayesfilter/highdim/ledh_younis_kdm_lgssm_reference_tf.py) | 0C: extend or select an oracle for all claimed parameter dependences; retain the bootstrap's fixed-stream finite-program target. |
++| [SGQF values](../../bayesfilter/nonlinear/fixed_sgqf_tf.py) and [derivatives](../../bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py) | 0E/0G: implement the LEDH filtering lifecycle, consumer sensitivities, GPU/XLA capability, and scaling measurements. |
++| [Tuning scopes](../../bayesfilter/highdim/ledh_tuning_scope.py) and [route registry](../../bayesfilter/highdim/ledh_tuning_registry.py) | 0B/0C: verify the complete issuer/consumer path; a scope type alone is not a tuner. |
++| [GPU memory policy](../../bayesfilter/runtime/gpu_memory_policy.py) | 0C: configure and verify before device initialization, then record the actual backend policy. |
++| [Previous Phase 4A runner](../benchmarks/run_ledh_younis_kdm_phase4a_campaign.py) | 0B/0G: audit reusable code against the amended targets, partition rules, and reports; it is not the new master merely because it is a CLI. |
++
++Before a research row runs, its implementation record must identify the
++producing phase, real callable, required capability tests and their results,
++source dependencies, current tuning scope where applicable, and result/report
++consumer. An absent field identifies unfinished master work. The record does
++not authorize callers to self-attest canonical route identity.
++
+ ## Phase 1: identity and call-chain verification
++
++Phase 1 is admission of the executable evidence produced during Phases
++0C--0G, evaluated per method and target. Its tests are implemented and run
++inside those prerequisite phases and reused here at the checked revision.
++Implementation does not wait for a later Phase 1 pass to create its own tests.
++An admission failure returns to the responsible implementation phase's repair
++step; it does not create a separate execution program.
+ 
+ Before measuring quality, choose the identity test from the estimator's
+ declared mathematical target:
+@@ -1304,6 +1675,12 @@
+ 
+ ## Phase 9: implementation and production audit
+ 
++This is the terminal audit of implementations built in Phases 0A--0G and
++repaired at phase boundaries. It is not the first implementation phase. If
++the audit finds missing functionality or invalid evidence, return to its
++implementation producer, repair it, and repeat the affected evaluation before
++closing the program.
++
+ Before any default or HMC-facing recommendation, audit:
+ 
+ 1. source-faithfulness to Younis and Sudderth where claimed;
+@@ -1323,27 +1700,40 @@
+ 
+ The phases are sequential where a later phase depends on a mathematical or
+ implementation identity, and parallel only where the dependency is explicit.
+-
+-| Task | Minimum prerequisite |
++Every implementation phase ends with its stated executable checks and the
++repair/refresh procedure. Completion of a plan paragraph is not completion
++of the implementation it specifies.
++
++| Task | Implementation producer and minimum prerequisite |
+ |---|---|
+-| Baseline preparation, oracle checks, tuning service | Phase 0 specification and bounded run plan |
+-| Phase 2 proposal quality | Gate A, applicable Gate B identities, actual proposal/correction law, scope tuning |
+-| Phase 3 estimator comparison | Gate A, estimator-specific Gate B, verified fixed-cloud law; Gate C for each new proposal used |
+-| Phase 4 normalisation study | Verified value/derivative pair and Phase 3 measurements for the estimators compared |
+-| Phase 4B consistency calibration | Oracle and eligible estimators; Phase 4C mechanics for FD diagnostics; no circular requirement to finish all error attribution |
+-| Phase 4C deterministic mechanics | Phase 0 exact scalar/derivative fixtures |
+-| Phase 4C stochastic/full-score study | Eligible value endpoint and proposal law, deterministic mechanics, valid directions, coupling checks, scope tuning |
+-| Phases 7--9 final comparisons/audit | Applicable mechanism gates and frozen scopes for the candidates actually compared |
++| Phase 0A specification/source reconciliation | Phase 0 scientific requirements and current checkout; developer tools only. |
++| Phase 0B coordinator | 0A target/return contract; implement its own state, validation, and repair/resume tests. |
++| Phase 0C baseline, oracle, tuning, and report integration | 0A--0B and baseline-specific repairs performed here. |
++| Phase 0D KDM/IWSG/combinations | The applicable 0C baseline; repair required shared-executor capabilities here. |
++| Phase 0E covariance/SGQF/twisting | The applicable 0C baseline; KDM-provider rows additionally use 0D law tests. |
++| Phase 0F deterministic FD | 0A target specification; implement exact fixtures here, independently of KDM or the coordinator. |
++| Phase 0F stochastic FD/normalization/consistency implementation | 0C value endpoints and only the implemented 0D/0E estimators actually used. |
++| Phase 0G model/scale/report coverage | Applicable 0C--0F capabilities for each new study slice. |
++| Phase 1 admission | Target-specific tests produced during 0C--0G at the actual consumer revision; failed tests return to their implementation producer. |
++| Phase 2 proposal quality | 0C or 0D/0E proposal implementation; 0G when coverage expands; Gates A/B, actual correction law, and scope tuning. |
++| Phase 3 estimator comparison | 0D or other applicable verified estimator implementation; Gates A/B, fixed-cloud law, and Gate C for each new proposal used. |
++| Phase 4 normalisation study | 0F implementation and Phase 3 evidence for the verified value/derivative pairs compared. |
++| Phase 4B consistency calibration | 0F implementation, oracle, and eligible estimators; deterministic FD checks when used, not completion of the whole normalization or FD campaign. |
++| Phase 4C deterministic mechanics | Execute the exact scalar/direction tests implemented in 0F. |
++| Phase 4C stochastic/full-score study | 0F implementation, eligible value/proposal law, deterministic mechanics, valid directions/coupling, and scope tuning. |
++| Phases 7--9 comparisons, replication, and final audit | 0G coverage/report implementation, applicable mechanism gates, and frozen scopes for the candidates compared. |
+ 
+ These are dependencies for each row, not a requirement that every candidate
+ finish one numbered phase before any candidate enters another. A KDM wiring
+ block does not stop oracle FD mechanics or an already verified UKF comparison.
+ Neither Phase 4B nor Phase 4C requires the separately owned Phases 5 or 6.
+ 
+-1. **Gate A, after Phase 0:** every active model has a target record, baseline
+-   ladder, tuning scope, and oracle
+-   status; no score-quality comparison proceeds without a valid comparator or
+-   an explicitly diagnostic label.
++1. **Gate A, after the applicable Phase 0C/0G implementation:** the model and
++   regime being admitted have Phase 0's target record, executable baseline
++   ladder, tuning service/scope, and checked oracle status. No score-quality
++   comparison proceeds without a valid comparator or an explicitly diagnostic
++   label. Later models need their own records and checks; they do not block
++   the first verified Gaussian study.
+ 2. **Gate B, after Phase 1:** each target-specific identity, support,
+    positivity, sensitivity, and consumer-to-provider call-chain test passes;
+    an IWSG identity is not replaced by finite-program parity. Failures return
+@@ -1370,7 +1760,8 @@
+    complete manifests, scope-specific tuning, and implementation audit may be
+    considered for default or HMC-facing status.
+ 
+-Phases 0--4 are the active foundation. Phase 7 evaluates active regular
++Phases 0, 0A--0G, 1--4, 4B, and 4C form the active implementation and research
++foundation. Phase 7 evaluates active regular
+ candidates against conditional heuristics. Phases 5 and 6 are deferred
+ external branches and cannot supply active claim evidence. Phases 8 and 9 are
+ terminal validation and audit, not sources of new tuning data.
+@@ -1380,6 +1771,10 @@
+ Every phase, including a failed or terminal phase, ends with an explicit
+ repair pass and a refresh of its successors. A scientific gate passing does
+ not waive unresolved defects in the computation that produced its evidence.
++An issue is repairable when there is a concrete correction or discriminating
++test within the current scientific scope and remaining resources. Record and
++attempt those repairs; a promise that unspecified further tuning might help
++is not a completed repair plan.
+ 
+ 1. Reconcile planned, completed, failed, blocked, and omitted rows. State
+    whether the finding invalidates the harness, mathematical target,
+@@ -1414,11 +1809,31 @@
+ 
+ The closeout note and machine-readable issue dispositions are sufficient;
+ routine repairs and next-phase refreshes do not require a new external review
+-or renewed permission within an authorized campaign. The coordinator must
+-test repair/resume, stale-evidence invalidation, shared-code effects, blocked
+-branches, budget exhaustion, and the terminal repair case. The
+-[execution plan](younis-score-master-execution-plan-2026-09-14.md) specifies
+-those tests and the initial build order.
++or renewed permission within an authorized campaign. Phase 0B implements
++tests for failure followed by repair; a repair that invalidates a formerly
++passing dependency; changed horizon/source with stale tuning; a shared-code
++failure affecting two methods; a blocked method beside a runnable method;
++exhausted repair budget; and a terminal repair requiring fresh evaluation.
++The scheduler refuses dependent launches without the applicable disposition
++and current next-phase plan. Phase 0C verifies this behavior with real
++endpoints, and Phase 0G extends it to the final reports.
++
++Use the phase note plus a machine-readable closeout record containing:
++
++```text
++phase_id, phase_plan_version, source_revision, source_changes
++planned_rows, completed_rows, blocked_rows, omitted_rows_with_reasons
++engineering_status, numerical_status, scientific_decision, inference_status
++issues: [issue_id, affected_rows, classification, root_cause, repair,
++         regression_evidence, scope_effect, disposition]
++attempts, consumed_cpu_hours, consumed_gpu_hours, remaining_budget
++invalidated_evidence, current_tuning_scopes, partition_usage
++next_phase_plan, next_phase_plan_version, refreshed_dependencies
++```
++
++For developer phases before the coordinator exists, record the same
++information in the phase note; Phase 0B adds the machine-readable support.
++The process does not require its own unbuilt machinery to get started.
+ 
+ ## Required artifacts
+ 
+@@ -1466,29 +1881,42 @@
+ 
+ ## First executable tranche
+ 
+-The first tranche should be run on the linear-Gaussian model, because it supplies
+-an exact score and permits every estimator to be compared without support
+-ambiguity:
+-
+-1. implement the target/oracle ledger and identity tests;
+-2. verify noise-free three/five/eleven-point mechanics and rectangular
+-   directional reconstruction against exact derivatives;
+-3. admit bootstrap, UKF/adapted, canonical LEDH, and physical-mixture baselines
+-   only after their endpoint, support, initialization, and density tests pass;
+-4. use common clouds for conditional estimator comparisons, repeat across
+-   independent clouds, and preserve each full-filter arm's marginal law while
+-   coupling arms where valid for paired inference;
+-5. add KDM/IWSG, centered control variates, covariance providers, and twisting
+-   after their named prerequisites pass; defer integrated KDM rows while the
+-   trace/callback conflict remains;
+-6. calibrate particle count, horizon, bandwidth, and FD choices in separate
+-   scopes, then quantify held-out bias, variance, MSE, denominator variability,
+-   ESS, runtime, and the conditional heuristic table; and
+-7. write the first decision note before nonlinear regular and SGQF scaling
+-   studies, which each require their own scoped plans and prerequisites.
+-
+-The deferred DSGE/support program is not launched in parallel by this tranche
+-and cannot inherit any numerical conclusion from it.
++Executing this master starts with implementation. Follow this order within
++this document:
++
++1. Read Phase 0's target/oracle requirements and perform Phase 0A's source,
++   capability, and manuscript reconciliation. Pin the existing environment
++   and the initial validation commands.
++2. Execute Phase 0B: implement the registries, CLI, dependency checks, result
++   records, budget accounting, and repair/resume behavior. Develop Phase 0F's
++   exact three/five/eleven-point and direction fixtures independently when
++   their Phase 0A specifications are available.
++3. Execute Phase 0C: implement and verify the independent Gaussian oracle,
++   parameter-dependent initialization, actual bootstrap/UKF/adapted and
++   canonical LEDH endpoints, tuning issuer/consumer path, and reports. Repair
++   the applicable shared canonical code instead of adding a reduced lane.
++4. Perform the repair/refresh step after each phase. Complete the real
++   Gaussian baseline smoke, interruption/resume check, and scoped
++   tuning/claim-plumbing check with explicit no-ranking status. This is the
++   first executable software milestone produced by the master.
++5. Execute the applicable 0D--0F branches for KDM/IWSG, centered control
++   variates, biased combinations, covariance/SGQF providers, twisting, and
++   stochastic FD. Finish Phase 1 admission for each method using the tests
++   produced by its implementation phase. A blocked method does not stop
++   independent verified branches.
++6. Use Phase 0G to implement each additional study's model, configuration,
++   reference, and reporting requirements before Phases 2--4C and 7 run it.
++   Tune on disjoint partitions, use common clouds for conditional comparisons
++   and independent clouds for total error, and preserve every replica's
++   marginal law in paired full-filter comparisons.
++7. Run the scientific studies under their refreshed finite plans, repair and
++   update after each phase, then perform Phases 8--9 replication and final
++   audit. Any outcome-informed repair uses fresh evaluation partitions.
++
++No separate execution plan is needed before these tasks begin. The deferred
++DSGE/support and smoothing programs remain separate assignments; this
++tranche neither launches them nor inherits an unsupported numerical result
++from them.
+ 
+ ## Literature coverage addendum (2026-09-14)
+ 
+@@ -1555,19 +1983,22 @@
+ 
+ ## Open prerequisites and amendment review
+ 
+-This amended master specifies the experiment; it is not evidence that the
+-filter integrations or the research campaigns have passed. Prerequisites are
+-attached to the affected rows, so unrelated verified work can proceed.
+-
+-| Obligation | Current evidence and next check |
+-|---|---|
+-| KDM integrated/resampling endpoint | Static trace/callback conflict in the current scalar executor; recheck the ongoing repair and run endpoint wiring regressions before KDM rows. |
+-| Parameter-dependent initialization | Supplied initial-state/covariance tangents start at zero; demonstrate the full outer initialization sensitivity on a nonconstant fixture. |
+-| UKF/KDM/SGQF moment lifecycle | Specify prediction, observation conditioning, persistent component state and reset, then test the actual moments and sensitivities consumed by LEDH. SGQF integration remains unverified. |
+-| Twisting/iAPF | Derive and test the actual ancestor/state law, normalizing integrals, correction and derivative terms. Preserve paper/source anchors for any faithfulness claim. |
+-| KDM as a LEDH control variate | Supply the center under the actual sampling law, or an independent unbiased center, and include its estimation cost/variance; otherwise retain the heuristic label. |
+-| Companion manuscript | Synchronize the finite-difference smoothness, stochastic MSE, direction convention and covariance lifecycle before using it as the revised implementation specification. |
+-| Serious run | Fill the scoped evidence contract, defaults audit, partitioning, finite attempts/compute budget, exact environment/commands, and unique output root. |
++This master specifies both the implementation and the experiments; it is not
++evidence that either has passed. The following unfinished work is assigned to
++phases in this master. It blocks only the dependent research rows, not the
++start of the master or unrelated verified work.
++
++| Obligation | Producing phase | Current evidence and required work |
++|---|---|---|
++| Coordinator, study inputs, and resume/report services | 0B/0C/0G | Proposed paths remain absent; build and test them as part of master execution. |
++| KDM integrated/resampling endpoint | 0D, with shared baseline regression in 0C | Static trace/callback conflict in the current scalar executor; reconcile the ongoing repair and run endpoint wiring regressions before KDM rows. |
++| Parameter-dependent initialization | 0C and every affected 0D--0G adapter | Supplied initial-state/covariance tangents start at zero; implement and demonstrate full outer initialization sensitivity on a nonconstant fixture. |
++| UKF/KDM/SGQF moment lifecycle | 0C--0E | Implement prediction, observation conditioning, persistent component state and reset, then test the actual moments and sensitivities consumed by LEDH. SGQF integration remains unverified. |
++| Twisting/iAPF | 0E | Derive, implement, and test actual ancestor/state laws, normalizing integrals, correction and derivative terms. Preserve paper/source anchors for any faithfulness claim. |
++| KDM as a LEDH control variate | 0D | Supply the center under the actual law or an independent unbiased center, including cost/variance; otherwise the exact-CV row remains blocked and any heuristic retains its own label. |
++| Companion manuscript | 0A, then relevant phase repairs | Synchronize FD smoothness, stochastic MSE, direction convention and covariance lifecycle before using it as the revised implementation specification. |
++| Additional models, row matrix, and final reports | 0G | Build and check each adapter/reference/configuration before its study, including capacity pilots and terminal report coverage. |
++| Serious run | Applicable phase and preceding refresh | Fill the evidence contract, defaults audit, partitions, finite attempts/compute budget, exact environment/commands, and unique output root. |
+ 
+ The companion manuscript at
+ [ledh_younis_kdm_score.tex](../papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex)

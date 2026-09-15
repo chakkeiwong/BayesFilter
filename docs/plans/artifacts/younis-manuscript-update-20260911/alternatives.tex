@@ -1,0 +1,72 @@
+\section{Other options and their place in the investigation}
+\label{sec:alternatives}
+
+Analytic marginalization should come before additional approximation when
+the model permits it. Section~\ref{sec:model-mixtures} gives the one-step
+Gaussian example. A conditionally linear-Gaussian state block can similarly
+be integrated rather than sampled, provided its conditional model is retained
+exactly. A Gaussian approximation to a nonlinear block is a different choice
+and needs its own error assessment. Neither a good fit to state observations
+nor an appealing proposal density establishes that the downstream score is
+accurate.
+
+More particles, paired random designs, and randomized quasi-Monte Carlo are
+important equal-compute alternatives. They can improve integration without
+changing the scientific target, but they cannot restore a missing derivative
+or correct a filtering approximation with persistent bias. The comparison
+must distinguish a better estimator from simply spending more work on it.
+Sparse mixtures, low-rank density approximations, and approximate backward
+sums likewise require separate bias and cost measurements; they are not
+algebraically equivalent to the full mixture merely because they produce
+finite values.
+
+Bandwidth or particle-count extrapolation is another possible bias-reduction
+strategy, but it requires a justified expansion. A presumed $h^2$ smoothing
+bias or $1/N$ score bias cannot be used across every nonsmooth, constrained,
+or resampling model without evidence. Randomized telescoping is more general.
+For coupled levels $S_l$ and an independent random truncation $L$,
+\begin{equation}
+ \widehat S_{\rm tel}
+ =S_0+\sum_{l=1}^{L}\frac{S_l-S_{l-1}}{\Pr(L\ge l)},
+ \qquad
+ \mathbb E\widehat S_{\rm tel}=\lim_{l\to\infty}\mathbb E S_l,
+ \label{eq:randomized-telescope}
+\end{equation}
+when absolute integrability permits exchanging sum and expectation. The
+expectation equality follows because each retained increment has inclusion
+probability $\Pr(L\ge l)$. The limit must first be shown to equal the model
+score. Finite expected work and finite variance impose additional conditions
+on the coupling and truncation tail; the displayed equality supplies neither.
+This makes literal unbiasedness a distinct research problem rather than a
+promised property of the next mixture prototype.
+
+The original proposal-force use remains valid in a different role. A
+deterministic position-only field may generate a reversible,
+volume-preserving kick--drift--kick proposal, with acceptance computed from
+the declared endpoint Hamiltonian. Each kick and drift is a shear with unit
+Jacobian determinant. Reversing the step size reverses the sequence, and a
+momentum flip turns the symmetric sequence into an involution. The ordinary
+Metropolis ratio therefore corrects this proposal for the endpoint density;
+the force need not be its exact gradient. If the endpoint uses a fixed
+finite-particle likelihood, it preserves that approximate target, not the
+exact state-space posterior. Exact pseudo-marginal inference instead needs a
+valid nonnegative unbiased likelihood estimate and the auxiliary randomness
+in the extended target. A new random score at each leapfrog step is not
+automatically a reversible proposal.
+
+The BayesFilter HMC interface already distinguishes an exact score from a
+frozen proposal field. A future raw-coordinate field must use the typed
+endpoint-corrected binding with \texttt{tune\_hmc\_kernel}; the
+fixed-transport tuner is for a genuine frozen coordinate transport with its
+Jacobian-corrected target. This document does not change an HMC consumer or
+claim posterior readiness. The interface and capability registry were read
+to keep the proposed downstream use consistent with the actual repository.
+
+The practical order is therefore to check model identity and complete
+initialization, establish a corrected mixture/Fisher reference, compare
+selective gradient estimators where needed, and then investigate scalable
+ancestor approximations or learned proposals. Control variates, analytic
+integration, and increased integration effort should be evaluated alongside
+that sequence. Further structural DSGE implementation remains deferred while
+the existing repository models are checked; the support derivations below
+are retained because they explain which model extensions will be valid.

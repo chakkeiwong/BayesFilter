@@ -1,0 +1,141 @@
+{
+  "comparison_target": "model_score",
+  "derivative_id": "analytical_recursion",
+  "derivative_target": "finite_program_score",
+  "diagnostics": {
+    "candidate_configuration": {
+      "controls": {
+        "coordinate_cap": 0.4,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_steps": 1,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.5,
+        "flow_substeps": 2,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 3,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 3
+      },
+      "within_fraction": 0.5
+    },
+    "canonical_status": "alternative_covariance_candidate_not_younis_filter_reproduction",
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 16,
+    "component_count": 2,
+    "component_lifecycle": "independent_prediction_observation_conditioning_and_evidence_reweighting",
+    "controls": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "covariance_provider": "local_gaussian_mixture_assumed_density_filter",
+    "data_model": "affine_gaussian_all_six_parameters",
+    "data_seed": [
+      484610754,
+      1500068662
+    ],
+    "data_version": "e0880e413904700d0ac18b5407df001b251a67f3dac0d54dc706f5ba862f7f99",
+    "derivative_semantics": "analytical_total_initial_moments_flow_genut_contract_e",
+    "final_component_log_weights": [
+      -0.7544688471337451,
+      -0.6353695790090756
+    ],
+    "final_provider_covariance": [
+      [
+        0.13367823753233912
+      ]
+    ],
+    "horizon": 3,
+    "initial_seed": [
+      515295301,
+      1378472696
+    ],
+    "parameter_dimension": 6,
+    "particle_count": 16,
+    "process_seed": [
+      610410425,
+      1350819091
+    ],
+    "resampling_seed": [
+      1938197839,
+      356308363
+    ],
+    "reset_contract_id": "contract_e_chol_v1",
+    "reset_seed": [
+      723107210,
+      197029242
+    ],
+    "score_consumer": "mixture_schedule -> shared executor -> scheduled prediction/conditioning moments",
+    "score_squared_error": 1.842272604743686,
+    "state_dimension": 1,
+    "tuning_status": "verified_selection",
+    "uses_autodiff": false,
+    "value_squared_error": 0.11825738406756359,
+    "within_fraction": 0.5
+  },
+  "inference_status": "mechanics_only",
+  "initial_terms": true,
+  "numerical_validity": "pass",
+  "oracle_score": [
+    -0.7303141972695388,
+    -0.2794344776677577,
+    -0.636996830571399,
+    -0.7247903965089109,
+    -0.060757260124692174,
+    -0.3576875641590893
+  ],
+  "oracle_value": -2.95106908912602,
+  "proposal_law": "independent_conditioned_gaussian_mixture_moments_shared_ledh",
+  "runtime": {
+    "allocator_current_bytes": null,
+    "allocator_peak_bytes": null,
+    "backend": "tensorflow",
+    "cpu_threads": 4,
+    "device": "CPU",
+    "dtype": "float64",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": true,
+    "kernel_calls": 6,
+    "kernel_wall_seconds": 0.007045205999929749,
+    "memory_policy": {
+      "mode": "cpu_reference_gpu_intentionally_hidden",
+      "physical_devices": []
+    },
+    "reason": "CPU reference; GPU intentionally hidden",
+    "reference_exception": true,
+    "score_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "tf32": false,
+    "traces": 1,
+    "value_device": "/job:localhost/replica:0/task:0/device:CPU:0"
+  },
+  "score": [
+    -1.9715742823098925,
+    0.13346417976576508,
+    -0.4987540182817126,
+    -0.6097894643875967,
+    -0.2236748340044361,
+    -0.6263551641809382
+  ],
+  "value": -3.2949548027978204,
+  "value_target": "finite_particle_log_likelihood"
+}

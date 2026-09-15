@@ -1,0 +1,50 @@
+--- a/bayesfilter/highdim/pair_block_tt_tf.py
++++ b/bayesfilter/highdim/pair_block_tt_tf.py
+@@ -219,6 +219,19 @@
+     return fit
+ 
+ 
++def initial_pair_cores(dimension: int, degree: int = 3, rank: int = 3):
++    """Existing deterministic generic start, also exposed for controlled diagnostics."""
++    n = degree + 1
++    ranks = (1,) + (rank,) * (dimension - 1) + (1,)
++    initial = []
++    for axis in range(dimension):
++        shape = (ranks[axis], n, n, ranks[axis + 1])
++        # Excite every channel: zero padding would trap one-site ALS at rank one.
++        core = tf.random.stateless_normal(shape, [7919, axis], dtype=D) / tf.sqrt(tf.cast(n*n*ranks[axis+1], D))
++        initial.append(tf.tensor_scatter_nd_add(core, [[0, 0, 0, 0]], [tf.constant(1., D)]))
++    return tuple(initial)
++
++
+ def fit_pair_features(features: tf.Tensor, target: tf.Tensor, row_weights: tf.Tensor,
+                       degree: int = 3, rank: int = 3, sweeps: int = 4,
+                       proximal_steps: int = 128, penalty: float = 0., initial=None,
+@@ -227,15 +240,9 @@
+     dimension = int(features.shape[1])
+     n = degree + 1
+     ranks = (1,) + (rank,) * (dimension - 1) + (1,)
++    supplied_initial = initial is not None
+     if initial is None:
+-        initial = []
+-        for axis in range(dimension):
+-            shape = (ranks[axis], n, n, ranks[axis + 1])
+-            # Every channel must be excited: zero inactive channels would
+-            # trap one-site ALS at rank one regardless of the stored ranks.
+-            core = tf.random.stateless_normal(shape, [7919, axis], dtype=D) / tf.sqrt(tf.cast(n*n*ranks[axis+1], D))
+-            core = tf.tensor_scatter_nd_add(core, [[0, 0, 0, 0]], [tf.constant(1., D)])
+-            initial.append(core)
++        initial = initial_pair_cores(dimension, degree, rank)
+     fitter = compiled_pair_fitter(dimension, degree, rank, sweeps, proximal_steps, jit_compile)
+     cores, minimum_decrease, kkt, condition = fitter(features, target, row_weights,
+                                           tf.constant(penalty, D), tuple(initial))
+@@ -245,7 +252,8 @@
+     return cores, {"minimum_objective_decrease": minimum_decrease,
+                    "maximum_core_gram_condition_capped": condition,
+                    "gauge_policy": "raw_coefficients_no_infit_gauge_changes",
+-                   "initialization": "stateless_7919_unit_expected_local_row_energy_plus_constant",
++                   "initialization": ("explicit_initial_cores" if supplied_initial else
++                       "stateless_7919_unit_expected_local_row_energy_plus_constant"),
+                    "kkt_residual": kkt,
+                    "rank_profile": list(ranks),
+                    "weighted_rows": tf.reduce_sum(row_weights),

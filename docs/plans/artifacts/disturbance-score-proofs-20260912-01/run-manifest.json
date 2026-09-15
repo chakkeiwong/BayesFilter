@@ -1,0 +1,81 @@
+{
+  "recorded_at_utc": "2026-09-12T07:19:32.067538+00:00",
+  "git_commit": "14a292098f35b6de450ffca29131ea34f4a4d8d7",
+  "branch": "surrogate-hmc",
+  "working_directory": "/home/chakwong/BayesFilter",
+  "scope": "LaTeX derivations and exact independent mathematical diagnostics; no algorithm implementation or research campaign",
+  "environment": {
+    "python": "3.11.15",
+    "python_executable": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "sympy": "1.14.0",
+    "tex_engine": "pdfTeX 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian)"
+  },
+  "hardware": {
+    "mode": "CPU-only exact reference",
+    "gpu_used": false,
+    "frameworks_imported": [],
+    "cuda_policy": "No TensorFlow/JAX/PyTorch/CUDA import or probe; GPU not used"
+  },
+  "data_version": "N/A: synthetic mathematical examples specified in the verification scripts",
+  "random_seeds": "N/A: exact arithmetic, symbolic identities, and exhaustive finite enumeration",
+  "plan_file": "docs/plans/disturbance-score-proofs-2026-09-12.md",
+  "result_file": "docs/plans/artifacts/disturbance-score-proofs-20260912-01/result.md",
+  "commands": [
+    [
+      "python",
+      "docs/plans/artifacts/disturbance-score-proofs-20260912-01/verify_score_identities.py"
+    ],
+    [
+      "python",
+      "docs/plans/artifacts/disturbance-score-proofs-20260912-01/verify_symbolic_derivation.py"
+    ],
+    [
+      "python",
+      "docs/plans/artifacts/disturbance-score-proofs-20260912-01/build_documents.py"
+    ],
+    [
+      "curl",
+      "-L",
+      "--fail",
+      "--max-time",
+      "25",
+      "-H",
+      "Accept: application/vnd.citationstyles.csl+json",
+      "-o",
+      "docs/plans/artifacts/disturbance-score-proofs-20260912-01/murray-doi-metadata.json",
+      "https://doi.org/10.1137/130915376"
+    ]
+  ],
+  "command_logs": "final-build-commands.json and its referenced logs; exact diagnostic outputs preserved as structured JSON",
+  "wall_seconds": {
+    "final_document_build": 3.357912560000841,
+    "exact_reference_checks": null,
+    "whole_task": null
+  },
+  "timing_limit": "Only PDF command wall times were recorded individually. Exact-check and whole-task wall times were not captured; no performance claim is made.",
+  "audit_rounds_used": 4,
+  "audit_verdict": "partial_coverage; full audit pass not achieved",
+  "source_tex_matches_final_rigor_audit": true,
+  "bibliography_revision": "DOI-verified Murray publication metadata corrected after final TeX audit; equations and TeX digest unchanged",
+  "output_files_sha256": {
+    "docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex": "6feeafff29e5f810b7032b9c8915efd1a5f7feb32fb661cfc01d302f63c7ebf0",
+    "docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.pdf": "613d63764354a788fc2b603f3bb207ca4cd52fbaaa3326e7cdadbc7b1b12a93c",
+    "docs/papers/ledh_younis_kdm_score/disturbance_score_proposal.tex": "9b83281189821a4d52be5f0242723b36999b491d0520ec3a911daf65a9d23af5",
+    "docs/papers/ledh_younis_kdm_score/disturbance_score_proposal.pdf": "043158879c640f37d3ee650e8c28165ac4c4e6f464fd699bafcecb5688cd0f59",
+    "docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.bib": "02a658421bb86b612fdc0cc5467b5e002c066553f7e63b75249bba10fdbe2e91"
+  },
+  "evidence_sha256": {
+    "verification.json": "fc940f0ea4a9703e08b3c2d9fac49b6795c5f3611dc49bdc8eef016f60286bc6",
+    "symbolic-verification.json": "b9c2ff70574f8985cbadde86798ee0617fb88b39282af456cde3c75fef012377",
+    "mathdevmcp-rigor-round4.json": "8a8a1041d6559540bf176662cbb5813d783e0b89f3706bc8569c8a17c583dea1",
+    "mathdevmcp-symbolic-checks.json": "11aff52ad9f72d72f64823051723dc7e687d0cff5467f291461bdd050330de11",
+    "mathdevmcp-derivation-round2.json": "a1cc238f2a42f46c2624a336a6458054be14f24ca8db0ad9161a0e2c009bf55a",
+    "mathdevmcp-final-label-audits.json": "7a5b2f1b64b367b9ddc24b530261ae3c9638b6c4e23b1def731c4e6dffe63d3d",
+    "mathdevmcp-score-recursion-label.json": "e076cbdac80e77ecb801e9484d205919fb1b10367a1c0ca758e3845b43b63576",
+    "murray-doi-metadata.json": "6424160382899494bc9d0eb5d8b97bff2bb9bbe856fa60cd1f0896bcaf5efa2e",
+    "document-checks.json": "d9f96ae5d3f431a6e749a2f7bae3a4fc016be0707e96b46c3a2c6952ec1bcf72",
+    "source-ledger.md": "c918b97daad552d9bf12dc1c2670937b671e85e7f6d45015fe965939cb0b8f0c",
+    "result.md": "061f5499cc2a40b1fd9f1aa255e9ec991aee9b76815d32bb0564c03bb29ac844"
+  },
+  "provenance_limit": "Separate label and derivation-tree audits are historical bounded evidence; round 4 binds the final TeX. Bibliography hash is recorded separately."
+}

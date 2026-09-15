@@ -1,0 +1,5 @@
+# Execution recovery after VS Code crash
+
+The temporary worktrees were absent both inside and outside the restarted sandbox. No relevant numerical process remained. The repository Git object database, per-worktree staged index, and campaign artifacts survived. All 12 changed files (603 insertions, 19 deletions) were recovered from the staged index into provider-crash-recovery.patch and applied with index checking to a fresh persistent checkout at .localresources/worktrees/younis-score-models-20260915. Main-checkout concurrent changes were untouched. Previous protected revisions remain recoverable from their commits.
+
+The final pre-crash consumer test log confirms 18 passed in41.12seconds. There is no need to rerun these unchanged tests solely because the UI crashed. Source-snapshot commit hooks and the planned new end-to-end numerical rows remain the next checks. Earlier default-sandbox Git commit attempts could not write the administrative index; the elevated retry is an ordinary snapshot operation, not a scientific or external publication boundary.

@@ -1,0 +1,13 @@
+# Active score master checkpoint
+
+Request: review and execute the master, including implementation and between-phase repair. Resume remains authorized. Parent envelope: 12 CPU process-hours, 8 GPU device-hours, 12 GPU launches; six launches used. Preserve concurrent main-checkout changes on surrogate-hmc.
+
+Frozen provider checkout: .localresources/worktrees/younis-score-models-20260915, commit 677e38a8. Persistent mixture covariance and fitted Gaussian-plus-floor twist consumers run on CPU and GPU, including independent selection/claim plumbing. Initial KDM claim config lost its candidate-family identity; two pre-numerical failures are preserved, repaired claim completed. No method ranking or published-iAPF equivalence.
+
+Frozen nonlinear checkout: .localresources/worktrees/younis-score-nonlinear-20260915, commit a99a1c55. All 96 rows in nonlinear-{weak,curved,concentrated}-cpu-01 completed; numerical grid refinement/domain/tail checks passed. At current untuned settings all three LEDH covariance candidates have larger observed score error than EKF in all three regimes. Two datasets cannot support a ranking. Promotion is vetoed; the research direction remains open. Targeted kernel, actual-consumer and coordinator/report tests passed; two MathDev algebra checks passed (nonlinear-mathdev-checks.json), without whole-program certification.
+
+Active implementation checkout: .localresources/worktrees/younis-score-ratio-20260915, initially a99a1c55. Next: preserve result/repair note, implement ratio and consistency diagnostics, execute bounded dimension/capacity checks and normalization pilots. Never edit frozen run-source snapshots; source fingerprints are revalidated by reports and selection.
+
+Current slice phase-0g-repair-execution-plan.md: 144/200 numerical rows completed, two additional pre-numerical failed attempts; max 300 attempts, two CPU process-hours, three GPU launches/device-hours. One slice GPU launch used (~31 seconds); numerical CPU runs ~three minutes, tests/hooks bring total to approximately 12 CPU process-minutes. Earlier slice 118/120 rows remains preserved. Exact runtime manifests govern accounting. Remaining 56 numerical rows are reserved for capacity and normalization mechanics. Further scientific tuning/replication requires the next bounded allocation within the parent budget, not an extra user-approval ceremony.
+
+Whole master is incomplete. Scope-specific scientific tuning, ratio/consistency calibration, replication and terminal reporting remain open. Main-checkout integration must compose with the concurrent while-loop executor and independently test its callback/trace contract; snapshot passes do not transfer automatically.
