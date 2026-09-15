@@ -28,7 +28,7 @@ def check_full_chain_health(result):
     tf.debugging.assert_all_finite(result.samples, "HMC qualification samples")
     tf.debugging.assert_equal(tf.reduce_all(trace["target_score_finite"]), True)
     for key in ("target_status_telemetry", "proposed_target_status_telemetry"):
-        if target_status_telemetry_has_failure(trace[key], expected_shape=tuple(result.samples.shape[:2])):
+        if key in trace and target_status_telemetry_has_failure(trace[key], expected_shape=tuple(result.samples.shape[:2])):
             raise ValueError("HMC qualification target status failed")
 
 

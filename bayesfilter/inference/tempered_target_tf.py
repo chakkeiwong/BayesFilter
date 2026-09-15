@@ -609,7 +609,17 @@ class FixedBetaBridgeAdapter:
 
     def target_status_telemetry(self, theta: Any) -> Mapping[str, tf.Tensor]:
         _value, _score, status = self.log_prob_and_grad_status(theta)
-        return dict(status)
+        result = dict(status)
+        # The q20 batched target publishes a minimum innovation eigenvalue but
+        # does not publish a condition estimate. The shared HMC trace contract
+        # admits this as core telemetry; retaining a lone optional field makes
+        # traces falsely appear schema-incomplete. Keep both optional fields or
+        # neither, without inventing a condition estimate.
+        optional = ("min_innovation_eigenvalue", "innovation_condition_estimate")
+        if not all(key in result for key in optional):
+            for key in optional:
+                result.pop(key, None)
+        return result
 
 
 def make_q20_tempered_bridge(
