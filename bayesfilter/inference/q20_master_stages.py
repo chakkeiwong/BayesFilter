@@ -81,7 +81,7 @@ def dispatch(config, bridge, root, request, memory):
     stage, root = request["stage"], Path(root)
     if stage == "qualify":
         from bayesfilter.inference.q20_hmc_qualification import qualify_bridge
-        return qualify_bridge(config, bridge, root)
+        return qualify_bridge(config, bridge, root, betas=request.get("betas"))
     if stage == "price":
         return price_complete(config, bridge, root, memory)
     if stage == "train":

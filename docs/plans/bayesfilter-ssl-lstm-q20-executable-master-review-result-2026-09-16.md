@@ -164,3 +164,16 @@ including native compilation and its termination grace. Its initial status is
 running; no qualification or training result is claimed at launch. The active
 ledger and receipts live in the isolated checkout at
 `docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/real-q20-r1/`.
+
+Launch `real-q20-r1` consumed 321.0815 seconds before the public-runner
+telemetry schema vetoed its receipt. The q20 target emitted one optional
+innovation field without its required pair; the repair drops that unpaired
+diagnostic at the bridge trace boundary and preserves the required core status
+fields. This is a schema normalization repair, not a relaxation of target
+health checks. Retry uses a fresh `real-q20-r2` root and subtracts the r1 charge.
+
+The exact partial-telemetry XLA regression and complete supervised master
+passed again: 4 tests in 344.71 seconds. Qualification is now dispatched per
+positive temperature with a merged receipt that must cover the entire ladder.
+The fresh retry uses `retry-protocol.json` and `retry-allowance.json`; the three
+remaining initial diagnostic attempts and all prior spending are preserved.

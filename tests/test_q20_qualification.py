@@ -52,6 +52,17 @@ def test_enclosing_xla_and_actual_serial_runner_qualification(tmp_path):
     config["jit_compile"]=True
     config["training"]["betas"]=[0.,1.]
     bridge=four_dimensional_bridge(True)
+    # Match the real q20 target's one-sided optional diagnostic inventory.
+    original=bridge.component_target.batch_prior_likelihood_value_score_status
+    def partial_conditioning(theta):
+        a,b,c,d,status=original(theta)
+        return a,b,c,d,{**status,"min_innovation_eigenvalue":tf.ones(tf.shape(theta)[:-1],tf.float64)}
+    bridge.component_target.batch_prior_likelihood_value_score_status=partial_conditioning
+    raw=bridge.fixed_beta_adapter(1.).log_prob_and_grad_status(tf.zeros([4,4],tf.float64))[2]
+    assert "min_innovation_eigenvalue" in raw
+    telemetry=bridge.fixed_beta_adapter(1.).target_status_telemetry(tf.zeros([4,4],tf.float64))
+    assert "min_innovation_eigenvalue" not in telemetry
+    assert "innovation_condition_estimate" not in telemetry
     qualify_bridge(config,bridge,tmp_path/"qualification")
     path=tmp_path/"qualification/result.json"
     receipt=json.loads(path.read_text())

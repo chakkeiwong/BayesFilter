@@ -225,3 +225,31 @@ The whole-program self-review and connected test evidence are recorded in
 25 supervised numerical stages through confirmation and reused them on resume.
 Real q20 execution follows from the isolated committed source and recovered
 allowance; no scientific qualification follows from the fixture.
+
+
+### Localized q20 retry after first real launch
+
+The first real launch passed trusted GPU readiness and ran the public runner,
+then failed on an incomplete optional telemetry pair. The target publishes
+`min_innovation_eigenvalue` but no `innovation_condition_estimate`. Normalize
+only the bridge's HMC-facing telemetry to its supported core fields; raw value/
+score status retains the original eigenvalue and the existing target validity
+bit already requires that eigenvalue to be finite and positive. Do not invent
+a condition estimate or relax a validity gate. Check this exact field inventory
+with an XLA Gaussian fixture and the actual public serial runner.
+
+The attempted qualification consumed 317.57764009101084 seconds; readiness
+consumed 3.503887817962095 seconds. Preserve that failed source scope and its
+full 321.08152790897293-second charge. The follow-up CPU inspection was manually
+interrupted; session tool timestamps bound its wall time at 43 seconds, charged
+as an upper bound, not as a successful numerical result.
+
+Split the two positive-temperature qualification scopes into separate workers,
+each still bounded by 600 seconds. A source-bound merged receipt requires both
+scopes. This reduces lost compiled work without changing the method. The prior
+failed attempt consumes one of the original four diagnostic attempts, leaving
+three for beta 0.5 qualification, beta 1 qualification and pricing. The next
+config therefore allows at most three initial diagnostic attempts. If those
+cannot finish the measured-cost prerequisite, preserve `MASTER_INCOMPLETE`;
+do not launch an underpriced training grid. All original campaign/diagnostic
+balances and the cumulative per-arm limit remain binding.

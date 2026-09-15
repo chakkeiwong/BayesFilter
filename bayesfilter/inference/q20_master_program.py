@@ -181,8 +181,21 @@ def _execute(campaign, *, fixture=False,stop_after=None):
         return result
     try:
         if config["jit_compile"]:
-            qualified=stage("qualify",{"stage":"qualify"},diagnostic=True)
-            qualification=qualified["result_path"]
+            receipts=[]
+            for beta in config["training"]["betas"][1:]:
+                qualified=stage(f"qualify-beta{beta:g}",{"stage":"qualify","betas":[beta]},diagnostic=True)
+                receipt=json.loads(Path(qualified["result_path"]).read_text())
+                checksum=receipt.pop("checksum")
+                if checksum != digest(receipt):
+                    raise ValueError("qualification receipt checksum mismatch")
+                receipts.append(receipt)
+            combined={**receipts[0],"betas":{}}
+            for receipt in receipts:
+                if any(receipt[k]!=combined[k] for k in receipt if k!="betas"):
+                    raise ValueError("qualification receipt scopes differ")
+                combined["betas"].update(receipt["betas"])
+            qualification=str(campaign.root/"qualification.json")
+            atomic_json(qualification,{**combined,"checksum":digest(combined)})
         pricing=stage("price",{"stage":"price"},diagnostic=True)
         pricing["result"]["process_overhead_seconds"]=max(0.,pricing["supervisor_seconds"]-pricing["wall_seconds"])
         quote=forecast_campaign(config,pricing["result"])

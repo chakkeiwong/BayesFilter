@@ -28,18 +28,21 @@ def check_full_chain_health(result):
     tf.debugging.assert_all_finite(result.samples, "HMC qualification samples")
     tf.debugging.assert_equal(tf.reduce_all(trace["target_score_finite"]), True)
     for key in ("target_status_telemetry", "proposed_target_status_telemetry"):
-        if key in trace and target_status_telemetry_has_failure(trace[key], expected_shape=tuple(result.samples.shape[:2])):
+        if target_status_telemetry_has_failure(trace[key], expected_shape=tuple(result.samples.shape[:2])):
             raise ValueError("HMC qualification target status failed")
 
 
-def qualify_bridge(config, bridge, root):
+def qualify_bridge(config, bridge, root, *, betas=None):
     from bayesfilter.inference.fixed_transport_hmc_mechanics_tf import build_fixed_transport_one_step_transition
     root = Path(root)
     root.mkdir(parents=True, exist_ok=False)
     shape = (config["posterior"]["chains"], bridge.parameter_dim)
     count = config["execution"]["pricing_transitions"]
     evidence = {}
-    for beta in config["training"]["betas"][1:]:
+    temperatures = config["training"]["betas"][1:] if betas is None else betas
+    if not temperatures or any(b not in config["training"]["betas"][1:] for b in temperatures):
+        raise ValueError("qualification requires declared positive temperatures")
+    for beta in temperatures:
         adapter = FixedBetaBridgeAdapter(bridge, beta=beta)
         # Diagnostic starts use the same prior proposal policy as all methods.
         from bayesfilter.inference.q20_production_hmc import draw_start_bank
