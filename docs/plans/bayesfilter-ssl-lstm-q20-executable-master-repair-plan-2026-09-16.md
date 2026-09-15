@@ -1,7 +1,7 @@
 # q20 executable master repair and campaign
 
 Date: 2026-09-16 (Asia/Shanghai)
-Status: `REPAIRED_TESTED_READY_FOR_BOUNDED_EXECUTION`
+Status: `REPAIRED_REVIEWED_EXECUTED`; final master outcome `UNDER_BUDGETED`.
 Authorization: owner requested the plan, review, complete repair, whole-program
 review and execution. Existing campaign/diagnostic limits remain binding.
 
@@ -302,3 +302,28 @@ root is `real-q20-r3`. No further retry is authorized by this amendment after
 these three attempts. A cost deficit requires a revised executable cost plan
 or measured performance repair; it does not authorize weaker posterior checks,
 a smaller unassessed canary, additional total compute, or scientific promotion.
+
+
+### Final execution and closure
+
+The final source `71e0fba399489a8f25fcbdea1185f6bbb600e487` was integrated on
+main as `04d59bcc`. The amended r3 execution completed all three diagnostic
+attempts normally and returned `UNDER_BUDGETED` through the new early cost
+branch. Both fresh HMC qualifications passed. Pricing stopped after its first
+batch-32 production scope exceeded the full initial allowance under the
+unchanged reservation rule. Total supervised worker time was 766.7371110460954
+seconds. The whole-program result records the exact command and terminal audit.
+
+The final balance is 123883.99030228473 campaign seconds, including
+42907.537327354854 diagnostic seconds. It is preserved in
+`artifacts/ssl-lstm-q20-executable-master-2026-09-16/settled-allowance.json`.
+No source drift, current platform rejection or residual owned worker was
+observed. The repair and requested execution are complete; the full scientific
+campaign remains unaffordable under the declared reservation policy.
+
+Next work must address the measured evaluation/target cost or produce a
+reviewed staged reservation plan that preserves the evidence contract and
+fits both the total allowance and cumulative stage caps. Reusing exactly
+identical baseline/previous-map heldout evaluations is a possible engineering
+repair to test, not an established speedup. Do not spend another full pricing
+attempt or train a shortened canary without a concrete cost-reducing change.

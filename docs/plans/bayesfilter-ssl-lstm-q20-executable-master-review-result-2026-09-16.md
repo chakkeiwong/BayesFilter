@@ -1,10 +1,12 @@
 # q20 executable master repair and whole-program review
 
-Date: 2026-09-16. Engineering status: `REPAIRED_AND_TESTED_FOR_BOUNDED_EXECUTION`.
-Research status: both q20 GPU/XLA qualification scopes passed in r2; no q20
-posterior result exists. The final section records the pricing timeout, measured
-cost deficit and repaired early affordability decision. This is a skeptical
-self-review, not an independent endorsement.
+Date: 2026-09-16. Engineering status: `REPAIRED_REVIEWED_EXECUTED`.
+Final master outcome: `UNDER_BUDGETED`, normal exit.
+Research status: both q20 GPU/XLA qualification scopes passed on the final
+source in r3; no q20 posterior result exists. The final section records the
+normal early affordability stop and settled allowance. This is a skeptical
+self-review, not an independent endorsement. Earlier review/launch subsections
+retain the status at their recorded point in the repair.
 
 The master now runs the complete fixed protocol: trusted device check,
 enclosing-graph and public-runner qualification, complete cost measurements,
@@ -233,3 +235,80 @@ reservation deficit; it did not invalidate the target, observed data, numerical
 qualification, or NeuTra mechanism. The next scientific work needs a funded
 validation/computation plan or measured performance repair. Shortening training
 back to an unassessed canary or weakening posterior precision is not justified.
+
+
+### r3 terminal execution and final review
+
+Executed from `/tmp/BayesFilter-q20-master-repair-20260916`, source commit
+`71e0fba399489a8f25fcbdea1185f6bbb600e487`, integrated on main as `04d59bcc`:
+
+```bash
+/home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py campaign --config docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/cost-stop-protocol.json --budget-record docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/cost-stop-allowance.json --output-dir docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/real-q20-r3
+```
+
+The master and all four supervised processes exited with code zero. The
+terminal result is `UNDER_BUDGETED`, not a timeout or failed worker. The
+same q20 target, observed data, GPU, TensorFlow 2.20.0, float64 and XLA were
+used. Every numerical worker records memory growth before initialization;
+physical host GPU 1 is the RTX 4080 SUPER. Exact target/bridge/source identities,
+seeds, environment, commands and plan/result paths are in the manifests.
+
+| Stage | Outcome | Measured wall seconds |
+| --- | --- | ---: |
+| Trusted readiness | Passed | 3.0033419160 |
+| Beta 0.5 qualification | Enclosing graph and actual public runner passed | 319.5937316370 |
+| Beta 1 qualification | Enclosing graph and actual public runner passed | 315.1001293110 |
+| Pricing | Normal early reservation deficit | 129.0399081821 |
+| Total | `UNDER_BUDGETED` | 766.7371110461 |
+
+The first measured batch-32 scope, width 16 at beta 0.5, implies
+268997.48527180706 seconds (74.72 h) under the current reservation rule. This
+already exceeds the initial 124650.72741333082-second allowance (34.63 h).
+The quote explicitly lists the remaining three training scopes and all
+unmeasured downstream costs; none is reported as zero or admitted. Earlier
+r2 measurements give the full training-only reservation of 449.37 h. Both
+calculations reserve all validation expansions/rungs and use the engineering
+factor of two. They are not confidence bounds or proof of the realized cost
+of an adaptive run.
+
+The remaining allowance is 123883.99030228473 campaign seconds (34.41 h),
+including 42907.537327354854 diagnostic seconds (11.92 h). The original
+7200-second unresolved-repair hold and 115-second overhead hold remain
+subtracted. `settled-allowance.json` carries the final balance and ledger hash.
+The budget is not exhausted; the declared full reservation cannot fit it.
+
+The terminal audit verifies the original source snapshot, the sum of all
+attempt charges, 14 saved dependency hashes, three stage-result hashes and
+absence of the same owned supervisor processes. Only qualification and pricing
+stages ran. The few optimizer updates are explicitly pricing probes; no full
+cohort, assessed map, posterior estimate, comparison or confirmation was created.
+
+| Decision | Primary criterion status | Veto status | Main uncertainty | Next justified action | Not concluded |
+| --- | --- | --- | --- | --- | --- |
+| Repair/review/execute the master | Complete: connected fixture, focused regressions and real committed-source execution | No current code, source-integrity, worker or platform failure in r3 | Real long-run stage behavior beyond qualification remains untested | Preserve this execution and use the current master for a funded plan | Broad production certification |
+| Admit the current full research schedule | Failed under the declared reservation rule | Cost admission blocks the full cohort; numerical qualification passed | Few timing samples and conservative all-rung validation reserve | Reprice a concrete equivalent computation repair or reviewed staged allocation within remaining budget/stage caps | Actual adaptive runtime must be 449 h |
+| Reject NeuTra or a posterior candidate | No such test was completed | No candidate-level scientific verdict is supported | Learning, coverage, precision and reference feasibility remain untested | Preserve the research question while repairing the executable cost plan | Whitening failure, posterior correctness, or a winning method |
+
+| Inference item | Final status |
+| --- | --- |
+| Hard veto screen | Graph/proposal/status qualification passed in both scopes; cost admission failed. Posterior vetoes were not evaluated. |
+| Statistically supported ranking | None; no method comparison completed. |
+| Descriptive-only differences | Short qualification and pricing timings; the reservation extrapolation. |
+| Default-readiness | Not established; `production_qualified=false`. |
+| Next evidence needed | A funded target-specific training/assessment plan, measured downstream work, qualified reference, verified kernels, development and fresh confirmation. |
+
+Post-run red-team: the strongest alternative explanation for the cost deficit
+is over-reservation of adaptive validation, combined with repeated identical
+heldout work. A mathematically equivalent cache/batch repair or a reviewed
+staged allocation could overturn the planning deficit without changing the
+scientific target. It must be measured and preserve the uncertainty/holdout
+contract. No speedup is established here. The weakest evidence is the short
+cost sample and the absence of actual trained q20 maps and posterior results.
+The outcome invalidates the funded reservation plan, not the target, data,
+mathematics or NeuTra research direction.
+
+The pasted historical conversation contains a generic request-failure message
+and reconnect attempts; it does not identify a security-classification reason.
+These current trusted launches were admitted and completed. That distinguishes
+the present engineering/cost findings from a platform security rejection but
+does not establish the cause of the historical service failure.
