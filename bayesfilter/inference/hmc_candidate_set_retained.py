@@ -102,16 +102,16 @@ def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecut
             raise ValueError("numerical evidence attempt mismatch")
         count = binding.work_count(work)
         warmup = binding.config.num_warmup_steps
-        if receipt["draw_range"] != [warmup, warmup + count]:
+        failed_execution = "execution_failure" in numerical
+        if receipt["draw_range"] != ([0, 0] if failed_execution else [warmup, warmup + count]):
             raise ValueError("numerical draw range mismatch")
         initial = _tensor_from_payload(numerical["initial_state"])
         if _tensor_payload(initial) != _tensor_payload(binding.initial_active_state):
             raise ValueError("numerical initial state mismatch")
-        samples = _tensor_from_payload(numerical["samples"])
-        if samples.shape[0] != count + warmup:
+        samples = None if failed_execution else _tensor_from_payload(numerical["samples"])
+        if samples is not None and samples.shape[0] != count + warmup:
             raise ValueError("numerical draw count mismatch")
-        trace = _trace_from_payload(numerical["trace"])
-        analysis = binding.analyze(initial, samples, trace)
+        analysis = binding.evidence_analysis(numerical)
         if _json_copy(analysis) != numerical["analysis"]:
             raise ValueError("numerical evidence recomputation mismatch")
         if analysis["evidence_validity"] == "shared_execution_invalid":
@@ -128,11 +128,43 @@ def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecut
     return payload, selected, endpoint
 
 
-def _run_sequential_member(*, binding, initial_state, model_transform, config, **kwargs):
+def _run_sequential_member(*, binding, candidate, initial_state, model_transform, config, **kwargs):
     """Delegate the checked member to the repository posterior controller."""
-    from bayesfilter.inference.neutra_hmc import run_sequential_neutra_hmc
+    from bayesfilter.inference.neutra_hmc import (
+        run_sequential_neutra_hmc, BatchedHMCConfig, _summarize_batched_hmc_output,
+    )
+    def run_chunk(state, count, seed, checkpoint_store, checkpoint_index):
+        binding.validate()
+        def execute():
+            result = binding._run(candidate, state, count, seed)
+            return result.samples, result.trace
+        if checkpoint_store is None:
+            samples, trace = execute()
+        else:
+            samples, trace = checkpoint_store.run(f"chunk-{checkpoint_index:06d}", {
+                "binding_hash": binding.binding_hash,
+                "candidate_record_hash": candidate.candidate_record_hash,
+                "config": config.payload(chain_count=int(state.shape[0])),
+                "active_results": count, "seed": seed,
+                "initial_state_sha256": checkpoint_store.tensor_hash(state),
+            }, execute)
+        failures = binding.health_failures(state, samples, trace)
+        chunk = _summarize_batched_hmc_output(initial_state=state,
+            samples=samples, trace=trace, chain_count=int(state.shape[0]),
+            elapsed_seconds=0., config=BatchedHMCConfig(num_results=count, num_burnin_steps=0,
+                step_size=candidate.epsilon, num_leapfrog_steps=candidate.leapfrog_steps,
+                seed=seed, jit_compile=config.jit_compile,
+                energy_error_log_accept_threshold=config.energy_error_log_accept_threshold))
+        chunk["diagnostics"].update(single_batched_sample_chain_invocation=False,
+            execution_topology=binding.config.chain_mode,
+            target_status_trace_policy=binding.config.target_status_trace_policy,
+            member_health_failures=failures,
+            health_passed=chunk["diagnostics"]["health_passed"] and not failures)
+        chunk["trace"] = trace
+        return chunk
     return run_sequential_neutra_hmc(adapter=binding._active_adapter,
-        initial_state=initial_state, model_transform=model_transform, config=config, **kwargs)
+        initial_state=initial_state, model_transform=model_transform, config=config,
+        _member_runner=run_chunk, **kwargs)
 
 
 class HMCCandidateRetainedRunner:
@@ -149,7 +181,7 @@ class HMCCandidateRetainedRunner:
         payload, candidate, endpoint = _validate_member(result, candidate_id, binding)
         if claim_eligible and (not binding.config.use_xla or binding._runtime["device_type"] != "GPU"):
             raise ValueError("CPU or non-XLA exception is mechanics-only, not claim eligible")
-        if claim_eligible and any("GPU" not in evidence.get("samples_device", "")
+        if claim_eligible and any("execution_failure" not in evidence and "GPU" not in evidence.get("samples_device", "")
                                   for evidence in binding._evidence.values()):
             raise ValueError("claim eligibility requires actual GPU verification evidence")
         self._result = payload
@@ -206,25 +238,39 @@ class HMCCandidateRetainedRunner:
             raise ValueError("sequential sampling must preserve the verified candidate kernel")
         if config.jit_compile != self._binding.config.use_xla:
             raise ValueError("sequential execution must preserve the qualified XLA policy")
-        used_seeds = self._tuning_seeds()
-        if tuple(config.warmup_seed) in used_seeds or tuple(config.retained_seed) in used_seeds:
-            raise ValueError("posterior seeds must be fresh relative to tuning")
-        if any(key in kwargs for key in ("adapter", "initial_state")):
+        from bayesfilter.inference.hmc_posterior_assessment import validate_sequential_seeds
+        validate_sequential_seeds(config, forbidden=self._tuning_seeds())
+        if any(key in kwargs for key in ("adapter", "initial_state", "_member_runner")):
             raise ValueError("the verified member supplies the sequential adapter and initial state")
         def transform(draws):
             raw = self._binding.position_samples(draws)
             return raw if model_transform is None else model_transform(raw)
-        return _run_sequential_member(binding=self._binding,
+        return _run_sequential_member(binding=self._binding, candidate=self.candidate,
             initial_state=self.initial_active_state, model_transform=transform, config=config, **kwargs)
 
-    def export(self, path: str | Path) -> Path:
-        """Persist geometry, complete candidate result, traces and verified state."""
+    def export(self, path: str | Path, *, portable: bool = False) -> Path:
+        """Write a compact member sharing an evidence bundle, or a portable file.
+
+        Copy the shared bundle with compact member files when moving them.
+        ``portable=True`` embeds all evidence for a standalone export.
+        """
         self._validate()
-        payload = {"schema": RETAINED_MEMBER_SCHEMA, "member_hash": self.member_hash,
-            "candidate_id": self.candidate.candidate_id, "candidate_set_result": self._result,
+        common = {"candidate_set_result": self._result,
             "execution": self._binding._spec, "binding_hash": self._binding.binding_hash,
-            "numerical_evidence": self._binding._evidence,
+            "numerical_evidence": self._binding._evidence}
+        payload = {"schema": RETAINED_MEMBER_SCHEMA, "member_hash": self.member_hash,
+            "candidate_id": self.candidate.candidate_id,
             "verified_endpoint": _tensor_payload(self.initial_active_state)}
+        if portable:
+            payload.update(common)
+        else:
+            from bayesfilter.inference.hmc_candidate_set_checkpoint import _persist_once
+            bundle = {"schema": "bayesfilter.hmc_candidate_evidence_bundle.v1", **common}
+            digest = _sha256(bundle)
+            bundle_path = Path(path).parent / ("evidence-" + digest + ".json")
+            _persist_once(self._binding, {**bundle, "content_hash": digest}, bundle_path)
+            payload.update(schema="bayesfilter.hmc_candidate_retained_member.v2",
+                evidence_bundle={"path": bundle_path.name, "content_hash": digest})
         return _write_new({**payload, "content_hash": _sha256(payload)}, path)
 
     def _validate(self) -> None:
@@ -236,53 +282,62 @@ class HMCCandidateRetainedRunner:
             raise ValueError("retained member mutated")
         if self.claim_eligible and (not self._binding.config.use_xla
                 or self._binding._runtime["device_type"] != "GPU"
-                or any("GPU" not in evidence.get("samples_device", "") for evidence in self._binding._evidence.values())):
+                or any("execution_failure" not in evidence and "GPU" not in evidence.get("samples_device", "") for evidence in self._binding._evidence.values())):
             raise ValueError("retained claim eligibility does not match numerical evidence")
 
-    def _archive(self, path: str | Path, seen: frozenset[str] = frozenset()) -> tuple[Mapping[str, Any], Any]:
+    def _archive(self, path: str | Path) -> tuple[Mapping[str, Any], Any]:
         import tensorflow as tf
 
-        resolved = str(Path(path).resolve())
-        if resolved in seen:
-            raise ValueError("retained predecessor cycle")
-        payload = _checked_payload(path, RETAINED_ARCHIVE_SCHEMA)
-        if (payload["member_hash"] != self.member_hash or payload["binding_hash"] != self._binding.binding_hash
-                or payload["candidate"] != _json_copy(self.candidate.payload())):
-            raise ValueError("retained archive kernel/member mismatch")
-        if payload["health_failures"]:
-            raise ValueError("retained archive has failed numerical health")
-        samples = _tensor_from_payload(payload["active_samples"])
-        initial = _tensor_from_payload(payload["initial_active_state"])
-        endpoint = _tensor_from_payload(payload["final_active_state"])
-        if samples.shape[0] != payload["num_results"] or _tensor_payload(samples[-1]) != _tensor_payload(endpoint):
-            raise ValueError("retained archive endpoint/count mismatch")
-        trace = _trace_from_payload(payload["trace"])
-        if self._binding.health_failures(initial, samples, trace):
-            raise ValueError("retained archive has failed numerical health")
-        raw = _tensor_from_payload(payload["position_samples"])
-        if not bool(tf.reduce_all(tf.equal(raw, self._binding.position_samples(samples)))):
-            raise ValueError("retained position samples disagree with frozen geometry")
-        expected_first = _tensor_payload(self.initial_active_state)
-        if payload["predecessor"] is None and payload["initial_active_state"] != expected_first:
-            raise ValueError("first retained archive does not start at verification endpoint")
-        seeds = payload["seed_history"]
-        if not seeds or seeds[-1] != payload["seed"] or len({tuple(seed) for seed in seeds}) != len(seeds):
-            raise ValueError("invalid retained seed history")
-        for seed in seeds:
-            _seed(seed)
-        if any(tuple(seed) in self._tuning_seeds() for seed in seeds):
-            raise ValueError("retained archive seeds must be fresh relative to all tuning chunks")
-        if payload["predecessor"] is not None:
-            parent = payload["predecessor"]
-            previous, previous_endpoint = self._archive(parent["path"], seen | {resolved})
-            if (parent["content_hash"] != _sha256(previous)
-                    or parent["final_active_state_hash"] != previous["final_active_state"]["sha256"]
-                    or _tensor_payload(previous_endpoint) != payload["initial_active_state"]
-                    or seeds != [*previous["seed_history"], payload["seed"]]):
-                raise ValueError("retained predecessor state or history mismatch")
-        elif seeds != [payload["seed"]]:
-            raise ValueError("first retained archive has invalid history")
-        return payload, endpoint
+        visited = set()
+        tuning_seeds = self._tuning_seeds()
+        newest = child = None
+        while True:
+            resolved = str(Path(path).resolve())
+            if resolved in visited:
+                raise ValueError("retained predecessor cycle")
+            visited.add(resolved)
+            payload = _checked_payload(path, RETAINED_ARCHIVE_SCHEMA)
+            if (payload["member_hash"] != self.member_hash or payload["binding_hash"] != self._binding.binding_hash
+                    or payload["candidate"] != _json_copy(self.candidate.payload())):
+                raise ValueError("retained archive kernel/member mismatch")
+            if payload["health_failures"]:
+                raise ValueError("retained archive has failed numerical health")
+            samples = _tensor_from_payload(payload["active_samples"])
+            initial = _tensor_from_payload(payload["initial_active_state"])
+            endpoint = _tensor_from_payload(payload["final_active_state"])
+            if samples.shape[0] != payload["num_results"] or _tensor_payload(samples[-1]) != _tensor_payload(endpoint):
+                raise ValueError("retained archive endpoint/count mismatch")
+            trace = _trace_from_payload(payload["trace"])
+            if self._binding.health_failures(initial, samples, trace):
+                raise ValueError("retained archive has failed numerical health")
+            raw = _tensor_from_payload(payload["position_samples"])
+            if not bool(tf.reduce_all(tf.equal(raw, self._binding.position_samples(samples)))):
+                raise ValueError("retained position samples disagree with frozen geometry")
+            expected_first = _tensor_payload(self.initial_active_state)
+            if payload["predecessor"] is None and payload["initial_active_state"] != expected_first:
+                raise ValueError("first retained archive does not start at verification endpoint")
+            seeds = payload["seed_history"]
+            if not seeds or seeds[-1] != payload["seed"] or len({tuple(seed) for seed in seeds}) != len(seeds):
+                raise ValueError("invalid retained seed history")
+            for seed in seeds:
+                _seed(seed)
+            if any(tuple(seed) in tuning_seeds for seed in seeds):
+                raise ValueError("retained archive seeds must be fresh relative to all tuning chunks")
+            if newest is None:
+                newest = payload, endpoint
+            if child is not None:
+                parent = child["predecessor"]
+                if (parent["content_hash"] != _sha256(payload)
+                        or parent["final_active_state_hash"] != payload["final_active_state"]["sha256"]
+                        or _tensor_payload(endpoint) != child["initial_active_state"]
+                        or child["seed_history"] != [*seeds, child["seed"]]):
+                    raise ValueError("retained predecessor state or history mismatch")
+            if payload["predecessor"] is None:
+                if seeds != [payload["seed"]]:
+                    raise ValueError("first retained archive has invalid history")
+                return newest
+            child = payload
+            path = payload["predecessor"]["path"]
 
     def run(self, *, num_results: int, seed: tuple[int, int], output_dir: str | Path,
             previous_archive: str | Path | None = None) -> Mapping[str, Any]:
@@ -364,7 +419,18 @@ def build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_re
 def load_hmc_candidate_retained_runner(path: str | Path, *, adapter: Any,
         claim_eligible: bool = False) -> HMCCandidateRetainedRunner:
     """Reload using the original target; BayesFilter reconstructs frozen geometry."""
-    payload = _checked_payload(path, RETAINED_MEMBER_SCHEMA)
+    schema = json.loads(Path(path).read_text()).get("schema")
+    if schema not in {RETAINED_MEMBER_SCHEMA, "bayesfilter.hmc_candidate_retained_member.v2"}:
+        raise ValueError("retained member schema mismatch")
+    payload = dict(_checked_payload(path, schema))
+    if schema != RETAINED_MEMBER_SCHEMA:
+        reference = payload["evidence_bundle"]
+        bundle_path = Path(path).parent / reference["path"]
+        bundle = _checked_payload(bundle_path, "bayesfilter.hmc_candidate_evidence_bundle.v1")
+        if _sha256(bundle) != reference["content_hash"]:
+            raise ValueError("retained evidence bundle checksum mismatch")
+        for key in ("execution", "binding_hash", "candidate_set_result", "numerical_evidence"):
+            payload[key] = bundle[key]
     spec = payload["execution"]
     if spec.get("schema") != EXECUTION_SCHEMA or _sha256(spec) != payload["binding_hash"]:
         raise ValueError("retained execution binding mismatch")

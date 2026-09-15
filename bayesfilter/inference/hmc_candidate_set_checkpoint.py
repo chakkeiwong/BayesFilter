@@ -19,6 +19,18 @@ from bayesfilter.inference.hmc_candidate_set_tuning import (
 CHECKPOINT_SCHEMA = "bayesfilter.hmc_numerical_tuning_checkpoint.v1"
 
 
+def _persist_once(binding, payload, path):
+    """Avoid reparsing/rewriting unchanged files; recheck external changes."""
+    key = str(path.resolve())
+    stat = path.stat() if path.exists() else None
+    signature = None if stat is None else (stat.st_mtime_ns, stat.st_size)
+    if signature is not None and binding._persisted_files.get(key) == signature:
+        return
+    _write(payload, path)
+    stat = path.stat()
+    binding._persisted_files[key] = (stat.st_mtime_ns, stat.st_size)
+
+
 def _write(payload: Mapping[str, Any], path: Path, *, replace: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     encoded = json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n"
@@ -37,17 +49,19 @@ def _write(payload: Mapping[str, Any], path: Path, *, replace: bool = False) -> 
 
 def write_numerical_tuning_checkpoint(binding: Any, result: Any, output_dir: str | Path) -> Path:
     root = Path(output_dir)
-    _write({"execution": binding._spec, "binding_hash": binding.binding_hash}, root / "execution_spec.json")
+    if _sha256(binding._spec) != binding.binding_hash:
+        raise ValueError("corrupt execution specification")
+    _persist_once(binding, {"execution": binding._spec, "binding_hash": binding.binding_hash}, root / "execution_spec.json")
     for digest, evidence in binding._evidence.items():
         if _sha256(evidence) != digest:
             raise ValueError("corrupt live numerical evidence")
-        _write(evidence, root / "numerical_evidence" / (digest + ".json"))
+        _persist_once(binding, evidence, root / "numerical_evidence" / (digest + ".json"))
     partial = {}
     for work_id, chunks in binding._partial.items():
         partial[work_id] = []
         for chunk in chunks:
             digest = _sha256(chunk)
-            _write(chunk, root / "numerical_chunks" / (digest + ".json"))
+            _persist_once(binding, chunk, root / "numerical_chunks" / (digest + ".json"))
             partial[work_id].append(digest)
     body = {"schema": CHECKPOINT_SCHEMA, "binding_hash": binding.binding_hash,
             "result": candidate_set_result_payload(result),
@@ -86,8 +100,6 @@ def load_numerical_tuning_checkpoint(path: str | Path, *, adapter: Any):
         evidence = json.loads((path.parent / "numerical_evidence" / (evidence_hash + ".json")).read_text())
         if _sha256(evidence) != evidence_hash or evidence["binding_hash"] != binding.binding_hash:
             raise ValueError("checkpoint numerical evidence checksum mismatch")
-        _tensor_from_payload(evidence["samples"])
-        _trace_from_payload(evidence["trace"])
         work = HMCWorkItem.from_payload(evidence["work"])
         issued = works.get(work.work_item_id)
         if issued is None or any(_sha256(v) != _sha256(issued.payload()[k])
@@ -97,13 +109,14 @@ def load_numerical_tuning_checkpoint(path: str | Path, *, adapter: Any):
         if candidate.candidate_record_hash != work.candidate_record_hash:
             raise ValueError("checkpoint numerical candidate mismatch")
         initial = _tensor_from_payload(evidence["initial_state"])
-        samples = _tensor_from_payload(evidence["samples"])
-        trace = _trace_from_payload(evidence["trace"])
         if (_tensor_payload(initial) != _tensor_payload(binding.initial_active_state)
-                or tuple(evidence["seed"]) != binding.work_seed(work)
-                or samples.shape[0] != binding.work_count(work) + binding.config.num_warmup_steps):
+                or tuple(evidence["seed"]) != binding.work_seed(work)):
             raise ValueError("checkpoint numerical starts, seeds or count mismatch")
-        if _sha256(binding.analyze(initial, samples, trace)) != _sha256(evidence["analysis"]):
+        if "execution_failure" not in evidence:
+            samples = _tensor_from_payload(evidence["samples"])
+            if samples.shape[0] != binding.work_count(work) + binding.config.num_warmup_steps:
+                raise ValueError("checkpoint numerical count mismatch")
+        if _sha256(binding.evidence_analysis(evidence)) != _sha256(evidence["analysis"]):
             raise ValueError("checkpoint numerical analysis mismatch")
         binding._evidence[evidence_hash] = evidence
     observed = set()

@@ -45,7 +45,7 @@ def _independent_bulk_rhat(samples: np.ndarray) -> np.ndarray:
     for parameter in range(parameters):
         values = sample_major[:, :, parameter].reshape(-1)
         ranks = stats.rankdata(values, method="average")
-        z = stats.norm.ppf((ranks - 3.0 / 8.0) / (total - 1.0 / 4.0))
+        z = stats.norm.ppf((ranks - 3.0 / 8.0) / (total + 1.0 / 4.0))
         normalized[:, :, parameter] = z.reshape(half, chains * 2)
     chain_mean = normalized.mean(axis=0)
     within = normalized.var(axis=0, ddof=1).mean(axis=0)

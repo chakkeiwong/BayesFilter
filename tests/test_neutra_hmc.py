@@ -116,7 +116,7 @@ def test_sequential_controller_retains_warmup_excludes_it_and_reuses_programs(
 
 def test_sequential_controller_extends_for_full_diagnostic(monkeypatch) -> None:
     _fake_programs(monkeypatch)
-    _script_rhat(monkeypatch, (True,))
+    _script_rhat(monkeypatch, (True, True, True))
     checks = iter(({"passed": False}, {"passed": True}))
 
     result = neutra_hmc.run_sequential_neutra_hmc(
@@ -211,6 +211,7 @@ def test_retained_continuation_uses_real_chunk_config_and_checkpoints(
     monkeypatch,
 ) -> None:
     builds, calls = _fake_programs(monkeypatch)
+    _script_rhat(monkeypatch, (True, True))
     diagnostics = iter(
         (
             {"passed": False, "hard_vetoes": ()},

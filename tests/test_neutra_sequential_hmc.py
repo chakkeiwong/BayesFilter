@@ -375,6 +375,8 @@ def _fixed_diagnostics(max_rhat: float) -> dict[str, object]:
 def test_archived_rhat_promotion_thresholds_are_strict(
     tmp_path, monkeypatch
 ) -> None:
+    monkeypatch.setattr(neutra_hmc_module, "_sequential_rhat",
+        lambda *_args, **kwargs: {"passed": True, "rhat_threshold": kwargs["rhat_max"]})
     warmup_equal = iter((_fixed_diagnostics(1.05),))
     monkeypatch.setattr(
         neutra_hmc_module,

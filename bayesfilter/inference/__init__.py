@@ -9,6 +9,7 @@ from __future__ import annotations
 from importlib import import_module
 
 __all__ = [
+    "HMCPrecisionTarget", "HMCPrecisionPolicy", "HMCPosteriorAssessmentPolicy", "run_hmc_posterior",
     "HMC_STAGE_RESUME_SCHEMA",
     "HMC_STAGE_SEQUENCE_RESULT_SCHEMA",
     "ORDINARY_HMC_TUNING_ROUTE",
@@ -657,6 +658,11 @@ _EXPORT_MODULES = (
 )
 
 _DIRECT_EXPORTS = {
+    "HMCPrecisionTarget": "bayesfilter.inference.hmc_precision",
+    "HMCPrecisionPolicy": "bayesfilter.inference.hmc_precision",
+    "HMCPosteriorAssessmentPolicy": "bayesfilter.inference.hmc_posterior_assessment",
+    "run_hmc_posterior": "bayesfilter.inference.hmc_posterior_assessment",
+
     "BATCHED_LOCAL_CENTER_NONCLAIMS": "bayesfilter.inference.batched_local_center",
     "BatchedLocalCenterConfig": "bayesfilter.inference.batched_local_center",
     "BatchedLocalCenterResult": "bayesfilter.inference.batched_local_center",

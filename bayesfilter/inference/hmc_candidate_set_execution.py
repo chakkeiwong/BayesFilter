@@ -22,7 +22,7 @@ from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCInfrastructureFailure, HMCSharedInvalidity,
 )
 from bayesfilter.inference.hmc_verification import HMCAcceptancePolicy
-from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
+from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision, HMCCandidateExecutionFailure
 from bayesfilter.inference.hmc_candidate_runtime import chunk_seed, before_numerical_chunk
 
 EXECUTION_SCHEMA = "bayesfilter.hmc_candidate_execution.v1"
@@ -182,6 +182,7 @@ def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping
              "hmc_candidate_set_checkpoint", "hmc_candidate_set_public", "hmc_candidate_set_position_field",
              "hmc_candidate_decisions", "hmc_candidate_proposals", "hmc_candidate_runtime", "hmc_preparation",
              "hmc_candidate_set_artifacts", "hmc_verification", "hmc_convergence",
+             "hmc_diagnostic_math", "hmc_posterior_diagnostics", "hmc_precision", "hmc_posterior_assessment", "neutra_hmc",
              "tuning_contract", "hmc_tuning_dispatch", "fixed_transport_hmc_tuning_tf",
              "posterior_adapter", "batched_value_score",
              "neutra_artifacts", "fixed_transport_hmc_mechanics_tf")
@@ -313,6 +314,8 @@ class HMCCandidateExecutionBinding:
             raise ValueError("target capability mismatch")
         self.binding_hash = _sha256(self._spec)
         self._evidence: dict[str, Mapping[str, Any]] = {}
+        self._analysis_cache: dict[str, Mapping[str, Any]] = {}
+        self._persisted_files: dict[str, tuple[int, int]] = {}
         self._partial: dict[str, list[Mapping[str, Any]]] = {}
         self._checkpoint_callback = None
         self._deadline = None
@@ -501,6 +504,60 @@ class HMCCandidateExecutionBinding:
         stage = "measurement" if work.stage == "pilot" else work.stage
         return getattr(self.config, stage + "_num_results") * work.evidence_multiplier
 
+    def evidence_analysis(self, numerical: Mapping[str, Any]) -> Mapping[str, Any]:
+        """Recompute successful evidence or validate a typed native failure."""
+        # Numerical evidence is host JSON and can be mutated by a caller.
+        # Hash its current content before using a cached numerical analysis.
+        digest = _sha256(numerical)
+        if digest in self._analysis_cache:
+            return _json_copy(self._analysis_cache[digest])
+        if "execution_failure" in numerical:
+            failure = HMCCandidateExecutionFailure.from_payload(numerical["execution_failure"])
+            if numerical.get("samples") is not None or numerical.get("trace") is not None:
+                raise ValueError("failed execution cannot fabricate complete samples")
+            work = HMCWorkItem.from_payload(numerical["work"])
+            chunks = numerical["chunks"]
+            root = self.work_seed(work)
+            total = self.work_count(work) + self.config.num_warmup_steps
+            if (failure.chunk_index != len(chunks) or tuple(numerical["seed"]) != root
+                    or tuple(numerical["attempted_seed"]) != chunk_seed(root, len(chunks))
+                    or sum(c["count"] for c in chunks) >= total
+                    or any(type(c["count"]) is not int or c["count"] != self.config.chunk_max_results
+                           or tuple(c["seed"]) != chunk_seed(root, i) for i, c in enumerate(chunks))):
+                raise ValueError("failed execution chunk/seed inventory mismatch")
+            analysis = failure.analysis()
+        else:
+            analysis = self.analyze(_tensor_from_payload(numerical["initial_state"]),
+                                   _tensor_from_payload(numerical["samples"]),
+                                   _trace_from_payload(numerical["trace"]))
+        self._analysis_cache[digest] = _json_copy(analysis)
+        return analysis
+
+    def _target_failure(self, exc: Exception, work: HMCWorkItem,
+                        candidate: HMCTuningCandidateRecord, chunks: list, seed: tuple[int, int]):
+        classifier = getattr(self._base_adapter, "classify_target_exception", None)
+        if not callable(classifier):
+            return None
+        declared = classifier(exc)
+        if type(declared) is not bool:
+            raise TypeError("classify_target_exception must return a boolean")
+        if not declared:
+            return None
+        failure = HMCCandidateExecutionFailure(type(exc).__name__, str(exc), len(chunks))
+        analysis = failure.analysis()
+        numerical = {"schema": "bayesfilter.hmc_candidate_numerical_failure.v1",
+            "binding_hash": self.binding_hash, "candidate": candidate.payload(), "work": work.payload(),
+            "seed": seed, "initial_state": _tensor_payload(self.initial_active_state),
+            "execution_failure": failure.payload(), "analysis": analysis,
+            "chunks": [{"count": c["count"], "seed": c["seed"]} for c in chunks],
+            "attempted_seed": chunk_seed(seed, len(chunks)), "samples_device": "unavailable"}
+        digest = _sha256(numerical)
+        self._evidence[digest] = _json_copy(numerical)
+        self._partial.pop(work.work_item_id, None)
+        return {**analysis, "numerical_evidence_hash": digest,
+                "stream_id": work.work_item_id + ":" + _sha256({"seed": seed}),
+                "draw_range": (0, 0), "seed_lineage": seed}
+
     def work_cost(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord, *, remaining=True) -> Mapping[str, Any]:
         count = self.work_count(work) + self.config.num_warmup_steps
         if remaining:
@@ -541,6 +598,11 @@ class HMCCandidateExecutionBinding:
             except (tf.errors.ResourceExhaustedError, tf.errors.UnavailableError,
                     tf.errors.DeadlineExceededError, tf.errors.AbortedError) as exc:
                 raise HMCInfrastructureFailure(type(exc).__name__ + ": " + str(exc)) from exc
+            except Exception as exc:
+                failure = self._target_failure(exc, work, candidate, chunks, seed)
+                if failure is None:
+                    raise
+                return failure
             chunk = {"count": take, "seed": current_seed, "initial_state": _tensor_payload(state),
                      "work": work.payload(), "binding_hash": self.binding_hash,
                      "samples": _tensor_payload(result.samples), "trace": _trace_payload(result.trace),

@@ -241,33 +241,132 @@ prove that no viable kernel exists. `HMCTuningScopeCollection` resolves members
 across scope/search identities; its completeness requires all included searches
 to be complete and all explicitly expected scopes to be present.
 
+Acceptance qualification uses the complete evidence predicate. After health,
+chain-conflict, temporal-conflict and trajectory-pathology screens, the
+compatibility interval must overlap the practical band, lie wholly in the
+repair band, and every chain mean must lie in the repair band. With practical
+band [0.65, 0.75] and repair band [0.55, 0.85], a pooled mean 0.76 with interval
+[0.73, 0.79] can pass these conditions. Closeness to 0.70 never ranks members.
+An interval wholly above/below the practical band supports directional repair;
+inconclusive evidence receives its declared additional allocation.
+
+An adapter's `classify_target_exception(error) -> bool` can explicitly classify
+a native domain error as candidate-local. It produces a typed failure with no
+invented acceptance, preserves attempted seeds, and allows peers to continue.
+Resource/unavailable/deadline/aborted errors remain infrastructure failures;
+unknown exceptions are not silently declared model-domain failures. Shared
+invalidity preserves past verification history but disables every replay.
+Budget-deferred work is reconsidered when a member releases reserved work.
+
+Retired fixed-transport selection and R-hat configuration overrides are rejected
+at the public boundary. Use `execution_config.acceptance_policy` and the shared
+posterior policy for their active replacements. All-chain movement remains
+mandatory; setting `require_all_chain_movement=False` is rejected by the config.
+
 ## Retained sampling and posterior assessment
 
 Choose a candidate ID explicitly and pass its result and numerical binding to
 `build_retained_bound_hmc_archive_runner_from_candidate_set_result`. The two
-`build_retained_frozen_kernel_hmc_adapter_from_candidate_set_result` and
-`build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result`
-variants share verification checks; the claim-eligible variant additionally
-requires actual GPU/XLA evidence. Callback adapters cannot grant this authority.
+frozen-kernel builder variants share verification checks; the claim-eligible
+variant additionally requires actual GPU/XLA evidence. A repaired child needs
+its own passing verification and valid ancestry. A failed parent need not pass.
 
-A repaired child needs its own passing verification and valid ancestry; a failed
-parent need not pass. Export a member with `runner.export(path)` and reload it
+`runner.export(path)` writes a compact member and a shared, checksummed evidence
+bundle beside it. Copy both when relocating the export. Use
+`runner.export(path, portable=True)` for a standalone file. Both formats reload
 with `load_hmc_candidate_retained_runner(path, adapter=original_target)`.
-`runner.run(..., previous_archive=...)` continues from the verified/predecessor
-endpoint with fresh seeds and frozen settings. Every block excludes tuning draws.
-Seed checks include every tuning stage's base seed, every completed numerical
-chunk and attempted partial chunk, as well as predecessor retained blocks.
-Attempted seeds are reconstructed from the durable work/accounting records after
-member export and reload, including native calls that failed without a trace.
-Current retained-member archives embed their evidence and validate predecessor
-history; target-scale memory and restart performance remain unqualified.
+Immutable evidence is written once; externally changed files are rechecked.
+Numerical analyses are cached by their current content hash, while live source,
+geometry, target and evidence mutation checks remain active. Predecessor archive
+validation uses an iterative walk. History hashing and target-scale memory costs
+remain; the implementation does not claim constant-cost restart.
 
-Posterior estimation needs a separate declared warmup and cumulative
-model-coordinate R-hat/ESS/health procedure. A verified tuning member is an input
-to that procedure; `runner.run_sequential` connects the selected member to the
-existing posterior controller. Posterior rejection cannot alter tuning membership.
-A tuning member is neither posterior-ready nor statistically superior to
-other verified members.
+`runner.run(..., previous_archive=...)` writes a fixed mechanics block from the
+verified/predecessor endpoint. It excludes tuning draws, checks numerical health
+and fresh seeds, and preserves frozen settings. It does not assess posterior
+burn-in or precision. Use `run_hmc_posterior(member=runner, config=...)` (or
+`runner.run_sequential`) for discarded equilibration and cumulative retained
+assessment. It preserves the member's numerical runner, scalar/batched topology
+and declared target-status policy. The entire bounded derived seed schedule is
+checked against tuning and attempted calls before sampling. R-hat, ESS and MCSE
+cannot alter tuning membership.
+
+The `SequentialNeuTraHMCConfig` keyword API is shared with ordinary members;
+its historical name does not require a learned transport. `step_size`,
+`num_leapfrog_steps` and `jit_compile` must match the member. The inherited
+warmup screen starts after 2,000 transitions per chain, uses the latest 1,000,
+requires modern R-hat <= 1.05, and caps warmup at 10,000. These are operational
+owner-policy defaults, not estimates of a universally sufficient burn-in.
+Stan likewise configures a warmup budget and adapts its metric and step size;
+its schedule does not prove stationarity or automatically certify sufficient
+burn-in for arbitrary targets.
+
+`HMCPosteriorAssessmentPolicy` can add warmup/retained bulk and tail ESS floors,
+`warmup_consecutive_checks`, and an `HMCPrecisionPolicy`. Additional requirements
+are explicit; default ESS floors are zero and one successful warmup look is
+required for compatibility. Overlapping successful windows are not independent
+replications. Every look reports modern R-hat, bulk/tail ESS, original-scale mean
+ESS and MCSE. These assess the monitored quantities in the explored region;
+chains trapped together in a missed mode may still pass. A failed screen
+continues within the declared cap. Exhaustion reports inconclusive equilibration
+or insufficient retained evidence, never sufficient burn-in by fiat.
+
+Retained draws grow cumulatively, excluding all warmup. Core R-hat and health
+checks cannot be replaced by `retained_diagnostic_fn`; callbacks can add
+requirements or vetoes. No accuracy target produces `precision_not_requested`,
+even if the other checks pass. The public `passed` flag means the *declared*
+checks passed, and does not imply requested precision when none was declared.
+A precision policy names every estimand and requires an absolute MCSE tolerance,
+an MCSE/posterior-SD tolerance, or both. A mean target can monitor an event
+indicator; quantiles use their own probability and indicator-ESS/order-statistic
+MCSE. Supply `quantities_fn(draws)` returning named `[draw, chain]` tensors and a
+stable `quantities_id` for scientific functionals or event probabilities. These
+quantities receive the same R-hat and ESS checks as model coordinates.
+
+The mean estimators are `autocorrelation`, `batch_means`, and `lugsail`.
+Autocorrelation retains the explicitly identified TFP 0.25 positive-pairs
+estimator; it is not Stan's initial-monotone estimator. Batch means use complete
+batches within each independent chain. Lugsail combines estimates at batch
+sizes b and floor(b/r) as `(LRV_b - c*LRV_small)/(1-c)`. The pooled mean variance
+is `sum(chain_LRV)/(chains**2 * draws_per_chain)`. Lugsail r=3, c=0.5 and
+square-root batch size are literature baselines; the minimum 20 batches is an
+operational floor, not calibrated coverage. All are configurable. Negative,
+zero, nonfinite or underbatched estimates cannot grant precision; raw per-chain
+LRV and excluded terminal counts are reported. Quantile ties yielding zero
+width are unavailable evidence, including unobserved rare events.
+
+These MCSE calculations assume the relevant moments and mixing/CLT conditions.
+Lugsail estimates retained mean uncertainty; it does not estimate burn-in.
+Repeated MCSE checks provide an operational accuracy screen, not anytime-valid
+confidence coverage. Finite-chain calibration does not justify a universal new
+stopping default. Declared target-specific posterior checks remain necessary.
+
+`checkpoint_store` accepts `DurableTensorCheckpoint` to preserve numerical
+chunks. Restart the call with the same member, policy, seeds, names, coordinate
+transform and quantity definition; completed transitions reload and diagnostics
+are recomputed from the same cumulative draws. Include consumer callback and
+transform identities in the store identity. Changed assessment settings require
+a distinct store. The legacy archived and exact-transition wrappers use the
+same assessment arithmetic; the archived API retains its stricter `<` R-hat
+boundary and declared ESS/coordinate screens for compatibility. Its parameter
+names default to `parameter_0`, etc.; supply scientific names for accuracy targets.
+
+The diagnostic identity is `bayesfilter.hmc_diagnostic_math.v2`. The rank formula
+now uses `(rank-3/8)/(S+1/4)` and R-hat is the square root of the variance ratio.
+Earlier reports using the old arithmetic are historical evidence and must be
+recomputed from draws before comparing thresholds. Rank diagnostics run as
+bounded-shape TensorFlow reporting graphs without XLA because rank grouping
+uses data-dependent segment operations. This exception does not change the
+member's HMC XLA execution policy; the optional batch-means kernel defaults to XLA.
+
+The separate legacy Phase 29 warmup screen still uses configured adjacent-epoch
+drift thresholds as heuristic rejection criteria. Its standardized differences
+omit covariance between epoch means, so they are descriptive statistics, not
+calibrated z tests. These extra drift criteria are not part of the common
+posterior assessment policy.
+
+See [the posterior example](../examples/hmc_posterior_precision.py) and
+[the combined repair and evidence plan](../plans/bayesfilter-hmc-overall-repair-plan-2026-09-15.md).
 
 ## Historical interfaces
 

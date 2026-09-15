@@ -1262,6 +1262,9 @@ class HMCTuningCandidateSetController:
         source = self._candidate_reserve_sources.pop(candidate_id, None)
         if units:
             self._available_units += units
+            # A previous deferral may now be affordable. Gradient exhaustion is
+            # still checked before dispatch; each rescan requires real progress.
+            self._budget_deferred.clear()
             if source == "repair_reserve":
                 self._repair_reserve_remaining = min(
                     self.config.repair_reserve_units,

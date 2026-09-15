@@ -245,7 +245,9 @@ def run_shared_fixed_transport_tuning(*, base_adapter, fixed_transport, initial_
         "selection_policy", "selection_replications", "selection_num_results", "selection_num_burnin_steps",
         "selection_seed_base", "budget_schedule", "tune_num_results",
         "screen_seed_base", "verification_seed_base", "fixed_grid_base_step_size_candidates",
-        "fixed_grid_num_leapfrog_steps", "fixed_grid_fallback_acceptance_max", "output_filename"))
+        "fixed_grid_num_leapfrog_steps", "fixed_grid_fallback_acceptance_max", "output_filename",
+        "report_modern_rank_normalized_verification", "verification_min_retained_results_per_chain",
+        "verification_rhat_max", "verification_coordinate_system"))
     if cfg.selection_acceptance_band != cfg.acceptance_band:
         raise ValueError("retired selection_acceptance_band must migrate to execution_config.acceptance_policy")
     lineage, paths = _provenance(base_adapter, target_lineage, source_paths)

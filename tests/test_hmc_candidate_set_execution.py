@@ -200,7 +200,7 @@ def test_durable_reload_rejects_drift_or_corruption(tuned, tmp_path, damage):
     binding, result = tuned
     runner = build_retained_bound_hmc_archive_runner_from_candidate_set_result(candidate_set_result=result,
         candidate_id=result.verified_candidate_ids[0], retained_binding=binding)
-    path = runner.export(tmp_path / "member.json")
+    path = runner.export(tmp_path / "member.json", portable=True)
     payload = json.loads(path.read_text())
     target = GaussianTarget()
     if damage == "target":

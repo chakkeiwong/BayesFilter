@@ -85,8 +85,8 @@ def _sample_tensor(samples: Any, *, label: str = "samples") -> Any:
     chains, draws, parameters = (int(dim) for dim in tensor.shape)
     if chains < 2:
         raise ValueError(f"{label} requires at least two chains")
-    if draws < 4 or draws % 2:
-        raise ValueError(f"{label} requires an even draw count of at least four")
+    if draws < 4:
+        raise ValueError(f"{label} requires at least four draws")
     if parameters < 1:
         raise ValueError(f"{label} requires at least one parameter")
     return tensor
@@ -100,63 +100,14 @@ def _split_sample_major(samples: Any) -> Any:
     draws = int(samples.shape[1])
     half = draws // 2
     split_chain_major = tf.concat(
-        (samples[:, :half, :], samples[:, half:, :]), axis=0
+        (samples[:, :half, :], samples[:, -half:, :]), axis=0
     )
     return tf.transpose(split_chain_major, perm=(1, 0, 2))
 
 
-def _average_rank_one(values: Any) -> Any:
-    """Return one-based average ranks, including exact tie handling."""
-
-    import tensorflow as tf
-
-    values = tf.cast(values, tf.float64)
-    count = tf.shape(values, out_type=tf.int32)[0]
-    order = tf.argsort(values, axis=0, stable=True)
-    ordered = tf.gather(values, order)
-    group_start = tf.concat(
-        (
-            tf.constant([True]),
-            tf.not_equal(ordered[1:], ordered[:-1]),
-        ),
-        axis=0,
-    )
-    group = tf.cumsum(tf.cast(group_start, tf.int32)) - 1
-    group_count = tf.reduce_max(group) + 1
-    positions = tf.cast(tf.range(1, count + 1), tf.float64)
-    rank_sum = tf.math.unsorted_segment_sum(positions, group, group_count)
-    rank_count = tf.math.unsorted_segment_sum(
-        tf.ones_like(positions), group, group_count
-    )
-    ordered_rank = tf.gather(rank_sum / rank_count, group)
-    inverse = tf.argsort(order, axis=0, stable=True)
-    return tf.gather(ordered_rank, inverse)
-
-
 def _rank_normalize(sample_major: Any) -> Any:
-    """Apply pooled rank normalization independently to each parameter."""
-
-    import tensorflow as tf
-    import tensorflow_probability as tfp
-
-    shape = tf.shape(sample_major, out_type=tf.int32)
-    flat = tf.reshape(sample_major, (shape[0] * shape[1], shape[2]))
-    ranks_by_parameter = tf.map_fn(
-        _average_rank_one,
-        tf.transpose(flat),
-        fn_output_signature=tf.TensorSpec(shape=(None,), dtype=tf.float64),
-        parallel_iterations=1,
-    )
-    ranks = tf.transpose(ranks_by_parameter)
-    total = tf.cast(tf.shape(flat, out_type=tf.int32)[0], tf.float64)
-    probability = (ranks - tf.constant(3.0 / 8.0, tf.float64)) / (
-        total - tf.constant(1.0 / 4.0, tf.float64)
-    )
-    normal = tfp.distributions.Normal(
-        loc=tf.constant(0.0, tf.float64),
-        scale=tf.constant(1.0, tf.float64),
-    )
-    return tf.reshape(normal.quantile(probability), shape)
+    from bayesfilter.inference.hmc_diagnostic_math import _rank_normalize as implementation
+    return implementation(sample_major)
 
 
 def _sample_sd(values: Any, *, axis: Any) -> Any:
@@ -175,84 +126,13 @@ def _sample_sd(values: Any, *, axis: Any) -> Any:
 
 
 def _cross_chain_ess(sample_major: Any) -> Any:
-    """Vehtari cross-chain ESS with a warning-free real FFT covariance.
-
-    TFP 0.25 computes the same autocovariance through a complex FFT and then
-    casts ``complex128`` to ``float64``.  The mathematical result is real, but
-    that cast emits a lossy-conversion warning for every ESS call.  Using
-    ``rfft``/``irfft`` preserves the real-valued contract directly.
-    """
-
-    import tensorflow as tf
-
-    values = tf.cast(tf.convert_to_tensor(sample_major), tf.float64)
-    if values.shape.rank != 3 or any(dim is None for dim in values.shape):
-        raise ValueError("cross-chain ESS requires static [draw, chain, parameter]")
-    draw_count, chain_count, _ = (int(dim) for dim in values.shape)
-    rotated = tf.transpose(values, (1, 2, 0))
-    centered = rotated - tf.reduce_mean(rotated, axis=-1, keepdims=True)
-    fft_length = 1 << int(math.ceil(math.log2(2 * draw_count)))
-    padded = tf.pad(centered, ((0, 0), (0, 0), (0, fft_length - draw_count)))
-    spectrum = tf.signal.rfft(padded)
-    autocov_rotated = tf.signal.irfft(
-        spectrum * tf.math.conj(spectrum), fft_length=(fft_length,)
-    )[..., :draw_count]
-    denominators = tf.cast(
-        tf.range(draw_count, 0, -1), tf.float64
-    )
-    autocov = tf.transpose(
-        autocov_rotated / denominators[tf.newaxis, tf.newaxis, :],
-        (2, 0, 1),
-    )
-
-    chain_means = tf.reduce_mean(values, axis=0)
-    between_div_n = tf.math.reduce_variance(chain_means, axis=0) * (
-        tf.cast(chain_count, tf.float64)
-        / tf.cast(chain_count - 1, tf.float64)
-    )
-    biased_within = tf.reduce_mean(autocov[0], axis=0)
-    variance_plus = biased_within + between_div_n
-    mean_autocov = tf.reduce_mean(autocov, axis=1)
-    autocorrelation = 1.0 - (
-        biased_within[tf.newaxis, :] - mean_autocov
-    ) / variance_plus[tf.newaxis, :]
-    lag_weight = tf.cast(
-        tf.range(draw_count, 0, -1), tf.float64
-    ) / tf.cast(draw_count, tf.float64)
-    weighted = autocorrelation * lag_weight[:, tf.newaxis]
-
-    even_count = draw_count - draw_count % 2
-    pair_shape = (even_count // 2, 2, int(values.shape[2]))
-    pair_correlation = tf.reduce_sum(
-        tf.reshape(autocorrelation[:even_count], pair_shape), axis=1
-    )
-    positive_mask = tf.maximum(
-        1.0
-        - tf.cumsum(tf.cast(pair_correlation < 0.0, tf.float64), axis=0),
-        0.0,
-    )
-    weighted_pairs = tf.reduce_sum(
-        tf.reshape(weighted[:even_count], pair_shape), axis=1
-    ) * positive_mask
-    return (
-        tf.cast(chain_count * draw_count, tf.float64)
-        / (-1.0 + 2.0 * tf.reduce_sum(weighted_pairs, axis=0))
-    )
+    from bayesfilter.inference.hmc_diagnostic_math import _cross_chain_ess as implementation
+    return implementation(sample_major)
 
 
 def _split_rhat_from_sample_major(sample_major: Any) -> Any:
-    """Return the square-root between/within-chain variance diagnostic."""
-
-    import tensorflow as tf
-
-    values = tf.cast(sample_major, tf.float64)
-    draws = tf.cast(tf.shape(values)[0], tf.float64)
-    chain_means = tf.reduce_mean(values, axis=0)
-    within_chain_variance = _sample_sd(values, axis=0) ** 2
-    within = tf.reduce_mean(within_chain_variance, axis=0)
-    between_over_draws = _sample_sd(chain_means, axis=0) ** 2
-    variance_plus = ((draws - 1.0) / draws) * within + between_over_draws
-    return tf.sqrt(variance_plus / within)
+    from bayesfilter.inference.hmc_diagnostic_math import _split_rhat_from_sample_major as implementation
+    return implementation(sample_major)
 
 
 def rank_normalized_split_rhat(samples: Any) -> Mapping[str, Any]:
@@ -414,7 +294,7 @@ def initialization_memory_statistics(samples: Any) -> Mapping[str, Any]:
 
 
 def epoch_drift_statistics(current: Any, previous: Any) -> Mapping[str, Any]:
-    """Compare adjacent non-overlapping epochs using MCSE and pooled SD."""
+    """Descriptive drift; adjacent epochs are correlated, not independent tests."""
 
     import tensorflow as tf
 
@@ -440,6 +320,7 @@ def epoch_drift_statistics(current: Any, previous: Any) -> Mapping[str, Any]:
     )
     sd_ratio = current_mean["posterior_sd"] / previous_mean["posterior_sd"]
     return {
+        "interpretation": "descriptive_only; adjacent-epoch covariance is not estimated",
         "current_mean": current_mean["pooled_mean"],
         "previous_mean": previous_mean["pooled_mean"],
         "mean_difference": difference,
@@ -604,7 +485,7 @@ def _evaluate_phase29_window(
         hard_vetoes.append("delta_h_nonfinite")
     if hard_vetoes:
         return {
-            "artifact_schema": "bayesfilter.phase29_posterior_diagnostics.v1",
+            "artifact_schema": "bayesfilter.phase29_posterior_diagnostics.v2",
             "role": role,
             "passed": False,
             "hard_vetoes": list(dict.fromkeys(hard_vetoes)),
@@ -665,7 +546,7 @@ def _evaluate_phase29_window(
     hard_vetoes = list(dict.fromkeys(hard_vetoes))
     promotion_vetoes = list(dict.fromkeys(promotion_vetoes))
     return {
-        "artifact_schema": "bayesfilter.phase29_posterior_diagnostics.v1",
+        "artifact_schema": "bayesfilter.phase29_posterior_diagnostics.v2",
         "role": role,
         "passed": not hard_vetoes and not promotion_vetoes,
         "hard_vetoes": hard_vetoes,

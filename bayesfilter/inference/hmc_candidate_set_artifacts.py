@@ -329,7 +329,7 @@ def _validate_result_payload(
         if qualified == "executed_and_verified":
             if execution != "executed" or verification != "passed" or reason not in (None, ""):
                 raise ValueError("qualified repair has inconsistent execution status")
-            if child_id not in verified:
+            if child_id not in expected_verified:
                 raise ValueError("qualified repair child is not verified")
         elif qualified == "not_executed_with_reason":
             if not reason and execution != "not_started":

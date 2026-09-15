@@ -64,7 +64,7 @@ def test_legacy_fixed_transport_selector_is_discoverable_but_not_authoritative()
     record = hmc_tuning_route_record("select_fixed_transport_candidate_set")
 
     assert record.role == "diagnostic"
-    assert record.replacement == "tune_hmc_kernel"
+    assert record.replacement == "tune_fixed_transport_hmc_kernel"
     assert record.artifact_authority is False
     with pytest.raises(ValueError, match="not active"):
         require_active_hmc_tuning_route(record.interface_name)
