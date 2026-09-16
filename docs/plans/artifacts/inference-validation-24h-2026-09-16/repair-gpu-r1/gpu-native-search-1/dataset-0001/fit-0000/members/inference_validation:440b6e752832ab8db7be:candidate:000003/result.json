@@ -1,0 +1,1169 @@
+{
+  "L": 9,
+  "candidate_id": "inference_validation:440b6e752832ab8db7be:candidate:000003",
+  "control": "baseline",
+  "draws_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/repair-gpu-r1/gpu-native-search-1/dataset-0001/fit-0000/members/inference_validation:440b6e752832ab8db7be:candidate:000003/draws.tensor",
+  "duplicate_chains": false,
+  "epsilon": 0.7071067811865476,
+  "member_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/repair-gpu-r1/gpu-native-search-1/dataset-0001/fit-0000/members/inference_validation:440b6e752832ab8db7be:candidate:000003/member.json",
+  "posterior": {
+    "assessment_role": "posterior_only",
+    "checkpoint_program_evidence": [],
+    "config": {
+      "assessment_policy": {
+        "defaults_provenance": "inherited R-hat-only policy; additional requirements explicitly configured",
+        "precision": {
+          "batch_provenance": "sqrt(n), literature baseline",
+          "batch_size": null,
+          "jit_compile": true,
+          "lugsail_c": 0.5,
+          "lugsail_r": 3,
+          "method": "lugsail",
+          "min_batches": 20,
+          "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+          "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+          "schema": "bayesfilter.hmc_precision_policy.v1",
+          "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+          "targets": [
+            {
+              "kind": "quantile",
+              "mcse_absolute_max": 0.1,
+              "mcse_sd_ratio_max": null,
+              "name": "theta",
+              "probability": 0.5
+            },
+            {
+              "kind": "mean",
+              "mcse_absolute_max": 0.1,
+              "mcse_sd_ratio_max": null,
+              "name": "theta",
+              "probability": null
+            }
+          ]
+        },
+        "quantities_id": null,
+        "retained_bulk_ess_min": 0.0,
+        "retained_tail_ess_min": 0.0,
+        "schema": "bayesfilter.hmc_posterior_assessment.v1",
+        "warmup_bulk_ess_min": 0.0,
+        "warmup_consecutive_checks": 1,
+        "warmup_interpretation": "declared checks only; no stationarity proof",
+        "warmup_tail_ess_min": 0.0
+      },
+      "chain_count": 4,
+      "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+      "dtype": "float64",
+      "energy_error_log_accept_threshold": -1000.0,
+      "jit_compile": true,
+      "minimum_chain_count": 4,
+      "num_leapfrog_steps": 9,
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "retained_chunk_results": 500,
+      "retained_max_results": 10000,
+      "retained_min_results": 1000,
+      "retained_rhat_max": 1.01,
+      "retained_seed": [
+        738824579,
+        521222618
+      ],
+      "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+      "step_size": 0.7071067811865476,
+      "warmup_check_window_results": 1000,
+      "warmup_chunk_results": 500,
+      "warmup_max_results": 10000,
+      "warmup_min_results": 2000,
+      "warmup_rhat_max": 1.05,
+      "warmup_seed": [
+        24241094,
+        497439870
+      ]
+    },
+    "cumulative_archives": null,
+    "decision": "POSTERIOR_DECLARED_CHECKS_PASSED",
+    "elapsed_seconds": 14.721166576026008,
+    "equilibration_status": "checks_passed",
+    "hard_vetoes": [],
+    "passed": true,
+    "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "precision_status": "precision_met",
+    "retained_archives": [],
+    "retained_cap_hit": false,
+    "retained_check_count": 2,
+    "retained_checks": [
+      {
+        "chunk_index": 0,
+        "completed_results_per_chain": 500,
+        "diagnostic_role": "modern_rhat",
+        "health": {
+          "acceptance_rate": 0.694,
+          "acceptance_rate_by_chain": [
+            0.714,
+            0.652,
+            0.7,
+            0.71
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 0.49165192199870944,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+          "execution_topology": "serial",
+          "extreme_log_accept_count": 0,
+          "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+          "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "member_health_failures": [],
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "runtime": {
+            "call_class": "repeated_execute",
+            "checkpoint_reused": false,
+            "native": {
+              "chain_count": 4,
+              "chain_seeds": [
+                [
+                  -1541280516,
+                  0
+                ],
+                [
+                  -1541280516,
+                  1
+                ],
+                [
+                  -1541280516,
+                  2
+                ],
+                [
+                  -1541280516,
+                  3
+                ]
+              ],
+              "ensemble_call_count": 5,
+              "ensemble_call_s": 0.4170029829838313,
+              "execution_mode": "serial",
+              "nonclaims": [
+                "HMC execution-topology mechanics only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "per_chain_call_s": [
+                0.10593094502110034,
+                0.09470891300588846,
+                0.14062303700484335,
+                0.07572674698894843
+              ],
+              "reusable_runner": true,
+              "root_seed": [
+                738824579,
+                521223627
+              ],
+              "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+              "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+              "state_shape": [
+                4,
+                1
+              ],
+              "target_scope": "inference_validation",
+              "trace_policy": "standard",
+              "use_xla": true
+            }
+          },
+          "sample_shape": [
+            500,
+            4,
+            1
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": false,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "available": false
+          },
+          "target_status_trace_policy": "none"
+        },
+        "modern_rhat": {
+          "bulk_ess": [
+            481.3809191354757
+          ],
+          "chain_count": 4,
+          "consumer_diagnostic": null,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 500,
+          "finite_rhat_count": 1,
+          "folded_rank_normalized_split_rhat": [
+            1.0023204239592578
+          ],
+          "hard_vetoes": [],
+          "information_passed": true,
+          "input_all_finite": true,
+          "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+          "max_finite_rhat": 1.005955772920655,
+          "max_folded_rank_normalized_split_rhat": 1.0023204239592578,
+          "max_rank_normalized_split_rhat": 1.005955772920655,
+          "mcse_sd_ratio": [
+            0.045486385073257224
+          ],
+          "mean_ess": [
+            483.3226552541203
+          ],
+          "mean_mcse": [
+            0.018292388861773704
+          ],
+          "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 500,
+            "finite_rhat_count": 1,
+            "folded_rank_normalized_split_rhat": [
+              1.0023204239592578
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.005955772920655,
+            "max_folded_rank_normalized_split_rhat": 1.0023204239592578,
+            "max_rank_normalized_split_rhat": 1.005955772920655,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 1,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              1.005955772920655
+            ],
+            "rhat": [
+              1.005955772920655
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.01,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 250
+          },
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 1,
+          "passed": true,
+          "precision": {
+            "batch_metadata": {
+              "batch_count": 22,
+              "batch_size": 22,
+              "per_chain_long_run_variance": [
+                [
+                  0.8132890609774485
+                ],
+                [
+                  0.6454077548363324
+                ],
+                [
+                  0.4508233997090669
+                ],
+                [
+                  0.6812733916700302
+                ]
+              ],
+              "per_chain_plain_long_run_variance": [
+                [
+                  0.7090927840404562
+                ],
+                [
+                  0.5565286953209996
+                ],
+                [
+                  0.4389025882826066
+                ],
+                [
+                  0.6282315375409793
+                ]
+              ],
+              "small_batch_size": 7,
+              "unused_terminal_draws": 16
+            },
+            "passed": true,
+            "policy": {
+              "batch_provenance": "sqrt(n), literature baseline",
+              "batch_size": null,
+              "jit_compile": true,
+              "lugsail_c": 0.5,
+              "lugsail_r": 3,
+              "method": "lugsail",
+              "min_batches": 20,
+              "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+              "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+              "schema": "bayesfilter.hmc_precision_policy.v1",
+              "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+              "targets": [
+                {
+                  "kind": "quantile",
+                  "mcse_absolute_max": 0.1,
+                  "mcse_sd_ratio_max": null,
+                  "name": "theta",
+                  "probability": 0.5
+                },
+                {
+                  "kind": "mean",
+                  "mcse_absolute_max": 0.1,
+                  "mcse_sd_ratio_max": null,
+                  "name": "theta",
+                  "probability": null
+                }
+              ]
+            },
+            "schema": "bayesfilter.hmc_precision_report.v1",
+            "status": "precision_met",
+            "targets": [
+              {
+                "estimate": 0.5480545201672833,
+                "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                "kind": "quantile",
+                "mcse": 0.023810804160302235,
+                "mcse_absolute_max": 0.1,
+                "mcse_sd_ratio": 0.05920863672446573,
+                "mcse_sd_ratio_max": null,
+                "name": "theta",
+                "passed": true,
+                "probability": 0.5,
+                "valid": true
+              },
+              {
+                "estimate": 0.5556773926365052,
+                "estimator": "lugsail",
+                "kind": "mean",
+                "mcse": 0.0179958106485679,
+                "mcse_absolute_max": 0.1,
+                "mcse_sd_ratio": 0.04474890508023078,
+                "mcse_sd_ratio_max": null,
+                "name": "theta",
+                "passed": true,
+                "probability": null,
+                "valid": true
+              }
+            ]
+          },
+          "quantity_names": [
+            "theta"
+          ],
+          "rank_normalized_split_rhat": [
+            1.005955772920655
+          ],
+          "rhat": [
+            1.005955772920655
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.01,
+          "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 250,
+          "stage": "retained",
+          "tail_ess": [
+            668.7061204000115
+          ]
+        },
+        "passed": false,
+        "seed": [
+          738824579,
+          521223627
+        ]
+      },
+      {
+        "chunk_index": 1,
+        "completed_results_per_chain": 1000,
+        "diagnostic_role": "modern_rhat",
+        "health": {
+          "acceptance_rate": 0.683,
+          "acceptance_rate_by_chain": [
+            0.672,
+            0.664,
+            0.702,
+            0.694
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 0.47513381601311266,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+          "execution_topology": "serial",
+          "extreme_log_accept_count": 0,
+          "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+          "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "member_health_failures": [],
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "runtime": {
+            "call_class": "repeated_execute",
+            "checkpoint_reused": false,
+            "native": {
+              "chain_count": 4,
+              "chain_seeds": [
+                [
+                  1077217229,
+                  0
+                ],
+                [
+                  1077217229,
+                  1
+                ],
+                [
+                  1077217229,
+                  2
+                ],
+                [
+                  1077217229,
+                  3
+                ]
+              ],
+              "ensemble_call_count": 6,
+              "ensemble_call_s": 0.39589928195346147,
+              "execution_mode": "serial",
+              "nonclaims": [
+                "HMC execution-topology mechanics only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "per_chain_call_s": [
+                0.1404166700085625,
+                0.09921884699724615,
+                0.08025761204771698,
+                0.07599335303530097
+              ],
+              "reusable_runner": true,
+              "root_seed": [
+                738824579,
+                521224636
+              ],
+              "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+              "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+              "state_shape": [
+                4,
+                1
+              ],
+              "target_scope": "inference_validation",
+              "trace_policy": "standard",
+              "use_xla": true
+            }
+          },
+          "sample_shape": [
+            500,
+            4,
+            1
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": false,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "available": false
+          },
+          "target_status_trace_policy": "none"
+        },
+        "modern_rhat": {
+          "bulk_ess": [
+            947.9376599866042
+          ],
+          "chain_count": 4,
+          "consumer_diagnostic": null,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "finite_rhat_count": 1,
+          "folded_rank_normalized_split_rhat": [
+            1.0013379399871747
+          ],
+          "hard_vetoes": [],
+          "information_passed": true,
+          "input_all_finite": true,
+          "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+          "max_finite_rhat": 1.0054976609724604,
+          "max_folded_rank_normalized_split_rhat": 1.0013379399871747,
+          "max_rank_normalized_split_rhat": 1.0054976609724604,
+          "mcse_sd_ratio": [
+            0.03275378242499792
+          ],
+          "mean_ess": [
+            932.1312764750064
+          ],
+          "mean_mcse": [
+            0.013190868126983358
+          ],
+          "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 1,
+            "folded_rank_normalized_split_rhat": [
+              1.0013379399871747
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.0054976609724604,
+            "max_folded_rank_normalized_split_rhat": 1.0013379399871747,
+            "max_rank_normalized_split_rhat": 1.0054976609724604,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 1,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              1.0054976609724604
+            ],
+            "rhat": [
+              1.0054976609724604
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.01,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 1,
+          "passed": true,
+          "precision": {
+            "batch_metadata": {
+              "batch_count": 32,
+              "batch_size": 31,
+              "per_chain_long_run_variance": [
+                [
+                  0.2966185888199091
+                ],
+                [
+                  1.2297199465245319
+                ],
+                [
+                  0.4347636889497447
+                ],
+                [
+                  0.19360788849889632
+                ]
+              ],
+              "per_chain_plain_long_run_variance": [
+                [
+                  0.453124474278937
+                ],
+                [
+                  0.8790013983615821
+                ],
+                [
+                  0.5197768954089306
+                ],
+                [
+                  0.3673665449705089
+                ]
+              ],
+              "small_batch_size": 10,
+              "unused_terminal_draws": 8
+            },
+            "passed": true,
+            "policy": {
+              "batch_provenance": "sqrt(n), literature baseline",
+              "batch_size": null,
+              "jit_compile": true,
+              "lugsail_c": 0.5,
+              "lugsail_r": 3,
+              "method": "lugsail",
+              "min_batches": 20,
+              "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+              "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+              "schema": "bayesfilter.hmc_precision_policy.v1",
+              "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+              "targets": [
+                {
+                  "kind": "quantile",
+                  "mcse_absolute_max": 0.1,
+                  "mcse_sd_ratio_max": null,
+                  "name": "theta",
+                  "probability": 0.5
+                },
+                {
+                  "kind": "mean",
+                  "mcse_absolute_max": 0.1,
+                  "mcse_sd_ratio_max": null,
+                  "name": "theta",
+                  "probability": null
+                }
+              ]
+            },
+            "schema": "bayesfilter.hmc_precision_report.v1",
+            "status": "precision_met",
+            "targets": [
+              {
+                "estimate": 0.5716794822463673,
+                "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                "kind": "quantile",
+                "mcse": 0.014797971845426194,
+                "mcse_absolute_max": 0.1,
+                "mcse_sd_ratio": 0.036744325353753576,
+                "mcse_sd_ratio_max": null,
+                "name": "theta",
+                "passed": true,
+                "probability": 0.5,
+                "valid": true
+              },
+              {
+                "estimate": 0.5799467285851613,
+                "estimator": "lugsail",
+                "kind": "mean",
+                "mcse": 0.011604713785766869,
+                "mcse_absolute_max": 0.1,
+                "mcse_sd_ratio": 0.028815258160746038,
+                "mcse_sd_ratio_max": null,
+                "name": "theta",
+                "passed": true,
+                "probability": null,
+                "valid": true
+              }
+            ]
+          },
+          "quantity_names": [
+            "theta"
+          ],
+          "rank_normalized_split_rhat": [
+            1.0054976609724604
+          ],
+          "rhat": [
+            1.0054976609724604
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.01,
+          "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500,
+          "stage": "retained",
+          "tail_ess": [
+            1283.753580526143
+          ]
+        },
+        "passed": true,
+        "seed": [
+          738824579,
+          521224636
+        ]
+      }
+    ],
+    "retained_passed": true,
+    "retained_results_per_chain": 1000,
+    "warmup_archives": [],
+    "warmup_cap_hit": false,
+    "warmup_check_count": 4,
+    "warmup_checks": [
+      {
+        "check_window_results_per_chain": 0,
+        "chunk_index": 0,
+        "completed_results_per_chain": 500,
+        "health": {
+          "acceptance_rate": 0.694,
+          "acceptance_rate_by_chain": [
+            0.682,
+            0.724,
+            0.664,
+            0.706
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 12.066645735001657,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+          "execution_topology": "serial",
+          "extreme_log_accept_count": 0,
+          "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+          "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "member_health_failures": [],
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "runtime": {
+            "call_class": "first_compile_plus_execute",
+            "checkpoint_reused": false,
+            "native": {
+              "chain_count": 4,
+              "chain_seeds": [
+                [
+                  647091893,
+                  0
+                ],
+                [
+                  647091893,
+                  1
+                ],
+                [
+                  647091893,
+                  2
+                ],
+                [
+                  647091893,
+                  3
+                ]
+              ],
+              "ensemble_call_count": 1,
+              "ensemble_call_s": 11.980466707027517,
+              "execution_mode": "serial",
+              "nonclaims": [
+                "HMC execution-topology mechanics only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "per_chain_call_s": [
+                3.057290905038826,
+                3.0329280989826657,
+                2.927058064029552,
+                2.963018122012727
+              ],
+              "reusable_runner": true,
+              "root_seed": [
+                24241094,
+                497440879
+              ],
+              "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+              "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+              "state_shape": [
+                4,
+                1
+              ],
+              "target_scope": "inference_validation",
+              "trace_policy": "standard",
+              "use_xla": true
+            }
+          },
+          "sample_shape": [
+            500,
+            4,
+            1
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": false,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "available": false
+          },
+          "target_status_trace_policy": "none"
+        },
+        "modern_rhat": null,
+        "passed": false,
+        "seed": [
+          24241094,
+          497440879
+        ]
+      },
+      {
+        "check_window_results_per_chain": 0,
+        "chunk_index": 1,
+        "completed_results_per_chain": 1000,
+        "health": {
+          "acceptance_rate": 0.7025,
+          "acceptance_rate_by_chain": [
+            0.728,
+            0.672,
+            0.708,
+            0.702
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 0.3859042639960535,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+          "execution_topology": "serial",
+          "extreme_log_accept_count": 0,
+          "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+          "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "member_health_failures": [],
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "runtime": {
+            "call_class": "repeated_execute",
+            "checkpoint_reused": false,
+            "native": {
+              "chain_count": 4,
+              "chain_seeds": [
+                [
+                  1519891332,
+                  0
+                ],
+                [
+                  1519891332,
+                  1
+                ],
+                [
+                  1519891332,
+                  2
+                ],
+                [
+                  1519891332,
+                  3
+                ]
+              ],
+              "ensemble_call_count": 2,
+              "ensemble_call_s": 0.30992152099497616,
+              "execution_mode": "serial",
+              "nonclaims": [
+                "HMC execution-topology mechanics only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "per_chain_call_s": [
+                0.077788240974769,
+                0.07856080104829744,
+                0.07793803897220641,
+                0.07562331802910194
+              ],
+              "reusable_runner": true,
+              "root_seed": [
+                24241094,
+                497441888
+              ],
+              "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+              "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+              "state_shape": [
+                4,
+                1
+              ],
+              "target_scope": "inference_validation",
+              "trace_policy": "standard",
+              "use_xla": true
+            }
+          },
+          "sample_shape": [
+            500,
+            4,
+            1
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": false,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "available": false
+          },
+          "target_status_trace_policy": "none"
+        },
+        "modern_rhat": null,
+        "passed": false,
+        "seed": [
+          24241094,
+          497441888
+        ]
+      },
+      {
+        "check_window_results_per_chain": 0,
+        "chunk_index": 2,
+        "completed_results_per_chain": 1500,
+        "health": {
+          "acceptance_rate": 0.6965,
+          "acceptance_rate_by_chain": [
+            0.736,
+            0.69,
+            0.674,
+            0.686
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 0.3871613389928825,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+          "execution_topology": "serial",
+          "extreme_log_accept_count": 0,
+          "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+          "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "member_health_failures": [],
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "runtime": {
+            "call_class": "repeated_execute",
+            "checkpoint_reused": false,
+            "native": {
+              "chain_count": 4,
+              "chain_seeds": [
+                [
+                  -1495938757,
+                  0
+                ],
+                [
+                  -1495938757,
+                  1
+                ],
+                [
+                  -1495938757,
+                  2
+                ],
+                [
+                  -1495938757,
+                  3
+                ]
+              ],
+              "ensemble_call_count": 3,
+              "ensemble_call_s": 0.310641962045338,
+              "execution_mode": "serial",
+              "nonclaims": [
+                "HMC execution-topology mechanics only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "per_chain_call_s": [
+                0.0765563269960694,
+                0.07567300699884072,
+                0.07612627203343436,
+                0.08227449603145942
+              ],
+              "reusable_runner": true,
+              "root_seed": [
+                24241094,
+                497442897
+              ],
+              "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+              "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+              "state_shape": [
+                4,
+                1
+              ],
+              "target_scope": "inference_validation",
+              "trace_policy": "standard",
+              "use_xla": true
+            }
+          },
+          "sample_shape": [
+            500,
+            4,
+            1
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": false,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "available": false
+          },
+          "target_status_trace_policy": "none"
+        },
+        "modern_rhat": null,
+        "passed": false,
+        "seed": [
+          24241094,
+          497442897
+        ]
+      },
+      {
+        "check_window_results_per_chain": 1000,
+        "chunk_index": 3,
+        "completed_results_per_chain": 2000,
+        "health": {
+          "acceptance_rate": 0.6975,
+          "acceptance_rate_by_chain": [
+            0.69,
+            0.684,
+            0.708,
+            0.708
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 0.6184023700188845,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+          "execution_topology": "serial",
+          "extreme_log_accept_count": 0,
+          "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+          "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "member_health_failures": [],
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "runtime": {
+            "call_class": "repeated_execute",
+            "checkpoint_reused": false,
+            "native": {
+              "chain_count": 4,
+              "chain_seeds": [
+                [
+                  230701763,
+                  0
+                ],
+                [
+                  230701763,
+                  1
+                ],
+                [
+                  230701763,
+                  2
+                ],
+                [
+                  230701763,
+                  3
+                ]
+              ],
+              "ensemble_call_count": 4,
+              "ensemble_call_s": 0.5337923319893889,
+              "execution_mode": "serial",
+              "nonclaims": [
+                "HMC execution-topology mechanics only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "per_chain_call_s": [
+                0.10010455700103194,
+                0.07775538199348375,
+                0.1283688879921101,
+                0.22754982602782547
+              ],
+              "reusable_runner": true,
+              "root_seed": [
+                24241094,
+                497443906
+              ],
+              "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+              "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+              "state_shape": [
+                4,
+                1
+              ],
+              "target_scope": "inference_validation",
+              "trace_policy": "standard",
+              "use_xla": true
+            }
+          },
+          "sample_shape": [
+            500,
+            4,
+            1
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": false,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "available": false
+          },
+          "target_status_trace_policy": "none"
+        },
+        "modern_rhat": {
+          "assessment": {
+            "bulk_ess": [
+              1108.7885815474435
+            ],
+            "chain_count": 4,
+            "consumer_diagnostic": null,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 1,
+            "folded_rank_normalized_split_rhat": [
+              1.0004575287324469
+            ],
+            "hard_vetoes": [],
+            "information_passed": true,
+            "input_all_finite": true,
+            "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+            "max_finite_rhat": 1.0012163467476176,
+            "max_folded_rank_normalized_split_rhat": 1.0004575287324469,
+            "max_rank_normalized_split_rhat": 1.0012163467476176,
+            "mcse_sd_ratio": [
+              0.030074864409538882
+            ],
+            "mean_ess": [
+              1105.586288513128
+            ],
+            "mean_mcse": [
+              0.01214040865348442
+            ],
+            "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+            "modern_rhat": {
+              "chain_count": 4,
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 1000,
+              "finite_rhat_count": 1,
+              "folded_rank_normalized_split_rhat": [
+                1.0004575287324469
+              ],
+              "hard_vetoes": [],
+              "input_all_finite": true,
+              "max_finite_rhat": 1.0012163467476176,
+              "max_folded_rank_normalized_split_rhat": 1.0004575287324469,
+              "max_rank_normalized_split_rhat": 1.0012163467476176,
+              "nonfinite_rhat_count": 0,
+              "parameter_count": 1,
+              "passed": true,
+              "rank_normalized_split_rhat": [
+                1.0012163467476176
+              ],
+              "rhat": [
+                1.0012163467476176
+              ],
+              "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "rhat_threshold": 1.05,
+              "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 500
+            },
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 1,
+            "passed": true,
+            "precision": {
+              "passed": true,
+              "status": "precision_not_requested",
+              "targets": []
+            },
+            "quantity_names": [
+              "theta"
+            ],
+            "rank_normalized_split_rhat": [
+              1.0012163467476176
+            ],
+            "rhat": [
+              1.0012163467476176
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500,
+            "stage": "warmup",
+            "tail_ess": [
+              1488.1869741034639
+            ]
+          },
+          "chain_count": 4,
+          "consecutive_passes": 1,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "finite_rhat_count": 1,
+          "folded_rank_normalized_split_rhat": [
+            1.0004575287324469
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.0012163467476176,
+          "max_folded_rank_normalized_split_rhat": 1.0004575287324469,
+          "max_rank_normalized_split_rhat": 1.0012163467476176,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 1,
+          "passed": true,
+          "rank_normalized_split_rhat": [
+            1.0012163467476176
+          ],
+          "rhat": [
+            1.0012163467476176
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.05,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500
+        },
+        "passed": true,
+        "seed": [
+          24241094,
+          497443906
+        ]
+      }
+    ],
+    "warmup_excluded_from_posterior": true,
+    "warmup_passed": true,
+    "warmup_results_per_chain": 2000,
+    "warmup_samples_retained": true
+  },
+  "recorded_retained_count": 1000,
+  "status": "assessed",
+  "timing": {
+    "compilation_separated": false,
+    "construction_seconds": 17.353286310040858,
+    "controller_seconds": 15.137090208998416
+  },
+  "warmup_exclusion_matches": true,
+  "warmup_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/repair-gpu-r1/gpu-native-search-1/dataset-0001/fit-0000/members/inference_validation:440b6e752832ab8db7be:candidate:000003/warmup.tensor"
+}

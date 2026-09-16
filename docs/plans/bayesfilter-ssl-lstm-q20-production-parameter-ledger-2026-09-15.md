@@ -21,6 +21,20 @@ budget. An executable production configuration is obtained by completing the
 selection rules and the cost calculation here, preserving the resulting values,
 and exercising the actual training-to-posterior consumer.
 
+September 16 execution amendment: the
+[batched execution repair and cost clarification](bayesfilter-ssl-lstm-q20-batched-execution-repair-2026-09-16.md)
+connects q20 to the public batched four-chain runner. The training counts and
+fine validation-loss resolution below remain uncalibrated hypotheses; the
+449-hour reservation is not a mathematical requirement. The actual filter
+placement includes process noise, so its dimension is 80, as corrected below.
+
+September 16 validation amendment: the
+[validation and budget repair](bayesfilter-ssl-lstm-q20-validation-budget-repair-plan-2026-09-16.md)
+caches immutable paired-loss prefixes, expands validation only for unresolved
+decisions, and adds a nonpromoting `calibrate` master stage. The inherited grid,
+rungs and thresholds remain hypotheses. The report separates calibration,
+floor and full-cap costs; the former 449-hour mixed reservation is superseded.
+
 ## Reading the tables
 
 - **Fixed:** defines the existing scientific target or an applicable owner policy.
@@ -83,7 +97,7 @@ Source: `bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py:32,85,94,117`,
 | Runtime arrays and derivatives | TensorFlow/TFP; float64 for this q20 UKF target | Inherited target-specific protocol. The LEDH TF32 direction does not make this UKF target float32. |
 | Training and sampling device | One GPU visible per worker; memory growth before import/initialization; XLA on | Fixed owner policy. Record GPU UUID, actual device placement, versions and allocator peak. No silent CPU, non-XLA or scalar-training fallback. |
 | TF32 flag | `True`, recorded explicitly, as in the audited launcher | Inherited launcher setting; it is not a claim that float64 operations use TF32. Any float32 subpath needs separate scrutiny. |
-| UKF rule | Unscented: alpha=1, beta=2, kappa=0 | Fixed current target. At dimension 60, lambda=0, 121 points, center mean weight 0, center covariance weight 2, other weights `1/120`. |
+| UKF rule | Unscented: alpha=1, beta=2, kappa=0 | Fixed current target. The actual placement dimension is 80: state 60 plus process innovation 20. Lambda=0, 161 points, center mean weight 0, center covariance weight 2, other weights `1/160`. The earlier 60-dimensional calculation described the state rather than the executed placement. |
 | Square-root backend | `tensorflow_eigh_strict` as the initial target-specific route | Earlier feasibility/parity evidence exists. The factor-cached route is an optional separately checked engineering arm, using identical maps, starts and scopes for a causal comparison. |
 | Explicit placement floor / added jitter | 0 / 0 at the public UKF call | Fixed current inputs. **This does not mean the implementation applies no shift:** the strict internal rule below remains active. |
 | Innovation floor | `1e-12` | Inherited finite-program choice. Monitor actual innovation eigenvalues and floor applications; changing it changes the scope. |
@@ -91,8 +105,8 @@ Source: `bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py:32,85,94,117`,
 | Strict roundoff scale rho | `rho=max(requested_floor,1e-14)` | Current strict classifier. Valid covariance gets `C+rho*I`; a permitted near-SPD repair gets `C+2*rho*I`. This belongs to the finite target/value-score audit. |
 | Permitted near-SPD repair | Minimum eigenvalue at least `-1e-14`, maximum absolute covariance entry at most `1e8` | Inherited numerical rule, not statistically calibrated. Exercise both sides of each boundary; no loosening to avoid a failed proposal. |
 | Invalid target sentinel | `-1e100` plus invalid status | Existing implementation sentinel. It is not a legitimate finite posterior value; consumers must reject invalid status even though the sentinel is finite. |
-| Eigensolver refinement | 8 sweeps | Existing measured repair: four failed a recorded residual check, eight passed. For the 60-dimensional block this is `8*(60-1)=472` rotation rounds. Recheck under the new batch/device scope. |
-| Eigensystem residual and orthogonality limit | `64*n*epsilon_machine`; at n=60, approximately `8.5265e-13` | Existing engineering bound; residual is relative to matrix norm. Failed checks produce invalid numerical evidence. It is not proof that eight sweeps work on every covariance. |
+| Eigensolver refinement | 8 sweeps | Existing measured repair: four failed a recorded residual check, eight passed. For the executed 80-dimensional placement this is `8*(80-1)=632` rotation rounds per refined solve. Recheck under the new batch/device scope. |
+| Eigensystem residual and orthogonality limit | `64*n*epsilon_machine`; at n=80, approximately `1.13687e-12` | Existing engineering bound; residual is relative to matrix norm. Failed checks produce invalid numerical evidence. It is not proof that eight sweeps work on every covariance. |
 | Value replay parity | `abs(diff)<=1e-10+1e-12*abs(reference)` | Existing q20 saved-endpoint regression tolerance. Retain for same-scope replay; extend the bank, not the tolerance, when coverage is missing. |
 | Score replay parity | `abs(diff)<=1e-9+1e-10*abs(reference)` | Same provenance and limitation. Cross-backend parity alone cannot prove both scores correct. |
 | Finite-difference initial step | `h_i=epsilon_machine^(1/3)*max(4,abs(theta_i))`; multiplier approximately `6.05545e-6` | Derived central-difference starting scale under smoothness, not a universal optimum. Compare `h/4,h/2,h,2h,4h` on the same numerical branch. |
@@ -102,7 +116,7 @@ Source: `bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py:32,85,94,117`,
 | Stress points | Signed coordinate axes at latent radii 2, 4, 6, plus self/cross-map and independently obtained posterior points | Inherited `sqrt(d),2*sqrt(d),3*sqrt(d)` at d=4. Axis checks do not establish global tail coverage. |
 | GPU memory budget | 4 GiB pilot allocation as an inherited resource hypothesis; confirm machine availability before execution | This is a post-call stop budget under memory growth, not a hard reservation or proof of current free memory. Measure peak for each batch and complete graph. |
 | CPU sample-generation workers | Probe `1,2,4,8,...` up to available affinity/physical cores and the measured memory bound | Select the smallest count whose throughput is indistinguishable from the largest feasible rate in the bounded pilot. Record explicit W. Per-worker intra/inter/OMP threads start at 1 as an oversubscription-avoidance hypothesis. |
-| HMC chain parallelism | The inspected shared candidate binding builds independent chains with `chain_mode='serial'` by default | Record this actual execution topology. Batch-native training does not imply batched HMC. Any batched q20 extension needs a supported binding and parity/cost checks before assuming a speedup. |
+| HMC chain parallelism | q20 explicitly selects `chain_mode='batched'`, one `[4,4]` state in a reusable compiled TFP runner | September 16 repair: qualification, pricing, tuning and retained draws use batched chains. Other consumers retain their declared compatibility modes. Preserve independent row randomness, per-chain telemetry and fresh qualification for changed source/seed topology; scalar and batched seeds are not pathwise interchangeable. |
 
 Fixed numeric controls remain hypotheses about numerical adequacy even when
 they define the current finite program. Boundary tests, same-value derivative

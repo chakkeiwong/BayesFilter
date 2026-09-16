@@ -165,12 +165,23 @@ candidate into a verified member.
 
 The default \path{HMCAcceptancePolicy} uses four independent chain means,
 temporal blocks, and a 90\% compatibility interval. Its first allocation
-requires at least four blocks of sixteen decisions per chain. Acceptance,
+requires at least four blocks of sixteen decisions per chain. After health,
+chain-conflict, temporal-conflict and trajectory checks, acceptance passes when
+the compatibility interval overlaps the practical band, lies inside the repair
+band, and every chain mean lies inside the repair band. For example, mean
+$0.76$ and interval $[0.73,0.79]$ can pass with practical band $[0.65,0.75]$
+and repair band $[0.55,0.85]$. The rule tests compatibility; it does not rank
+candidates by closeness to $0.70$. Acceptance,
 movement and numerical health have distinct roles. Finite accepted/proposed
 states and targets, endpoint score finiteness, momentum, Metropolis state
 consistency and declared target status determine
 whether the numerical evidence is usable. Candidate-local failure rejects that
 pair; shared execution corruption stops the scope and disables all its replay.
+A declared target-domain exception preserves the attempted seeds and failure
+without inventing an acceptance value, so other candidates can continue.
+Shared invalidity preserves the history of earlier verification while revoking
+current replay. Released reservations cause affordable deferred work to be
+reconsidered within the same invocation.
 Available native divergence vetoes promotion of the current pair. When the
 acceptance evidence is valid and supports a directional repair, that veto does
 not prevent a newly measured child. Acceptance compatibility and promotion
@@ -339,8 +350,12 @@ seeds are reconstructed from the durable work/accounting records after member
 export and reload, including failed native calls that returned no trace.
 Tuning draws remain excluded.
 \path{runner.run_sequential} connects the explicitly chosen member to the
-existing cumulative posterior controller, with diagnostics transformed into
-model coordinates. Posterior rejection does not change tuning membership.
+shared cumulative posterior controller, preserving the member's transition,
+chain topology and target-status requirements. The generic entry point is
+\path{run_hmc_posterior(member=runner, config=config)}. Diagnostics use model
+coordinates and any declared scientific functionals. Posterior rejection does
+not change tuning membership. Chapter~\ref{ch:bf-diagnostics} distinguishes
+adaptation, discarded equilibration and retained precision.
 
 The status \path{complete} means the declared search reached terminal
 dispositions; its verified set may be empty. It does not prove the absence of a
@@ -361,14 +376,94 @@ metadata; the active result's shared configs determine candidate stages.
 Proposal-field execution defaults to XLA; a diagnostic exception supplies
 \path{non_xla_reason}.
 
-Retained-member files currently embed their evidence and check predecessor
-history. These mechanics tests do not qualify target-scale memory, restart
+Retained-member exports share one checksummed evidence bundle beside their
+compact member files. Copy the bundle when moving the members, or use
+\path{runner.export(path, portable=True)} for a standalone file. Numerical
+analyses are cached by current evidence content; mutations and changed source
+identities still invalidate reuse. Predecessor history is checked iteratively. These mechanics tests do not qualify target-scale memory, restart
 latency, posterior convergence, or scientific validity. Consumer evidence must
 also establish complete target/data/prior identity and any intermediate
 integrator telemetry required by that target.
 
 \lstinputlisting[language=Python,caption={Ordinary candidate-set invocation.},label={lst:bf-hmc-tuning-ordinary}]{examples/hmc_tuning_ordinary.py}
 \lstinputlisting[language=Python,caption={Numerical candidate evidence and explicit retained-member replay.}]{examples/hmc_candidate_set_retained.py}
+
+\section{What the validation experiments establish}
+\label{sec:bf-inference-validation}
+
+The tuning procedure is tested through several distinct experiments. Numerical
+oracles compare target values, scores, coordinate Jacobians and leapfrog updates
+with independent calculations. Frozen-kernel experiments test invariance using
+independent reference draws and a reversible random-position construction.
+The latter uses Algorithm 2 and Proposition 2.3 of
+\citet{gandy2021mcmctesting}; it applies to frozen reversible kernels.
+Controller tests check that every qualified pair is retained, each repair keeps
+its own L, and fresh verification and restart preserve the numerical record.
+Full-procedure experiments then call the public tuner and run the separate
+posterior controller. Small integration cases reconstruct every verified member.
+Larger replicated experiments may predeclare one member by tuning identity
+before sampling; all other verified members remain recorded as unassessed for
+that experiment.
+
+Simulation-based calibration generates a parameter from a proper prior and a
+dataset conditional on that parameter. If the fitted outputs are independent
+exact posterior draws, the generating parameter's randomized rank among them
+is uniform. This supplies the null distribution for the test. The implemented design uses independent
+complete fits within each dataset and one fixed output per fit. It includes
+data-dependent likelihood quantities because parameter ranks alone can miss a
+procedure that ignores the observations. Failed fits remain in the denominator;
+conditional ranks from successful fits cannot establish calibration for a
+procedure that sometimes fails. Candidate siblings share a dataset and are not
+independent calibration replications.
+The rank argument follows \citet{talts2020sbc}; the likelihood quantities follow
+the sensitivity analysis of \citet{modrak2023sbcquantities}.
+
+An invariant kernel can remain motionless or revisit only a few states.
+Identity and two-cycle controls therefore accompany the distributional tests.
+Similarly, an MCSE estimator can perform adequately on fixed-length stationary
+arrays while intervals based on it have poor coverage at a data-dependent
+stopping time. Separate experiments compare the actual controller's stopped
+means and medians with available exact references, retaining cap and unavailable
+outcomes. A fixed-length arm reuses the same verified kernel with independent
+randomness and predeclared discarded and retained counts. Mixture mode
+probabilities check global exploration that a local mean or small reported MCSE
+may miss. Missing arms remain in the comparison denominator; pointwise
+uncertainty intervals from a small number of replications do not establish a
+ranking or nominal sequential coverage. No R-hat, ESS or MCSE assessment changes
+tuning membership.
+
+The September 2026 campaign observed this distinction directly. A Gaussian
+mixture run passed its local posterior checks after 6,500 discarded and 2,000
+retained transitions per chain, but all retained draws occupied the right mode.
+Its estimated mean was 4.956, against the exact mean 2, with reported MCSE 0.038.
+Thus a small within-mode uncertainty estimate did not measure error relative
+to the full posterior. Target-specific posterior assessment should include
+relevant mode or other global quantities and examine sensitivity to starting
+locations. The saved result and its limited replication evidence are documented
+in \path{docs/plans/bayesfilter-inference-validation-24h-result-2026-09-16.md}.
+
+Automatic initialization and supplied epsilon proposals are distinct subjects
+of validation. A supplied proposal can exceed the final prepared metric's bound;
+native initialization uses preparation's own starting epsilon. Either search
+can return no verified member under its finite domain and budget. A complete
+calibration experiment must preserve those missing fits, even when all observed
+ranks among successful fits look uniform. Parallel dataset groups are combined
+only when declared together with identical settings and frozen source; pilot and
+repaired experiments remain separate.
+
+The executable suite definitions are documented in
+\path{docs/validation/README.md}. The following table is generated from their
+saved reports. C, H and P denote current-source executions, historical-source
+executions and planned designs, including retries. These are counts of designs,
+not models declared correct or independent replications. CPU reference work and
+GPU/XLA work remain separate. A completed controller call with no retained draws
+does not establish posterior coverage; missing stopping intervals remain in the
+denominator. Affine and dense nonlinear transports occupy separate rows.
+Each experiment declares its evidence scope. Incomplete confirmation cannot
+establish calibration; statistical uncertainty and unresolved coverage are
+reported with the underlying observations.
+
+\input{generated/inference_validation_coverage}
 
 \section{Historical readers and complete interface inventory}
 \label{sec:bf-hmc-complete-interface-inventory}

@@ -1,0 +1,1644 @@
+"""Frozen NeuTra-style transport artifact loader.
+
+This module loads small, reviewed frozen transport manifests only.  It does not
+train NeuTra, import model-specific code, or establish sampler validity.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
+
+import tensorflow as tf
+
+
+NEUTRA_ARTIFACT_NONCLAIMS = (
+    "frozen transport artifact loader only",
+    "no NeuTra training claim",
+    "no HMC tuning or sampling claim",
+    "no posterior convergence claim",
+    "no scientific validity claim",
+)
+
+_SUPPORTED_SCHEMAS = {"bayesfilter.neutra.frozen_affine_diag.v1"}
+_DENSE_IAF_SCHEMA = "bayesfilter.neutra.dense_iaf_frozen_transport.v1"
+_SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
+_PROCESS_LOCAL_SIGNATURE_PATTERNS = (
+    re.compile(r"\b0x[0-9a-fA-F]+\b"),
+    re.compile(r"\bobject at\b"),
+    re.compile(r"\bid\s*\("),
+)
+
+
+class InvalidNeuTraArtifact(ValueError):
+    """Raised when a frozen NeuTra artifact is missing required bindings."""
+
+
+@dataclass(frozen=True)
+class FrozenNeuTraArtifactManifest:
+    """Stable manifest for a loaded frozen transport artifact."""
+
+    schema: str
+    transport_id: str
+    dimension: int
+    target_signature: str
+    transport_hash: str
+    log_jacobian_available: bool
+    training_state_hash: str | None
+    topology_hash: str | None = None
+    tensor_hash: str | None = None
+    chart_signature: str | None = None
+    procedure: str | None = None
+    initialization_mode: str | None = None
+    anchor_release_steps: int | None = None
+    anchor_estimator_signature: str | None = None
+    anchor_factor_orientation: str | None = None
+    nonclaims: tuple[str, ...] = NEUTRA_ARTIFACT_NONCLAIMS
+
+    def manifest_payload(self) -> Mapping[str, Any]:
+        payload = {
+            "schema": self.schema,
+            "transport_id": self.transport_id,
+            "dimension": self.dimension,
+            "target_signature": self.target_signature,
+            "transport_hash": self.transport_hash,
+            "log_jacobian_available": self.log_jacobian_available,
+            "training_state_hash": self.training_state_hash,
+            "topology_hash": self.topology_hash,
+            "tensor_hash": self.tensor_hash,
+            "chart_signature": self.chart_signature,
+            "nonclaims": self.nonclaims,
+        }
+        if self.procedure is not None:
+            payload.update(
+                {
+                    "procedure": self.procedure,
+                    "initialization_mode": self.initialization_mode,
+                    "anchor_release_steps": self.anchor_release_steps,
+                    "anchor_estimator_signature": self.anchor_estimator_signature,
+                    "anchor_factor_orientation": self.anchor_factor_orientation,
+                }
+            )
+        return payload
+
+
+class FrozenAffineDiagonalTransport:
+    """Frozen affine diagonal transport loaded from a small artifact manifest."""
+
+    def __init__(
+        self,
+        *,
+        manifest: FrozenNeuTraArtifactManifest,
+        shift: tuple[float, ...],
+        raw_scale: tuple[float, ...],
+    ) -> None:
+        self.manifest = manifest
+        self.parameter_dim = manifest.dimension
+        if len(shift) != self.parameter_dim:
+            raise InvalidNeuTraArtifact("shift length must match artifact dimension")
+        if len(raw_scale) != self.parameter_dim:
+            raise InvalidNeuTraArtifact("raw_scale length must match artifact dimension")
+        self.shift = tf.constant(shift, dtype=tf.float64)
+        self.raw_scale = tf.constant(raw_scale, dtype=tf.float64)
+
+    @property
+    def scale(self) -> tf.Tensor:
+        return tf.exp(self.raw_scale)
+
+    @property
+    def target_signature(self) -> str:
+        return self.manifest.target_signature
+
+    def manifest_payload(self) -> Mapping[str, Any]:
+        return {
+            **self.manifest.manifest_payload(),
+            "parameter_dim": self.parameter_dim,
+            "shift": tuple(float(item) for item in self.shift.numpy().tolist()),
+            "raw_scale": tuple(float(item) for item in self.raw_scale.numpy().tolist()),
+        }
+
+    def forward(self, z: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        return self.shift + self.scale * values
+
+    def forward_batch(self, z_batch: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z_batch, dtype=tf.float64)
+        if values.shape.rank != 2:
+            raise ValueError("frozen transport batch input must have rank 2")
+        return self.shift + self.scale * values
+
+    def log_abs_det_jacobian(self, z: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        return tf.zeros(tf.shape(values)[:-1], dtype=values.dtype) + tf.reduce_sum(
+            self.raw_scale
+        )
+
+    def log_abs_det_jacobian_batch(self, z_batch: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z_batch, dtype=tf.float64)
+        if values.shape.rank != 2:
+            raise ValueError("frozen transport batch input must have rank 2")
+        return tf.zeros(tf.shape(values)[:-1], dtype=values.dtype) + tf.reduce_sum(
+            self.raw_scale
+        )
+
+    def pullback_score(self, z: Any, theta_score: Any) -> tf.Tensor:
+        score = tf.convert_to_tensor(theta_score, dtype=tf.float64)
+        return score * tf.cast(self.scale, score.dtype)
+
+    def pullback_score_batch(self, z_batch: Any, theta_score_batch: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z_batch, dtype=tf.float64)
+        if values.shape.rank != 2:
+            raise ValueError("frozen transport batch input must have rank 2")
+        score = tf.convert_to_tensor(theta_score_batch, dtype=values.dtype)
+        if score.shape.rank != 2:
+            raise ValueError("frozen transport batch score must have rank 2")
+        return score * tf.cast(self.scale, score.dtype)
+
+    def log_abs_det_jacobian_score(self, z: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        return tf.zeros_like(values)
+
+    def log_abs_det_jacobian_score_batch(self, z_batch: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z_batch, dtype=tf.float64)
+        if values.shape.rank != 2:
+            raise ValueError("frozen transport batch input must have rank 2")
+        return tf.zeros_like(values)
+
+
+class FrozenDenseIAFTransport:
+    """Frozen composed dense-IAF transport loaded from a reviewed manifest."""
+
+    def __init__(
+        self,
+        *,
+        manifest: FrozenNeuTraArtifactManifest,
+        components: tuple[Any, ...],
+    ) -> None:
+        self.manifest = manifest
+        self.parameter_dim = manifest.dimension
+        self.components = components
+
+    @property
+    def target_signature(self) -> str:
+        return self.manifest.target_signature
+
+    def manifest_payload(self) -> Mapping[str, Any]:
+        return {
+            **self.manifest.manifest_payload(),
+            "parameter_dim": self.parameter_dim,
+            "component_count": len(self.components),
+        }
+
+    def forward(self, z: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        return self.forward_batch(_ensure_rank2(values, "dense IAF input"))[0]
+
+    def forward_z_to_theta(self, z: Any) -> tf.Tensor:
+        return self.forward(z)
+
+    def forward_batch(self, z_batch: Any) -> tf.Tensor:
+        values = _ensure_rank2(tf.convert_to_tensor(z_batch, dtype=tf.float64), "dense IAF batch input")
+        output, _ = self._forward_and_logdet(values)
+        return output
+
+    def forward_z_to_theta_batch(self, z_batch: Any) -> tf.Tensor:
+        return self.forward_batch(z_batch)
+
+    def inverse_theta_to_z(self, theta: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(theta, dtype=tf.float64)
+        return self.inverse_theta_to_z_batch(
+            _ensure_rank2(values, "dense IAF inverse input")
+        )[0]
+
+    def inverse_theta_to_z_batch(self, theta_batch: Any) -> tf.Tensor:
+        output = _ensure_rank2(
+            tf.convert_to_tensor(theta_batch, dtype=tf.float64),
+            "dense IAF inverse batch input",
+        )
+        for component in reversed(self.components):
+            output = component.inverse(output)
+        return output
+
+    def log_abs_det_jacobian(self, z: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        return self.log_abs_det_jacobian_batch(_ensure_rank2(values, "dense IAF input"))[0]
+
+    def log_abs_det_jacobian_batch(self, z_batch: Any) -> tf.Tensor:
+        values = _ensure_rank2(tf.convert_to_tensor(z_batch, dtype=tf.float64), "dense IAF batch input")
+        _, logdet = self._forward_and_logdet(values)
+        return logdet
+
+    def pullback_score(self, z: Any, theta_score: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        score = tf.convert_to_tensor(theta_score, dtype=tf.float64)
+        return self.pullback_score_batch(
+            _ensure_rank2(values, "dense IAF pullback input"),
+            _ensure_rank2(score, "dense IAF pullback score"),
+        )[0]
+
+    def pullback_score_batch(
+        self,
+        z_batch: Any,
+        theta_score_batch: Any,
+    ) -> tf.Tensor:
+        values = _ensure_rank2(
+            tf.convert_to_tensor(z_batch, dtype=tf.float64),
+            "dense IAF pullback batch input",
+        )
+        score = _ensure_rank2(
+            tf.convert_to_tensor(theta_score_batch, dtype=values.dtype),
+            "dense IAF pullback batch score",
+        )
+        _require_same_shape(values, score, "dense IAF pullback score")
+        component_inputs = []
+        output = values
+        for component in self.components:
+            component_inputs.append(output)
+            output, _ = component.forward_and_logdet(output)
+        for component, component_input in reversed(
+            tuple(zip(self.components, component_inputs))
+        ):
+            score = component.pullback_score(component_input, score)
+        return score
+
+    def log_abs_det_jacobian_score(self, z: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        return self.log_abs_det_jacobian_score_batch(
+            _ensure_rank2(values, "dense IAF logdet score input")
+        )[0]
+
+    def log_abs_det_jacobian_score_batch(self, z_batch: Any) -> tf.Tensor:
+        values = _ensure_rank2(
+            tf.convert_to_tensor(z_batch, dtype=tf.float64),
+            "dense IAF logdet score batch input",
+        )
+        component_inputs = []
+        output = values
+        for component in self.components:
+            component_inputs.append(output)
+            output, _ = component.forward_and_logdet(output)
+        score = tf.zeros_like(output)
+        for component, component_input in reversed(
+            tuple(zip(self.components, component_inputs))
+        ):
+            score = component.pullback_score(component_input, score)
+            score = score + component.logdet_score(component_input)
+        return score
+
+    def _forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        output = values
+        logdet = tf.zeros(tf.shape(values)[:-1], dtype=values.dtype)
+        for component in self.components:
+            output, component_logdet = component.forward_and_logdet(output)
+            logdet = logdet + component_logdet
+        return output, logdet
+
+
+class _DenseAutoregressiveIAFComponent:
+    def __init__(
+        self,
+        *,
+        dim: int,
+        hidden_layers: tuple[int, ...],
+        activation: str,
+        s_max: float,
+        scale_transform: str,
+        weights: tuple[tf.Tensor, ...],
+        biases: tuple[tf.Tensor, ...],
+        initialization_mode: str = "legacy",
+        anchor_shift_weight: tf.Tensor | None = None,
+        anchor_shift_bias: tf.Tensor | None = None,
+        anchor_scale_raw: tf.Tensor | None = None,
+        anchor_factor_orientation: str | None = None,
+    ) -> None:
+        self.dim = dim
+        self.hidden_layers = hidden_layers
+        self.activation = activation
+        self.s_max = s_max
+        self.scale_transform = scale_transform
+        self.weights = weights
+        self.biases = biases
+        self.initialization_mode = str(initialization_mode)
+        self.anchor_shift_weight = anchor_shift_weight
+        self.anchor_shift_bias = anchor_shift_bias
+        self.anchor_scale_raw = anchor_scale_raw
+        self.anchor_factor_orientation = anchor_factor_orientation
+        if self.initialization_mode == "quadratic_triangular_anchor_v1":
+            if (
+                anchor_shift_weight is None
+                or anchor_shift_bias is None
+                or anchor_scale_raw is None
+            ):
+                raise InvalidNeuTraArtifact("quadratic anchor fields are required")
+            lower = tf.linalg.band_part(anchor_shift_weight, -1, 0)
+            diagonal = tf.linalg.diag(tf.linalg.diag_part(anchor_shift_weight))
+            if bool(tf.reduce_any(tf.not_equal(anchor_shift_weight, lower - diagonal)).numpy()):
+                raise InvalidNeuTraArtifact("quadratic anchor shift weight must be strict lower")
+            if anchor_factor_orientation != "row_lower_cholesky":
+                raise InvalidNeuTraArtifact("unsupported quadratic anchor orientation")
+        elif any(
+            value is not None
+            for value in (anchor_shift_weight, anchor_shift_bias, anchor_scale_raw)
+        ):
+            raise InvalidNeuTraArtifact("anchor fields require quadratic anchor mode")
+        self.masks = _dense_iaf_masks(dim, hidden_layers)
+
+    def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        scale_log, shift, _, _ = self._network(values)
+        output = values * tf.exp(scale_log) + shift
+        return output, tf.reduce_sum(scale_log, axis=-1)
+
+    def inverse(self, output: tf.Tensor) -> tf.Tensor:
+        values = tf.zeros_like(output)
+        for index in range(self.dim):
+            scale_log, shift, _, _ = self._network(values)
+            solved = (output[..., index] - shift[..., index]) * tf.exp(
+                -scale_log[..., index]
+            )
+            delta = solved - values[..., index]
+            values = values + delta[..., tf.newaxis] * tf.one_hot(
+                index,
+                self.dim,
+                dtype=values.dtype,
+            )
+        return values
+
+    def pullback_score(
+        self,
+        values: tf.Tensor,
+        output_score: tf.Tensor,
+    ) -> tf.Tensor:
+        scale_log, _, scale_derivative, cache = self._network(values)
+        direct = output_score * tf.exp(scale_log)
+        scale_cotangent = output_score * values * tf.exp(scale_log)
+        raw_cotangent = tf.concat(
+            (scale_cotangent * scale_derivative, output_score),
+            axis=-1,
+        )
+        pullback = direct + self._network_pullback(raw_cotangent, cache)
+        if self.anchor_shift_weight is not None:
+            anchor_weight = tf.linalg.band_part(
+                self.anchor_shift_weight, -1, 0
+            ) - tf.linalg.diag(tf.linalg.diag_part(self.anchor_shift_weight))
+            pullback = pullback + tf.matmul(output_score, anchor_weight)
+        return pullback
+
+    def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
+        _, _, scale_derivative, cache = self._network(values)
+        raw_cotangent = tf.concat(
+            (scale_derivative, tf.zeros_like(scale_derivative)),
+            axis=-1,
+        )
+        return self._network_pullback(raw_cotangent, cache)
+
+    def _network(
+        self,
+        values: tf.Tensor,
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tuple[tf.Tensor, ...]]:
+        h = values
+        preactivations = []
+        for weight, bias, mask in zip(
+            self.weights[:-1],
+            self.biases[:-1],
+            self.masks[:-1],
+        ):
+            preactivation = tf.matmul(h, weight * mask) + bias
+            preactivations.append(preactivation)
+            h = _apply_activation(preactivation, self.activation)
+        raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
+        scale_logits = raw[..., : self.dim]
+        shift = raw[..., self.dim :]
+        if self.anchor_shift_weight is not None:
+            anchor_weight = tf.linalg.band_part(
+                self.anchor_shift_weight, -1, 0
+            ) - tf.linalg.diag(tf.linalg.diag_part(self.anchor_shift_weight))
+            scale_logits = scale_logits + self.anchor_scale_raw
+            shift = shift + tf.matmul(values, anchor_weight, transpose_b=True)
+            shift = shift + self.anchor_shift_bias
+        if self.scale_transform == "identity":
+            scale_log = scale_logits
+            scale_derivative = tf.ones_like(scale_logits)
+        elif self.scale_transform == "dsge_bounded_tanh":
+            scale_tanh = tf.math.tanh(scale_logits)
+            scale_log = self.s_max * scale_tanh
+            scale_derivative = 1.0 - tf.square(scale_tanh)
+        else:
+            scaled_logits = scale_logits / self.s_max
+            scale_tanh = tf.math.tanh(scaled_logits)
+            scale_log = self.s_max * scale_tanh
+            scale_derivative = 1.0 - tf.square(scale_tanh)
+        return scale_log, shift, scale_derivative, tuple(preactivations)
+
+    def _network_pullback(
+        self,
+        raw_cotangent: tf.Tensor,
+        preactivations: tuple[tf.Tensor, ...],
+    ) -> tf.Tensor:
+        cotangent = tf.matmul(
+            raw_cotangent,
+            self.weights[-1] * self.masks[-1],
+            transpose_b=True,
+        )
+        for layer_index in reversed(range(len(preactivations))):
+            cotangent = cotangent * _activation_derivative(
+                preactivations[layer_index],
+                self.activation,
+            )
+            cotangent = tf.matmul(
+                cotangent,
+                self.weights[layer_index] * self.masks[layer_index],
+                transpose_b=True,
+            )
+        return cotangent
+
+
+class _MixingLinearComponent:
+    def __init__(self, *, matrix: tf.Tensor) -> None:
+        self.matrix = matrix
+        sign, log_abs_det = tf.linalg.slogdet(matrix)
+        if bool(tf.equal(sign, 0.0).numpy()):
+            raise InvalidNeuTraArtifact("mixing_linear matrix must be nonsingular")
+        self.log_abs_det = tf.convert_to_tensor(log_abs_det, dtype=tf.float64)
+
+    def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        output = tf.matmul(values, self.matrix)
+        logdet = tf.zeros(tf.shape(values)[:-1], dtype=values.dtype) + self.log_abs_det
+        return output, logdet
+
+    def inverse(self, output: tf.Tensor) -> tf.Tensor:
+        return tf.transpose(
+            tf.linalg.solve(tf.transpose(self.matrix), tf.transpose(output))
+        )
+
+    def pullback_score(
+        self,
+        values: tf.Tensor,
+        output_score: tf.Tensor,
+    ) -> tf.Tensor:
+        del values
+        return tf.matmul(output_score, self.matrix, transpose_b=True)
+
+    def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
+        return tf.zeros_like(values)
+
+
+class _AffineComponent:
+    def __init__(
+        self,
+        *,
+        offset: tf.Tensor,
+        scale: tf.Tensor | None = None,
+        matrix: tf.Tensor | None = None,
+    ) -> None:
+        self.offset = offset
+        self.scale = scale
+        self.matrix = matrix
+        if scale is not None:
+            if bool(tf.reduce_any(tf.equal(scale, 0.0)).numpy()):
+                raise InvalidNeuTraArtifact("affine scale must be nonzero")
+            self.log_abs_det = tf.reduce_sum(tf.math.log(tf.abs(scale)))
+        elif matrix is not None:
+            sign, log_abs_det = tf.linalg.slogdet(matrix)
+            if bool(tf.equal(sign, 0.0).numpy()):
+                raise InvalidNeuTraArtifact("affine matrix must be nonsingular")
+            lower = tf.linalg.band_part(matrix, -1, 0)
+            upper = tf.linalg.band_part(matrix, 0, -1)
+            triangular = bool(tf.reduce_all(tf.equal(matrix, lower)).numpy()) or bool(
+                tf.reduce_all(tf.equal(matrix, upper)).numpy()
+            )
+            self.log_abs_det = tf.convert_to_tensor(
+                tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(matrix))))
+                if triangular
+                else log_abs_det,
+                dtype=tf.float64,
+            )
+        else:
+            raise InvalidNeuTraArtifact("affine component requires scale or matrix")
+
+    def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        if self.scale is not None:
+            output = self.offset + values * self.scale
+        else:
+            output = self.offset + tf.matmul(values, self.matrix, transpose_b=True)
+        logdet = tf.zeros(tf.shape(values)[:-1], dtype=values.dtype) + self.log_abs_det
+        return output, logdet
+
+    def inverse(self, output: tf.Tensor) -> tf.Tensor:
+        centered = output - self.offset
+        if self.scale is not None:
+            return centered / self.scale
+        return tf.transpose(tf.linalg.solve(self.matrix, tf.transpose(centered)))
+
+    def pullback_score(
+        self,
+        values: tf.Tensor,
+        output_score: tf.Tensor,
+    ) -> tf.Tensor:
+        del values
+        if self.scale is not None:
+            return output_score * self.scale
+        return tf.matmul(output_score, self.matrix)
+
+    def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
+        return tf.zeros_like(values)
+
+
+class _ComposedComponent:
+    def __init__(self, *, children: tuple[Any, ...]) -> None:
+        if not children:
+            raise InvalidNeuTraArtifact("composed component children must be nonempty")
+        self.children = children
+
+    def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        output = values
+        logdet = tf.zeros(tf.shape(values)[:-1], dtype=values.dtype)
+        for child in self.children:
+            output, child_logdet = child.forward_and_logdet(output)
+            logdet = logdet + child_logdet
+        return output, logdet
+
+    def inverse(self, output: tf.Tensor) -> tf.Tensor:
+        values = output
+        for child in reversed(self.children):
+            values = child.inverse(values)
+        return values
+
+    def pullback_score(
+        self,
+        values: tf.Tensor,
+        output_score: tf.Tensor,
+    ) -> tf.Tensor:
+        child_inputs = []
+        output = values
+        for child in self.children:
+            child_inputs.append(output)
+            output, _ = child.forward_and_logdet(output)
+        score = output_score
+        for child, child_input in reversed(tuple(zip(self.children, child_inputs))):
+            score = child.pullback_score(child_input, score)
+        return score
+
+    def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
+        child_inputs = []
+        output = values
+        for child in self.children:
+            child_inputs.append(output)
+            output, _ = child.forward_and_logdet(output)
+        score = tf.zeros_like(output)
+        for child, child_input in reversed(tuple(zip(self.children, child_inputs))):
+            score = child.pullback_score(child_input, score)
+            score = score + child.logdet_score(child_input)
+        return score
+
+
+@dataclass(frozen=True)
+class LoadedFrozenNeuTraArtifact:
+    """Loaded frozen transport plus stable reuse metadata."""
+
+    transport: Any
+    manifest: FrozenNeuTraArtifactManifest
+    binding: Any
+    artifact_signature: str
+
+    def manifest_payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.neutra.loaded_frozen_artifact.v1",
+            "artifact_signature": self.artifact_signature,
+            "manifest": self.manifest.manifest_payload(),
+            "binding": self.binding.manifest_payload(),
+        }
+
+
+def load_frozen_neutra_artifact(
+    payload: Mapping[str, Any],
+    *,
+    expected_target_signature: str,
+    binding_factory: Any | None = None,
+) -> LoadedFrozenNeuTraArtifact:
+    """Load a synthetic/reviewed frozen transport artifact fail-closed."""
+
+    from bayesfilter.ssm import FrozenTransportBinding
+
+    binding_type = FrozenTransportBinding if binding_factory is None else binding_factory
+    normalized = _require_mapping(payload, "payload")
+    expected = _nonempty_text(expected_target_signature, "expected_target_signature")
+    schema = _nonempty_text(normalized.get("schema"), "schema")
+    if schema == _DENSE_IAF_SCHEMA:
+        return _load_dense_iaf_neutra_artifact(
+            normalized,
+            expected_target_signature=expected,
+            binding_type=binding_type,
+        )
+    if schema not in _SUPPORTED_SCHEMAS:
+        raise InvalidNeuTraArtifact(f"unsupported NeuTra artifact schema: {schema}")
+    transport_id = _nonempty_text(normalized.get("transport_id"), "transport_id")
+    dimension = int(normalized.get("dimension", 0))
+    if dimension <= 0:
+        raise InvalidNeuTraArtifact("dimension must be positive")
+    target_signature = _nonempty_text(normalized.get("target_signature"), "target_signature")
+    if target_signature != expected:
+        raise InvalidNeuTraArtifact("target_signature mismatch")
+    if not bool(normalized.get("log_jacobian_available", False)):
+        raise InvalidNeuTraArtifact("log_jacobian_available is required")
+    shift = _float_tuple(normalized.get("shift"), "shift")
+    raw_scale = _float_tuple(normalized.get("raw_scale"), "raw_scale")
+    if len(shift) != dimension:
+        raise InvalidNeuTraArtifact("shift length must match dimension")
+    if len(raw_scale) != dimension:
+        raise InvalidNeuTraArtifact("raw_scale length must match dimension")
+    training_state_hash = normalized.get("training_state_hash")
+    if training_state_hash is not None:
+        training_state_hash = _nonempty_text(training_state_hash, "training_state_hash")
+    transport_hash = _stable_json_hash(
+        {
+            "schema": schema,
+            "transport_id": transport_id,
+            "dimension": dimension,
+            "target_signature": target_signature,
+            "shift": shift,
+            "raw_scale": raw_scale,
+            "training_state_hash": training_state_hash,
+        }
+    )
+    manifest = FrozenNeuTraArtifactManifest(
+        schema=schema,
+        transport_id=transport_id,
+        dimension=dimension,
+        target_signature=target_signature,
+        transport_hash=transport_hash,
+        log_jacobian_available=True,
+        training_state_hash=training_state_hash,
+    )
+    transport = FrozenAffineDiagonalTransport(
+        manifest=manifest,
+        shift=shift,
+        raw_scale=raw_scale,
+    )
+    binding = binding_type(
+        transport_id=transport_id,
+        dimension=dimension,
+        target_signature=target_signature,
+        log_jacobian_available=True,
+        transport_manifest={
+            "transport_id": transport_id,
+            "transport_hash": transport_hash,
+            "target_signature": target_signature,
+            "schema": schema,
+        },
+    )
+    artifact_signature = _stable_json_hash(
+        {
+            "schema": "bayesfilter.neutra.loaded_frozen_artifact.v1",
+            "manifest": manifest.manifest_payload(),
+            "binding": binding.manifest_payload(),
+        }
+    )
+    return LoadedFrozenNeuTraArtifact(
+        transport=transport,
+        manifest=manifest,
+        binding=binding,
+        artifact_signature=artifact_signature,
+    )
+
+
+def finalize_dense_iaf_neutra_artifact_payload(
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Return a normalized dense-IAF payload with stable component/top-level hashes."""
+
+    normalized = _require_mapping(payload, "payload")
+    schema = _nonempty_text(normalized.get("schema"), "schema")
+    if schema != _DENSE_IAF_SCHEMA:
+        raise InvalidNeuTraArtifact(f"unsupported dense IAF schema: {schema}")
+    finalized = dict(normalized)
+    components = _component_list(finalized.get("components"), "components")
+    finalized["components"] = [_finalize_component_hashes(component) for component in components]
+    hashes = _dense_iaf_top_level_hashes(finalized)
+    finalized.update(hashes)
+    return finalized
+
+
+def stable_frozen_neutra_artifact_signature(
+    artifact: LoadedFrozenNeuTraArtifact,
+) -> str:
+    """Return the stable persisted signature for a loaded frozen artifact."""
+
+    if not isinstance(artifact, LoadedFrozenNeuTraArtifact):
+        raise TypeError("artifact must be a LoadedFrozenNeuTraArtifact")
+    return artifact.artifact_signature
+
+
+def _load_dense_iaf_neutra_artifact(
+    normalized: Mapping[str, Any],
+    *,
+    expected_target_signature: str,
+    binding_type: Any,
+) -> LoadedFrozenNeuTraArtifact:
+    transport_id = _nonempty_text(normalized.get("transport_id"), "transport_id")
+    dimension = int(normalized.get("dimension", 0))
+    if dimension <= 0:
+        raise InvalidNeuTraArtifact("dimension must be positive")
+    target_signature = _nonempty_text(normalized.get("target_signature"), "target_signature")
+    _require_sha256_hex(target_signature, "target_signature")
+    if target_signature != expected_target_signature:
+        raise InvalidNeuTraArtifact("target_signature mismatch")
+    if not bool(normalized.get("log_jacobian_available", False)):
+        raise InvalidNeuTraArtifact("log_jacobian_available is required")
+    procedure = normalized.get("procedure")
+    if procedure == "dsge_hmc_rotemberg_sgu_plain_neutra_v1":
+        _validate_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(dimension, dimension),
+            label="dsge paper NeuTra",
+        )
+    elif procedure == "bayesfilter_pure_paper_dense_iaf_v1":
+        _validate_pure_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(dimension, dimension),
+            expected_scale_transform="identity",
+            label="pure paper NeuTra",
+        )
+    elif procedure == "bayesfilter_pure_bounded_dense_iaf_v1":
+        _validate_pure_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(dimension, dimension),
+            expected_scale_transform="bounded_tanh",
+            require_explicit_scale_transform=True,
+            require_bounded_initialization=True,
+            label="pure bounded NeuTra",
+        )
+    elif procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1":
+        _validate_quadratic_anchor_pure_payload(
+            normalized,
+            dimension,
+            expected_hidden=(dimension, dimension),
+            label="pure quadratic-anchor NeuTra",
+        )
+    elif procedure in {
+        "bayesfilter_ssl_lstm_capacity_32x32_neutra_v1",
+        "bayesfilter_ssl_lstm_tuned_capacity_32x32_neutra_v1",
+    }:
+        _validate_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(32, 32),
+            label="SSL-LSTM capacity NeuTra",
+        )
+    elif procedure == "bayesfilter_ssl_lstm_deep_capacity_32x32x32_neutra_v1":
+        _validate_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(32, 32, 32),
+            label="SSL-LSTM deep capacity NeuTra",
+        )
+    elif procedure == "bayesfilter_ssl_lstm_wide_capacity_64x64_neutra_v1":
+        _validate_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(64, 64),
+            label="SSL-LSTM wide capacity NeuTra",
+        )
+    elif procedure == "bayesfilter_ssl_lstm_pure_32x32_neutra_v1":
+        _validate_pure_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(32, 32),
+            expected_scale_transform=None,
+            label="SSL-LSTM pure NeuTra",
+        )
+    finalized = finalize_dense_iaf_neutra_artifact_payload(normalized)
+    for key in ("topology_hash", "tensor_hash", "transport_hash"):
+        supplied = _nonempty_text(normalized.get(key), key)
+        _require_sha256_hex(supplied, key)
+        if supplied != finalized[key]:
+            raise InvalidNeuTraArtifact(f"{key} mismatch")
+    component_by_id = {
+        _nonempty_text(component.get("component_id"), "component_id"): component
+        for component in _component_list(normalized.get("components"), "components")
+    }
+    component_order = tuple(
+        _nonempty_text(item, "component_order item")
+        for item in _sequence(normalized.get("component_order"), "component_order")
+    )
+    if set(component_order) != set(component_by_id) or len(component_order) != len(component_by_id):
+        raise InvalidNeuTraArtifact("component_order must match component ids exactly")
+    components = tuple(_parse_dense_component(component_by_id[item], dimension) for item in component_order)
+    training_state_hash = normalized.get("training_state_hash")
+    if training_state_hash is not None:
+        training_state_hash = _nonempty_text(training_state_hash, "training_state_hash")
+    manifest = FrozenNeuTraArtifactManifest(
+        schema=_DENSE_IAF_SCHEMA,
+        transport_id=transport_id,
+        dimension=dimension,
+        target_signature=target_signature,
+        transport_hash=finalized["transport_hash"],
+        log_jacobian_available=True,
+        training_state_hash=training_state_hash,
+        topology_hash=finalized["topology_hash"],
+        tensor_hash=finalized["tensor_hash"],
+        chart_signature=normalized.get("chart_signature"),
+        procedure=(
+            str(procedure)
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+        initialization_mode=(
+            str(normalized.get("initialization_mode"))
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+        anchor_release_steps=(
+            int(normalized.get("anchor_release_steps"))
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+        anchor_estimator_signature=(
+            str(normalized.get("anchor_estimator_signature"))
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+        anchor_factor_orientation=(
+            str(normalized.get("anchor_factor_orientation"))
+            if procedure == "bayesfilter_pure_paper_dense_iaf_quadratic_anchor_v1"
+            else None
+        ),
+    )
+    transport = FrozenDenseIAFTransport(manifest=manifest, components=components)
+    binding = binding_type(
+        transport_id=transport_id,
+        dimension=dimension,
+        target_signature=target_signature,
+        log_jacobian_available=True,
+        transport_manifest={
+            "transport_id": transport_id,
+            "transport_hash": finalized["transport_hash"],
+            "target_signature": target_signature,
+            "schema": _DENSE_IAF_SCHEMA,
+            "topology_hash": finalized["topology_hash"],
+            "tensor_hash": finalized["tensor_hash"],
+            "chart_signature": normalized.get("chart_signature"),
+        },
+    )
+    artifact_signature = _stable_json_hash(
+        {
+            "schema": "bayesfilter.neutra.loaded_frozen_artifact.v1",
+            "manifest": manifest.manifest_payload(),
+            "binding": binding.manifest_payload(),
+        }
+    )
+    return LoadedFrozenNeuTraArtifact(
+        transport=transport,
+        manifest=manifest,
+        binding=binding,
+        artifact_signature=artifact_signature,
+    )
+
+
+def _validate_composed_neutra_payload(
+    payload: Mapping[str, Any],
+    dimension: int,
+    *,
+    expected_hidden: tuple[int, int],
+    label: str,
+) -> None:
+    """Fail closed on mutations to a named composed NeuTra topology."""
+
+    expected_kinds = (
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+        "affine",
+    )
+    components = _component_list(payload.get("components"), "components")
+    order = tuple(
+        _nonempty_text(value, "component_order item")
+        for value in _sequence(payload.get("component_order"), "component_order")
+    )
+    component_by_id = {
+        _nonempty_text(component.get("component_id"), "component_id"): component
+        for component in components
+    }
+    actual_kinds = tuple(component_by_id.get(value, {}).get("kind") for value in order)
+    dense_factor = payload.get("fixed_output_factor")
+    if actual_kinds != expected_kinds and not (
+        dense_factor
+        and actual_kinds[:-1] == expected_kinds[:-1]
+        and actual_kinds[-1] == "affine_dense"
+    ):
+        raise InvalidNeuTraArtifact(f"{label} component order mismatch")
+    reverse_matrix = [
+        [1.0 if column == dimension - row - 1 else 0.0 for column in range(dimension)]
+        for row in range(dimension)
+    ]
+    for index, component_id in enumerate(order):
+        component = component_by_id[component_id]
+        kind = component.get("kind")
+        if kind == "dense_autoregressive_iaf":
+            if component.get("hidden_layers") != list(expected_hidden):
+                raise InvalidNeuTraArtifact(f"{label} hidden layers mismatch")
+            if component.get("activation") != "elu":
+                raise InvalidNeuTraArtifact(f"{label} activation mismatch")
+            if float(component.get("s_max", 0.0)) != 1.0:
+                raise InvalidNeuTraArtifact(f"{label} s_max mismatch")
+        elif kind == "mixing_linear" and component.get("matrix") != reverse_matrix:
+            raise InvalidNeuTraArtifact(f"{label} reverse mixing mismatch")
+        elif index == len(order) - 1:
+            translation = payload.get("fixed_translation")
+            if component.get("offset") != translation:
+                raise InvalidNeuTraArtifact(f"{label} translation mismatch")
+            if dense_factor:
+                if component.get("kind") != "affine_dense" or component.get("matrix") != dense_factor:
+                    raise InvalidNeuTraArtifact(f"{label} output factor mismatch")
+            else:
+                expected_scale = payload.get("fixed_output_scale")
+                if not expected_scale:
+                    expected_scale = [1.0] * dimension
+                if component.get("scale") != expected_scale:
+                    raise InvalidNeuTraArtifact(f"{label} output scale mismatch")
+    names = payload.get("target_parameter_names")
+    if not isinstance(names, (tuple, list)) or len(names) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} target chart names mismatch")
+    target_chart = payload.get("target_chart")
+    if not isinstance(target_chart, str) or not target_chart.strip():
+        raise InvalidNeuTraArtifact(f"{label} target chart declaration missing")
+    if dense_factor:
+        chart_signature = payload.get("chart_signature")
+        if not isinstance(chart_signature, str) or not _SHA256_HEX_RE.fullmatch(chart_signature):
+            raise InvalidNeuTraArtifact(f"{label} dense chart signature missing")
+
+
+def _validate_pure_composed_neutra_payload(
+    payload: Mapping[str, Any],
+    dimension: int,
+    *,
+    expected_hidden: tuple[int, int],
+    expected_scale_transform: str | None,
+    require_explicit_scale_transform: bool = False,
+    require_bounded_initialization: bool = False,
+    label: str,
+) -> None:
+    """Fail closed on the pure IAF topology: no affine chart component."""
+
+    expected_kinds = (
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+    )
+    components = _component_list(payload.get("components"), "components")
+    order = tuple(
+        _nonempty_text(value, "component_order item")
+        for value in _sequence(payload.get("component_order"), "component_order")
+    )
+    component_by_id = {
+        _nonempty_text(component.get("component_id"), "component_id"): component
+        for component in components
+    }
+    actual_kinds = tuple(component_by_id.get(value, {}).get("kind") for value in order)
+    if actual_kinds != expected_kinds:
+        raise InvalidNeuTraArtifact(f"{label} component order mismatch")
+    reverse_matrix = [
+        [1.0 if column == dimension - row - 1 else 0.0 for column in range(dimension)]
+        for row in range(dimension)
+    ]
+    for index, component_id in enumerate(order):
+        component = component_by_id[component_id]
+        kind = component.get("kind")
+        if kind == "dense_autoregressive_iaf":
+            if component.get("hidden_layers") != list(expected_hidden):
+                raise InvalidNeuTraArtifact(f"{label} hidden layers mismatch")
+            if component.get("activation") != "elu":
+                raise InvalidNeuTraArtifact(f"{label} activation mismatch")
+            if require_explicit_scale_transform and "scale_transform" not in component:
+                raise InvalidNeuTraArtifact(f"{label} scale transform declaration missing")
+            scale_transform = component.get("scale_transform", "bounded_tanh")
+            if (
+                expected_scale_transform is not None
+                and scale_transform != expected_scale_transform
+            ):
+                raise InvalidNeuTraArtifact(f"{label} scale transform mismatch")
+            if scale_transform not in {
+                "bounded_tanh",
+                "identity",
+            }:
+                raise InvalidNeuTraArtifact(f"{label} scale transform mismatch")
+            s_max = float(component.get("s_max", 0.0))
+            if not math.isfinite(s_max) or s_max <= 0.0:
+                raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
+            if scale_transform == "bounded_tanh" and s_max <= 1.0:
+                raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
+            if require_bounded_initialization:
+                initial_scale_log = payload.get("initial_output_scale_log")
+                if not isinstance(initial_scale_log, (tuple, list)) or len(
+                    initial_scale_log
+                ) != dimension:
+                    raise InvalidNeuTraArtifact(
+                        f"{label} initial log-scale declaration mismatch"
+                    )
+                if any(
+                    not math.isfinite(float(value)) for value in initial_scale_log
+                ) or not s_max > max(abs(float(value)) for value in initial_scale_log):
+                    raise InvalidNeuTraArtifact(
+                        f"{label} scale bound does not represent initialization"
+                    )
+        elif kind == "mixing_linear" and component.get("matrix") != reverse_matrix:
+            raise InvalidNeuTraArtifact(f"{label} reverse mixing mismatch")
+    if payload.get("fixed_translation") or payload.get("fixed_output_scale") or payload.get("fixed_output_factor"):
+        raise InvalidNeuTraArtifact(f"{label} must not contain fixed affine chart fields")
+    names = payload.get("target_parameter_names")
+    if not isinstance(names, (tuple, list)) or len(names) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} target chart names mismatch")
+    if payload.get("target_chart") != "direct_physical":
+        raise InvalidNeuTraArtifact(f"{label} target chart declaration mismatch")
+
+
+def _validate_quadratic_anchor_pure_payload(
+    payload: Mapping[str, Any],
+    dimension: int,
+    *,
+    expected_hidden: tuple[int, int],
+    label: str,
+) -> None:
+    """Validate the trainable triangular-anchor arm without accepting a chart."""
+
+    expected_kinds = (
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+        "mixing_linear",
+        "dense_autoregressive_iaf",
+    )
+    components = _component_list(payload.get("components"), "components")
+    order = tuple(
+        _nonempty_text(value, "component_order item")
+        for value in _sequence(payload.get("component_order"), "component_order")
+    )
+    by_id = {
+        _nonempty_text(component.get("component_id"), "component_id"): component
+        for component in components
+    }
+    actual_kinds = tuple(by_id.get(value, {}).get("kind") for value in order)
+    if actual_kinds != expected_kinds:
+        raise InvalidNeuTraArtifact(f"{label} component order mismatch")
+    if payload.get("initialization_mode") != "quadratic_triangular_anchor_v1":
+        raise InvalidNeuTraArtifact(f"{label} initialization mode mismatch")
+    release_steps = int(payload.get("anchor_release_steps", -1))
+    if release_steps < 0:
+        raise InvalidNeuTraArtifact(f"{label} release steps mismatch")
+    estimator_signature = str(payload.get("anchor_estimator_signature", ""))
+    _require_sha256_hex(estimator_signature, "anchor_estimator_signature")
+    if payload.get("anchor_factor_orientation") != "row_lower_cholesky":
+        raise InvalidNeuTraArtifact(f"{label} factor orientation mismatch")
+    initial_factor = payload.get("initial_anchor_factor")
+    if not isinstance(initial_factor, (tuple, list)) or len(initial_factor) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} initial factor shape mismatch")
+    for row in initial_factor:
+        if not isinstance(row, (tuple, list)) or len(row) != dimension:
+            raise InvalidNeuTraArtifact(f"{label} initial factor shape mismatch")
+    for i, row in enumerate(initial_factor):
+        for j, value in enumerate(row):
+            value = float(value)
+            if not math.isfinite(value):
+                raise InvalidNeuTraArtifact(f"{label} initial factor is nonfinite")
+            if j > i and value != 0.0:
+                raise InvalidNeuTraArtifact(f"{label} initial factor is not lower triangular")
+        if float(row[i]) <= 0.0:
+            raise InvalidNeuTraArtifact(f"{label} initial factor diagonal is not positive")
+    initial_shift = payload.get("initial_output_shift")
+    initial_scale_log = payload.get("initial_output_scale_log")
+    if not isinstance(initial_shift, (tuple, list)) or len(initial_shift) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} initial shift mismatch")
+    if not isinstance(initial_scale_log, (tuple, list)) or len(initial_scale_log) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} initial scale mismatch")
+    reverse_matrix = [
+        [1.0 if column == dimension - row - 1 else 0.0 for column in range(dimension)]
+        for row in range(dimension)
+    ]
+    for component_id in order:
+        component = by_id[component_id]
+        if component["kind"] == "mixing_linear":
+            if component.get("matrix") != reverse_matrix:
+                raise InvalidNeuTraArtifact(f"{label} reverse mixing mismatch")
+            continue
+        if component.get("hidden_layers") != list(expected_hidden):
+            raise InvalidNeuTraArtifact(f"{label} hidden layers mismatch")
+        if component.get("activation") != "elu":
+            raise InvalidNeuTraArtifact(f"{label} activation mismatch")
+        if component.get("initialization_mode") != "quadratic_triangular_anchor_v1":
+            raise InvalidNeuTraArtifact(f"{label} component initialization mismatch")
+        transform = component.get("scale_transform")
+        if transform not in {"identity", "dsge_bounded_tanh"}:
+            raise InvalidNeuTraArtifact(f"{label} scale transform mismatch")
+        s_max = float(component.get("s_max", 0.0))
+        if not math.isfinite(s_max) or s_max <= 0.0:
+            raise InvalidNeuTraArtifact(f"{label} scale bound mismatch")
+        anchor_weight = component.get("anchor_shift_weight")
+        anchor_bias = component.get("anchor_shift_bias")
+        anchor_raw = component.get("anchor_scale_raw")
+        if not isinstance(anchor_weight, (tuple, list)) or len(anchor_weight) != dimension:
+            raise InvalidNeuTraArtifact(f"{label} anchor weight shape mismatch")
+        if not isinstance(anchor_bias, (tuple, list)) or len(anchor_bias) != dimension:
+            raise InvalidNeuTraArtifact(f"{label} anchor bias shape mismatch")
+        if not isinstance(anchor_raw, (tuple, list)) or len(anchor_raw) != dimension:
+            raise InvalidNeuTraArtifact(f"{label} anchor scale shape mismatch")
+        for i, row in enumerate(anchor_weight):
+            if not isinstance(row, (tuple, list)) or len(row) != dimension:
+                raise InvalidNeuTraArtifact(f"{label} anchor weight shape mismatch")
+            for j, value in enumerate(row):
+                value = float(value)
+                if not math.isfinite(value):
+                    raise InvalidNeuTraArtifact(f"{label} anchor weight is nonfinite")
+                if j >= i and value != 0.0:
+                    raise InvalidNeuTraArtifact(f"{label} anchor weight is not strict lower")
+        if any(not math.isfinite(float(value)) for value in (*anchor_bias, *anchor_raw)):
+            raise InvalidNeuTraArtifact(f"{label} anchor tensor is nonfinite")
+        if component.get("anchor_factor_orientation") != "row_lower_cholesky":
+            raise InvalidNeuTraArtifact(f"{label} component orientation mismatch")
+        if transform == "dsge_bounded_tanh" and not s_max > max(
+            abs(float(value)) for value in initial_scale_log
+        ):
+            raise InvalidNeuTraArtifact(f"{label} scale bound does not represent initialization")
+    if payload.get("fixed_translation") or payload.get("fixed_output_scale") or payload.get("fixed_output_factor"):
+        raise InvalidNeuTraArtifact(f"{label} must not contain fixed affine chart fields")
+    names = payload.get("target_parameter_names")
+    if not isinstance(names, (tuple, list)) or len(names) != dimension:
+        raise InvalidNeuTraArtifact(f"{label} target chart names mismatch")
+    if payload.get("target_chart") != "direct_physical":
+        raise InvalidNeuTraArtifact(f"{label} target chart declaration mismatch")
+
+
+def _parse_dense_component(payload: Mapping[str, Any], dimension: int) -> Any:
+    _assert_component_hashes(payload)
+    kind = _nonempty_text(payload.get("kind"), "component kind")
+    dim = int(payload.get("dim", dimension))
+    if dim != dimension:
+        raise InvalidNeuTraArtifact("component dim must match artifact dimension")
+    if kind == "dense_autoregressive_iaf":
+        hidden_layers = tuple(int(item) for item in _sequence(payload.get("hidden_layers"), "hidden_layers"))
+        if not hidden_layers or any(item <= 0 for item in hidden_layers):
+            raise InvalidNeuTraArtifact("hidden_layers must be positive")
+        activation = _nonempty_text(payload.get("activation"), "activation")
+        if activation not in {"elu", "tanh", "relu"}:
+            raise InvalidNeuTraArtifact(f"unsupported dense IAF activation: {activation}")
+        masks_policy = _nonempty_text(payload.get("masks_policy"), "masks_policy")
+        if masks_policy != "legacy_degree_masks_v1":
+            raise InvalidNeuTraArtifact("unsupported dense IAF masks_policy")
+        s_max = float(payload.get("s_max", 0.0))
+        if s_max <= 0.0:
+            raise InvalidNeuTraArtifact("s_max must be positive")
+        scale_transform = str(payload.get("scale_transform", "bounded_tanh"))
+        if scale_transform not in {
+            "bounded_tanh",
+            "dsge_bounded_tanh",
+            "identity",
+        }:
+            raise InvalidNeuTraArtifact("unsupported dense IAF scale_transform")
+        layer_sizes = (dimension, *hidden_layers, 2 * dimension)
+        weights = _tensor_tuple(payload.get("weights"), "weights")
+        biases = _tensor_tuple(payload.get("biases"), "biases")
+        if len(weights) != len(layer_sizes) - 1 or len(biases) != len(layer_sizes) - 1:
+            raise InvalidNeuTraArtifact("dense IAF parameter length mismatch")
+        for index, (weight, bias) in enumerate(zip(weights, biases)):
+            _require_shape(weight, (layer_sizes[index], layer_sizes[index + 1]), f"weights[{index}]")
+            _require_shape(bias, (layer_sizes[index + 1],), f"biases[{index}]")
+        initialization_mode = str(payload.get("initialization_mode", "legacy"))
+        anchor_shift_weight = anchor_shift_bias = anchor_scale_raw = None
+        anchor_factor_orientation = None
+        if initialization_mode == "quadratic_triangular_anchor_v1":
+            anchor_shift_weight = _tensor(payload.get("anchor_shift_weight"), "anchor_shift_weight")
+            anchor_shift_bias = _tensor(payload.get("anchor_shift_bias"), "anchor_shift_bias")
+            anchor_scale_raw = _tensor(payload.get("anchor_scale_raw"), "anchor_scale_raw")
+            _require_shape(anchor_shift_weight, (dimension, dimension), "anchor_shift_weight")
+            _require_shape(anchor_shift_bias, (dimension,), "anchor_shift_bias")
+            _require_shape(anchor_scale_raw, (dimension,), "anchor_scale_raw")
+            anchor_factor_orientation = _nonempty_text(
+                payload.get("anchor_factor_orientation"),
+                "anchor_factor_orientation",
+            )
+        elif initialization_mode != "legacy":
+            raise InvalidNeuTraArtifact("unsupported dense IAF initialization_mode")
+        return _DenseAutoregressiveIAFComponent(
+            dim=dimension,
+            hidden_layers=hidden_layers,
+            activation=activation,
+            s_max=s_max,
+            scale_transform=scale_transform,
+            weights=weights,
+            biases=biases,
+            initialization_mode=initialization_mode,
+            anchor_shift_weight=anchor_shift_weight,
+            anchor_shift_bias=anchor_shift_bias,
+            anchor_scale_raw=anchor_scale_raw,
+            anchor_factor_orientation=anchor_factor_orientation,
+        )
+    if kind == "mixing_linear":
+        matrix = _tensor(payload.get("matrix"), "matrix")
+        _require_shape(matrix, (dimension, dimension), "matrix")
+        return _MixingLinearComponent(matrix=matrix)
+    if kind == "affine":
+        return _parse_affine_component(payload, dimension)
+    if kind == "affine_dense":
+        return _parse_affine_component(payload, dimension, dense=True)
+    if kind == "composed":
+        children = tuple(
+            _parse_dense_component(child, dimension)
+            for child in _component_list(payload.get("children"), "children")
+        )
+        return _ComposedComponent(children=children)
+    raise InvalidNeuTraArtifact(f"unsupported component kind: {kind}")
+
+
+def _parse_affine_component(
+    payload: Mapping[str, Any],
+    dimension: int,
+    *,
+    dense: bool = False,
+) -> _AffineComponent:
+    offset = _tensor(payload.get("offset"), "offset")
+    _require_shape(offset, (dimension,), "offset")
+    if "scale" in payload and payload.get("scale") is not None and not dense:
+        scale = _tensor(payload.get("scale"), "scale")
+        _require_shape(scale, (dimension,), "scale")
+        return _AffineComponent(offset=offset, scale=scale)
+    matrix_key = "matrix" if "matrix" in payload else "L_np"
+    matrix = _tensor(payload.get(matrix_key), matrix_key)
+    _require_shape(matrix, (dimension, dimension), matrix_key)
+    return _AffineComponent(offset=offset, matrix=matrix)
+
+
+def _require_mapping(value: Any, name: str) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        raise InvalidNeuTraArtifact(f"{name} must be a mapping")
+    normalized = _normalize_for_json(value)
+    if not isinstance(normalized, Mapping):
+        raise InvalidNeuTraArtifact(f"{name} must normalize to a mapping")
+    _reject_process_local_identity(normalized)
+    _reject_nonfinite_json_number(normalized)
+    return normalized
+
+
+def _nonempty_text(value: Any, name: str) -> str:
+    text = str(value)
+    if not text.strip() or text == "None":
+        raise InvalidNeuTraArtifact(f"{name} must be nonempty")
+    return text
+
+
+def _float_tuple(value: Any, name: str) -> tuple[float, ...]:
+    if value is None:
+        raise InvalidNeuTraArtifact(f"{name} is required")
+    try:
+        result = tuple(float(item) for item in value)
+    except TypeError as exc:
+        raise InvalidNeuTraArtifact(f"{name} must be a numeric sequence") from exc
+    if not result:
+        raise InvalidNeuTraArtifact(f"{name} must be nonempty")
+    if not all(tf.math.is_finite(tf.constant(result, dtype=tf.float64)).numpy().tolist()):
+        raise InvalidNeuTraArtifact(f"{name} must be finite")
+    return result
+
+
+def _tensor(value: Any, name: str) -> tf.Tensor:
+    if value is None:
+        raise InvalidNeuTraArtifact(f"{name} is required")
+    tensor = tf.constant(value, dtype=tf.float64)
+    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
+        raise InvalidNeuTraArtifact(f"{name} must be finite")
+    return tensor
+
+
+def _tensor_tuple(value: Any, name: str) -> tuple[tf.Tensor, ...]:
+    return tuple(_tensor(item, f"{name}[{index}]") for index, item in enumerate(_sequence(value, name)))
+
+
+def _require_shape(tensor: tf.Tensor, shape: tuple[int, ...], name: str) -> None:
+    actual = tuple(tensor.shape.as_list())
+    if actual != shape:
+        raise InvalidNeuTraArtifact(f"{name} shape mismatch: expected {shape}, got {actual}")
+
+
+def _ensure_rank2(values: tf.Tensor, name: str) -> tf.Tensor:
+    if values.shape.rank == 1:
+        return values[tf.newaxis, :]
+    if values.shape.rank != 2:
+        raise ValueError(f"{name} must have rank 1 or 2")
+    return values
+
+
+def _require_same_shape(left: tf.Tensor, right: tf.Tensor, name: str) -> None:
+    if left.shape != right.shape:
+        raise ValueError(
+            f"{name} shape must match input shape: {right.shape} != {left.shape}"
+        )
+
+
+def _sequence(value: Any, name: str) -> tuple[Any, ...]:
+    if not isinstance(value, (tuple, list)):
+        raise InvalidNeuTraArtifact(f"{name} must be a sequence")
+    if not value:
+        raise InvalidNeuTraArtifact(f"{name} must be nonempty")
+    return tuple(value)
+
+
+def _component_list(value: Any, name: str) -> tuple[Mapping[str, Any], ...]:
+    items = _sequence(value, name)
+    out = []
+    for item in items:
+        if not isinstance(item, Mapping):
+            raise InvalidNeuTraArtifact(f"{name} entries must be mappings")
+        out.append(_normalize_for_json(item))
+    return tuple(out)
+
+
+def _apply_activation(values: tf.Tensor, activation: str) -> tf.Tensor:
+    if activation == "elu":
+        return tf.nn.elu(values)
+    if activation == "tanh":
+        return tf.math.tanh(values)
+    if activation == "relu":
+        return tf.nn.relu(values)
+    raise InvalidNeuTraArtifact(f"unsupported activation: {activation}")
+
+
+def _activation_derivative(values: tf.Tensor, activation: str) -> tf.Tensor:
+    if activation == "elu":
+        return tf.where(values > 0.0, tf.ones_like(values), tf.exp(values))
+    if activation == "tanh":
+        activated = tf.math.tanh(values)
+        return 1.0 - tf.square(activated)
+    if activation == "relu":
+        return tf.cast(values > 0.0, values.dtype)
+    raise InvalidNeuTraArtifact(f"unsupported activation: {activation}")
+
+
+def _dense_iaf_masks(dim: int, hidden_layers: tuple[int, ...]) -> tuple[tf.Tensor, ...]:
+    degrees: list[list[int]] = [list(range(1, dim + 1))]
+    max_degree = max(1, dim - 1)
+    for width in hidden_layers:
+        degrees.append([1 + (index % max_degree) for index in range(width)])
+    degrees.append(list(range(1, dim + 1)) + list(range(1, dim + 1)))
+    masks = []
+    for layer_index, (deg_in, deg_out) in enumerate(zip(degrees[:-1], degrees[1:])):
+        is_output = layer_index == len(degrees) - 2
+        masks.append(
+            tf.constant(
+                [
+                    [
+                        1.0
+                        if ((source < target) if is_output else (source <= target))
+                        else 0.0
+                        for target in deg_out
+                    ]
+                    for source in deg_in
+                ],
+                dtype=tf.float64,
+            )
+        )
+    return tuple(masks)
+
+
+def _finalize_component_hashes(component: Mapping[str, Any]) -> Mapping[str, Any]:
+    finalized = dict(_normalize_for_json(component))
+    if finalized.get("kind") == "composed":
+        finalized["children"] = [
+            _finalize_component_hashes(child)
+            for child in _component_list(finalized.get("children"), "children")
+        ]
+    finalized["component_topology_hash"] = _stable_json_hash(_component_topology_payload(finalized))
+    finalized["component_tensor_hash"] = _stable_json_hash(_component_tensor_payload(finalized))
+    return finalized
+
+
+def _assert_component_hashes(component: Mapping[str, Any]) -> None:
+    for key, payload_fn in (
+        ("component_topology_hash", _component_topology_payload),
+        ("component_tensor_hash", _component_tensor_payload),
+    ):
+        supplied = _nonempty_text(component.get(key), key)
+        _require_sha256_hex(supplied, key)
+        expected = _stable_json_hash(payload_fn(component))
+        if supplied != expected:
+            raise InvalidNeuTraArtifact(f"{key} mismatch")
+    if component.get("kind") == "composed":
+        for child in _component_list(component.get("children"), "children"):
+            _assert_component_hashes(child)
+
+
+def _dense_iaf_top_level_hashes(payload: Mapping[str, Any]) -> Mapping[str, str]:
+    topology_hash = _stable_json_hash(_transport_topology_payload(payload))
+    tensor_hash = _stable_json_hash(_transport_tensor_payload(payload))
+    transport_payload = {
+        "schema": _DENSE_IAF_SCHEMA,
+        "transport_id": payload.get("transport_id"),
+        "dimension": payload.get("dimension"),
+        "target_signature": payload.get("target_signature"),
+        "log_jacobian_available": bool(payload.get("log_jacobian_available", False)),
+        "logdet_semantics": "sum_component_log_abs_det_jacobian_forward_order",
+        "topology_hash": topology_hash,
+        "tensor_hash": tensor_hash,
+    }
+    if payload.get("procedure") is not None:
+        transport_payload["procedure_contract"] = {
+            "procedure": payload.get("procedure"),
+            "target_adapter_signature": payload.get("target_adapter_signature"),
+            "target_chart": payload.get("target_chart"),
+            "target_parameter_names": payload.get("target_parameter_names"),
+            "fixed_translation": payload.get("fixed_translation"),
+            "fixed_output_scale": payload.get("fixed_output_scale"),
+            "fixed_output_factor": payload.get("fixed_output_factor"),
+            "chart_signature": payload.get("chart_signature"),
+        }
+        if payload.get("initialization_mode") is not None or str(
+            payload.get("procedure", "")
+        ).endswith("quadratic_anchor_v1"):
+            transport_payload["procedure_contract"].update(
+                {
+                    "initialization_mode": payload.get("initialization_mode"),
+                    "anchor_release_steps": payload.get("anchor_release_steps"),
+                    "anchor_estimator_signature": payload.get(
+                        "anchor_estimator_signature"
+                    ),
+                    "anchor_factor_orientation": payload.get(
+                        "anchor_factor_orientation"
+                    ),
+                    "initial_anchor_factor": payload.get("initial_anchor_factor"),
+                }
+            )
+    transport_hash = _stable_json_hash(transport_payload)
+    return {
+        "topology_hash": topology_hash,
+        "tensor_hash": tensor_hash,
+        "transport_hash": transport_hash,
+    }
+
+
+def _transport_topology_payload(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    return {
+        "schema": payload.get("schema"),
+        "dimension": payload.get("dimension"),
+        "component_order": payload.get("component_order"),
+        "components": [
+            _component_topology_payload(component)
+            for component in _component_list(payload.get("components"), "components")
+        ],
+    }
+
+
+def _transport_tensor_payload(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    return {
+        "schema": payload.get("schema"),
+        "dimension": payload.get("dimension"),
+        "component_order": payload.get("component_order"),
+        "components": [
+            _component_tensor_payload(component)
+            for component in _component_list(payload.get("components"), "components")
+        ],
+    }
+
+
+def _component_topology_payload(component: Mapping[str, Any]) -> Mapping[str, Any]:
+    kind = component.get("kind")
+    base: dict[str, Any] = {
+        "component_id": component.get("component_id"),
+        "kind": kind,
+        "dim": component.get("dim"),
+        "dtype": component.get("dtype"),
+    }
+    if kind == "dense_autoregressive_iaf":
+        base.update(
+            {
+                "hidden_layers": component.get("hidden_layers"),
+                "activation": component.get("activation"),
+                "s_max": component.get("s_max"),
+                "masks_policy": component.get("masks_policy"),
+                "weight_shapes": [_shape_of_nested(item) for item in _sequence(component.get("weights"), "weights")],
+                "bias_shapes": [_shape_of_nested(item) for item in _sequence(component.get("biases"), "biases")],
+            }
+        )
+        if component.get("scale_transform") is not None:
+            base["scale_transform"] = component.get("scale_transform")
+        if component.get("initialization_mode") is not None:
+            base["initialization_mode"] = component.get("initialization_mode")
+            base["anchor_factor_orientation"] = component.get(
+                "anchor_factor_orientation"
+            )
+            base["anchor_shift_weight_shape"] = _shape_of_nested(
+                component.get("anchor_shift_weight")
+            )
+            base["anchor_shift_bias_shape"] = _shape_of_nested(
+                component.get("anchor_shift_bias")
+            )
+            base["anchor_scale_raw_shape"] = _shape_of_nested(
+                component.get("anchor_scale_raw")
+            )
+    elif kind == "mixing_linear":
+        base["matrix_shape"] = _shape_of_nested(component.get("matrix"))
+    elif kind in {"affine", "affine_dense"}:
+        base["offset_shape"] = _shape_of_nested(component.get("offset"))
+        if component.get("scale") is not None:
+            base["scale_shape"] = _shape_of_nested(component.get("scale"))
+        matrix_key = "matrix" if "matrix" in component else "L_np"
+        if component.get(matrix_key) is not None:
+            base["matrix_key"] = matrix_key
+            base["matrix_shape"] = _shape_of_nested(component.get(matrix_key))
+    elif kind == "composed":
+        base["children"] = [
+            _component_topology_payload(child)
+            for child in _component_list(component.get("children"), "children")
+        ]
+    return base
+
+
+def _component_tensor_payload(component: Mapping[str, Any]) -> Mapping[str, Any]:
+    kind = component.get("kind")
+    base: dict[str, Any] = {
+        "component_id": component.get("component_id"),
+        "kind": kind,
+        "dim": component.get("dim"),
+        "dtype": component.get("dtype"),
+    }
+    if kind == "dense_autoregressive_iaf":
+        base["weights"] = component.get("weights")
+        base["biases"] = component.get("biases")
+        if component.get("initialization_mode") is not None:
+            base["initialization_mode"] = component.get("initialization_mode")
+            base["anchor_shift_weight"] = component.get("anchor_shift_weight")
+            base["anchor_shift_bias"] = component.get("anchor_shift_bias")
+            base["anchor_scale_raw"] = component.get("anchor_scale_raw")
+    elif kind == "mixing_linear":
+        base["matrix"] = component.get("matrix")
+    elif kind in {"affine", "affine_dense"}:
+        base["offset"] = component.get("offset")
+        if component.get("scale") is not None:
+            base["scale"] = component.get("scale")
+        matrix_key = "matrix" if "matrix" in component else "L_np"
+        if component.get(matrix_key) is not None:
+            base[matrix_key] = component.get(matrix_key)
+    elif kind == "composed":
+        base["children"] = [
+            _component_tensor_payload(child)
+            for child in _component_list(component.get("children"), "children")
+        ]
+    return base
+
+
+def _shape_of_nested(value: Any) -> tuple[int, ...]:
+    if not isinstance(value, (list, tuple)):
+        return ()
+    if not value:
+        return (0,)
+    return (len(value), *_shape_of_nested(value[0]))
+
+
+def _require_sha256_hex(value: str, name: str) -> None:
+    if not _SHA256_HEX_RE.fullmatch(value):
+        raise InvalidNeuTraArtifact(f"{name} must be a 64-character sha256 hex digest")
+
+
+def _normalize_for_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {
+            str(key): _normalize_for_json(item)
+            for key, item in sorted(value.items(), key=lambda entry: str(entry[0]))
+        }
+    if isinstance(value, (tuple, list)):
+        return [_normalize_for_json(item) for item in value]
+    return value
+
+
+def _stable_json_hash(payload: Mapping[str, Any] | Any) -> str:
+    normalized = _normalize_for_json(payload)
+    _reject_nonfinite_json_number(normalized)
+    blob = json.dumps(normalized, sort_keys=True, separators=(",", ":"))
+    _reject_process_local_identity(blob)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _reject_nonfinite_json_number(value: Any) -> None:
+    if isinstance(value, float) and not math.isfinite(value):
+        raise InvalidNeuTraArtifact("frozen NeuTra artifact manifests must contain finite numbers")
+    if isinstance(value, Mapping):
+        for item in value.values():
+            _reject_nonfinite_json_number(item)
+    elif isinstance(value, (tuple, list)):
+        for item in value:
+            _reject_nonfinite_json_number(item)
+
+
+def _reject_process_local_identity(value: Any) -> None:
+    text = json.dumps(_normalize_for_json(value), sort_keys=True, default=str)
+    if any(pattern.search(text) for pattern in _PROCESS_LOCAL_SIGNATURE_PATTERNS):
+        raise InvalidNeuTraArtifact(
+            "frozen NeuTra artifact manifests must not contain process-local identity"
+        )

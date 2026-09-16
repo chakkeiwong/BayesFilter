@@ -32,11 +32,31 @@ def test_actual_tuning_member_and_posterior(tmp_path, method):
     tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
     assert tuned["verified_members"], tuned
     member = tuned["verified_members"][sorted(tuned["verified_members"])[0]]
+    from bayesfilter.inference import load_hmc_candidate_retained_runner
+    loaded = load_hmc_candidate_retained_runner(member, adapter=bridge.fixed_beta_adapter(1.))
+    assert loaded._binding.config.chain_mode == "batched"
     result = sample_member(config, bridge, tmp_path / "posterior", member_path=member, label=method)
     assert result["private_retained_raw"] is not None
     saved = json.loads((tmp_path / "posterior/result.json").read_text())
     assert saved["summary"]["reference_agreement"] == "incomplete"
     assert saved["production_qualified"] is False
+    checks = (*result["warmup_checks"], *result["retained_checks"])
+    assert checks
+    for check in checks:
+        health = check["health"]
+        assert health["single_batched_sample_chain_invocation"] is True
+        assert health["execution_topology"] == "batched"
+        runtime = health["runtime"]
+        assert runtime["checkpoint_reused"] is False
+        count = runtime["native"]["sample_chain_invocation_count"]
+        assert runtime["call_class"] == ("first_compile_plus_execute" if count == 1 else "repeated_execute")
+    if method == "identity":
+        replay = sample_member(config, bridge, tmp_path / "posterior-replay", member_path=member,
+                               label=method, resume_chunks=str(tmp_path / "posterior/chunks"))
+        tf.debugging.assert_equal(result["private_retained_raw"], replay["private_retained_raw"])
+        replay_checks = (*replay["warmup_checks"], *replay["retained_checks"])
+        assert replay_checks
+        assert all(check["health"]["runtime"]["checkpoint_reused"] for check in replay_checks)
     fresh, _ = draw_start_bank(config, bridge, 1., "fresh-confirmation")
     confirmation = reverify_member(config, bridge, tmp_path / "reverify",
         parent_member_path=member, beta=1., label="confirm-"+method, initial_position=fresh)
@@ -98,6 +118,8 @@ def test_actual_pricing_dispatch_and_finite_complete_forecast(tmp_path):
     config["training"]["pricing_batches"]=[8]
     config["reference"].update(banks=4,rungs=[64,128],batch_size=32,ess_min=1.,minimum_tail_rows=1)
     priced=dispatch(config,bridge,tmp_path/"price",{"stage":"price"},{"mode":"tiny_cpu_reference"})
+    prices = [json.loads(path.read_text()) for path in (tmp_path/"price").glob("hmc-*.json")]
+    assert prices and all(row["runner"] == "public_batched_chain_with_proposal_telemetry" for row in prices)
     priced["worker_initialization_seconds"]=1. # Harness startup fixture; numerical prices are measured.
     quote=forecast_campaign(config,priced)
     assert quote["minimum_complete_seconds"]>0

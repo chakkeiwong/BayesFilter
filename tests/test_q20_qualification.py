@@ -8,7 +8,8 @@ from tests.test_q20_master_integration import protocol
 from tests.test_q20_production_repair import four_dimensional_bridge
 from tests.test_hmc_candidate_set_execution import GaussianTarget, make_binding, execution_config
 from bayesfilter.inference.fixed_transport_hmc_mechanics_tf import build_fixed_transport_one_step_transition
-from bayesfilter.inference.q20_hmc_qualification import qualify_bridge, attach_qualification
+from bayesfilter.inference.q20_hmc_qualification import qualify_bridge, attach_qualification, QUALIFICATION_SCHEMA
+from bayesfilter.inference.q20_production_config import digest
 
 
 def test_finite_large_energy_is_reporting_only_and_bad_status_is_veto():
@@ -47,7 +48,7 @@ def test_new_starts_preserve_geometry_domain_and_round_trip():
     tf.debugging.assert_near(round_trip(starts),starts,atol=1e-12)
 
 
-def test_enclosing_xla_and_actual_serial_runner_qualification(tmp_path):
+def test_enclosing_xla_and_actual_batched_runner_qualification(tmp_path):
     config=protocol()
     config["jit_compile"]=True
     config["training"]["betas"]=[0.,1.]
@@ -66,8 +67,16 @@ def test_enclosing_xla_and_actual_serial_runner_qualification(tmp_path):
     qualify_bridge(config,bridge,tmp_path/"qualification")
     path=tmp_path/"qualification/result.json"
     receipt=json.loads(path.read_text())
-    assert receipt["betas"]["1.0"]["public_serial_runner_passed"]
+    assert receipt["schema"] == QUALIFICATION_SCHEMA
+    assert receipt["betas"]["1.0"]["public_batched_runner_passed"]
+    assert receipt["betas"]["1.0"]["public_state_shape"] == [4, 4]
+    assert receipt["betas"]["1.0"]["public_traces"] == 1
     qualified=attach_qualification(bridge,path,config)
     assert qualified.fixed_beta_adapter(1.).value_score_capability().full_chain_xla_diagnostic_ready
     with pytest.raises(ValueError,match="unqualified"):
         qualified.fixed_beta_adapter(.25)
+    receipt.pop("checksum")
+    receipt["schema"] = "bayesfilter.q20.bridge_hmc_qualification.v1"
+    path.write_text(json.dumps({**receipt, "checksum": digest(receipt)}))
+    with pytest.raises(ValueError, match="batched public-runner evidence"):
+        attach_qualification(bridge, path, config)

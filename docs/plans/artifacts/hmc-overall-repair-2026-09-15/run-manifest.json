@@ -1,0 +1,1613 @@
+{
+  "schema": "bayesfilter.hmc_overall_repair_manifest.v1",
+  "created_at_utc": "2026-09-15T06:24:58.141668+00:00",
+  "git_commit": "5139f151237e9764ebf34b4e8cf6ceee1e74a38d",
+  "worktree_dirty": true,
+  "plan": "docs/plans/bayesfilter-hmc-overall-repair-plan-2026-09-15.md",
+  "result": "docs/plans/bayesfilter-hmc-overall-repair-result-2026-09-15.md",
+  "environment": {
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "tensorflow": "2.20.0",
+    "tfp": "0.25.0",
+    "conda_env": "tfgpu"
+  },
+  "commands": [
+    {
+      "name": "broad_integration",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+      },
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--disable-warnings",
+        "tests/test_hmc_overall_repair.py",
+        "tests/test_hmc_convergence.py",
+        "tests/test_hmc_posterior_diagnostics.py",
+        "tests/test_hmc_candidate_set_execution.py",
+        "tests/test_hmc_candidate_set_tuning.py",
+        "tests/test_hmc_candidate_set_artifacts.py",
+        "tests/test_hmc_candidate_set_adapters.py",
+        "tests/test_hmc_tuning_gap_regressions.py",
+        "tests/test_hmc_tuning_dispatch.py",
+        "tests/test_hmc_tuning_contract.py",
+        "tests/test_hmc_tuning_documentation_contract.py",
+        "tests/test_neutra_hmc.py",
+        "tests/test_neutra_sequential_hmc.py",
+        "tests/test_neutra_hmc_route_policy.py",
+        "tests/test_neutra_all_models_end_to_end_contract.py",
+        "tests/test_tempered_lineage_transitions.py"
+      ],
+      "log": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/tests-final-r1.log",
+      "passed": 277,
+      "warnings": 13313,
+      "wall_seconds": 319.77,
+      "timing_scope": "pytest reported session time",
+      "command_provenance": "reconstructed executable argument list from preserved file inventory and log; raw original shell command was not archived",
+      "source_state": "before final assessment summary compatibility change and two added regressions"
+    },
+    {
+      "name": "terminal_affected_routes",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+      },
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--disable-warnings",
+        "tests/test_hmc_overall_repair.py",
+        "tests/test_neutra_hmc.py",
+        "tests/test_neutra_sequential_hmc.py",
+        "tests/test_neutra_all_models_end_to_end_contract.py",
+        "tests/test_tempered_lineage_transitions.py"
+      ],
+      "stdout_stderr": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/tests-terminal.log",
+      "passed": 114,
+      "warnings": 12303,
+      "wall_seconds": 228.63,
+      "timing_scope": "pytest reported session time",
+      "command_provenance": "exact argv and environment retained in execution handover",
+      "source_state": "terminal source hashes below"
+    },
+    {
+      "name": "stationary_ar1_calibration",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+      },
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/plans/artifacts/hmc-overall-repair-2026-09-15/calibrate_precision.py"
+      ],
+      "stdout_stderr": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/calibration.log",
+      "result": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/precision-calibration.json",
+      "wall_seconds": 1.020375827967655,
+      "timing_scope": "script computation only, excludes imports",
+      "source_state": "calibration-manifest.json source hashes, unchanged estimator source at terminal"
+    },
+    {
+      "name": "gpu_xla_lugsail_parity",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+      },
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/plans/artifacts/hmc-overall-repair-2026-09-15/gpu_precision_parity.py"
+      ],
+      "stdout_stderr": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/gpu-precision-parity.log",
+      "result": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/gpu-precision-parity.json",
+      "wall_seconds": 4.679170352988876,
+      "timing_scope": "script timer includes TensorFlow import, compilation and parity",
+      "permissions": "trusted/escalated GPU execution",
+      "memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "jit_compile": true,
+      "seed": [
+        915,
+        44
+      ],
+      "source_state": "terminal estimator source; unchanged since run"
+    },
+    {
+      "name": "posterior-cpu-r2",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+      },
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/examples/hmc_posterior_precision.py",
+        "--output-dir",
+        "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2",
+        "--cpu-reference"
+      ],
+      "stdout_stderr": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2.log",
+      "result": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/result.json",
+      "wall_seconds": 11.01119126798585,
+      "timing_scope": "example timer includes framework initialization, tuning and posterior execution",
+      "permissions": "CPU diagnostic with GPUs hidden",
+      "jit_compile": false,
+      "source_state": "execution-time closure in example record; terminal delta explicitly listed"
+    },
+    {
+      "name": "posterior-gpu",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+      },
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/examples/hmc_posterior_precision.py",
+        "--output-dir",
+        "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu"
+      ],
+      "stdout_stderr": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu.log",
+      "result": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/result.json",
+      "wall_seconds": 46.7030128359911,
+      "timing_scope": "example timer includes framework initialization, tuning and posterior execution",
+      "permissions": "trusted/escalated GPU execution",
+      "jit_compile": true,
+      "source_state": "execution-time closure in example record; terminal delta explicitly listed"
+    }
+  ],
+  "examples": [
+    {
+      "name": "posterior-cpu-r2",
+      "result": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/result.json",
+      "source_hashes_at_execution": {
+        "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_budget_contract.py": "a2bd9a4865ac5857268c21283a213b26ac4235fa3e6798214dabcb495001d4a4",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_ordinary_selection_policy.py": "0aa46488b2b5d2158ed000739cf7a0d379f8ac9bf1f6919966704aca0fb44177",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_route_contract.py": "ec0a8fd8e0e07b372ecf8775324a4b58be0fb9d906c6341ba37b8510c9b0e929",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/batched_value_score.py": "25dd24e5aeb56c0c32a22d21723761e100eff5ec6fbb9018dd613f0717dba13e",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_l_finite_bracket.py": "4bb83fac9253c72e548d8a36aa5668c98f980431cfee50d684222f51ddf006a7",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_transport_hmc_mechanics_tf.py": "4540826d97605e7d767b87d78959772d331b5b276cf39f2f41ba91bf707dcb89",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_transport_hmc_tuning_tf.py": "f8cdb824b8510b8fdf666f7469753c028d15c3d0f7bf8ccdbec6f7048eb9c4b2",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc.py": "be4e04804c3af3d8a619073771e84d7bffb72bbe9a2aaf8cede1b67773145ea4",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_artifact_identity.py": "947f5498e4cf8007f8e54c1ad8e9cec84186f6830b8b7067acc405f0985dc105",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_budget_ladder.py": "3056671a250cc581475c532dfe9ce4fb1c85f6c6257696fc43b96a7c0bf20894",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_decisions.py": "c0633a5cce29bcb8a5c8218a0e9716abc60e8ad209155fc439f8283cc9f0d48c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_proposals.py": "188d291614ff7667d9a3c8d52581d22e262c704fd1c7e5b00e7195e14306f812",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_runtime.py": "0477060935379d93cca1359896be2fad3a9698db4ada402f2a1d665bcbfb20c4",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_adapters.py": "d9606d07386cb7b4dcc40083c115001fbabce5482b433148518caeb95b6163b5",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_artifacts.py": "732aaea3d1389f22a640dd29b75162460fae6aa6d92799678228d2c834d23735",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_checkpoint.py": "d594034046ba2e80fda2ddc142f53859e5c891614598ec8c386760eb31ccab3d",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_execution.py": "08fee146eaabeb7857d2814aee108b44c1992f9681833b0463b45594539533da",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_position_field.py": "f6b8e79301c81ad707a4339e6150550e170307fbcd6cec1821983bedf6c7b37c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_public.py": "e10b7d2046466864a88119b1d70a17c94dd9c90b4fd56c0cb70e49e09ffed6bc",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_retained.py": "d937ce93dc5f25b8aadbb6f7f20c0b1a1c152d6b44f45d54af73e2a1a96547d7",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py": "7d753ab5f403a01704c69e78641091731ffc0ee83cf6c8016a804f0ffde11572",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_convergence.py": "97cdd8db2d5230a36b55900af825daf2bdc04f6e531b996f70dc629927401612",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_coordinates.py": "ca8e6512ea968c7351f1d3ad90ff3b79bef556a25c6010a700faad706112a154",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_diagnostic_math.py": "bc8c7dc647cc31018e1a8027207c9728c66f344ce225e550242bf3c17a8df001",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_diagnostics.py": "a33073bf16336b8c47a54d56f85295dd70c1b198eb09967b3a1f581c0ee87dd1",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_selection.py": "74cb15743189eb254dce9d115b8411c0bf10081c2a9974fbef585c1041bc6421",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py": "6f66266d6b0cd85a351b5d21537fd068339319ac576c6af5440cafe3caf4fb9c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_posterior_assessment.py": "aa815d0fd6a8173d55fdbaa7b805658d44de440b9b2c4492c97804dd127e8c6f",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_posterior_diagnostics.py": "db49cf7495aaefb1c6fda8941c25c491409d0b3dc83a4542d9ce986b515ff01e",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_precision.py": "0a6e981b603d6c64596847ab82b436e5b376572c3abc2fa938992b409d777786",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_preparation.py": "de28d15b2502c539246f9bceadd8b33460003047f08b569e7e61653f15bdd3f3",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning.py": "c1f2ccde7d86a330b79de55ddf3154f692642184ddc74d4831ff978bd20bd78a",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_dispatch.py": "676836cbf7c88637a201fae2de3cfb5094e3737d58f13f0207bd7b2ad3390be9",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_state.py": "63659b3202349048532fbf85c69fa58a5dac3faa63732ea8421fabb7d1ae283c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_verification.py": "9ff0f90a83775a157421dc435a8813a968a0ab1015ecdb00ed3ad0ed674e4d7c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_warmup.py": "d064d55fc8a53ef5f49bbf655744284edcafa4c8ea7c75b35f46cfc5116234c4",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/neutra_artifacts.py": "80ce1b32103d45e2c6e772cae085ec17650e2f7e46537a1d5997d40e63396530",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/neutra_hmc.py": "75278446ebd260a9f3360d806183150b6ebdf4a8332dd4a04d93b81f273ac11b",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/tuning_contract.py": "177224e89c40d0cf4e4e305127bf26a9a81f338cbc560ba1e39d16a8052a213c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/runner.py": "d0e49fb3ca650e2374674c31c05ed6d31c66ada364cd43e24c10f30bb0b76dcf",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/selection.py": "3793e76dc5d619ed70973c621917aa6c4c76cf0ea7f857c45a19c8d66df885c4",
+        "/home/ubuntu/python/BayesFilter/docs/examples/hmc_candidate_set_retained.py": "d7a5a2b2410a59385234e58818643dc7833fdf2bb6949bf2772a6076e991cad0",
+        "/home/ubuntu/python/BayesFilter/docs/examples/hmc_posterior_precision.py": "778dde7ff0d26f992c8f722f826f0f1a21dc109c39d3671a136914bd8c01b2d6"
+      },
+      "source_changed_since_execution": [
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_posterior_assessment.py"
+      ],
+      "source_delta_description": "posterior assessment summary/callback compatibility and generic decision wording only; transition and estimator source unchanged",
+      "seed_roots": {
+        "tuning": [
+          20260914,
+          11
+        ],
+        "warmup": [
+          20260915,
+          17
+        ],
+        "retained": [
+          20260915,
+          19
+        ]
+      },
+      "tuning_seed_inventory": [
+        [
+          168032993,
+          999835991
+        ],
+        [
+          1742517724,
+          2123885041
+        ]
+      ],
+      "executed_posterior_check_seeds": [
+        {
+          "stage": "warmup",
+          "chunk_index": 0,
+          "seed": [
+            20260915,
+            1026
+          ]
+        },
+        {
+          "stage": "warmup",
+          "chunk_index": 1,
+          "seed": [
+            20260915,
+            2035
+          ]
+        },
+        {
+          "stage": "retained",
+          "chunk_index": 0,
+          "seed": [
+            20260915,
+            1028
+          ]
+        }
+      ],
+      "data_version": "known_standard_gaussian_2d_fixture_v1",
+      "warmup_results_per_chain": 512,
+      "retained_results_per_chain": 512,
+      "passed": true,
+      "precision_targets": [
+        {
+          "name": "x",
+          "kind": "mean",
+          "probability": null,
+          "mcse_absolute_max": 0.1,
+          "mcse_sd_ratio_max": null,
+          "estimate": -0.022084051805227982,
+          "mcse": 0.022724008922219638,
+          "mcse_sd_ratio": 0.023100638592355557,
+          "valid": true,
+          "passed": true,
+          "estimator": "lugsail"
+        },
+        {
+          "name": "y",
+          "kind": "quantile",
+          "probability": 0.9,
+          "mcse_absolute_max": 0.15,
+          "mcse_sd_ratio_max": null,
+          "estimate": 1.3397631779849115,
+          "mcse": 0.051588463866278134,
+          "mcse_sd_ratio": 0.05164661207626132,
+          "valid": true,
+          "passed": true,
+          "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs"
+        }
+      ],
+      "compact_member_bytes": 802,
+      "shared_evidence_bytes": 245107,
+      "runtime_policy": {
+        "device_type": "CPU",
+        "memory_policy": {
+          "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+          "mode": "memory_growth",
+          "physical_devices": [],
+          "all_physical_devices_memory_growth": true,
+          "full_device_preallocation_disabled": true,
+          "memory_growth_is_hard_memory_cap": false,
+          "logical_device_memory_limit_required_for_hard_cap": true,
+          "configured_before_logical_device_initialization": true,
+          "tf_force_gpu_allow_growth": "true"
+        },
+        "tf32_enabled": true,
+        "cuda_visible_devices": "-1"
+      },
+      "checkpoint_config": {
+        "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+        "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+        "step_size": 1.3,
+        "num_leapfrog_steps": 3,
+        "warmup_seed": [
+          20260915,
+          17
+        ],
+        "retained_seed": [
+          20260915,
+          19
+        ],
+        "warmup_chunk_results": 256,
+        "warmup_min_results": 256,
+        "warmup_check_window_results": 256,
+        "warmup_max_results": 1024,
+        "warmup_rhat_max": 1.05,
+        "retained_chunk_results": 512,
+        "retained_min_results": 512,
+        "retained_max_results": 2048,
+        "retained_rhat_max": 1.01,
+        "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+        "assessment_policy": {
+          "schema": "bayesfilter.hmc_posterior_assessment.v1",
+          "warmup_bulk_ess_min": 50.0,
+          "warmup_tail_ess_min": 50.0,
+          "retained_bulk_ess_min": 100.0,
+          "retained_tail_ess_min": 100.0,
+          "warmup_consecutive_checks": 2,
+          "precision": {
+            "schema": "bayesfilter.hmc_precision_policy.v1",
+            "targets": [
+              {
+                "name": "x",
+                "kind": "mean",
+                "probability": null,
+                "mcse_absolute_max": 0.1,
+                "mcse_sd_ratio_max": null
+              },
+              {
+                "name": "y",
+                "kind": "quantile",
+                "probability": 0.9,
+                "mcse_absolute_max": 0.15,
+                "mcse_sd_ratio_max": null
+              }
+            ],
+            "method": "lugsail",
+            "batch_size": null,
+            "min_batches": 20,
+            "lugsail_r": 3,
+            "lugsail_c": 0.5,
+            "jit_compile": false,
+            "batch_provenance": "sqrt(n), literature baseline",
+            "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+            "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+            "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage"
+          },
+          "quantities_id": null,
+          "warmup_interpretation": "declared checks only; no stationarity proof",
+          "defaults_provenance": "inherited R-hat-only policy; additional requirements explicitly configured"
+        },
+        "minimum_chain_count": 4,
+        "chain_count": 4,
+        "jit_compile": false,
+        "dtype": "float64",
+        "energy_error_log_accept_threshold": -1000.0
+      }
+    },
+    {
+      "name": "posterior-gpu",
+      "result": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/result.json",
+      "source_hashes_at_execution": {
+        "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_budget_contract.py": "a2bd9a4865ac5857268c21283a213b26ac4235fa3e6798214dabcb495001d4a4",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_ordinary_selection_policy.py": "0aa46488b2b5d2158ed000739cf7a0d379f8ac9bf1f6919966704aca0fb44177",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_route_contract.py": "ec0a8fd8e0e07b372ecf8775324a4b58be0fb9d906c6341ba37b8510c9b0e929",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/batched_value_score.py": "25dd24e5aeb56c0c32a22d21723761e100eff5ec6fbb9018dd613f0717dba13e",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_l_finite_bracket.py": "4bb83fac9253c72e548d8a36aa5668c98f980431cfee50d684222f51ddf006a7",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_transport_hmc_mechanics_tf.py": "4540826d97605e7d767b87d78959772d331b5b276cf39f2f41ba91bf707dcb89",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_transport_hmc_tuning_tf.py": "f8cdb824b8510b8fdf666f7469753c028d15c3d0f7bf8ccdbec6f7048eb9c4b2",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc.py": "be4e04804c3af3d8a619073771e84d7bffb72bbe9a2aaf8cede1b67773145ea4",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_artifact_identity.py": "947f5498e4cf8007f8e54c1ad8e9cec84186f6830b8b7067acc405f0985dc105",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_budget_ladder.py": "3056671a250cc581475c532dfe9ce4fb1c85f6c6257696fc43b96a7c0bf20894",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_decisions.py": "c0633a5cce29bcb8a5c8218a0e9716abc60e8ad209155fc439f8283cc9f0d48c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_proposals.py": "188d291614ff7667d9a3c8d52581d22e262c704fd1c7e5b00e7195e14306f812",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_runtime.py": "0477060935379d93cca1359896be2fad3a9698db4ada402f2a1d665bcbfb20c4",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_adapters.py": "d9606d07386cb7b4dcc40083c115001fbabce5482b433148518caeb95b6163b5",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_artifacts.py": "732aaea3d1389f22a640dd29b75162460fae6aa6d92799678228d2c834d23735",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_checkpoint.py": "d594034046ba2e80fda2ddc142f53859e5c891614598ec8c386760eb31ccab3d",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_execution.py": "08fee146eaabeb7857d2814aee108b44c1992f9681833b0463b45594539533da",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_position_field.py": "f6b8e79301c81ad707a4339e6150550e170307fbcd6cec1821983bedf6c7b37c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_public.py": "e10b7d2046466864a88119b1d70a17c94dd9c90b4fd56c0cb70e49e09ffed6bc",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_retained.py": "d937ce93dc5f25b8aadbb6f7f20c0b1a1c152d6b44f45d54af73e2a1a96547d7",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py": "7d753ab5f403a01704c69e78641091731ffc0ee83cf6c8016a804f0ffde11572",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_convergence.py": "97cdd8db2d5230a36b55900af825daf2bdc04f6e531b996f70dc629927401612",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_coordinates.py": "ca8e6512ea968c7351f1d3ad90ff3b79bef556a25c6010a700faad706112a154",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_diagnostic_math.py": "bc8c7dc647cc31018e1a8027207c9728c66f344ce225e550242bf3c17a8df001",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_diagnostics.py": "a33073bf16336b8c47a54d56f85295dd70c1b198eb09967b3a1f581c0ee87dd1",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_selection.py": "74cb15743189eb254dce9d115b8411c0bf10081c2a9974fbef585c1041bc6421",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py": "6f66266d6b0cd85a351b5d21537fd068339319ac576c6af5440cafe3caf4fb9c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_posterior_assessment.py": "aa815d0fd6a8173d55fdbaa7b805658d44de440b9b2c4492c97804dd127e8c6f",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_posterior_diagnostics.py": "db49cf7495aaefb1c6fda8941c25c491409d0b3dc83a4542d9ce986b515ff01e",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_precision.py": "0a6e981b603d6c64596847ab82b436e5b376572c3abc2fa938992b409d777786",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_preparation.py": "de28d15b2502c539246f9bceadd8b33460003047f08b569e7e61653f15bdd3f3",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning.py": "c1f2ccde7d86a330b79de55ddf3154f692642184ddc74d4831ff978bd20bd78a",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_dispatch.py": "676836cbf7c88637a201fae2de3cfb5094e3737d58f13f0207bd7b2ad3390be9",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_state.py": "63659b3202349048532fbf85c69fa58a5dac3faa63732ea8421fabb7d1ae283c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_verification.py": "9ff0f90a83775a157421dc435a8813a968a0ab1015ecdb00ed3ad0ed674e4d7c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_warmup.py": "d064d55fc8a53ef5f49bbf655744284edcafa4c8ea7c75b35f46cfc5116234c4",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/neutra_artifacts.py": "80ce1b32103d45e2c6e772cae085ec17650e2f7e46537a1d5997d40e63396530",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/neutra_hmc.py": "75278446ebd260a9f3360d806183150b6ebdf4a8332dd4a04d93b81f273ac11b",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/tuning_contract.py": "177224e89c40d0cf4e4e305127bf26a9a81f338cbc560ba1e39d16a8052a213c",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/runner.py": "d0e49fb3ca650e2374674c31c05ed6d31c66ada364cd43e24c10f30bb0b76dcf",
+        "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/selection.py": "3793e76dc5d619ed70973c621917aa6c4c76cf0ea7f857c45a19c8d66df885c4",
+        "/home/ubuntu/python/BayesFilter/docs/examples/hmc_candidate_set_retained.py": "d7a5a2b2410a59385234e58818643dc7833fdf2bb6949bf2772a6076e991cad0",
+        "/home/ubuntu/python/BayesFilter/docs/examples/hmc_posterior_precision.py": "778dde7ff0d26f992c8f722f826f0f1a21dc109c39d3671a136914bd8c01b2d6"
+      },
+      "source_changed_since_execution": [
+        "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_posterior_assessment.py"
+      ],
+      "source_delta_description": "posterior assessment summary/callback compatibility and generic decision wording only; transition and estimator source unchanged",
+      "seed_roots": {
+        "tuning": [
+          20260914,
+          11
+        ],
+        "warmup": [
+          20260915,
+          17
+        ],
+        "retained": [
+          20260915,
+          19
+        ]
+      },
+      "tuning_seed_inventory": [
+        [
+          1419757227,
+          1864051845
+        ],
+        [
+          1945130585,
+          2137827963
+        ]
+      ],
+      "executed_posterior_check_seeds": [
+        {
+          "stage": "warmup",
+          "chunk_index": 0,
+          "seed": [
+            20260915,
+            1026
+          ]
+        },
+        {
+          "stage": "warmup",
+          "chunk_index": 1,
+          "seed": [
+            20260915,
+            2035
+          ]
+        },
+        {
+          "stage": "retained",
+          "chunk_index": 0,
+          "seed": [
+            20260915,
+            1028
+          ]
+        }
+      ],
+      "data_version": "known_standard_gaussian_2d_fixture_v1",
+      "warmup_results_per_chain": 512,
+      "retained_results_per_chain": 512,
+      "passed": true,
+      "precision_targets": [
+        {
+          "name": "x",
+          "kind": "mean",
+          "probability": null,
+          "mcse_absolute_max": 0.1,
+          "mcse_sd_ratio_max": null,
+          "estimate": -0.011556278937438194,
+          "mcse": 0.023612655758040953,
+          "mcse_sd_ratio": 0.023855679117830438,
+          "valid": true,
+          "passed": true,
+          "estimator": "lugsail"
+        },
+        {
+          "name": "y",
+          "kind": "quantile",
+          "probability": 0.9,
+          "mcse_absolute_max": 0.15,
+          "mcse_sd_ratio_max": null,
+          "estimate": 1.255583297038412,
+          "mcse": 0.04217125281315026,
+          "mcse_sd_ratio": 0.042642889249130685,
+          "valid": true,
+          "passed": true,
+          "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs"
+        }
+      ],
+      "compact_member_bytes": 802,
+      "shared_evidence_bytes": 245384,
+      "runtime_policy": {
+        "device_type": "GPU",
+        "memory_policy": {
+          "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+          "mode": "memory_growth",
+          "physical_devices": [
+            {
+              "device": "/physical_device:GPU:0",
+              "device_details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "memory_growth": true
+            }
+          ],
+          "all_physical_devices_memory_growth": true,
+          "full_device_preallocation_disabled": true,
+          "memory_growth_is_hard_memory_cap": false,
+          "logical_device_memory_limit_required_for_hard_cap": true,
+          "configured_before_logical_device_initialization": true,
+          "tf_force_gpu_allow_growth": "true"
+        },
+        "tf32_enabled": true,
+        "cuda_visible_devices": "1"
+      },
+      "checkpoint_config": {
+        "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+        "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+        "step_size": 1.3,
+        "num_leapfrog_steps": 3,
+        "warmup_seed": [
+          20260915,
+          17
+        ],
+        "retained_seed": [
+          20260915,
+          19
+        ],
+        "warmup_chunk_results": 256,
+        "warmup_min_results": 256,
+        "warmup_check_window_results": 256,
+        "warmup_max_results": 1024,
+        "warmup_rhat_max": 1.05,
+        "retained_chunk_results": 512,
+        "retained_min_results": 512,
+        "retained_max_results": 2048,
+        "retained_rhat_max": 1.01,
+        "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+        "assessment_policy": {
+          "schema": "bayesfilter.hmc_posterior_assessment.v1",
+          "warmup_bulk_ess_min": 50.0,
+          "warmup_tail_ess_min": 50.0,
+          "retained_bulk_ess_min": 100.0,
+          "retained_tail_ess_min": 100.0,
+          "warmup_consecutive_checks": 2,
+          "precision": {
+            "schema": "bayesfilter.hmc_precision_policy.v1",
+            "targets": [
+              {
+                "name": "x",
+                "kind": "mean",
+                "probability": null,
+                "mcse_absolute_max": 0.1,
+                "mcse_sd_ratio_max": null
+              },
+              {
+                "name": "y",
+                "kind": "quantile",
+                "probability": 0.9,
+                "mcse_absolute_max": 0.15,
+                "mcse_sd_ratio_max": null
+              }
+            ],
+            "method": "lugsail",
+            "batch_size": null,
+            "min_batches": 20,
+            "lugsail_r": 3,
+            "lugsail_c": 0.5,
+            "jit_compile": true,
+            "batch_provenance": "sqrt(n), literature baseline",
+            "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+            "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+            "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage"
+          },
+          "quantities_id": null,
+          "warmup_interpretation": "declared checks only; no stationarity proof",
+          "defaults_provenance": "inherited R-hat-only policy; additional requirements explicitly configured"
+        },
+        "minimum_chain_count": 4,
+        "chain_count": 4,
+        "jit_compile": true,
+        "dtype": "float64",
+        "energy_error_log_accept_threshold": -1000.0
+      }
+    }
+  ],
+  "budget": {
+    "cpu_wall_minutes_ceiling": 45,
+    "gpu_wall_minutes_ceiling": 5,
+    "calibration_cpu_wall_minutes_subceiling": 5,
+    "numerical_gpu_seconds_measured": 51.38218318897998,
+    "principal_cpu_seconds_measured": 560.4315670959535,
+    "accounting_limit": "principal timers exclude unrecorded short debugging/test iterations and the GPU readiness probe; no exact aggregate wall-time claim",
+    "model_scale_campaign": false
+  },
+  "calibration": {
+    "manifest": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/calibration-manifest.json",
+    "data_version": "stationary_AR1_2048x4x200_v1",
+    "seed": 20260915,
+    "replications_per_rho": 200,
+    "chains": 4,
+    "draws_per_chain": 2048,
+    "rho": [
+      0.0,
+      0.8,
+      -0.5
+    ],
+    "unavailable_lugsail_antithetic_replications": 2,
+    "preliminary_invalid_directory": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/preliminary-comparator-invalid",
+    "normalization_repair": "Stan reference corrected from N-lag to N using actual official autocovariance body; runtime TFP definition intentionally differs"
+  },
+  "guide": {
+    "pdf": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.pdf",
+    "page_count": 558,
+    "log": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-build-drift-clarification.log",
+    "commands": [
+      {
+        "cwd": "/home/ubuntu/python/BayesFilter/docs",
+        "argv": [
+          "latexmk",
+          "-pdf",
+          "-interaction=nonstopmode",
+          "-halt-on-error",
+          "-outdir=plans/artifacts/hmc-overall-repair-2026-09-15/book",
+          "main.tex"
+        ],
+        "purpose": "full guide build/rerun; reproducible argument list"
+      },
+      {
+        "cwd": "/home/ubuntu/python/BayesFilter/docs",
+        "environment": {
+          "BIBINPUTS": "/home/ubuntu/python/BayesFilter/docs:"
+        },
+        "argv": [
+          "bibtex",
+          "plans/artifacts/hmc-overall-repair-2026-09-15/book/main"
+        ],
+        "purpose": "explicit artifact-directory bibliography build, followed by latexmk rerun"
+      }
+    ],
+    "visually_inspected_pdf_pages": [
+      414,
+      458,
+      459,
+      460
+    ],
+    "existing_unresolved_citations": [
+      "Gorinova2020",
+      "Pakman2014",
+      "Afshar2015"
+    ],
+    "wall_seconds": null,
+    "timing_limit": "build wall timer not archived; logs preserve successful completion",
+    "last_document_change": "Clarified legacy Phase 29 drift heuristic role; rebuilt book and visually inspected PDF page 460.",
+    "last_rendered_image": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/drift-clarification.png"
+  },
+  "source_hashes_at_terminal": {
+    "bayesfilter/inference/__init__.py": "df7a8caecab2b41f813a5a31d368d60456e47eee8f27670884af4dd7cd51ac2d",
+    "bayesfilter/inference/hmc_candidate_decisions.py": "c0633a5cce29bcb8a5c8218a0e9716abc60e8ad209155fc439f8283cc9f0d48c",
+    "bayesfilter/inference/hmc_candidate_runtime.py": "0477060935379d93cca1359896be2fad3a9698db4ada402f2a1d665bcbfb20c4",
+    "bayesfilter/inference/hmc_candidate_set_artifacts.py": "732aaea3d1389f22a640dd29b75162460fae6aa6d92799678228d2c834d23735",
+    "bayesfilter/inference/hmc_candidate_set_checkpoint.py": "d594034046ba2e80fda2ddc142f53859e5c891614598ec8c386760eb31ccab3d",
+    "bayesfilter/inference/hmc_candidate_set_execution.py": "08fee146eaabeb7857d2814aee108b44c1992f9681833b0463b45594539533da",
+    "bayesfilter/inference/hmc_candidate_set_public.py": "e10b7d2046466864a88119b1d70a17c94dd9c90b4fd56c0cb70e49e09ffed6bc",
+    "bayesfilter/inference/hmc_candidate_set_retained.py": "d937ce93dc5f25b8aadbb6f7f20c0b1a1c152d6b44f45d54af73e2a1a96547d7",
+    "bayesfilter/inference/hmc_candidate_set_tuning.py": "7d753ab5f403a01704c69e78641091731ffc0ee83cf6c8016a804f0ffde11572",
+    "bayesfilter/inference/hmc_convergence.py": "97cdd8db2d5230a36b55900af825daf2bdc04f6e531b996f70dc629927401612",
+    "bayesfilter/inference/hmc_diagnostic_math.py": "bc8c7dc647cc31018e1a8027207c9728c66f344ce225e550242bf3c17a8df001",
+    "bayesfilter/inference/hmc_posterior_assessment.py": "e6405e06bc18391abc9483fc5bcb49812a5bbc4f9c5280510341bf4cf8dfa735",
+    "bayesfilter/inference/hmc_posterior_diagnostics.py": "db49cf7495aaefb1c6fda8941c25c491409d0b3dc83a4542d9ce986b515ff01e",
+    "bayesfilter/inference/hmc_precision.py": "0a6e981b603d6c64596847ab82b436e5b376572c3abc2fa938992b409d777786",
+    "bayesfilter/inference/neutra_hmc.py": "75278446ebd260a9f3360d806183150b6ebdf4a8332dd4a04d93b81f273ac11b",
+    "bayesfilter/inference/tuning_contract.py": "177224e89c40d0cf4e4e305127bf26a9a81f338cbc560ba1e39d16a8052a213c",
+    "docs/chapters/ch21b_hmc_tuning_interfaces.tex": "99f11fa7817bdf03e9adc9f180d2f9d16aae855d8de8e4902b1fcb31499cdb86",
+    "docs/chapters/ch22_mass_matrices.tex": "2dc9c1f815945c2e3a4e339ddee0454a4f0e3eef1bfb0948604c77dba05f9206",
+    "docs/chapters/ch25_diagnostics.tex": "2ed52ba95ac1c9caada12a2b5477268b695c6c082010080a1d0de79792256c8e",
+    "docs/chapters/ch26b_neutra_transport_hmc.tex": "a73b0a76af053911e1bcd3458da0b9d2f4236a286c999be73bf54f8d8eff58d9",
+    "docs/examples/hmc_posterior_precision.py": "778dde7ff0d26f992c8f722f826f0f1a21dc109c39d3671a136914bd8c01b2d6",
+    "docs/examples/hmc_tuning_neural_force_binding.py": "14938e7525acc5d089de4886d7cd9d60cd2413e1b09f316f397f45ad32f3fdae",
+    "docs/generated/hmc_tuning_route_table.md": "6612c8b0d655ff2f19dc6a5cd3b0d6e155c1ff496f1da7bb1795b8229475f75d",
+    "docs/generated/hmc_tuning_route_table.tex": "404847362d5be8350013d4c3edf86694cae7873e2c1e87b947134f0a79615774",
+    "docs/plans/bayesfilter-hmc-overall-repair-plan-2026-09-15.md": "7c80b2a9526e52e8b67c2280fcb3766104cae6cb8e6c3e346b9e12e5916acded",
+    "docs/plans/bayesfilter-hmc-overall-repair-result-2026-09-15.md": "bcca0393e219470757cec2e01f3692b38ff70940b0d030b794c2a6ef6066437e",
+    "docs/reference/hmc-tuning-interface.md": "7846e8e1aff94e5ac11e3c950f97306d61a8b3c35c68139d21a05e141278dcc6",
+    "docs/references.bib": "64a6823db3a57e191841e82d14ec5bf4ed5ef849e2a34c3c6bc949e499aa5bb5",
+    "tests/test_hmc_candidate_set_adapters.py": "3af941b24711110ce7062eb87239ffbeb4a1e3f0f0dfc5b7aa28668d15631df7",
+    "tests/test_hmc_candidate_set_artifacts.py": "a0c3ea38cbf02897b57bd12e7b2d9e962da7b9e18cece8e434ede8310bc5a5ee",
+    "tests/test_hmc_candidate_set_execution.py": "97be19e3adbdead96f02afcaf0c520b443031b163d289a40a9d156f60cc6f678",
+    "tests/test_hmc_candidate_set_tuning.py": "52582b22d5a0b00df5a89b62b2fcde69699cbeb6d221b1eff6272165994ca90c",
+    "tests/test_hmc_convergence.py": "dfc1f2a8277b462401c3fc154c66a6b0e60993a57f14356aabd716d3f4735d69",
+    "tests/test_hmc_overall_repair.py": "8339ace20a1f0dc424e0a4cd8818c4a00029086a6d765c1d8556618ef4a9a466",
+    "tests/test_hmc_posterior_diagnostics.py": "d275cba76cc39d769b495a0806a54f1d807d9c21e168fbd0c7244e0734698c51",
+    "tests/test_hmc_tuning_contract.py": "7e4fbab0e2a09e26b661a67770ad9e846f9fb619e78d0d053edce3a239ed5bcb",
+    "tests/test_hmc_tuning_dispatch.py": "7ac8de047540c2474f0463c52ab39b5fb801c83131fb6bcef4f41496eb8f8ccf",
+    "tests/test_hmc_tuning_documentation_contract.py": "47a29633ef6328d4d277f1198aa08abf8aab4b5a07ee3a5016a96ce72fff042c",
+    "tests/test_hmc_tuning_gap_regressions.py": "bf63f56e561e0d865df0747d4635876cdaef6efc7339bf0f74cce5e1e7476c52",
+    "tests/test_neutra_all_models_end_to_end_contract.py": "2d734d8dcace8b69ce39bc6812c67c02d3edaf91666e3974cf86aef260064848",
+    "tests/test_neutra_hmc.py": "217226fe6cc74b67508ad8e569403e58141cae37bb9e4482e10a2e7d32054e4c",
+    "tests/test_neutra_hmc_route_policy.py": "1d00383fb17c87d09b8c47b78dc6451f12d05028cc47f06401a5275c02df2cf5",
+    "tests/test_neutra_sequential_hmc.py": "16719c6b01516e376326eb9de8152d883510d8b114e30bb9f6ecf590b49fbef4",
+    "tests/test_tempered_lineage_transitions.py": "eab0dad36a7c98b8ec128fc72cba7c2eac8a49923a05e52b60634c7128389648"
+  },
+  "literature_source_inventory": "docs/plans/artifacts/hmc-warmup-precision-review-2026-09-15/run-manifest.json",
+  "artifact_inventory": {
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-bibtex-final.log": {
+      "sha256": "2b3ba22e025028377f8b82d56a73be86d57702d6362d2c9857dd8adeea970610",
+      "bytes": 406
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-bibtex.log": {
+      "sha256": "6d981f1a62a00acaeec37a92de8e241e7e4b041c644064dca8d3454fb0ca7b43",
+      "bytes": 450
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-build-drift-clarification.log": {
+      "sha256": "361c65f4e16765bb8a92f5fd43131f6411317aa02efafacdcf9e44fb819a030e",
+      "bytes": 144092
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-build-final.log": {
+      "sha256": "6a5f40552514ae595c03a09f71dc97b0217ef1e9d1278e1138cb60ba66c3b4cf",
+      "bytes": 145407
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-build-terminal.log": {
+      "sha256": "82736fd3719c24ca7a0617599dce73642385b4659220818ae912ada1c9528fa4",
+      "bytes": 290930
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-build.log": {
+      "sha256": "a24034cbaa73395039a3782bba613bb76687a7ac8a75d32bf88e900e3c71744e",
+      "bytes": 675665
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-pdf-final.log": {
+      "sha256": "19b81672e2c2fbd31ab97b31575fcb23795dc69cbee994fd1e34c343c014f74d",
+      "bytes": 142916
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book-pdf-r2.log": {
+      "sha256": "919b6f32878663ad6050ea5222cce058bdb6cd3c18cd969d9eb8f480e5dca40a",
+      "bytes": 143205
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/drift-clarification.png": {
+      "sha256": "c5b877e7aece813aa0f11e13dfe05d0fa47b03e09c7543c8d34e4c57ab4fb597",
+      "bytes": 347576
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/inspect-414.png": {
+      "sha256": "4867babcf4e553fe906a8e71538ed5e7c085a9842efa329a7844072cd01fd138",
+      "bytes": 350442
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/inspect-458.png": {
+      "sha256": "5b9598883885572bfa9cd29d043fed31872697d0ef808f23b4e891b4cbb54c42",
+      "bytes": 218916
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/inspect-459.png": {
+      "sha256": "f4e98e164524a6541733e375ef331cdc82a693ea931b07c89084cb99993a6276",
+      "bytes": 297887
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/inspect-460.png": {
+      "sha256": "1c921044f584ccce1af364761125cc2f8ad30aec83a5412d00319baa8872a9e1",
+      "bytes": 304380
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.aux": {
+      "sha256": "c22d8c237660a15909233b9a5281bdb6c63fe9f2ba94d4855343102d3428b263",
+      "bytes": 342615
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.bbl": {
+      "sha256": "24ad24c2742a1c1eb01fa04abedfa8f9ccb97b93f2e4feb518ce9a3253138603",
+      "bytes": 32376
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.blg": {
+      "sha256": "be04dd2053a37feb492c52ab058400cbbe6c496a930b602b8426cb88a6a17f27",
+      "bytes": 1139
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.fdb_latexmk": {
+      "sha256": "658604476c6931fb6a72e03bdad8a05d6791558c4dfc080d8072397f15d08d1f",
+      "bytes": 39684
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.fls": {
+      "sha256": "23266f64ca7a53817c1ade50a54d601edd9b5f149ce0b783a448a2abad5fe09d",
+      "bytes": 114407
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.log": {
+      "sha256": "e71a3db289f8291580124a914968ff0c271118966355d11545f4dcb2f9ee88f2",
+      "bytes": 176868
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.out": {
+      "sha256": "c901d5703ac51e254e9a65be3329a78488e73c711b5f4ac0b83bf7447e85a21a",
+      "bytes": 161278
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.pdf": {
+      "sha256": "c112ecfc38a3d52a3a39c41fa0034ca773f0eaf8def4c318a0314043ea79ce94",
+      "bytes": 2412909
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.toc": {
+      "sha256": "f2d3312d12c6f39e5311746eafe5fc124a86e240fe990e1f4ad12e696636356f",
+      "bytes": 79320
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/main.txt": {
+      "sha256": "833bf900342ce58f1a2ded9a2afc6cd41cc8a7486abc92c87c9f9e33bda61e10",
+      "bytes": 1608286
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/terminal-458.png": {
+      "sha256": "8ac0d6fe7a635c2f09f112c1e7c69afca0db195ee1635b0f857366e0edc3b182",
+      "bytes": 194670
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/terminal-459.png": {
+      "sha256": "c4ef223f353a8db2746219a18af63562397fc566d462f740c7bf40583de4ccfb",
+      "bytes": 258268
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/book/terminal-460.png": {
+      "sha256": "23a19a825be6464bd245e90de1b9c118a923dac08bf308089dacb9fc82288615",
+      "bytes": 257756
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/calibrate_precision.py": {
+      "sha256": "02ab6c1eb119af0ea549a27d9435d1235d2ad4cb2d5058f939248fd748c1eac4",
+      "bytes": 6361
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/calibration-manifest.json": {
+      "sha256": "61b4ea0e5f03487ba72168e5af4543c7194df7e75bfade1c4cad46018aa78bb7",
+      "bytes": 1538
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/calibration.log": {
+      "sha256": "9bdb2374b947c4e2789cdbbbb8f59116a5436eb88e826bb19a4ace3a6faf7829",
+      "bytes": 621
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/gpu-precision-parity.json": {
+      "sha256": "742841c136a80cc946e7f5c48c571adf96a7fdfc09d07ba3d217074bcabf979f",
+      "bytes": 1334
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/gpu-precision-parity.log": {
+      "sha256": "9b5c2ce1944d4f4cba4fc995f65d9c624fbe46b21ca66cd4b84b89b53488ad33",
+      "bytes": 2415
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/gpu_precision_parity.py": {
+      "sha256": "8a5ecef429fc17b930a434b4d75e88d481de48aa5fd33c4656957d438e637c11",
+      "bytes": 2080
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2.log": {
+      "sha256": "8052bb6fce191a155696e05871c64a3eb2600b6fc94f33aff6ac1aec22d9808d",
+      "bytes": 2089
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/evidence-bf256ab15c108143af384c5345663c61fc365ff3054e6cb54fb3b6f96a2f791c.json": {
+      "sha256": "f58e7d9bb71993a8f33d375633af1e28aaee006e4551833593688505ff909c2c",
+      "bytes": 245107
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/member.json": {
+      "sha256": "30222bb2579293fedf33833c4f92a86b2eb274e15b0b4d50e44e3e63f74152fd",
+      "bytes": 802
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/.writer.lock": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000000-cfc10b3185ba4fc3bce8b48c5cbcbc72/before-commit.json": {
+      "sha256": "04916c7511aae5302365bc20ebb48595421549b9d90aec420e263a20cb0af9c3",
+      "bytes": 2251
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000000-cfc10b3185ba4fc3bce8b48c5cbcbc72/call-end.json": {
+      "sha256": "2f9136fba12fe1f73155c9f86ab52e680668e391567ce9582223a71ff8cd29f5",
+      "bytes": 2282
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000000-cfc10b3185ba4fc3bce8b48c5cbcbc72/call-start.json": {
+      "sha256": "a3da611b17a4f5ae4a4935732b1e05487fc6b2a1c5f3f4995a84b020b12dce80",
+      "bytes": 2248
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000000-cfc10b3185ba4fc3bce8b48c5cbcbc72/committed.json": {
+      "sha256": "b28a491ade998ed6afde99fa57538b0f5887b16b9a59d9830f41a8333a0e8f2c",
+      "bytes": 2246
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000000-cfc10b3185ba4fc3bce8b48c5cbcbc72/tensors-written.json": {
+      "sha256": "1f369be46b6bb126622d3e09f05a4e83ac08102a54a84b180c8ec181ee41f2ac",
+      "bytes": 2252
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000001-8b6a68193aff47fe8f5f87498931e0ba/before-commit.json": {
+      "sha256": "1ed56a5e2862360868e6ccc71d105db7012d7e7c1b889b2268c5032ac67a1cbf",
+      "bytes": 2251
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000001-8b6a68193aff47fe8f5f87498931e0ba/call-end.json": {
+      "sha256": "1cd4e47b6777eb0700d7c7aaf5b3d198cebd217b3861614332f13e1cbc804c47",
+      "bytes": 2283
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000001-8b6a68193aff47fe8f5f87498931e0ba/call-start.json": {
+      "sha256": "5359bccee0f7a1a192297c4c9124f940334627fc0c421e81f1e1df3db622707a",
+      "bytes": 2248
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000001-8b6a68193aff47fe8f5f87498931e0ba/committed.json": {
+      "sha256": "ee7df2782eebe9819ff3e015d7032125b2cbd37662511975301c702a3ae7a0dd",
+      "bytes": 2247
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000001-8b6a68193aff47fe8f5f87498931e0ba/tensors-written.json": {
+      "sha256": "1e027e0eea505894d1f65f51644886630b93d8cc03604e1fd483e55e2d3d250a",
+      "bytes": 2253
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000002-6f6947656b5745c1b82dbb35f786933a/before-commit.json": {
+      "sha256": "aaba11091e3e94d6263032a20cd1f2a6c2e1c7c7e0d4cde313c83cd9c742ce18",
+      "bytes": 2251
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000002-6f6947656b5745c1b82dbb35f786933a/call-end.json": {
+      "sha256": "8a47802b3d9b8edeca39fd89d5054341fb51c2b9b0b322dace13e8de0b3bc6d6",
+      "bytes": 2281
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000002-6f6947656b5745c1b82dbb35f786933a/call-start.json": {
+      "sha256": "4aeecae8eb2fc3b65126e0959243f521eaa88c6a73627a5f8e013840b8056003",
+      "bytes": 2248
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000002-6f6947656b5745c1b82dbb35f786933a/committed.json": {
+      "sha256": "7f8d4a7ea1f8db7acf3208b9441e041c1bd78f8735c66bb77851943e4fa826b2",
+      "bytes": 2247
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/attempts/chunk-000002-6f6947656b5745c1b82dbb35f786933a/tensors-written.json": {
+      "sha256": "fd02b5ae094ad429612e8fcfc393c322385bd2b4b82088f5ac1be7f5c4838ac4",
+      "bytes": 2252
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/bundle.json": {
+      "sha256": "1f0cf3802c9b6517120ea0755339b5ab9c89cbde2ca9af5e08f9f1a58a406430",
+      "bytes": 3325
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/bundle.sha256": {
+      "sha256": "979a501c246921ec1f8ac3f6f5522693a2593cbab981cd68d70decd3cf4bc94d",
+      "bytes": 64
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0000.bin": {
+      "sha256": "d3cea3077d38a79261e4ca42bb62f97b9762adb288f6be73f1edcc7305071a40",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0001.bin": {
+      "sha256": "3a1124ced66f084036a0a56cc786ea7ebba50cc3d25fa42f59c2062a6b0b7c6d",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0002.bin": {
+      "sha256": "a882d411595bb883c3c1f947305c48eeea9ad93ea8122641d9573821d5fe1ad3",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0003.bin": {
+      "sha256": "f76cea17c35f9b41ed55eb2cdf431989019c836b4077f404f03d1452d5983023",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0004.bin": {
+      "sha256": "1b94c79df379e7bfc3096293a191916404aaa9b30a97fb50b0a0359bebcb09d5",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0005.bin": {
+      "sha256": "218b867a5b4300a85d49d0347dbcf6f1b85d1e1591ee49b4f771211fbce4cdf0",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0006.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0007.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0008.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0009.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0010.bin": {
+      "sha256": "87aba9db53e78c38a62ee3178063fccd5294670260a11d50e6bd2c115b5313ff",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0011.bin": {
+      "sha256": "78bc2eb895de3f645e06068872cbdb5de5f185ca1c6845b542243441ed13b048",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0012.bin": {
+      "sha256": "50152d05fd61c74bc4f43034aff9ceffc979c1ec35111e85654c87ae180c36ad",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0013.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0014.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000000/tensor-0015.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/bundle.json": {
+      "sha256": "342b544a69cf81a28008d37a456bf23c2aedfb6ac5f1705ad7503abb811bddf0",
+      "bytes": 3323
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/bundle.sha256": {
+      "sha256": "1f1f3b451a0f3981ecf031fa6299e77fb9171814e3a62b447c3c6f088e92d224",
+      "bytes": 64
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0000.bin": {
+      "sha256": "378d807a82ef2480e0c3c1d42e5a69ca8f4907542da49dc8843dfc0befe38de9",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0001.bin": {
+      "sha256": "785106fe921e9dd9008cd6888dd203d4f25dfffbfbe55e1afade2218f1ac9ad4",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0002.bin": {
+      "sha256": "0171599af55b9e775f56cd64f6d085bc9b5eb92f81d207a28431e76f361528d6",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0003.bin": {
+      "sha256": "3eaa0ed2e0e209f4e1deadf1a50eabbca9ac2476979958a57d36c72d4c02d4d8",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0004.bin": {
+      "sha256": "c3e011462f4644ea3a1dc9374bec61c274ebd483f460d9cd5839aa5033d5e71a",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0005.bin": {
+      "sha256": "9da27a91f286b68a24ed3f7c25904bb6480d29bf352cd2162fe337a55e8a2cb5",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0006.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0007.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0008.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0009.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0010.bin": {
+      "sha256": "aeac437f215c38c9d563438b89ad9027e49d2c7fe152de4f2c13d06676a56a7f",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0011.bin": {
+      "sha256": "c3707ff37ca9b50be035bc246c29194027dd6cdb6428813794b1477dc2c09cb5",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0012.bin": {
+      "sha256": "3ea70f9d307baca055864d06f14bd610c30ddb874b4c4dfd86495491e0d44c37",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0013.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0014.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000001/tensor-0015.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/bundle.json": {
+      "sha256": "635cf9dd4a18cd711de4945ff0f03bfd9119123e8c58855becda87adf8f5ad5e",
+      "bytes": 3323
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/bundle.sha256": {
+      "sha256": "382af5f2fb4a8c084afcfcdd78533119911005c7447456e69c179e16a499a06b",
+      "bytes": 64
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0000.bin": {
+      "sha256": "34eb03623eb710904fa290a2db221500520a786ba2de06ff53ab7348776e7e28",
+      "bytes": 32789
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0001.bin": {
+      "sha256": "9e57074eaf4bfda7c3856137d13843f6e381dd60e34de262d8f63cec6d342573",
+      "bytes": 2064
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0002.bin": {
+      "sha256": "6ec971395cd431106380b0b62b9e8048139b40e99cf1d100da7cc0f9f7c7ab77",
+      "bytes": 16401
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0003.bin": {
+      "sha256": "fa856a9210f905de9272377b6574d98f67e30c9d859c40e0cf84b39813e4531e",
+      "bytes": 16401
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0004.bin": {
+      "sha256": "598dea8d3f8746596be41470af5efe664202c20a7453b65d1baf644432757fc4",
+      "bytes": 16401
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0005.bin": {
+      "sha256": "a50770b46eb8110e4c5953c06502f885e373e12b842ec567609afbcba443dbf2",
+      "bytes": 16401
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0006.bin": {
+      "sha256": "2b05eb7a2873128cd550fb28ccf708d365db6d67b74a7e76fedfba09f1f19ad9",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0007.bin": {
+      "sha256": "384552ef15c15cf7084d4808b2f807bbb0f07b84382aebc700cd0b7ce75401ac",
+      "bytes": 2064
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0008.bin": {
+      "sha256": "2b05eb7a2873128cd550fb28ccf708d365db6d67b74a7e76fedfba09f1f19ad9",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0009.bin": {
+      "sha256": "384552ef15c15cf7084d4808b2f807bbb0f07b84382aebc700cd0b7ce75401ac",
+      "bytes": 2064
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0010.bin": {
+      "sha256": "f40d5eee8d3fd71bff88dbe39f832e220e056e746c86214d711615dc2a0febaa",
+      "bytes": 32789
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0011.bin": {
+      "sha256": "33e581682552dd5dbb052396e93f8f99d3dad8e8abd88e59a3a3085290d82b3f",
+      "bytes": 32789
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0012.bin": {
+      "sha256": "174685962809f5dd73b926dfc4b3286ff2dc9e3ec0e9179b19c4e0b3da2357dc",
+      "bytes": 32789
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0013.bin": {
+      "sha256": "2b05eb7a2873128cd550fb28ccf708d365db6d67b74a7e76fedfba09f1f19ad9",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0014.bin": {
+      "sha256": "384552ef15c15cf7084d4808b2f807bbb0f07b84382aebc700cd0b7ce75401ac",
+      "bytes": 2064
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/committed/chunk-000002/tensor-0015.bin": {
+      "sha256": "2b05eb7a2873128cd550fb28ccf708d365db6d67b74a7e76fedfba09f1f19ad9",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/posterior_chunks/identity.json": {
+      "sha256": "e655d0eb1d8b14fe0728f2364110f91fd0ed654805a548b581449935c05ad2b4",
+      "bytes": 1268
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/result.json": {
+      "sha256": "87fdd3604308253c42596842c6c18ce0d9fd3c8eb33bdde6a7698709720cec85",
+      "bytes": 27933
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/tuning/candidate_set_result.json": {
+      "sha256": "4593e8870424abf86bfbbfa2b5e0065e717269e37ddc748522cc68e976ff7386",
+      "bytes": 26115
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/tuning/execution_spec.json": {
+      "sha256": "1362c9e501efc7da4ea2ba20b96bc020f0178d0a9af5310363f20c9c1bdc4d51",
+      "bytes": 16259
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/tuning/numerical_chunks/23e175c84f38f71d42082282daedd071c116e671db63ba4074ac9e220b2e097a.json": {
+      "sha256": "419e6acfba959a95aa69567045dcee1357ffcdf6659ed922765f1b4007adbb4e",
+      "bytes": 90531
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/tuning/numerical_chunks/c0faa35e0b941a16027cacf9e8d1d49a20fafb3b88fc8bc15acd782414ab3355.json": {
+      "sha256": "2e6a8d57e3ed6a1617f98f6ccd03f62e1cad3512eedaa91691128d0eb180edd0",
+      "bytes": 90465
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/tuning/numerical_evidence/1835abce78b17c203c13b49a5c4288b8554cb30190ddcc84916734d51b2e640d.json": {
+      "sha256": "0cc024286aa6f6e223653c82ba2407657582ef278aec26d3040d94b6a88cf8c4",
+      "bytes": 98530
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/tuning/numerical_evidence/c3c9d294d42438afc03a8900be11db91d2f51a1d68d7131161271be453346c19.json": {
+      "sha256": "b710077dcb879d9aa93981fb064c39ba523adab98fa10b59276a4f886a3c71dc",
+      "bytes": 98452
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu-r2/tuning/tuning_checkpoint.json": {
+      "sha256": "66435a95dc23a5fb07b6a36aebbf0eb679f91f6f68aa11ccc04693223e8a32e9",
+      "bytes": 28069
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-cpu.log": {
+      "sha256": "02016711f30c1a532207fe11cbc36cfc805e1baee2963b93c5db1e22cc33b5e3",
+      "bytes": 1451
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu.log": {
+      "sha256": "260f5d0a902bfa250cba5b7a98dc9b342d0c7de287c59cb6aef350d8317c17f3",
+      "bytes": 3120
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/evidence-b09af4313249a61038902388f5cb0e0a42101b1463adb0085749d188c8e42f64.json": {
+      "sha256": "c2c8526db2dcdb609e676c84ed3d740dc30aa1f9129ddeeeb5cd6ec928254f03",
+      "bytes": 245384
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/member.json": {
+      "sha256": "71b73077c428f0a28732e10e146be1e22967f0df2b52b33e69edeb2c8783e7e7",
+      "bytes": 802
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/.writer.lock": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000000-1c3d32119725429d8af7aa26801cbcae/before-commit.json": {
+      "sha256": "7690943f6445cd416c9b1dfb931623a80edb9e28f979bd3c619a3c9a02264193",
+      "bytes": 2255
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000000-1c3d32119725429d8af7aa26801cbcae/call-end.json": {
+      "sha256": "ea538e7293ec3a39dd71619c4087d65baee6b79eb4ae11b4fa1235557752ac76",
+      "bytes": 2287
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000000-1c3d32119725429d8af7aa26801cbcae/call-start.json": {
+      "sha256": "a75659599475c12837890f5847bcbabb78a782bb403ef577ca7aada1e3350c30",
+      "bytes": 2251
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000000-1c3d32119725429d8af7aa26801cbcae/committed.json": {
+      "sha256": "449409be4e5f347322205a8ff185805c3ac51ac6abb56b9c2ab5c9adc9409725",
+      "bytes": 2251
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000000-1c3d32119725429d8af7aa26801cbcae/tensors-written.json": {
+      "sha256": "a23caf3675df2590ae1215ae30db2f4145be097b7ab11e0a30ceef067cc60eca",
+      "bytes": 2257
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000001-88892102144d432e998aa0f3cf520e1b/before-commit.json": {
+      "sha256": "2ab4ea313635dd467aefa52164a2048f62756241bb9929187ffdbdff348258e2",
+      "bytes": 2254
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000001-88892102144d432e998aa0f3cf520e1b/call-end.json": {
+      "sha256": "a2dddca28e09a07b346ade3dea3f11a11b4d553f1f89db3d17640f2a4160c52a",
+      "bytes": 2286
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000001-88892102144d432e998aa0f3cf520e1b/call-start.json": {
+      "sha256": "bd7f263f9c88b2f42975bfc3e20dd77b0616c191badff0b30245682a975fb650",
+      "bytes": 2251
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000001-88892102144d432e998aa0f3cf520e1b/committed.json": {
+      "sha256": "931f8944fc73ced758c40111d25ff4d580ef01b361488a65cfb3064d0161c4b5",
+      "bytes": 2251
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000001-88892102144d432e998aa0f3cf520e1b/tensors-written.json": {
+      "sha256": "0b3071f99574b82932d2efaf35f26b0ef9ef38ef3517c1b77980ef7742fe218b",
+      "bytes": 2257
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000002-337966dbd2e94b5eb881ce23ea99fed3/before-commit.json": {
+      "sha256": "cf1fa0dc693a78e4ca50d4b158e461acc3f035f3ed63d312eb26c38c00efdd08",
+      "bytes": 2255
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000002-337966dbd2e94b5eb881ce23ea99fed3/call-end.json": {
+      "sha256": "d77efca99c22718ecb9ca1506a4d137d2497d74f6e8761fe663e7c6ae9484ec7",
+      "bytes": 2286
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000002-337966dbd2e94b5eb881ce23ea99fed3/call-start.json": {
+      "sha256": "3621e91059edd21f2c50405e7bef4e20c1370d7d0bdf093dce2833b84252f9b2",
+      "bytes": 2252
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000002-337966dbd2e94b5eb881ce23ea99fed3/committed.json": {
+      "sha256": "b59331b4cdfae7204313274ab40789a110f5f2e7cb273224253a8ffb8283a14c",
+      "bytes": 2250
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/attempts/chunk-000002-337966dbd2e94b5eb881ce23ea99fed3/tensors-written.json": {
+      "sha256": "8952e7443864ec85837b7f42dad3c93762047df6884249c7f8dabd74b3f174af",
+      "bytes": 2257
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/bundle.json": {
+      "sha256": "d6509fa666609017ca0235650e071589b7d91c982ef8fbfaf077701890d51728",
+      "bytes": 3321
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/bundle.sha256": {
+      "sha256": "83733e054af24c9976fbc365cab31d32bdf3dda09725ce5e1802f8982aa436f3",
+      "bytes": 64
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0000.bin": {
+      "sha256": "94ffec2f6a4773c7f47e1d9fdca503f710b88fe5854f7d6fdf82e727da48ce4e",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0001.bin": {
+      "sha256": "0d4f50bc77d3390a562eb68b0d16e20aad075aed238060a35e29837d5992fb6f",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0002.bin": {
+      "sha256": "4a407bcf5635c76bcf6e1701580b2497e4ce8c2d6bded133b1d835299df998e7",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0003.bin": {
+      "sha256": "997fe680968ff9315183b3d0f87511876db25f12003dda65054c3a3fdb09be1d",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0004.bin": {
+      "sha256": "a00df905bd1a165089d2c46a6485d05a0027594d02491ad809cb715b51274010",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0005.bin": {
+      "sha256": "693353fe1b6b3c7615672f45256ea9fd1d1952b7393089ea926133ab42e45fc0",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0006.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0007.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0008.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0009.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0010.bin": {
+      "sha256": "add2b1b5540a18957e2a1bb5634af79b9d1f13bf93d1b50b60befb5be88fce26",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0011.bin": {
+      "sha256": "de445d990fb0b4b38ce2c870bf8b2ff9b0bb1bf627025eb024a50146503024e3",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0012.bin": {
+      "sha256": "63455109a77ef804b1fe08a77c7db6db2ccfdc3e81608c9b9874b3e64cd205ee",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0013.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0014.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000000/tensor-0015.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/bundle.json": {
+      "sha256": "765400de11d7b82216642d5f373f43bb8efd6babeb65124247736683772ab0a1",
+      "bytes": 3320
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/bundle.sha256": {
+      "sha256": "fac35c1d555dd2f2a3f5967f4d59435538b8fcefd8be9dc32a6d36495f1c3971",
+      "bytes": 64
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0000.bin": {
+      "sha256": "0d573927d63c3cc4b7a8330bd321e9a4b636ca215b198db528f54c19b01c5789",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0001.bin": {
+      "sha256": "cbbfed031b4f6c4495c23c7296547e89cc2a695c71d0e0c37961b92a0d7ac41e",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0002.bin": {
+      "sha256": "05c0e0cd47d837f1035c7ebf649ad8ad2cf3f3f522cd691ecb7449be85704c52",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0003.bin": {
+      "sha256": "b8437d4e77c0b5a39d5e7a1c102e0915e7139a8f119c6d202e7cad057bb09d8f",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0004.bin": {
+      "sha256": "d72a7c8916a662fdb4cc0b319fa89343e73fa51c2dac7124370490c869a3c918",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0005.bin": {
+      "sha256": "486b44975b37f2ceccf148dd4639458bc43f0b2362f4de1c70d7284993a97164",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0006.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0007.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0008.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0009.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0010.bin": {
+      "sha256": "bd206f63c81c78a320ebce92c30dc936a8491c693c93cb381c728324214d2f6f",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0011.bin": {
+      "sha256": "ebdf1e0f98ea46c6997829321766071fc645dbacb0f0860a4b1eb1bd02344672",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0012.bin": {
+      "sha256": "dfbc8d96c11b68be178a22b4f732838e2fd942922b6a07db18f00f49cff2ab3a",
+      "bytes": 16405
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0013.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0014.bin": {
+      "sha256": "24c7576bcdabcfb795bdb84cb8ebae0febcd3a19d8f79ee337035dfe6d128405",
+      "bytes": 1040
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000001/tensor-0015.bin": {
+      "sha256": "0b42ada74af48ee6a54bf59c8da57cf12f8ac732c5bc7ca3b4a3f8476ff7be23",
+      "bytes": 4112
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/bundle.json": {
+      "sha256": "0afa6fcb7b81df0a1cdff77b011ee47f5fcac136cdb9c21b82308980cb05a9d3",
+      "bytes": 3322
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/bundle.sha256": {
+      "sha256": "06a8d132feb25a75c3610aefb751fc4c8ac8648fa46518a443af657cb57392a9",
+      "bytes": 64
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0000.bin": {
+      "sha256": "a95f7e19f25557545490034965c8d9c1d749b8223bd7466402283e46df48ff08",
+      "bytes": 32789
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0001.bin": {
+      "sha256": "e687f02df050b91e71293f90552efe20dfcea3fe21db7f97e15a4fda22c9712f",
+      "bytes": 2064
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0002.bin": {
+      "sha256": "affa42c8968094c31dc32bbd554288b3e39b9c8896f14d3708f5554e141c673a",
+      "bytes": 16401
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0003.bin": {
+      "sha256": "3c4720734428f0099de91b2776121bf9afdfcabd1b88fe4f6f1929bee280f966",
+      "bytes": 16401
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0004.bin": {
+      "sha256": "8d82e522b464d573416c33c217236295070ec0875352e3e92eccb968883e02fc",
+      "bytes": 16401
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0005.bin": {
+      "sha256": "7e224ebff92e3499ad4473065a97a749b58d8e3da24f4f04b0ea997bd62ebcdb",
+      "bytes": 16401
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0006.bin": {
+      "sha256": "2b05eb7a2873128cd550fb28ccf708d365db6d67b74a7e76fedfba09f1f19ad9",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0007.bin": {
+      "sha256": "384552ef15c15cf7084d4808b2f807bbb0f07b84382aebc700cd0b7ce75401ac",
+      "bytes": 2064
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0008.bin": {
+      "sha256": "2b05eb7a2873128cd550fb28ccf708d365db6d67b74a7e76fedfba09f1f19ad9",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0009.bin": {
+      "sha256": "384552ef15c15cf7084d4808b2f807bbb0f07b84382aebc700cd0b7ce75401ac",
+      "bytes": 2064
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0010.bin": {
+      "sha256": "c3365eb27f0a609d6a75f02759e79ca2b4ffff2c0afce591ef95e58a0a6b4599",
+      "bytes": 32789
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0011.bin": {
+      "sha256": "924103a91c5ddecd39e4638d9439cd318af87adfbbab8ff228399c52180436e7",
+      "bytes": 32789
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0012.bin": {
+      "sha256": "f01d3bb3c63c6ea5a5024a438ba69fb9e06424b3591e853c5d4f3e4f1d40c8f9",
+      "bytes": 32789
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0013.bin": {
+      "sha256": "2b05eb7a2873128cd550fb28ccf708d365db6d67b74a7e76fedfba09f1f19ad9",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0014.bin": {
+      "sha256": "384552ef15c15cf7084d4808b2f807bbb0f07b84382aebc700cd0b7ce75401ac",
+      "bytes": 2064
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/committed/chunk-000002/tensor-0015.bin": {
+      "sha256": "2b05eb7a2873128cd550fb28ccf708d365db6d67b74a7e76fedfba09f1f19ad9",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/posterior_chunks/identity.json": {
+      "sha256": "0c3c56bbe97b1390f550cc9f55de101670fb4f6098f002f1c4195b8c141bd8e1",
+      "bytes": 1267
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/result.json": {
+      "sha256": "9af20423fff4246314007351616887a91e9cbbae86336baeb57206577a48a30b",
+      "bytes": 28505
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/tuning/candidate_set_result.json": {
+      "sha256": "bdd6f02e40ea5e83e7883c9dbdd3cddf3827e47e2bfc36af2ff9c31658ac0046",
+      "bytes": 26121
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/tuning/execution_spec.json": {
+      "sha256": "68beff5baf057d4cac6d5a2cb7a2646e6699849ecc54f1045259d2ce179beaa2",
+      "bytes": 16537
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/tuning/numerical_chunks/025665e0a7b9416bf21b98aff22e5c33903a20f81912dc31acd5b262c1c649ea.json": {
+      "sha256": "3c03a3f6d32265820dc7614b71610e2d08001fc7d2ca64a602621478e0fdfb8c",
+      "bytes": 90457
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/tuning/numerical_chunks/f343c1a0443316e3cd4022062b6f6929b94bfc2330e7bd65648353e5ec8b4213.json": {
+      "sha256": "5c6d0683fdf886325a90ae9a2d3b7723144a2e46156cbb7e8ae33f30b03b809e",
+      "bytes": 90531
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/tuning/numerical_evidence/1252bfa2193d1d5312c7e2a06bd52037f552ed30ca0d6e71bdc11c51dda9d225.json": {
+      "sha256": "1c11731b2b1b2c5601e9f429b14048980c1ca06ee3fc30442f06b746c2291f6d",
+      "bytes": 98526
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/tuning/numerical_evidence/7f80b8723b19a2c1727cc012b65fdb06253ec303717dd2298e336d7ab9e01391.json": {
+      "sha256": "271adba9a2aa57bf2204dcc90f617242a475466408ec8f2096e341005f23073b",
+      "bytes": 98449
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/posterior-gpu/tuning/tuning_checkpoint.json": {
+      "sha256": "27ed329635c2b4573a3cd1cbd37af011b97947ead100523ff1e45142ffb9c1f3",
+      "bytes": 28074
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/precision-calibration.json": {
+      "sha256": "5caa1c8fe4fd9ca5ce174901a85f06ee85878cd98251a2f181c320fbc91e162c",
+      "bytes": 8211
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/preliminary-comparator-invalid/README.md": {
+      "sha256": "170373b6725aaf1ff22148e270ced213506ab1036fa2cf5738f329f13d56fd5d",
+      "bytes": 345
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/preliminary-comparator-invalid/calibrate_precision.py": {
+      "sha256": "78b1cd1aae8a0f71af74dbe75c54d8b7c74c3228c6b244999e0c6047ebfc719e",
+      "bytes": 6375
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/preliminary-comparator-invalid/calibration-manifest.json": {
+      "sha256": "aae0fa048c099aac7c29ac36a9392df5ee9c67d9028b6325840be144e8775b61",
+      "bytes": 1539
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/preliminary-comparator-invalid/calibration.log": {
+      "sha256": "f941501bd49932b8255f254ddf4d98acfbd7a1c7f28f1b8bfd9982ecf23cc21b",
+      "bytes": 622
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/preliminary-comparator-invalid/precision-calibration.json": {
+      "sha256": "aa0a1a3fc46238c023ed8685fb566e8d1737ea6613804dcd09d1e4fb2a370d1a",
+      "bytes": 8208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/terminal-audit.json": {
+      "sha256": "111cd0abd9ff64e69e5df2d872c2aa7028f85d2c123e80d5ef6618a472476a84",
+      "bytes": 444
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/tests-final-r1.log": {
+      "sha256": "59fd061505ef71eefd47dadaa66083df6d4c50a3462c76f46449f24fc289e379",
+      "bytes": 368
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/tests-terminal.log": {
+      "sha256": "e69161fcf21621331cdb760781ba6d42310d9eacd10443d376fd37a6ed82dcd9",
+      "bytes": 208
+    },
+    "docs/plans/artifacts/hmc-overall-repair-2026-09-15/unrelated-files-preservation.json": {
+      "sha256": "515425515fd8d0ec03bbb079ad12d342ab6a4590e4a1fa6fb15a8f0f7aa07733",
+      "bytes": 1799
+    }
+  },
+  "verification_interpretation": [
+    "277 and 114 test counts overlap",
+    "final 114 tests cover last assessment/report change",
+    "new diagnostic identity is v2; old source-bound examples cannot be silently relabeled as final-source replay",
+    "no universal sufficient burn-in, no statistical superiority, no anytime or joint confidence coverage",
+    "R-hat ESS MCSE remain outside candidate tuning qualification",
+    "large-history runtime and storage performance remain unqualified"
+  ],
+  "unrelated_preservation": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/unrelated-files-preservation.json",
+  "terminal_audit": "docs/plans/artifacts/hmc-overall-repair-2026-09-15/terminal-audit.json",
+  "finalized_at_utc": "2026-09-15T06:28:00.612632+00:00"
+}

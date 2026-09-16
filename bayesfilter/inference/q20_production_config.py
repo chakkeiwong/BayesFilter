@@ -155,6 +155,8 @@ def validate_protocol(config):
         raise ValueError("invalid Adam moments")
     if not v["bank_sizes"] or sorted(set(v["bank_sizes"])) != v["bank_sizes"] or any(type(x) is not int or x <= 1 for x in v["bank_sizes"]):
         raise ValueError("validation banks must increase and contain multiple rows")
+    if any(n % t["batch_size"] for n in v["bank_sizes"]):
+        raise ValueError("validation banks must contain whole training batches")
     if p["chains"] != 4 or config["starts"]["per_sign"] * 2 != p["chains"]:
         raise ValueError("four independent chains with two starts per sign are required")
     for key in ("warmup_min", "warmup_window", "warmup_chunk", "warmup_max", "retained_min", "retained_chunk", "retained_max"):

@@ -251,15 +251,19 @@ class HeldoutLoss:
         # A CPU bank is independent of GPU optimizer randomness. The same chunks
         # extend the bank prefix deterministically at later validation rungs.
         for start in range(0, count, self.batch_size):
-            with tf.device("/CPU:0"):
-                z = tf.random.stateless_normal([self.batch_size, self.dimension],
-                    tf.random.experimental.stateless_fold_in(seed, start // self.batch_size), dtype=tf.float64)
-            loss, valid = self.compiled(z)
+            loss, valid = self.batch(start // self.batch_size, seed)
             length = min(self.batch_size, count - start)
             if not bool(tf.reduce_all(valid[:length]).numpy()):
                 raise ValueError("invalid heldout target/map row; no resampling allowed")
             rows.append(loss[:length])
         return tf.concat(rows, axis=0)
+
+    def batch(self, index, seed):
+        """Stable paired-bank block, shared by uncached and incremental readers."""
+        with tf.device("/CPU:0"):
+            z = tf.random.stateless_normal([self.batch_size, self.dimension],
+                tf.random.experimental.stateless_fold_in(seed, index), dtype=tf.float64)
+        return self.compiled(z)
 
 
 def paired_loss_statistics(before, after, *, multiplier):
@@ -281,22 +285,31 @@ def paired_loss_statistics(before, after, *, multiplier):
 
 
 def assess_training_rung(*, baseline, increment, reliability, prior_plateaus,
-                         at_cap, minimum_improvement, maximum_half_width, plateau_comparisons):
+                         at_cap, minimum_improvement, maximum_half_width, plateau_comparisons,
+                         minimum_updates_met=True):
     if not reliability:
         return {"status": "numerically_invalid", "plateaus": 0, "development_eligible": False}
     precise = max(baseline["half_width"], increment["half_width"]) <= maximum_half_width
     learning = baseline["upper"] < -minimum_improvement
+    improving = increment["upper"] < -minimum_improvement
+    deteriorating = increment["lower"] > minimum_improvement
     plateau = precise and increment["lower"] >= -minimum_improvement and increment["upper"] <= minimum_improvement
     plateaus = prior_plateaus + 1 if plateau else 0
-    if learning and plateaus >= plateau_comparisons:
+    resolved = (not minimum_updates_met or precise or improving or deteriorating
+                or (at_cap and baseline["lower"] >= -minimum_improvement))
+    if not minimum_updates_met:
+        status = "deterioration_repair_trigger" if deteriorating else "continue_training"
+    elif learning and plateaus >= plateau_comparisons:
         status = "plateau_nominee"
-    elif increment["lower"] > minimum_improvement:
+    elif deteriorating:
         status = "deterioration_repair_trigger"
     elif at_cap:
         status = "cap_learning_observed" if learning else "cap_learning_unresolved"
     else:
-        status = "continue_training" if precise else "expand_validation_or_continue"
+        status = "continue_training" if precise or improving else "expand_validation_or_continue"
     return {"status": status, "plateaus": plateaus,
             "learning_observed": learning, "precision_screen": precise,
+            "continuing_improvement": improving, "minimum_updates_met": minimum_updates_met,
+            "validation_resolved": resolved,
             "development_eligible": status == "plateau_nominee",
             "posterior_qualified": False}

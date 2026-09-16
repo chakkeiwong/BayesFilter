@@ -38,6 +38,16 @@ from bayesfilter.runtime.durable_tensor_checkpoint import (
 )
 
 
+SOURCE_MIGRATION_FILENAME = "source-migration.json"
+SOURCE_MIGRATION_SCHEMA = "bayesfilter.phase9b.source_migration.v1"
+SOURCE_MIGRATION_ID = "phase9b_recovery_tuning_checkpoint_nonfinite_v1"
+NUMERICAL_MIGRATION_ID = "phase9b_principal_root_eigh_refinement_v1"
+ACCOUNTING_MIGRATION_ID = "phase9b_campaign_budget_ledger_repair_v1"
+NUMERICAL_MIGRATION_IDS = (NUMERICAL_MIGRATION_ID, ACCOUNTING_MIGRATION_ID)
+NUMERICAL_CORE_PATH = "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py"
+ACCOUNTING_REPAIR_PATH = "bayesfilter/runtime/campaign_budget_ledger.py"
+
+
 def load_parallel():
     spec = importlib.util.spec_from_file_location("phase9b_recovery_parallel", PARALLEL_SCRIPT)
     module = importlib.util.module_from_spec(spec)
@@ -53,17 +63,22 @@ def source_hashes() -> dict[str, str]:
     return result
 
 
-def typed_tuning_payload(result: Any) -> dict[str, Any]:
-    def encode(value):
-        if isinstance(value, tuple):
-            return {"tuple_items": [encode(item) for item in value]}
-        if isinstance(value, list):
-            return [encode(item) for item in value]
-        if isinstance(value, dict):
-            return {key: encode(item) for key, item in value.items()}
-        return value
+def _encode_tuning_value(value: Any) -> Any:
+    if isinstance(value, tuple):
+        return {"tuple_items": [_encode_tuning_value(item) for item in value]}
+    if isinstance(value, list):
+        return [_encode_tuning_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _encode_tuning_value(item) for key, item in value.items()}
+    if isinstance(value, float) and not math.isfinite(value):
+        return {"__nonfinite__": value.__repr__()}
+    return value
 
-    return {"fields": encode(asdict(result)), "payload_hash": payload_hash(result.payload())}
+
+def typed_tuning_payload(result: Any) -> dict[str, Any]:
+    return {"schema": "bayesfilter.phase9b.typed_tuning_payload.v2",
+            "fields": _encode_tuning_value(asdict(result)),
+            "payload_hash": result.artifact_hash}
 
 
 def restore_tuning(payload: dict[str, Any]) -> Any:
@@ -72,7 +87,19 @@ def restore_tuning(payload: dict[str, Any]) -> Any:
         FixedTransportHMCKernelTuningResult,
     )
 
+    if payload.get("schema") not in (None, "bayesfilter.phase9b.typed_tuning_payload.v2"):
+        raise CheckpointError("unsupported typed tuning checkpoint schema")
+
     def decode(value):
+        if isinstance(value, dict) and set(value) == {"__nonfinite__"}:
+            marker = value["__nonfinite__"]
+            if marker == "nan":
+                return float("nan")
+            if marker == "inf":
+                return float("inf")
+            if marker == "-inf":
+                return float("-inf")
+            raise CheckpointError(f"unknown nonfinite tuning marker: {marker!r}")
         if isinstance(value, dict) and set(value) == {"tuple_items"}:
             return tuple(decode(item) for item in value["tuple_items"])
         if isinstance(value, list):
@@ -82,10 +109,14 @@ def restore_tuning(payload: dict[str, Any]) -> Any:
         return value
 
     values = decode(payload["fields"])
-    values["config"] = FixedTransportHMCKernelTuningConfig(**values["config"])
+    config_fields = dict(values["config"])
+    tuning_policy = config_fields.pop("tuning_policy", "measured_joint_grid_v1")
+    values["config"] = FixedTransportHMCKernelTuningConfig(
+        tuning_policy=tuning_policy, **config_fields
+    )
     values["candidates"] = tuple(FixedTransportHMCCandidateResult(**row) for row in values["candidates"])
     result = FixedTransportHMCKernelTuningResult(**values)
-    if payload_hash(result.payload()) != payload["payload_hash"]:
+    if result.artifact_hash != payload["payload_hash"]:
         raise CheckpointError("restored typed tuning result differs from the public artifact")
     return result
 
@@ -335,8 +366,13 @@ def worker(job_path: Path) -> int:
     job = json.loads(job_path.read_bytes())
     output = Path(job["output_dir"])
     output.mkdir(parents=True, exist_ok=False)
-    if source_hashes() != job["sources"]:
+    current_sources = source_hashes()
+    if current_sources != job["sources"]:
         raise CheckpointError("source closure changed before worker launch")
+    migration = job.get("source_migration")
+    if migration is not None and (migration.get("to_sources") != current_sources
+                                  or migration.get("from_sources") != job.get("binding_sources")):
+        raise CheckpointError("worker source migration binding changed")
     if os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH", "").lower() != "true":
         raise CheckpointError("memory growth must be enabled before import")
     if os.environ.get("CUDA_VISIBLE_DEVICES") != job["gpu_uuid"]:
@@ -498,9 +534,98 @@ def p1_allocations(canaries: dict[str, Any], forecasts: dict[str, Any], remainin
     return allocations
 
 
-def verify_binding(start: dict[str, Any]) -> None:
-    if source_hashes() != start["sources"] or hashlib.sha256(PLAN.read_bytes()).hexdigest() != start["plan_hash"]:
+def _source_migration_path(campaign: Path) -> Path:
+    return campaign / SOURCE_MIGRATION_FILENAME
+
+
+def _validate_source_migration(start: dict[str, Any], campaign: Path, current: dict[str, str]) -> dict[str, Any]:
+    path = _source_migration_path(campaign)
+    if not path.is_file():
+        raise CheckpointError("source closure changed after campaign initialization without a recorded migration")
+    try:
+        migration = json.loads(path.read_bytes())
+    except (OSError, ValueError) as exc:
+        raise CheckpointError(f"invalid source migration record: {exc}") from exc
+    migration_id = migration.get("migration_id")
+    if (migration.get("schema") != SOURCE_MIGRATION_SCHEMA
+            or migration_id not in (SOURCE_MIGRATION_ID, *NUMERICAL_MIGRATION_IDS)):
+        raise CheckpointError("unsupported Phase 9B source migration")
+    if migration.get("from_sources") != start["sources"] or migration.get("to_sources") != current:
+        raise CheckpointError("source migration does not bind the current source closure")
+    changed = sorted(path for path in set(start["sources"]) | set(current)
+                     if start["sources"].get(path) != current.get(path))
+    numerical = migration_id in NUMERICAL_MIGRATION_IDS
+    if migration_id == ACCOUNTING_MIGRATION_ID:
+        allowed = sorted([str(SCRIPT.relative_to(ROOT)), NUMERICAL_CORE_PATH, ACCOUNTING_REPAIR_PATH])
+    else:
+        allowed = sorted([str(SCRIPT.relative_to(ROOT)), NUMERICAL_CORE_PATH] if numerical
+                         else [str(SCRIPT.relative_to(ROOT))])
+    if migration.get("changed_paths") != changed or changed != allowed:
+        raise CheckpointError("source migration is broader than the declared repair")
+    if migration.get("plan_hash") != start["plan_hash"] or migration.get("claim_boundary") != CLAIM_BOUNDARY:
+        raise CheckpointError("source migration plan or claim boundary mismatch")
+    if (migration.get("scientific_contract_unchanged") is not True
+            or migration.get("serializer_only") is not (not numerical)):
+        raise CheckpointError("source migration repair kind or scientific contract mismatch")
+    if migration_id == ACCOUNTING_MIGRATION_ID:
+        reusable_setup_sources = migration.get("reusable_setup_sources")
+        if not isinstance(reusable_setup_sources, dict):
+            raise CheckpointError("accounting migration lacks reusable setup source identity")
+        setup_changed = sorted(path for path in set(reusable_setup_sources) | set(current)
+                               if reusable_setup_sources.get(path) != current.get(path))
+        expected_setup_changes = sorted([str(SCRIPT.relative_to(ROOT)), ACCOUNTING_REPAIR_PATH])
+        if setup_changed != expected_setup_changes:
+            raise CheckpointError("accounting migration setup identity changed beyond harness files")
+    if numerical:
+        namespace = Path(migration.get("execution_namespace", ""))
+        if (len(namespace.parts) != 2 or namespace.parts[0] != "numerical-repairs"
+                or namespace.parts[1] in (".", "..") or namespace.is_absolute()
+                or (campaign / namespace).resolve().parent != (campaign / "numerical-repairs").resolve()):
+            raise CheckpointError("numerical migration requires a fresh local execution namespace")
+    return migration
+
+
+def execution_source_binding(start: dict[str, Any], campaign: Path) -> tuple[dict[str, str], dict[str, Any] | None]:
+    current = source_hashes()
+    if current == start["sources"]:
+        return current, None
+    migration_root = Path(start.get("source_migration_root", campaign))
+    return current, _validate_source_migration(start, migration_root, current)
+
+
+def verify_binding(start: dict[str, Any], campaign: Path | None = None) -> None:
+    current = source_hashes()
+    if current != start["sources"]:
+        if campaign is None:
+            raise CheckpointError("source closure changed after campaign initialization")
+        _validate_source_migration(start, Path(start.get("source_migration_root", campaign)), current)
+    if hashlib.sha256(PLAN.read_bytes()).hexdigest() != start["plan_hash"]:
         raise CheckpointError("source/plan changed after campaign initialization")
+
+
+def prepare_execution_namespace(campaign: Path, start: dict[str, Any], sources: dict[str, str],
+                                migration: dict[str, Any] | None) -> tuple[Path, dict[str, Any]]:
+    if migration is None or migration["migration_id"] not in NUMERICAL_MIGRATION_IDS:
+        return campaign, start
+    execution = campaign / migration["execution_namespace"]
+    setup_sources = migration.get("reusable_setup_sources", sources)
+    record = {"schema": "bayesfilter.phase9b.numerical_execution.v1", "budget_campaign_root": str(campaign),
+              "execution_root": str(execution), "binding_sources": start["sources"],
+              "execution_sources": sources, "setup_sources": setup_sources,
+              "plan_hash": start["plan_hash"],
+              "source_migration": migration, "claim_boundary": CLAIM_BOUNDARY}
+    record_path = execution / "execution-start.json"
+    if record_path.exists():
+        if json.loads(record_path.read_bytes()) != record:
+            raise CheckpointError("numerical execution namespace binding changed")
+    else:
+        if execution.exists() and any(not path.is_file() or not path.name.startswith("execution-start.json.partial-")
+                                      for path in execution.iterdir()):
+            raise CheckpointError("numerical execution namespace contains unbound prior evidence")
+        execution.mkdir(parents=True, exist_ok=True)
+        durable_json(record_path, record)
+    return execution, {**start, "source_migration_root": str(campaign),
+                       "setup_sources": setup_sources, "stream_sources": sources}
 
 
 def _wave(campaign: Path, mode: str, cap: float | dict[str, float], ledger: Any, start: dict[str, Any],
@@ -508,7 +633,8 @@ def _wave(campaign: Path, mode: str, cap: float | dict[str, float], ledger: Any,
     from bayesfilter.runtime.display_gpu_policy import probe_inventory, select_gpus
     from bayesfilter.runtime.parallel_tuning import ParallelTuningTask, run_parallel_tuning_wave
 
-    verify_binding(start)
+    verify_binding(start, campaign)
+    execution_sources, source_migration = execution_source_binding(start, campaign)
     caps = {arm: float(cap[arm] if isinstance(cap, dict) else cap) for arm in ARMS}
     if any(not math.isfinite(value) or not 30.0 < value <= ARM_CAP_SECONDS for value in caps.values()):
         raise CheckpointError("worker caps must be finite and within the eight-hour ceiling")
@@ -535,6 +661,14 @@ def _wave(campaign: Path, mode: str, cap: float | dict[str, float], ledger: Any,
                 _validate_worker(task, result)
                 if result["job"]["mode"] != mode or Path(result["job"]["campaign_root"]) != campaign:
                     raise CheckpointError("previous sibling belongs to a different wave")
+                if (source_migration is not None
+                        and source_migration.get("migration_id") in NUMERICAL_MIGRATION_IDS):
+                    reusable_setup_sources = source_migration.get("reusable_setup_sources", execution_sources)
+                    job_sources = result["job"]
+                    if (job_sources.get("setup_sources") != reusable_setup_sources
+                            or job_sources.get("sources") not in (execution_sources, reusable_setup_sources)
+                            or job_sources.get("stream_sources") not in (execution_sources, reusable_setup_sources)):
+                        raise CheckpointError("previous sibling belongs to a different numerical scope")
                 if mode == "p1" and p1_outcome(result["controller"]) == "resource_cap_partial_not_completed":
                     continue
                 results[arm] = row
@@ -581,11 +715,14 @@ def _wave(campaign: Path, mode: str, cap: float | dict[str, float], ledger: Any,
                 else:
                     branches[arm] = mode
                 job = {"arm": arm, "mode": mode, "campaign_root": str(campaign), "output_dir": str(output / arm),
-                       "sources": start["sources"], "gpu_uuid": device["uuid"], "cap_seconds": arm_cap,
+                       "sources": execution_sources, "binding_sources": start["sources"],
+                       "gpu_uuid": device["uuid"], "cap_seconds": arm_cap,
                        "setup_sources": start.get("setup_sources", start["sources"]),
                        "stream_sources": start.get("stream_sources", start["sources"]),
                        "tuning_repair": start.get("tuning_repair", 1),
                        "stream_branch": branches[arm]}
+                if source_migration is not None:
+                    job["source_migration"] = source_migration
                 if mode == "p1":
                     job["next_chunk_reserve_seconds"] = allocations[arm]["next_chunk_reserve_seconds"]
                 job_path = output / f"{arm}-job.json"
@@ -716,13 +853,15 @@ def reconcile_interrupted_supervisor(campaign: Path, ledger: Any) -> None:
 def initialize_campaign(campaign: Path, *, resume: bool) -> tuple[dict[str, Any], Any]:
     from bayesfilter.runtime.campaign_budget_ledger import CampaignBudgetLedger
 
+    if (campaign / "execution-start.json").exists():
+        raise CheckpointError("resume numerical execution through its original budget campaign root")
     ledger = CampaignBudgetLedger(campaign / "campaign_budget_ledger.json")
     start_path = campaign / "campaign-start.json"
     if start_path.exists():
         if not resume:
             raise CheckpointError("initialized campaign requires --resume")
         start = json.loads(start_path.read_bytes())
-        verify_binding(start)
+        verify_binding(start, campaign)
         payload = ledger.read()
         if (payload["campaign_id"] != campaign.name or payload["total_budget_seconds"] != TOTAL_GPU_SECONDS
                 or payload["source_hash"] != payload_hash(start["sources"])
@@ -735,7 +874,7 @@ def initialize_campaign(campaign: Path, *, resume: bool) -> tuple[dict[str, Any]
     if initialization.exists():
         record = json.loads(initialization.read_bytes())
         start = record["start"]
-        verify_binding(start)
+        verify_binding(start, campaign)
     else:
         start = {"sources": sources, "plan_hash": plan_hash, "plan_file": str(PLAN), "result_file": str(RESULT),
                  "command": sys.argv, "python": sys.executable, "started_at_unix": time.time(),
@@ -774,7 +913,7 @@ def initialize_campaign(campaign: Path, *, resume: bool) -> tuple[dict[str, Any]
                               "at_unix": start["started_at_unix"], "prepared_ledger_sha256": original_hash}]
         durable_json(ledger.path, payload)
     durable_json(start_path, start)
-    verify_binding(start)
+    verify_binding(start, campaign)
     return start, ledger
 
 
@@ -820,10 +959,14 @@ def _coordinator(campaign: Path, *, resume: bool, canary_only: bool,
                  through_p1: bool, initialize_only: bool) -> int:
     campaign = campaign.resolve()
     start, ledger = initialize_campaign(campaign, resume=resume)
+    execution_sources, source_migration = execution_source_binding(start, campaign)
+    budget_campaign = campaign
+    campaign, start = prepare_execution_namespace(campaign, start, execution_sources, source_migration)
     if initialize_only:
-        print(json.dumps({"status": "INITIALIZED_NO_GPU_WORK", "campaign": str(campaign), "budget": ledger.read()}))
+        print(json.dumps({"status": "INITIALIZED_NO_GPU_WORK", "campaign": str(budget_campaign),
+                          "execution_root": str(campaign), "budget": ledger.read()}))
         return 0
-    reconcile_interrupted_supervisor(campaign, ledger)
+    reconcile_interrupted_supervisor(budget_campaign, ledger)
     for mode, cap in (("reference", 3600.0), ("interrupt", 400.0), ("resume", 400.0)):
         if not (campaign / f"{mode}-complete.json").exists():
             _wave(campaign, mode, cap, ledger, start)
@@ -849,7 +992,8 @@ def _coordinator(campaign: Path, *, resume: bool, canary_only: bool,
         readiness_path = campaign / "phase0-readiness.json"
         if readiness_path.exists():
             readiness = json.loads(readiness_path.read_bytes())
-            if readiness["sources"] != start["sources"] or readiness["plan_hash"] != start["plan_hash"]:
+            if (readiness["sources"] != start["sources"] or readiness["plan_hash"] != start["plan_hash"]
+                    or readiness.get("execution_sources", readiness["sources"]) != execution_sources):
                 raise CheckpointError("stale P1 readiness binding")
             allocations = readiness["allocations"]
         else:
@@ -859,6 +1003,7 @@ def _coordinator(campaign: Path, *, resume: bool, canary_only: bool,
                 if len(set(seeds)) != 3:
                     raise CheckpointError("diagnostic and P1 seed families collide")
             readiness = {"status": "PASS_CURRENT_SOURCE_PHASE0_FOR_BOUNDED_P1", "sources": start["sources"],
+                         "execution_sources": execution_sources, "source_migration": source_migration,
                          "plan_hash": start["plan_hash"], "canaries": canaries, "forecasts": forecasts,
                          "allocations": allocations, "bundle_verification": verify_campaign_bundles(campaign),
                          "p1_entrypoint": str(ROOT / "docs/benchmarks/run_ssl_lstm_q20_phase9b_p1_sequential_canary_2026_09_05.py"),
@@ -879,7 +1024,7 @@ def _coordinator(campaign: Path, *, resume: bool, canary_only: bool,
         result_path = campaign / (f"p1-partial-{uuid.uuid4().hex[:10]}.json" if partial else "p1-result.json")
         if not result_path.exists():
             durable_json(result_path, result)
-    verify_binding(start)
+    verify_binding(start, campaign)
     print(json.dumps(result, indent=2), flush=True)
     return 0
 

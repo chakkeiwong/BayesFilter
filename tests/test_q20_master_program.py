@@ -7,6 +7,26 @@ from bayesfilter.inference.q20_master_program import execute_master
 from bayesfilter.inference.q20_production_config import validate_protocol
 
 
+def test_calibration_master_prices_only_training_and_preserves_partial_cohort(tmp_path):
+    config = protocol()
+    config["training"].update(pricing_batches=[8])
+    root = tmp_path / "calibration"
+    kwargs = dict(repo=Path(__file__).resolve().parents[1], fixture=True, stop_after="calibrate",
+        allowance={"campaign_remaining_seconds": 1200., "diagnostic_remaining_seconds": 300.})
+    result = execute_master(config, root, **kwargs)
+    assert result["status"] == "TRAINING_CALIBRATION_COMPLETE", result
+    assert result["production_qualified"] is False
+    state = json.loads((root / "campaign.json").read_text())
+    assert set(state["stages"]) == {"price-training", "calibration"}
+    checkpoint = json.loads(Path(result["details"]["training"]["checkpoint"]).read_text())
+    assert checkpoint["status"] == "calibration_complete"
+    assert len(checkpoint["cohort"]) == 2
+    before = state["spent_seconds"]
+    repeated = execute_master(config, root, **kwargs)
+    assert repeated == result
+    assert json.loads((root / "campaign.json").read_text())["spent_seconds"] == before
+
+
 def test_real_pricing_worker_stops_early_and_resume_does_not_repeat(tmp_path):
     from tests.test_q20_production_repair import tiny_protocol
     config = tiny_protocol()

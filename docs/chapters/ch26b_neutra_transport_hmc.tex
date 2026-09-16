@@ -401,17 +401,26 @@ size is
 \begin{equation}
  N_{\rm eff}=\frac{MN}{1+2\sum_{t\ge1}\rho_t},
 \end{equation}
-with a stable positive-sequence estimator used in computation.  Bulk ESS uses
+with an explicitly identified positive-pairs estimator used in computation.
+The current TensorFlow calculation matches TFP 0.25 and is not identical to
+Stan's initial-monotone estimator.  Bulk ESS uses
 rank-normalized draws; tail ESS evaluates lower and upper tail indicators and
 takes the conservative tail value.  These are finite-run diagnostics, not
 proofs of convergence.
 
-The current serious protocol uses four chains, warm-up modern R-hat at most
+The historical case-study protocol below used four chains, warm-up modern R-hat at most
 $1.05$, retained modern R-hat at most $1.01$, minimum bulk ESS $1000$, minimum
 tail ESS $400$, and caps of $10{,}000$ warm-up and retained draws per chain.
 The value $1000$ is a conservative convenience rule, not a theorem.  The
 structural result below missed it narrowly and is labeled with the disclosed
 post-result owner adjudication rather than called an automated pass.
+
+New posterior runs declare their ESS and precision requirements through
+\path{HMCPosteriorAssessmentPolicy}; Chapter~\ref{ch:bf-diagnostics} gives the
+common procedure. The corrected diagnostic version is
+\path{bayesfilter.hmc_diagnostic_math.v2}. Historical numerical reports below
+have not been recomputed with that version and cannot establish current
+threshold passage.
 
 TFP's fixed HamiltonianMonteCarlo kernel did not expose native divergence flags
 for these runs.  The preserved hard screen defines an energy failure as a

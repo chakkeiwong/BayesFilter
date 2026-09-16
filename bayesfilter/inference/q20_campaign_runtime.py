@@ -261,7 +261,7 @@ class Campaign:
         worker_config = json.loads(json.dumps(self.config))
         if request.get("role") and worker_config["role"] != "smoke":
             worker_config["role"] = request["role"]
-        request = {**request, **resume, "config": worker_config, "plan_file": "docs/plans/bayesfilter-ssl-lstm-q20-executable-master-repair-plan-2026-09-16.md"}
+        request = {**request, **resume, "config": worker_config, "plan_file": "docs/plans/bayesfilter-ssl-lstm-q20-validation-budget-repair-plan-2026-09-16.md"}
         if request["stage"] == "train":
             request["cooperative_seconds"] = max(0., cap_seconds - 2*self.config["execution"]["termination_grace_seconds"])
         command = [sys.executable, "docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py",
@@ -277,7 +277,10 @@ class Campaign:
             return {"status": self.state["status"], "completed": False, "attempt": attempt}
         data = path.read_bytes()
         result = json.loads(data)
-        partial_training = request["stage"] == "train" and not result.get("result", {}).get("cohort_complete", False)
+        training_result = result.get("result", {})
+        training_complete = (training_result.get("calibration_complete", False) if request.get("calibration_only")
+                             else training_result.get("cohort_complete", False))
+        partial_training = request["stage"] == "train" and not training_complete
         partial_tuning = request["stage"] in {"tune","reverify"} and result.get("result",{}).get("status") == "paused_infrastructure"
         if result.get("completed") and not partial_training and not partial_tuning:
             self.state["stages"][name] = {"request_hash": original_hash,

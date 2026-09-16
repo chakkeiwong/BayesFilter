@@ -1,0 +1,750 @@
+{
+  "accounting_events": [
+    {
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "event": "reserve_allocated",
+      "source": "initial_reserve",
+      "units": 3
+    },
+    {
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "event": "work_reserved",
+      "units": 1,
+      "work_item_id": "docs-posterior:example-1:work:000001"
+    },
+    {
+      "event": "preparation_elapsed",
+      "seconds": 0.0
+    },
+    {
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "event": "work_charged",
+      "remaining_candidate_reserve": 2,
+      "units": 1,
+      "work_item_id": "docs-posterior:example-1:work:000001"
+    },
+    {
+      "charge_mode": "chunk",
+      "cost_basis": "conservative_endpoint_gradient_work_estimate",
+      "event": "numerical_work_quoted",
+      "gradient_work": 2176,
+      "leapfrog_steps": 3,
+      "transitions": 544,
+      "work_item_id": "docs-posterior:example-1:work:000001"
+    },
+    {
+      "chunk_index": 0,
+      "cost_basis": "conservative_attempted_native_chunk",
+      "event": "numerical_chunk_charged",
+      "gradient_work": 2176,
+      "transitions": 544,
+      "work_item_id": "docs-posterior:example-1:work:000001"
+    },
+    {
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "event": "work_reserved",
+      "units": 1,
+      "work_item_id": "docs-posterior:example-1:work:000002"
+    },
+    {
+      "event": "work_elapsed",
+      "seconds": 15.404542781994678,
+      "work_item_id": "docs-posterior:example-1:work:000001"
+    },
+    {
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "event": "work_charged",
+      "remaining_candidate_reserve": 1,
+      "units": 1,
+      "work_item_id": "docs-posterior:example-1:work:000002"
+    },
+    {
+      "charge_mode": "chunk",
+      "cost_basis": "conservative_endpoint_gradient_work_estimate",
+      "event": "numerical_work_quoted",
+      "gradient_work": 2176,
+      "leapfrog_steps": 3,
+      "transitions": 544,
+      "work_item_id": "docs-posterior:example-1:work:000002"
+    },
+    {
+      "chunk_index": 0,
+      "cost_basis": "conservative_attempted_native_chunk",
+      "event": "numerical_chunk_charged",
+      "gradient_work": 2176,
+      "transitions": 544,
+      "work_item_id": "docs-posterior:example-1:work:000002"
+    },
+    {
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "event": "reserve_released",
+      "reason": "verified",
+      "units": 1
+    },
+    {
+      "event": "work_elapsed",
+      "seconds": 0.228176920034457,
+      "work_item_id": "docs-posterior:example-1:work:000002"
+    }
+  ],
+  "artifact_authority": false,
+  "artifact_schema": "bayesfilter.hmc_candidate_set_artifact.v1",
+  "budget_used_units": 2,
+  "candidate_states": {
+    "docs-posterior:example-1:candidate:000001": "verified"
+  },
+  "candidates": [
+    {
+      "adapter_signature": "ff423f6c25d427a3cc5308b8bece58f4d14c468fcce0bc765d5cf046ef129758",
+      "backend": "tensorflow_probability",
+      "candidate_family_id": "docs-posterior:example-1:family:000001",
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "candidate_record_hash": "e12ba3c440a75c4679be145996464bf59f3cbd22127aef855ba5357ab96709c8",
+      "coordinate_system": "ordinary",
+      "creation_ordinal": 1,
+      "dtype": "float64",
+      "epsilon": 1.3,
+      "execution_mode": "tf_function",
+      "leapfrog_steps": 3,
+      "mass_signature": "4e19164b12cb4171c9f145d2a464df429d3063705cb6cb82f12875ffef14bd06",
+      "parent_candidate_id": null,
+      "schema": "bayesfilter.hmc_candidate_record.v1",
+      "scope_id": "docs-posterior",
+      "search_id": "example-1",
+      "source_dependency_hash": "2189d4b7555410c4dfa87014432d11eb879ec5f7febf51446e9c714ef83171dc",
+      "start_bank_signature": "b6fb5bc4d954ef040724128d08bdf8cb2ace7fd95bdead7015903052a0018e62",
+      "target_preparation_identity": "342ba7dd0757c3a2b3b14991701491b9841a79246d29c667dc39566370b803e9",
+      "target_signature": "docs-candidate-retained-gaussian-v1",
+      "transition_identity": "047a6ccb5504fc6ebd6ff6de4ad0485fd9f7a5fe076c71f8b710fec7eed105d5",
+      "use_xla": true,
+      "warmup_protocol": "432459d44dc474bf70c775db8873fdd427a64b5ebf5f2b54da6137ca3ca71f28"
+    }
+  ],
+  "completion_status": "complete",
+  "config": {
+    "allow_repair_from_free_pool": true,
+    "candidate_reserve_units": 3,
+    "epsilon_by_l": [
+      [
+        3,
+        [
+          1.3
+        ]
+      ]
+    ],
+    "epsilon_refinement_factors": [
+      0.8,
+      1.25
+    ],
+    "evidence_rungs": [
+      1,
+      2,
+      4
+    ],
+    "expansion_l_grid": [],
+    "initial_epsilon": null,
+    "max_candidates": 100,
+    "max_gradient_work": null,
+    "max_wall_time_seconds": null,
+    "pilot_enabled": false,
+    "primary_l_grid": [
+      3
+    ],
+    "refinement_l_grid": [],
+    "refinement_rounds": 0,
+    "repair_reserve_units": 3,
+    "schema": "bayesfilter.hmc_controller_config.v1",
+    "total_budget_units": 10
+  },
+  "final_status": "complete",
+  "nominee_id": null,
+  "nonclaims": [
+    "no statistical superiority claim",
+    "no posterior convergence claim from tuning evidence",
+    "no implicit candidate selection"
+  ],
+  "numerical_handoff_authority": false,
+  "observations": [
+    {
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "observation": {
+        "acceptance": 0.7619632711477977,
+        "acceptance_decision": "passed",
+        "acceptance_evidence": {
+          "acceptance_decision": "passed",
+          "block_means_by_chain": [
+            [
+              0.7181898863048038,
+              0.8019486983954891,
+              0.6734636211075202,
+              0.7906942369749653
+            ],
+            [
+              0.749862178001209,
+              0.7581461655465263,
+              0.7857575500084047,
+              0.7776011052757974
+            ],
+            [
+              0.7659731677580791,
+              0.7488061355618797,
+              0.7837741108690411,
+              0.7902828203610929
+            ],
+            [
+              0.7511128145393811,
+              0.7850043379564086,
+              0.7471135981306896,
+              0.7636819115734768
+            ]
+          ],
+          "candidate_health_alerts": [],
+          "candidate_promotion_vetoes": [],
+          "chain_mean_uncertainty_interval": [
+            0.7485117632251775,
+            0.7754147790704179
+          ],
+          "chain_mean_uncertainty_level": 0.9,
+          "chain_mean_uncertainty_method": "two_sided_student_t_independent_chain_means",
+          "chain_means": [
+            0.7460741106956946,
+            0.7678417497079844,
+            0.7722090586375232,
+            0.761728165549989
+          ],
+          "compatibility_aliases_non_authoritative": true,
+          "cost_stop_reasons": [],
+          "cost_stop_scope": null,
+          "decision": "passed",
+          "diagnostic_followups": [],
+          "engineering_invalidity_reasons": [],
+          "evidence_validity": "valid",
+          "excluded_remainder_per_chain": 0,
+          "explanatory_notes": [
+            "binary_acceptance_is_explanatory_only"
+          ],
+          "max_abs_log_accept_energy_proxy": 3.9506224838682638,
+          "max_log_accept_ratio": 2.034438130098612,
+          "min_log_accept_ratio": -3.9506224838682638,
+          "movement_rate_by_chain": [
+            0.6929133858267716,
+            0.7559055118110236,
+            0.8110236220472441,
+            0.8503937007874016
+          ],
+          "native_divergence_count": null,
+          "native_divergence_status": "not_exposed_by_kernel",
+          "negative_proxy_exceedance_count_by_chain": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "negative_proxy_exceedance_rate_by_chain": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "normalized_return_displacement_by_chain": [
+            1.4499129596733267,
+            1.583216975643995,
+            0.7684113699080715,
+            2.0965538204624634
+          ],
+          "passed": true,
+          "path_return_fraction_by_chain": [
+            0.07936507936507936,
+            0.05555555555555555,
+            0.015873015873015872,
+            0.015873015873015872
+          ],
+          "policy": {
+            "allowed_cost_stop_reasons": [],
+            "block_count": 4,
+            "chain_count": 4,
+            "confidence_level": 0.9,
+            "dependence_unit": "independently_seeded_chain_mean",
+            "diagnostic_roles": {
+              "bounded_short_cycle_path_return": "promotion_veto_and_resonance_repair_trigger",
+              "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+              "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+              "movement": "promotion_veto_and_trajectory_repair_trigger",
+              "native_divergence": "promotion_veto",
+              "signed_log_accept_ratio_tails": "explanatory_alert_only"
+            },
+            "max_abs_log_accept_energy_proxy": 1000.0,
+            "max_repeated_state_fraction": 0.95,
+            "min_block_size": 16,
+            "min_decisions_per_chain": 64,
+            "min_movement_rate": 0.05,
+            "min_normalized_return_displacement": 0.0001,
+            "path_return_contract": {
+              "absolute_tolerance": 1e-12,
+              "aggregation": "maximum_recurrence_fraction_over_lags_per_chain",
+              "chain_rule": "veto_if_any_chain_exceeds_max_fraction",
+              "lags": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16
+              ],
+              "max_fraction": 0.95,
+              "minimum_repetitions_at_minimum_evidence": 4,
+              "relative_tolerance": 1e-10
+            },
+            "practical_region": [
+              0.55,
+              0.85
+            ],
+            "repair_region": [
+              0.5,
+              0.9
+            ],
+            "schema": "bayesfilter.hmc_acceptance_policy.v5",
+            "target": 0.7,
+            "tuning_decision_role": "working_tuning_compatibility_interval_not_convergence_or_equivalence",
+            "uncertainty_method": "two_sided_student_t_independent_chain_means"
+          },
+          "pooled_mean": 0.7619632711477977,
+          "positive_proxy_exceedance_count_by_chain": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_proxy_exceedance_rate_by_chain": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "promotion_eligible": true,
+          "raw_traces_exposed": false,
+          "realized_acceptance_rate": 0.7734375,
+          "realized_acceptance_rate_by_chain": [
+            0.6953125,
+            0.75,
+            0.8046875,
+            0.84375
+          ],
+          "repair_direction": null,
+          "repeated_state_fraction_by_chain": [
+            0.30708661417322836,
+            0.2440944881889764,
+            0.1889763779527559,
+            0.14960629921259838
+          ],
+          "reports_posterior_convergence": false,
+          "schema": "bayesfilter.hmc_acceptance_evidence.v5",
+          "tuning_repair_triggers": [],
+          "usable_decisions_per_chain": 128
+        },
+        "adapter_kind": "ordinary",
+        "adapter_signature": "ff423f6c25d427a3cc5308b8bece58f4d14c468fcce0bc765d5cf046ef129758",
+        "decision": "passed",
+        "diagnostic_alerts": [],
+        "draw_range": [
+          8,
+          136
+        ],
+        "engineering_invalidity_reasons": [],
+        "evidence_validity": "valid",
+        "hard_vetoes": [],
+        "numerical_evidence_hash": "7f80b8723b19a2c1727cc012b65fdb06253ec303717dd2298e336d7ab9e01391",
+        "promotion_eligible": true,
+        "promotion_vetoes": [],
+        "repair_eligible": false,
+        "rhat_reporting_only": {
+          "finite_rhat_count": 2,
+          "max_finite_rhat": 1.0282392682897494,
+          "max_folded_rank_normalized_split_rhat": 1.0282392682897494,
+          "max_rank_normalized_split_rhat": 0.9978925991486605,
+          "nonfinite_rhat_count": 0,
+          "passed": false,
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "role": "reporting_only"
+        },
+        "seed_lineage": [
+          1945130585,
+          2137827963
+        ],
+        "source_dependency_hash": "2189d4b7555410c4dfa87014432d11eb879ec5f7febf51446e9c714ef83171dc",
+        "stream_id": "docs-posterior:example-1:work:000001:c425dfad5a3d58f2d1e39920ba7563dc3e086074a3b127204a99529d15e28339"
+      },
+      "stage": "measurement",
+      "work_item_id": "docs-posterior:example-1:work:000001"
+    },
+    {
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "observation": {
+        "acceptance": 0.7571601214049843,
+        "acceptance_decision": "passed",
+        "acceptance_evidence": {
+          "acceptance_decision": "passed",
+          "block_means_by_chain": [
+            [
+              0.704358162031677,
+              0.810530164677346,
+              0.7472312592359699,
+              0.7680491328221581
+            ],
+            [
+              0.7631206068774468,
+              0.6873648680529645,
+              0.7231665178519204,
+              0.7470302165602496
+            ],
+            [
+              0.7135149864303575,
+              0.8672265397268941,
+              0.7598643888750515,
+              0.7608928074662463
+            ],
+            [
+              0.7878022727365692,
+              0.727434394948646,
+              0.7807470503739887,
+              0.7662285738122648
+            ]
+          ],
+          "candidate_health_alerts": [],
+          "candidate_promotion_vetoes": [],
+          "chain_mean_uncertainty_interval": [
+            0.7343151697510689,
+            0.7800050730588998
+          ],
+          "chain_mean_uncertainty_level": 0.9,
+          "chain_mean_uncertainty_method": "two_sided_student_t_independent_chain_means",
+          "chain_means": [
+            0.7575421796917877,
+            0.7301705523356453,
+            0.7753746806246373,
+            0.7655530729678672
+          ],
+          "compatibility_aliases_non_authoritative": true,
+          "cost_stop_reasons": [],
+          "cost_stop_scope": null,
+          "decision": "passed",
+          "diagnostic_followups": [],
+          "engineering_invalidity_reasons": [],
+          "evidence_validity": "valid",
+          "excluded_remainder_per_chain": 0,
+          "explanatory_notes": [
+            "binary_acceptance_is_explanatory_only"
+          ],
+          "max_abs_log_accept_energy_proxy": 4.490341078932717,
+          "max_log_accept_ratio": 2.2237512632551715,
+          "min_log_accept_ratio": -4.490341078932717,
+          "movement_rate_by_chain": [
+            0.7874015748031497,
+            0.7165354330708661,
+            0.7401574803149606,
+            0.7401574803149606
+          ],
+          "native_divergence_count": null,
+          "native_divergence_status": "not_exposed_by_kernel",
+          "negative_proxy_exceedance_count_by_chain": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "negative_proxy_exceedance_rate_by_chain": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "normalized_return_displacement_by_chain": [
+            0.5384828739546205,
+            1.0145399584430659,
+            1.170710975302171,
+            1.736690707823983
+          ],
+          "passed": true,
+          "path_return_fraction_by_chain": [
+            0.03968253968253968,
+            0.07936507936507936,
+            0.09523809523809523,
+            0.047619047619047616
+          ],
+          "policy": {
+            "allowed_cost_stop_reasons": [],
+            "block_count": 4,
+            "chain_count": 4,
+            "confidence_level": 0.9,
+            "dependence_unit": "independently_seeded_chain_mean",
+            "diagnostic_roles": {
+              "bounded_short_cycle_path_return": "promotion_veto_and_resonance_repair_trigger",
+              "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+              "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+              "movement": "promotion_veto_and_trajectory_repair_trigger",
+              "native_divergence": "promotion_veto",
+              "signed_log_accept_ratio_tails": "explanatory_alert_only"
+            },
+            "max_abs_log_accept_energy_proxy": 1000.0,
+            "max_repeated_state_fraction": 0.95,
+            "min_block_size": 16,
+            "min_decisions_per_chain": 64,
+            "min_movement_rate": 0.05,
+            "min_normalized_return_displacement": 0.0001,
+            "path_return_contract": {
+              "absolute_tolerance": 1e-12,
+              "aggregation": "maximum_recurrence_fraction_over_lags_per_chain",
+              "chain_rule": "veto_if_any_chain_exceeds_max_fraction",
+              "lags": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16
+              ],
+              "max_fraction": 0.95,
+              "minimum_repetitions_at_minimum_evidence": 4,
+              "relative_tolerance": 1e-10
+            },
+            "practical_region": [
+              0.55,
+              0.85
+            ],
+            "repair_region": [
+              0.5,
+              0.9
+            ],
+            "schema": "bayesfilter.hmc_acceptance_policy.v5",
+            "target": 0.7,
+            "tuning_decision_role": "working_tuning_compatibility_interval_not_convergence_or_equivalence",
+            "uncertainty_method": "two_sided_student_t_independent_chain_means"
+          },
+          "pooled_mean": 0.7571601214049843,
+          "positive_proxy_exceedance_count_by_chain": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_proxy_exceedance_rate_by_chain": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "promotion_eligible": true,
+          "raw_traces_exposed": false,
+          "realized_acceptance_rate": 0.74609375,
+          "realized_acceptance_rate_by_chain": [
+            0.7890625,
+            0.71875,
+            0.7421875,
+            0.734375
+          ],
+          "repair_direction": null,
+          "repeated_state_fraction_by_chain": [
+            0.21259842519685035,
+            0.2834645669291339,
+            0.25984251968503935,
+            0.25984251968503935
+          ],
+          "reports_posterior_convergence": false,
+          "schema": "bayesfilter.hmc_acceptance_evidence.v5",
+          "tuning_repair_triggers": [],
+          "usable_decisions_per_chain": 128
+        },
+        "adapter_kind": "ordinary",
+        "adapter_signature": "ff423f6c25d427a3cc5308b8bece58f4d14c468fcce0bc765d5cf046ef129758",
+        "decision": "passed",
+        "diagnostic_alerts": [],
+        "draw_range": [
+          8,
+          136
+        ],
+        "engineering_invalidity_reasons": [],
+        "evidence_validity": "valid",
+        "hard_vetoes": [],
+        "numerical_evidence_hash": "1252bfa2193d1d5312c7e2a06bd52037f552ed30ca0d6e71bdc11c51dda9d225",
+        "promotion_eligible": true,
+        "promotion_vetoes": [],
+        "repair_eligible": false,
+        "rhat_reporting_only": {
+          "finite_rhat_count": 2,
+          "max_finite_rhat": 1.0134035813573585,
+          "max_folded_rank_normalized_split_rhat": 1.0115723821899687,
+          "max_rank_normalized_split_rhat": 1.0134035813573585,
+          "nonfinite_rhat_count": 0,
+          "passed": false,
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "role": "reporting_only"
+        },
+        "seed_lineage": [
+          1419757227,
+          1864051845
+        ],
+        "source_dependency_hash": "2189d4b7555410c4dfa87014432d11eb879ec5f7febf51446e9c714ef83171dc",
+        "stream_id": "docs-posterior:example-1:work:000002:c6c9ca806ea46bc962f72ad12ba101437564e25f5e3e1d8b6f6d2df68c3d65dc"
+      },
+      "stage": "verification",
+      "work_item_id": "docs-posterior:example-1:work:000002"
+    }
+  ],
+  "remaining_budget_units": 8,
+  "repair_actions": [],
+  "replay_authority": true,
+  "reserved_budget_units": 0,
+  "result_hash": "0ab3f4e85b750f5e8a9717d66de7dc068bb0ee33164ef5fc1eb0f6fdbdc230b5",
+  "resume_pending_work_item_ids": [],
+  "schema": "bayesfilter.hmc_candidate_set_result.v1",
+  "scope": {
+    "adapter_signature": "ff423f6c25d427a3cc5308b8bece58f4d14c468fcce0bc765d5cf046ef129758",
+    "backend": "tensorflow_probability",
+    "coordinate_system": "ordinary",
+    "dtype": "float64",
+    "epsilon_domain": [
+      0.1,
+      1.9
+    ],
+    "execution_mode": "tf_function",
+    "mass_signature": "4e19164b12cb4171c9f145d2a464df429d3063705cb6cb82f12875ffef14bd06",
+    "max_repairs_per_family": 0,
+    "repair_factor": 1.1,
+    "schema": "bayesfilter.hmc_tuning_scope.v1",
+    "scope_id": "docs-posterior",
+    "search_id": "example-1",
+    "source_dependency_hash": "2189d4b7555410c4dfa87014432d11eb879ec5f7febf51446e9c714ef83171dc",
+    "start_bank_signature": "b6fb5bc4d954ef040724128d08bdf8cb2ace7fd95bdead7015903052a0018e62",
+    "target_preparation_identity": "342ba7dd0757c3a2b3b14991701491b9841a79246d29c667dc39566370b803e9",
+    "target_signature": "docs-candidate-retained-gaussian-v1",
+    "transition_identity": "047a6ccb5504fc6ebd6ff6de4ad0485fd9f7a5fe076c71f8b710fec7eed105d5",
+    "use_xla": true,
+    "warmup_protocol": "432459d44dc474bf70c775db8873fdd427a64b5ebf5f2b54da6137ca3ca71f28"
+  },
+  "search_state": {
+    "controller_policy_version": 3,
+    "elapsed_seconds": 15.649282289028633,
+    "gradient_work": 4352,
+    "refinement_round": 0
+  },
+  "verification_receipts": [
+    {
+      "acceptance": 0.7619632711477977,
+      "acceptance_decision": "passed",
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "candidate_record_hash": "e12ba3c440a75c4679be145996464bf59f3cbd22127aef855ba5357ab96709c8",
+      "decision": "passed",
+      "diagnostic_alerts": [],
+      "draw_range": [
+        8,
+        136
+      ],
+      "epsilon": 1.3,
+      "evidence_validity": "valid",
+      "exact_l": 3,
+      "hard_vetoes": [],
+      "mass_signature": "4e19164b12cb4171c9f145d2a464df429d3063705cb6cb82f12875ffef14bd06",
+      "numerical_evidence_hash": "7f80b8723b19a2c1727cc012b65fdb06253ec303717dd2298e336d7ab9e01391",
+      "promotion_eligible": true,
+      "promotion_vetoes": [],
+      "repair_eligible": false,
+      "schema": "bayesfilter.hmc_verification_receipt.v1",
+      "seed_lineage": [
+        1945130585,
+        2137827963
+      ],
+      "stage": "measurement",
+      "stream_id": "docs-posterior:example-1:work:000001:c425dfad5a3d58f2d1e39920ba7563dc3e086074a3b127204a99529d15e28339",
+      "verification_attempt_id": "docs-posterior:example-1:work:000001:attempt"
+    },
+    {
+      "acceptance": 0.7571601214049843,
+      "acceptance_decision": "passed",
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "candidate_record_hash": "e12ba3c440a75c4679be145996464bf59f3cbd22127aef855ba5357ab96709c8",
+      "decision": "passed",
+      "diagnostic_alerts": [],
+      "draw_range": [
+        8,
+        136
+      ],
+      "epsilon": 1.3,
+      "evidence_validity": "valid",
+      "exact_l": 3,
+      "hard_vetoes": [],
+      "mass_signature": "4e19164b12cb4171c9f145d2a464df429d3063705cb6cb82f12875ffef14bd06",
+      "numerical_evidence_hash": "1252bfa2193d1d5312c7e2a06bd52037f552ed30ca0d6e71bdc11c51dda9d225",
+      "promotion_eligible": true,
+      "promotion_vetoes": [],
+      "repair_eligible": false,
+      "schema": "bayesfilter.hmc_verification_receipt.v1",
+      "seed_lineage": [
+        1419757227,
+        1864051845
+      ],
+      "stage": "verification",
+      "stream_id": "docs-posterior:example-1:work:000002:c6c9ca806ea46bc962f72ad12ba101437564e25f5e3e1d8b6f6d2df68c3d65dc",
+      "verification_attempt_id": "docs-posterior:example-1:candidate:000001:verification:001"
+    }
+  ],
+  "verified_candidate_ids": [
+    "docs-posterior:example-1:candidate:000001"
+  ],
+  "viable_candidate_ids": [
+    "docs-posterior:example-1:candidate:000001"
+  ],
+  "work_items": [
+    {
+      "candidate_family_id": "docs-posterior:example-1:family:000001",
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "candidate_record_hash": "e12ba3c440a75c4679be145996464bf59f3cbd22127aef855ba5357ab96709c8",
+      "cohort_id": "docs-posterior:cohort:0001",
+      "evidence_multiplier": 1,
+      "evidence_rung": 0,
+      "ordinal": 1,
+      "priority": 1,
+      "repair_action_id": null,
+      "reservation_units": 1,
+      "schema": "bayesfilter.hmc_work_item.v1",
+      "stage": "measurement",
+      "status": "completed",
+      "verification_attempt_id": null,
+      "work_item_id": "docs-posterior:example-1:work:000001"
+    },
+    {
+      "candidate_family_id": "docs-posterior:example-1:family:000001",
+      "candidate_id": "docs-posterior:example-1:candidate:000001",
+      "candidate_record_hash": "e12ba3c440a75c4679be145996464bf59f3cbd22127aef855ba5357ab96709c8",
+      "cohort_id": "docs-posterior:cohort:0002",
+      "evidence_multiplier": 1,
+      "evidence_rung": 0,
+      "ordinal": 2,
+      "priority": 1,
+      "repair_action_id": null,
+      "reservation_units": 1,
+      "schema": "bayesfilter.hmc_work_item.v1",
+      "stage": "verification",
+      "status": "completed",
+      "verification_attempt_id": "docs-posterior:example-1:candidate:000001:verification:001",
+      "work_item_id": "docs-posterior:example-1:work:000002"
+    }
+  ]
+}

@@ -23,7 +23,7 @@ from bayesfilter.inference.q20_production_config import (
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode",choices=("validate","price","train","campaign","status","worker","write-config"))
+    parser.add_argument("mode",choices=("validate","price","calibrate","train","campaign","status","worker","write-config"))
     parser.add_argument("--config",type=Path)
     parser.add_argument("--output-dir",type=Path)
     parser.add_argument("--budget-record",type=Path,
@@ -56,7 +56,7 @@ def main(argv=None):
             result={"schema":config["schema"],"config_hash":digest(config),"role":config["role"],
                 "promotion_eligible":False,"cohort_size":len(training_cohort(config)),
                 "methods":config["comparison"]["methods"],
-                "stages":["qualify","price","reference","train","tune","sample","replica_exchange","ensemble","compare","reverify","confirmation"],
+                "stages":["price-training","calibration","qualify","price","reference","train","tune","sample","replica_exchange","ensemble","compare","reverify","confirmation"],
                 "runtime_limit":"external_process_supervisor","budget_required_before_numerical_work":True}
         else:
             if args.output_dir is None:
@@ -64,7 +64,7 @@ def main(argv=None):
             from bayesfilter.inference.q20_master_program import execute_master
             allowance=None if args.budget_record is None else json.loads(args.budget_record.read_text())
             result=execute_master(config,args.output_dir,repo=ROOT,allowance=allowance,
-                                  stop_after=args.mode if args.mode in {"price","train"} else None)
+                                  stop_after=args.mode if args.mode in {"price","train","calibrate"} else None)
     print(json.dumps(result,indent=2,allow_nan=False))
     return 0
 

@@ -83,9 +83,9 @@ def make_binding(*, target=None, config=None, **overrides):
     return bind_hmc_candidate_set_execution(**(values | overrides))
 
 
-@pytest.fixture(scope="module")
-def tuned():
-    binding = make_binding()
+@pytest.fixture(scope="module", params=("serial", "batched"))
+def tuned(request):
+    binding = make_binding(config=execution_config(chain_mode=request.param))
     config = HMCControllerConfig(primary_l_grid=(2, 3),
         epsilon_by_l=((2, (1.1, 1.3, 1.5)), (3, (1.1, 1.3, 1.5))),
         total_budget_units=40, repair_reserve_units=3)
@@ -109,13 +109,19 @@ def test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence(tuned):
         assert tuple(evidence["seed"]) not in seen_seeds
         seen_seeds.add(tuple(evidence["seed"]))
         samples = _tensor_from_payload(evidence["samples"])
-        assert samples.shape == (136, 4, 2)
-        assert receipt.draw_range == (8, 136)
+        work = next(w for w in result.work_items if w.work_item_id == evidence["work"]["work_item_id"])
+        expected = (binding.config.num_warmup_steps
+                    + binding.config.verification_num_results * work.evidence_multiplier)
+        assert samples.shape == (expected, 4, 2)
+        assert receipt.draw_range == (binding.config.num_warmup_steps, expected)
     assert len(result.verified_candidate_ids) >= 2
 
 
 def test_member_export_reload_and_continuation_match_direct_runner(tuned, tmp_path):
-    from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
+    from bayesfilter.inference.hmc import (
+        FullChainHMCConfig, ReusableFullChainHMCRunner,
+        build_independent_chain_tfp_hmc_runner,
+    )
     binding, result = tuned
     candidate_id = result.verified_candidate_ids[-1]  # Explicit member, not a nominee.
     runner = build_retained_bound_hmc_archive_runner_from_candidate_set_result(
@@ -131,11 +137,15 @@ def test_member_export_reload_and_continuation_match_direct_runner(tuned, tmp_pa
     assert not np.array_equal(first["final_active_state"], runner.initial_active_state)
     assert payload["predecessor"]["content_hash"] == first["content_hash"]
     assert not payload["warmup_draws_included"] and not payload["tuning_draws_included"]
-    baseline = build_independent_chain_tfp_hmc_runner(binding._active_adapter, binding.initial_active_state,
+    factory = (ReusableFullChainHMCRunner if binding.config.chain_mode == "batched"
+               else build_independent_chain_tfp_hmc_runner)
+    baseline = factory(binding._active_adapter, binding.initial_active_state,
         FullChainHMCConfig(num_results=12, num_burnin_steps=0, step_size=runner.candidate.epsilon,
             num_leapfrog_steps=runner.candidate.leapfrog_steps, seed=(19,42), use_xla=False,
             target_scope="candidate-bridge-test"))
-    direct = baseline.run(current_state=first["final_active_state"], mode="serial")
+    direct = baseline.run(current_state=first["final_active_state"],
+                          **({} if binding.config.chain_mode == "batched" else {"mode": "serial"}))
+    assert payload["runtime"]["execution_mode"] == binding.config.chain_mode
     np.testing.assert_array_equal(second["samples"], direct.samples)
     with pytest.raises(ValueError, match="fresh"):
         reloaded.run(num_results=8, seed=(19, 41), output_dir=tmp_path / "reuse", previous_archive=second["archive_path"])
@@ -235,10 +245,51 @@ def test_dispatch_rejects_wrong_target_or_start_before_work(tuned):
 
 
 @pytest.mark.parametrize("overrides", [dict(measurement_num_results=63), dict(verification_num_results=0),
-    dict(num_warmup_steps=-1), dict(seed=(1,)), dict(non_xla_reason=None), dict(use_xla="true")])
+    dict(num_warmup_steps=-1), dict(seed=(1,)), dict(non_xla_reason=None), dict(use_xla="true"),
+    dict(chain_mode="unknown")])
 def test_execution_config_rejects_invalid_evidence_budgets(overrides):
     with pytest.raises((ValueError, TypeError)):
         execution_config(**overrides)
+
+
+def test_batched_binding_xla_preserves_independent_rows_and_dynamic_inputs(monkeypatch):
+    from bayesfilter.inference import hmc
+    from bayesfilter.inference.hmc_candidate_set_tuning import HMCTuningCandidateRecord
+
+    def forbid_scalar_runners(*_args, **_kwargs):
+        raise AssertionError("batched execution must not dispatch scalar chains")
+
+    monkeypatch.setattr(hmc, "build_independent_chain_tfp_hmc_runner", forbid_scalar_runners)
+    binding = make_binding(config=execution_config(chain_mode="batched", use_xla=True,
+                                                   non_xla_reason=None))
+    candidate = HMCTuningCandidateRecord.create(binding.scope, leapfrog_steps=2,
+                                                epsilon=.2, creation_ordinal=1)
+    starts = tf.zeros_like(binding.initial_active_state)
+    first = binding._run(candidate, starts, 4, (31, 7))
+    replay = binding._run(candidate, starts, 4, (31, 7))
+    tf.debugging.assert_equal(first.samples, replay.samples)
+    momenta = first.trace["initial_momentum"][0]
+    assert bool(tf.reduce_all(tf.reduce_any(momenta[1:] != momenta[:1], axis=-1)))
+    shifted = tf.tensor_scatter_nd_update(starts, [[0, 0]], [1.])
+    independent = binding._run(candidate, shifted, 4, (31, 7))
+    tf.debugging.assert_equal(first.samples[:, 1:], independent.samples[:, 1:])
+    assert bool(tf.reduce_any(first.samples[:, 0] != independent.samples[:, 0]))
+    changed_seed = binding._run(candidate, starts, 4, (31, 8))
+    assert bool(tf.reduce_any(first.samples != changed_seed.samples))
+    child = HMCTuningCandidateRecord.create(binding.scope, leapfrog_steps=2,
+                                            epsilon=.3, creation_ordinal=2)
+    changed_step = binding._run(child, starts, 4, (31, 7))
+    assert bool(tf.reduce_any(first.samples != changed_step.samples))
+    assert binding.health_failures(starts, first.samples, first.trace) == ()
+    assert first.trace["proposed_target_status_telemetry"]["status_code"].shape == (4, 4)
+    assert len(binding._runners) == 1
+    compiled = next(iter(binding._runners.values()))._runner
+    concrete = compiled.get_concrete_function()
+    assert compiled.experimental_get_tracing_count() == 1
+    assert concrete.function_def.attr["_XlaMustCompile"].b
+    definition = concrete.graph.as_graph_def()
+    nodes = list(definition.node) + [node for fn in definition.library.function for node in fn.node_def]
+    assert not any("PyFunc" in node.op or "HostCompute" in node.op for node in nodes)
 
 
 def test_finite_guard_and_candidate_health_wrappers_compose():

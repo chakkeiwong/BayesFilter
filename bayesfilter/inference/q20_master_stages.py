@@ -55,7 +55,7 @@ def run_worker(request, output):
             bridge = attach_qualification(bridge, request["qualification_path"], config)
         initialization_seconds=time.monotonic()-started
         result = dispatch(config, bridge, output / "data", request, memory)
-        if request["stage"] == "price":
+        if request["stage"] in {"price", "price-training"}:
             result["worker_initialization_seconds"] = initialization_seconds
             write_json(output / "data/result.json", result, exclusive=False)
         final = {"completed": True, "status": result.get("status", "computed"),
@@ -85,10 +85,15 @@ def dispatch(config, bridge, root, request, memory):
     if stage == "price":
         return price_complete(config, bridge, root, memory,
             reservation_limit_seconds=request.get("reservation_limit_seconds"))
+    if stage == "price-training":
+        from bayesfilter.inference.q20_production_training import price_training
+        return price_training(config, bridge, root, memory_policy=memory,
+            reservation_limit_seconds=request.get("reservation_limit_seconds"), calibration_only=True)
     if stage == "train":
         from bayesfilter.inference.q20_production_training import run_training_cohort
         return run_training_cohort(config, bridge, root, memory_policy=memory,
-            max_seconds=request["cooperative_seconds"], resume=request.get("resume_checkpoint"))
+            max_seconds=request["cooperative_seconds"], resume=request.get("resume_checkpoint"),
+            calibration_only=request.get("calibration_only", False))
     if stage == "reference":
         from bayesfilter.inference.q20_production_reference import run_reference
         return run_reference(config, bridge, root, resume_chunks=request.get("resume_chunks"))
@@ -136,7 +141,7 @@ def price_complete(config, bridge, root, memory, *, reservation_limit_seconds=No
     from bayesfilter.inference.neutra_training_protocol import export_weighted_transport
     from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
     from bayesfilter.inference.hmc_kernel_tuning import HMCKernelTuningConfig, prepare_operational_windowed_mass_handoff
-    from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
+    from bayesfilter.inference.hmc import FullChainHMCConfig, ReusableFullChainHMCRunner
     from bayesfilter.inference.q20_hmc_qualification import check_full_chain_health
     from bayesfilter.inference.q20_production_config import scoped_seed
     root.mkdir(parents=True, exist_ok=False)
@@ -183,7 +188,7 @@ def price_complete(config, bridge, root, memory, *, reservation_limit_seconds=No
         for name,target,state in targets:
             for length in sorted({min(config["tuning"]["l_grid"]),max(config["tuning"]["l_grid"])}):
                 count = config["execution"]["pricing_transitions"]
-                runner=build_independent_chain_tfp_hmc_runner(target,state,FullChainHMCConfig(
+                runner=ReusableFullChainHMCRunner(target,state,FullChainHMCConfig(
                     num_results=count,num_burnin_steps=0,step_size=config["tuning"]["initial_epsilon"],
                     num_leapfrog_steps=length,use_xla=config["jit_compile"],
                     seed=scoped_seed(config,"price-hmc",beta,name,length),target_scope=adapter.target_scope,
@@ -191,13 +196,13 @@ def price_complete(config, bridge, root, memory, *, reservation_limit_seconds=No
                 times=[]
                 for index in range(config["budget"]["pricing_updates"]):
                     begin=time.monotonic()
-                    result=runner.run(current_state=state,root_seed=scoped_seed(config,"price-hmc",beta,name,length,index),mode="serial")
+                    result=runner.run(current_state=state,seed=scoped_seed(config,"price-hmc",beta,name,length,index))
                     result.samples.numpy()
                     times.append(time.monotonic()-begin)
                     check_full_chain_health(result)
                 rows.append({"beta":beta,"kind":name,"L":length,"first_seconds":times[0],
                     "steady_seconds":max(times[1:] or times)/count,"transitions_per_chain":count,
-                    "runner":"public_independent_chain_serial_with_proposal_telemetry"})
+                    "runner":"public_batched_chain_with_proposal_telemetry"})
                 write_json(root / f"hmc-{beta}-{name}-{length}.json",rows[-1])
         # Last target is the widest actual transport; use its measured primitive
         # inside the real full replica-exchange graph for an initial cost quote.

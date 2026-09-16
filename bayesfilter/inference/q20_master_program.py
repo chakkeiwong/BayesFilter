@@ -180,6 +180,24 @@ def _execute(campaign, *, fixture=False,stop_after=None):
             raise StageIncomplete(result["status"])
         return result
     try:
+        if stop_after == "calibrate":
+            from bayesfilter.inference.q20_campaign_costs import training_reservation
+            priced = stage("price-training", {"stage": "price-training",
+                "reservation_limit_seconds": campaign.state["campaign_limit"]}, diagnostic=True)
+            quote = training_reservation(config, priced["result"]["rows"])
+            startup = priced["result"]["worker_initialization_seconds"] + max(
+                0., priced["supervisor_seconds"] - priced["wall_seconds"])
+            reserve = quote["calibration_seconds"] + config["budget"]["forecast_safety_factor"] * (
+                startup + 2 * config["execution"]["termination_grace_seconds"])
+            atomic_json(campaign.root / "training-forecast.json", {**quote,
+                "calibration_with_worker_overhead_seconds": reserve})
+            if quote["missing_calibration_scopes"] or reserve > campaign.remaining():
+                return finish("CALIBRATION_UNDER_BUDGETED", forecast=quote,
+                              required_seconds=reserve, full_campaign_priced=False)
+            calibrated = stage("calibration", {"stage": "train", "calibration_only": True}, reserve=reserve)
+            return finish("TRAINING_CALIBRATION_COMPLETE", training=calibrated["result"],
+                forecast=quote, next_action="inspect learning and variance before extending the same full protocol",
+                full_campaign_priced=False)
         if config["jit_compile"]:
             receipts=[]
             for beta in config["training"]["betas"][1:]:
@@ -223,7 +241,11 @@ def _execute(campaign, *, fixture=False,stop_after=None):
         # Its complete reference result is preserved while development proceeds.
         training_budget=min(quote["training_cap_seconds"],campaign.remaining()-sum(
             value for key,value in reserve.items() if key!="reference"))
-        trained=stage("train",{"stage":"train","cooperative_seconds":training_budget-config["execution"]["termination_grace_seconds"]},reserve=training_budget)
+        training_request = {"stage": "train"}
+        if "calibration" in campaign.state["stages"]:
+            completed_calibration = json.loads(Path(campaign.state["stages"]["calibration"]["result_path"]).read_text())
+            training_request["resume_checkpoint"] = completed_calibration["result"]["checkpoint"]
+        trained=stage("train", training_request, reserve=training_budget)
         if stop_after=="train":
             return finish("TRAINING_STAGE_COMPLETE",training=trained["result"])
         maps=choose_maps(config,trained["result"]["checkpoint"])

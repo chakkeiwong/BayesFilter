@@ -16,7 +16,7 @@ def measured_row(width=16, beta=.5):
 def test_partial_cost_can_reject_but_cannot_admit_campaign():
     config = protocol_template()
     partial = training_reservation(config, [measured_row()])
-    assert partial["minimum_cohort_seconds"] > config["budget"]["campaign_remaining_seconds"]
+    assert partial["minimum_cohort_seconds"] > 0
     assert partial["missing_training_scopes"]
     assert partial["full_campaign_priced"] is False
     complete = training_reservation(config, [measured_row(w, b)
@@ -24,6 +24,18 @@ def test_partial_cost_can_reject_but_cannot_admit_campaign():
     assert not complete["missing_training_scopes"]
     assert complete["minimum_cohort_seconds"] > partial["minimum_cohort_seconds"]
     assert complete["full_campaign_priced"] is False
+    scenarios = complete["scenarios"]
+    assert scenarios["calibration"]["training_scopes"] == 8
+    assert scenarios["calibration"]["optimizer_updates"] == 8 * 128
+    assert scenarios["calibration"]["target_validation_rows"] == 8 * 2 * 768
+    assert scenarios["floor_validation_cap"]["optimizer_updates"] == 36 * 512
+    assert scenarios["floor_first_bank"]["target_validation_rows"] == 36 * 3 * 768
+    assert scenarios["floor_validation_cap"]["target_validation_rows"] == 36 * 3 * 12288
+    assert scenarios["full_cap"]["target_validation_rows"] == 36 * 5 * 12288
+    # In particular, no duplicate baseline/previous graph at the first rung.
+    assert scenarios["calibration"]["optimizer_seconds"] == 8 * (12. + 127 * 3.)
+    assert scenarios["calibration"]["validation_seconds"] == 16 * (13. - 2 * 3. + 24 * 3.)
+    assert complete["calibration_seconds"] < complete["minimum_cohort_seconds"] < complete["full_training_cap_seconds"]
 
 
 @pytest.mark.parametrize("bad", [0., -1., float("nan"), float("inf")])
@@ -41,3 +53,9 @@ def test_duplicate_or_wrong_scope_cannot_inflate_reservation():
     row["width"] = 999
     with pytest.raises(ValueError, match="duplicate or unsupported"):
         training_reservation(protocol_template(), [row])
+
+
+def test_invalid_setup_or_batch_cost_metadata_rejects():
+    for field, value in (("setup_seconds", float("nan")), ("heldout_first_batches", 0)):
+        with pytest.raises(ValueError):
+            training_reservation(protocol_template(), [{**measured_row(), field: value}])

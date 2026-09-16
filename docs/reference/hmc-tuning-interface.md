@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-15. This reference describes the common candidate-set
+Last checked: 2026-09-16. This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
@@ -92,6 +92,13 @@ It never transfers acceptance qualification from one L to another. A directional
 repair crossing the domain can measure its unvisited boundary before stopping.
 
 ## Evidence roles
+
+Posterior transforms may report a different number of model quantities than
+the active HMC dimension. For example, two unconstrained simplex coordinates
+can produce three named probabilities. The transform must preserve draw and
+chain axes and match `parameter_names`; retained checkpoints and continued HMC
+states keep the original active dimension. This changes posterior reporting,
+not tuning membership or qualification.
 
 `HMCAcceptancePolicy` uses four chain means, temporal blocks and a compatibility
 interval, with a default minimum of four blocks of sixteen decisions per chain.
@@ -367,6 +374,55 @@ posterior assessment policy.
 
 See [the posterior example](../examples/hmc_posterior_precision.py) and
 [the combined repair and evidence plan](../plans/bayesfilter-hmc-overall-repair-plan-2026-09-15.md).
+
+## Testing the procedure and its diagnostics
+
+The [inference validation suites](../validation/README.md) exercise the existing
+public procedure through separate numerical, invariance, search, SBC, reference
+accuracy, stopping and defect-detection experiments. The
+[generated coverage table](../generated/inference_validation_coverage.md)
+records actual target, route and device scope, including unavailable and
+incomplete work. A model listed in the target catalog is not automatically a
+tested model.
+
+Automatic preparation, supplied geometry, and frozen transport have distinct
+coverage. Small complete-path cases assess every verified member. Full SBC uses
+fresh datasets and independent complete fits, with one declared output per fit;
+candidate siblings never inflate replication counts. Failed fits remain in the
+denominator. Data-dependent likelihood quantities help detect fitting procedures
+that ignore the observations even when parameter ranks appear uniform.
+
+Fixed-kernel invariance tests use the reversible random-position construction
+or independent two-sample experiments. Adapting warmup draws cannot replace
+those experiments. Identity and recurrent kernels demonstrate why invariance
+alone says nothing about useful exploration. A diagnostic passing on stationary
+arrays also does not establish its behavior at an adaptive stopping time;
+separate experiments compare actual stopped outputs with exact references.
+Fixed-length comparison arms reuse the same verified member with independent
+streams and predeclared discarded/retained counts. Missing arms remain in the
+comparison denominator. Larger replicated experiments can assess a member
+selected by tuning identity before sampling, while retaining all unassessed
+siblings explicitly.
+
+Validation of native automatic initialization passes no supplied search
+configuration. A fixed epsilon declared before preparation is a different
+experiment and can exceed the prepared metric's bound. Even with native
+initialization, the bounded search may return no verified candidate; failed
+fits must remain visible in calibration rather than being dropped or rerun
+until they pass.
+
+The [September 16 validation campaign](../plans/bayesfilter-inference-validation-24h-result-2026-09-16.md)
+also found a mixture run whose local posterior checks passed while its retained
+draws missed a mode. `POSTERIOR_DECLARED_CHECKS_PASSED` means the declared checks
+passed. For multimodal targets, include relevant mode or other global quantities
+in posterior assessment and examine sensitivity to starting locations. A small
+MCSE within one visited mode does not quantify error relative to the full
+posterior.
+
+These are development validation tools. They preserve tuning qualification:
+R-hat, ESS and MCSE do not reject, rank, repair or delay tuning candidates.
+Missing references, underpowered experiments, non-rejection and descriptive
+error comparisons do not grant posterior or default-readiness claims.
 
 ## Historical interfaces
 
