@@ -56,9 +56,10 @@ def assemble_diagnostics(run_root):
         validate_result(result, row, registry)
         if digest(result) != saved["result_digest"]:
             raise ValueError("corrupt numerical result")
-        condition = row.get("condition", "affine_gaussian_correctness_fixture")
+        condition = row.get("condition", "affine_gaussian_correctness_fixture" if row["model"]=="gaussian_all_parameters" else row["model"])
         # Different tuning candidates stay separate instead of being averaged.
-        candidate = row["proposal"] + (":" + digest(row["controls"])[:12] if "controls" in row else "")
+        configuration = result["diagnostics"].get("candidate_configuration", row.get("controls"))
+        candidate = row["proposal"] + (":" + digest(configuration)[:12] if configuration is not None else "")
         dataset_key = (condition, row["dataset"])
         version = result["diagnostics"]["data_version"]
         if dataset_key in data_versions and data_versions[dataset_key] != version:
@@ -78,20 +79,24 @@ def assemble_diagnostics(run_root):
                     "kernel_calls": result["runtime"]["kernel_calls"]})
     comparisons = []
     for (condition, candidate), values in sorted(groups.items()):
-        if candidate == "kalman":
+        if candidate in ("kalman", "grid_reference"):
             continue
-        for adversary in ("bootstrap", "ukf", "adapted", "prior_sis", "adapted_sis"):
+        nonlinear = any(r["model"]=="nonlinear_scalar" for r in study["rows"])
+        adversaries = study.get("heuristic_adversaries", ("ekf", "ukf", "bootstrap", "local_linear") if nonlinear else ("bootstrap", "ukf", "adapted", "prior_sis", "adapted_sis"))
+        for adversary in adversaries:
             if candidate == adversary:
                 continue
             comparison = paired_dataset_summary(values, groups.get((condition, adversary), {}))
             comparisons.append({"condition": condition, "candidate": candidate, "heuristic": adversary, **comparison})
+    observed_losses = [x for x in comparisons if x.get("mean_squared_error_difference",0)>0]
     result = {"schema": "younis_score_diagnostic_comparison_v1", "raw_rows": raw,
               "aggregation_backend": "TensorFlow CPU diagnostic, GPU intentionally hidden",
               "failed_or_missing_rows": failures, "conditional_heuristic_table": comparisons,
               "hard_veto_screen": "failed_rows_preserved" if failures else "passed_numerical_smoke",
               "heuristic_dominance_verdict": "correctness_fixture_only_no_promotion",
               "statistically_supported_ranking": False, "default_ready": False,
-              "interpretation": "Affine Gaussian UKF equals the exact Kalman score. This tests implementation and error reporting; particle error does not reject the research direction.",
+              "observed_heuristic_underperformance": observed_losses,
+              "interpretation": "Observed heuristic losses veto promotion in this pilot; small-sample differences are descriptive. Finite-grid references remain numerical approximations. Candidate failure does not reject the research direction.",
               "next_evidence": "scope tuning, nonlinear oracle models, independent datasets and predeclared paired uncertainty criteria"}
     write_json(root / "comparison.json", result)
     return result

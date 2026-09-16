@@ -3,6 +3,7 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 import tensorflow as tf
+import pytest
 from bayesfilter.highdim import observation_guided_tt_tf as obs
 from bayesfilter.highdim import pair_block_tt_tf as pair
 from bayesfilter.nonlinear.fixed_sgqf_tf import tf_standard_normal_ghq_level_rule
@@ -12,10 +13,11 @@ from docs.benchmarks import observation_tt_sgqf_projection_diagnostic as project
 D = tf.float64
 
 
-def test_coefficients_against_independent_gauss_hermite_integral():
+@pytest.mark.parametrize('degree', [3, 4])
+def test_coefficients_against_independent_gauss_hermite_integral(degree):
     mean = tf.constant([.2, -.15], D)
     covariance = tf.constant([[.8, .3], [.3, 1.4]], D)
-    actual, _ = projection.coefficient_kernel(2, 3, False)(mean, covariance)
+    actual, _ = projection.coefficient_kernel(2, degree, False)(mean, covariance)
     rule = tf_standard_normal_ghq_level_rule(16)
     x, y = tf.meshgrid(rule.nodes, rule.nodes, indexing='ij')
     wx, wy = tf.meshgrid(rule.weights, rule.weights, indexing='ij')
@@ -25,7 +27,7 @@ def test_coefficients_against_independent_gauss_hermite_integral():
     standard = obs.Chart(tf.zeros([2], D), tf.eye(2, dtype=D))
     amplitude = tf.exp(.5*(chart.log_prob(rows)-standard.log_prob(rows)))
     expected = tf.einsum('n,ni,nj->ij', weights*amplitude,
-        _normalized_hermite_values(rows[:, 0], 3), _normalized_hermite_values(rows[:, 1], 3))
+        _normalized_hermite_values(rows[:, 0], degree), _normalized_hermite_values(rows[:, 1], degree))
     tf.debugging.assert_near(actual, expected, atol=2e-11, rtol=2e-11)
 
 

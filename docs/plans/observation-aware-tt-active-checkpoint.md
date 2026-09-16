@@ -1,85 +1,60 @@
-# Observation-aware TT active checkpoint — 2026-09-15
+# Observation-aware TT active checkpoint, 2026-09-16
 
-## Research question and current authority
+## Active question and authorization
 
-Can TT fitting preserve and improve the available SGQF approximation, and does
-an empirical SGQF safeguard help actual filtering? Follow the
-[master](observation-aware-tt-repair-complete-program-20260913.md), completed
-amendments A04–A06 and H11's additional 24-hour authorization. Do not choose ad
-hoc experiments. The owner requested the problems and results before continuation;
-the [briefing](observation-aware-tt-24h-results-briefing-20260915.md) answers that.
+Does standalone SGQF-initialized pair TT supply a useful conditional proposal
+for exact-importance-corrected Zhao-Cui filtering? The owner requested a plan,
+thorough review and execution of regression improvements. A09 is complete.
+Follow [master](observation-aware-tt-repair-complete-program-20260913.md) and
+[A09 result](observation-aware-tt-warm-improvement-20260916-result.md).
+SGQF fit loss is explanatory, never a continuation veto. No per-step TT/SGQF
+selector, raw-TT normalizer, total analytical derivative or HMC claim.
 
-Checkout `/home/chakwong/BayesFilter`, branch `surrogate-hmc`. Preserve unrelated
-AGENTS.md, CLAUDE.md, c2_gaussian_hermite_proposal_tf.py and
-ledh_canonical_score_tf.py changes. Current budget:
-`artifacts/observation-tt-continuation-24h-20260915-01/budget.json`.
-H11 adds 86400 seconds to the unused H6 balance of 816.529454 seconds; charge
-future work only through the new ledger. It includes all active planning,
-review, implementation, computation and reporting once; crash/user idle is
-excluded. H6's completed ledger and pre-H11 master/checkpoint are preserved.
-A06's numerical cap was met. Its separate active-work suballocation was not
-timed apart from concurrent phase-10 drafting, so compliance is unverified.
+Checkout /home/chakwong/BayesFilter, branch surrogate-hmc. Preserve unrelated
+dirty files. No commit/push requested. Review was a skeptical executor review;
+no independent review claimed. No numerical jobs remain running.
 
-Final H6 accounting at 2026-09-15 06:28:16 UTC: **17183.471 seconds charged; 816.529 seconds unused** (about 13 minutes), including a conservative 60-second final-response allowance. The ledger is paused; subsequent idle time is excluded.
+## Checked findings
 
-H11 briefing accounting at 2026-09-15 07:13:52 UTC: 836.637 seconds charged; **86379.893 seconds remain** (about 23.99 hours), including a conservative 120-second response allowance. Ledger paused after the requested results briefing; resume the recorded amendment task without re-requesting the authorized budget.
+Confirmation-02 completed 24 sequences in 1287.928335 seconds, RTX 5080,
+TF float64/XLA kernels, verified memory growth and unchanged source snapshots.
+Both degree-4 nominees reduce scalar filtering MSE versus the degree-3 warm
+baseline by 7.5% and 8.1% under exploratory paired bootstrap intervals. Their
+mutual ranking is unsupported. d4 mean ESS is about 322--325/512, but d4
+promotion fails: s10 fails guide SPD and reference precision; s04 has a guide
+factor collapse to 2--4e-16 at t8 and every guide-dependent proposal fails
+log-evidence agreement. Reference precision passes for s04.
 
-## Checked findings and history
+All 54 same-target fitted H2 values are below their own initializer; d4 mean
+H2 baseline/capacity/preservation .003260/.001532/.002087 (descriptive).
+Conditioning reaches 5.24e10; KKT .0137 leaves optimizer accuracy open.
+All 27 focused tests and the final artifact audit pass.
 
-[A04 initialization result](observation-aware-tt-sgqf-initialization-20260915-result.md):
-24 cases completed; SGQF initialization is descriptively favorable in difficult
-d4 cases, but TT conversion/refinement loses to the analytical SGQF joint at
-early d4 targets. Validation selection is no worse by construction; audit is
-no worse in 23/24 cases. This does not guarantee population/filter performance.
-The full-coefficient initializer is diagnostic and restricted to d<=4.
+Calibration-01 was invalidated for A07 data reuse. Calibration-02 nomination
+and confirmation-01 had time-shift algorithm stream reuse; the latter is
+ineligible for independent-sequence intervals. Evidence is preserved.
+Confirmation-02 repairs actual particle/reference seed call chains, uses fresh
+partition 2, and keeps all nominees frozen. Earlier independence-based MCSE
+claims require separate audit; do not silently reuse them.
 
-[A05 safety/consumer result](observation-aware-tt-defense-consumer-20260915-result.md):
-complete, terminal review AGREE. The optional 1e-5 fraction passes the declared
-N=512 healthy non-harm and small-mass rescue bounds. Inherited 5% fails healthy
-non-harm. Exact SGQF joint conditional, retained marginal, actual mixed consumer
-and correction weights pass focused tests. One 19.103-second GPU run, 96 stress
-configurations and 24 exposed-target fresh-row cases. Some early TT losses to
-SGQF remain; late d4 target-row ESS reaches only 11.94/8192. No filter promotion.
+## Budget and exact next action
 
-## Completed execution and next-action boundary
+Sole ledger: artifacts/observation-tt-continuation-24h-20260915-01/budget.json.
+A09 began 04:05:18 UTC; numerical work finished before its six-hour ceiling.
+Final administrative closeout slightly exceeded it, as recorded in the ledger.
+The ledger
+charges elapsed work and tool/approval waits once, conservatively, with a
+two-minute final-response allowance. These waits are not GPU computation.
+Retain the A08 unmetered reservation. Approximately 11.6 hours remain.
 
-A06 full attempt-01 COMPLETE. All 24 references pass. One shared SGQF guide
-fails at d4 sequence 8, time 18: all levels 2–5 give non-SPD signed covariance.
-The unchanged CPU replay reproduces it. Six guide-dependent methods are
-unavailable on that sequence; the two unguided methods complete. All stored
-particle numbers on completed methods are finite, with zero recorded CDF
-bracket failures. The paired d1 criterion fails: observed losses against the
-transition proposal in ordinary observations and SGQF joint in large
-observations; one interval also misses precision. No promotion. d4 descriptive
-tables must use the same 11 successful sequences and cannot support population
-ranking. Preserve the failed sequence and all 12 unguided outcomes.
+Next scientific priority: prepare and review an amendment for SGQF covariance
+scale and tail-coverage validity, using the saved s04 collapse as diagnostic
+evidence and fresh heldout data for claims. Determine a principled scale check
+and evaluate any numerics-changing protection explicitly. Only then revisit
+TT solver conditioning. No new experiment or amended method is authorized by
+this checkpoint alone; use the governing campaign scope and reviewed amendment.
 
-Run: `docs/benchmarks/artifacts/observation_tt_independent_filtering_20260915/attempt-01/`.
-Operational/report files: `artifacts/observation-tt-independent-filtering-20260915-01/`.
-`assemble_report.py` distinguishes absent validity fields from explicit false
-flags and checks all stored particle numeric values; it does not change run
-results. `report.json` and `tables.md` now use matched sequence comparisons.
-
-The [A06 result](observation-aware-tt-independent-filtering-20260915-result.md)
-is complete and its bounded terminal interpretation review returned AGREE.
-The [phase-10 closeout](observation-aware-tt-phase10-closeout-20260915.md)
-completes the master program, result/inference tables and manuscript update.
-All continuation phases 7–10 have executed; no experiment is running. Candidate
-rejection does not reject the research direction. H11 now funds the next
-continuation, whose numerical protocol has not yet been specified or reviewed.
-
-Exact next action: write and review the next master amendment, using the results
-briefing and H11's authorized ceiling. The amendment must distinguish
-SGQF signed-quadrature robustness from TT conversion/selection generalization,
-state its evidence contract and budget, and use fresh confirmation data.
-No additional numerical protocol is active. Do not silently retune the A06
-holdout or substitute a covariance repair after seeing its failure.
-
-Phase-10 protected baseline and drafting record:
-`artifacts/observation-tt-manuscript-20260915-01/`.
-The [54-page PDF](artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_observation_aware_tt_algorithm_note.pdf)
-includes the SGQF joint derivation, A04/A05 results and matched A06 comparisons.
-Final build and rendered checks passed; all 187 prior math environments and
-the appendix are preserved. Human reading feedback remains pending. No pair
-gradients, HMC, default readiness, source-faithful TT-cross or scalable
-initializer is claimed. Keep crash investigation separate.
+- Plan/review/report/audit: artifacts/observation-tt-warm-improvement-20260916-01/
+- Numerical root: ../benchmarks/artifacts/observation_tt_warm_improvement_20260916/
+- Final attempts: attempt-calibration-02 and attempt-confirmation-02
+- Prior objective/LaTeX repair: observation-aware-tt-downstream-filter-objective-20260916-result.md

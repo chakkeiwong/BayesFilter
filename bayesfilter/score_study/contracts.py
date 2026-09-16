@@ -52,6 +52,7 @@ class Estimator:
     includes_initial_terms: bool
     derivative: str = "analytical_recursion"
     prerequisite: str = ""
+    models: tuple[str, ...] = ()
 
 
 @dataclass
@@ -157,6 +158,8 @@ def validate_study(study: dict, registry: Registry) -> list[dict]:
         model = registry.models[row["model"]]
         proposal = registry.proposals[row["proposal"]]
         estimator = registry.estimators[row["estimator"]]
+        if estimator.models and model.id not in estimator.models:
+            raise ValueError("estimator does not support this model adapter")
         if estimator.target not in registry.targets or row["proposal"] not in estimator.proposals:
             raise ValueError("incompatible estimator/proposal")
         if any(model.support not in supports for supports in
@@ -174,8 +177,10 @@ def validate_study(study: dict, registry: Registry) -> list[dict]:
         role = row.get("role", "mechanics")
         if role != "mechanics" and row.get("dataset") not in partitions.get(role, []):
             raise ValueError("row dataset is outside its declared partition")
-        if role == "claim" and row["proposal"] == "ledh" and not row.get("tuning_selection"):
-            raise ValueError("claim LEDH requires a repository-issued tuning selection")
+        if role == "claim" and row["estimator"] == "symmetric_fd" and not row.get("fd_selection"):
+            raise ValueError("claim FD requires a repository-issued FD selection")
+        if role == "claim" and row["proposal"] in ("ledh", "sgqf", "kdm_covariance", "integrated_kdm", "resampling_kdm", "twist", "fitted_twist", "iapf") and row["estimator"] != "symmetric_fd" and not row.get("tuning_selection"):
+            raise ValueError("claim LEDH/provider requires a repository-issued tuning selection")
         dependencies = row.get("depends_on", [])
         if set(dependencies) - set(ids):
             raise ValueError("unknown prerequisite row")
@@ -195,3 +200,22 @@ def validate_study(study: dict, registry: Registry) -> list[dict]:
             raise ValueError("cyclic row dependencies")
         pending = {k: v for k, v in pending.items() if k not in ready}
     return decisions
+class DiagnosticFailure(ValueError):
+    """A failed computation with retained, JSON-safe explanatory evidence."""
+
+    def __init__(self, message, diagnostics):
+        import math
+
+        def encode(value):
+            if isinstance(value, float) and not math.isfinite(value):
+                return str(value)
+            if isinstance(value, dict):
+                return {key: encode(item) for key, item in value.items()}
+            if isinstance(value, (list, tuple)):
+                return [encode(item) for item in value]
+            return value
+
+        super().__init__(message)
+        self.diagnostics = {"schema": "score_study_failure_diagnostics_v1",
+                            "nonfinite_encoding": "nan/inf/-inf strings",
+                            "details": encode(diagnostics)}

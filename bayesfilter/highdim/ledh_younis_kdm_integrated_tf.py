@@ -379,13 +379,6 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
         if model.observation_covariance_tangent_fn is not None
         else tf.zeros_like(model.observation_covariance)
     )
-    factor_records: list[Mapping[str, Tensor]] = []
-    atom_value_errors: list[Tensor] = []
-    atom_tangent_errors: list[Tensor] = []
-    atom_identity_valid: list[Tensor] = []
-    observation_map_value_errors: list[Tensor] = []
-    observation_map_tangent_errors: list[Tensor] = []
-    observation_map_valid: list[Tensor] = []
     effective_model_tolerance = max(
         float(model_tolerance),
         64.0 * _dtype_machine_epsilon(dtype),
@@ -480,10 +473,8 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
                 "model's atom log-density tangent"
             ),
         )
-        atom_identity_valid.append(
-            (value_error <= tolerance * value_scale)
-            & (tangent_error <= tolerance * tangent_scale)
-        )
+        atom_identity_valid = ((value_error <= tolerance * value_scale)
+                               & (tangent_error <= tolerance * tangent_scale))
         result = linear_gaussian_kdm_observation_factors(
             points,
             d_points,
@@ -502,22 +493,18 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
             True,
             message="invalid KDM observation factor",
         )
-        factor_records.append(result)
-        atom_value_errors.append(value_error)
-        atom_tangent_errors.append(tangent_error)
-        observation_map_value_errors.append(observation_map_value_error)
-        observation_map_tangent_errors.append(observation_map_tangent_error)
-        observation_map_valid.append(
-            (
-                observation_map_value_error
-                <= model_tolerance_tensor * observation_map_value_scale
-            )
-            & (
-                observation_map_tangent_error
-                <= model_tolerance_tensor * observation_map_tangent_scale
-            )
-        )
-        return result["log_factor"], result["d_log_factor"]
+        observation_map_valid = (
+            (observation_map_value_error <= model_tolerance_tensor * observation_map_value_scale)
+            & (observation_map_tangent_error <= model_tolerance_tensor * observation_map_tangent_scale))
+        return result["log_factor"], result["d_log_factor"], {
+            "observation_factor": result,
+            "atom_value_error": value_error, "atom_tangent_error": tangent_error,
+            "atom_identity_valid": atom_identity_valid,
+            "observation_map_value_error": observation_map_value_error,
+            "observation_map_tangent_error": observation_map_tangent_error,
+            "observation_map_valid": observation_map_valid,
+            "observation_factor_valid": result["valid"] & atom_identity_valid & observation_map_valid,
+        }
 
     value, score, trace = _value_and_analytical_score_impl(
         model,
@@ -531,6 +518,13 @@ def integrated_linear_gaussian_kdm_value_and_analytical_score(
         observation_factor_override=observation_factor_override,
         **options,
     )
+    factor_records = tuple(step["observation_factor"] for step in trace)
+    atom_value_errors = tuple(step["atom_value_error"] for step in trace)
+    atom_tangent_errors = tuple(step["atom_tangent_error"] for step in trace)
+    atom_identity_valid = tuple(step["atom_identity_valid"] for step in trace)
+    observation_map_value_errors = tuple(step["observation_map_value_error"] for step in trace)
+    observation_map_tangent_errors = tuple(step["observation_map_tangent_error"] for step in trace)
+    observation_map_valid = tuple(step["observation_map_valid"] for step in trace)
     factor_valid = tf.stack([record["valid"] for record in factor_records])
     atom_identity_valid_tensor = tf.stack(atom_identity_valid)
     observation_map_valid_tensor = tf.stack(observation_map_valid)

@@ -256,7 +256,6 @@ def _run_resampling_program(
     )
     d_uniform_component_weights = tf.zeros([1, particle_count], dtype)
     uniform_cumulative = tf.cumsum(uniform_component_weights)
-    resampling_records: list[Mapping[str, Tensor]] = []
 
     def post_reset_transform(
         time_index: int,
@@ -429,7 +428,7 @@ def _run_resampling_program(
             "kdm_minimum_bandwidth_eigenvalue": (minimum_bandwidth_eigenvalue),
             "kdm_bandwidth_symmetry_error": bandwidth_symmetry_error,
         }
-        resampling_records.append(record)
+        record["post_reset_valid"] = step_valid
         return (
             samples,
             tf.zeros_like(samples),
@@ -453,7 +452,7 @@ def _run_resampling_program(
         post_reset_transform=post_reset_transform,
         **options,
     )
-    step_valid = tf.stack([record["kdm_step_valid"] for record in resampling_records])
+    step_valid = _stack_trace(trace, "kdm_step_valid")
     higher_moment_valid = _stack_trace(trace, "higher_moment_valid")
     return {
         "route_id": RESAMPLING_ROUTE_ID,

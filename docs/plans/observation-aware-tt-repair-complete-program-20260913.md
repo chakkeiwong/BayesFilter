@@ -5,18 +5,44 @@ Execution and amendments have been reconciled under the owner request of
 status text is historical. The exact pre-refresh copy and checksum are preserved under
 `artifacts/observation-tt-master-refresh-20260914-01/`.
 
-## Current execution state — 2026-09-15
+## Current execution state — 2026-09-16
 
-**The original campaign and authorized continuation phases 7–10 are complete.
-A04 initialization, A05 safety/consumer work, A06 independent filtering, terminal
-review and the manuscript update are complete. The tested candidate is not
-promoted. H11 adds 24 hours for the next continuation; its next numerical
-protocol remains to be specified and reviewed.**
-The owner requested an explanation of the problems before continuation work.
+**A09 is complete.** The owner-requested plan, skeptical review, implementation,
+GPU smoke, calibration and fresh confirmation are recorded in
+[A09](observation-aware-tt-master-amendment-09-standalone-warm-tt-20260916.md)
+and its [result](observation-aware-tt-warm-improvement-20260916-result.md).
+Both degree-4 nominees reduce scalar filtering MSE versus standalone warm TT
+by about 7.5% and 8.1% under the exploratory paired comparison. No ranking
+between those nominees is established. Four-dimensional promotion is blocked:
+one sequence has invalid SGQF covariance and insufficient reference precision;
+another has a nominally positive covariance whose factor collapses to machine
+scale, failing log-evidence agreement for every guide-dependent method.
+The next amendment must investigate guide covariance scale and tail coverage
+before more regression tuning. This is a repair trigger, not rejection of TT.
+No next campaign has been launched. There is no total-gradient/default claim.
+All 27 focused tests and the final artifact audit passed. Seed collisions and
+time-shift reuse invalidated earlier attempts; they remain preserved. Final
+confirmation uses disjoint sequence/repetition streams and frozen nominees.
+Prior independence-based MCSE claims require separate audit. The H11 budget
+ledger records the conservative A09 elapsed charge and remaining balance.
+
+**A04 initialization, A05 safety/consumer work, A06 independent filtering and
+A07 guide/fitting separation are complete. A07 found zero guide failures, zero
+fit failures and six selected-TT audit losses against the exact SGQF joint.
+That audit loss is retained as a representation repair diagnostic; it is not a
+continuation veto for the downstream Zhao-Cui filtering question. Amendment
+A08 is complete: the versioned rerun reproduces A06's filtering errors and
+adds actual particle ESS and weight-concentration diagnostics. Its d=4
+selected route has MSE 0.0023614 and mean ESS 317.53/512 on eleven complete
+sequences, versus 0.0066699 and 199.52/512 for earlier guided TT. The one
+shared-guide failure recurs. These comparisons support continued TT work;
+TT-arm ranking and default readiness remain unestablished.**
 This file is the governing program index. The
 [active checkpoint](observation-aware-tt-active-checkpoint.md) is its concise
-resumption pointer. All original stages executed; fitting accuracy and
-statistical benefit remain unresolved scientific questions.
+resumption pointer. The question is whether the fitted TT supplies a useful
+conditional proposal to the exact-importance-corrected particle filter. SGQF
+fit agreement is a representation diagnostic. Corrected-particle results do
+not validate the uncorrected retained-TT density or Gram normalizer.
 
 H11 / owner extension, 2026-09-15: the owner grants “24 more hours for the
 campaign” and asks to see the problems and results. The
@@ -26,9 +52,54 @@ conversion/fitting losses and selection uncertainty. The additional 86400
 seconds and unused H6 balance are recorded in
 `artifacts/observation-tt-continuation-24h-20260915-01/budget.json`, the sole
 ledger for future spending. Prior program/checkpoint/budget copies are preserved
-beside it. Exact next action: prepare the evidence-driven amendment, obtain the
-requested independent review, then execute its admitted protocol within H11.
-This authorization does not change the completed A06 verdict or promotion rules.
+beside it. A07 is now closed under that ledger. Its result note is
+[A07 result](observation-aware-tt-h11-guide-fit-separation-20260915-result.md);
+the attempt manifest and aggregate result are under
+`../benchmarks/artifacts/observation_tt_h11_separation_20260915/attempt-01/`.
+The [A08 result](observation-aware-tt-downstream-filter-objective-20260916-result.md)
+completes that rerun. A09 completes TT-only regression and fresh downstream
+comparison. Its covariance-collapse evidence now prioritizes a guide-validity
+amendment; the guide remained frozen throughout A09.
+
+H11 / admitted A07, 2026-09-15: the
+[guide/fitting separation amendment](observation-aware-tt-master-amendment-07-guide-fit-separation-20260915.md)
+turns the briefing's next action into a bounded protocol. It uses six fresh
+sequences per dimension, preserves all signed-SGQF level failures, and runs
+the existing exact-joint versus generic/warm-start TT diagnostic only on
+complete guide paths. Its independent review is recorded at
+`artifacts/observation-tt-h11-separation-20260915-01/review-proposal-01.txt`.
+The versioned numerical run was admitted under the sole H11 ledger and is now
+complete. Its terminal result distinguishes guide validity from TT
+representation loss and keeps descriptive values separate from unsupported
+rankings.
+
+H11 / A07 result, 2026-09-15: the GPU preflight completed in 12.321 seconds and
+the fresh attempt completed in 369.122 seconds. All 12 sequences (six each for
+d=1 and d=4) completed the signed SGQF guide and all 228 representation
+targets produced finite records. Six validation-selected warm TT candidates
+lost to the exact SGQF joint on untouched audit panels: one d=1 case and five
+d=4 cases. The guide robustness screen therefore passed, but the candidate
+representation veto fired; no filtering/default promotion is supported. See
+the [A07 result](observation-aware-tt-h11-guide-fit-separation-20260915-result.md),
+the machine-readable
+`../benchmarks/artifacts/observation_tt_h11_separation_20260915/attempt-01/result.json`,
+and the terminal review recorded at
+`artifacts/observation-tt-h11-separation-20260915-01/review-result-01.txt`.
+
+H11 / A08 objective repair, 2026-09-16: the owner identified that treating
+SGQF-versus-TT fit loss as a continuation veto prevented further downstream
+evaluation despite promising A06 filtering results. The
+[A08 amendment](observation-aware-tt-master-amendment-08-downstream-filter-objective-20260916.md)
+reclassifies that loss as a representation diagnostic, freezes the A06/A07
+scope and comparator ladder, and requires per-step ESS, maximum weight,
+resampling and ancestor diagnostics. Comparable smoke `attempt-smoke-04` and
+full `attempt-full-01` completed on RTX 5080; the latter took 2023.805 seconds.
+All 24 references passed. MSE and bootstrap results exactly reproduce A06
+because its seeds and observations were reused; this is added observability,
+not independent confirmation. The selected route includes SGQF fallback.
+Result and matched tables are linked from the A08 result note. Attempts use
+separate output roots under
+`../benchmarks/artifacts/observation_tt_downstream_filter_objective_20260916/`.
 
 | Original stage | Required work | Execution and evidence |
 | --- | --- | --- |
@@ -39,6 +110,15 @@ This authorization does not change the completed A06 verdict or promotion rules.
 | 4 | Independent full-support conditional draws and actual proposal densities | Executed; corrected pair runs pass tested finite/mass/bracket/CDF checks. Finite test coverage is not universal certification. |
 | 5 | Exact initial/transition/likelihood correction and post-correction resampling | Executed for d=1,4, all T=20 observations; saved-fit retry completed the real master consumer. |
 | 6 | References, conditional heuristic comparisons and analytical frozen-proposal score | Executed. All six proposals pass reference screens; pair heuristic losses block promotion. The score check covers scalar guided frozen proposals only. |
+
+The stage-6 fit and heuristic losses are promotion diagnostics for the candidate,
+not continuation vetoes for the scientific question. The A08 claim-bearing test
+is the corrected-particle filtering computation: finite normalized updates,
+reference agreement, filter moments and log-evidence estimates, particle ESS,
+weight concentration, resampling and ancestor behavior, with conditional
+comparisons to the constructed heuristic proposals. A failed TT arm remains
+evidence about that arm and a repair trigger; it does not cancel this
+downstream measurement.
 
 Authorities: [original result](observation-aware-tt-repair-complete-program-20260913-result.md)
 and [terminal pair result](observation-tt-pair-block-remedy-20260914-result.md).
@@ -59,8 +139,12 @@ an amendment.
 This evidence clarification changes
 neither the existing promotion rules nor the five-hour authorization.
 
-The [54-page manuscript](artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_observation_aware_tt_algorithm_note.pdf)
-now includes the A04–A06 derivations and outcomes. The
+The [A08 revised manuscript](artifacts/observation-tt-downstream-filter-objective-20260916-01/latex/observation-aware-tt-a08.pdf)
+adds the corrected objective, particle-ESS definition and downstream statistics
+to the A04–A06 derivations and outcomes. Its mathematical Algorithm-3 use of TT
+was already correct; the closing rejection language needed repair. The prior
+[54-page manuscript](artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_observation_aware_tt_algorithm_note.pdf)
+remains preserved. The
 [phase-10 closeout](observation-aware-tt-phase10-closeout-20260915.md) records
 rendered checks, protected-baseline preservation and the terminal AGREE review.
 The prior 48-page version and its rendered review remain preserved. Eight earlier
@@ -81,12 +165,16 @@ Original plans, failures, manifests and result files remain unchanged.
 | H4: sampler recovery, 2026-09-14 | Reproduced negative conditional mass; corrected a wrong Gram index after an independent coefficient-integral regression. Reused identical fits/settings. | [Recovery plan](observation-tt-pair-sampler-recovery-20260914.md), [terminal result](observation-tt-pair-block-remedy-20260914-result.md). Corrected replay and full launch 3 completed. Candidate still not promoted. |
 | H5 / A03: master reconciliation, 2026-09-14 | Owner identified stale master status and an informal next-study/budget suggestion. Reconciles this program and defines how a continuation is to be proposed. | [A03 change record](observation-aware-tt-master-amendment-03-20260914.md), [independent review: AGREE](../reviews/observation-aware-tt-master-amendment-03-review-20260914.md). Reconciliation applied; no numerical continuation activated. |
 | H6: owner continuation budget, 2026-09-14 | Subsequent owner instruction: “you have 5 hours of budget to do any work. Before we do that, explain to me what the problems are.” | Five hours authorized for the continuation. Explain the checked problems first, then follow phases 7–10 below. The detailed numerical protocol still requires the review requested by the owner; this budget entry does not change the reviewed A03 record or authorize a claim of promotion. |
+| H11 / A07: guide/fitting separation, 2026-09-15 | Owner granted 24 more hours after the results briefing. The reviewed amendment separated signed-SGQF guide validity from TT conversion/fitting/selection loss on fresh sequences. | [Amendment](observation-aware-tt-master-amendment-07-guide-fit-separation-20260915.md), [proposal review](artifacts/observation-tt-h11-separation-20260915-01/review-proposal-01.txt), [result](observation-aware-tt-h11-guide-fit-separation-20260915-result.md). Guide and fit screens passed; six selected-TT audit losses veto representation promotion only. The downstream question remained open. |
+| H11 / A08: downstream filter objective repair, 2026-09-16 | Fit loss no longer blocks downstream measurement. The same-seed A06 replay adds actual particle diagnostics and distinguishes corrected-particle outputs from uncorrected retained TT. | [Amendment](observation-aware-tt-master-amendment-08-downstream-filter-objective-20260916.md), [result](observation-aware-tt-downstream-filter-objective-20260916-result.md). RTX 5080 smoke/full complete; all references pass, one guide fails; d=4 selected route MSE 0.0023614, mean ESS 317.53/512 on eleven complete sequences. TT-only confirmation and guide repair remain open. |
 
 The original master allowed recorded capacity amendments within remaining
 budget. H2–H4 followed evidence about its research question; they did not
 establish all the results needed for promotion. No scientific reason requires
-abandoning that question. New calibration/replication would extend a completed
-campaign, and is not an existing authorized launch.
+abandoning that question. The original launch limits below are historical.
+H11 and the reviewed A09 amendment authorize the current continuation. Further
+methods require a recorded protocol under the remaining H11 budget; descriptive
+results alone do not define another numerical launch.
 
 ## Reconciled budget
 

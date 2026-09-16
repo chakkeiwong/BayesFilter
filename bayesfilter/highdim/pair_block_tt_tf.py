@@ -148,9 +148,11 @@ def _pair_features(points: tf.Tensor, degree: int) -> tf.Tensor:
 
 def compiled_pair_fitter(dimension: int, degree: int = 3, rank: int = 3,
                          sweeps: int = 4, proximal_steps: int = 128,
-                         jit_compile: bool = True):
+                         jit_compile: bool = True, regularization_center: str = "zero"):
     """ALS/proximal fit for pair cores with weighted L2 rows."""
-    key = (dimension, degree, rank, sweeps, proximal_steps, jit_compile)
+    if regularization_center not in ("zero", "initial"):
+        raise ValueError("regularization_center must be zero or initial")
+    key = (dimension, degree, rank, sweeps, proximal_steps, jit_compile, regularization_center)
     if key in _PAIR_FITTERS:
         return _PAIR_FITTERS[key]
     n = degree + 1
@@ -186,14 +188,17 @@ def compiled_pair_fitter(dimension: int, degree: int = 3, rank: int = 3,
                 conditions.append(largest / tf.maximum(tf.reduce_min(eigenvalues),
                     tf.constant(2.220446049250313e-16, D)*lipschitz))
                 old = tf.reshape(cores[axis], [-1])
+                anchor = (tf.reshape(initial[axis], [-1]) if regularization_center == "initial"
+                          else tf.zeros_like(old))
 
                 def objective(v):
                     return (0.5 * tf.tensordot(v, tf.linalg.matvec(gram, v), 1)
-                            - tf.tensordot(v, rhs, 1) + penalty * tf.reduce_sum(tf.abs(v)))
+                            - tf.tensordot(v, rhs, 1) + penalty * tf.reduce_sum(tf.abs(v-anchor)))
 
                 def body(k, value):
                     proposal = value - (tf.linalg.matvec(gram, value) - rhs) / lipschitz
-                    value = tf.sign(proposal) * tf.maximum(tf.abs(proposal) - penalty / lipschitz, 0.)
+                    shifted = proposal-anchor
+                    value = anchor + tf.sign(shifted) * tf.maximum(tf.abs(shifted) - penalty / lipschitz, 0.)
                     return k + 1, value
 
                 old_obj = objective(old)
@@ -214,6 +219,8 @@ def compiled_pair_fitter(dimension: int, degree: int = 3, rank: int = 3,
                                     tf.cast(tf.shape(target)[0], D), tf.reshape(cores[axis], [-1])) - \
                    tf.linalg.matvec(design * sqrtw[:, None], target * sqrtw, transpose_a=True) / tf.cast(tf.shape(target)[0], D)
             coeff = tf.reshape(cores[axis], [-1])
+            if regularization_center == "initial":
+                coeff = coeff-tf.reshape(initial[axis], [-1])
             kkt = tf.where(coeff != 0., tf.abs(grad + penalty * tf.sign(coeff)),
                            tf.maximum(tf.abs(grad) - penalty, 0.))
             final_grad.append(tf.reduce_max(kkt))
@@ -239,7 +246,7 @@ def initial_pair_cores(dimension: int, degree: int = 3, rank: int = 3):
 def fit_pair_features(features: tf.Tensor, target: tf.Tensor, row_weights: tf.Tensor,
                       degree: int = 3, rank: int = 3, sweeps: int = 4,
                       proximal_steps: int = 128, penalty: float = 0., initial=None,
-                      jit_compile: bool = True):
+                      jit_compile: bool = True, regularization_center: str = "zero"):
     """Fit one weighted split; a small wrapper used by tests and the driver."""
     dimension = int(features.shape[1])
     n = degree + 1
@@ -247,7 +254,8 @@ def fit_pair_features(features: tf.Tensor, target: tf.Tensor, row_weights: tf.Te
     supplied_initial = initial is not None
     if initial is None:
         initial = initial_pair_cores(dimension, degree, rank)
-    fitter = compiled_pair_fitter(dimension, degree, rank, sweeps, proximal_steps, jit_compile)
+    fitter = compiled_pair_fitter(dimension, degree, rank, sweeps, proximal_steps,
+                                 jit_compile, regularization_center)
     cores, minimum_decrease, kkt, condition = fitter(features, target, row_weights,
                                           tf.constant(penalty, D), tuple(initial))
     tf.debugging.assert_all_finite(kkt, "pair KKT residual")
@@ -256,6 +264,7 @@ def fit_pair_features(features: tf.Tensor, target: tf.Tensor, row_weights: tf.Te
     return cores, {"minimum_objective_decrease": minimum_decrease,
                    "maximum_core_gram_condition_capped": condition,
                    "gauge_policy": "raw_coefficients_no_infit_gauge_changes",
+                   "regularization_center": regularization_center,
                    "initialization": ("explicit_initial_cores" if supplied_initial else
                        "stateless_7919_unit_expected_local_row_energy_plus_constant"),
                    "kkt_residual": kkt,

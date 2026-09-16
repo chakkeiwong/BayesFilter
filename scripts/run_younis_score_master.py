@@ -19,9 +19,10 @@ from bayesfilter.score_study.registry import default_registry
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--study", type=Path, required=True)
-    parser.add_argument("--action", choices=("validate", "dry-run", "run", "resume", "report", "select", "compare"), required=True)
+    parser.add_argument("--action", choices=("validate", "dry-run", "run", "resume", "report", "select", "compare", "combine", "fd-report", "fd-select", "normalization", "consistency"), required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--selection", type=Path)
+    parser.add_argument("--related-runs", nargs=3, type=Path)
     args = parser.parse_args()
     study = json.loads(args.study.read_text())
     registry = default_registry()
@@ -31,6 +32,36 @@ def main() -> int:
         return 0
     if args.output is None:
         parser.error("--output is required for execution or reporting")
+    if args.action == "normalization":
+        from bayesfilter.score_study.normalization_reporting import assemble_normalization
+        result = assemble_normalization(args.output)
+        print(json.dumps({"normalization": str(args.output / "normalization.json"), "groups": len(result["groups"])}))
+        return 0
+    if args.action == "consistency":
+        if args.related_runs is None:
+            parser.error("--related-runs requires N, 2N, 4N run directories")
+        from bayesfilter.score_study.normalization_reporting import assemble_consistency
+        result = assemble_consistency(args.related_runs, args.output / "consistency.json")
+        print(json.dumps({"consistency": str(args.output / "consistency.json"), "groups": len(result["groups"])}))
+        return 0
+    if args.action == "fd-select":
+        if args.selection is None: parser.error("--selection is required")
+        from bayesfilter.score_study.fd_selection import issue_fd_selection
+        issue_fd_selection(args.output,args.selection)
+        print(json.dumps({"selection":str(args.selection),"default_ready":False}))
+        return 0
+    if args.action == "fd-report":
+        from bayesfilter.score_study.fd_reporting import assemble_fd_diagnostics
+        result = assemble_fd_diagnostics(args.output)
+        print(json.dumps({"finite_differences": str(args.output / "finite-differences.json"),
+                          "statistically_supported_ranking": result["statistically_supported_ranking"]}))
+        return 0
+    if args.action == "combine":
+        from bayesfilter.score_study.combinations import assemble_combinations
+        result = assemble_combinations(args.output)
+        print(json.dumps({"combinations": str(args.output / "combinations.json"),
+                          "inference_status": result["inference_status"]}))
+        return 0
     if args.action == "select":
         if args.selection is None:
             parser.error("--selection is required for offline selection")

@@ -74,11 +74,12 @@ def _value_and_analytical_score_impl(
     *,
     flow_substeps: int = 24,
     with_score: bool,
+    return_trace: bool = False,
     initial_state_tangent: Tensor | None = None,
     initial_covariance_tangent: Tensor | None = None,
-    return_trace: bool = False,
     observation_factor_override: Callable[
-        [int, Tensor, Tensor, Tensor, Tensor, Tensor], tuple[Tensor, Tensor]
+        [Tensor, Tensor, Tensor, Tensor, Tensor, Tensor],
+        tuple[Tensor, Tensor] | tuple[Tensor, Tensor, Mapping[str, Tensor]]
     ]
     | None = None,
     post_reset_transform: Callable[
@@ -112,6 +113,8 @@ def _value_and_analytical_score_impl(
     coordinate_cap_power: int = 8,
     annealed_stages: int = 1,
     annealed_seed: int = 0,
+    moment_provider: tuple[Callable, Callable] | None = None,
+    moment_schedule: Mapping[str, Tensor] | None = None,
 ) -> (
     tuple[Tensor, Tensor | None]
     | tuple[Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]]
@@ -178,21 +181,6 @@ def _value_and_analytical_score_impl(
             "Phase 1 while-loop conversion requires annealed_stages=1; "
             "nested loop support deferred to future phase"
         )
-    if return_trace:
-        raise ValueError(
-            "Phase 1 while-loop conversion requires return_trace=False; "
-            "TensorArray trace accumulation deferred to future phase"
-        )
-    if observation_factor_override is not None:
-        raise ValueError(
-            "Phase 1 while-loop conversion requires observation_factor_override=None; "
-            "Python callable compatibility deferred to future phase"
-        )
-    if post_reset_transform is not None:
-        raise ValueError(
-            "Phase 1 while-loop conversion requires post_reset_transform=None; "
-            "Python callable compatibility deferred to future phase"
-        )
     horizon = int(observations.shape[0])
     dim = int(initial_states.shape[1])
     count = tf.shape(initial_states)[0]
@@ -221,21 +209,16 @@ def _value_and_analytical_score_impl(
         else None
     )
     states = initial_states
-    d_states = (
-        tf.zeros_like(states) if initial_state_tangent is None
-        else tf.ensure_shape(tf.convert_to_tensor(initial_state_tangent, dtype=dtype), states.shape)
-    )
+    d_states = (tf.zeros_like(states) if initial_state_tangent is None else
+                tf.ensure_shape(tf.convert_to_tensor(initial_state_tangent, dtype=dtype), states.shape))
     covariances = initial_covariances
-    d_covariances = (
-        tf.zeros_like(covariances) if initial_covariance_tangent is None
-        else tf.ensure_shape(tf.convert_to_tensor(initial_covariance_tangent, dtype=dtype), covariances.shape)
-    )
+    d_covariances = (tf.zeros_like(covariances) if initial_covariance_tangent is None else
+                     tf.ensure_shape(tf.convert_to_tensor(initial_covariance_tangent, dtype=dtype), covariances.shape))
     uniform_log_weights = -tf.math.log(tf.cast(count, dtype)) * tf.ones([count], dtype)
     incoming_log_weights = uniform_log_weights
     d_incoming_log_weights = tf.zeros_like(uniform_log_weights)
     total = tf.zeros([], dtype)
     d_total = tf.zeros([], dtype)
-    trace = [] if return_trace else None
 
     def mean_fn(points):
         return model.transition_mean_fn(theta, points)
@@ -247,6 +230,22 @@ def _value_and_analytical_score_impl(
     # Reference: deleted implementation at 5cc59cfa~1, lines 691-714
     def time_loop_cond(t, _states, _d_states, _covs, _d_covs, _in_log_w, _d_in_log_w, _total, _d_total):
         return t < horizon
+
+    moment_predict, moment_update = (moment_provider if moment_provider is not None else
+                                    (ukf_predict_with_parameter_tangent, ukf_update_with_parameter_tangent))
+    if moment_schedule is not None and moment_provider is not None:
+        raise ValueError("choose a recursive provider or an independent filter schedule")
+
+    def scheduled_moments(t, prefix):
+        return tuple(tf.broadcast_to(moment_schedule[prefix + name][t],
+                     [count, dim, dim] if "covariances" in name else [count, dim])
+                     for name in ("means", "covariances", "d_means", "d_covariances"))
+
+    def predict_at(t, *args, **kwargs):
+        return scheduled_moments(t, "predicted_") if moment_schedule is not None else moment_predict(*args, **kwargs)
+
+    def update_at(t, *args, **kwargs):
+        return scheduled_moments(t, "post_") if moment_schedule is not None else moment_update(*args, **kwargs)
 
     def time_loop_body(t, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, total, d_total):
         observation = observations[t]
@@ -260,7 +259,7 @@ def _value_and_analytical_score_impl(
             predicted_covs,
             d_predicted_means,
             d_predicted_covs,
-        ) = ukf_predict_with_parameter_tangent(
+        ) = predict_at(t,
             states,
             covariances,
             d_states,
@@ -278,6 +277,8 @@ def _value_and_analytical_score_impl(
         d_pre_flow = d_anchors
         if d_process_chol is not None:
             d_pre_flow = d_pre_flow + tf.einsum("ij,nj->ni", d_process_chol, noise)
+
+        observation_record = {}
 
         # Per-step density evaluators shared by S4 and the annealed
         # telescope (model callback path or Gaussian fallback).
@@ -318,7 +319,13 @@ def _value_and_analytical_score_impl(
                     obs_chol,
                     d_covariance=d_r,
                 )
-            return base_result  # observation_factor_override removed by constraint
+            if observation_factor_override is None:
+                return base_result
+            result = observation_factor_override(t, points, d_points,
+                                                 observation, *base_result)
+            if len(result) == 3:
+                observation_record.update(result[2])
+            return result[:2]
 
         # annealed_stages > 1 removed by constraint
         # S3: flow with per-particle predicted covariance AND its
@@ -383,7 +390,7 @@ def _value_and_analytical_score_impl(
             post_covs,
             _d_post_means,
             d_post_covs,
-        ) = ukf_update_with_parameter_tangent(
+        ) = update_at(t,
             predicted_means,
             predicted_covs,
             d_predicted_means,
@@ -397,6 +404,28 @@ def _value_and_analytical_score_impl(
 
         step_weights = softmax
         d_step_weights = softmax * (d_logits - tf.reduce_sum(softmax * d_logits))
+        reset_transport = tf.eye(count, dtype=dtype)
+        d_reset_transport = tf.zeros_like(reset_transport)
+        post_reset_record: Mapping[str, Tensor] = {}
+        higher_moment_record: Mapping[str, Tensor] = {
+            "higher_moment_valid": tf.constant(True),
+            "higher_moment_pairwise_configured": tf.constant(False),
+            "higher_moment_pairwise_target_mask": tf.zeros([dim, dim], dtype),
+            "higher_moment_pairwise_co_skew_residual": tf.zeros([dim, dim], dtype),
+            "higher_moment_pairwise_co_kurtosis_residual": tf.zeros([dim, dim], dtype),
+            "higher_moment_maximum_pairwise_pre_cap_particle_rms": tf.zeros([], dtype),
+            "higher_moment_maximum_pairwise_post_cap_particle_rms": tf.zeros([], dtype),
+            "higher_moment_minimum_pairwise_particle_cap_scale": tf.ones([], dtype),
+            "higher_moment_maximum_coordinatewise_pre_cap_absolute": tf.zeros(
+                [], dtype
+            ),
+            "higher_moment_maximum_coordinatewise_post_cap_absolute": tf.zeros(
+                [], dtype
+            ),
+            "higher_moment_mean_coordinatewise_cap_displacement": tf.zeros([], dtype),
+            "higher_moment_fraction_coordinatewise_cap_active": tf.zeros([], dtype),
+            "higher_moment_minimum_coordinatewise_cap_derivative": tf.ones([], dtype),
+        }
         if reset_policy == "contract_e":
             from bayesfilter.highdim.ledh_canonical_reset_score_tf import (
                 sinkhorn_contract_e_reset_triple_with_tangent,
@@ -407,8 +436,8 @@ def _value_and_analytical_score_impl(
                 d_reset_states,
                 reset_covariances,
                 d_reset_covariances,
-                _reset_transport,
-                _d_reset_transport,
+                reset_transport,
+                d_reset_transport,
             ) = sinkhorn_contract_e_reset_triple_with_tangent(
                 children,
                 d_children,
@@ -460,8 +489,60 @@ def _value_and_analytical_score_impl(
                     True,
                     message="higher-moment Contract-E correction is invalid",
                 )
+                # XLA may elide Assert ops. Propagate invalidity into the
+                # returned scalar even at the final reset, where no subsequent
+                # observation would otherwise expose an invalid correction.
+                invalid = tf.constant(float("nan"), dtype)
+                total = tf.where(corrected["valid"], total, invalid)
+                d_total = tf.where(corrected["valid"], d_total, invalid)
                 reset_states = corrected["particles"]
                 d_reset_states = corrected["particles_tangent"][:, :, 0]
+                higher_moment_record = {
+                    "higher_moment_valid": corrected["valid"],
+                    "higher_moment_pairwise_configured": tf.constant(
+                        bool(pairwise_steps > 0 and dim > 1)
+                    ),
+                    "higher_moment_pairwise_target_mask": corrected[
+                        "pairwise_target_mask"
+                    ],
+                    "higher_moment_pairwise_co_skew_residual": corrected[
+                        "pairwise_co_skew_residual"
+                    ],
+                    "higher_moment_pairwise_co_kurtosis_residual": corrected[
+                        "pairwise_co_kurtosis_residual"
+                    ],
+                    "higher_moment_maximum_pairwise_pre_cap_particle_rms": corrected[
+                        "maximum_pairwise_pre_cap_particle_rms"
+                    ],
+                    "higher_moment_maximum_pairwise_post_cap_particle_rms": corrected[
+                        "maximum_pairwise_post_cap_particle_rms"
+                    ],
+                    "higher_moment_minimum_pairwise_particle_cap_scale": corrected[
+                        "minimum_pairwise_particle_cap_scale"
+                    ],
+                    "higher_moment_maximum_coordinatewise_pre_cap_absolute": corrected[
+                        "maximum_coordinatewise_pre_cap_absolute"
+                    ],
+                    "higher_moment_maximum_coordinatewise_post_cap_absolute": corrected[
+                        "maximum_coordinatewise_post_cap_absolute"
+                    ],
+                    "higher_moment_mean_coordinatewise_cap_displacement": corrected[
+                        "mean_coordinatewise_cap_displacement"
+                    ],
+                    "higher_moment_fraction_coordinatewise_cap_active": corrected[
+                        "fraction_coordinatewise_cap_active"
+                    ],
+                    "higher_moment_minimum_coordinatewise_cap_derivative": corrected[
+                        "minimum_coordinatewise_cap_derivative"
+                    ],
+                }
+                # Retain every diagnostic computed by the shared correction.
+                # These tensors never alter states, weights or their tangents.
+                higher_moment_record.update({
+                    "higher_moment_" + key: value
+                    for key, value in corrected.items()
+                    if key not in ("particles", "particles_tangent")
+                })
             new_states, new_d_states = reset_states, d_reset_states
             new_covariances, new_d_covariances = (
                 reset_covariances,
@@ -475,7 +556,18 @@ def _value_and_analytical_score_impl(
             new_incoming_log_weights = uniform_log_weights
             new_d_incoming_log_weights = tf.zeros_like(uniform_log_weights)
 
-        return (
+        if post_reset_transform is not None:
+            (new_states, new_d_states, new_covariances, new_d_covariances,
+             new_incoming_log_weights, new_d_incoming_log_weights,
+             post_reset_record) = post_reset_transform(
+                 t, new_states, new_d_states, new_covariances, new_d_covariances)
+        callback_valid = (observation_record.get("observation_factor_valid", tf.constant(True))
+                          & post_reset_record.get("post_reset_valid", tf.constant(True)))
+        invalid = tf.constant(float("nan"), dtype)
+        total = tf.where(callback_valid, total, invalid)
+        d_total = tf.where(callback_valid, d_total, invalid)
+
+        result = (
             t + 1,
             new_states,
             new_d_states,
@@ -486,40 +578,90 @@ def _value_and_analytical_score_impl(
             total,
             d_total,
         )
+        if return_trace:
+            step_record = {
+                "time_index": t,
+                "incoming_log_weights": step_incoming_log_weights,
+                "d_incoming_log_weights": d_step_incoming_log_weights,
+                "pre_flow": pre_flow,
+                "d_pre_flow": d_pre_flow,
+                "children": children,
+                "d_children": d_children,
+                "posterior_weights": step_weights,
+                "d_posterior_weights": d_step_weights,
+                "prior_observation_weights": prior_observation_weights,
+                "d_prior_observation_weights": d_prior_observation_weights,
+                "prior_observation_logits": prior_observation_logits,
+                "d_prior_observation_logits": d_prior_observation_logits,
+                "prior_observation_log_normalizer": prior_observation_normalizer,
+                "d_prior_observation_log_normalizer": d_prior_observation_normalizer,
+                "observation_log_density": observation_log,
+                "d_observation_log_density": d_observation_log,
+                "posterior_logits": logits,
+                "d_posterior_logits": d_logits,
+                "observation": observation,
+                "predicted_covariances": predicted_covs,
+                "d_predicted_covariances": d_predicted_covs,
+                "post_covariances": post_covs,
+                "post_means": _post_means,
+                "d_post_means": _d_post_means,
+                "d_post_covariances": d_post_covs,
+                "covariances_after_reset": new_covariances,
+                "d_covariances_after_reset": new_d_covariances,
+                "reset_transport": reset_transport,
+                "d_reset_transport": d_reset_transport,
+                "states_after_reset": new_states,
+                "d_states_after_reset": new_d_states,
+                "outgoing_log_weights": new_incoming_log_weights,
+                "d_outgoing_log_weights": new_d_incoming_log_weights,
+            }
+            step_record.update(higher_moment_record)
+            step_record.update(post_reset_record)
+            step_record.update(observation_record)
+            return result, step_record
+        return result
 
-    _, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, total, d_total = tf.while_loop(
-        cond=time_loop_cond,
-        body=time_loop_body,
-        loop_vars=(
-            tf.constant(0, tf.int32),
-            states,
-            d_states,
-            covariances,
-            d_covariances,
-            incoming_log_weights,
-            d_incoming_log_weights,
-            total,
-            d_total,
-        ),
-        shape_invariants=(
-            tf.TensorShape([]),
-            tf.TensorShape([None, dim]),
-            tf.TensorShape([None, dim]),
-            tf.TensorShape([None, dim, dim]),
-            tf.TensorShape([None, dim, dim]),
-            tf.TensorShape([None]),
-            tf.TensorShape([None]),
-            tf.TensorShape([]),
-            tf.TensorShape([]),
-        ),
-        maximum_iterations=horizon,
-        parallel_iterations=1,
-    )
 
-    score = d_total[None] if with_score else None
-    if with_score:
-        return total, d_total[None]
-    return total, None
+    initial_loop = (tf.constant(0, tf.int32), states, d_states, covariances,
+                    d_covariances, incoming_log_weights, d_incoming_log_weights,
+                    total, d_total)
+    state_shapes = (tf.TensorShape([]), tf.TensorShape([None, dim]),
+                    tf.TensorShape([None, dim]), tf.TensorShape([None, dim, dim]),
+                    tf.TensorShape([None, dim, dim]), tf.TensorShape([None]),
+                    tf.TensorShape([None]), tf.TensorShape([]), tf.TensorShape([]))
+    if return_trace:
+        # One traced numerical step; TensorArrays carry all diagnostic fields
+        # through the time loop. Python callbacks must return their metadata,
+        # never append loop tensors to a Python container outside this body.
+        step_kernel = tf.function(time_loop_body, autograph=False,
+                                  input_signature=[tf.TensorSpec(v.shape, v.dtype)
+                                                   for v in initial_loop])
+        template = step_kernel.get_concrete_function().structured_outputs[1]
+        buffers = tf.nest.map_structure(
+            lambda value: tf.TensorArray(value.dtype, size=horizon,
+                                         element_shape=value.shape), template)
+
+        def traced_body(*args):
+            result, record = step_kernel(*args[:-1])
+            buffers = tf.nest.map_structure(lambda buf, value: buf.write(args[0], value),
+                                            args[-1], record)
+            return (*result, buffers)
+
+        loop_result = tf.while_loop(
+            lambda *args: args[0] < horizon, traced_body,
+            (*initial_loop, buffers), maximum_iterations=horizon,
+            parallel_iterations=1)
+        stacked = tf.nest.map_structure(lambda buf: buf.stack(), loop_result[-1])
+        trace = tuple(tf.nest.map_structure(lambda value: value[index], stacked)
+                      for index in range(horizon))
+        total, d_total = loop_result[-3:-1]
+        return total, d_total[None] if with_score else None, trace
+    loop_result = tf.while_loop(
+        time_loop_cond, time_loop_body, initial_loop,
+        shape_invariants=state_shapes, maximum_iterations=horizon,
+        parallel_iterations=1)
+    total, d_total = loop_result[-2:]
+    return total, d_total[None] if with_score else None
 
 
 def canonical_value_and_analytical_score(
@@ -532,9 +674,9 @@ def canonical_value_and_analytical_score(
     *,
     flow_substeps: int = 24,
     with_score: bool,
+    return_trace: bool = False,
     initial_state_tangent: Tensor | None = None,
     initial_covariance_tangent: Tensor | None = None,
-    return_trace: bool = False,
     reset_policy: str = "none",
     reset_design: Tensor | None = None,
     reset_epsilon: float = 2.0,
@@ -580,9 +722,9 @@ def canonical_value_and_analytical_score(
         observations,
         flow_substeps=flow_substeps,
         with_score=with_score,
+        return_trace=return_trace,
         initial_state_tangent=initial_state_tangent,
         initial_covariance_tangent=initial_covariance_tangent,
-        return_trace=return_trace,
         observation_factor_override=None,
         post_reset_transform=None,
         reset_policy=reset_policy,

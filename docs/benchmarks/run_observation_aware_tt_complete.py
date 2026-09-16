@@ -99,15 +99,18 @@ def filter_kernel(model, jit):
         weights = tf.exp(normalized)
         mean, covariance = lib.gaussian_moments(x, weights)
         ess = 1/tf.reduce_sum(weights*weights)
+        maximum_weight = tf.reduce_max(weights)
         n = tf.shape(x)[0]
         resample = ess < .5*tf.cast(n, D)
         cumulative = tf.concat([tf.cumsum(weights)[:-1], tf.ones([1], D)], axis=0)
         positions = (tf.cast(tf.range(n), D)+offset)/tf.cast(n, D)
         indices = tf.minimum(tf.searchsorted(cumulative, positions, side='right'), n-1)
         indices = tf.where(resample, indices, tf.range(n))
+        ancestor_counts = tf.math.unsorted_segment_sum(tf.ones_like(indices, dtype=tf.int32), indices, n)
+        unique_ancestors = tf.reduce_sum(tf.cast(ancestor_counts > 0, tf.int32))
         carried = tf.gather(x, indices)
         carried_logweights = tf.where(resample, -tf.math.log(tf.cast(n, D))*tf.ones([n], D), normalized)
-        return carried, carried_logweights, increment, mean, covariance, ess, indices, resample, logfactor-logq
+        return carried, carried_logweights, increment, mean, covariance, ess, maximum_weight, unique_ancestors, indices, resample, logfactor-logq
     _FILTER_KERNELS[key] = update
     return update
 
@@ -122,7 +125,7 @@ def particle_filter(model, observations, guide, tt_path, method, count, seed, ji
         previous = particles
         diag = {}
         noise = tf.random.stateless_normal([count, d], [seed+t, 2], dtype=D)
-        if method in ('sgqf_joint', 'tt_sgqf_safeguard'):
+        if method in ('sgqf_joint', 'tt_sgqf_safeguard', 'tt_sgqf_initialized'):
             if tt_path is None:
                 raise ValueError('A joint consumer requires its frozen proposal path')
             from bayesfilter.highdim.sgqf_joint_consumer_tf import sample_joint_step
@@ -149,7 +152,7 @@ def particle_filter(model, observations, guide, tt_path, method, count, seed, ji
             draws = tf.linalg.matmul(previous, model.transition, transpose_b=True)+model.sigma*noise
             logq = model.transition_log_prob(draws, previous)
         offset = tf.random.stateless_uniform([], [seed+t, 3], dtype=D)
-        particles, logweights, inc, mean, cov, ess, ancestors, resampled, correction = update(
+        particles, logweights, inc, mean, cov, ess, maximum_weight, unique_ancestors, ancestors, resampled, correction = update(
             draws, logq, previous, logweights, y, tf.constant(t == 0), offset)
         lib.finite(inc, 'particle evidence')
         lib.finite(mean, 'particle moments')
@@ -157,7 +160,8 @@ def particle_filter(model, observations, guide, tt_path, method, count, seed, ji
         if keep_history:
             history.append(dict(x=draws, previous=previous, logq=logq, resampled=bool(resampled.numpy())))
         records.append(dict(time=t, mean=mean, covariance=cov, log_increment=inc, cumulative_log_evidence=total,
-            ess=ess, resampled=resampled, minimum_log_correction=tf.reduce_min(correction),
+            ess=ess, maximum_weight=maximum_weight, unique_ancestors=unique_ancestors,
+            resampled=resampled, minimum_log_correction=tf.reduce_min(correction),
             maximum_log_correction=tf.reduce_max(correction), **diag))
     return {'method': method, 'count': count, 'seed': seed, 'steps': records, 'log_evidence': total}, history
 

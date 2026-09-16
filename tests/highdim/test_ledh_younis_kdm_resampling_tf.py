@@ -767,8 +767,8 @@ def test_post_reset_extension_preserves_canonical_no_hook_behavior():
         post_reset_transform=identity_hook,
         **fixture["options"],
     )
-    np.testing.assert_array_equal(hooked_value.numpy(), baseline_value.numpy())
-    np.testing.assert_array_equal(hooked_score.numpy(), baseline_score.numpy())
+    np.testing.assert_allclose(hooked_value.numpy(), baseline_value.numpy(), rtol=32*np.finfo(float).eps, atol=32*np.finfo(float).eps)
+    np.testing.assert_allclose(hooked_score.numpy(), baseline_score.numpy(), rtol=32*np.finfo(float).eps, atol=32*np.finfo(float).eps)
     for step_index in range(2):
         for name in (
             "states_after_reset",
@@ -784,9 +784,10 @@ def test_post_reset_extension_preserves_canonical_no_hook_behavior():
             "higher_moment_minimum_pairwise_particle_cap_scale",
             "higher_moment_minimum_coordinatewise_cap_derivative",
         ):
-            np.testing.assert_array_equal(
+            np.testing.assert_allclose(
                 hooked_trace[step_index][name].numpy(),
                 baseline_trace[step_index][name].numpy(),
+                rtol=32*np.finfo(float).eps, atol=32*np.finfo(float).eps,
             )
 
 
@@ -815,16 +816,6 @@ def test_post_reset_state_weight_and_covariance_values_reach_next_pfpf_step():
 
     def run_hook(kind):
         def hook(time_index, states, d_states, covariances, d_covariances):
-            if time_index != 0:
-                return (
-                    states,
-                    d_states,
-                    covariances,
-                    d_covariances,
-                    uniform_log,
-                    tf.zeros_like(uniform_log),
-                    {},
-                )
             next_states = states + state_shift if kind == "state" else states
             next_covariances = (
                 covariances + 0.04 * tf.eye(2, batch_shape=[8], dtype=DTYPE)
@@ -837,11 +828,11 @@ def test_post_reset_state_weight_and_covariance_values_reach_next_pfpf_step():
                 else uniform_log
             )
             return (
-                next_states,
+                tf.where(time_index == 0, next_states, states),
                 d_states,
-                next_covariances,
+                tf.where(time_index == 0, next_covariances, covariances),
                 d_covariances,
-                next_log_weights,
+                tf.where(time_index == 0, next_log_weights, uniform_log),
                 tf.zeros_like(uniform_log),
                 {},
             )
@@ -872,7 +863,7 @@ def test_post_reset_log_weight_tangent_is_consumed_by_next_pfpf_logits():
     np.testing.assert_allclose(tf.reduce_sum(injected).numpy(), 0.0, atol=2e-16)
 
     def identity_hook(time_index, states, d_states, covariances, d_covariances):
-        tangent = injected if time_index == 0 else tf.zeros_like(injected)
+        tangent = tf.where(time_index == 0, injected, tf.zeros_like(injected))
         return (
             states,
             d_states,

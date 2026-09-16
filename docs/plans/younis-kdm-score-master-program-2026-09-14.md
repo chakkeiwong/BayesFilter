@@ -83,9 +83,29 @@ Seven baseline rows have run on CPU/XLA and GPU/XLA; full six-parameter
 derivatives include the initial distribution. These are mechanics fixtures,
 not evidence of score improvement. The active execution checkpoint is
 [checkpoint.md](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/checkpoint.md).
-KDM integration, covariance alternatives, corrected twists, and the research
-matrix remain implementation/execution work inside this master. A missing
-method cannot be removed to declare the full matrix implemented.
+KDM integration, persistent covariance alternatives, fixed and locally fitted
+twists, finite differences, normalization reports, and nonlinear comparison
+endpoints now execute. Bounded density-objective iAPF fitting and adaptive
+iteration and adaptive-N selection/reporting now pass scalar Gaussian CPU/GPU
+mechanics checks. Nonlinear iAPF, comprehensive control calibration and the broader
+research matrix remain work inside this master.
+A missing method cannot be removed to declare the full matrix implemented.
+The latest completed slice is [adaptive-N iAPF selection/reporting](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-adaptive-scope-result-and-refresh.md): ten GPU rows and eleven main consumer tests pass, including an actual 16-to-32 count change. Nonlinear iAPF is the next implementation prerequisite. The preceding [control diagnostics and safety screen](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/control-safety-result-and-refresh.md) completed:
+108 comparison rows and eight GPU smoke rows complete after a validator-only
+coordinate-cap repair. The inherited cap substantially compresses intermediate
+coordinates; larger caps reduce that compression but do not rescue observed
+score errors. All tested controls fail the descriptive heuristic screen in
+weak and concentrated regimes. These two-dataset results select no default.
+The diagnostics and repaired validator are integrated and seven shared-checkout
+consumer tests pass. Adaptive-N iAPF selection/reporting is the next
+implementation obligation; complete control calibration remains open.
+The preceding [bounded iAPF implementation and repair](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-result-and-refresh.md) records:
+eight GPU rows and 12 directional checks pass after an explicit offline
+FP64 fitting repair; final filtering and analytical scores remain FP32/TF32/XLA.
+It establishes mechanics only. The preceding [1,440-row nonlinear covariance pilot](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/nonlinear-calibration-result-and-refresh.md)
+passes numerical/reference and provenance checks, but all three covariance
+candidates fail the observed conditional heuristic promotion screen. The
+whole program remains incomplete; these are candidate-level results.
 
 Concurrent edits to the shared canonical executor interrupted the first
 numerical launch during provenance inspection. Subsequent runs use the isolated
@@ -827,6 +847,8 @@ The exact-center control had higher observed validation error; the small
 calibrated blend was descriptively favorable. Neither result establishes a
 ranking or removes the need for the later scientific comparison.
 
+The [density-fit iAPF prerequisite](younis-score-iapf-implementation-2026-09-15.md) implements the density-scale objective and adaptive iteration controller alongside the log-quadratic comparator. Source `cf823241` passes the scalar Gaussian GPU consumer and derivative checks. The unrestricted objective need not attain its infimum; numerical bounds, local optimizer, stopping rule, offline fitting precision and realized particle count are explicit. [Adaptive-N selection/reporting](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-adaptive-scope-result-and-refresh.md) now executes at `1c12eefa`, binding the selected procedure and recording its realized count and full offline/final work. Ten GPU rows pass, including actual count growth; this is mechanics evidence, not scientific promotion. The [control-safety screen](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/control-safety-result-and-refresh.md) completes its bounded observability and domain repair; comprehensive control calibration remains open. Next extend iAPF to the existing nonlinear fixture through shared kernels. Wider dimensional coverage remains implementation work inside this master.
+
 Entry: Phase 0C for the affected baseline. A KDM covariance provider also requires the relevant Phase 0D mixture-law tests; other providers need not wait for KDM.
 
 Implement one provider interface for prior/predicted moments, observation
@@ -849,8 +871,11 @@ correction can be derived and checked. Test a finite discrete example and a
 Gaussian example before fitted twists, including initialization, terminal
 factors, telescoping, and recovery of the untwisted law when the lookahead is
 constant. Inspect primary equations and author
-code for source-faithfulness claims. Fit on allowed calibration data and
-freeze before claim evaluation. Distinguish held-fixed learned controls from
+code for source-faithfulness claims. Select hyperparameters and the fitting
+procedure on calibration data. That frozen procedure may fit a proposal to each
+new observation dataset using independent offline streams; freeze its fitted
+coefficients and realized count before final sampling. Oracle scores, heldout
+errors and final sampling noise must never enter fitting. Distinguish held-fixed learned controls from
 their explicitly parameter-dependent evaluations and include the latter's
 derivatives. An unknown required normalizer blocks that proposed correction.
 
@@ -989,11 +1014,29 @@ resampling-IWSG, SGQF and persistent-mixture consumer tests. They also include
 explicit initial-state and initial-covariance tangents, checked against the
 six-parameter Gaussian oracle and fixed-program finite differences. This
 resolves the original prerequisites for those snapshots. The main checkout's
-concurrent while-loop repair still has a different callback/trace interface;
-its admission requires its own endpoint regressions. Do not transfer a pass
-between these source revisions or replace that work with a reduced LEDH lane.
+native-loop integration subsequently passed its own endpoint regressions and
+GPU mechanics checks, including the repaired callback interface. The versioned
+integration result records those checks; passes remain tied to their actual
+source revisions and do not imply scientific promotion.
 
 ## Phase 2: proposal and representation study
+
+Execution update, 15 September: the first nonlinear settings failed the
+conditional heuristic screen descriptively. The next repair is the
+[nonlinear calibration and untouched pilot](younis-score-nonlinear-calibration-2026-09-15.md):
+nine proposal/regime calibration scopes, frozen selections and fresh evaluation
+against four constructed heuristics. Phase 0G now includes
+`scripts/run_younis_score_campaign.py` and
+`bayesfilter/score_study/heldout_reporting.py`, with executable tests for
+selection-before-evaluation and dataset-level uncertainty. These are master
+implementation tasks. The 1,440-row GPU pilot completed after these checks
+passed; all nine selections preceded untouched evaluation. Its
+[result and phase refresh](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/nonlinear-calibration-result-and-refresh.md)
+records the heuristic promotion veto in all three regimes. Concentrated-regime
+paired intervals include zero. Incomplete control calibration and modest
+dataset count prohibit final ranking or default claims. Preserve the opened
+evaluation data and continue to fresh calibration and the remaining method
+prerequisites; this is not a continuation veto on the research direction.
 
 Hold the score estimator fixed and vary only the proposal representation. The
 factorial factors are proposal family, lookahead construction, covariance
@@ -2028,23 +2071,34 @@ start of the master or unrelated verified work.
 | Obligation | Producing phase | Current evidence and required work |
 |---|---|---|
 | Coordinator, study inputs, and resume/report services | 0B/0C/0G | Implemented under score_study, with backend-free tests and real baseline run/resume. Research aggregation and later method coverage remain separate milestones. |
-| KDM integrated/resampling endpoint | 0D, with shared baseline regression in 0C | Implemented and tested in the protected 0D snapshot; 48 CPU combination rows and three GPU consumer rows complete. Main-checkout integration must preserve concurrent canonical changes. |
+| KDM integrated/resampling endpoint | 0D, with shared baseline regression in 0C | Implemented and tested in the protected 0D snapshot; 48 CPU combination rows and three GPU consumer rows complete. Main integration preserves the concurrent native loops; both consumers pass main CPU direction checks and the focused GPU callback retry. |
 | Parameter-dependent initialization | 0C and every affected 0D--0G adapter | Explicit initial-state/covariance tangents implemented; six-parameter canonical finite-difference regression passes. Extend the same contract to each later adapter. |
 | UKF/KDM/SGQF moment lifecycle | 0C--0E | Shared UKF/SGQF and persistent Gaussian-mixture prediction, observation conditioning and reset carry execute with total analytical tangents. Provider snapshot 677e38a8 has CPU/GPU and independent selection/claim checks. Nonlinear snapshot a99a1c55 reaches the same shared consumers. The mixture construction is a local assumed-density candidate, not a reproduction of Younis's learned filter. |
-| Twisting/iAPF | 0E | Fixed positive-power Gaussian psi-APF and a fitted Gaussian-plus-floor variant have checked initial/terminal normalization, actual sampling law and analytical finite-program tangents. Independent fit/evaluation and selection/claim plumbing execute at 677e38a8. The fit uses a local log-quadratic criterion and fixed iterations; it does not implement the published iAPF density-scale objective or adaptive stopping. Those source-faithful comparison rows remain open. |
+| Twisting/iAPF | 0E | Fixed positive-power and log-quadratic fitted Gaussian psi-APF consumers execute at 677e38a8. Bounded density-objective iAPF and adaptive iteration execute at cf823241; eight GPU rows and 12 directional derivative checks pass. Adaptive-N selection/reporting at 1c12eefa passes ten GPU rows and eleven main consumer tests, with offline FP64 fitting, final FP32 filtering, independent final streams and full count/cost evidence. Bounds, local solver and particle initialization are declared adaptations. Nonlinear extension and scientific comparisons remain open. |
 | KDM as a LEDH control variate | 0D | Known-zero-center mixture density-score control and independent calibrated biased-score blend execute. The tiny exact-control fixture has worse descriptive validation error; no ranking. Other unknown centers cannot inherit this result. |
-| Coupled finite differences | 0F | Three stencils, full directional reconstruction/covariance and frozen-design consumption execute. Forty-row pilot plus independent eight-row selection and two held-out mechanics rows complete. Ratio/consistency reports remain open. See phase-0f-result-and-refresh.md in the active artifact root. |
+| Coupled finite differences | 0F | Three stencils, full directional reconstruction/covariance and frozen-design consumption execute. Forty-row pilot plus independent eight-row selection and two held-out mechanics rows complete. Conditional normalization, ratio covariance and N/2N/4N consistency reports also execute; 48 diagnostic rows complete. The eight-row pooled LEDH consistency association is only r=0.058, descriptive and insufficient for bias calibration. Larger replication and calibrated combinations remain open. See phase-0f-result-and-refresh.md and phase-0g-capacity-normalization-result.md in the active artifact root. |
 | Companion manuscript | 0A, then relevant phase repairs | Synchronize FD smoothness, stochastic MSE, direction convention and covariance lifecycle before using it as the revised implementation specification. |
 | Additional models, row matrix, and final reports | 0G | Scalar nonlinear transition/observation adapters, a refined numerical grid reference, EKF/UKF and corrected particle baselines execute at a99a1c55. All 96 rows across three regimes complete. At these untuned settings, every LEDH covariance candidate loses descriptively to EKF in every regime; this vetoes promotion, not the research direction. GPU capacity checks at d=4 and d=12, N=64, T=3, o=2 complete for Kalman and all three shared LEDH consumers. Scientific scope tuning, wider model coverage, replication and terminal reporting remain open. |
+| Serious run | Applicable phase and preceding refresh | Fill the evidence contract, defaults audit, partitions, finite attempts/compute budget, exact environment/commands, and unique output root. |
 
 The 15 September provider/nonlinear result and required next repair are recorded
 in [phase-0g-provider-nonlinear-result.md](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/phase-0g-provider-nonlinear-result.md).
-The active bounded normalization/capacity allocation is
-[phase-0g-capacity-normalization-plan.md](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/phase-0g-capacity-normalization-plan.md).
-The protected execution checkouts contain these completed implementations;
-main-checkout integration must preserve the concurrent executor rewrite and
-pass its own call-chain regressions before inheriting this status.
-| Serious run | Applicable phase and preceding refresh | Fill the evidence contract, defaults audit, partitions, finite attempts/compute budget, exact environment/commands, and unique output root. |
+The [density-fit audit](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-density-fit-audit.md)
+adds a required Phase0E specification: an unrestricted covariance/scale search
+in the paper's density-scale criterion can have a zero infimum without a
+finite minimizer. The implemented arm specifies its local optimizer and
+termination semantics; a small absolute fitting loss alone cannot certify its
+shape or downstream score quality. The existing local fitted comparator
+remains available under its declared target and method identity.
+The completed normalization/capacity allocation is recorded in
+[phase-0g-capacity-normalization-result.md](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/phase-0g-capacity-normalization-result.md).
+The completed consumers have been integrated into the main checkout while
+preserving the concurrent native flow-substep loop. Protected/native-loop
+parity, main consumer regressions and all nine planned GPU consumer smokes
+passed, including a recorded repair of two initially omitted KDM callback
+modules. The [integration result and next repair](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/phase-0g-main-integration-result.md)
+records the versioned evidence. This establishes bounded implementation
+coverage; scientific tuning and the remaining master phases are still open.
 
 The companion manuscript at
 [ledh_younis_kdm_score.tex](../papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex)

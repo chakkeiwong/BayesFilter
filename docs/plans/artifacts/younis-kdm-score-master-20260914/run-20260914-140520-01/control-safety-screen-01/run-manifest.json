@@ -1,0 +1,43 @@
+{
+  "bundle_sha256": "126f8ba52e440a2838917e3d5056792682e61210f7621487d9695efe582240f0",
+  "command": [
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/run-control-safety.py",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/control-safety-config-01/bundle.json",
+    "screen",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/control-safety-screen-01"
+  ],
+  "driver_sha256": "8210bc6bb8ae3a442bcdcfda77262c608ab8626cc51b9ab6ed2ae30b9c3258d5",
+  "environment": "tftwogpu",
+  "error": "RuntimeError: required wiring or unclassified failure: coordinate_cap_4_700",
+  "failure_classes": [
+    {
+      "classification": "unclassified_failure",
+      "condition": "weak",
+      "reasons": [
+        "in user code:\n\n    File \"/home/chakwong/BayesFilter/.localresources/worktrees/younis-score-control-safety-20260916/bayesfilter/score_study/nonlinear_tf.py\", line 118, in kernel  *\n        result=_value_and_analytical_score_impl(model,theta,initial,tf.broadcast_to(P,[N,1,1]),\n    File \"/home/chakwong/BayesFilter/.localresources/worktrees/younis-score-control-safety-20260916/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 459, in time_loop_body  *\n        batched_corrected = batched_higher_moment_shape_jvp(\n    File \"/home/chakwong/BayesFilter/.localresources/worktrees/younis-score-control-safety-20260916/bayesfilter/highdim/ledh_unified_correction_tf.py\", line 146, in batched_higher_moment_shape_jvp  **\n        result = tf.map_fn(\n    File \"/home/chakwong/BayesFilter/.localresources/worktrees/younis-score-control-safety-20260916/bayesfilter/highdim/ledh_unified_correction_tf.py\", line 125, in correct_row  **\n        return higher_moment_shape_jvp(\n    File \"/home/chakwong/BayesFilter/.localresources/worktrees/younis-score-control-safety-20260916/bayesfilter/highdim/higher_moment_contract_e.py\", line 1048, in higher_moment_shape_jvp\n        raise ValueError(\"invalid higher-moment correction controls\")\n\n    ValueError: invalid higher-moment correction controls\n"
+      ],
+      "row": "coordinate_cap_4_700"
+    }
+  ],
+  "git_commit": "41446e1e38c8fad4f837852bf54d575f18c535f9",
+  "hardware": "RTX 4080 SUPER; trusted GPU; per-row runtime metadata authoritative",
+  "interpreter": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "parity_checks": [],
+  "plan": "/home/chakwong/BayesFilter/docs/plans/younis-score-control-safety-calibration-2026-09-16.md",
+  "schema": "control_safety_run_v1",
+  "source_root": "/home/chakwong/BayesFilter/.localresources/worktrees/younis-score-control-safety-20260916",
+  "stage": "screen",
+  "status": "failed",
+  "studies": [
+    {
+      "completed": 32,
+      "name": "weak",
+      "output": "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/control-safety-screen-01/weak",
+      "rows": 36,
+      "status": "incomplete",
+      "study": "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/control-safety-config-01/weak-screen-study.json",
+      "wall_seconds": 148.60253773799923
+    }
+  ],
+  "wall_seconds": 151.52251520699065
+}

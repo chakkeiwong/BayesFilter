@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A06 independent filtering diagnostic; frozen algorithm, no default claims."""
+"""A08 downstream Zhao-Cui filtering diagnostic; frozen algorithm, no default claims."""
 import argparse
 from datetime import datetime, timezone
 import hashlib
@@ -13,7 +13,7 @@ import traceback
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
-PLAN=ROOT/'docs/plans/observation-aware-tt-master-amendment-06-independent-filtering-20260915.md'
+PLAN=ROOT/'docs/plans/observation-aware-tt-master-amendment-08-downstream-filter-objective-20260916.md'
 FIXTURE=ROOT/'docs/benchmarks/artifacts/observation_tt_pair_block_remedy_20260914/diagnostic-02/downstream_fixture.json'
 METHODS=('transition','stationary_prior','sgqf_gaussian','sgqf_joint','tt_predictive','tt_guided','tt_pair_block','tt_sgqf_safeguard')
 HEURISTICS=METHODS[:4]
@@ -133,7 +133,7 @@ def mean_se(values):
     return mean,tf.sqrt(tf.reduce_sum((x-mean)**2,axis=0)/(n*(n-1)))
 
 
-def references(model,observations,dest,seed,budget):
+def references(model,observations,dest,seed,budget,*,replicate_seed_stride=10):
     d=model.dimension
     if d==1:
         coarse=base.scalar_grid_reference(model,observations,801)
@@ -148,7 +148,7 @@ def references(model,observations,dest,seed,budget):
     for level,N in enumerate((32768,65536,131072)):
         budget();runs=[]
         for r in range(4):
-            budget();value,_=base.particle_filter(model,observations,None,None,'transition',N,seed+1000000*level+10*r,True)
+            budget();value,_=base.particle_filter(model,observations,None,None,'transition',N,seed+1000000*level+replicate_seed_stride*r,True)
             runs.append(value)
         means,se=mean_se([tf.stack([s['mean'] for s in run['steps']]) for run in runs])
         logz,logse=mean_se([run['log_evidence'] for run in runs])
@@ -169,7 +169,45 @@ def references(model,observations,dest,seed,budget):
         previous=current
 
 
-def sequence_metrics(model,observations,runs,refmeans,refz):
+def _summary(values):
+    values=tf.reshape(tf.cast(values,D),[-1])
+    ordered=tf.sort(values)
+    n=int(tf.size(ordered))
+    if n % 2:
+        median=ordered[n//2]
+    else:
+        median=.5*(ordered[n//2-1]+ordered[n//2])
+    return dict(mean=float(tf.reduce_mean(values)),minimum=float(tf.reduce_min(values)),
+        median=float(median),maximum=float(tf.reduce_max(values)))
+
+
+def particle_diagnostics(replicates,count):
+    def matrix(key):
+        return tf.stack([tf.stack([step[key] for step in run['steps']]) for run in replicates])
+    ess=matrix('ess')
+    maximum_weight=matrix('maximum_weight')
+    resampled=tf.cast(matrix('resampled'),D)
+    unique_ancestors=matrix('unique_ancestors')
+    minimum_log_correction=matrix('minimum_log_correction')
+    maximum_log_correction=matrix('maximum_log_correction')
+    normalizer=tf.cast(count,D)
+    per_step=[]
+    for t in range(int(ess.shape[1])):
+        per_step.append(dict(time=t,ess=_summary(ess[:,t]),
+            normalized_ess=_summary(ess[:,t]/normalizer),
+            maximum_weight=_summary(maximum_weight[:,t]),
+            resampling_rate=float(tf.reduce_mean(resampled[:,t])),
+            unique_ancestors=_summary(unique_ancestors[:,t]),
+            correction_minimum=_summary(minimum_log_correction[:,t]),
+            correction_maximum=_summary(maximum_log_correction[:,t])))
+    return dict(ess=_summary(ess),normalized_ess=_summary(ess/normalizer),
+        maximum_weight=_summary(maximum_weight),resampling_rate=float(tf.reduce_mean(resampled)),
+        unique_ancestors=_summary(unique_ancestors),
+        correction_minimum=_summary(minimum_log_correction),
+        correction_maximum=_summary(maximum_log_correction),per_step=per_step)
+
+
+def sequence_metrics(model,observations,runs,refmeans,refz,particle_count):
     scale=tf.linalg.diag_part(model.covariance0)
     magnitude=tf.abs(observations)/model.beta
     masks={'all':tf.ones_like(magnitude,dtype=tf.bool),'near_zero':magnitude<=.5,
@@ -180,10 +218,11 @@ def sequence_metrics(model,observations,runs,refmeans,refz):
         avg=tf.reduce_mean(errors,axis=0)
         values={}
         for label,mask in masks.items():
-            count=int(tf.reduce_sum(tf.cast(mask,tf.int32)))
-            values[label]=dict(count=count,mse=float(tf.reduce_mean(tf.boolean_mask(avg,mask))) if count else None)
+            regime_count=int(tf.reduce_sum(tf.cast(mask,tf.int32)))
+            values[label]=dict(count=regime_count,mse=float(tf.reduce_mean(tf.boolean_mask(avg,mask))) if regime_count else None)
         z,zse=mean_se([r['log_evidence'] for r in replicates])
-        table[name]=dict(regimes=values,log_evidence_bias=z-refz,log_evidence_mcse=zse)
+        table[name]=dict(regimes=values,log_evidence_bias=z-refz,log_evidence_mcse=zse,
+            particle_diagnostics=particle_diagnostics(replicates,particle_count))
     return plain(table)
 
 
@@ -270,8 +309,14 @@ def main():
         source_hashes={str(p.relative_to(ROOT)):sha(p) for p in dependencies},model_source_sha256=sha(FIXTURE),
         environment=sys.prefix,python=sys.version,tensorflow=tf.__version__,cpu_only=False,gpu_intentionally_hidden=False,
         jit_compile=True,numerical_dtype='float64',tf32_enabled=tf.config.experimental.tensor_float_32_execution_enabled(),
-        cuda_visible_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),gpu_memory_policy=dict(schema='a06_growth_v1',mode='memory_growth',devices=growth),
-        trust_basis='escalated_gpu_access',classification='mechanics_smoke' if args.smoke else 'independent_sequence_diagnostic',
+        cuda_visible_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),gpu_memory_policy=dict(schema='a08_growth_v1',mode='memory_growth',devices=growth),
+        trust_basis='escalated_gpu_access',classification='mechanics_smoke' if args.smoke else 'downstream_filtering_diagnostic',
+        objective='downstream_zhao_cui_filtering',
+        research_question='Does validation-selected SGQF-initialized TT yield a finite and useful recursive Zhao-Cui filtering object?',
+        primary_metric='regime-conditional normalized particle mean MSE against independent reference',
+        fit_audit_role='representation diagnostic and repair trigger; not a continuation veto',
+        promotion_vetoes=['nonfinite filter values or evidence', 'reference failure', 'heuristic dominance loss', 'declared ESS/weight/resampling validity failure'],
+        heuristic_adversaries=list(HEURISTICS),
         reference_exceptions='Gaussian setup/projection SVD, scalar grid and post-run statistics are TF/stdlib reference exceptions.',
         data_version='A06 stateless SV sequences; parameters only from old fixture, old observations unused',seeds=dict(data='916000+100*d+i',fit='917000+10000*d+100*i',particle='918000+10000*d+100*i+10*r',reference='919000+10000*d+100*i+10*r'),
         attempts_budget=dict(numerical_total_seconds=2700,per_attempt_seconds=args.wall_budget_seconds))
@@ -279,9 +324,13 @@ def main():
         degree=3,rank=3,sweeps=4,proximal_steps=128,defensive_mass=1e-5,l1_grid=[0,1e-5,1e-3],
         rows=[1024,4096,8192],selector='minimum_validation_H2_tie_SGQF',frozen_before_observations=True)
     write(out/'frozen-controls.json',controls);write(out/'run_manifest.json',manifest)
-    result=dict(status='RUNNING',sequences=[],default_ready=False)
+    result=dict(status='RUNNING',objective='downstream_zhao_cui_filtering',
+        research_question='Does validation-selected SGQF-initialized TT yield a finite and useful recursive Zhao-Cui filtering object?',
+        primary_metric='regime-conditional normalized particle mean MSE against independent reference',
+        fit_audit_role='representation diagnostic and repair trigger; not a continuation veto',
+        promotion_status='NOT_PROMOTED',sequences=[],default_ready=False)
     def budget():
-        if time.monotonic()-start>args.wall_budget_seconds: raise TimeoutError('A06 attempt budget exhausted')
+        if time.monotonic()-start>args.wall_budget_seconds: raise TimeoutError('A08 attempt budget exhausted')
     try:
         fixture=json.loads(FIXTURE.read_text())
         for d in ([1] if args.smoke else [1,4]):
@@ -331,7 +380,7 @@ def main():
                     except (ValueError,tf.errors.OpError) as exc:
                         failures[method]=repr(exc);times[method]=dict(total_seconds=time.monotonic()-stage)
                         write(methoddir/'failure.json',dict(error=repr(exc),traceback=traceback.format_exc(),fallback_used=False))
-                metrics=sequence_metrics(model,observations,runs,refmeans,refz)
+                metrics=sequence_metrics(model,observations,runs,refmeans,refz,512)
                 entry=dict(dimension=d,sequence=seq,reference_pass=refpass,reference=refinfo,metrics=metrics,
                     failures=failures,times=times,wall_seconds=time.monotonic()-tic)
                 write(dest/'summary.json',entry);result['sequences'].append(plain(entry));write(out/'result.json',result)

@@ -143,6 +143,20 @@ def test_interruption_preserved_and_resumed(study, registry, tmp_path):
     assert len(state["attempts"]) == 2
 
 
+def test_computed_failure_diagnostics_survive_coordinator(study, registry, tmp_path):
+    from bayesfilter.score_study.contracts import DiagnosticFailure
+    def failed_fit(row, context):
+        raise DiagnosticFailure("fit failed", {"history": [1., float("nan")],
+                                                "valid": False, "iterations": 7})
+    output = tmp_path / "run"
+    state = execute(study, registry, output, endpoint_loader=lambda _: failed_fit)
+    attempt = state["attempts"][0]
+    saved = json.loads((output / attempt["failure_diagnostics_path"]).read_text())
+    assert attempt["status"] == "failed"
+    assert saved["details"] == {"history": [1., "nan"], "valid": False, "iterations": 7}
+    assert state["rows"]["a"]["numerical_validity"] == "not_admitted"
+
+
 def test_incomplete_output_and_attempt_budget(study, registry, tmp_path):
     output = tmp_path / "run"
     study["budget"]["max_attempts_per_row"] = 1

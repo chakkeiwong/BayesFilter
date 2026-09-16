@@ -2,8 +2,33 @@
 
 **Date:** 2026-09-07  
 **Authority:** This program  
-**Status:** Ready for execution with Option A defaults approved  
+**Status:** TERMINATED - Phase 4a Continuation Veto (2026-09-16)  
 **Replaces:** All prior LEDH HMC validation programs
+
+---
+
+## Campaign Termination Notice
+
+**Date:** 2026-09-16  
+**Phase:** Phase 4a (Ultra-Short Diagnostic)  
+**Verdict:** CONTINUATION VETO
+
+**Reason:** LEDH particle filter cannot maintain numerical stability during HMC parameter space exploration. Two attempts with increasingly strong regularization both failed with identical Cholesky decomposition errors.
+
+**Result Document:** `docs/plans/ledh-surrogate-hmc-phase4a-diagnostic-result-2026-09-07.md`
+
+**What Was Not Tested:** The surrogate-force mechanism (Corollary 5.2) itself remains mathematically valid but cannot be empirically validated with LEDH targets using the current implementation. NeuTra-based validation (Phase 3) already succeeded.
+
+**Phases Completed:**
+- ✅ Phase 1: Dual-parameter target implementation
+- ✅ Phase 2: Unit tests and gradient checks  
+- ✅ Phase 3: NeuTra validation (reference implementation)
+- ✅ Phase 3.5: LEDH fixed-θ validation
+- ❌ Phase 4a: LEDH HMC diagnostic (FAILED - continuation veto)
+
+**Phases Blocked:**
+- ⛔ Phase 4b: Full Certification (conditional on Phase 4a)
+- ⛔ Phase 5: Production integration (conditional on Phase 4b)
 
 ---
 

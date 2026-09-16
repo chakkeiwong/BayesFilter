@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "confirmation": "docs/benchmarks/artifacts/observation_tt_warm_improvement_20260916/attempt-confirmation-02",
+  "particle_time_records": 14880,
+  "checked_tt_cdf_records": 6992,
+  "reference_particle_time_records": 2160,
+  "finite_numeric_values": 1077122,
+  "distinct_particle_reference_scalar_seeds": 4080,
+  "source_snapshots_verified": 19,
+  "frozen_configs_and_fit_seeds_verified": 1311,
+  "same_target_audits": 54,
+  "fitted_h2_below_initializer": 54,
+  "evidence_screen_failures": [
+    {
+      "dimension": 4,
+      "sequence": 4,
+      "method": "baseline"
+    },
+    {
+      "dimension": 4,
+      "sequence": 4,
+      "method": "capacity"
+    },
+    {
+      "dimension": 4,
+      "sequence": 4,
+      "method": "preservation"
+    },
+    {
+      "dimension": 4,
+      "sequence": 4,
+      "method": "tt_pair_block"
+    },
+    {
+      "dimension": 4,
+      "sequence": 4,
+      "method": "sgqf_gaussian"
+    },
+    {
+      "dimension": 4,
+      "sequence": 4,
+      "method": "sgqf_joint"
+    },
+    {
+      "dimension": 4,
+      "sequence": 6,
+      "method": "stationary_prior"
+    },
+    {
+      "dimension": 4,
+      "sequence": 9,
+      "method": "stationary_prior"
+    }
+  ],
+  "coverage_failures": [
+    {
+      "dimension": 4,
+      "sequence": 10,
+      "missing": [
+        "baseline",
+        "capacity",
+        "preservation",
+        "sgqf_gaussian",
+        "sgqf_joint",
+        "tt_pair_block"
+      ],
+      "reference_pass": false,
+      "failures": {
+        "guide": "ValueError(\"all SGQF levels invalid: [{'level': 2, 'points': 9, 'negative_rule_weights': 1, 'scaled_mass': 0.1666666666666692, 'status': 'invalid', 'reason': 'chart covariance is not numerically SPD: -3.2636384798595723e-19 <= 6.844123313578001e-27'}, {'level': 3, 'points': 49, 'negative_rule_weights': 9, 'scaled_mass': 0.028417078037232226, 'status': 'invalid', 'reason': 'chart covariance is not numerically SPD: -0.004675876177955655 <= 7.839387146553957e-15'}, {'level': 4, 'points': 201, 'negative_rule_weights': 49, 'scaled_mass': 0.001904613071574042, 'status': 'invalid', 'reason': 'chart covariance is not numerically SPD: -0.25365435407501025 <= 5.209269019432383e-14'}, {'level': 5, 'points': 681, 'negative_rule_weights': 169, 'scaled_mass': 0.0007676396897813551, 'status': 'invalid', 'reason': 'chart covariance is not numerically SPD: -0.06424637387935643 <= 7.9043139795541e-14'}]\")",
+        "baseline": "ValueError('Shared SGQF guide failed; no fallback')",
+        "capacity": "ValueError('Shared SGQF guide failed; no fallback')",
+        "preservation": "ValueError('Shared SGQF guide failed; no fallback')",
+        "sgqf_gaussian": "ValueError('Shared SGQF guide failed; no fallback')",
+        "sgqf_joint": "ValueError('Shared SGQF guide failed; no fallback')",
+        "tt_pair_block": "ValueError('Shared SGQF guide failed; no fallback')"
+      }
+    }
+  ],
+  "primary_contrast_arithmetic": "independently recomputed; bootstrap critical value retained from frozen driver",
+  "reviewer": "executor self-audit; no independent reviewer claimed"
+}

@@ -361,6 +361,7 @@ def _sigma_points_with_tangent(
     d_covariances: Tensor,
     scale: float,
     jitter: float,
+    standard_points: Tensor | None = None,
 ) -> tuple[Tensor, Tensor]:
     """Sigma points and their analytical tangents (Cholesky differential)."""
 
@@ -376,6 +377,9 @@ def _sigma_points_with_tangent(
     scale_c = tf.constant(scale, dtype=dtype)
     chol = tf.linalg.cholesky(scale_c * stabilized)
     d_chol = _cholesky_forward_differential(chol, scale_c * d_stabilized)
+    if standard_points is not None:
+        return (means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, chol),
+                d_means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, d_chol))
     offsets = tf.linalg.matrix_transpose(chol)
     d_offsets = tf.linalg.matrix_transpose(d_chol)
     points = tf.concat(
@@ -397,7 +401,7 @@ def _sigma_points_with_tangent(
     return points, d_points
 
 
-def ukf_predict_with_parameter_tangent(
+def quadrature_predict_with_parameter_tangent(
     states: Tensor,
     covariances: Tensor,
     d_states: Tensor,
@@ -411,6 +415,7 @@ def ukf_predict_with_parameter_tangent(
     beta: float = 2.0,
     kappa: float = 0.0,
     jitter: float = 1.0e-12,
+    point_rule: tuple[Tensor, Tensor] | None = None,
 ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """S1: unscented prediction with analytical parameter tangent.
 
@@ -425,20 +430,28 @@ def ukf_predict_with_parameter_tangent(
     dtype = states.dtype
     dim = int(states.shape[1])
     count = tf.shape(states)[0]
-    mean_w, cov_w, scale = _unscented_weights(
-        dim, dtype, alpha=alpha, beta=beta, kappa=kappa
-    )
+    if point_rule is None:
+        mean_w, cov_w, scale = _unscented_weights(
+            dim, dtype, alpha=alpha, beta=beta, kappa=kappa
+        )
+        standard_points = None
+        point_count = 2 * dim + 1
+    else:
+        standard_points, weights = point_rule
+        standard_points, weights = tf.cast(standard_points, dtype), tf.cast(weights, dtype)
+        mean_w = cov_w = weights
+        scale, point_count = 1., int(standard_points.shape[0])
     points, d_points = _sigma_points_with_tangent(
-        states, covariances, d_states, d_covariances, scale, jitter
+        states, covariances, d_states, d_covariances, scale, jitter, standard_points
     )
     flat = tf.reshape(points, [-1, dim])
     d_flat = tf.reshape(d_points, [-1, dim])
     pushed = tf.reshape(
-        transition_mean_fn(flat), [count, 2 * dim + 1, dim]
+        transition_mean_fn(flat), [count, point_count, dim]
     )
     d_pushed = tf.reshape(
         transition_mean_tangent_fn(flat, d_flat),
-        [count, 2 * dim + 1, dim],
+        [count, point_count, dim],
     )
     predicted_means = tf.einsum("s,nsd->nd", mean_w, pushed)
     d_predicted_means = tf.einsum("s,nsd->nd", mean_w, d_pushed)
@@ -460,7 +473,7 @@ def ukf_predict_with_parameter_tangent(
     return predicted_means, predicted_covs, d_predicted_means, d_predicted_covs
 
 
-def ukf_update_with_parameter_tangent(
+def quadrature_update_with_parameter_tangent(
     predicted_means: Tensor,
     predicted_covariances: Tensor,
     d_predicted_means: Tensor,
@@ -475,6 +488,8 @@ def ukf_update_with_parameter_tangent(
     beta: float = 2.0,
     kappa: float = 0.0,
     jitter: float = 1.0e-12,
+    point_rule: tuple[Tensor, Tensor] | None = None,
+    return_evidence: bool = False,
 ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """S5: unscented update with analytical parameter tangent."""
 
@@ -484,9 +499,17 @@ def ukf_update_with_parameter_tangent(
     dim = int(predicted_means.shape[1])
     obs_dim = int(observation.shape[-1])
     count = tf.shape(predicted_means)[0]
-    mean_w, cov_w, scale = _unscented_weights(
-        dim, dtype, alpha=alpha, beta=beta, kappa=kappa
-    )
+    if point_rule is None:
+        mean_w, cov_w, scale = _unscented_weights(
+            dim, dtype, alpha=alpha, beta=beta, kappa=kappa
+        )
+        standard_points = None
+        point_count = 2 * dim + 1
+    else:
+        standard_points, weights = point_rule
+        standard_points, weights = tf.cast(standard_points, dtype), tf.cast(weights, dtype)
+        mean_w = cov_w = weights
+        scale, point_count = 1., int(standard_points.shape[0])
     points, d_points = _sigma_points_with_tangent(
         predicted_means,
         predicted_covariances,
@@ -494,15 +517,16 @@ def ukf_update_with_parameter_tangent(
         d_predicted_covariances,
         scale,
         jitter,
+        standard_points,
     )
     flat = tf.reshape(points, [-1, dim])
     d_flat = tf.reshape(d_points, [-1, dim])
     observed = tf.reshape(
-        observation_mean_fn(flat), [count, 2 * dim + 1, obs_dim]
+        observation_mean_fn(flat), [count, point_count, obs_dim]
     )
     d_observed = tf.reshape(
         observation_mean_tangent_fn(flat, d_flat),
-        [count, 2 * dim + 1, obs_dim],
+        [count, point_count, obs_dim],
     )
     observed_means = tf.einsum("s,nso->no", mean_w, observed)
     d_observed_means = tf.einsum("s,nso->no", mean_w, d_observed)
@@ -568,7 +592,31 @@ def ukf_update_with_parameter_tangent(
         (d_predicted_covariances - d_ksk)
         + tf.linalg.matrix_transpose(d_predicted_covariances - d_ksk)
     )
-    return post_means, post_covs, d_post_means, d_post_covs
+    result = (post_means, post_covs, d_post_means, d_post_covs)
+    if return_evidence:
+        inverse_innovation = tf.linalg.cholesky_solve(chol, innovation[..., None])[..., 0]
+        logdet = 2 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)), axis=-1)
+        constant = tf.cast(obs_dim, dtype) * tf.math.log(2 * tf.acos(tf.cast(-1., dtype)))
+        log_evidence = -.5 * (constant + logdet + tf.reduce_sum(innovation * inverse_innovation, -1))
+        d_log_evidence = -tf.reduce_sum(d_innovation * inverse_innovation, -1)
+        d_log_evidence += .5 * tf.einsum("ni,nij,nj->n", inverse_innovation, d_innovation_cov, inverse_innovation)
+        d_log_evidence -= .5 * tf.linalg.trace(tf.linalg.cholesky_solve(chol, d_innovation_cov))
+        return (*result, log_evidence, d_log_evidence)
+    return result
+
+
+def ukf_predict_with_parameter_tangent(*args, **kwargs):
+    """Canonical UKF prediction through the shared quadrature moment kernel."""
+    if "point_rule" in kwargs:
+        raise ValueError("canonical UKF does not accept an alternative point rule")
+    return quadrature_predict_with_parameter_tangent(*args, **kwargs)
+
+
+def ukf_update_with_parameter_tangent(*args, **kwargs):
+    """Canonical UKF conditioning through the shared quadrature moment kernel."""
+    if "point_rule" in kwargs:
+        raise ValueError("canonical UKF does not accept an alternative point rule")
+    return quadrature_update_with_parameter_tangent(*args, **kwargs)
 
 
 __all__ = [

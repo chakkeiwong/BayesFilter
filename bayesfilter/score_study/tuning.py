@@ -14,17 +14,54 @@ from .contracts import digest, validate_result, validate_study
 from .coordinator import fingerprint, write_json
 from .registry import default_registry
 
+TUNABLE_PROPOSALS = frozenset(("ledh", "sgqf", "kdm_covariance", "integrated_kdm",
+                              "resampling_kdm", "twist", "fitted_twist", "iapf"))
+
+
+def candidate_configuration(row):
+    """Every tunable provider input, including the covariance/psi family."""
+    proposal = row["proposal"]
+    if proposal == "ledh":
+        return row["controls"]
+    keys = {"sgqf": ("controls", "sgqf_level"),
+            "kdm_covariance": ("controls", "within_fraction"),
+            "integrated_kdm": ("controls", "bandwidth_scale"),
+            "resampling_kdm": ("controls", "bandwidth_scale"),
+            "twist": ("twist_power",),
+            "fitted_twist": ("fit_theta", "fit_iterations", "fit_initial_variance", "fit_floor_ratio"),
+            "iapf": ("iapf",)}
+    return {key: row[key] for key in keys[proposal]}
+
+
+def selected_row(row, context):
+    """Resolve a frozen configuration without allowing a contradictory row."""
+    selected = consume_selection(row, context)
+    values = {"controls": selected} if row["proposal"] == "ledh" else selected
+    for key, value in values.items():
+        if key in row and row[key] != value:
+            raise ValueError("claim row contradicts selected provider configuration")
+    return {**row, **values}
+
 
 def scope(study, row):
     s = study["settings"]
     # Dataset IDs are intentionally omitted: partitions differ, their generating
     # regime does not. Every execution/numerical setting is included.
-    return {"model": row["model"], "proposal": row["proposal"], "estimator": row["estimator"],
+    out = {"model": row["model"], "proposal": row["proposal"], "estimator": row["estimator"],
             "comparison_target": row["comparison_target"], "settings": s,
-            "reset_contract_id": "contract_e_chol_v1",
-            "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "reset_contract_id": "contract_e_chol_v1" if row["proposal"] not in ("twist", "fitted_twist", "iapf") else "not_applicable",
+            "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1" if row["proposal"] not in ("twist", "fitted_twist", "iapf") else "not_applicable",
             "parameter_dimension": 6,
             "candidate_family": study.get("tuning_candidate_family", [])}
+    if row["proposal"] == "iapf":
+        out["particle_count_contract"] = {
+            "schema": "iapf_adaptive_count_scope_v1",
+            "initial_particles": s["particles"],
+            "maximum_particles": "bound_by_each_declared_candidate_configuration",
+            "realized_particles": "offline_controller_result_frozen_for_final_score",
+            "fitting_observations": "current_dataset_independent_of_final_randomness",
+            "comparison": "adaptive_procedures_with_separate_actual_work_not_equal_N"}
+    return out
 
 
 def _derive_selection(source_run):
@@ -35,7 +72,7 @@ def _derive_selection(source_run):
     validate_study(study, registry)
     if state["fingerprint"] != fingerprint(study, registry):
         raise ValueError("tuning evidence source/registry is stale")
-    rows = [r for r in study["rows"] if r["proposal"] == "ledh" and r.get("role") in ("calibration", "validation")]
+    rows = [r for r in study["rows"] if r["proposal"] in TUNABLE_PROPOSALS and r.get("role") in ("calibration", "validation")]
     if not rows:
         raise ValueError("no completed calibration/validation candidates")
     from .runtime import configure_runtime
@@ -52,15 +89,26 @@ def _derive_selection(source_run):
         validate_result(result, row, registry)
         if digest(result) != saved["result_digest"]:
             raise ValueError("tuning numerical evidence digest mismatch")
-        if result["diagnostics"].get("controls") != row["controls"]:
+        configuration = candidate_configuration(row)
+        executed = result["diagnostics"].get("candidate_configuration", result["diagnostics"].get("controls"))
+        if executed != configuration:
             raise ValueError("candidate controls differ from executed controls")
-        candidate = digest(row["controls"])
-        record = records.setdefault(candidate, {"controls": row["controls"], "calibration": {}, "validation": {}})
+        candidate = digest(configuration)
+        record = records.setdefault(candidate, {"controls": configuration, "calibration": {}, "validation": {}})
         key = (row["dataset"], row["replicate"])
         if key in record[row["role"]]:
             raise ValueError("duplicate tuning replicate")
         error = tf.constant(result["score"], tf.float64) - tf.constant(result["oracle_score"], tf.float64)
         record[row["role"]][key] = tf.reduce_sum(error**2)
+        if row["proposal"] == "iapf":
+            from .iapf_scope import validate_result_accounting
+            adaptive = validate_result_accounting(result, row, study["settings"])
+            earlier = record.setdefault("adaptive_evidence", [])
+            for other in earlier:
+                if other["dataset"] == row["dataset"] and other["fit_digest"] != adaptive["fit_digest"]:
+                    raise ValueError("replicates changed the shared offline fitting result")
+            earlier.append({"row": row["id"], "role": row["role"], "dataset": row["dataset"],
+                            "replicate": row["replicate"], **adaptive})
         evidence.append({"row": row["id"], "digest": saved["result_digest"]})
     calibration_keys = None
     rows_out = []
@@ -78,6 +126,14 @@ def _derive_selection(source_run):
         rows_out.append({"candidate": candidate, "controls": record["controls"],
                          "calibration_score_mse": dataset_mean(record["calibration"]),
                          "validation_score_mse": dataset_mean(record["validation"])})
+        if "adaptive_evidence" in record:
+            entries = record["adaptive_evidence"]
+            rows_out[-1]["adaptive_evidence"] = entries
+            rows_out[-1]["realized_particle_counts"] = sorted({e["realized_particle_count"] for e in entries})
+            rows_out[-1]["total_observed_work"] = {key: sum(e["work_accounting"][key] for e in entries)
+                for key in ("offline_particle_time_points", "offline_fit_input_particle_time_points",
+                            "final_particle_time_points", "offline_optimizer_steps",
+                            "offline_wall_seconds", "final_wall_seconds")}
     family = study.get("tuning_candidate_family")
     if not family or {digest(c) for c in family} != set(records):
         raise ValueError("executed candidates differ from declared tuning family")
@@ -88,7 +144,7 @@ def _derive_selection(source_run):
     return {"schema": "younis_score_offline_selection_v1", "issuer": "bayesfilter.score_study.tuning.issue_selection",
             "source_run": str(root), "source_fingerprint": digest(state["fingerprint"]),
             "scope": reference_scope, "evidence": evidence, "candidates": rows_out,
-            "selected_controls": selected["controls"], "criterion": "calibration_mean_squared_error_to_exact_score",
+            "selected_controls": selected["controls"], "criterion": "calibration_mean_squared_error_to_declared_reference_score",
             "validation_status": "complete_finite_descriptive_only", "evidence_class": study["evidence_class"],
             "partitions": study["partitions"], "statistically_supported_ranking": False,
             "default_ready": False}
@@ -104,6 +160,8 @@ def issue_selection(source_run, destination):
 
 
 def consume_selection(row, context):
+    if not row.get("tuning_selection"):
+        raise ValueError("claim row requires a repository-issued tuning selection")
     selection = json.loads(Path(row["tuning_selection"]).read_text())
     derived = _derive_selection(selection["source_run"])
     if selection != derived:

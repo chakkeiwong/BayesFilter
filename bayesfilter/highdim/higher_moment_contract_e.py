@@ -7,6 +7,8 @@ JVP differentiates the complete executed map without TensorFlow autodiff.
 
 from __future__ import annotations
 
+import math
+
 import tensorflow as tf
 
 from bayesfilter.highdim.genut_shape_lm_tf import (
@@ -1038,7 +1040,7 @@ def higher_moment_shape_jvp(
         or coordinatewise_bounded_cap_power < 2
         or coordinatewise_bounded_cap_power % 2 != 0
         or coordinatewise_standardized_cap < 0.0
-        or coordinatewise_standardized_cap >= 1.0
+        or not math.isfinite(coordinatewise_standardized_cap)
         or coordinatewise_standardized_cap_power < 2
         or coordinatewise_standardized_cap_power % 2 != 0
         or projected_cumulant_correction_steps < 0

@@ -17,7 +17,7 @@ import time
 import traceback
 from typing import Callable
 
-from .contracts import Registry, digest, seed_pair, validate_result, validate_study
+from .contracts import DiagnosticFailure, Registry, digest, seed_pair, validate_result, validate_study
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -230,6 +230,10 @@ def execute(study: dict, registry: Registry, output: Path, *, resume: bool = Fal
                 except BaseException as error:
                     attempt["status"] = "interrupted" if isinstance(error, (KeyboardInterrupt, SystemExit)) else "failed"
                     (directory / "error.log").write_text(traceback.format_exc())
+                    if isinstance(error, DiagnosticFailure):
+                        write_json(directory / "failure_diagnostics.json", error.diagnostics)
+                        attempt["failure_diagnostics_path"] = str(
+                            (directory / "failure_diagnostics.json").relative_to(output))
                     state["rows"][row_id] = {"execution_status": attempt["status"],
                                              "engineering_status": "failed", "numerical_validity": "not_admitted",
                                              "scientific_decision": "not_evaluated", "reasons": [str(error)],

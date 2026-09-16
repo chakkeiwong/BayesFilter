@@ -23,7 +23,7 @@
 \title{Observation-Guided Tensor-Train Filtering for Stochastic Volatility\\
 \large The attempt05 Failure, Rejected Repairs, and an Executable SGQF Proposal}
 \author{Corrected mathematical and implementation audit}
-\date{Revised 2026-09-15}
+\date{Revised 2026-09-16}
 
 \begin{document}
 \maketitle
@@ -87,8 +87,12 @@ dimension. All references pass, but the candidate remains unpromoted: it has
 observed losses to simple proposals in two scalar observation regimes, and
 the signed SGQF quadrature fails on one four-dimensional sequence. Favorable
 results on the other eleven sequences do not establish reliability when the
-guide fails. The fitting safeguard remains empirical rather than a guarantee
-that TT refinement preserves SGQF accuracy on unseen data.
+guide fails. These findings limit promotion of this configuration; they do not
+reject TT as a proposal family or require every TT fit to improve on SGQF.
+The fitting safeguard remains empirical rather than a guarantee that TT
+refinement preserves SGQF accuracy on unseen data. The objective is a useful
+TT proposal in the corrected filtering recursion, assessed through filtering
+error, log evidence and particle-weight efficiency.
 \end{abstract}
 
 \section{Question, Evidence, and Decision}
@@ -4856,11 +4860,13 @@ references use replicated bootstrap filters at increasing particle counts
 with declared precision and agreement screens. A regime with insufficient
 sequence coverage, or a reference that fails its screen, remains inconclusive.
 The sequence bootstrap jointly accounts for the predeclared heuristic
-comparisons. Clearing those simple proposals is the primary filtering
-criterion; comparisons among the TT variants remain descriptive. Lower fit
-discrepancy cannot replace the downstream comparison.
+comparisons. A06 required clearing those simple proposals for promotion;
+comparisons among the TT variants remain descriptive. A08 retains these
+comparisons as performance diagnostics and limits on promotion, while asking
+whether the TT proposal supports a useful corrected filter. Lower fit
+discrepancy cannot replace that downstream measurement.
 
-The completed candidate fails this criterion. In one dimension it has
+The completed candidate fails A06's promotion criterion. In one dimension it has
 observed losses to the transition proposal on ordinary observations and to
 the analytical SGQF joint conditional on large observations. In four
 dimensions the shared SGQF guide fails on one sequence, leaving the complete
@@ -4992,14 +4998,17 @@ construction is recorded separately, and the ordered campaign reuses
 compiled kernels, so these are descriptive timings rather than an equal
 cold-start benchmark.
 
-The experiment rejects the tested candidate while leaving two distinguishable
-repair questions. Signed quadrature must first provide valid moments on the
-observations where the guide is needed. Separately, TT conversion and
-validation selection must preserve useful accuracy already present in the
-analytical joint. The current observation sequences have now been inspected;
-a repair needs fresh calibration and confirmation sequences under a reviewed
-protocol. A lower fitting discrepancy or a favorable table conditioned on
-guide success would not answer both questions.
+The experiment withholds promotion of the tested configuration while leaving
+two distinguishable repair questions. Signed quadrature must provide valid
+moments on the observations where the guide is needed. Separately, TT
+conversion and fitting must produce a normalized, evaluable proposal whose
+importance corrections permit useful filtering estimates. Discrepancy from
+the analytical SGQF joint helps diagnose this second question; any positive
+discrepancy difference is not, by itself, a rejection of the TT proposal.
+The current observation sequences have now been inspected: a rerun can check
+reproducibility and recover missing diagnostics, but a tuned repair requires
+fresh confirmation sequences. A lower fitting discrepancy or a favorable
+table conditioned on guide success would not answer both questions.
 
 The initialization, defense-calibration and independent-filtering records are
 respectively
@@ -5007,11 +5016,105 @@ respectively
 \path{docs/plans/observation-aware-tt-defense-consumer-20260915-result.md}, and
 \path{docs/plans/observation-aware-tt-independent-filtering-20260915-result.md}.
 They preserve commands, exact inputs, frozen controls, failed cases and
-inference tables. The independent terminal interpretation review agrees with
-the stated rejection and uncertainty limits. This section remains a
+inference tables. A06's independent terminal interpretation review agreed with
+its then-stated promotion and uncertainty limits. This section remains a
 provisional manuscript addition pending human reading feedback; its
 initialization/selection extensions do not establish source-faithful TT-cross,
 scalable high-dimensional fitting, total parameter gradients or HMC readiness.
+
+\subsection{The downstream objective and particle ESS}
+\label{sec:tt-downstream-objective}
+
+A08 asks whether the fitted TT is useful in the corrected filtering computation.
+Let $q_t(x\mid x_{t-1})$ denote the proposal actually sampled, and let
+$w_{t-1}^{(i)}$ be the normalized particle weight carried into the update.
+With transition density $f$ and observation density $g$, the implemented
+correction for a draw $x_t^{(i)}$ from that proposal is
+\begin{align}
+ u_t^{(i)} & = w_{t-1}^{(i)}
+ \frac{f(x_t^{(i)}\mid x_{t-1}^{(i)})g(y_t\mid x_t^{(i)})}
+ {q_t(x_t^{(i)}\mid x_{t-1}^{(i)})},
+ & w_t^{(i)}&=\frac{u_t^{(i)}}{\sum_{j=1}^N u_t^{(j)}},\\
+ \ESS_t&=\frac{1}{\sum_{i=1}^N(w_t^{(i)})^2},
+ &\widehat m_t&=\sum_{i=1}^N w_t^{(i)}x_t^{(i)}.
+\end{align}
+At the initial observation, the prior density replaces $f$ and the incoming
+weights are $1/N$. The sum of unnormalized weights is the evidence increment;
+summing its logarithm over time gives the particle log-evidence estimate.
+ESS is measured before resampling, which occurs here when $\ESS_t<N/2$.
+Equal weights give $\ESS_t=N$, while one dominant weight gives a value near
+one. The maximum weight and the number of distinct parents retained by that
+resampling step help distinguish typical efficiency from occasional collapse.
+They do not measure long-term genealogical diversity.
+
+This ESS concerns actual filtering particles. It differs from the importance
+ESS of rows used to fit a TT. It also differs from a validation of the
+uncorrected retained TT density: exact importance corrections can yield useful
+particle estimates even when the fitted density is imperfect. Accordingly,
+the filtering-mean error and log evidence are compared with independent
+references, while ESS and weight tails explain the cost of correcting the
+proposal. A TT fit need not defeat SGQF on every audit panel for this test to
+be informative. No numerical ESS acceptance threshold is chosen after seeing
+the result.
+
+The A08 rerun preserves A06's observations, fitting controls and particle
+seeds and adds explicit particle-diagnostic summaries. It is a reproducibility
+check with additional measurements, not a new independent confirmation.
+Moreover, the safeguarded route can select the analytical SGQF joint: its
+results describe that selection policy rather than a TT-only recursion.
+The pair-TT arm provides a separate comparator without that per-step selection.
+
+The rerun completed on the RTX 5080 in 2023.805 seconds and reproduced the
+earlier filtering-error tables and bootstrap intervals exactly. All 24
+reference screens passed. The same four-dimensional guide failure left eleven
+complete sequences for comparisons involving TT. Across the 14880 completed
+particle-time records there were no stored nonfinite numeric values or
+recorded conditional-CDF bracket failures. Table~\ref{tab:a08-particle-ess}
+reports actual particle ESS alongside filtering error, with the same sequence
+denominator for every method within a dimension.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{llrrrr}
+\toprule
+$d$ & Proposal & Norm. MSE & Mean ESS & Min. ESS & Resampled\\
+\midrule
+1 & Pair TT & 0.0016075 & 379.67 & 76.76 & 7.71\%\\
+1 & Selected TT/SGQF & 0.0016702 & 375.82 & 55.98 & 7.50\%\\
+\midrule
+4 & Transition & 0.0066377 & 175.78 & 2.70 & 79.89\%\\
+4 & SGQF joint & 0.0029703 & 311.47 & 3.16 & 30.23\%\\
+4 & Scalar guided TT & 0.0066699 & 199.52 & 14.34 & 87.50\%\\
+4 & Pair TT & 0.0026151 & 310.55 & 38.77 & 30.00\%\\
+4 & Selected TT/SGQF & 0.0023614 & 317.53 & 44.39 & 27.50\%\\
+\bottomrule
+\end{tabular}
+\caption{A08 particle diagnostics, with $N=512$. The scalar panel uses twelve
+sequences and the four-dimensional panel uses eleven complete-guide sequences.
+ESS is measured before resampling. Minima and resampling frequencies are
+descriptive, and no TT-versus-TT ranking is established.}
+\label{tab:a08-particle-ess}
+\end{table}
+
+For the selected route, the largest normalized particle weights are 0.1064
+and 0.1254 in one and four dimensions. Mean log-evidence errors are
+$-0.01384$ and $-0.01068$ nats, with largest absolute sequence-mean errors
+0.07673 and 0.13624 nats. The four-dimensional MSE is descriptively 64.6\%
+below scalar guided TT and 9.7\% below pair TT; the scalar result does not
+show the same gain over pair TT. This contrast supports further TT work
+without asserting uniform superiority.
+
+The selected policy uses generic TT, SGQF-start TT and exact SGQF at
+145, 59 and 36 scalar time steps, and 10, 191 and 19 four-dimensional time
+steps. The SGQF counts include the fixed initial steps. Consequently these
+results support the utility of a predominantly TT selection policy, while
+the stand-alone warm-start TT recursion remains a distinct test. The guide
+failure, completion-conditioned four-dimensional comparison and lack of
+TT-arm uncertainty intervals remain the main limitations. The two scalar
+heuristic losses still have simultaneous intervals containing zero. They
+limit the earlier promotion claim; they do not establish that TT is unusable.
+The full comparison and per-step records are linked from
+\path{docs/plans/observation-aware-tt-downstream-filter-objective-20260916-result.md}.
 
 \appendix
 \section{Artifact Provenance and Corrections}
