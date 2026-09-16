@@ -2,7 +2,19 @@
 
 Date: 2026-09-14
 
-Execution refresh: 2026-09-17. The
+Execution refresh: 2026-09-17. The latest
+[relative-shape repair and solver diagnostic](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-relative-shape-repair-20260917-01/result-and-refresh.md)
+executed from clean `e6298503`: 29 accepted fresh numerical rows, one
+unconverged validation fit, two blocked weak-regime claims and no underflow
+failures. The final diagnostic resolved that validation failure at 4,201
+optimizer steps without relaxing the 1e-7 threshold. Curved repaired claims
+still fail the boundary and EKF/UKF/local-linear screens. No candidate is
+promoted and no statistical ranking is supported. The main implementation is
+updated; 32 isolated checks, three oracle hooks, and 13 main-checkout checks
+pass. All three permitted GPU launches are used; total consumption is 249/280
+charges, 252.98/3000 GPU wall seconds and 1074.95/7200 CPU seconds.
+
+The preceding
 [fresh fit-calibration phase](younis-score-iapf-fit-calibration-fresh-2026-09-17.md)
 has executed from clean commit `418e5388`: 54 completed numerical rows,
 14 rejected underflow fits, and 12 selected-candidate claim rows blocked by
@@ -12,13 +24,17 @@ observed score error than EKF and UKF on every claim dataset; no candidate is
 promoted and no statistical ranking is supported. See the
 [result and diagnosis](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-fit-calibration-fresh-20260917-01/result-and-refresh.md).
 
-Phase 0E continuation is now implementing and checking the
+Phase 0E has implemented and executed the
 [relative-shape fitting repair](younis-score-iapf-relative-shape-repair-2026-09-17.md).
 Its objective divides profiled residual squared norm by density squared norm;
 it is an explicit Algorithm-3 adaptation, different from the published Eq. (15)
 retained as comparator. The source anchors, analytical quotient derivative,
-failure conditions and 32-row fresh-data experiment are written before execution.
-The maximum 104 charges fit within the existing 109-charge remainder.
+failure conditions and fresh-data experiment were written before execution.
+Next is a new bounded fitting-control calibration with fresh partitions:
+justify the solver budget or improve optimizer geometry, and address the
+remaining curved-regime bound/floor, Gaussian-family and particle-budget
+questions. The old campaign's three-launch allowance is exhausted; unused
+row charges do not authorize a fourth launch.
 Fitted-moment integration into LEDH, wider model coverage and
 powered replication remain open. The whole master is incomplete. Current
 execution details and the exact restart action are in the
@@ -128,11 +144,13 @@ Both selected-candidate studies remain incomplete and cannot issue tuning
 artifacts. Baseline-only selection succeeds, but baseline score errors exceed
 EKF and UKF on every claim dataset, and fitting boundaries are active on ten
 of twelve baseline claim rows. The source/result audit passes. No candidate
-is promoted and no ranking is statistically supported. This is a fitting
-repair trigger, not rejection of twisting or a harness failure. Reconcile
-objective scaling, constraints and stopping with the source specification,
-then execute fresh scope-specific calibration before iAPF-moment integration
-into LEDH. Seven new campaign-driver tests pass in each checkout.
+is promoted and no ranking is statistically supported. This triggered the
+executed relative-shape repair linked above, not rejection of twisting or a
+harness failure. That repair makes objective identity explicit, has no observed
+underflow in the fresh run, and shows that the former 2,000-step solver cap
+was insufficient on a saved validation cloud. Fresh control calibration and
+the curved score-error problem remain open before iAPF-moment integration
+into LEDH. The current repair/driver checks pass in both source checkouts.
 The earlier implementation slice is [nonlinear iAPF](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/nonlinear-iapf-result-and-refresh.md): twenty GPU rows, thirty frozen-source checks and the integrated consumers pass. Exact conditional twisting and frozen-fit derivatives are derived in manuscript Section 7.3. The observed score errors exceed EKF/UKF errors in both tested regimes; no ranking or promotion is supported. Its fitting controls now require the repair identified above. The preceding [adaptive-N selection/reporting](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-adaptive-scope-result-and-refresh.md) includes an actual 16-to-32 count change. The preceding [control diagnostics and safety screen](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/control-safety-result-and-refresh.md) completed:
 108 comparison rows and eight GPU smoke rows complete after a validator-only
 coordinate-cap repair. The inherited cap substantially compresses intermediate
@@ -2116,7 +2134,7 @@ start of the master or unrelated verified work.
 | KDM integrated/resampling endpoint | 0D, with shared baseline regression in 0C | Implemented and tested in the protected 0D snapshot; 48 CPU combination rows and three GPU consumer rows complete. Main integration preserves the concurrent native loops; both consumers pass main CPU direction checks and the focused GPU callback retry. |
 | Parameter-dependent initialization | 0C and every affected 0D--0G adapter | Explicit initial-state/covariance tangents implemented; six-parameter canonical finite-difference regression passes. Extend the same contract to each later adapter. |
 | UKF/KDM/SGQF moment lifecycle | 0C--0E | Shared UKF/SGQF and persistent Gaussian-mixture prediction, observation conditioning and reset carry execute with total analytical tangents. Provider snapshot 677e38a8 has CPU/GPU and independent selection/claim checks. Nonlinear snapshot a99a1c55 reaches the same shared consumers. The mixture construction is a local assumed-density candidate, not a reproduction of Younis's learned filter. |
-| Twisting/iAPF | 0E | Scalar Gaussian and nonlinear consumers, adaptive N, frozen-fit analytical scores and the underflow guard execute. Fresh calibration at `418e5388` completes 54 numerical rows, both conditional heuristic tables and twelve frozen-baseline claim rows; fourteen source rows underflow and twelve selected claims remain blocked. The baseline fails the descriptive EKF/UKF screen on all six datasets; no promotion or supported ranking. Seven driver tests pass in each checkout, and eight study fingerprints / 54 result digests pass the saved-result audit. Next: source-grounded density-objective, constraint and stopping repair, then fresh calibration. Wider dimensions and iAPF-moment integration into LEDH remain open. |
+| Twisting/iAPF | 0E | Relative-shape adaptation at `e6298503` completes 29 fresh numerical rows with no underflow failure; one unconverged validation fit blocks two weak claims. Curved repaired claims fail boundary and EKF/UKF/local-linear screens. A same-cloud diagnostic converges in 4,201 steps at the unchanged tolerance, identifying inadequate solver allowance. Nine source fingerprints and 29 result digests pass audit; 32 isolated tests, three hooks and 13 main checks pass. Campaign closes at 249/280 charges and 3/3 launches, without promotion or supported ranking. Next: fresh scoped solver/control calibration and diagnosis of curved downstream error. Wider dimensions and iAPF-moment integration into LEDH remain open. |
 | KDM as a LEDH control variate | 0D | Known-zero-center mixture density-score control and independent calibrated biased-score blend execute. The tiny exact-control fixture has worse descriptive validation error; no ranking. Other unknown centers cannot inherit this result. |
 | Coupled finite differences | 0F | Three stencils, full directional reconstruction/covariance and frozen-design consumption execute. Forty-row pilot plus independent eight-row selection and two held-out mechanics rows complete. Conditional normalization, ratio covariance and N/2N/4N consistency reports also execute; 48 diagnostic rows complete. The eight-row pooled LEDH consistency association is only r=0.058, descriptive and insufficient for bias calibration. Larger replication and calibrated combinations remain open. See phase-0f-result-and-refresh.md and phase-0g-capacity-normalization-result.md in the active artifact root. |
 | Companion manuscript | 0A, then relevant phase repairs | Synchronize FD smoothness, stochastic MSE, direction convention and covariance lifecycle before using it as the revised implementation specification. |

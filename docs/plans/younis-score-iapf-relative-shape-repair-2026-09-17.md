@@ -134,3 +134,13 @@ failures remain saved. Total launch limit stays three; total wall/CPU/charge
 limits remain unchanged. Final result must include decision and inference
 status tables, the conditional heuristic table, remaining budget, and the
 smallest justified next action. Update the master and active checkpoint.
+
+## Executed outcome
+
+Clean source `e6298503` completed 29 numerical rows with one unconverged
+validation fit and two blocked claims; there were no underflow failures.
+Curved repaired claims fail the conditional heuristic and bound screens.
+The separately planned final solver diagnostic converged on the saved
+validation case after 4,201 steps at the unchanged threshold. The campaign
+closed at 249/280 charges and 3/3 GPU launches. See
+`artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-relative-shape-repair-20260917-01/result-and-refresh.md`.

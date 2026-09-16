@@ -14,6 +14,7 @@ import time
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 PLAN = "docs/plans/younis-score-iapf-fit-calibration-fresh-2026-09-17.md"
+SHAPE_PLAN = "docs/plans/younis-score-iapf-relative-shape-repair-2026-09-17.md"
 LIMIT = 280
 REGIMES = {"weak": (.12, .04, 0), "curved": (.35, .12, 1)}
 
@@ -26,7 +27,9 @@ def write(path, data):
     path.write_text(json.dumps(data, indent=2, sort_keys=True, allow_nan=False) + "\n")
 
 
-def studies(regime):
+def studies(regime, protocol="density"):
+    if protocol not in ("density", "relative_shape"):
+        raise ValueError("unknown calibration protocol")
     c, b, offset = REGIMES[regime]
     theta = [.62, -.8, -.6, .9, .25, -.3]
     settings = dict(dimension=1, observation_dimension=1, horizon=2, particles=16,
@@ -45,11 +48,17 @@ def studies(regime):
               {"iapf": {**wider, "k":2, "tau":10.}}]
     partitions = {"calibration":[1100+offset, 1102+offset],
         "validation":[1110+offset, 1112+offset], "claim":[1120+offset, 1122+offset, 1124+offset]}
+    if protocol == "relative_shape":
+        family = [{"iapf": {**baseline, "fit_objective":"relative_shape"}}]
+        partitions = {"calibration":[1200+offset, 1202+offset],
+            "validation":[1210+offset, 1212+offset], "claim":[1220+offset]}
+        settings["prepared_data_regime"] = "nonlinear_iapf_shape_repair_20260917_" + regime
     base = dict(model="nonlinear_scalar", proposal="iapf", estimator="nonlinear_analytical",
         comparison_target="model_score", comparison="approximation_error",
         replicate=0, coupling_group="baseline")
     template = dict(schema="younis_score_study_v1", phase="0F", version=1,
-        plan=PLAN, evidence_class="target_specific_calibration", seed=1000,
+        plan=SHAPE_PLAN if protocol=="relative_shape" else PLAN,
+        evidence_class="target_specific_calibration", seed=1000,
         settings=settings, required_proposals=["iapf"], partitions=partitions,
         tuning_candidate_family=family,
         budget=dict(wall_seconds=2900, max_attempts=24, max_attempts_per_row=1))
@@ -58,8 +67,8 @@ def studies(regime):
         role=role, dataset=dataset) for i, candidate in enumerate(family)
         for role in ("calibration", "validation") for dataset in partitions[role]]
     frozen = deepcopy(template)
-    frozen["tuning_candidate_family"] = family[:1]
-    frozen["rows"] = [dict(base, **family[0], id=f"baseline-{role}-{dataset}",
+    frozen["tuning_candidate_family"] = [{"iapf":baseline}]
+    frozen["rows"] = [dict(base, iapf=baseline, id=f"baseline-{role}-{dataset}",
         role=role, dataset=dataset) for role in ("calibration", "validation")
         for dataset in partitions[role]]
     heuristic = deepcopy(template)
@@ -144,10 +153,10 @@ def fit_summary(diagnostics):
         "max_shape_residual":max((s[1] for s in steps), default=None)}
 
 
-def conditional_tables(rows, selections):
+def conditional_tables(rows, selections, protocol="density"):
     tables = []
     for regime in REGIMES:
-        _, _, heuristic = studies(regime)
+        _, _, heuristic = studies(regime, protocol)
         datasets = []
         for dataset in heuristic["partitions"]["claim"]:
             subset = [r for r in rows if r["regime"] == regime and r["dataset"] == dataset]
@@ -173,7 +182,7 @@ def conditional_tables(rows, selections):
     return tables
 
 
-def preflight(output):
+def preflight(output, protocol="density"):
     from bayesfilter.score_study.contracts import validate_study
     from bayesfilter.score_study.registry import default_registry
     from bayesfilter.score_study.coordinator import fingerprint
@@ -181,7 +190,7 @@ def preflight(output):
     rows, upper = 0, 0
     all_data = set()
     for regime in REGIMES:
-        source, frozen, heuristic = studies(regime)
+        source, frozen, heuristic = studies(regime, protocol)
         specs = [source, frozen, heuristic,
             claims(source, source["tuning_candidate_family"][0], Path("/preflight/selected.json"), "selected"),
             claims(frozen, frozen["tuning_candidate_family"][0], Path("/preflight/baseline.json"), "baseline")]
@@ -197,11 +206,14 @@ def preflight(output):
             raise ValueError("overlapping fresh partitions")
         all_data.update(ids)
         fingerprint(source, registry)
-    if upper != 248 or rows != 80 or upper+32 != LIMIT:
+    expected_upper, expected_rows, reserved, prior = ((104,32,5,171) if protocol=="relative_shape"
+                                                    else (248,80,32,0))
+    if upper != expected_upper or rows != expected_rows or upper+reserved+prior != LIMIT:
         raise ValueError("matrix or conservative cost changed")
     output.mkdir(parents=True, exist_ok=False)
     write(output/"preflight.json", {"status":"pass", "rows":rows, "upper_charges":upper,
-        "reserved_charges":32, "limit":LIMIT, "datasets":sorted(all_data),
+        "reserved_charges":reserved, "prior_charges":prior, "protocol":protocol,
+        "limit":LIMIT, "datasets":sorted(all_data),
         "numerical_work":False, "gpu_intentionally_hidden":os.environ.get("CUDA_VISIBLE_DEVICES")=="-1"})
 
 
@@ -219,13 +231,15 @@ def run(args):
     started, cpu_started = time.monotonic(), time.process_time()
     registry, rows, selections = default_registry(), [], {}
     manifest = {"schema":"iapf_fresh_calibration_v1", "status":"running", "git_commit":revision,
-        "source_checkout":str(REPO), "plan":PLAN, "command":sys.argv,
+        "source_checkout":str(REPO), "plan":SHAPE_PLAN if args.protocol=="relative_shape" else PLAN,
+        "protocol":args.protocol, "command":sys.argv,
         "environment_name":"tftwogpu", "launch_number":args.launch_number,
         "prior_charges":args.prior_charges, "prior_wall_seconds":args.prior_wall_seconds,
         "prior_cpu_seconds":args.prior_cpu_seconds, "charge_limit":LIMIT,
         "environment":{k:os.environ.get(k) for k in ("CUDA_VISIBLE_DEVICES", "TF_FORCE_GPU_ALLOW_GROWTH", "BAYESFILTER_PRELOAD_CUSTOM_OP")},
         "driver_sha256":hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        "seed":1000, "data_version":"repository nonlinear model, fresh 1100-1125 identities",
+        "seed":1000, "data_version":("repository nonlinear model, fresh 1200-1221 identities"
+            if args.protocol=="relative_shape" else "repository nonlinear model, fresh 1100-1125 identities"),
         "studies":[], "statistically_supported_ranking":False, "default_ready":False,
         "score_semantics":"finite_program_frozen_fit_realized_count_and_labels",
         "timing_ranking":"not_permitted_concurrent_workloads", "selections":selections}
@@ -235,7 +249,7 @@ def run(args):
         write(root/"attempt-accounting.json", budget.charges)
         write(root/"invalid-fits.json", budget.failures)
         write(root/"consumer-evidence.json", rows)
-        write(root/"conditional-heuristics.json", conditional_tables(rows, selections))
+        write(root/"conditional-heuristics.json", conditional_tables(rows, selections, args.protocol))
         write(root/"run-manifest.json", manifest)
     budget = Budget(save, prior=args.prior_charges,
         wall_limit=2950.-args.prior_wall_seconds, cpu_limit=6900.-args.prior_cpu_seconds)
@@ -290,8 +304,12 @@ def run(args):
 
     try:
         manifest["runtime"] = configure_runtime(device="GPU", tf32=True, jit_compile=True)
+        import tensorflow as tf
+        manifest["physical_gpu_details"] = [dict(name=device.name,
+            **tf.config.experimental.get_device_details(device))
+            for device in tf.config.list_physical_devices("GPU")]
         for regime in REGIMES:
-            source, frozen, heuristic = studies(regime)
+            source, frozen, heuristic = studies(regime, args.protocol)
             # Independent heuristics remain observable even when fitting is invalid.
             stage(regime+"-heuristics", regime, "heuristic", heuristic)
             for arm, spec in (("selected",source), ("baseline",frozen)):
@@ -306,9 +324,10 @@ def run(args):
                     stage(name+"-claim", regime, arm, evaluation)
                 else:
                     manifest.setdefault("blocked_claims", []).append({"regime":regime,"arm":arm,
-                        "datasets":spec["partitions"]["claim"],"rows":6,"reason":selection["reason"]})
+                        "datasets":spec["partitions"]["claim"],"rows":2*len(spec["partitions"]["claim"]),
+                        "reason":selection["reason"]})
         for regime in REGIMES:
-            for dataset in studies(regime)[0]["partitions"]["claim"]:
+            for dataset in studies(regime, args.protocol)[0]["partitions"]["claim"]:
                 relevant = [r for r in rows if r["regime"]==regime and r["dataset"]==dataset
                             and r["arm"] in ("selected","baseline")]
                 for arm in ("selected","baseline"):
@@ -335,6 +354,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--protocol", choices=("density", "relative_shape"), default="density")
     parser.add_argument("--source-revision")
     parser.add_argument("--launch-number", type=int, default=1)
     parser.add_argument("--prior-charges", type=int, default=0)
@@ -342,7 +362,7 @@ def main():
     parser.add_argument("--prior-cpu-seconds", type=float, default=0.)
     args = parser.parse_args()
     if args.dry_run:
-        preflight(args.output)
+        preflight(args.output, args.protocol)
     elif (not args.source_revision or not 1 <= args.launch_number <= 3
           or not 0 <= args.prior_charges <= LIMIT
           or not 0 <= args.prior_wall_seconds < 2950

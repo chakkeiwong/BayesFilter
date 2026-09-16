@@ -3,6 +3,7 @@ import argparse
 from collections import Counter
 import hashlib
 import json
+import math
 from pathlib import Path
 from statistics import mean, median
 
@@ -14,6 +15,42 @@ def read(path):
 def extent(values):
     return dict(mean=mean(values), median=median(values), minimum=min(values),
                 maximum=max(values), count=len(values)) if values else None
+
+
+def finite_numbers(value):
+    if isinstance(value, list):
+        return all(finite_numbers(v) for v in value)
+    return isinstance(value, (int, float)) and math.isfinite(value)
+
+
+def arm_decisions(summary, inference):
+    """Apply A11 screens to each arm; a panel-wide flag is not an arm verdict."""
+    decisions = {}
+    for name in ('baseline', 'nominee', 'stronger-defense'):
+        arm = summary['arms'].get(name)
+        if arm is None:
+            continue
+        complete = (summary['sequences'] == 12 and summary['reference_valid'] == 12
+                    and arm['completed'] == 12 and arm['reference_valid_sequences'] == 12)
+        valid = (complete and not arm['failures'] and not arm['log_evidence_failures']
+                 and arm['cdf_failures'] == 0 and arm['consumer_invalid_steps'] == 0
+                 and arm.get('particles', {}).get('finite', False)
+                 and arm.get('particles', {}).get('cdf_invalid_steps', 0) == 0)
+        losses = [row for row in inference['heuristic_losses'] if row['candidate'] == name]
+        contrast = inference['contrasts'].get(name, {})
+        interval = contrast.get('simultaneous_interval')
+        primary = ('comparator' if name == 'baseline' else
+                   'incomplete_or_invalid_comparison' if interval is None else
+                   'lower_mse' if interval[1] < 0 else
+                   'non_harm' if interval[1] <= .10 else
+                   'non_harm_not_established')
+        decisions[name] = dict(reference_complete=complete, numerical_screen_passed=bool(valid),
+            primary_criterion=primary, contrast=contrast, heuristic_losses=losses,
+            promotion_veto=not valid or bool(losses),
+            eligible_under_a11=bool(name != 'baseline' and valid and not losses
+                                   and primary in ('lower_mse', 'non_harm')),
+            default_readiness=False)
+    return decisions
 
 
 def inspect(root):
@@ -82,7 +119,12 @@ def inspect(root):
                 ess = [s['ess'] for s in steps]
                 margins = [s['log_density_lower_bound_margin'] for s in steps
                            if 'log_density_lower_bound_margin' in s]
-                arm['particles'] = dict(steps=len(steps), finite=all(s['finite'] for s in steps),
+                arm['particles'] = dict(steps=len(steps),
+                    finite=all(s.get('finite', True) and finite_numbers([s[k] for k in
+                               ('mean', 'covariance', 'log_increment', 'ess', 'maximum_weight')]) for s in steps),
+                    native_finite_flag_steps=sum('finite' in s for s in steps),
+                    cdf_checked_steps=sum('cdf_bracket_valid' in s for s in steps),
+                    cdf_invalid_steps=sum(not s['cdf_bracket_valid'] for s in steps if 'cdf_bracket_valid' in s),
                     ess=extent(ess), maximum_weight=extent([s['maximum_weight'] for s in steps]),
                     low_ess_fraction=sum(x < .05*512 for x in ess)/len(ess),
                     resampling_fraction=mean(float(s['resampled']) for s in steps),
@@ -100,6 +142,10 @@ def inspect(root):
                     projection_truncation=extent([r['conversion']['truncation_squared_l2'] for r in fits]),
                     projection_compression=extent([r['conversion']['compression_squared_l2'] for r in fits]))
             summary['arms'][name] = arm
+        if run.get('inference'):
+            summary['arm_decisions'] = arm_decisions(summary, run['inference'][str(d)])
+            summary['panel_promotion_veto_meaning'] = (
+                'At least one panel screen failed; use arm_decisions for candidate-specific verdicts')
         report['dimensions'][str(d)] = summary
     return report
 

@@ -66,8 +66,8 @@ A11 Section 18 (propositions 39–45) is written; the 69-page PDF builds and
 the new pages were visually inspected. MathDevMCP coverage is partial because
 document retrieval/extraction failed; its mixture-score scalar check is proved,
 and its exact covariance-label check is inconclusive. See math-review.md.
-The optional covariance blend, driver and diagnostics are implemented; 34
-focused tests pass. GPU smoke-01 completed in 118.649815 seconds with valid
+The optional covariance blend, driver and diagnostics are implemented; 53
+focused/inherited tests pass. GPU smoke-01 completed in 118.649815 seconds with valid
 references and no candidate failures. Calibration-01 is running on GPU 1:
 ../benchmarks/artifacts/observation_tt_protected_fitting_20260917/attempt-calibration-01/.
 All six scalar cases passed references and fitting; four-dimensional fitting
@@ -75,8 +75,17 @@ is underway. Process session 37801; run_manifest.json/result.json and per-case
 summary.json preserve progress. Do not change the driver dependency files or
 the hashed A11 plan until confirmation finishes. A11 has not yet been charged.
 
-Next: finish the bounded math-review record and required regression checks,
-monitor calibration, then launch the planned fresh confirmation from its
-frozen controls. Preserve exact weights, A10 comparator, seed partitions,
+The supervised continuation helper (session 97304) waits for successful
+calibration and automatically launches confirmation-01 with frozen controls,
+GPU 1 and its 5400-second cap. See continuation-state.json/continuation.log in
+the A11 evidence root; do not launch a duplicate confirmation. It then writes
+calibration-inspection.json and confirmation-inspection.json. The helper is
+continue_after_calibration.py; the diagnostic reporter is inspect_result.py.
+
+Next: monitor the authorized numerical stages, then inspect completed results.
+The reporter now gives per-arm decisions: the driver's panel-wide veto flag
+must not be copied to every arm. Its synthetic semantic check passes; frozen
+driver dependencies, selection and numerical criteria remain unchanged.
+Preserve exact weights, A10 comparator, seed partitions,
 and unrelated work. Final work: result note, LaTeX results/build, master and
 checkpoint closeout, one A11 budget charge. No new permission is required.

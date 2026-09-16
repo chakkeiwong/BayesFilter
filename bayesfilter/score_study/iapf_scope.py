@@ -86,6 +86,11 @@ def validate_result_accounting(result, row, settings):
     """Bind counts, fitting data and work to the executed result before selection."""
     from .contracts import digest
     diag, config = result["diagnostics"], row["iapf"]
+    from .iapf_adapter import FIT_DIAGNOSTIC_COLUMNS
+    if diag.get("fit_objective") != config.get("fit_objective", "density_l2"):
+        raise ValueError("fit objective differs from the declared configuration")
+    if diag.get("fit_diagnostic_columns") != FIT_DIAGNOSTIC_COLUMNS:
+        raise ValueError("fit diagnostic schema mismatch")
     ledger = diag["fit_iterations"]
     counts = validate_adaptive_ledger(ledger, initial_particles=settings["particles"],
         max_particles=config["max_particles"], k=config["k"], tau=config["tau"])
@@ -96,7 +101,7 @@ def validate_result_accounting(result, row, settings):
                    ("density_fit_valid", "density_fit_converged", "coefficient_cast_valid")):
             raise ValueError("invalid or unconverged offline fit in successful evidence")
         details = rec.get("density_fit_diagnostics", [])
-        if len(details) != settings["horizon"] or any(len(step) != 10 for step in details):
+        if len(details) != settings["horizon"] or any(len(step) != len(FIT_DIAGNOSTIC_COLUMNS) for step in details):
             raise ValueError("missing per-time fit diagnostics")
         if any(not all(math.isfinite(v) for v in step) or not 0 <= step[4] <= config["max_fit_steps"] or int(step[4]) != step[4]
                for step in details):

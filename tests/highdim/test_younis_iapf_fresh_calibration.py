@@ -23,6 +23,21 @@ def test_complete_matrix_is_disjoint_and_within_budget(tmp_path):
     assert record["numerical_work"] is False
 
 
+def test_shape_repair_has_fresh_partitions_frozen_comparator_and_fits_remaining_budget(tmp_path):
+    driver.preflight(tmp_path / "shape", "relative_shape")
+    record=json.loads((tmp_path / "shape/preflight.json").read_text())
+    assert record["rows"]==32 and record["upper_charges"]==104
+    assert record["upper_charges"]+record["prior_charges"]+record["reserved_charges"]==280
+    for regime in driver.REGIMES:
+        original=driver.studies(regime)
+        source,baseline,heuristics=driver.studies(regime,"relative_shape")
+        assert source["rows"][0]["iapf"]["fit_objective"]=="relative_shape"
+        assert baseline["tuning_candidate_family"]==original[1]["tuning_candidate_family"]
+        assert len(heuristics["rows"])==4
+        previous=set(sum(original[0]["partitions"].values(),[]))
+        assert previous.isdisjoint(sum(source["partitions"].values(),[]))
+
+
 def test_failed_fit_is_preserved_and_charged_without_stopping_independent_work():
     budget = driver.Budget(lambda: None)
     row = driver.studies("weak")[0]["rows"][0]
