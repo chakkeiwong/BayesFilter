@@ -1,0 +1,28 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/highdim/test_ledh_numerical_safety_tf.py",
+    "tests/highdim/test_ledh_reset_validity.py",
+    "tests/inference/test_dual_parameter_target_invalid.py",
+    "tests/highdim/test_ledh_canonical_score_ukf_tangent.py",
+    "tests/integration/test_ledh_hmc_graceful_failure.py",
+    "tests/integration/test_ledh_graceful_failure_integration.py"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "OMP_NUM_THREADS": "2"
+  },
+  "exit_status": 1,
+  "wall_seconds": 10.28927291202126,
+  "purpose": "review mechanics diagnostic; no posterior or production claim"
+}

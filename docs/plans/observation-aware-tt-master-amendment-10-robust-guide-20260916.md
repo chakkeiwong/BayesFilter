@@ -1,6 +1,12 @@
 # A10: stable TT coordinates and physical proposal defense
 
-Status: reviewed protocol; implementation and execution follow this amendment.
+Status: complete. The reviewed protocol, implementation, seven bounded attempts
+and terminal interpretation are recorded in the
+[A10 result](observation-aware-tt-robust-guide-20260916-result.md) and
+[terminal review](artifacts/observation-tt-robust-guide-20260916-01/result-review.md).
+The exposed numerical mechanisms pass their repair checks; current candidates
+do not meet every filtering-promotion criterion. The protocol below is retained
+as executed, with its pre-closeout copy in the confirmation source snapshot.
 Owner instruction, 2026-09-16: document the proposed protection thoroughly in
 LaTeX, in proposition/proof form, audit it with MathDevMCP, then plan, review
 and execute. This explicitly authorizes the proposed extension. Start charged
@@ -203,3 +209,16 @@ explicit. The exposed A09 failures are debugging fixtures, not holdouts.
 Main residual risks: d4 tensor-quadrature cost, rank3/degree4 on broader charts,
 reference imprecision, and a bounded epsilon curve that may not identify a
 useful setting. None is silently promoted to a default.
+
+## Closeout
+
+Three smoke, two calibration and two confirmation attempts consume this
+amendment's attempt ceiling. Measured numerical wall time is 4042.169143 seconds;
+including the conservative 150-second estimate for smoke-01 gives 4192.169143
+seconds, within the 18000-second numerical ceiling. These times are included
+in the elapsed campaign charge, not charged again. Final confirmation completes
+all 24 cases for every TT arm; one d4 reference is insufficiently precise.
+The scalar full arm is promising under the declared exploratory comparison;
+d4 quality and conditional heuristic losses prevent promotion. A later amendment
+must specify reference precision and broader-chart fitting diagnostics before
+new research runs. See the master and sole H11 ledger for remaining budget.

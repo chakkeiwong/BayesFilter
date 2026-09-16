@@ -37,3 +37,28 @@ Zhao-Cui production route.
 The protected manuscript comparison has exactly one insertion (412 lines)
 and no removed or replaced baseline lines before numerical closeout. The
 MathDevMCP coverage and unresolved tooling limitations are in math-review.md.
+
+The amplitude-sign addendum extends this audit: the actual fit_step endpoint
+calls scale_initial_amplitude; tests-05 has 38 passes, including unchanged
+positive-scale arithmetic, sign equivalence and zero-scale/norm rejection.
+Smoke-03 replays the exact exposed data and fitting seed and accepts the
+original -0.3106276392630666 scale at d4-s05 t19. Calibration-02's complete
+selection ledger equals calibration-01. These are localized implementation
+checks; fresh filtering confirmation remains a separate evidence requirement.
+
+## Final confirmation and manuscript closeout
+
+Confirmation-02 completes every TT arm on all 24 fresh cases, with zero TT
+numerical/CDF/log-evidence failures. One d4 reference fails its precision
+budget and is excluded from admitted accuracy comparisons for every arm.
+The terminal checks verify disjoint sequence seeds, archived source hashes,
+unchanged calibration selection and the physical density bound at all 1,920
+mixture steps. Three unresolved guide updates explicitly use the predictive
+fallback. The numerical repair passes its bounded checks; downstream quality
+does not support promotion. The complete interpretation is in result-review.md
+and the A10 result note, rather than inferred from passing implementation tests.
+
+The final protected-manuscript comparison has exactly one 610-line insertion
+and no removed or replaced baseline lines. Final LaTeX build and rendered-page
+inspection pass. MathDevMCP coverage remains partial as documented in
+math-review.md; no formal or total-gradient certificate is claimed.

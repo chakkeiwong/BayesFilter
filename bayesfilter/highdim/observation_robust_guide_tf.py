@@ -239,6 +239,44 @@ def stable_charts(model, guide):
 
 
 @lru_cache(None)
+def _blend_covariance_kernel(dimension, jit_compile=True):
+    @tf.function(input_signature=[tf.TensorSpec([dimension, dimension], D),
+                                  tf.TensorSpec([dimension, dimension], D),
+                                  tf.TensorSpec([], D)],
+                 jit_compile=jit_compile, autograph=False)
+    def blend(posterior_covariance, reference_covariance, fraction):
+        return (1.-fraction)*posterior_covariance+fraction*reference_covariance
+    return blend
+
+
+def blended_charts(model, guide, fraction, *, jit_compile=True):
+    """Optional A11 charts with C >= fraction * R; guide law is unchanged.
+
+    Chart construction and checks are host-side setup. The repeated blend is
+    a stable-signature TensorFlow/XLA kernel. At fraction=1 the exact A10
+    stable-chart route is retained, including its floating-point arithmetic.
+    A finite valid guide is required even when its covariance is very small.
+    """
+    fraction = float(fraction)
+    if not math.isfinite(fraction) or not 0. < fraction <= 1.:
+        raise ValueError('Chart fraction must be finite and in (0, 1]')
+    reference = stable_charts(model, guide)
+    if fraction == 1.:
+        return reference
+    kernel = _blend_covariance_kernel(model.dimension, jit_compile)
+    charts = []
+    for (_, posterior), independent in zip(guide, reference):
+        factor = posterior.factor
+        if not bool(tf.reduce_all(tf.math.is_finite(factor))):
+            raise ValueError('Guide chart factor must be finite')
+        covariance = kernel(factor @ tf.transpose(factor),
+                            independent.factor @ tf.transpose(independent.factor),
+                            tf.constant(fraction, D))
+        charts.append(obs.Chart.from_moments(posterior.mean, covariance))
+    return charts
+
+
+@lru_cache(None)
 def conditional_density_kernel(shapes, jit_compile=True):
     d = len(shapes)
     @tf.function(input_signature=[tuple(tf.TensorSpec(s, D) for s in shapes),

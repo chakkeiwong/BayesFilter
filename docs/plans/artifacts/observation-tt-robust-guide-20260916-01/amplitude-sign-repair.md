@@ -72,3 +72,23 @@ derivation and density identity above remain the checked mathematical basis.
 Confirmation-01 completed in 1211.579978 seconds with all 24 references valid;
 stable/full each lack exactly the d4-s05 fit. Original result, inference and
 exact dependency sources are preserved in comparison.json and source-snapshot/.
+
+Smoke-03 completed in 236.078364 seconds. The exposed d4-s05 t19 fit retains
+the original scalar -0.3106276392630666 and now completes. All three protected
+arms on both healthy cases and all three exposed cases have zero inverse-CDF
+bracket failures and invalid consumer steps. The original guide failure on
+A09 d4-s10 remains visible. This passes the localized repair criterion; it
+does not establish filtering accuracy. Proceed to calibration-02 and fresh
+confirmation-02 under the unchanged protocol.
+
+Calibration-02 completed in 551.950738 seconds with all six reference checks
+passing and all 90 arms complete. Its entire selected-controls.json is equal
+as parsed JSON to calibration-01, including the full selection ledger and
+reported MSEs. The correction therefore changes no calibration selection or
+positive-scale result in these cases. Confirmation-02 uses these frozen
+controls and fresh blocks 48--71. It completes all TT arms on all 24 cases
+without numerical/CDF/log-evidence failures. One imprecise d4 reference and
+the declared conditional heuristic losses prevent filtering promotion; these
+do not invalidate the localized signed-scale correction. Final confirmation
+has no negative initialization scales, so smoke-03 remains the direct replay
+evidence for that branch. See the A10 result and result-review.md.

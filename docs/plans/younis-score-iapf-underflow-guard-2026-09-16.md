@@ -69,3 +69,42 @@ research phase must handle rejected calibration candidates explicitly, include
 the frozen-control claim baseline and both conditional heuristic tables, use
 fresh data, and budget worst-case fits before execution. Full numerical-control
 calibration and fitted-moment integration into LEDH remain open master work.
+
+## Execution and repair decision
+
+The isolated repair checkout was created from
+`f5a4d411a4a0197fe9c1d25c24573337a633c96a` and changed only the fit validity
+predicate and its preserved negative fixture. The main checkout received the
+same two-file patch after the isolated comparison. The focused command was:
+
+```
+env CUDA_VISIBLE_DEVICES=-1 BAYESFILTER_PRELOAD_CUSTOM_OP=0 \
+TF_NUM_INTRAOP_THREADS=1 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=1 \
+/home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q \
+tests/highdim/test_younis_score_master_iapf_tf.py \
+tests/highdim/test_younis_score_master_nonlinear_iapf.py
+```
+
+It passed with 19 tests in the isolated checkout (41.62 seconds) and 19
+tests in the main checkout (43.17 seconds). Both runs emitted only the known
+TensorFlow Probability deprecation warnings. Bytecode compilation and
+`git diff --check` also passed; complete logs, hashes, revisions and the
+decision are in
+`docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-fit-underflow-guard-repair-20260916/`.
+
+The repair is admitted as a Class B fail-closed guard. It sets
+`objective_underflow = (loss == 0) and (normalized_shape_residual > 0)` and
+requires `not objective_underflow` in the existing `valid` flag. The recursive
+fitter propagates that flag and the iAPF adapter rejects the fit before score
+execution. Finite diagnostics are retained. Healthy fitted values, gradients,
+and objective arithmetic are unchanged. A GPU smoke was not run because this
+is an admission-only change and the preceding calibration allocation is
+already closed at 64 charged attempts and two launches.
+
+The phase is complete as an engineering repair, not as a scientific
+calibration or promotion phase. All prior selected calibration rows remain
+partial-phase evidence and are not restamped as valid. The next research phase
+must have a new output root and budget, use fresh partitions, reject invalid
+fits before comparison, include the frozen-control claim baseline, complete
+both weak and curved conditional heuristic tables, and obtain independent
+replications. No old calibration row can substitute for those requirements.

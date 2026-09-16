@@ -40,3 +40,36 @@ score. No proof guarantees realized ESS, quadrature accuracy, complete-filter
 smoothness, or high-dimensional scalability. Numerical identity and endpoint
 tests are required next. The review is an executor self-review, not an
 independent reviewer verdict. Optional implementation may proceed under A10.
+
+## Signed amplitude addendum
+
+The ninth proposition derives the least-squares amplitude scale and proves
+that its sign cancels in the normalized squared density. MathDevMCP's bounded
+equation audit is preserved in mathdev-amplitude.json and mathdev-amplitude.md.
+It selected the new equation but abstained on formalization/role, with partial
+coverage. It supplied neither a concrete counterexample nor a proof certificate.
+The final executor review makes the finite training set, finite row values,
+nonnegative weights and finite positive continuous squared-amplitude integral
+explicit; these strengthen the written hypotheses without changing the equation.
+The integral is explicitly with respect to a fixed reference measure, Gaussian
+for the implemented polynomial amplitude. A polynomial's Lebesgue squared
+integral need not be finite; that would be the wrong reference measure for
+the runtime TT. Sign and homogeneous-scale cancellation hold under either
+measure when the stated finite-normalizer assumption holds.
+The elementary quadratic derivative and normalizer cancellation are checked
+directly. Tests-05 records 38 passing tests, including exact positive-branch
+parity, sign equivalence and zero-scale rejection. Smoke-03 reproduces the
+exposed negative scalar and completes the actual consumer. Neither those tests
+nor the audit proves a complete analytical filter derivative.
+
+## Final manuscript closeout
+
+Section 17 now contains nine propositions/proofs and the fresh A10 filtering
+results. LaTeX passes 6 and 7 succeed, producing 64 pages; the final pass has
+no undefined references, LaTeX warnings or overfull boxes. Rendered pages
+61--64 were inspected after the last changes, in addition to the earlier
+proof pages. manuscript-preservation.json records one 610-line insertion and
+no removed or replaced protected-baseline lines. This supersedes the earlier
+intermediate insertion count. The final proof assumptions and tool limitations
+above remain part of the result; the build does not upgrade partial MathDevMCP
+coverage to formal verification. See result-review.md for terminal review.

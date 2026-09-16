@@ -1,0 +1,53 @@
+{
+  "schema": "younis_score_iapf_underflow_guard_repair_manifest_v1",
+  "status": "complete_engineering_repair",
+  "plan": "docs/plans/younis-score-iapf-underflow-guard-2026-09-16.md",
+  "master": "docs/plans/younis-kdm-score-master-program-2026-09-14.md",
+  "artifact_root": "docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01",
+  "baseline_revision": "f5a4d411a4a0197fe9c1d25c24573337a633c96a",
+  "main_checkout_head_at_verification": "2baa30b65f40d3f22ecfe2daa58e451f0c943d5b",
+  "isolated_checkout": ".localresources/worktrees/younis-score-iapf-underflow-guard-20260916",
+  "question": "Reject a profiled density fit when represented loss is zero and normalized shape residual is positive, while preserving healthy fit values, gradients, and diagnostics.",
+  "mechanism": "objective_underflow = (loss == 0) and (shape_error > 0); valid is additionally required to be false for this condition.",
+  "call_chain": [
+    "bounded_density_fit",
+    "make_density_recursive_fit_kernel",
+    "iapf_adapter.execute_iapf"
+  ],
+  "changed_files": [
+    "bayesfilter/score_study/iapf_fit_tf.py",
+    "tests/highdim/test_younis_score_master_iapf_tf.py"
+  ],
+  "commands": {
+    "focused_cpu_tests": "env CUDA_VISIBLE_DEVICES=-1 BAYESFILTER_PRELOAD_CUSTOM_OP=0 TF_NUM_INTRAOP_THREADS=1 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=1 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q tests/highdim/test_younis_score_master_iapf_tf.py tests/highdim/test_younis_score_master_nonlinear_iapf.py",
+    "compile": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python -m py_compile bayesfilter/score_study/iapf_fit_tf.py tests/highdim/test_younis_score_master_iapf_tf.py",
+    "diff_check": "git diff --check"
+  },
+  "environment": {
+    "conda_environment": "tftwogpu",
+    "cuda_visible_devices": "-1",
+    "execution_class": "CPU-only reference and consumer regression",
+    "xla": "repository test configuration",
+    "gpu_smoke": "not_run; no arithmetic or objective change and prior calibration GPU budget is closed"
+  },
+  "tests": {
+    "isolated": {"passed": 19, "warnings": 2, "wall_seconds": 41.62, "log": "iapf-fit-underflow-guard-repair-20260916/isolated-cpu-focused-tests.log"},
+    "main": {"passed": 19, "warnings": 2, "wall_seconds": 43.17, "log": "iapf-fit-underflow-guard-repair-20260916/main-cpu-focused-tests.log"},
+    "compile": "pass",
+    "diff_check": "pass"
+  },
+  "sha256": {
+    "bayesfilter/score_study/iapf_fit_tf.py": "4ecebf307e81c73db4c15a7e747f7a0bb8e2e51e43b0dc8d70b8b865fa487517",
+    "tests/highdim/test_younis_score_master_iapf_tf.py": "5e9c46c58354cba446ec35a2c48cc1d5210df7b917b562fde8a097f0bda42a77",
+    "iapf-fit-underflow-guard-repair-20260916/isolated-cpu-focused-tests.log": "341e92940bbec7d47536c0c791bfc2fe9afd166143bb0bf9d8e9602916063ab2",
+    "iapf-fit-underflow-guard-repair-20260916/main-cpu-focused-tests.log": "d65cce8baf2b5c79da7c9f311a57b140f5d5e85830ca1be6cedabc2e54efef48"
+  },
+  "decision": {
+    "engineering": "pass",
+    "healthy_path_parity": "pass by focused regression coverage",
+    "underflow_fixture": "rejected by validity flag while finite diagnostics remain available",
+    "scientific_promotion": "not_ready",
+    "calibration_phase": "remains partial_budget_exhausted; no old row is restamped"
+  },
+  "next_phase": "Fresh underflow-safe recursive-fit calibration with a frozen-control claim baseline, complete weak and curved conditional heuristic tables, fresh partitions, independent replications, and a worst-case fit budget."
+}

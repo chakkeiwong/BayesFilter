@@ -5562,8 +5562,9 @@ and prior covariance $P_0$, the sequence error is
 \]
 This measures error against the reference approximation, whose precision is
 checked separately. The scalar reference uses nested physical-space grids;
-the four-dimensional reference uses transition particle filters with
-$32768$, $65536$ and $131072$ particles. Its declared mean-MCSE, log-evidence
+the four-dimensional reference compares transition particle filters along
+the ladder $32768$, $65536$, $131072$, stopping when two successive levels
+pass the declared checks. Its declared mean-MCSE, log-evidence
 MCSE and resolution screens remain active. Observation-coordinate regimes
 are $|y_j|/\beta\le0.5$, $0.5<|y_j|/\beta<2$, and $|y_j|/\beta\ge2$.
 
@@ -5590,10 +5591,13 @@ least-squares scalar is
 \end{equation}
 \begin{proposition}[Amplitude sign is not a density validity condition]
 \label{prop:robust-amplitude-sign}
-Suppose the denominator in~\eqref{eq:robust-amplitude-scale} is finite and
-strictly positive, and $c^*$ is finite and nonzero. Replacing $h$ by
+Suppose the training set is finite, each $h_i,b_i,w_i$ is finite, $w_i\ge0$,
+and the denominator in~\eqref{eq:robust-amplitude-scale} is strictly positive.
+For a fixed reference measure $\mu$, suppose also that $c^*$ is finite and
+nonzero and $0<\int h(u)^2\,d\mu(u)<\infty$. Replacing $h$ by
 $c^*h$ is valid even when $c^*<0$. If the represented TT density is the
-normalized square $q_h(x)=h(x)^2/\int h(u)^2\,du$, then
+normalized square $q_h(x)=h(x)^2/\int h(u)^2\,d\mu(u)$ with respect to
+$\mu$, then
 $q_{c^*h}=q_h$. A zero or nonfinite denominator or scalar remains invalid.
 \end{proposition}
 \begin{proof}
@@ -5610,12 +5614,478 @@ unidentified global amplitude sign. This proof does not justify clipping,
 changing the target, or accepting a zero scale.
 \end{proof}
 
-The implementation now checks the denominator, finiteness and $|c^*|>0$ and
+For the polynomial TT amplitude, $\mu$ is the Gaussian reference measure;
+the polynomial alone need not be square-integrable with respect to Lebesgue
+measure. The implementation now checks the denominator, finiteness and $|c^*|>0$ and
 retains the signed scalar. Positive-scale cases are unchanged to roundoff.
+Its Gaussian-reference conditional density has the form
+$q(u\mid v)=(h(u,v)^2+\tau)\phi(u)/(Z(v)+\tau)$.
+A global sign change leaves this density unchanged even with fixed $\tau$.
+For a change in amplitude magnitude, the same invariance requires scaling
+$\tau$ by $c^2$ as well as $Z(v)$; the implemented choice
+$\tau=Z_{\rm joint}\delta/(1-\delta)$ has this homogeneity when
+the declared internal defensive mass $\delta$ is fixed. An independently
+fixed additive $\tau$ would not have magnitude invariance. The signed
+least-squares adjustment occurs before fitting and before this defense is
+constructed; no fixed additive term is silently rescaled during sampling.
 Confirmation-01 d4-s05 had $c^*=-0.3106276393$ and is preserved as the
-repair trigger; it is excluded from matched stable/full summaries until a
-fresh run evaluates the repaired endpoint.
+repair trigger. Its missing stable/full fits remain visible in that original
+comparison. An exact replay now completes, and a fresh confirmation evaluates
+the repaired endpoint on disjoint data.
 
+\subsection{Fresh filtering results after the numerical repair}
+
+The repeated calibration selected exactly the same controls and reproduced
+the earlier selection statistics. Fresh confirmation then completed all eight
+methods on all 24 sequences. None of the TT arms had a nonfinite consumer
+step, inverse-CDF bracket failure or log-evidence disagreement under the
+declared checks. One four-dimensional reference remained too imprecise:
+at 131072 particles its maximum normalized mean MCSE was $0.02362$, above
+the $0.02$ limit. Its log-evidence MCSE was $0.03533$, below the $0.10$
+limit. This case remains in the record and is excluded from accuracy
+comparisons for every method. It is a reference limitation, not a TT failure.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{clrrr}
+\toprule
+$d$ & TT proposal & Mean error $M$ & Mean ESS & Minimum ESS\\
+\midrule
+1 & A09 baseline & 0.00187975 & 383.29 & 62.46\\
+1 & Repaired guide & 0.00175544 & 383.61 & 143.32\\
+1 & Independent charts & 0.00165335 & 375.14 & 164.18\\
+1 & Charts and physical mixture & 0.00152322 & 374.61 & 114.69\\
+\midrule
+4 & A09 baseline & 0.00241227 & 325.01 & 46.18\\
+4 & Repaired guide & 0.00239518 & 323.52 & 45.74\\
+4 & Independent charts & 0.00311999 & 304.27 & 2.62\\
+4 & Charts and physical mixture & 0.00274654 & 303.89 & 14.06\\
+\bottomrule
+\end{tabular}
+\caption{Fresh A10 filtering comparison, $N=512$, $T=20$, four repetitions.
+Mean error uses twelve scalar and eleven four-dimensional reference-valid
+sequences. ESS uses all twelve numerically completed sequences in each
+dimension. These aggregates are descriptive except for the stated scalar
+paired comparison; extremes have no uncertainty interval.}
+\label{tab:robust-fresh-filtering}
+\end{table}
+
+In the scalar problem the full protection reduces mean error by $19.0\%$
+relative to A09. The predeclared exploratory paired interval for the absolute
+difference is $[-0.0007837013,-0.0000048193]$. All three repairs satisfy the
+declared scalar $10\%$ non-harm comparison, but only the full arm's absolute
+difference interval excludes zero. No ranking among the repaired arms follows.
+In dimension four, the full arm has $13.86\%$ larger observed error than A09
+on the eleven matched valid cases. Independent charts alone have $29.34\%$
+larger error, while the guide-only difference is $-0.71\%$. The missing
+twelfth valid reference prevents the planned four-dimensional interval;
+these differences remain descriptive.
+
+Conditional comparisons identify a further limitation. On ordinary scalar
+observations, all three repairs have larger observed error than the transition
+proposal, despite favorable averages across the full scalar experiment. In
+dimension four, guide-only has larger error than the SGQF joint near zero;
+independent charts have larger error in all three observation regimes; the
+full arm has larger error near zero and in the ordinary regime. These
+observations fail the predeclared conditional comparison rule for recommending
+the new routes. They do not establish a statistically certain heuristic
+ranking or invalidate TT as the representation needed by the filter.
+
+The numerical mechanisms nevertheless perform their stated tasks. Out of
+240 guide updates per dimension, positive Laplace quadrature repairs seven
+scalar and 77 four-dimensional updates. Three four-dimensional updates remain
+unresolved and explicitly use the predictive Gaussian. The other updates
+pass the signed-rule resolution comparison. All 1920 particle-filter steps
+using the physical mixture satisfy its checked density lower bound. Its
+observed physical-component fraction is $0.04968$, with $\varepsilon=0.05$.
+The minimum ESS of $14.06$ in the full four-dimensional arm illustrates why
+the finite conditional second-moment result is not an ESS floor.
+
+Observed four-dimensional preparation times, including the appropriate guide
+and TT fitting, are $18.97$, $19.48$, $21.34$ and $21.34$ seconds for the four
+TT arms in table order. Particle times per $N=512$, $T=20$ repetition are
+$1.32$, $1.10$, $1.10$ and $1.24$ seconds. The SGQF joint requires $2.62$
+seconds of preparation and $0.24$ seconds per repetition. Compilation and
+fixed execution order affect these measurements, so they do not establish
+a general speed ranking. Full defense reuses the independent-chart fit;
+its standalone preparation time includes that fit.
+
+The remaining question is whether the fixed rank and polynomial degree have
+enough capacity to fit well in the broader coordinates. That is a plausible
+explanation of the four-dimensional degradation, not an established cause.
+A separate capacity study and more precise references are needed before
+recommending the protected route. The exposed covariance and amplitude-sign
+failures have been repaired, while approximation quality, rare-event behavior
+and the total analytical parameter derivative remain distinct requirements.
+The numerical record and complete comparison are retained in
+\path{docs/plans/observation-aware-tt-robust-guide-20260916-result.md}.
+MathDevMCP inspected the new labeled equations but had incomplete derivation
+coverage and formalization abstentions; it did not issue a formal proof
+certificate. The nine proposition proofs and their explicit assumptions
+therefore remain the mathematical argument, supported by 38 focused tests
+of the implemented identities and consumer path.
+
+
+\section{Recovering fitting accuracy without removing the physical defense}
+\label{sec:protected-fitting}
+
+The completed experiment leaves a specific approximation question. Independent
+model covariances prevented collapse, and the physical mixture supplied a
+valid proposal at every tested update, but four-dimensional filtering error
+remained above the earlier repaired-guide result. The independent covariance
+may spread polynomial resolution over a region larger than the observation
+requires. Alternatively, the number of rows, polynomial degree, pair ranks,
+or finite optimization budget may be insufficient. The following construction
+tests those explanations while retaining a quantitative covariance floor and
+the exact physical importance correction. It is an extension of the pair-TT
+method developed in this note, not a claim of source-faithful TT-cross.
+
+\subsection{Observation adaptation with a covariance floor}
+
+Let $x,z,m_t\in\mathbb R^d$ and $A,Q,P_t,R_t,C_t,L_t\in\mathbb R^{d\times d}$.
+Let $P_t\succeq0$ denote the finite, checked covariance returned by the guide
+repair, including its predictive fallback when quadrature remains unresolved.
+Let $m_t$ be the corresponding mean. As in
+\eqref{eq:robust-chart}, assume $P_0^{\rm prior}\succ0$, $Q\succ0$, and
+finite linear dynamics $A$, and define
+\begin{equation}
+ R_0=P_0^{\rm prior},\qquad R_t=AR_{t-1}A^\top+Q,\qquad
+ C_t(\lambda)=(1-\lambda)P_t+\lambda R_t,
+ \quad 0<\lambda\le1.
+ \label{eq:a11-blend}
+\end{equation}
+The chart is $x=m_t+L_tu$, where $L_tL_t^\top=C_t(\lambda)$ is the
+Cholesky factorization with positive diagonal. The previous state receives
+the corresponding chart at time $t-1$. These are coordinate covariances;
+they do not replace the physical covariance in the SGQF joint initializer.
+
+\begin{proposition}[A relative covariance floor]
+\label{prop:a11-floor}
+Under these assumptions, $C_t(\lambda)\succ0$ and
+\begin{equation}
+ C_t(\lambda)\succeq\lambda R_t,\qquad
+ C_t(\lambda)^{-1}\preceq\lambda^{-1}R_t^{-1},\qquad
+ \det C_t(\lambda)\ge\lambda^d\det R_t.
+ \label{eq:a11-floor}
+\end{equation}
+If $s_1,\ldots,s_d$ are the eigenvalues of
+$R_t^{-1/2}P_tR_t^{-1/2}$, the eigenvalues of
+$R_t^{-1/2}C_tR_t^{-1/2}$ are exactly
+$\lambda+(1-\lambda)s_i\ge\lambda$. If also $P_t\preceq M R_t$,
+the condition number of this whitened covariance is at most
+$[\lambda+(1-\lambda)M]/\lambda$.
+\end{proposition}
+\begin{proof}
+The recursion gives $R_t\succ0$ by induction, since for nonzero $v$ the
+term $v^\top Qv$ is strictly positive. Subtracting $\lambda R_t$ from
+$C_t$ leaves $(1-\lambda)P_t\succeq0$. Whiten by $R_t^{-1/2}$ to obtain
+$\lambda I+(1-\lambda)R_t^{-1/2}P_tR_t^{-1/2}$. Diagonalizing its
+symmetric second term proves the eigenvalue formula. Inverting those
+positive eigenvalues and undoing the congruence proves the inverse bound.
+Their product, multiplied by $\det R_t$, proves the determinant bound.
+Under the additional upper bound, $0\le s_i\le M$, which gives the
+stated ratio of largest to smallest eigenvalue.
+\end{proof}
+
+Thus $\lambda=.25$ retains at least half the independent-model standard
+deviation in every whitened direction. For example, if $P_t=.01R_t$,
+then $C_t(.25)=.2575R_t$: the chart follows some observation contraction
+without inheriting the near-collapse. The blend need not shrink every
+direction relative to $R_t$ because $P_t\preceq R_t$ is not assumed.
+The bound is relative to the physical model scale; it is not an absolute
+floating-point guarantee when that scale itself is ill-conditioned. Checked
+factorization and finite-value diagnostics therefore remain necessary.
+
+\subsection{What the pair-TT regression is approximating}
+
+Write $z=x_{t-1}$, $x=x_t$, and let $p_{t-1}^{\rm ret}(z)$ be the
+normalized density retained by the preceding TT step. With the current
+observation $y_t$, the unnormalized fitting target is
+\begin{equation}
+ \Gamma_t(z,x)=p_{t-1}^{\rm ret}(z)f_t(x\mid z)g_t(y_t\mid x).
+ \label{eq:a11-target}
+\end{equation}
+This uses the retained approximation, not the unknown exact filtering
+density. Subsequent particle weights nevertheless use the physical
+transition and likelihood, so a poor retained approximation affects proposal
+efficiency rather than silently replacing that importance-sampling target.
+
+Let $u=L_t^{-1}(x-m_t)$ and
+$v=L_{t-1}^{-1}(z-m_{t-1})$, and write $\varphi_{2d}(u,v)$ for the
+standard Gaussian density. For a fixed positive scale $s_t$, define
+\begin{equation}
+ b_t(u,v)=\left[
+ \frac{\Gamma_t(m_{t-1}+L_{t-1}v,m_t+L_tu)
+       |\det L_{t-1}|\,|\det L_t|}
+      {s_t\varphi_{2d}(u,v)}\right]^{1/2},\qquad
+ \mathcal E(h)=\int(h-b_t)^2\varphi_{2d}\,du\,dv.
+ \label{eq:a11-amplitude}
+\end{equation}
+The two determinants matter: omitting either fits a different density.
+The pair-TT groups the variables as $(u_1,v_1),\ldots,(u_d,v_d)$.
+Its Gaussian initialization is transformed into these same charts before
+projection and coefficient compression.
+
+\begin{proposition}[A bounded design correction]
+\label{prop:a11-design}
+Let $j_t$ be the normalized pullback of the physical SGQF joint and draw
+training rows from $r_\delta=\delta\varphi_{2d}+(1-\delta)j_t$,
+$0<\delta\le1$. For a fixed $h$ and $s_t$, with $\mathcal E(h)<\infty$,
+\begin{equation}
+ 0<\frac{\varphi_{2d}}{r_\delta}\le\delta^{-1},\qquad
+ \mathbb E_{r_\delta}\left[
+ \frac{\varphi_{2d}(U,V)}{r_\delta(U,V)}
+       (h(U,V)-b_t(U,V))^2\right]=\mathcal E(h).
+ \label{eq:a11-design}
+\end{equation}
+\end{proposition}
+\begin{proof}
+The Gaussian component gives $r_\delta\ge\delta\varphi_{2d}>0$.
+Multiplying the integrand by the sampling density cancels $r_\delta$
+and leaves precisely the integral in \eqref{eq:a11-amplitude}.
+\end{proof}
+
+The implementation retains $\delta=.2$, hence a design importance ratio
+bounded by five. This is a bound on the design correction, not on the target
+amplitude or the variance of the regression loss. Increasing the row count
+tests whether the existing design resolves the important regions. The
+training scale is estimated on the training panel and then frozen for
+validation; the fitted $h$ also depends on those rows. Consequently the
+proposition does not assert unbiased finite-sample training error for that
+data-dependent pair $(h,s_t)$. Independent validation measures its error
+conditional on the fitted choice.
+
+\begin{proposition}[Capacity and initialization errors]
+\label{prop:a11-capacity}
+Let $\mathcal H_{p,r}$ be pair-TT polynomials of coordinate degree at most
+$p$ and pair ranks at most $r$. If $p'\ge p$ and $r'\ge r$, then
+\begin{equation}
+ \inf_{h\in\mathcal H_{p',r'}}\mathcal E(h)
+ \le \inf_{h\in\mathcal H_{p,r}}\mathcal E(h).
+ \label{eq:a11-capacity}
+\end{equation}
+For a normalized Gaussian-joint amplitude $b_G$, let $\Pi_p$ be orthogonal
+projection onto the full degree-$p$ tensor polynomial space under
+$\varphi_{2d}$. For any compressed initializer $h_G$ in that space,
+\begin{equation}
+ \|b_G-h_G\|_2^2=
+ \|b_G-\Pi_pb_G\|_2^2+\|\Pi_pb_G-h_G\|_2^2,
+ \label{eq:a11-projection}
+\end{equation}
+where the norm is in $L^2(\varphi_{2d})$.
+\end{proposition}
+\begin{proof}
+Zero-padding coefficient and rank indices embeds each old core product in
+the larger class without changing its polynomial. The infimum over a
+superset cannot increase. For the second assertion,
+$b_G-\Pi_pb_G$ is orthogonal to every polynomial in the projected space,
+including $\Pi_pb_G-h_G$. Expanding the squared norm eliminates the cross
+term and yields the identity.
+\end{proof}
+
+The two initialization errors distinguish insufficient degree from coefficient
+compression. They concern the Gaussian initializer, not the nonlinear target
+$b_t$. Nor does nested capacity guarantee improvement after finitely many
+alternating sweeps with an L1 core penalty: the optimization is nonconvex,
+and the penalty depends on the chosen core representation. Rank is inert
+when $d=1$, because there is only one pair core. These facts motivate separate
+row, sweep, rank and degree ablations, with L1 reselected on calibration data.
+
+\subsection{A normalized conditional and its physical correction}
+
+Let $h_t$ be the finite fitted polynomial and $\tau_t>0$ its internal
+defensive mass. Define $a_t(v)=\int h_t(u,v)^2\varphi_d(u)\,du$.
+\begin{proposition}[Conditional normalization]
+\label{prop:a11-conditional}
+For each finite $z$ and its corresponding $v$, the density
+\begin{equation}
+ q_t^{TT}(x\mid z)=
+ \frac{h_t(u,v)^2+\tau_t}{a_t(v)+\tau_t}
+ \frac{\varphi_d(u)}{|\det L_t|}
+ \label{eq:a11-conditional}
+\end{equation}
+is strictly positive and integrates to one in physical coordinates.
+\end{proposition}
+\begin{proof}
+A finite polynomial is square-integrable under the Gaussian measure, so
+$a_t(v)$ is finite and nonnegative. The positive $\tau_t$ makes numerator
+and denominator positive. Substitute $dx=|\det L_t|du$; integration of the
+numerator gives $a_t(v)+\tau_t$, which cancels the denominator.
+\end{proof}
+
+The same normalization must be used by the inverse-CDF sampler and the
+reported conditional density. Changing coordinates without changing one of
+these calculations would break the importance correction. We now retain
+the physical mixture from Section~17:
+\begin{equation}
+ q_{t,\epsilon}(x\mid z)=(1-\epsilon)q_t^{TT}(x\mid z)
+                  +\epsilon f_t(x\mid z),\qquad 0<\epsilon<1.
+ \label{eq:a11-mixture}
+\end{equation}
+At the initial time, replace $f_t(\cdot\mid z)$ by the initial prior.
+Choose the component with its stated probability, sample from it, and
+evaluate the \emph{whole} mixture at the resulting draw.
+
+\begin{proposition}[Exact correction and a finite second moment]
+\label{prop:a11-weights}
+Fix an ancestor $z$, let $G(x)=f_t(x\mid z)g_t(y_t\mid x)$, and assume
+$0<Z(z)=\int G(x)dx<\infty$ and
+$\int f_t(x\mid z)g_t(y_t\mid x)^2dx<\infty$. Then
+\begin{equation}
+ w(x,z)=\frac{G(x)}{q_{t,\epsilon}(x\mid z)},\quad
+ \mathbb E_q w=Z(z),\quad
+ 0\le w(x,z)\le\frac{g_t(y_t\mid x)}{\epsilon},\quad
+ \mathbb E_qw^2\le\frac1\epsilon\int f_tg_t^2\,dx<\infty.
+ \label{eq:a11-weights}
+\end{equation}
+For conditionally independent identically distributed draws at this fixed
+ancestor, the importance ESS satisfies
+\begin{equation}
+ \frac{\ESS_N}{N}
+ =\frac{(N^{-1}\sum_iw_i)^2}{N^{-1}\sum_iw_i^2}
+ \longrightarrow \frac{Z(z)^2}{\mathbb E_qw^2}
+ =\frac1{1+\chi^2(\pi_z\Vert q)},\qquad
+ \pi_z=G/Z(z),
+ \label{eq:a11-ess}
+\end{equation}
+almost surely.
+\end{proposition}
+\begin{proof}
+The lower bound $q\ge\epsilon f_t$ gives the pointwise inequality wherever
+$f_t>0$ and the second-moment bound by
+$G^2/q\le f_tg_t^2/\epsilon$. Direct cancellation in $\int qw$ proves the
+mean identity. The strong law applies to both $w$ and $w^2$ under the stated
+integrability conditions. Finally,
+$\chi^2(\pi_z\Vert q)=\int\pi_z^2/q-1
+=\mathbb E_qw^2/Z(z)^2-1$.
+\end{proof}
+
+The integrability assumption holds for the present Gaussian transition and
+independent stochastic-volatility observations. For
+$g(y\mid x)=\prod_j(2\pi\beta^2 e^{x_j})^{-1/2}
+\exp[-y_j^2e^{-x_j}/(2\beta^2)]$, $\beta>0$, its square is bounded above by
+$(2\pi\beta^2)^{-d}\exp(-\sum_jx_j)$, which has finite expectation under a
+finite Gaussian transition. This proves finiteness, not a useful uniform
+upper bound over arbitrary ancestors or observations. In the actual filter,
+ancestors and incoming weights differ; the implementation multiplies $w$
+by the previous particle weight and reports ESS before resampling.
+Equation~\eqref{eq:a11-ess} is therefore a fixed-ancestor explanation of
+weight dispersion, not a theorem equating the full filter's measured ESS
+with one conditional chi-square divergence. The earlier mean ESS of roughly
+$304/512$ was an empirical result and is not an ESS floor.
+
+\begin{proposition}[Mixture strength has a convex second-moment objective]
+\label{prop:a11-epsilon}
+For fixed $z$, $h_t$, charts and $\tau_t$, under the preceding integrability
+assumption, put $J(\epsilon)=\int G(x)^2/q_{t,\epsilon}(x\mid z)dx$.
+On any closed interval $[a,b]\subset(0,1)$,
+\begin{equation}
+ J'(\epsilon)=-\int\frac{G^2(f_t-q_t^{TT})}{q_{t,\epsilon}^2}dx,
+ \qquad
+ J''(\epsilon)=2\int\frac{G^2(f_t-q_t^{TT})^2}{q_{t,\epsilon}^3}dx
+ \ge0.
+ \label{eq:a11-epsilon}
+\end{equation}
+\end{proposition}
+\begin{proof}
+The denominator is affine in $\epsilon$, so differentiating its reciprocal
+gives the displayed integrands. Uniformly on $[a,b]$,
+$f_t/q_{t,\epsilon}\le1/a$ and
+$q_t^{TT}/q_{t,\epsilon}\le1/(1-b)$. Therefore the first two differentiated
+integrands are bounded in absolute value by constant multiples of
+$G^2/q_{t,\epsilon}\le f_tg_t^2/a$, an integrable function.
+Dominated differentiation justifies the calculation. Nonnegativity proves
+convexity.
+\end{proof}
+
+Convexity does not imply that increasing $\epsilon$ reduces $J$; its first
+derivative can have either sign. Nor does it make finite-particle filtering
+MSE convex in $\epsilon$, since propagation and resampling intervene.
+The experiment consequently evaluates a small offline non-harm curve after
+fitting: a stronger physical component is retained only if its calibration
+filtering error and low-ESS frequency remain acceptable, followed by a fresh
+confirmation. The density floor is the protection; ESS and filtering error
+measure its realized cost and benefit.
+
+\subsection{Local analytical derivatives and the experiment they support}
+
+The coordinate blend adds no eigenspace selection or eigenvalue clipping.
+For a scalar parameter $\theta$, use a dot for its derivative. Assume the
+guide branch, $\lambda$, $\epsilon$, basis and ranks are fixed locally,
+and that $P_t,m_t,R_t$ and the fitted coefficients are differentiable with
+finite derivatives. These assumptions describe a local calculation; L1
+active-set changes and guide-acceptance decisions need not satisfy them.
+
+\begin{proposition}[Analytical chart and mixture derivatives]
+\label{prop:a11-derivative}
+With the stated local assumptions,
+\begin{align}
+ \dot R_t&=\dot A R_{t-1}A^\top+A\dot R_{t-1}A^\top
+             +AR_{t-1}\dot A^\top+\dot Q,\nonumber\\
+ \dot C_t&=(1-\lambda)\dot P_t+\lambda\dot R_t,\qquad
+ \dot L_t=L_t\Phi(L_t^{-1}\dot C_t L_t^{-\top}),\nonumber\\
+ \dot u&=-L_t^{-1}(\dot m_t+\dot L_tu),
+ \label{eq:a11-chart-derivative}
+\end{align}
+where $\Phi(B)$ keeps the strictly lower-triangular entries of the symmetric
+$B$, halves its diagonal, and sets its upper triangle to zero. At fixed
+physical $x,z$, if $\dot\tau_t$ is included, the conditional score is
+\begin{equation}
+ \partial_\theta\log q_t^{TT}=
+ \frac{2h_t\dot h_t+\dot\tau_t}{h_t^2+\tau_t}
+ -\frac{\dot a_t+\dot\tau_t}{a_t+\tau_t}
+ -u^\top\dot u-\operatorname{tr}(L_t^{-1}\dot L_t),
+ \label{eq:a11-tt-score}
+\end{equation}
+where $\dot h_t$ includes coefficient, $u$ and $v$ dependence, and
+$\dot a_t$ includes coefficient and $v$ dependence. For the fixed mixture
+probability, its score is
+\begin{equation}
+ \partial_\theta\log q_{t,\epsilon}
+ =\omega_{TT}\partial_\theta\log q_t^{TT}
+  +\omega_f\partial_\theta\log f_t,
+ \quad
+ \omega_{TT}=\frac{(1-\epsilon)q_t^{TT}}{q_{t,\epsilon}},\quad
+ \omega_f=\frac{\epsilon f_t}{q_{t,\epsilon}},\quad
+ \omega_{TT}+\omega_f=1.
+ \label{eq:a11-mixture-score}
+\end{equation}
+\end{proposition}
+\begin{proof}
+Differentiate the covariance recursion and the fixed-weight blend term by
+term. Differentiating $C_t=L_tL_t^\top$ and multiplying by $L_t^{-1}$ and
+$L_t^{-\top}$ gives $B=E+E^\top$, where $E=L_t^{-1}\dot L_t$ is lower
+triangular. Its unique solution is $E=\Phi(B)$, proving the Cholesky formula.
+Differentiating $x=m_t+L_tu$ at fixed $x$ gives the displayed $\dot u$;
+the previous chart gives the analogous $\dot v$.
+Taking the logarithm of \eqref{eq:a11-conditional}, differentiating each
+term, and using $\partial\log\varphi_d(u)=-u^\top\dot u$ and
+$\partial\log|\det L_t|=\operatorname{tr}(L_t^{-1}\dot L_t)$ proves
+\eqref{eq:a11-tt-score}. The integral defining $a_t$ is a finite sum of
+Gaussian polynomial moments; its derivative includes all coefficient and
+$v$ dependence. Finally differentiate the sum in
+\eqref{eq:a11-mixture} and divide by its positive density.
+\end{proof}
+
+These formulas establish smooth local chart and conditional-density
+operations on the stated branch. A total derivative of the complete
+parameter-dependent filter must also include the fitted-core recursion,
+guide moments, initial law, likelihood, incoming weights and the treatment
+of discrete decisions. That implementation and its verification are outside
+this fitting experiment. Analytical tractability of the new chart alone
+does not establish HMC readiness.
+
+The A11 experiment compares the full A10 method with $\lambda=.5$ and
+$.25$, additional rows and sweeps, and degree/rank increments. It preserves
+the physical mixture and exact weight formula, reselects L1 on calibration
+only, and uses untouched sequences for the final comparison. The primary
+quantity is reference-based filtering mean error. Fit residuals,
+initialization errors and KKT residuals explain mechanisms; ESS, maximum
+weight and resampling describe importance-sampling behavior. A stronger
+four-dimensional reference ladder addresses the unresolved precision in
+A10. The mathematical bounds justify retaining the protections; only this
+downstream comparison can determine whether the proposed fitting changes
+are useful.
 
 \appendix
 \section{Artifact Provenance and Corrections}

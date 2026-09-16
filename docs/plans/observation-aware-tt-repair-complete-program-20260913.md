@@ -5,14 +5,38 @@ Execution and amendments have been reconciled under the owner request of
 status text is historical. The exact pre-refresh copy and checksum are preserved under
 `artifacts/observation-tt-master-refresh-20260914-01/`.
 
-## Current execution state — 2026-09-16
+## Current execution state — 2026-09-17
 
-**A10 is active, authorized by the owner request to document, audit, plan, review and execute the numerical-stability repair.** The
+The owner added **another 24 hours** after A10. The sole H11 ledger retains
+all earlier charges/reservations and now has 106807.892609 seconds
+(about 29 hours 40 minutes) available after the status-review allowance.
+This budget extension funds the next reviewed amendment; it does not expand
+A10's exhausted attempt ceiling or change its recorded scientific criteria.
+
+**A10 is complete.** The owner-requested documentation, MathDevMCP audit,
+plan review, implementation and bounded numerical campaign are recorded in the
 [A10 amendment](observation-aware-tt-master-amendment-10-robust-guide-20260916.md)
-binds the propositions/proofs, MathDevMCP audit, stable model-based TT charts,
-resolved guide repair and a physical transition-mixture defense. Its eight-hour
-active ceiling is within the remaining H11 budget. Skeptical plan review passed
-with explicit limits on quadrature accuracy, ESS and smoothness claims.
+and [A10 result](observation-aware-tt-robust-guide-20260916-result.md).
+Nine propositions/proofs and the fresh results are in the revised manuscript.
+MathDevMCP coverage is partial; no formal proof certificate is claimed.
+All 38 focused tests pass. Every TT arm completes all 24 fresh cases without
+numerical or log-evidence failures. The full protection lowers scalar filtering
+MSE by 19.0% under the exploratory paired comparison. On eleven reference-valid
+d4 cases, guide repair is close to A09 (.002395 versus .002412 MSE), while
+independent charts with the physical mixture have descriptively higher error
+(.002747, +13.9%). One d4 reference is imprecise; conditional heuristic losses
+also block promotion. These findings trigger further fitting work, not rejection
+of TT. No default, source-faithfulness or total-gradient claim is established.
+
+**A11 is active:** the owner requested mathematical derivation, MathDevMCP
+review, a built manuscript, and a reviewed implementation/testing plan followed
+by execution. [A11](observation-aware-tt-master-amendment-11-protected-fitting-20260917.md)
+passes the recorded skeptical plan audit. It tests protected covariance blends,
+training rows, optimization and TT capacity against the full A10 physical
+mixture, with stronger d4 references and fresh calibration/confirmation data.
+The cap is 12 active hours including at most six numerical hours, within the
+existing sole H11 ledger. Broader-chart capacity remains a hypothesis. No new
+A10 attempt, source-faithfulness, total-gradient or default claim is implied.
 
 **A09 is complete.** The owner-requested plan, skeptical review, implementation,
 GPU smoke, calibration and fresh confirmation are recorded in
@@ -24,13 +48,14 @@ between those nominees is established. Four-dimensional promotion is blocked:
 one sequence has invalid SGQF covariance and insufficient reference precision;
 another has a nominally positive covariance whose factor collapses to machine
 scale, failing log-evidence agreement for every guide-dependent method.
-The next amendment must investigate guide covariance scale and tail coverage
-before more regression tuning. This is a repair trigger, not rejection of TT.
+A09 therefore required investigation of guide covariance scale and tail
+coverage before more regression tuning. A10 completes that bounded repair
+evaluation; the remaining quality question is recorded above.
 The [bounded collapse diagnosis](artifacts/observation-tt-warm-improvement-20260916-01/covariance-collapse-diagnostic.md)
 confirms single-node quadrature concentration and a scale-invariant SPD check
 that accepts the nearly zero covariance. The existing TT defensive Gaussian
 inherits the same collapsed chart; it cannot supply independent tail coverage.
-A10 now evaluates that repair as an optional extension. There is no total-gradient/default claim.
+A10 evaluated that repair as an optional extension. There is no total-gradient/default claim.
 All 27 focused tests and the final artifact audit passed. Seed collisions and
 time-shift reuse invalidated earlier attempts; they remain preserved. Final
 confirmation uses disjoint sequence/repetition streams and frozen nominees.
@@ -69,8 +94,8 @@ the attempt manifest and aggregate result are under
 `../benchmarks/artifacts/observation_tt_h11_separation_20260915/attempt-01/`.
 The [A08 result](observation-aware-tt-downstream-filter-objective-20260916-result.md)
 completes that rerun. A09 completes TT-only regression and fresh downstream
-comparison. Its covariance-collapse evidence now prioritizes a guide-validity
-amendment; the guide remained frozen throughout A09.
+comparison. Its covariance-collapse evidence motivated A10's guide-validity
+repair, now complete; the guide remained frozen throughout A09.
 
 H11 / admitted A07, 2026-09-15: the
 [guide/fitting separation amendment](observation-aware-tt-master-amendment-07-guide-fit-separation-20260915.md)

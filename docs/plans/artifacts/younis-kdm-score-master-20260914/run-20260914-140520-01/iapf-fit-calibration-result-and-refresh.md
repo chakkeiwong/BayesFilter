@@ -105,8 +105,8 @@ saved links/digests, while the actual trusted GPU retry re-derives selection.
 
 | Decision | Primary criterion | Veto status | Main uncertainty | Next justified action | Not concluded |
 |---|---|---|---|---|---|
-| Do not promote either selected candidate | Claim baseline comparison and uncertainty missing | Objective underflow in every selected claim; weak heuristic veto | Fit geometry versus finite-particle error | Add the underflow guard, then evaluate admissible controls with complete fresh-data baselines | No rejection of twisting or iAPF as a research direction |
-| Close this allocation as partial | 20 unique rows preserved | 64-charge and two-launch limits exhausted | Curved heuristic performance unknown | Continue through the master's separately bounded repair phase | Whole master completion |
+| Do not promote either selected candidate | Claim baseline comparison and uncertainty missing | Objective underflow in every selected claim; weak heuristic veto | Fit geometry versus finite-particle error | Evaluate admissible controls with complete fresh-data baselines in a new phase after the guard repair | No rejection of twisting or iAPF as a research direction |
+| Close this allocation as partial | 20 unique rows preserved | 64-charge and two-launch limits exhausted | Curved heuristic performance unknown | Begin a separately bounded fresh calibration phase after its plan and evidence contract are written | Whole master completion |
 
 | Inference status | Finding |
 |---|---|
@@ -123,3 +123,36 @@ Healthy fits with independent replicated score evidence would overturn the
 candidate verdict. The weakest evidence is the tiny heldout sample and absent
 claim baseline. Repairing underflow is necessary for a trustworthy calibration
 study but does not itself promise better scores or close full-control tuning.
+
+## Underflow-guard repair refresh
+
+The follow-up engineering repair is complete. A profiled fit is now rejected
+when its represented density objective is zero while its normalized shape
+residual is positive. The guard is carried by the existing `valid` flag through
+`bounded_density_fit`, `make_density_recursive_fit_kernel`, and the nonlinear
+iAPF adapter; finite diagnostics remain available for diagnosis. The repair
+does not change objective arithmetic, fitted values, gradients, or the healthy
+fit path.
+
+The same minimal patch was checked in an isolated checkout based on
+`f5a4d411` and in the main checkout. The focused CPU/XLA reference and consumer
+suite passed 19 tests in each checkout (41.62 s isolated; 43.17 s main), with
+bytecode compilation and `git diff --check` passing. The complete logs and
+source hashes are recorded in
+`iapf-fit-underflow-guard-repair-20260916/manifest.json` and `result.md`.
+
+This closes the repair as an engineering phase only. The earlier 64-charge,
+two-launch calibration remains `partial_budget_exhausted`; its rows were
+created before the guard and are not restamped as valid. No candidate is
+promoted, no ranking or default changes, and no scientific rejection of iAPF
+or twisting follows from this repair. A GPU rerun was intentionally not
+started because the guard is an admission check with no changed device
+arithmetic and the prior calibration allocation is closed.
+
+The next calibration phase requires a new output root and budget, fresh data
+partitions, rejection of invalid recursive fits before score comparison, the
+frozen-control claim baseline, complete conditional heuristic tables for both
+weak and curved regimes, and independent replications. It must budget
+worst-case recursive fits before launch; the old rows cannot substitute for
+any of those requirements. Full numerical-control calibration and fitted-
+moment integration into LEDH remain open master work.

@@ -108,8 +108,14 @@ def bounded_density_fit(points, log_targets, *, mean_bound, sd_lower, sd_upper,
     log_floor=tf.math.log(tf.cast(floor_ratio,dtype))+log_constant-tf.reduce_sum(parameters[d:])
     eps=tf.cast(2**-23 if dtype==tf.float32 else 2**-52,dtype)
     boundary=tf.reduce_any(tf.minimum(parameters-lower,upper-parameters)<=32*eps*(1+tf.abs(parameters)))
+    # A zero density-scale objective with a nonzero relative residual is
+    # floating-point underflow, not a successful fit.  Keep the diagnostic and
+    # all finite values available for reporting, but fail closed at the
+    # admission flag consumed by the recursive fitter and adapter.
+    objective_underflow=(loss==0)&(shape_error>0)
     valid=(healthy & tf.math.is_finite(loss) & tf.math.is_finite(shape_error) &
-           tf.math.is_finite(log_lambda) & tf.reduce_all(tf.math.is_finite(sd)) & tf.reduce_all(sd>0))
+           tf.math.is_finite(log_lambda) & tf.reduce_all(tf.math.is_finite(sd)) & tf.reduce_all(sd>0) &
+           ~objective_underflow)
     return center,covariance,log_floor,{
         "valid":valid,"converged":converged,"scaled_loss":loss,
         "normalized_shape_residual":shape_error,"log_lambda":log_lambda,
@@ -117,7 +123,7 @@ def bounded_density_fit(points, log_targets, *, mean_bound, sd_lower, sd_upper,
         "projected_gradient":projected_gradient,"cloud_sd":cloud_sd,
         "fitted_sd":sd,"density_log_constant":log_constant,
         "density_log_amplitude":log_amplitude,
-        "objective_underflow":(loss==0)&(shape_error>0)}
+        "objective_underflow":objective_underflow}
 
 
 @lru_cache(maxsize=16)

@@ -133,7 +133,13 @@ def mean_se(values):
     return mean,tf.sqrt(tf.reduce_sum((x-mean)**2,axis=0)/(n*(n-1)))
 
 
-def references(model,observations,dest,seed,budget,*,replicate_seed_stride=10):
+def references(model,observations,dest,seed,budget,*,replicate_seed_stride=10,
+               particle_levels=(32768,65536,131072),replicates=4,
+               mean_mcse_limit=.02,logz_mcse_limit=.10,reference_t=3.182446):
+    if (replicates<2 or len(particle_levels)<2 or
+            any(a>=b for a,b in zip(particle_levels,particle_levels[1:])) or
+            particle_levels[0]<=0 or min(mean_mcse_limit,logz_mcse_limit,reference_t)<=0):
+        raise ValueError('Invalid independent reference precision policy')
     d=model.dimension
     if d==1:
         coarse=base.scalar_grid_reference(model,observations,801)
@@ -145,9 +151,9 @@ def references(model,observations,dest,seed,budget,*,replicate_seed_stride=10):
         write(dest/'reference.json',output)
         return tf.stack([tf.reshape(s['mean'],[1]) for s in fine['steps']]),fine['log_evidence'],passed,output
     levels=[];previous=None
-    for level,N in enumerate((32768,65536,131072)):
+    for level,N in enumerate(particle_levels):
         budget();runs=[]
-        for r in range(4):
+        for r in range(replicates):
             budget();value,_=base.particle_filter(model,observations,None,None,'transition',N,seed+1000000*level+replicate_seed_stride*r,True)
             runs.append(value)
         means,se=mean_se([tf.stack([s['mean'] for s in run['steps']]) for run in runs])
@@ -156,14 +162,17 @@ def references(model,observations,dest,seed,budget,*,replicate_seed_stride=10):
         current=dict(N=N,mean=means,se=se,logz=logz,logse=logse,runs=runs)
         if previous is not None:
             gap=tf.abs(means-previous['mean'])/scale
-            allowance=3.182446*tf.sqrt(se**2+previous['se']**2)/scale+.01
-            passed=bool(tf.reduce_max(se/scale)<=.02 and logse<=.10 and tf.reduce_all(gap<=allowance) and tf.abs(logz-previous['logz'])<=3.182446*tf.sqrt(logse**2+previous['logse']**2)+.10)
+            allowance=reference_t*tf.sqrt(se**2+previous['se']**2)/scale+.01
+            passed=bool(tf.reduce_max(se/scale)<=mean_mcse_limit and logse<=logz_mcse_limit and tf.reduce_all(gap<=allowance) and tf.abs(logz-previous['logz'])<=reference_t*tf.sqrt(logse**2+previous['logse']**2)+.10)
             current.update(passed=passed,max_mean_mcse=tf.reduce_max(se/scale),max_mean_gap=tf.reduce_max(gap))
         else: passed=False
         levels.append(current);write(dest/f'reference-{N}.json',current)
-        if previous is not None and (passed or N==131072):
+        if previous is not None and (passed or N==particle_levels[-1]):
             output=dict(kind='bootstrap_multiscale',passed=passed,selected_N=N,
-                mean_mcse=tf.reduce_max(se/scale),log_evidence_mcse=logse,levels=[k['N'] for k in levels])
+                mean_mcse=tf.reduce_max(se/scale),log_evidence_mcse=logse,levels=[k['N'] for k in levels],
+                policy=dict(particle_levels=particle_levels,replicates=replicates,
+                            mean_mcse_limit=mean_mcse_limit,logz_mcse_limit=logz_mcse_limit,
+                            reference_t=reference_t,replicate_seed_stride=replicate_seed_stride))
             write(dest/'reference.json',output)
             return means,logz,passed,output
         previous=current

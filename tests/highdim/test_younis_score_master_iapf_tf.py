@@ -76,7 +76,7 @@ def test_saved_failed_cloud_is_finite_in_fp32_and_underflow_is_explicit():
     saved=json.loads((Path(__file__).resolve().parents[1]/'fixtures/iapf_density_underflow.json').read_text())
     kernel=make_density_recursive_fit_kernel(1,1,16,2,4.,.2,4.,2000,30,1e-7,.01,'float32')
     out=kernel(*(tf.constant(saved[key],tf.float32) for key in ('theta','observations','clouds')))
-    assert bool(out[3]) and bool(out[4])
+    assert not bool(out[3]) and bool(out[4])
     tf.debugging.assert_all_finite(out[5],'underflow diagnostics must remain finite')
     assert float(out[5][0,1])>.3 and float(out[5][0,3])==1.
     assert float(out[5][0,9])==1.
