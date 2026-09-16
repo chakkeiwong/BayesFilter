@@ -1,0 +1,586 @@
+HloModule a_inference_evaluate_397__.533, is_scheduled=true, alias_passthrough_params=true, entry_computation_layout={(f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4,4]{3,2,1,0}, f64[4,128,4]{2,1,0})->(f64[4,128,4]{2,1,0}, f64[4,128,4,4]{3,2,1,0}, f64[4]{0}, f64[4]{0}, f64[4]{0})}, frontend_attributes={fingerprint_before_lhs="29b73ff6405755119d8eaa4f913636d1"}
+
+%Sum-reduction.35 (x.36: f64[], y.37: f64[]) -> f64[] {
+  %y.37 = f64[] parameter(1)
+  %x.36 = f64[] parameter(0)
+  ROOT %add.48 = f64[] add(f64[] %x.36, f64[] %y.37)
+}
+
+%fused_reduce (param_0.50: f64[4,128,128,4], param_1.64: f64[4,128]) -> f64[4,128,4] {
+  %param_0.50 = f64[4,128,128,4]{2,3,1,0} parameter(0)
+  %bitcast.891.4 = f64[4,128,4,128]{3,2,1,0} bitcast(f64[4,128,128,4]{2,3,1,0} %param_0.50)
+  %param_1.64 = f64[4,128]{1,0} parameter(1)
+  %broadcast.223.1 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128]{1,0} %param_1.64), dimensions={0,3}, metadata={op_type="Einsum" op_name="while/einsum_1/Einsum"}
+  %multiply.117.3 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %bitcast.891.4, f64[4,128,4,128]{3,2,1,0} %broadcast.223.1)
+  %constant_45_2 = f64[] constant(0)
+  ROOT %reduce.22.1 = f64[4,128,4]{2,1,0} reduce(f64[4,128,4,128]{3,2,1,0} %multiply.117.3, f64[] %constant_45_2), dimensions={3}, to_apply=%Sum-reduction.35, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum_1/Einsum"}
+}
+
+%fused_reduce.2 (param_0.52: f64[4,128,128], param_1.66: f64[4,128]) -> f64[4,128] {
+  %param_0.52 = f64[4,128,128]{2,1,0} parameter(0)
+  %param_1.66 = f64[4,128]{1,0} parameter(1)
+  %broadcast.218.3 = f64[4,128,128]{2,1,0} broadcast(f64[4,128]{1,0} %param_1.66), dimensions={0,2}, metadata={op_type="Einsum" op_name="while/einsum/Einsum"}
+  %multiply.115.3 = f64[4,128,128]{2,1,0} multiply(f64[4,128,128]{2,1,0} %param_0.52, f64[4,128,128]{2,1,0} %broadcast.218.3)
+  %constant_45_4 = f64[] constant(0)
+  ROOT %reduce.20.1 = f64[4,128]{1,0} reduce(f64[4,128,128]{2,1,0} %multiply.115.3, f64[] %constant_45_4), dimensions={2}, to_apply=%Sum-reduction.35, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum/Einsum"}
+}
+
+%fused_divide (param_0.38: f64[4,128,4], param_1.62: f64[4,128]) -> f64[4,128,4] {
+  %constant_44_1 = f64[] constant(-0.0078125), metadata={op_type="Mul" op_name="while/mul" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.222.3 = f64[4,128,4]{2,1,0} broadcast(f64[] %constant_44_1), dimensions={}, metadata={op_type="Mul" op_name="while/mul" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_0.38 = f64[4,128,4]{2,1,0} parameter(0)
+  %multiply.118.3 = f64[4,128,4]{2,1,0} multiply(f64[4,128,4]{2,1,0} %broadcast.222.3, f64[4,128,4]{2,1,0} %param_0.38), metadata={op_type="Mul" op_name="while/mul" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.62 = f64[4,128]{1,0} parameter(1)
+  %constant_41_3 = f64[] constant(1.0000000116860974e-07), metadata={op_type="AddV2" op_name="while/add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.219.4 = f64[4,128]{1,0} broadcast(f64[] %constant_41_3), dimensions={}, metadata={op_type="AddV2" op_name="while/add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %add.50.3 = f64[4,128]{1,0} add(f64[4,128]{1,0} %param_1.62, f64[4,128]{1,0} %broadcast.219.4), metadata={op_type="AddV2" op_name="while/add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.119.1 = f64[4,128]{1,0} multiply(f64[4,128]{1,0} %add.50.3, f64[4,128]{1,0} %add.50.3), metadata={op_type="Square" op_name="while/Square" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.224.1 = f64[4,128,4]{2,1,0} broadcast(f64[4,128]{1,0} %multiply.119.1), dimensions={0,1}, metadata={op_type="RealDiv" op_name="while/truediv_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %divide.44.1 = f64[4,128,4]{2,1,0} divide(f64[4,128,4]{2,1,0} %multiply.118.3, f64[4,128,4]{2,1,0} %broadcast.224.1), metadata={op_type="RealDiv" op_name="while/truediv_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_divide.1 (param_0.48: f64[4,128]) -> f64[4,128] {
+  %constant_43_1 = f64[] constant(0.0078125), metadata={op_type="RealDiv" op_name="while/truediv" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.217.1 = f64[4,128]{1,0} broadcast(f64[] %constant_43_1), dimensions={}, metadata={op_type="RealDiv" op_name="while/truediv" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_0.48 = f64[4,128]{1,0} parameter(0)
+  %constant_41_2 = f64[] constant(1.0000000116860974e-07), metadata={op_type="AddV2" op_name="while/add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.219.6 = f64[4,128]{1,0} broadcast(f64[] %constant_41_2), dimensions={}, metadata={op_type="AddV2" op_name="while/add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %add.50.5 = f64[4,128]{1,0} add(f64[4,128]{1,0} %param_0.48, f64[4,128]{1,0} %broadcast.219.6), metadata={op_type="AddV2" op_name="while/add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %divide.42.1 = f64[4,128]{1,0} divide(f64[4,128]{1,0} %broadcast.217.1, f64[4,128]{1,0} %add.50.5), metadata={op_type="RealDiv" op_name="while/truediv" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_reduce.1 (param_0.51: f64[4,128], param_1.65: f64[4,128,128,4]) -> f64[4,4,128] {
+  %param_1.65 = f64[4,128,128,4]{2,3,1,0} parameter(1)
+  %bitcast.891.6 = f64[4,128,4,128]{3,2,1,0} bitcast(f64[4,128,128,4]{2,3,1,0} %param_1.65)
+  %param_0.51 = f64[4,128]{1,0} parameter(0)
+  %broadcast.227.3 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128]{1,0} %param_0.51), dimensions={0,1}, metadata={op_type="Einsum" op_name="while/einsum_4/Einsum"}
+  %multiply.120.3 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %bitcast.891.6, f64[4,128,4,128]{3,2,1,0} %broadcast.227.3)
+  %constant_45_3 = f64[] constant(0)
+  ROOT %reduce.29.1 = f64[4,4,128]{1,2,0} reduce(f64[4,128,4,128]{3,2,1,0} %multiply.120.3, f64[] %constant_45_3), dimensions={1}, to_apply=%Sum-reduction.35
+}
+
+%fused_reduce.3 (param_0.49: f64[4,128,128], param_1.63: f64[4,128]) -> f64[4,128] {
+  %param_0.49 = f64[4,128,128]{2,1,0} parameter(0)
+  %param_1.63 = f64[4,128]{1,0} parameter(1)
+  %broadcast.220.3 = f64[4,128,128]{2,1,0} broadcast(f64[4,128]{1,0} %param_1.63), dimensions={0,1}, metadata={op_type="Einsum" op_name="while/einsum_3/Einsum"}
+  %multiply.116.3 = f64[4,128,128]{2,1,0} multiply(f64[4,128,128]{2,1,0} %param_0.49, f64[4,128,128]{2,1,0} %broadcast.220.3)
+  %constant_45_1 = f64[] constant(0)
+  ROOT %reduce.21.1 = f64[4,128]{1,0} reduce(f64[4,128,128]{2,1,0} %multiply.116.3, f64[] %constant_45_1), dimensions={1}, to_apply=%Sum-reduction.35, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum_3/Einsum"}
+}
+
+%fused_slice (param_0_0: f64[4,128], param_0_1: f64[4,128], param_1_0: f64[4,128,4], param_1_1: f64[4,128,4]) -> (f64[512], f64[2048]) {
+  %param_0_0 = f64[4,128]{1,0} parameter(0)
+  %param_0_1 = f64[4,128]{1,0} parameter(1)
+  %constant_41_5 = f64[] constant(1.0000000116860974e-07), metadata={op_type="AddV2" op_name="while/add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.219.11 = f64[4,128]{1,0} broadcast(f64[] %constant_41_5), dimensions={}, metadata={op_type="AddV2" op_name="while/add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %add.51.6 = f64[4,128]{1,0} add(f64[4,128]{1,0} %param_0_1, f64[4,128]{1,0} %broadcast.219.11), metadata={op_type="AddV2" op_name="while/add_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %divide.43.2 = f64[4,128]{1,0} divide(f64[4,128]{1,0} %param_0_0, f64[4,128]{1,0} %add.51.6), metadata={op_type="RealDiv" op_name="while/truediv_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %reshape.71 = f64[512]{0} reshape(f64[4,128]{1,0} %divide.43.2), metadata={op_type="RealDiv" op_name="while/truediv_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1_0 = f64[4,128,4]{2,1,0} parameter(2)
+  %broadcast.225.4 = f64[4,128,4]{2,1,0} broadcast(f64[4,128]{1,0} %add.51.6), dimensions={0,1}, metadata={op_type="RealDiv" op_name="while/truediv_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %divide.45.4 = f64[4,128,4]{2,1,0} divide(f64[4,128,4]{2,1,0} %param_1_0, f64[4,128,4]{2,1,0} %broadcast.225.4), metadata={op_type="RealDiv" op_name="while/truediv_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.226.6 = f64[4,128,4]{2,1,0} broadcast(f64[4,128]{1,0} %param_0_0), dimensions={0,1}, metadata={op_type="Mul" op_name="while/mul_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1_1 = f64[4,128,4]{2,1,0} parameter(3)
+  %multiply.121.6 = f64[4,128,4]{2,1,0} multiply(f64[4,128,4]{2,1,0} %broadcast.226.6, f64[4,128,4]{2,1,0} %param_1_1), metadata={op_type="Mul" op_name="while/mul_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.122.4 = f64[4,128]{1,0} multiply(f64[4,128]{1,0} %add.51.6, f64[4,128]{1,0} %add.51.6), metadata={op_type="Square" op_name="while/Square_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.229.4 = f64[4,128,4]{2,1,0} broadcast(f64[4,128]{1,0} %multiply.122.4), dimensions={0,1}, metadata={op_type="RealDiv" op_name="while/truediv_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %divide.46.4 = f64[4,128,4]{2,1,0} divide(f64[4,128,4]{2,1,0} %multiply.121.6, f64[4,128,4]{2,1,0} %broadcast.229.4), metadata={op_type="RealDiv" op_name="while/truediv_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %subtract.16.2 = f64[4,128,4]{2,1,0} subtract(f64[4,128,4]{2,1,0} %divide.45.4, f64[4,128,4]{2,1,0} %divide.46.4), metadata={op_type="Sub" op_name="while/sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %reshape.72 = f64[2048]{0} reshape(f64[4,128,4]{2,1,0} %subtract.16.2), metadata={op_type="Sub" op_name="while/sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %concatenate.4 = f64[2560]{0} concatenate(f64[512]{0} %reshape.71, f64[2048]{0} %reshape.72), dimensions={0}
+  %slice.8 = f64[512]{0} slice(f64[2560]{0} %concatenate.4), slice={[0:512]}
+  %slice.9 = f64[2048]{0} slice(f64[2560]{0} %concatenate.4), slice={[512:2560]}
+  ROOT %tuple.17 = (f64[512]{0}, f64[2048]{0}) tuple(f64[512]{0} %slice.8, f64[2048]{0} %slice.9), metadata={op_type="Sub" op_name="while/sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_add (param_0.47: s32[]) -> s32[] {
+  %param_0.47 = s32[] parameter(0)
+  %constant_40_1 = s32[] constant(1), metadata={op_type="AddV2" op_name="while/add_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %add.49.1 = s32[] add(s32[] %param_0.47, s32[] %constant_40_1), metadata={op_type="AddV2" op_name="while/add_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%command_buffer.4 (p.24: f64[4,128,128,4], p.25: f64[4,128], p.26: (s32[], f64[4,128], f64[4,128], f64[4,128,4], f64[4,128,4], /*index=5*/f64[4,128,128], f64[4,128,128,4], f64[4,128], f64[4,128,4]), p.27: f64[4,128,128]) -> (f64[4,128,4], f64[4,128], f64[4,128], f64[4,128,4], f64[4,128], /*index=5*/f64[4,128,4], s32[]) {
+  %p.24 = f64[4,128,128,4]{2,3,1,0} parameter(0)
+  %p.25 = f64[4,128]{1,0} parameter(1)
+  %p.26 = (s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) parameter(2)
+  %p.27 = f64[4,128,128]{2,1,0} parameter(3)
+  %input_reduce_fusion = f64[4,128,4]{2,1,0} fusion(f64[4,128,128,4]{2,3,1,0} %p.24, f64[4,128]{1,0} %p.25), kind=kInput, calls=%fused_reduce, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum_1/Einsum"}
+  %get-tuple-element.179 = f64[4,128,4]{2,1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %p.26), index=4
+  %cublas-batch-gemm.4.0 = (f64[4,128,4]{2,1,0}, s8[557056]{0}) custom-call(f64[4,128,128]{2,1,0} %p.27, f64[4,128,4]{2,1,0} %get-tuple-element.179, f64[4,128,4]{2,1,0} %input_reduce_fusion), custom_call_target="__cublas$gemm", output_to_operand_aliasing={{0}: (2, {})}, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum_2/Einsum"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":1,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"16384","rhs_stride":"512","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.147.0 = f64[4,128,4]{2,1,0} get-tuple-element((f64[4,128,4]{2,1,0}, s8[557056]{0}) %cublas-batch-gemm.4.0), index=0, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum_2/Einsum"}
+  %input_reduce_fusion.2 = f64[4,128]{1,0} fusion(f64[4,128,128]{2,1,0} %p.27, f64[4,128]{1,0} %p.25), kind=kInput, calls=%fused_reduce.2, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum/Einsum"}
+  %loop_divide_fusion = f64[4,128,4]{2,1,0} fusion(f64[4,128,4]{2,1,0} %get-tuple-element.147.0, f64[4,128]{1,0} %input_reduce_fusion.2), kind=kLoop, calls=%fused_divide, metadata={op_type="RealDiv" op_name="while/truediv_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %loop_divide_fusion.1 = f64[4,128]{1,0} fusion(f64[4,128]{1,0} %input_reduce_fusion.2), kind=kLoop, calls=%fused_divide.1, metadata={op_type="RealDiv" op_name="while/truediv" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_reduce_fusion.1 = f64[4,4,128]{1,2,0} fusion(f64[4,128]{1,0} %loop_divide_fusion.1, f64[4,128,128,4]{2,3,1,0} %p.24), kind=kInput, calls=%fused_reduce.1
+  %bitcast.933.0 = f64[4,128,4]{2,1,0} bitcast(f64[4,4,128]{1,2,0} %input_reduce_fusion.1)
+  %cublas-batch-gemm.5.0 = (f64[4,128,4]{2,1,0}, s8[557056]{0}) custom-call(f64[4,128,128]{2,1,0} %p.27, f64[4,128,4]{2,1,0} %loop_divide_fusion, f64[4,128,4]{2,1,0} %bitcast.933.0), custom_call_target="__cublas$gemm", output_to_operand_aliasing={{0}: (2, {})}, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum_5/Einsum"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":1,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"16384","rhs_stride":"512","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.148.0 = f64[4,128,4]{2,1,0} get-tuple-element((f64[4,128,4]{2,1,0}, s8[557056]{0}) %cublas-batch-gemm.5.0), index=0, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum_5/Einsum"}
+  %input_reduce_fusion.3 = f64[4,128]{1,0} fusion(f64[4,128,128]{2,1,0} %p.27, f64[4,128]{1,0} %loop_divide_fusion.1), kind=kInput, calls=%fused_reduce.3, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="while/einsum_3/Einsum"}
+  %get-tuple-element.204 = f64[4,128]{1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %p.26), index=7
+  %get-tuple-element.205 = f64[4,128,4]{2,1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %p.26), index=8
+  %input_slice_fusion = (f64[512]{0}, f64[2048]{0}) fusion(f64[4,128]{1,0} %get-tuple-element.204, f64[4,128]{1,0} %input_reduce_fusion.3, f64[4,128,4]{2,1,0} %get-tuple-element.205, f64[4,128,4]{2,1,0} %get-tuple-element.148.0), kind=kInput, calls=%fused_slice, control-predecessors={%input_reduce_fusion, %cublas-batch-gemm.4.0, %input_reduce_fusion.2}, metadata={op_type="Sub" op_name="while/sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.158 = f64[512]{0} get-tuple-element((f64[512]{0}, f64[2048]{0}) %input_slice_fusion), index=0
+  %bitcast.1261 = f64[4,128]{1,0} bitcast(f64[512]{0} %get-tuple-element.158), metadata={op_type="RealDiv" op_name="while/truediv_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.159 = f64[2048]{0} get-tuple-element((f64[512]{0}, f64[2048]{0}) %input_slice_fusion), index=1
+  %bitcast.1262 = f64[4,128,4]{2,1,0} bitcast(f64[2048]{0} %get-tuple-element.159), metadata={op_type="Sub" op_name="while/sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.175 = s32[] get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %p.26), index=0
+  %loop_add_fusion = s32[] fusion(s32[] %get-tuple-element.175), kind=kLoop, calls=%fused_add, metadata={op_type="AddV2" op_name="while/add_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %tuple.30 = (f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) tuple(f64[4,128,4]{2,1,0} %loop_divide_fusion, f64[4,128]{1,0} %loop_divide_fusion.1, f64[4,128]{1,0} %get-tuple-element.204, f64[4,128,4]{2,1,0} %get-tuple-element.205, f64[4,128]{1,0} %bitcast.1261, /*index=5*/f64[4,128,4]{2,1,0} %bitcast.1262, s32[] %loop_add_fusion)
+}
+
+%while_body_166_const_0__.182.clone.clone.clone.clone (arg_tuple.3.0: (s32[], f64[4,128], f64[4,128], f64[4,128,4], f64[4,128,4], /*index=5*/f64[4,128,128], f64[4,128,128,4], f64[4,128], f64[4,128,4])) -> (s32[], f64[4,128], f64[4,128], f64[4,128,4], f64[4,128,4], /*index=5*/f64[4,128,128], f64[4,128,128,4], f64[4,128], f64[4,128,4]) {
+  %arg_tuple.3.0 = (s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) parameter(0)
+  %get-tuple-element.202 = f64[4,128,128]{2,1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %arg_tuple.3.0), index=5
+  %get-tuple-element.203 = f64[4,128,128,4]{2,3,1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %arg_tuple.3.0), index=6
+  %get-tuple-element.177 = f64[4,128]{1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %arg_tuple.3.0), index=2
+  %call.2 = (f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) call(f64[4,128,128,4]{2,3,1,0} %get-tuple-element.203, f64[4,128]{1,0} %get-tuple-element.177, (s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %arg_tuple.3.0, f64[4,128,128]{2,1,0} %get-tuple-element.202), to_apply=%command_buffer.4
+  %get-tuple-element.236 = f64[4,128,4]{2,1,0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) %call.2), index=0
+  %get-tuple-element.237 = f64[4,128]{1,0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) %call.2), index=1
+  %get-tuple-element.238 = f64[4,128]{1,0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) %call.2), index=2
+  %get-tuple-element.239 = f64[4,128,4]{2,1,0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) %call.2), index=3
+  %get-tuple-element.240 = f64[4,128]{1,0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) %call.2), index=4
+  %get-tuple-element.241 = f64[4,128,4]{2,1,0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) %call.2), index=5
+  %get-tuple-element.242 = s32[] get-tuple-element((f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, s32[]) %call.2), index=6
+  ROOT %tuple.24 = (s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) tuple(s32[] %get-tuple-element.242, f64[4,128]{1,0} %get-tuple-element.237, f64[4,128]{1,0} %get-tuple-element.240, f64[4,128,4]{2,1,0} %get-tuple-element.236, f64[4,128,4]{2,1,0} %get-tuple-element.241, /*index=5*/f64[4,128,128]{2,1,0} %get-tuple-element.202, f64[4,128,128,4]{2,3,1,0} %get-tuple-element.203, f64[4,128]{1,0} %get-tuple-element.238, f64[4,128,4]{2,1,0} %get-tuple-element.239)
+}
+
+%fused_compare (param_0.53: s32[]) -> pred[] {
+  %param_0.53 = s32[] parameter(0)
+  %constant_47_1 = s32[] constant(16)
+  ROOT %compare.20.1 = pred[] compare(s32[] %param_0.53, s32[] %constant_47_1), direction=LT, metadata={op_type="LogicalAnd" op_name="while/LogicalAnd" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%cond_wrapper.289.clone.clone.sunk.clone (inputs.3.0: (s32[], f64[4,128], f64[4,128], f64[4,128,4], f64[4,128,4], /*index=5*/f64[4,128,128], f64[4,128,128,4], f64[4,128], f64[4,128,4])) -> pred[] {
+  %inputs.3.0 = (s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) parameter(0)
+  %get-tuple-element.136.0 = s32[] get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %inputs.3.0), index=0
+  ROOT %loop_compare_fusion = pred[] fusion(s32[] %get-tuple-element.136.0), kind=kLoop, calls=%fused_compare, metadata={op_type="LogicalAnd" op_name="while/LogicalAnd" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_reduce.6 (param_0.201: f64[4,128,4]) -> f64[4,256] {
+  %param_0.201 = f64[4,128,4]{2,1,0} parameter(0)
+  %broadcast.236.7 = f64[4,128,128,4]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_0.201), dimensions={0,1,3}, metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.237.7 = f64[4,128,128,4]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_0.201), dimensions={0,2,3}, metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %subtract.17.7 = f64[4,128,128,4]{3,2,1,0} subtract(f64[4,128,128,4]{3,2,1,0} %broadcast.236.7, f64[4,128,128,4]{3,2,1,0} %broadcast.237.7), metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.123.1 = f64[4,128,128,4]{3,2,1,0} multiply(f64[4,128,128,4]{3,2,1,0} %subtract.17.7, f64[4,128,128,4]{3,2,1,0} %subtract.17.7), metadata={op_type="Square" op_name="Square" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %bitcast.976.1 = f64[4,256,256]{2,1,0} bitcast(f64[4,128,128,4]{3,2,1,0} %multiply.123.1)
+  %constant_33_6 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.38.1 = f64[4,256]{1,0} reduce(f64[4,256,256]{2,1,0} %bitcast.976.1, f64[] %constant_33_6), dimensions={2}, to_apply=%Sum-reduction.35, metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_reduce.12 (param_0.199: f64[4,256]) -> f64[4] {
+  %param_0.199 = f64[4,256]{1,0} parameter(0)
+  %constant_33_4 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.48.1 = f64[4]{0} reduce(f64[4,256]{1,0} %param_0.199, f64[] %constant_33_4), dimensions={1}, to_apply=%Sum-reduction.35, metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_multiply.1 (param_0.168: f64[4]) -> f64[4] {
+  %param_0.168 = f64[4]{0} parameter(0)
+  %constant_25_2 = f64[] constant(6.103515625e-05), metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.238.1 = f64[4]{0} broadcast(f64[] %constant_25_2), dimensions={}, metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %multiply.124.1 = f64[4]{0} multiply(f64[4]{0} %param_0.168, f64[4]{0} %broadcast.238.1), metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_slice.1 () -> (f64[512], f64[2048]) {
+  %constant_9_2 = f64[] constant(1), metadata={op_type="Const" op_name="ones_like" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.231.2 = f64[4,128]{1,0} broadcast(f64[] %constant_9_2), dimensions={}, metadata={op_type="Const" op_name="ones_like" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %reshape.73 = f64[512]{0} reshape(f64[4,128]{1,0} %broadcast.231.2), metadata={op_type="Const" op_name="ones_like" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_33_13 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.234.2 = f64[4,128,4]{2,1,0} broadcast(f64[] %constant_33_13), dimensions={}, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %reshape.74 = f64[2048]{0} reshape(f64[4,128,4]{2,1,0} %broadcast.234.2), metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %concatenate.5 = f64[2560]{0} concatenate(f64[512]{0} %reshape.73, f64[2048]{0} %reshape.74), dimensions={0}
+  %slice.10 = f64[512]{0} slice(f64[2560]{0} %concatenate.5), slice={[0:512]}
+  %slice.11 = f64[2048]{0} slice(f64[2560]{0} %concatenate.5), slice={[512:2560]}
+  ROOT %tuple.18 = (f64[512]{0}, f64[2048]{0}) tuple(f64[512]{0} %slice.10, f64[2048]{0} %slice.11), metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%copy_horizontally_fused_computation (param_0_0.1: f64[4,128], param_1_0.1: f64[4,128,4]) -> (f64[512], f64[2048]) {
+  %param_0_0.1 = f64[4,128]{1,0} parameter(0)
+  %copy.27 = f64[4,128]{1,0} copy(f64[4,128]{1,0} %param_0_0.1)
+  %reshape.76 = f64[512]{0} reshape(f64[4,128]{1,0} %copy.27)
+  %param_1_0.1 = f64[4,128,4]{2,1,0} parameter(1)
+  %copy.28 = f64[4,128,4]{2,1,0} copy(f64[4,128,4]{2,1,0} %param_1_0.1)
+  %reshape.77 = f64[2048]{0} reshape(f64[4,128,4]{2,1,0} %copy.28)
+  %concatenate.6 = f64[2560]{0} concatenate(f64[512]{0} %reshape.76, f64[2048]{0} %reshape.77), dimensions={0}
+  %slice.12 = f64[512]{0} slice(f64[2560]{0} %concatenate.6), slice={[0:512]}
+  %slice.14 = f64[2048]{0} slice(f64[2560]{0} %concatenate.6), slice={[512:2560]}
+  ROOT %tuple.25 = (f64[512]{0}, f64[2048]{0}) tuple(f64[512]{0} %slice.12, f64[2048]{0} %slice.14)
+}
+
+%fused_reduce.8 (param_0.197: f64[4,128,4]) -> f64[4,128,128] {
+  %param_0.197 = f64[4,128,4]{2,1,0} parameter(0)
+  %broadcast.236.5 = f64[4,128,128,4]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_0.197), dimensions={0,1,3}, metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.237.5 = f64[4,128,128,4]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_0.197), dimensions={0,2,3}, metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %subtract.17.5 = f64[4,128,128,4]{3,2,1,0} subtract(f64[4,128,128,4]{3,2,1,0} %broadcast.236.5, f64[4,128,128,4]{3,2,1,0} %broadcast.237.5), metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.123.2 = f64[4,128,128,4]{3,2,1,0} multiply(f64[4,128,128,4]{3,2,1,0} %subtract.17.5, f64[4,128,128,4]{3,2,1,0} %subtract.17.5), metadata={op_type="Square" op_name="Square" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_33_1 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.39.1 = f64[4,128,128]{2,1,0} reduce(f64[4,128,128,4]{3,2,1,0} %multiply.123.2, f64[] %constant_33_1), dimensions={3}, to_apply=%Sum-reduction.35, metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_exponential (param_0.188: f64[4,128,128], param_1.242: f64[4]) -> f64[4,128,128] {
+  %param_0.188 = f64[4,128,128]{2,1,0} parameter(0)
+  %negate.4.3 = f64[4,128,128]{2,1,0} negate(f64[4,128,128]{2,1,0} %param_0.188), metadata={op_type="Neg" op_name="Neg" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.242 = f64[4]{0} parameter(1)
+  %constant_56_2 = f64[] constant(0.0010000000474974513), metadata={op_type="Maximum" op_name="Maximum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.239.12 = f64[4]{0} broadcast(f64[] %constant_56_2), dimensions={}, metadata={op_type="Maximum" op_name="Maximum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %maximum.2.9 = f64[4]{0} maximum(f64[4]{0} %param_1.242, f64[4]{0} %broadcast.239.12), metadata={op_type="Maximum" op_name="Maximum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_64_2 = f64[] constant(0.5), metadata={op_type="Mul" op_name="mul_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.240.4 = f64[4]{0} broadcast(f64[] %constant_64_2), dimensions={}, metadata={op_type="Mul" op_name="mul_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.125.3 = f64[4]{0} multiply(f64[4]{0} %maximum.2.9, f64[4]{0} %broadcast.240.4), metadata={op_type="Mul" op_name="mul_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.242.3 = f64[4,128,128]{2,1,0} broadcast(f64[4]{0} %multiply.125.3), dimensions={0}, metadata={op_type="RealDiv" op_name="truediv" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %divide.47.3 = f64[4,128,128]{2,1,0} divide(f64[4,128,128]{2,1,0} %negate.4.3, f64[4,128,128]{2,1,0} %broadcast.242.3), metadata={op_type="RealDiv" op_name="truediv" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %exponential.2.1 = f64[4,128,128]{2,1,0} exponential(f64[4,128,128]{2,1,0} %divide.47.3), metadata={op_type="Exp" op_name="Exp"}
+}
+
+%fused_reduce.7 (param_0.200: f64[4,128,4], param_1.235: f64[4,128,4,4]) -> f64[4,128,4,128] {
+  %param_0.200 = f64[4,128,4]{2,1,0} parameter(0)
+  %broadcast.236.3 = f64[4,128,128,4]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_0.200), dimensions={0,1,3}, metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.237.3 = f64[4,128,128,4]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_0.200), dimensions={0,2,3}, metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %subtract.17.3 = f64[4,128,128,4]{3,2,1,0} subtract(f64[4,128,128,4]{3,2,1,0} %broadcast.236.3, f64[4,128,128,4]{3,2,1,0} %broadcast.237.3), metadata={op_type="Sub" op_name="sub" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.245.3 = f64[4,128,4,128,4]{4,3,2,1,0} broadcast(f64[4,128,128,4]{3,2,1,0} %subtract.17.3), dimensions={0,1,3,4}, metadata={op_type="Mul" op_name="mul" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.235 = f64[4,128,4,4]{3,2,1,0} parameter(1)
+  %bitcast.1002.3 = f64[512,4,4]{2,1,0} bitcast(f64[4,128,4,4]{3,2,1,0} %param_1.235)
+  %transpose.43.3 = f64[512,4,4]{2,1,0} transpose(f64[512,4,4]{2,1,0} %bitcast.1002.3), dimensions={0,2,1}, metadata={op_name="XLA_Args"}
+  %bitcast.1005.5 = f64[4,128,4,4]{3,2,1,0} bitcast(f64[512,4,4]{2,1,0} %transpose.43.3)
+  %broadcast.246.5 = f64[4,128,4,128,4]{4,3,2,1,0} broadcast(f64[4,128,4,4]{3,2,1,0} %bitcast.1005.5), dimensions={0,1,2,4}, metadata={op_type="Sub" op_name="sub_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %bitcast.1010.3 = f64[4,512,4]{2,1,0} bitcast(f64[4,128,4,4]{3,2,1,0} %param_1.235)
+  %transpose.44.3 = f64[4,4,512]{2,1,0} transpose(f64[4,512,4]{2,1,0} %bitcast.1010.3), dimensions={0,2,1}, metadata={op_name="XLA_Args"}
+  %bitcast.1013.5 = f64[4,4,128,4]{3,2,1,0} bitcast(f64[4,4,512]{2,1,0} %transpose.44.3)
+  %broadcast.247.5 = f64[4,128,4,128,4]{4,3,2,1,0} broadcast(f64[4,4,128,4]{3,2,1,0} %bitcast.1013.5), dimensions={0,2,3,4}, metadata={op_type="Sub" op_name="sub_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %subtract.18.3 = f64[4,128,4,128,4]{4,3,2,1,0} subtract(f64[4,128,4,128,4]{4,3,2,1,0} %broadcast.246.5, f64[4,128,4,128,4]{4,3,2,1,0} %broadcast.247.5), metadata={op_type="Sub" op_name="sub_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.126.3 = f64[4,128,4,128,4]{4,3,2,1,0} multiply(f64[4,128,4,128,4]{4,3,2,1,0} %broadcast.245.3, f64[4,128,4,128,4]{4,3,2,1,0} %subtract.18.3), metadata={op_type="Mul" op_name="mul" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_33_5 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.30.1 = f64[4,128,4,128]{3,2,1,0} reduce(f64[4,128,4,128,4]{4,3,2,1,0} %multiply.126.3, f64[] %constant_33_5), dimensions={4}, to_apply=%Sum-reduction.35
+}
+
+%fused_reduce.9 (param_0.202: f64[4,128,4,128]) -> f64[4,4,128] {
+  %constant_101_2 = f64[] constant(2), metadata={op_type="Mul" op_name="mul_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.243.3 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[] %constant_101_2), dimensions={}, metadata={op_type="Mul" op_name="mul_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_0.202 = f64[4,128,4,128]{3,2,1,0} parameter(0)
+  %multiply.127.3 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.243.3, f64[4,128,4,128]{3,2,1,0} %param_0.202), metadata={op_type="Mul" op_name="mul_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_33_7 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.36.1 = f64[4,4,128]{2,1,0} reduce(f64[4,128,4,128]{3,2,1,0} %multiply.127.3, f64[] %constant_33_7), dimensions={1}, to_apply=%Sum-reduction.35, metadata={op_type="Mean" op_name="Mean_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_reduce.13 (param_0.203: f64[4,4,128]) -> f64[4,4] {
+  %param_0.203 = f64[4,4,128]{2,1,0} parameter(0)
+  %constant_33_8 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.111.1 = f64[4,4]{1,0} reduce(f64[4,4,128]{2,1,0} %param_0.203, f64[] %constant_33_8), dimensions={2}, to_apply=%Sum-reduction.35, metadata={op_type="Mean" op_name="Mean_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_multiply (param_0.195: f64[4,128,128], param_1.233: f64[4,128,128], param_2.113: f64[4,128,4,128], param_3.64: f64[4], param_4.36: f64[4,4]) -> f64[4,128,4,128] {
+  %constant_101_1 = f64[] constant(2), metadata={op_type="Mul" op_name="mul_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.243.7 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[] %constant_101_1), dimensions={}, metadata={op_type="Mul" op_name="mul_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_2.113 = f64[4,128,4,128]{3,2,1,0} parameter(2)
+  %multiply.127.7 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.243.7, f64[4,128,4,128]{3,2,1,0} %param_2.113), metadata={op_type="Mul" op_name="mul_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_3.64 = f64[4]{0} parameter(3)
+  %constant_56_1 = f64[] constant(0.0010000000474974513), metadata={op_type="Maximum" op_name="Maximum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.239.6 = f64[4]{0} broadcast(f64[] %constant_56_1), dimensions={}, metadata={op_type="Maximum" op_name="Maximum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %maximum.2.3 = f64[4]{0} maximum(f64[4]{0} %param_3.64, f64[4]{0} %broadcast.239.6), metadata={op_type="Maximum" op_name="Maximum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.249.3 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4]{0} %maximum.2.3), dimensions={0}, metadata={op_type="RealDiv" op_name="truediv_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %divide.48.3 = f64[4,128,4,128]{3,2,1,0} divide(f64[4,128,4,128]{3,2,1,0} %multiply.127.7, f64[4,128,4,128]{3,2,1,0} %broadcast.249.3), metadata={op_type="RealDiv" op_name="truediv_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_0.195 = f64[4,128,128]{2,1,0} parameter(0)
+  %broadcast.250.1 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128,128]{2,1,0} %param_0.195), dimensions={0,1,3}, metadata={op_type="Mul" op_name="mul_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %compare.21.5 = pred[4]{0} compare(f64[4]{0} %param_3.64, f64[4]{0} %broadcast.239.6), direction=GT, metadata={op_type="Greater" op_name="Greater" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.252.3 = pred[4,4]{1,0} broadcast(pred[4]{0} %compare.21.5), dimensions={0}, metadata={op_type="SelectV2" op_name="SelectV2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_4.36 = f64[4,4]{1,0} parameter(4)
+  %constant_25_1 = f64[] constant(6.103515625e-05), metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.253.3 = f64[4,4]{1,0} broadcast(f64[] %constant_25_1), dimensions={}, metadata={op_type="Mean" op_name="Mean_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.128.3 = f64[4,4]{1,0} multiply(f64[4,4]{1,0} %param_4.36, f64[4,4]{1,0} %broadcast.253.3), metadata={op_type="Mean" op_name="Mean_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_33_3 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.254.3 = f64[4,4]{1,0} broadcast(f64[] %constant_33_3), dimensions={}, metadata={op_type="Const" op_name="zeros_like" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %select.2.3 = f64[4,4]{1,0} select(pred[4,4]{1,0} %broadcast.252.3, f64[4,4]{1,0} %multiply.128.3, f64[4,4]{1,0} %broadcast.254.3), metadata={op_type="SelectV2" op_name="SelectV2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.255.1 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,4]{1,0} %select.2.3), dimensions={0,2}, metadata={op_type="Mul" op_name="mul_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.130.1 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.250.1, f64[4,128,4,128]{3,2,1,0} %broadcast.255.1), metadata={op_type="Mul" op_name="mul_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.131.3 = f64[4]{0} multiply(f64[4]{0} %maximum.2.3, f64[4]{0} %maximum.2.3), metadata={op_type="Square" op_name="Square_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.256.1 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4]{0} %multiply.131.3), dimensions={0}, metadata={op_type="RealDiv" op_name="truediv_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %divide.49.5 = f64[4,128,4,128]{3,2,1,0} divide(f64[4,128,4,128]{3,2,1,0} %multiply.130.1, f64[4,128,4,128]{3,2,1,0} %broadcast.256.1), metadata={op_type="RealDiv" op_name="truediv_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %subtract.19.5 = f64[4,128,4,128]{3,2,1,0} subtract(f64[4,128,4,128]{3,2,1,0} %divide.48.3, f64[4,128,4,128]{3,2,1,0} %divide.49.5), metadata={op_type="Sub" op_name="sub_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %negate.5.3 = f64[4,128,4,128]{3,2,1,0} negate(f64[4,128,4,128]{3,2,1,0} %subtract.19.5), metadata={op_type="Neg" op_name="Neg_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.233 = f64[4,128,128]{2,1,0} parameter(1)
+  %broadcast.257.1 = f64[4,128,128]{2,1,0} broadcast(f64[] %constant_101_1), dimensions={}, metadata={op_type="Mul" op_name="mul_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.132.1 = f64[4,128,128]{2,1,0} multiply(f64[4,128,128]{2,1,0} %param_1.233, f64[4,128,128]{2,1,0} %broadcast.257.1), metadata={op_type="Mul" op_name="mul_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.258.1 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128,128]{2,1,0} %multiply.132.1), dimensions={0,1,3}, metadata={op_type="Mul" op_name="mul_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %multiply.133.1 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %negate.5.3, f64[4,128,4,128]{3,2,1,0} %broadcast.258.1), metadata={op_type="Mul" op_name="mul_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%command_buffer (p: s32[], p.1: f64[4,128,4,4], p.2: f64[4,128,4]) -> (s32[], f64[4,128,16], f64[4,128], f64[4,128,4], f64[4,128], /*index=5*/f64[4,128,4], f64[4,128,128], f64[4,128,4,128]) {
+  %p = s32[] parameter(0)
+  %p.1 = f64[4,128,4,4]{3,2,1,0} parameter(1)
+  %p.2 = f64[4,128,4]{2,1,0} parameter(2)
+  %copy.29 = s32[] copy(s32[] %p)
+  %bitcast.1133.0 = f64[4,128,16]{2,1,0} bitcast(f64[4,128,4,4]{3,2,1,0} %p.1)
+  %input_reduce_fusion.6 = f64[4,256]{1,0} fusion(f64[4,128,4]{2,1,0} %p.2), kind=kInput, calls=%fused_reduce.6, metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_reduce_fusion.12 = f64[4]{0} fusion(f64[4,256]{1,0} %input_reduce_fusion.6), kind=kInput, calls=%fused_reduce.12, metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %loop_multiply_fusion.1 = f64[4]{0} fusion(f64[4]{0} %input_reduce_fusion.12), kind=kLoop, calls=%fused_multiply.1, metadata={op_type="Mean" op_name="Mean" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_slice_fusion.1 = (f64[512]{0}, f64[2048]{0}) fusion(), kind=kInput, calls=%fused_slice.1, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.161 = f64[2048]{0} get-tuple-element((f64[512]{0}, f64[2048]{0}) %input_slice_fusion.1), index=1
+  %get-tuple-element.160 = f64[512]{0} get-tuple-element((f64[512]{0}, f64[2048]{0}) %input_slice_fusion.1), index=0
+  %bitcast.1263 = f64[4,128]{1,0} bitcast(f64[512]{0} %get-tuple-element.160), metadata={op_type="Const" op_name="ones_like" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %bitcast.1264 = f64[4,128,4]{2,1,0} bitcast(f64[2048]{0} %get-tuple-element.161), metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %copy_fusion = (f64[512]{0}, f64[2048]{0}) fusion(f64[4,128]{1,0} %bitcast.1263, f64[4,128,4]{2,1,0} %bitcast.1264), kind=kInput, calls=%copy_horizontally_fused_computation
+  %get-tuple-element.207 = f64[2048]{0} get-tuple-element((f64[512]{0}, f64[2048]{0}) %copy_fusion), index=1
+  %get-tuple-element.206 = f64[512]{0} get-tuple-element((f64[512]{0}, f64[2048]{0}) %copy_fusion), index=0
+  %bitcast.1265 = f64[4,128]{1,0} bitcast(f64[512]{0} %get-tuple-element.206)
+  %bitcast.1266 = f64[4,128,4]{2,1,0} bitcast(f64[2048]{0} %get-tuple-element.207)
+  %input_reduce_fusion.8 = f64[4,128,128]{2,1,0} fusion(f64[4,128,4]{2,1,0} %p.2), kind=kInput, calls=%fused_reduce.8, metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %loop_exponential_fusion = f64[4,128,128]{2,1,0} fusion(f64[4,128,128]{2,1,0} %input_reduce_fusion.8, f64[4]{0} %loop_multiply_fusion.1), kind=kLoop, calls=%fused_exponential, metadata={op_type="Exp" op_name="Exp"}
+  %input_reduce_fusion.7 = f64[4,128,4,128]{3,2,1,0} fusion(f64[4,128,4]{2,1,0} %p.2, f64[4,128,4,4]{3,2,1,0} %p.1), kind=kInput, calls=%fused_reduce.7
+  %input_reduce_fusion.9 = f64[4,4,128]{2,1,0} fusion(f64[4,128,4,128]{3,2,1,0} %input_reduce_fusion.7), kind=kInput, calls=%fused_reduce.9, metadata={op_type="Mean" op_name="Mean_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_reduce_fusion.13 = f64[4,4]{1,0} fusion(f64[4,4,128]{2,1,0} %input_reduce_fusion.9), kind=kInput, calls=%fused_reduce.13, metadata={op_type="Mean" op_name="Mean_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %loop_multiply_fusion = f64[4,128,4,128]{3,2,1,0} fusion(f64[4,128,128]{2,1,0} %input_reduce_fusion.8, f64[4,128,128]{2,1,0} %loop_exponential_fusion, f64[4,128,4,128]{3,2,1,0} %input_reduce_fusion.7, f64[4]{0} %loop_multiply_fusion.1, f64[4,4]{1,0} %input_reduce_fusion.13), kind=kLoop, calls=%fused_multiply, metadata={op_type="Mul" op_name="mul_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %tuple.26 = (s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) tuple(s32[] %copy.29, f64[4,128,16]{2,1,0} %bitcast.1133.0, f64[4,128]{1,0} %bitcast.1263, f64[4,128,4]{2,1,0} %bitcast.1264, f64[4,128]{1,0} %bitcast.1265, /*index=5*/f64[4,128,4]{2,1,0} %bitcast.1266, f64[4,128,128]{2,1,0} %loop_exponential_fusion, f64[4,128,4,128]{3,2,1,0} %loop_multiply_fusion)
+}
+
+%wrapped_transpose_computation (param_0.218: f64[4,128,4]) -> f64[4,4,128] {
+  %param_0.218 = f64[4,128,4]{2,1,0} parameter(0)
+  ROOT %transpose.45.1 = f64[4,4,128]{2,1,0} transpose(f64[4,128,4]{2,1,0} %param_0.218), dimensions={0,2,1}, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_reduce.10 (param_0.205: f64[4,4,128], param_1.239: f64[4,128], param_2.112: f64[4,128,4,128], param_3.63: f64[4,128], param_4.35: f64[4,128,128], param_5.26: f64[4,128,4]) -> f64[4,128,4] {
+  %param_5.26 = f64[4,128,4]{2,1,0} parameter(5)
+  %broadcast.261.5 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_5.26), dimensions={0,1,2}, metadata={op_type="Mul" op_name="mul_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_4.35 = f64[4,128,128]{2,1,0} parameter(4)
+  %broadcast.262.5 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128,128]{2,1,0} %param_4.35), dimensions={0,1,3}, metadata={op_type="Mul" op_name="mul_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.136.5 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.261.5, f64[4,128,4,128]{3,2,1,0} %broadcast.262.5), metadata={op_type="Mul" op_name="mul_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.239 = f64[4,128]{1,0} parameter(1)
+  %broadcast.263.14 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128]{1,0} %param_1.239), dimensions={0,3}, metadata={op_type="Mul" op_name="mul_8" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.137.7 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %multiply.136.5, f64[4,128,4,128]{3,2,1,0} %broadcast.263.14), metadata={op_type="Mul" op_name="mul_8" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_3.63 = f64[4,128]{1,0} parameter(3)
+  %broadcast.264.3 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128]{1,0} %param_3.63), dimensions={0,1}, metadata={op_type="Mul" op_name="mul_9" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_2.112 = f64[4,128,4,128]{3,2,1,0} parameter(2)
+  %multiply.138.3 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.264.3, f64[4,128,4,128]{3,2,1,0} %param_2.112), metadata={op_type="Mul" op_name="mul_9" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.139.7 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %multiply.138.3, f64[4,128,4,128]{3,2,1,0} %broadcast.263.14), metadata={op_type="Mul" op_name="mul_10" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %add.52.5 = f64[4,128,4,128]{3,2,1,0} add(f64[4,128,4,128]{3,2,1,0} %multiply.137.7, f64[4,128,4,128]{3,2,1,0} %multiply.139.7), metadata={op_type="AddV2" op_name="add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.259.7 = f64[4,128,128]{2,1,0} broadcast(f64[4,128]{1,0} %param_3.63), dimensions={0,1}, metadata={op_type="Mul" op_name="mul_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.134.7 = f64[4,128,128]{2,1,0} multiply(f64[4,128,128]{2,1,0} %broadcast.259.7, f64[4,128,128]{2,1,0} %param_4.35), metadata={op_type="Mul" op_name="mul_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.265.3 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128,128]{2,1,0} %multiply.134.7), dimensions={0,1,3}, metadata={op_type="Mul" op_name="mul_12" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_0.205 = f64[4,4,128]{2,1,0} parameter(0)
+  %broadcast.266.3 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,4,128]{2,1,0} %param_0.205), dimensions={0,2,3}, metadata={op_type="Mul" op_name="mul_12" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.140.3 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.265.3, f64[4,128,4,128]{3,2,1,0} %broadcast.266.3), metadata={op_type="Mul" op_name="mul_12" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %add.53.3 = f64[4,128,4,128]{3,2,1,0} add(f64[4,128,4,128]{3,2,1,0} %add.52.5, f64[4,128,4,128]{3,2,1,0} %multiply.140.3), metadata={op_type="AddV2" op_name="add_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_33_10 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.498.1 = f64[4,128,4]{2,1,0} reduce(f64[4,128,4,128]{3,2,1,0} %add.53.3, f64[] %constant_33_10), dimensions={3}, to_apply=%Sum-reduction.35, metadata={op_type="Sum" op_name="Sum_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_multiply_reduce (param_0.215: f64[4,128], param_1.253: f64[4,128,128], param_2.118: f64[4,128]) -> (f64[4,128], f64[4,128,128]) {
+  %param_2.118 = f64[4,128]{1,0} parameter(2)
+  %broadcast.259.5.clone.1 = f64[4,128,128]{2,1,0} broadcast(f64[4,128]{1,0} %param_2.118), dimensions={0,1}, metadata={op_type="Mul" op_name="mul_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.253 = f64[4,128,128]{2,1,0} parameter(1)
+  %multiply.134.5.clone.1 = f64[4,128,128]{2,1,0} multiply(f64[4,128,128]{2,1,0} %broadcast.259.5.clone.1, f64[4,128,128]{2,1,0} %param_1.253), metadata={op_type="Mul" op_name="mul_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_0.215 = f64[4,128]{1,0} parameter(0)
+  %broadcast.260.1.clone.1 = f64[4,128,128]{2,1,0} broadcast(f64[4,128]{1,0} %param_0.215), dimensions={0,2}, metadata={op_type="Mul" op_name="mul_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.135.1.clone.1 = f64[4,128,128]{2,1,0} multiply(f64[4,128,128]{2,1,0} %multiply.134.5.clone.1, f64[4,128,128]{2,1,0} %broadcast.260.1.clone.1), metadata={op_type="Mul" op_name="mul_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_33_12 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %reduce.338.1 = f64[4,128]{1,0} reduce(f64[4,128,128]{2,1,0} %multiply.135.1.clone.1, f64[] %constant_33_12), dimensions={2}, to_apply=%Sum-reduction.35, metadata={op_type="Sum" op_name="Sum_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %tuple.16 = (f64[4,128]{1,0}, f64[4,128,128]{2,1,0}) tuple(f64[4,128]{1,0} %reduce.338.1, f64[4,128,128]{2,1,0} %multiply.135.1.clone.1)
+}
+
+%fused_concatenate (param_0.62: f64[4,128,128], param_1.149: f64[4,4,128], param_2.73: f64[4,128], param_3.40: f64[4,128,4,128], param_4.25: f64[4,128], param_5.17: f64[4,128,128], param_6.15: f64[4,128,4]) -> f64[4,640,128] {
+  %param_0.62 = f64[4,128,128]{2,1,0} parameter(0)
+  %param_6.15 = f64[4,128,4]{2,1,0} parameter(6)
+  %broadcast.261.7 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_6.15), dimensions={0,1,2}, metadata={op_type="Mul" op_name="mul_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_5.17 = f64[4,128,128]{2,1,0} parameter(5)
+  %broadcast.262.7 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128,128]{2,1,0} %param_5.17), dimensions={0,1,3}, metadata={op_type="Mul" op_name="mul_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.136.7 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.261.7, f64[4,128,4,128]{3,2,1,0} %broadcast.262.7), metadata={op_type="Mul" op_name="mul_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_2.73 = f64[4,128]{1,0} parameter(2)
+  %broadcast.263.18 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128]{1,0} %param_2.73), dimensions={0,3}, metadata={op_type="Mul" op_name="mul_8" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.137.9 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %multiply.136.7, f64[4,128,4,128]{3,2,1,0} %broadcast.263.18), metadata={op_type="Mul" op_name="mul_8" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_4.25 = f64[4,128]{1,0} parameter(4)
+  %broadcast.264.5 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128]{1,0} %param_4.25), dimensions={0,1}, metadata={op_type="Mul" op_name="mul_9" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_3.40 = f64[4,128,4,128]{3,2,1,0} parameter(3)
+  %multiply.138.5 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.264.5, f64[4,128,4,128]{3,2,1,0} %param_3.40), metadata={op_type="Mul" op_name="mul_9" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.139.9 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %multiply.138.5, f64[4,128,4,128]{3,2,1,0} %broadcast.263.18), metadata={op_type="Mul" op_name="mul_10" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %add.52.7 = f64[4,128,4,128]{3,2,1,0} add(f64[4,128,4,128]{3,2,1,0} %multiply.137.9, f64[4,128,4,128]{3,2,1,0} %multiply.139.9), metadata={op_type="AddV2" op_name="add" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.259.3 = f64[4,128,128]{2,1,0} broadcast(f64[4,128]{1,0} %param_4.25), dimensions={0,1}, metadata={op_type="Mul" op_name="mul_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.134.3 = f64[4,128,128]{2,1,0} multiply(f64[4,128,128]{2,1,0} %broadcast.259.3, f64[4,128,128]{2,1,0} %param_5.17), metadata={op_type="Mul" op_name="mul_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.265.5 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,128,128]{2,1,0} %multiply.134.3), dimensions={0,1,3}, metadata={op_type="Mul" op_name="mul_12" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.149 = f64[4,4,128]{2,1,0} parameter(1)
+  %broadcast.266.5 = f64[4,128,4,128]{3,2,1,0} broadcast(f64[4,4,128]{2,1,0} %param_1.149), dimensions={0,2,3}, metadata={op_type="Mul" op_name="mul_12" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.140.5 = f64[4,128,4,128]{3,2,1,0} multiply(f64[4,128,4,128]{3,2,1,0} %broadcast.265.5, f64[4,128,4,128]{3,2,1,0} %broadcast.266.5), metadata={op_type="Mul" op_name="mul_12" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %add.53.5 = f64[4,128,4,128]{3,2,1,0} add(f64[4,128,4,128]{3,2,1,0} %add.52.7, f64[4,128,4,128]{3,2,1,0} %multiply.140.5), metadata={op_type="AddV2" op_name="add_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %bitcast.1114.1 = f64[4,512,128]{2,1,0} bitcast(f64[4,128,4,128]{3,2,1,0} %add.53.5)
+  ROOT %concatenate.3.1 = f64[4,640,128]{2,1,0} concatenate(f64[4,128,128]{2,1,0} %param_0.62, f64[4,512,128]{2,1,0} %bitcast.1114.1), dimensions={1}, metadata={op_type="Mul" op_name="mul_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_divide.4 (param_0.156: f64[4,640,4], param_1.182: f64[4,128]) -> f64[4,128,4] {
+  %param_0.156 = f64[4,640,4]{2,1,0} parameter(0)
+  %slice.6.1 = f64[4,128,4]{2,1,0} slice(f64[4,640,4]{2,1,0} %param_0.156), slice={[0:4], [0:128], [0:4]}, metadata={op_type="Einsum" op_name="einsum/Einsum"}
+  %param_1.182 = f64[4,128]{1,0} parameter(1)
+  %broadcast.267.1 = f64[4,128,4]{2,1,0} broadcast(f64[4,128]{1,0} %param_1.182), dimensions={0,1}, metadata={op_type="RealDiv" op_name="truediv_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %divide.50.1 = f64[4,128,4]{2,1,0} divide(f64[4,128,4]{2,1,0} %slice.6.1, f64[4,128,4]{2,1,0} %broadcast.267.1), metadata={op_type="RealDiv" op_name="truediv_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_transpose (param_0.148: f64[4,640,4]) -> f64[512,4,4] {
+  %param_0.148 = f64[4,640,4]{2,1,0} parameter(0)
+  %slice.7.1 = f64[4,512,4]{2,1,0} slice(f64[4,640,4]{2,1,0} %param_0.148), slice={[0:4], [128:640], [0:4]}, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="einsum_1/Einsum"}
+  %bitcast.1137.1 = f64[512,4,4]{2,1,0} bitcast(f64[4,512,4]{2,1,0} %slice.7.1)
+  ROOT %transpose.46.1 = f64[512,4,4]{2,1,0} transpose(f64[512,4,4]{2,1,0} %bitcast.1137.1), dimensions={0,2,1}, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="einsum_1/Einsum"}
+}
+
+%All_1-reduction.346 (x.347: pred[], y.348: pred[]) -> pred[] {
+  %y.348 = pred[] parameter(1)
+  %x.347 = pred[] parameter(0)
+  ROOT %and.15 = pred[] and(pred[] %x.347, pred[] %y.348)
+}
+
+%fused_reduce.5 (param_0.209: f64[4,128,4]) -> pred[4] {
+  %param_0.209 = f64[4,128,4]{2,1,0} parameter(0)
+  %is-finite.7.1 = pred[4,128,4]{2,1,0} is-finite(f64[4,128,4]{2,1,0} %param_0.209), metadata={op_type="IsFinite" op_name="IsFinite_1"}
+  %bitcast.1210.1 = pred[4,512]{1,0} bitcast(pred[4,128,4]{2,1,0} %is-finite.7.1)
+  %constant_344_2 = pred[] constant(true), metadata={op_type="All" op_name="All_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.404.1 = pred[4]{0} reduce(pred[4,512]{1,0} %bitcast.1210.1, pred[] %constant_344_2), dimensions={1}, to_apply=%All_1-reduction.346, metadata={op_type="All" op_name="All_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_divide.2 (param_0.139: f64[4,128,128], param_1.165: f64[4,128]) -> f64[4,128,128] {
+  %constant_179_1 = f64[] constant(0.0078125), metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.272.1 = f64[4,128,128]{2,1,0} broadcast(f64[] %constant_179_1), dimensions={}, metadata={op_type="Mul" op_name="mul_14" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_0.139 = f64[4,128,128]{2,1,0} parameter(0)
+  %multiply.142.1 = f64[4,128,128]{2,1,0} multiply(f64[4,128,128]{2,1,0} %broadcast.272.1, f64[4,128,128]{2,1,0} %param_0.139), metadata={op_type="Mul" op_name="mul_14" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.165 = f64[4,128]{1,0} parameter(1)
+  %broadcast.273.1 = f64[4,128,128]{2,1,0} broadcast(f64[4,128]{1,0} %param_1.165), dimensions={0,1}, metadata={op_type="RealDiv" op_name="truediv_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %divide.52.1 = f64[4,128,128]{2,1,0} divide(f64[4,128,128]{2,1,0} %multiply.142.1, f64[4,128,128]{2,1,0} %broadcast.273.1), metadata={op_type="RealDiv" op_name="truediv_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_reduce.14 (param_0.206: f64[4,128,128]) -> f64[4,128] {
+  %param_0.206 = f64[4,128,128]{2,1,0} parameter(0)
+  %constant_33_11 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.426.1 = f64[4,128]{1,0} reduce(f64[4,128,128]{2,1,0} %param_0.206, f64[] %constant_33_11), dimensions={1}, to_apply=%Sum-reduction.35, metadata={op_type="Sum" op_name="Sum_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%Min-reduction.366 (x.367: f64[], y.368: f64[]) -> f64[] {
+  %y.368 = f64[] parameter(1)
+  %x.367 = f64[] parameter(0)
+  ROOT %minimum.2 = f64[] minimum(f64[] %x.367, f64[] %y.368)
+}
+
+%fused_reduce.11 (param_0.204: f64[4,128], param_1.238: f64[4,128], param_2.119: f64[4,128]) -> (f64[4], f64[4], pred[4], pred[4]) {
+  %param_0.204 = f64[4,128]{1,0} parameter(0)
+  %param_1.238 = f64[4,128]{1,0} parameter(1)
+  %subtract.22.3 = f64[4,128]{1,0} subtract(f64[4,128]{1,0} %param_0.204, f64[4,128]{1,0} %param_1.238), metadata={op_type="Sub" op_name="sub_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %abs.2.3 = f64[4,128]{1,0} abs(f64[4,128]{1,0} %subtract.22.3), metadata={op_type="Abs" op_name="Abs"}
+  %constant_33_9 = f64[] constant(0), metadata={op_type="Sum" op_name="Sum" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %reduce.437.1 = f64[4]{0} reduce(f64[4,128]{1,0} %abs.2.3, f64[] %constant_33_9), dimensions={1}, to_apply=%Sum-reduction.35, metadata={op_type="Sum" op_name="Sum_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_2.119 = f64[4,128]{1,0} parameter(2)
+  %constant_364_1_clone_1_clone_1 = f64[] constant(inf), metadata={op_type="Min" op_name="Min" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %reduce.370.1.clone.1.clone.1 = f64[4]{0} reduce(f64[4,128]{1,0} %param_2.119, f64[] %constant_364_1_clone_1_clone_1), dimensions={1}, to_apply=%Min-reduction.366, metadata={op_type="Min" op_name="Min" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_178_1_clone_1_clone_1 = f64[] constant(1.0000000116860974e-07), metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.274.3.clone.1.clone.1 = f64[4,128]{1,0} broadcast(f64[] %constant_178_1_clone_1_clone_1), dimensions={}, metadata={op_type="Greater" op_name="Greater_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %compare.22.3.clone.1.clone.1 = pred[4,128]{1,0} compare(f64[4,128]{1,0} %param_2.119, f64[4,128]{1,0} %broadcast.274.3.clone.1.clone.1), direction=GT, metadata={op_type="Greater" op_name="Greater_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_344_1_clone_1 = pred[] constant(true), metadata={op_type="All" op_name="All_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %reduce.350.1.clone.1.clone.1 = pred[4]{0} reduce(pred[4,128]{1,0} %compare.22.3.clone.1.clone.1, pred[] %constant_344_1_clone_1), dimensions={1}, to_apply=%All_1-reduction.346, metadata={op_type="All" op_name="All_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %is-finite.6.1.clone.1 = pred[4,128]{1,0} is-finite(f64[4,128]{1,0} %param_2.119), metadata={op_type="IsFinite" op_name="IsFinite"}
+  %reduce.360.1.clone.1 = pred[4]{0} reduce(pred[4,128]{1,0} %is-finite.6.1.clone.1, pred[] %constant_344_1_clone_1), dimensions={1}, to_apply=%All_1-reduction.346, metadata={op_type="All" op_name="All" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %tuple.21 = (f64[4]{0}, f64[4]{0}, pred[4]{0}, pred[4]{0}) tuple(f64[4]{0} %reduce.437.1, f64[4]{0} %reduce.370.1.clone.1.clone.1, pred[4]{0} %reduce.350.1.clone.1.clone.1, pred[4]{0} %reduce.360.1.clone.1)
+}
+
+%fused_divide.3 (param_0.149: f64[4,128,16], param_1.175: f64[4,128,4], param_2.87: f64[4,128,4], param_3.49: f64[4,128]) -> f64[4,128,4,4] {
+  %param_0.149 = f64[4,128,16]{2,1,0} parameter(0)
+  %bitcast.1144.3 = f64[4,128,4,4]{3,2,1,0} bitcast(f64[4,128,16]{2,1,0} %param_0.149)
+  %param_2.87 = f64[4,128,4]{2,1,0} parameter(2)
+  %broadcast.268.1 = f64[4,128,4,4]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_2.87), dimensions={0,1,2}, metadata={op_type="Mul" op_name="mul_13" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.175 = f64[4,128,4]{2,1,0} parameter(1)
+  %broadcast.269.1 = f64[4,128,4,4]{3,2,1,0} broadcast(f64[4,128,4]{2,1,0} %param_1.175), dimensions={0,1,3}, metadata={op_type="Mul" op_name="mul_13" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %multiply.141.1 = f64[4,128,4,4]{3,2,1,0} multiply(f64[4,128,4,4]{3,2,1,0} %broadcast.268.1, f64[4,128,4,4]{3,2,1,0} %broadcast.269.1), metadata={op_type="Mul" op_name="mul_13" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %subtract.20.3 = f64[4,128,4,4]{3,2,1,0} subtract(f64[4,128,4,4]{3,2,1,0} %bitcast.1144.3, f64[4,128,4,4]{3,2,1,0} %multiply.141.1), metadata={op_type="Sub" op_name="sub_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_3.49 = f64[4,128]{1,0} parameter(3)
+  %broadcast.270.1 = f64[4,128,4,4]{3,2,1,0} broadcast(f64[4,128]{1,0} %param_3.49), dimensions={0,1}, metadata={op_type="RealDiv" op_name="truediv_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %divide.51.1 = f64[4,128,4,4]{3,2,1,0} divide(f64[4,128,4,4]{3,2,1,0} %subtract.20.3, f64[4,128,4,4]{3,2,1,0} %broadcast.270.1), metadata={op_type="RealDiv" op_name="truediv_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_reduce.4 (param_0.210: f64[4,128,4,4]) -> pred[4] {
+  %param_0.210 = f64[4,128,4,4]{3,2,1,0} parameter(0)
+  %is-finite.8.1 = pred[4,128,4,4]{3,2,1,0} is-finite(f64[4,128,4,4]{3,2,1,0} %param_0.210), metadata={op_type="IsFinite" op_name="IsFinite_2"}
+  %bitcast.1220.1 = pred[4,2048]{1,0} bitcast(pred[4,128,4,4]{3,2,1,0} %is-finite.8.1)
+  %constant_344_3 = pred[] constant(true), metadata={op_type="All" op_name="All_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %reduce.522.1 = pred[4]{0} reduce(pred[4,2048]{1,0} %bitcast.1220.1, pred[] %constant_344_3), dimensions={1}, to_apply=%All_1-reduction.346, metadata={op_type="All" op_name="All_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+}
+
+%fused_convert_multiply (param_0.213: pred[4], param_1.245: pred[4], param_2.115: pred[4], param_3.66: pred[4], param_4.39: f64[4]) -> (f64[4], f64[4]) {
+  %param_2.115 = pred[4]{0} parameter(2)
+  %param_3.66 = pred[4]{0} parameter(3)
+  %and.16.1 = pred[4]{0} and(pred[4]{0} %param_2.115, pred[4]{0} %param_3.66), metadata={op_type="LogicalAnd" op_name="and" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_1.245 = pred[4]{0} parameter(1)
+  %and.17.1 = pred[4]{0} and(pred[4]{0} %and.16.1, pred[4]{0} %param_1.245), metadata={op_type="LogicalAnd" op_name="and_1" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_0.213 = pred[4]{0} parameter(0)
+  %and.18.1 = pred[4]{0} and(pred[4]{0} %and.17.1, pred[4]{0} %param_0.213), metadata={op_type="LogicalAnd" op_name="and_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_64_1_clone_1 = f64[] constant(0.5), metadata={op_type="Mul" op_name="mul_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.240.2.clone.1 = f64[4]{0} broadcast(f64[] %constant_64_1_clone_1), dimensions={}, metadata={op_type="Mul" op_name="mul_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %param_4.39 = f64[4]{0} parameter(4)
+  %multiply.143.1.clone.1 = f64[4]{0} multiply(f64[4]{0} %broadcast.240.2.clone.1, f64[4]{0} %param_4.39), metadata={op_type="Mul" op_name="mul_15" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %constant_442_1 = f64[] constant(9.9999997473787516e-05), metadata={op_type="LessEqual" op_name="LessEqual" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %broadcast.275.5 = f64[4]{0} broadcast(f64[] %constant_442_1), dimensions={}, metadata={op_type="LessEqual" op_name="LessEqual" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %compare.23.5 = pred[4]{0} compare(f64[4]{0} %multiply.143.1.clone.1, f64[4]{0} %broadcast.275.5), direction=LE, metadata={op_type="LessEqual" op_name="LessEqual" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %and.19.3 = pred[4]{0} and(pred[4]{0} %and.18.1, pred[4]{0} %compare.23.5), metadata={op_type="LogicalAnd" op_name="and_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %convert.2.1 = f64[4]{0} convert(pred[4]{0} %and.19.3), metadata={op_type="Cast" op_name="Cast_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %tuple.13 = (f64[4]{0}, f64[4]{0}) tuple(f64[4]{0} %convert.2.1, f64[4]{0} %multiply.143.1.clone.1)
+}
+
+%command_buffer.2 (p.6: f64[4,128,4], p.7: f64[4,128], p.8: f64[4,128,4,128], p.9: f64[4,128], p.10: f64[4,128,128], p.11: f64[4,128,4], p.12: f64[4,128,4], p.13: f64[4,128], p.14: f64[4,128,16]) -> (f64[4,128,4], f64[4], f64[4,128,4,4], (f64[4], f64[4])) {
+  %p.6 = f64[4,128,4]{2,1,0} parameter(0)
+  %p.7 = f64[4,128]{1,0} parameter(1)
+  %p.8 = f64[4,128,4,128]{3,2,1,0} parameter(2)
+  %p.9 = f64[4,128]{1,0} parameter(3)
+  %p.10 = f64[4,128,128]{2,1,0} parameter(4)
+  %p.11 = f64[4,128,4]{2,1,0} parameter(5)
+  %p.12 = f64[4,128,4]{2,1,0} parameter(6)
+  %p.13 = f64[4,128]{1,0} parameter(7)
+  %p.14 = f64[4,128,16]{2,1,0} parameter(8)
+  %wrapped_transpose = f64[4,4,128]{2,1,0} fusion(f64[4,128,4]{2,1,0} %p.6), kind=kLoop, calls=%wrapped_transpose_computation, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_reduce_fusion.10 = f64[4,128,4]{2,1,0} fusion(f64[4,4,128]{2,1,0} %wrapped_transpose, f64[4,128]{1,0} %p.7, f64[4,128,4,128]{3,2,1,0} %p.8, f64[4,128]{1,0} %p.9, f64[4,128,128]{2,1,0} %p.10, /*index=5*/f64[4,128,4]{2,1,0} %p.11), kind=kInput, calls=%fused_reduce.10, metadata={op_type="Sum" op_name="Sum_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_multiply_reduce_fusion = (f64[4,128]{1,0}, f64[4,128,128]{2,1,0}) fusion(f64[4,128]{1,0} %p.7, f64[4,128,128]{2,1,0} %p.10, f64[4,128]{1,0} %p.9), kind=kInput, calls=%fused_multiply_reduce, metadata={op_type="Sum" op_name="Sum_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.156 = f64[4,128]{1,0} get-tuple-element((f64[4,128]{1,0}, f64[4,128,128]{2,1,0}) %input_multiply_reduce_fusion), index=0, metadata={op_type="Sum" op_name="Sum_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.157 = f64[4,128,128]{2,1,0} get-tuple-element((f64[4,128]{1,0}, f64[4,128,128]{2,1,0}) %input_multiply_reduce_fusion), index=1, metadata={op_type="Sum" op_name="Sum_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_concatenate_fusion = f64[4,640,128]{2,1,0} fusion(f64[4,128,128]{2,1,0} %get-tuple-element.157, f64[4,4,128]{2,1,0} %wrapped_transpose, f64[4,128]{1,0} %p.7, f64[4,128,4,128]{3,2,1,0} %p.8, f64[4,128]{1,0} %p.9, /*index=5*/f64[4,128,128]{2,1,0} %p.10, f64[4,128,4]{2,1,0} %p.11), kind=kInput, calls=%fused_concatenate, metadata={op_type="Mul" op_name="mul_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %custom-call.4.0 = (f64[4,640,4]{2,1,0}, s8[2637824]{0}) custom-call(f64[4,640,128]{2,1,0} %input_concatenate_fusion, f64[4,128,4]{2,1,0} %p.12), custom_call_target="__cublas$gemm", frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="einsum/Einsum"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"81920","rhs_stride":"512","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.149.0 = f64[4,640,4]{2,1,0} get-tuple-element((f64[4,640,4]{2,1,0}, s8[2637824]{0}) %custom-call.4.0), index=0, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="einsum/Einsum"}
+  %loop_divide_fusion.4 = f64[4,128,4]{2,1,0} fusion(f64[4,640,4]{2,1,0} %get-tuple-element.149.0, f64[4,128]{1,0} %get-tuple-element.156), kind=kLoop, calls=%fused_divide.4, metadata={op_type="RealDiv" op_name="truediv_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %loop_transpose_fusion = f64[512,4,4]{2,1,0} fusion(f64[4,640,4]{2,1,0} %get-tuple-element.149.0), kind=kLoop, calls=%fused_transpose, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="einsum_1/Einsum"}
+  %bitcast.1141.0 = f64[4,128,16]{2,1,0} bitcast(f64[512,4,4]{2,1,0} %loop_transpose_fusion)
+  %input_reduce_fusion.5 = pred[4]{0} fusion(f64[4,128,4]{2,1,0} %loop_divide_fusion.4), kind=kInput, calls=%fused_reduce.5, metadata={op_type="All" op_name="All_2" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %loop_divide_fusion.2 = f64[4,128,128]{2,1,0} fusion(f64[4,128,128]{2,1,0} %get-tuple-element.157, f64[4,128]{1,0} %get-tuple-element.156), kind=kLoop, calls=%fused_divide.2, metadata={op_type="RealDiv" op_name="truediv_7" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_reduce_fusion.14 = f64[4,128]{1,0} fusion(f64[4,128,128]{2,1,0} %loop_divide_fusion.2), kind=kInput, calls=%fused_reduce.14, metadata={op_type="Sum" op_name="Sum_4" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_reduce_fusion.11 = (f64[4]{0}, f64[4]{0}, pred[4]{0}, pred[4]{0}) fusion(f64[4,128]{1,0} %input_reduce_fusion.14, f64[4,128]{1,0} %p.13, f64[4,128]{1,0} %get-tuple-element.156), kind=kInput, calls=%fused_reduce.11, metadata={op_type="Sum" op_name="Sum_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.165 = pred[4]{0} get-tuple-element((f64[4]{0}, f64[4]{0}, pred[4]{0}, pred[4]{0}) %input_reduce_fusion.11), index=3, metadata={op_type="Sum" op_name="Sum_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.164 = pred[4]{0} get-tuple-element((f64[4]{0}, f64[4]{0}, pred[4]{0}, pred[4]{0}) %input_reduce_fusion.11), index=2, metadata={op_type="Sum" op_name="Sum_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.163 = f64[4]{0} get-tuple-element((f64[4]{0}, f64[4]{0}, pred[4]{0}, pred[4]{0}) %input_reduce_fusion.11), index=1, metadata={op_type="Sum" op_name="Sum_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.162 = f64[4]{0} get-tuple-element((f64[4]{0}, f64[4]{0}, pred[4]{0}, pred[4]{0}) %input_reduce_fusion.11), index=0, metadata={op_type="Sum" op_name="Sum_5" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %cublas-batch-gemm.8.0 = (f64[4,128,16]{2,1,0}, s8[655360]{0}) custom-call(f64[4,128,128]{2,1,0} %get-tuple-element.157, f64[4,128,16]{2,1,0} %p.14, f64[4,128,16]{2,1,0} %bitcast.1141.0), custom_call_target="__cublas$gemm", output_to_operand_aliasing={{0}: (2, {})}, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="einsum_2/Einsum"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":1,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"16384","rhs_stride":"2048","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.150.0 = f64[4,128,16]{2,1,0} get-tuple-element((f64[4,128,16]{2,1,0}, s8[655360]{0}) %cublas-batch-gemm.8.0), index=0, frontend_attributes={grad_x="false",grad_y="false"}, metadata={op_type="Einsum" op_name="einsum_2/Einsum"}
+  %loop_divide_fusion.3 = f64[4,128,4,4]{3,2,1,0} fusion(f64[4,128,16]{2,1,0} %get-tuple-element.150.0, f64[4,128,4]{2,1,0} %input_reduce_fusion.10, f64[4,128,4]{2,1,0} %loop_divide_fusion.4, f64[4,128]{1,0} %get-tuple-element.156), kind=kLoop, calls=%fused_divide.3, metadata={op_type="RealDiv" op_name="truediv_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %input_reduce_fusion.4 = pred[4]{0} fusion(f64[4,128,4,4]{3,2,1,0} %loop_divide_fusion.3), kind=kInput, calls=%fused_reduce.4, metadata={op_type="All" op_name="All_3" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %loop_convert_multiply_fusion = (f64[4]{0}, f64[4]{0}) fusion(pred[4]{0} %input_reduce_fusion.4, pred[4]{0} %input_reduce_fusion.5, pred[4]{0} %get-tuple-element.165, pred[4]{0} %get-tuple-element.164, f64[4]{0} %get-tuple-element.162), kind=kLoop, calls=%fused_convert_multiply, metadata={op_type="Cast" op_name="Cast_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %tuple.28 = (f64[4,128,4]{2,1,0}, f64[4]{0}, f64[4,128,4,4]{3,2,1,0}, (f64[4]{0}, f64[4]{0})) tuple(f64[4,128,4]{2,1,0} %loop_divide_fusion.4, f64[4]{0} %get-tuple-element.163, f64[4,128,4,4]{3,2,1,0} %loop_divide_fusion.3, (f64[4]{0}, f64[4]{0}) %loop_convert_multiply_fusion)
+}
+
+ENTRY %a_inference_evaluate_397__.533 (arg0.1.0: f64[4,128,4], arg1.2.0: f64[4,128], arg2.3.0: f64[4,128,4,4], arg3.4.0: f64[4,128,4]) -> (f64[4,128,4], f64[4,128,4,4], f64[4], f64[4], f64[4]) {
+  %constant_171_0 = s32[] constant(0), metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %arg0.1.0 = f64[4,128,4]{2,1,0} parameter(0), parameter_replication={false}, metadata={op_name="XLA_Args"}
+  %arg2.3.0 = f64[4,128,4,4]{3,2,1,0} parameter(2), parameter_replication={false}, metadata={op_name="XLA_Args"}
+  %arg1.2.0 = f64[4,128]{1,0} parameter(1), parameter_replication={false}, metadata={op_name="XLA_Args"}
+  %arg3.4.0 = f64[4,128,4]{2,1,0} parameter(3), parameter_replication={false}, metadata={op_name="XLA_Args"}
+  %call = (s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) call(s32[] %constant_171_0, f64[4,128,4,4]{3,2,1,0} %arg2.3.0, f64[4,128,4]{2,1,0} %arg0.1.0), to_apply=%command_buffer
+  %get-tuple-element.212 = s32[] get-tuple-element((s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) %call), index=0
+  %get-tuple-element.213 = f64[4,128,16]{2,1,0} get-tuple-element((s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) %call), index=1
+  %get-tuple-element.214 = f64[4,128]{1,0} get-tuple-element((s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) %call), index=2
+  %get-tuple-element.215 = f64[4,128,4]{2,1,0} get-tuple-element((s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) %call), index=3
+  %get-tuple-element.216 = f64[4,128]{1,0} get-tuple-element((s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) %call), index=4
+  %get-tuple-element.217 = f64[4,128,4]{2,1,0} get-tuple-element((s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) %call), index=5
+  %get-tuple-element.218 = f64[4,128,128]{2,1,0} get-tuple-element((s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) %call), index=6
+  %get-tuple-element.219 = f64[4,128,4,128]{3,2,1,0} get-tuple-element((s32[], f64[4,128,16]{2,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128]{1,0}, /*index=5*/f64[4,128,4]{2,1,0}, f64[4,128,128]{2,1,0}, f64[4,128,4,128]{3,2,1,0}) %call), index=7
+  %bitcast.1071.0 = f64[4,128,128,4]{2,3,1,0} bitcast(f64[4,128,4,128]{3,2,1,0} %get-tuple-element.219)
+  %tuple.22 = (s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) tuple(s32[] %get-tuple-element.212, f64[4,128]{1,0} %get-tuple-element.214, f64[4,128]{1,0} %get-tuple-element.216, f64[4,128,4]{2,1,0} %get-tuple-element.215, f64[4,128,4]{2,1,0} %get-tuple-element.217, /*index=5*/f64[4,128,128]{2,1,0} %get-tuple-element.218, f64[4,128,128,4]{2,3,1,0} %bitcast.1071.0, f64[4,128]{1,0} %arg1.2.0, f64[4,128,4]{2,1,0} %arg3.4.0)
+  %while.2.0 = (s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) while((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %tuple.22), condition=%cond_wrapper.289.clone.clone.sunk.clone, body=%while_body_166_const_0__.182.clone.clone.clone.clone, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}, backend_config={"known_trip_count":{"n":"16"}}
+  %get-tuple-element.312.0 = f64[4,128]{1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %while.2.0), index=2, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.311.0 = f64[4,128]{1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %while.2.0), index=1, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.313.0 = f64[4,128,4]{2,1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %while.2.0), index=3, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.314.0 = f64[4,128,4]{2,1,0} get-tuple-element((s32[], f64[4,128]{1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}, f64[4,128,4]{2,1,0}, /*index=5*/f64[4,128,128]{2,1,0}, f64[4,128,128,4]{2,3,1,0}, f64[4,128]{1,0}, f64[4,128,4]{2,1,0}) %while.2.0), index=4, metadata={op_type="StatelessWhile" op_name="while" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %call.1 = (f64[4,128,4]{2,1,0}, f64[4]{0}, f64[4,128,4,4]{3,2,1,0}, (f64[4]{0}, f64[4]{0})) call(f64[4,128,4]{2,1,0} %get-tuple-element.314.0, f64[4,128]{1,0} %get-tuple-element.312.0, f64[4,128,4,128]{3,2,1,0} %get-tuple-element.219, f64[4,128]{1,0} %get-tuple-element.311.0, f64[4,128,128]{2,1,0} %get-tuple-element.218, /*index=5*/f64[4,128,4]{2,1,0} %get-tuple-element.313.0, f64[4,128,4]{2,1,0} %arg0.1.0, f64[4,128]{1,0} %arg1.2.0, f64[4,128,16]{2,1,0} %get-tuple-element.213), to_apply=%command_buffer.2
+  %get-tuple-element.226 = f64[4,128,4]{2,1,0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4]{0}, f64[4,128,4,4]{3,2,1,0}, (f64[4]{0}, f64[4]{0})) %call.1), index=0
+  %get-tuple-element.227 = f64[4]{0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4]{0}, f64[4,128,4,4]{3,2,1,0}, (f64[4]{0}, f64[4]{0})) %call.1), index=1
+  %get-tuple-element.228 = f64[4,128,4,4]{3,2,1,0} get-tuple-element((f64[4,128,4]{2,1,0}, f64[4]{0}, f64[4,128,4,4]{3,2,1,0}, (f64[4]{0}, f64[4]{0})) %call.1), index=2
+  %get-tuple-element.229 = (f64[4]{0}, f64[4]{0}) get-tuple-element((f64[4,128,4]{2,1,0}, f64[4]{0}, f64[4,128,4,4]{3,2,1,0}, (f64[4]{0}, f64[4]{0})) %call.1), index=3
+  %get-tuple-element.152 = f64[4]{0} get-tuple-element((f64[4]{0}, f64[4]{0}) %get-tuple-element.229), index=1, metadata={op_type="Cast" op_name="Cast_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  %get-tuple-element.151 = f64[4]{0} get-tuple-element((f64[4]{0}, f64[4]{0}) %get-tuple-element.229), index=0, metadata={op_type="Cast" op_name="Cast_6" source_file="/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+  ROOT %tuple.532.0 = (f64[4,128,4]{2,1,0}, f64[4,128,4,4]{3,2,1,0}, f64[4]{0}, f64[4]{0}, f64[4]{0}) tuple(f64[4,128,4]{2,1,0} %get-tuple-element.226, f64[4,128,4,4]{3,2,1,0} %get-tuple-element.228, f64[4]{0} %get-tuple-element.227, f64[4]{0} %get-tuple-element.152, f64[4]{0} %get-tuple-element.151), metadata={op_name="XLA_Retvals"}
+}
+
