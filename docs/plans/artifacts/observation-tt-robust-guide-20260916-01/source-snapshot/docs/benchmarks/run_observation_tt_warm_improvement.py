@@ -65,18 +65,6 @@ def discrepancy(cores, data):
     return dict(amplitude_rms=rms, defended_h2=tf.maximum(tf.constant(0., D), h2))
 
 
-def scale_initial_amplitude(initial, data):
-    """Least-squares scale; an amplitude sign does not identify a density."""
-    values = pair.evaluate_pair_cores(initial, data['rows'])
-    denominator = tf.reduce_sum(data['weights']*values**2)
-    lib.finite(denominator, 'initial amplitude squared norm')
-    tf.debugging.assert_positive(denominator, 'zero initial amplitude squared norm')
-    scalar = tf.reduce_sum(data['weights']*values*data['target'])/denominator
-    lib.finite(scalar, 'initial amplitude scale')
-    tf.debugging.assert_positive(tf.abs(scalar), 'zero initial amplitude scale')
-    return (initial[0]*scalar, *initial[1:]), scalar
-
-
 def fit_step(model, observation, guide, retained, t, seed, cfg, budget, *, audit=False, charts=None):
     budget(); started = time.monotonic()
     physical_guide = (guide[t][1], guide[t-1][1])
@@ -90,7 +78,10 @@ def fit_step(model, observation, guide, retained, t, seed, cfg, budget, *, audit
                       compression_squared_l2=compression)
     train = panel(model, observation, current, condition, retained, cfg['rows'], seed+t, physical_guide=physical_guide)
     validation = panel(model, observation, current, condition, retained, 4096, seed+t+100000, train['scale'], physical_guide=physical_guide)
-    initial, scalar = scale_initial_amplitude(initial, train)
+    values = pair.evaluate_pair_cores(initial, train['rows'])
+    scalar = tf.reduce_sum(train['weights']*values*train['target'])/tf.reduce_sum(train['weights']*values**2)
+    tf.debugging.assert_positive(scalar, 'nonpositive initial amplitude scale')
+    initial = (initial[0]*scalar, *initial[1:])
     features = pair._pair_features(train['rows'], cfg['degree'])
     cores, diag = pair.fit_pair_features(features, train['target'], train['weights'],
         degree=cfg['degree'], rank=cfg['rank'], sweeps=cfg['sweeps'],

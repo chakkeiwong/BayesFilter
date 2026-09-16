@@ -162,16 +162,6 @@ class expansion. Stop at campaign cap; record under-budgeted claims honestly.
 
 ## Skeptical plan review before implementation
 
-Localized repair after confirmation-01 (all sources/results preserved): see
-[amplitude-sign repair and review](artifacts/observation-tt-robust-guide-20260916-01/amplitude-sign-repair.md).
-A negative least-squares amplitude scale was incorrectly rejected at one
-stable-chart fit. Its sign is not a constraint on a squared TT density. The
-repair retains finite/nonzero checks, exact positive-branch parity and all
-scientific criteria. Use the remaining smoke/calibration/confirmation slots;
-confirmation-02 uses fresh blocks 48--71. Original calibration blocks repeat
-only for calibration and smoke-03 exposes the failed data/seed as diagnostics.
-No tuning on confirmation-01 and no expansion of either campaign ceiling.
-
 Implementation clarification before calibration, 2026-09-16: the epsilon
 non-harm calibration compares the defended arm with the same stable-chart TT
 without external defense. The final primary comparison remains against A09.

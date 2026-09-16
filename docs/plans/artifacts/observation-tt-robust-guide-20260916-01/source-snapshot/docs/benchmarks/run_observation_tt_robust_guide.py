@@ -26,10 +26,8 @@ write,plain,sha=prior.write,prior.plain,prior.sha
 HEURISTICS=warm.HEURISTICS
 
 
-def sequence_seed(stage,dimension,sequence,confirmation_block_start=24):
-    if confirmation_block_start not in (24,48):
-        raise ValueError('Unreviewed confirmation seed block')
-    block=(0 if dimension==1 else 3)+sequence if stage=='calibration' else confirmation_block_start+(0 if dimension==1 else 12)+sequence
+def sequence_seed(stage,dimension,sequence):
+    block=(0 if dimension==1 else 3)+sequence if stage=='calibration' else 24+(0 if dimension==1 else 12)+sequence
     return 1000000000+10000000*block
 
 
@@ -177,7 +175,6 @@ def main():
     parser.add_argument('--stage',choices=('smoke','calibration','confirmation'),required=True)
     parser.add_argument('--output-root',required=True)
     parser.add_argument('--calibration-root')
-    parser.add_argument('--confirmation-block-start',type=int,choices=(24,48),default=24)
     parser.add_argument('--wall-budget-seconds',type=float,default=5400)
     args=parser.parse_args();started=time.monotonic()
     out=Path(args.output_root).resolve();out.mkdir(parents=True,exist_ok=False)
@@ -221,7 +218,7 @@ def main():
         trust_basis='escalated_gpu_access',classification='bounded_diagnostic_extension',source_classification='extension_or_invention',
         plan=str(PLAN),result=str(out/'result.json'),wall_budget_seconds=args.wall_budget_seconds,
         source_hashes={str(p.resolve()):sha(p) for p in dependencies},data_version='A10 fresh stateless SV sequences; fixed model parameters only',
-        seeds=dict(block=f'1e9+1e7*k; cal k0..5, confirm k{args.confirmation_block_start}..{args.confirmation_block_start+23}',fit='block+2e6; validation+1e5,audit+2e5',
+        seeds=dict(block='1e9+1e7*k; cal k0..5, confirm k24..47',fit='block+2e6; validation+1e5,audit+2e5',
                    particle='block+3e6+1000*r+t',reference='block+4e6+1e6*level+1000*r+t',bootstrap=109277777),
         setup_exceptions='Host guide/row/feature setup, positive-rule CPU eigensolve, CPU TT-SVD and reference/statistical reporting; no end-to-end XLA claim')
     write(out/'run_manifest.json',manifest)
@@ -231,18 +228,18 @@ def main():
     try:
         fixture=json.loads(prior.FIXTURE.read_text())
         jobs=[(d,s,None) for d in (1,4) for s in range(1 if args.stage=='smoke' else (3 if args.stage=='calibration' else 12))]
-        if args.stage=='smoke':jobs.extend([(4,4,'exposed'),(4,10,'exposed'),(4,5,'a10-scale')])
+        if args.stage=='smoke':jobs.extend([(4,4,'exposed'),(4,10,'exposed')])
         for d,sequence,exposed in jobs:
-            budget();dest=out/(f'{exposed}-d4-s{sequence:02d}' if exposed else f'd{d}-s{sequence:02d}');dest.mkdir()
+            budget();dest=out/(f'exposed-d4-s{sequence:02d}' if exposed else f'd{d}-s{sequence:02d}');dest.mkdir()
             data=fixture['dimensions'][str(d)]
             model=lib.SVModel(tf.constant(data['A'],D),tf.constant(data['P0'],D),fixture['beta'],fixture['sigma'])
             if exposed:
-                source=ROOT/(f'docs/benchmarks/artifacts/observation_tt_robust_guide_20260916/attempt-confirmation-01/d4-s{sequence:02d}/data.json' if exposed=='a10-scale' else f'docs/benchmarks/artifacts/observation_tt_warm_improvement_20260916/attempt-confirmation-02/d4-s{sequence:02d}/data.json')
+                source=ROOT/f'docs/benchmarks/artifacts/observation_tt_warm_improvement_20260916/attempt-confirmation-02/d4-s{sequence:02d}/data.json'
                 saved=json.loads(source.read_text());observations=tf.constant(saved['observations'],D)
-                states=tf.constant(saved['states'],D);seed=saved['seed'] if exposed=='a10-scale' else 1100000000+sequence*10000
+                states=tf.constant(saved['states'],D);seed=1100000000+sequence*10000
                 manifest.setdefault('diagnostic_sources',{})[str(source)]=sha(source)
             else:
-                seed=(1080000000+d*10000) if args.stage=='smoke' else sequence_seed(args.stage,d,sequence,args.confirmation_block_start)
+                seed=(1080000000+d*10000) if args.stage=='smoke' else sequence_seed(args.stage,d,sequence)
                 states,observations=prior.data_generator(model,3 if args.stage=='smoke' else 20)(tf.constant(seed,tf.int32))
             write(dest/'data.json',dict(seed=seed,states=states,observations=observations,A=model.transition,P0=model.covariance0,beta=model.beta,sigma=model.sigma,exposed=bool(exposed)))
             entry=dict(dimension=d,sequence=sequence,data_seed=seed,exposed=bool(exposed),metrics={},failures={},times={})

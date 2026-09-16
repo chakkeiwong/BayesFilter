@@ -8,53 +8,63 @@ import numpy as np
 import tensorflow as tf
 
 from bayesfilter.highdim.ledh_canonical_batch_fused_tf import (
-    PerPointScoreModel,
     canonical_batch_fused_value_score,
 )
 
 
-class PathologicalLGSSM(PerPointScoreModel):
-    """LGSSM with pathologically small process noise to trigger degeneracy."""
+class PathologicalLGSSM:
+    """LGSSM with pathologically small process noise to trigger degeneracy.
 
-    def __init__(self, state_dim: int = 2, tiny_noise: float = 1e-10):
+    Implements PerPointScoreModel interface for canonical_batch_fused_value_score.
+    """
+
+    def __init__(self, state_dim: int = 2, tiny_noise: float = 1e-10, dtype=tf.float64):
         self.state_dim = state_dim
         self.tiny_noise = tiny_noise
+        self.dtype = dtype
 
-    def transition_log_density(self, state, next_state, noise, theta):
-        # Near-deterministic dynamics: Q = tiny_noise * I
-        diff = next_state - state
-        log_det = self.state_dim * tf.math.log(
-            tf.constant(self.tiny_noise, state.dtype)
+        # PerPointScoreModel required attributes
+        self.process_covariance = tf.constant(
+            tiny_noise * np.eye(state_dim), dtype=dtype
         )
-        mahalanobis = tf.reduce_sum(
-            tf.square(diff) / self.tiny_noise, axis=-1
+        self.observation_covariance = tf.constant(
+            1.0 * np.eye(state_dim), dtype=dtype
         )
-        normalizer = (
-            0.5 * self.state_dim * tf.math.log(
-                2.0 * tf.constant(np.pi, state.dtype)
-            )
-        )
-        return -normalizer - 0.5 * log_det - 0.5 * mahalanobis
 
-    def observation_log_density(self, state, observation, theta):
-        # Identity observation with unit noise
-        diff = observation - state
-        log_det = 0.0
-        mahalanobis = tf.reduce_sum(tf.square(diff), axis=-1)
-        normalizer = (
-            0.5 * self.state_dim * tf.math.log(
-                2.0 * tf.constant(np.pi, state.dtype)
-            )
+        # Bind the instance methods as attributes for PerPointScoreModel
+        self.transition_mean_fn = self._transition_mean_fn
+        self.transition_mean_tangent_fn = self._transition_mean_tangent_fn
+        self.observation_fn = self._observation_fn
+        self.observation_jacobian_fn = self._observation_jacobian_fn
+        self.observation_tangent_fn = self._observation_tangent_fn
+
+        # Optional observation log density (not used in this test)
+        self.observation_log_density_fn = None
+        self.observation_log_density_tangent_fn = None
+
+    def _transition_mean_fn(self, theta_rows, points):
+        """Identity dynamics: f(x) = x (no parameter dependence)."""
+        return points
+
+    def _transition_mean_tangent_fn(self, theta_rows, points, d_points, d_theta_rows):
+        """Tangent of identity dynamics: df/dx @ d_points."""
+        return d_points
+
+    def _observation_fn(self, points):
+        """Identity observation: h(x) = x."""
+        return points
+
+    def _observation_jacobian_fn(self, points):
+        """Jacobian of identity observation: H = I."""
+        n = tf.shape(points)[0]
+        return tf.broadcast_to(
+            tf.eye(self.state_dim, dtype=self.dtype)[None, :, :],
+            [n, self.state_dim, self.state_dim]
         )
-        return -normalizer - 0.5 * log_det - 0.5 * mahalanobis
 
-    def transition_score(self, state, next_state, noise, theta):
-        # Zero score (parameters are hardcoded)
-        return tf.zeros_like(theta)
-
-    def observation_score(self, state, observation, theta):
-        # Zero score (parameters are hardcoded)
-        return tf.zeros_like(theta)
+    def _observation_tangent_fn(self, points, d_points):
+        """Tangent of identity observation: H @ d_points."""
+        return d_points
 
 
 class TestLEDHGracefulFailureIntegration(tf.test.TestCase):

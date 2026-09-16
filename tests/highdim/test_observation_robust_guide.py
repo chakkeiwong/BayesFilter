@@ -161,10 +161,10 @@ def test_consumer_calls_physical_mixture_at_initial_and_later_steps(monkeypatch)
 
 def test_a10_seed_blocks_are_disjoint_and_int32_safe():
     seen=set()
-    for stage,count in [('calibration',3),('confirmation',12)]:
+    for stage,count,block in [('calibration',3,24),('confirmation',12,24),('confirmation',12,48)]:
         for dimension in (1,4):
             for sequence in range(count):
-                seed=campaign.sequence_seed(stage,dimension,sequence)
+                seed=campaign.sequence_seed(stage,dimension,sequence,block)
                 seeds=[seed]
                 seeds.extend(seed+2000000+offset+t for offset in (0,100000,200000) for t in range(20))
                 seeds.extend(seed+3000000+1000*r+t for r in range(4) for t in range(20))
@@ -172,6 +172,29 @@ def test_a10_seed_blocks_are_disjoint_and_int32_safe():
                 assert not seen.intersection(seeds) and len(seeds)==len(set(seeds))
                 assert max(seeds)<2**31
                 seen.update(seeds)
+
+
+def test_initial_amplitude_scale_sign_is_not_a_density_constraint(monkeypatch):
+    warm = campaign.warm
+    for name,value in [('tf',tf),('D',D),('pair',pair),('lib',obs)]:
+        monkeypatch.setattr(warm,name,value,raising=False)
+    initial=pair.initial_pair_cores(1,1,1)
+    data=dict(rows=tf.constant([[[-1.,.2]],[[0.,-.4]],[[1.,.6]]],D),
+              target=tf.constant([.2,.7,1.1],D),weights=tf.constant([.3,.2,.5],D))
+    values=pair.evaluate_pair_cores(initial,data['rows'])
+    old_scalar=tf.reduce_sum(data['weights']*values*data['target'])/tf.reduce_sum(data['weights']*values**2)
+    positive,scale=warm.scale_initial_amplitude(initial,data)
+    negative,negative_scale=warm.scale_initial_amplitude((-initial[0],*initial[1:]),data)
+    tf.debugging.assert_equal(scale,old_scalar)
+    tf.debugging.assert_equal(positive[0],initial[0]*old_scalar)
+    tf.debugging.assert_equal(negative_scale,-scale)
+    for a,b in zip(positive,negative): tf.debugging.assert_equal(a,b)
+    tf.debugging.assert_near(values**2/pair.pair_total_mass(initial),
+        pair.evaluate_pair_cores(negative,data['rows'])**2/pair.pair_total_mass(negative),atol=1e-14)
+    with pytest.raises(tf.errors.InvalidArgumentError,match='zero initial amplitude'):
+        warm.scale_initial_amplitude(initial,dict(data,target=tf.zeros([3],D)))
+    with pytest.raises(tf.errors.InvalidArgumentError,match='zero initial amplitude'):
+        warm.scale_initial_amplitude((tf.zeros_like(initial[0]),*initial[1:]),data)
 
 
 def test_calibration_does_not_discard_failures_or_choose_best_epsilon():

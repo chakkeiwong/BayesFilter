@@ -44,9 +44,19 @@ work/tool waits once at closeout; numerical times are a subset. Smoke-01 failed
 in one-repetition MCSE reporting (150 seconds conservatively reserved);
 smoke-02 completed in 169.254 seconds. Plan caps numerical work at 18000 seconds.
 
-Next: launch disjoint calibration (three T20 sequences per dimension, L1 and
-epsilon curves), freeze controls, then fresh twelve-sequence-per-dimension
-confirmation. Pre-calibration self-review passed and selection/reporting
-details are recorded in A10. Do not edit hashed runtime/plan files during runs.
+Calibration-01 COMPLETE in 581.310050 seconds; all six references pass and no
+arm failures. Frozen controls: guide L1 d1=1e-5/d4=.001; stable L1=.001 both;
+epsilon=.05 both, smallest passing weight. All calibration-admissible.
+Confirmation-01 COMPLETE in 1211.579978 seconds, all references valid; stable
+and full fail on d4-s05 t19 because a valid negative least-squares amplitude
+scale was incorrectly rejected. Signed-scale repair is derived, documented,
+reviewed and tested (38 pass); positive branch unchanged. Exact original
+sources/results preserved in source-snapshot and comparison.json. MathDevMCP
+additional equation audit abstains on formalization, no counterexample.
+Next: smoke-03 includes exposed d4-s05 data AND original fitting seed; then
+calibration-02 on existing calibration blocks and fresh confirmation-02 with
+--confirmation-block-start 48. This consumes remaining A10 attempt slots,
+under unchanged ceilings. Run summarize.py attempt-confirmation-02, terminal
+result/manuscript update and build/visual check, master/budget closeout once.
 Numerical root: ../benchmarks/artifacts/observation_tt_robust_guide_20260916/.
 Result: observation-aware-tt-robust-guide-20260916-result.md.

@@ -5527,6 +5527,95 @@ ancestry and timing. Loss against a Gaussian joint describes approximation
 quality; it cannot by itself decide whether a TT proposal is useful after
 exact importance correction.
 
+\subsection{A10 evaluation of the repair}
+
+The experiment separates three changes. The \emph{guide} arm replaces the
+unchecked SGQF moments with the resolution-checked guide while retaining
+guide-covariance TT coordinates. The \emph{stable} arm additionally uses
+the independent covariance recursion in Proposition~\ref{prop:robust-chart}.
+The \emph{full} arm adds the physical transition mixture to that same
+stable-coordinate TT. All are compared with the A09 SGQF-initialized pair
+TT under the same exact importance correction. Transition, stationary-prior,
+SGQF marginal and SGQF joint proposals provide cheap filtering comparisons.
+The initial proposal is an analytic Gaussian; subsequent times have separate
+TT fits. The stability change therefore does not assert that every proposal,
+including the initial Gaussian, has a TT representation.
+
+Calibration uses three independent sequences in each of dimensions one and
+four, each of length 20, with four particle repetitions and 512 particles.
+It considers L1 weights $10^{-5}$ and $10^{-3}$ and external mixture weights
+$0.05,0.2,0.5$. A candidate must retain all three reference-valid sequences;
+missing or invalid cases cannot improve its selection score. The smallest
+mixture weight satisfying the declared non-harm screen is selected. The
+frozen guide L1 weights are $10^{-5}$ in dimension one and $10^{-3}$ in
+dimension four; both stable arms use $10^{-3}$. Both dimensions select
+$\varepsilon=0.05$. Twelve fresh sequences per dimension then test those
+frozen choices, using seed blocks disjoint from calibration.
+
+For sequence $i$, method $a$, repetition $r$ and time $t$, let
+$\widehat m^{a}_{irt,j}$ be coordinate $j$ of the estimated filtering mean
+and $m^{\rm ref}_{it,j}$ the independent reference mean. With $R=4$, $T=20$
+and prior covariance $P_0$, the sequence error is
+\[
+ M_i^a=\frac{1}{RTd}\sum_{r=1}^R\sum_{t=1}^T\sum_{j=1}^d
+ \frac{(\widehat m^a_{irt,j}-m^{\rm ref}_{it,j})^2}{(P_0)_{jj}}.
+\]
+This measures error against the reference approximation, whose precision is
+checked separately. The scalar reference uses nested physical-space grids;
+the four-dimensional reference uses transition particle filters with
+$32768$, $65536$ and $131072$ particles. Its declared mean-MCSE, log-evidence
+MCSE and resolution screens remain active. Observation-coordinate regimes
+are $|y_j|/\beta\le0.5$, $0.5<|y_j|/\beta<2$, and $|y_j|/\beta\ge2$.
+
+The paired non-harm statistic is the average of
+$M_i^a-1.1M_i^{\rm A09}$. The predeclared sequence bootstrap uses 9999
+resamples and simultaneous Bonferroni percentile intervals for the six
+dimension-by-repair contrasts. An upper endpoint at most zero supports the
+declared 10\% non-harm statement on this experiment. An upper endpoint below
+zero for $M_i^a-M_i^{\rm A09}$ supports a reduction under the same exploratory
+bootstrap analysis. Twelve sequences provide limited information about
+rare failures and tails; neither outcome establishes a universal ranking.
+All numerical and reference checks must pass before interpreting a paired
+contrast. Conditional losses against the cheap proposals block promotion
+under the stated comparison rule; they do not invalidate the TT research
+direction or the exact-importance identity.
+
+The confirmation exposed one fitting guard that is separate from these
+statistical criteria. Let $h_i$ be the initial TT amplitude evaluated on
+training rows, let $b_i$ be the target amplitude and let $w_i\ge0$. The
+least-squares scalar is
+\begin{equation}
+ c^*=\frac{\sum_i w_i h_i b_i}{\sum_i w_i h_i^2}.
+ \label{eq:robust-amplitude-scale}
+\end{equation}
+\begin{proposition}[Amplitude sign is not a density validity condition]
+\label{prop:robust-amplitude-sign}
+Suppose the denominator in~\eqref{eq:robust-amplitude-scale} is finite and
+strictly positive, and $c^*$ is finite and nonzero. Replacing $h$ by
+$c^*h$ is valid even when $c^*<0$. If the represented TT density is the
+normalized square $q_h(x)=h(x)^2/\int h(u)^2\,du$, then
+$q_{c^*h}=q_h$. A zero or nonfinite denominator or scalar remains invalid.
+\end{proposition}
+\begin{proof}
+The stated conditions make the weighted quadratic objective finite and give
+its unique scalar minimizer by differentiating
+$\sum_iw_i(c h_i-b_i)^2$. A negative minimizer is therefore a valid
+least-squares solution. For every $x$,
+$(c^*h(x))^2=(c^*)^2h(x)^2$; the same positive factor multiplies the
+normalizing integral and cancels. The denominator condition excludes a zero
+initial amplitude in the training norm, and finiteness and nonzeroness of
+$c^*$ exclude a nonfinite or identically zero initialization. Thus an
+assertion $c^*>0$ would reject a valid representation solely because of an
+unidentified global amplitude sign. This proof does not justify clipping,
+changing the target, or accepting a zero scale.
+\end{proof}
+
+The implementation now checks the denominator, finiteness and $|c^*|>0$ and
+retains the signed scalar. Positive-scale cases are unchanged to roundoff.
+Confirmation-01 d4-s05 had $c^*=-0.3106276393$ and is preserved as the
+repair trigger; it is excluded from matched stable/full summaries until a
+fresh run evaluates the repaired endpoint.
+
 
 \appendix
 \section{Artifact Provenance and Corrections}
