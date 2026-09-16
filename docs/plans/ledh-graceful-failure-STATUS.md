@@ -92,6 +92,48 @@ Partially complete:
 - Missing: Phase 4a result comparison
 - Missing: Performance measurements
 
+## Validity Flag Shape Fix (2026-09-16)
+
+### Issue
+
+Pre-commit hook revealed test failures in `test_ledh_canonical_score_ukf_tangent.py`:
+- Tests expected scalar validity flags but received arrays
+- Root cause: `safe_cholesky` returns shape `[B]` for batch operations
+- In canonical score single-trajectory context, validity flags must be scalars
+- Using array validity in `tf.where(overall_valid, total, neg_inf)` broadcasted scalar `total` to array shape
+
+### Fix Applied
+
+Modified `ledh_canonical_score_tf.py` at two locations:
+
+1. **Lines 570-581**: Applied `tf.reduce_all()` to convert batch validity flags to scalars:
+   ```python
+   numerical_valid = tf.reduce_all(valid_predict) & tf.reduce_all(valid_update)
+   if reset_policy == "contract_e":
+       numerical_valid = numerical_valid & tf.reduce_all(valid_reset)
+   overall_valid = tf.reduce_all(callback_valid) & numerical_valid
+   ```
+
+2. **Lines 498-500**: Fixed remaining NaN sentinel to use -inf with zero gradient:
+   ```python
+   neg_inf = tf.constant(float("-inf"), dtype)
+   total = tf.where(corrected["valid"], total, neg_inf)
+   d_total = tf.where(corrected["valid"], d_total, tf.zeros([], dtype))
+   ```
+
+### Verification
+
+All tests passing after fix:
+- `test_ledh_canonical_score_ukf_tangent.py`: 2 passed
+- `test_ledh_numerical_safety_tf.py`: 12 passed, 1 skipped
+- `test_ledh_reset_validity.py`: 5 passed
+- `test_dual_parameter_target_invalid.py`: 4 passed
+
+**Total: 23 passed, 1 skipped**
+
+Committed as: `bdc0bdcb` "Fix validity flag shape issue in canonical score computation"
+Pushed to: `origin/surrogate-hmc`
+
 ## Next Steps
 
 To fully validate the implementation:
