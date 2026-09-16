@@ -1,0 +1,165 @@
+{
+  "schema": "filter_xla_memory_comparison.v1",
+  "parity_tolerance": {
+    "absolute": 1e-10,
+    "relative": 1e-10
+  },
+  "comparisons": [
+    {
+      "fixture": "rectangular",
+      "artifacts": [
+        "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/rectangular-off.json",
+        "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/rectangular-on.json"
+      ],
+      "elementwise_parity_pass": true,
+      "max_abs_difference": 7.105427357601002e-15,
+      "elements": 224,
+      "non_xla": {
+        "trace_seconds": 0.4021923820000666,
+        "cold_seconds_after_trace": 2.817746092001471,
+        "cold_rss_mib": 1047.22265625,
+        "cold_incremental_rss_mib": 169.5390625,
+        "gpu_peak_bytes": 105216,
+        "warm_current_bytes": 35072,
+        "warm_current_range_bytes": 0,
+        "warm_rss_growth_kib": 16,
+        "trace_count": 1,
+        "warm_iterations": 20
+      },
+      "xla": {
+        "trace_seconds": 3.158415600002627,
+        "cold_seconds_after_trace": 2.5046994670010463,
+        "cold_rss_mib": 1028.15234375,
+        "cold_incremental_rss_mib": 150.2265625,
+        "gpu_peak_bytes": 61696,
+        "warm_current_bytes": 4096,
+        "warm_current_range_bytes": 0,
+        "warm_rss_growth_kib": 0,
+        "trace_count": 1,
+        "warm_iterations": 20
+      },
+      "gpu_peak_ratio_xla_over_non_xla": 0.5863746958637469,
+      "source_differences": [
+        "scripts/measure_filter_xla_memory.py"
+      ],
+      "source_note": "First rectangular off/on worker differs only in import formatting; numerical sources match"
+    },
+    {
+      "fixture": "factor",
+      "artifacts": [
+        "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/factor-off.json",
+        "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/factor-on.json"
+      ],
+      "elementwise_parity_pass": true,
+      "max_abs_difference": 8.881784197001252e-15,
+      "elements": 224,
+      "non_xla": {
+        "trace_seconds": 0.35234465500252554,
+        "cold_seconds_after_trace": 3.0612693639995996,
+        "cold_rss_mib": 1037.1640625,
+        "cold_incremental_rss_mib": 159.62109375,
+        "gpu_peak_bytes": 136960,
+        "warm_current_bytes": 39680,
+        "warm_current_range_bytes": 0,
+        "warm_rss_growth_kib": 20,
+        "trace_count": 1,
+        "warm_iterations": 20
+      },
+      "xla": {
+        "trace_seconds": 3.133479708998493,
+        "cold_seconds_after_trace": 1.7643924429976323,
+        "cold_rss_mib": 1018.5234375,
+        "cold_incremental_rss_mib": 140.46875,
+        "gpu_peak_bytes": 66816,
+        "warm_current_bytes": 4096,
+        "warm_current_range_bytes": 0,
+        "warm_rss_growth_kib": 12,
+        "trace_count": 1,
+        "warm_iterations": 20
+      },
+      "gpu_peak_ratio_xla_over_non_xla": 0.48785046728971965,
+      "source_differences": [],
+      "source_note": "All imported repository sources match within this pair"
+    },
+    {
+      "fixture": "covariance",
+      "artifacts": [
+        "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/covariance-off.json",
+        "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/covariance-on.json"
+      ],
+      "elementwise_parity_pass": true,
+      "max_abs_difference": 1.4210854715202004e-13,
+      "elements": 264,
+      "non_xla": {
+        "trace_seconds": 0.18854254100006074,
+        "cold_seconds_after_trace": 0.8084326520001923,
+        "cold_rss_mib": 999.84375,
+        "cold_incremental_rss_mib": 122.546875,
+        "gpu_peak_bytes": 16328960,
+        "warm_current_bytes": 2925312,
+        "warm_current_range_bytes": 0,
+        "warm_rss_growth_kib": 36,
+        "trace_count": 1,
+        "warm_iterations": 20
+      },
+      "xla": {
+        "trace_seconds": 0.18928997100010747,
+        "cold_seconds_after_trace": 1.2751282480021473,
+        "cold_rss_mib": 1000.78515625,
+        "cold_incremental_rss_mib": 123.80078125,
+        "gpu_peak_bytes": 16958464,
+        "warm_current_bytes": 178688,
+        "warm_current_range_bytes": 0,
+        "warm_rss_growth_kib": 20,
+        "trace_count": 1,
+        "warm_iterations": 20
+      },
+      "gpu_peak_ratio_xla_over_non_xla": 1.0385513835541271,
+      "source_differences": [],
+      "source_note": "All imported repository sources match within this pair"
+    },
+    {
+      "fixture": "sinkhorn_jvp",
+      "artifacts": [
+        "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/sinkhorn_jvp-off.json",
+        "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/sinkhorn_jvp-on.json"
+      ],
+      "elementwise_parity_pass": true,
+      "max_abs_difference": 3.3306690738754696e-16,
+      "elements": 10252,
+      "non_xla": {
+        "trace_seconds": 0.09959087700190139,
+        "cold_seconds_after_trace": 1.59062125499986,
+        "cold_rss_mib": 1013.87109375,
+        "cold_incremental_rss_mib": 158.90234375,
+        "gpu_peak_bytes": 12728064,
+        "warm_current_bytes": 145152,
+        "warm_current_range_bytes": 0,
+        "warm_rss_growth_kib": 648,
+        "trace_count": 1,
+        "warm_iterations": 20
+      },
+      "xla": {
+        "trace_seconds": 0.09600748299999395,
+        "cold_seconds_after_trace": 0.8293617849994916,
+        "cold_rss_mib": 988.47265625,
+        "cold_incremental_rss_mib": 135.48828125,
+        "gpu_peak_bytes": 8601856,
+        "warm_current_bytes": 113920,
+        "warm_current_range_bytes": 0,
+        "warm_rss_growth_kib": 756,
+        "trace_count": 1,
+        "warm_iterations": 20
+      },
+      "gpu_peak_ratio_xla_over_non_xla": 0.6758180977091253,
+      "source_differences": [],
+      "source_note": "All imported repository sources match within this pair"
+    }
+  ],
+  "limits": [
+    "Four engineering fixtures, one process per arm, 20 warm invocations; not a repository-wide memory qualification",
+    "GPU allocator bytes exclude driver/compiler allocations; process RSS includes host/compiler memory",
+    "Non-XLA is ordinary tf.function graph execution, not eager",
+    "No throughput ranking or proof of absence of long-run leaks"
+  ]
+}
