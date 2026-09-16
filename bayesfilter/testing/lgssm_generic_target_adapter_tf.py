@@ -13,6 +13,9 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.linear.kalman_qr_derivatives_tf import (
+    tf_qr_sqrt_kalman_score_batched_static,
+)
 from bayesfilter.ssm import (
     BayesianSSMProblem,
     FilterProgram,
@@ -25,7 +28,6 @@ from bayesfilter.ssm import (
     build_ssm_posterior_adapter,
 )
 from bayesfilter.testing.tf_hmc_readiness import QRStaticLGSSMTarget
-
 
 LGSSM_GENERIC_TARGET_NONCLAIMS = (
     "LGSSM generic target adapter fixture only",
@@ -220,15 +222,40 @@ def lgssm_qr_log_likelihood_and_grad(
 
     theta_tensor = _rank2_theta(theta)
     target = QRStaticLGSSMTarget.default() if source_target is None else source_target
-    values = []
-    scores = []
-    for row in tf.unstack(theta_tensor, axis=0):
-        result = target.analytic_score_hessian(row)
-        value = result.log_likelihood
-        score = result.score
-        values.append(value)
-        scores.append(score)
-    return tf.stack(values, axis=0), tf.stack(scores, axis=0)
+    return _lgssm_batched_qr_value_score(theta_tensor, target.observations, target.jitter)
+
+
+@tf.function(jit_compile=True, reduce_retracing=True)
+def _lgssm_batched_qr_value_score(theta, observations, jitter):
+    """Tensor-batched construction of the QRStaticLGSSMTarget fixture law."""
+    batch = tf.shape(theta)[0]
+    tanh_rho = tf.math.tanh(theta[:, 0])
+    rho = 0.75 * tanh_rho
+    drho = 0.75 * (1.0 - tf.square(tanh_rho))
+    variance = tf.exp(2.0 * theta[:, 1])
+    zeros = tf.zeros_like(variance)
+    d_vector = tf.zeros([batch, 2, 1], tf.float64)
+    d_matrix = tf.zeros([batch, 2, 1, 1], tf.float64)
+    return tf_qr_sqrt_kalman_score_batched_static(
+        observations=observations,
+        transition_offset=tf.fill([batch, 1], tf.constant(0.02, tf.float64)),
+        transition_matrix=rho[:, None, None],
+        transition_covariance=tf.fill([batch, 1, 1], tf.constant(0.07, tf.float64)),
+        observation_offset=tf.fill([batch, 1], tf.constant(0.01, tf.float64)),
+        observation_matrix=tf.fill([batch, 1, 1], tf.constant(1.2, tf.float64)),
+        observation_covariance=variance[:, None, None],
+        initial_state_mean=tf.fill([batch, 1], tf.constant(0.1, tf.float64)),
+        initial_state_covariance=tf.fill([batch, 1, 1], tf.constant(0.35, tf.float64)),
+        d_initial_state_mean=d_vector,
+        d_initial_state_covariance=d_matrix,
+        d_transition_offset=d_vector,
+        d_transition_matrix=tf.stack([drho, zeros], axis=1)[:, :, None, None],
+        d_transition_covariance=d_matrix,
+        d_observation_offset=d_vector,
+        d_observation_matrix=d_matrix,
+        d_observation_covariance=tf.stack([zeros, 2.0 * variance], axis=1)[:, :, None, None],
+        jitter=jitter,
+    )
 
 
 def _rank2_theta(theta: Any) -> tf.Tensor:

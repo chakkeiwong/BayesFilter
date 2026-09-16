@@ -14,6 +14,7 @@ from typing import Literal, Mapping
 import tensorflow as tf
 
 from bayesfilter.diagnostics import TFFilterDiagnostics, TFRegularizationDiagnostics
+from bayesfilter.linear.compiled_recurrence_tf import compiled_tensor_recurrence
 from bayesfilter.linear.qr_factor_tf import factor_solve
 from bayesfilter.linear.svd_factor_tf import (
     eigh_logdet,
@@ -29,7 +30,6 @@ from bayesfilter.structural_tf import (
     structural_block_metadata,
     structural_filter_metadata,
 )
-
 
 TFSigmaPointValueBackend = Literal["tf_svd_cubature", "tf_svd_ukf", "tf_principal_sqrt_ukf"]
 TFSigmaPointRuleName = Literal["cubature", "unscented"]
@@ -309,6 +309,7 @@ def tf_svd_sigma_point_log_likelihood_with_rule(
     jitter: tf.Tensor | float = 0.0,
     return_filtered: bool = False,
     backend_name: TFSigmaPointValueBackend = "tf_svd_cubature",
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor | None, tf.Tensor | None, Mapping[str, tf.Tensor]]:
     """Evaluate a structural sigma-point likelihood with a fixed rule."""
 
@@ -345,10 +346,10 @@ def tf_svd_sigma_point_log_likelihood_with_rule(
         [observation_dim, observation_dim],
         dtype=tf.float64,
     )
-    means = []
-    covariances = []
+    means = tf.zeros([n_timesteps, state_dim], tf.float64)
+    covariances = tf.zeros([n_timesteps, state_dim, state_dim], tf.float64)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance, covariances, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_innovation_floor_count, max_innovation_residual, max_placement_floor_count, max_placement_residual, max_rank, max_support_residual, mean, means, min_innovation_eigen_gap, min_placement_eigen_gap):
         aug_mean = tf.concat(
             [mean, tf.zeros([innovation_dim], dtype=tf.float64)],
             axis=0,
@@ -490,12 +491,18 @@ def tf_svd_sigma_point_log_likelihood_with_rule(
         max_rank = tf.maximum(max_rank, placement.rank)
         last_implemented_innovation_covariance = implemented_innovation_covariance
         if return_filtered:
-            means.append(mean)
-            covariances.append(covariance)
+            means = tf.tensor_scatter_nd_update(means, [[t]], mean[None, :])
+            covariances = tf.tensor_scatter_nd_update(covariances, [[t]], covariance[None, :, :])
+        return t + 1, covariance, covariances, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_innovation_floor_count, max_innovation_residual, max_placement_floor_count, max_placement_residual, max_rank, max_support_residual, mean, means, min_innovation_eigen_gap, min_placement_eigen_gap
 
-    filtered_means = tf.stack(means, axis=0) if return_filtered else None
-    filtered_covariances = tf.stack(covariances, axis=0) if return_filtered else None
+    _, covariance, covariances, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_innovation_floor_count, max_innovation_residual, max_placement_floor_count, max_placement_residual, max_rank, max_support_residual, mean, means, min_innovation_eigen_gap, min_placement_eigen_gap = compiled_tensor_recurrence(
+        time_step, (covariance, covariances, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_innovation_floor_count, max_innovation_residual, max_placement_floor_count, max_placement_residual, max_rank, max_support_residual, mean, means, min_innovation_eigen_gap, min_placement_eigen_gap), n_timesteps, jit_compile=jit_compile,
+    )
+
+    filtered_means = means if return_filtered else None
+    filtered_covariances = covariances if return_filtered else None
     diagnostics = {
+        "jit_compile": tf.constant(jit_compile),
         "rule": tf.constant(sigma_rule.name),
         "augmented_dim": tf.constant(aug_dim, dtype=tf.int32),
         "point_count": tf.constant(sigma_rule.point_count, dtype=tf.int32),
@@ -619,7 +626,7 @@ def tf_svd_sigma_point_filter(
             model,
             filter_name=f"{backend}_filter",
             differentiability_status="value_only",
-            compiled_status="eager_tf",
+            compiled_status="xla_tensor_recurrence",
         ),
         diagnostics=diagnostics,
     )

@@ -20,12 +20,13 @@ from typing import Callable, Literal, Mapping
 
 import tensorflow as tf
 
-from bayesfilter.ops import symmetric_principal_sqrt, symmetric_sylvester_solve
+from bayesfilter.linear.compiled_recurrence_tf import compiled_tensor_recurrence
 from bayesfilter.nonlinear.cut_tf import tf_cut4g_sigma_point_rule
 from bayesfilter.nonlinear.sigma_points_tf import (
     TFSigmaPointRule,
     tf_unit_sigma_point_rule,
 )
+from bayesfilter.ops import symmetric_principal_sqrt, symmetric_sylvester_solve
 
 TFBatchedTransitionFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 TFBatchedObservationFn = Callable[[tf.Tensor], tf.Tensor]
@@ -349,6 +350,10 @@ class TFBatchedSmoothEighFactorFirstDerivatives:
     min_eigenvalue: tf.Tensor
     max_abs_covariance_entry: tf.Tensor
     max_abs_derivative_covariance_entry: tf.Tensor
+
+
+def _write_time(buffer, time_index, value):
+    return tf.tensor_scatter_nd_update(buffer, tf.reshape(time_index, [1, 1]), value[None])
 
 
 def _to_rank(value: object, rank: int, name: str) -> tf.Tensor:
@@ -715,10 +720,16 @@ def _tensorflow_newton_schulz_principal_sqrt(covariance: tf.Tensor) -> tf.Tensor
     scale = tf.linalg.norm(matrix, axis=[-2, -1], keepdims=True)
     normalized = matrix / scale
     inverse_root = identity
-    for _ in range(_PRINCIPAL_SQRT_NEWTON_SCHULZ_ITERATIONS):
+    def iteration(i, normalized, inverse_root):
         correction = 0.5 * (3.0 * identity - inverse_root @ normalized)
         normalized = normalized @ correction
         inverse_root = correction @ inverse_root
+        return i + 1, normalized, inverse_root
+
+    _, normalized, inverse_root = tf.while_loop(
+        lambda i, *_: i < _PRINCIPAL_SQRT_NEWTON_SCHULZ_ITERATIONS,
+        iteration, (tf.constant(0), normalized, inverse_root), parallel_iterations=1,
+    )
     return _symmetrize(normalized * tf.sqrt(scale))
 
 
@@ -1546,6 +1557,7 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     principal_sqrt_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
     jitter: tf.Tensor | float = 0.0,
     _value_only: bool = False,
+    jit_compile: bool = True,
 ) -> TFBatchedSigmaPointOutputCotangents | TFBatchedSigmaPointValue:
     """Return value and reverse-mode cotangents for model hook outputs.
 
@@ -1636,39 +1648,12 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         [batch_dim], tf.constant(float("inf"), dtype=tf.float64)
     )
 
-    previous_ta = tf.TensorArray(
-        dtype=tf.float64,
-        size=n_timesteps,
-        element_shape=tf.TensorShape([batch_dim, point_count, state_dim]),
-        clear_after_read=False,
-    )
-    innovation_ta = tf.TensorArray(
-        dtype=tf.float64,
-        size=n_timesteps,
-        element_shape=tf.TensorShape([batch_dim, point_count, innovation_dim]),
-        clear_after_read=False,
-    )
-    predicted_ta = tf.TensorArray(
-        dtype=tf.float64,
-        size=n_timesteps,
-        element_shape=tf.TensorShape([batch_dim, point_count, state_dim]),
-        clear_after_read=False,
-    )
-    observation_ta = tf.TensorArray(
-        dtype=tf.float64,
-        size=n_timesteps,
-        element_shape=tf.TensorShape([batch_dim, point_count, observation_dim]),
-    )
-    implemented_innovation_covariance_ta = tf.TensorArray(
-        dtype=tf.float64,
-        size=n_timesteps,
-        element_shape=tf.TensorShape([batch_dim, observation_dim, observation_dim]),
-    )
-    placement_factor_ta = tf.TensorArray(
-        dtype=tf.float64,
-        size=n_timesteps,
-        element_shape=tf.TensorShape([batch_dim, aug_dim, aug_dim]),
-    )
+    previous_ta = tf.zeros([n_timesteps, batch_dim, point_count, state_dim], dtype=tf.float64)
+    innovation_ta = tf.zeros([n_timesteps, batch_dim, point_count, innovation_dim], dtype=tf.float64)
+    predicted_ta = tf.zeros([n_timesteps, batch_dim, point_count, state_dim], dtype=tf.float64)
+    observation_ta = tf.zeros([n_timesteps, batch_dim, point_count, observation_dim], dtype=tf.float64)
+    implemented_innovation_covariance_ta = tf.zeros([n_timesteps, batch_dim, observation_dim, observation_dim], dtype=tf.float64)
+    placement_factor_ta = tf.zeros([n_timesteps, batch_dim, aug_dim, aug_dim], dtype=tf.float64)
 
     n_timesteps_tensor = tf.constant(n_timesteps, dtype=tf.int32)
 
@@ -1842,15 +1827,12 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             tf.maximum(max_innovation_floor_count, innovation_factor.floor_count),
             tf.minimum(min_placement_eigenvalue, placement.min_eigenvalue),
             tf.minimum(min_innovation_eigenvalue, innovation_factor.min_eigenvalue),
-            previous_ta.write(t, previous_points),
-            innovation_ta.write(t, innovation_points),
-            predicted_ta.write(t, predicted_points),
-            observation_ta.write(t, observation_points),
-            implemented_innovation_covariance_ta.write(
-                t,
-                implemented_innovation_covariance,
-            ),
-            placement_factor_ta.write(t, placement.factor),
+            _write_time(previous_ta, t, previous_points),
+            _write_time(innovation_ta, t, innovation_points),
+            _write_time(predicted_ta, t, predicted_points),
+            _write_time(observation_ta, t, observation_points),
+            _write_time(implemented_innovation_covariance_ta, t, implemented_innovation_covariance),
+            _write_time(placement_factor_ta, t, placement.factor),
         )
 
     (
@@ -1872,11 +1854,9 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         observation_ta,
         implemented_innovation_covariance_ta,
         placement_factor_ta,
-    ) = tf.while_loop(
-        lambda t, *_unused: t < n_timesteps_tensor,
+    ) = compiled_tensor_recurrence(
         forward_body,
         (
-            tf.constant(0, dtype=tf.int32),
             mean,
             covariance,
             log_likelihood,
@@ -1895,7 +1875,7 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             implemented_innovation_covariance_ta,
             placement_factor_ta,
         ),
-        parallel_iterations=1,
+        n_timesteps_tensor, jit_compile=jit_compile,
     )
 
     if value_only:
@@ -1974,21 +1954,13 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         return TFBatchedSigmaPointValue(
             value=checked_value,
             diagnostics=diagnostics,
-            transition_previous_points=previous_ta.stack(),
-            transition_innovation_points=innovation_ta.stack(),
-            observation_state_points=predicted_ta.stack(),
+            transition_previous_points=previous_ta,
+            transition_innovation_points=innovation_ta,
+            observation_state_points=predicted_ta,
         )
 
-    transition_cotangent_ta = tf.TensorArray(
-        dtype=tf.float64,
-        size=n_timesteps,
-        element_shape=tf.TensorShape([batch_dim, point_count, state_dim]),
-    )
-    observation_cotangent_ta = tf.TensorArray(
-        dtype=tf.float64,
-        size=n_timesteps,
-        element_shape=tf.TensorShape([batch_dim, point_count, observation_dim]),
-    )
+    transition_cotangent_ta = tf.zeros([n_timesteps, batch_dim, point_count, state_dim], dtype=tf.float64)
+    observation_cotangent_ta = tf.zeros([n_timesteps, batch_dim, point_count, observation_dim], dtype=tf.float64)
 
     def reverse_body(
         k,
@@ -2000,12 +1972,12 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         observation_cotangent_ta,
     ):
         t = n_timesteps_tensor - tf.constant(1, dtype=tf.int32) - k
-        previous_points = previous_ta.read(t)
-        innovation_points = innovation_ta.read(t)
-        predicted_points = predicted_ta.read(t)
-        observation_points = observation_ta.read(t)
-        implemented_innovation_covariance = implemented_innovation_covariance_ta.read(t)
-        placement_factor = placement_factor_ta.read(t)
+        previous_points = previous_ta[t]
+        innovation_points = innovation_ta[t]
+        predicted_points = predicted_ta[t]
+        observation_points = observation_ta[t]
+        implemented_innovation_covariance = implemented_innovation_covariance_ta[t]
+        placement_factor = placement_factor_ta[t]
 
         predicted_mean = tf.einsum(
             "r,brn->bn",
@@ -2264,8 +2236,8 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             covariance_cotangent,
             innovation_covariance_cotangent,
             observation_covariance_cotangent,
-            transition_cotangent_ta.write(t, predicted_points_cotangent),
-            observation_cotangent_ta.write(t, observation_points_cotangent),
+            _write_time(transition_cotangent_ta, t, predicted_points_cotangent),
+            _write_time(observation_cotangent_ta, t, observation_points_cotangent),
         )
 
     (
@@ -2276,11 +2248,9 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
         observation_covariance_cotangent,
         transition_cotangent_ta,
         observation_cotangent_ta,
-    ) = tf.while_loop(
-        lambda k, *_unused: k < n_timesteps_tensor,
+    ) = compiled_tensor_recurrence(
         reverse_body,
         (
-            tf.constant(0, dtype=tf.int32),
             tf.zeros([batch_dim, state_dim], dtype=tf.float64),
             tf.zeros([batch_dim, state_dim, state_dim], dtype=tf.float64),
             tf.zeros([batch_dim, innovation_dim, innovation_dim], dtype=tf.float64),
@@ -2288,7 +2258,7 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             transition_cotangent_ta,
             observation_cotangent_ta,
         ),
-        parallel_iterations=1,
+        n_timesteps_tensor, jit_compile=jit_compile,
     )
 
     classified_invalid_count = (
@@ -2314,10 +2284,10 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     )
     valid_float = tf.cast(valid_mask, tf.float64)
     transition_output_cotangent = (
-        transition_cotangent_ta.stack() * valid_float[tf.newaxis, :, tf.newaxis, tf.newaxis]
+        transition_cotangent_ta * valid_float[tf.newaxis, :, tf.newaxis, tf.newaxis]
     )
     observation_output_cotangent = (
-        observation_cotangent_ta.stack() * valid_float[tf.newaxis, :, tf.newaxis, tf.newaxis]
+        observation_cotangent_ta * valid_float[tf.newaxis, :, tf.newaxis, tf.newaxis]
     )
     initial_mean_cotangent = initial_mean_cotangent * valid_float[:, tf.newaxis]
     initial_covariance_cotangent = (
@@ -2355,10 +2325,10 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     }
     return TFBatchedSigmaPointOutputCotangents(
         value=checked_value,
-        transition_previous_points=previous_ta.stack(),
-        transition_innovation_points=innovation_ta.stack(),
+        transition_previous_points=previous_ta,
+        transition_innovation_points=innovation_ta,
         transition_output_cotangent=transition_output_cotangent,
-        observation_state_points=predicted_ta.stack(),
+        observation_state_points=predicted_ta,
         observation_output_cotangent=observation_output_cotangent,
         initial_mean_cotangent=initial_mean_cotangent,
         initial_covariance_cotangent=initial_covariance_cotangent,
@@ -2455,8 +2425,13 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
     principal_sqrt_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
     jitter: tf.Tensor | float = 0.0,
     allow_fixed_null_support: bool = False,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
-    """Return batched nonlinear SVD sigma-point likelihood and analytic score."""
+    """Return a batched analytical score with an XLA date recurrence.
+
+    ``jit_compile=False`` is an explicit reference/debug exception. Consumers
+    construct one parameter-to-result tf.function to compile the complete target.
+    """
 
     batch_dim, parameter_dim, state_dim, innovation_dim, observation_dim = (
         _check_model_derivative_shapes(model, derivatives)
@@ -3184,11 +3159,9 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
         max_placement_derivative_covariance_abs_entry,
         max_innovation_derivative_covariance_abs_entry,
         last_implemented_innovation_covariance,
-    ) = tf.while_loop(
-        lambda t, *_unused: t < n_timesteps_tensor,
+    ) = compiled_tensor_recurrence(
         _loop_body,
         (
-            tf.constant(0, dtype=tf.int32),
             mean,
             covariance,
             d_mean,
@@ -3222,12 +3195,35 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
             max_innovation_derivative_covariance_abs_entry,
             last_implemented_innovation_covariance,
         ),
-        parallel_iterations=1,
+        n_timesteps_tensor, jit_compile=jit_compile,
     )
+
+    # Preserve branch vetoes when XLA removes Assert operations in the loop.
+    null_valid = tf.logical_and(
+        max_structural_null_covariance_residual <= fixed_null_tolerance,
+        max_fixed_null_derivative_residual <= fixed_null_tolerance,
+    )
+    tf.debugging.assert_less_equal(max_structural_null_covariance_residual, fixed_null_tolerance,
+                                   message="blocked_structural_null_covariance")
+    tf.debugging.assert_less_equal(max_fixed_null_derivative_residual, fixed_null_tolerance,
+                                   message="blocked_moving_structural_null")
+    if backend_name == "tf_principal_sqrt_ukf":
+        factor_valid = max_factor_derivative_residual <= principal_sqrt_reconstruction_tolerance
+        tf.debugging.assert_less_equal(max_factor_derivative_residual, principal_sqrt_reconstruction_tolerance,
+                                       message="blocked_principal_sqrt_reconstruction")
+    else:
+        no_floor = tf.logical_and(max_placement_floor_count == 0, max_innovation_floor_count == 0)
+        separated = tf.logical_and(min_placement_eigen_gap > spectral_gap_tolerance,
+                                   min_innovation_eigen_gap > spectral_gap_tolerance)
+        tf.debugging.assert_equal(no_floor, True, message="blocked_active_floor")
+        tf.debugging.assert_equal(separated, True, message="blocked_weak_spectral_gap")
+        factor_valid = tf.logical_and(no_floor, separated)
+    compiled_branch_valid = tf.logical_and(null_valid, factor_valid)
 
     total_classified_invalid_count = (
         max_placement_classified_invalid_count
         + max_innovation_classified_invalid_count
+        + tf.cast(tf.logical_not(compiled_branch_valid), tf.int32)
     )
     total_derivative_rhs_nonfinite_count = (
         max_placement_derivative_rhs_nonfinite_count
@@ -3311,6 +3307,8 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
         ),
     )
     diagnostics = {
+        "compiled_branch_valid": compiled_branch_valid,
+        "jit_compile": tf.constant(jit_compile),
         "backend": tf.constant(backend_name),
         "rule": tf.constant(sigma_rule.name),
         "observation_contract": tf.constant(observation_contract),
@@ -3416,6 +3414,7 @@ def tf_batched_svd_sigma_point_value_and_score(
     principal_sqrt_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
     jitter: tf.Tensor | float = 0.0,
     allow_fixed_null_support: bool = False,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
     """Dispatch to an experimental batch-native SVD sigma-point value+score."""
 

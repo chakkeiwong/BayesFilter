@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from typing import Mapping, Protocol
 
 import tensorflow as tf
@@ -727,8 +727,12 @@ class SpatialSIRSSM:
 
         state = _as_row_matrix(x_prev, self.state_dim(), "x_prev")
         step = self.delta / tf.cast(self._rk4_substeps, tf.float64)
-        for _ in range(int(self._rk4_substeps)):
-            state = self._rk4_step(state, step)
+        _, state = tf.while_loop(
+            lambda index, _: index < self._rk4_substeps,
+            lambda index, value: (index + 1, self._rk4_step(value, step)),
+            (tf.constant(0), state), parallel_iterations=1,
+            maximum_iterations=self._rk4_substeps,
+        )
         return state
 
     def transition_log_density(
@@ -1022,13 +1026,17 @@ class ParameterizedZhaoCuiSIRSSM:
             dtype=tf.float64,
         )
         step = scaled.delta / tf.cast(scaled._rk4_substeps, tf.float64)
-        for _ in range(int(scaled._rk4_substeps)):
+        def step_with_derivative(index, state, d_state):
             state, d_state = self._rk4_step_parameter_jacobian(
-                scaled,
-                state,
-                d_state,
-                step,
+                scaled, state, d_state, step,
             )
+            return index + 1, state, d_state
+
+        _, state, d_state = tf.while_loop(
+            lambda index, *_: index < scaled._rk4_substeps,
+            step_with_derivative, (tf.constant(0), state, d_state),
+            parallel_iterations=1, maximum_iterations=scaled._rk4_substeps,
+        )
         return state, d_state
 
     def transition_log_density_parameter_score(
@@ -1443,7 +1451,7 @@ def _zhao_cui_sir_austria_transition_mean_xla(
     adjacency = _zhao_cui_sir_austria_adjacency_xla()
     degree = tf.reduce_sum(adjacency, axis=1)
     step = tf.constant(0.005, dtype=tf.float64)
-    for _ in range(4):
+    def rk4_step(index, state):
         k1 = _zhao_cui_sir_austria_rhs_xla(state, kappa, nu, adjacency, degree)
         k2 = _zhao_cui_sir_austria_rhs_xla(
             state + tf.constant(0.5, dtype=tf.float64) * step * k1,
@@ -1472,6 +1480,12 @@ def _zhao_cui_sir_austria_transition_mean_xla(
             + tf.constant(2.0, dtype=tf.float64) * k3
             + k4
         )
+        return index + 1, state
+
+    _, state = tf.while_loop(
+        lambda index, _: index < 4, rk4_step, (tf.constant(0), state),
+        parallel_iterations=1, maximum_iterations=4,
+    )
     return state
 
 
@@ -1650,8 +1664,12 @@ class PredatorPreySSM:
             raise ValueError("theta outside P30 predator-prey parameter box")
         state = self._row_matrix(x_prev, "x_prev")
         step = self.delta / tf.cast(self._rk4_substeps, self.dtype)
-        for _ in range(int(self._rk4_substeps)):
-            state = self._rk4_step(parameters, state, step)
+        _, state = tf.while_loop(
+            lambda index, _: index < self._rk4_substeps,
+            lambda index, value: (index + 1, self._rk4_step(parameters, value, step)),
+            (tf.constant(0), state), parallel_iterations=1,
+            maximum_iterations=self._rk4_substeps,
+        )
         return state
 
     def transition_log_density(
@@ -1691,13 +1709,17 @@ class PredatorPreySSM:
             dtype=self.dtype,
         )
         step = self.delta / tf.cast(self._rk4_substeps, self.dtype)
-        for _ in range(int(self._rk4_substeps)):
+        def step_with_derivative(index, state, d_state):
             state, d_state = self._rk4_step_parameter_jacobian(
-                parameters,
-                state,
-                d_state,
-                step,
+                parameters, state, d_state, step,
             )
+            return index + 1, state, d_state
+
+        _, state, d_state = tf.while_loop(
+            lambda index, *_: index < self._rk4_substeps,
+            step_with_derivative, (tf.constant(0), state, d_state),
+            parallel_iterations=1, maximum_iterations=self._rk4_substeps,
+        )
         return state, d_state
 
     def initial_log_density_parameter_score(self, theta: tf.Tensor, x0: tf.Tensor) -> tf.Tensor:

@@ -29,7 +29,6 @@ from docs.benchmarks.benchmark_experimental_batched_svd_sigma_point_cpu_gpu impo
     _to_tensors,
 )
 
-
 BACKENDS = ("tf_svd_ukf", "tf_svd_cubature")
 OLD_BACKENDS = ("tf_svd_ukf", "tf_svd_cubature", "tf_svd_cut4")
 
@@ -1726,7 +1725,7 @@ def test_lagged_observation_contract_source_contract() -> None:
     source = inspect.getsource(module.tf_batched_svd_sigma_point_value_and_score_with_rule)
     tree = ast.parse(textwrap.dedent(source))
 
-    assert "tf.while_loop" in source
+    assert "compiled_tensor_recurrence" in source
     assert "observation_contract" in source
     assert "lagged_previous_innovation_predicted" in source
     assert "d_lagged_observation_fn" in source

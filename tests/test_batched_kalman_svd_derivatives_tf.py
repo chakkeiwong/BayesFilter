@@ -13,10 +13,6 @@ from bayesfilter.linear import batched_kalman_svd_derivatives_tf as kernel
 from bayesfilter.linear.kalman_svd_derivatives_tf import (
     tf_svd_linear_gaussian_score_first_order_graph_status,
 )
-from bayesfilter.linear.types_tf import (
-    TFLinearGaussianStateSpace,
-    TFLinearGaussianStateSpaceFirstDerivatives,
-)
 from bayesfilter.testing.multidim_triangular_lgssm_batched_tf import (
     materialize_lower_triangular_lgssm_batch,
 )
@@ -62,7 +58,7 @@ def _inputs():
     return contract, raw, observations, kwargs
 
 
-def _scalar_result(raw, contract, observations, *, singular_floor=1.0e-12):
+def _scalar_result(raw, contract, observations, *, singular_floor=1.0e-12, jit_compile=True):
     materialized = materialize_lower_triangular_lgssm_with_first_derivatives(
         raw, contract
     )
@@ -73,6 +69,7 @@ def _scalar_result(raw, contract, observations, *, singular_floor=1.0e-12):
         materialized.derivatives,
         jitter=tf.constant(1.0e-9, tf.float64),
         singular_floor=tf.constant(singular_floor, tf.float64),
+        jit_compile=jit_compile,
     )
 
 
@@ -91,7 +88,7 @@ def test_regular_batch_matches_scalar_value_score_and_status() -> None:
         )
     )
     expected = tuple(
-        _scalar_result(raw[index], contract, observations) for index in range(3)
+        _scalar_result(raw[index], contract, observations, jit_compile=False) for index in range(3)
     )
     np.testing.assert_allclose(
         eager_actual.log_likelihood.numpy(),
@@ -307,7 +304,7 @@ def test_single_row_python_body_preserves_batch_shapes() -> None:
             singular_floor=tf.constant(1.0e-12, tf.float64),
         )
     )
-    expected = _scalar_result(raw[0], contract, observations)
+    expected = _scalar_result(raw[0], contract, observations, jit_compile=False)
     assert actual.log_likelihood.shape == (1,)
     assert actual.score.shape == (1, 18)
     np.testing.assert_allclose(actual.log_likelihood[0], expected.log_likelihood, rtol=2e-13, atol=2e-13)

@@ -8,12 +8,7 @@ from typing import Any, Mapping
 
 import tensorflow as tf
 
-from bayesfilter.testing.exact_sv_sgqf_neutra_target_tf import (
-    generate_frozen_exact_sv_dataset_tf,
-    source_chart_physical_parameters,
-    source_two_probit_jacobian_value_score,
-    source_uniform_prior_value_score,
-)
+from bayesfilter.inference.posterior_adapter import ValueScoreCapability
 from bayesfilter.ssm import (
     BayesianSSMProblem,
     FilterProgram,
@@ -24,7 +19,12 @@ from bayesfilter.ssm import (
     SSMTargetContract,
     stable_ssm_target_signature,
 )
-from bayesfilter.inference.posterior_adapter import ValueScoreCapability
+from bayesfilter.testing.exact_sv_sgqf_neutra_target_tf import (
+    generate_frozen_exact_sv_dataset_tf,
+    source_chart_physical_parameters,
+    source_two_probit_jacobian_value_score,
+    source_uniform_prior_value_score,
+)
 from bayesfilter.testing.ksc_gaussian_sum_ukf_scope import (
     KSC_GAUSSIAN_SUM_UKF_COMPONENT_CAP,
     KSC_GAUSSIAN_SUM_UKF_DATASET_ID,
@@ -33,6 +33,7 @@ from bayesfilter.testing.ksc_gaussian_sum_ukf_scope import (
     KSC_GAUSSIAN_SUM_UKF_SCOPE,
     KSC_GAUSSIAN_SUM_UKF_TARGET_SIGNATURE,
 )
+
 KSC_GAUSSIAN_SUM_UKF_NONCLAIMS = (
     "KSC seven-component Gaussian-mixture transformed-SV target, not exact SV",
     "bounded mass-preserving Gaussian-sum UKF approximation, not exact latent-state filtering",
@@ -46,6 +47,7 @@ _INVALID_LOG_WEIGHT = tf.constant(-1.0e100, tf.float64)
 _MASS_FLOOR = tf.constant(1.0e-300, tf.float64)
 
 
+@tf.function(jit_compile=True)
 def ksc_gaussian_sum_ukf_likelihood_value_score_status(
     theta: Any,
     *,

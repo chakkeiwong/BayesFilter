@@ -35,19 +35,14 @@ def covariance_to_cholesky_factor_contract(
     b, p, d, d2 = dc.shape.as_list()
     if None in (b, p, d, d2) or factor.shape.as_list() != [b, d, d] or d != d2:
         raise ValueError(f"d_{name} shape is incompatible with its factor")
-    rows = []
-    for i in range(p):
-        rhs = 0.5 * (dc[:, i] + tf.linalg.matrix_transpose(dc[:, i]))
-        left = tf.linalg.triangular_solve(factor, rhs, lower=True)
-        transformed = tf.linalg.triangular_solve(
-            factor,
-            tf.linalg.matrix_transpose(left),
-            lower=True,
-        )
-        lower_part = tf.linalg.band_part(transformed, -1, 0)
-        lower_part -= 0.5 * tf.linalg.diag(tf.linalg.diag_part(lower_part))
-        rows.append(tf.einsum("bij,bjk->bik", factor, lower_part))
-    return factor, tf.stack(rows, axis=1)
+    rhs = 0.5 * (dc + tf.linalg.matrix_transpose(dc))
+    left = tf.linalg.triangular_solve(factor[:, None], rhs, lower=True)
+    transformed = tf.linalg.triangular_solve(
+        factor[:, None], tf.linalg.matrix_transpose(left), lower=True,
+    )
+    lower_part = tf.linalg.band_part(transformed, -1, 0)
+    lower_part -= 0.5 * tf.linalg.diag(tf.linalg.diag_part(lower_part))
+    return factor, tf.einsum("bij,bpjk->bpik", factor, lower_part)
 
 
 def covariance_model_to_factor_contract(model: Any, derivatives: Any) -> tuple[TFFactorSRUKFModel, TFFactorSRUKFDerivatives]:

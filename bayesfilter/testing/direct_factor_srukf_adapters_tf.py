@@ -22,7 +22,6 @@ from bayesfilter.testing.multidim_triangular_lgssm_batched_tf import (
     materialize_lower_triangular_lgssm_batch,
 )
 
-
 _PI = tf.constant(3.141592653589793238462643383279502884, tf.float64)
 _RANGE_EPS = tf.constant(1.0e-12, tf.float64)
 
@@ -415,7 +414,9 @@ def predator_prey_rk4_value_state_parameter_jacobians(
         )
 
     step = tf.convert_to_tensor(model.rk4_internal_step, tf.float64)
-    for _ in range(int(model.manifest_payload()["rk4_substeps"])):
+    substeps = int(model.manifest_payload()["rk4_substeps"])
+
+    def substep(i, state, state_jacobian, parameter_jacobian):
         k1, a1, b1 = stage(state, state_jacobian, parameter_jacobian)
         k2, a2, b2 = stage(state + 0.5 * step * k1, state_jacobian + 0.5 * step * a1, parameter_jacobian + 0.5 * step * b1)
         k3, a3, b3 = stage(state + 0.5 * step * k2, state_jacobian + 0.5 * step * a2, parameter_jacobian + 0.5 * step * b2)
@@ -424,6 +425,13 @@ def predator_prey_rk4_value_state_parameter_jacobians(
         state = state + scale * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
         state_jacobian = state_jacobian + scale * (a1 + 2.0 * a2 + 2.0 * a3 + a4)
         parameter_jacobian = parameter_jacobian + scale * (b1 + 2.0 * b2 + 2.0 * b3 + b4)
+        return i + 1, state, state_jacobian, parameter_jacobian
+
+    _, state, state_jacobian, parameter_jacobian = tf.while_loop(
+        lambda i, *_: i < substeps, substep,
+        (tf.constant(0), state, state_jacobian, parameter_jacobian),
+        parallel_iterations=1, maximum_iterations=substeps,
+    )
     return state, state_jacobian, parameter_jacobian
 
 

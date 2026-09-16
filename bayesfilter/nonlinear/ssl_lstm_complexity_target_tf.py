@@ -16,6 +16,7 @@ from typing import Any, Mapping
 import tensorflow as tf
 
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
+from bayesfilter.nonlinear.sigma_points_tf import tf_svd_sigma_point_filter
 from bayesfilter.nonlinear.ssl_lstm_protocol import SSLLSTMStaticConfig
 from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
     make_ssl_lstm_svd_ukf_components,
@@ -23,11 +24,9 @@ from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
     ssl_lstm_transition,
     unpack_ssl_lstm_parameters,
 )
-from bayesfilter.nonlinear.sigma_points_tf import tf_svd_sigma_point_filter
 from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import (
     tf_principal_sqrt_ukf_score,
 )
-
 
 FREE_NAMES = (
     "latent_mean_weight.0.0",
@@ -244,7 +243,8 @@ class SSLLSTMComplexityPosteriorTarget:
         )
 
     def full_theta(self, free: tf.Tensor) -> tf.Tensor:
-        return tf.tensor_scatter_nd_update(self.config.fixture, tf.constant([[i] for i in self.config.free_indices], tf.int32), free)
+        indices = tf.reshape(tf.constant(self.config.free_indices, tf.int32), [-1, 1])
+        return tf.tensor_scatter_nd_update(self.config.fixture, indices, free)
 
     def _value_score_status_impl(
         self, free: tf.Tensor

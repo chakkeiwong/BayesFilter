@@ -1,0 +1,804 @@
+{
+  "schema": "kalman_ukf_loop_lint_exceptions.v1",
+  "purpose": "Exact AST lint exceptions for reviewed non-recurrent Python structure, not execution authorization. A changed loop requires reinspection.",
+  "roles": {
+    "trace_time_schema": "Iterates over declared fields, shapes, dtypes, labels or static route metadata; it does not unroll a numerical array axis.",
+    "fixed_tensor_state_schema": "Packs or updates a fixed tuple/dictionary of tensor histories or input signatures. Numerical date, chain and parameter axes stay in tensors.",
+    "host_artifact_reporting": "Assembles host provenance or report records after the numerical result; not a target evaluation.",
+    "host_diagnostic_orchestration": "Dispatches separately compiled diagnostics for declared fixture dimensions; not a filter recurrence.",
+    "input_validation": "Checks fixed input fields before/at tracing. Numerical invalid-state propagation is separately tested where required."
+  },
+  "exceptions": [
+    {
+      "path": "bayesfilter/highdim/actual_sv_srukf_tf.py",
+      "function": "ActualSVSRUKFPanelScoreResult.__post_init__",
+      "ast_sha256": "d9bb588e19a5de3080da833e5cd65ac369c0fffa61455d5c09545efddb38e877",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('log_likelihood', 'score', 'log_normalizers', 'mean_path', 'covariance_path', 'factor_path', 'd_mean_path', 'd_covariance_path', 'd_factor_path'):"
+    },
+    {
+      "path": "bayesfilter/highdim/sv_mixture_cut4.py",
+      "function": "_compiled_panel_mixture_ukf",
+      "ast_sha256": "12bc3cf6751ff463369c1821aa5c30bb0b3b8a46c226328e6a16271172dbcacd",
+      "role": "fixed_tensor_state_schema",
+      "iteration": "(tf.TensorSpec(shape, tf.float64) for shape in ([], [parameter_dim], [dim], [dim, dim], [parameter_dim, dim], [parameter_dim, dim, dim]))"
+    },
+    {
+      "path": "bayesfilter/highdim/sv_mixture_cut4.py",
+      "function": "_compiled_panel_mixture_ukf",
+      "ast_sha256": "7f1300338050972810fcba11a5e6c1b4341fadf95c60dfe46cb261226bbfde2b",
+      "role": "fixed_tensor_state_schema",
+      "iteration": "(tf.zeros([dates, *shape], tf.float64) for shape in history_shapes)"
+    },
+    {
+      "path": "bayesfilter/highdim/sv_mixture_cut4.py",
+      "function": "_compiled_panel_mixture_ukf.body",
+      "ast_sha256": "d6b221fd7e2c2ce0c40e323d741c83141befec3d06372e6edfe7698d36cac9bb",
+      "role": "fixed_tensor_state_schema",
+      "iteration": "(tf.tensor_scatter_nd_update(history, tf.reshape(t, [1, 1]), value[None]) for history, value in zip(histories, values, strict=True))"
+    },
+    {
+      "path": "bayesfilter/highdim/sv_mixture_cut4.py",
+      "function": "_panel_transformed_sv_component_structural_model",
+      "ast_sha256": "ae3d13ccb7c7b392e385d8b62ccba03d809145183a77f8e0f1a21aa0ab1e8e38",
+      "role": "trace_time_schema",
+      "iteration": "(f'x{index}' for index in range(dim))"
+    },
+    {
+      "path": "bayesfilter/highdim/sv_mixture_cut4.py",
+      "function": "_panel_transformed_sv_component_ukf_structural_model",
+      "ast_sha256": "ae3d13ccb7c7b392e385d8b62ccba03d809145183a77f8e0f1a21aa0ab1e8e38",
+      "role": "trace_time_schema",
+      "iteration": "(f'x{index}' for index in range(dim))"
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_scout.py",
+      "function": "UKFScoutConfig.__post_init__",
+      "ast_sha256": "c19efad13929c2ad2855b02c7a1cdd635c0a8213fbb5c8578d26787389dcc2ea",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('alpha', 'beta', 'jitter', 'rank_tolerance'):"
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_scout.py",
+      "function": "p52_spatial_sir_ukf_scout_manifest",
+      "ast_sha256": "6b9dacc136f78191827c42d413667732fe125a0b6439507fff28c1f7ea1f76c7",
+      "role": "host_diagnostic_orchestration",
+      "iteration": "for dimension in dimensions:"
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_scout.py",
+      "function": "p52_spatial_sir_ukf_scout_manifest",
+      "ast_sha256": "fcca2cb648cd9a081ab63aa9cefb4a4e98374cfe28f42e3222303a67ead67b3c",
+      "role": "host_diagnostic_orchestration",
+      "iteration": "(int(value) for value in dimensions)"
+    },
+    {
+      "path": "bayesfilter/linear/compiled_recurrence_tf.py",
+      "function": "compiled_tensor_recurrence",
+      "ast_sha256": "85f88c433c5f18114321fb61db5d7f87782894fb1bccf656038cd4c455339c1c",
+      "role": "fixed_tensor_state_schema",
+      "iteration": "(tf.TensorSpec(value.shape, value.dtype) for value in state)"
+    },
+    {
+      "path": "bayesfilter/linear/correlated_kalman_tf.py",
+      "function": "_prepare_batched_inputs",
+      "ast_sha256": "8723bd88ae6db3f6fad7ef8e290eabcf75863f98f0b78f5c69a2795928af2420",
+      "role": "input_validation",
+      "iteration": "for name, tensor, rank in (('observations', y, 2), ('transition_offset', c, 3), ('transition_matrix', transition, 4), ('transition_covariance', process_covariance, 4), ('observation_offset', d, 3), ('observation_matrix', observation, 4), ('observation_covariance', measurement_covariance, 4), ('state_measurement_cross_covariance', cross_covariance, 4), ('initial_state_mean', mean, 2), ('initial_state_covariance', covariance, 3)):"
+    },
+    {
+      "path": "bayesfilter/linear/correlated_kalman_tf.py",
+      "function": "_prepare_batched_inputs",
+      "ast_sha256": "96478665aabb28c11dbfcc8ef21ce2554dfdcbe1d173cff74334a71860b7f334",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('transition_offset', c), ('transition_matrix', transition), ('transition_covariance', process_covariance), ('observation_offset', d), ('observation_matrix', observation), ('observation_covariance', measurement_covariance), ('state_measurement_cross_covariance', cross_covariance), ('initial_state_mean', mean), ('initial_state_covariance', covariance)):"
+    },
+    {
+      "path": "bayesfilter/linear/correlated_kalman_tf.py",
+      "function": "_prepare_batched_inputs",
+      "ast_sha256": "e9594926e9bc8c29e6e060f1abd9abed9486d4c07f0f25644468cf14a0141ed1",
+      "role": "input_validation",
+      "iteration": "for value, message in ((batch_dim, 'batch dimension must be positive'), (state_dim, 'state dimension must be positive'), (time_dim, 'observations must contain time rows'), (observation_dim, 'observation dimension must be positive')):"
+    },
+    {
+      "path": "bayesfilter/linear/correlated_kalman_tf.py",
+      "function": "_prepare_scalar_inputs",
+      "ast_sha256": "96478665aabb28c11dbfcc8ef21ce2554dfdcbe1d173cff74334a71860b7f334",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('transition_offset', c), ('transition_matrix', transition), ('transition_covariance', process_covariance), ('observation_offset', d), ('observation_matrix', observation), ('observation_covariance', measurement_covariance), ('state_measurement_cross_covariance', cross_covariance), ('initial_state_mean', mean), ('initial_state_covariance', covariance)):"
+    },
+    {
+      "path": "bayesfilter/linear/correlated_kalman_tf.py",
+      "function": "_prepare_scalar_inputs",
+      "ast_sha256": "9c88d274b87d3a314887a1346eee490bbb98e0fad8fc3dcc033275991f1ecd18",
+      "role": "input_validation",
+      "iteration": "for name, tensor, rank in (('observations', y, 2), ('transition_offset', c, 2), ('transition_matrix', transition, 3), ('transition_covariance', process_covariance, 3), ('observation_offset', d, 2), ('observation_matrix', observation, 3), ('observation_covariance', measurement_covariance, 3), ('state_measurement_cross_covariance', cross_covariance, 3), ('initial_state_mean', mean, 1), ('initial_state_covariance', covariance, 2)):"
+    },
+    {
+      "path": "bayesfilter/linear/dtypes_tf.py",
+      "function": "as_float_tensor",
+      "ast_sha256": "c2243cc57f4e76d05cf300e95836b6f82a7b66117a9081f1075b4a0a47d86952",
+      "role": "trace_time_schema",
+      "iteration": "(item.name for item in SUPPORTED_FLOAT_DTYPES)"
+    },
+    {
+      "path": "bayesfilter/linear/dtypes_tf.py",
+      "function": "common_floating_dtype",
+      "ast_sha256": "092ed84d70fb286eb4b3006fe0362378e02fea8553250ea8f2a90fd873b99846",
+      "role": "trace_time_schema",
+      "iteration": "for value in values:"
+    },
+    {
+      "path": "bayesfilter/linear/dtypes_tf.py",
+      "function": "common_floating_dtype",
+      "ast_sha256": "23b6b440e44759b9de51b1aca7239120beba329fc85d21ef1d279dced6aab6c1",
+      "role": "trace_time_schema",
+      "iteration": "(tf.as_dtype(dtype) for dtype in allowed)"
+    },
+    {
+      "path": "bayesfilter/linear/dtypes_tf.py",
+      "function": "common_floating_dtype",
+      "ast_sha256": "c01f8736ee6e04626e88ea7346ec32445e1d6a98e237d1e9694dd61281ef149e",
+      "role": "trace_time_schema",
+      "iteration": "(dtype.name for dtype in allowed_dtypes)"
+    },
+    {
+      "path": "bayesfilter/linear/dtypes_tf.py",
+      "function": "common_floating_dtype",
+      "ast_sha256": "c01f8736ee6e04626e88ea7346ec32445e1d6a98e237d1e9694dd61281ef149e",
+      "role": "trace_time_schema",
+      "iteration": "(dtype.name for dtype in allowed_dtypes)"
+    },
+    {
+      "path": "bayesfilter/linear/dtypes_tf.py",
+      "function": "common_floating_dtype",
+      "ast_sha256": "d3a7daea8770bdb2a7c4de97f9bcb4aac0fa683a385f08e22896d32c75536c27",
+      "role": "trace_time_schema",
+      "iteration": "(dtype.name for dtype in observed)"
+    },
+    {
+      "path": "bayesfilter/linear/experimental_batched_kalman_tf.py",
+      "function": "_check_batched_derivative_shapes",
+      "ast_sha256": "976a793c531ee62dd04189f34d01ce8ba922e884cd1ea31f6642cc727646cd82",
+      "role": "input_validation",
+      "iteration": "for name, tensor, expected in expected_shapes:"
+    },
+    {
+      "path": "bayesfilter/linear/experimental_batched_kalman_tf.py",
+      "function": "_check_batched_value_shapes",
+      "ast_sha256": "798c617abb8dc3667ec1d6ad3d48597e04e3c60167dbe12153cf44f657e709d6",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('transition_offset', transition_offset), ('observation_offset', observation_offset)):"
+    },
+    {
+      "path": "bayesfilter/linear/experimental_batched_kalman_tf.py",
+      "function": "_check_batched_value_shapes",
+      "ast_sha256": "dc5da77c22a418f8d6c827b2e18202ffb6e72478dde60ace13f4ee1336852d1d",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('transition_matrix', transition_matrix), ('transition_covariance', transition_covariance), ('initial_state_covariance', initial_state_covariance)):"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_covariance_derivatives_tf.py",
+      "function": "_check_batched_derivative_shapes",
+      "ast_sha256": "976a793c531ee62dd04189f34d01ce8ba922e884cd1ea31f6642cc727646cd82",
+      "role": "input_validation",
+      "iteration": "for name, tensor, expected in expected_shapes:"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_covariance_derivatives_tf.py",
+      "function": "_check_batched_value_shapes",
+      "ast_sha256": "798c617abb8dc3667ec1d6ad3d48597e04e3c60167dbe12153cf44f657e709d6",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('transition_offset', transition_offset), ('observation_offset', observation_offset)):"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_covariance_derivatives_tf.py",
+      "function": "_check_batched_value_shapes",
+      "ast_sha256": "dc5da77c22a418f8d6c827b2e18202ffb6e72478dde60ace13f4ee1336852d1d",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('transition_matrix', transition_matrix), ('transition_covariance', transition_covariance), ('initial_state_covariance', initial_state_covariance)):"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+      "function": "_require_time_invariant_score_inputs",
+      "ast_sha256": "4fc554c84e44f652ee7b3db2e86a40e053a277346819ce5d9bc9449b020fe99b",
+      "role": "input_validation",
+      "iteration": "for name in ('transition_offset', 'transition_matrix', 'transition_covariance', 'observation_offset', 'observation_matrix', 'observation_covariance'):"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+      "function": "_validate_batched_static_factor_score_shapes",
+      "ast_sha256": "c14dd3f3e5ac7ce7ef002a76ebf7074675c6b8fc0abf1b4e1659916a98491b43",
+      "role": "input_validation",
+      "iteration": "for name, (tensor, rank) in expected_ranks.items():"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+      "function": "_validate_batched_static_factor_score_shapes",
+      "ast_sha256": "c9de5a5156b14c994f0d935c53c301437e1e19062c02a82acd55f9c21945dbcc",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('transition_offset', transition_offset), ('transition_matrix', transition_matrix), ('observation_offset', observation_offset), ('observation_matrix', observation_matrix), ('initial_state_factor', initial_state_factor), ('transition_noise_factor', transition_noise_factor), ('observation_noise_factor', observation_noise_factor), ('d_initial_state_mean', d_initial_state_mean), ('d_initial_state_factor', d_initial_state_factor), ('d_transition_offset', d_transition_offset), ('d"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+      "function": "_validate_batched_static_score_shapes",
+      "ast_sha256": "1d54bf51206b33b420390d097932706930357821ec155db118a536956dff2469",
+      "role": "input_validation",
+      "iteration": "for name, (tensor, rank) in expected_ranks.items():"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+      "function": "_validate_batched_static_score_shapes",
+      "ast_sha256": "9a3c8628193a7f232deec24dde413a30145739ba6e7309dc8037d31c68673aba",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('initial_state_covariance', initial_state_covariance), ('transition_offset', transition_offset), ('transition_matrix', transition_matrix), ('transition_covariance', transition_covariance), ('observation_offset', observation_offset), ('observation_matrix', observation_matrix), ('observation_covariance', observation_covariance), ('d_initial_state_mean', d_initial_state_mean), ('d_initial_state_covariance', d_initial_state_covariance), ('d_transition_offset', d_transition_offs"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+      "function": "_validate_batched_static_score_shapes",
+      "ast_sha256": "c1ed38aa3cec0021da7aa6714bbe1e37390c8b8a7813d4ba87288d7e09a0c866",
+      "role": "input_validation",
+      "iteration": "for name, tensor in (('d_initial_state_covariance', d_initial_state_covariance), ('d_transition_offset', d_transition_offset), ('d_transition_matrix', d_transition_matrix), ('d_transition_covariance', d_transition_covariance), ('d_observation_offset', d_observation_offset), ('d_observation_matrix', d_observation_matrix), ('d_observation_covariance', d_observation_covariance)):"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_qr_tf.py",
+      "function": "_validate_batched_static_shapes",
+      "ast_sha256": "d236504b55bcaee46eae77f6b2d5ca3119876dd9e292de4f23e57c500a5c9242",
+      "role": "input_validation",
+      "iteration": "for name, (tensor, rank) in expected_ranks.items():"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_tf.py",
+      "function": "_validate_checked_batched_static_shapes",
+      "ast_sha256": "20ce3785953dfe3d87262fded08d80960be2ba3d9c4a80f22e65767fa901a5f9",
+      "role": "input_validation",
+      "iteration": "(int(value) for value in static)"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_tf.py",
+      "function": "_validate_checked_batched_static_shapes",
+      "ast_sha256": "31a105715cf889ab61757d0b605a65eb54e3ec7a64747235f8272e5def6344cc",
+      "role": "input_validation",
+      "iteration": "for name, expected in expected_shapes.items():"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_tf.py",
+      "function": "_validate_checked_batched_static_shapes",
+      "ast_sha256": "9e44da35862c2b06b71bcf87a9203b39b7b0ed03971348c440d1a895f3ade6b2",
+      "role": "input_validation",
+      "iteration": "for name, (tensor, rank) in expected_ranks.items():"
+    },
+    {
+      "path": "bayesfilter/linear/kalman_tf.py",
+      "function": "_validate_checked_batched_static_shapes",
+      "ast_sha256": "b176beadd83a45db7e2fd56f1bf03e711fd2f56700fd09c0e19474ab276721b4",
+      "role": "input_validation",
+      "iteration": "(value is None for value in static)"
+    },
+    {
+      "path": "bayesfilter/linear/rectangular_factor_tf.py",
+      "function": "batched_fixed_support_qr_conditional",
+      "ast_sha256": "6310b1296e1686b333a2014f0cacb8d83d4f60d5ddf091c174a3aad2a9904e24",
+      "role": "trace_time_schema",
+      "iteration": "{'conditional_' + key: value for key, value in conditional_diag.items()}"
+    },
+    {
+      "path": "bayesfilter/linear/stationary_lgssm_derivatives_tf.py",
+      "function": "stationary_lgssm_first_derivative_coverage",
+      "ast_sha256": "1fd3424159b42cefd8eefc10aadde8583a9b841556262b65a68a7a2e90d9cd50",
+      "role": "host_artifact_reporting",
+      "iteration": "for block in blocks:"
+    },
+    {
+      "path": "bayesfilter/linear/stationary_lgssm_derivatives_tf.py",
+      "function": "stationary_lgssm_first_derivative_coverage",
+      "ast_sha256": "3ea7200747e96304d078464133cec9682ae1193b5795cccde105cf9252b1bfba",
+      "role": "host_artifact_reporting",
+      "iteration": "(str(name) for name in parameter_names)"
+    },
+    {
+      "path": "bayesfilter/linear/stationary_lgssm_derivatives_tf.py",
+      "function": "stationary_lgssm_first_derivative_coverage",
+      "ast_sha256": "9051160dff657fa269af11b27f2af3dcb25f1e30bb7ec79954452b78c98dee98",
+      "role": "host_artifact_reporting",
+      "iteration": "(name for name, is_covered in zip(names, covered_np, strict=True) if is_covered)"
+    },
+    {
+      "path": "bayesfilter/linear/stationary_lgssm_derivatives_tf.py",
+      "function": "stationary_lgssm_first_derivative_coverage",
+      "ast_sha256": "98b83c7b72045b253a4fdb0fab4f521a3d1585060f9a1722828f6a5ae7fb0379",
+      "role": "host_artifact_reporting",
+      "iteration": "(bool(item) for item in covered.numpy().tolist())"
+    },
+    {
+      "path": "bayesfilter/linear/stationary_lgssm_derivatives_tf.py",
+      "function": "stationary_lgssm_first_derivative_coverage",
+      "ast_sha256": "c8a116e23ab860e239724da9cade73ff3beed8c06daf0fd449d1b8299a5ca941",
+      "role": "host_artifact_reporting",
+      "iteration": "(name for name, is_covered in zip(names, covered_np, strict=True) if not is_covered)"
+    },
+    {
+      "path": "bayesfilter/linear/types_tf.py",
+      "function": "TFLinearGaussianStateSpace.validate_static_shapes",
+      "ast_sha256": "b54e442dd281b88be77163b51069ad0703a71e8fa26239400e789319e48e967c",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('transition_matrix', 'transition_covariance'):"
+    },
+    {
+      "path": "bayesfilter/linear/types_tf.py",
+      "function": "TFLinearGaussianStateSpaceDerivatives.__post_init__",
+      "ast_sha256": "810680530ea7b2d07a2c104d47d496ec5b37c9763acb9febf0c096a839e89ebd",
+      "role": "trace_time_schema",
+      "iteration": "for name in self.__dataclass_fields__:"
+    },
+    {
+      "path": "bayesfilter/linear/types_tf.py",
+      "function": "TFLinearGaussianStateSpaceDerivatives.__post_init__",
+      "ast_sha256": "8bccf18f4db3f27c6bb8bc3ca7b8da6807467cf890a4e2fb27352e29a36599eb",
+      "role": "trace_time_schema",
+      "iteration": "(getattr(self, name) for name in self.__dataclass_fields__)"
+    },
+    {
+      "path": "bayesfilter/linear/types_tf.py",
+      "function": "TFLinearGaussianStateSpaceDerivatives.validate_static_shapes",
+      "ast_sha256": "5c2b61b23f4196b49edc5dadcb9b0fa8a28b60f462ed5c556aed0cb21de55ce1",
+      "role": "trace_time_schema",
+      "iteration": "for name, shape in expected.items():"
+    },
+    {
+      "path": "bayesfilter/linear/types_tf.py",
+      "function": "TFLinearGaussianStateSpaceFirstDerivatives.__post_init__",
+      "ast_sha256": "810680530ea7b2d07a2c104d47d496ec5b37c9763acb9febf0c096a839e89ebd",
+      "role": "trace_time_schema",
+      "iteration": "for name in self.__dataclass_fields__:"
+    },
+    {
+      "path": "bayesfilter/linear/types_tf.py",
+      "function": "TFLinearGaussianStateSpaceFirstDerivatives.__post_init__",
+      "ast_sha256": "8bccf18f4db3f27c6bb8bc3ca7b8da6807467cf890a4e2fb27352e29a36599eb",
+      "role": "trace_time_schema",
+      "iteration": "(getattr(self, name) for name in self.__dataclass_fields__)"
+    },
+    {
+      "path": "bayesfilter/linear/types_tf.py",
+      "function": "TFLinearGaussianStateSpaceFirstDerivatives.validate_static_shapes",
+      "ast_sha256": "5c2b61b23f4196b49edc5dadcb9b0fa8a28b60f462ed5c556aed0cb21de55ce1",
+      "role": "trace_time_schema",
+      "iteration": "for name, shape in expected.items():"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "NonlinearFilterValuePathContract.__post_init__",
+      "ast_sha256": "aab193142dfe0084a907b112d8e283d525f8051ee1a0fdc60e6e61c8401d73d7",
+      "role": "trace_time_schema",
+      "iteration": "(str(item) for item in self.nonclaims)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "NonlinearFilterValuePathContract.__post_init__",
+      "ast_sha256": "f57a91e74074f00cfdc8facd80e320b057c796658391ef682714c75819f45436",
+      "role": "trace_time_schema",
+      "iteration": "(str(path) for path in self.source_paths)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "NonlinearFilterValuePathContract.__post_init__",
+      "ast_sha256": "fcc960c886094803b2cd6b4ac7533da298db9c9edf438908b33ab4af7cf23c41",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('fixture_name', 'model_name', 'filter_implementation', 'dtype', 'value_authority', 'dynamic_horizon_status', 'score_status', 'hmc_status'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "NonlinearFilterValueStaticShape.__post_init__",
+      "ast_sha256": "26fd55032eda72d39f9ff6a7e5fd8c56428f7d54f86a64456bcaf7a3b89f23fe",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('horizon', 'state_dim', 'observation_dim', 'innovation_dim', 'augmented_dim'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "NonlinearFilterValueStaticShape.__post_init__",
+      "ast_sha256": "2fb3e82b8423d630aa7f34167043bda018eed7c3a60e95483b44a660e424611a",
+      "role": "trace_time_schema",
+      "iteration": "(int(dim) for dim in self.observation_shape)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "_normalize_for_json",
+      "ast_sha256": "c7df287f6b7db230f1cd4dea6909a376c1b01cf6066593e851cb07a0a1e6f69d",
+      "role": "host_artifact_reporting",
+      "iteration": "[_normalize_for_json(item) for item in value]"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "_normalize_for_json",
+      "ast_sha256": "dd5c3c914298f0ccd6d04fbd6d92d533dbccf8b955af0a9fac69c63e28e99e71",
+      "role": "host_artifact_reporting",
+      "iteration": "{str(key): _normalize_for_json(val) for key, val in value.items()}"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "_reject_process_local_identity",
+      "ast_sha256": "f8882a8328ce10ad8ee1442cf2002c70b0cdcad19e18b58ca55e2a5ddb9f3151",
+      "role": "trace_time_schema",
+      "iteration": "(pattern.search(text) for pattern in _PROCESS_LOCAL_SIGNATURE_PATTERNS)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/compiled_value_paths.py",
+      "function": "find_forbidden_compiled_value_tokens",
+      "ast_sha256": "306b3be79efc27015830cb7241a06e8391bd42620d3080915eb1a626667c65b8",
+      "role": "trace_time_schema",
+      "iteration": "(token for token, pattern in _FORBIDDEN_SOURCE_PATTERNS.items() if pattern.search(text))"
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "TFBatchedStructuralFirstDerivatives.__post_init__",
+      "ast_sha256": "1fc41e17c97bc29e4acef08dff331b2ea2d14451fc0d459d778f96e5bbbd2f31",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('d_initial_mean', 'd_initial_covariance', 'd_innovation_covariance', 'd_observation_covariance'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "TFBatchedStructuralFirstDerivatives.validate_static_shapes",
+      "ast_sha256": "1f0c8d9ffef3c46999d81b5a7ffc6d09237f931a537a8423bb24e08228d37e0b",
+      "role": "trace_time_schema",
+      "iteration": "for name, shape in expected.items():"
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "TFBatchedStructuralStateSpace.__post_init__",
+      "ast_sha256": "e0e1ce5e14fc0db00827f3e740ec76713b4360b29f7543ee8f2d763b6a4676fb",
+      "role": "trace_time_schema",
+      "iteration": "for name, rank in (('initial_mean', 2), ('initial_covariance', 3), ('innovation_covariance', 3), ('observation_covariance', 3)):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "TFBatchedStructuralStateSpace.validate_static_shapes",
+      "ast_sha256": "1f0c8d9ffef3c46999d81b5a7ffc6d09237f931a537a8423bb24e08228d37e0b",
+      "role": "trace_time_schema",
+      "iteration": "for name, shape in expected.items():"
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "_check_model_derivative_shapes",
+      "ast_sha256": "744c86ca7b5c2857066a4909d9dfb8e714cbf7982a9feaeffbcfdff5cba5a447",
+      "role": "input_validation",
+      "iteration": "(value is None for value in values)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "_validate_static_shape",
+      "ast_sha256": "f83c74c89035e021267d487905e583a46ae565533ea2841d82704fe90f58a3f6",
+      "role": "input_validation",
+      "iteration": "(dim is None for dim in actual)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/factor_srukf_tf.py",
+      "function": "TFFactorSRUKFDerivatives.__post_init__",
+      "ast_sha256": "f30963c77cff814a1a9bac90b5812a289167c6cb9968292b404c7223cb71c94d",
+      "role": "trace_time_schema",
+      "iteration": "for field in ('d_initial_mean', 'd_initial_factor', 'd_process_factor', 'd_observation_factor'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/factor_srukf_tf.py",
+      "function": "TFFactorSRUKFModel.__post_init__",
+      "ast_sha256": "b9337531a025f961162564f48c516aeeda8f977b01356bbe178cc0fe3578fd0b",
+      "role": "trace_time_schema",
+      "iteration": "for field in ('initial_mean', 'initial_factor', 'process_factor', 'observation_factor'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/factor_srukf_tf.py",
+      "function": "_one_step",
+      "ast_sha256": "04c6bc67393d74211b643d18e037c2d06d815db99c02c4d9cf5ecfce38c00028",
+      "role": "trace_time_schema",
+      "iteration": "{'innovation_' + k: v for k, v in block_diag.items()}"
+    },
+    {
+      "path": "bayesfilter/nonlinear/factor_srukf_tf.py",
+      "function": "tf_factor_srukf_value_and_score",
+      "ast_sha256": "6523666c6143306144502dce390a4610b71458b14b2ed42e82ef375914336e54",
+      "role": "trace_time_schema",
+      "iteration": "{key: tf.constant(value) for key, value in srukf_backend_metadata(DEFAULT_SRUKF_BACKEND).items()}"
+    },
+    {
+      "path": "bayesfilter/nonlinear/factor_srukf_tf.py",
+      "function": "tf_factor_srukf_value_and_score.run",
+      "ast_sha256": "c2a30883b5f8cdb764590b6a4dc68ea101234b210edb366d0ee7ca7acc9c56d4",
+      "role": "input_validation",
+      "iteration": "for factor_name, factor_value in (('initial_factor', model.initial_factor), ('process_factor', model.process_factor), ('observation_factor', model.observation_factor)):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/fixed_sgqf_compiled_tf.py",
+      "function": "fixed_sgqf_tensor_result",
+      "ast_sha256": "82e4d580940eefec5a9d371a4f4d251a069b42996a6f673aa46b70668d5c3eb5",
+      "role": "fixed_tensor_state_schema",
+      "iteration": "{name: tf.zeros([dates, *shape], tf.float64) for name, shape in history_shapes.items()}"
+    },
+    {
+      "path": "bayesfilter/nonlinear/fixed_sgqf_compiled_tf.py",
+      "function": "fixed_sgqf_tensor_result.body",
+      "ast_sha256": "e912a2f5932357c53675d827f6f98a19272bc8960295b0b3ac9c2515ff25e38f",
+      "role": "fixed_tensor_state_schema",
+      "iteration": "{name: tf.tensor_scatter_nd_update(histories[name], tf.reshape(time_index, [1, 1]), data[None]) for name, data in snapshot.items()}"
+    },
+    {
+      "path": "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py",
+      "function": "TFFixedSGQFDerivatives.__post_init__",
+      "ast_sha256": "4fa87418004ddff2f3c31a7c8cc5a86417c5d8c70c2b7a1c1cf47aeccfe4bb4e",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('d_initial_mean', 'd_initial_covariance', 'd_process_covariance', 'd_observation_covariance'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py",
+      "function": "TFFixedSGQFDerivatives.validate_static_shapes",
+      "ast_sha256": "1f0c8d9ffef3c46999d81b5a7ffc6d09237f931a537a8423bb24e08228d37e0b",
+      "role": "trace_time_schema",
+      "iteration": "for name, shape in expected.items():"
+    },
+    {
+      "path": "bayesfilter/nonlinear/fixed_sgqf_structural_adapter_tf.py",
+      "function": "TFFixedSGQFStructuralAdapterResult.__post_init__",
+      "ast_sha256": "aab193142dfe0084a907b112d8e283d525f8051ee1a0fdc60e6e61c8401d73d7",
+      "role": "trace_time_schema",
+      "iteration": "(str(item) for item in self.nonclaims)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/fixed_sgqf_tf.py",
+      "function": "_fixed_sgqf_tensor_step_diagnostics",
+      "ast_sha256": "62b11c064bc39cbd807793ba597b9f633bf6a09b99da66a24e686940ea231b89",
+      "role": "host_artifact_reporting",
+      "iteration": "{name: {'min_eigenvalue': minima[index], 'epsilon': tf.constant(epsilon, tf.float64), 'symmetrized_matrix': history[matrix][time_index]} for index, name, epsilon, matrix in ((0, 'previous_covariance_diagnostics', config.predictive_epsilon, 'previous_covariance'), (1, 'predictive_covariance_diagnostics', config.predictive_epsilon, 'predicted_covariance'), (2, 'innovation_covariance_diagnostics', config.innovation_epsilon, 'innovation_covariance'), (3, 'filtered_covariance_diagnostics', config.pre"
+    },
+    {
+      "path": "bayesfilter/nonlinear/fixed_sgqf_tf.py",
+      "function": "tf_fixed_sgqf_filter",
+      "ast_sha256": "43b3287cbdd827ba3c6680f2c3f8b98ee043e3e32406258143ec43dd1a155750",
+      "role": "host_artifact_reporting",
+      "iteration": "for time_index in range(int(numeric['attempted_steps'].numpy())):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/fixed_sgqf_tf.py",
+      "function": "tf_fixed_sgqf_filter",
+      "ast_sha256": "62c6c931dc0c369ab79579ca0bbb27aa015b7eb16009962fe68501773d075d69",
+      "role": "host_artifact_reporting",
+      "iteration": "{name: history[name][time_index] for name in fields}"
+    },
+    {
+      "path": "bayesfilter/nonlinear/rectangular_srukf_tf.py",
+      "function": "TFRectangularSRUKFDerivatives.__post_init__",
+      "ast_sha256": "cd757dc2050fa006791472608fa66cb999fd5d0d12d9cf5a7c6cf7244b6f7f90",
+      "role": "trace_time_schema",
+      "iteration": "for field in ('d_initial_mean', 'd_initial_factor', 'd_process_factor', 'd_observation_factor'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/rectangular_srukf_tf.py",
+      "function": "TFRectangularSRUKFFixedBranch.__post_init__",
+      "ast_sha256": "b78239841fd7901fe57d475dd6d29ee1dd10ed33e11f5082a12393e5bf5d7e95",
+      "role": "trace_time_schema",
+      "iteration": "for permutation in (self.predicted_permutation, self.innovation_permutation, self.filtered_permutation):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/rectangular_srukf_tf.py",
+      "function": "TFRectangularSRUKFFixedBranch.__post_init__",
+      "ast_sha256": "c501568c1e8cc747ad72586013cb1c7ba265fae8507184a4dc4d1cdb597d4e87",
+      "role": "trace_time_schema",
+      "iteration": "for rank in (self.predicted_rank, self.innovation_rank, self.filtered_rank):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/rectangular_srukf_tf.py",
+      "function": "TFRectangularSRUKFModel.__post_init__",
+      "ast_sha256": "97d76f5a556b1e01471b47cce0e0939cbf735551a54adca510afe776e7c5e06d",
+      "role": "trace_time_schema",
+      "iteration": "for field in ('initial_mean', 'initial_factor', 'process_factor', 'observation_factor'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/rectangular_srukf_tf.py",
+      "function": "TFRectangularSRUKFModel.__post_init__",
+      "ast_sha256": "b69a9da37ae07c0d90507bd4f6551a2cea67876692466648cdfa695d99df38bb",
+      "role": "trace_time_schema",
+      "iteration": "for field in ('initial_factor', 'process_factor', 'observation_factor'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/rectangular_srukf_tf.py",
+      "function": "tf_rectangular_srukf_value.run",
+      "ast_sha256": "3a84aaf9483c2919f8ab7df9637492626056f71e45bcc15fb8c003ff08c7e9b0",
+      "role": "input_validation",
+      "iteration": "for name, value in (('initial_factor', model.initial_factor), ('process_factor', model.process_factor), ('observation_factor', model.observation_factor)):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/srukf_factor_tf.py",
+      "function": "TFSRUKFStepResult.__post_init__",
+      "ast_sha256": "335935190b5043b94cf731a3b8a825974e318b5428496b24a71b3edc80ca99cd",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('log_likelihood', 'score', 'filtered_mean', 'filtered_factor', 'filtered_covariance', 'd_filtered_mean', 'd_filtered_factor', 'd_filtered_covariance'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_batched_target_tf.py",
+      "function": "BatchNativeSSLLSTMComplexityPosteriorTarget.bridge_source_facts",
+      "ast_sha256": "04ef189928963c5f526b2d3096a9f80d549758d454049adb66ad58c0c66aaa0f",
+      "role": "host_artifact_reporting",
+      "iteration": "(value >= 0.0 for value in covariance_weights)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_batched_target_tf.py",
+      "function": "BatchNativeSSLLSTMComplexityPosteriorTarget.bridge_source_facts",
+      "ast_sha256": "6d353d093f0504fb375c587179e910d23fcfd977b811a9153a456a6129c1e628",
+      "role": "host_artifact_reporting",
+      "iteration": "[float(value) for value in rule.covariance_weights.numpy().tolist()]"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+      "function": "build_ssl_lstm_debug_value_score_artifact",
+      "ast_sha256": "fbd126ad405c79ebd6a7f01bc10049ba74b22cc026cd9ff99f9465f373406211",
+      "role": "host_artifact_reporting",
+      "iteration": "[float(item) for item in tf.reshape(score_tensor, [-1])]"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+      "function": "make_ssl_lstm_svd_ukf_components",
+      "ast_sha256": "2947833c94a1728ebb93d238c5ebf1b0b01c3a5ed3b1743adaa07d7d9dde0289",
+      "role": "trace_time_schema",
+      "iteration": "(str(index) for index in unsupported)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+      "function": "make_ssl_lstm_svd_ukf_components",
+      "ast_sha256": "359f04e838f0a133d039a2725fb99ec1d5c4f1a543b3bc0129622ad167bdcb19",
+      "role": "trace_time_schema",
+      "iteration": "[f'a.{idx}' for idx in range(h)]"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+      "function": "make_ssl_lstm_svd_ukf_components",
+      "ast_sha256": "7664516d19d9d166bdc7080bb9778389b8f01bbb75637236c1f9fe1b43bfc8a0",
+      "role": "trace_time_schema",
+      "iteration": "[f'z.{idx}' for idx in range(k)]"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+      "function": "make_ssl_lstm_svd_ukf_components",
+      "ast_sha256": "8389b8244aad98715184e815b3a2e6d66880aaeb20b4a1ff0270f74c876faf80",
+      "role": "trace_time_schema",
+      "iteration": "[f'c.{idx}' for idx in range(h)]"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+      "function": "unpack_ssl_lstm_parameters",
+      "ast_sha256": "de7085724cc3bf29920033f515064f6b35181c94aec0dc8d6553706e9411cc03",
+      "role": "trace_time_schema",
+      "iteration": "(index < 0 or index >= full_parameter_dim for index in selected)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+      "function": "unpack_ssl_lstm_parameters",
+      "ast_sha256": "f0e04697284d657081bda315b6a7f3b7d49851ce0bbb0353b8fe4db564de65dc",
+      "role": "trace_time_schema",
+      "iteration": "(int(index) for index in derivative_parameter_indices)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py",
+      "function": "TFStructuralFirstDerivatives.__post_init__",
+      "ast_sha256": "1fc41e17c97bc29e4acef08dff331b2ea2d14451fc0d459d778f96e5bbbd2f31",
+      "role": "trace_time_schema",
+      "iteration": "for name in ('d_initial_mean', 'd_initial_covariance', 'd_innovation_covariance', 'd_observation_covariance'):"
+    },
+    {
+      "path": "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py",
+      "function": "TFStructuralFirstDerivatives.validate_static_shapes",
+      "ast_sha256": "1f0c8d9ffef3c46999d81b5a7ffc6d09237f931a537a8423bb24e08228d37e0b",
+      "role": "trace_time_schema",
+      "iteration": "for name, shape in expected.items():"
+    },
+    {
+      "path": "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py",
+      "function": "_validate_shape",
+      "ast_sha256": "f83c74c89035e021267d487905e583a46ae565533ea2841d82704fe90f58a3f6",
+      "role": "input_validation",
+      "iteration": "(dim is None for dim in actual)"
+    },
+    {
+      "path": "bayesfilter/testing/ksc_gaussian_sum_ukf_neutra_target_tf.py",
+      "function": "_tensor_bundle_hash",
+      "ast_sha256": "bf30978f742abca8a615b55e7e93c3996f0b61f74051e293f0dea781731fc4c8",
+      "role": "host_artifact_reporting",
+      "iteration": "for value in values:"
+    },
+    {
+      "path": "bayesfilter/testing/ksc_ukf_neutra_target_tf.py",
+      "function": "_tensor_bundle_hash",
+      "ast_sha256": "bf30978f742abca8a615b55e7e93c3996f0b61f74051e293f0dea781731fc4c8",
+      "role": "host_artifact_reporting",
+      "iteration": "for value in values:"
+    },
+    {
+      "path": "bayesfilter/testing/lgssm_generic_target_adapter_tf.py",
+      "function": "make_lgssm_generic_target_contract",
+      "ast_sha256": "3653a975de17f404d561630501e53ff493079c4f111817fccb1868986191b232",
+      "role": "host_artifact_reporting",
+      "iteration": "(float(value) for value in target.prior_scale.numpy())"
+    },
+    {
+      "path": "bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py",
+      "function": "make_predator_prey_ukf_target_contract",
+      "ast_sha256": "306c702cb304b6b73053a1556c3de60beb3a04fb78ec4a211f557584f1e98161",
+      "role": "host_artifact_reporting",
+      "iteration": "(float(item) for item in PP_PARAMETER_UPPER.numpy())"
+    },
+    {
+      "path": "bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py",
+      "function": "make_predator_prey_ukf_target_contract",
+      "ast_sha256": "358dbcb5e6914a2a7a709aa9cc4902381ab2e48e8224e0def96870c49558a9a3",
+      "role": "host_artifact_reporting",
+      "iteration": "(float(item) for item in PP_PARAMETER_LOWER.numpy())"
+    },
+    {
+      "path": "bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py",
+      "function": "make_predator_prey_ukf_target_contract",
+      "ast_sha256": "36ffd3413d8164bebbc245cb84bcf13cdfd2c1b4bae44dc302e7c2bc98077571",
+      "role": "host_artifact_reporting",
+      "iteration": "((float(lower), float(upper)) for lower, upper in zip(PP_PARAMETER_LOWER.numpy(), PP_PARAMETER_UPPER.numpy()))"
+    },
+    {
+      "path": "bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py",
+      "function": "make_predator_prey_ukf_target_contract",
+      "ast_sha256": "36ffd3413d8164bebbc245cb84bcf13cdfd2c1b4bae44dc302e7c2bc98077571",
+      "role": "host_artifact_reporting",
+      "iteration": "((float(lower), float(upper)) for lower, upper in zip(PP_PARAMETER_LOWER.numpy(), PP_PARAMETER_UPPER.numpy()))"
+    },
+    {
+      "path": "bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py",
+      "function": "make_predator_prey_ukf_target_contract",
+      "ast_sha256": "dda304e221ee24ae563e83daad1f6daa915ff2fd5738196fc55b281f54b78fae",
+      "role": "host_artifact_reporting",
+      "iteration": "(float(item) for item in PP_TRUTH_PHYSICAL.numpy())"
+    },
+    {
+      "path": "bayesfilter/testing/simple_nonlinear_generic_target_adapter_tf.py",
+      "function": "",
+      "ast_sha256": "e628c46a5e9340d861470b0042f84f9f9b72442137c09f35a4f6c44cd29b1c92",
+      "role": "trace_time_schema",
+      "iteration": "{route.filter_id: route for route in _SIMPLE_NONLINEAR_FILTER_ROUTES}"
+    },
+    {
+      "path": "bayesfilter/testing/simple_nonlinear_generic_target_adapter_tf.py",
+      "function": "simple_nonlinear_admitted_filter_ids",
+      "ast_sha256": "f839b4ba741a435039c47556ddb019690b76ab1af23cf35934db4db7e49a8f5d",
+      "role": "trace_time_schema",
+      "iteration": "(route.filter_id for route in _SIMPLE_NONLINEAR_FILTER_ROUTES if route.status == 'admitted')"
+    },
+    {
+      "path": "bayesfilter/testing/simple_nonlinear_generic_target_adapter_tf.py",
+      "function": "simple_nonlinear_filter_route_inventory",
+      "ast_sha256": "16c4603e8f43d3e73d95296f86320d052a7b40566aa4e588f28ed61f5a083eb1",
+      "role": "trace_time_schema",
+      "iteration": "(route.manifest_payload() for route in _SIMPLE_NONLINEAR_FILTER_ROUTES)"
+    },
+    {
+      "path": "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+      "function": "make_structural_ukf_target_contract",
+      "ast_sha256": "32609e4f15232dba13c5fdc6bd2f9e3073e547d8b5bec4e6702ca949b1102790",
+      "role": "host_artifact_reporting",
+      "iteration": "(float(item) for item in STRUCTURAL_PARAMETER_UPPER)"
+    },
+    {
+      "path": "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+      "function": "make_structural_ukf_target_contract",
+      "ast_sha256": "36c12bba8d8f964240830053c7b9181b163ea45667b32aca00d43069d13a18de",
+      "role": "host_artifact_reporting",
+      "iteration": "(float(item) for item in STRUCTURAL_TRUTH_PHYSICAL)"
+    },
+    {
+      "path": "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+      "function": "make_structural_ukf_target_contract",
+      "ast_sha256": "cb612b92fd5f5230efd6b27df7dd2e5dbb4280f19ec55368b64bc40c7bad0e28",
+      "role": "host_artifact_reporting",
+      "iteration": "((float(lower), float(upper)) for lower, upper in zip(STRUCTURAL_PARAMETER_LOWER, STRUCTURAL_PARAMETER_UPPER, strict=True))"
+    },
+    {
+      "path": "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+      "function": "make_structural_ukf_target_contract",
+      "ast_sha256": "fc53b51c6ab2f65685123d859bc3f00320d9fbc908f40c8c8a7ae29e97090964",
+      "role": "host_artifact_reporting",
+      "iteration": "(float(item) for item in STRUCTURAL_PARAMETER_LOWER)"
+    }
+  ]
+}
