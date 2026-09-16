@@ -49,6 +49,8 @@ def execute_iapf(row,settings,theta,observations,seed,context=None):
     from .fitted_twist_tf import make_fitted_twist_kernel
     from .iapf_fit_tf import make_density_recursive_fit_kernel
     from .iapf_scope import cost_record, validate_adaptive_ledger
+    from .conditional_means_tf import model_curves
+    curves=model_curves(row,settings)
     d,o,N,T=(settings[k] for k in ("dimension","observation_dimension","particles","horizon"))
     if d!=1 or o!=1:
         raise ValueError("density-fit iAPF consumer currently requires scalar state and observation")
@@ -90,7 +92,7 @@ def execute_iapf(row,settings,theta,observations,seed,context=None):
         return draw("initial",[N,d],True),draw("process",[T,N,d],True),draw("ancestors",[T+1,N],False),draw("mixture",[T,N],False)
     offline_started=time.monotonic()
     for iteration in range(config["max_iterations"]):
-        kernel=make_fitted_twist_kernel(d,o,N,T,settings["dtype"],settings["jit_compile"],constant_twist=iteration==0)
+        kernel=make_fitted_twist_kernel(d,o,N,T,settings["dtype"],settings["jit_compile"],constant_twist=iteration==0,**curves)
         run_kernels.append(kernel)
         output=kernel(fit_theta,observations,*streams(f"iapf_fit{iteration}",True),centers,covariances,floors);calls+=1
         histories.append(float(output[0].numpy()));counts.append(N)
@@ -103,7 +105,7 @@ def execute_iapf(row,settings,theta,observations,seed,context=None):
         if iteration+1==config["max_iterations"]:fail("iAPF iteration cap exhausted before convergence")
         fitter=make_density_recursive_fit_kernel(d,o,N,T,config["mean_bound"],config["sd_lower"],config["sd_upper"],
             config["max_fit_steps"],config["max_backtracks"],config["fit_tolerance"],config["floor_ratio"],
-            fit_dtype_name,settings["jit_compile"])
+            fit_dtype_name,settings["jit_compile"],**curves)
         fit_kernels.append(fitter)
         fitted_centers,fitted_covariances,fitted_floors,valid,converged,fit_details=fitter(
             tf.cast(fit_theta,fit_dtype),tf.cast(observations,fit_dtype),tf.cast(output[2],fit_dtype));calls+=1
@@ -130,7 +132,7 @@ def execute_iapf(row,settings,theta,observations,seed,context=None):
     count_ledger=validate_adaptive_ledger(details,initial_particles=settings["particles"],
         max_particles=config["max_particles"],k=config["k"],tau=config["tau"])
     final_started=time.monotonic()
-    kernel=make_fitted_twist_kernel(d,o,N,T,settings["dtype"],settings["jit_compile"])
+    kernel=make_fitted_twist_kernel(d,o,N,T,settings["dtype"],settings["jit_compile"],**curves)
     final=kernel(theta,observations,*streams("iapf_final",False),centers,covariances,floors);calls+=1
     # Materialize the score to include asynchronous device completion in timing.
     final[1].numpy()
@@ -143,7 +145,7 @@ def execute_iapf(row,settings,theta,observations,seed,context=None):
     final_seeds={tuple(v) for key,v in seed_records.items() if key.startswith("iapf_final")}
     fitting_seeds={tuple(v) for key,v in seed_records.items() if not key.startswith("iapf_final")}
     if final_seeds&fitting_seeds:raise ValueError("iAPF final streams overlap fitting streams")
-    return kernel,final,{"iapf_configuration":config,"fit":frozen,"fit_digest":digest(frozen),
+    return kernel,final,{"iapf_configuration":config,"fit":frozen,"fit_digest":digest(frozen),"fit_model":curves,
         "candidate_configuration":{"iapf":config},
         "fit_iterations":details,"fit_seed_records":seed_records,"actual_particle_count":N,
         "adaptive_count_ledger":count_ledger,"work_accounting":work,

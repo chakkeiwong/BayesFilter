@@ -7,6 +7,13 @@ status text is historical. The exact pre-refresh copy and checksum are preserved
 
 ## Current execution state — 2026-09-16
 
+**A10 is active, authorized by the owner request to document, audit, plan, review and execute the numerical-stability repair.** The
+[A10 amendment](observation-aware-tt-master-amendment-10-robust-guide-20260916.md)
+binds the propositions/proofs, MathDevMCP audit, stable model-based TT charts,
+resolved guide repair and a physical transition-mixture defense. Its eight-hour
+active ceiling is within the remaining H11 budget. Skeptical plan review passed
+with explicit limits on quadrature accuracy, ESS and smoothness claims.
+
 **A09 is complete.** The owner-requested plan, skeptical review, implementation,
 GPU smoke, calibration and fresh confirmation are recorded in
 [A09](observation-aware-tt-master-amendment-09-standalone-warm-tt-20260916.md)
@@ -19,7 +26,11 @@ another has a nominally positive covariance whose factor collapses to machine
 scale, failing log-evidence agreement for every guide-dependent method.
 The next amendment must investigate guide covariance scale and tail coverage
 before more regression tuning. This is a repair trigger, not rejection of TT.
-No next campaign has been launched. There is no total-gradient/default claim.
+The [bounded collapse diagnosis](artifacts/observation-tt-warm-improvement-20260916-01/covariance-collapse-diagnostic.md)
+confirms single-node quadrature concentration and a scale-invariant SPD check
+that accepts the nearly zero covariance. The existing TT defensive Gaussian
+inherits the same collapsed chart; it cannot supply independent tail coverage.
+A10 now evaluates that repair as an optional extension. There is no total-gradient/default claim.
 All 27 focused tests and the final artifact audit passed. Seed collisions and
 time-shift reuse invalidated earlier attempts; they remain preserved. Final
 confirmation uses disjoint sequence/repetition streams and frozen nominees.
@@ -172,7 +183,7 @@ The original master allowed recorded capacity amendments within remaining
 budget. H2–H4 followed evidence about its research question; they did not
 establish all the results needed for promotion. No scientific reason requires
 abandoning that question. The original launch limits below are historical.
-H11 and the reviewed A09 amendment authorize the current continuation. Further
+H11, the owner's latest execute request and the reviewed A10 amendment authorize the current continuation. Further
 methods require a recorded protocol under the remaining H11 budget; descriptive
 results alone do not define another numerical launch.
 

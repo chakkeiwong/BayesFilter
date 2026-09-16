@@ -10,6 +10,8 @@ from .contracts import digest
 def execute_fitted_twist(row, settings, theta, observations, seed):
     import tensorflow as tf
     from .fitted_twist_tf import make_fitted_twist_kernel, make_recursive_fit_kernel
+    from .conditional_means_tf import model_curves
+    curves=model_curves(row,settings)
     d,o,N,T=(settings[k] for k in ("dimension","observation_dimension","particles","horizon"))
     iterations=row["fit_iterations"]
     initial_variance=row["fit_initial_variance"]
@@ -25,8 +27,8 @@ def execute_fitted_twist(row, settings, theta, observations, seed):
     dtype=theta.dtype
     fit_theta=tf.constant(row["fit_theta"],dtype)
     tf.debugging.assert_equal(tf.shape(fit_theta),[6])
-    kernel=make_fitted_twist_kernel(d,o,N,T,settings["dtype"],settings["jit_compile"])
-    fitter=make_recursive_fit_kernel(d,o,N,T,floor_ratio,settings["dtype"],settings["jit_compile"])
+    kernel=make_fitted_twist_kernel(d,o,N,T,settings["dtype"],settings["jit_compile"],**curves)
+    fitter=make_recursive_fit_kernel(d,o,N,T,floor_ratio,settings["dtype"],settings["jit_compile"],**curves)
     centers=tf.zeros([T,d],dtype)
     covariances=tf.eye(d,batch_shape=[T],dtype=dtype)*tf.cast(initial_variance,dtype)
     log_floors=tf.fill([T],tf.math.log(tf.cast(floor_ratio,dtype))-
@@ -55,7 +57,8 @@ def execute_fitted_twist(row, settings, theta, observations, seed):
     final_seeds={tuple(v) for k,v in seed_records.items() if k.startswith("final_")}
     if fitting_seeds & final_seeds:
         raise ValueError("offline fitting and final streams overlap")
-    return kernel,final,{"fit":frozen,"fit_digest":digest(frozen),"fit_iterations":iterations_out,
+    return kernel,final,{"fit":frozen,"fit_digest":digest(frozen),"fit_iterations":iterations_out,"fit_model":curves,
+        "fit_observation_digest":digest(observations.numpy().tolist()),
         "fit_seed_records":seed_records,"fit_stopping":"fixed_declared_iteration_count",
         "fit_method":"local_full_log_quadratic_qr_with_positive_precision_guard",
         "fit_parameter_derivative":"frozen_coefficients_at_declared_nominal_theta",

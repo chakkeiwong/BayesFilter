@@ -259,6 +259,7 @@ def _value_and_analytical_score_impl(
             predicted_covs,
             d_predicted_means,
             d_predicted_covs,
+            valid_predict,
         ) = predict_at(t,
             states,
             covariances,
@@ -390,6 +391,7 @@ def _value_and_analytical_score_impl(
             post_covs,
             _d_post_means,
             d_post_covs,
+            valid_update,
         ) = update_at(t,
             predicted_means,
             predicted_covs,
@@ -438,6 +440,7 @@ def _value_and_analytical_score_impl(
                 d_reset_covariances,
                 reset_transport,
                 d_reset_transport,
+                valid_reset,
             ) = sinkhorn_contract_e_reset_triple_with_tangent(
                 children,
                 d_children,
@@ -492,9 +495,9 @@ def _value_and_analytical_score_impl(
                 # XLA may elide Assert ops. Propagate invalidity into the
                 # returned scalar even at the final reset, where no subsequent
                 # observation would otherwise expose an invalid correction.
-                invalid = tf.constant(float("nan"), dtype)
-                total = tf.where(corrected["valid"], total, invalid)
-                d_total = tf.where(corrected["valid"], d_total, invalid)
+                neg_inf = tf.constant(float("-inf"), dtype)
+                total = tf.where(corrected["valid"], total, neg_inf)
+                d_total = tf.where(corrected["valid"], d_total, tf.zeros([], dtype))
                 reset_states = corrected["particles"]
                 d_reset_states = corrected["particles_tangent"][:, :, 0]
                 higher_moment_record = {
@@ -563,9 +566,20 @@ def _value_and_analytical_score_impl(
                  t, new_states, new_d_states, new_covariances, new_d_covariances)
         callback_valid = (observation_record.get("observation_factor_valid", tf.constant(True))
                           & post_reset_record.get("post_reset_valid", tf.constant(True)))
-        invalid = tf.constant(float("nan"), dtype)
-        total = tf.where(callback_valid, total, invalid)
-        d_total = tf.where(callback_valid, d_total, invalid)
+
+        # Combine all validity flags from numerical operations
+        # Reduce batch-shaped validity flags to scalars for single-trajectory context
+        numerical_valid = tf.reduce_all(valid_predict) & tf.reduce_all(valid_update)
+        if reset_policy == "contract_e":
+            numerical_valid = numerical_valid & tf.reduce_all(valid_reset)
+
+        # Overall validity: both callbacks and numerical operations must succeed
+        overall_valid = tf.reduce_all(callback_valid) & numerical_valid
+
+        # When invalid, return -inf for log probability (NaN would propagate differently)
+        neg_inf = tf.constant(float("-inf"), dtype)
+        total = tf.where(overall_valid, total, neg_inf)
+        d_total = tf.where(overall_valid, d_total, tf.zeros([], dtype))
 
         result = (
             t + 1,

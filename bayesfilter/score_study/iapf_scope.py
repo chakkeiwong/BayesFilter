@@ -112,7 +112,21 @@ def validate_result_accounting(result, row, settings):
     expected_fit["fit_theta"] = tf.constant(config["fit_theta"], tf.as_dtype(settings["dtype"])).numpy().tolist()
     if diag["fit"] != expected_fit or diag["candidate_configuration"] != {"iapf": config}:
         raise ValueError("frozen fit differs from the last fitted coefficients or selected configuration")
-    if diag["fit_observation_digest"] != diag["data_version"]:
+    from .conditional_means_tf import model_curves
+    if diag["fit_model"] != model_curves(row,settings):
+        raise ValueError("fitted and evaluated model coefficients differ")
+    expected_data=diag["data_version"]
+    if row["model"] == "nonlinear_scalar":
+        physical=diag["physical_observations"]
+        if digest(physical) != expected_data:
+            raise ValueError("physical observation identity mismatch")
+        executed=tf.constant(physical,tf.as_dtype(settings["dtype"]))
+        if executed.shape != (settings["horizon"],settings["observation_dimension"]):
+            raise ValueError("executed observation shape mismatch")
+        expected_data=digest(executed.numpy().tolist())
+        if diag["executed_observation_digest"] != expected_data:
+            raise ValueError("executed observation cast identity mismatch")
+    if diag["fit_observation_digest"] != expected_data:
         raise ValueError("fitted and evaluated observations differ")
     seeds = diag["fit_seed_records"]
     final_seeds = {tuple(v) for k, v in seeds.items() if k.startswith("iapf_final")}

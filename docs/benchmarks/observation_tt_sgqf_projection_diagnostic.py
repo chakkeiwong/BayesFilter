@@ -49,16 +49,19 @@ def coefficient_kernel(coordinates, degree=3, jit_compile=True):
     return coefficients
 
 
-def paired_gaussian(model, current, condition, *, predictive=False):
+def paired_gaussian(model, current, condition, *, predictive=False,
+                    guide_current=None, guide_condition=None):
     """Mean/covariance in interleaved current/previous marginal coordinates."""
     A = model.transition
-    P = condition.factor @ tf.transpose(condition.factor)
+    guide_current = current if guide_current is None else guide_current
+    guide_condition = condition if guide_condition is None else guide_condition
+    P = guide_condition.factor @ tf.transpose(guide_condition.factor)
     S = A @ P @ tf.transpose(A) + model.sigma**2*tf.eye(model.dimension, dtype=D)
     K = tf.transpose(tf.linalg.solve(S, A @ P))
     B = P-K @ S @ tf.transpose(K)
-    qmean = tf.linalg.matvec(A, condition.mean) if predictive else current.mean
-    qcov = S if predictive else current.factor @ tf.transpose(current.factor)
-    zmean = condition.mean + tf.linalg.matvec(K, qmean-tf.linalg.matvec(A, condition.mean))
+    qmean = tf.linalg.matvec(A, guide_condition.mean) if predictive else guide_current.mean
+    qcov = S if predictive else guide_current.factor @ tf.transpose(guide_current.factor)
+    zmean = guide_condition.mean + tf.linalg.matvec(K, qmean-tf.linalg.matvec(A, guide_condition.mean))
     means = tf.concat([qmean, zmean], axis=0)
     covariance = tf.concat([tf.concat([qcov, qcov @ tf.transpose(K)], axis=1),
         tf.concat([K @ qcov, B + K @ qcov @ tf.transpose(K)], axis=1)], axis=0)

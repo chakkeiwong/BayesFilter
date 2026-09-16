@@ -7,7 +7,7 @@ from .tuning import TUNABLE_PROPOSALS,candidate_configuration,selected_row
 
 
 def evaluate_nonlinear(row,context):
-    if row.get("role")=="claim" and row["proposal"] in TUNABLE_PROPOSALS:
+    if row.get("role")=="claim" and row["proposal"] in TUNABLE_PROPOSALS and row["proposal"]!="iapf":
         row=selected_row(row,context)
     settings=context["study"]["settings"]
     if settings["dimension"]!=1 or settings["observation_dimension"]!=1:
@@ -48,6 +48,7 @@ def evaluate_nonlinear(row,context):
         if not all(math.isfinite(x) for x in (mesh_error,domain_error,tail)) or max(mesh_error,domain_error)>tolerance or tail>tail_tolerance:
             raise ValueError(f"reference refinement veto: mesh={mesh_error}, domain={domain_error}, tail={tail}")
     diagnostics={"data_seed":data_seed,"data_version":digest(observations64.numpy().tolist()),
+        "physical_observations":observations64.numpy().tolist(),
         "data_model":"scalar_sine_transition_quadratic_observation","transition_curve":c,"observation_curve":b,
         "initial_seed":seed("initial"),"process_seed":seed("process"),"resampling_seed":seed("resampling"),
         "reset_seed":seed("reset_design"),"state_dimension":1,"parameter_dimension":6,"particle_count":N,"horizon":T,
@@ -57,6 +58,7 @@ def evaluate_nonlinear(row,context):
     proposal=row["proposal"]
     with tf.device("/GPU:0" if settings["device"]=="GPU" else "/CPU:0"):
         obs=tf.cast(observations64,dtype)
+        diagnostics["executed_observation_digest"]=digest(obs.numpy().tolist())
         initial=tf.random.stateless_normal([N,1],seed("initial"),dtype=dtype)
         process=tf.random.stateless_normal([T,N,1],seed("process"),dtype=dtype)
         uniforms=tf.random.stateless_uniform([T,N],seed("resampling"),dtype=dtype)
@@ -74,6 +76,16 @@ def evaluate_nonlinear(row,context):
             kernel=make_particle_filter(N,T,c,b,proposal=="local_linear",proposal!="prior_sis",settings["dtype"],settings["jit_compile"])
             value,score,ess=kernel(theta,obs,initial,process,uniforms)
             diagnostics.update(minimum_particle_ess=float(ess.numpy()),derivative_semantics="locally_fixed_multinomial_labels")
+        elif proposal in ("fitted_twist","iapf"):
+            if proposal=="iapf":
+                from .iapf_adapter import execute_iapf
+                kernel,out,extra,calls=execute_iapf(row,settings,theta,obs,seed,context=context)
+            else:
+                from .fitted_twist_adapter import execute_fitted_twist
+                kernel,out,extra,calls=execute_fitted_twist(row,settings,theta,obs,seed)
+                extra["candidate_configuration"]=candidate_configuration(row)
+            value,score=out[:2]
+            diagnostics.update(extra,score_consumer="nonlinear model -> shared fitted-twist kernel and "+proposal+" fitter")
         else:
             controls=row["controls"]
             control={"ledh":1.,"sgqf":row.get("sgqf_level",2),"kdm_covariance":row.get("within_fraction",.5)}[proposal]
@@ -100,9 +112,13 @@ def evaluate_nonlinear(row,context):
     diagnostics["score_squared_error"]=float(tf.reduce_sum((tf.cast(score,tf.float64)-oracle[1])**2).numpy())
     diagnostics["value_squared_error"]=float(((tf.cast(value,tf.float64)-oracle[0])**2).numpy())
     estimator=context["registry"].estimators[row["estimator"]]
-    return {"value":value_number,"score":score_numbers,"oracle_value":float(oracle[0].numpy()),"oracle_score":oracle[1].numpy().tolist(),
+    result={"value":value_number,"score":score_numbers,"oracle_value":float(oracle[0].numpy()),"oracle_score":oracle[1].numpy().tolist(),
         "value_target":"finite_grid_log_likelihood" if proposal=="grid_reference" else ("gaussian_approximate_log_likelihood" if proposal in ("ekf","ukf") else "finite_particle_log_likelihood"),
         "derivative_target":estimator.target,"comparison_target":row["comparison_target"],"derivative_id":estimator.derivative,
         "proposal_law":context["registry"].proposals[proposal].law,"initial_terms":True,"numerical_validity":"pass",
         "inference_status":"mechanics_only" if context["study"].get("evidence_class")=="mechanics" else "descriptive_only",
         "runtime":runtime,"diagnostics":diagnostics}
+    if proposal=="iapf":
+        from .iapf_scope import validate_result_accounting
+        validate_result_accounting(result,{**row,"iapf":diagnostics["iapf_configuration"]},settings)
+    return result

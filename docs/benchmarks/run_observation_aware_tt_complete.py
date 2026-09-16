@@ -125,7 +125,10 @@ def particle_filter(model, observations, guide, tt_path, method, count, seed, ji
         previous = particles
         diag = {}
         noise = tf.random.stateless_normal([count, d], [seed+t, 2], dtype=D)
-        if method in ('sgqf_joint', 'tt_sgqf_safeguard', 'tt_sgqf_initialized'):
+        if method == 'tt_physical_defense':
+            from bayesfilter.highdim.observation_robust_guide_tf import sample_physical_defense
+            draws, logq, diag = sample_physical_defense(tt_path[t], previous, seed+t, jit)
+        elif method in ('sgqf_joint', 'tt_sgqf_safeguard', 'tt_sgqf_initialized'):
             if tt_path is None:
                 raise ValueError('A joint consumer requires its frozen proposal path')
             from bayesfilter.highdim.sgqf_joint_consumer_tf import sample_joint_step

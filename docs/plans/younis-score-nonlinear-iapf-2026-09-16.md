@@ -1,5 +1,12 @@
 # Nonlinear iAPF implementation inside master Phase 0E
 
+Status: COMPLETE for the scalar nonlinear implementation prerequisite. Source
+`f5a4d411` passes twenty frozen GPU rows and the integrated consumer checks.
+See [result and phase refresh](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/nonlinear-iapf-result-and-refresh.md).
+Observed score errors exceed EKF/UKF errors in both regimes; the run does not
+promote a method or establish a ranking. Next is comprehensive control
+calibration. The historical pre-run sections below retain their original scope.
+
 The active question is whether the existing bounded density-fit iAPF procedure can evaluate the scalar sine-transition/quadratic-observation model through its shared fitting and twisted filtering kernels, with correct likelihood corrections and analytical frozen-fit derivatives. The adaptive-count slice at `1c12eefa` has completed. Nonlinear implementation is the next prerequisite, not an additional project outside the master.
 
 ## Skeptical audit and mathematical scope
@@ -50,6 +57,18 @@ The numerical protections are explicit properties of the candidate family. No ri
 
 ## Implementation and checks
 
+The manuscript addition is one bounded teaching unit for a reader who knows
+Gaussian densities and the preceding auxiliary-weight correction. It explains
+why nonlinear conditional means still permit an exact Gaussian twist, derives
+the mixture sampler and telescoping correction, then differentiates the frozen
+finite program. The reader should be able to reconstruct each cancellation and
+identify which quantities are held fixed. This is a local derivation, not a new
+claim about the cited paper or degenerate transitions. Preserve the current
+TeX/PDF in `manuscript-before-nonlinear-iapf-01/`, add the unit before covariance
+alternatives, compile and inspect its rendered pages. All existing mathematics
+and citations remain; reader feedback is pending, so narrative acceptance is
+provisional.
+
 Create a new mutable worktree from `1c12eefa`. Add shared conditional-mean value/tangent helpers used by the filter and both recursive fitters, with zero curvature as the exact preceding path. Pass explicit curvature settings through both adapters; admit nonlinear iAPF only through its selected procedure and the actual nonlinear consumer. Record exact executed observations and model coefficients in fitting evidence, while retaining physical-data provenance. Reject missing/mismatched curvature or fitting data.
 
 Focused tests must check: nonlinear mixture normalization and density correction on an independently integrated one-dimensional fixture; full six-parameter directional finite differences with the same random inputs and frozen fit; zero-curvature value/score/fit parity; actual endpoints call the shared filter/fitter; wrong scope and cast-data failures; CPU selection and independent final replicates. Autodiff or NumPy, if used by a reference test, stays explicitly diagnostic. Runtime kernels use TensorFlow, stable signatures and native loops without pfor. Freeze the source only after these checks; never edit a snapshot after running it.
@@ -65,3 +84,21 @@ Use `/home/chakwong/anaconda3/envs/tftwogpu/bin/python`, trusted RTX4080 SUPER a
 Versioned output root: `docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/nonlinear-iapf-*`. Preserve full logs, source/driver checksums, commands, seeds, model/data identities, work counts, device/memory/XLA evidence and actual timing. The exact frozen command will be appended before launch. Fail closed before final samples if selection or the reference is invalid.
 
 Pre-mortem: successful execution could conceal a linearized transition, linear observation fit target, wrong data digest, partial derivative, omitted fit cost or unexamined inherited tuning. The listed law, tangent, call-chain and provenance checks discriminate these before a comparison. A valid but inaccurate fitted proposal triggers later target-specific calibration, not abandonment of iAPF. At phase exit integrate checked files, record decision/inference tables, repair what is repairable and refresh the next master phase. Comprehensive control calibration and replicated nonlinear proposal comparisons remain the next scientific obligations.
+
+## Pre-freeze verification
+
+The first 28 focused tests pass: nonlinear normalization and mixture identity, full six-parameter frozen-fit finite differences at both curvatures and two step sizes, both nonlinear recursive fitting targets, real CPU selection/final consumers, fit-data cast validation, and preceding Gaussian iAPF/fitted-twist tests. Two further checks recover the independent physical bootstrap filter when psi=1, with zero and nonzero curvature. A differential run in the frozen predecessor and candidate checkouts gives exact equality of both fitted coefficient families, fit diagnostics, final likelihood values, all six score components and particle clouds when curvature is zero. Evidence is `nonlinear-iapf-tests-01.log`, `nonlinear-iapf-bootstrap-tests-01.log`, `nonlinear-iapf-zero-{0,1}.json` and `nonlinear-iapf-zero-parity.json` under the artifact root.
+
+Measured CPU process time through these checks is 101.41 seconds. `nonlinear-iapf-budget-check.json` parses both timing formats and preserves the available historical CPU timings; it does not pretend to reconstruct older untimed CPU work. Conservative prior GPU use plus this allocation is 6286.066 seconds, below the master's 28800 seconds.
+
+The GPU driver is `run-nonlinear-iapf.py` in the artifact root. One complete launch can consume at most 64 numerical row/recursive-fit attempts, depending on which candidate is selected, so a full retry must fit the remaining 120-attempt allocation; otherwise use a smaller repair run. This bound corrects an overly optimistic count based only on selecting k=1. All twenty rows and four heuristic comparisons per curvature are preserved; no failed candidate disappears from selection.
+
+## Frozen GPU launch
+
+Source `f5a4d411a4a0197fe9c1d25c24573337a633c96a` is frozen in `.localresources/worktrees/younis-score-nonlinear-iapf-20260916`, with a clean tree. The three mandatory commit oracle checks pass; CPU process time increases to 177.02 seconds. Trusted preflight found RTX4080 SUPER at 11/16376 MiB and 0% utilization; the other GPU is excluded. MathDev verifies the scalar Gaussian completing-the-square identity. Its derivative probes could not encode `diff` expressions; this is a tool limitation, not a proof. The full response and limits are preserved in `nonlinear-iapf-mathdev.json`. The analytical derivation and finite-difference checks remain the derivative evidence.
+
+Execute from the frozen worktree:
+
+```bash
+env CUDA_VISIBLE_DEVICES=GPU-68251639-fe82-8f81-3ccc-2953c32e805b TF_FORCE_GPU_ALLOW_GROWTH=true BAYESFILTER_PRELOAD_CUSTOM_OP=0 TF_NUM_INTRAOP_THREADS=1 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=1 MPLCONFIGDIR=/tmp/younis-score-mpl /usr/bin/time -p -o /home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/nonlinear-iapf-gpu-01.time timeout 1800 /home/chakwong/anaconda3/envs/tftwogpu/bin/python /home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/run-nonlinear-iapf.py /home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/nonlinear-iapf-gpu-01 --source-revision f5a4d411a4a0197fe9c1d25c24573337a633c96a
+```

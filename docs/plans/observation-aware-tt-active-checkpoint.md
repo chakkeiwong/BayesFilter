@@ -2,59 +2,51 @@
 
 ## Active question and authorization
 
-Does standalone SGQF-initialized pair TT supply a useful conditional proposal
-for exact-importance-corrected Zhao-Cui filtering? The owner requested a plan,
-thorough review and execution of regression improvements. A09 is complete.
-Follow [master](observation-aware-tt-repair-complete-program-20260913.md) and
-[A09 result](observation-aware-tt-warm-improvement-20260916-result.md).
-SGQF fit loss is explanatory, never a continuation veto. No per-step TT/SGQF
-selector, raw-TT normalizer, total analytical derivative or HMC claim.
+Does SGQF-initialized pair TT remain a useful exact-importance-corrected
+Zhao-Cui proposal after guide covariance collapse is prevented? Owner explicitly
+requests thorough LaTeX propositions/proofs, MathDevMCP audit, a reviewed plan
+and execution. A10 is active; A09 is complete. Follow
+[master](observation-aware-tt-repair-complete-program-20260913.md) and
+[A10](observation-aware-tt-master-amendment-10-robust-guide-20260916.md).
 
-Checkout /home/chakwong/BayesFilter, branch surrogate-hmc. Preserve unrelated
-dirty files. No commit/push requested. Review was a skeptical executor review;
-no independent review claimed. No numerical jobs remain running.
+Checkout /home/chakwong/BayesFilter, branch surrogate-hmc; initial commit
+50f93709d8a4c0b9481d49b07ec5373b73b23473.
+Preserve unrelated changes; no commit/push requested. No subagents authorized.
 
-## Checked findings
+## Checked evidence and current stage
 
-Confirmation-02 completed 24 sequences in 1287.928335 seconds, RTX 5080,
-TF float64/XLA kernels, verified memory growth and unchanged source snapshots.
-Both degree-4 nominees reduce scalar filtering MSE versus the degree-3 warm
-baseline by 7.5% and 8.1% under exploratory paired bootstrap intervals. Their
-mutual ranking is unsupported. d4 mean ESS is about 322--325/512, but d4
-promotion fails: s10 fails guide SPD and reference precision; s04 has a guide
-factor collapse to 2--4e-16 at t8 and every guide-dependent proposal fails
-log-evidence agreement. Reference precision passes for s04.
+A09 d4-s04 t8: nine-node SGQF puts essentially all weight on one node;
+covariance about 1e-31 passes a self-scaled SPD check. Higher rules are
+indefinite. TT defense shares the collapsed chart. Saved reference has
+order-one covariance. d4-s10 also has guide failure and reference imprecision.
+Evidence: artifacts/observation-tt-warm-improvement-20260916-01/
+covariance-collapse-diagnostic.md and observation-aware-tt-warm-improvement-20260916-result.md.
 
-All 54 same-target fitted H2 values are below their own initializer; d4 mean
-H2 baseline/capacity/preservation .003260/.001532/.002087 (descriptive).
-Conditioning reaches 5.24e10; KKT .0137 leaves optimizer accuracy open.
-All 27 focused tests and the final artifact audit pass.
-
-Calibration-01 was invalidated for A07 data reuse. Calibration-02 nomination
-and confirmation-01 had time-shift algorithm stream reuse; the latter is
-ineligible for independent-sequence intervals. Evidence is preserved.
-Confirmation-02 repairs actual particle/reference seed call chains, uses fresh
-partition 2, and keeps all nominees frozen. Earlier independence-based MCSE
-claims require separate audit; do not silently reuse them.
+A10 plan skeptical self-review passed. Eight propositions/proofs drafted in
+LaTeX Section 17; MathDevMCP audit/dispositions saved in math-review.md.
+Build and rendered-page inspection passed. Optional TF implementation and
+actual-consumer wiring are complete; 37 focused tests pass. GPU smoke-02
+passed numerical mechanism checks, including exposed s04/s10. Repaired-guide
+chart minimum on s04 is .27047 versus baseline 3.72e-32; stable-chart minimum
+is .80365. These smoke runs have no accuracy reference. MathDevMCP found no
+established counterexample but was incomplete; no formal proof certificate.
+Protected LaTeX baseline and metadata live under
+artifacts/observation-tt-robust-guide-20260916-01/.
+Implementations are optional extensions, not source-faithfulness, default or
+HMC claims. Finite diagnostic tests do not certify posterior accuracy or ESS.
 
 ## Budget and exact next action
 
 Sole ledger: artifacts/observation-tt-continuation-24h-20260915-01/budget.json.
-A09 began 04:05:18 UTC; numerical work finished before its six-hour ceiling.
-Final administrative closeout slightly exceeded it, as recorded in the ledger.
-The ledger
-charges elapsed work and tool/approval waits once, conservatively, with a
-two-minute final-response allowance. These waits are not GPU computation.
-Retain the A08 unmetered reservation. Approximately 11.6 hours remain.
+A10 begins conservatively 2026-09-16 12:48:00 UTC, ceiling 28800 active seconds,
+from 41020.892609 seconds remaining. Retain previous reservations. Charge elapsed
+work/tool waits once at closeout; numerical times are a subset. Smoke-01 failed
+in one-repetition MCSE reporting (150 seconds conservatively reserved);
+smoke-02 completed in 169.254 seconds. Plan caps numerical work at 18000 seconds.
 
-Next scientific priority: prepare and review an amendment for SGQF covariance
-scale and tail-coverage validity, using the saved s04 collapse as diagnostic
-evidence and fresh heldout data for claims. Determine a principled scale check
-and evaluate any numerics-changing protection explicitly. Only then revisit
-TT solver conditioning. No new experiment or amended method is authorized by
-this checkpoint alone; use the governing campaign scope and reviewed amendment.
-
-- Plan/review/report/audit: artifacts/observation-tt-warm-improvement-20260916-01/
-- Numerical root: ../benchmarks/artifacts/observation_tt_warm_improvement_20260916/
-- Final attempts: attempt-calibration-02 and attempt-confirmation-02
-- Prior objective/LaTeX repair: observation-aware-tt-downstream-filter-objective-20260916-result.md
+Next: launch disjoint calibration (three T20 sequences per dimension, L1 and
+epsilon curves), freeze controls, then fresh twelve-sequence-per-dimension
+confirmation. Pre-calibration self-review passed and selection/reporting
+details are recorded in A10. Do not edit hashed runtime/plan files during runs.
+Numerical root: ../benchmarks/artifacts/observation_tt_robust_guide_20260916/.
+Result: observation-aware-tt-robust-guide-20260916-result.md.

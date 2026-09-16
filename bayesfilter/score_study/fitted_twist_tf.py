@@ -8,6 +8,7 @@ or adaptive stopping rule. Fitted psi is frozen when differentiating theta.
 from functools import lru_cache
 import tensorflow as tf
 from .gaussian_tf import (parameterized_model,chol_tangent,gaussian_log_density_and_tangent,symmetric)
+from .conditional_means_tf import conditional_mean, conditional_mean_and_tangent, validate_curves
 
 
 def gaussian_floor_log(x,dx,center,covariance,log_floor):
@@ -43,7 +44,9 @@ def twisted_transition(mean,dmean,Q,dQ,center,V,probability,noise,uniform):
 
 
 @lru_cache(maxsize=12)
-def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True,constant_twist=False):
+def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True,constant_twist=False,
+                             transition_curve=0.,observation_curve=0.):
+    validate_curves(d,o,transition_curve,observation_curve)
     dtype=tf.as_dtype(dtype_name)
     @tf.function(input_signature=[tf.TensorSpec([6],dtype),tf.TensorSpec([T,o],dtype),
         tf.TensorSpec([N,d],dtype),tf.TensorSpec([T,N,d],dtype),tf.TensorSpec([T+1,N],dtype),
@@ -55,7 +58,7 @@ def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True,const
         x=m+tf.einsum("ij,nj->ni",L,initial_noise)
         dx=dm[:,None,:]+tf.einsum("pij,nj->pni",chol_tangent(L,dP),initial_noise)
         def predict(x,dx):
-            return tf.einsum("ij,nj->ni",A,x),tf.einsum("pij,nj->pni",dA,x)+tf.einsum("ij,pnj->pni",A,dx)
+            return conditional_mean_and_tangent(x,dx,A,dA,transition_curve)
         def future(x,dx,t):
             if constant_twist:
                 return tf.zeros([N],dtype),tf.zeros([6,N],dtype),tf.zeros([N],dtype)
@@ -78,8 +81,8 @@ def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True,const
                 _,_,probability=normalizer(mean,dmean,Q,dQ,centers[t],covariances[t],log_floors[t])
                 x,dx=twisted_transition(mean,dmean,Q,dQ,centers[t],covariances[t],probability,noise[t],mixture_uniforms[t])
             clouds=clouds.write(t,x)
-            residual=observations[t]-tf.einsum("ij,nj->ni",H,x)
-            dr=-tf.einsum("pij,nj->pni",dH,x)-tf.einsum("ij,pnj->pni",H,dx)
+            observed,dobserved=conditional_mean_and_tangent(x,dx,H,dH,observation_curve,quadratic=True)
+            residual,dr=observations[t]-observed,-dobserved
             lg,dlg=gaussian_log_density_and_tangent(residual,dr,R,dR[:,None,:,:])
             if constant_twist:
                 lp,dlp=tf.zeros([N],dtype),tf.zeros([6,N],dtype)
@@ -131,7 +134,9 @@ def fit_log_quadratic(points,targets,floor_ratio):
 
 
 @lru_cache(maxsize=12)
-def make_recursive_fit_kernel(d,o,N,T,floor_ratio,dtype_name="float64",jit_compile=True):
+def make_recursive_fit_kernel(d,o,N,T,floor_ratio,dtype_name="float64",jit_compile=True,
+                              transition_curve=0.,observation_curve=0.):
+    validate_curves(d,o,transition_curve,observation_curve)
     if not 0<floor_ratio<1: raise ValueError("declare a positive floor ratio below one")
     feature_count=1+2*d+d*(d-1)//2
     if N<feature_count: raise ValueError("too few fit points for full quadratic")
@@ -144,9 +149,9 @@ def make_recursive_fit_kernel(d,o,N,T,floor_ratio,dtype_name="float64",jit_compi
         floors=tf.TensorArray(dtype,size=T); errors=tf.TensorArray(dtype,size=T)
         def step(t,center,V,log_floor,valid,centers,covariances,floors,errors):
             x=clouds[t]
-            residual=observations[t]-tf.einsum("ij,nj->ni",H,x)
+            residual=observations[t]-conditional_mean(x,H,observation_curve,quadratic=True)
             lg,_=gaussian_log_density_and_tangent(residual,tf.zeros([6,N,o],dtype),R,tf.zeros([6,1,o,o],dtype))
-            lf=tf.cond(t+1<T,lambda:normalizer(tf.einsum("ij,nj->ni",A,x),tf.zeros([6,N,d],dtype),
+            lf=tf.cond(t+1<T,lambda:normalizer(conditional_mean(x,A,transition_curve),tf.zeros([6,N,d],dtype),
                 Q,tf.zeros([6,d,d],dtype),center,V,log_floor)[0],lambda:tf.zeros([N],dtype))
             (center,V,log_floor),(ok,error,_)=fit_log_quadratic(x,lg+lf,floor_ratio)
             return t-1,center,V,log_floor,valid&ok,centers.write(t,center),covariances.write(t,V),floors.write(t,log_floor),errors.write(t,error)

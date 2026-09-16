@@ -138,10 +138,16 @@ class DualParameterLEDHTarget:
             )
             biased_score = biased_score[0]  # [1, P] -> [P]
 
+            # Check for -inf (graceful failure from numerical instability)
+            # When exact_value is -inf, return -inf with zero gradient
+            is_invalid = tf.math.is_inf(exact_value) & (exact_value < 0.0)
+
             def grad_fn(dy):
-                # Return biased gradient (surrogate force)
+                # Return biased gradient (surrogate force) when valid
+                # Return zero gradient when invalid (-inf)
                 # dy is upstream gradient (scalar for log-prob)
-                return dy * biased_score
+                zero_grad = tf.zeros_like(biased_score)
+                return tf.where(is_invalid, zero_grad, dy * biased_score)
 
             return exact_value, grad_fn
 

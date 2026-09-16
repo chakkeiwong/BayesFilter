@@ -82,11 +82,12 @@ def test_s1_predict_tangent_matches_oracle_nonlinear():
     oracle = oracle_forward_autodiff_score(summary_fn, theta0)
 
     mean_fn = mean_fn_theta(theta0)
-    means, predicted, d_means, d_predicted = (
+    means, predicted, d_means, d_predicted, valid = (
         ukf_predict_with_parameter_tangent(
             states, covs, d_states, d_covs, mean_fn, d_mean_fn, q
         )
     )
+    assert valid.numpy().all(), "Sigma points generation should be valid"
     analytical = tf.reduce_sum(tf.cos(means) * d_means) - tf.reduce_sum(
         tf.sin(predicted) * d_predicted
     )
@@ -130,7 +131,7 @@ def test_s5_update_tangent_matches_oracle():
         )
 
     oracle = oracle_forward_autodiff_score(summary_fn, theta0)
-    post_means, posterior, d_post_means, d_posterior = (
+    post_means, posterior, d_post_means, d_posterior, valid = (
         ukf_update_with_parameter_tangent(
             states,
             covs,
@@ -142,6 +143,7 @@ def test_s5_update_tangent_matches_oracle():
             observation,
         )
     )
+    assert valid.numpy().all(), "Sigma points generation should be valid"
     analytical = tf.reduce_sum(
         tf.cos(post_means) * d_post_means
     ) - tf.reduce_sum(tf.sin(posterior) * d_posterior)

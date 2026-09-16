@@ -5116,6 +5116,418 @@ limit the earlier promotion claim; they do not establish that TT is unusable.
 The full comparison and per-step records are linked from
 \path{docs/plans/observation-aware-tt-downstream-filter-objective-20260916-result.md}.
 
+\section{Stable coordinates and a physical defense against guide collapse}
+\label{sec:robust-guide}
+
+The purpose of the Gaussian guide is to make a conditional TT proposal easier
+to fit. A failed guide should therefore make approximation less efficient,
+not destroy the coordinates in which the proposal is represented. This
+distinction matters for the four-dimensional stochastic-volatility example.
+In the A09 confirmation sequence s04 at time 8, a nine-node signed sparse
+quadrature rule assigned normalized weight essentially one to a single node.
+The sum of the other absolute weights was $1.38\,10^{-31}$. Its computed
+covariance eigenvalues lay between $3.72\,10^{-32}$ and $2.44\,10^{-31}$,
+although the predictive covariance eigenvalues were between 1.20 and 1.32.
+All higher tested rules had an indefinite covariance. A check relative to
+the candidate covariance's own scale accepted the tiny positive matrix.
+Consequently the Gaussian component used to defend the TT polynomial had
+the same collapsed physical scale as the fitted TT. The corrected filter
+then failed log-evidence agreement, despite apparently valid factorizations.
+
+The highest-resolution particle reference for this sequence had marginal
+variances approximately $(1.07,0.25,0.71,0.90)$ at that time. This is strong
+diagnostic evidence against interpreting the near-zero guide covariance as
+real posterior concentration. It is not a theorem about every small
+posterior covariance. The saved replay is
+\path{docs/plans/artifacts/observation-tt-warm-improvement-20260916-01/covariance-collapse-diagnostic.md}.
+The A09 evidence also exposed seed reuse in earlier attempts; earlier
+independence-based Monte Carlo standard errors must not be reused without
+their own seed audit. The present construction and its fresh tests are
+specified by amendment A10.
+
+We use three protections with different mathematical purposes. First,
+quadrature diagnostics reject numerically unresolved Gaussian moments.
+Second, model-based TT coordinates remain nonsingular even when those
+moments fail. Third, a mixture with the physical transition density gives
+the proposal independent tail coverage. None of these statements alone
+certifies the accuracy of Gaussian quadrature or the quality of TT fitting.
+They define an optional extension of the proposal construction, rather than
+a new claim about fidelity to the Zhao--Cui author implementation.
+
+\subsection{What a covariance check can establish}
+
+Let the Gaussian predictive approximation be $p^-(x)=\mathcal N(x;m,S)$,
+where $S=LL^\top\succ0$. A quadrature rule has nodes $u_i$ in predictive
+standard coordinates and possibly signed weights $w_i$. Put
+\begin{equation}
+ a_i=w_i\exp\{\ell(m+Lu_i)-b\},\qquad
+ A=\sum_i a_i,\qquad b=\max_i\ell(m+Lu_i),\qquad
+ \alpha_i=a_i/A .
+ \label{eq:robust-signed-weights}
+\end{equation}
+Here $\ell(x)=\log g(y\mid x)$ and $b$ only prevents numerical overflow.
+When $A>0$, the formal quadrature mean and covariance in these coordinates
+are $\bar u=\sum_i\alpha_i u_i$ and
+$C=\sum_i\alpha_i(u_i-\bar u)(u_i-\bar u)^\top$.
+The physical moments are $m+L\bar u$ and $LCL^\top$. These formulas are
+quadrature estimates; signed $\alpha_i$ are not probabilities.
+
+\begin{proposition}[A relative SPD test does not protect physical scale]
+\label{prop:robust-scale}
+For any $c\in(0,1)$, the test
+$\lambda_{\min}(C)>c\|C\|_2$ accepts every $C=\delta I_d$ with
+$\delta>0$, however small $\delta$ is relative to a predictive covariance.
+Moreover, positive normalized quadrature weights do not prevent their
+weighted covariance from converging to zero.
+\end{proposition}
+\begin{proof}
+For $C=\delta I_d$, both $\lambda_{\min}(C)$ and $\|C\|_2$ equal
+$\delta$, so the inequality reduces to $1>c$. For the second assertion,
+fix finitely many nodes and let the weight of one node tend to one while
+all other nonnegative weights tend to zero. The weighted mean tends to that
+node, and every term in the finite covariance sum tends to zero.
+Thus positivity prevents an indefinite exact weighted covariance but does
+not prevent concentration on a single quadrature node.
+\end{proof}
+
+There are two distinct numerical warnings. Cancellation is measured by
+$\kappa_A=\sum_i|a_i|/|A|$; dominance is measured by
+$D_A=\max_i|a_i|/\sum_i|a_i|$. The latter uses absolute weights and
+remains meaningful for a signed rule. It is not an effective sample size.
+
+\begin{proposition}[Cancellation and moment sensitivity]
+\label{prop:robust-cancellation}
+Suppose the summands $a_i$ are exact, their floating-point sum is computed
+without overflow or underflow, and $n\epsilon_{\rm mach}<1$. In the
+usual rounding model its absolute error is at most
+$\gamma_n\sum_i|a_i|$, where
+$\gamma_n=n\epsilon_{\rm mach}/(1-n\epsilon_{\rm mach})$.
+Hence the relative error bound is $\gamma_n\kappa_A$ when $A\ne0$.
+In exact arithmetic a signed normalized weighted covariance can be
+indefinite even when $A>0$; this is a separate failure from cancellation.
+\end{proposition}
+\begin{proof}
+Expanding successive rounded additions gives
+$\widehat A=\sum_i a_i(1+\theta_i)$ with
+$|\theta_i|\le\gamma_n$. The triangle inequality proves the absolute
+bound, and division by $|A|$ proves the relative bound. The same argument
+applies entry by entry to sums defining moments, with the appropriate
+absolute summands. It does not account for errors in evaluating likelihoods
+or centered nodes. For indefiniteness, the one-dimensional nodes $0,1$
+with normalized weights $2,-1$ have mean $-1$ and variance
+$2(0+1)^2-(1+1)^2=-2$. Their total weight is one.
+\end{proof}
+
+We therefore evaluate covariance in predictive units and compare its
+smallest eigenvalue with a margin that has an independent unit scale:
+\begin{equation}
+ \eta_C=64\epsilon_{\rm mach} n
+ \max\!\left\{1,\sum_i |\alpha_i|\|u_i-\bar u\|^2\right\},
+ \qquad \lambda_{\min}(C)>\eta_C .
+ \label{eq:robust-margin}
+\end{equation}
+Finite values, positive signed mass and a corresponding cancellation check
+are also required. The factor 64 is a conservative numerical hypothesis,
+not a proved forward-error constant for the whole algorithm. This check
+rejects numerically unusable guide moments; it does not assert that a true
+posterior cannot be concentrated. No eigenvalue is clipped and no hidden
+ridge is added to accepted moments. Dominance, cancellation, eigenvalues
+and standardized third and fourth moments are retained as diagnostics.
+
+Numerical admissibility is followed by a resolution check. Successive
+admissible rules must agree in mean, covariance and log integral to declared
+tolerances: $0.02$ predictive standard-deviation units for the Euclidean
+mean difference, $0.05$ for the relative Frobenius covariance difference,
+and $0.02$ nats for the log integral. The covariance denominator is the
+larger of one and the earlier covariance's Frobenius norm in predictive
+units. Agreement of two rules is evidence of resolution at those orders,
+not a quadrature error bound: both rules can miss the same mass. A failed
+check triggers the following independent construction.
+
+\subsection{An observation-adapted positive quadrature repair}
+
+In the example, $x,m\in\mathbb R^d$, $S\in\mathbb R^{d\times d}$ is
+symmetric positive definite and therefore invertible, $\beta>0$, and,
+conditionally on $x$,
+$y_j$ are independent $\mathcal N(0,\beta^2 e^{x_j})$ variables. Combining
+this likelihood with the Gaussian predictive approximation gives the
+negative log density, up to a constant independent of $x$,
+\begin{equation}
+ U(x)=\tfrac12(x-m)^\top S^{-1}(x-m)
+       +\tfrac12\sum_{j=1}^d\{x_j+c_j e^{-x_j}\},
+ \qquad c_j=(y_j/\beta)^2\ge0 .
+ \label{eq:robust-sv-potential}
+\end{equation}
+This is a density for the Gaussian-predictive approximation. It equals
+neither the full filtering density in general nor a TT-retained target.
+
+\begin{proposition}[Unique mode of the Gaussian-predictive SV update]
+\label{prop:robust-mode}
+If $S\succ0$, $\beta>0$ and all $y_j$ are finite, $U$ is coercive and
+strongly convex. It has a unique minimizer $x_*$, with
+\begin{align}
+ \nabla U(x)&=S^{-1}(x-m)+\tfrac12(\boldsymbol1-c\odot e^{-x}),
+ \nonumber\\
+ H(x)&=S^{-1}+\tfrac12\operatorname{diag}(c\odot e^{-x})\succ0 .
+ \label{eq:robust-mode-derivatives}
+\end{align}
+The mode is a smooth function locally of $(m,S,y,\beta)$ on the domain
+$S\succ0$, $\beta>0$, including observations with zero components.
+\end{proposition}
+\begin{proof}
+Differentiating \eqref{eq:robust-sv-potential} gives the displayed gradient
+and Hessian. The diagonal addition is positive semidefinite, so
+$H(x)\succeq S^{-1}\succeq\lambda_{\min}(S^{-1})I$ for all $x$.
+The quadratic term dominates the possibly negative linear term as
+$\|x\|\to\infty$, while the exponential term is nonnegative. This
+proves coercivity, existence and uniqueness. The gradient is smooth in all
+parameters on the stated open domain. Its derivative with respect to $x$
+at the solution is the invertible Hessian. The implicit function theorem
+gives the local smooth dependence. Setting a $y_j$ to zero leaves these
+arguments unchanged.
+\end{proof}
+
+We solve for the mode with damped Newton steps and a backtracking decrease
+test using the displayed analytical derivatives. A finite residual check
+is required before using $V=H(x_*)^{-1}$. The proposition concerns the
+exact mode; it does not prove that any fixed numerical iteration budget
+will attain its tolerance. Failed factorizations or unresolved residuals
+are recorded rather than concealed by covariance clipping.
+
+Let $q_L(x)=\mathcal N(x;x_*,V)$ and write $x=x_*+Bu$, where
+$BB^\top=V$ and $u$ has standard Gaussian density $\rho$.
+
+\begin{proposition}[Positive quadrature with the correct density ratio]
+\label{prop:robust-change-measure}
+For any function $h$ integrable under $p^-(x)g(y\mid x)$,
+\begin{equation}
+ \int h(x)p^-(x)g(y\mid x)\,dx
+ =\int h(x_*+Bu)
+   \frac{p^-(x_*+Bu)g(y\mid x_*+Bu)}{q_L(x_*+Bu)}\rho(u)\,du .
+ \label{eq:robust-change-measure}
+\end{equation}
+A positive Gauss--Hermite rule for the right-hand side produces positive
+normalized weights. With strictly positive finite likelihood ratios and
+nodes whose physical locations affinely span $\mathbb R^d$, its exact
+weighted covariance is positive definite. Neither assertion establishes
+the accuracy or numerical conditioning of the finite quadrature rule.
+\end{proposition}
+\begin{proof}
+The substitution has Jacobian $|\det B|$, and
+$q_L(x_*+Bu)|\det B|=\rho(u)$. Substitution proves the identity and
+shows why the predictive-to-Laplace density ratio cannot be omitted.
+Multiplying positive quadrature weights by a positive likelihood ratio
+preserves positivity. For normalized weights $\omega_i>0$ and any
+$v\ne0$, the weighted variance is
+$\sum_i\omega_i[v^\top(x_i-\bar x)]^2$. It vanishes only if
+$v^\top x_i$ is constant at every node. Affine spanning excludes this
+possibility. Proposition~\ref{prop:robust-scale} still permits arbitrarily
+small variances when almost all weight is concentrated at one node.
+\end{proof}
+
+A10 tests tensor orders 5, 7 and 9, at most $9^4=6561$ nodes, using
+log-sum-exp normalization and the same numerical and resolution diagnostics.
+The small-dimensional tensor rule is a bounded repair experiment; its
+exponential growth prevents a claim of a scalable high-dimensional
+implementation. It is not the generic all-axes retained-grid Zhao--Cui
+route. If neither signed sparse quadrature nor this repair resolves the
+guide, the predictive Gaussian is used explicitly as an unresolved-guide
+fallback. This preserves a usable proposal but supplies no observation
+adaptation at that step.
+
+\subsection{TT coordinates that do not inherit guide covariance collapse}
+
+Let the physical dynamics be $x_t=A x_{t-1}+\xi_t$, with
+$\xi_t\sim\mathcal N(0,Q)$, $Q\succ0$, and initial covariance
+$P_0\succ0$. Define deterministic model covariances
+\begin{equation}
+ R_0=P_0,\qquad R_t=A R_{t-1}A^\top+Q,\qquad
+ x_t=c_t+L_t u_t,\quad L_tL_t^\top=R_t .
+ \label{eq:robust-chart}
+\end{equation}
+The center $c_t$ may be the accepted or repaired guide mean. The covariance
+$R_t$ is independent of the guide's observation-weighted covariance. In the
+stationary fixture, $A P_0A^\top+Q=P_0$ and $R_t=P_0$ for every $t$.
+
+\begin{proposition}[A nonsingular chart and invariant physical proposals]
+\label{prop:robust-chart}
+For finite $t$, finite $A,Q,P_0$ satisfying the assumptions above,
+$R_t\succ0$ and $R_t\succeq Q$ for $t\ge1$.
+The affine change of coordinates is bijective. If a physical density $p$
+is represented in these coordinates as
+$p_U(u)=p(c_t+L_tu)|\det L_t|$, then its physical law is unchanged.
+The same statement holds for a joint law after transforming both states.
+\end{proposition}
+\begin{proof}
+For nonzero $v$,
+$v^\top R_tv=(A^\top v)^\top R_{t-1}(A^\top v)+v^\top Q>0$;
+induction starts from $P_0\succ0$. The first summand is nonnegative, which
+also proves $R_t\succeq Q$. Every finite recursion has finite entries in
+exact real arithmetic, and its Cholesky factor is nonsingular. The
+change-of-variables formula gives the asserted density, with determinant
+$|\det L_t|$; a block-diagonal affine transformation gives the joint
+version. Centering translates the coordinates and does not change the
+factor's singular values.
+\end{proof}
+
+This proposition removes guide collapse as a source of chart singularity.
+It does not bound $R_t$ uniformly for unstable dynamics, guarantee safe
+floating-point arithmetic for arbitrary $A,Q$, or imply that a low-degree
+TT fits well in the broader coordinates. Numerical factorizations are still
+checked. In particular, Gaussian initialization and regression sampling must
+transform the same physical SGQF joint into the new charts. Reinterpreting
+$R_t$ as the guide covariance would instead change the initializer and
+the design distribution. The implementation checks this distinction at the
+consumer endpoint, not just inside a coordinate utility.
+
+For clarity, let the incoming guide be $\mathcal N(m_z,P_z)$, the current
+guide be $\mathcal N(m_x,P_x)$, and define
+$S_z=A P_zA^\top+Q$, $K=P_zA^\top S_z^{-1}$ and
+$B_z=P_z-KS_zK^\top$. The Gaussian joint used for initialization has
+\begin{equation}
+ \begin{pmatrix}x\\z\end{pmatrix}\sim\mathcal N\!\left(
+ \begin{pmatrix}m_x\\m_z+K(m_x-Am_z)\end{pmatrix},
+ \begin{pmatrix}P_x&P_xK^\top\\KP_x&B_z+KP_xK^\top\end{pmatrix}
+ \right).
+ \label{eq:robust-initializer-joint}
+\end{equation}
+This follows by drawing $x$ from the current guide and then drawing
+$z\mid x\sim\mathcal N(m_z+K(x-Am_z),B_z)$; conditional expectation
+and the law of total covariance give every block. Equation
+\eqref{eq:robust-chart} transforms this joint without substituting $R_t$
+for either $P_x$ or $P_z$.
+
+\subsection{A defensive component in physical coordinates}
+
+Let $q_{\rm TT}(x\mid z)$ be the normalized conditional proposal obtained
+from the fitted pair TT, including its internal polynomial-zero defense.
+That internal component is Gaussian in the TT chart. Define instead the
+additional physical mixture
+\begin{equation}
+ q_\varepsilon(x\mid z)
+ =(1-\varepsilon)q_{\rm TT}(x\mid z)
+       +\varepsilon f(x\mid z),\qquad 0<\varepsilon<1,
+ \quad f(x\mid z)=\mathcal N(x;Az,Q).
+ \label{eq:robust-mixture}
+\end{equation}
+At time zero the second component is the physical prior. A component label
+is sampled with probabilities $1-\varepsilon,\varepsilon$, followed by a
+draw from that component. Both component densities must then be evaluated
+at the actual sampled point. Using only the sampled component's density in
+the denominator implements a different importance calculation.
+
+\begin{proposition}[Normalization and exact conditional importance correction]
+\label{prop:robust-mixture-correction}
+Suppose $q_{\rm TT}(\cdot\mid z)$ is a probability density and
+$Z_y(z)=\int f(x\mid z)g(y\mid x)\,dx\in(0,\infty)$.
+Then \eqref{eq:robust-mixture} is a probability density with
+$q_\varepsilon\ge\varepsilon f$. For every integrable $h$,
+\begin{equation}
+ \mathbb E_{q_\varepsilon}\!\left[
+ h(X)\frac{f(X\mid z)g(y\mid X)}{q_\varepsilon(X\mid z)}\right]
+ =\int h(x)f(x\mid z)g(y\mid x)\,dx .
+ \label{eq:robust-importance}
+\end{equation}
+Thus the exact importance target is unchanged by this proposal mixture.
+\end{proposition}
+\begin{proof}
+Integration of the convex combination gives one, and nonnegativity gives
+the lower bound. Multiplying the integrand on the left by its sampling
+density cancels the denominator. Since $f$ is everywhere positive, the
+mixture covers the target support. Integrability permits the expectation.
+\end{proof}
+
+The equality is for unnormalized importance integrals conditional on $z$.
+It does not make a finite-sample self-normalized mean unbiased, nor does it
+validate a TT approximation's own normalizing constant. In the particle
+filter the usual previous particle weights and the declared resampling law
+remain part of the calculation.
+
+\begin{proposition}[Finite conditional second moment for the SV likelihood]
+\label{prop:robust-second-moment}
+Under the SV likelihood above, finite $z,y$, $\beta>0$ and $Q\succ0$,
+the importance weight $W=f(X\mid z)g(y\mid X)/q_\varepsilon(X\mid z)$
+has finite conditional second moment. In particular, with $\mu=Az$,
+\begin{equation}
+ \mathbb E_{q_\varepsilon}[W^2\mid z]
+ \le \frac{1}{\varepsilon}\mathbb E_{f(\cdot\mid z)}[g(y\mid X)^2]
+ \le \frac{(2\pi\beta^2)^{-d}}{\varepsilon}
+ \exp\!\left\{-\boldsymbol1^\top\mu
+                  +\tfrac12\boldsymbol1^\top Q\boldsymbol1\right\}.
+ \label{eq:robust-second-moment}
+\end{equation}
+The normalized conditional importance ratio $W/Z_y(z)$ also has finite
+second moment. This is a pointwise-in-$(y,z)$ assertion, not a uniform ESS
+bound or a lower bound on any realized finite-particle ESS.
+\end{proposition}
+\begin{proof}
+Since $q_\varepsilon\ge\varepsilon f$,
+$\int f^2g^2/q_\varepsilon\le\varepsilon^{-1}\int fg^2$.
+Squaring the likelihood gives
+\[
+ g(y\mid x)^2=(2\pi\beta^2)^{-d}
+ \exp\!\left\{-\boldsymbol1^\top x-\sum_j c_j e^{-x_j}\right\}
+ \le (2\pi\beta^2)^{-d}e^{-\boldsymbol1^\top x}.
+\]
+The Gaussian moment-generating function at $-\boldsymbol1$ gives the
+second bound. The same bound, or Cauchy--Schwarz, makes $Z_y(z)$ finite;
+strict positivity of the likelihood and transition makes it positive.
+Division by its square proves the normalized assertion. It may be very
+small, so this argument supplies no useful universal numerical bound on
+the normalized variance. At time zero the proof is identical with the
+prior mean and covariance replacing $\mu,Q$.
+\end{proof}
+
+The first inequality bounds the second moment by $1/\varepsilon$ times
+that of the transition proposal. A10 evaluates $\varepsilon=0.05,0.2,0.5$,
+whose multipliers are 20, 5 and 2. These are declared robustness/cost
+hypotheses. They do not predict which setting has the smallest filtering
+error. The smallest setting passing the calibration safety/non-harm checks
+is frozen before fresh confirmation. Runtime switching based on heldout
+performance is excluded.
+
+\subsection{Differentiability and the remaining empirical question}
+
+\begin{proposition}[Smooth mixture density on a fixed branch]
+\label{prop:robust-smoothness}
+Let $\vartheta$ collect continuous state or model parameters. On an open
+domain suppose $q_{\rm TT}(x\mid z;\vartheta)$ and
+$f(x\mid z;\vartheta)$ are positive $C^1$ densities and $\varepsilon$
+is a fixed number in $(0,1)$. Then $\log q_\varepsilon$ is $C^1$, with
+\begin{equation}
+ \nabla_\vartheta\log q_\varepsilon
+ =r_{\rm TT}\nabla_\vartheta\log q_{\rm TT}
+   +r_f\nabla_\vartheta\log f,\qquad
+ r_{\rm TT}=\frac{(1-\varepsilon)q_{\rm TT}}{q_\varepsilon},
+ \quad r_f=\frac{\varepsilon f}{q_\varepsilon}.
+ \label{eq:robust-mixture-score}
+\end{equation}
+This statement alone gives no derivative of adaptive guide selection,
+TT fitting, component selection or particle resampling.
+\end{proposition}
+\begin{proof}
+A fixed positive convex combination of $C^1$ functions is positive and
+$C^1$. Differentiating its logarithm and multiplying and dividing each
+summand by its positive component density gives the formula. The argument
+treats the component densities as differentiable functions on the stated
+domain; it does not differentiate any algorithm used to select or construct
+them. Branch changes, active-set changes in L1 fitting, singular-value
+choices and discrete resampling therefore require additional analysis.
+\end{proof}
+
+The proposal remains analytically differentiable in its evaluation
+coordinates when its fitted cores and positive charts are held fixed. A
+total analytical derivative of the complete finite filtering program is a
+separate, unproved requirement. The immediate empirical question is more
+limited: do the numerical guards detect the observed failure, do the new
+charts and physical defense preserve valid filtering on fresh sequences,
+and is the cost acceptable? Tests retain quadrature failures, normalized
+filtering MSE, log-evidence agreement, particle ESS, maximum weights,
+ancestry and timing. Loss against a Gaussian joint describes approximation
+quality; it cannot by itself decide whether a TT proposal is useful after
+exact importance correction.
+
+
 \appendix
 \section{Artifact Provenance and Corrections}
 

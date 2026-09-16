@@ -33,9 +33,10 @@ def key(cfg):
     return f"p{cfg['degree']}-n{cfg['rows']}-l{cfg['l1']:g}-{cfg['center']}"
 
 
-def panel(model, observation, current, condition, retained, count, seed, scale=None):
+def panel(model, observation, current, condition, retained, count, seed, scale=None, *, physical_guide=None):
     d = model.dimension
-    coordinates, logw, info = lib.joint_sgqf_row_sampler(model, current, condition, count, seed)
+    guide_args = {} if physical_guide is None else dict(guide_current=physical_guide[0], guide_condition=physical_guide[1])
+    coordinates, logw, info = lib.joint_sgqf_row_sampler(model, current, condition, count, seed, **guide_args)
     rows = tf.stack([coordinates[:, :d], coordinates[:, d:]], axis=-1)
     x, z = current.forward(rows[:, :, 0]), condition.forward(rows[:, :, 1])
     logtarget = (model.observation_log_prob(x, observation)+model.transition_log_prob(x, z)
@@ -64,17 +65,19 @@ def discrepancy(cores, data):
     return dict(amplitude_rms=rms, defended_h2=tf.maximum(tf.constant(0., D), h2))
 
 
-def fit_step(model, observation, guide, retained, t, seed, cfg, budget, *, audit=False):
+def fit_step(model, observation, guide, retained, t, seed, cfg, budget, *, audit=False, charts=None):
     budget(); started = time.monotonic()
-    current, condition = guide[t][1], guide[t-1][1]
-    m, C = projection.paired_gaussian(model, current, condition)
+    physical_guide = (guide[t][1], guide[t-1][1])
+    current, condition = physical_guide if charts is None else (charts[t], charts[t-1])
+    m, C = projection.paired_gaussian(model, current, condition,
+        guide_current=physical_guide[0], guide_condition=physical_guide[1])
     coefficients, _ = projection.coefficient_kernel(2*model.dimension, cfg['degree'])(m, C)
     with tf.device('/CPU:0'):
         initial, compression, _ = projection.pair_svd(coefficients, cfg['rank'])
     conversion = dict(truncation_squared_l2=1-tf.reduce_sum(coefficients**2),
                       compression_squared_l2=compression)
-    train = panel(model, observation, current, condition, retained, cfg['rows'], seed+t)
-    validation = panel(model, observation, current, condition, retained, 4096, seed+t+100000, train['scale'])
+    train = panel(model, observation, current, condition, retained, cfg['rows'], seed+t, physical_guide=physical_guide)
+    validation = panel(model, observation, current, condition, retained, 4096, seed+t+100000, train['scale'], physical_guide=physical_guide)
     values = pair.evaluate_pair_cores(initial, train['rows'])
     scalar = tf.reduce_sum(train['weights']*values*train['target'])/tf.reduce_sum(train['weights']*values**2)
     tf.debugging.assert_positive(scalar, 'nonpositive initial amplitude scale')
@@ -95,7 +98,7 @@ def fit_step(model, observation, guide, retained, t, seed, cfg, budget, *, audit
         cores=cores, tau=tau, mass=Z, current_mean=current.mean, current_factor=current.factor,
         condition_mean=condition.mean, condition_factor=condition.factor)
     if audit:
-        heldout = panel(model, observation, current, condition, retained, 8192, seed+t+200000, train['scale'])
+        heldout = panel(model, observation, current, condition, retained, 8192, seed+t+200000, train['scale'], physical_guide=physical_guide)
         record['audit'] = dict(initial=discrepancy(initial, heldout), fitted=discrepancy(cores, heldout))
         record['row_diagnostics']['audit'] = heldout['info']
     record['wall_seconds'] = time.monotonic()-started

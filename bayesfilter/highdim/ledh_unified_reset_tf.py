@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import tensorflow as tf
 
+from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
+
 Tensor = tf.Tensor
 
 
@@ -67,8 +69,26 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
     sinkhorn_steps: int,
     balance_steps: int,
     ridge: float,
-) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
-    """Reset B clouds for K tangent directions without cross-row reductions."""
+) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    """Reset B clouds for K tangent directions without cross-row reductions.
+
+    Returns
+    -------
+    particles : Tensor
+        Reset particles [B, N, D]
+    d_particles : Tensor
+        Tangent particles [K, B, N, D]
+    carried_covariances : Tensor
+        Transported covariances [B, N, D, D]
+    d_carried_covariances : Tensor
+        Tangent covariances [K, B, N, D, D]
+    transport : Tensor
+        Transport plan [B, N, N]
+    d_transport : Tensor
+        Tangent transport [K, B, N, N]
+    valid : Tensor
+        Validity flag [B]. True if all Cholesky decompositions succeeded.
+    """
     children = tf.convert_to_tensor(children)
     dtype = children.dtype
     d_children = tf.cast(d_children, dtype)
@@ -192,7 +212,7 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
     )
     gap = _sym(target_cov - plus_cov) + ridge_eye
     d_gap = _sym(d_target_cov - d_plus_cov)
-    gap_chol = tf.linalg.cholesky(gap)
+    valid_gap, gap_chol = safe_cholesky(gap, "gap")
     d_gap_chol = _chol_diff(gap_chol, d_gap)
 
     injected = barycentric + tf.einsum("bnj,bij->bni", design, gap_chol)
@@ -221,10 +241,14 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
         / n_f
     )
 
-    target_chol = tf.linalg.cholesky(target_cov + ridge_eye)
+    valid_target, target_chol = safe_cholesky(target_cov + ridge_eye, "target")
     d_target_chol = _chol_diff(target_chol, d_target_cov)
-    injected_chol = tf.linalg.cholesky(injected_cov)
+    valid_injected, injected_chol = safe_cholesky(injected_cov, "injected")
     d_injected_chol = _chol_diff(injected_chol, d_injected_cov)
+
+    # Combined validity: all three Cholesky decompositions must succeed
+    valid = valid_gap & valid_target & valid_injected
+
     rhs = tf.linalg.matrix_transpose(target_chol)
     d_rhs = tf.linalg.matrix_transpose(d_target_chol)
     solved = tf.linalg.triangular_solve(injected_chol, rhs, adjoint=True)
@@ -270,6 +294,7 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
         _sym(d_carried_covariances),
         transport,
         d_transport,
+        valid,
     )
 
 

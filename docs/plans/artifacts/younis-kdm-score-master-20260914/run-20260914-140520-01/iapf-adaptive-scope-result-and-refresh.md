@@ -10,7 +10,7 @@ The corrected GPU run completed ten rows, fourteen iAPF recursive fits and two l
 
 The computed derivative holds the fitted coefficients, realized N and discrete labels fixed. It is the corresponding finite-program derivative, not a derivative through adaptive fitting and not an unbiased marginal model score. Starting N is never presented as the realized count or as equal total cost.
 
-Evidence: `iapf-adaptive-scope-gpu-02/run-manifest.json`, `consumer-evidence.json`, `selection.json`, ten saved row results, and `iapf-adaptive-scope-verification.json`. The latter verifies all saved result digests, the driver checksum and source revision. Exact commands, seeds, selected controls, hardware, timings and study paths are preserved in the manifest and the [phase plan](../../../../younis-score-iapf-adaptive-scope-2026-09-16.md).
+Evidence: `iapf-adaptive-scope-gpu-02/run-manifest.json`, `consumer-evidence.json`, `selection.json`, ten saved row results, and `iapf-adaptive-scope-verification.json`. The latter verifies all saved result digests, the driver checksum and source revision. Exact commands, seeds, selected controls, hardware, timings and study paths are preserved in the manifest and the [phase plan](../../../younis-score-iapf-adaptive-scope-2026-09-16.md).
 
 Attempt 01 completed six iAPF rows and fourteen recursive fits, then failed comparator validation: Kalman inherited the particle estimator label. This was a driver metadata failure before comparator numerical execution. The original driver and all results remain in `iapf-adaptive-scope-gpu-01/`. Correcting that label passed the four comparator validations; attempt 02 used unchanged scientific settings and frozen kernels.
 

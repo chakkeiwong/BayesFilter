@@ -30,7 +30,7 @@ EPS = 2.220446049250313e-16
 
 
 def joint_sgqf_row_sampler(model, current: Chart, condition: Chart, rows: int, seed: int,
-                           *, epsilon: float = 0.2):
+                           *, epsilon: float = 0.2, guide_current=None, guide_condition=None):
     """Draw paired regression rows from a frozen SGQF Gaussian mixture.
 
     The first component is the product reference ``rho``.  The second draws
@@ -41,17 +41,21 @@ def joint_sgqf_row_sampler(model, current: Chart, condition: Chart, rows: int, s
     """
     if not 0. < epsilon <= 1.:
         raise ValueError("epsilon must be in (0,1]")
+    # Optional charts may differ from the physical Gaussian guide. Never
+    # reinterpret chart scale as guide covariance when transforming rows.
+    guide_current = current if guide_current is None else guide_current
+    guide_condition = condition if guide_condition is None else guide_condition
     d = model.dimension
     base = tf.random.stateless_normal([rows, 2*d], [seed, 0], dtype=D)
     # Gaussian backward conditional z|x for z~N(m,P), x|z~N(Az,Q).
     A, Q = model.transition, model.sigma**2 * tf.eye(d, dtype=D)
-    Pz = condition.factor @ tf.transpose(condition.factor)
-    mz = condition.mean
+    Pz = guide_condition.factor @ tf.transpose(guide_condition.factor)
+    mz = guide_condition.mean
     S = A @ Pz @ tf.transpose(A) + Q
     K = tf.transpose(tf.linalg.solve(S, A @ Pz))
     Pback = Pz - K @ S @ tf.transpose(K)
     back_factor = spd_factor(Pback, "backward SGQF covariance")
-    x2 = current.forward(base[:, :d])
+    x2 = guide_current.forward(base[:, :d])
     Az = tf.linalg.matvec(A, mz)
     z2 = mz + tf.linalg.matmul(x2 - Az[None, :], K, transpose_b=True)
     z2 = z2 + tf.linalg.matmul(base[:, d:], back_factor, transpose_b=True)
@@ -62,7 +66,7 @@ def joint_sgqf_row_sampler(model, current: Chart, condition: Chart, rows: int, s
     # Compute s_joint in coordinate space for the guided component.
     x_coord = current.forward(coordinates[:, :d])
     z_coord = condition.forward(coordinates[:, d:])
-    log_px = current.log_prob(x_coord) + current.logdet
+    log_px = guide_current.log_prob(x_coord) + current.logdet
     residual = z_coord - (mz[None, :] + tf.linalg.matmul(x_coord - Az[None, :], K, transpose_b=True))
     standardized = tf.transpose(tf.linalg.triangular_solve(back_factor, tf.transpose(residual)))
     log_pback = _log_standard_normal(standardized) - tf.reduce_sum(tf.math.log(tf.linalg.diag_part(back_factor)))

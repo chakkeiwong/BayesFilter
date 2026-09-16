@@ -9,6 +9,7 @@ import math
 import tensorflow as tf
 from .gaussian_tf import parameterized_model, gaussian_log_density_and_tangent
 from .fitted_twist_tf import normalizer
+from .conditional_means_tf import conditional_mean, validate_curves
 
 
 def profile_density_loss(z, target, parameters):
@@ -122,7 +123,9 @@ def bounded_density_fit(points, log_targets, *, mean_bound, sd_lower, sd_upper,
 @lru_cache(maxsize=16)
 def make_density_recursive_fit_kernel(d,o,N,T,mean_bound,sd_lower,sd_upper,
                                       max_steps,max_backtracks,tolerance,floor_ratio,
-                                      dtype_name="float64",jit_compile=True):
+                                      dtype_name="float64",jit_compile=True,
+                                      transition_curve=0.,observation_curve=0.):
+    validate_curves(d,o,transition_curve,observation_curve)
     values=(mean_bound,sd_lower,sd_upper,tolerance,floor_ratio)
     if not all(math.isfinite(x) and x>0 for x in values) or not sd_lower<1<sd_upper:
         raise ValueError("positive finite controls and sd_lower < 1 < sd_upper required")
@@ -137,9 +140,9 @@ def make_density_recursive_fit_kernel(d,o,N,T,mean_bound,sd_lower,sd_upper,
         floors=tf.TensorArray(dtype,size=T);diagnostics=tf.TensorArray(dtype,size=T,element_shape=[10])
         def step(t,center,V,log_floor,valid,converged,centers,covariances,floors,diagnostics):
             x=clouds[t]
-            lg,_=gaussian_log_density_and_tangent(observations[t]-tf.einsum("ij,nj->ni",H,x),
+            lg,_=gaussian_log_density_and_tangent(observations[t]-conditional_mean(x,H,observation_curve,quadratic=True),
                 tf.zeros([6,N,o],dtype),R,tf.zeros([6,1,o,o],dtype))
-            lf=tf.cond(t+1<T,lambda:normalizer(tf.einsum("ij,nj->ni",A,x),tf.zeros([6,N,d],dtype),
+            lf=tf.cond(t+1<T,lambda:normalizer(conditional_mean(x,A,transition_curve),tf.zeros([6,N,d],dtype),
                 Q,tf.zeros([6,d,d],dtype),center,V,log_floor)[0],lambda:tf.zeros([N],dtype))
             center,V,log_floor,info=bounded_density_fit(x,lg+lf,mean_bound=mean_bound,
                 sd_lower=sd_lower,sd_upper=sd_upper,max_steps=max_steps,

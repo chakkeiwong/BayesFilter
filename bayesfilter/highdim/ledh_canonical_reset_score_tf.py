@@ -28,8 +28,18 @@ def sinkhorn_contract_e_reset_with_tangent(
     sinkhorn_steps: int,
     balance_steps: int,
     ridge: float,
-) -> tuple[Tensor, Tensor]:
-    """Return reset particles and one analytical score-direction tangent."""
+) -> tuple[Tensor, Tensor, Tensor]:
+    """Return reset particles and one analytical score-direction tangent.
+
+    Returns
+    -------
+    particles : Tensor
+        Reset particles [N, D]
+    d_particles : Tensor
+        Tangent particles [N, D]
+    valid : Tensor
+        Validity flag (scalar). True if all Cholesky decompositions succeeded.
+    """
     children = tf.convert_to_tensor(children)
     count = tf.shape(children)[0]
     dimension = tf.shape(children)[1]
@@ -49,7 +59,7 @@ def sinkhorn_contract_e_reset_with_tangent(
         balance_steps=balance_steps,
         ridge=ridge,
     )
-    return result[0][0], result[1][0, 0]
+    return result[0][0], result[1][0, 0], result[6]
 
 
 def sinkhorn_contract_e_reset_triple_with_tangent(
@@ -65,8 +75,26 @@ def sinkhorn_contract_e_reset_triple_with_tangent(
     sinkhorn_steps: int,
     balance_steps: int,
     ridge: float,
-) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
-    """Reset states and carry covariances using the same shared transport."""
+) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    """Reset states and carry covariances using the same shared transport.
+
+    Returns
+    -------
+    particles : Tensor
+        Reset particles [N, D]
+    d_particles : Tensor
+        Tangent particles [N, D]
+    carried_covariances : Tensor
+        Transported covariances [N, D, D]
+    d_carried_covariances : Tensor
+        Tangent covariances [N, D, D]
+    transport : Tensor
+        Transport plan [N, N]
+    d_transport : Tensor
+        Tangent transport [N, N]
+    valid : Tensor
+        Validity flag (scalar). True if all Cholesky decompositions succeeded.
+    """
     result = batched_sinkhorn_contract_e_reset_triple_with_tangent(
         children[None, ...],
         d_children[None, None, ...],
@@ -87,6 +115,7 @@ def sinkhorn_contract_e_reset_triple_with_tangent(
         result[3][0, 0],
         result[4][0],
         result[5][0, 0],
+        result[6],
     )
 
 

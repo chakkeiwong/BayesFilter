@@ -362,8 +362,19 @@ def _sigma_points_with_tangent(
     scale: float,
     jitter: float,
     standard_points: Tensor | None = None,
-) -> tuple[Tensor, Tensor]:
-    """Sigma points and their analytical tangents (Cholesky differential)."""
+) -> tuple[Tensor, Tensor, Tensor]:
+    """Sigma points and their analytical tangents (Cholesky differential).
+
+    Returns
+    -------
+    points : Tensor
+        Sigma points [N, S, D]
+    d_points : Tensor
+        Tangent sigma points [N, S, D]
+    valid : Tensor
+        Validity flag (scalar). True if Cholesky decomposition succeeded.
+    """
+    from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
 
     dim = tf.shape(means)[1]
     dtype = means.dtype
@@ -375,11 +386,12 @@ def _sigma_points_with_tangent(
         d_covariances + tf.linalg.matrix_transpose(d_covariances)
     )
     scale_c = tf.constant(scale, dtype=dtype)
-    chol = tf.linalg.cholesky(scale_c * stabilized)
+    valid, chol = safe_cholesky(scale_c * stabilized, "sigma_points")
     d_chol = _cholesky_forward_differential(chol, scale_c * d_stabilized)
     if standard_points is not None:
         return (means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, chol),
-                d_means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, d_chol))
+                d_means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, d_chol),
+                valid)
     offsets = tf.linalg.matrix_transpose(chol)
     d_offsets = tf.linalg.matrix_transpose(d_chol)
     points = tf.concat(
@@ -398,7 +410,7 @@ def _sigma_points_with_tangent(
         ],
         axis=1,
     )
-    return points, d_points
+    return points, d_points, valid
 
 
 def quadrature_predict_with_parameter_tangent(
@@ -416,12 +428,27 @@ def quadrature_predict_with_parameter_tangent(
     kappa: float = 0.0,
     jitter: float = 1.0e-12,
     point_rule: tuple[Tensor, Tensor] | None = None,
-) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
     """S1: unscented prediction with analytical parameter tangent.
 
+    Returns
+    -------
+    predicted_means : Tensor
+        Predicted means [N, D]
+    predicted_covs : Tensor
+        Predicted covariances [N, D, D]
+    d_predicted_means : Tensor
+        Tangent predicted means [N, D]
+    d_predicted_covs : Tensor
+        Tangent predicted covariances [N, D, D]
+    valid : Tensor
+        Validity flag (scalar). True if sigma points generation succeeded.
+
+    Notes
+    -----
     ``transition_mean_tangent_fn(points, d_points)`` must return the TOTAL
     tangent of the dynamics at ``points`` (partial-theta term plus Jacobian
-    times ``d_points``) — the same contract as the repo's model tangent
+    times ``d_points``) -- the same contract as the repo's model tangent
     callbacks.
     """
 
@@ -441,7 +468,7 @@ def quadrature_predict_with_parameter_tangent(
         standard_points, weights = tf.cast(standard_points, dtype), tf.cast(weights, dtype)
         mean_w = cov_w = weights
         scale, point_count = 1., int(standard_points.shape[0])
-    points, d_points = _sigma_points_with_tangent(
+    points, d_points, valid = _sigma_points_with_tangent(
         states, covariances, d_states, d_covariances, scale, jitter, standard_points
     )
     flat = tf.reshape(points, [-1, dim])
@@ -470,7 +497,7 @@ def quadrature_predict_with_parameter_tangent(
     )
     if d_process_noise_covariance is not None:
         d_predicted_covs += tf.cast(d_process_noise_covariance, dtype)[None]
-    return predicted_means, predicted_covs, d_predicted_means, d_predicted_covs
+    return predicted_means, predicted_covs, d_predicted_means, d_predicted_covs, valid
 
 
 def quadrature_update_with_parameter_tangent(
@@ -490,8 +517,22 @@ def quadrature_update_with_parameter_tangent(
     jitter: float = 1.0e-12,
     point_rule: tuple[Tensor, Tensor] | None = None,
     return_evidence: bool = False,
-) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-    """S5: unscented update with analytical parameter tangent."""
+) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    """S5: unscented update with analytical parameter tangent.
+
+    Returns
+    -------
+    updated_means : Tensor
+        Updated means [N, D]
+    updated_covs : Tensor
+        Updated covariances [N, D, D]
+    d_updated_means : Tensor
+        Tangent updated means [N, D]
+    d_updated_covs : Tensor
+        Tangent updated covariances [N, D, D]
+    valid : Tensor
+        Validity flag (scalar). True if sigma points generation succeeded.
+    """
 
     from bayesfilter.highdim.ledh_ukf_lifecycle_tf import _unscented_weights
 
@@ -510,7 +551,7 @@ def quadrature_update_with_parameter_tangent(
         standard_points, weights = tf.cast(standard_points, dtype), tf.cast(weights, dtype)
         mean_w = cov_w = weights
         scale, point_count = 1., int(standard_points.shape[0])
-    points, d_points = _sigma_points_with_tangent(
+    points, d_points, valid = _sigma_points_with_tangent(
         predicted_means,
         predicted_covariances,
         d_predicted_means,
@@ -592,7 +633,7 @@ def quadrature_update_with_parameter_tangent(
         (d_predicted_covariances - d_ksk)
         + tf.linalg.matrix_transpose(d_predicted_covariances - d_ksk)
     )
-    result = (post_means, post_covs, d_post_means, d_post_covs)
+    result = (post_means, post_covs, d_post_means, d_post_covs, valid)
     if return_evidence:
         inverse_innovation = tf.linalg.cholesky_solve(chol, innovation[..., None])[..., 0]
         logdet = 2 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)), axis=-1)

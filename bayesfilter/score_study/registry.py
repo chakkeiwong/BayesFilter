@@ -41,7 +41,7 @@ def default_registry() -> Registry:
         Estimator("resampling_iwsg_analytical", "frozen_iwsg_log_program_score", ("resampling_kdm",), "bayesfilter.score_study.adapters:evaluate_gaussian", (), True),
         Estimator("iwsg", "kdm_expectation_gradient", ("kdm",), None, (), True, prerequisite="0D"),
         Estimator("nonlinear_reference", "finite_grid_score", ("grid_reference",), "bayesfilter.score_study.nonlinear_adapter:evaluate_nonlinear", (), True, models=("nonlinear_scalar",)),
-        Estimator("nonlinear_analytical", "finite_program_score", ("ekf", "ukf", "bootstrap", "prior_sis", "local_linear", "ledh", "sgqf", "kdm_covariance"), "bayesfilter.score_study.nonlinear_adapter:evaluate_nonlinear", (), True, models=("nonlinear_scalar",)),
+        Estimator("nonlinear_analytical", "finite_program_score", ("ekf", "ukf", "bootstrap", "prior_sis", "local_linear", "ledh", "sgqf", "kdm_covariance", "fitted_twist", "iapf"), "bayesfilter.score_study.nonlinear_adapter:evaluate_nonlinear", (), True, models=("nonlinear_scalar",)),
     )}
     from dataclasses import replace
     estimators = {key: (value if value.models else replace(value, models=("gaussian_all_parameters",)))
