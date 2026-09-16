@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-12. The prose contract is exercised by
+Last checked: 2026-09-14. The prose contract is exercised by
 `tests/test_hmc_tuning_documentation_contract.py`; the route table is generated
 from the executable capability registry.
 
@@ -25,10 +25,11 @@ The current numerical entry points remain compatibility adapters while P2-P5
 qualify their shared wiring. Diagnostic and historical procedures have explicit
 helper kinds and no artifact authority. A chain runner or stage helper is not a
 complete tuner. Replayable artifact authority is distinct from
-scientific/promotion authority: the ordinary runtime currently carries a known
-NumPy-policy blocker, so its public result is explicitly non-admitting for
-claims, default promotion, and posterior admission until that debt is repaired
-or a reviewed exception is recorded.
+scientific/promotion authority. The ordinary runtime now uses TF/TFP for its
+numerical stages; remaining NumPy uses are diagnostic helpers and test oracles.
+Read the current resolved policy's `claim_bearing_blockers` before a handoff.
+A successful tuning result alone does not establish a scientific claim or
+retained posterior convergence.
 
 Use the package imports shown below. Implementation modules do not define a
 second ordinary tuner. Exported discovery, refinement, campaign, runner, and
@@ -377,12 +378,25 @@ stubbed binding is in
 [hmc_tuning_covariance_first.py](../examples/hmc_tuning_covariance_first.py).
 
 With the default TFP runner, final handoff requires finite health and acceptance
-diagnostics, the configured minimum tuning draws, and finite rank-normalized
-split and folded split R-hat values at or below
-`HMC_TUNING_ORDINARY_RHAT_THRESHOLD` (`1.01` at this revision). Bulk and tail
-ESS are disabled for ordinary tuning admission; retained posterior ESS is a
-separate check. Neither acceptance nor tuning R-hat proves retained posterior
-convergence.
+evidence and the configured minimum tuning draws. Rank-normalized split and
+folded split R-hat are reported against `HMC_TUNING_ORDINARY_RHAT_THRESHOLD`
+(`1.01` at this revision) for diagnosis only. R-hat, energy and bulk/tail ESS do
+not gate ordinary tuning or its fixed-kernel handoff. None of these tuning
+diagnostics establishes retained posterior convergence.
+
+The ordinary entry point accepts `campaign_checkpoint_dir` and
+`campaign_time_budget_s` for interruption recovery. `config.max_attempts` then
+bounds cumulative outer attempt slots across calls. Completed geometry,
+bootstrap and attempt results are committed with tensor checksums; a restart
+restores private mass, start bank, selected kernel and repair state and uses the
+next global attempt seed. Compiled runners are rebuilt. Only an interrupted,
+uncommitted work unit can be replayed. Each call receives the remaining active
+wall time with a 60-second closeout reserve. A killed call needs the supervising
+process's elapsed time (`campaign_interrupted_elapsed_s`) before recovery; a
+heartbeat is insufficient. To extend a budget, increase the resource limits
+explicitly while preserving the checkpoint directory, target, seeds and
+numerical configuration. Completed evidence is retained. Terminal target or
+implementation failures must be investigated before any new campaign.
 
 The ordinary ladder, warmup, selection and verification use TF/TFP numerical
 operations. Host materialization is limited to scalar control, immutable

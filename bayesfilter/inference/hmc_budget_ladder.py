@@ -1618,7 +1618,11 @@ def _tune_config(
     )
     return FullChainHMCConfig(
         num_results=config.tune_num_results,
-        step_size_upper_bound=config.step_size_upper_bound,
+        # Fresh same-L bracketing can qualify epsilon above the warmup seed's
+        # ceiling. The runner and adaptation policy must consume that same
+        # qualified ceiling, or config validation rejects the measured step.
+        step_size_upper_bound=(config.step_size_upper_bound
+                               if step_size_upper_bound is None else step_size_upper_bound),
         num_burnin_steps=int(budget),
         step_size=float(step),
         num_leapfrog_steps=config.num_leapfrog_steps,

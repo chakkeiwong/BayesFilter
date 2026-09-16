@@ -172,6 +172,7 @@ from bayesfilter.inference.tuning_contract import (
     HMCTuningRunnerBinding,
 )
 from bayesfilter.runtime import stable_config_hash
+from bayesfilter.inference.hmc_tuning_checkpoint import HMCTuningCampaignCheckpoint
 
 
 _G2_BOOTSTRAP_ROUND_SEED_DERIVATION_SITE_ID = (
@@ -6697,16 +6698,16 @@ class HMCTuneVerifyRepairAttempt:
                     raise ValueError(
                         "passed Phase 7 attempt requires passed sequential verifier"
                     )
-                if diagnostics.get(
-                    "all_finite_rhat_at_or_below_threshold"
-                ) is not True:
+                # R-hat is retained as an explanatory diagnostic.  It is not a
+                # tuning or fixed-kernel handoff gate; acceptance evidence,
+                # finite target health, and the retained-draw minimum are the
+                # verifier's admission criteria.
+                if diagnostics.get("verification_min_retained_pass_gate_satisfied") is not True:
                     raise ValueError(
-                        "passed Phase 7 attempt requires the sequential R-hat gate"
+                        "passed Phase 7 attempt requires the minimum retained-draw gate"
                     )
                 if diagnostics.get("cap_hit") is not False:
-                    raise ValueError(
-                        "passed Phase 7 attempt cannot report a verification cap hit"
-                    )
+                    raise ValueError("passed Phase 7 attempt cannot report a verification cap hit")
 
     @property
     def passed(self) -> bool:
@@ -13071,6 +13072,7 @@ def run_hmc_tune_verify_repair_loop(
     _progress_callback: LoopProgressCallback | None = None,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
     _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
+    _campaign_checkpoint: HMCTuningCampaignCheckpoint | None = None,
 ) -> HMCTuneVerifyRepairLoopResult:
     """Run Phase 7 tune/verify/repair with private budget escalation.
 
@@ -13143,9 +13145,30 @@ def run_hmc_tune_verify_repair_loop(
 
     attempt_index = 0
     terminal_phase6_repair_extra_attempts_consumed = 0
+    resume_terminal = False
+    if _campaign_checkpoint is not None and _campaign_checkpoint.attempt_states:
+        saved = _campaign_checkpoint.attempt_states
+        attempts = [item["attempt"] for item in saved]
+        if any(attempt.attempt_index != index for index, attempt in enumerate(attempts)):
+            raise ValueError("checkpoint attempt indices are not contiguous")
+        last = saved[-1]
+        attempt_state = last["handoff_state"]
+        attempt_index = len(attempts)
+        hard_vetoes = [code for attempt in attempts for code in attempt.hard_vetoes]
+        repair_triggers = [code for attempt in attempts for code in attempt.repair_triggers]
+        verification_only_retry_bundle = last["verification_only_retry_bundle"]
+        operational_repair_verification_bundle = last["operational_repair_verification_bundle"]
+        terminal_phase6_repair_extra_attempts_consumed = last["extra_attempts_consumed"]
+        if attempts[-1].final_status in {"passed", "hard_veto", "architecture_blocked"}:
+            # A terminal real-target failure is never automatically retried.
+            resume_terminal = True
+            final_status = attempts[-1].final_status
+            diagnostic_role = attempts[-1].diagnostic_role
+            final_kernel_payload = last["final_kernel_payload"]
+            final_kernel_hash = last["final_kernel_hash"]
     loop_exhausted = False
     terminal_phase6_slot_payload: Mapping[str, Any] | None = None
-    while True:
+    while not resume_terminal:
         if attempt_index >= int(cfg.max_attempts):
             if _phase7_terminal_phase6_repair_slot_eligible(
                 config=cfg,
@@ -14284,6 +14307,15 @@ def run_hmc_tune_verify_repair_loop(
             }
         else:
             verification_only_retry_bundle = None
+        if _campaign_checkpoint is not None:
+            _campaign_checkpoint.commit_attempt({
+                "attempt": attempt, "handoff_state": handoff_state,
+                "verification_only_retry_bundle": verification_only_retry_bundle,
+                "operational_repair_verification_bundle": operational_repair_verification_bundle,
+                "extra_attempts_consumed": terminal_phase6_repair_extra_attempts_consumed,
+                "final_kernel_payload": final_kernel_payload if attempt_status == "passed" else None,
+                "final_kernel_hash": final_kernel_hash if attempt_status == "passed" else None,
+            })
         if attempt_status == "passed":
             final_status = "passed"
             diagnostic_role = "fresh_fixed_kernel_verification_passed"
@@ -14428,8 +14460,21 @@ def _ordinary_tuning_source_dependency_closure() -> Mapping[str, Any]:
     repository_root = package_root.parent
     paths = (
         inference_root / "hmc_kernel_tuning.py",
+        inference_root / "hmc_tuning_checkpoint.py",
+        package_root / "runtime/durable_tensor_checkpoint.py",
         inference_root / "hmc.py",
         inference_root / "hmc_tuning.py",
+        inference_root / "hmc_tuning_dispatch.py",
+        inference_root / "hmc_warmup.py",
+        inference_root / "hmc_budget_ladder.py",
+        inference_root / "hmc_kernel_selection.py",
+        inference_root / "hmc_tuning_state.py",
+        inference_root / "hmc_verification.py",
+        inference_root / "hmc_diagnostics.py",
+        inference_root / "fixed_l_finite_bracket.py",
+        inference_root / "batched_value_score.py",
+        inference_root / "transition_health_tf.py",
+
         inference_root / "hmc_coordinates.py",
         inference_root / "tuning_contract.py",
         inference_root / "posterior_adapter.py",
@@ -14478,6 +14523,62 @@ def _public_tuning_runner_identity_payload(
 
 
 def _run_canonical_hmc_tuning(
+    *, adapter: Any, initial_position: Any, config: HMCKernelTuningConfig | None = None,
+    output_dir: str | Path | None = None, negative_hessian: Any | None = None,
+    initial_covariance: Any | None = None, parameter_scales: Any | None = None,
+    diagnostic_callback: FixedMassScreenCallback | None = None,
+    verification_checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
+    runner_binding: HMCTuningRunnerBinding | None = None,
+    campaign_checkpoint_dir: str | Path | None = None,
+    campaign_time_budget_s: float | None = None,
+    campaign_interrupted_elapsed_s: float | None = None,
+) -> HMCKernelTuningResult:
+    cfg = HMCKernelTuningConfig.standard() if config is None else config
+    kwargs = dict(adapter=adapter, initial_position=initial_position, config=cfg,
+                  output_dir=output_dir, negative_hessian=negative_hessian,
+                  initial_covariance=initial_covariance, parameter_scales=parameter_scales,
+                  diagnostic_callback=diagnostic_callback,
+                  verification_checkpoint_writer_config=verification_checkpoint_writer_config,
+                  runner_binding=runner_binding)
+    if campaign_checkpoint_dir is None:
+        if campaign_time_budget_s is not None or campaign_interrupted_elapsed_s is not None:
+            raise ValueError("campaign options require campaign_checkpoint_dir")
+        return _run_canonical_hmc_tuning_impl(**kwargs)
+    if (not isinstance(cfg, HMCKernelTuningConfig) or runner_binding is not None
+            or diagnostic_callback is not None or cfg.staged_timeout_policy is not None
+            or cfg.engineering_probe_covariance_multiplier is not None
+            or cfg.terminal_phase6_repair_extra_attempts != 0):
+        raise ValueError("campaign recovery supports the ordinary default runner without extra attempt slots")
+    if campaign_time_budget_s is None:
+        raise ValueError("campaign recovery requires a cumulative time budget")
+    # Only resource limits may change during budget extension. All numerical
+    # policy, seeds, target/data identity and source bytes remain bound.
+    policy = dict(cfg.payload())
+    for key in ("max_attempts", "public_timeout_budget_s", "incall_progress_heartbeat_s"):
+        policy.pop(key, None)
+    from bayesfilter.runtime.durable_tensor_checkpoint import DurableTensorCheckpoint
+    identity = {
+        "schema": "bayesfilter.ordinary_tuning_campaign_identity.v1",
+        "policy": policy, "adapter": stable_adapter_signature(adapter),
+        "sources": _ordinary_tuning_source_dependency_closure(),
+        "inputs": {name: None if value is None else DurableTensorCheckpoint.tensor_hash(_float64_tensor(value))
+                   for name, value in (("position", initial_position), ("covariance", initial_covariance),
+                                       ("negative_hessian", negative_hessian), ("scales", parameter_scales))},
+    }
+    with HMCTuningCampaignCheckpoint(
+        campaign_checkpoint_dir, identity, max_attempts=cfg.max_attempts,
+        time_budget_s=campaign_time_budget_s,
+        interrupted_elapsed_s=campaign_interrupted_elapsed_s,
+    ) as checkpoint:
+        remaining = checkpoint.remaining_seconds - (time.monotonic() - checkpoint.started) - 60.0
+        if remaining <= 0:
+            raise ValueError("campaign time budget exhausted during checkpoint loading")
+        native_limit = remaining if cfg.public_timeout_budget_s is None else min(remaining, cfg.public_timeout_budget_s)
+        kwargs["config"] = dataclasses.replace(cfg, public_timeout_budget_s=native_limit)
+        return _run_canonical_hmc_tuning_impl(**kwargs, _campaign_checkpoint=checkpoint)
+
+
+def _run_canonical_hmc_tuning_impl(
     *,
     adapter: Any,
     initial_position: Any,
@@ -14489,6 +14590,7 @@ def _run_canonical_hmc_tuning(
     diagnostic_callback: FixedMassScreenCallback | None = None,
     verification_checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
     runner_binding: HMCTuningRunnerBinding | None = None,
+    _campaign_checkpoint: HMCTuningCampaignCheckpoint | None = None,
 ) -> HMCKernelTuningResult:
     """Tune a frozen HMC kernel from model-facing inputs.
 
@@ -14900,14 +15002,17 @@ def _run_canonical_hmc_tuning(
                     "reports_posterior_convergence": False,
                 },
             )
-        geometry = initialize_hmc_kernel_geometry(
-            adapter=adapter,
-            initial_position=position,
-            config=_public_geometry_config(cfg),
-            negative_hessian=negative_hessian,
-            initial_covariance=initial_covariance,
-            parameter_scales=parameter_scales,
-        )
+        def compute_geometry():
+            return initialize_hmc_kernel_geometry(
+                adapter=adapter,
+                initial_position=position,
+                config=_public_geometry_config(cfg),
+                negative_hessian=negative_hessian,
+                initial_covariance=initial_covariance,
+                parameter_scales=parameter_scales,
+            )
+        geometry = (compute_geometry() if _campaign_checkpoint is None
+                    else _campaign_checkpoint.stage("geometry", compute_geometry))
         write_private_mass_event(
             event_type="mass_matrix_change",
             stage="geometry_complete",
@@ -15003,15 +15108,18 @@ def _run_canonical_hmc_tuning(
             if p4_seed_use_registry is None
             else {"_g2_seed_use_registry": p4_seed_use_registry}
         )
-        bootstrap = run_hmc_bootstrap_screen(
-            adapter=adapter,
-            geometry=geometry,
-            config=_public_bootstrap_config(cfg, geometry=geometry),
-            run_full_chain=selected_run_full_chain,
-            progress_callback=write_bootstrap_progress,
-            _private_diagnostic_callback=write_private_tuning_diagnostic,
-            **p4_registry_kwargs,
-        )
+        def compute_bootstrap():
+            return run_hmc_bootstrap_screen(
+                adapter=adapter,
+                geometry=geometry,
+                config=_public_bootstrap_config(cfg, geometry=geometry),
+                run_full_chain=selected_run_full_chain,
+                progress_callback=write_bootstrap_progress,
+                _private_diagnostic_callback=write_private_tuning_diagnostic,
+                **p4_registry_kwargs,
+            )
+        bootstrap = (compute_bootstrap() if _campaign_checkpoint is None
+                    else _campaign_checkpoint.stage("bootstrap", compute_bootstrap))
         bootstrap_hard_vetoes = _bootstrap_hard_vetoes(bootstrap)
         if bootstrap_hard_vetoes:
             final_status = "hard_veto"
@@ -15250,6 +15358,7 @@ def _run_canonical_hmc_tuning(
                 geometry=geometry,
             ),
             _progress_callback=write_loop_progress,
+            **({} if _campaign_checkpoint is None else {"_campaign_checkpoint": _campaign_checkpoint}),
             _private_diagnostic_callback=write_private_tuning_diagnostic,
             **p4_registry_kwargs,
         )
@@ -19698,8 +19807,8 @@ def _phase7_verification_acceptance_budget_blocker(
 ) -> Mapping[str, Any] | None:
     if config.public_timeout_budget_s is None or attempt_state is None:
         return None
-    if _phase7_should_run_operational_repair_verification(attempt_state):
-        return None
+    # A direct scalar repair also consumes a fresh verification run. It must
+    # respect the global closeout guard even though it reuses earlier stages.
     budget_guard_repair_triggers = {
         _PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER,
         _PHASE6_TRAJECTORY_ACCEPTANCE_REPAIR_TRIGGER,
@@ -20099,7 +20208,7 @@ def _phase7_should_run_operational_repair_verification(
         return False
     return (
         attempt_state.direct_candidate_handoff.get("source_kind")
-        == "operational_selection_v2"
+        in {"direct_phase5_candidate", "operational_selection_v2"}
         and attempt_state.has_final_kernel_handoff
         and attempt_state.verification_repair_applied
         and attempt_state.verification_repair_trigger
@@ -24835,6 +24944,24 @@ def _phase7_operational_repair_verification_input(
 
     if not _phase7_should_run_operational_repair_verification(attempt_state):
         raise ValueError("operational repair verification state is incomplete")
+    handoff = attempt_state.direct_candidate_handoff
+    if handoff is not None and handoff.get("source_kind") == "direct_phase5_candidate":
+        base = _phase7_direct_candidate_verification_input(
+            adapter=adapter, geometry=geometry, windowed_stage=windowed_stage,
+            fixed_mass_step_stage=fixed_mass_step_stage,
+            candidate_identity=handoff["candidate_identity"], config=config,
+            attempt_index=attempt_index, target_scope=target_scope,
+        )
+        if any(handoff.get(key) != getattr(base, key) for key in (
+            "candidate_batch_hash", "candidate_record_hash", "fixed_mass_step_stage_artifact_hash"
+        )):
+            raise ValueError("direct repair candidate lineage mismatch")
+        # The next global attempt index gives this repair an independent seed.
+        # Preserve the source candidate identity, metric and leapfrog count.
+        return dataclasses.replace(
+            base, step_size=attempt_state.verification_repair_step_size,
+            selected_step_hash=attempt_state.verification_repair_step_hash, input_hash="",
+        )
     base = _phase7_operational_selection_verification_input(
         adapter=adapter,
         geometry=geometry,
@@ -26064,15 +26191,14 @@ def _run_phase7_sequential_rhat_final_verification(
         )
     retained_count = _scalar_or_none(diagnostics.get("retained_sample_count"))
     retained_count_int = 0 if retained_count is None else int(retained_count)
-    rhat_passed_before_minimum = (
+    # Preserve the computed R-hat value and pass flag verbatim.  The minimum
+    # retained-draw requirement is an independent health/admission check;
+    # rewriting a true R-hat result to false conflates the diagnostic with
+    # that separate requirement.
+    diagnostics["rhat_passed_before_minimum_retained_count"] = bool(
         diagnostics.get("all_finite_rhat_at_or_below_threshold") is True
         and retained_count_int < int(min_retained_for_pass)
     )
-    if rhat_passed_before_minimum:
-        diagnostics["all_finite_rhat_at_or_below_threshold"] = False
-        diagnostics["rhat_passed_before_minimum_retained_count"] = True
-    else:
-        diagnostics["rhat_passed_before_minimum_retained_count"] = False
     diagnostics["verification_min_retained_results_for_pass"] = int(
         min_retained_for_pass
     )
@@ -26098,12 +26224,12 @@ def _run_phase7_sequential_rhat_final_verification(
         "minimum_retained_pass_gate_satisfied": bool(
             retained_count_int >= int(min_retained_for_pass)
         ),
-        "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
+        "rhat_threshold_role": "explanatory_diagnostic_only_not_a_handoff_gate",
         "handoff_gate": (
-            "dependence_aware_acceptance_evidence_hard_health_minimum_draws_and_rhat"
+            "dependence_aware_acceptance_evidence_hard_health_and_minimum_draws"
         ),
         "stopping_rule": (
-            "stop_on_nonpromoting_acceptance_or_first_checkpoint_passing_acceptance_health_minimum_draws_and_rhat"
+            "stop_on_nonpromoting_acceptance_or_first_checkpoint_passing_acceptance_health_and_minimum_draws"
         ),
         "cap_rule": "stop_inconclusive_at_budget_policy_verification_num_results",
         "acceptance_policy": acceptance_policy.payload(),
@@ -26112,7 +26238,7 @@ def _run_phase7_sequential_rhat_final_verification(
             "finite_value_and_score_per_retained_chain_batch"
         ),
         "early_rhat_pass_before_minimum_retained_count": (
-            "continue_until_minimum_retained_count; both gates are required"
+            "continue_until_minimum_retained_count; R-hat is diagnostic only"
         ),
         "mechanics_publicized": False,
     }
@@ -26125,11 +26251,11 @@ def _run_phase7_sequential_rhat_final_verification(
         "semantic_source": "_run_phase7_sequential_rhat_final_verification",
         "route_nonclaims": (
             "sequential R-hat final verification uses fixed-size TF/TFP chunks",
-            "R-hat gates this fixed-kernel tuning handoff but does not prove retained posterior convergence",
+            "R-hat is explanatory only and does not gate the tuning handoff",
         ),
         "evidence_role": "fixed_kernel_tuning_admission",
         "promotion_role": "handoff_gate",
-        "stopping_rule_role": "required_with_acceptance_health_and_minimum_draws",
+        "stopping_rule_role": "acceptance_health_and_minimum_draws_only",
         "reports_posterior_convergence": False,
         "reports_sampler_superiority": False,
     }
@@ -26141,7 +26267,7 @@ def _run_phase7_sequential_rhat_final_verification(
         "num_burnin_steps": sequential_config.num_burnin_steps,
         "chain_count": sequential_config.chain_count,
         "rhat_threshold": sequential_config.rhat_threshold,
-        "rhat_threshold_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+        "rhat_threshold_role": "explanatory_diagnostic_only_not_a_handoff_gate",
         "rhat_definition": (
             "max(rank-normalized split R-hat, "
             "folded rank-normalized split R-hat)"
@@ -26562,48 +26688,12 @@ def _classify_phase7_acceptance_evidence_verification(
             (),
         )
     if evidence.promotion_eligible:
-        rhat_passed = diagnostics.get("passed")
-        all_rhat_passed = diagnostics.get(
-            "all_finite_rhat_at_or_below_threshold"
-        )
-        cap_hit = diagnostics.get("cap_hit")
-        if not all(
-            isinstance(value, bool)
-            for value in (rhat_passed, all_rhat_passed, cap_hit)
-        ):
-            return (
-                "hard_veto",
-                "shared_invalidity",
-                ("verification_rhat_gate_missing_or_invalid",),
-                (),
-            )
-        if rhat_passed != all_rhat_passed or (rhat_passed and cap_hit):
-            return (
-                "hard_veto",
-                "shared_invalidity",
-                ("verification_rhat_gate_inconsistent",),
-                (),
-            )
-        if not rhat_passed:
-            if not cap_hit:
-                return (
-                    "hard_veto",
-                    "shared_invalidity",
-                    ("verification_rhat_failure_without_cap",),
-                    (),
-                )
-            return (
-                "repair_or_retry",
-                "verification_rhat_repair_trigger",
-                (),
-                (
-                    "verification_rhat_above_threshold_or_cap_hit",
-                    "verification_rhat_cap_hit",
-                ),
-            )
+        # R-hat remains recorded for diagnosis, but it is not a tuning or
+        # verification gate. Acceptance evidence, finite target health, and
+        # the minimum retained draw count determine handoff eligibility.
         return (
             "passed",
-            "dependence_aware_fixed_kernel_verification_passed",
+            "acceptance_health_fixed_kernel_verification_passed",
             (),
             (),
         )

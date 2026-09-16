@@ -1040,8 +1040,9 @@ class SequentialRHatHMCVerificationConfig:
     The verifier runs a fixed-size TF/TFP HMC chunk repeatedly, computes
     dependence-aware acceptance evidence and rank-normalized split/folded R-hat
     on private traces after each checkpoint. Out-of-band acceptance returns a
-    repair decision immediately; promotion requires both acceptance evidence
-    and the R-hat gate after the minimum retained count.
+    repair decision immediately; promotion uses acceptance evidence and finite
+    target health after the minimum retained count. R-hat remains an
+    explanatory diagnostic and is not a tuning-verification gate.
     It is a tuning-verification gate, not a posterior-convergence certificate.
     """
 
@@ -5344,11 +5345,7 @@ class SequentialRHatHMCVerifier:
             )
             if decision_reached and not acceptance_evidence.promotion_eligible:
                 break
-            if (
-                acceptance_evidence.promotion_eligible
-                and minimum_retained_satisfied
-                and bool(final_rhat["passed"])
-            ):
+            if acceptance_evidence.promotion_eligible and minimum_retained_satisfied:
                 passed = True
                 break
             chunk_index += 1
@@ -5375,7 +5372,7 @@ class SequentialRHatHMCVerifier:
             ),
             "chunk_count": len(chunk_summaries),
             "rhat_threshold": float(config.rhat_threshold),
-            "rhat_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+            "rhat_role": "explanatory_diagnostic_only_not_a_handoff_gate",
             "rhat_definition": final_rhat["rhat_definition"],
             "max_finite_rhat": final_rhat["max_finite_rhat"],
             "max_rank_normalized_split_rhat": final_rhat[

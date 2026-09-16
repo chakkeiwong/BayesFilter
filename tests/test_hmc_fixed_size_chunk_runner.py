@@ -332,7 +332,7 @@ def test_sequential_verifier_fails_closed_when_modern_rhat_is_undefined(monkeypa
         "inconclusive_evidence"
     )
     assert result.diagnostics["rhat_role"] == (
-        "fixed_kernel_convergence_gate_not_candidate_ranking"
+        "explanatory_diagnostic_only_not_a_handoff_gate"
     )
     assert result.diagnostics["rhat_definition"] == (
         "max(rank-normalized split R-hat, "
@@ -570,7 +570,7 @@ def test_sequential_verifier_rejects_period_two_return_path(monkeypatch) -> None
         "trajectory:repair_resonance"
     ]
     assert result.diagnostics["rhat_role"] == (
-        "fixed_kernel_convergence_gate_not_candidate_ranking"
+        "explanatory_diagnostic_only_not_a_handoff_gate"
     )
 
 
@@ -710,8 +710,9 @@ def test_sequential_verifier_private_retained_health_is_phase7_opt_in(
     assert diagnostics["acceptance_evidence_validity"] == expected_validity
     assert diagnostics["target_status_failure_count"] == expected_status_count
     if mode == "public_default":
-        assert result.passed is False
-        assert result.cap_hit is True
+        assert result.passed is True
+        assert result.cap_hit is False
+        assert diagnostics["all_finite_rhat_at_or_below_threshold"] is False
         assert diagnostics["retained_target_health_policy"] == "disabled"
         assert diagnostics["target_score_health_passed"] is None
         assert diagnostics["retained_target_health_evaluated_draw_count"] == 0

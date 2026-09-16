@@ -213,7 +213,9 @@ def test_acceptance_bracket_is_not_transferred_between_leapfrog_counts():
                               verification_repair_max_step_size=0.06,
                               fixed_mass_bracket_state=bracket)
     configurations = [hmc_kernel_tuning._joint_l_epsilon_ladder_config(
-        hmc_kernel_tuning.HMCFixedMassStepStageConfig(), initial_step=0.05,
+        hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=hmc_kernel_tuning.LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+        ), initial_step=0.05,
         num_leapfrog_steps=count, target_scope="bounded-adaptation-regression",
         seed_offset=0, attempt_state=attempt, qualified_step_size_upper_bound=0.08,
     ) for count in (3, 5)]
@@ -221,3 +223,21 @@ def test_acceptance_bracket_is_not_transferred_between_leapfrog_counts():
     assert configurations[0].step_repair_max_step_size == 0.06
     assert configurations[1].initial_fixed_mass_bracket_state is None
     assert configurations[1].step_repair_max_step_size == 0.08
+
+
+def test_fresh_fixed_l_bracket_owns_both_runtime_bounds():
+    """A newly qualified same-L ceiling supersedes the warmup seed ceiling."""
+    ladder = hmc_budget_ladder.FixedMassHMCTuningBudgetLadderConfig(
+        initial_step_size=0.005, step_size_upper_bound=0.005,
+        num_leapfrog_steps=3, budget_schedule=(8,),
+        target_scope="bounded-adaptation-regression",
+    )
+    runtime, bracket = hmc_budget_ladder._qualify_fixed_l_tune_config(
+        ladder, adapter=GaussianAdapter(), current_state=tf.zeros((4, 2), tf.float64),
+        budget=8, seed=(20260914, 41), step=0.005,
+        target_scope="bounded-adaptation-regression",
+    )
+    assert runtime.step_size > ladder.step_size_upper_bound
+    assert runtime.step_size <= bracket["step_size_upper_bound"]
+    assert runtime.step_size_upper_bound == bracket["step_size_upper_bound"]
+    assert runtime.tuning_policy.step_size_upper_bound == runtime.step_size_upper_bound

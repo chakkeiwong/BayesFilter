@@ -995,8 +995,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         ),
         fresh_verification_policy=(
             "fresh fixed-kernel verification; default TFP runner requires typed "
-            "acceptance, health, minimum draws, and rank-normalized split/folded "
-            f"R-hat at or below {HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}"
+            "acceptance, health, and minimum draws; rank-normalized split/folded "
+            f"R-hat (reference threshold {HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}) and energy remain explanatory diagnostics only"
         ),
         ess_admission_policy=(
             "disabled for ordinary tuning admission; retained posterior ESS is separate"

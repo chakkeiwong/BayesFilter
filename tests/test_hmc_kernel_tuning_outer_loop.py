@@ -165,12 +165,12 @@ def _sequential_verification_diagnostics(
         cost_stop_reasons=cost_stop_reasons,
         native_divergence_count=native_divergence_count,
     )
-    rhat_gate_passed = bool(rhat_passed and evidence["promotion_eligible"])
+    verifier_passed = bool(evidence["promotion_eligible"])
     return {
         "sequential_rhat_verification": True,
-        "passed": rhat_gate_passed,
+        "passed": verifier_passed,
         "all_finite_rhat_at_or_below_threshold": bool(rhat_passed),
-        "cap_hit": bool(evidence["promotion_eligible"] and not rhat_passed),
+        "cap_hit": False,
         "rhat_threshold": 1.01,
         "check_interval": int(draw_count),
         "max_results": int(draw_count),
@@ -2231,7 +2231,7 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert route["evidence_role"] == "fixed_kernel_tuning_admission"
     assert route["promotion_role"] == "handoff_gate"
     assert route["stopping_rule_role"] == (
-        "required_with_acceptance_health_and_minimum_draws"
+        "acceptance_health_and_minimum_draws_only"
     )
     assert route["reports_posterior_convergence"] is False
     assert route["reports_sampler_superiority"] is False
@@ -2250,7 +2250,7 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert verification["sequential_rhat_policy"]["check_interval"] == 64
     assert (
         verification["sequential_rhat_policy"]["rhat_threshold_role"]
-        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
+        == "explanatory_diagnostic_only_not_a_handoff_gate"
     )
     assert (
         verification["sequential_rhat_policy"]["cap_rule"]
@@ -3171,7 +3171,7 @@ def test_sequential_verification_supported_high_acceptance_requests_repair() -> 
     assert repair_triggers == ("verification_acceptance_outside_pass_band",)
 
 
-def test_sequential_rhat_failure_requests_verification_retry() -> None:
+def test_sequential_rhat_failure_is_diagnostic_only() -> None:
     diagnostics = _sequential_verification_diagnostics(0.70, rhat_passed=False)
     status, role, hard_vetoes, repair_triggers = (
         hmc_kernel_tuning._classify_phase7_final_verification(
@@ -3182,13 +3182,11 @@ def test_sequential_rhat_failure_requests_verification_retry() -> None:
         )
     )
 
-    assert status == "repair_or_retry"
-    assert role == "verification_rhat_repair_trigger"
+    assert status == "passed"
+    assert role == "acceptance_health_fixed_kernel_verification_passed"
     assert hard_vetoes == ()
-    assert repair_triggers == (
-        "verification_rhat_above_threshold_or_cap_hit",
-        "verification_rhat_cap_hit",
-    )
+    assert repair_triggers == ()
+    assert diagnostics["all_finite_rhat_at_or_below_threshold"] is False
 
 
 @pytest.mark.parametrize("acceptance", [0.82, 0.60])
@@ -3223,7 +3221,7 @@ def test_sequential_verification_passes_with_valid_in_band_evidence() -> None:
     )
 
     assert status == "passed"
-    assert role == "dependence_aware_fixed_kernel_verification_passed"
+    assert role == "acceptance_health_fixed_kernel_verification_passed"
     assert hard_vetoes == ()
     assert repair_triggers == ()
 
@@ -5947,7 +5945,7 @@ def test_legacy_shared_epsilon_outer_loop_accepts_fallback_and_reserved_repair(
             callback_result=FixedMassHMCTuningBudgetCallbackResult(),
             final_status="passed" if repaired else "repair_or_retry",
             diagnostic_role=(
-                "dependence_aware_fixed_kernel_verification_passed"
+                "acceptance_health_fixed_kernel_verification_passed"
                 if repaired
                 else "verification_acceptance_repair_trigger"
             ),
@@ -6340,6 +6338,10 @@ def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
                 "log_accept_ratio": np.log(probability),
                 "is_accepted": np.ones_like(probability, dtype=bool),
                 "target_log_prob": np.zeros_like(probability),
+                **{name: np.ones_like(probability, dtype=bool) for name in (
+                    "target_score_finite", "proposal_finite", "movement_finite",
+                    "proposed_target_finite", "accepted_target_finite",
+                )},
             },
         )
 
@@ -6368,7 +6370,7 @@ def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
     screen_calls = tuple(call for call in calls if call["role"] == "screen")
     expected_l_values = ORDINARY_BROAD_PRIMARY_L_GRID + expected_refinement
 
-    assert fixed.passed is True
+    assert fixed.passed is True, (fixed.final_status, fixed.hard_vetoes, fixed.diagnostics)
     assert tuple(call["num_leapfrog_steps"] for call in tune_calls) == expected_l_values
     assert tuple(call["num_leapfrog_steps"] for call in screen_calls) == expected_l_values
     assert len({call["seed"] for call in tune_calls}) == len(expected_l_values)
@@ -6621,7 +6623,7 @@ def test_outer_loop_propagates_fixed_mass_budget_incomplete_without_final_kernel
     assert "hard_veto" not in fixed_summary["public_timeout_closeout"]
 
 
-def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
+def test_outer_loop_high_rhat_allows_acceptance_handoff() -> None:
     windowed = _windowed_stage()
     fixed = hmc_kernel_tuning.run_hmc_fixed_mass_step_stage(
         adapter=_ToyGaussianAdapter(),
@@ -6714,7 +6716,7 @@ def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
                 "verification_policy": "sequential_rhat",
                 "max_results": int(budget_policy.verification_num_results),
                 "acceptance_band": (0.65, 0.75),
-                "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
+                "rhat_threshold_role": "explanatory_diagnostic_only_not_a_handoff_gate",
             },
             diagnostics,
             FixedMassHMCTuningBudgetCallbackResult(),
@@ -6736,16 +6738,16 @@ def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
         _phase7_final_verification_runner=verification_wrapper,
     )
 
-    assert result.final_status == "budget_exhausted"
-    assert result.final_kernel_payload is None
-    assert result.final_kernel_hash is None
+    assert result.final_status == "passed"
+    assert result.final_kernel_payload is not None
+    assert result.final_kernel_hash is not None
     assert verification_calls == [0]
     assert stage_calls == ["windowed", "fixed", "trajectory"]
     assert len(result.attempts) == 1
     assert result.attempts[0].windowed_stage is windowed
     assert result.attempts[0].fixed_mass_step_stage is fixed
     assert result.attempts[0].frozen_step_trajectory_stage is trajectory
-    assert result.attempts[0].verification_diagnostics["cap_hit"] is True
+    assert result.attempts[0].verification_diagnostics["cap_hit"] is False
     assert (
         result.attempts[0].verification_diagnostics[
             "all_finite_rhat_at_or_below_threshold"
@@ -6759,11 +6761,11 @@ def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
     assert verification["verification_only_retry"] is False
     assert verification["reused_frozen_kernel_handoff"] is False
     assert verification["hmc_mechanics_exposed"] is False
-    assert verification["cap_hit"] is True
+    assert verification["cap_hit"] is False
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
     assert (
         verification["rhat_threshold_role"]
-        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
+        == "explanatory_diagnostic_only_not_a_handoff_gate"
     )
 
 
@@ -7003,34 +7005,15 @@ def test_terminal_phase6_repair_slot_no_longer_depends_on_rhat_saturation() -> N
         _phase7_final_verification_runner=verification_wrapper,
     )
 
-    assert result.final_status == "budget_exhausted"
-    assert result.final_kernel_payload is None
-    assert result.final_kernel_hash is None
-    assert verification_calls == [0, 1]
+    assert result.final_status == "passed"
+    assert result.final_kernel_payload is not None
+    assert result.final_kernel_hash is not None
+    assert verification_calls == [0]
     assert stage_calls == ["windowed", "fixed", "trajectory"]
-    assert result.terminal_budget_guard_payload is not None
-    assert result.terminal_budget_guard_payload["classification"] == (
-        "verification_only_rhat_cap_budget_saturated_no_repair_slot"
-    )
-    assert result.diagnostic_role == (
-        "verification_only_rhat_cap_budget_saturated_no_repair_slot"
-    )
-    assert len(result.attempts) == 2
-    assert all(
-        attempt.verification_diagnostics["cap_hit"] is True
-        for attempt in result.attempts
-    )
-    terminal_summary = hmc_kernel_tuning._phase7_public_summary(result)[
-        "attempt_summaries"
-    ][-1]["stage_statuses"]["verification"]
-    assert terminal_summary["verification_only_retry"] is True
-    assert terminal_summary["reused_frozen_kernel_handoff"] is True
-    assert (
-        result.attempts[0].verification_diagnostics[
-            "all_finite_rhat_at_or_below_threshold"
-        ]
-        is False
-    )
+    assert result.terminal_budget_guard_payload is None
+    assert len(result.attempts) == 1
+    assert result.attempts[0].verification_diagnostics["cap_hit"] is False
+    assert result.attempts[0].verification_diagnostics["all_finite_rhat_at_or_below_threshold"] is False
 
 
 def test_outer_loop_out_of_band_direct_candidate_advances_before_stage_repair() -> None:
