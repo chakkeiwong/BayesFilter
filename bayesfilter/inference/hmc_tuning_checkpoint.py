@@ -1,4 +1,7 @@
-"""Private ordinary-tuner recovery at completed attempt boundaries.
+"""Historical ordinary-tuner diagnostic recovery at completed attempt boundaries.
+
+The public candidate-set procedure uses its own numerical checkpoints and
+resume API. This helper does not select a public tuning route.
 
 This is artifact I/O, not another numerical runtime. TensorFlow tensor shards
 and validated dataclass fields retain the mass, start bank, repair history and

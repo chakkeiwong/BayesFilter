@@ -206,20 +206,26 @@ def test_cache_identity_includes_step_bound():
     assert payloads[0]["static_config"]["step_size_upper_bound"] == 0.05
 
 
-def test_acceptance_bracket_is_not_transferred_between_leapfrog_counts():
+@pytest.mark.parametrize("algorithm_id,fresh_bracket", [
+    (hmc_kernel_tuning.ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID, True),
+    (hmc_kernel_tuning.LEGACY_JOINT_L_EPSILON_ALGORITHM_ID, False),
+])
+def test_acceptance_bracket_is_not_transferred_between_leapfrog_counts(
+    algorithm_id, fresh_bracket,
+):
     bracket = {"next_step_size": 0.05, "high_acceptance_step_lower_bound": 0.04,
                "low_acceptance_step_upper_bound": 0.07}
     attempt = SimpleNamespace(selected_num_leapfrog_steps=3,
                               verification_repair_max_step_size=0.06,
                               fixed_mass_bracket_state=bracket)
     configurations = [hmc_kernel_tuning._joint_l_epsilon_ladder_config(
-        hmc_kernel_tuning.HMCFixedMassStepStageConfig(
-            algorithm_id=hmc_kernel_tuning.LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
-        ), initial_step=0.05,
+        hmc_kernel_tuning.HMCFixedMassStepStageConfig(algorithm_id=algorithm_id),
+        initial_step=0.05,
         num_leapfrog_steps=count, target_scope="bounded-adaptation-regression",
         seed_offset=0, attempt_state=attempt, qualified_step_size_upper_bound=0.08,
     ) for count in (3, 5)]
-    assert configurations[0].initial_fixed_mass_bracket_state is not None
+    assert all(config.require_finite_trajectory_bracket == fresh_bracket for config in configurations)
+    assert (configurations[0].initial_fixed_mass_bracket_state is None) == fresh_bracket
     assert configurations[0].step_repair_max_step_size == 0.06
     assert configurations[1].initial_fixed_mass_bracket_state is None
     assert configurations[1].step_repair_max_step_size == 0.08

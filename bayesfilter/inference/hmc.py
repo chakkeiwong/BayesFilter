@@ -560,11 +560,16 @@ class FullChainHMCConfig:
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
     require_finite_transitions: bool = False
+    capture_candidate_health: bool = False
     capture_first_failure: bool = False
     failure_capture_role: str = "sampling"
     step_size_upper_bound: float | None = None
 
     def __post_init__(self) -> None:
+        if type(self.capture_candidate_health) is not bool:
+            raise TypeError("capture_candidate_health must be boolean")
+        if self.capture_candidate_health and self.trace_policy != "standard":
+            raise ValueError("candidate health requires the standard trace")
         if self.capture_first_failure and (
             self.use_xla or self.chain_execution_mode != "tf_function"
             or self.trace_policy != "standard"
@@ -576,11 +581,15 @@ class FullChainHMCConfig:
             raise ValueError("unsupported first-failure lifecycle role")
         if self.require_finite_transitions and (self.use_xla or self.trace_policy != "standard"):
             raise ValueError("finite-transition checks require non-XLA standard tracing")
-        for name in ("num_results", "num_burnin_steps", "num_leapfrog_steps"):
+        for name in ("num_results", "num_leapfrog_steps"):
             value = int(getattr(self, name))
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
             object.__setattr__(self, name, value)
+        burnin = int(self.num_burnin_steps)
+        if burnin < 0:
+            raise ValueError("num_burnin_steps must be nonnegative")
+        object.__setattr__(self, "num_burnin_steps", burnin)
         step_size = float(self.step_size)
         if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
@@ -666,6 +675,7 @@ class FullChainHMCConfig:
             "num_results": self.num_results,
             "num_burnin_steps": self.num_burnin_steps,
             **({"require_finite_transitions": True} if self.require_finite_transitions else {}),
+            **({"capture_candidate_health": True} if self.capture_candidate_health else {}),
             **({"capture_first_failure": True, "failure_capture_role": self.failure_capture_role}
                if self.capture_first_failure else {}),
             "step_size": self.step_size,
@@ -1040,10 +1050,10 @@ class SequentialRHatHMCVerificationConfig:
     The verifier runs a fixed-size TF/TFP HMC chunk repeatedly, computes
     dependence-aware acceptance evidence and rank-normalized split/folded R-hat
     on private traces after each checkpoint. Out-of-band acceptance returns a
-    repair decision immediately; promotion uses acceptance evidence and finite
-    target health after the minimum retained count. R-hat remains an
-    explanatory diagnostic and is not a tuning-verification gate.
-    It is a tuning-verification gate, not a posterior-convergence certificate.
+    repair decision immediately. ``rhat_role`` explicitly determines whether
+    the R-hat threshold is a pass requirement or an explanatory diagnostic.
+    The default remains the posterior/diagnostic gate for direct consumers;
+    ordinary tuning selects the explanatory-only role.
     """
 
     check_interval: int
@@ -1061,6 +1071,7 @@ class SequentialRHatHMCVerificationConfig:
     use_xla: bool = False
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
+    rhat_role: str = "posterior_gate"
 
     def __post_init__(self) -> None:
         check_interval = int(self.check_interval)
@@ -1115,6 +1126,12 @@ class SequentialRHatHMCVerificationConfig:
         if not math.isfinite(threshold) or threshold <= 1.0:
             raise ValueError("rhat_threshold must be finite and greater than 1")
         object.__setattr__(self, "rhat_threshold", threshold)
+        rhat_role = str(self.rhat_role)
+        if rhat_role not in {"posterior_gate", "tuning_explanatory_only"}:
+            raise ValueError(
+                "rhat_role must be 'posterior_gate' or 'tuning_explanatory_only'"
+            )
+        object.__setattr__(self, "rhat_role", rhat_role)
         if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
             raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
         object.__setattr__(self, "use_xla", bool(self.use_xla))
@@ -1141,6 +1158,7 @@ class SequentialRHatHMCVerificationConfig:
             "seed": self.seed,
             "chain_count": self.chain_count,
             "rhat_threshold": self.rhat_threshold,
+            "rhat_role": self.rhat_role,
             "acceptance_policy": self.acceptance_policy.payload(),
             "use_xla": self.use_xla,
             "chain_execution_mode": self.chain_execution_mode,
@@ -1186,7 +1204,7 @@ class RetainedSampleHMCArchiveRunResult:
 
 @dataclass(frozen=True)
 class SequentialRHatHMCVerificationResult:
-    """Public-safe result for sequential R-hat tuning verification."""
+    """Fixed-kernel evidence with an explicit R-hat diagnostic or gate role."""
 
     passed: bool
     cap_hit: bool
@@ -5345,7 +5363,14 @@ class SequentialRHatHMCVerifier:
             )
             if decision_reached and not acceptance_evidence.promotion_eligible:
                 break
-            if acceptance_evidence.promotion_eligible and minimum_retained_satisfied:
+            if (
+                acceptance_evidence.promotion_eligible
+                and minimum_retained_satisfied
+                and (
+                    config.rhat_role == "tuning_explanatory_only"
+                    or bool(final_rhat["passed"])
+                )
+            ):
                 passed = True
                 break
             chunk_index += 1
@@ -5372,7 +5397,7 @@ class SequentialRHatHMCVerifier:
             ),
             "chunk_count": len(chunk_summaries),
             "rhat_threshold": float(config.rhat_threshold),
-            "rhat_role": "explanatory_diagnostic_only_not_a_handoff_gate",
+            "rhat_role": config.rhat_role,
             "rhat_definition": final_rhat["rhat_definition"],
             "max_finite_rhat": final_rhat["max_finite_rhat"],
             "max_rank_normalized_split_rhat": final_rhat[
@@ -5511,6 +5536,7 @@ class SequentialRHatHMCVerifier:
             "chunk_count": len(chunk_summaries),
             "chain_count": int(config.chain_count),
             "rhat_threshold": float(config.rhat_threshold),
+            "rhat_role": config.rhat_role,
             "rhat_definition": final_rhat["rhat_definition"],
             "max_rank_normalized_split_rhat": final_rhat[
                 "max_rank_normalized_split_rhat"
@@ -6566,9 +6592,51 @@ def _trace_fn_for_config(
     *,
     adapter: Any | None = None,
     _wrap_finite_checks: bool = True,
+    _wrap_candidate_health: bool = True,
 ) -> Callable[[Any, Any], Mapping[str, Any]]:
+    if config.capture_candidate_health and _wrap_candidate_health:
+        base_trace = _trace_fn_for_config(
+            config, adapter=adapter, _wrap_finite_checks=_wrap_finite_checks,
+            _wrap_candidate_health=False,
+        )
+
+        def candidate_health_trace(state: Any, kernel_results: Any) -> Mapping[str, Any]:
+            import tensorflow as tf
+
+            trace = dict(base_trace(state, kernel_results))
+            results = kernel_results.inner_results if config.require_finite_transitions else kernel_results
+            if config.tuning_policy.uses_dual_averaging:
+                results = results.inner_results
+            proposed = results.proposed_results
+            accepted = results.accepted_results
+            scores = tf.nest.flatten((proposed.grads_target_log_prob, accepted.grads_target_log_prob))
+            trace["target_score_finite"] = tf.reduce_all(tf.stack([
+                tf.reduce_all(tf.math.is_finite(score), axis=-1) for score in scores
+            ]), axis=0)
+            # Preserve proposals so the host can check displacement from the
+            # actual pre-transition state, including the first transition.
+            trace["proposed_state"] = results.proposed_state
+            initial_momentum = tf.nest.flatten(proposed.initial_momentum)
+            final_momentum = tf.nest.flatten(proposed.final_momentum)
+            if len(initial_momentum) != 1 or len(final_momentum) != 1:
+                raise ValueError("candidate health requires a single tensor state")
+            trace["initial_momentum"] = initial_momentum[0]
+            trace["final_momentum"] = final_momentum[0]
+            if config.target_status_trace_policy == "per_chain_step":
+                telemetry = adapter.target_status_telemetry(results.proposed_state)
+                if any(key not in telemetry for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS):
+                    raise ValueError("proposed target-status telemetry is incomplete")
+                trace["proposed_target_status_telemetry"] = {
+                    key: telemetry[key] for key in TARGET_STATUS_TELEMETRY_FIELDS if key in telemetry
+                }
+            return trace
+
+        return candidate_health_trace
     if config.require_finite_transitions and _wrap_finite_checks:
-        base_trace = _trace_fn_for_config(config, adapter=adapter, _wrap_finite_checks=False)
+        base_trace = _trace_fn_for_config(
+            config, adapter=adapter, _wrap_finite_checks=False,
+            _wrap_candidate_health=False,
+        )
 
         def checked_trace(state: Any, kernel_results: Any) -> Mapping[str, Any]:
             trace = dict(base_trace(state, kernel_results.inner_results))

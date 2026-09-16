@@ -376,11 +376,10 @@ def test_preflight_accepts_structured_candidate_rejection_only_after_real_hmc() 
         encoding="utf-8"
     )
     for required in (
-        'tuning_payload.get("schema") != "bayesfilter.hmc_kernel_tuning_public_artifact.v1"',
-        'bootstrap.get("preflight_passed") is True',
-        'bootstrap.get("round_timing_available") is True',
-        'bootstrap.get("observed_acceptance_relations")',
-        '"candidate_tuning_passed": tiny_tuning.passed is True',
+        'tiny_tuning.result.completion_status != "shared_invalidity"',
+        'get("numerical_evidence_hash")', 'get("evidence_validity") == "valid"',
+        'not row["observation"].get("hard_vetoes")',
+        '"candidate_tuning_passed": bool(tiny_tuning.result.verified_candidate_ids)',
         '"native_tuning_scientific_pass_required": False',
     ):
         assert required in text
@@ -496,8 +495,8 @@ def test_runner_supports_admitted_kernel_replay_validation() -> None:
     assert "admitted_kernel_mechanics_payload_from_tuning_result" in implementation
     assert "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload" in implementation
     assert "tune_hmc_kernel(" in implementation
-    assert "run_sequential_neutra_hmc(" in implementation
-    assert implementation.count("adapter=replay.adapter") == 2
+    assert "replay.run_sequential(" in implementation
+    assert implementation.count("replay.run_sequential(") == 2
 
 
 def test_runner_exposes_broad_grid_as_explicit_tuning_only_action() -> None:
@@ -622,7 +621,7 @@ def test_admitted_kernel_replay_is_scoped_to_frozen_validation() -> None:
 def test_tuning_only_frozen_validation_returns_before_sequential_sampling() -> None:
     path = ROOT / "bayesfilter/inference/neutra_end_to_end.py"
     text = path.read_text(encoding="utf-8")
-    marker = "if config.tuning_only:"
+    marker = "if config.tuning_only or (replay_path is None and config.selected_candidate_id is None):"
     assert marker in text
     tuning_only_block = text.split(marker, 1)[1].split(
         "tuned_adapter = _fixed_transport_adapter", 1

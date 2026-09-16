@@ -1,7 +1,26 @@
 # HMC candidate-set unification and guidebook rewrite
 
+## Current disposition: 2026-09-15
+
+The supported public ordinary, fixed-transport, and conditional position-field
+routes now use the shared candidate-set controller, including proposals,
+repairs, further evidence, retention, and restart. The active NeuTra consumer
+uses explicit members and the separate posterior controller. The tuning guide
+and book were rewritten to describe that implementation. R-hat is reporting-only
+during tuning. The [whole-procedure repair plan](bayesfilter-hmc-whole-procedure-repair-plan-2026-09-14.md)
+and [execution audit](bayesfilter-hmc-whole-procedure-repair-execution-audit-2026-09-14.md)
+are the current completion record and list the remaining target-specific limits.
+
+The September 12/R5 text below is preserved as historical planning context.
+Its statements that the numerical bridge and public/consumer migration are
+deferred no longer describe current library implementation. Target-scale
+qualification and a real MacroFinance campaign remain separate work.
+
+## Historical R5 plan
+
 Date: 2026-09-12.
-Status: revision R5 after a post-R4 implementation audit. R5 preserves the
+Status: revision R5 with the 2026-09-14 R-hat role correction.
+See `bayesfilter-hmc-tuning-rhat-role-repair-plan-2026-09-14.md`. R5 preserves the
 MacroFinance candidate-specific epsilon-repair correction and adds durable
 resume, budget conservation, replay-integrity, and guide/reference alignment
 requirements. The pure controller, checked artifact boundary, and typed
@@ -114,8 +133,8 @@ example; use a small synthetic fixture for regression tests.
 | Primary engineering pass criterion | Deterministic adversarial tests demonstrate complete survivor retention, fair stage allocation, correct scope-bound replay for each verified member, unchanged target/transition contracts, bounded repairs/resume, and matching guide/examples/registry. |
 | Promotion veto | Lost viable candidate; unmeasured or unverified member exported as verified; computed-but-unexecuted repair treated as a handoff; target/score mismatch; invalid scope reuse; missing required diagnostics; unsupported backend; divergent active procedures; unsupported scientific wording; failing relevant tests or documentation contradictions. |
 | Continuation veto | Shared target/coordinate/geometry corruption, invalid execution environment, corrupted or cross-wired evidence, or exhausted total budget. Local kernel failure and insufficient mixing evidence are not shared invalidity. |
-| Repair trigger | Candidate-local numerical failure with an identified repair, one-sided directional epsilon evidence, poor or inconclusive mixing, acceptance needing exploration, inadequate grid coverage, or localized infrastructure failure. Each trigger has a typed bounded next action; inconclusive evidence alone is not directional repair evidence. |
-| Explanatory diagnostics | Acceptance, trajectory length, geometry spectrum, movement, runtime, compilation cost, and descriptive ESS summaries, except where the declared validation design assigns a stronger role. |
+| Repair trigger | Candidate-local numerical failure with an identified repair, one-sided directional epsilon evidence, acceptance needing exploration, inadequate grid coverage, or localized infrastructure failure. Each trigger has a typed bounded next action; inconclusive evidence alone is not directional repair evidence. |
+| Explanatory diagnostics | Acceptance, trajectory length, geometry spectrum, movement, runtime, compilation cost, and descriptive R-hat/ESS/MCSE summaries. Posterior gates apply only after tuning handoff. |
 | Unsupported conclusions | No universal optimal L range, epsilon, mass, acceptance target, convergence guarantee, sampler superiority, or M4/NeuTra posterior readiness follows from controller tests or short smokes. |
 | Preserved result | Versioned test and smoke outputs, exact command/environment manifest, candidate and repair tables, before/after reproduction trace, code diff, rewritten source/PDF, result note, and Claude audit findings. |
 
@@ -249,13 +268,14 @@ configuration hypotheses with recorded provenance, not universal HMC constants.
 | Nonfinite candidate trajectory, declared divergence, invalid target status, or missing required telemetry | Veto that candidate's promotion. Distinguish a local step/geometry problem from shared implementation failure before scheduling a measured repair. |
 | Finite acceptance outside a target band | Descriptive tuning/efficiency diagnostic. It is not a validity veto and does not by itself create a repair; a repair requires the typed directional evidence rule below. |
 | High acceptance with absent movement | Movement/health failure under the declared screen; acceptance cannot rescue it. |
-| Early R-hat/ESS/MCSE insufficient or unavailable because evidence is too short | Pending evidence or a predeclared evidence extension. No verified handoff; extend under the declared ladder. Do not reject the L family merely for failing an early short screen. A change of epsilon requires separate directional evidence. |
-| Final declared R-hat, bulk/tail ESS, MCSE, or target-specific mixing screen fails | Promotion veto for that candidate at that evidence budget. Record whether longer evidence or new settings are allowed; do not stop unrelated candidates. |
+| R-hat/ESS/MCSE insufficient or unavailable during tuning | Explanatory evidence; retain the diagnostic without rejecting, repairing, or delaying a tuning handoff solely for this reason. Posterior assessment may request its own declared evidence extension after handoff. |
+| Declared R-hat, bulk/tail ESS, MCSE, or target-specific posterior mixing screen fails | Blocks posterior admission only where the downstream posterior route declares that screen. It is not a tuning promotion veto or an epsilon repair trigger. |
 | Runtime/device failure | Infrastructure classification; preserve the failed attempt and retry locally if the scope and remaining budget permit. |
 | Total campaign budget exhausted | Stop new work, preserve completed work and pending candidates, and report incomplete coverage. No scientific rejection is inferred. |
 
-Choose numeric mixing thresholds and any target-specific mode/observable checks
-before execution. Modern rank-normalized split/folded R-hat, bulk/tail ESS, and
+Choose numeric posterior mixing thresholds and target-specific mode/observable
+checks before posterior assessment. They do not gate tuning handoff. Modern
+rank-normalized split/folded R-hat, bulk/tail ESS, and
 MCSE must be computed in the coordinates and observables relevant to the claim,
 including model parameters when latent diagnostics do not answer that question.
 Record mean Metropolis probability separately from realized binary acceptance.
@@ -640,8 +660,8 @@ Create meaningful controller/replay tests in the proposed
    and no pair is admitted without being measured.
 4. Out-of-band finite acceptance alone does not reject a candidate; high
    acceptance with no movement does not pass its declared health screen.
-5. Early insufficient R-hat/ESS evidence takes a permitted extension/repair path;
-   a final screen failure blocks that member while unrelated work continues.
+5. High or unavailable R-hat/ESS/MCSE cannot reject, repair, or delay a tuning
+   candidate; posterior assessment retains its separately declared gates.
 6. Local failure/repair preserves other candidates and frozen geometry; shared
    invalidity stops the affected scope; changed geometry requires fresh tuning.
 7. Budget exhaustion/resume preserves partial progress, RNG/seed lineage,

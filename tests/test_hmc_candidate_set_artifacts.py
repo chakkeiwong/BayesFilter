@@ -138,11 +138,13 @@ def test_replay_rejects_inconclusive_receipt_relabelled_as_verified():
     payload = dict(candidate_set_result_payload(result))
     candidate_id = result.verified_candidate_ids[0]
     receipts = [dict(receipt) for receipt in payload["verification_receipts"]]
-    receipts[0]["decision"] = "inconclusive_evidence"
+    for receipt in receipts:
+        if receipt["candidate_id"] == candidate_id and receipt.get("stage", "verification") == "verification":
+            receipt["decision"] = "inconclusive_evidence"
     payload["verification_receipts"] = receipts
     _rehash(payload)
 
-    with pytest.raises(ValueError, match="passing verification receipt"):
+    with pytest.raises(ValueError, match="passing verification receipt|decision aliases disagree"):
         require_verified_member(
             payload,
             scope_id=result.scope.scope_id,

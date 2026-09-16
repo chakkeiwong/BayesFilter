@@ -1,4 +1,4 @@
-"""Recovery checks use real typed handoffs and injected deterministic runners."""
+"""Historical recovery checks use typed handoffs and deterministic runners."""
 import json
 
 import pytest
@@ -191,8 +191,7 @@ def test_real_operational_warmup_state_roundtrips_without_repeating_hmc(tmp_path
     ], check=True, capture_output=True, text=True, timeout=60)
 
 
-def test_public_api_reuses_geometry_bootstrap_and_binds_numerical_inputs(tmp_path, monkeypatch):
-    from bayesfilter.inference import tune_hmc_kernel
+def test_historical_executor_reuses_geometry_bootstrap_and_binds_numerical_inputs(tmp_path, monkeypatch):
     from tests.test_hmc_kernel_tuning_public_api import _ToyGaussianAdapter, _loop_result
     calls = []
     def geometry_runner(**_):
@@ -211,7 +210,7 @@ def test_public_api_reuses_geometry_bootstrap_and_binds_numerical_inputs(tmp_pat
     kwargs = dict(adapter=_ToyGaussianAdapter(), initial_position=[0.0, 0.0],
                   campaign_checkpoint_dir=tmp_path / "campaign")
     for index, budget in enumerate((1000, 18000)):
-        result = tune_hmc_kernel(
+        result = tuning._run_canonical_hmc_tuning(
             **kwargs, campaign_time_budget_s=budget, output_dir=tmp_path / f"call-{index}",
             config=tuning.HMCKernelTuningConfig.smoke(
                 target_scope="kernel_fixed_mass_step_toy_gaussian", max_attempts=3 if index == 0 else 10,
@@ -221,6 +220,27 @@ def test_public_api_reuses_geometry_bootstrap_and_binds_numerical_inputs(tmp_pat
     assert calls == ["geometry", "bootstrap"]
     kwargs["initial_position"] = [0.0, 0.1]
     with pytest.raises(CheckpointError, match="identity changed"):
-        tune_hmc_kernel(**kwargs, campaign_time_budget_s=18000,
+        tuning._run_canonical_hmc_tuning(**kwargs, campaign_time_budget_s=18000,
                         config=tuning.HMCKernelTuningConfig.smoke(
                             target_scope="kernel_fixed_mass_step_toy_gaussian", max_attempts=10))
+
+
+@pytest.mark.parametrize("option,value", [
+    ("campaign_checkpoint_dir", "historical-campaign"),
+    ("campaign_time_budget_s", 18000),
+    ("campaign_interrupted_elapsed_s", 123),
+])
+def test_public_dispatch_rejects_historical_campaign_options_before_execution(
+    option, value, monkeypatch,
+):
+    from bayesfilter.inference import hmc_candidate_set_public, tune_hmc_kernel
+
+    def unexpected_execution(**_):
+        pytest.fail("retired campaign options must be rejected before execution")
+
+    monkeypatch.setattr(
+        hmc_candidate_set_public, "run_shared_ordinary_tuning", unexpected_execution,
+    )
+    monkeypatch.setattr(tuning, "_run_canonical_hmc_tuning", unexpected_execution)
+    with pytest.raises(ValueError, match="resume_hmc_candidate_set_tuning"):
+        tune_hmc_kernel(adapter=object(), initial_position=None, **{option: value})

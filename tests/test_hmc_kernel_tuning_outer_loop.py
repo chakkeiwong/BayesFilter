@@ -165,10 +165,10 @@ def _sequential_verification_diagnostics(
         cost_stop_reasons=cost_stop_reasons,
         native_divergence_count=native_divergence_count,
     )
-    verifier_passed = bool(evidence["promotion_eligible"])
     return {
         "sequential_rhat_verification": True,
-        "passed": verifier_passed,
+        "passed": bool(evidence["promotion_eligible"]),
+        "rhat_role": "tuning_explanatory_only",
         "all_finite_rhat_at_or_below_threshold": bool(rhat_passed),
         "cap_hit": False,
         "rhat_threshold": 1.01,
@@ -2250,7 +2250,7 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert verification["sequential_rhat_policy"]["check_interval"] == 64
     assert (
         verification["sequential_rhat_policy"]["rhat_threshold_role"]
-        == "explanatory_diagnostic_only_not_a_handoff_gate"
+        == "tuning_explanatory_only"
     )
     assert (
         verification["sequential_rhat_policy"]["cap_rule"]
@@ -3171,7 +3171,7 @@ def test_sequential_verification_supported_high_acceptance_requests_repair() -> 
     assert repair_triggers == ("verification_acceptance_outside_pass_band",)
 
 
-def test_sequential_rhat_failure_is_diagnostic_only() -> None:
+def test_sequential_rhat_failure_is_explanatory_only() -> None:
     diagnostics = _sequential_verification_diagnostics(0.70, rhat_passed=False)
     status, role, hard_vetoes, repair_triggers = (
         hmc_kernel_tuning._classify_phase7_final_verification(
@@ -4724,10 +4724,8 @@ def test_verification_mixed_rhat_acceptance_handoff_supplies_private_repair_step
             "cap_hit": True,
         },
         verification_final_status="repair_or_retry",
-        verification_diagnostic_role="verification_rhat_repair_trigger",
+        verification_diagnostic_role="verification_acceptance_repair_trigger",
         verification_repair_triggers=(
-            "verification_rhat_above_threshold_or_cap_hit",
-            "verification_rhat_cap_hit",
             "verification_acceptance_outside_pass_band",
         ),
         verification_reserved=True,
@@ -6288,6 +6286,8 @@ def test_operational_phase5_selection_repairs_through_empirical_midpoint(
 def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from bayesfilter.inference import hmc_warmup
+
     adapter, geometry, bootstrap = _operational_inputs()
     windowed = hmc_kernel_tuning.run_hmc_windowed_mass_stage(
         adapter=adapter,
@@ -6302,12 +6302,42 @@ def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
         _attempt_budget_policy=_operational_budget(),
     )
     calls: list[dict[str, Any]] = []
+    bracket_calls: list[tuple[int, tuple[int, int]]] = []
+    fixture_step_bound = hmc_kernel_tuning._fixed_mass_step_upper_bound(windowed)
+    assert fixture_step_bound is not None
+
+    def finite_bracket(**kwargs: Any):
+        # This fixture checks broad-grid scheduling, not numerical bracketing.
+        leapfrog = int(kwargs["num_leapfrog_steps"])
+        seed = tuple(kwargs["seed"])
+        bracket_calls.append((leapfrog, seed))
+        assert kwargs["hard_veto_nonfinite"] is True
+        step = min(
+            float(geometry.target_trajectory_length) / float(leapfrog),
+            fixture_step_bound,
+        )
+        return hmc_warmup.ReasonableEpsilonResult(
+            status="passed",
+            selected_step_size=step,
+            attempts=(hmc_warmup.ReasonableEpsilonAttempt(
+                step_size=step,
+                mean_acceptance_probability=0.70,
+                finite=True,
+                seed=seed,
+                num_leapfrog_steps=leapfrog,
+            ),),
+        )
+
+    monkeypatch.setattr(hmc_warmup, "find_reasonable_epsilon", finite_bracket)
 
     def operational_runner(_adapter: Any, initial_state: Any, config: Any):
         bank = np.asarray(initial_state, dtype=float)
         leapfrog = int(config.num_leapfrog_steps)
         uses_tuning = bool(config.tuning_policy.uses_dual_averaging)
-        tuned_step = float(geometry.target_trajectory_length) / float(leapfrog)
+        tuned_step = min(
+            float(geometry.target_trajectory_length) / float(leapfrog),
+            fixture_step_bound,
+        )
         calls.append(
             {
                 "role": "tune" if uses_tuning else "screen",
@@ -6338,10 +6368,13 @@ def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
                 "log_accept_ratio": np.log(probability),
                 "is_accepted": np.ones_like(probability, dtype=bool),
                 "target_log_prob": np.zeros_like(probability),
-                **{name: np.ones_like(probability, dtype=bool) for name in (
-                    "target_score_finite", "proposal_finite", "movement_finite",
-                    "proposed_target_finite", "accepted_target_finite",
-                )},
+                **{
+                    name: np.ones_like(probability, dtype=bool)
+                    for name in (
+                        "target_score_finite", "proposal_finite", "movement_finite",
+                        "proposed_target_finite", "accepted_target_finite",
+                    )
+                },
             },
         )
 
@@ -6370,7 +6403,9 @@ def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
     screen_calls = tuple(call for call in calls if call["role"] == "screen")
     expected_l_values = ORDINARY_BROAD_PRIMARY_L_GRID + expected_refinement
 
-    assert fixed.passed is True, (fixed.final_status, fixed.hard_vetoes, fixed.diagnostics)
+    assert fixed.passed is True
+    assert tuple(leapfrog for leapfrog, _seed in bracket_calls) == expected_l_values
+    assert len({seed for _leapfrog, seed in bracket_calls}) == len(expected_l_values)
     assert tuple(call["num_leapfrog_steps"] for call in tune_calls) == expected_l_values
     assert tuple(call["num_leapfrog_steps"] for call in screen_calls) == expected_l_values
     assert len({call["seed"] for call in tune_calls}) == len(expected_l_values)
@@ -6623,7 +6658,7 @@ def test_outer_loop_propagates_fixed_mass_budget_incomplete_without_final_kernel
     assert "hard_veto" not in fixed_summary["public_timeout_closeout"]
 
 
-def test_outer_loop_high_rhat_allows_acceptance_handoff() -> None:
+def test_outer_loop_high_rhat_does_not_block_handoff_at_public_budget() -> None:
     windowed = _windowed_stage()
     fixed = hmc_kernel_tuning.run_hmc_fixed_mass_step_stage(
         adapter=_ToyGaussianAdapter(),
@@ -6716,7 +6751,7 @@ def test_outer_loop_high_rhat_allows_acceptance_handoff() -> None:
                 "verification_policy": "sequential_rhat",
                 "max_results": int(budget_policy.verification_num_results),
                 "acceptance_band": (0.65, 0.75),
-                "rhat_threshold_role": "explanatory_diagnostic_only_not_a_handoff_gate",
+                "rhat_threshold_role": "tuning_explanatory_only",
             },
             diagnostics,
             FixedMassHMCTuningBudgetCallbackResult(),
@@ -6765,7 +6800,7 @@ def test_outer_loop_high_rhat_allows_acceptance_handoff() -> None:
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
     assert (
         verification["rhat_threshold_role"]
-        == "explanatory_diagnostic_only_not_a_handoff_gate"
+        == "tuning_explanatory_only"
     )
 
 
@@ -6902,7 +6937,7 @@ def test_outer_loop_rhat_cap_with_out_of_band_acceptance_still_reenters_stage_re
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
 
 
-def test_terminal_phase6_repair_slot_no_longer_depends_on_rhat_saturation() -> None:
+def test_high_rhat_does_not_consume_terminal_repair_slot() -> None:
     windowed = _windowed_stage()
     fixed = hmc_kernel_tuning.run_hmc_fixed_mass_step_stage(
         adapter=_ToyGaussianAdapter(),
@@ -7012,8 +7047,10 @@ def test_terminal_phase6_repair_slot_no_longer_depends_on_rhat_saturation() -> N
     assert stage_calls == ["windowed", "fixed", "trajectory"]
     assert result.terminal_budget_guard_payload is None
     assert len(result.attempts) == 1
-    assert result.attempts[0].verification_diagnostics["cap_hit"] is False
-    assert result.attempts[0].verification_diagnostics["all_finite_rhat_at_or_below_threshold"] is False
+    assert result.attempts[0].repair_triggers == ()
+    diagnostics = result.attempts[0].verification_diagnostics
+    assert diagnostics["cap_hit"] is False
+    assert diagnostics["all_finite_rhat_at_or_below_threshold"] is False
 
 
 def test_outer_loop_out_of_band_direct_candidate_advances_before_stage_repair() -> None:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
+
 import hashlib
 import json
 from collections.abc import Mapping
@@ -10,6 +12,8 @@ from typing import Any
 
 from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMC_CANDIDATE_SET_RESULT_SCHEMA,
+    HMCCandidateSetScope,
+    HMCTuningCandidateRecord,
     HMCWorkItem,
     HMCTuningCandidateSetController,
     HMCTuningCandidateSetResult,
@@ -45,6 +49,7 @@ def _validate_result_payload(
     scope = payload.get("scope")
     if not isinstance(scope, Mapping) or not str(scope.get("scope_id", "")):
         raise ValueError("candidate-set artifact has invalid scope")
+    checked_scope = HMCCandidateSetScope.from_payload(scope)
     candidates = payload.get("candidates")
     states = payload.get("candidate_states")
     if not isinstance(candidates, (tuple, list)) or not isinstance(states, Mapping):
@@ -65,6 +70,7 @@ def _validate_result_payload(
         identity.pop("candidate_record_hash", None)
         if _sha256(identity) != supplied_hash:
             raise ValueError("candidate-set candidate record hash mismatch")
+        HMCTuningCandidateRecord.from_payload(checked_scope, candidate)
         by_id[candidate_id] = candidate
 
     state_by_id = {str(key): str(value) for key, value in states.items()}
@@ -73,6 +79,7 @@ def _validate_result_payload(
         "proposal_budget_pending",
         "screened",
         "validating",
+        "inconclusive_at_cap",
         "promotion_failed",
         "verified",
     }
@@ -116,7 +123,7 @@ def _validate_result_payload(
         candidate["candidate_id"]
         for candidate in candidates
         if state_by_id[candidate["candidate_id"]]
-        in {"screened", "validating", "verified"}
+        in {"screened", "validating", "inconclusive_at_cap", "verified"}
     )
     if payload.get("completion_status") != "shared_invalidity" and viable != expected_viable:
         raise ValueError("candidate-set viable IDs do not match candidate states")
@@ -187,6 +194,8 @@ def _validate_result_payload(
             if attempt_id in work_by_attempt:
                 raise ValueError("duplicate verification work-item identity")
             work_by_attempt[attempt_id] = work
+        else:
+            work_by_attempt[work_id + ":attempt"] = work
         work_by_id[work_id] = work
         work_ordinals.add(checked_work.ordinal)
 
@@ -219,7 +228,7 @@ def _validate_result_payload(
         if (
             work is None
             or work.get("candidate_id") != candidate_id
-            or work.get("stage") != "verification"
+            or work.get("stage") != receipt.get("stage", "verification")
             or work.get("status") != "completed"
         ):
             raise ValueError("verification receipt has no matching work item")
@@ -240,17 +249,19 @@ def _validate_result_payload(
         decision = str(receipt.get("decision", ""))
         if not decision:
             raise ValueError("verification receipt decision is missing")
-        if receipt.get("hard_vetoes") and (
-            candidate_id in verified or decision in passing_decisions
-        ):
-            raise ValueError("verified verification receipt contains a hard veto")
+        # A passing acceptance observation may belong to a rejected candidate.
+        # Validate its roles here; membership is checked independently below.
+        HMCCandidateDecision.from_observation(receipt)
         prior_ranges.append(draw_range)
         receipt_hash = _sha256(receipt)
         receipt_by_hash[receipt_hash] = receipt
     for candidate_id in verified:
         if not any(
             receipt.get("candidate_id") == candidate_id
-            and receipt.get("decision") in passing_decisions
+            and HMCCandidateDecision.from_observation(receipt).promotion_eligible
+            and receipt.get("stage", "verification") == "verification"
+            and not receipt.get("hard_vetoes") and not receipt.get("promotion_vetoes")
+            and receipt.get("evidence_validity", "valid") == "valid"
             for receipt in receipts
             if isinstance(receipt, Mapping)
         ):
@@ -294,6 +305,7 @@ def _validate_result_payload(
             "source_dependency_hash",
             "target_preparation_identity",
             "transition_identity",
+            "use_xla",
         ):
             if child.get(field) != parent.get(field) or child.get(field) != scope.get(field):
                 raise ValueError(f"repair {field} identity mismatch")
@@ -347,6 +359,7 @@ def _validate_result_payload(
                 raise ValueError("work item repair identity mismatch")
 
     accounting = payload.get("accounting_events", ())
+    chunk_accounting = payload.get("search_state", {}).get("controller_policy_version", 0) >= 3
     if not isinstance(accounting, (tuple, list)):
         raise ValueError("candidate-set artifact has invalid accounting events")
     charged = 0
@@ -358,6 +371,14 @@ def _validate_result_payload(
         units = int(event.get("units", 0))
         if units < 0:
             raise ValueError("candidate-set accounting units must be non-negative")
+        if chunk_accounting and event.get("event") == "numerical_chunk_charged":
+            work = work_by_id.get(event.get("work_item_id"))
+            index, transitions = event.get("chunk_index"), event.get("transitions")
+            if (work is None or type(index) is not int or index < 0
+                    or type(transitions) is not int or transitions <= 0):
+                raise ValueError("invalid attempted chunk accounting identity or extent")
+            if event.get("gradient_work") != transitions * (by_id[work["candidate_id"]]["leapfrog_steps"] + 1):
+                raise ValueError("attempted chunk cost disagrees with candidate")
         if event.get("event") == "work_charged":
             charged += units
         elif event.get("event") == "reserve_allocated":
@@ -368,6 +389,11 @@ def _validate_result_payload(
         raise ValueError("candidate-set budget usage does not match accounting")
     if allocated - charged - released != reserved_budget:
         raise ValueError("candidate-set reserved budget does not match accounting")
+    if chunk_accounting:
+        work = sum(event.get("gradient_work", 0) for event in accounting
+                   if event.get("event") in {"numerical_work_reserved", "numerical_chunk_charged"})
+        if work != payload.get("search_state", {}).get("gradient_work"):
+            raise ValueError("gradient-work usage does not match attempted-work accounting")
 
 
 def candidate_set_result_payload(result: HMCTuningCandidateSetResult) -> Mapping[str, Any]:
@@ -381,11 +407,15 @@ def candidate_set_result_payload(result: HMCTuningCandidateSetResult) -> Mapping
 def write_candidate_set_result(
     result: HMCTuningCandidateSetResult,
     path: str | Path,
+    *, checkpoint: bool = False,
 ) -> Mapping[str, Any]:
     """Write one atomic, checksummed result artifact."""
     destination = Path(path)
+    if destination.exists() and not checkpoint:
+        raise FileExistsError(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     payload = candidate_set_result_payload(result)
+    _validate_result_payload(payload)
     encoded = json.dumps(payload, indent=2, sort_keys=True, default=list) + "\n"
     temporary = destination.with_name(destination.name + ".tmp")
     temporary.write_text(encoded, encoding="utf-8")

@@ -1,0 +1,65 @@
+....................F................................................... [ 25%]
+.........................................................F.............. [ 51%]
+............................................FF.....F...F................ [ 76%]
+..........F..............................F.......................        [100%]
+=================================== FAILURES ===================================
+_ test_public_ordinary_configuration_uses_common_search_and_retains_multiple_members _
+tests/test_hmc_whole_procedure_repair.py:210: in test_public_ordinary_configuration_uses_common_search_and_retains_multiple_members
+    run = tune_hmc_kernel(adapter=GaussianTarget(),
+bayesfilter/inference/hmc_tuning_dispatch.py:135: in tune_hmc_kernel
+    return run_shared_ordinary_tuning(
+bayesfilter/inference/hmc_candidate_set_public.py:120: in run_shared_ordinary_tuning
+    _reject_changed_retired_options(cfg, (
+bayesfilter/inference/hmc_candidate_set_public.py:56: in _reject_changed_retired_options
+    raise ValueError("retired tuning options require migration to search_config/execution_config: " + ", ".join(changed))
+E   ValueError: retired tuning options require migration to search_config/execution_config: step_repair_high_acceptance_directional_factor, step_repair_high_acceptance_ladder_max_factor
+___________ test_guide_binds_the_executable_ordinary_default_policy ____________
+tests/test_hmc_tuning_documentation_contract.py:369: in test_guide_binds_the_executable_ordinary_default_policy
+    assert "every verified" in guide
+E   AssertionError: assert 'every verified' in '# HMC Tuning Interface Last checked: 2026-09-15. This reference describes the common candidate-set procedure. Read it...nner` for the conditional position-field mechanics route; never disguise an arbitrary field as a frozen nonlinear map.'
+______ test_public_presets_construct_nonclaim_configs[standard-standard] _______
+tests/test_hmc_kernel_tuning_public_api.py:817: in test_public_presets_construct_nonclaim_configs
+    assert config.use_xla is False
+E   AssertionError: assert True is False
+E    +  where True = HMCKernelTuningConfig(algorithm_id='ordinary_broad_fixed_metric_selection_v1', operational_budget_policy_id='bayesfilt...out_enlargement_rounds=None, incall_progress_heartbeat_s=None, source='bayesfilter.inference.tune_hmc_kernel.standard').use_xla
+_______ test_public_presets_construct_nonclaim_configs[serious-serious] ________
+tests/test_hmc_kernel_tuning_public_api.py:817: in test_public_presets_construct_nonclaim_configs
+    assert config.use_xla is False
+E   AssertionError: assert True is False
+E    +  where True = HMCKernelTuningConfig(algorithm_id='ordinary_broad_fixed_metric_selection_v1', operational_budget_policy_id='bayesfilt...eout_enlargement_rounds=None, incall_progress_heartbeat_s=None, source='bayesfilter.inference.tune_hmc_kernel.serious').use_xla
+_____________ test_public_xla_runtime_parameter_rejects_eager_mode _____________
+tests/test_hmc_kernel_tuning_public_api.py:990: in test_public_xla_runtime_parameter_rejects_eager_mode
+    with pytest.raises(ValueError, match="XLA HMC requires"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_ test_public_progress_artifact_records_bootstrap_callback_before_bootstrap_returns _
+tests/test_hmc_kernel_tuning_public_api.py:1213: in test_public_progress_artifact_records_bootstrap_callback_before_bootstrap_returns
+    config=HMCKernelTuningConfig.diagnostic(
+bayesfilter/inference/hmc_kernel_tuning.py:7391: in diagnostic
+    return cls(**payload)
+           ^^^^^^^^^^^^^^
+<string>:52: in __init__
+    ???
+bayesfilter/inference/hmc_kernel_tuning.py:7192: in __post_init__
+    raise ValueError("XLA HMC requires chain_execution_mode='tf_function'")
+E   ValueError: XLA HMC requires chain_execution_mode='tf_function'
+_________ test_fixed_transport_defaults_match_owner_acceptance_policy __________
+tests/test_fixed_transport_hmc_tuning.py:461: in test_fixed_transport_defaults_match_owner_acceptance_policy
+    with pytest.raises(ValueError, match="at least two distinct step_size_candidates"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+________ test_modern_reporting_does_not_impose_convergence_draw_budget _________
+tests/test_fixed_transport_hmc_tuning.py:1346: in test_modern_reporting_does_not_impose_convergence_draw_budget
+    with pytest.raises(ValueError, match="exactly four chains"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+=========================== short test summary info ============================
+FAILED tests/test_hmc_whole_procedure_repair.py::test_public_ordinary_configuration_uses_common_search_and_retains_multiple_members
+FAILED tests/test_hmc_tuning_documentation_contract.py::test_guide_binds_the_executable_ordinary_default_policy
+FAILED tests/test_hmc_kernel_tuning_public_api.py::test_public_presets_construct_nonclaim_configs[standard-standard]
+FAILED tests/test_hmc_kernel_tuning_public_api.py::test_public_presets_construct_nonclaim_configs[serious-serious]
+FAILED tests/test_hmc_kernel_tuning_public_api.py::test_public_xla_runtime_parameter_rejects_eager_mode
+FAILED tests/test_hmc_kernel_tuning_public_api.py::test_public_progress_artifact_records_bootstrap_callback_before_bootstrap_returns
+FAILED tests/test_fixed_transport_hmc_tuning.py::test_fixed_transport_defaults_match_owner_acceptance_policy
+FAILED tests/test_fixed_transport_hmc_tuning.py::test_modern_reporting_does_not_impose_convergence_draw_budget
+8 failed, 273 passed, 5908 warnings in 342.14s (0:05:42)

@@ -329,9 +329,9 @@ For a valid batched target, the operational algorithm is:
  \item Construct \eqref{eq:bf-neutra-transported-target} from the frozen map.
  Check trainable/frozen parity, finite values, scores, and target telemetry.
  \item Screen a broad set of fixed HMC pairs $(\epsilon,L)$ with disjoint
- seeds through the shared candidate controller.  Acceptance and short-chain
- ESS are explanatory or nomination diagnostics; finite states, target health,
- energy errors, and modern R-hat may veto individual members.
+ seeds through the shared candidate controller. Acceptance evidence and
+ numerical health qualify each exact pair; retain every verified member.
+ Short-chain ESS and modern R-hat are reporting-only during kernel tuning.
  \item Retain warm-up chunks separately until the warm-up gate passes or the
  cap is reached.  Never pool warm-up into posterior summaries.
  \item Accumulate fresh retained chunks until the joint R-hat, ESS, and health
@@ -360,10 +360,10 @@ same-$(L)$ epsilon children only from typed directional evidence; verify each
 child independently; retain all candidates that pass; and nominate one only
 after recording the score ordering and its uncertainty status. A low reverse-KL
 or good whitening receipt can nominate a candidate, but it does not prove global
-Gaussianity, posterior correctness, or sampler superiority. Likewise, R-hat is
-a validity screen and tie-breaker only when the caller explicitly declares that
-role. An inconclusive result remains pending or receives a declared evidence
-extension; it does not silently replace $L$.
+Gaussianity, posterior correctness, or sampler superiority. R-hat belongs to
+separate posterior assessment and cannot reject, rank or delay tuning members.
+An inconclusive result receives a declared evidence extension or an explicit
+inconclusive disposition at its cap; it does not silently replace $L$.
 
 Do not rank restarts solely by training loss, silently discard viable
 candidates, or treat a p-value as a universal quality score. The candidate
@@ -650,7 +650,8 @@ widths $(30,30)$ and learning rate $5\times10^{-3}$, selected from four
 500-step screens.  Heldout reverse KL was $137.734$, versus $195.591$ for the
 identity/source-prior baseline.  This is training evidence only.  The admitted
 fixed HMC kernel used step size $.05$ and 12 leapfrog steps.  Verification had
-zero energy failures and modern R-hat $1.03240$ under the $1.05$ tuning gate.
+zero energy failures and modern R-hat $1.03240$ under the historical $1.05$
+tuning gate. The current procedure reports tuning R-hat without gating on it.
 Warm-up stopped at $4000$ draws per chain when the last 1000-draw window reached
 $1.04742$.  Retained maximum rank/folded/modern R-hat were
 $1.00668/1.00156/1.00668$; minimum bulk/tail ESS were $971.06/2354.53$.

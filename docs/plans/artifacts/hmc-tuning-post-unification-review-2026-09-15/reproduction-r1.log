@@ -1,0 +1,110 @@
+2026-09-15 02:07:19.349913: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-09-15 02:07:21.915693: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+WARNING:tensorflow:5 out of the last 5 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76586c5699e0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING:tensorflow:6 out of the last 6 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76586c569da0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+{
+  "native_divergence_roles": {
+    "common_policy": {
+      "validity": "valid",
+      "decision": "repair_step_lower",
+      "promotion_vetoes": [
+        "native_divergence_positive"
+      ]
+    },
+    "numerical_adapter": {
+      "decision": "failed",
+      "evidence_validity": "valid",
+      "hard_vetoes": [
+        "native_divergence_positive"
+      ],
+      "repair_eligible": false
+    },
+    "evidence_kind": "synthetic finite trace; tests classification, not divergence incidence"
+  },
+  "affordable_verification_blocked": {
+    "completion": "partial_budget",
+    "used": 300,
+    "ceiling": 600,
+    "verified": [],
+    "work": [
+      {
+        "L": 3,
+        "stage": "measurement",
+        "status": "completed",
+        "cost": 300
+      },
+      {
+        "L": 25,
+        "stage": "measurement",
+        "status": "pending",
+        "cost": 2500
+      },
+      {
+        "L": 3,
+        "stage": "verification",
+        "status": "pending",
+        "cost": 300
+      }
+    ]
+  },
+  "collection_search_ambiguity": {
+    "accepted_search_count": 2,
+    "requested_id": "scope:second-search:candidate:000001",
+    "lookup_error": "replay requires an explicitly verified candidate ID"
+  },
+  "late_search_preflight": {
+    "preparation_entered": true,
+    "exception_type": "RuntimeError",
+    "message": "review sentinel: preparation entered"
+  },
+  "fixed_transport_dropped_controls": {
+    "forwarded_keys": [
+      "_candidate_set_route_kind",
+      "adapter",
+      "candidate_set_adapter",
+      "config",
+      "initial_position",
+      "max_work_items",
+      "output_dir"
+    ],
+    "dropped": [
+      "search_config",
+      "execution_config",
+      "target_lineage",
+      "source_paths"
+    ],
+    "evidence_kind": "dispatch-boundary spy; does not issue numerical evidence"
+  },
+  "resume_work_charge": {
+    "first_completion": "paused_infrastructure",
+    "first_saved_chunk_counts": [
+      64
+    ],
+    "first_charged_work": 2176,
+    "resumed_completion": "partial_budget",
+    "resumed_charged_work": 4352,
+    "resumed_work": [
+      {
+        "stage": "measurement",
+        "status": "completed"
+      },
+      {
+        "stage": "verification",
+        "status": "pending"
+      }
+    ],
+    "candidate_states": {
+      "bridge-test:search-1:candidate:000001": "screened"
+    },
+    "verified": []
+  },
+  "retained_chunk_seed_reuse": {
+    "accepted": true,
+    "seed": [
+      444194925,
+      1333419708
+    ],
+    "archive": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/reproduction-r1/reused-tuning-chunk-seed/retained_archive.json"
+  }
+}

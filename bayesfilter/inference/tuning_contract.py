@@ -986,17 +986,19 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "windowed adaptation by default or explicit fixed identity from config"
         ),
         step_size_policy=(
-            "bootstrap, then an independent epsilon ladder for every L in the "
-            "primary and survivor-midpoint barriers"
+            "shared per-L pilot, exact-pair measurement, bounded directional repair, "
+            "and independently seeded evidence rungs"
         ),
         trajectory_policy=(
-            "ordinary primary L grid (3, 5, 9, 13, 18, 25), followed by one "
-            "midpoint-refinement barrier adjacent to every primary survivor"
+            "shared primary L grid (3, 5, 9, 13, 18, 25), explicit optional "
+            "all-survivor refinement and expansion; retain every verified pair"
         ),
         fresh_verification_policy=(
             "fresh fixed-kernel verification; default TFP runner requires typed "
             "acceptance, health, and minimum draws; rank-normalized split/folded "
-            f"R-hat (reference threshold {HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}) and energy remain explanatory diagnostics only"
+            f"R-hat is retained as an explanatory diagnostic with threshold "
+            f"metadata ({HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}), not a tuning "
+            "handoff gate"
         ),
         ess_admission_policy=(
             "disabled for ordinary tuning admission; retained posterior ESS is separate"
@@ -1005,7 +1007,10 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "default runner supports none or per-chain-step; typed bindings must declare equivalent fail-closed endpoint evidence"
         ),
         runner_injection_policy=(
-            "default TFP runner for exact-score ordinary HMC; a repository-issued "
+            "HMCControllerConfig uses HMCCandidateExecutionBinding.typed_adapter "
+            "for numerical candidate sets and durable retained replay; callback "
+            "adapters alone remain mechanics-only. Default TFP runner for "
+            "exact-score ordinary preparation translation; a repository-issued "
             "HMCTuningRunnerBinding is accepted only with "
             "TensorFlowHMCKernelTuningConfig and is conditional mechanics evidence "
             "only; bare callables are forbidden"
@@ -1022,14 +1027,16 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         forbidden_uses=(
             "arbitrary bare runner callback",
             "engineering_probe_covariance_multiplier as a public ordinary mode",
-            "shared epsilon across different ordinary L candidates",
+            "transferring epsilon qualification across different L candidates",
             "fixed nonlinear transport without its transformed target contract",
             "retained posterior convergence claim",
         ),
         nonclaims=_PUBLIC_TUNER_NONCLAIMS,
         evidence_anchors=(
+            "tests/test_hmc_candidate_set_execution.py::test_member_export_reload_and_continuation_match_direct_runner",
+            "tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers",
             "tests/test_hmc_tuning_documentation_contract.py::test_ordinary_capability_matches_public_signature",
-            "tests/test_hmc_kernel_tuning_public_api.py::test_public_tuner_rejects_failed_sequential_rhat_handoff",
+            "tests/test_hmc_whole_procedure_repair.py::test_public_ordinary_configuration_uses_common_search_and_retains_multiple_members",
             "tests/test_hmc_kernel_tuning_public_api.py::test_public_ordinary_config_rejects_typed_runner_binding",
             "tests/test_neural_force_hmc.py::test_typed_tuning_binding_rejects_identity_mass_fallback",
         ),
@@ -1051,21 +1058,23 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         coordinate_prerequisite="fixed transport latent z coordinates",
         mass_policy="fixed identity mass in z; no ordinary windowed mass adaptation",
         step_size_policy=(
-            "measured_joint_grid_v1 explicit step-size candidates; legacy directional "
-            "ladder is diagnostic-only"
+            "shared per-L pilot or explicit epsilon proposals, exact-pair measurement "
+            "and bounded independently verified repairs"
         ),
         trajectory_policy=(
-            "all declared (epsilon, L) pairs measured before replicated selection"
+            "all declared (epsilon, L) pairs measured; all-survivor refinement and retention"
         ),
         fresh_verification_policy=(
-            "disjoint replicated fixed-kernel selection and held-out verification"
+            "fresh fixed-kernel verification for every survivor; declared evidence rungs; R-hat reporting-only"
         ),
         ess_admission_policy=(
-            "selection-policy dependent; ordinary-tuner ESS status does not transfer"
+            "disabled for kernel tuning admission; cumulative posterior ESS is separate"
         ),
         target_status_telemetry="transformed target health and declared transition telemetry",
         runner_injection_policy=(
-            "scoped chain runner only after the frozen transformed adapter is built"
+            "HMCControllerConfig shares the numerical candidate evaluator and "
+            "retained bridge for supported frozen artifact codecs; legacy numerical "
+            "configs translate preparation into the shared scheduler; custom runners are rejected"
         ),
         identity_bindings=(
             "base and transformed adapter signatures",
@@ -1084,7 +1093,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         ),
         nonclaims=_PUBLIC_TUNER_NONCLAIMS,
         evidence_anchors=(
-            "tests/test_fixed_transport_hmc_tuning.py",
+            "tests/test_hmc_whole_procedure_repair.py::test_public_fixed_transport_config_enters_common_scheduler",
             "tests/test_fixed_transport_hmc_binding.py",
         ),
         mass_capability="fixed",
@@ -1230,8 +1239,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         mass_policy="owned by the typed TensorFlow mechanics branch",
         step_size_policy="owned by the typed TensorFlow mechanics branch",
         trajectory_policy=(
-            "powers-of-two candidate screen owned by the typed TensorFlow mechanics "
-            "branch; not the ordinary broad-grid policy"
+            "shared broad L grid (3, 5, 9, 13, 18, 25) within the declared maximum; "
+            "explicit all-survivor and unresolved-interval refinement; retain every verified pair"
         ),
         fresh_verification_policy="fresh injected-runner fixed-kernel health and acceptance verification",
         ess_admission_policy="disabled for ordinary tuning admission",
@@ -1349,6 +1358,22 @@ def hmc_tuning_capability_registry_payload() -> Mapping[str, Any]:
     return {
         "schema": HMC_TUNING_CAPABILITY_REGISTRY_SCHEMA,
         "interfaces": tuple(record.payload() for record in capabilities),
+        "candidate_set_retained_bridge": {
+            "schema": "bayesfilter.hmc_candidate_retained_member.v1",
+            "status": "supported_with_repository_numerical_binding",
+            "binding_factory": "bind_hmc_candidate_set_execution",
+            "preparation_factory": "bind_hmc_candidate_set_execution_from_preparation",
+            "builders": (
+                "build_retained_bound_hmc_archive_runner_from_candidate_set_result",
+                "build_retained_frozen_kernel_hmc_adapter_from_candidate_set_result",
+                "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result",
+            ),
+            "loader": "load_hmc_candidate_retained_runner",
+            "coordinates": ("ordinary_affine_mass", "frozen_affine_diag", "frozen_dense_iaf"),
+            "rhat_role": "reporting_only",
+            "callback_observations_can_grant_numerical_authority": False,
+            "posterior_convergence_authority": False,
+        },
     }
 
 

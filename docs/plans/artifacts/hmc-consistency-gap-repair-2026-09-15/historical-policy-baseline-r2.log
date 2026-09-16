@@ -1,0 +1,31 @@
+.FFF.F                                                                   [100%]
+=================================== FAILURES ===================================
+_______________ test_measured_policy_rejects_underspecified_grid _______________
+tests/test_hmc_tuning_policy_repair.py:150: in test_measured_policy_rejects_underspecified_grid
+    with pytest.raises(ValueError, match="at least two distinct step"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_________ test_measured_policy_executes_every_joint_pair_and_holds_out _________
+tests/test_hmc_tuning_policy_repair.py:185: in test_measured_policy_executes_every_joint_pair_and_holds_out
+    result = tune_fixed_transport_hmc_kernel(
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: in tune_fixed_transport_hmc_kernel
+    raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E   ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+________ test_measured_policy_does_not_hard_veto_valid_high_acceptance _________
+tests/test_hmc_tuning_policy_repair.py:226: in test_measured_policy_does_not_hard_veto_valid_high_acceptance
+    result = tune_fixed_transport_hmc_kernel(
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: in tune_fixed_transport_hmc_kernel
+    raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E   ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+______________ test_legacy_directional_policy_is_diagnostic_only _______________
+tests/test_hmc_tuning_policy_repair.py:275: in test_legacy_directional_policy_is_diagnostic_only
+    result = tune_fixed_transport_hmc_kernel(
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: in tune_fixed_transport_hmc_kernel
+    raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E   ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+=========================== short test summary info ============================
+FAILED tests/test_hmc_tuning_policy_repair.py::test_measured_policy_rejects_underspecified_grid
+FAILED tests/test_hmc_tuning_policy_repair.py::test_measured_policy_executes_every_joint_pair_and_holds_out
+FAILED tests/test_hmc_tuning_policy_repair.py::test_measured_policy_does_not_hard_veto_valid_high_acceptance
+FAILED tests/test_hmc_tuning_policy_repair.py::test_legacy_directional_policy_is_diagnostic_only
+4 failed, 2 passed, 2 warnings in 3.01s

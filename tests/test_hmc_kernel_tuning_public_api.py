@@ -1,8 +1,13 @@
+"""Public configuration tests and explicitly invoked historical single-kernel regressions.
+
+Current numerical public integration is tested in test_hmc_whole_procedure_repair.
+"""
 from __future__ import annotations
 
 import inspect
 import json
 import os
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Mapping
@@ -37,6 +42,7 @@ from bayesfilter.inference.neural_force_hmc import (
 )
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning_module
+from bayesfilter.inference.hmc_kernel_tuning import _run_canonical_hmc_tuning
 from tests.test_hmc_kernel_tuning_fixed_mass_step import _ToyGaussianAdapter
 from tests.test_hmc_kernel_tuning_fixed_mass_step import _bootstrap as _passed_bootstrap
 from tests.test_hmc_kernel_tuning_fixed_mass_step import _geometry
@@ -295,8 +301,8 @@ def _loop_result_for_bootstrap(
     )
 
 
-def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult:
-    base = _loop_result(passed=False)
+def _loop_result_with_high_rhat_public_summary() -> HMCTuneVerifyRepairLoopResult:
+    base = _loop_result(passed=True)
     attempt = base.attempts[0]
     attempt = HMCTuneVerifyRepairAttempt(
         attempt_index=attempt.attempt_index,
@@ -323,18 +329,25 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "max_results": 64,
             "num_burnin_steps": 16,
             "chain_count": 4,
-            "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
+            "rhat_threshold_role": "tuning_explanatory_only",
             "step_size": 0.2,
             "num_leapfrog_steps": 8,
         },
         verification_diagnostics={
             "sequential_rhat_verification": True,
-            "passed": False,
+            "passed": True,
+            "rhat_role": "tuning_explanatory_only",
+            "max_finite_rhat": 1.8,
+            "finite_rhat_count": 2,
+            "nonfinite_rhat_count": 0,
             "rhat_threshold": 1.01,
             "check_interval": 64,
             "max_results": 64,
+            "verification_min_retained_results_for_pass": 64,
+            "verification_retained_sample_count": 64,
+            "verification_min_retained_pass_gate_satisfied": True,
             "all_finite_rhat_at_or_below_threshold": False,
-            "cap_hit": True,
+            "cap_hit": False,
             "acceptance_rate": 0.70,
             "runtime_finite": True,
             "log_accept_ratio_finite": True,
@@ -353,13 +366,10 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "reports_posterior_convergence": False,
         },
         verification_callback_result=attempt.verification_callback_result,
-        final_status="repair_or_retry",
-        diagnostic_role="verification_rhat_repair_trigger",
+        final_status="passed",
+        diagnostic_role="dependence_aware_fixed_kernel_verification_passed",
         hard_vetoes=(),
-        repair_triggers=(
-            "verification_rhat_above_threshold_or_cap_hit",
-            "verification_rhat_cap_hit",
-        ),
+        repair_triggers=(),
         handoff_state_payload=attempt.handoff_state_payload,
     )
     return HMCTuneVerifyRepairLoopResult(
@@ -369,15 +379,12 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
         adapter_signature=base.adapter_signature,
         target_dimension=base.target_dimension,
         attempts=(attempt,),
-        final_status="repair_or_retry",
-        diagnostic_role="verification_rhat_repair_trigger",
+        final_status="passed",
+        diagnostic_role="dependence_aware_fixed_kernel_verification_passed",
         hard_vetoes=(),
-        repair_triggers=(
-            "verification_rhat_above_threshold_or_cap_hit",
-            "verification_rhat_cap_hit",
-        ),
-        final_kernel_payload=None,
-        final_kernel_hash=None,
+        repair_triggers=(),
+        final_kernel_payload=base.final_kernel_payload,
+        final_kernel_hash=base.final_kernel_hash,
         seed_report=base.seed_report,
         diagnostic_roles=base.diagnostic_roles,
     )
@@ -810,7 +817,7 @@ def test_public_presets_construct_nonclaim_configs(factory: Any, preset: str) ->
     config = factory(target_scope="kernel_fixed_mass_step_toy_gaussian")
 
     assert config.preset == preset
-    assert config.use_xla is False
+    assert config.use_xla is (preset != "smoke")
     assert config.trajectory_window_lower_multiplier == pytest.approx(0.3)
     assert config.trajectory_window_upper_multiplier == pytest.approx(3.0)
     assert config.payload()["reports_posterior_convergence"] is False
@@ -983,11 +990,9 @@ def test_public_xla_runtime_parameter_rejects_eager_mode() -> None:
             use_xla=True,
         )
 
-    with pytest.raises(ValueError, match="XLA HMC requires"):
-        HMCKernelTuningConfig.smoke(
-            target_scope="kernel_fixed_mass_step_toy_gaussian",
-            use_xla=True,
-        )
+    assert HMCKernelTuningConfig.smoke(
+        target_scope="kernel_fixed_mass_step_toy_gaussian", use_xla=True,
+    ).chain_execution_mode == "tf_function"
 
 
 class _XLAReadyToyGaussianAdapter(_ToyGaussianAdapter):
@@ -1111,7 +1116,7 @@ def test_tune_hmc_kernel_runs_phase2_phase3_phase7_in_order(monkeypatch: pytest.
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", bootstrap_runner)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", loop_runner)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1203,12 +1208,13 @@ def test_public_progress_artifact_records_bootstrap_callback_before_bootstrap_re
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", bootstrap_runner)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.diagnostic(
             target_scope="kernel_fixed_mass_step_toy_gaussian",
             chain_execution_mode="eager",
+            use_xla=False,  # Explicit historical callback fixture.
             bootstrap_diagnostic_screen_num_results=1,
             bootstrap_diagnostic_screen_num_burnin_steps=1,
             bootstrap_max_repairs=0,
@@ -1250,7 +1256,7 @@ def test_phase3_non_promoting_preflight_calls_phase7(
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", loop_runner)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1289,7 +1295,7 @@ def test_serious_tuner_fails_closed_without_acceptance_promoted_bootstrap(
         raise AssertionError("serious tuning must not run after non-promoting bootstrap")
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", forbidden_loop)
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.serious(
@@ -1328,7 +1334,7 @@ def test_phase3_hard_veto_does_not_call_phase7(monkeypatch: pytest.MonkeyPatch) 
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", forbidden_loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1373,7 +1379,7 @@ def test_bootstrap_hard_veto_retains_round_diagnostics_and_skips_handoff(
         raise AssertionError("Phase 7 must not run after bootstrap hard veto")
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", forbidden_loop)
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1415,7 +1421,7 @@ def test_final_kernel_emitted_only_after_phase7_pass(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1441,7 +1447,7 @@ def test_bootstrap_exception_provenance_is_preserved_in_terminal_result(
     monkeypatch.setattr(module, "initialize_hmc_kernel_geometry", lambda **_kwargs: geometry)
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", failing_bootstrap)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1481,7 +1487,7 @@ def test_phase23_final_kernel_emitted_only_after_phase7_pass(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1511,7 +1517,7 @@ def test_output_artifact_is_sanitized_public_evidence(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1579,7 +1585,7 @@ def test_passed_public_artifact_separates_active_and_historical_repair_triggers(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1619,7 +1625,7 @@ def test_public_artifact_exposes_phase6_summary_without_candidate_grid_or_mechan
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1736,7 +1742,7 @@ def test_public_progress_exposes_resume_split_summary_without_mechanics(
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", loop_runner)
 
-    tune_hmc_kernel(
+    _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1897,7 +1903,7 @@ def test_one_call_private_tuning_ledger_records_mechanics_without_public_leak(
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", bootstrap_runner)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", loop_runner)
 
-    tune_hmc_kernel(
+    _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -1976,7 +1982,7 @@ def test_public_progress_exposes_pre_windowed_resume_split_unavailable_without_m
 
     monkeypatch.setattr(hmc_kernel_tuning_module.time, "perf_counter", fake_perf_counter)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.diagnostic(
@@ -2071,7 +2077,7 @@ def test_public_artifact_exposes_early_global_timeout_closeout_without_phase7_lo
 
     monkeypatch.setattr(hmc_kernel_tuning_module.time, "perf_counter", fake_perf_counter)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.diagnostic(
@@ -2165,7 +2171,7 @@ def test_public_artifact_exposes_windowed_mass_timeout_closeout_without_mechanic
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -2220,7 +2226,7 @@ def test_public_artifact_exposes_phase7_public_timeout_before_windowed_mass_with
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.diagnostic(
@@ -2286,19 +2292,39 @@ def test_public_artifact_exposes_phase7_public_timeout_before_windowed_mass_with
         assert forbidden not in text
 
 
-def test_public_tuner_rejects_failed_sequential_rhat_handoff(
+@pytest.mark.parametrize(
+    "overrides,message",
+    [
+        ({"rhat_role": None}, "requires tuning_explanatory_only"),
+        ({"rhat_role": "posterior_gate"}, "requires tuning_explanatory_only"),
+        ({"passed": False}, "requires passed sequential verifier"),
+        ({"cap_hit": True}, "cannot report a verification cap hit"),
+    ],
+)
+def test_passed_ordinary_attempt_requires_tuning_verifier_completion(
+    overrides: Mapping[str, Any], message: str,
+) -> None:
+    attempt = _loop_result_with_high_rhat_public_summary().attempts[0]
+    with pytest.raises(ValueError, match=message):
+        replace(
+            attempt,
+            verification_diagnostics={**attempt.verification_diagnostics, **overrides},
+        )
+
+
+def test_public_tuner_accepts_high_rhat_tuning_diagnostic(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     geometry = _geometry()
     bootstrap = _bootstrap_passed()
-    loop = _loop_result_with_rhat_cap_public_summary()
+    loop = _loop_result_with_high_rhat_public_summary()
     module = __import__("bayesfilter.inference.hmc_kernel_tuning", fromlist=[""])
     monkeypatch.setattr(module, "initialize_hmc_kernel_geometry", lambda **_kwargs: geometry)
     monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", lambda **_kwargs: loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -2313,9 +2339,9 @@ def test_public_tuner_rejects_failed_sequential_rhat_handoff(
     phase7 = payload["phase7_public_summary"]
     attempt = phase7["attempt_summaries"][0]
     verification = attempt["stage_statuses"]["verification"]
-    assert result.final_status == "repair_or_retry"
-    assert result.final_kernel_hash is None
-    assert result.final_kernel_payload is None
+    assert result.final_status == "passed"
+    assert result.final_kernel_hash is not None
+    assert result.final_kernel_payload is not None
     assert phase7["attempt_count"] == 1
     assert attempt["attempt_index"] == 0
     assert attempt["budget_public_summary"]["public_budget_class"] == (
@@ -2324,11 +2350,15 @@ def test_public_tuner_rejects_failed_sequential_rhat_handoff(
     assert attempt["budget_public_summary"]["substage_budget_details_exposed"] is False
     assert verification["verification_policy"] == "sequential_rhat"
     assert verification["sequential_rhat_verification"] is True
-    assert verification["cap_hit"] is True
+    assert verification["cap_hit"] is False
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
+    assert verification["rhat_role"] == "tuning_explanatory_only"
+    assert verification["max_finite_rhat"] == 1.8
+    assert verification["finite_rhat_count"] == 2
+    assert verification["nonfinite_rhat_count"] == 0
     assert (
         verification["rhat_threshold_role"]
-        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
+        == "tuning_explanatory_only"
     )
     assert verification["acceptance_relation"] == "inside_acceptance_band"
     assert verification["acceptance_band_from_payload"] is True
@@ -2392,7 +2422,7 @@ def test_public_progress_artifact_survives_loop_error(
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", failing_loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -2461,7 +2491,7 @@ def test_public_progress_artifact_survives_internal_loop_substage_error(
 
     monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", failing_loop)
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(
@@ -2553,7 +2583,7 @@ def test_public_artifacts_include_sanitized_bootstrap_summary(
         ),
     )
 
-    result = tune_hmc_kernel(
+    result = _run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.standard(

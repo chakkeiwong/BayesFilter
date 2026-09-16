@@ -1,0 +1,140 @@
+{
+  "accounting_events": [
+    {
+      "candidate_id": "bridge-test:search-1:candidate:000001",
+      "event": "reserve_allocated",
+      "source": "initial_reserve",
+      "units": 3
+    },
+    {
+      "candidate_id": "bridge-test:search-1:candidate:000001",
+      "event": "work_reserved",
+      "units": 1,
+      "work_item_id": "bridge-test:search-1:work:000001"
+    },
+    {
+      "candidate_id": "bridge-test:search-1:candidate:000001",
+      "event": "work_charged",
+      "remaining_candidate_reserve": 2,
+      "units": 1,
+      "work_item_id": "bridge-test:search-1:work:000001"
+    },
+    {
+      "candidate_id": "bridge-test:search-1:candidate:000001",
+      "event": "reserve_released",
+      "reason": "measurement_failure",
+      "units": 2
+    }
+  ],
+  "artifact_authority": false,
+  "artifact_schema": "bayesfilter.hmc_candidate_set_artifact.v1",
+  "budget_used_units": 1,
+  "candidate_states": {
+    "bridge-test:search-1:candidate:000001": "promotion_failed"
+  },
+  "candidates": [
+    {
+      "adapter_signature": "b453e9b9ea00d4b5b8b092a551778d874a0d8d98b7f5276293a98fe46de07762",
+      "backend": "tensorflow_probability",
+      "candidate_family_id": "bridge-test:search-1:family:000001",
+      "candidate_id": "bridge-test:search-1:candidate:000001",
+      "candidate_record_hash": "2b1e49b209844906744b8796362a5f7841390d4495025fbebd283740601ea738",
+      "coordinate_system": "ordinary",
+      "creation_ordinal": 1,
+      "dtype": "float64",
+      "epsilon": 3.0,
+      "execution_mode": "tf_function",
+      "leapfrog_steps": 3,
+      "mass_signature": "c7c60ed2cd040983a167b26f14e6e59107a3ff70eb6fcaa133faa217ae176074",
+      "parent_candidate_id": null,
+      "schema": "bayesfilter.hmc_candidate_record.v1",
+      "scope_id": "bridge-test",
+      "search_id": "search-1",
+      "source_dependency_hash": "cf727f7db1bb4329f096d591b02b157c1007312b1b0bf51be3fc8792a499a240",
+      "start_bank_signature": "b6fb5bc4d954ef040724128d08bdf8cb2ace7fd95bdead7015903052a0018e62",
+      "target_preparation_identity": "45704ccdf43524a6786d5303050b59de0a6ed47b62ffdbaa9b1c7e1163b9f6be",
+      "target_signature": "dbd7b69f2dac6f85f46806f5baabe5fec98b3615549fc3111f81510a45e03a79",
+      "transition_identity": "e0ff32b034964e06f6b77cec1ec34001d672f83bc6e9193e844cec0c69beee6e",
+      "use_xla": false,
+      "warmup_protocol": "766e6578a4da70ae1edf7836477aeb811520b4e76b479fac9d29e817bfb80bfb"
+    }
+  ],
+  "completion_status": "complete",
+  "config": {
+    "allow_repair_from_free_pool": true,
+    "candidate_reserve_units": 3,
+    "epsilon_by_l": [
+      [
+        3,
+        [
+          3.0
+        ]
+      ]
+    ],
+    "primary_l_grid": [
+      3
+    ],
+    "repair_reserve_units": 6,
+    "schema": "bayesfilter.hmc_controller_config.v1",
+    "total_budget_units": 20
+  },
+  "final_status": "complete",
+  "nominee_id": null,
+  "nonclaims": [
+    "no statistical superiority claim",
+    "no posterior convergence claim from tuning evidence",
+    "no implicit candidate selection"
+  ],
+  "numerical_handoff_authority": false,
+  "remaining_budget_units": 19,
+  "repair_actions": [],
+  "replay_authority": true,
+  "reserved_budget_units": 0,
+  "result_hash": "7843c4cf2f71aae5faafe47e242a3224a07815a2cbd70b61fa66824285fda56e",
+  "resume_pending_work_item_ids": [],
+  "schema": "bayesfilter.hmc_candidate_set_result.v1",
+  "scope": {
+    "adapter_signature": "b453e9b9ea00d4b5b8b092a551778d874a0d8d98b7f5276293a98fe46de07762",
+    "backend": "tensorflow_probability",
+    "coordinate_system": "ordinary",
+    "dtype": "float64",
+    "epsilon_domain": [
+      0.01,
+      10.0
+    ],
+    "execution_mode": "tf_function",
+    "mass_signature": "c7c60ed2cd040983a167b26f14e6e59107a3ff70eb6fcaa133faa217ae176074",
+    "max_repairs_per_family": 2,
+    "repair_factor": 2.0,
+    "schema": "bayesfilter.hmc_tuning_scope.v1",
+    "scope_id": "bridge-test",
+    "search_id": "search-1",
+    "source_dependency_hash": "cf727f7db1bb4329f096d591b02b157c1007312b1b0bf51be3fc8792a499a240",
+    "start_bank_signature": "b6fb5bc4d954ef040724128d08bdf8cb2ace7fd95bdead7015903052a0018e62",
+    "target_preparation_identity": "45704ccdf43524a6786d5303050b59de0a6ed47b62ffdbaa9b1c7e1163b9f6be",
+    "target_signature": "dbd7b69f2dac6f85f46806f5baabe5fec98b3615549fc3111f81510a45e03a79",
+    "transition_identity": "e0ff32b034964e06f6b77cec1ec34001d672f83bc6e9193e844cec0c69beee6e",
+    "use_xla": false,
+    "warmup_protocol": "766e6578a4da70ae1edf7836477aeb811520b4e76b479fac9d29e817bfb80bfb"
+  },
+  "verification_receipts": [],
+  "verified_candidate_ids": [],
+  "viable_candidate_ids": [],
+  "work_items": [
+    {
+      "candidate_family_id": "bridge-test:search-1:family:000001",
+      "candidate_id": "bridge-test:search-1:candidate:000001",
+      "candidate_record_hash": "2b1e49b209844906744b8796362a5f7841390d4495025fbebd283740601ea738",
+      "cohort_id": "bridge-test:cohort:0001",
+      "ordinal": 1,
+      "priority": 1,
+      "repair_action_id": null,
+      "reservation_units": 1,
+      "schema": "bayesfilter.hmc_work_item.v1",
+      "stage": "measurement",
+      "status": "completed",
+      "verification_attempt_id": null,
+      "work_item_id": "bridge-test:search-1:work:000001"
+    }
+  ]
+}

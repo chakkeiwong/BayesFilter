@@ -286,7 +286,8 @@ class TensorFlowHMCKernelTuningConfig:
     seed: tuple[int, int]
     chain_execution_mode: str = "tf_function"
     target_status_trace_policy: str = "none"
-    use_xla: bool = False
+    use_xla: bool = True
+    non_xla_reason: str | None = None
 
     def __post_init__(self) -> None:
         dimension = _positive_int(self.parameter_dimension, "parameter_dimension")
@@ -330,6 +331,8 @@ class TensorFlowHMCKernelTuningConfig:
             raise ValueError("TensorFlow bound tuning currently requires target status none")
         if not isinstance(self.use_xla, bool):
             raise ValueError("use_xla must be a Python bool")
+        if self.non_xla_reason is not None and not str(self.non_xla_reason).strip():
+            raise ValueError("non_xla_reason must be nonempty when supplied")
         if not isinstance(self.acceptance_policy, FourChainMeanBandAcceptancePolicy):
             raise TypeError(
                 "acceptance_policy must be FourChainMeanBandAcceptancePolicy"
@@ -423,10 +426,14 @@ class TensorFlowHMCKernelTuningConfig:
             "metric_state_count_by_window": self.metric_state_count_by_window,
             "metric_rank_eligible": self.metric_rank_eligible,
             "step_adaptation_results": self.step_adaptation_results,
+            **({"non_xla_reason": self.non_xla_reason} if self.non_xla_reason is not None else {}),
             "verification_results": self.verification_results,
             "max_leapfrog_steps": self.max_leapfrog_steps,
             "trajectory_candidates": self.trajectory_candidates,
             "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
+            "candidate_policy_metadata_role": (
+                "historical_graph_helper_only; active candidate stages use shared search/execution configs"
+            ),
             "seed_derivation_policy": (
                 "stateless_fold_in_mass_100_plus_window_candidate_1000_plus_index"
             ),
@@ -536,6 +543,7 @@ class TensorFlowHMCKernelTuningConfig:
             chain_execution_mode=payload["chain_execution_mode"],
             target_status_trace_policy=payload["target_status_trace_policy"],
             use_xla=payload["use_xla"],
+            non_xla_reason=payload.get("non_xla_reason"),
         )
 
 
@@ -916,6 +924,7 @@ def _build_tuning_graph(
     config: TensorFlowHMCKernelTuningConfig,
     binding: HMCTuningRunnerBinding,
     adapter_signature: str,
+    *, preparation_only: bool = False,
 ) -> Any:
     dimension = config.parameter_dimension
     root_seed = tf.constant(config.seed, tf.int32)
@@ -1018,6 +1027,11 @@ def _build_tuning_graph(
             base_adapter_signature=adapter_signature,
             target_scope=config.target_scope,
         )
+        if preparation_only:
+            return {"center": center, "factor": factor, "covariance": covariance,
+                    "initial_active_state": state, "initial_step_size": step_size,
+                    "adaptation_divergence_count": adaptation_divergence_count,
+                    "adaptation_fallback_count": adaptation_fallback_count}
         candidate_selected = tf.constant(False)
         selected_index = tf.constant(-1, tf.int32)
         reported_index = tf.constant(-1, tf.int32)

@@ -1,814 +1,290 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-14. The prose contract is exercised by
-`tests/test_hmc_tuning_documentation_contract.py`; the route table is generated
-from the executable capability registry.
+Last checked: 2026-09-15. This reference describes the common candidate-set
+procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
+HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
+classifies public tuners, preparation helpers, chain runners, and historical
+readers. A chain runner is not a tuner.
 
-Read this before changing an HMC consumer. BayesFilter now has one recommended
-candidate-set lifecycle: prepare one immutable target/geometry scope, measure a
-broad set of `(L, epsilon)` pairs, retain every viable member, and carry each
-member through its own validation and fresh verification. Ordinary coordinates
-and frozen transports still use different preparation adapters, but they share
-the candidate controller and result contract. A result is one scope-bound
-`HMCTuningCandidateSetResult`; a cross-transport collection is reporting only.
+## One procedure, with target-specific preparation
 
-An epsilon repair is a new immutable child record in the same fixed-`L`
-`candidate_family_id`. It preserves exact `L`, mass, target, coordinates, start
-bank, and warmup protocol, receives a fresh verification stream, and runs after
-already-reserved cohort work but before not-yet-admitted work for another `L`.
-`inconclusive_evidence` and `inconclusive_conflict` retain the evidence without
-silently switching `L`. A computed repair is not a handoff: only
-`qualified_repair_status="executed_and_verified"` is replayable. Unfunded
-repairs carry `not_executed_with_reason` and typed `repair_budget_exhausted`.
+`tune_hmc_kernel` and `tune_fixed_transport_hmc_kernel` use
+`HMCTuningCandidateSetController` and return `HMCTypedCandidateSetRun`. Its
+`result` is an `HMCTuningCandidateSetResult`. Configuration types translate
+preparation and initial proposals; they no longer select independent
+first-admission or efficiency-winner schedulers.
 
-The current numerical entry points remain compatibility adapters while P2-P5
-qualify their shared wiring. Diagnostic and historical procedures have explicit
-helper kinds and no artifact authority. A chain runner or stage helper is not a
-complete tuner. Replayable artifact authority is distinct from
-scientific/promotion authority. The ordinary runtime now uses TF/TFP for its
-numerical stages; remaining NumPy uses are diagnostic helpers and test oracles.
-Read the current resolved policy's `claim_bearing_blockers` before a handoff.
-A successful tuning result alone does not establish a scientific claim or
-retained posterior convergence.
-
-Use the package imports shown below. Implementation modules do not define a
-second ordinary tuner. Exported discovery, refinement, campaign, runner, and
-stage helpers remain diagnostics; they are not additional tuning choices.
-The generated capability table is an audit inventory, not a menu of supported
-tuning procedures.
-
-For fixed-center position initialization, see
-[posterior-local-geometry.md](posterior-local-geometry.md). That procedure
-estimates regional position geometry and is deliberately separate from HMC
-mass-matrix construction and tuning.
-
-Import and compare the schemas rather than copying their values:
-
-```python
-from bayesfilter.inference import (
-    HMC_TUNING_CAPABILITY_REGISTRY_SCHEMA,
-    HMC_TUNING_ORDINARY_RHAT_THRESHOLD,
-    HMC_TUNING_RUNNER_BINDING_SCHEMA,
-)
-```
-
-At this revision the capability-registry schema is
-`bayesfilter.hmc_tuning_capability_registry.v2`, the runner-binding schema is
-`bayesfilter.hmc_tuning_runner_binding.v2`, and the ordinary fixed-kernel
-handoff threshold is defined by `HMC_TUNING_ORDINARY_RHAT_THRESHOLD`.
-
-## Qualified Step-Size Handoff
-
-The ordinary per-L ladder carries the operational warmup's final-metric step
-bound into `FullChainHMCConfig.step_size_upper_bound`. This optional runtime
-field bounds both consumed dual-averaging steps and the exported adapted step;
-`step_repair_max_step_size` alone only limits subsequent directional repairs.
-Reusable-runner cache identity includes the bound. If warmup changes metric
-coordinates, the next stage requires the corresponding fresh epsilon
-qualification. An acceptance bracket for one L is not evidence for another L.
-
-These are tuning safeguards, not a proof that the ceiling is the largest stable
-step or that a posterior has converged. Configurations without an upper bound
-retain the unbounded TFP policy. Focused CPU regressions are in
-`tests/test_hmc_step_bound_handoff.py`; this repair adds no GPU/XLA readiness
-claim and does not alter the Metropolis correction.
-
-## Candidate-Set Procedure
-
-The pure lifecycle is available for adapters and deterministic tests through
-`HMCCandidateSetScope`, `HMCControllerConfig`, and
-`HMCTuningCandidateSetController`. Numerical adapters must supply observations
-at the controller boundary; they do not select a winner or mutate a candidate
-record. Use `write_candidate_set_result` for the atomic, checksummed mechanics
-result and `require_verified_member` for explicit scope/member replay. The
-controller artifact has replay authority for its own evidence but no numerical
-handoff or scientific artifact authority; a qualified TensorFlow/TFP adapter
-must still issue the public kernel artifact after P2-P5.
-
-```python
-from bayesfilter.inference import (
-    HMCControllerConfig,
-    HMCCandidateSetScope,
-    HMCTuningCandidateSetController,
-)
-
-scope = HMCCandidateSetScope(
-    scope_id="issued-scope",
-    search_id="search-1",
-    target_signature="target-signature",
-    mass_signature="frozen-mass-signature",
-    coordinate_system="ordinary",
-    start_bank_signature="dispersed-bank-signature",
-    warmup_protocol="declared-warmup-v1",
-)
-config = HMCControllerConfig(
-    primary_l_grid=(3, 5, 9),
-    epsilon_by_l=((3, (0.25, 0.35)), (5, (0.20,)), (9, (0.10,))),
-)
-controller = HMCTuningCandidateSetController(scope, config)
-result = controller.run(adapter_observation)
-```
-
-The result retains all `verified_candidate_ids`; `nominee_id` is absent by
-default. Any descriptive nomination is separate from replay authority and does
-not establish superiority. Resume consumes the persisted work-item order and
-attempt IDs rather than rebuilding the queue from acceptance values.
-
-The public dispatchers also accept this lifecycle explicitly during the
-adapter migration: pass an `HMCControllerConfig` together with a
-repository-issued `HMCTypedCandidateSetAdapter`. `tune_hmc_kernel` requires an
-ordinary adapter; `tune_fixed_transport_hmc_kernel` is a compatibility wrapper
-that requires a fixed-transport adapter and delegates to the same controller.
-The bridge writes only a replayable mechanics artifact. Its target-preparation
-identity, transition identity, backend, dtype, and source-closure hash are
-bound into the scope and candidate records. It is unqualified until the
-target-parity and TensorFlow/XLA gates in the migration plan pass, so the
-bridge cannot issue a numerical handoff by itself.
-
-## Reporting Across Frozen Transports
-
-Each frozen transport is a separate tuning scope. Call the shared procedure
-once for each scope, retain every verified member in that scope's
-`HMCTuningCandidateSetResult`, and combine those results only in a read-only
-`HMCTuningScopeCollection`. Scope identity, candidate hashes, start banks, and
-verification receipts must remain attached to each member; a collection never
-dispatches a runner, selects a kernel, or creates a handoff.
-
-The exported `select_fixed_transport_candidate_set` name is retained solely
-for diagnostic and historical payloads. It consumes already prepared records
-and caller-managed validation callbacks, has no artifact authority, and is not
-part of the recommended workflow. Its optional score is a descriptive
-nomination among diagnostic records, not evidence of sampler superiority or
-posterior convergence. The legacy example
-`docs/examples/fixed_transport_candidate_selection.py` is labelled accordingly.
-
-## Route Decision
-
-First identify the target measure, score or proposal field, and coordinate
-system. Then use this table. Each row has one primary instruction and at most
-one weaker conditional alternative.
-
-| Situation | Primary instruction | Conditional alternative or stop |
+| Input | Preparation and transition | Result authority |
 | --- | --- | --- |
-| Ordinary coordinates with an exact log target and matching exact score | Call `tune_hmc_kernel` with `HMCKernelTuningConfig`. This is the canonical broad-first ordinary procedure. | Reuse a previously admitted result only when its complete tuning scope is unchanged; otherwise retune. |
-| One frozen nonlinear transport with the exact Jacobian-corrected transformed value and matching score | Call `tune_fixed_transport_hmc_kernel` with `FixedTransportHMCKernelTuningConfig` and the measured joint-grid policy. | Use the legacy directional policy only for mechanics debugging. It cannot issue a verified handoff. |
-| A deterministic position-only proposal field that is not the exact score, with an exact endpoint potential in the same coordinates | Build a repository binding with `bind_neural_force_hmc_tuning_runner`, then call `tune_hmc_kernel` with `TensorFlowHMCKernelTuningConfig`. | This is mechanics/candidate evidence only. If artifact-authoritative tuning is required, stop: no supported alternative currently exists. |
-| A chain-mechanics smoke or historical replay | Call the specific runner or helper named by that test or replay record. | Never use its output as a tuning handoff. |
-| None of the contracts above applies | Stop. | Do not relabel a runner, helper, arbitrary force, or partial derivative as a supported tuner. |
+| `HMCKernelTuningConfig` or omitted ordinary config | Operational windowed mass preparation, or explicit fixed identity; exact TF/TFP value and score. | All verified members can seek checked numerical replay. |
+| `HMCControllerConfig` plus numerical `candidate_set_adapter` | Caller already obtained repository-issued frozen geometry and starts. | Same controller, evidence, and replay checks. |
+| `FixedTransportHMCKernelTuningConfig` plus `frozen_transport_payload` | Reconstruct the frozen diagonal-affine or dense-IAF map; identity mass in latent coordinates. | Same controller and checked numerical replay. |
+| `TensorFlowHMCKernelTuningConfig` plus `runner_binding` | Affine preparation and the declared position-only proposal field with exact endpoint potential. | Conditional mechanics only; no exact-score retained-member authority. |
 
-If the supplied field is the exact ordinary score, use the first row and do not
-construct a runner binding. If it is a different deterministic proposal field,
-use the third row and retain its mechanics-only authority boundary.
+Unsupported custom transports or bare runner callbacks fail before execution.
+Supply a supported frozen payload or a repository-issued numerical binding.
+Legacy custom verification callbacks and stage retry policies must migrate to
+shared evidence/budget settings. Historical helper implementations and result
+readers remain for inspecting earlier evidence; they are not public tuning
+alternatives. Existing consumers must migrate from a single `final_kernel_payload`
+to explicit candidate IDs.
 
-The registry is queryable without running a chain:
+The registry schema is `bayesfilter.hmc_tuning_capability_registry.v2`; the
+position-field runner schema is `bayesfilter.hmc_tuning_runner_binding.v2`.
+Import their constants rather than copying the strings.
 
-```python
-from bayesfilter.inference import (
-    HMC_TUNING_INTERFACE_CAPABILITIES,
-    hmc_tuning_capability_registry_payload,
-    hmc_tuning_interface_capability,
-)
-```
+## Search, qualification, and retention
 
-`hmc_tuning_interface_capability` accepts the short `interface_name`, such as
-`"tune_hmc_kernel"`; it does not accept the fully qualified name printed in the
-table. Accept a route only when `capability_status="tested_supported"` and
-`artifact_authority=True`, and confirm that the corresponding route record is
-active.
+1. Prepare and freeze the target, geometry, coordinate transform, four-chain
+   start bank, numerical backend, telemetry policy, and source dependencies.
+2. Declare broad L coverage and epsilon hypotheses. The ordinary convenience
+   grid is `(3, 5, 9, 13, 18, 25)`. The ordinary legacy config fixes its maximum
+   at 25; the position-field config declares its own maximum. Supplied initial,
+   refinement and expansion grids must obey the preparation config's maximum. A supplied
+   `epsilon_by_l` may contain several epsilons at each L. `initial_epsilon` is
+   a warm start when an explicit grid is unavailable; each L is still measured
+   independently. An optional per-L pilot proposes a frozen pair and never
+   qualifies it for replay.
+3. Measure every funded admitted exact pair. Close the current cohort before
+   admitting its repair children. A peer whose required work exceeds remaining
+   budget is explicitly deferred, allowing affordable mandatory work to finish.
+   Its evidence allocation is preserved, and the search remains incomplete.
+   A first passing member does not end the cohort.
+4. Give each measurement survivor its own fresh fixed-kernel verification.
+   Measurement, verification, and evidence extensions use separate recorded
+   streams. Neither adaptation nor tuning draws enter posterior estimates.
+5. Preserve valid directional decisions. A supported smaller epsilon may repair
+   rejection-induced immobility while the immobile parent remains unpromotable.
+   Every epsilon repair is an immutable same-L child preserving mass, target,
+   starts and coordinates. The child must be measured and independently verified.
+6. Extend inconclusive measurement or verification using the predeclared finite
+   `evidence_rungs`. These are multipliers of the corresponding base draw count;
+   the convenience sequence is `(1, 2, 4)`. Each rung is a fresh run of the same
+   candidate. An exhausted rung sequence gives `inconclusive_at_cap`, never a
+   verified member. The operational repeated-look screen does not claim nominal
+   sequential confidence coverage.
+7. Refine around every surviving family when `refinement_rounds` is positive.
+   Epsilon factors and additional L values are declared in
+   `epsilon_refinement_factors`, `refinement_l_grid`, and `expansion_l_grid`.
+   Every exact setting is deduplicated. Repairs remember the latest valid
+   directional evidence at each exact pair and prioritize unvisited geometric
+   interiors toward nearby opposing observations. Finite refinement also tests
+   unresolved directional intervals when no family survives. This proposes
+   measured hypotheses without assuming monotone acceptance. Trajectory alerts can propose only
+   declared additional L values, as new candidates rather than same-L repairs.
+8. Retain all verified members. `verified_candidate_ids` is the complete set of
+   members eligible for checked replay. `viable_candidate_ids` also includes
+   candidates still validating and those terminally inconclusive at the cap;
+   inspect `candidate_states` before use. `nominee_id` is always `None`.
 
-The generated complete table is
-[hmc_tuning_route_table.md](../generated/hmc_tuning_route_table.md). Its source
-is `HMC_TUNING_INTERFACE_CAPABILITIES`, and
-`scripts/render_hmc_tuning_interface_docs.py --check` rejects drift.
+The automatic preparation translation enables one pilot per L and one bounded
+refinement round. Direct `HMCControllerConfig` defaults to a supplied-pair search
+with refinement disabled. Both use the same lifecycle; the optional stages and
+limits are serialized. Refinement factors `(0.8, 1.25)` are reciprocal proposal
+hypotheses, not target-specific defaults. Multiple epsilons at one L remain
+separate candidates. No descriptive acceptance distance, ESS, runtime or R-hat
+ranking removes a viable member.
 
-## Downstream Static Audit
+The final-metric epsilon bound from operational preparation is a proposal safety
+bound. The binding must preserve the final mass/coordinate identity that produced
+it. Direct preparation bindings intersect the requested domain with the bound.
+It never transfers acceptance qualification from one L to another. A directional
+repair crossing the domain can measure its unvisited boundary before stopping.
 
-Before changing a consumer, run the bounded standard-library audit and inspect
-its branch, consumer-role, NumPy, and provenance ledgers:
+## Evidence roles
 
-```bash
-python scripts/audit_ordinary_hmc_migration_surface.py \
-  --downstream-root /home/ubuntu/python/MacroFinance \
-  --downstream-root /home/ubuntu/python/dsge_hmc
-```
+`HMCAcceptancePolicy` uses four chain means, temporal blocks and a compatibility
+interval, with a default minimum of four blocks of sixteen decisions per chain.
+It reports mean Metropolis probability separately from realized acceptance.
+Finite acceptance alone does not qualify a kernel.
 
-The report is a source-classification aid, not numerical evidence. A row marked
-`unknown_dynamic_import`, `unresolved_dynamic_attribute`, or
-`mixed_public_and_lower_level` requires manual role classification before a
-claim-adjacent consumer can be admitted. Generated reports belong under the
-ignored plan-artifact root; the authored execution note records the command
-and the unresolved rows.
+| Evidence | Tuning role |
+| --- | --- |
+| Valid acceptance evidence with no promotion veto | Qualifies the exact measured kernel; fresh verification remains required. |
+| Supported directional acceptance failure | Proposes a smaller or larger same-L child. |
+| Repeated states, insufficient movement or recurrence | Vetoes current promotion; may coexist with an eligible directional repair. |
+| Available native divergence | Vetoes current promotion; finite valid acceptance evidence can still support a directional child repair. |
+| Candidate-local invalid target, score or transition health | Rejects that candidate and preserves the reason. |
+| Corrupt shared execution or accepted-state consistency | Stops the scope and disables all its replayable members. |
+| Resource/runtime interruption | Preserves attempted work and pauses for unchanged-scope resume. |
+| High, missing, nonfinite or computation-error R-hat | Reporting-only; not a tuning gate, ranking score, repair trigger or delay. |
+| ESS and short-chain runtime | Descriptive diagnostics; disabled for ordinary tuning admission. |
 
-## Ordinary Default Policy
+The exact numerical binding checks accepted/proposed states and targets, endpoint
+score finiteness, momentum, Metropolis state consistency, native divergence when
+available, and declared target status. Target-specific intermediate integrator
+telemetry and the correctness of the target value/score require consumer evidence.
+Both execution routes check numerical health over discarded warmup too. The
+position-field route checks states, log acceptance and energy errors before
+excluding warmup from acceptance statistics.
+R-hat/ESS still belong in separate cumulative posterior assessment; tuning does
+not establish convergence.
 
-The target procedure for `tune_hmc_kernel` with `HMCKernelTuningConfig` or an
-omitted config is `ordinary_hmc` with algorithm ID
-`ordinary_broad_fixed_metric_selection_v1`, prepared through the shared
-candidate-set lifecycle. After windowed mass warm-up, the migration target
-evaluates the complete primary grid `L=(3, 5, 9, 13, 18, 25)` and tunes epsilon
-independently for every `L`. It then evaluates one refinement barrier containing
-every untested floor/ceiling integer midpoint adjacent to every surviving
-primary value. Every measured member advances through the closed cohort and
-fresh verification; geometry-derived order is scheduling metadata, not a
-winner-selection rule.
+Acceptance compatibility and promotion eligibility are separate typed fields.
+An in-band acceptance receipt with a promotion veto is a valid record of a
+rejected setting. Writers and readers preserve it; a verified member still
+requires its own fresh verification with valid evidence and no veto.
 
-The public config fixes the upper bound at `L=25` so the primary grid cannot be
-silently truncated. It exposes neither a caller-selected grid nor the private
-P4-E covariance-multiplier switch. The former shared-epsilon
-`operational_paired_fixed_trajectory_selection_v3` route and the internal
-`joint_l_epsilon_grid_fixed_mass_hmc` route remain readable compatibility
-identities, but both fail the public artifact-authority guard.
-
-The package also retains
-`run_fixed_mass_step_tuning_diagnostic`,
-`run_windowed_mass_adaptation_diagnostic`,
-`run_fixed_trajectory_tuning_diagnostic`,
-`run_gaussian_dual_averaging_diagnostic`, and
-`run_hmc_start_bank_diagnostic` for focused diagnostics and historical tests.
-Every one is registry-classified as `diagnostic_helper`, has no artifact
-authority, and names `tune_hmc_kernel` as its replacement. Do not assemble
-them into another ordinary tuning procedure.
-
-Fresh verification consumes all eligible measured pairs in the deterministic
-cohort. A directional result creates a same-`L` immutable child and gives it
-priority after already-reserved work; an inconclusive result remains pending or
-uses a declared evidence extension. A computed child is not replayable until
-its own fresh verification passes. The old
-`operational_verification_bracket_policy="single_repair"` and
-`one_verified_log_midpoint` fields remain compatibility identities for the
-legacy adapter only; they do not define the candidate-set procedure.
-
-The route payload reports three separate roles: `operational_authority` for a
-stage route, `artifact_authority` for a replayable route artifact, and
-`scientific_promotion_authority` for a scientific/default claim. The first two
-are not evidence of the third. Inspect `result.payload()["resolved_policy"]`
-and require `claim_bearing_artifact_authority=True` together with successful
-target-specific evidence. The current ordinary backend is eligible, but this
-policy flag alone does not establish a successful tuning result. Older results
-with `ordinary_runtime_numpy_policy_pending` cannot be retroactively admitted.
-
-The route can be inspected without constructing a chain:
-
-```python
-from bayesfilter.inference import HMCKernelTuningConfig
-from bayesfilter.hmc_route_contract import (
-    HMC_TOP_LEVEL_SELECTION_STAGE,
-    resolve_hmc_algorithm_route,
-)
-
-config = HMCKernelTuningConfig.standard()
-route = resolve_hmc_algorithm_route(
-    algorithm_id=config.algorithm_id,
-    stage=HMC_TOP_LEVEL_SELECTION_STAGE,
-    chain_execution_mode=config.chain_execution_mode,
-    use_xla=config.use_xla,
-)
-print({"config_variant": "ordinary_hmc", "preset": config.preset, **route.payload()})
-```
-
-This is a construction-only inspection. It does not tune, initialize an HMC
-runner, or establish numerical validity.
-
-## Exact Public Imports
-
-Ordinary target:
+## Public imports and execution
 
 ```python
 from bayesfilter.inference import (
-    HMCKernelTuningConfig,
-    tune_hmc_kernel,
+    HMCControllerConfig, HMCCandidateExecutionConfig, HMCAcceptancePolicy,
+    bind_hmc_candidate_set_execution,
+    bind_hmc_candidate_set_execution_from_preparation,
+    tune_hmc_kernel, tune_fixed_transport_hmc_kernel,
+    resume_hmc_candidate_set_tuning, load_numerical_tuning_checkpoint,
+    build_retained_bound_hmc_archive_runner_from_candidate_set_result,
+    load_hmc_candidate_retained_runner,
 )
 ```
 
-Frozen transport:
+The numerical factories require explicit target/data/prior lineage, source paths,
+frozen mass or transport, and four-chain starts. The automatic legacy-config
+translation can derive an adapter-signature-only lineage when a consumer omits
+one; its metadata explicitly records that incomplete coverage. Supply
+`target_lineage` and `source_paths` for real targets. A source hash and start probe
+cannot establish that unlisted data or prior dependencies are unchanged.
+
+For already prepared execution, pass the original target and
+`binding.initial_active_state` to the public dispatcher, with
+`candidate_set_adapter=binding.typed_adapter` and `config=search`.
+For automatic ordinary preparation, pass `HMCKernelTuningConfig` plus optional
+`search_config` and `execution_config`. Geometry hints are `negative_hessian`,
+`initial_covariance`, and `parameter_scales`; keep the estimated center and its
+covariance in the same coordinates. The operational factory preserves both
+bootstrap and final affine layers and the actual post-warmup bank.
+
+Configuration types and conflicting options are checked before preparation.
+An issued numerical binding rejects redundant execution, search, lineage,
+source-path, or frozen-payload overrides; create a new binding when those inputs
+change. Automatic routes accept explicit `search_config` and `execution_config`.
+The latter owns candidate evidence counts and acceptance policy while its XLA
+and target-status settings must agree with preparation.
+
+On the position-field route, the legacy `step_adaptation_results` count supplies
+the fixed-pair pilot allocation when a pilot is enabled. It no longer invokes
+the historical adaptive candidate selector. `verification_results` supplies
+the measurement and verification allocations. An explicit
+`HMCCandidateExecutionConfig` replaces those stage allocations, with optional
+`pilot_num_results` (otherwise the measurement count). Pilot evidence never
+grants replay authority. The route uses batched chains and rejects threaded
+chain execution. Both preparation configs default to XLA; position-field
+non-XLA diagnostics must supply `non_xla_reason`.
+Historical candidate-policy fields in `TensorFlowHMCKernelTuningConfig.payload()`
+are explicitly labeled as metadata for the historical graph helper. The active
+result's shared search and execution configs determine candidate stages.
+
+GPU/XLA is the normal execution policy. Memory growth must be enabled before
+TensorFlow import and verified before GPU initialization. CPU and non-XLA
+settings are explicit small reference/debugging exceptions. The public ordinary
+preparation config defaults to XLA. That choice is owner policy, not evidence
+that arbitrary targets are XLA qualified. The numerical binding rejects targets
+without the required full-chain XLA capability.
+
+## Checkpoints, budgets, and restart
+
+A new run requires a fresh output directory. Complete results are written to
+`candidate_set_result.json` and are never replaced. During numerical tuning,
+`tuning_checkpoint.json` is atomically updated, alongside `execution_spec.json`,
+immutable numerical evidence files, and completed numerical chunks. Failed and
+zero-verified searches preserve observations and explanations too.
+
+Before frozen candidate execution exists, `preparation_progress.json` records
+phases, elapsed time and any failure. Ordinary preparation checks deadlines
+between its available progress boundaries. Position-field affine preparation
+is one compiled graph, checked before and after the call. A failed preparation
+requires a fresh output directory for retry; it cannot be resumed as numerical
+candidate evidence. Source or search-policy changes also require a fresh run;
+historical controller results remain readable but cannot resume under a new
+controller policy.
 
 ```python
-from bayesfilter.inference import (
-    FixedTransportHMCKernelTuningConfig,
-    FIXED_TRANSPORT_HMC_MEASURED_POLICY,
-    tune_fixed_transport_hmc_kernel,
+continued = resume_hmc_candidate_set_tuning(
+    "run/tuning_checkpoint.json", adapter=original_target,
 )
 ```
 
-Typed deterministic proposal-field mechanics:
-
-```python
-from bayesfilter.inference import (
-    BoundRetainedHMCArchiveConfig,
-    FrozenPositionOnlyForce,
-    FrozenTargetPotential,
-    TensorFlowHMCKernelTuningConfig,
-    bind_neural_force_hmc_tuning_runner,
-    build_retained_bound_hmc_archive_runner_from_tuning_result,
-    tune_hmc_kernel,
-)
-```
-
-`tune_hmc_kernel(..., config=tf_config, runner_binding=binding)` accepts the
-binding only when `tf_config` is a `TensorFlowHMCKernelTuningConfig`; a bare
-callable is invalid. Conversely, `HMCKernelTuningConfig` rejects any runner
-binding and always uses the exact adapter score with BayesFilter's default TFP
-runner. This typed dispatch rule prevents a deterministic non-score field from
-silently entering canonical ordinary HMC.
-
-The default ordinary runner requires an exact log target and matching score.
-The v2 typed deterministic-field branch instead requires an exact endpoint
-potential and a frozen, honestly labeled position-only proposal field. The
-field need not equal the potential gradient, and neither the binding nor this
-documentation promotes it to an exact score. The binding records identities and
-coordinate semantics; it cannot prove that a caller's endpoint potential is the
-claimed target. That equality still requires a target-specific check.
-
-## Ordinary Workflow And Geometry
-
-The caller and tuner have different geometry responsibilities. The caller
-supplies a center and may supply a local geometry hypothesis. The tuner
-validates that input, constructs the affine fixed-mass adapter, performs
-windowed mass adaptation by default, freezes the adapted metric and checked
-four-chain start bank, evaluates the complete primary `L` barrier with an
-independent epsilon ladder per value, evaluates one survivor-midpoint barrier,
-and sends eligible measured pairs directly to fresh verification. It does not
-perform a second local `L` search after broad selection.
-
-There is no second ordinary entry point hidden in an implementation module.
-`bayesfilter.inference.tune_hmc_kernel` is the same function object as
-`bayesfilter.inference.hmc_tuning_dispatch.tune_hmc_kernel`; the implementation
-module provides only the private canonical executor. The fixed-transport tuner
-likewise has one implementation, re-exported by the package.
-
-Each candidate binds the mass-artifact signature, target scope, coordinates, and
-metric signature. A mass-signature change invalidates the selection and its
-calibration; the stage emits a hard veto and no final handoff, so the caller
-must perform fresh tuning under the new geometry.
-
-For `mass_policy="windowed_adaptive"`, geometry hints are tried in this order:
-
-1. `negative_hessian`, interpreted as `-d^2 log posterior` in the same
-   unconstrained coordinates as `initial_position`;
-2. `initial_covariance` at that position;
-3. positive diagonal `parameter_scales`; and
-4. identity covariance.
-
-When `allow_geometry_fallback=True`, an invalid higher-priority hint is recorded
-and the next hint is tried. When it is false, the invalid hint fails closed.
-The explicit `mass_policy="fixed_identity"` ignores all supplied hints. Identity
-is useful for a mechanics smoke, but it is only a convenience fallback and is
-not automatically defensible for an anisotropic posterior.
-
-A covariance-first caller should keep the center and covariance together:
-
-```python
-covariance_result = estimate_sequential_map_covariance(...)
-if not covariance_result.accepted:
-    raise RuntimeError("local covariance was not accepted")
-
-tuning_result = tune_hmc_kernel(
-    adapter=adapter,
-    initial_position=covariance_result.map_candidate,
-    initial_covariance=covariance_result.covariance,
-    config=tuning_config,
-)
-```
-
-Before that handoff, establish that the center and covariance use the adapter's
-unconstrained coordinates, the covariance was estimated at that center, exact
-target/score replay passes there, the covariance is finite, symmetric, and
-positive definite, and all regularization or fallback is recorded. The checked
-stubbed binding is in
-[hmc_tuning_covariance_first.py](../examples/hmc_tuning_covariance_first.py).
-
-With the default TFP runner, final handoff requires finite health and acceptance
-evidence and the configured minimum tuning draws. Rank-normalized split and
-folded split R-hat are reported against `HMC_TUNING_ORDINARY_RHAT_THRESHOLD`
-(`1.01` at this revision) for diagnosis only. R-hat, energy and bulk/tail ESS do
-not gate ordinary tuning or its fixed-kernel handoff. None of these tuning
-diagnostics establishes retained posterior convergence.
-
-The ordinary entry point accepts `campaign_checkpoint_dir` and
-`campaign_time_budget_s` for interruption recovery. `config.max_attempts` then
-bounds cumulative outer attempt slots across calls. Completed geometry,
-bootstrap and attempt results are committed with tensor checksums; a restart
-restores private mass, start bank, selected kernel and repair state and uses the
-next global attempt seed. Compiled runners are rebuilt. Only an interrupted,
-uncommitted work unit can be replayed. Each call receives the remaining active
-wall time with a 60-second closeout reserve. A killed call needs the supervising
-process's elapsed time (`campaign_interrupted_elapsed_s`) before recovery; a
-heartbeat is insufficient. To extend a budget, increase the resource limits
-explicitly while preserving the checkpoint directory, target, seeds and
-numerical configuration. Completed evidence is retained. Terminal target or
-implementation failures must be investigated before any new campaign.
-
-The ordinary ladder, warmup, selection and verification use TF/TFP numerical
-operations. Host materialization is limited to scalar control, immutable
-records, hashes and serialization; NumPy remains isolated in Gaussian
-diagnostic helpers and independent test oracles. The separate TensorFlow-only proposal-field branch has two
-evidence roles. `diagnostic_only` can never hand off. `candidate`
-may hand the same frozen transition to a retained pilot only when it selected a
-predeclared trajectory length, performed a rank-eligible valid metric update,
-recorded zero final-verification divergences, and passed the declared four-chain
-acceptance screen. Its artifact still serializes `artifact_authority=False`,
-`posterior_admission_authority=False`, and `admission_supported=False`: the
-handoff is mechanics authority, not posterior or scientific admission.
-
-Fresh retained R-hat and ESS are explanatory posterior diagnostics and do not
-enter this tuning handoff. The ordinary config currently defaults to
-`use_xla=False`, which is a documented policy mismatch under `AGENTS.md`, not
-an implicit qualification. A claim-adjacent consumer must wait for an XLA-on
-default or a scope-bound reviewed exception. That typed branch's exposed tuning
-hyperparameters have no numeric constructor defaults. The implementation fixes
-four chains and `float64`. A
-`candidate` must supply an explicit initial-position bank with shape `[4,d]`.
-The tuner preserves caller row order, uses the equal-row mean as the initial
-affine center, and maps each raw row into that chart. A `diagnostic_only` call
-may still supply one `[d]` position; BayesFilter replicates it deliberately and
-records `initial_position_was_replicated=True`. The remaining fixed policies are
-`L=1` in metric windows, a powers-of-two trajectory grid, and a stateless
-seed-offset scheme. The route also inherits TensorFlow Probability's internal
-dual-averaging defaults except for the explicit adaptation count and target
-acceptance. These are interface policies rather than evidence of posterior
-convergence or default readiness.
-
-## Fixed Transport
-
-`tune_fixed_transport_hmc_kernel` constructs and identity-binds the transformed
-target before any scoped runner is called. For `theta = T(z)`, it requires
-`log pi_z(z) = log pi_theta(T(z)) + log|det J_T(z)|` and the corresponding total
-score. It uses fixed identity mass in `z`, tunes epsilon, selects `L`, and runs
-fresh candidate or held-out verification. It does not perform ordinary mass
-adaptation. An arbitrary force without a frozen transport cannot enter this
-route.
-
-Its ESS and verification requirements are selection-policy dependent. The
-ordinary ESS-disabled status and `1.01` R-hat threshold do not transfer to this
-route. Read the selected fixed-transport configuration and result schema rather
-than borrowing ordinary-tuner thresholds.
-
-### Fixed-transport tuning policy
-
-The artifact-authoritative fixed-transport policy is
-`measured_joint_grid_v1`. A configuration under this policy must explicitly
-declare `step_size_candidates` and at least two distinct values in
-`leapfrog_grid`; the dataclass does not invent a grid. The no-configuration
-convenience call supplies the small `(0.05, 0.1, 0.2)` baseline and records it
-as a repository convenience hypothesis, not target-specific evidence.
-The tuner executes every declared pair `(epsilon, L)` with the same frozen
-transport, target, coordinate identity, chain bank, and fixed-kernel screen.
-The candidate count is bounded by `max_joint_candidate_count`; a missing grid,
-duplicate-only grid, or exceeded bound fails before a chain is started. The
-legacy `fixed_grid_base_step_size_candidates` and
-`fixed_grid_scale_candidates` fields are accepted only as an explicitly
-recorded migration input and are expanded into measured pairs; they do not
-retain first-in-band or directional-repair semantics.
-
-Selection under `measured_joint_grid_v1` uses replicated fixed-kernel
-efficiency evidence (`replicated_min_bulk_ess_per_gradient`) followed by a
-disjoint held-out verification. Mean Metropolis acceptance probability and
-binary acceptance are both recorded, but neither is a convergence statistic.
-Movement, squared jump distance, energy/error telemetry, divergence provenance,
-and finite target/score checks are recorded with their stated diagnostic role.
-Missing or non-finite acceptance, and missing or non-positive
-retained-transition movement, are hard ineligibility conditions. An acceptance
-value outside the target band is instead recorded as a descriptive repair
-trigger in the measured route; it is not a validity veto, because a target such
-as `0.70` is an efficiency heuristic rather than a correctness condition.
-The selected candidate is never inferred from an unmeasured neighboring step
-size, and an acceptance target is not a substitute for an efficiency or health
-check.
-
-`legacy_directional_diagnostic_v1` preserves the former dual-averaging and
-factor-of-two ladder for migration and debugging only. Its result is stamped
-`diagnostic_only_legacy_policy`; the verified-handoff builder rejects it. At
-finite fixed `L`, leapfrog phase can make `a(epsilon,L)` non-monotone, so a
-higher acceptance does not justify multiplying epsilon and a lower acceptance
-does not justify dividing it without measuring the proposed pair. A harmonic
-oscillator makes this visible: the leapfrog phase is
-`theta(epsilon)=acos(1-epsilon^2/2)`, and the trajectory phase is
-`L*theta(epsilon)`, which can approach a return or resonance while acceptance
-remains high. This is why the measured policy evaluates the joint grid.
-
-The payload exposes distinct status fields: a candidate with finite target/score
-and valid transition health is `mechanics_validated`; a row that also passes
-the replicated efficiency screen is `tuning_candidate`; `posterior_ready`
-requires a later retained-chain assessment and is always false in this tuner.
-The result and final-kernel payloads carry `authority_status`,
-`posterior_status`, and `posterior_ready` explicitly so these labels cannot be
-inferred from a bare `passed` boolean.
-
-The July 2026 LGSSM validation caller is retained as a historical compatibility
-route and explicitly selects `legacy_directional_diagnostic_v1`. Its one-`L`
-ladder may emit diagnostics, but the handoff builder rejects it. Any active
-caller must provide a reviewed target-specific measured grid before it can
-issue a claim-bearing artifact.
-
-The same explicit legacy classification is required for the historical
-fixed-transport benchmark callers in this checkout, including the weighted
-three-mode, paper-d100, German reverse-comparator, strong-smooth, defensive
-analytic, banana-repair, replication, q=20 CPU validation, q=20 global-mixing,
-q=20 seed-B, and Chart-A six-`L` scripts. Their configurations set
-`FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY` and the historical
-`acceptance_target_distance` selector, so a bare `passed` value cannot issue a
-current measured-grid handoff. A caller that is intended to be active must
-replace that explicit legacy policy with a reviewed finite
-`step_size_candidates` grid and at least two `leapfrog_grid` values before it
-can use the measured policy.
-
-### Fixed-transport layers
-
-BayesFilter exposes one active fixed-transport tuner and retains three
-diagnostic procedures for compatibility. The diagnostic procedures solve narrower
-problems and are not alternatives in the route-decision table:
-
-1. `discover_fixed_transport_hmc_candidates` is diagnostic candidate
-   nomination. It does not select or confirm a kernel.
-2. `run_fixed_transport_hmc_candidate_campaign` combines runner qualification
-   with candidate nomination. It records neither selection nor confirmation.
-3. `refine_fixed_transport_hmc_candidates` is diagnostic, staged comparison of
-   nominated candidates. It does not issue an authoritative handoff.
-
-`tune_fixed_transport_hmc_kernel` is the active public tuner. Only this layer
-can issue the fixed-transport tuning artifact described by the route registry.
-
-Do not assemble these helpers into a new de facto tuning route in a
-consumer. If their policy is wanted for an authoritative handoff, either feed
-the resulting proposal into an active public tuner that independently owns its
-required stages or implement and review a separate artifact-authority route.
-
-### Diagnostic candidate discovery
-
-The discovery helper evaluates the fixed primary grid
-`L=(3, 5, 9, 13, 18, 25)`. It performs separate dual-averaging adaptation for
-each `L`, using four chains, then evaluates the tuned epsilon in two fresh
-fixed-kernel replications. The configured adaptation, returned-draw, and screen
-budgets are explicit caller inputs; do not infer them from the public tuner's
-defaults.
-
-For each `L`, the statistical unit is a replication mean across the four
-chains. If the two replication means are `a1` and `a2`, discovery nominates the
-candidate only when the clipped interval `[mean(a1,a2)-sd(a1,a2),
-mean(a1,a2)+sd(a1,a2)]` intersects `[0.65,0.75]`. This is a deliberately broad
-nomination rule, not confirmation. The result records
-`selection_performed=False`, `confirmation_performed=False`, and does not
-authorize a final kernel or retained sampling.
-
-### Diagnostic candidate refinement
-
-The refinement helper accepts at most one nominated epsilon for each `L` and
-uses four chains. Its configured stages are `(500,500)` returned transitions.
-Stage 1 first discards 500 burn-in transitions; stage 2, when run, continues
-from surviving stage-1 endpoints without another burn-in block. Each attempt
-reports rank-normalized split R-hat plus bulk and tail ESS diagnostics and uses
-the four chain-level acceptance means for its nomination interval. These are
-candidate diagnostics, not retained-posterior convergence evidence.
-
-A stage permits at most one candidate-specific epsilon repair, and that repair
-is attempted only if the first attempt leaves no survivors. Low acceptance
-multiplies epsilon by `0.80`; high acceptance multiplies it by `1.20`. A hard
-veto also follows the lower-epsilon branch. Before describing this as a
-two-stage confirmation, inspect the actual stage list: stage 2 is skipped when
-stage 1 leaves zero or one survivor. Therefore the implemented policy is not an
-unconditional "500+500 confirmation" of every candidate.
-
-### Active public tuner budgets and control flow
-
-For the public `FixedTransportHMCKernelTuningConfig` defaults, a ladder or
-fixed-grid screen uses 4 discarded burn-in plus 16 returned transitions per
-chain. Fresh candidate verification also uses 4 plus 16 per chain. These are
-short tuning screens; they are not posterior convergence runs. The default
-`selection_num_results=64` is consumed only by the
-`replicated_min_bulk_ess_per_gradient` selection policy. It does not lengthen
-the default `acceptance_target_distance` branch.
-
-For `measured_joint_grid_v1`, every declared pair is measured before selection;
-there is no first-in-band early stop. The selection and held-out budgets are
-explicit and disjoint. A failed pair is preserved as a candidate failure and
-does not invalidate the target or promote a neighboring unmeasured pair. A
-declared step above the configured hard cap is rejected before execution, so a
-cap-excluded pair is never counted as measured.
-
-The old directional ladder remains available only under
-`legacy_directional_diagnostic_v1`. Its factor-of-two repairs are explanatory
-diagnostics, not claim-bearing tuning evidence. Do not use its artifact as a
-kernel handoff or as a baseline for a new serious campaign.
-
-### Promotion and failed-attempt discipline
-
-Discovery and refinement artifacts remain diagnostic even when their numerical
-checks pass. They cannot be relabeled as canonical tuning handoffs. Promotion
-requires an active public tuner or a separately implemented, tested, registered,
-and reviewed artifact-authority route. Preserve every failed or superseded
-artifact as evidence; do not overwrite its root or retrofit its status. A later
-attempt must use a fresh versioned output root with its own target, transport,
-configuration, seed, source, and code lineage.
-
-`run_full_chain_neural_force_hmc` owns transition mechanics for a supplied
-configuration. It does not tune mass or choose `L`, cannot issue a tuning
-artifact, and has a diagnostic direct identity-mass fallback. That fallback is
-rejected by the typed public binding.
-
-## DO
-
-- Read `hmc_tuning_interface_capability(name)` at the BayesFilter commit used by
-  the consumer.
-- Bind target scope, adapter or transport identity, coordinates, backend, dtype,
-  runner identity, and source closure.
-- Let the selected public tuner own its full stage sequence.
-- Record the geometry hint selected, its coordinate system, provenance,
-  regularization, and any fallback.
-- Treat tuning draws as discarded and run retained posterior assessment
-  separately.
-- Preserve failed candidates as tuning evidence and follow only declared repair
-  triggers and budgets.
-
-## DO NOT
-
-- Do not call a chain runner and describe it as full tuning.
-- Do not use a bare runner callback with `tune_hmc_kernel`.
-- Do not pass `runner_binding` with `HMCKernelTuningConfig`; use the typed
-  proposal-field branch only when its mechanics-only contract is intended.
-- Do not configure `engineering_probe_covariance_multiplier` through the public
-  ordinary config.
-- Do not pass an arbitrary position-only force to the fixed-transport tuner.
-- Do not claim ordinary mass adaptation for fixed identity mass in latent `z`.
-- Do not reuse a tuning artifact after any target, coordinate, transport,
-  dimension, backend, dtype, or bound source identity changes.
-- Do not treat acceptance alone as convergence or handoff evidence.
-
-A high acceptance rate after a short run with fixed `M=I`, fixed `L=1`, and
-only epsilon adaptation describes that under-tuned configuration. It is not
-evidence against HMC, the target, or the neural-force proposal.
-
-## STOP
-
-Stop without issuing or consuming a handoff when:
-
-- no active public tuner matches the target and coordinates;
-- the exact value and score do not describe the same probability measure;
-- a frozen transport or its Jacobian identity is missing;
-- neural force and endpoint target coordinates differ;
-- required transition telemetry or source identity is missing; movement has no
-  additional candidate threshold unless the selected policy declares one;
-- fresh verification fails or exhausts its cap; or
-- a candidate supplies only one initial position, rather than an explicit
-  four-chain bank; or
-- a consumer requires XLA-qualified tuning, because the ordinary default is
-  currently non-XLA and no reviewed exception record is present; or
-- result, route, or capability schemas are unsupported by the consumer's
-  pinned BayesFilter commit.
-
-## Artifact Acceptance
-
-Accept a tuning result only after checking all of the following:
-
-- The capability record is `interface_kind="public_tuner"`,
-  `capability_status="tested_supported"`, has `artifact_authority=True`, and its
-  route record is active. Diagnostic and historical helpers never satisfy this
-  conjunction.
-- The result, capability-registry, and, when applicable, runner-binding schemas
-  are explicitly supported by the consumer.
-- Target scope, coordinate signature, dimension, backend, dtype, XLA mode, and
-  chain execution mode match the intended run.
-- Adapter, mass or transport, runner-binding, and source-closure identities
-  match the actual call.
-- Final status is passed and the route-required fresh verifier passed. A failed
-  verifier must have no final kernel or public success payload.
-- The BayesFilter-owned private handoff exists for replay; redacted public
-  status alone is not replayable.
-- A claim-adjacent retained consumer uses an explicit claim-bearing replay
-  builder and verifies `resolved_policy.claim_bearing_blockers == []` plus
-  `claim_bearing_artifact_authority=True`. A mechanics consumer instead uses
-  the explicit mechanics-only role; route-level `artifact_authority=True` is
-  not sufficient for posterior or scientific authority.
-- Tuning draws are excluded from retained posterior inference.
-
-### Durable typed TensorFlow replay
-
-A passing TensorFlow `candidate` is already bound to the endpoint target,
-proposal field, affine geometry, selected epsilon and `L`, final chain state,
-and source closure. Consume it only through the repository-issued binding:
-
-```python
-runner = build_retained_bound_hmc_archive_runner_from_tuning_result(
-    tuning_result=tuning_result,
-    runner_binding=binding,
-)
-pilot = runner.run(
-    BoundRetainedHMCArchiveConfig(
-        num_results=pilot_draws,
-        seed=pilot_seed,
-        output_dir=pilot_output,
-        budget_provenance=pilot_budget_provenance,
-    )
-)
-```
-
-The builder rejects a diagnostic or failed candidate, a changed binding, or a
-missing durable tuning manifest. It runs the same frozen bound transition; it
-does not switch to ordinary exact-gradient HMC. For an extension, pass the
-immediately preceding archive as `continuation_manifest`. BayesFilter verifies
-the predecessor and begins from its final active-coordinate state. The caller
-must not reconstruct the mass map or restart from the original tuning endpoint.
-This typed archive path is mechanics replay, not posterior admission; its
-`artifact_authority=False` binding must not be upgraded by the consumer.
-
-### Durable ordinary replay
-
-The in-memory `HMCKernelTuningResult` contains private geometry and final-mass
-arrays that the redacted public JSON does not. Before process exit, convert a
-passed result to the durable admitted mechanics form:
-
-```python
-from bayesfilter.inference import (
-    admitted_kernel_mechanics_payload_from_tuning_result,
-    build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
-)
-```
-
-`admitted_kernel_mechanics_payload_from_tuning_result` reuses the validated
-geometry already bound into the result. It preserves and signs both the initial
-and adapted mass artifacts, including nonidentity geometry, and requires no
-caller reconstruction of hidden hints. Persist the returned JSON-ready mapping.
-`build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload` validates its
-fingerprint, target, scope, execution settings, adapter signatures, initial
-position, and both mass signatures; it invokes neither tuning nor HMC.
-
-The older serialized tuning-payload replay API is different: when reconstructing
-geometry from such a payload, the caller must provide the same explicit geometry
-inputs used originally. A public status payload without the private mass arrays
-is not replayable.
-
-### Replay roles and authority
-
-The historical-looking name
-`build_retained_frozen_kernel_hmc_adapter_from_tuning_payload` is retained for
-compatibility, but it is explicitly a `mechanics_only` replay boundary. The
-same is true of its `...from_tuning_result` form. Prefer the explicit aliases
-when writing new mechanics consumers:
-
-```python
-from bayesfilter.inference import (
-    build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload,
-    build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result,
-)
-```
-
-Claim-adjacent consumers must use the separate claim-bearing builders:
-
-```python
-from bayesfilter.inference import (
-    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload,
-    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result,
-    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
-)
-```
-
-Those builders fail closed unless the repository-issued `resolved_policy`
-explicitly has an empty `claim_bearing_blockers` collection and
-`claim_bearing_artifact_authority=True`. The guard recomputes the ordinary
-epsilon/L policy from the repository-owned `config` (or the durable
-`tuning_config`) and compares both the embedded policy and blocker list; a
-caller-edited authority flag or blocker list cannot grant authority. They also
-require the persisted mechanics role to be `claim_bearing_retained`; a
-mechanics artifact cannot gain claim authority by changing a caller-side flag.
-Both configuration and resolved policy must also identify
-`ordinary_tf_tfp_runtime_v1`. Missing or mismatched backend identities preserve
-the historical `ordinary_runtime_numpy_policy_pending` veto even when someone
-deletes the old blocker list. All subsequent target, geometry and kernel
-validation still applies.
-`admitted_kernel_mechanics_payload_from_tuning_result`
-continues to emit an explicit `mechanics_only` role,
-`authority_status=mechanics_only_nonclaiming`, and the source `tuning_config`
-needed for the repository-owned policy check.
-
-Never infer compatibility from a matching schema string alone. Record the
-BayesFilter Git commit in the consumer, compare the current registry payload,
-and run that consumer's contract tests. A downstream lock update is a separate
-owner-controlled migration.
-
-## Checked Sources
-
-- Normative explanation: [HMC Tuning Interfaces](../chapters/ch21b_hmc_tuning_interfaces.tex)
-- Ordinary example: [hmc_tuning_ordinary.py](../examples/hmc_tuning_ordinary.py)
-- Covariance-first binding example:
-  [hmc_tuning_covariance_first.py](../examples/hmc_tuning_covariance_first.py)
-- Neural-force binding example:
-  [hmc_tuning_neural_force_binding.py](../examples/hmc_tuning_neural_force_binding.py)
-- Fixed-transport example: [hmc_tuning_fixed_transport.py](../examples/hmc_tuning_fixed_transport.py)
-- Route-selection example: [hmc_tuning_route_selection.py](../examples/hmc_tuning_route_selection.py)
-- Documentation contract: `tests/test_hmc_tuning_documentation_contract.py`
-- Bounded downstream audit: `scripts/audit_ordinary_hmc_migration_surface.py`
-- Ordinary admission and binding tests:
-  `tests/test_hmc_kernel_tuning_public_api.py` and
-  `tests/test_hmc_kernel_tuning_outer_loop.py`
-- Fixed-transport tests: `tests/test_fixed_transport_hmc_tuning.py` and
-  `tests/test_fixed_transport_hmc_binding.py`
-- Fixed-transport diagnostic discovery and refinement implementation:
-  `bayesfilter/inference/fixed_transport_hmc_candidate_discovery_tf.py`
-- Fixed-transport diagnostic discovery and refinement tests:
-  `tests/test_fixed_transport_hmc_candidate_discovery.py`
-- Neural-force binding tests: `tests/test_neural_force_hmc.py`
-- Dispatcher and TensorFlow diagnostic/candidate mechanics tests:
-  `tests/test_hmc_tuning_dispatch.py`
-
-These checks establish interface behavior for their fixtures. They do not
-establish posterior convergence, target correctness, sampler superiority,
-performance, scientific validity, default readiness, or GPU/XLA readiness.
+Resume reconstructs the frozen geometry, complete numerical inventory, queue,
+attempts and accounting. It rejects changes to scope, source, numerical policy,
+versions, target probes, or tensor checksums. `max_work_items` pauses at a work
+boundary without changing the search. Position-field mechanics preserve their
+preparation and observations separately; use
+`resume_position_field_candidate_tuning` with the original target and runner
+binding to resume `controller_checkpoint.json`, including immutable completed
+chunks within a longer stage. A controller-only artifact
+cannot manufacture missing numerical evidence.
+
+`total_budget_units` bounds dispatched attempts. The minimum candidate reserve
+covers its mandatory pilot/measurement/verification stages; later rungs and
+retries can use free budget without taking another admitted member's reservation.
+`max_gradient_work` bounds a conservative transition-times-(L+1) work estimate.
+The scheduler quotes unfinished stage work; each numerical chunk is charged
+and checkpointed before its native call. Completed chunks are not charged
+again on resume. An interrupted native call remains conservatively charged
+even when it returned no usable chunk; invocation budgets charge its retry too.
+This is not a measured count of every target invocation. Unfundable work stays
+pending while other affordable reserved work may proceed.
+`max_wall_time_seconds` includes recorded preparation time and execution time.
+The numerical adapter uses chunks of at most `chunk_max_results` (convenience
+default 256), checks time between chunks, and records elapsed time including the
+first call's tracing/compilation. Native calls and compilation cannot be
+preempted by a Python deadline; a hard process limit must be applied externally.
+When both preparation and search time limits are supplied, the smaller limit
+applies. Unfinished work reports `partial_budget` or
+`paused_infrastructure`, not `complete`. Budget-limited searches may still have
+verified members. `shared_invalidity` disables all replay.
+
+`complete` means that all work allowed by the declared search policy reached a
+terminal disposition. It can coexist with an empty verified set and does not
+prove that no viable kernel exists. `HMCTuningScopeCollection` resolves members
+across scope/search identities; its completeness requires all included searches
+to be complete and all explicitly expected scopes to be present.
+
+## Retained sampling and posterior assessment
+
+Choose a candidate ID explicitly and pass its result and numerical binding to
+`build_retained_bound_hmc_archive_runner_from_candidate_set_result`. The two
+`build_retained_frozen_kernel_hmc_adapter_from_candidate_set_result` and
+`build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result`
+variants share verification checks; the claim-eligible variant additionally
+requires actual GPU/XLA evidence. Callback adapters cannot grant this authority.
+
+A repaired child needs its own passing verification and valid ancestry; a failed
+parent need not pass. Export a member with `runner.export(path)` and reload it
+with `load_hmc_candidate_retained_runner(path, adapter=original_target)`.
+`runner.run(..., previous_archive=...)` continues from the verified/predecessor
+endpoint with fresh seeds and frozen settings. Every block excludes tuning draws.
+Seed checks include every tuning stage's base seed, every completed numerical
+chunk and attempted partial chunk, as well as predecessor retained blocks.
+Attempted seeds are reconstructed from the durable work/accounting records after
+member export and reload, including native calls that failed without a trace.
+Current retained-member archives embed their evidence and validate predecessor
+history; target-scale memory and restart performance remain unqualified.
+
+Posterior estimation needs a separate declared warmup and cumulative
+model-coordinate R-hat/ESS/health procedure. A verified tuning member is an input
+to that procedure; `runner.run_sequential` connects the selected member to the
+existing posterior controller. Posterior rejection cannot alter tuning membership.
+A tuning member is neither posterior-ready nor statistically superior to
+other verified members.
+
+## Historical interfaces
+
+Earlier `HMCKernelTuningResult`, fixed-transport selection results, and typed
+`TensorFlowHMCKernelTuningResult` archives retain their original identities.
+Their readers and low-level diagnostics are preserved for historical inspection.
+The private ordinary campaign checkpoint helper also remains for historical
+diagnostics. Public tuning rejects its `campaign_checkpoint_dir`,
+`campaign_time_budget_s`, and `campaign_interrupted_elapsed_s` options. Use the
+shared candidate checkpoint/resume API and shared search budgets described above.
+The single-kernel `build_retained_*_from_tuning_result` and
+`build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload` interfaces
+are historical compatibility readers. They do not define the new candidate-set
+procedure or allow a caller-edited authority flag to grant authority.
+
+`run_full_chain_neural_force_hmc`, `select_fixed_transport_candidate_set`, discovery,
+refinement, dual-averaging and stage helpers remain diagnostic helpers. Direct
+fixed `M=I`, fixed `L=1` execution is one kernel experiment, not whole tuning.
+Use `bind_neural_force_hmc_tuning_runner` for the conditional position-field
+mechanics route; never disguise an arbitrary field as a frozen nonlinear map.

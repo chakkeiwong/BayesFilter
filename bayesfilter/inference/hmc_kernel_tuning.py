@@ -6694,6 +6694,11 @@ class HMCTuneVerifyRepairAttempt:
                 raise ValueError("passed Phase 7 attempt cannot have hard vetoes")
             diagnostics = self.verification_diagnostics
             if diagnostics.get("sequential_rhat_verification") is True:
+                if diagnostics.get("rhat_role") != "tuning_explanatory_only":
+                    raise ValueError(
+                        "passed ordinary attempt requires tuning_explanatory_only "
+                        "R-hat role"
+                    )
                 if diagnostics.get("passed") is not True:
                     raise ValueError(
                         "passed Phase 7 attempt requires passed sequential verifier"
@@ -6943,7 +6948,7 @@ class HMCKernelTuningConfig:
     terminal_phase6_repair_extra_attempts: int = 0
     seed: tuple[int, int] = (20260621, 8)
     chain_execution_mode: str = "tf_function"
-    use_xla: bool = False
+    use_xla: bool = True
     target_scope: str | None = None
     target_status_trace_policy: str = "none"
     mass_policy: str = "windowed_adaptive"
@@ -6970,6 +6975,11 @@ class HMCKernelTuningConfig:
     source: str = "bayesfilter.inference.tune_hmc_kernel"
 
     def __post_init__(self) -> None:
+        for name in ("max_leapfrog_steps", "bootstrap_max_repairs", "max_attempts",
+                     "terminal_phase6_repair_extra_attempts"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Integral):
+                raise ValueError(f"{name} must be an integer")
         algorithm_id = str(self.algorithm_id)
         if algorithm_id != ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID:
             raise ValueError(
@@ -7360,7 +7370,8 @@ class HMCKernelTuningConfig:
         payload: dict[str, Any] = {
             "preset": "smoke",
             "max_attempts": 1,
-            "chain_execution_mode": "eager",
+            "chain_execution_mode": "tf_function",
+            "use_xla": False,
             "source": "bayesfilter.inference.tune_hmc_kernel.smoke",
         }
         payload.update(overrides)
@@ -18247,6 +18258,10 @@ def _phase7_verification_public_summary(
             diagnostics.get("sequential_rhat_verification")
         ),
         "rhat_threshold": diagnostics.get("rhat_threshold"),
+        "rhat_role": diagnostics.get("rhat_role"),
+        "max_finite_rhat": diagnostics.get("max_finite_rhat"),
+        "finite_rhat_count": diagnostics.get("finite_rhat_count"),
+        "nonfinite_rhat_count": diagnostics.get("nonfinite_rhat_count"),
         "rhat_threshold_role": (
             config_payload.get("rhat_threshold_role")
             or (
@@ -20191,14 +20206,10 @@ def _phase7_terminal_phase6_repair_slot_exhausted_payload(
 def _phase7_should_retry_verification_only(
     attempt_state: "_HMCPhaseAttemptState | None",
 ) -> bool:
-    if attempt_state is None:
-        return False
-    return (
-        attempt_state.has_final_kernel_handoff
-        and attempt_state.verification_acceptance_relation == "inside_acceptance_band"
-        and attempt_state.verification_repair_trigger is None
-        and not attempt_state.verification_repair_applied
-    )
+    # Ordinary tuning does not spend another verification-only attempt chasing
+    # an R-hat threshold. Posterior convergence consumers invoke their own
+    # explicitly gated verifier and do not enter this Phase 7 loop.
+    return False
 
 
 def _phase7_should_run_operational_repair_verification(
@@ -20230,23 +20241,9 @@ def _phase7_should_prepare_verification_only_retry(
     handoff_state: "_HMCPhaseAttemptState | None",
     verification_diagnostics: Mapping[str, Any],
 ) -> bool:
-    triggers = tuple(str(item) for item in attempt_repair_triggers)
-    return (
-        str(attempt_status) == "repair_or_retry"
-        and str(attempt_role) == "verification_rhat_repair_trigger"
-        and not tuple(attempt_hard_vetoes)
-        and "verification_rhat_above_threshold_or_cap_hit" in triggers
-        and "verification_rhat_cap_hit" in triggers
-        and _PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER not in triggers
-        and handoff_state is not None
-        and _phase7_should_retry_verification_only(handoff_state)
-        and verification_diagnostics.get("sequential_rhat_verification") is True
-        and verification_diagnostics.get("cap_hit") is True
-        and verification_diagnostics.get("runtime_finite") is True
-        and verification_diagnostics.get("samples_all_finite") is True
-        and _verification_acceptance_log_health_passed(verification_diagnostics)
-        and _verification_target_value_health_passed(verification_diagnostics)
-    )
+    """Historical retry hook; ordinary tuning never retries solely for R-hat."""
+
+    return False
 
 
 def _phase7_verification_result_supports_verification_only_retry(
@@ -20258,41 +20255,9 @@ def _phase7_verification_result_supports_verification_only_retry(
     verify_hard_vetoes: Sequence[str],
     verify_repair_triggers: Sequence[str],
 ) -> bool:
-    """Return true only for valid verify-only retry outcomes.
+    """Historical retry hook; ordinary tuning never retries solely for R-hat."""
 
-    The retry path reuses a frozen kernel selected by a previous Phase 6 pass.
-    If a fresh verification of that same kernel later observes acceptance
-    outside the pass band, the next action is a private step-size repair, not
-    another verification-only retry. A successful verification-only pass still
-    counts as a valid verify-only outcome because no retuning stages were run.
-    """
-
-    triggers = tuple(str(item) for item in verify_repair_triggers)
-    acceptance_relation = _acceptance_relation_to_band(
-        verification_diagnostics.get("acceptance_rate"),
-        config.acceptance_band,
-    )
-    healthy = (
-        not tuple(verify_hard_vetoes)
-        and acceptance_relation == "inside_acceptance_band"
-        and _PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER not in triggers
-        and verification_diagnostics.get("sequential_rhat_verification") is True
-        and verification_diagnostics.get("runtime_finite") is True
-        and verification_diagnostics.get("samples_all_finite") is True
-        and _verification_acceptance_log_health_passed(verification_diagnostics)
-        and _verification_target_value_health_passed(verification_diagnostics)
-    )
-    if not healthy:
-        return False
-    if str(verify_status) == "passed":
-        return True
-    return (
-        str(verify_status) == "repair_or_retry"
-        and str(verify_role) == "verification_rhat_repair_trigger"
-        and "verification_rhat_above_threshold_or_cap_hit" in triggers
-        and "verification_rhat_cap_hit" in triggers
-        and verification_diagnostics.get("cap_hit") is True
-    )
+    return False
 
 
 def _emit_phase7_progress(
@@ -24375,152 +24340,11 @@ def prepare_operational_windowed_mass_handoff(
     parameter_scales: Any | None = None,
     progress_callback: Callable[[str, Mapping[str, Any]], None] | None = None,
 ) -> Mapping[str, Any]:
-    """Prepare one public operational mass and post-warmup start-bank handoff.
-
-    This is the bounded public prefix of ordinary HMC tuning: BayesFilter owns
-    geometry initialization, bootstrap repair, the dimension-scaled warmup
-    budget, operational windowed adaptation, and the final affine/start-bank
-    lineage checks.  It intentionally stops before fixed-step or trajectory
-    selection so callers that already own a reviewed fixed-kernel comparison
-    do not have to run a second candidate campaign.
-
-    All warmup draws are discarded.  The returned mapping contains live
-    BayesFilter adapters plus the public geometry, bootstrap, windowed-stage,
-    and budget records needed to audit the handoff.  It is not posterior or
-    convergence evidence.
-    """
-
-    cfg = HMCKernelTuningConfig.standard() if config is None else config
-    if not isinstance(cfg, HMCKernelTuningConfig):
-        raise TypeError("config must be HMCKernelTuningConfig")
-    if cfg.mass_policy != "windowed_adaptive":
-        raise ValueError(
-            "operational windowed mass preparation requires mass_policy='windowed_adaptive'"
-        )
-    position = _validate_position(initial_position)
-    scope = cfg.target_scope or str(getattr(adapter, "target_scope", ""))
-    if not scope:
-        raise ValueError("target_scope must be supplied by config or adapter")
-
-    def progress(stage: str, payload: Mapping[str, Any] | None = None) -> None:
-        if progress_callback is not None:
-            progress_callback(
-                stage,
-                {
-                    "schema": "bayesfilter.operational_windowed_mass_preparation_progress.v1",
-                    "stage": stage,
-                    "reports_posterior_convergence": False,
-                    "raw_samples_retained": False,
-                    **({} if payload is None else dict(payload)),
-                },
-            )
-
-    progress("geometry_started")
-    geometry = initialize_hmc_kernel_geometry(
-        adapter=adapter,
-        initial_position=position,
-        config=_public_geometry_config(cfg),
-        negative_hessian=negative_hessian,
-        initial_covariance=initial_covariance,
-        parameter_scales=parameter_scales,
-    )
-    progress(
-        "geometry_completed",
-        {"geometry_artifact_hash": geometry.artifact_hash},
-    )
-    bootstrap = run_hmc_bootstrap_screen(
-        adapter=adapter,
-        geometry=geometry,
-        config=_public_bootstrap_config(cfg, geometry=geometry),
-    )
-    progress(
-        "bootstrap_completed",
-        {
-            "bootstrap_artifact_hash": bootstrap.artifact_hash,
-            "final_status": bootstrap.final_status,
-        },
-    )
-    if not _bootstrap_preflight_passed(bootstrap):
-        raise RuntimeError(
-            "bootstrap contained a hard-vetoed round and cannot seed operational warmup"
-        )
-
-    budget_factory = _public_budget_policy_factory(cfg, geometry=geometry)
-    if budget_factory is None:
-        raise RuntimeError("public operational warmup budget policy is unavailable")
-    budget_policy = budget_factory(geometry.target_dimension, 0)
-    if not isinstance(budget_policy, _HMCAttemptBudgetPolicy):
-        raise TypeError("public operational warmup budget policy is invalid")
-    loop_config = _public_loop_config(cfg)
-    windowed_config = _phase7_windowed_stage_config(loop_config, attempt_index=0)
-    progress(
-        "windowed_mass_started",
-        {
-            "warmup_steps": budget_policy.phase4_warmup_steps,
-            "budget_policy_hash": stable_config_hash(budget_policy.payload()),
-        },
-    )
-    windowed = run_hmc_windowed_mass_stage(
-        adapter=adapter,
-        geometry=geometry,
-        bootstrap=bootstrap,
-        config=windowed_config,
-        _attempt_budget_policy=budget_policy,
-        _progress_callback=(
-            None
-            if progress_callback is None
-            else lambda stage, payload: progress(f"windowed_mass.{stage}", payload)
-        ),
-    )
-    operational = windowed.operational_warmup_result
-    if not windowed.passed or operational is None:
-        raise RuntimeError(
-            f"operational windowed mass stage did not pass: {windowed.final_status}"
-        )
-    if (
-        cfg.metric_update_requirement == "require_operational_update"
-        and operational.operational_metric_update_count <= 0
-    ):
-        raise RuntimeError("required operational metric update was not observed")
-    progress(
-        "windowed_mass_completed",
-        {
-            "final_status": windowed.final_status,
-            "operational_metric_update_count": (
-                operational.operational_metric_update_count
-            ),
-        },
-    )
-    handoff = build_operational_fixed_mass_hmc_adapter(
-        adapter=adapter,
-        geometry=geometry,
-        windowed_stage=windowed,
-        target_scope=scope,
-    )
-    progress(
-        "handoff_completed",
-        {
-            "final_adapter_signature": handoff["final_adapter_signature"],
-            "adapted_mass_artifact_signature": (
-                handoff["adapted_mass_artifact_signature"]
-            ),
-        },
-    )
-    return {
-        **handoff,
-        "config": cfg,
-        "geometry": geometry,
-        "bootstrap": bootstrap,
-        "windowed_stage": windowed,
-        "budget_policy_payload": budget_policy.payload(),
-        "budget_policy_hash": stable_config_hash(budget_policy.payload()),
-        # This prefix invokes warmup preparation only.  Preserve the handoff's
-        # explicit nonclaim that fixed-kernel HMC/tuning was run.
-        "hmc_or_tuning_invoked": handoff["hmc_or_tuning_invoked"],
-        "warmup_invoked": True,
-        "warmup_draws_discarded": True,
-        "reports_posterior_convergence": False,
-    }
+    """Compatibility import for the active ordinary preparation orchestration."""
+    from bayesfilter.inference.hmc_preparation import prepare_operational_windowed_mass_handoff as prepare
+    return prepare(adapter=adapter, initial_position=initial_position, config=config,
+        negative_hessian=negative_hessian, initial_covariance=initial_covariance,
+        parameter_scales=parameter_scales, progress_callback=progress_callback)
 
 
 def _phase7_historical_verification_input(
@@ -26046,6 +25870,7 @@ def _run_phase7_sequential_rhat_final_verification(
         min_retained_results_for_pass=min_retained_for_pass,
         chain_count=4,
         rhat_threshold=HMC_TUNING_ORDINARY_RHAT_THRESHOLD,
+        rhat_role="tuning_explanatory_only",
         acceptance_policy=acceptance_policy,
         use_xla=config.use_xla,
         target_scope=sequential_target_scope,
@@ -26183,6 +26008,7 @@ def _run_phase7_sequential_rhat_final_verification(
         diagnostics = dict(_bootstrap_error_diagnostics(run_error))
     if run_error is not None:
         diagnostics["sequential_rhat_verification"] = True
+        diagnostics["rhat_role"] = sequential_config.rhat_role
         diagnostics["rhat_threshold"] = HMC_TUNING_ORDINARY_RHAT_THRESHOLD
         diagnostics["check_interval"] = check_interval
         diagnostics["max_results"] = max_results
@@ -26224,12 +26050,12 @@ def _run_phase7_sequential_rhat_final_verification(
         "minimum_retained_pass_gate_satisfied": bool(
             retained_count_int >= int(min_retained_for_pass)
         ),
-        "rhat_threshold_role": "explanatory_diagnostic_only_not_a_handoff_gate",
+        "rhat_threshold_role": "tuning_explanatory_only",
         "handoff_gate": (
-            "dependence_aware_acceptance_evidence_hard_health_and_minimum_draws"
+            "dependence_aware_acceptance_evidence_hard_health_minimum_draws"
         ),
         "stopping_rule": (
-            "stop_on_nonpromoting_acceptance_or_first_checkpoint_passing_acceptance_health_and_minimum_draws"
+            "stop_on_nonpromoting_acceptance_or_first_checkpoint_passing_acceptance_health_minimum_draws"
         ),
         "cap_rule": "stop_inconclusive_at_budget_policy_verification_num_results",
         "acceptance_policy": acceptance_policy.payload(),
@@ -26238,7 +26064,7 @@ def _run_phase7_sequential_rhat_final_verification(
             "finite_value_and_score_per_retained_chain_batch"
         ),
         "early_rhat_pass_before_minimum_retained_count": (
-            "continue_until_minimum_retained_count; R-hat is diagnostic only"
+            "R-hat is explanatory; minimum retained count remains required"
         ),
         "mechanics_publicized": False,
     }
@@ -26251,11 +26077,12 @@ def _run_phase7_sequential_rhat_final_verification(
         "semantic_source": "_run_phase7_sequential_rhat_final_verification",
         "route_nonclaims": (
             "sequential R-hat final verification uses fixed-size TF/TFP chunks",
-            "R-hat is explanatory only and does not gate the tuning handoff",
+            "R-hat is explanatory only and does not gate this tuning handoff",
         ),
         "evidence_role": "fixed_kernel_tuning_admission",
         "promotion_role": "handoff_gate",
         "stopping_rule_role": "acceptance_health_and_minimum_draws_only",
+        "rhat_role": "tuning_explanatory_only",
         "reports_posterior_convergence": False,
         "reports_sampler_superiority": False,
     }
@@ -26267,7 +26094,8 @@ def _run_phase7_sequential_rhat_final_verification(
         "num_burnin_steps": sequential_config.num_burnin_steps,
         "chain_count": sequential_config.chain_count,
         "rhat_threshold": sequential_config.rhat_threshold,
-        "rhat_threshold_role": "explanatory_diagnostic_only_not_a_handoff_gate",
+        "rhat_threshold_role": "tuning_explanatory_only",
+        "rhat_role": sequential_config.rhat_role,
         "rhat_definition": (
             "max(rank-normalized split R-hat, "
             "folded rank-normalized split R-hat)"
@@ -26688,9 +26516,24 @@ def _classify_phase7_acceptance_evidence_verification(
             (),
         )
     if evidence.promotion_eligible:
-        # R-hat remains recorded for diagnosis, but it is not a tuning or
-        # verification gate. Acceptance evidence, finite target health, and
-        # the minimum retained draw count determine handoff eligibility.
+        # Completion checks describe tuning evidence, not the R-hat result.
+        if diagnostics.get("rhat_role") != "tuning_explanatory_only":
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_tuning_role_missing_or_invalid",),
+                (),
+            )
+        if (
+            diagnostics.get("passed") is not True
+            or diagnostics.get("cap_hit") is not False
+        ):
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_completion_inconsistent",),
+                (),
+            )
         return (
             "passed",
             "acceptance_health_fixed_kernel_verification_passed",
