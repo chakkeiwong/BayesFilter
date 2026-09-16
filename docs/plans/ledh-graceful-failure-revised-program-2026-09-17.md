@@ -176,7 +176,7 @@ dP_0-F(dP_0)F^\top
 =(dF)P_0F^\top+FP_0(dF)^\top+dQ.
 \]
 
-Use a solve, not a matrix inverse. Dimension 20 gives a `400×400` system, suitable for an initial bounded implementation. Check stability and positive definiteness separately from the equation residual. The original unstable case has a tiny residual and a negative covariance eigenvalue; preserve it as a negative test.
+Use a solve, not a matrix inverse. Dimension 20 gives a `400×400` system, suitable for an initial bounded implementation. Before solving, require the declared stable target to satisfy `rho(F) < 1` (equivalently, `max |lambda(F)| < 1`) and fail the stationary-covariance path closed otherwise. After a permitted solve, check positive definiteness separately from the equation residual. The original unstable case has a tiny residual and a negative covariance eigenvalue; preserve it as a negative test rather than treating its algebraic solve as a stationary target.
 
 For fixed base draws `z_i`, construct `x0_i=m0+L0 z_i` and propagate `dx0_i=dm0+(dL0)z_i`. Define separately what each particle's UKF covariance represents; do not assume that the global initial-cloud covariance and every conditional particle covariance can be interchanged. Follow the canonical initialization/lifecycle specification and test its moments. Fixed random inputs are part of the finite target identity.
 
