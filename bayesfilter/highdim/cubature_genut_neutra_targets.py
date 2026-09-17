@@ -1,13 +1,15 @@
-"""Frozen four-model posterior adapters for batch-native GenUT NeuTra training."""
+"""Diagnostic four-model finite-program GenUT posterior adapters.
+
+These adapters are not eligible for NeuTra training or HMC admission until
+the canonical LEDH rebuild supplies the required analytical recursive score.
+"""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import math
-import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Mapping
 
 import tensorflow as tf
@@ -38,10 +40,6 @@ _LGSSM_LOWER = (-0.95, -0.95, -0.95, 0.05, 0.05)
 _LGSSM_UPPER = (0.95, 0.95, 0.95, 2.0, 2.0)
 _PP_LOWER = (0.1, 110.0, 20.0, 0.1, 0.0, 0.0)
 _PP_UPPER = (1.1, 130.0, 30.0, 1.1, 1.0, 1.0)
-_ADMISSION_ARTIFACT = (
-    Path(__file__).resolve().parents[2]
-    / "docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/aggregate_attempt04/result.json"
-)
 
 
 @dataclass(frozen=True)
@@ -91,41 +89,6 @@ class GenUTControls:
         return payload
 
 
-_WARM_START_CONTROLS = GenUTControls(
-    epsilon=2.0,
-    sinkhorn_steps=8,
-    balance_steps=8,
-    ridge=1.0e-5,
-    tuning_scope="cross_scope_warm_start_hypothesis_only",
-    tuning_artifact=(
-        "docs/benchmarks/artifacts/"
-        "moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json"
-    ),
-)
-_LGSSM_CONTROLS = GenUTControls(
-    epsilon=2.0,
-    sinkhorn_steps=8,
-    balance_steps=8,
-    ridge=1.0e-5,
-    tuning_scope="lgssm_T50_N1008_fp32_tf32_initial_observation_first",
-    tuning_artifact=(
-        "docs/benchmarks/artifacts/"
-        "moment_retuned_genut_whole_leaderboard_20260723/attempt05_final/result.json"
-    ),
-)
-_AUSTRIA_CONTROLS = GenUTControls(
-    epsilon=8.0,
-    sinkhorn_steps=8,
-    balance_steps=8,
-    ridge=1.0e-5,
-    tuning_scope="austria_sir_T20_N1008_current_source",
-    tuning_artifact=(
-        "docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/"
-        "tuning_attempt01/result.json"
-    ),
-)
-
-
 class GenUTNeuTraTargetAdapter:
     """Frozen deterministic posterior formed from one finite GenUT program."""
 
@@ -146,6 +109,8 @@ class GenUTNeuTraTargetAdapter:
         transition_before_first_observation: bool,
         data_id: str,
         control_status: str,
+        jit_compile: bool = True,
+        batch_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128),
     ) -> None:
         self.model_id = str(model_id)
         self.parameter_names = tuple(parameter_names)
@@ -162,6 +127,11 @@ class GenUTNeuTraTargetAdapter:
         )
         self.data_id = str(data_id)
         self.control_status = str(control_status)
+        self._jit_compile = bool(jit_compile)
+        self._batch_sizes = tuple(int(size) for size in batch_sizes)
+        if not self._batch_sizes or any(size < 1 for size in self._batch_sizes):
+            raise ValueError("declare positive diagnostic batch sizes")
+        self._compiled_calls = {}
         self.target_scope = f"GENUT-{self.model_id}-fixed-posterior-v1"
         payload = {
             "schema": "bayesfilter.genut_neutra_target.v1",
@@ -178,7 +148,7 @@ class GenUTNeuTraTargetAdapter:
             "transition_before_first_observation": (
                 self.transition_before_first_observation
             ),
-            "backend": "tensorflow_batch_native_genut_forward_jvp_fp32",
+            "backend": "tensorflow_batch_native_genut_finite_program_ad_diagnostic_fp32",
             "deterministic_ops_required": True,
         }
         self._target_signature = _semantic_hash(payload)
@@ -202,16 +172,18 @@ class GenUTNeuTraTargetAdapter:
     def value_score_capability(self) -> ValueScoreCapability:
         return ValueScoreCapability(
             value_score_authority="graph_native",
-            xla_hmc_ready=True,
+            xla_hmc_ready=False,
+            score_provenance="finite_program_autodiff_diagnostic_only",
             full_chain_xla_diagnostic_ready=False,
-            runtime_backend="tensorflow_batch_native_genut_forward_jvp_fp32",
+            runtime_backend="tensorflow_batch_native_genut_finite_program_ad_diagnostic_fp32",
             evidence_path=(
                 "docs/plans/"
-                "bayesfilter-genut-four-model-neutra-readiness-plan-2026-08-04.md"
+                "filter_gradient_repair_master_20260917.md"
             ),
             target_scope=self.target_scope,
             nonclaims=(
-                "engineering readiness target only",
+                "finite-program AD diagnostic only; canonical LEDH rebuild incomplete",
+                "not eligible for NeuTra training or HMC admission",
                 "no HMC convergence or posterior correctness claim",
                 f"control_status={self.control_status}",
             ),
@@ -220,12 +192,30 @@ class GenUTNeuTraTargetAdapter:
     def neutra_batch_log_prob_and_grad_status(
         self, theta: Any
     ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
-        return _posterior_value_score_status(self, theta)
+        return self._compiled_call("score", theta)
 
     def batch_value_status(
         self, theta: Any
     ) -> tuple[tf.Tensor, Mapping[str, tf.Tensor]]:
-        return _posterior_value_status(self, theta)
+        return self._compiled_call("value", theta)
+
+
+    def _compiled_call(self, kind, theta):
+        values = tf.convert_to_tensor(theta, tf.float64)
+        if values.shape.rank != 2 or values.shape[1] != self.parameter_dim:
+            raise ValueError("GenUT diagnostic input requires [batch, parameter]")
+        size = values.shape[0]
+        if size not in self._batch_sizes:
+            raise ValueError("batch size is outside the declared diagnostic signature inventory")
+        key = (kind, size)
+        if key not in self._compiled_calls:
+            endpoint = _posterior_value_score_status if kind == "score" else _posterior_value_status
+            self._compiled_calls[key] = tf.function(
+                lambda rows: endpoint(self, rows),
+                input_signature=[tf.TensorSpec([size, self.parameter_dim], tf.float64)],
+                autograph=False, jit_compile=self._jit_compile,
+            )
+        return self._compiled_calls[key](values)
 
 
 def _normal_cdf_density(values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
@@ -259,10 +249,7 @@ def _filter_theta_and_jacobian(
     probability, density = _normal_cdf_density(theta)
     if target.chart == "lgssm_five_probit_box":
         lower = tf.constant(_LGSSM_LOWER, theta.dtype)
-        width = tf.constant(
-            tuple(upper - lower for lower, upper in zip(_LGSSM_LOWER, _LGSSM_UPPER)),
-            theta.dtype,
-        )
+        width = tf.constant(_LGSSM_UPPER, theta.dtype) - lower
         physical = lower[None, :] + width[None, :] * probability
         derivative = width[None, :] * density
         prior = tf.fill(tf.shape(theta)[:1], -tf.reduce_sum(tf.math.log(width)))
@@ -295,10 +282,7 @@ def _filter_theta_and_jacobian(
 
     if target.chart == "predator_prey_six_probit_box":
         lower = tf.constant(_PP_LOWER, theta.dtype)
-        width = tf.constant(
-            tuple(upper - lower for lower, upper in zip(_PP_LOWER, _PP_UPPER)),
-            theta.dtype,
-        )
+        width = tf.constant(_PP_UPPER, theta.dtype) - lower
         physical = lower[None, :] + width[None, :] * probability
         derivative = width[None, :] * density
         prior = tf.fill(tf.shape(theta)[:1], -tf.reduce_sum(tf.math.log(width)))
@@ -460,15 +444,20 @@ def make_genut_neutra_target(
     particle_count: int = 1008,
     noise_seed: int = 140000,
     controls: GenUTControls | None = None,
+    jit_compile: bool = True,
+    batch_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128),
 ) -> GenUTNeuTraTargetAdapter:
-    """Build one candidate target without a posterior-row fallback.
+    """Build a diagnostic finite-program target with explicit controls.
 
-    This generic factory does not establish training admission. Serious NeuTra
-    training must use :func:`make_admitted_genut_neutra_target`.
+    Historical tuning/admission results cannot supply defaults. Compilation
+    does not qualify this autodiff score for canonical LEDH or NeuTra use.
     """
 
     name = str(model).lower().replace("-", "_")
-    supplied_scope_controls = controls is not None
+    if controls is None:
+        raise ValueError("explicit diagnostic controls are required; historical tuning is invalidated")
+    selected = controls
+    control_status = "explicit_diagnostic_controls_not_admitted"
     if particle_count <= 0:
         raise ValueError("particle_count must be positive")
     if name == "lgssm":
@@ -487,12 +476,6 @@ def make_genut_neutra_target(
         chart = "lgssm_five_probit_box"
         transition_first = False
         data_id = "benchmark_lgssm_m3_T50_seed81100"
-        selected = controls or _LGSSM_CONTROLS
-        control_status = (
-            "repository_tuning_artifact_bound"
-            if supplied_scope_controls
-            else "scope_tuned_current_scalar_source_batch_revalidation_required"
-        )
     elif name in ("ksc", "ksc_sv"):
         from bayesfilter.testing.exact_sv_sgqf_neutra_target_tf import (
             generate_frozen_exact_sv_dataset_tf,
@@ -509,12 +492,6 @@ def make_genut_neutra_target(
         chart = "ksc_two_probit_box"
         transition_first = False
         data_id = "zhao_cui_sv_ksc_T1000_seed81101"
-        selected = controls or _WARM_START_CONTROLS
-        control_status = (
-            "repository_tuning_artifact_bound"
-            if supplied_scope_controls
-            else "requires_T1000_tuning_before_claim"
-        )
     elif name in ("austria", "austria_sir", "sir"):
         from bayesfilter.testing.sir_filter_neutra_target_design_tf import (
             SIR_OBSERVATION_SHA256,
@@ -533,12 +510,6 @@ def make_genut_neutra_target(
         chart = "austria_identity_normal"
         transition_first = True
         data_id = f"austria_sir_y1_y20_sha256_{SIR_OBSERVATION_SHA256}"
-        selected = controls or _AUSTRIA_CONTROLS
-        control_status = (
-            "repository_tuning_artifact_bound"
-            if supplied_scope_controls
-            else "scope_tuned_current_source"
-        )
     elif name in ("predator_prey", "pp"):
         from bayesfilter.testing.predator_prey_ukf_neutra_target_tf import (
             PP_OBSERVATION_SHA256,
@@ -553,12 +524,6 @@ def make_genut_neutra_target(
         chart = "predator_prey_six_probit_box"
         transition_first = False
         data_id = f"predator_prey_T20_sha256_{PP_OBSERVATION_SHA256}"
-        selected = controls or _WARM_START_CONTROLS
-        control_status = (
-            "repository_tuning_artifact_bound"
-            if supplied_scope_controls
-            else "event_order_mismatch_requires_exact_scope_tuning"
-        )
     else:
         raise ValueError(f"unknown GenUT NeuTra model: {model}")
     initial_noise = tf.random.stateless_normal(
@@ -586,72 +551,19 @@ def make_genut_neutra_target(
         transition_before_first_observation=transition_first,
         data_id=data_id,
         control_status=control_status,
+        jit_compile=jit_compile,
+        batch_sizes=batch_sizes,
     )
 
 
 def make_admitted_genut_neutra_target(model: str) -> GenUTNeuTraTargetAdapter:
-    """Build a target admitted by the repository-owned readiness aggregate."""
+    """Reject retired admission; the required canonical rebuild is incomplete."""
 
-    if not _ADMISSION_ARTIFACT.is_file():
-        raise RuntimeError("GenUT NeuTra admission artifact is missing")
-    aggregate = json.loads(_ADMISSION_ARTIFACT.read_text(encoding="utf-8"))
-    if (
-        aggregate.get("schema")
-        != "bayesfilter.genut_four_model_neutra_readiness_aggregate.v1"
-        or aggregate.get("passed") is not True
-    ):
-        raise RuntimeError("GenUT NeuTra admission artifact is invalid")
-    name = str(model).lower().replace("-", "_")
-    aliases = {"ksc": "ksc_sv", "pp": "predator_prey"}
-    name = aliases.get(name, name)
-    entry = aggregate.get("models", {}).get(name)
-    if not isinstance(entry, dict) or not entry.get(
-        "ready_for_target_specific_serious_neutra_training", False
-    ):
-        raise ValueError(f"GenUT target is not admitted for serious NeuTra training: {name}")
-    expected_tf32 = bool(entry["tf32_enabled"])
-    if tf.config.experimental.tensor_float_32_execution_enabled() is not expected_tf32:
-        raise RuntimeError(
-            f"GenUT admitted arithmetic requires tf32_enabled={expected_tf32}"
-        )
-    if os.environ.get("TF_DETERMINISTIC_OPS") != "1":
-        raise RuntimeError("GenUT admitted target requires TF_DETERMINISTIC_OPS=1")
-    physical_gpus = tf.config.list_physical_devices("GPU")
-    if not physical_gpus:
-        raise RuntimeError("GenUT admitted target requires a visible GPU")
-    if not all(
-        tf.config.experimental.get_memory_growth(device) for device in physical_gpus
-    ):
-        raise RuntimeError("GenUT admitted target requires verified GPU memory growth")
-    controls_payload = entry["controls"]
-    controls = GenUTControls(
-        epsilon=float(controls_payload["epsilon"]),
-        sinkhorn_steps=int(controls_payload["sinkhorn_steps"]),
-        balance_steps=int(controls_payload["balance_steps"]),
-        ridge=float(controls_payload["ridge"]),
-        higher_moment_correction_steps=int(
-            controls_payload["higher_moment_correction_steps"]
-        ),
-        higher_moment_strength=float(controls_payload["higher_moment_strength"]),
-        higher_moment_floor=float(controls_payload["higher_moment_floor"]),
-        higher_moment_lm_damping=float(
-            controls_payload.get("higher_moment_lm_damping", 0.0)
-        ),
-        higher_moment_lm_scale_floor=float(
-            controls_payload.get("higher_moment_lm_scale_floor", 1.0e-6)
-        ),
-        higher_moment_trust_radius=float(
-            controls_payload.get("higher_moment_trust_radius", 0.0)
-        ),
-        tuning_scope=str(controls_payload["tuning_scope"]),
-        tuning_artifact=str(controls_payload["tuning_artifact"]),
+    raise ValueError(
+        f"GenUT target is not admitted for serious NeuTra training or HMC: {model}; "
+        "the canonical LEDH rebuild and analytical recursive score are incomplete. "
+        "Pre-2026-08-21 readiness artifacts cannot grant admission."
     )
-    target = make_genut_neutra_target(name, particle_count=1008, controls=controls)
-    if target.target_signature != entry["target_signature"]:
-        raise RuntimeError("GenUT admitted target signature mismatch")
-    if target.control_status != "repository_tuning_artifact_bound":
-        raise RuntimeError("GenUT admitted target is not tuning-artifact bound")
-    return target
 
 
 def _lgssm_observations() -> tf.Tensor:
@@ -671,13 +583,17 @@ def _lgssm_observations() -> tf.Tensor:
         tf.linalg.matvec(observation_matrix, state)
         + r_scale * generator.normal([3], dtype=tf.float64),
     )
-    for index in range(1, 50):
+    def step(index, state, observations):
         state = phi * state + q_scale * generator.normal([3], dtype=tf.float64)
         observations = observations.write(
             index,
             tf.linalg.matvec(observation_matrix, state)
             + r_scale * generator.normal([3], dtype=tf.float64),
         )
+        return index + 1, state, observations
+    _, _, observations = tf.while_loop(lambda index, *_: index < 50, step,
+                                       (tf.constant(1), state, observations),
+                                       maximum_iterations=49)
     return tf.cast(observations.stack(), tf.float32)
 
 

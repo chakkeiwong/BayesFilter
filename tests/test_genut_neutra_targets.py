@@ -15,7 +15,7 @@ from bayesfilter.highdim.cubature_genut_neutra_targets import (
 )
 from bayesfilter.highdim.genut_shape_lm_tf import GENUT_SHAPE_SOLVER_ID
 from bayesfilter.inference.neutra_batching import bind_batch_native_neutra_target
-from bayesfilter.inference.neutra_batching import batch_native_value_status_target_fn
+from bayesfilter.inference.neutra_batching import InvalidNeuTraBatchTarget
 
 
 def _controls() -> GenUTControls:
@@ -67,20 +67,11 @@ def test_lgssm_target_is_batch_native_and_endpoint_consistent() -> None:
         endpoint_status["valid_pre_regularized_score"],
     )
     tf.debugging.assert_equal(value, endpoint)
-    binding = bind_batch_native_neutra_target(
-        target, target_signature=target.target_signature
-    )
-    _bound_value, normalized_status = batch_native_value_status_target_fn(binding)(
-        theta
-    )
-    assert not bool(
-        tf.reduce_any(
-            normalized_status["min_innovation_eigenvalue_available"]
-        ).numpy()
-    )
-    assert binding.payload()["scalar_fallback_used"] is False
-    assert binding.payload()["sample_axis_python_loop_used"] is False
-    assert binding.payload()["row_mapped_scalar_target_used"] is False
+    capability = target.value_score_capability()
+    assert not capability.xla_hmc_ready
+    assert capability.score_provenance == "finite_program_autodiff_diagnostic_only"
+    with pytest.raises(InvalidNeuTraBatchTarget, match="authority"):
+        bind_batch_native_neutra_target(target, target_signature=target.target_signature)
 
 
 def test_training_method_has_no_sample_mapping_or_python_loop() -> None:
@@ -99,10 +90,20 @@ def test_admitted_factory_rejects_blocked_austria() -> None:
         make_admitted_genut_neutra_target("austria_sir")
 
 
-def test_admitted_factory_requires_bound_arithmetic_scope() -> None:
+def test_admitted_factory_cannot_reuse_invalidated_readiness_artifact() -> None:
     tf.config.experimental.enable_tensor_float_32_execution(True)
-    with pytest.raises(RuntimeError, match="tf32_enabled=False"):
+    with pytest.raises(ValueError, match="canonical LEDH rebuild"):
         make_admitted_genut_neutra_target("lgssm")
+
+
+def test_generic_factory_cannot_reuse_historical_controls() -> None:
+    with pytest.raises(ValueError, match="explicit diagnostic controls"):
+        make_genut_neutra_target("lgssm")
+    target = make_genut_neutra_target("lgssm", particle_count=12, controls=_controls())
+    assert target.control_status == "explicit_diagnostic_controls_not_admitted"
+    assert target._jit_compile
+    with pytest.raises(ValueError, match="signature inventory"):
+        target.batch_value_status(tf.zeros([3, 5], tf.float64))
 
 
 def test_repaired_controls_bind_solver_identity_and_scope() -> None:

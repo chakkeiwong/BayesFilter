@@ -42,6 +42,7 @@ from bayesfilter.highdim.squared_tt import (
 )
 from bayesfilter.highdim.tt import TTCore
 from bayesfilter.linear.compiled_recurrence_tf import compiled_tensor_recurrence
+from bayesfilter.ops.slogdet_tf import slogdet_tf
 
 MULTISTATE_RETAINED_GRID_ROUTE_ROLE = "diagnostic_historical_retained_grid"
 MULTISTATE_RETAINED_GRID_LEADERBOARD_ADMISSION = (
@@ -77,11 +78,11 @@ class IdentityCoordinateMap:
             raise ValueError("IdentityCoordinateMap requires tf.float64")
 
     def forward(self, reference_points: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        points = _as_matrix(reference_points, int(self.dimension), "reference_points")
+        points = _coordinate_matrix(reference_points, int(self.dimension), "reference_points")
         return points, tf.zeros([tf.shape(points)[0]], dtype=tf.float64)
 
     def inverse(self, physical_points: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        points = _as_matrix(physical_points, int(self.dimension), "physical_points")
+        points = _coordinate_matrix(physical_points, int(self.dimension), "physical_points")
         return points, tf.zeros([tf.shape(points)[0]], dtype=tf.float64)
 
     def manifest_payload(self) -> Mapping[str, object]:
@@ -118,7 +119,7 @@ class AffineCoordinateMap:
         return int(self.offset.shape[0])
 
     def forward(self, reference_points: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        points = _as_matrix(reference_points, self.dimension, "reference_points")
+        points = _coordinate_matrix(reference_points, self.dimension, "reference_points")
         physical = self.offset[tf.newaxis, :] + tf.linalg.matmul(
             points,
             self.matrix,
@@ -127,7 +128,7 @@ class AffineCoordinateMap:
         return physical, tf.fill([tf.shape(points)[0]], self.log_abs_det())
 
     def inverse(self, physical_points: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        points = _as_matrix(physical_points, self.dimension, "physical_points")
+        points = _coordinate_matrix(physical_points, self.dimension, "physical_points")
         shifted = points - self.offset[tf.newaxis, :]
         reference = tf.linalg.matrix_transpose(
             tf.linalg.solve(self.matrix, tf.linalg.matrix_transpose(shifted))
@@ -135,7 +136,7 @@ class AffineCoordinateMap:
         return reference, tf.fill([tf.shape(points)[0]], -self.log_abs_det())
 
     def log_abs_det(self) -> tf.Tensor:
-        return tf.math.log(tf.abs(tf.linalg.det(self.matrix)))
+        return slogdet_tf(self.matrix)[1]
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -444,12 +445,14 @@ class FixedBranchSquaredTTFilter:
         theta: tf.Tensor,
         observations: tf.Tensor,
         initial_branch: BranchIdentity | None = None,
+        *,
+        jit_compile: bool = True,
     ) -> FixedBranchFilterResult:
         if initial_branch is not None and not isinstance(initial_branch, BranchIdentity):
             raise TypeError("initial_branch must be a BranchIdentity")
         if isinstance(model, LinearGaussianSSM):
-            return self._linear_gaussian_value_path(model, theta, observations, initial_branch)
-        return self._scalar_nonlinear_dense_value_path(model, theta, observations, initial_branch)
+            return self._linear_gaussian_value_path(model, theta, observations, initial_branch, jit_compile=jit_compile)
+        return self._scalar_nonlinear_dense_value_path(model, theta, observations, initial_branch, jit_compile=jit_compile)
 
     def _scalar_nonlinear_dense_value_path(
         self,
@@ -457,6 +460,8 @@ class FixedBranchSquaredTTFilter:
         theta: tf.Tensor,
         observations: tf.Tensor,
         initial_branch: BranchIdentity | None,
+        *,
+        jit_compile: bool = True,
     ) -> FixedBranchFilterResult:
         if int(model.state_dim()) != 1:
             raise TypeError("scalar nonlinear dense value path requires state_dim == 1")
@@ -465,54 +470,23 @@ class FixedBranchSquaredTTFilter:
         theta_vector = _as_theta_vector(theta, int(model.parameter_dim()))
         observation_matrix = _as_observation_matrix(observations, int(model.observation_dim()))
         reference_points, weights, physical_points, log_abs_det = self._scalar_dense_reference_grid()
-        x_grid = physical_points[:, 0]
+        from bayesfilter.highdim.filtering_native_tf import scalar_dense_program
+
+        if observation_matrix.shape[0] < 1:
+            raise ValueError("observations must contain at least one row")
+        program = scalar_dense_program(model, observation_matrix.shape,
+            physical_points.shape[0], jit_compile=jit_compile)
+        output = program(theta_vector, observation_matrix, physical_points, weights, log_abs_det)
+        total_mass = output["moments"][:, 3]
+        if not bool(tf.reduce_all(tf.math.is_finite(total_mass) & (total_mass > 0.0))):
+            raise ValueError(HighDimStatus.NORMALIZER_FLOOR_EXCEEDED.value)
         steps: list[FixedBranchFilterStepResult] = []
-        log_terms = []
-        log_posterior_physical: tf.Tensor | None = None
         retained: RetainedFilter | None = None
         previous_step_hash: str | None = None
+        # Reporting only: the complete numerical recurrence has finished.
         for time_index in range(int(observation_matrix.shape[0])):
-            if time_index == 0:
-                log_unnormalized_physical = model.initial_log_density(
-                    theta_vector,
-                    physical_points,
-                ) + model.observation_log_density(
-                    theta_vector,
-                    physical_points,
-                    observation_matrix[time_index],
-                    t=time_index,
-                )
-            else:
-                if log_posterior_physical is None:
-                    raise RuntimeError("missing retained scalar dense posterior")
-                transition_log = _scalar_pairwise_transition_log_density(
-                    model=model,
-                    theta=theta_vector,
-                    physical_points=physical_points,
-                    t=time_index,
-                )
-                predictive_log_terms = (
-                    tf.math.log(weights)[tf.newaxis, :]
-                    + log_abs_det[tf.newaxis, :]
-                    + log_posterior_physical[tf.newaxis, :]
-                    + transition_log
-                )
-                log_predictive = tf.reduce_logsumexp(predictive_log_terms, axis=1)
-                log_unnormalized_physical = log_predictive + model.observation_log_density(
-                    theta_vector,
-                    physical_points,
-                    observation_matrix[time_index],
-                    t=time_index,
-                )
-            log_unnormalized_reference = log_unnormalized_physical + log_abs_det
-            log_increment = _logsumexp_weighted(log_unnormalized_reference, weights)
-            log_posterior_physical = log_unnormalized_physical - log_increment
-            mean, variance = _scalar_grid_moments(
-                x_grid=x_grid,
-                weights=weights,
-                log_abs_det=log_abs_det,
-                log_density_physical=log_posterior_physical,
-            )
+            log_posterior_physical = output["posterior"][time_index]
+            log_increment, mean, variance = tf.unstack(output["moments"][time_index, :3])
             retained = scalar_dense_retained_filter(
                 physical_points=physical_points,
                 reference_points=reference_points,
@@ -564,10 +538,9 @@ class FixedBranchSquaredTTFilter:
                     },
                 )
             )
-            log_terms.append(log_increment)
         if retained is None:
             raise ValueError("observations must contain at least one row")
-        log_likelihood = tf.reduce_sum(tf.stack(log_terms))
+        log_likelihood = output["log_likelihood"]
         manifest = BranchManifest(
             version="fixed_branch_scalar_nonlinear_filter_result.v1",
             payload={
@@ -612,6 +585,8 @@ class FixedBranchSquaredTTFilter:
         theta: tf.Tensor,
         observations: tf.Tensor,
         initial_branch: BranchIdentity | None,
+        *,
+        jit_compile: bool = True,
     ) -> FixedBranchFilterResult:
         theta_tensor = tf.convert_to_tensor(theta, dtype=tf.float64)
         if theta_tensor.shape.rank == 1:
@@ -619,19 +594,32 @@ class FixedBranchSquaredTTFilter:
         if theta_tensor.shape.rank != 2 or theta_tensor.shape[1] != model.parameter_dim():
             raise ValueError(f"theta: {HighDimStatus.INVALID_SHAPE.value}")
         observation_matrix = _as_observation_matrix(observations, model.observation_dim())
-        means, covariances, increments = _compiled_linear_gaussian_moment_history(model, observation_matrix)
+        from bayesfilter.highdim.filtering_native_tf import gaussian_fit_program, gaussian_history_program
+
+        dates = int(observation_matrix.shape[0])
+        if dates < 1:
+            raise ValueError("observations must contain at least one row")
+        program = gaussian_history_program(dates, model.state_dim(), model.observation_dim(),
+                                          jit_compile=jit_compile)
+        means, covariances, increments = program(observation_matrix, model.initial_mean,
+            model.initial_covariance, model.transition_matrix, model.transition_covariance,
+            model.observation_matrix, model.observation_covariance, model.transition_offset,
+            model.observation_offset)
+        prepared = histories = None
+        if self.config.fit_config is not None or self.config.product_basis is not None:
+            prepared = gaussian_fit_program(self.config, dates, model.state_dim(), jit_compile=jit_compile)
+            histories = prepared(means, covariances)
         steps: list[FixedBranchFilterStepResult] = []
-        log_terms = []
-        # The Kalman recurrence has finished. This loop builds per-date TT
-        # artifacts/manifests from its tensor histories; it cannot alter the filter.
+        # Both Kalman and optional TT fits have finished; assemble their records.
         for time_index in range(int(observation_matrix.shape[0])):
             mean = means[time_index]
             covariance = covariances[time_index]
             log_increment = increments[time_index]
             tt_artifacts = self._fit_current_filtering_density_artifacts(
                 time_index=time_index,
-                mean=mean,
-                covariance=covariance,
+                prepared=prepared,
+                history=(None if histories is None else tf.nest.map_structure(
+                    lambda value: value[time_index], histories)),
             )
             retained = gaussian_retained_filter(
                 mean=mean,
@@ -693,8 +681,7 @@ class FixedBranchSquaredTTFilter:
                     },
                 )
             )
-            log_terms.append(log_increment)
-        log_likelihood = tf.reduce_sum(tf.stack(log_terms))
+        log_likelihood = tf.reduce_sum(increments)
         manifest = BranchManifest(
             version="fixed_branch_filter_result.v1",
             payload={
@@ -733,8 +720,8 @@ class FixedBranchSquaredTTFilter:
     def _fit_current_filtering_density_artifacts(
         self,
         time_index: int,
-        mean: tf.Tensor,
-        covariance: tf.Tensor,
+        prepared,
+        history,
     ) -> Mapping[str, object]:
         if self.config.fit_config is None and self.config.product_basis is None:
             return {
@@ -745,46 +732,23 @@ class FixedBranchSquaredTTFilter:
                 "density": None,
                 "density_normalizer": None,
             }
-        if self.config.fit_config is None or self.config.product_basis is None:
-            raise ValueError(f"tt_artifacts: {HighDimStatus.INVALID_SHAPE.value}")
+        if prepared is None or history is None:
+            raise ValueError("missing completed Gaussian TT fit")
         product_basis = self.config.product_basis
-        fit_config = self.config.fit_config
-        if product_basis.dimension != int(mean.shape[0]):
-            raise ValueError(f"product_basis: {HighDimStatus.INVALID_SHAPE.value}")
-        reference_points, weights = _tensor_product_reference_quadrature(
-            product_basis,
-            self.config.fit_quadrature_order,
-        )
-        coordinate_map = self._coordinate_map_for_dimension(product_basis.dimension)
-        physical_points, log_abs_det = coordinate_map.forward(reference_points)
-        log_reference_weight = _log_uniform_reference_weight_density(product_basis)
-        log_target = _gaussian_log_density(physical_points, mean, covariance)
-        log_target = log_target + log_abs_det - log_reference_weight
-        target_batch = build_adjacent_target_batch(
+        target_batch = AdjacentTargetBatch(
             time_index=time_index,
-            physical_points=physical_points,
-            reference_points=reference_points,
-            log_target=log_target,
-            weights=weights,
+            physical_points=prepared.physical,
+            reference_points=prepared.points,
+            log_target=history["log_target"],
+            sqrt_target=history["target"],
+            weights=prepared.weights,
             measure_convention=self.config.measure_convention,
-            retained_filter=None,
-            expected_retained_axes=None,
+            retained_filter_hash=None,
         )
-        initial_cores = self.config.initial_cores or _default_initial_cores(
-            product_basis,
-            fit_config,
-        )
-        fit_result = FixedTTFitter().fit(
-            product_basis=product_basis,
-            samples=FixedTTFitSampleBatch(
-                points=target_batch.reference_points,
-                target_values=target_batch.sqrt_target,
-                weights=target_batch.weights,
-            ),
-            config=fit_config,
-            initial_cores=initial_cores,
+        fit_result = prepared.report_fit.report(
+            history["fit"], history["target"], prepared.report_fit.initial,
             branch_seed=f"{self.config.deterministic_seed}:time_{time_index}:current_filter",
-            measure_convention=self.config.measure_convention,
+            initialization_rule="supplied_initial_cores",
         )
         if fit_result.status is not HighDimStatus.OK:
             raise ValueError(fit_result.status.value)
@@ -812,13 +776,14 @@ class FixedBranchSquaredTTFilter:
             measure_convention=self.config.measure_convention,
             branch_identity=density_identity,
         )
+        density._validate_normalizer(history["normalizer"])
         return {
             "status": HighDimStatus.OK.value,
             "target": "current_filtering_density_under_reference_measure",
             "target_batch": target_batch,
             "fit_result": fit_result,
             "density": density,
-            "density_normalizer": density.normalizer(),
+            "density_normalizer": history["normalizer"],
         }
 
     def _coordinate_map_for_dimension(self, dimension: int) -> HighDimCoordinateMap:
@@ -848,6 +813,7 @@ def scalar_nonlinear_fixed_design_tt_value_path(
     branch_seed_prefix: str = "p37-m2p6c-sv-short-tt",
     retained_moment_order: int = 257,
     retained_propagation_order: int = 321,
+    jit_compile: bool = True,
 ) -> FixedBranchFilterResult:
     """Run the scalar fixed-design TT value path for one or more observations."""
 
@@ -862,79 +828,68 @@ def scalar_nonlinear_fixed_design_tt_value_path(
     if observation_count < 1:
         raise ValueError("observations must contain at least one row")
     theta_vector = _as_theta_vector(theta, int(model.parameter_dim()))
+    from bayesfilter.highdim.scalar_retained_native_tf import make_scalar_retained_program
+    program = make_scalar_retained_program(
+        model, config, observation_matrix.shape, moment_order=retained_moment_order,
+        propagation_order=retained_propagation_order, jit_compile=jit_compile,
+    )
+    output = program.call(theta_vector, observation_matrix)
+    return _scalar_retained_value_report(
+        program, output, model, theta_vector, observation_matrix, config,
+        fixture_id=fixture_id, initial_target_id=initial_target_id,
+        transition_target_id=transition_target_id, branch_seed_prefix=branch_seed_prefix,
+        retained_moment_order=retained_moment_order,
+        retained_propagation_order=retained_propagation_order, jit_compile=jit_compile,
+    )
+
+
+def _scalar_retained_value_report(
+    program, output, model, theta_vector, observation_matrix, config, *,
+    fixture_id, branch_seed_prefix, jit_compile,
+    initial_target_id="p37.m2p6c.sv.initial.t0.v1",
+    transition_target_id="p37.m2p6c.sv.transition.t1.tt-retained.v1",
+    retained_moment_order=257, retained_propagation_order=321,
+):
+    """Assemble public artifacts from a completed scalar or panel calculation."""
+    observation_count = int(observation_matrix.shape[0])
     product_basis = config.product_basis
-    fit_config = config.fit_config
     coordinate_map = _coordinate_map_for_config(config, 1)
-    initial_cores = config.initial_cores or _default_initial_cores(product_basis, fit_config)
+    histories = output["history"]
+    program.validate(histories)
     steps: list[FixedBranchFilterStepResult] = []
     retained: RetainedFilter | None = None
     previous_step_hash: str | None = None
-    log_terms = []
-
+    # Assemble identities from completed histories; this loop cannot feed the
+    # numerical recurrence, which has already finished inside program.call.
     for time_index in range(observation_count):
-        if time_index == 0:
-            target_result = scalar_nonlinear_initial_adjacent_target_batch(
-                model=model,
-                theta=theta_vector,
-                observation=observation_matrix[time_index],
-                product_basis=product_basis,
-                coordinate_map=coordinate_map,
-                quadrature_order=config.fit_quadrature_order,
-                measure_convention=config.measure_convention,
-                fixture_id=fixture_id,
-                target_id=initial_target_id,
-                branch_seed=f"{branch_seed_prefix}:t0:target",
-                time_index=0,
-            )
-        else:
-            if retained is None or retained.storage_kind != "scalar_tt_grid":
-                raise ValueError("M2.6c transition requires scalar_tt_grid retained filter")
-            target_result = scalar_nonlinear_transition_adjacent_target_batch(
-                model=model,
-                theta=theta_vector,
-                observation=observation_matrix[time_index],
-                retained_filter=retained,
-                product_basis=product_basis,
-                coordinate_map=coordinate_map,
-                quadrature_order=config.fit_quadrature_order,
-                measure_convention=config.measure_convention,
-                fixture_id=fixture_id,
-                target_id=transition_target_id,
-                branch_seed=f"{branch_seed_prefix}:t{time_index}:target",
-                time_index=time_index,
-            )
-
-        fit_result = FixedTTFitter().fit(
-            product_basis=product_basis,
-            samples=FixedTTFitSampleBatch(
-                points=target_result.target_batch.reference_points,
-                target_values=target_result.target_batch.sqrt_target,
-                weights=target_result.target_batch.weights,
-            ),
-            config=fit_config,
-            initial_cores=initial_cores,
+        row = tf.nest.map_structure(lambda value, index=time_index: value[index], histories)
+        target_result = _finalize_scalar_adjacent_target_result(
+            target_kind="initial" if time_index == 0 else "transition",
+            model=model, theta=theta_vector, observation=observation_matrix[time_index],
+            product_basis=product_basis, coordinate_map=coordinate_map,
+            reference_points=program.rows, physical_points=program.physical,
+            log_abs_det=program.logdet, weights=program.weights,
+            log_reference_target=row["log_target"], measure_convention=config.measure_convention,
+            retained_filter=retained, fixture_id=fixture_id,
+            target_id=initial_target_id if time_index == 0 else transition_target_id,
+            branch_seed=f"{branch_seed_prefix}:t{time_index}:target",
+            log_scale_shift=row["shift"], time_index=time_index,
+        )
+        fit_result = program.fit.report(
+            row["fit"], row["target"], row["initial"],
             branch_seed=f"{branch_seed_prefix}:t{time_index}:fit",
-            measure_convention=config.measure_convention,
+            initialization_rule="provided_initial_cores",
         )
-        if fit_result.status is not HighDimStatus.OK:
-            raise ValueError(fit_result.status.value)
-
         density = _squared_density_from_fit_result(fit_result, product_basis, config)
-        scaled_normalizer = density.normalizer()
-        log_scale_shift = tf.convert_to_tensor(
-            target_result.diagnostics["log_scale_shift"],
-            dtype=tf.float64,
-        )
-        log_normalizer = tf.math.log(scaled_normalizer) + log_scale_shift
-        moment_payload = _scalar_tt_retained_moments(
-            density=density,
-            coordinate_map=coordinate_map,
-            order=retained_moment_order,
-        )
-        retained = _scalar_tt_grid_retained_from_density(
-            density=density,
-            coordinate_map=coordinate_map,
-            order=retained_propagation_order,
+        scaled_normalizer, log_scale_shift = row["z"], row["shift"]
+        log_normalizer = row["increment"]
+        moment_payload = {name: row[name] for name in ("mass", "mean", "variance")}
+        retained = scalar_tt_grid_retained_filter(
+            physical_points=program.propagation_physical,
+            reference_points=program.propagation_rows,
+            weights=program.propagation_weights,
+            log_density_physical=row["propagation_log"],
+            retained_axes=(0,), retained_coordinate_names=("x0",), density=density,
             measure_convention=config.measure_convention,
             normalizer=tf.exp(log_normalizer),
             storage_byte_budget=config.retained_storage_byte_budget,
@@ -1003,11 +958,9 @@ def scalar_nonlinear_fixed_design_tt_value_path(
                 },
             )
         )
-        log_terms.append(log_normalizer)
-
     if retained is None:
         raise RuntimeError("missing final retained filter")
-    log_likelihood = tf.reduce_sum(tf.stack(log_terms))
+    log_likelihood = output["log_likelihood"]
     manifest = BranchManifest(
         version="fixed_branch_scalar_tt_filter_result.v1",
         payload={
@@ -1049,6 +1002,8 @@ def scalar_nonlinear_fixed_design_tt_value_path(
             "last_time_index": observation_count - 1,
             "retained_storage_kind": retained.storage_kind,
             "step_hashes": tuple(step.branch_identity.hash.value for step in steps),
+            "jit_compile": bool(jit_compile),
+            "execution_role": "runtime" if jit_compile else "graph_reference_exception",
         },
     )
 
@@ -1066,345 +1021,117 @@ def scalar_nonlinear_fixed_design_tt_score_path(
     branch_seed_prefix: str = "p37-m2p6c-sv-short-tt-score",
     retained_moment_order: int = 257,
     retained_propagation_order: int = 321,
+    jit_compile: bool = True,
 ) -> FixedBranchScoreResult:
-    """Run a generic same-branch analytical score path for the scalar fixed-design TT lane."""
+    """Complete native-date analytical score with optional diagnostic FD rows."""
+    from bayesfilter.highdim.scalar_retained_native_tf import make_scalar_retained_program
 
     if not isinstance(derivative_config, FixedBranchDerivativeConfig):
         raise TypeError("derivative_config must be a FixedBranchDerivativeConfig")
     policy = derivative_config.unsupported_status()
     if policy.status is not HighDimStatus.OK:
         raise ValueError(policy.status.value)
+    _require_explicit_parameter_score_methods(model)
+    observation_matrix = _as_observation_matrix(observations, int(model.observation_dim()))
+    theta_vector = _as_theta_vector(theta, int(model.parameter_dim()))
     parameter_indices = tuple(int(index) for index in derivative_config.parameter_indices)
     if not parameter_indices:
         raise ValueError("scalar fixed-design TT score path requires at least one parameter index")
-    _require_explicit_parameter_score_methods(model)
-    observation_matrix = _as_observation_matrix(observations, int(model.observation_dim()))
-    observation_count = int(observation_matrix.shape[0])
-    if observation_count < 1:
-        raise ValueError("observations must contain at least one row")
-    if len(parameter_indices) > 1:
-        partial_results = []
-        for local_index in parameter_indices:
-            local_config = FixedBranchDerivativeConfig(
-                parameter_indices=(local_index,),
-                finite_difference_h=derivative_config.finite_difference_h,
-                derivative_ridge_floor=derivative_config.derivative_ridge_floor,
-                solve_condition_number_veto=derivative_config.solve_condition_number_veto,
-                allow_parameter_dependent_coordinate_map=derivative_config.allow_parameter_dependent_coordinate_map,
-                allow_moving_basis=derivative_config.allow_moving_basis,
-                dtype=derivative_config.dtype,
-            )
-            partial_results.append(
-                scalar_nonlinear_fixed_design_tt_score_path(
-                    model,
-                    theta,
-                    observation_matrix,
-                    config,
-                    local_config,
-                    fixture_id=f"{fixture_id}.param{local_index}",
-                    initial_target_id=initial_target_id,
-                    transition_target_id=transition_target_id,
-                    branch_seed_prefix=branch_seed_prefix,
-                    retained_moment_order=retained_moment_order,
-                    retained_propagation_order=retained_propagation_order,
-                )
-            )
-        manifest = BranchManifest(
-            "fixed_branch_score_fixture.v1",
-            {
-                "name": fixture_id,
-                "log_likelihood": partial_results[0].log_likelihood,
-                "score": tf.concat([result.score for result in partial_results], axis=0),
-                "fixed_branch_only": True,
-                "moving_basis_supported": False,
-                "observation_count": observation_count,
-                "last_time_index": observation_count - 1,
-                "target_derivative_backend": "model_parameter_score_methods_only",
-            },
-        )
-        identity = BranchIdentity(manifest=manifest, hash=manifest.sha256())
-        return FixedBranchScoreResult(
-            log_likelihood=partial_results[0].log_likelihood,
-            score=tf.concat([result.score for result in partial_results], axis=0),
-            branch_identity=identity,
-            replay_tape_hash=partial_results[0].replay_tape_hash,
-            finite_difference_table=FiniteDifferenceTable(tuple(row for result in partial_results for row in result.finite_difference_table.rows)),
-            status=HighDimStatus.OK,
-            diagnostics={
-                "value_path": partial_results[0].diagnostics["value_path"],
-                "score_path": "scalar_nonlinear_fixed_design_tt_score_path",
-                "parameter_indices": parameter_indices,
-                "fixed_branch_only": True,
-                "observation_count": observation_count,
-                "last_time_index": observation_count - 1,
-                "target_derivative_backend": "model_parameter_score_methods_only",
-                "retained_storage_kind": partial_results[0].diagnostics["retained_storage_kind"],
-                "replay_tape_version": partial_results[0].diagnostics["replay_tape_version"],
-            },
-        )
-    parameter_index = parameter_indices[0]
-    value_result = scalar_nonlinear_fixed_design_tt_value_path(
-        model=model,
-        theta=theta,
-        observations=observations,
-        config=config,
-        fixture_id=fixture_id.replace("score", "value"),
-        initial_target_id=initial_target_id,
-        transition_target_id=transition_target_id,
-        branch_seed_prefix=branch_seed_prefix.replace("score", "value"),
+    options = dict(
+        initial_target_id=initial_target_id, transition_target_id=transition_target_id,
         retained_moment_order=retained_moment_order,
-        retained_propagation_order=retained_propagation_order,
+        retained_propagation_order=retained_propagation_order, jit_compile=jit_compile,
     )
-    theta_vector = _as_theta_vector(theta, int(model.parameter_dim()))
-    product_basis = config.product_basis
-    fit_config = config.fit_config
-    if product_basis is None or fit_config is None:
-        raise TypeError("scalar fixed-design TT score path requires fit_config and product_basis")
-    coordinate_map = _coordinate_map_for_config(config, 1)
-    initial_cores = config.initial_cores or _default_initial_cores(product_basis, fit_config)
-
-    score_terms = []
-    replay_entries = []
-    fd_rows = []
-    current_initial_cores = tuple(initial_cores)
-    retained = None
-    dot_retained_values = None
-
-    for time_index in range(observation_count):
-        if time_index == 0:
-            target_derivative = scalar_nonlinear_initial_adjacent_target_derivative_batch(
-                model=model,
-                theta=theta_vector,
-                observation=observation_matrix[time_index],
-                product_basis=product_basis,
-                coordinate_map=coordinate_map,
-                quadrature_order=config.fit_quadrature_order,
-                measure_convention=config.measure_convention,
-                fixture_id=fixture_id,
-                target_id=initial_target_id,
-                branch_seed=f"{branch_seed_prefix}:t0:target",
-                parameter_index=parameter_index,
-                time_index=0,
-            )
-        else:
-            if retained is None or dot_retained_values is None:
-                raise RuntimeError("missing retained derivative state")
-            target_derivative = scalar_nonlinear_transition_adjacent_target_derivative_batch(
-                model=model,
-                theta=theta_vector,
-                observation=observation_matrix[time_index],
-                retained_filter=retained,
-                dot_retained_filter_values=dot_retained_values,
-                product_basis=product_basis,
-                coordinate_map=coordinate_map,
-                quadrature_order=config.fit_quadrature_order,
-                measure_convention=config.measure_convention,
-                fixture_id=fixture_id,
-                target_id=transition_target_id,
-                branch_seed=f"{branch_seed_prefix}:t{time_index}:target",
-                parameter_index=parameter_index,
-                time_index=time_index,
-            )
-        target_result = target_derivative.target_result
-        fit_result = FixedTTFitter().fit(
-            product_basis=product_basis,
-            samples=FixedTTFitSampleBatch(
-                points=target_result.target_batch.reference_points,
-                target_values=target_result.target_batch.sqrt_target,
-                weights=target_result.target_batch.weights,
-            ),
-            config=fit_config,
-            initial_cores=current_initial_cores,
-            branch_seed=f"{branch_seed_prefix}:t{time_index}:fit",
-            measure_convention=config.measure_convention,
-        )
-        if fit_result.status is not HighDimStatus.OK:
-            raise ValueError(fit_result.status.value)
-        dot_cores = []
-        for axis, core in enumerate(fit_result.fitted_tt.cores):
-            base_cores = list(fit_result.fitted_tt.cores)
-            base_cores[axis] = current_initial_cores[axis]
-            design = FixedTTFitter().build_core_update_system(
-                product_basis,
-                target_result.target_batch.reference_points,
-                target_result.target_batch.sqrt_target,
-                target_result.target_batch.weights,
-                base_cores,
-                core_index=axis,
-                config=fit_config,
-            ).design_matrix
-            coefficients = tf.reshape(core.values, [-1])
-            dot_design = differentiate_design_matrix(
-                product_basis,
-                target_result.target_batch.reference_points,
-                fit_result.fitted_tt.cores,
-                tuple(
-                    TTCore(tf.zeros_like(candidate.values)) if idx != axis else TTCore(tf.zeros_like(candidate.values))
-                    for idx, candidate in enumerate(fit_result.fitted_tt.cores)
-                ),
-                core_index=axis,
-            )
-            derivative_result = fixed_design_lsq_derivative(
-                design_matrix=design,
-                target_values=target_result.target_batch.sqrt_target,
-                weights=target_result.target_batch.weights,
-                coefficients=coefficients,
-                dot_target_values=target_derivative.dot_sqrt_target,
-                ridge=fit_config.ridge,
-                dot_design_matrix=dot_design,
-                condition_number_veto=derivative_config.solve_condition_number_veto,
-            )
-            if derivative_result.status is not HighDimStatus.OK:
-                raise ValueError(derivative_result.status.value)
-            dot_cores.append(TTCore(tf.reshape(derivative_result.dot_coefficients, core.values.shape)))
-        dot_cores = tuple(dot_cores)
-        density = _squared_density_from_fit_result(fit_result, product_basis, config)
-        log_scale_shift = tf.convert_to_tensor(target_result.diagnostics["log_scale_shift"], dtype=tf.float64)
-        dot_log_scale_shift = tf.convert_to_tensor(
-            target_derivative.diagnostics.get("dot_log_scale_shift", 0.0),
-            dtype=tf.float64,
-        )
-        dot_log_normalizer = squared_tt_log_normalizer_derivative(density, dot_cores)
-        score_terms.append(dot_log_normalizer + dot_log_scale_shift)
-        moment_payload = _scalar_tt_retained_moments(
-            density=density,
-            coordinate_map=coordinate_map,
-            order=retained_moment_order,
-        )
-        retained = _scalar_tt_grid_retained_from_density(
-            density=density,
-            coordinate_map=coordinate_map,
-            order=retained_propagation_order,
-            measure_convention=config.measure_convention,
-            normalizer=tf.exp(tf.math.log(density.normalizer()) + log_scale_shift),
-            storage_byte_budget=config.retained_storage_byte_budget,
-            stage=f"time_{time_index}",
-            mean=moment_payload["mean"],
-            variance=moment_payload["variance"],
-        )
-        dot_retained_values = _normalized_retained_log_density_derivatives_chunked(
-            density,
-            dot_cores,
-            tf.convert_to_tensor(retained.diagnostics["reference_points"], dtype=tf.float64),
-        )
-        retained_derivatives = _scalar_tt_retained_moment_derivatives(
-            density,
-            coordinate_map,
-            dot_cores,
-            retained_moment_order,
-        )
-        replay_entries.append(
-            {
-                "time_index": int(time_index),
-                "target_hash": target_result.branch_identity.hash.value,
-                "fit_hash": fit_result.branch_identity.hash.value,
-                "retained_hash": retained.branch_identity.hash.value,
-                "parameter_index": parameter_index,
-                "dot_log_normalizer": dot_log_normalizer,
-                "dot_mean": retained_derivatives["dot_mean"],
-                "dot_variance": retained_derivatives["dot_variance"],
-                "fixed_branch_only": True,
-                "observation_count": observation_count,
-                "last_time_index": observation_count - 1,
-            }
-        )
-        current_initial_cores = tuple(fit_result.fitted_tt.cores)
-
-    if retained is None:
-        raise RuntimeError("missing final retained filter")
-    analytic_score = tf.stack(score_terms)
-    total_score = tf.reduce_sum(analytic_score)
-    for h in derivative_config.finite_difference_h:
-        step = tf.cast(h, tf.float64)
-        plus_theta = tf.tensor_scatter_nd_add(theta_vector, [[parameter_index]], [step])
-        minus_theta = tf.tensor_scatter_nd_add(theta_vector, [[parameter_index]], [-step])
-        plus_result = scalar_nonlinear_fixed_design_tt_value_path(
-            model=model,
-            theta=plus_theta,
-            observations=observations,
-            config=config,
-            fixture_id=fixture_id.replace("score", "fd-plus"),
-            initial_target_id=initial_target_id,
-            transition_target_id=transition_target_id,
-            branch_seed_prefix=branch_seed_prefix,
-            retained_moment_order=retained_moment_order,
-            retained_propagation_order=retained_propagation_order,
-        )
-        minus_result = scalar_nonlinear_fixed_design_tt_value_path(
-            model=model,
-            theta=minus_theta,
-            observations=observations,
-            config=config,
-            fixture_id=fixture_id.replace("score", "fd-minus"),
-            initial_target_id=initial_target_id,
-            transition_target_id=transition_target_id,
-            branch_seed_prefix=branch_seed_prefix,
-            retained_moment_order=retained_moment_order,
-            retained_propagation_order=retained_propagation_order,
-        )
-        base_hash = _fixed_design_scalar_compatibility_hash(
-            value_result=value_result,
-            config=config,
-            product_basis=product_basis,
-            fit_config=fit_config,
-            observations=observation_matrix,
-            branch_seed_prefix=branch_seed_prefix,
-            initial_target_id=initial_target_id,
-            transition_target_id=transition_target_id,
-        )
-        plus_hash = _fixed_design_scalar_compatibility_hash(
-            value_result=plus_result,
-            config=config,
-            product_basis=product_basis,
-            fit_config=fit_config,
-            observations=observation_matrix,
-            branch_seed_prefix=branch_seed_prefix,
-            initial_target_id=initial_target_id,
-            transition_target_id=transition_target_id,
-        )
-        minus_hash = _fixed_design_scalar_compatibility_hash(
-            value_result=minus_result,
-            config=config,
-            product_basis=product_basis,
-            fit_config=fit_config,
-            observations=observation_matrix,
-            branch_seed_prefix=branch_seed_prefix,
-            initial_target_id=initial_target_id,
-            transition_target_id=transition_target_id,
-        )
-        fd_rows.append(
-            make_finite_difference_row(
-                parameter_index=parameter_index,
-                h=float(h),
-                value_plus=plus_result.log_likelihood,
-                value_minus=minus_result.log_likelihood,
-                branch_hash_plus=plus_hash,
-                branch_hash_minus=minus_hash,
-                branch_hash_base=base_hash,
-                analytic_gradient=total_score,
-            )
-        )
-    fd_table = FiniteDifferenceTable(tuple(fd_rows))
+    value_result = scalar_nonlinear_fixed_design_tt_value_path(
+        model, theta_vector, observation_matrix, config,
+        fixture_id=fixture_id.replace("score", "value"),
+        branch_seed_prefix=branch_seed_prefix.replace("score", "value"), **options,
+    )
+    program = make_scalar_retained_program(
+        model, config, observation_matrix.shape, moment_order=retained_moment_order,
+        propagation_order=retained_propagation_order, derivative_config=derivative_config,
+        jit_compile=jit_compile,
+    )
+    output = program.call(theta_vector, observation_matrix)
+    histories, total_score = output["history"], output["score"]
+    program.validate(histories)
+    # Only serialize completed numerical histories. No date or parameter loop
+    # here supplies inputs to the analytical recurrence.
+    replay_entries = tuple({
+        "time_index": index,
+        "parameter_indices": parameter_indices,
+        "fit_cores": histories["fit"]["cores"][index],
+        "initial_cores": histories["initial"][index],
+        "log_target": histories["log_target"][index],
+        "dot_log_normalizer": histories["dot_log_z"][index],
+        "dot_mean": histories["dot_mean"][index],
+        "dot_variance": histories["dot_variance"][index],
+        "fixed_branch_only": True,
+    } for index in range(observation_matrix.shape[0]))
     replay_tape = replay_tape_from_filter_result(value_result.branch_identity, replay_entries)
+    fd_table = _scalar_retained_finite_difference_diagnostic(
+        model, theta_vector, observation_matrix, config, derivative_config,
+        value_result, total_score, fixture_id, branch_seed_prefix, options,
+    )
+    diagnostics = {
+        "value_path": value_result.diagnostics["value_path"],
+        "score_path": "scalar_nonlinear_fixed_design_tt_score_path",
+        "parameter_indices": parameter_indices,
+        "fixed_branch_only": True,
+        "observation_count": int(observation_matrix.shape[0]),
+        "last_time_index": int(observation_matrix.shape[0]) - 1,
+        "target_derivative_backend": "model_parameter_score_methods_only",
+        "retained_storage_kind": value_result.retained_filter.storage_kind,
+        "replay_tape_version": replay_tape.version,
+        "jit_compile": bool(jit_compile),
+    }
+    if len(parameter_indices) == 1:
+        diagnostics["parameter_index"] = parameter_indices[0]
     return FixedBranchScoreResult(
-        log_likelihood=value_result.log_likelihood,
-        score=tf.reshape(total_score, [1]),
+        log_likelihood=value_result.log_likelihood, score=total_score,
         branch_identity=value_result.branch_identity,
         replay_tape_hash=replay_tape.sha256().value,
-        finite_difference_table=fd_table,
-        status=HighDimStatus.OK,
-        diagnostics={
-            "value_path": value_result.diagnostics["value_path"],
-            "score_path": "scalar_nonlinear_fixed_design_tt_score_path",
-            "parameter_index": parameter_index,
-            "fixed_branch_only": True,
-            "observation_count": observation_count,
-            "last_time_index": observation_count - 1,
-            "target_derivative_backend": "model_parameter_score_methods_only",
-            "retained_storage_kind": retained.storage_kind,
-            "replay_tape_version": replay_tape.version,
-        },
+        finite_difference_table=fd_table, status=HighDimStatus.OK,
+        diagnostics=diagnostics,
     )
+
+
+def _scalar_retained_finite_difference_diagnostic(
+    model, theta, observations, config, derivative_config, value_result,
+    score, fixture_id, branch_seed_prefix, options,
+):
+    """Explicit optional reference checks; never supplies the analytical score."""
+    def compatibility(result):
+        return _fixed_design_scalar_compatibility_hash(
+            value_result=result, config=config, product_basis=config.product_basis,
+            fit_config=config.fit_config, observations=observations,
+            branch_seed_prefix=branch_seed_prefix,
+            initial_target_id=options["initial_target_id"],
+            transition_target_id=options["transition_target_id"],
+        )
+
+    rows = []
+    base_hash = compatibility(value_result)
+    for column, parameter_index in enumerate(derivative_config.parameter_indices):
+        for h in derivative_config.finite_difference_h:
+            step = tf.constant(h, tf.float64)
+            plus = scalar_nonlinear_fixed_design_tt_value_path(
+                model, tf.tensor_scatter_nd_add(theta, [[parameter_index]], [step]),
+                observations, config, fixture_id=fixture_id.replace("score", "fd-plus"),
+                branch_seed_prefix=branch_seed_prefix, **options,
+            )
+            minus = scalar_nonlinear_fixed_design_tt_value_path(
+                model, tf.tensor_scatter_nd_add(theta, [[parameter_index]], [-step]),
+                observations, config, fixture_id=fixture_id.replace("score", "fd-minus"),
+                branch_seed_prefix=branch_seed_prefix, **options,
+            )
+            rows.append(make_finite_difference_row(
+                parameter_index=parameter_index, h=float(h),
+                value_plus=plus.log_likelihood, value_minus=minus.log_likelihood,
+                branch_hash_plus=compatibility(plus), branch_hash_minus=compatibility(minus),
+                branch_hash_base=base_hash, analytic_gradient=score[column],
+            ))
+    return FiniteDifferenceTable(tuple(rows))
 
 
 def multistate_nonlinear_fixed_design_tt_score_path(
@@ -1421,7 +1148,12 @@ def multistate_nonlinear_fixed_design_tt_score_path(
     retained_moment_order: int | None = None,
     retained_propagation_order: int | None = None,
 ) -> FixedBranchScoreResult:
-    """Run a same-branch fixed-branch score path for multistate TT filters."""
+    """Historical diagnostic score for the all-axes retained-grid TT route.
+
+    This route is ineligible for production, leaderboard or HMC use under
+    the Zhao-Cui route policy. Its Python recurrence is a reference only;
+    active fixed-variant routes own their compiled value/score programs.
+    """
 
     if not isinstance(config, FixedBranchFilterConfig):
         raise TypeError("config must be a FixedBranchFilterConfig")
@@ -2001,7 +1733,7 @@ def multistate_nonlinear_fixed_design_tt_value_path(
     )
 
 
-def _compiled_linear_gaussian_moment_history(model, observation_matrix):
+def _compiled_linear_gaussian_moment_history(model, observation_matrix, *, jit_compile=True):
     """Compiled Kalman moments consumed by the retained-density report wrapper."""
     dates, n = int(observation_matrix.shape[0]), model.state_dim()
     means = tf.zeros([dates, n], tf.float64)
@@ -2041,7 +1773,7 @@ def _compiled_linear_gaussian_moment_history(model, observation_matrix):
                 tf.tensor_scatter_nd_update(covariances, index, covariance[None]),
                 tf.tensor_scatter_nd_update(increments, index, log_increment[None]))
 
-    result = compiled_tensor_recurrence(body, (model.initial_mean, model.initial_covariance, means, covariances, increments), dates)
+    result = compiled_tensor_recurrence(body, (model.initial_mean, model.initial_covariance, means, covariances, increments), dates, jit_compile=jit_compile)
     return result[3:]
 
 
@@ -2993,30 +2725,17 @@ def _tensor_product_reference_quadrature(
     product_basis: ProductBasis,
     order: int,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    nodes_1d, weights_1d = legendre_gauss_nodes_weights(order)
-    axis_nodes = []
-    axis_weights = []
-    for basis in product_basis.bases:
-        half_length = 0.5 * basis.domain.length
-        midpoint = 0.5 * (basis.domain.left + basis.domain.right)
-        physical_nodes = midpoint + half_length * nodes_1d
-        uniform_weights = 0.5 * weights_1d
-        axis_nodes.append(physical_nodes)
-        axis_weights.append(uniform_weights)
-    mesh_nodes = tf.meshgrid(*axis_nodes, indexing="ij")
-    mesh_weights = tf.meshgrid(*axis_weights, indexing="ij")
-    points = tf.stack([tf.reshape(axis, [-1]) for axis in mesh_nodes], axis=1)
-    weights = tf.ones([tf.shape(points)[0]], dtype=tf.float64)
-    for axis_weight in mesh_weights:
-        weights = weights * tf.reshape(axis_weight, [-1])
-    return points, weights
+    from bayesfilter.ops.quadrature_tf import gauss_legendre_product
+    nodes, weights = gauss_legendre_product(product_basis.dimension, order)
+    bounds = tf.stack(tuple((basis.domain.left, basis.domain.right) for basis in product_basis.bases))
+    half = 0.5 * (bounds[:, 1] - bounds[:, 0])
+    midpoint = 0.5 * (bounds[:, 1] + bounds[:, 0])
+    return midpoint[None] + half[None] * nodes, weights
 
 
 def _log_uniform_reference_weight_density(product_basis: ProductBasis) -> tf.Tensor:
-    log_density = tf.constant(0.0, dtype=tf.float64)
-    for basis in product_basis.bases:
-        log_density = log_density - tf.math.log(basis.domain.length)
-    return log_density
+    bounds = tf.stack(tuple((basis.domain.left, basis.domain.right) for basis in product_basis.bases))
+    return -tf.reduce_sum(tf.math.log(bounds[:, 1] - bounds[:, 0]))
 
 
 def _gaussian_log_density(points: tf.Tensor, mean: tf.Tensor, covariance: tf.Tensor) -> tf.Tensor:
@@ -4126,18 +3845,12 @@ def _normalized_retained_density_values_chunked(
         int(density.sqrt_tt.product_basis.dimension),
         "reference_points",
     )
-    row_count = int(points.shape[0])
     chunk_size = max(1, int(density.sqrt_tt.complexity_budget.max_elements) // 80)
-    chunks = []
-    for start in range(0, row_count, chunk_size):
-        stop = min(row_count, start + chunk_size)
-        chunks.append(
-            density.normalized_retained_density_values(
-                tuple(range(int(density.sqrt_tt.product_basis.dimension))),
-                points[start:stop],
-            )
-        )
-    return tf.concat(chunks, axis=0)
+    values, normalizer = density._evaluate("retained_chunked", points=points, chunk_size=chunk_size)
+    density._validate_normalizer(normalizer)
+    if not bool(tf.reduce_all(tf.math.is_finite(values))):
+        raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+    return values
 
 
 def _normalized_retained_density_value_derivatives_chunked(
@@ -4556,10 +4269,11 @@ def _reverse_mode_log_density_parameter_score_column(
     name: str,
 ) -> tf.Tensor:
     theta_vector = _as_theta_vector(theta, int(theta.shape[0]))
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta_vector)
         values = tf.convert_to_tensor(value_fn(theta_vector), dtype=tf.float64)
-    jacobian = tape.jacobian(values, theta_vector)
+    jacobian = tape.jacobian(values, theta_vector, experimental_use_pfor=False)
+    del tape
     if jacobian is None:
         raise ValueError(f"{name} parameter score is None")
     return _validated_parameter_score_column(
@@ -4635,24 +4349,14 @@ def _default_initial_cores(
 ) -> tuple[TTCore, ...]:
     if len(fit_config.ranks) != product_basis.dimension + 1:
         raise ValueError(f"ranks: {HighDimStatus.INVALID_SHAPE.value}")
-    cores = []
-    for axis, basis in enumerate(product_basis.bases):
-        values = tf.zeros(
-            [fit_config.ranks[axis], basis.basis_dim, fit_config.ranks[axis + 1]],
-            dtype=tf.float64,
-        )
-        updates = []
-        if axis == 0:
-            updates.append(([0, 0, 0], tf.constant(1.0, dtype=tf.float64)))
-        else:
-            for rank in range(min(fit_config.ranks[axis], fit_config.ranks[axis + 1])):
-                updates.append(([rank, 0, rank], tf.constant(1.0, dtype=tf.float64)))
-        if not updates:
-            updates.append(([0, 0, 0], tf.constant(1.0, dtype=tf.float64)))
-        indices = tf.constant([update[0] for update in updates], dtype=tf.int32)
-        values_to_update = tf.stack([update[1] for update in updates])
-        cores.append(TTCore(tf.tensor_scatter_nd_update(values, indices, values_to_update)))
-    return tuple(cores)
+    from bayesfilter.highdim.filtering_native_tf import constant_core_program
+
+    packed = constant_core_program(product_basis.dimension, max(fit_config.ranks),
+                                   max(product_basis.basis_dim_tuple()))()
+    # Only unpack the heterogeneous public tuple after the numerical operation.
+    return tuple(TTCore(packed[axis, :fit_config.ranks[axis], :basis.basis_dim,
+                               :fit_config.ranks[axis + 1]])
+                 for axis, basis in enumerate(product_basis.bases))
 
 
 def _core_values_hash(cores: Sequence[TTCore] | None) -> str | None:
@@ -4858,6 +4562,18 @@ def _basis_payload(basis) -> Mapping[str, object]:
         "dtype": basis.dtype.name,
         "basis_dim": int(basis.basis_dim),
     }
+
+
+def _coordinate_matrix(values: tf.Tensor, width: int, name: str) -> tf.Tensor:
+    """Graph-safe map inputs; enclosing programs validate completed outputs."""
+    if tf.executing_eagerly():
+        return _as_matrix(values, width, name)
+    tensor = tf.convert_to_tensor(values, dtype=tf.float64)
+    if tensor.shape.rank == 1:
+        tensor = tensor[:, tf.newaxis] if int(width) == 1 else tensor[tf.newaxis, :]
+    if tensor.shape.rank != 2 or tensor.shape[1] != width:
+        raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
+    return tensor
 
 
 def _as_matrix(values: tf.Tensor, width: int, name: str) -> tf.Tensor:

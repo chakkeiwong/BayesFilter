@@ -28,6 +28,9 @@ def symmetrize(matrix: tf.Tensor) -> tf.Tensor:
     """Return the symmetric part of a covariance-like matrix."""
 
     matrix = tf.convert_to_tensor(matrix, dtype=tf.float64)
+    # Avoid Grappler's scalar transpose rewrite inside nested recurrences.
+    if matrix.shape[-2:] == (1, 1):
+        return 0.5 * (matrix + matrix)
     return 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
 
 

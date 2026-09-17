@@ -835,16 +835,17 @@ def p85_author_sir_lagrangep_algebraic_product_basis_spec(
 def _legendre_values(xi: tf.Tensor, max_degree: int) -> tf.Tensor:
     xi = tf.convert_to_tensor(xi, dtype=tf.float64)
     flat = tf.reshape(xi, [-1])
-    values = [tf.ones_like(flat)]
+    values = tf.TensorArray(tf.float64, size=max_degree + 1, element_shape=flat.shape, clear_after_read=False).write(0, tf.ones_like(flat))
     if max_degree >= 1:
-        values.append(flat)
-    for n in range(1, max_degree):
+        values = values.write(1, flat)
+    def step(n, values):
         n_float = tf.cast(n, tf.float64)
-        next_value = ((2.0 * n_float + 1.0) * flat * values[n] - n_float * values[n - 1]) / (
+        next_value = ((2.0 * n_float + 1.0) * flat * values.read(n) - n_float * values.read(n - 1)) / (
             n_float + 1.0
         )
-        values.append(next_value)
-    stacked = tf.stack(values, axis=-1)
+        return n + 1, values.write(n + 1, next_value)
+    _, values = tf.while_loop(lambda n, _: n < max_degree, step, (tf.constant(1), values), maximum_iterations=max(0, max_degree - 1))
+    stacked = tf.transpose(values.stack())
     return tf.reshape(stacked, tf.concat([tf.shape(xi), [max_degree + 1]], axis=0))
 
 
@@ -852,22 +853,19 @@ def _legendre_reference_derivatives(xi: tf.Tensor, max_degree: int) -> tf.Tensor
     xi = tf.convert_to_tensor(xi, dtype=tf.float64)
     flat = tf.reshape(xi, [-1])
     polys = tf.reshape(_legendre_values(flat, max_degree), [tf.shape(flat)[0], max_degree + 1])
-    derivs = [tf.zeros_like(flat)]
+    derivs = tf.TensorArray(tf.float64, size=max_degree + 1, element_shape=flat.shape, clear_after_read=False).write(0, tf.zeros_like(flat))
     if max_degree >= 1:
-        derivs.append(tf.ones_like(flat))
-    for n in range(2, max_degree + 1):
-        n_float = tf.cast(n, tf.float64)
-        deriv = n_float * (polys[:, n - 1] + flat * derivs[n - 1]) - n_float * derivs[n - 2] / (
-            n_float - 1.0
-        )
+        derivs = derivs.write(1, tf.ones_like(flat))
+    def step(n, derivs):
         # Simpler and stable for low-degree tests: differentiate recurrence.
         prev_n = tf.cast(n - 1, tf.float64)
         deriv = (
-            (2.0 * prev_n + 1.0) * (polys[:, n - 1] + flat * derivs[n - 1])
-            - prev_n * derivs[n - 2]
+            (2.0 * prev_n + 1.0) * (polys[:, n - 1] + flat * derivs.read(n - 1))
+            - prev_n * derivs.read(n - 2)
         ) / (prev_n + 1.0)
-        derivs.append(deriv)
-    stacked = tf.stack(derivs, axis=-1)
+        return n + 1, derivs.write(n, deriv)
+    _, derivs = tf.while_loop(lambda n, _: n <= max_degree, step, (tf.constant(2), derivs), maximum_iterations=max(0, max_degree - 1))
+    stacked = tf.transpose(derivs.stack())
     return tf.reshape(stacked, tf.concat([tf.shape(xi), [max_degree + 1]], axis=0))
 
 
@@ -879,16 +877,17 @@ def _hermite_normalized_values(u: tf.Tensor, max_degree: int) -> tf.Tensor:
     """
     u = tf.convert_to_tensor(u, dtype=tf.float64)
     flat = tf.reshape(u, [-1])
-    values = [tf.ones_like(flat)]
+    values = tf.TensorArray(tf.float64, size=max_degree + 1, element_shape=flat.shape, clear_after_read=False).write(0, tf.ones_like(flat))
     if max_degree >= 1:
-        values.append(flat)
-    for k in range(1, max_degree):
+        values = values.write(1, flat)
+    def step(k, values):
         k_float = tf.cast(k, tf.float64)
         next_value = (
-            flat * values[k] - tf.sqrt(k_float) * values[k - 1]
+            flat * values.read(k) - tf.sqrt(k_float) * values.read(k - 1)
         ) / tf.sqrt(k_float + 1.0)
-        values.append(next_value)
-    stacked = tf.stack(values, axis=-1)
+        return k + 1, values.write(k + 1, next_value)
+    _, values = tf.while_loop(lambda k, _: k < max_degree, step, (tf.constant(1), values), maximum_iterations=max(0, max_degree - 1))
+    stacked = tf.transpose(values.stack())
     return tf.reshape(stacked, tf.concat([tf.shape(u), [max_degree + 1]], axis=0))
 
 
@@ -900,10 +899,7 @@ def _hermite_normalized_derivatives(u: tf.Tensor, max_degree: int) -> tf.Tensor:
         _hermite_normalized_values(flat, max_degree),
         [tf.shape(flat)[0], max_degree + 1],
     )
-    columns = [tf.zeros_like(flat)]
-    for k in range(1, max_degree + 1):
-        columns.append(tf.sqrt(tf.cast(k, tf.float64)) * polys[:, k - 1])
-    stacked = tf.stack(columns, axis=-1)
+    stacked = tf.concat([tf.zeros_like(flat[:, None]), tf.sqrt(tf.cast(tf.range(1, max_degree + 1), tf.float64))[None, :] * polys[:, :-1]], axis=1)
     return tf.reshape(stacked, tf.concat([tf.shape(u), [max_degree + 1]], axis=0))
 
 
@@ -929,8 +925,8 @@ def _lagrangep_reference_mass_and_integral(
     mass = tf.zeros([basis_dim, basis_dim], dtype=tf.float64)
     integral = tf.zeros([basis_dim], dtype=tf.float64)
     local_cols = tf.range(local_dim, dtype=tf.int32)
-    for elem in range(int(num_elems)):
-        cols = local_cols + int(elem) * int(order)
+    def step(elem, mass, integral):
+        cols = local_cols + elem * int(order)
         row_cols, col_cols = tf.meshgrid(cols, cols, indexing="ij")
         matrix_indices = tf.stack(
             [tf.reshape(row_cols, [-1]), tf.reshape(col_cols, [-1])],
@@ -946,6 +942,9 @@ def _lagrangep_reference_mass_and_integral(
             cols[:, tf.newaxis],
             local_integral * elem_size,
         )
+        return elem + 1, mass, integral
+    _, mass, integral = tf.while_loop(lambda elem, *_: elem < num_elems, step,
+                                    (tf.constant(0), mass, integral), maximum_iterations=num_elems)
     return 0.5 * (mass + tf.transpose(mass)), integral
 
 
@@ -1093,13 +1092,8 @@ def _lagrangep_reference_nodes(order: int, num_elems: int) -> tf.Tensor:
         int(num_elems) + 1,
     )
     elem_size = tf.constant(2.0 / float(num_elems), dtype=tf.float64)
-    segments = []
-    for elem in range(int(num_elems)):
-        mapped = grid[elem] + local_nodes * elem_size
-        if elem:
-            mapped = mapped[1:]
-        segments.append(mapped)
-    return tf.concat(segments, axis=0)
+    segments = grid[:-1, None] + local_nodes[None, :] * elem_size
+    return tf.concat([segments[0], tf.reshape(segments[1:, 1:], [-1])], axis=0)
 
 
 def _lagrange_ref_nodes(num_points: int) -> tf.Tensor:

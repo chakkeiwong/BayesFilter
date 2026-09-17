@@ -16,11 +16,12 @@ diagnostic geometry; this API does not install a fixed affine transport.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from numbers import Integral
 from typing import Any
 
-import numpy as np
 import tensorflow as tf
 
 from bayesfilter.inference._exact_incumbent import (
@@ -38,8 +39,12 @@ from bayesfilter.inference.joint_center import (
 )
 from bayesfilter.inference.quadratic_geometry import (
     LowRankSPDQuadraticGeometryConfig,
+    _evaluate_value_score,
+    _evaluate_values_scores,
     fit_low_rank_spd_quadratic_geometry,
 )
+from bayesfilter.ops.geometry_random_tf import STREAM_ID, GeometryTensorStream
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 POSTERIOR_LOCAL_INITIALIZER_NONCLAIMS = (
     "posterior-local location and scale initializer only",
@@ -65,7 +70,7 @@ class PosteriorLocalInitializerConfig:
 
     locator_box_radius: float = 4.0
     locator_config: JointCenterLocatorConfig = field(
-        default_factory=lambda: JointCenterLocatorConfig(jit_compile=False)
+        default_factory=JointCenterLocatorConfig
     )
     min_movement_fits: int = 2
     max_movement_attempts: int = 3
@@ -93,12 +98,12 @@ class PosteriorLocalInitializerConfig:
             "max_condition_number",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value <= 0.0:
+            if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be positive and finite")
             object.__setattr__(self, name, value)
         for name in ("objective_improvement_tolerance", "scaled_center_tolerance"):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value < 0.0:
+            if not math.isfinite(value) or value < 0.0:
                 raise ValueError(f"{name} must be finite and non-negative")
             object.__setattr__(self, name, value)
         for name in (
@@ -139,7 +144,7 @@ class PosteriorLocalInitializerConfig:
             raise ValueError("factor_2 structured target requires factor_max=2")
         weights = tuple(float(value) for value in self.shrinkage_weights)
         if not weights or any(
-            not np.isfinite(value) or not 0.0 <= value <= 1.0 for value in weights
+            not math.isfinite(value) or not 0.0 <= value <= 1.0 for value in weights
         ):
             raise ValueError("shrinkage_weights must be finite values in [0, 1]")
         object.__setattr__(self, "shrinkage_weights", weights)
@@ -166,6 +171,7 @@ class PosteriorLocalInitializerConfig:
             "structured_target_family": self.structured_target_family,
             "max_exact_evaluations": self.max_exact_evaluations,
             "seed": self.seed,
+            "random_stream": STREAM_ID,
         }
 
 
@@ -176,17 +182,17 @@ class PosteriorLocalInitializerResult:
     accepted: bool
     status: str
     dimension: int
-    center: np.ndarray
+    center: tf.Tensor
     center_value: float
-    center_score: np.ndarray
-    scale: np.ndarray
-    precision_z: np.ndarray | None
-    covariance_z: np.ndarray | None
-    precision_theta: np.ndarray | None
-    covariance_theta: np.ndarray | None
-    marginal_standard_deviations: np.ndarray | None
-    initial_output_shift: np.ndarray | None
-    initial_output_scale_log: np.ndarray | None
+    center_score: tf.Tensor
+    scale: tf.Tensor
+    precision_z: tf.Tensor | None
+    covariance_z: tf.Tensor | None
+    precision_theta: tf.Tensor | None
+    covariance_theta: tf.Tensor | None
+    marginal_standard_deviations: tf.Tensor | None
+    initial_output_shift: tf.Tensor | None
+    initial_output_scale_log: tf.Tensor | None
     locator: Mapping[str, Any]
     movement_fits: tuple[Mapping[str, Any], ...]
     curvature: FixedCenterCurvatureResult | None
@@ -200,8 +206,7 @@ class PosteriorLocalInitializerResult:
         object.__setattr__(self, "status", str(self.status))
         object.__setattr__(self, "dimension", int(self.dimension))
         for name in ("center", "center_score", "scale"):
-            array = np.asarray(getattr(self, name), dtype=float).copy()
-            array.setflags(write=False)
+            array = numeric_tensor(getattr(self, name), tf.float64)
             object.__setattr__(self, name, array)
         for name in (
             "precision_z",
@@ -214,8 +219,7 @@ class PosteriorLocalInitializerResult:
         ):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "locator", _json_ready(dict(self.locator)))
         object.__setattr__(
@@ -305,8 +309,8 @@ class _EligibilityTrackingEvaluator:
         def denied() -> tuple[tf.Tensor, tf.Tensor]:
             update = self.budget_exhausted.assign(True)
             with tf.control_dependencies([update]):
-                return tf.constant(np.nan, tf.float64), tf.fill(
-                    [self.dimension], tf.constant(np.nan, tf.float64)
+                return tf.constant(math.nan, tf.float64), tf.fill(
+                    [self.dimension], tf.constant(math.nan, tf.float64)
                 )
 
         def evaluate() -> tuple[tf.Tensor, tf.Tensor]:
@@ -341,11 +345,11 @@ class _EligibilityTrackingEvaluator:
             )
             with tf.control_dependencies(updates):
                 return (
-                    tf.where(valid, value, tf.constant(np.nan, tf.float64)),
+                    tf.where(valid, value, tf.constant(math.nan, tf.float64)),
                     tf.where(
                         valid,
                         score,
-                        tf.fill([self.dimension], tf.constant(np.nan, tf.float64)),
+                        tf.fill([self.dimension], tf.constant(math.nan, tf.float64)),
                     ),
                 )
 
@@ -367,8 +371,10 @@ class _EligibilityTrackingEvaluator:
             update = self.budget_exhausted.assign(True)
             with tf.control_dependencies([update]):
                 return (
-                    tf.fill([tf.shape(positions)[0]], tf.constant(np.nan, tf.float64)),
-                    tf.fill(tf.shape(positions), tf.constant(np.nan, tf.float64)),
+                    tf.fill(
+                        [tf.shape(positions)[0]], tf.constant(math.nan, tf.float64)
+                    ),
+                    tf.fill(tf.shape(positions), tf.constant(math.nan, tf.float64)),
                 )
 
         def evaluate() -> tuple[tf.Tensor, tf.Tensor]:
@@ -414,12 +420,12 @@ class _EligibilityTrackingEvaluator:
                     tf.where(
                         valid,
                         values,
-                        tf.fill(tf.shape(values), tf.constant(np.nan, tf.float64)),
+                        tf.fill(tf.shape(values), tf.constant(math.nan, tf.float64)),
                     ),
                     tf.where(
                         valid[:, None],
                         scores,
-                        tf.fill(tf.shape(scores), tf.constant(np.nan, tf.float64)),
+                        tf.fill(tf.shape(scores), tf.constant(math.nan, tf.float64)),
                     ),
                 )
 
@@ -475,9 +481,9 @@ def initialize_posterior_local_location_scale(
             "movement_config must constrain refinement to the trust region"
         )
     initial = _vector(initial_position, "initial_position")
-    dimension = int(initial.size)
+    dimension = int(initial.shape[0])
     units = (
-        np.ones(dimension, dtype=float)
+        tf.ones([dimension], tf.float64)
         if scale is None
         else _positive_vector(scale, dimension, "scale")
     )
@@ -507,9 +513,9 @@ def initialize_posterior_local_location_scale(
     curvature: FixedCenterCurvatureResult | None = None
 
     def record_candidate(
-        position: np.ndarray,
+        position: tf.Tensor,
         value: float,
-        score: np.ndarray,
+        score: tf.Tensor,
         source: str,
     ) -> tuple[ExactCandidate, bool]:
         previous = select_exact_incumbent(candidates)
@@ -529,13 +535,13 @@ def initialize_posterior_local_location_scale(
                 "source": source,
                 "position": position,
                 "value": value,
-                "score_l2": float(np.linalg.norm(score * units)),
+                "score_l2": float(tf.linalg.norm(score * units)),
                 "promoted": promoted,
             }
         )
         return candidate, promoted
 
-    initial_value, initial_score, initial_ok = _evaluate_numpy(
+    initial_value, initial_score, initial_ok = _evaluate_tensor(
         evaluator.scalar, initial
     )
     if not initial_ok:
@@ -578,8 +584,8 @@ def initialize_posterior_local_location_scale(
 
     locator_result = locate_joint_center(
         bounded_value_and_score,
-        np.zeros(dimension),
-        scale=np.ones(dimension),
+        tf.zeros([dimension], tf.float64),
+        scale=tf.ones([dimension], tf.float64),
         config=cfg.locator_config,
     )
     locator_payload = {
@@ -589,10 +595,10 @@ def initialize_posterior_local_location_scale(
         "chart_center_role": "truth_blind_initial_position",
     }
     if locator_result.best_evaluated_position is not None:
-        u_best = np.asarray(locator_result.best_evaluated_position, dtype=float)
-        z_best = radius * np.tanh(u_best / radius)
+        u_best = numeric_tensor(locator_result.best_evaluated_position, tf.float64)
+        z_best = radius * tf.math.tanh(u_best / radius)
         theta_best = initial + units * z_best
-        value_best, score_best, valid_best = _evaluate_numpy(
+        value_best, score_best, valid_best = _evaluate_tensor(
             evaluator.scalar, theta_best
         )
         if valid_best:
@@ -626,7 +632,7 @@ def initialize_posterior_local_location_scale(
     for attempt in range(cfg.max_movement_attempts):
         incumbent = select_exact_incumbent(candidates)
         assert incumbent is not None
-        fit_center = np.asarray(incumbent.position, dtype=float).copy()
+        fit_center = numeric_tensor(incumbent.position, tf.float64)
         fit_seed = (base_seed[0], base_seed[1] + attempt)
         attempt_cfg = replace(move_cfg, seed=fit_seed)
         geometry = fit_low_rank_spd_quadratic_geometry(
@@ -639,11 +645,11 @@ def initialize_posterior_local_location_scale(
             config=attempt_cfg,
         )
         previous_value = float(incumbent.value)
-        previous_position = fit_center.copy()
+        previous_position = fit_center
         promoted = False
         if geometry.best_evaluated_position is not None:
-            nominated = np.asarray(geometry.best_evaluated_position, dtype=float)
-            nominated_value, nominated_score, nominated_ok = _evaluate_numpy(
+            nominated = numeric_tensor(geometry.best_evaluated_position, tf.float64)
+            nominated_value, nominated_score, nominated_ok = _evaluate_tensor(
                 evaluator.scalar, nominated
             )
             if nominated_ok:
@@ -657,10 +663,10 @@ def initialize_posterior_local_location_scale(
         assert incumbent is not None
         center_moved = bool(
             incumbent.value > previous_value
-            and not np.array_equal(incumbent.position, previous_position)
+            and not bool(tf.reduce_all(incumbent.position == previous_position))
         )
         scaled_move = float(
-            np.linalg.norm((incumbent.position - previous_position) / units)
+            tf.linalg.norm((incumbent.position - previous_position) / units)
         )
         improvement = float(incumbent.value - previous_value)
         material_move = bool(
@@ -677,6 +683,7 @@ def initialize_posterior_local_location_scale(
                 "seed": f"{fit_seed[0]}:{fit_seed[1]}",
                 "fit_center": fit_center,
                 "geometry_status": geometry.status,
+                "random_stream": STREAM_ID,
                 "geometry_accepted": geometry.accepted,
                 "geometry_exact_evaluation_count": geometry.exact_evaluation_count,
                 "geometry_best_source": geometry.best_evaluated_source,
@@ -750,8 +757,8 @@ def initialize_posterior_local_location_scale(
     for curvature_attempt in range(cfg.max_curvature_attempts):
         incumbent = select_exact_incumbent(candidates)
         assert incumbent is not None
-        center = np.asarray(incumbent.position, dtype=float).copy()
-        center_value, center_score, center_ok = _evaluate_numpy(
+        center = numeric_tensor(incumbent.position, tf.float64)
+        center_value, center_score, center_ok = _evaluate_tensor(
             evaluator.scalar, center
         )
         if not center_ok:
@@ -778,9 +785,9 @@ def initialize_posterior_local_location_scale(
             center_score,
             f"curvature[{curvature_attempt}]_center_replay",
         )
-        partition_offsets: list[np.ndarray] = []
-        partition_values: list[np.ndarray] = []
-        partition_scores: list[np.ndarray] = []
+        partition_offsets: list[tf.Tensor] = []
+        partition_values: list[tf.Tensor] = []
+        partition_scores: list[tf.Tensor] = []
         partition_names: list[str] = []
         partition_seeds: list[tuple[int, int]] = []
         specs = [
@@ -842,9 +849,9 @@ def initialize_posterior_local_location_scale(
         assert next_incumbent is not None
         moved = bool(
             next_incumbent.value > center_value
-            and not np.array_equal(next_incumbent.position, center)
+            and not bool(tf.reduce_all(next_incumbent.position == center))
         )
-        scaled_move = float(np.linalg.norm((next_incumbent.position - center) / units))
+        scaled_move = float(tf.linalg.norm((next_incumbent.position - center) / units))
         improvement = float(next_incumbent.value - center_value)
         curvature_attempt_records.append(
             {
@@ -852,6 +859,7 @@ def initialize_posterior_local_location_scale(
                 "center": center,
                 "partition_names": partition_names,
                 "partition_seeds": partition_seeds,
+                "random_stream": STREAM_ID,
                 "partition_rows": [int(array.shape[0]) for array in partition_offsets],
                 "center_moved": moved,
                 "scaled_center_move": scaled_move,
@@ -879,12 +887,12 @@ def initialize_posterior_local_location_scale(
                 )
             continue
 
-        train_offsets = np.stack(partition_offsets[: cfg.replicate_count])
-        train_scores_z = np.stack(partition_scores[: cfg.replicate_count])
+        train_offsets = tf.stack(partition_offsets[: cfg.replicate_count])
+        train_scores_z = tf.stack(partition_scores[: cfg.replicate_count])
         selection_start = cfg.replicate_count
         selection_stop = 2 * cfg.replicate_count
-        selection_offsets = np.stack(partition_offsets[selection_start:selection_stop])
-        selection_scores_z = np.stack(partition_scores[selection_start:selection_stop])
+        selection_offsets = tf.stack(partition_offsets[selection_start:selection_stop])
+        selection_scores_z = tf.stack(partition_scores[selection_start:selection_stop])
         audit_offsets_z = partition_offsets[-1]
         audit_scores_z = partition_scores[-1]
         curvature = fit_fixed_center_curvature(
@@ -906,6 +914,7 @@ def initialize_posterior_local_location_scale(
                 "role": "posterior_local_terminal_curvature",
                 "curvature_attempt": curvature_attempt,
                 "partition_seeds": partition_seeds,
+                "random_stream": STREAM_ID,
                 "fit_center_equals_exact_incumbent": True,
             },
         )
@@ -931,12 +940,12 @@ def initialize_posterior_local_location_scale(
                 extra={"curvature_attempts": curvature_attempt_records},
             )
 
-        precision_z = np.asarray(curvature.selected_precision_z, dtype=float)
-        covariance_z = np.asarray(curvature.selected_covariance_z, dtype=float)
+        precision_z = numeric_tensor(curvature.selected_precision_z, tf.float64)
+        covariance_z = numeric_tensor(curvature.selected_covariance_z, tf.float64)
         precision_theta = precision_z / (units[:, None] * units[None, :])
         covariance_theta = covariance_z * units[:, None] * units[None, :]
-        marginal = np.sqrt(np.diag(covariance_theta))
-        if not np.all(np.isfinite(marginal) & (marginal > 0.0)):
+        marginal = tf.sqrt(tf.linalg.diag_part(covariance_theta))
+        if not bool(tf.reduce_all(tf.math.is_finite(marginal) & (marginal > 0.0))):
             return _build_result(
                 accepted=False,
                 status="physical_marginal_scale_invalid",
@@ -989,7 +998,7 @@ def _build_result(
     center: Any,
     center_value: float,
     center_score: Any,
-    scale: np.ndarray,
+    scale: tf.Tensor,
     locator: Mapping[str, Any],
     movement_fits: Sequence[Mapping[str, Any]],
     curvature: FixedCenterCurvatureResult | None,
@@ -997,20 +1006,20 @@ def _build_result(
     evaluator: _EligibilityTrackingEvaluator,
     config: PosteriorLocalInitializerConfig,
     movement_config: LowRankSPDQuadraticGeometryConfig,
-    precision_z: np.ndarray | None = None,
-    covariance_z: np.ndarray | None = None,
-    precision_theta: np.ndarray | None = None,
-    covariance_theta: np.ndarray | None = None,
-    marginal: np.ndarray | None = None,
+    precision_z: tf.Tensor | None = None,
+    covariance_z: tf.Tensor | None = None,
+    precision_theta: tf.Tensor | None = None,
+    covariance_theta: tf.Tensor | None = None,
+    marginal: tf.Tensor | None = None,
     extra: Mapping[str, Any] | None = None,
 ) -> PosteriorLocalInitializerResult:
-    center_array = np.asarray(center, dtype=float).reshape([-1])
-    score_array = np.asarray(center_score, dtype=float).reshape([-1])
+    center_array = tf.reshape(numeric_tensor(center, tf.float64), [-1])
+    score_array = tf.reshape(numeric_tensor(center_score, tf.float64), [-1])
     evaluator_diagnostics = evaluator.diagnostics()
     return PosteriorLocalInitializerResult(
         accepted=accepted,
         status=status,
-        dimension=int(center_array.size),
+        dimension=int(center_array.shape[0]),
         center=center_array,
         center_value=float(center_value),
         center_score=score_array,
@@ -1021,7 +1030,7 @@ def _build_result(
         covariance_theta=covariance_theta,
         marginal_standard_deviations=marginal,
         initial_output_shift=center_array if accepted else None,
-        initial_output_scale_log=(None if marginal is None else np.log(marginal)),
+        initial_output_scale_log=(None if marginal is None else tf.math.log(marginal)),
         locator=locator,
         movement_fits=tuple(movement_fits),
         curvature=curvature,
@@ -1034,6 +1043,7 @@ def _build_result(
                 else "posterior_local_initializer_rejected"
             ),
             "eligibility_contract": evaluator_diagnostics,
+            "random_stream": STREAM_ID,
             "hmc_rejection_policy_permitted": False,
             "base_distribution_changed": False,
             "base_distribution_contract": "IID standard normal remains external to this initializer",
@@ -1056,49 +1066,24 @@ def _tracker_failure_status(evaluator: _EligibilityTrackingEvaluator) -> str | N
     return None
 
 
-def _evaluate_numpy(
-    callback: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
-    position: np.ndarray,
-) -> tuple[float, np.ndarray, bool]:
-    try:
-        value, score = callback(tf.constant(position, tf.float64))
-        value_np = float(tf.convert_to_tensor(value, tf.float64).numpy())
-        score_np = np.asarray(
-            tf.reshape(tf.convert_to_tensor(score, tf.float64), [-1]).numpy(),
-            dtype=float,
-        )
-    except Exception:  # noqa: BLE001 - typed diagnostic failure is returned.
-        return float("nan"), np.full_like(position, np.nan, dtype=float), False
-    valid = bool(np.isfinite(value_np) and np.all(np.isfinite(score_np)))
-    return value_np, score_np, valid
+def _evaluate_tensor(callback, position):
+    value, score, status = _evaluate_value_score(callback, position)
+    return value, score, status == "finite"
 
 
-def _evaluate_rows(
-    evaluator: _EligibilityTrackingEvaluator,
-    positions: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, bool]:
-    try:
-        if evaluator.batched_fn is not None:
-            values, scores = evaluator.batched(tf.constant(positions, tf.float64))
-            values_np = np.asarray(values.numpy(), dtype=float)
-            scores_np = np.asarray(scores.numpy(), dtype=float)
-        else:
-            rows = [_evaluate_numpy(evaluator.scalar, row) for row in positions]
-            values_np = np.asarray([row[0] for row in rows], dtype=float)
-            scores_np = np.asarray([row[1] for row in rows], dtype=float)
-    except Exception:  # noqa: BLE001 - typed diagnostic failure is returned.
-        return (
-            np.full(positions.shape[0], np.nan),
-            np.full_like(positions, np.nan),
-            False,
-        )
-    valid = bool(
-        values_np.shape == (positions.shape[0],)
-        and scores_np.shape == positions.shape
-        and np.all(np.isfinite(values_np))
-        and np.all(np.isfinite(scores_np))
+def _evaluate_rows(evaluator, positions):
+    values, scores = _evaluate_values_scores(
+        evaluator.scalar,
+        positions,
+        batched_value_and_score_fn=(
+            evaluator.batched if evaluator.batched_fn is not None else None
+        ),
     )
-    return values_np, scores_np, valid
+    valid = bool(
+        tf.reduce_all(tf.math.is_finite(values))
+        & tf.reduce_all(tf.math.is_finite(scores))
+    )
+    return values, scores, valid
 
 
 def _cloud_row_counts(
@@ -1129,22 +1114,17 @@ def _sample_ball(
     *,
     radius: float,
     seed: tuple[int, int],
-) -> np.ndarray:
-    combined_seed = int(seed[0]) ^ (int(seed[1]) << 16)
-    rng = np.random.default_rng(combined_seed)
-    directions = rng.normal(size=(rows, dimension))
-    norms = np.linalg.norm(directions, axis=1, keepdims=True)
-    while np.any(norms == 0.0):
-        zero = np.flatnonzero(norms[:, 0] == 0.0)
-        directions[zero] = rng.normal(size=(zero.size, dimension))
-        norms = np.linalg.norm(directions, axis=1, keepdims=True)
-    directions /= norms
-    radial = radius * rng.uniform(0.25, 1.0, size=(rows, 1)) ** (1.0 / dimension)
-    return directions * radial
+) -> tf.Tensor:
+    return GeometryTensorStream(seed).ball(
+        rows,
+        dimension,
+        radius=radius,
+        minimum_uniform=0.25,
+    )
 
 
 def _normalize_seed(seed: int | Sequence[int]) -> tuple[int, int]:
-    if isinstance(seed, (int, np.integer)):
+    if isinstance(seed, Integral):
         value = int(seed)
         if value < 0:
             raise ValueError("seed must be non-negative")
@@ -1155,27 +1135,35 @@ def _normalize_seed(seed: int | Sequence[int]) -> tuple[int, int]:
     return values
 
 
-def _vector(value: Any, name: str) -> np.ndarray:
-    array = np.asarray(value, dtype=float)
-    if array.ndim != 1 or array.size == 0 or not np.all(np.isfinite(array)):
+def _vector(value: Any, name: str) -> tf.Tensor:
+    array = numeric_tensor(value, tf.float64)
+    if (
+        array.shape.rank != 1
+        or array.shape[0] == 0
+        or not bool(tf.reduce_all(tf.math.is_finite(array)))
+    ):
         raise ValueError(f"{name} must be a nonempty finite vector")
-    return array.copy()
+    return array
 
 
-def _positive_vector(value: Any, dimension: int, name: str) -> np.ndarray:
-    array = np.asarray(value, dtype=float)
-    if array.shape != (dimension,) or not np.all(np.isfinite(array) & (array > 0.0)):
+def _positive_vector(value: Any, dimension: int, name: str) -> tf.Tensor:
+    array = numeric_tensor(value, tf.float64)
+    if array.shape != (dimension,) or not bool(
+        tf.reduce_all(tf.math.is_finite(array) & (array > 0.0))
+    ):
         raise ValueError(f"{name} must be positive finite with shape [{dimension}]")
-    return array.copy()
+    return array
 
 
-def _eigen_summary(matrix: np.ndarray) -> Mapping[str, Any]:
-    eigenvalues = np.linalg.eigvalsh(0.5 * (matrix + matrix.T))
+def _eigen_summary(matrix: tf.Tensor) -> Mapping[str, Any]:
+    eigenvalues = tf.linalg.eigvalsh(0.5 * (matrix + tf.transpose(matrix)))
     return {
-        "minimum": float(np.min(eigenvalues)),
-        "maximum": float(np.max(eigenvalues)),
-        "condition_number": float(np.max(eigenvalues) / np.min(eigenvalues)),
-        "positive": bool(np.all(eigenvalues > 0.0)),
+        "minimum": float(tf.reduce_min(eigenvalues)),
+        "maximum": float(tf.reduce_max(eigenvalues)),
+        "condition_number": float(
+            tf.reduce_max(eigenvalues) / tf.reduce_min(eigenvalues)
+        ),
+        "positive": bool(tf.reduce_all(eigenvalues > 0.0)),
     }
 
 
@@ -1184,10 +1172,8 @@ def _json_ready(value: Any) -> Any:
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_json_ready(item) for item in value]
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
-    if isinstance(value, float) and not np.isfinite(value):
+    if tf.is_tensor(value) or hasattr(value, "__array_interface__"):
+        return _json_ready(numeric_tensor(value).numpy().tolist())
+    if isinstance(value, float) and not math.isfinite(value):
         return None
     return value

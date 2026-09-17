@@ -137,7 +137,10 @@ def inspect(path):
 
 def audit():
     tracked = subprocess.check_output(["git", "ls-files", "*.py"], cwd=ROOT, text=True).splitlines()
-    rows = [inspect(path) for path in tracked if (ROOT / path).exists()]
+    discovered = sorted(set(subprocess.check_output(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "*.py"],
+        cwd=ROOT, text=True).splitlines()))
+    rows = [inspect(path) for path in discovered if (ROOT / path).exists()]
     modules = {row["module"]: row for row in rows if "module" in row}
     definitions = {row["module"] + "." + fn["name"] for row in modules.values() for fn in row["functions"]}
     exports = {}
@@ -171,7 +174,9 @@ def audit():
                 edges.append({"caller": row["module"] + ("." + call["function"] if call["function"] else ""), "line": call["line"], "target": target, "path": row["path"], "kind": call["kind"]})
     owned = [row for row in modules.values() if row["ownership"].startswith("owned_")]
     summary = {"tracked_python_files": len(tracked), "parsed_files": len(modules), "parse_errors": len(rows) - len(modules), "ownership_counts": dict(collections.Counter(row["ownership"] for row in rows)), "owned_source_modules": len(owned), "owned_name_matched_modules": sum(row["algorithm_name_match"] for row in owned), "owned_loop_syntax_sites": sum(len(row["loops"]) for row in owned), "owned_numpy_import_sites": sum(len(row["numpy_imports"]) for row in owned), "resolved_static_call_edges": len(edges)}
-    return {"schema": "bayesfilter.filter_gradient_policy_audit.v2", "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "summary": summary, "modules": rows, "resolved_static_call_edges": edges, "limits": ["Syntax counts are not violation counts or compliance certificates.", "Import/name resolution is static and best-effort; rebinding, method dispatch, closure factories and callbacks need runtime checks.", "Ownership records provenance, not an automatic policy exemption.", "Every tracked Python file is discovered; untracked files and non-Python implementations are not claimed covered.", "A decorator does not prove execution or enclosing compilation; memory workers inspect reachable GraphDefs and export HLO."]}
+    summary["working_tree_python_files"] = len(discovered)
+    summary["untracked_python_files"] = len(set(discovered) - set(tracked))
+    return {"schema": "bayesfilter.filter_gradient_policy_audit.v2", "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "summary": summary, "modules": rows, "resolved_static_call_edges": edges, "limits": ["Syntax counts are not violation counts or compliance certificates.", "Import/name resolution is static and best-effort; rebinding, method dispatch, closure factories and callbacks need runtime checks.", "Ownership records provenance, not an automatic policy exemption.", "Tracked and nonignored untracked Python files are discovered; ignored files and non-Python implementations are not claimed covered.", "A decorator does not prove execution or enclosing compilation; memory workers inspect reachable GraphDefs and export HLO."]}
 
 
 def main():

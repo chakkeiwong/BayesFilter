@@ -2571,7 +2571,7 @@ def find_reasonable_epsilon(
     num_leapfrog_steps: int = 1,
     momentum_probe_count: int = 1,
     target_status_trace_policy: str = "none",
-    jit_compile: bool = False,
+    jit_compile: bool = True,
     hard_veto_nonfinite: bool = False,
     _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
     _g2_seed_key_prefix: str | None = None,
@@ -5947,7 +5947,7 @@ def run_operational_windowed_warmup(
     _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
     _g2_p4_action_tracker: _G2P4BoundaryActionTracker | None = None,
     chain_execution_mode: str = "tf_function",
-    jit_compile: bool = False,
+    jit_compile: bool = True,
     target_status_trace_policy: str = "none",
     algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
     route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION,
@@ -7019,7 +7019,7 @@ def _start_bank_geometry_and_eligibility():
 
     This is the original endpoint-first rule, not a clustering algorithm.
     A single TF loop keeps the quadratic pair checks off the Python/eager
-    boundary. XLA qualification is separate from this non-XLA migration.
+    boundary. XLA specializes this signature to each concrete input shape.
     """
 
     import tensorflow as tf
@@ -7027,7 +7027,7 @@ def _start_bank_geometry_and_eligibility():
     @tf.function(input_signature=[
         tf.TensorSpec((None, None), tf.float64),
         tf.TensorSpec((), tf.float64),
-    ], jit_compile=False)
+    ], jit_compile=True)
     def select(reference, separation):
         row_count = tf.shape(reference)[0]
         std_norm = tf.linalg.norm(tf.math.reduce_std(reference, axis=0))

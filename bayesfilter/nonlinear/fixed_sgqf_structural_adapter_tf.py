@@ -94,20 +94,13 @@ def tf_predator_prey_to_fixed_sgqf_model(
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         if values.shape.rank == 1:
             values = values[tf.newaxis, :]
-        with tf.GradientTape() as tape:
-            tape.watch(values)
-            outputs = transition_fn(values)
-        return tape.batch_jacobian(outputs, values)
+        return model.transition_mean_state_jacobian(theta, values)[1]
 
     def d_transition_fn(points: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         if values.shape.rank == 1:
             values = values[tf.newaxis, :]
-        with tf.GradientTape() as tape:
-            tape.watch(theta)
-            outputs = model.transition_mean(theta, values)
-        jacobian = tape.jacobian(outputs, theta)
-        return tf.transpose(tf.convert_to_tensor(jacobian, dtype=tf.float64), perm=[2, 0, 1])
+        return model.transition_mean_parameter_jacobian(theta, values)[1]
 
     def observation_state_jacobian_fn(points: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(points, dtype=tf.float64)

@@ -10,9 +10,10 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+import math
+import sys
 from typing import Any
 
-import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
@@ -24,6 +25,11 @@ from bayesfilter.inference.mass_matrix import covariance_from_precision
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
     fit_factor_correlation_score_geometry,
+)
+from bayesfilter.ops.host_tensor_io import numeric_tensor
+from bayesfilter.ops.symmetric_matrix_tf import (
+    symmetric_score_design as _symmetric_score_design,
+    unpack_symmetric as _unpack_symmetric,
 )
 
 
@@ -106,11 +112,11 @@ class SequentialMapCovarianceConfig:
         )
         for name in positive_floats:
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value <= 0.0:
+            if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be positive finite")
             object.__setattr__(self, name, value)
         condition = float(self.max_condition_number)
-        if not np.isfinite(condition) or condition <= 1.0:
+        if not math.isfinite(condition) or condition <= 1.0:
             raise ValueError("max_condition_number must be finite and greater than 1")
         object.__setattr__(self, "max_condition_number", condition)
         for name in (
@@ -209,9 +215,9 @@ class SequentialMapCovarianceConfig:
 class SequentialMapCovarianceResult:
     accepted: bool
     status: str
-    map_candidate: np.ndarray | None
-    precision: np.ndarray | None
-    covariance: np.ndarray | None
+    map_candidate: tf.Tensor | None
+    precision: tf.Tensor | None
+    covariance: tf.Tensor | None
     diagnostics: Mapping[str, Any]
     nonclaims: tuple[str, ...] = SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS
 
@@ -221,8 +227,7 @@ class SequentialMapCovarianceResult:
         for name in ("map_candidate", "precision", "covariance"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
         object.__setattr__(self, "nonclaims", tuple(self.nonclaims))
@@ -498,7 +503,7 @@ def estimate_sequential_map_covariance(
     refinement_origin = center if cfg.record_refinement_movement_diagnostics else None
     refinement_movement_initial = (
         {
-            "position_z": np.zeros(dimension, dtype=np.float64),
+            "position_z": tf.zeros([dimension], tf.float64),
             "value": center_value,
             "score_norm": float(tf.linalg.norm(scale_tf * center_score).numpy()),
         }
@@ -1101,8 +1106,8 @@ def _refinement_movement_payload(
 ) -> Mapping[str, Any]:
     """Record exact refinement states without changing the transition logic."""
 
-    def position_z(value: tf.Tensor) -> np.ndarray:
-        return ((value - refinement_origin) / scale).numpy()
+    def position_z(value: tf.Tensor) -> tf.Tensor:
+        return (value - refinement_origin) / scale
 
     def score_norm(value: tf.Tensor) -> float:
         return float(tf.linalg.norm(scale * value).numpy())
@@ -1163,9 +1168,9 @@ def dimension_scaled_search_count(dimension: int) -> int:
     raw = (
         float(size * size)
         if size <= 10
-        else 100.0 + float(size - 10) * np.log(float(size - 10))
+        else 100.0 + float(size - 10) * math.log(float(size - 10))
     )
-    return 2 * int(np.ceil(raw / 2.0))
+    return 2 * math.ceil(raw / 2.0)
 
 
 def _orthogonal_antithetic_cloud(
@@ -1270,9 +1275,9 @@ def _structured_factor_fit_data(
 
     reused_count = int(tf.shape(reused_z)[0].numpy())
     fresh_candidates = candidates_from_rows(
-        np.asarray(fresh_theta.numpy(), dtype=float),
-        np.asarray(fresh_values.numpy(), dtype=float),
-        np.asarray(fresh_scores.numpy(), dtype=float),
+        fresh_theta,
+        fresh_values,
+        fresh_scores,
         start_index=int(evaluations - fresh_sample_count),
         source_role="structured_fit_cloud",
     )
@@ -1409,9 +1414,9 @@ def _fit_score_curvature(
     )
     evaluations += sample_count
     exact_candidates = candidates_from_rows(
-        np.asarray(theta_rows.numpy(), dtype=float),
-        np.asarray(values.numpy(), dtype=float),
-        np.asarray(scores.numpy(), dtype=float),
+        theta_rows,
+        values,
+        scores,
         start_index=int(evaluations - sample_count),
         source_role="score_fit_cloud",
     )
@@ -1445,7 +1450,7 @@ def _fit_score_curvature(
     train_design = tf.reshape(train_design_rows, [-1, coefficient_count])
     train_response = tf.reshape(train_response_rows, [-1, 1])
     singular_values = tf.linalg.svd(train_design, compute_uv=False)
-    tolerance = tf.reduce_max(singular_values) * tf.cast(tf.shape(train_design)[0], tf.float64) * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
+    tolerance = tf.reduce_max(singular_values) * tf.cast(tf.shape(train_design)[0], tf.float64) * sys.float_info.epsilon
     rank = int(tf.reduce_sum(tf.cast(singular_values > tolerance, tf.int32)).numpy())
     if rank < coefficient_count:
         return {
@@ -1536,7 +1541,7 @@ def _score_fit_partition_indices(
     holdout_fraction: float,
     *,
     pair_disjoint: bool,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[tf.Tensor, tf.Tensor]:
     """Partition score rows while optionally keeping antithetic pairs together."""
 
     count = int(sample_count)
@@ -1546,7 +1551,7 @@ def _score_fit_partition_indices(
     if not pair_disjoint:
         holdout_count = max(1, int(round(count * fraction)))
         train_count = count - holdout_count
-        return np.arange(train_count), np.arange(train_count, count)
+        return tf.range(train_count, dtype=tf.int64), tf.range(train_count, count, dtype=tf.int64)
     if count % 2:
         raise ValueError("pair-disjoint score holdout requires an even sample count")
     pair_count = count // 2
@@ -1554,11 +1559,11 @@ def _score_fit_partition_indices(
     if holdout_pair_count >= pair_count:
         raise ValueError("pair-disjoint score holdout requires at least one training pair")
     train_pair_count = pair_count - holdout_pair_count
-    train_positive = np.arange(train_pair_count)
-    holdout_positive = np.arange(train_pair_count, pair_count)
+    train_positive = tf.range(train_pair_count, dtype=tf.int64)
+    holdout_positive = tf.range(train_pair_count, pair_count, dtype=tf.int64)
     return (
-        np.concatenate((train_positive, train_positive + pair_count)),
-        np.concatenate((holdout_positive, holdout_positive + pair_count)),
+        tf.concat((train_positive, train_positive + pair_count), axis=0),
+        tf.concat((holdout_positive, holdout_positive + pair_count), axis=0),
     )
 
 
@@ -1589,34 +1594,6 @@ def _evaluate_cloud(
         values.append(value)
         scores.append(score)
     return tf.stack(values), tf.stack(scores)
-
-
-def _symmetric_score_design(z: tf.Tensor, dimension: int) -> tf.Tensor:
-    columns = []
-    for row in range(dimension):
-        for column in range(row, dimension):
-            contribution = z[:, column, None] * tf.one_hot(
-                row, dimension, dtype=tf.float64
-            )[None, :]
-            if row != column:
-                contribution += z[:, row, None] * tf.one_hot(
-                    column, dimension, dtype=tf.float64
-                )[None, :]
-            columns.append(contribution)
-    return tf.stack(columns, axis=2)
-
-
-def _unpack_symmetric(coefficients: tf.Tensor, dimension: int) -> tf.Tensor:
-    matrix = tf.zeros([dimension, dimension], tf.float64)
-    index = 0
-    for row in range(dimension):
-        for column in range(row, dimension):
-            value = coefficients[index]
-            matrix += tf.scatter_nd([[row, column]], [value], [dimension, dimension])
-            if row != column:
-                matrix += tf.scatter_nd([[column, row]], [value], [dimension, dimension])
-            index += 1
-    return matrix
 
 
 def _solve_trust_region_tf(precision: tf.Tensor, linear: tf.Tensor, radius: float) -> Mapping[str, Any]:
@@ -1660,7 +1637,7 @@ def _proposal_score_gate(
     old = float(old_norm)
     new = float(new_norm)
     factor = float(fractional_factor)
-    finite = bool(np.isfinite(old) and np.isfinite(new))
+    finite = bool(math.isfinite(old) and math.isfinite(new))
     legacy_threshold = factor * old if finite else float("nan")
     legacy_passed = bool(finite and new <= legacy_threshold)
     if not active:
@@ -1684,7 +1661,7 @@ def _proposal_score_gate(
     if policy != "resolvable_decrease":
         raise ValueError(f"unknown proposal score acceptance policy {policy!r}")
     resolution_floor = float(
-        np.sqrt(np.finfo(np.float64).eps) * max(1.0, abs(old))
+        math.sqrt(sys.float_info.epsilon) * max(1.0, abs(old))
     )
     required_max = old - resolution_floor
     return {
@@ -1772,10 +1749,8 @@ def _emit_progress(
 
 
 def _json_ready(value: Any) -> Any:
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if tf.is_tensor(value) or hasattr(value, "__array_interface__"):
+        return numeric_tensor(value).numpy().tolist()
     if isinstance(value, Mapping):
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):

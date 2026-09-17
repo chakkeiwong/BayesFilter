@@ -383,10 +383,10 @@ def test_result_payload_is_array_free_and_has_no_geometry_authority() -> None:
         "num_leapfrog_steps",
     }
     assert forbidden.isdisjoint(payload)
-    assert result.endpoint_position.flags.writeable is False
-    assert result.initial_position.flags.writeable is False
-    assert result.endpoint_score.flags.writeable is False
-    assert result.initial_score.flags.writeable is False
+    assert isinstance(result.endpoint_position, tf.Tensor) and not isinstance(result.endpoint_position, tf.Variable)
+    assert isinstance(result.initial_position, tf.Tensor) and not isinstance(result.initial_position, tf.Variable)
+    assert isinstance(result.endpoint_score, tf.Tensor) and not isinstance(result.endpoint_score, tf.Variable)
+    assert isinstance(result.initial_score, tf.Tensor) and not isinstance(result.initial_score, tf.Variable)
 
 
 def test_staged_config_requires_strictly_larger_total_budget() -> None:
@@ -421,8 +421,8 @@ def test_staged_checkpoint_is_private_immutable_and_validated_once() -> None:
     assert result.checkpoint_validator_calls == 1
     assert result.checkpoint_validated is True
     assert result.continuation_started is True
-    assert result.checkpoint.position.flags.writeable is False
-    assert result.checkpoint.score.flags.writeable is False
+    assert isinstance(result.checkpoint.position, tf.Tensor) and not isinstance(result.checkpoint.position, tf.Variable)
+    assert isinstance(result.checkpoint.score, tf.Tensor) and not isinstance(result.checkpoint.score, tf.Variable)
     checkpoint_payload = result.checkpoint.payload()
     assert "position" not in checkpoint_payload
     assert "score" not in checkpoint_payload

@@ -8,6 +8,7 @@ from typing import Callable, Sequence
 
 import tensorflow as tf
 
+from bayesfilter.highdim.bases import ProductBasis
 from bayesfilter.highdim.models import parameterized_zhao_cui_sir_austria_model
 from bayesfilter.highdim.zhao_cui_austria_sir_centered_density_tf import (
     CenteredThetaFeatures,
@@ -2763,14 +2764,15 @@ def estimate_t1_prefix_scores(
     _states, observations, _all = generate_sealed_lane_b_dataset()
     theta = tf.zeros([PARAMETER_DIM], DTYPE)
     prior_mean = model.base_model.initial_mean
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         mean_variable = tf.Variable(prior_mean[tf.newaxis, :])
         transition_at_mean = latent_model.transition_mean(
             theta, mean_variable, time_index=1
         )
     jacobian = tf.reshape(
-        tape.jacobian(transition_at_mean, mean_variable), [STATE_DIM, STATE_DIM]
+        tape.jacobian(transition_at_mean, mean_variable, experimental_use_pfor=False), [STATE_DIM, STATE_DIM]
     )
+    del tape
     precision = tf.eye(STATE_DIM, dtype=DTYPE) + tf.linalg.matmul(
         jacobian, jacobian, transpose_a=True
     )

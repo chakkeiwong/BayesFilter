@@ -17,6 +17,8 @@ from dataclasses import dataclass
 
 import tensorflow as tf
 
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
+
 
 ROUTE_ID = "zhao_cui_fixed_als_padded_xla_value_jvp_v1"
 ROUTE_CLASSIFICATION = "extension_or_invention"
@@ -240,7 +242,7 @@ def _padded_paired_step(
     )
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="cores", tensor_dtypes={"keep_mask": tf.bool})
 def padded_squared_tt_normalized_marginal_jvp_xla(
     cores: tf.Tensor,
     dot_cores: tf.Tensor,
@@ -614,7 +616,9 @@ def _padded_affine_moments_jvp(
     return values, tangents
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(
+    dtype_like="cores", tensor_dtypes={"first_powers": tf.int32, "second_powers": tf.int32},
+)
 def padded_squared_tt_affine_moments_jvp_xla(
     cores: tf.Tensor,
     dot_cores: tf.Tensor,
@@ -667,7 +671,7 @@ def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
     return chol @ phi
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="cores", tensor_dtypes={"pair_indices": tf.int32})
 def padded_squared_tt_shape_targets_jvp_xla(
     cores: tf.Tensor,
     dot_cores: tf.Tensor,
@@ -892,7 +896,10 @@ def padded_squared_tt_shape_targets_jvp_xla(
     )
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(
+    dtype_like="initial_cores",
+    tensor_dtypes={"schedule": tf.int32, "scale_shift_indices": tf.int32, "keep_mask": tf.bool},
+)
 def padded_fixed_teacher_recursion_marginal_xla(
     basis_values: tf.Tensor,
     active_mask: tf.Tensor,
@@ -1027,7 +1034,13 @@ def padded_fixed_teacher_recursion_marginal_xla(
     return cores, dot_cores, marginal_values.stack(), marginal_tangents.stack(), normalizers.stack(), valid
 
 
-@tf.function(jit_compile=True)
+@fixed_signature_function(
+    dtype_like="initial_cores",
+    tensor_dtypes={
+        "schedule": tf.int32, "scale_shift_indices": tf.int32,
+        "keep_mask": tf.bool, "pair_indices": tf.int32,
+    },
+)
 def padded_fixed_teacher_recursion_shape_xla(
     basis_values: tf.Tensor,
     active_mask: tf.Tensor,
@@ -1313,7 +1326,7 @@ def _condition_from_spd(matrix: tf.Tensor, *, square_root: bool = False) -> tf.T
     return tf.where(finite & positive, value, tf.constant(float("inf"), matrix.dtype))
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="initial_cores", tensor_dtypes={"schedule": tf.int32})
 def padded_fixed_als_value_jvp_xla(
     basis_values: tf.Tensor,
     active_mask: tf.Tensor,

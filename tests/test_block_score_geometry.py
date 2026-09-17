@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import tensorflow as tf
 
 from bayesfilter.inference.block_score_geometry import (
     BLOCK_SCORE_GEOMETRY_NONCLAIMS,
@@ -96,7 +97,7 @@ def test_exact_block_score_geometry_qualifies_and_preserves_orientation() -> Non
         physical["precision"] @ physical["covariance"], np.eye(5), atol=1.0e-10
     )
     np.testing.assert_allclose(
-        physical["factor"] @ physical["factor"].T,
+        physical["factor"] @ tf.transpose(physical["factor"]),
         physical["covariance"],
         atol=1.0e-10,
     )

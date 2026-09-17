@@ -388,28 +388,10 @@ class StochasticVolatilitySSM:
         gamma_score = tf.zeros_like(beta_score, dtype=tf.float64)
         return tf.stack([gamma_score, beta_score], axis=1)
 
-    def simulate(
-        self,
-        theta: tf.Tensor,
-        final_time: int,
-        seed: int,
-    ) -> tuple[tf.Tensor, tf.Tensor]:
-        """Generate ``x_0:x_T`` and ``y_0:y_T`` for a fixed integer seed."""
-
-        if int(final_time) < 0:
-            raise ValueError("final_time must be nonnegative")
-        parameters = self.physical_parameters(theta)
-        gamma = parameters["gamma"]
-        beta = parameters["beta"]
-        generator = tf.random.Generator.from_seed(int(seed))
-        initial_scale = self.sigma / tf.sqrt(1.0 - tf.square(gamma))
-        x_values = [initial_scale * generator.normal([], dtype=tf.float64)]
-        y_values = [beta * tf.exp(0.5 * x_values[0]) * generator.normal([], dtype=tf.float64)]
-        for _time_index in range(1, int(final_time) + 1):
-            next_x = gamma * x_values[-1] + self.sigma * generator.normal([], dtype=tf.float64)
-            x_values.append(next_x)
-            y_values.append(beta * tf.exp(0.5 * next_x) * generator.normal([], dtype=tf.float64))
-        return tf.reshape(tf.stack(x_values), [-1, 1]), tf.reshape(tf.stack(y_values), [-1, 1])
+    def simulate(self, theta: tf.Tensor, final_time: int, seed: int, *, jit_compile=True):
+        """Generate the original seeded SV path in one compiled recurrence."""
+        from bayesfilter.highdim.model_simulation_tf import simulate_model
+        return simulate_model(self, theta, final_time, seed, "sv", jit_compile=jit_compile)
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -787,47 +769,10 @@ class SpatialSIRSSM:
     def infectious_components(self, x_t: tf.Tensor) -> tf.Tensor:
         return _as_row_matrix(x_t, self.state_dim(), "x_t")[:, 1::2]
 
-    def simulate(
-        self,
-        final_time: int,
-        seed: int,
-    ) -> tuple[tf.Tensor, tf.Tensor]:
-        """Generate ``x_0:x_T`` and ``y_0:y_T`` without positivity projection."""
-
-        if int(final_time) < 0:
-            raise ValueError("final_time must be nonnegative")
-        generator = tf.random.Generator.from_seed(int(seed))
-        initial_chol = tf.linalg.cholesky(self.initial_covariance)
-        process_chol = tf.linalg.cholesky(self.process_covariance)
-        observation_chol = tf.linalg.cholesky(self.observation_covariance)
-        state = self.initial_mean + tf.linalg.matvec(
-            initial_chol,
-            generator.normal([self.state_dim()], dtype=tf.float64),
-        )
-        states = [state]
-        observations = [
-            self.infectious_components(state)[0]
-            + tf.linalg.matvec(
-                observation_chol,
-                generator.normal([self.observation_dim()], dtype=tf.float64),
-            )
-        ]
-        for _time_index in range(1, int(final_time) + 1):
-            mean = self.transition_mean(state)[0]
-            state = mean + tf.linalg.matvec(
-                process_chol,
-                generator.normal([self.state_dim()], dtype=tf.float64),
-            )
-            state = self._apply_process_noise_policy(state[tf.newaxis, :])[0]
-            states.append(state)
-            observations.append(
-                self.infectious_components(state)[0]
-                + tf.linalg.matvec(
-                    observation_chol,
-                    generator.normal([self.observation_dim()], dtype=tf.float64),
-                )
-            )
-        return tf.stack(states), tf.stack(observations)
+    def simulate(self, final_time: int, seed: int, *, jit_compile=True):
+        """Generate the original seeded SIR path in one compiled recurrence."""
+        from bayesfilter.highdim.model_simulation_tf import simulate_model
+        return simulate_model(self, tf.zeros([0], tf.float64), final_time, seed, "sir", jit_compile=jit_compile)
 
     def observed_unobserved_rmse(
         self,
@@ -1408,14 +1353,24 @@ def zhao_cui_sir_austria_batched_local_complete_data_log_density_xla(
     parameters = tf.reshape(tf.convert_to_tensor(theta, dtype=tf.float64), [3])
     state_batch = tf.convert_to_tensor(states, dtype=tf.float64)
     observation_batch = tf.convert_to_tensor(observations, dtype=tf.float64)
-    return tf.vectorized_map(
-        lambda item: zhao_cui_sir_austria_local_complete_data_log_density_xla(
-            parameters,
-            item[0],
-            item[1],
-        ),
-        (state_batch, observation_batch),
+    batch_size = tf.shape(state_batch)[0]
+    initial = _xla_isotropic_mvn_log_prob(
+        state_batch[:, 0, :] - _zhao_cui_sir_austria_initial_mean_xla()[None, :],
+        tf.constant(1.0, tf.float64),
     )
+    previous = tf.reshape(state_batch[:, :-1, :], [-1, 18])
+    following = tf.reshape(state_batch[:, 1:, :], [-1, 18])
+    transition = _xla_isotropic_mvn_log_prob(
+        following - _zhao_cui_sir_austria_transition_mean_xla(parameters, previous),
+        tf.constant(1.0, tf.float64),
+    )
+    observation = _xla_isotropic_mvn_log_prob(
+        tf.reshape(observation_batch - state_batch[:, :, 1::2], [-1, 9]),
+        tf.constant(100.0, tf.float64) * tf.exp(tf.constant(2.0, tf.float64) * parameters[2]),
+    )
+    return (initial
+            + tf.reduce_sum(tf.reshape(transition, [batch_size, -1]), axis=1)
+            + tf.reduce_sum(tf.reshape(observation, [batch_size, -1]), axis=1))
 
 
 def _zhao_cui_sir_austria_initial_mean_xla() -> tf.Tensor:
@@ -1722,6 +1677,52 @@ class PredatorPreySSM:
         )
         return state, d_state
 
+    def transition_mean_state_jacobian(
+        self, theta: tf.Tensor, x_prev: tf.Tensor,
+    ) -> tuple[tf.Tensor, tf.Tensor]:
+        """Differentiate the existing fixed RK4 recurrence w.r.t. initial state.
+
+        The RHS Jacobian follows eq:p27-pp1/pp2 of the P27 note. For every
+        stage, dG=G_x dX; the RK4 combination uses the same stage states and
+        weights as `_rk4_step`. This preserves the local RK4 program; it does
+        not assert equivalence to the author's differently coded fourth stage.
+        """
+        parameters = self._parameter_vector(theta, "theta")
+        if tf.executing_eagerly() and not self.validate_parameter_box(parameters):
+            raise ValueError("theta outside P30 predator-prey parameter box")
+        state = self._row_matrix(x_prev, "x_prev")
+        derivative = tf.eye(2, batch_shape=[tf.shape(state)[0]], dtype=self.dtype)
+        step = self.delta / tf.cast(self._rk4_substeps, self.dtype)
+        r, capacity, half, s, u, v = tf.unstack(parameters)
+
+        def rhs(value, tangent):
+            prey, predator = value[:, 0], value[:, 1]
+            denominator = half + prey
+            interaction_prey = predator * half / tf.square(denominator)
+            interaction_predator = prey / denominator
+            jacobian = tf.stack([
+                tf.stack([r * (1.0 - 2.0 * prey / capacity) - s * interaction_prey, -s * interaction_predator], axis=-1),
+                tf.stack([u * interaction_prey, u * interaction_predator - v], axis=-1),
+            ], axis=1)
+            return self._rhs(parameters, value), tf.linalg.matmul(jacobian, tangent)
+
+        def advance(index, value, tangent):
+            k1, d1 = rhs(value, tangent)
+            k2, d2 = rhs(value + 0.5 * step * k1, tangent + 0.5 * step * d1)
+            k3, d3 = rhs(value + 0.5 * step * k2, tangent + 0.5 * step * d2)
+            k4, d4 = rhs(value + step * k3, tangent + step * d3)
+            return (
+                index + 1,
+                value + (step / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4),
+                tangent + (step / 6.0) * (d1 + 2.0 * d2 + 2.0 * d3 + d4),
+            )
+        _, state, derivative = tf.while_loop(
+            lambda index, *_: index < self._rk4_substeps, advance,
+            (tf.constant(0), state, derivative),
+            parallel_iterations=1, maximum_iterations=self._rk4_substeps,
+        )
+        return state, derivative
+
     def initial_log_density_parameter_score(self, theta: tf.Tensor, x0: tf.Tensor) -> tf.Tensor:
         """Return manual theta score for the fixed initial Gaussian density."""
 
@@ -1785,50 +1786,13 @@ class PredatorPreySSM:
             [tf.shape(values)[0], self.parameter_dim()], dtype=self.dtype
         )
 
-    def simulate(
-        self,
-        theta: tf.Tensor,
-        final_time: int,
-        seed: int,
-    ) -> tuple[tf.Tensor, tf.Tensor]:
-        """Generate ``x_0:x_T`` and ``y_0:y_T`` without positivity projection."""
-
-        if int(final_time) < 0:
-            raise ValueError("final_time must be nonnegative")
+    def simulate(self, theta: tf.Tensor, final_time: int, seed: int, *, jit_compile=True):
+        """Generate the original seeded predator-prey path in one compiled recurrence."""
+        from bayesfilter.highdim.model_simulation_tf import simulate_model
         parameters = self._parameter_vector(theta, "theta")
         if not self.validate_parameter_box(parameters):
             raise ValueError("theta outside P30 predator-prey parameter box")
-        generator = tf.random.Generator.from_seed(int(seed))
-        initial_chol = tf.linalg.cholesky(self.initial_covariance)
-        process_chol = tf.linalg.cholesky(self.process_covariance)
-        observation_chol = tf.linalg.cholesky(self.observation_covariance)
-        state = self.initial_mean + tf.linalg.matvec(
-            initial_chol,
-            generator.normal([self.state_dim()], dtype=self.dtype),
-        )
-        states = [state]
-        observations = [
-            state
-            + tf.linalg.matvec(
-                observation_chol,
-                generator.normal([self.observation_dim()], dtype=self.dtype),
-            )
-        ]
-        for _time_index in range(1, int(final_time) + 1):
-            mean = self.transition_mean(parameters, state)[0]
-            state = mean + tf.linalg.matvec(
-                process_chol,
-                generator.normal([self.state_dim()], dtype=self.dtype),
-            )
-            states.append(state)
-            observations.append(
-                state
-                + tf.linalg.matvec(
-                    observation_chol,
-                    generator.normal([self.observation_dim()], dtype=self.dtype),
-                )
-            )
-        return tf.stack(states), tf.stack(observations)
+        return simulate_model(self, parameters, final_time, seed, "predator_prey", jit_compile=jit_compile)
 
     def trajectory_rmse(
         self,

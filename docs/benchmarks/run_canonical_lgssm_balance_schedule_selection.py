@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Select LGSSM terminal balancing from consumed-plan marginals only."""
+"""Historical July LEDH selection source; new canonical execution is disabled."""
 
 from __future__ import annotations
 
@@ -238,6 +238,10 @@ def _write_exclusive(path: Path, payload: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    raise RuntimeError(
+        "Historical pre-August-21 LEDH selection is ineligible for reuse; "
+        "the canonical algorithm rebuild and current scope tuning are required."
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

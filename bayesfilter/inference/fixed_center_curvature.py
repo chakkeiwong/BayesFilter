@@ -14,10 +14,12 @@ clouds; the audit cloud is evaluated only after candidate selection.
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from functools import lru_cache
+from typing import Any
 
-import numpy as np
 import tensorflow as tf
 
 from bayesfilter.inference.factor_correlation_geometry import (
@@ -26,7 +28,12 @@ from bayesfilter.inference.factor_correlation_geometry import (
 )
 from bayesfilter.inference.hmc import PrecomputedMassArtifact
 from bayesfilter.inference.score_curvature_tf import fit_dense_score_precision_tf
-
+from bayesfilter.ops.host_tensor_io import (
+    buffer_byte_regions,
+    buffer_regions_overlap,
+    canonical_numeric_bytes,
+    numeric_tensor,
+)
 
 FIXED_CENTER_CURVATURE_NONCLAIMS = (
     "fixed-center local score-curvature diagnostic only",
@@ -115,10 +122,10 @@ class FixedCenterCurvatureFit:
     factor_count: int | None
     accepted: bool
     status: str
-    raw_precision_z: np.ndarray | None
-    precision_z: np.ndarray | None
-    covariance_z: np.ndarray | None
-    raw_eigenvalues: np.ndarray | None
+    raw_precision_z: tf.Tensor | None
+    precision_z: tf.Tensor | None
+    covariance_z: tf.Tensor | None
+    raw_eigenvalues: tf.Tensor | None
     raw_nonpositive_count: int | None
     projection_relative_frobenius: float | None
     selection_holdout_relative_rmse: float | None
@@ -139,8 +146,7 @@ class FixedCenterCurvatureFit:
         ):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
 
@@ -170,11 +176,11 @@ class FixedCenterCurvatureResult:
 
     accepted: bool
     status: str
-    center: np.ndarray
-    center_score_z: np.ndarray
+    center: tf.Tensor
+    center_score_z: tf.Tensor
     selected_family: str | None
-    selected_precision_z: np.ndarray | None
-    selected_covariance_z: np.ndarray | None
+    selected_precision_z: tf.Tensor | None
+    selected_covariance_z: tf.Tensor | None
     audit_relative_rmse: float | None
     fits: tuple[FixedCenterCurvatureFit, ...]
     diagnostics: Mapping[str, Any]
@@ -182,14 +188,12 @@ class FixedCenterCurvatureResult:
 
     def __post_init__(self) -> None:
         for name in ("center", "center_score_z"):
-            array = np.asarray(getattr(self, name), dtype=float).copy()
-            array.setflags(write=False)
+            array = numeric_tensor(getattr(self, name), tf.float64)
             object.__setattr__(self, name, array)
         for name in ("selected_precision_z", "selected_covariance_z"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "accepted", bool(self.accepted))
         object.__setattr__(self, "status", str(self.status))
@@ -225,16 +229,14 @@ class FixedCenterCurvatureResult:
 
         if not self.accepted or self.status != "eligible_for_exact_hmc_canary":
             raise ValueError("fixed-center curvature is not eligible for HMC handoff")
-        scale_array = np.asarray(scale, dtype=float)
-        if scale_array.shape != self.center.shape or not np.all(
-            np.isfinite(scale_array) & (scale_array > 0.0)
+        scale_array = numeric_tensor(scale, tf.float64)
+        if scale_array.shape != self.center.shape or not bool(
+            tf.reduce_all(tf.math.is_finite(scale_array) & (scale_array > 0.0))
         ):
             raise ValueError("scale must be positive finite with center shape")
         covariance_z = tf.convert_to_tensor(self.selected_covariance_z, tf.float64)
         scale_tf = tf.convert_to_tensor(scale_array, tf.float64)
-        covariance_theta = (
-            covariance_z * scale_tf[:, None] * scale_tf[None, :]
-        ).numpy()
+        covariance_theta = _run_kernel(_scale_covariance, covariance_z, scale_tf)
         lineage = self.diagnostics.get("lineage", {})
         return PrecomputedMassArtifact.from_covariance(
             position=self.center,
@@ -304,13 +306,33 @@ def fit_fixed_center_curvature(
         train_partitions, select_partitions, strict=True
     ):
         if int(train_z.shape[0]) + int(select_z.shape[0]) < 4 * dimension:
-            raise ValueError("each training plus selection replicate must total at least 4N")
+            raise ValueError(
+                "each training plus selection replicate must total at least 4N"
+            )
     named_partition_offsets = [
-        *((f"training[{index}]", offsets) for index, (offsets, _scores) in enumerate(train_partitions)),
-        *((f"selection[{index}]", offsets) for index, (offsets, _scores) in enumerate(select_partitions)),
+        *(
+            (f"training[{index}]", offsets)
+            for index, (offsets, _scores) in enumerate(train_partitions)
+        ),
+        *(
+            (f"selection[{index}]", offsets)
+            for index, (offsets, _scores) in enumerate(select_partitions)
+        ),
         ("audit", audit_z),
     ]
-    _require_independent_partitions(named_partition_offsets)
+    raw_regions = []
+    for name, value in (
+        ("training", training_offsets_z),
+        ("selection", selection_offsets_z),
+        ("audit", audit_offsets_z),
+    ):
+        shape = getattr(value, "shape", ())
+        split = len(shape) == 3
+        for index, regions in enumerate(
+            buffer_byte_regions(value, split_first_axis=split)
+        ):
+            raw_regions.append((f"{name}[{index}]" if split else name, regions))
+    _require_independent_partitions(named_partition_offsets, raw_regions=raw_regions)
     if int(audit_z.shape[0]) < 2 * dimension:
         raise ValueError("audit rows must total at least 2N")
     if factor_max not in (1, 2):
@@ -359,8 +381,8 @@ def fit_fixed_center_curvature(
 
     one_factor_passed_all_replicates = all(fit.accepted for fit in one_factor_fits)
     one_factor_stability = _family_stability(one_factor_fits, thresholds)
-    one_factor_adequate = (
-        one_factor_passed_all_replicates and bool(one_factor_stability["passed"])
+    one_factor_adequate = one_factor_passed_all_replicates and bool(
+        one_factor_stability["passed"]
     )
     two_factor_attempted = factor_max == 2 and (
         not one_factor_adequate or structured_target_family == "factor_2"
@@ -417,7 +439,7 @@ def fit_fixed_center_curvature(
             extra={"selection": selection},
         )
 
-    selected_precision = np.asarray(selected["precision_z"], dtype=float)
+    selected_precision = numeric_tensor(selected["precision_z"], tf.float64)
     audit_error = _score_relative_rmse(
         selected_precision, center_score, audit_z, audit_scores
     )
@@ -443,9 +465,7 @@ def fit_fixed_center_curvature(
         center_score_z=center_score,
         selected_family=str(selected["family"]),
         selected_precision_z=selected_precision,
-        selected_covariance_z=tf.linalg.inv(
-            tf.convert_to_tensor(selected_precision, tf.float64)
-        ).numpy(),
+        selected_covariance_z=_run_kernel(tf.linalg.inv, selected_precision),
         audit_relative_rmse=audit_error,
         fits=tuple(fits),
         diagnostics={
@@ -484,79 +504,41 @@ def compare_precision_geometry(
     second = _symmetric_matrix(right, "right")
     if first.shape != second.shape:
         raise ValueError("precision matrices must have matching shapes")
-    first_tf = tf.convert_to_tensor(first, tf.float64)
-    second_tf = tf.convert_to_tensor(second, tf.float64)
-    first_values_tf, first_vectors_tf = tf.linalg.eigh(first_tf)
-    second_values_tf, second_vectors_tf = tf.linalg.eigh(second_tf)
-    first_values = first_values_tf.numpy()
-    second_values = second_values_tf.numpy()
-    first_vectors = first_vectors_tf.numpy()
-    second_vectors = second_vectors_tf.numpy()
-    first_positive = first_values > float(positive_subspace_tolerance)
-    second_positive = second_values > float(positive_subspace_tolerance)
-    positive_rank = min(int(first_positive.sum()), int(second_positive.sum()))
-    if subspace_rank is not None:
-        requested_rank = int(subspace_rank)
-        if requested_rank <= 0 or requested_rank > first.shape[0]:
-            raise ValueError("subspace_rank must lie in [1, dimension]")
-        positive_rank = min(positive_rank, requested_rank)
-    principal_angles: list[float] = []
-    if positive_rank:
-        first_space = first_vectors[:, -positive_rank:]
-        second_space = second_vectors[:, -positive_rank:]
-        singular = tf.linalg.svd(
-            tf.convert_to_tensor(first_space.T @ second_space, tf.float64),
-            compute_uv=False,
-        )
-        singular = tf.where(
-            tf.abs(1.0 - singular) <= tf.constant(1.0e-12, tf.float64),
-            tf.ones_like(singular),
-            singular,
-        )
-        principal_angles = (
-            tf.acos(tf.clip_by_value(singular, -1.0, 1.0))
-            * tf.constant(180.0 / np.pi, tf.float64)
-        ).numpy().tolist()
-    generalized = None
-    if np.all(first_values > 0.0) and np.all(second_values > 0.0):
-        chol = tf.linalg.cholesky(first_tf)
-        left_solved = tf.linalg.triangular_solve(chol, second_tf)
-        transformed = tf.linalg.triangular_solve(
-            chol, tf.transpose(left_solved), adjoint=False
-        )
-        transformed = tf.transpose(transformed)
-        generalized_values = tf.linalg.eigvalsh(
-            0.5 * (transformed + tf.transpose(transformed))
-        ).numpy()
-        generalized = {
-            "minimum": float(generalized_values.min()),
-            "maximum": float(generalized_values.max()),
-            "spread": float(generalized_values.max() / generalized_values.min()),
-        }
-    scale = max(
-        abs(float(tf.linalg.trace(first_tf).numpy())),
-        abs(float(tf.linalg.trace(second_tf).numpy())),
-        1.0e-15,
+    dimension = int(first.shape[0])
+    requested_rank = dimension if subspace_rank is None else int(subspace_rank)
+    if requested_rank <= 0 or requested_rank > dimension:
+        raise ValueError("subspace_rank must lie in [1, dimension]")
+    values = _run_kernel(
+        _precision_geometry_kernel,
+        first,
+        second,
+        tf.constant(float(positive_subspace_tolerance), tf.float64),
+        tf.constant(requested_rank, tf.int32),
     )
-    difference = first_tf - second_tf
+    first_values, second_values, rank, angles, generalized, frobenius, operator = values
+    positive_rank = int(rank)
+    principal_angles = angles.numpy().tolist()[:positive_rank]
+    spd = bool(tf.reduce_all(first_values > 0.0) & tf.reduce_all(second_values > 0.0))
     return _json_ready(
         {
             "left_raw_eigenvalues": first_values,
             "right_raw_eigenvalues": second_values,
-            "left_nonpositive_count": int(np.sum(first_values <= 0.0)),
-            "right_nonpositive_count": int(np.sum(second_values <= 0.0)),
-            "trace_normalized_frobenius": float(
-                (tf.linalg.norm(difference) / scale).numpy()
-            ),
-            "trace_normalized_operator": float(
-                (tf.reduce_max(tf.linalg.svd(difference, compute_uv=False)) / scale).numpy()
-            ),
+            "left_nonpositive_count": int(tf.math.count_nonzero(first_values <= 0.0)),
+            "right_nonpositive_count": int(tf.math.count_nonzero(second_values <= 0.0)),
+            "trace_normalized_frobenius": float(frobenius),
+            "trace_normalized_operator": float(operator),
             "positive_subspace_rank": positive_rank,
             "principal_angles_degrees": principal_angles,
-            "maximum_principal_angle_degrees": (
-                None if not principal_angles else float(max(principal_angles))
-            ),
-            "generalized_eigenvalues": generalized,
+            "maximum_principal_angle_degrees": None
+            if not principal_angles
+            else max(principal_angles),
+            "generalized_eigenvalues": None
+            if not spd
+            else {
+                "minimum": float(generalized[0]),
+                "maximum": float(generalized[1]),
+                "spread": float(generalized[2]),
+            },
         }
     )
 
@@ -566,7 +548,7 @@ def consensus_shrunk_precision(
     *,
     target: Any,
     weight: float,
-) -> np.ndarray:
+) -> tf.Tensor:
     """Return ``(1-weight) * mean(precisions) + weight * target``."""
 
     if not precisions:
@@ -578,16 +560,19 @@ def consensus_shrunk_precision(
     if target_matrix.shape != matrices[0].shape:
         raise ValueError("target shape must match precisions")
     shrinkage = float(weight)
-    if not np.isfinite(shrinkage) or not 0.0 <= shrinkage <= 1.0:
+    if not math.isfinite(shrinkage) or not 0.0 <= shrinkage <= 1.0:
         raise ValueError("weight must be finite and in [0, 1]")
-    stack = tf.convert_to_tensor(np.stack(matrices, axis=0), tf.float64)
+    stack = tf.stack(matrices, axis=0)
     target_tf = tf.convert_to_tensor(target_matrix, tf.float64)
-    candidate = consensus_shrunk_precision_tf(
-        stack, target_tf, tf.convert_to_tensor(shrinkage, tf.float64)
+    candidate = _run_kernel(
+        consensus_shrunk_precision_tf,
+        stack,
+        target_tf,
+        tf.convert_to_tensor(shrinkage, tf.float64),
     )
     if float(tf.reduce_min(tf.linalg.eigvalsh(candidate)).numpy()) <= 0.0:
         raise ValueError("consensus shrinkage requires SPD inputs and target")
-    return candidate.numpy()
+    return candidate
 
 
 def consensus_shrunk_precision_tf(
@@ -605,12 +590,114 @@ def consensus_shrunk_precision_tf(
     return 0.5 * (candidate + tf.transpose(candidate))
 
 
+@lru_cache(maxsize=128)
+def _compiled_kernel(kernel, signature):
+    return tf.function(
+        kernel, input_signature=signature, jit_compile=True, autograph=False
+    )
+
+
+def _run_kernel(kernel, *tensors):
+    signature = tuple(tf.TensorSpec(value.shape, value.dtype) for value in tensors)
+    return _compiled_kernel(kernel, signature)(*tensors)
+
+
+def _scale_covariance(covariance, scale):
+    return covariance * scale[:, None] * scale[None, :]
+
+
+def _precision_geometry_kernel(first, second, tolerance, requested_rank):
+    first_values, first_vectors = tf.linalg.eigh(first)
+    second_values, second_vectors = tf.linalg.eigh(second)
+    rank = tf.minimum(
+        requested_rank,
+        tf.minimum(
+            tf.math.count_nonzero(first_values > tolerance, dtype=tf.int32),
+            tf.math.count_nonzero(second_values > tolerance, dtype=tf.int32),
+        ),
+    )
+    dimension = first.shape[0]
+    # Keep the subspace matrix fixed-size for XLA. Its first `rank` singular
+    # values are exactly those of the two selected positive eigenspaces.
+    selected = tf.cast(tf.range(dimension) >= dimension - rank, first.dtype)
+    overlap = tf.matmul(
+        first_vectors * selected, second_vectors * selected, transpose_a=True
+    )
+    singular = tf.linalg.svd(overlap, compute_uv=False)
+    singular = tf.where(
+        tf.abs(1.0 - singular) <= 1.0e-12, tf.ones_like(singular), singular
+    )
+    angles = tf.acos(tf.clip_by_value(singular, -1.0, 1.0)) * tf.constant(
+        180.0 / math.pi, tf.float64
+    )
+    spd = tf.reduce_all(first_values > 0.0) & tf.reduce_all(second_values > 0.0)
+
+    def generalized():
+        chol = tf.linalg.cholesky(first)
+        solved = tf.linalg.triangular_solve(chol, second)
+        transformed = tf.transpose(
+            tf.linalg.triangular_solve(chol, tf.transpose(solved))
+        )
+        values = tf.linalg.eigvalsh(0.5 * (transformed + tf.transpose(transformed)))
+        minimum, maximum = tf.reduce_min(values), tf.reduce_max(values)
+        return tf.stack((minimum, maximum, maximum / minimum))
+
+    generalized_values = tf.cond(spd, generalized, lambda: tf.zeros([3], first.dtype))
+    scale = tf.maximum(
+        tf.maximum(tf.abs(tf.linalg.trace(first)), tf.abs(tf.linalg.trace(second))),
+        tf.constant(1.0e-15, tf.float64),
+    )
+    difference = first - second
+    return (
+        first_values,
+        second_values,
+        rank,
+        angles,
+        generalized_values,
+        tf.linalg.norm(difference) / scale,
+        tf.reduce_max(tf.linalg.svd(difference, compute_uv=False)) / scale,
+    )
+
+
+def _score_error_kernel(precision, center_score, offsets, scores):
+    response = center_score[None, :] - scores
+    prediction = tf.matmul(offsets, precision, transpose_b=True)
+    error = tf.sqrt(tf.reduce_mean(tf.square(prediction - response)))
+    scale = tf.maximum(
+        tf.sqrt(tf.reduce_mean(tf.square(response))), tf.constant(1.0e-15, tf.float64)
+    )
+    return error / scale
+
+
+def _dense_fit_kernel(
+    center, train, scores, selection, selection_scores, eigenvalue_floor, condition_cap
+):
+    raw = fit_dense_score_precision_tf(center, train, scores)["raw_precision"]
+    values, vectors = tf.linalg.eigh(raw)
+    floor = tf.maximum(eigenvalue_floor, tf.reduce_max(tf.abs(values)) / condition_cap)
+    projected = tf.matmul(
+        vectors * tf.maximum(values, floor)[None, :], vectors, transpose_b=True
+    )
+    projection = tf.linalg.norm(projected - raw) / tf.maximum(
+        tf.linalg.norm(raw), tf.constant(1.0e-15, tf.float64)
+    )
+    return (
+        raw,
+        projected,
+        tf.linalg.inv(projected),
+        values,
+        projection,
+        _score_error_kernel(projected, center, selection, selection_scores),
+        tf.math.count_nonzero(values <= 0.0),
+    )
+
+
 def _fit_dense_precision(
-    center_score: np.ndarray,
-    train_z: np.ndarray,
-    train_scores: np.ndarray,
-    select_z: np.ndarray,
-    select_scores: np.ndarray,
+    center_score: tf.Tensor,
+    train_z: tf.Tensor,
+    train_scores: tf.Tensor,
+    select_z: tf.Tensor,
+    select_scores: tf.Tensor,
     *,
     replicate_index: int,
     eigenvalue_floor: float,
@@ -619,33 +706,23 @@ def _fit_dense_precision(
     projection_cap: float,
     require_raw_spd: bool,
 ) -> FixedCenterCurvatureFit:
-    shared_fit = fit_dense_score_precision_tf(
-        tf.convert_to_tensor(center_score, tf.float64),
-        tf.convert_to_tensor(train_z, tf.float64),
-        tf.convert_to_tensor(train_scores, tf.float64),
+    raw, projected, covariance, raw_values, projection_tf, holdout_tf, nonpositive = (
+        _run_kernel(
+            _dense_fit_kernel,
+            numeric_tensor(center_score, tf.float64),
+            numeric_tensor(train_z, tf.float64),
+            numeric_tensor(train_scores, tf.float64),
+            numeric_tensor(select_z, tf.float64),
+            numeric_tensor(select_scores, tf.float64),
+            tf.constant(float(eigenvalue_floor), tf.float64),
+            tf.constant(float(max_condition_number), tf.float64),
+        )
     )
-    raw_tf = shared_fit["raw_precision"]
-    raw_values_tf, vectors_tf = tf.linalg.eigh(raw_tf)
-    raw = raw_tf.numpy()
-    raw_values = raw_values_tf.numpy()
-    floor = max(float(eigenvalue_floor), float(np.max(np.abs(raw_values))) / max_condition_number)
-    projected_values = np.maximum(raw_values, floor)
-    projected_tf = tf.matmul(
-        vectors_tf * tf.convert_to_tensor(projected_values[None, :], tf.float64),
-        vectors_tf,
-        transpose_b=True,
+    projection, holdout, raw_nonpositive = (
+        float(projection_tf),
+        float(holdout_tf),
+        int(nonpositive),
     )
-    projected = projected_tf.numpy()
-    projection = float(
-        (
-            tf.linalg.norm(projected_tf - raw_tf)
-            / tf.maximum(tf.linalg.norm(raw_tf), tf.constant(1.0e-15, tf.float64))
-        ).numpy()
-    )
-    holdout = _score_relative_rmse(
-        projected, center_score, select_z, select_scores
-    )
-    raw_nonpositive = int(np.sum(raw_values <= 0.0))
     accepted = (
         (not require_raw_spd or raw_nonpositive == 0)
         and projection <= projection_cap
@@ -668,7 +745,7 @@ def _fit_dense_precision(
         status=status,
         raw_precision_z=raw,
         precision_z=projected,
-        covariance_z=tf.linalg.inv(projected_tf).numpy(),
+        covariance_z=covariance,
         raw_eigenvalues=raw_values,
         raw_nonpositive_count=raw_nonpositive,
         projection_relative_frobenius=projection,
@@ -685,11 +762,11 @@ def _fit_dense_precision(
 
 
 def _fit_structured_precision(
-    center_score: np.ndarray,
-    train_z: np.ndarray,
-    train_scores: np.ndarray,
-    select_z: np.ndarray,
-    select_scores: np.ndarray,
+    center_score: tf.Tensor,
+    train_z: tf.Tensor,
+    train_scores: tf.Tensor,
+    select_z: tf.Tensor,
+    select_scores: tf.Tensor,
     *,
     replicate_index: int,
     factor_count: int,
@@ -708,8 +785,12 @@ def _fit_structured_precision(
             holdout_score_relative_rmse=holdout_cap,
         ),
     )
-    precision = None if result.precision_z is None else np.asarray(result.precision_z)
-    values = None if precision is None else np.linalg.eigvalsh(precision)
+    precision = (
+        None
+        if result.precision_z is None
+        else numeric_tensor(result.precision_z, tf.float64)
+    )
+    values = None if precision is None else _run_kernel(tf.linalg.eigvalsh, precision)
     return FixedCenterCurvatureFit(
         family=f"factor_{factor_count}",
         replicate_index=replicate_index,
@@ -720,7 +801,9 @@ def _fit_structured_precision(
         precision_z=precision,
         covariance_z=result.covariance_z,
         raw_eigenvalues=values,
-        raw_nonpositive_count=(None if values is None else int(np.sum(values <= 0.0))),
+        raw_nonpositive_count=(
+            None if values is None else int(tf.math.count_nonzero(values <= 0.0))
+        ),
         projection_relative_frobenius=0.0 if precision is not None else None,
         selection_holdout_relative_rmse=result.diagnostics.get(
             "holdout_score_relative_rmse"
@@ -732,9 +815,11 @@ def _fit_structured_precision(
             "anchor_indices": result.anchor_indices,
             "geometry_admissible": bool(
                 precision is not None
-                and result.status
-                in {"usable", "holdout_score_fit_rejected"}
-                and (factor_count == 1 or result.diagnostics.get("second_factor_identified"))
+                and result.status in {"usable", "holdout_score_fit_rejected"}
+                and (
+                    factor_count == 1
+                    or result.diagnostics.get("second_factor_identified")
+                )
             ),
             "selection_holdout_passed": bool(
                 result.diagnostics.get("holdout_score_relative_rmse", float("inf"))
@@ -746,8 +831,8 @@ def _fit_structured_precision(
 
 def _select_candidate(
     fits: Sequence[FixedCenterCurvatureFit],
-    center_score: np.ndarray,
-    selection_partitions: Sequence[tuple[np.ndarray, np.ndarray]],
+    center_score: tf.Tensor,
+    selection_partitions: Sequence[tuple[tf.Tensor, tf.Tensor]],
     *,
     thresholds: FixedCenterCurvatureThresholds,
     shrinkage_weights: tuple[float, ...],
@@ -770,7 +855,9 @@ def _select_candidate(
             stable_families.add(family)
     selection["stability"] = stability
 
-    for family in (() if structured_target_family is not None else ("factor_1", "factor_2")):
+    for family in (
+        () if structured_target_family is not None else ("factor_1", "factor_2")
+    ):
         family_fits = [
             fit
             for fit in fits
@@ -778,12 +865,9 @@ def _select_candidate(
         ]
         if family in stable_families and len(family_fits) >= 2:
             consensus = tf.reduce_mean(
-                tf.convert_to_tensor(
-                    np.stack([fit.precision_z for fit in family_fits], axis=0),
-                    tf.float64,
-                ),
+                tf.stack([fit.precision_z for fit in family_fits], axis=0),
                 axis=0,
-            ).numpy()
+            )
             selection["candidates"].append({"family": family, "selected": True})
             return {"family": family, "precision_z": consensus}, selection
 
@@ -796,15 +880,10 @@ def _select_candidate(
     ]
     if not admissible:
         return None, selection
-    dense_precisions = [
-        fit.precision_z for fit in admissible if fit.family == "dense"
-    ]
+    dense_precisions = [fit.precision_z for fit in admissible if fit.family == "dense"]
     if not dense_precisions:
         return None, selection
-    consensus = tf.reduce_mean(
-        tf.convert_to_tensor(np.stack(dense_precisions), tf.float64), axis=0
-    ).numpy()
-    structured = None
+    consensus = tf.reduce_mean(tf.stack(dense_precisions), axis=0)
     if structured_target_family is not None:
         candidates_for_target = [
             fit
@@ -814,24 +893,19 @@ def _select_candidate(
         if structured_target_family not in stable_families or not candidates_for_target:
             return None, selection
         target = tf.reduce_mean(
-            tf.convert_to_tensor(
-                np.stack([fit.precision_z for fit in candidates_for_target]),
-                tf.float64,
-            ),
+            tf.stack([fit.precision_z for fit in candidates_for_target]),
             axis=0,
-        ).numpy()
+        )
         target_family = structured_target_family
     else:
-        target = np.diag(np.diag(consensus))
+        target = tf.linalg.diag(tf.linalg.diag_part(consensus))
         target_family = "diagonal_consensus"
     candidates = []
     for weight in shrinkage_weights:
         candidate = consensus_shrunk_precision(
             dense_precisions, target=target, weight=weight
         )
-        error = _mean_selection_error(
-            candidate, center_score, selection_partitions
-        )
+        error = _mean_selection_error(candidate, center_score, selection_partitions)
         candidates.append((error, weight, candidate))
         selection["candidates"].append(
             {
@@ -845,7 +919,8 @@ def _select_candidate(
     if error > thresholds.selection_holdout_relative_rmse_cap:
         return None, selection
     selected_index = min(
-        range(len(candidates)), key=lambda index: (candidates[index][0], candidates[index][1])
+        range(len(candidates)),
+        key=lambda index: (candidates[index][0], candidates[index][1]),
     )
     selection["candidates"][-len(candidates) + selected_index]["selected"] = True
     selection["selected_weight"] = weight
@@ -860,29 +935,26 @@ def _select_candidate(
 
 
 def _score_relative_rmse(
-    precision: np.ndarray,
-    center_score: np.ndarray,
-    offsets: np.ndarray,
-    scores: np.ndarray,
+    precision: tf.Tensor,
+    center_score: tf.Tensor,
+    offsets: tf.Tensor,
+    scores: tf.Tensor,
 ) -> float:
-    response = tf.convert_to_tensor(center_score[None, :] - scores, tf.float64)
-    prediction = tf.matmul(
-        tf.convert_to_tensor(offsets, tf.float64),
-        tf.convert_to_tensor(precision, tf.float64),
-        transpose_b=True,
+    return float(
+        _run_kernel(
+            _score_error_kernel,
+            *(
+                numeric_tensor(value, tf.float64)
+                for value in (precision, center_score, offsets, scores)
+            ),
+        )
     )
-    error = tf.sqrt(tf.reduce_mean(tf.square(prediction - response)))
-    scale = tf.maximum(
-        tf.sqrt(tf.reduce_mean(tf.square(response))),
-        tf.constant(1.0e-15, tf.float64),
-    )
-    return float((error / scale).numpy())
 
 
 def _mean_selection_error(
-    precision: np.ndarray,
-    center_score: np.ndarray,
-    partitions: Sequence[tuple[np.ndarray, np.ndarray]],
+    precision: tf.Tensor,
+    center_score: tf.Tensor,
+    partitions: Sequence[tuple[tf.Tensor, tf.Tensor]],
 ) -> float:
     errors = [
         _score_relative_rmse(precision, center_score, offsets, scores)
@@ -970,8 +1042,8 @@ def _family_stability(
 
 
 def _blocked_result(
-    center: np.ndarray,
-    center_score: np.ndarray,
+    center: tf.Tensor,
+    center_score: tf.Tensor,
     fits: Sequence[FixedCenterCurvatureFit],
     status: str,
     *,
@@ -999,17 +1071,19 @@ def _blocked_result(
 
 def _cloud_pair(
     offsets: Any, scores: Any, dimension: int, name: str
-) -> tuple[np.ndarray, np.ndarray]:
-    offset_array = np.asarray(offsets, dtype=float)
-    score_array = np.asarray(scores, dtype=float)
+) -> tuple[tf.Tensor, tf.Tensor]:
+    offset_array = numeric_tensor(offsets, tf.float64)
+    score_array = numeric_tensor(scores, tf.float64)
     if (
-        offset_array.ndim != 2
+        offset_array.shape.rank != 2
         or offset_array.shape[1] != dimension
         or score_array.shape != offset_array.shape
         or offset_array.shape[0] == 0
     ):
         raise ValueError(f"{name} offsets/scores must have matching [rows, N] shape")
-    if not np.all(np.isfinite(offset_array)) or not np.all(np.isfinite(score_array)):
+    if not bool(tf.reduce_all(tf.math.is_finite(offset_array))) or not bool(
+        tf.reduce_all(tf.math.is_finite(score_array))
+    ):
         raise ValueError(f"{name} offsets/scores must be finite")
     return offset_array, score_array
 
@@ -1019,13 +1093,13 @@ def _cloud_partitions(
     scores: Any,
     dimension: int,
     name: str,
-) -> tuple[tuple[np.ndarray, np.ndarray], ...]:
-    offset_array = np.asarray(offsets, dtype=float)
-    score_array = np.asarray(scores, dtype=float)
-    if offset_array.ndim == 2:
+) -> tuple[tuple[tf.Tensor, tf.Tensor], ...]:
+    offset_array = numeric_tensor(offsets, tf.float64)
+    score_array = numeric_tensor(scores, tf.float64)
+    if offset_array.shape.rank == 2:
         return (_cloud_pair(offset_array, score_array, dimension, name),)
     if (
-        offset_array.ndim != 3
+        offset_array.shape.rank != 3
         or offset_array.shape[2] != dimension
         or score_array.shape != offset_array.shape
         or offset_array.shape[0] == 0
@@ -1033,7 +1107,9 @@ def _cloud_partitions(
         raise ValueError(
             f"{name} offsets/scores must have matching [replicates, rows, N] shape"
         )
-    if not np.all(np.isfinite(offset_array)) or not np.all(np.isfinite(score_array)):
+    if not bool(tf.reduce_all(tf.math.is_finite(offset_array))) or not bool(
+        tf.reduce_all(tf.math.is_finite(score_array))
+    ):
         raise ValueError(f"{name} offsets/scores must be finite")
     return tuple(
         (offset_array[index], score_array[index])
@@ -1042,19 +1118,37 @@ def _cloud_partitions(
 
 
 def _require_independent_partitions(
-    named_arrays: Sequence[tuple[str, np.ndarray]],
+    named_arrays: Sequence[tuple[str, tf.Tensor]],
+    *,
+    raw_regions=None,
 ) -> None:
-    row_keys = []
-    for name, array in named_arrays:
-        normalized = np.ascontiguousarray(array, dtype=np.float64).copy()
-        normalized[normalized == 0.0] = 0.0
-        row_keys.append((name, {row.tobytes() for row in normalized}))
-    for left_index, (left_name, left) in enumerate(named_arrays):
-        for right_name, right in named_arrays[left_index + 1 :]:
-            if np.shares_memory(left, right):
+    if raw_regions is None:
+        raw_regions = [
+            (name, regions)
+            for name, array in named_arrays
+            for regions in buffer_byte_regions(array)
+        ]
+    for left_index, (left_name, left) in enumerate(raw_regions):
+        for right_name, right in raw_regions[left_index + 1 :]:
+            if buffer_regions_overlap(left, right):
                 raise ValueError(
                     f"partition offsets must be disjoint arrays: {left_name} and {right_name} share memory"
                 )
+    row_keys = []
+    for name, array in named_arrays:
+        normalized = numeric_tensor(array, tf.float64)
+        normalized = tf.where(normalized == 0.0, tf.zeros_like(normalized), normalized)
+        _, data = canonical_numeric_bytes(normalized)
+        row_bytes = int(normalized.shape[1]) * 8
+        row_keys.append(
+            (
+                name,
+                {
+                    data[start : start + row_bytes]
+                    for start in range(0, len(data), row_bytes)
+                },
+            )
+        )
     for left_index, (left_name, left_keys) in enumerate(row_keys):
         for right_name, right_keys in row_keys[left_index + 1 :]:
             if left_keys.intersection(right_keys):
@@ -1063,48 +1157,57 @@ def _require_independent_partitions(
                 )
 
 
-def _vector(value: Any, name: str) -> np.ndarray:
-    array = np.asarray(value, dtype=float)
-    if array.ndim != 1 or array.size == 0 or not np.all(np.isfinite(array)):
+def _vector(value: Any, name: str) -> tf.Tensor:
+    array = numeric_tensor(value, tf.float64)
+    if (
+        array.shape.rank != 1
+        or array.shape[0] == 0
+        or not bool(tf.reduce_all(tf.math.is_finite(array)))
+    ):
         raise ValueError(f"{name} must be a nonempty finite vector")
     return array
 
 
-def _symmetric_matrix(value: Any, name: str) -> np.ndarray:
-    matrix = np.asarray(value, dtype=float)
+def _symmetric_matrix(value: Any, name: str) -> tf.Tensor:
+    matrix = numeric_tensor(value, tf.float64)
     if (
-        matrix.ndim != 2
+        matrix.shape.rank != 2
         or matrix.shape[0] != matrix.shape[1]
-        or not np.all(np.isfinite(matrix))
-        or not np.allclose(matrix, matrix.T, rtol=1.0e-10, atol=1.0e-12)
+        or not bool(tf.reduce_all(tf.math.is_finite(matrix)))
+        or not bool(
+            tf.reduce_all(
+                tf.abs(matrix - tf.transpose(matrix))
+                <= 1.0e-12 + 1.0e-10 * tf.abs(tf.transpose(matrix))
+            )
+        )
     ):
         raise ValueError(f"{name} must be a finite symmetric square matrix")
-    return 0.5 * (matrix + matrix.T)
+    return 0.5 * (matrix + tf.transpose(matrix))
 
 
 def _shrinkage_weights(values: Sequence[float]) -> tuple[float, ...]:
     weights = tuple(float(value) for value in values)
     if (
         not weights
-        or any(not np.isfinite(value) or not 0.0 <= value <= 1.0 for value in weights)
+        or any(not math.isfinite(value) or not 0.0 <= value <= 1.0 for value in weights)
         or 0.0 not in weights
         or 1.0 not in weights
     ):
-        raise ValueError("shrinkage_weights must be finite in [0,1] and include 0 and 1")
+        raise ValueError(
+            "shrinkage_weights must be finite in [0,1] and include 0 and 1"
+        )
     return tuple(sorted(set(weights)))
 
 
 def _positive_finite(value: Any, name: str) -> None:
     number = float(value)
-    if not np.isfinite(number) or number <= 0.0:
+    if not math.isfinite(number) or number <= 0.0:
         raise ValueError(f"{name} must be positive finite")
 
 
 def _json_ready(value: Any) -> Any:
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if tf.is_tensor(value) or hasattr(value, "__array_interface__"):
+        return numeric_tensor(value).numpy().tolist()
     if isinstance(value, Mapping):
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):

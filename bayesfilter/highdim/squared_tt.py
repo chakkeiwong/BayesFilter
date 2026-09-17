@@ -16,7 +16,6 @@ from bayesfilter.highdim.diagnostics import (
     freeze_mapping,
 )
 from bayesfilter.highdim.fixed_branch import BranchIdentity, BranchManifest
-from bayesfilter.highdim.bases import ProductBasis
 from bayesfilter.highdim.tt import FunctionalTT, TTContractedRepresentation
 
 
@@ -60,9 +59,12 @@ class TensorProductReferenceDensity:
         if measure is MassMeasure.REFERENCE_MEASURE:
             base = tf.constant(1.0, dtype=tf.float64)
         elif measure is MassMeasure.REFERENCE_LEBESGUE:
-            base = tf.constant(1.0, dtype=tf.float64)
-            for basis in self.product_basis.bases:
-                base = base * basis.domain.length
+            from bayesfilter.highdim.squared_tt_density_native_tf import (
+                reference_volume,
+            )
+            bounds = tuple((basis.domain.left, basis.domain.right) for basis in self.product_basis.bases)
+            kernel = reference_volume.python_function if tf.inside_function() else reference_volume
+            base = kernel(tf.reshape(tf.stack(bounds), [-1, 2]))
         else:
             raise TypeError("measure must be a MassMeasure")
         return base * (1.0 + self.floor)
@@ -154,40 +156,38 @@ class SquaredTTDensity:
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
             raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
-        h_value = self.sqrt_tt.evaluate(values)
-        q0 = tf.exp(self.defensive_density.log_density(values))
-        result = tf.square(h_value) + self.tau * q0
+        result = self._evaluate("unnormalized", points=values)
         if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
             raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
         return result
 
-    def sqrt_square_normalizer(self) -> tf.Tensor:
-        vector = tf.ones([1], dtype=tf.float64)
-        active_measure = self.measure_convention.mass_measure
-        for axis, core in enumerate(self.sqrt_tt.cores):
-            mass = self.sqrt_tt.product_basis.bases[axis].mass_matrix(active_measure)
-            paired = tf.einsum("alb,A mB,lm->aAbB", core.values, core.values, mass)
-            matrix = tf.reshape(
-                paired,
-                [core.left_rank * core.left_rank, core.right_rank * core.right_rank],
-            )
-            vector = tf.einsum("a,ab->b", vector, matrix)
-        return tf.reshape(vector, [])
+    def _evaluate(self, operation, **kwargs):
+        from bayesfilter.highdim.squared_tt_density_native_tf import evaluate_density
+        return evaluate_density(self, operation, **kwargs)
 
-    def normalizer(self) -> tf.Tensor:
-        z_h = self.sqrt_square_normalizer()
-        z_0 = self.defensive_density.normalizer(self.measure_convention.mass_measure)
-        z = z_h + self.tau * z_0
+    def _validate_normalizer(self, z):
         if not bool(tf.math.is_finite(z).numpy()):
             raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
         if bool((z <= self.normalizer_floor).numpy()):
             raise ValueError(HighDimStatus.NORMALIZER_FLOOR_EXCEEDED.value)
+
+    def sqrt_square_normalizer(self, *, jit_compile=True) -> tf.Tensor:
+        return self._evaluate("sqrt_normalizer", jit_compile=jit_compile)
+
+    def normalizer(self, *, jit_compile=True) -> tf.Tensor:
+        z = self._evaluate("normalizer", jit_compile=jit_compile)
+        self._validate_normalizer(z)
         return z
 
-    def log_density(self, points: tf.Tensor) -> tf.Tensor:
-        z = self.normalizer()
-        q_u = self.unnormalized_density(points)
-        return tf.math.log(q_u) - tf.math.log(z)
+    def log_density(self, points: tf.Tensor, *, jit_compile=True) -> tf.Tensor:
+        values = tf.convert_to_tensor(points, dtype=tf.float64)
+        if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
+            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        result, z, raw = self._evaluate("log_density", points=values, jit_compile=jit_compile)
+        self._validate_normalizer(z)
+        if not bool(tf.reduce_all(tf.math.is_finite(raw)).numpy()):
+            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        return result
 
     def normalized_retained_density_values(self, keep_axes: Sequence[int], points: tf.Tensor) -> tf.Tensor:
         """Evaluate the normalized retained density for the all-retained case.
@@ -207,7 +207,11 @@ class SquaredTTDensity:
             raise ValueError(f"points: {HighDimStatus.INVALID_SHAPE.value}")
         if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
             raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
-        return tf.exp(self.log_density(values))
+        result, z, raw = self._evaluate("normalized_retained", points=values)
+        self._validate_normalizer(z)
+        if not bool(tf.reduce_all(tf.math.is_finite(raw)).numpy()):
+            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        return result
 
     def marginal_density(self, keep_axes: Sequence[int]) -> SquaredTTMarginal:
         axes = tuple(sorted(set(int(axis) for axis in keep_axes)))
@@ -253,8 +257,10 @@ class SquaredTTDensity:
             raise ValueError(f"points: {HighDimStatus.INVALID_SHAPE.value}")
         if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
             raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
-        numerator = self._source_style_marginal_unnormalized_values(axes, values)
-        normalized = numerator / self.normalizer()
+        if not axes and isinstance(self.defensive_density, TensorProductReferenceDensity):
+            raise ValueError("ProductBasis requires at least one basis")
+        normalized, z = self._evaluate("normalized_marginal", keep_axes=axes, points=values)
+        self._validate_normalizer(z)
         if not bool(tf.reduce_all(tf.math.is_finite(normalized)).numpy()):
             raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
         return normalized
@@ -264,89 +270,22 @@ class SquaredTTDensity:
         keep_axes: tuple[int, ...],
         points: tf.Tensor,
     ) -> tf.Tensor:
-        active_measure = self.measure_convention.mass_measure
-        n_points = tf.shape(points)[0]
-        vector = tf.ones([n_points, 1], dtype=tf.float64)
-        point_axis = {axis: index for index, axis in enumerate(keep_axes)}
-        for axis, core in enumerate(self.sqrt_tt.cores):
-            if axis in point_axis:
-                basis_values = self.sqrt_tt.product_basis.evaluate_axis(
-                    axis,
-                    points[:, point_axis[axis]],
-                )
-                matrices = tf.einsum(
-                    "nl,nm,alb,AmB->naAbB",
-                    basis_values,
-                    basis_values,
-                    core.values,
-                    core.values,
-                )
-            else:
-                paired = tf.einsum(
-                    "alb,A mB,lm->aAbB",
-                    core.values,
-                    core.values,
-                    self.sqrt_tt.product_basis.bases[axis].mass_matrix(active_measure),
-                )
-                matrices = tf.broadcast_to(
-                    paired[tf.newaxis, :, :, :, :],
-                    [
-                        n_points,
-                        core.left_rank,
-                        core.left_rank,
-                        core.right_rank,
-                        core.right_rank,
-                    ],
-                )
-            matrices = tf.reshape(
-                matrices,
-                [
-                    n_points,
-                    core.left_rank * core.left_rank,
-                    core.right_rank * core.right_rank,
-                ],
-            )
-            vector = tf.einsum("na,nab->nb", vector, matrices)
-        sqrt_square = tf.reshape(vector, [n_points])
-        defensive = self._defensive_marginal_values(keep_axes, points)
-        return sqrt_square + self.tau * defensive
+        return self._evaluate("marginal", keep_axes=keep_axes, points=points)[0]
 
     def _defensive_marginal_values(
         self,
         keep_axes: tuple[int, ...],
         points: tf.Tensor,
     ) -> tf.Tensor:
-        if keep_axes == tuple(range(len(self.sqrt_tt.cores))):
-            return tf.exp(self.defensive_density.log_density(points))
-        if isinstance(self.defensive_density, TensorProductReferenceDensity):
-            retained_basis = ProductBasis(
-                [self.sqrt_tt.product_basis.bases[axis] for axis in keep_axes],
-                self.measure_convention,
-            )
-            retained_reference = TensorProductReferenceDensity(
-                retained_basis,
-                self.measure_convention,
-                floor=self.defensive_density.floor,
-            )
-            values = tf.exp(retained_reference.log_density(points))
-            if self.measure_convention.mass_measure is MassMeasure.REFERENCE_LEBESGUE:
-                integrated_axes = tuple(
-                    axis
-                    for axis in range(len(self.sqrt_tt.cores))
-                    if axis not in keep_axes
-                )
-                volume = tf.constant(1.0, tf.float64)
-                for axis in integrated_axes:
-                    volume = volume * self.sqrt_tt.product_basis.bases[axis].domain.length
-                values = values * volume
-            return values
-        raise NotImplementedError("source-style defensive marginal requires tensor-product reference density")
+        return self._evaluate("defensive_marginal", keep_axes=keep_axes, points=points)
 
     def conditional_density(
         self,
         axis: int,
         prefix: tf.Tensor,
         grid: tf.Tensor,
+        *,
+        jit_compile=True,
     ) -> tf.Tensor:
         grid_values = tf.convert_to_tensor(grid, dtype=tf.float64)
         prefix_values = tf.convert_to_tensor(prefix, dtype=tf.float64)
@@ -358,13 +297,16 @@ class SquaredTTDensity:
             raise IndexError("axis out of range")
         if prefix_values.shape[0] != 1 or prefix_values.shape[1] != axis:
             raise ValueError(f"prefix: {HighDimStatus.INVALID_SHAPE.value}")
-        values = self._prefix_axis_marginal_values(axis, prefix_values, grid_values)
-        integral = _trapezoid_integral(grid_values, values)
+        if not bool(tf.reduce_all(tf.math.is_finite(prefix_values)).numpy()) or not bool(tf.reduce_all(tf.math.is_finite(grid_values)).numpy()):
+            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        result, integral, z = self._evaluate("conditional", axis=axis, prefix=prefix_values,
+                                             grid=grid_values, jit_compile=jit_compile)
+        self._validate_normalizer(z)
         if not bool(tf.math.is_finite(integral).numpy()):
             raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
         if bool((integral <= self.denominator_floor).numpy()):
             raise ValueError(HighDimStatus.CONDITIONAL_DENOMINATOR_FLOOR_EXCEEDED.value)
-        return values / integral
+        return result
 
     def _prefix_axis_marginal_values(
         self,
@@ -372,31 +314,9 @@ class SquaredTTDensity:
         prefix: tf.Tensor,
         grid: tf.Tensor,
     ) -> tf.Tensor:
-        dimension = len(self.sqrt_tt.cores)
-        suffix_axes = tuple(range(axis + 1, dimension))
-        if not suffix_axes:
-            full_points = _points_with_prefix_axis_grid(
-                dimension=dimension,
-                axis=axis,
-                prefix=prefix,
-                grid=grid,
-                suffix_points=None,
-            )
-            return tf.exp(self.log_density(full_points))
-        suffix_grids = [self._axis_default_grid(suffix_axis) for suffix_axis in suffix_axes]
-        suffix_points, suffix_weights = _tensor_product_grid_and_weights(suffix_grids)
-        rows = []
-        for z_value in tf.unstack(grid):
-            full_points = _points_with_prefix_axis_grid(
-                dimension=dimension,
-                axis=axis,
-                prefix=prefix,
-                grid=tf.reshape(z_value, [1]),
-                suffix_points=suffix_points,
-            )
-            values = tf.exp(self.log_density(full_points))
-            rows.append(tf.reduce_sum(values * suffix_weights))
-        return tf.stack(rows)
+        rows, z = self._evaluate("prefix", axis=axis, prefix=prefix, grid=grid)
+        self._validate_normalizer(z)
+        return rows
 
     def _axis_default_grid(self, axis: int) -> tf.Tensor:
         basis = self.sqrt_tt.product_basis.bases[axis]
@@ -487,22 +407,11 @@ def _points_with_prefix_axis_grid(
     grid: tf.Tensor,
     suffix_points: tf.Tensor | None,
 ) -> tf.Tensor:
-    n = tf.shape(suffix_points)[0] if suffix_points is not None else tf.shape(grid)[0]
-    columns = []
-    for dim in range(dimension):
-        if dim < axis:
-            columns.append(tf.fill([n], prefix[0, dim]))
-        elif dim == axis:
-            if suffix_points is None:
-                columns.append(grid)
-            else:
-                columns.append(tf.fill([n], grid[0]))
-        else:
-            if suffix_points is None:
-                columns.append(tf.zeros([n], dtype=tf.float64))
-            else:
-                columns.append(suffix_points[:, dim - axis - 1])
-    return tf.stack(columns, axis=1)
+    n = suffix_points.shape[0] if suffix_points is not None else grid.shape[0]
+    previous = tf.broadcast_to(prefix, [n, axis])
+    if suffix_points is None:
+        return tf.concat([previous, grid[:, None], tf.zeros([n, dimension-axis-1], tf.float64)], axis=1)
+    return tf.concat([previous, tf.fill([n, 1], grid[0]), suffix_points], axis=1)
 
 
 def _validate_source_marginal_axes(axes: tuple[int, ...], dimension: int) -> None:
@@ -538,10 +447,27 @@ def _trapezoid_weights(grid: tf.Tensor) -> tf.Tensor:
 
 
 def _tensor_product_grid_and_weights(grids: Sequence[tf.Tensor]) -> tuple[tf.Tensor, tf.Tensor]:
-    meshes = tf.meshgrid(*grids, indexing="ij")
-    weight_meshes = tf.meshgrid(*[_trapezoid_weights(grid) for grid in grids], indexing="ij")
-    points = tf.stack([tf.reshape(mesh, [-1]) for mesh in meshes], axis=1)
-    weights = tf.ones([tf.shape(points)[0]], dtype=tf.float64)
-    for weight_mesh in weight_meshes:
-        weights = weights * tf.reshape(weight_mesh, [-1])
+    # Mixed-radix indices preserve meshgrid(indexing="ij") order without a
+    # Python numerical product over dimensions. Unequal grid extents remain
+    # supported at this fixed-schema packing boundary.
+    lengths = tf.constant(tuple(grid.shape[0] for grid in grids), tf.int32)
+    width = max(grid.shape[0] for grid in grids)
+    packed = tf.stack(tuple(tf.pad(grid, [[0, width-grid.shape[0]]]) for grid in grids))
+    strides = tf.math.cumprod(lengths, exclusive=True, reverse=True)
+    count = tf.reduce_prod(lengths)
+    indices = (tf.range(count)[:, None] // strides) % lengths
+    points = tf.transpose(tf.gather(packed, tf.transpose(indices), batch_dims=1))
+    weights = tf.ones([count], tf.float64)
+
+    def step(axis, weights):
+        size = lengths[axis]
+        positions = indices[:, axis]
+        current = tf.gather(packed[axis], positions)
+        left = tf.gather(packed[axis], tf.maximum(positions-1, 0))
+        right = tf.gather(packed[axis], tf.minimum(positions+1, size-1))
+        axis_weights = 0.5 * (current-left) + 0.5 * (right-current)
+        return axis+1, weights * axis_weights
+
+    _, weights = tf.while_loop(lambda axis, _: axis < len(grids), step,
+        (tf.constant(0), weights), maximum_iterations=len(grids), parallel_iterations=1)
     return points, weights

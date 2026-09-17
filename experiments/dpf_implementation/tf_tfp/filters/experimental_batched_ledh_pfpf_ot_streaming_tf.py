@@ -767,4 +767,7 @@ def _is_static_all_false_bool_tensor(tensor: tf.Tensor) -> bool:
         return False
     if value is None:
         return False
-    return not bool(value.any())
+    # This is a trace/setup optimization. Materialize only the scalar result
+    # of a TensorFlow reduction, never a NumPy numerical/control operation.
+    with tf.init_scope():
+        return not bool(tf.reduce_any(tf.convert_to_tensor(value, tf.bool)).numpy())

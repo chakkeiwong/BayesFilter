@@ -181,14 +181,15 @@ def _thread_snapshot(worker_pids: Sequence[int]) -> Mapping[str, Any]:
 def _pool_config() -> CPUValueScorePoolConfig:
     return CPUValueScorePoolConfig(
         worker_factory_path=(
-            "bayesfilter.nonlinear.ssl_lstm_complexity_target_tf:"
-            "complexity_target_worker_factory"
+            "bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf:"
+            "batch_native_complexity_target_worker_factory"
         ),
         worker_config={"q": Q},
         dimension=4,
         worker_count=WORKER_COUNT,
         cores_per_worker=1,
         timeout_seconds=600.0,
+        batch_sizes=tuple(sorted({2, 3, 4, 8, 16, 32, BATCH_SIZE // WORKER_COUNT, (BATCH_SIZE + WORKER_COUNT - 1) // WORKER_COUNT})),
     )
 
 
@@ -417,7 +418,7 @@ def run() -> Mapping[str, Any]:
     trainer_construction_seconds = time.perf_counter() - trainer_started
     pool_started = time.perf_counter()
     with CPUValueScorePool(_pool_config()) as pool:
-        startup_rows = tf.repeat(PRIOR_CENTER[None, :], repeats=WORKER_COUNT, axis=0)
+        startup_rows = tf.repeat(PRIOR_CENTER[None, :], repeats=2 * WORKER_COUNT, axis=0)
         startup_values, startup_metadata = pool.evaluate_values(
             startup_rows.numpy(), request_id="q20-cpu-timing-pool-startup"
         )

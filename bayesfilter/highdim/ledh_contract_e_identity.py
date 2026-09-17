@@ -24,7 +24,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
-import numpy as np
+import tensorflow as tf
+from tensorflow.core.framework import tensor_pb2
 
 
 CONTRACT_E_ROUTE_IDENTITY_SCHEMA_VERSION = (
@@ -237,7 +238,7 @@ def _wrapper_payload(value: Any, role_spec: "_CallableRoleSpec") -> dict[str, An
 
 def _global_value_record(name: str, value: Any, roles: set[str]) -> dict[str, Any]:
     if (
-        isinstance(value, (np.ndarray, np.generic))
+        _is_array_input(value)
         or hasattr(value, "numpy")
     ):
         tensor, _ = _tensor_record(name, value)
@@ -247,7 +248,7 @@ def _global_value_record(name: str, value: Any, roles: set[str]) -> dict[str, An
         for item in fields(value):
             field_value = getattr(value, item.name)
             if (
-                isinstance(field_value, (np.ndarray, np.generic))
+                _is_array_input(field_value)
                 or hasattr(field_value, "numpy")
             ):
                 record, _ = _tensor_record(item.name, field_value)
@@ -281,8 +282,9 @@ def _is_serializable_global_value(value: Any) -> bool:
         value is None
         or isinstance(
             value,
-            (bool, int, float, str, bytes, tuple, frozenset, np.ndarray, np.generic),
+            (bool, int, float, str, bytes, tuple, frozenset),
         )
+        or _is_array_input(value)
         or hasattr(value, "numpy")
         or (is_dataclass(value) and not isinstance(value, type))
         or (
@@ -292,24 +294,44 @@ def _is_serializable_global_value(value: Any) -> bool:
     )
 
 
-def _tensor_record(name: str, value: Any) -> tuple[dict[str, Any], np.ndarray]:
-    raw = value.numpy() if hasattr(value, "numpy") else value
+def _is_array_input(value: Any) -> bool:
+    """Recognize legacy incoming arrays without importing their backend."""
+    return hasattr(value, "__array_interface__")
+
+
+def _tensor_record(name: str, value: Any) -> tuple[dict[str, Any], tf.Tensor]:
     try:
-        array = np.asarray(raw)
+        dtype = getattr(value, "dtype", None)
+        if dtype is None:
+            leaves = tf.nest.flatten(value)
+            if any(isinstance(item, complex) for item in leaves):
+                dtype = tf.complex128
+            elif any(isinstance(item, float) for item in leaves):
+                dtype = tf.float64
+            elif any(isinstance(item, int) and not isinstance(item, bool) for item in leaves):
+                dtype = tf.int64
+        array = tf.convert_to_tensor(value, dtype=dtype)
     except Exception as error:
         raise ValueError(f"prepared input {name} is not tensor-serializable") from error
-    if array.dtype.hasobject:
+    kind = ("b" if array.dtype == tf.bool else
+            "f" if array.dtype.is_floating else
+            "c" if array.dtype.is_complex else
+            "u" if array.dtype.is_unsigned else
+            "i" if array.dtype.is_integer else None)
+    if kind is None:
         raise ValueError(f"prepared input {name} cannot use object dtype")
-    # np.ascontiguousarray promotes scalars to shape [1], which corrupts the
-    # prepared-input rank encoded in the identity.
-    array = np.array(array, copy=True, order="C", subok=False)
-    data = array.tobytes(order="C")
+    # TF's TensorProto preserves scalar rank and contiguous little-endian
+    # numerical bytes. Keep the existing numeric identity format unchanged.
+    payload = tensor_pb2.TensorProto.FromString(tf.io.serialize_tensor(array).numpy())
+    data = payload.tensor_content
+    width = array.dtype.size
+    encoding = ("|" if width == 1 else "<") + kind + str(width)
     record = {
         "name": name,
         "dtype": array.dtype.name,
-        "dtype_encoding": array.dtype.str,
-        "rank": array.ndim,
-        "shape": list(array.shape),
+        "dtype_encoding": encoding,
+        "rank": array.shape.rank,
+        "shape": array.shape.as_list(),
         "byte_length": len(data),
         "value_sha256": _sha256(data),
     }
@@ -571,9 +593,9 @@ class _ContractERouteIdentityFactory:
                         raise ValueError(
                             f"prepared input {field_spec.name} violates shape symbol {declared}"
                         )
-            if field_spec.finite_required and not bool(np.all(np.isfinite(array))):
+            if field_spec.finite_required and (array.dtype.is_floating or array.dtype.is_complex) and not bool(tf.reduce_all(tf.math.is_finite(array)).numpy()):
                 raise ValueError(f"prepared input {field_spec.name} must be finite")
-            if field_spec.strictly_positive and not bool(np.all(array > 0)):
+            if field_spec.strictly_positive and not bool(tf.reduce_all(array > 0).numpy()):
                 raise ValueError(
                     f"prepared input {field_spec.name} must be strictly positive"
                 )

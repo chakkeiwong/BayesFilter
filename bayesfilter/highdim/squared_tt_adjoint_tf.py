@@ -60,11 +60,9 @@ def solve_node_adjoint(
 def _core_matrices(
     product_basis: ProductBasis, points: tf.Tensor, cores: Sequence[TTCore]
 ) -> list[tf.Tensor]:
-    matrices = []
-    for axis, core in enumerate(cores):
-        basis_values = product_basis.evaluate_axis(axis, points[:, axis])
-        matrices.append(tf.einsum("akb,nk->nab", core.values, basis_values))
-    return matrices
+    from bayesfilter.highdim.tt_native_control_tf import core_matrices
+
+    return list(core_matrices(product_basis, points, cores))
 
 
 def design_assembly_adjoint(
@@ -81,54 +79,11 @@ def design_assembly_adjoint(
     zero adjoint (A_i does not contain core i).
     """
 
-    points = tf.convert_to_tensor(points, DTYPE)
-    checked = tuple(cores)
-    d = len(checked)
-    n_rows = int(points.shape[0])
-    core = checked[core_index]
-    bar_blocks = tf.reshape(
-        tf.convert_to_tensor(bar_design, DTYPE),
-        [n_rows, core.left_rank, core.basis_dim, core.right_rank],
-    )
-    matrices = _core_matrices(product_basis, points, checked)
+    from bayesfilter.highdim.tt_native_control_tf import row_chain_adjoint
 
-    # Value environments (row-wise): left[j] before axis j, right[j] after.
-    left = [tf.ones([n_rows, 1], DTYPE)]
-    for j in range(d - 1):
-        left.append(tf.einsum("na,nab->nb", left[-1], matrices[j]))
-    # suffix[j] = S_{j+1} = C_{j+1}..C_{d-1} * ones  (size = right rank of core j)
-    suffix = [tf.ones([n_rows, 1], DTYPE)]
-    for j in range(d - 1, 0, -1):
-        suffix.append(tf.einsum("nab,nb->na", matrices[j], suffix[-1]))
-    suffix = list(reversed(suffix))  # suffix[j] as documented; suffix[d-1] = ones
-
-    phi_i = product_basis.evaluate_axis(core_index, points[:, core_index])
-    # Cotangents of the two dot-environment streams at axis core_index:
-    #   dot_A blocks = dot_left_i (x) phi_i (x) S_{i+1}  +  L_i (x) phi_i (x) dot_S_{i+1}
-    r_i = suffix[core_index]
-    l_i = left[core_index]
-    bar_dot_left = tf.einsum("nalb,nl,nb->na", bar_blocks, phi_i, r_i)
-    bar_dot_right = tf.einsum("nalb,na,nl->nb", bar_blocks, l_i, phi_i)
-
-    bar_cores: list[tf.Tensor] = [tf.zeros_like(c.values) for c in checked]
-
-    # Reverse the left recursion: dot_left_{j+1} = dot_left_j C_j + left_j dot_C_j,
-    # j = 0..core_index-1, dot_left_0 = 0. Cotangent flows backward.
-    bar_dl = bar_dot_left  # cotangent of dot_left_{core_index}
-    for j in range(core_index - 1, -1, -1):
-        basis_j = product_basis.evaluate_axis(j, points[:, j])
-        bar_cores[j] += tf.einsum("na,nk,nb->akb", left[j], basis_j, bar_dl)
-        bar_dl = tf.einsum("nb,nab->na", bar_dl, matrices[j])
-
-    # Reverse the suffix recursion S_j = C_j S_{j+1}:
-    # dot S_j = dot_C_j S_{j+1} + C_j dot S_{j+1}; cotangent flows j = i+1..d-1.
-    bar_dr = bar_dot_right  # cotangent of dot S_{core_index+1}
-    for j in range(core_index + 1, d):
-        basis_j = product_basis.evaluate_axis(j, points[:, j])
-        bar_cores[j] += tf.einsum("na,nk,nb->akb", bar_dr, basis_j, suffix[j])
-        bar_dr = tf.einsum("na,nab->nb", bar_dr, matrices[j])
-
-    return tuple(TTCore(values) for values in bar_cores)
+    values = row_chain_adjoint(cores, product_basis, tf.convert_to_tensor(points, DTYPE),
+                                core_index=core_index, bar_design=bar_design)
+    return tuple(TTCore(value) for value in values)
 
 
 def sqrt_target_adjoint(
@@ -191,20 +146,10 @@ def prefix_rows_adjoint(
     """Adjoint of prefix cores -> H_L rows (transpose of the forward
     product-rule propagation in `prefix_row_vectors_tangent`)."""
 
-    points = tf.convert_to_tensor(points, DTYPE)
-    checked = tuple(cores)
-    n_rows = int(points.shape[0])
-    matrices = _core_matrices(product_basis, points, checked)
-    left = [tf.ones([n_rows, 1], DTYPE)]
-    for j in range(len(checked) - 1):
-        left.append(tf.einsum("na,nab->nb", left[-1], matrices[j]))
-    bar_state = tf.convert_to_tensor(bar_rows, DTYPE)  # cotangent of final row [n, r_last]
-    bar_cores: list[tf.Tensor] = [tf.zeros_like(c.values) for c in checked]
-    for j in range(len(checked) - 1, -1, -1):
-        basis_j = product_basis.evaluate_axis(j, points[:, j])
-        bar_cores[j] += tf.einsum("na,nk,nb->akb", left[j], basis_j, bar_state)
-        bar_state = tf.einsum("nb,nab->na", bar_state, matrices[j])
-    return tuple(TTCore(values) for values in bar_cores)
+    from bayesfilter.highdim.tt_native_control_tf import row_chain_adjoint
+
+    values = row_chain_adjoint(cores, product_basis, tf.convert_to_tensor(points, DTYPE), bar_rows=bar_rows)
+    return tuple(TTCore(value) for value in values)
 
 
 def gram_chain_adjoint(
@@ -218,35 +163,10 @@ def gram_chain_adjoint(
     A.2.7/A.2.8 pattern). Forward tangent is the sum over axes of the
     chain with one core pair replaced; the adjoint mirrors it."""
 
-    checked = tuple(cores)
-    count = len(checked)
-    mass = [
-        product_basis.bases[axis_offset + j].mass_matrix(
-            product_basis.convention.mass_measure
-        )
-        for j in range(count)
-    ]
-    # states below axis j (from the right end) and above (toward boundary)
-    below: list[tf.Tensor] = [tf.ones([1, 1], DTYPE)]
-    for j in range(count - 1, -1, -1):
-        below.append(
-            tf.einsum("akb,AlB,kl,bB->aA", checked[j].values, checked[j].values, mass[j], below[-1])
-        )
-    below = list(reversed(below))  # below[j] = chain over axes j..end; below[count] = I1
-    bar_states: list[tf.Tensor] = [tf.zeros([1, 1], DTYPE)] * (count + 1)
-    bar_cores: list[tf.Tensor] = [tf.zeros_like(c.values) for c in checked]
-    # bar over the final (topmost) state is bar_gram; propagate downward.
-    bar_state = tf.convert_to_tensor(bar_gram, DTYPE)
-    for j in range(count):
-        # state_{j} = T_j(state_{j+1}) with T_j(s) = einsum(core_j, core_j, mass_j, s)
-        core_j = checked[j].values
-        # cotangent to the two core slots:
-        bar_cores[j] += tf.einsum(
-            "aA,AlB,kl,bB->akb", bar_state, core_j, mass[j], below[j + 1]
-        ) + tf.einsum("aA,akb,kl,bB->AlB", bar_state, core_j, mass[j], below[j + 1])
-        # cotangent to the inner state:
-        bar_state = tf.einsum("aA,akb,AlB,kl->bB", bar_state, core_j, core_j, mass[j])
-    return tuple(TTCore(values) for values in bar_cores)
+    from bayesfilter.highdim.tt_native_control_tf import basis_masses, gram_adjoint
+
+    masses = basis_masses(product_basis, cores, axis_offset=axis_offset)
+    return tuple(TTCore(value) for value in gram_adjoint(cores, masses, bar_gram, reverse=True))
 
 
 def cholesky_vjp(chol: tf.Tensor, bar_chol: tf.Tensor) -> tf.Tensor:
@@ -331,7 +251,10 @@ def forward_jvp_replay_scaled(
     initial_dot_cores: Sequence[TTCore],
     dot_target: tf.Tensor,
 ) -> tuple[tuple[TTCore, ...], tuple[TTCore, ...]]:
-    """Ordered forward JVP over traced value updates with SCALED solves.
+    """Independent test-reference JVP over traced updates with scaled solves.
+
+    This unrolled replay is a parity oracle only. Runtime value/score consumers
+    use the native forward/reverse recurrence in squared_tt_native_adjoint_engine_tf.
 
     Value cores are the traced solutions (bit-identical to the value
     program); only the tangent solves run here, each through

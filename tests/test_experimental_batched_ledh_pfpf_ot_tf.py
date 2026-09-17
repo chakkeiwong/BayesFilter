@@ -1081,6 +1081,24 @@ def _value_score_from_theta(
     )
 
 
+@pytest.mark.parametrize("gradient_mode", ["raw", MANUAL_DENSE_FINITE_TRANSPORT_GRADIENT_MODE])
+def test_native_time_recursion_complete_value_and_score_xla(gradient_mode):
+    theta = _score_theta_batch(2)
+    fixture = _score_fixture(2)
+
+    def evaluate(values):
+        result = _value_score_from_theta(values, fixture, transport_gradient_mode=gradient_mode)
+        return result.log_likelihood, result.score
+
+    compiled = tf.function(evaluate, input_signature=[tf.TensorSpec([2, 3], DTYPE)],
+                           jit_compile=True, autograph=False)
+    expected = evaluate(theta)
+    actual = compiled(theta)
+    for value, reference in zip(actual, expected):
+        np.testing.assert_allclose(value.numpy(), reference.numpy(), atol=1e-10, rtol=1e-10)
+    assert compiled.experimental_get_tracing_count() == 1
+
+
 def _central_finite_difference_score(
     theta_batch: tf.Tensor,
     fixed_fixture: dict[str, tf.Tensor],

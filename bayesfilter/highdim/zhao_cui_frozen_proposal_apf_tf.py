@@ -335,6 +335,7 @@ def compile_fixed_ttsirt_proposal_branch(
     ancestor_uniforms: tf.Tensor,
     auxiliary_log_probabilities: tf.Tensor,
     transition_reference_points: tf.Tensor,
+    jit_compile: bool = True,
 ) -> FrozenTTSIRTProposalCompilation:
     """Compile fixed TTSIRT maps using `(previous, current)` axis ordering.
 
@@ -425,59 +426,17 @@ def compile_fixed_ttsirt_proposal_branch(
         if transport_manifest.get("production_kr_closure") is not False:
             raise ValueError("local grid-CDF TTSIRT transport must remain nonproduction")
 
-    initial_local = initial_transport.inverse_transport(initial_reference)
-    initial_physical, initial_forward_log_det = coordinate_map.forward(
-        tf.transpose(initial_local)
-    )
-    initial_log_q = (
-        tf.math.log(initial_transport.eval_pdf(initial_local))
-        - initial_forward_log_det
-    )
-    states = [initial_physical]
-    ancestor_rows = []
-    transition_log_q_rows = []
+    from bayesfilter.highdim.ttsirt_native_tf import check_transport_status
+    from bayesfilter.highdim.ttsirt_proposal_native_tf import proposal_program
 
-    for time_index, transport in enumerate(transports, start=1):
-        cdf = tf.math.cumsum(tf.exp(auxiliary_log[time_index - 1]))
-        cdf = tf.concat([cdf[:-1], tf.ones([1], tf.float64)], axis=0)
-        ancestor = tf.searchsorted(
-            cdf,
-            ancestor_u[time_index - 1],
-            side="right",
-            out_type=tf.int32,
-        )
-        parent_physical = tf.gather(states[-1], ancestor)
-        parent_local, _ = coordinate_map.inverse(parent_physical)
-        current_local = transport.conditional_inverse_transport(
-            tf.transpose(parent_local),
-            transition_reference[time_index - 1],
-        )
-        current_physical, current_forward_log_det = coordinate_map.forward(
-            tf.transpose(current_local)
-        )
-        conditional_local_log_q = transport.conditional_proposal_log_density(
-            conditioning_points=tf.transpose(parent_local),
-            generated_points=current_local,
-        )
-        transition_log_q_rows.append(
-            conditional_local_log_q - current_forward_log_det
-        )
-        ancestor_rows.append(ancestor)
-        states.append(current_physical)
-
-    ancestors_tensor = (
-        tf.stack(ancestor_rows)
-        if ancestor_rows
-        else tf.zeros([0, particle_count], tf.int32)
-    )
-    transition_log_q_tensor = (
-        tf.stack(transition_log_q_rows)
-        if transition_log_q_rows
-        else tf.zeros([0, particle_count], tf.float64)
-    )
+    program, arguments = proposal_program(initial_transport, transports, coordinate_map,
+        particle_count, jit_compile=jit_compile)
+    states, initial_log_q, ancestors_tensor, transition_log_q_tensor, code = program(
+        *arguments, initial_reference, ancestor_u, auxiliary_log, transition_reference)
+    check_transport_status(code)
     branch = prepare_frozen_proposal_branch(
         observations=observations_tensor,
-        states=tf.stack(states),
+        states=states,
         initial_log_proposal_density=initial_log_q,
         ancestors=ancestors_tensor,
         auxiliary_log_probabilities=auxiliary_log,
@@ -485,6 +444,8 @@ def compile_fixed_ttsirt_proposal_branch(
     )
     manifest = {
         "compiler_route_id": TTSIRT_COMPILER_ID,
+        "jit_compile": bool(jit_compile),
+        "execution_role": "xla_default" if jit_compile else "debug_reference_exception",
         "classification": TTSIRT_COMPILER_CLASSIFICATION,
         "classification_correction": (
             "v2 classifies the reordered finite-grid compiler as an extension; "
@@ -705,6 +666,7 @@ class FrozenProposalAPFProgram:
     model: FrozenProposalAPFModel
     branch: PreparedFrozenProposalBranch
     program_id: str = field(init=False)
+    _compiled_evaluators: dict = field(default_factory=dict, init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         required_methods = (
@@ -739,16 +701,20 @@ class FrozenProposalAPFProgram:
             raise ValueError("model must expose the reviewed analytical score backend")
         object.__setattr__(self, "program_id", _program_fingerprint(self.model, self.branch))
 
-    def evaluate(self, theta: tf.Tensor) -> Mapping[str, tf.Tensor]:
-        """Evaluate eagerly with the same TensorFlow core used by XLA."""
+    def evaluate(self, theta: tf.Tensor, *, jit_compile: bool = True) -> Mapping[str, tf.Tensor]:
+        """Evaluate the complete cached XLA program by default."""
 
         parameters = _theta_vector(theta, self.model.parameter_dim(), self.branch.dtype)
-        return _evaluate_core(self.model, self.branch, parameters)
+        return self.compiled(jit_compile=jit_compile)(parameters)
 
     def compiled(
         self, *, jit_compile: bool = True
     ) -> Callable[[tf.Tensor], Mapping[str, tf.Tensor]]:
         """Build the default XLA evaluator; non-JIT is an explicit debug exception."""
+
+        mode = bool(jit_compile)
+        if mode in self._compiled_evaluators:
+            return self._compiled_evaluators[mode]
 
         parameter_dimension = int(self.model.parameter_dim())
         dtype = self.branch.dtype
@@ -761,6 +727,7 @@ class FrozenProposalAPFProgram:
         def evaluate(theta: tf.Tensor) -> Mapping[str, tf.Tensor]:
             return _evaluate_core(self.model, self.branch, theta)
 
+        self._compiled_evaluators[mode] = evaluate
         return evaluate
 
     def manifest_payload(self) -> Mapping[str, object]:
@@ -846,20 +813,20 @@ def _evaluate_core(
             derivative_log_weights,
         )
     )
-    increments = [increment]
-    increment_scores = [increment_score]
-    ess_by_time = [minimum_ess]
-    log_weight_spread_by_time = [maximum_log_weight_spread]
-    maximum_normalized_weight_by_time = [tf.reduce_max(normalized_weights)]
+    increments = tf.TensorArray(dtype, size=branch.time_steps).write(0, increment)
+    increment_scores = tf.TensorArray(dtype, size=branch.time_steps).write(0, increment_score)
+    ess_by_time = tf.TensorArray(dtype, size=branch.time_steps).write(0, minimum_ess)
+    log_weight_spread_by_time = tf.TensorArray(dtype, size=branch.time_steps).write(0, maximum_log_weight_spread)
+    maximum_normalized_weight_by_time = tf.TensorArray(dtype, size=branch.time_steps).write(0, tf.reduce_max(normalized_weights))
 
-    for time_index in range(1, branch.time_steps):
-        ancestors = branch.ancestors[time_index - 1]
-        previous_state = tf.gather(branch.states[time_index - 1], ancestors)
-        current_state = branch.states[time_index]
+    def step(time_index, log_weights, derivative_log_weights, total_log_likelihood, total_score, minimum_ess, maximum_log_weight_spread, finite, increments, increment_scores, ess_by_time, log_weight_spread_by_time, maximum_normalized_weight_by_time):
+        ancestors = tf.gather(branch.ancestors, time_index - 1)
+        previous_state = tf.gather(tf.gather(branch.states, time_index - 1), ancestors)
+        current_state = tf.gather(branch.states, time_index)
         selected_previous_log_weights = tf.gather(log_weights, ancestors)
         selected_previous_marks = tf.gather(derivative_log_weights, ancestors)
         selected_auxiliary_log_probability = tf.gather(
-            branch.auxiliary_log_probabilities[time_index - 1], ancestors
+            tf.gather(branch.auxiliary_log_probabilities, time_index - 1), ancestors
         )
 
         transition_log_density = _vector(
@@ -873,7 +840,7 @@ def _evaluate_core(
             model.observation_log_density(
                 theta,
                 current_state,
-                branch.observations[time_index],
+                tf.gather(branch.observations, time_index),
                 time_index,
             ),
             particle_count,
@@ -891,7 +858,7 @@ def _evaluate_core(
             model.observation_log_density_parameter_score(
                 theta,
                 current_state,
-                branch.observations[time_index],
+                tf.gather(branch.observations, time_index),
                 time_index,
             ),
             particle_count,
@@ -899,12 +866,12 @@ def _evaluate_core(
             dtype,
         )
         log_unnormalized = (
-            branch.transition_log_base_mass[time_index - 1]
+            tf.gather(branch.transition_log_base_mass, time_index - 1)
             + selected_previous_log_weights
             + transition_log_density
             + observation_log_density
             - selected_auxiliary_log_probability
-            - branch.transition_log_proposal_density[time_index - 1]
+            - tf.gather(branch.transition_log_proposal_density, time_index - 1)
         )
         local_marks = selected_previous_marks + transition_score + observation_score
         log_sum = tf.reduce_logsumexp(log_unnormalized)
@@ -937,22 +904,27 @@ def _evaluate_core(
                 derivative_log_weights,
             )
         )
-        increments.append(increment)
-        increment_scores.append(increment_score)
-        ess_by_time.append(current_ess)
-        log_weight_spread_by_time.append(current_log_weight_spread)
-        maximum_normalized_weight_by_time.append(current_maximum_normalized_weight)
+        increments = increments.write(time_index, increment)
+        increment_scores = increment_scores.write(time_index, increment_score)
+        ess_by_time = ess_by_time.write(time_index, current_ess)
+        log_weight_spread_by_time = log_weight_spread_by_time.write(time_index, current_log_weight_spread)
+        maximum_normalized_weight_by_time = maximum_normalized_weight_by_time.write(time_index, current_maximum_normalized_weight)
+        return time_index + 1, log_weights, derivative_log_weights, total_log_likelihood, total_score, minimum_ess, maximum_log_weight_spread, finite, increments, increment_scores, ess_by_time, log_weight_spread_by_time, maximum_normalized_weight_by_time
+
+    _, log_weights, derivative_log_weights, total_log_likelihood, total_score, minimum_ess, maximum_log_weight_spread, finite, increments, increment_scores, ess_by_time, log_weight_spread_by_time, maximum_normalized_weight_by_time = tf.while_loop(
+        lambda time_index, *_: time_index < branch.time_steps, step,
+        (tf.constant(1), log_weights, derivative_log_weights, total_log_likelihood, total_score, minimum_ess, maximum_log_weight_spread, finite, increments, increment_scores, ess_by_time, log_weight_spread_by_time, maximum_normalized_weight_by_time),
+        maximum_iterations=branch.time_steps - 1, parallel_iterations=1,
+    )
 
     return {
         "log_likelihood": total_log_likelihood,
         "score": total_score,
-        "log_increments": tf.stack(increments),
-        "increment_scores": tf.stack(increment_scores),
-        "ess_by_time": tf.stack(ess_by_time),
-        "log_weight_spread_by_time": tf.stack(log_weight_spread_by_time),
-        "maximum_normalized_weight_by_time": tf.stack(
-            maximum_normalized_weight_by_time
-        ),
+        "log_increments": increments.stack(),
+        "increment_scores": increment_scores.stack(),
+        "ess_by_time": ess_by_time.stack(),
+        "log_weight_spread_by_time": log_weight_spread_by_time.stack(),
+        "maximum_normalized_weight_by_time": maximum_normalized_weight_by_time.stack(),
         "final_log_weights": log_weights,
         "minimum_ess": minimum_ess,
         "maximum_log_weight_spread": maximum_log_weight_spread,
@@ -989,8 +961,8 @@ def _score_matrix(
 
 
 def _all_finite(values: Sequence[tf.Tensor]) -> tf.Tensor:
-    flags = [tf.reduce_all(tf.math.is_finite(value)) for value in values]
-    return tf.reduce_all(tf.stack(flags))
+    packed = tf.concat(tuple(tf.reshape(value, [-1]) for value in values), axis=0)
+    return tf.reduce_all(tf.math.is_finite(packed))
 
 
 def _require_all_finite(name: str, value: tf.Tensor) -> None:

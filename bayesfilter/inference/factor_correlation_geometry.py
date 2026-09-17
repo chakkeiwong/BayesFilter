@@ -13,13 +13,19 @@ and held-out score prediction are the numerical objects consumed downstream.
 
 from __future__ import annotations
 
+import math
+import sys
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from functools import lru_cache
+from typing import Any
 
-import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
+from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
+from bayesfilter.ops.host_tensor_io import numeric_tensor
+from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
 
 FACTOR_CORRELATION_GEOMETRY_NONCLAIMS = (
     "structured local score geometry diagnostic only",
@@ -55,13 +61,13 @@ class FactorCorrelationGeometryConfig:
             "tolerance",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value <= 0.0:
+            if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be positive finite")
             object.__setattr__(self, name, value)
         if self.loading_margin >= 1.0:
             raise ValueError("loading_margin must be less than one")
         condition = float(self.max_condition_number)
-        if not np.isfinite(condition) or condition <= 1.0:
+        if not math.isfinite(condition) or condition <= 1.0:
             raise ValueError("max_condition_number must exceed one")
         object.__setattr__(self, "max_condition_number", condition)
         iterations = int(self.max_iterations)
@@ -79,10 +85,10 @@ class FactorCorrelationGeometryResult:
     factor_count: int
     parameter_count: int
     anchor_indices: tuple[int, ...]
-    covariance_z: np.ndarray | None
-    precision_z: np.ndarray | None
-    marginal_standard_deviations: np.ndarray | None
-    loadings: np.ndarray | None
+    covariance_z: tf.Tensor | None
+    precision_z: tf.Tensor | None
+    marginal_standard_deviations: tf.Tensor | None
+    loadings: tf.Tensor | None
     diagnostics: Mapping[str, Any]
     nonclaims: tuple[str, ...] = FACTOR_CORRELATION_GEOMETRY_NONCLAIMS
 
@@ -102,8 +108,7 @@ class FactorCorrelationGeometryResult:
         ):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = tf.identity(numeric_tensor(value, tf.float64))
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
 
@@ -135,6 +140,7 @@ def fit_factor_correlation_score_geometry(
     *,
     training_weights: Any | None = None,
     config: FactorCorrelationGeometryConfig | None = None,
+    jit_compile: bool = True,
 ) -> FactorCorrelationGeometryResult:
     """Fit an SPD factor covariance to exact local score differences.
 
@@ -195,101 +201,30 @@ def fit_factor_correlation_score_geometry(
         tf.reduce_all(tf.math.is_finite(weights) & (weights > 0.0)).numpy()
     ):
         raise ValueError("training_weights must be positive finite per row")
-    weights /= tf.reduce_sum(weights)
-    train_response = center[None, :] - train_score
-    holdout_response = center[None, :] - holdout_score
-
-    dense_precision = _weighted_dense_precision(
-        train_z,
-        train_response,
-        weights,
-        max_condition_number=cfg.max_condition_number,
-    )
-    dense_covariance = tf.linalg.inv(dense_precision)
-    initial_standard_deviations, initial_loadings, anchors = _initial_factor_state(
-        dense_covariance,
-        factor_count=cfg.factor_count,
-        loading_margin=cfg.loading_margin,
-    )
-    initial_raw = _encode_state(
-        initial_standard_deviations,
-        initial_loadings,
-        anchors,
-        cfg,
-    )
-    parameter_count = int(initial_raw.shape[0])
-
-    def loss(raw: tf.Tensor) -> tf.Tensor:
-        covariance, _std, _loads = _decode_covariance(
-            raw, dimension=dimension, anchors=anchors, config=cfg
-        )
-        precision = tf.linalg.cholesky_solve(
-            tf.linalg.cholesky(covariance), tf.eye(dimension, dtype=tf.float64)
-        )
-        prediction = tf.einsum("ij,bj->bi", precision, train_z)
-        per_row = tf.reduce_mean(tf.square(prediction - train_response), axis=1)
-        return tf.reduce_sum(weights * per_row)
-
-    def value_and_gradient(raw: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        return tfp.math.value_and_gradient(loss, raw)
-
+    parameter_count = nominal_parameter_count
+    program = _make_factor_program(dimension, row_count, int(holdout_z.shape[0]), cfg,
+                                   bool(jit_compile), _prediction_jacobian_diagnostics)
     try:
-        optimizer = tfp.optimizer.lbfgs_minimize(
-            value_and_gradient,
-            initial_position=initial_raw,
-            tolerance=tf.constant(cfg.tolerance, tf.float64),
-            max_iterations=cfg.max_iterations,
-            parallel_iterations=1,
-        )
-        fitted_raw = tf.convert_to_tensor(optimizer.position, tf.float64)
-        covariance, deviations, loadings = _decode_covariance(
-            fitted_raw, dimension=dimension, anchors=anchors, config=cfg
-        )
-        chol = tf.linalg.cholesky(covariance)
-        precision = tf.linalg.cholesky_solve(
-            chol, tf.eye(dimension, dtype=tf.float64)
-        )
+        computed = program(center, train_z, train_score, holdout_z, holdout_score, weights)
     except (tf.errors.OpError, ValueError) as exc:
-        return _rejected(
-            cfg,
-            dimension,
-            "factor_optimizer_failed",
-            parameter_count=parameter_count,
-            anchors=anchors,
-            diagnostics={"exception_type": type(exc).__name__},
-        )
-
-    train_prediction = tf.einsum("ij,bj->bi", precision, train_z)
-    holdout_prediction = tf.einsum("ij,bj->bi", precision, holdout_z)
-    train_rmse = tf.sqrt(
-        tf.reduce_sum(
-            weights
-            * tf.reduce_mean(tf.square(train_prediction - train_response), axis=1)
-        )
-    )
-    holdout_error = tf.sqrt(
-        tf.reduce_mean(tf.square(holdout_prediction - holdout_response))
-    )
-    holdout_scale = tf.maximum(
-        tf.sqrt(tf.reduce_mean(tf.square(holdout_response))),
-        tf.constant(1.0e-15, tf.float64),
-    )
-    holdout_relative = holdout_error / holdout_scale
-    eigenvalues = tf.linalg.eigvalsh(covariance)
-    condition_number = tf.reduce_max(eigenvalues) / tf.reduce_min(eigenvalues)
-    finite = (
-        tf.reduce_all(tf.math.is_finite(covariance))
-        & tf.reduce_all(tf.math.is_finite(precision))
-        & tf.reduce_all(tf.math.is_finite(deviations))
-        & tf.reduce_all(tf.math.is_finite(loadings))
-    )
-    jacobian_rank, jacobian_condition = _prediction_jacobian_diagnostics(
-        fitted_raw,
-        train_z,
-        dimension=dimension,
-        anchors=anchors,
-        config=cfg,
-    )
+        return _rejected(cfg, dimension, "factor_optimizer_failed", parameter_count=parameter_count,
+                         diagnostics={"exception_type": type(exc).__name__, "jit_compile": bool(jit_compile)})
+    covariance = computed["covariance"]
+    precision = computed["precision"]
+    deviations = computed["deviations"]
+    loadings = computed["loadings"]
+    eigenvalues = computed["eigenvalues"]
+    finite = computed["finite"]
+    condition_number = computed["condition_number"]
+    train_rmse = computed["train_rmse"]
+    holdout_error = computed["holdout_error"]
+    holdout_relative = computed["holdout_relative"]
+    jacobian_rank = computed["jacobian_rank"]
+    jacobian_condition = computed["jacobian_condition"]
+    optimizer = computed["optimizer"]
+    anchors = tuple(computed["anchors"].numpy().tolist())
+    jacobian_rank = int(jacobian_rank)
+    jacobian_condition = None if jacobian_rank == 0 else float(jacobian_condition)
     second_factor_identified = bool(
         cfg.factor_count == 1 or jacobian_rank == parameter_count
     )
@@ -306,6 +241,7 @@ def fit_factor_correlation_score_geometry(
         status = "factor_optimizer_failed"
 
     diagnostics = {
+        "jit_compile": bool(jit_compile),
         "training_row_count": row_count,
         "holdout_row_count": int(holdout_z.shape[0]),
         "training_score_equation_count": row_count * dimension,
@@ -349,6 +285,107 @@ def fit_factor_correlation_score_geometry(
     )
 
 
+@lru_cache(maxsize=16)
+def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compile, diagnosis):
+    """One stable numerical boundary, including preparation and optimizer."""
+    signature = [tf.TensorSpec([dimension], tf.float64),
+        tf.TensorSpec([training_rows, dimension], tf.float64),
+        tf.TensorSpec([training_rows, dimension], tf.float64),
+        tf.TensorSpec([holdout_rows, dimension], tf.float64),
+        tf.TensorSpec([holdout_rows, dimension], tf.float64),
+        tf.TensorSpec([training_rows], tf.float64)]
+    @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
+    def numerical(center, train_z, train_score, holdout_z, holdout_score, weights):
+        weights /= tf.reduce_sum(weights)
+        train_response = center[None, :] - train_score
+        holdout_response = center[None, :] - holdout_score
+
+        dense_precision = _weighted_dense_precision(
+            train_z,
+            train_response,
+            weights,
+            max_condition_number=cfg.max_condition_number,
+        )
+        dense_covariance = tf.linalg.inv(dense_precision)
+        initial_standard_deviations, initial_loadings, anchors = _initial_factor_state(
+            dense_covariance,
+            factor_count=cfg.factor_count,
+            loading_margin=cfg.loading_margin,
+        )
+        initial_raw = _encode_state(
+            initial_standard_deviations,
+            initial_loadings,
+            anchors,
+            cfg,
+        )
+        int(initial_raw.shape[0])
+
+        def loss(raw: tf.Tensor) -> tf.Tensor:
+            covariance, _std, _loads = _decode_covariance(
+                raw, dimension=dimension, anchors=anchors, config=cfg
+            )
+            precision = tf.linalg.cholesky_solve(
+                tf.linalg.cholesky(covariance), tf.eye(dimension, dtype=tf.float64)
+            )
+            prediction = tf.einsum("ij,bj->bi", precision, train_z)
+            per_row = tf.reduce_mean(tf.square(prediction - train_response), axis=1)
+            return tf.reduce_sum(weights * per_row)
+
+        def value_and_gradient(raw: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+            return tfp.math.value_and_gradient(loss, raw)
+
+        optimizer = tfp.optimizer.lbfgs_minimize(
+            value_and_gradient,
+            initial_position=initial_raw,
+            tolerance=tf.constant(cfg.tolerance, tf.float64),
+            max_iterations=cfg.max_iterations,
+            parallel_iterations=1,
+        )
+        fitted_raw = tf.convert_to_tensor(optimizer.position, tf.float64)
+        covariance, deviations, loadings = _decode_covariance(
+            fitted_raw, dimension=dimension, anchors=anchors, config=cfg
+        )
+        chol = tf.linalg.cholesky(covariance)
+        precision = tf.linalg.cholesky_solve(
+            chol, tf.eye(dimension, dtype=tf.float64)
+        )
+
+        train_prediction = tf.einsum("ij,bj->bi", precision, train_z)
+        holdout_prediction = tf.einsum("ij,bj->bi", precision, holdout_z)
+        train_rmse = tf.sqrt(
+            tf.reduce_sum(
+                weights
+                * tf.reduce_mean(tf.square(train_prediction - train_response), axis=1)
+            )
+        )
+        holdout_error = tf.sqrt(
+            tf.reduce_mean(tf.square(holdout_prediction - holdout_response))
+        )
+        holdout_scale = tf.maximum(
+            tf.sqrt(tf.reduce_mean(tf.square(holdout_response))),
+            tf.constant(1.0e-15, tf.float64),
+        )
+        holdout_relative = holdout_error / holdout_scale
+        eigenvalues = tf.linalg.eigvalsh(covariance)
+        condition_number = tf.reduce_max(eigenvalues) / tf.reduce_min(eigenvalues)
+        finite = (
+            tf.reduce_all(tf.math.is_finite(covariance))
+            & tf.reduce_all(tf.math.is_finite(precision))
+            & tf.reduce_all(tf.math.is_finite(deviations))
+            & tf.reduce_all(tf.math.is_finite(loadings))
+        )
+        jacobian_rank, jacobian_condition = diagnosis(
+            fitted_raw,
+            train_z,
+            dimension=dimension,
+            anchors=anchors,
+            config=cfg,
+            jit_compile=jit_compile,
+        )
+        return {"covariance": covariance, "precision": precision, "deviations": deviations, "loadings": loadings, "eigenvalues": eigenvalues, "finite": finite, "condition_number": condition_number, "train_rmse": train_rmse, "holdout_error": holdout_error, "holdout_relative": holdout_relative, "jacobian_rank": jacobian_rank, "jacobian_condition": jacobian_condition, "optimizer": optimizer, "anchors": tf.stack(anchors)}
+    return numerical
+
+
 def factor_correlation_covariance(
     marginal_standard_deviations: Any,
     loadings: Any,
@@ -388,38 +425,24 @@ def _decode_covariance(
     remaining = vector[dimension:]
     if config.factor_count == 1:
         anchor = anchors[0]
-        before = remaining[:anchor]
-        anchor_loading = bound * tf.math.sigmoid(remaining[anchor : anchor + 1])
-        after = remaining[anchor + 1 :]
-        loads = bound * tf.math.tanh(tf.concat((before, after), axis=0))
-        loadings = tf.concat(
-            (loads[:anchor], anchor_loading, loads[anchor:]), axis=0
-        )[:, None]
+        loadings = bound * tf.where(tf.range(dimension) == anchor,
+            tf.math.sigmoid(remaining), tf.math.tanh(remaining))[:, None]
     else:
         anchor_a, anchor_b = anchors
-        rows = []
-        cursor = 0
-        for row in range(dimension):
-            if row == anchor_a:
-                radius = bound * tf.math.sigmoid(remaining[cursor])
-                cursor += 1
-                rows.append(tf.stack((radius, tf.constant(0.0, tf.float64))))
-            elif row == anchor_b:
-                radius = bound * tf.math.sigmoid(remaining[cursor])
-                angle = tf.constant(np.pi, tf.float64) * tf.math.sigmoid(
-                    remaining[cursor + 1]
-                )
-                cursor += 2
-                rows.append(radius * tf.stack((tf.cos(angle), tf.sin(angle))))
-            else:
-                unconstrained = remaining[cursor : cursor + 2]
-                cursor += 2
-                rows.append(
-                    bound
-                    * unconstrained
-                    / tf.sqrt(1.0 + tf.reduce_sum(tf.square(unconstrained)))
-                )
-        loadings = tf.stack(rows, axis=0)
+        # Insert the omitted second coordinate of the first anchor. Every row
+        # then has the same two-coordinate representation for tensor algebra.
+        omitted = 2 * anchor_a + 1
+        indices = tf.range(2*dimension)
+        full = tf.where(indices == omitted, tf.zeros([2*dimension], tf.float64),
+            tf.gather(remaining, tf.minimum(indices-tf.cast(indices > omitted, tf.int32), 2*dimension-2)))
+        unconstrained = tf.reshape(full, [dimension, 2])
+        loadings = bound * unconstrained / tf.sqrt(1.0 + tf.reduce_sum(tf.square(unconstrained), axis=1, keepdims=True))
+        first_radius = bound * tf.math.sigmoid(unconstrained[anchor_a, 0])
+        second_radius = bound * tf.math.sigmoid(unconstrained[anchor_b, 0])
+        angle = tf.constant(math.pi, tf.float64) * tf.math.sigmoid(unconstrained[anchor_b, 1])
+        loadings = tf.tensor_scatter_nd_update(loadings, tf.reshape(tf.stack((anchor_a, anchor_b)), [2, 1]),
+            tf.stack((tf.stack((first_radius, tf.constant(0., tf.float64))),
+                      second_radius * tf.stack((tf.cos(angle), tf.sin(angle))))))
     covariance = factor_correlation_covariance(
         deviations, loadings, loading_margin=config.loading_margin
     )
@@ -435,19 +458,18 @@ def _initial_factor_state(
     deviations = tf.sqrt(tf.linalg.diag_part(covariance))
     correlation = covariance / (deviations[:, None] * deviations[None, :])
     eigenvalues, eigenvectors = tf.linalg.eigh(correlation)
-    dimension = int(covariance.shape[0])
     selected_values = eigenvalues[-factor_count:]
     selected_vectors = eigenvectors[:, -factor_count:]
     excess = tf.sqrt(tf.maximum(selected_values - 1.0, 1.0e-6))
     loadings = selected_vectors * excess[None, :]
-    bound = float(np.sqrt(1.0 - loading_margin))
+    bound = math.sqrt(1.0 - loading_margin)
     row_norms = tf.linalg.norm(loadings, axis=1, keepdims=True)
     loadings *= tf.minimum(
         tf.ones_like(row_norms),
         tf.constant(0.8 * bound, tf.float64) / tf.maximum(row_norms, 1.0e-15),
     )
     if factor_count == 1:
-        anchor = int(tf.argmax(tf.abs(loadings[:, 0])).numpy())
+        anchor = tf.argmax(tf.abs(loadings[:, 0]), output_type=tf.int32)
         sign = tf.where(
             loadings[anchor, 0] >= 0.0,
             tf.constant(1.0, tf.float64),
@@ -456,7 +478,7 @@ def _initial_factor_state(
         loadings *= sign
         return deviations, loadings, (anchor,)
 
-    anchor_a = int(tf.argmax(tf.linalg.norm(loadings, axis=1)).numpy())
+    anchor_a = tf.argmax(tf.linalg.norm(loadings, axis=1), output_type=tf.int32)
     first = loadings[anchor_a]
     first_norm = tf.maximum(tf.linalg.norm(first), 1.0e-15)
     cosine, sine = first[0] / first_norm, first[1] / first_norm
@@ -466,9 +488,9 @@ def _initial_factor_state(
     loadings = tf.matmul(loadings, rotation)
     second_abs = tf.abs(loadings[:, 1])
     second_abs = tf.tensor_scatter_nd_update(
-        second_abs, [[anchor_a]], [tf.constant(-1.0, tf.float64)]
+        second_abs, tf.reshape(anchor_a, [1, 1]), [tf.constant(-1.0, tf.float64)]
     )
-    anchor_b = int(tf.argmax(second_abs).numpy())
+    anchor_b = tf.argmax(second_abs, output_type=tf.int32)
     second_sign = tf.where(
         loadings[anchor_b, 1] >= 0.0,
         tf.constant(1.0, tf.float64),
@@ -493,46 +515,22 @@ def _encode_state(
     bound = tf.sqrt(tf.constant(1.0 - config.loading_margin, tf.float64))
     if config.factor_count == 1:
         anchor = anchors[0]
-        rows = []
-        for row in range(int(loadings.shape[0])):
-            ratio = tf.clip_by_value(loadings[row, 0] / bound, -0.999999, 0.999999)
-            rows.append(
-                _logit(tf.clip_by_value(ratio, 1.0e-6, 1.0 - 1.0e-6))
-                if row == anchor
-                else tf.atanh(ratio)
-            )
-        raw_loadings = tf.stack(rows)
+        ratio = tf.clip_by_value(loadings[:, 0] / bound, -0.999999, 0.999999)
+        raw_loadings = tf.tensor_scatter_nd_update(tf.atanh(ratio), tf.reshape(anchor, [1, 1]),
+            tf.reshape(_logit(tf.clip_by_value(ratio[anchor], 1.0e-6, 1.0-1.0e-6)), [1]))
     else:
         anchor_a, anchor_b = anchors
-        rows = []
-        for row in range(int(loadings.shape[0])):
-            loading = loadings[row]
-            radius_ratio = tf.clip_by_value(
-                tf.linalg.norm(loading) / bound, 1.0e-6, 1.0 - 1.0e-6
-            )
-            if row == anchor_a:
-                rows.append(_logit(radius_ratio))
-            elif row == anchor_b:
-                angle = tf.atan2(loading[1], loading[0])
-                angle_ratio = tf.clip_by_value(
-                    angle / tf.constant(np.pi, tf.float64),
-                    1.0e-6,
-                    1.0 - 1.0e-6,
-                )
-                rows.extend((_logit(radius_ratio), _logit(angle_ratio)))
-            else:
-                ratio = loading / bound
-                rows.extend(
-                    tf.unstack(
-                        ratio
-                        / tf.sqrt(
-                            tf.maximum(
-                                1.0 - tf.reduce_sum(tf.square(ratio)), 1.0e-12
-                            )
-                        )
-                    )
-                )
-        raw_loadings = tf.stack(rows)
+        radius_ratio = tf.clip_by_value(tf.linalg.norm(loadings, axis=1)/bound, 1.0e-6, 1.0-1.0e-6)
+        ratio = loadings/bound
+        rows = ratio/tf.sqrt(tf.maximum(1.0-tf.reduce_sum(tf.square(ratio), axis=1, keepdims=True), 1.0e-12))
+        angle_ratio = tf.clip_by_value(tf.atan2(loadings[anchor_b, 1], loadings[anchor_b, 0])/math.pi, 1.0e-6, 1.0-1.0e-6)
+        rows = tf.tensor_scatter_nd_update(rows, tf.reshape(tf.stack((anchor_a, anchor_b)), [2, 1]),
+            tf.stack((tf.stack((_logit(radius_ratio[anchor_a]), tf.constant(0., tf.float64))),
+                      tf.stack((_logit(radius_ratio[anchor_b]), _logit(angle_ratio))))))
+        flat = tf.reshape(rows, [-1])
+        omitted = 2*anchor_a+1
+        indices = tf.range(2*int(loadings.shape[0])-1)
+        raw_loadings = tf.gather(flat, indices+tf.cast(indices >= omitted, tf.int32))
     return tf.concat((raw_deviations, raw_loadings), axis=0)
 
 
@@ -544,9 +542,7 @@ def _weighted_dense_precision(
     max_condition_number: float,
 ) -> tf.Tensor:
     root_weight = tf.sqrt(weights)[:, None]
-    raw = tf.linalg.lstsq(
-        offsets * root_weight, responses * root_weight, fast=False
-    )
+    raw = complete_orthogonal_lstsq(offsets * root_weight, responses * root_weight)
     symmetric = 0.5 * (raw + tf.transpose(raw))
     values, vectors = tf.linalg.eigh(symmetric)
     maximum = tf.maximum(tf.reduce_max(tf.abs(values)), 1.0)
@@ -562,31 +558,33 @@ def _prediction_jacobian_diagnostics(
     dimension: int,
     anchors: tuple[int, ...],
     config: FactorCorrelationGeometryConfig,
-) -> tuple[int, float | None]:
-    with tf.GradientTape() as tape:
-        tape.watch(raw)
-        covariance, _deviations, _loadings = _decode_covariance(
-            raw, dimension=dimension, anchors=anchors, config=config
-        )
-        precision = tf.linalg.cholesky_solve(
-            tf.linalg.cholesky(covariance), tf.eye(dimension, dtype=tf.float64)
-        )
-        prediction = tf.reshape(tf.einsum("ij,bj->bi", precision, offsets), [-1])
-    jacobian = tape.jacobian(prediction, raw)
-    singular = tf.linalg.svd(jacobian, compute_uv=False)
+    jit_compile: bool = True,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    parameter_count = int(raw.shape[0])
+    columns = tf.TensorArray(tf.float64, parameter_count, element_shape=[int(offsets.shape[0])*dimension])
+    def column(index, columns):
+        with tf.autodiff.ForwardAccumulator(raw, tf.one_hot(index, parameter_count, dtype=raw.dtype)) as tangent:
+            covariance, _, _ = _decode_covariance(raw, dimension=dimension, anchors=anchors, config=config)
+            precision = tf.linalg.cholesky_solve(tf.linalg.cholesky(covariance), tf.eye(dimension, dtype=tf.float64))
+            prediction = tf.reshape(tf.einsum("ij,bj->bi", precision, offsets), [-1])
+        return index+1, columns.write(index, tangent.jvp(prediction))
+    _, columns = tf.while_loop(lambda index, _: index < parameter_count, column, (tf.constant(0), columns),
+                               maximum_iterations=parameter_count, parallel_iterations=1)
+    jacobian = tf.transpose(columns.stack())
+    if jit_compile:
+        upper = tf.linalg.qr(jacobian, full_matrices=False)[1]
+        singular = xla_svd(upper, max_iter=100, epsilon=sys.float_info.epsilon, precision_config="").s
+    else:
+        singular = tf.linalg.svd(jacobian, compute_uv=False)
     largest = tf.reduce_max(singular)
     tolerance = (
         largest
         * tf.cast(tf.maximum(tf.shape(jacobian)[0], tf.shape(jacobian)[1]), tf.float64)
-        * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
+        * sys.float_info.epsilon
     )
-    positive = singular[singular > tolerance]
-    rank = int(tf.size(positive).numpy())
-    condition = (
-        None
-        if rank == 0
-        else float((tf.reduce_max(positive) / tf.reduce_min(positive)).numpy())
-    )
+    positive = singular > tolerance
+    rank = tf.reduce_sum(tf.cast(positive, tf.int32))
+    condition = tf.where(rank > 0, largest/tf.reduce_min(tf.where(positive, singular, float("inf"))), 0.)
     return rank, condition
 
 
@@ -634,10 +632,8 @@ def _rejected(
 
 
 def _json_ready(value: Any) -> Any:
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if tf.is_tensor(value) or getattr(value, "__array_interface__", None) is not None:
+        return numeric_tensor(value).numpy().tolist()
     if isinstance(value, Mapping):
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):

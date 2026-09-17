@@ -326,8 +326,10 @@ def _sinkhorn_barycentric_batch_value(
         return index + 1, left_new, right_new
 
     total_iterations = sinkhorn_steps + balance_steps
-    for _ in range(total_iterations):
-        _, left, right = body(tf.constant(0, tf.int32), left, right)
+    _, left, right = tf.while_loop(
+        lambda index, *_: index < total_iterations, body,
+        (tf.constant(0), left, right), maximum_iterations=total_iterations,
+    )
     coupling = left[:, :, None] * kernel * right[:, None, :]
     row_mass = tf.reduce_sum(coupling, axis=2)
     barycentric = tf.einsum("bij,bjd->bid", coupling, particles) / row_mass[:, :, None]
@@ -613,8 +615,8 @@ def _restore_cloud_batch_jvp(
         balance_steps=balance_steps,
         ridge=ridge,
     )
-    tangent_directions = []
-    for parameter in range(int(parameter_count)):
+    tangent_directions = tf.TensorArray(particles.dtype, size=parameter_count, element_shape=particles.shape)
+    def direction_step(parameter, tangent_directions):
         with tf.autodiff.ForwardAccumulator(
             (particles, weights),
             (
@@ -631,8 +633,11 @@ def _restore_cloud_batch_jvp(
                 balance_steps=balance_steps,
                 ridge=ridge,
             )["particles"]
-        tangent_directions.append(accumulator.jvp(direction_particles))
-    restored_tangent = tf.stack(tangent_directions, axis=-1)
+        return parameter + 1, tangent_directions.write(parameter, accumulator.jvp(direction_particles))
+    _, tangent_directions = tf.while_loop(lambda parameter, _: parameter < parameter_count,
+                                         direction_step, (tf.constant(0), tangent_directions),
+                                         maximum_iterations=parameter_count)
+    restored_tangent = tf.transpose(tangent_directions.stack(), [1, 2, 3, 0])
     reset_valid = value["valid"] & tf.reduce_all(
         tf.math.is_finite(restored_tangent), axis=[1, 2, 3]
     )
@@ -1093,7 +1098,7 @@ def _higher_moment_batch_manual_jvp_diagnostic(
     maximum_condition = tf.zeros([tf.shape(source)[0]], source.dtype)
     maximum_pre_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
     maximum_post_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
-    for _ in range(correction_steps):
+    def correct(index, standardized, standardized_tangent, maximum_condition, maximum_pre_cap_rms, maximum_post_cap_rms):
         (
             standardized,
             standardized_tangent,
@@ -1119,6 +1124,13 @@ def _higher_moment_batch_manual_jvp_diagnostic(
         )
         maximum_post_cap_rms = tf.maximum(
             maximum_post_cap_rms, iteration_post_cap_rms
+        )
+        return index + 1, standardized, standardized_tangent, maximum_condition, maximum_pre_cap_rms, maximum_post_cap_rms
+    if correction_steps:
+        _, standardized, standardized_tangent, maximum_condition, maximum_pre_cap_rms, maximum_post_cap_rms = tf.while_loop(
+            lambda index, *_: index < correction_steps, correct,
+            (tf.constant(0), standardized, standardized_tangent, maximum_condition, maximum_pre_cap_rms, maximum_post_cap_rms),
+            maximum_iterations=correction_steps,
         )
     output = mean[:, None, :] + tf.linalg.matmul(
         standardized, target_chol, transpose_b=True
@@ -1195,8 +1207,8 @@ def _higher_moment_batch_jvp(
         lm_scale_floor=lm_scale_floor,
         trust_radius=trust_radius,
     )
-    tangent_directions = []
-    for parameter in range(int(parameter_count)):
+    tangent_directions = tf.TensorArray(points.dtype, size=parameter_count, element_shape=points.shape)
+    def direction_step(parameter, tangent_directions):
         with tf.autodiff.ForwardAccumulator(
             (source, weights, points),
             (
@@ -1216,8 +1228,11 @@ def _higher_moment_batch_jvp(
                 lm_scale_floor=lm_scale_floor,
                 trust_radius=trust_radius,
             )["particles"]
-        tangent_directions.append(accumulator.jvp(direction_particles))
-    particles_tangent = tf.stack(tangent_directions, axis=-1)
+        return parameter + 1, tangent_directions.write(parameter, accumulator.jvp(direction_particles))
+    _, tangent_directions = tf.while_loop(lambda parameter, _: parameter < parameter_count,
+                                         direction_step, (tf.constant(0), tangent_directions),
+                                         maximum_iterations=parameter_count)
+    particles_tangent = tf.transpose(tangent_directions.stack(), [1, 2, 3, 0])
     result["particles_tangent"] = particles_tangent
     result["valid"] &= tf.reduce_all(
         tf.math.is_finite(particles_tangent), axis=[1, 2, 3]
@@ -1398,7 +1413,7 @@ def _higher_moment_batch_value(
     maximum_condition = tf.zeros([tf.shape(source)[0]], source.dtype)
     maximum_pre_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
     maximum_post_cap_rms = tf.zeros([tf.shape(source)[0]], source.dtype)
-    for _ in range(correction_steps):
+    def correct(index, standardized, minimum_chol_diagonal, chol_finite, maximum_condition, maximum_pre_cap_rms, maximum_post_cap_rms):
         iteration = _shape_iteration_batch_primal(
             standardized,
             target_skew,
@@ -1427,6 +1442,15 @@ def _higher_moment_batch_value(
         maximum_post_cap_rms = tf.maximum(
             maximum_post_cap_rms, iteration["maximum_post_cap_rms"]
         )
+        return index + 1, standardized, minimum_chol_diagonal, chol_finite, maximum_condition, maximum_pre_cap_rms, maximum_post_cap_rms
+    # A zero-capacity AD TensorList is not compilable by XLA. This static
+    # configuration branch also matches the former range(0) no-op exactly.
+    if correction_steps:
+        _, standardized, minimum_chol_diagonal, chol_finite, maximum_condition, maximum_pre_cap_rms, maximum_post_cap_rms = tf.while_loop(
+            lambda index, *_: index < correction_steps, correct,
+            (tf.constant(0), standardized, minimum_chol_diagonal, chol_finite, maximum_condition, maximum_pre_cap_rms, maximum_post_cap_rms),
+            maximum_iterations=correction_steps,
+        )
     maximum_pairwise_pre_cap_rms = tf.zeros(
         [tf.shape(source)[0]], source.dtype
     )
@@ -1452,7 +1476,7 @@ def _higher_moment_batch_value(
         )
         target_co_skew *= off_diagonal
         target_co_kurtosis *= off_diagonal
-        for _ in range(pairwise_correction_steps):
+        def correct_pairwise(index, standardized, minimum_chol_diagonal, chol_finite, maximum_pairwise_pre_cap_rms, maximum_pairwise_post_cap_rms, minimum_pairwise_cap_scale):
             pairwise = _pairwise_iteration_batch_primal(
                 standardized,
                 target_co_skew,
@@ -1482,6 +1506,12 @@ def _higher_moment_batch_value(
                 minimum_pairwise_cap_scale,
                 pairwise["minimum_cap_scale"],
             )
+            return index + 1, standardized, minimum_chol_diagonal, chol_finite, maximum_pairwise_pre_cap_rms, maximum_pairwise_post_cap_rms, minimum_pairwise_cap_scale
+        _, standardized, minimum_chol_diagonal, chol_finite, maximum_pairwise_pre_cap_rms, maximum_pairwise_post_cap_rms, minimum_pairwise_cap_scale = tf.while_loop(
+            lambda index, *_: index < pairwise_correction_steps, correct_pairwise,
+            (tf.constant(0), standardized, minimum_chol_diagonal, chol_finite, maximum_pairwise_pre_cap_rms, maximum_pairwise_post_cap_rms, minimum_pairwise_cap_scale),
+            maximum_iterations=pairwise_correction_steps,
+        )
     maximum_pre_coordinate_cap_absolute = tf.reduce_max(
         tf.abs(standardized), axis=[1, 2]
     )
@@ -1719,19 +1749,11 @@ def batch_finite_value(
         max_pre_cap_rms,
         max_post_cap_rms,
     )
-    horizon_static = observations.shape[0]
-    if horizon_static is not None:
-        loop_state = initial_loop_state
-        for _ in range(int(horizon_static)):
-            loop_state = body(*loop_state)
-    else:
-        loop_state = tf.while_loop(
-            lambda time_index, *_: time_index < horizon,
-            body,
-            initial_loop_state,
-            parallel_iterations=1,
-            maximum_iterations=horizon,
-        )
+    loop_state = tf.while_loop(
+        lambda time_index, *_: time_index < horizon,
+        body, initial_loop_state, parallel_iterations=1,
+        maximum_iterations=horizon,
+    )
     (
         _,
         _particles,
@@ -2032,19 +2054,11 @@ def batch_finite_value_score_manual_jvp_diagnostic(
         maximum_diagonal_pre_cap_particle_rms,
         maximum_diagonal_post_cap_particle_rms,
     )
-    horizon_static = observations.shape[0]
-    if horizon_static is not None:
-        loop_state = initial_loop_state
-        for _ in range(int(horizon_static)):
-            loop_state = body(*loop_state)
-    else:
-        loop_state = tf.while_loop(
-            lambda time_index, *_: time_index < horizon,
-            body,
-            initial_loop_state,
-            parallel_iterations=1,
-            maximum_iterations=horizon,
-        )
+    loop_state = tf.while_loop(
+        lambda time_index, *_: time_index < horizon,
+        body, initial_loop_state, parallel_iterations=1,
+        maximum_iterations=horizon,
+    )
     (
         _,
         _particles,
@@ -2108,7 +2122,13 @@ def batch_finite_value_score(
     higher_moment_lm_scale_floor: float = 1.0e-6,
     higher_moment_trust_radius: float = 0.0,
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
-    """Return the value and the derivative of that exact value program."""
+    """Diagnostic AD of the exact finite value program, not canonical LEDH.
+
+    Posterior rows are independent throughout ``batch_finite_value``. The
+    derivative of their sum therefore returns each row's own parameter score.
+    Reverse AD avoids TensorFlow's ForwardAccumulator/TensorList failure on
+    nested native loops; it does not change the scalar being differentiated.
+    """
 
     theta = tf.convert_to_tensor(theta, dtype=initial_noise.dtype)
     if theta.shape.rank != 2:
@@ -2116,7 +2136,6 @@ def batch_finite_value_score(
     parameter_count = theta.shape[-1]
     if parameter_count is None:
         raise ValueError("batch GenUT score requires static parameter count")
-    parameter_count = int(parameter_count)
     kwargs = {
         "epsilon": epsilon,
         "sinkhorn_steps": sinkhorn_steps,
@@ -2130,37 +2149,18 @@ def batch_finite_value_score(
         "higher_moment_lm_scale_floor": higher_moment_lm_scale_floor,
         "higher_moment_trust_radius": higher_moment_trust_radius,
     }
-    value, diagnostics = batch_finite_value(
-        adapter,
-        theta,
-        observations,
-        initial_noise,
-        process_noise,
-        design,
-        **kwargs,
-    )
+    with tf.GradientTape(watch_accessed_variables=False) as tape:
+        tape.watch(theta)
+        value, diagnostics = batch_finite_value(
+            adapter, theta, observations, initial_noise, process_noise, design,
+            **kwargs,
+        )
+        total_value = tf.reduce_sum(value)
+    score = tape.gradient(total_value, theta)
     initial_tangent = adapter.initial_tangent(theta, initial_noise)
     tangent_input_valid = tf.reduce_all(
         tf.math.is_finite(initial_tangent), axis=[1, 2, 3]
     )
-    score_directions = []
-    for parameter in range(int(parameter_count)):
-        direction = tf.one_hot(
-            parameter, int(parameter_count), dtype=theta.dtype
-        )[None, :]
-        direction = tf.broadcast_to(direction, tf.shape(theta))
-        with tf.autodiff.ForwardAccumulator(theta, direction) as accumulator:
-            direction_value, _direction_diagnostics = batch_finite_value(
-                adapter,
-                theta,
-                observations,
-                initial_noise,
-                process_noise,
-                design,
-                **kwargs,
-            )
-        score_directions.append(accumulator.jvp(direction_value))
-    score = tf.stack(score_directions, axis=1)
     valid = diagnostics["program_valid"] & tangent_input_valid & tf.reduce_all(
         tf.math.is_finite(score), axis=1
     )

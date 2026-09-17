@@ -9,7 +9,6 @@ from __future__ import annotations
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-
 Tensor = tf.Tensor
 HILBERT_IMPLEMENTATION_ID = "skilling_transpose_tf_lexicographic_int30_v2"
 STATE_MAP_ID = "componentwise_logistic_empirical_mean_std_floor_v2"
@@ -53,7 +52,7 @@ def calibrated_logistic_map(
     return guarded, saturation
 
 
-def _hilbert_transpose_axes(unit_points: Tensor, *, bits: int) -> list[Tensor]:
+def _hilbert_transpose_axes(unit_points: Tensor, *, bits: int) -> Tensor:
     """Return Skilling-transformed integer axes for rows in ``[0, 1)^d``."""
 
     if bits < 1 or bits > 20:
@@ -67,65 +66,64 @@ def _hilbert_transpose_axes(unit_points: Tensor, *, bits: int) -> list[Tensor]:
         tf.floor(open_unit_interval(unit_points) * tf.cast(levels, unit_points.dtype)),
         tf.int32,
     )
-    axes = tf.unstack(coordinates, axis=1)
+    axes = tf.transpose(coordinates)
 
     # Inverse undo/exchange transform from Skilling's Hilbert transpose.
-    q = 1 << (bits - 1)
-    while q > 1:
+    def exchange_level(q, axes):
         p = q - 1
-        for axis in range(dimension):
-            has_bit = tf.not_equal(tf.bitwise.bitwise_and(axes[axis], q), 0)
-            exchange = tf.bitwise.bitwise_and(
-                tf.bitwise.bitwise_xor(axes[0], axes[axis]), p
-            )
-            first_if_clear = tf.bitwise.bitwise_xor(axes[0], exchange)
-            axis_if_clear = tf.bitwise.bitwise_xor(axes[axis], exchange)
-            first_if_set = tf.bitwise.bitwise_xor(axes[0], p)
-            axes[0] = tf.where(has_bit, first_if_set, first_if_clear)
-            axes[axis] = tf.where(has_bit, axes[axis], axis_if_clear)
-        q >>= 1
-
-    for axis in range(1, dimension):
-        axes[axis] = tf.bitwise.bitwise_xor(axes[axis], axes[axis - 1])
-
-    correction = tf.zeros_like(axes[0])
-    q = 1 << (bits - 1)
-    while q > 1:
-        correction = tf.where(
-            tf.not_equal(tf.bitwise.bitwise_and(axes[dimension - 1], q), 0),
-            tf.bitwise.bitwise_xor(correction, q - 1),
-            correction,
+        has_bit = tf.not_equal(tf.bitwise.bitwise_and(axes, q), 0)
+        # At this bit level only the lower p bits are exchanged. The first
+        # coordinate carries the last clear axis's lower bits, XOR p once
+        # for every intervening set axis. Compute all such prefixes together.
+        index = tf.range(dimension)
+        prefix_index = tf.range(dimension + 1)
+        clear_before = (
+            tf.logical_not(has_bit)[None, :, :]
+            & (index[None, :, None] > 0)
+            & (index[None, :, None] < prefix_index[:, None, None])
         )
-        q >>= 1
-    axes = [tf.bitwise.bitwise_xor(axis, correction) for axis in axes]
-    return axes
+        last_clear = tf.reduce_max(tf.where(clear_before, index[None, :, None], 0), axis=1)
+        source = tf.transpose(tf.gather(tf.transpose(axes), tf.transpose(last_clear), batch_dims=1))
+        set_count = tf.concat([tf.zeros_like(axes[:1]), tf.cumsum(tf.cast(has_bit, tf.int32), axis=0)], axis=0)
+        count_at_source = tf.transpose(tf.gather(tf.transpose(set_count), tf.transpose(last_clear + 1), batch_dims=1))
+        intervening = set_count - tf.where(last_clear > 0, count_at_source, 0)
+        lower = tf.bitwise.bitwise_xor(tf.bitwise.bitwise_and(source, p), tf.where(intervening % 2 != 0, p, 0))
+        high = tf.bitwise.bitwise_and(axes, tf.bitwise.invert(p))
+        exchanged = tf.where(has_bit, axes, tf.bitwise.bitwise_or(high, lower[:-1]))
+        axes = tf.concat([tf.bitwise.bitwise_or(high[:1], lower[-1:]), exchanged[1:]], axis=0)
+        return tf.bitwise.right_shift(q, 1), axes
+
+    _, axes = tf.while_loop(
+        lambda q, _: q > 1, exchange_level,
+        (tf.constant(1 << (bits - 1)), axes), maximum_iterations=bits - 1,
+    )
+    shifts = tf.range(bits)[None, None, :]
+    binary = tf.bitwise.bitwise_and(tf.bitwise.right_shift(axes[:, :, None], shifts), 1)
+    prefix_bits = tf.cumsum(binary, axis=0) % 2
+    axes = tf.reduce_sum(tf.bitwise.left_shift(prefix_bits, shifts), axis=2)
+    correction_bits = tf.cumsum(prefix_bits[-1], axis=1, exclusive=True, reverse=True) % 2
+    correction = tf.reduce_sum(tf.bitwise.left_shift(correction_bits, shifts[0]), axis=1)
+    return tf.bitwise.bitwise_xor(axes, correction[None, :])
 
 
 def hilbert_transpose_words(unit_points: Tensor, *, bits: int) -> Tensor:
     """Return arbitrary-width Hilbert keys as lexicographic 30-bit words."""
 
     axes = _hilbert_transpose_axes(unit_points, bits=bits)
-    dimension = len(axes)
-    words: list[Tensor] = []
-    word = tf.zeros_like(axes[0])
-    word_bits = 0
-    for bit in range(bits - 1, -1, -1):
-        for axis in range(dimension):
-            word = tf.bitwise.left_shift(word, 1)
-            word = tf.bitwise.bitwise_or(
-                word,
-                tf.bitwise.bitwise_and(
-                    tf.bitwise.right_shift(axes[axis], bit), 1
-                ),
-            )
-            word_bits += 1
-            if word_bits == 30:
-                words.append(word)
-                word = tf.zeros_like(axes[0])
-                word_bits = 0
-    if word_bits:
-        words.append(word)
-    return tf.stack(words, axis=1)
+    dimension = int(axes.shape[0])
+    total_bits = bits * dimension
+    positions = tf.range(total_bits)
+    axis_bits = tf.bitwise.bitwise_and(
+        tf.bitwise.right_shift(
+            tf.gather(axes, positions % dimension),
+            (bits - 1 - positions // dimension)[:, None],
+        ), 1,
+    )
+    widths = tf.minimum(30, total_bits - 30 * (positions // 30))
+    weighted = tf.bitwise.left_shift(axis_bits, (widths - 1 - positions % 30)[:, None])
+    word_count = (total_bits + 29) // 30
+    padded = tf.pad(tf.transpose(weighted), [[0, 0], [0, 30 * word_count - total_bits]])
+    return tf.reduce_sum(tf.reshape(padded, [-1, word_count, 30]), axis=2)
 
 
 def hilbert_integer_keys(unit_points: Tensor, *, bits: int) -> Tensor:
@@ -137,20 +135,16 @@ def hilbert_integer_keys(unit_points: Tensor, *, bits: int) -> Tensor:
         raise ValueError("packed Hilbert keys support dimensions 2 and 3")
     axes = _hilbert_transpose_axes(unit_points, bits=bits)
 
-    key = tf.zeros_like(tf.cast(axes[0], tf.int64))
-    for bit in range(bits - 1, -1, -1):
-        for axis in range(dimension):
-            key = tf.bitwise.left_shift(key, 1)
-            key = tf.bitwise.bitwise_or(
-                key,
-                tf.cast(
-                    tf.bitwise.bitwise_and(
-                        tf.bitwise.right_shift(axes[axis], bit), 1
-                    ),
-                    tf.int64,
-                ),
-            )
-    return key
+    positions = tf.range(bits * dimension)
+    axis_bits = tf.cast(tf.bitwise.bitwise_and(
+        tf.bitwise.right_shift(
+            tf.gather(axes, positions % dimension),
+            (bits - 1 - positions // dimension)[:, None],
+        ), 1,
+    ), tf.int64)
+    return tf.reduce_sum(tf.bitwise.left_shift(
+        axis_bits, tf.cast(bits * dimension - 1 - positions, tf.int64)[:, None],
+    ), axis=0)
 
 
 def hilbert_permutation(
@@ -165,11 +159,15 @@ def hilbert_permutation(
     mapped, saturation = calibrated_logistic_map(points, location, scale)
     words = hilbert_transpose_words(mapped, bits=bits)
     order = tf.range(tf.shape(words)[0], dtype=tf.int32)
-    for word_index in range(int(words.shape[1]) - 1, -1, -1):
+    def sort_word(word_index, order):
         local_order = tf.argsort(
             tf.gather(words[:, word_index], order), axis=0, stable=True
         )
-        order = tf.gather(order, local_order)
+        return word_index - 1, tf.gather(order, local_order)
+    _, order = tf.while_loop(
+        lambda word_index, _: word_index >= 0, sort_word,
+        (tf.shape(words)[1] - 1, order), maximum_iterations=int(words.shape[1]),
+    )
     sorted_words = tf.gather(words, order)
     ties = tf.reduce_sum(
         tf.cast(

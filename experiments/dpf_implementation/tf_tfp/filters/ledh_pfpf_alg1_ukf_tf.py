@@ -7,6 +7,8 @@ from typing import Any, Callable, Mapping
 
 import tensorflow as tf
 
+from bayesfilter.ops.slogdet_tf import slogdet_tf
+
 from bayesfilter.linear.svd_factor_tf import eigh_solve, floor_count, psd_eigh, symmetrize
 from bayesfilter.nonlinear.sigma_points_tf import (
     TFSigmaPointRule,
@@ -182,7 +184,7 @@ def ukf_predict_additive_tf(
         singular_floor=tf.cast(covariance_floor, DTYPE),
         rank_tolerance=tf.cast(rank_tolerance, DTYPE),
     )
-    predicted_points = tf.cast(transition_mean_fn(sigma_points, int(time_index)), DTYPE)
+    predicted_points = tf.cast(transition_mean_fn(sigma_points, time_index), DTYPE)
     predicted_mean = tf.linalg.matvec(
         tf.transpose(predicted_points),
         rule.mean_weights,
@@ -249,7 +251,7 @@ def ukf_update_additive_tf(
         rank_tolerance=tf.cast(rank_tolerance, DTYPE),
     )
     placed_covariance = placement.implemented_covariance
-    observation_points = tf.cast(observation_mean_fn(sigma_points, int(time_index)), DTYPE)
+    observation_points = tf.cast(observation_mean_fn(sigma_points, time_index), DTYPE)
     observation_mean = tf.linalg.matvec(
         tf.transpose(observation_points),
         rule.mean_weights,
@@ -330,6 +332,7 @@ def li_coates_ledh_alg1_time_step_tf(
     kappa: float = 0.0,
     covariance_floor: float | tf.Tensor = DEFAULT_COVARIANCE_FLOOR,
     rank_tolerance: float | tf.Tensor = DEFAULT_RANK_TOLERANCE,
+    graph_reference: bool = False,
 ) -> LedhAlg1TimeStepResult:
     """Run one source-form Algorithm 1 LEDH PF-PF time step."""
 
@@ -340,63 +343,55 @@ def li_coates_ledh_alg1_time_step_tf(
     pseudo_time_steps = validate_pseudo_time_steps_tf(pseudo_time_steps)
     num_particles = int(ancestors.shape[0])
     state_dim = int(ancestors.shape[1])
-    obs_covariance = symmetrize(observation_covariance_fn(int(time_index)))
+    obs_covariance = symmetrize(observation_covariance_fn(time_index))
+    obs_eigensystem = psd_eigh(obs_covariance, tf.cast(covariance_floor, DTYPE))[:3]
+    coefficient_fn = (_ledh_alg1_coefficients_graph_reference_tf if graph_reference
+                      else ledh_alg1_coefficients_tf)
     identity = tf.eye(state_dim, dtype=DTYPE)
 
-    predicted_means = []
-    predicted_covariances = []
-    updated_means = []
-    updated_covariances = []
-    auxiliary_anchors = []
-    auxiliary_terminal_states = []
-    flow_matrices_by_particle_step = []
-    flow_offsets_by_particle_step = []
-    post_flow_particles = []
-    forward_log_dets = []
-    min_predicted_eigenvalues = []
-    max_prediction_floor_counts = []
-    determinant_signs = []
+    pseudo_count = pseudo_time_steps.shape[0]
+    if pseudo_count is None:
+        raise ValueError("Algorithm 1 pseudo-time grid requires a static length")
 
-    for i in range(num_particles):
-        ancestor_i = ancestors[i]
-        previous_covariance_i = symmetrize(previous_covariances[i])
+    def one_particle(inputs):
+        ancestor_i, previous_covariance_i, pre_flow_i = inputs
+        previous_covariance_i = symmetrize(previous_covariance_i)
         process_covariance_i = symmetrize(
-            process_noise_covariance_fn(ancestor_i, int(time_index))
+            process_noise_covariance_fn(ancestor_i, time_index)
         )
         prediction = ukf_predict_additive_tf(
             previous_state=ancestor_i,
             previous_covariance=previous_covariance_i,
             transition_mean_fn=transition_mean_fn,
             process_noise_covariance=process_covariance_i,
-            time_index=int(time_index),
+            time_index=time_index,
             alpha=alpha,
             beta=beta,
             kappa=kappa,
             covariance_floor=covariance_floor,
             rank_tolerance=rank_tolerance,
         )
-        predicted_means.append(prediction.mean)
-        predicted_covariances.append(prediction.covariance)
-        max_prediction_floor_counts.append(prediction.diagnostics["prediction_floor_count"])
-        min_predicted_eigenvalues.append(
-            tf.reduce_min(tf.linalg.eigvalsh(symmetrize(prediction.covariance)))
-        )
-
         anchor_i = tf.reshape(
-            transition_mean_fn(ancestor_i[tf.newaxis, :], int(time_index))[0],
+            transition_mean_fn(ancestor_i[tf.newaxis, :], time_index)[0],
             [-1],
         )
         auxiliary_state_i = tf.identity(anchor_i)
-        eta_i = tf.reshape(pre_flow_particles[i], [-1])
+        eta_i = tf.reshape(pre_flow_i, [-1])
         log_det_i = tf.constant(0.0, dtype=DTYPE)
         lambda_value = tf.constant(0.0, dtype=DTYPE)
         sign_product_i = tf.constant(1.0, dtype=DTYPE)
-        a_matrices_i = []
-        b_vectors_i = []
-        for eps in tf.unstack(pseudo_time_steps, axis=0):
+        a_matrices_i = tf.zeros([pseudo_count, state_dim, state_dim], DTYPE)
+        b_vectors_i = tf.zeros([pseudo_count, state_dim], DTYPE)
+
+        def pseudo_cond(j, lambda_value, auxiliary_state, eta, log_det, sign_product, matrices, offsets):
+            del lambda_value, auxiliary_state, eta, log_det, sign_product, matrices, offsets
+            return j < pseudo_count
+
+        def pseudo_body(j, lambda_value, auxiliary_state, eta, log_det, sign_product, matrices, offsets):
+            eps = pseudo_time_steps[j]
             lambda_value = lambda_value + eps
-            coefficients = ledh_alg1_coefficients_tf(
-                auxiliary_state=auxiliary_state_i,
+            coefficients = coefficient_fn(
+                auxiliary_state=auxiliary_state,
                 zero_noise_anchor=anchor_i,
                 predicted_covariance=prediction.covariance,
                 observation=observation,
@@ -404,56 +399,101 @@ def li_coates_ledh_alg1_time_step_tf(
                 observation_jacobian_fn=observation_jacobian_fn,
                 observation_covariance=obs_covariance,
                 lambda_value=lambda_value,
-                time_index=int(time_index),
+                time_index=time_index,
                 covariance_floor=covariance_floor,
+                observation_eigensystem=obs_eigensystem,
             )
             a_matrix = coefficients["A"]
             b_vector = coefficients["b"]
-            a_matrices_i.append(a_matrix)
-            b_vectors_i.append(b_vector)
-            auxiliary_state_i = auxiliary_state_i + eps * (
-                tf.linalg.matvec(a_matrix, auxiliary_state_i) + b_vector
+            matrices = tf.tensor_scatter_nd_update(matrices, tf.reshape(j, [1, 1]), a_matrix[None])
+            offsets = tf.tensor_scatter_nd_update(offsets, tf.reshape(j, [1, 1]), b_vector[None])
+            auxiliary_state = auxiliary_state + eps * (
+                tf.linalg.matvec(a_matrix, auxiliary_state) + b_vector
             )
-            eta_i = eta_i + eps * (tf.linalg.matvec(a_matrix, eta_i) + b_vector)
+            eta = eta + eps * (tf.linalg.matvec(a_matrix, eta) + b_vector)
             step_map = identity + eps * a_matrix
-            sign, log_abs_det = tf.linalg.slogdet(step_map)
-            sign_product_i = sign_product_i * sign
-            log_det_i = log_det_i + log_abs_det
+            sign, log_abs_det = slogdet_tf(step_map)
+            sign_product = sign_product * sign
+            log_det = log_det + log_abs_det
+            return j + 1, lambda_value, auxiliary_state, eta, log_det, sign_product, matrices, offsets
+
+        (
+            _j, _lambda_value, auxiliary_state_i, eta_i, log_det_i,
+            sign_product_i, a_matrices_i, b_vectors_i,
+        ) = tf.while_loop(
+            pseudo_cond,
+            pseudo_body,
+            loop_vars=(
+                tf.constant(0, tf.int32), lambda_value, auxiliary_state_i, eta_i,
+                log_det_i, sign_product_i, a_matrices_i, b_vectors_i,
+            ),
+            maximum_iterations=pseudo_count,
+        )
         update = ukf_update_additive_tf(
             predicted_mean=prediction.mean,
             predicted_covariance=prediction.covariance,
             observation=observation,
             observation_mean_fn=observation_mean_fn,
             observation_covariance=obs_covariance,
-            time_index=int(time_index),
+            time_index=time_index,
             alpha=alpha,
             beta=beta,
             kappa=kappa,
             covariance_floor=covariance_floor,
             rank_tolerance=rank_tolerance,
         )
-        updated_means.append(update.mean)
-        updated_covariances.append(update.covariance)
-        auxiliary_anchors.append(anchor_i)
-        auxiliary_terminal_states.append(auxiliary_state_i)
-        flow_matrices_by_particle_step.append(tf.stack(a_matrices_i, axis=0))
-        flow_offsets_by_particle_step.append(tf.stack(b_vectors_i, axis=0))
-        post_flow_particles.append(eta_i)
-        forward_log_dets.append(log_det_i)
-        determinant_signs.append(sign_product_i)
+        return (
+            prediction.mean,
+            prediction.covariance,
+            update.mean,
+            update.covariance,
+            anchor_i,
+            auxiliary_state_i,
+            a_matrices_i,
+            b_vectors_i,
+            eta_i,
+            log_det_i,
+            prediction.diagnostics["prediction_floor_count"],
+            tf.stop_gradient(tf.reduce_min(tf.linalg.eigvalsh(symmetrize(prediction.covariance)))),
+            sign_product_i,
+        )
 
-    predicted_means_tensor = tf.stack(predicted_means, axis=0)
-    predicted_covariances_tensor = tf.stack(predicted_covariances, axis=0)
-    updated_means_tensor = tf.stack(updated_means, axis=0)
-    updated_covariances_tensor = tf.stack(updated_covariances, axis=0)
-    anchors_tensor = tf.stack(auxiliary_anchors, axis=0)
-    auxiliary_terminal_tensor = tf.stack(auxiliary_terminal_states, axis=0)
-    flow_matrices_tensor = tf.stack(flow_matrices_by_particle_step, axis=0)
-    flow_offsets_tensor = tf.stack(flow_offsets_by_particle_step, axis=0)
-    post_flow_tensor = tf.stack(post_flow_particles, axis=0)
-    forward_log_det_tensor = tf.stack(forward_log_dets, axis=0)
+    from experiments.dpf_implementation.tf_tfp.filters.native_execution_tf import map_fixed_rows
+    (
+        predicted_means_tensor,
+        predicted_covariances_tensor,
+        updated_means_tensor,
+        updated_covariances_tensor,
+        anchors_tensor,
+        auxiliary_terminal_tensor,
+        flow_matrices_tensor,
+        flow_offsets_tensor,
+        post_flow_tensor,
+        forward_log_det_tensor,
+        max_prediction_floor_counts,
+        min_predicted_eigenvalues,
+        determinant_signs,
+    ) = map_fixed_rows(
+        one_particle,
+        (ancestors, previous_covariances, pre_flow_particles),
+        output_signature=(
+            tf.TensorSpec([state_dim], DTYPE),
+            tf.TensorSpec([state_dim, state_dim], DTYPE),
+            tf.TensorSpec([state_dim], DTYPE),
+            tf.TensorSpec([state_dim, state_dim], DTYPE),
+            tf.TensorSpec([state_dim], DTYPE),
+            tf.TensorSpec([state_dim], DTYPE),
+            tf.TensorSpec([pseudo_count, state_dim, state_dim], DTYPE),
+            tf.TensorSpec([pseudo_count, state_dim], DTYPE),
+            tf.TensorSpec([state_dim], DTYPE),
+            tf.TensorSpec([], DTYPE),
+            tf.TensorSpec([], tf.int32),
+            tf.TensorSpec([], DTYPE),
+            tf.TensorSpec([], DTYPE),
+        ),
+    )
     pre_flow_log_density = tf.cast(
-        transition_log_density_fn(pre_flow_particles, ancestors, int(time_index)),
+        transition_log_density_fn(pre_flow_particles, ancestors, time_index),
         DTYPE,
     )
     diagnostics = {
@@ -465,11 +505,9 @@ def li_coates_ledh_alg1_time_step_tf(
         "pseudo_time_step_count": int(pseudo_time_steps.shape[0]),
         "pseudo_time_sum": _float(tf.reduce_sum(pseudo_time_steps)),
         "min_predicted_covariance_eigenvalue": _float(
-            tf.reduce_min(tf.stack(min_predicted_eigenvalues, axis=0))
+            tf.reduce_min(min_predicted_eigenvalues)
         ),
-        "max_prediction_floor_count": int(
-            tf.reduce_max(tf.stack(max_prediction_floor_counts, axis=0)).numpy()
-        ),
+        "max_prediction_floor_count": _host_int(tf.reduce_max(max_prediction_floor_counts)),
         "min_forward_log_det": _float(tf.reduce_min(forward_log_det_tensor)),
         "max_forward_log_det": _float(tf.reduce_max(forward_log_det_tensor)),
         "finite_forward_log_det": _finite_bool(forward_log_det_tensor),
@@ -477,13 +515,13 @@ def li_coates_ledh_alg1_time_step_tf(
         "finite_auxiliary_terminal": _finite_bool(auxiliary_terminal_tensor),
         "finite_predicted_covariances": _finite_bool(predicted_covariances_tensor),
         "finite_updated_covariances": _finite_bool(updated_covariances_tensor),
-        "min_determinant_sign_product": _float(tf.reduce_min(tf.stack(determinant_signs))),
+        "min_determinant_sign_product": _float(tf.reduce_min(determinant_signs)),
         "same_affine_trace_available": True,
         "backend": "tensorflow",
     }
-    if not diagnostics["finite_forward_log_det"]:
+    if tf.executing_eagerly() and not diagnostics["finite_forward_log_det"]:
         raise FloatingPointError("Algorithm 1 LEDH determinant product is non-finite")
-    if not diagnostics["finite_post_flow"]:
+    if tf.executing_eagerly() and not diagnostics["finite_post_flow"]:
         raise FloatingPointError("Algorithm 1 LEDH flow emitted non-finite particles")
     return LedhAlg1TimeStepResult(
         pre_flow_particles=pre_flow_particles,
@@ -523,171 +561,52 @@ def li_coates_ledh_alg1_time_step_vectorized_particles_tf(
     covariance_floor: float | tf.Tensor = DEFAULT_COVARIANCE_FLOOR,
     rank_tolerance: float | tf.Tensor = DEFAULT_RANK_TOLERANCE,
 ) -> LedhAlg1TimeStepResult:
-    """Run one Algorithm 1 time step with a TensorFlow particle-batched route."""
+    """Compatibility name for the native TensorFlow particle route.
 
-    ancestors = tf.cast(ancestors, DTYPE)
-    previous_covariances = tf.cast(previous_covariances, DTYPE)
-    pre_flow_particles = tf.cast(pre_flow_particles, DTYPE)
-    observation = tf.reshape(tf.cast(observation, DTYPE), [-1])
-    pseudo_time_steps = validate_pseudo_time_steps_tf(pseudo_time_steps)
-    state_dim = int(ancestors.shape[1])
-    obs_covariance = symmetrize(observation_covariance_fn(int(time_index)))
-    identity = tf.eye(state_dim, dtype=DTYPE)
+    The old implementation duplicated the scalar particle body and used
+    ``tf.vectorized_map`` around a Python pseudo-time loop.  That created a
+    second execution contract and an implicit pfor boundary.  The native
+    implementation already maps particles with a fixed native tensor loop and carries
+    pseudo-time state through ``tf.while_loop``; keeping one body makes the
+    value and analytical-direction routes agree and lets the enclosing XLA
+    factory inspect one stable graph.
+    """
 
-    def one_particle(inputs: tuple[tf.Tensor, tf.Tensor, tf.Tensor]):
-        ancestor_i, previous_covariance_i, pre_flow_i = inputs
-        ancestor_i = tf.reshape(tf.cast(ancestor_i, DTYPE), [-1])
-        previous_covariance_i = symmetrize(previous_covariance_i)
-        eta_i = tf.reshape(tf.cast(pre_flow_i, DTYPE), [-1])
-        process_covariance_i = symmetrize(
-            process_noise_covariance_fn(ancestor_i, int(time_index))
-        )
-        prediction = ukf_predict_additive_tf(
-            previous_state=ancestor_i,
-            previous_covariance=previous_covariance_i,
-            transition_mean_fn=transition_mean_fn,
-            process_noise_covariance=process_covariance_i,
-            time_index=int(time_index),
-            alpha=alpha,
-            beta=beta,
-            kappa=kappa,
-            covariance_floor=covariance_floor,
-            rank_tolerance=rank_tolerance,
-        )
-        anchor_i = tf.reshape(
-            transition_mean_fn(ancestor_i[tf.newaxis, :], int(time_index))[0],
-            [-1],
-        )
-        auxiliary_state_i = tf.identity(anchor_i)
-        log_det_i = tf.constant(0.0, dtype=DTYPE)
-        lambda_value = tf.constant(0.0, dtype=DTYPE)
-        sign_product_i = tf.constant(1.0, dtype=DTYPE)
-        a_matrices_i = []
-        b_vectors_i = []
-        for eps in tf.unstack(pseudo_time_steps, axis=0):
-            lambda_value = lambda_value + eps
-            coefficients = ledh_alg1_coefficients_tf(
-                auxiliary_state=auxiliary_state_i,
-                zero_noise_anchor=anchor_i,
-                predicted_covariance=prediction.covariance,
-                observation=observation,
-                observation_mean_fn=observation_mean_fn,
-                observation_jacobian_fn=observation_jacobian_fn,
-                observation_covariance=obs_covariance,
-                lambda_value=lambda_value,
-                time_index=int(time_index),
-                covariance_floor=covariance_floor,
-            )
-            a_matrix = coefficients["A"]
-            b_vector = coefficients["b"]
-            a_matrices_i.append(a_matrix)
-            b_vectors_i.append(b_vector)
-            auxiliary_state_i = auxiliary_state_i + eps * (
-                tf.linalg.matvec(a_matrix, auxiliary_state_i) + b_vector
-            )
-            eta_i = eta_i + eps * (tf.linalg.matvec(a_matrix, eta_i) + b_vector)
-            step_map = identity + eps * a_matrix
-            sign, log_abs_det = tf.linalg.slogdet(step_map)
-            sign_product_i = sign_product_i * sign
-            log_det_i = log_det_i + log_abs_det
-        update = ukf_update_additive_tf(
-            predicted_mean=prediction.mean,
-            predicted_covariance=prediction.covariance,
-            observation=observation,
-            observation_mean_fn=observation_mean_fn,
-            observation_covariance=obs_covariance,
-            time_index=int(time_index),
-            alpha=alpha,
-            beta=beta,
-            kappa=kappa,
-            covariance_floor=covariance_floor,
-            rank_tolerance=rank_tolerance,
-        )
-        min_predicted_eigenvalue = tf.reduce_min(
-            tf.linalg.eigvalsh(symmetrize(prediction.covariance))
-        )
-        return (
-            prediction.mean,
-            prediction.covariance,
-            update.mean,
-            update.covariance,
-            anchor_i,
-            auxiliary_state_i,
-            tf.stack(a_matrices_i, axis=0),
-            tf.stack(b_vectors_i, axis=0),
-            eta_i,
-            log_det_i,
-            prediction.diagnostics["prediction_floor_count"],
-            min_predicted_eigenvalue,
-            sign_product_i,
-        )
-
-    (
-        predicted_means_tensor,
-        predicted_covariances_tensor,
-        updated_means_tensor,
-        updated_covariances_tensor,
-        anchors_tensor,
-        auxiliary_terminal_tensor,
-        flow_matrices_tensor,
-        flow_offsets_tensor,
-        post_flow_tensor,
-        forward_log_det_tensor,
-        prediction_floor_counts,
-        min_predicted_eigenvalues,
-        determinant_signs,
-    ) = tf.vectorized_map(
-        one_particle,
-        (ancestors, previous_covariances, pre_flow_particles),
-    )
-    pre_flow_log_density = tf.cast(
-        transition_log_density_fn(pre_flow_particles, ancestors, int(time_index)),
-        DTYPE,
-    )
-    diagnostics = {
-        "component_id": "li_coates_algorithm1_ledh_pfpf_ukf_time_step",
-        "method_generation": METHOD_GENERATION,
-        "flow_source_route": FLOW_SOURCE_ROUTE,
-        "covariance_route": COVARIANCE_ROUTE,
-        "flow_anchor_route": FLOW_ANCHOR_ROUTE,
-        "particle_batch_route": "tf_vectorized_map",
-        "pseudo_time_step_count": int(pseudo_time_steps.shape[0]),
-        "pseudo_time_sum": _float(tf.reduce_sum(pseudo_time_steps)),
-        "min_predicted_covariance_eigenvalue": _float(
-            tf.reduce_min(min_predicted_eigenvalues)
-        ),
-        "max_prediction_floor_count": int(
-            tf.reduce_max(prediction_floor_counts).numpy()
-        ),
-        "min_forward_log_det": _float(tf.reduce_min(forward_log_det_tensor)),
-        "max_forward_log_det": _float(tf.reduce_max(forward_log_det_tensor)),
-        "finite_forward_log_det": _finite_bool(forward_log_det_tensor),
-        "finite_post_flow": _finite_bool(post_flow_tensor),
-        "finite_auxiliary_terminal": _finite_bool(auxiliary_terminal_tensor),
-        "finite_predicted_covariances": _finite_bool(predicted_covariances_tensor),
-        "finite_updated_covariances": _finite_bool(updated_covariances_tensor),
-        "min_determinant_sign_product": _float(tf.reduce_min(determinant_signs)),
-        "same_affine_trace_available": True,
-        "backend": "tensorflow",
-    }
-    if not diagnostics["finite_forward_log_det"]:
-        raise FloatingPointError("Algorithm 1 LEDH determinant product is non-finite")
-    if not diagnostics["finite_post_flow"]:
-        raise FloatingPointError("Algorithm 1 LEDH flow emitted non-finite particles")
-    return LedhAlg1TimeStepResult(
+    result = li_coates_ledh_alg1_time_step_tf(
+        ancestors=ancestors,
+        previous_covariances=previous_covariances,
         pre_flow_particles=pre_flow_particles,
-        post_flow_particles=post_flow_tensor,
-        predicted_means=predicted_means_tensor,
-        predicted_covariances=predicted_covariances_tensor,
-        updated_means=updated_means_tensor,
-        updated_covariances=updated_covariances_tensor,
-        auxiliary_anchors=anchors_tensor,
-        auxiliary_terminal_states=auxiliary_terminal_tensor,
-        flow_matrices_by_particle_step=flow_matrices_tensor,
-        flow_offsets_by_particle_step=flow_offsets_tensor,
+        observation=observation,
+        transition_mean_fn=transition_mean_fn,
+        transition_log_density_fn=transition_log_density_fn,
+        observation_mean_fn=observation_mean_fn,
+        observation_jacobian_fn=observation_jacobian_fn,
+        process_noise_covariance_fn=process_noise_covariance_fn,
+        observation_covariance_fn=observation_covariance_fn,
+        time_index=time_index,
         pseudo_time_steps=pseudo_time_steps,
-        forward_log_det=forward_log_det_tensor,
-        pre_flow_log_density=pre_flow_log_density,
+        alpha=alpha,
+        beta=beta,
+        kappa=kappa,
+        covariance_floor=covariance_floor,
+        rank_tolerance=rank_tolerance,
+    )
+    diagnostics = dict(result.diagnostics)
+    diagnostics["particle_batch_route"] = "tf_while_loop_fixed_rows"
+    return LedhAlg1TimeStepResult(
+        pre_flow_particles=result.pre_flow_particles,
+        post_flow_particles=result.post_flow_particles,
+        predicted_means=result.predicted_means,
+        predicted_covariances=result.predicted_covariances,
+        updated_means=result.updated_means,
+        updated_covariances=result.updated_covariances,
+        auxiliary_anchors=result.auxiliary_anchors,
+        auxiliary_terminal_states=result.auxiliary_terminal_states,
+        flow_matrices_by_particle_step=result.flow_matrices_by_particle_step,
+        flow_offsets_by_particle_step=result.flow_offsets_by_particle_step,
+        pseudo_time_steps=result.pseudo_time_steps,
+        forward_log_det=result.forward_log_det,
+        pre_flow_log_density=result.pre_flow_log_density,
         diagnostics=diagnostics,
     )
 
@@ -704,6 +623,7 @@ def ledh_alg1_coefficients_tf(
     lambda_value: tf.Tensor,
     time_index: int,
     covariance_floor: float | tf.Tensor = DEFAULT_COVARIANCE_FLOOR,
+    observation_eigensystem=None,
 ) -> Mapping[str, tf.Tensor]:
     """Compute source-form Li-Coates LEDH coefficients for one particle."""
 
@@ -713,10 +633,10 @@ def ledh_alg1_coefficients_tf(
     observation = tf.reshape(tf.cast(observation, DTYPE), [-1])
     observation_covariance = symmetrize(observation_covariance)
     h_value = tf.reshape(
-        tf.cast(observation_mean_fn(auxiliary_state[tf.newaxis, :], int(time_index))[0], DTYPE),
+        tf.cast(observation_mean_fn(auxiliary_state[tf.newaxis, :], time_index)[0], DTYPE),
         [-1],
     )
-    h_jacobian = tf.cast(observation_jacobian_fn(auxiliary_state, int(time_index)), DTYPE)
+    h_jacobian = tf.cast(observation_jacobian_fn(auxiliary_state, time_index), DTYPE)
     residual_intercept = h_value - tf.linalg.matvec(h_jacobian, auxiliary_state)
     hpht = h_jacobian @ predicted_covariance @ tf.transpose(h_jacobian)
     lambda_tensor = tf.cast(lambda_value, DTYPE)
@@ -732,10 +652,9 @@ def ledh_alg1_coefficients_tf(
         @ tf.transpose(h_jacobian)
         @ solved_h
     )
-    obs_eigenvalues, obs_floored, obs_eigenvectors, _obs_impl, _obs_residual = psd_eigh(
-        observation_covariance,
-        tf.cast(covariance_floor, DTYPE),
-    )
+    if observation_eigensystem is None:
+        observation_eigensystem = psd_eigh(observation_covariance, tf.cast(covariance_floor, DTYPE))[:3]
+    obs_eigenvalues, obs_floored, obs_eigenvectors = observation_eigensystem
     shifted_observation = observation - residual_intercept
     obs_precision_residual = eigh_solve(obs_eigenvectors, obs_floored, shifted_observation)
     identity = tf.eye(int(auxiliary_state.shape[0]), dtype=DTYPE)
@@ -754,6 +673,10 @@ def ledh_alg1_coefficients_tf(
         "flow_floor_count": floor_count(flow_eigenvalues, tf.cast(covariance_floor, DTYPE)),
         "observation_floor_count": floor_count(obs_eigenvalues, tf.cast(covariance_floor, DTYPE)),
     }
+
+
+_ledh_alg1_coefficients_graph_reference_tf = tf.function(
+    ledh_alg1_coefficients_tf, autograph=False, experimental_attributes={"_noinline": True})
 
 
 def run_ledh_pfpf_alg1_ukf_tf(
@@ -788,202 +711,57 @@ def run_ledh_pfpf_alg1_ukf_tf(
     annealed_convergence_threshold: float = 1e-3,
     transport_gradient_mode: str = "filterflow_clipped",
     method_id: str = "ledh_pfpf_alg1_ukf_tf",
+    jit_compile: bool = True,
 ) -> LedhPFPFAlg1UKFTFResult:
     """Run Algorithm 1 UKF LEDH with reviewed resampling routes."""
 
-    if resampling_route not in {
-        "none",
-        "classical_resampling",
-        OT_ANNEALED_COVARIANCE_CARRY_ROUTE,
-        OT_SINKHORN_COVARIANCE_CARRY_ROUTE,
-    }:
-        raise ValueError(
-            "Algorithm 1 core supports none, classical_resampling, and reviewed P8h OT routes"
-        )
-    route = algorithm1_route_identifiers(resampling_route=resampling_route)
-    validate_algorithm1_route_identifiers(route)
+    from experiments.dpf_implementation.tf_tfp.filters.alg1_execution_tf import make_alg1_filter
+    from experiments.dpf_implementation.tf_tfp.filters.native_execution_tf import host_reports
+
+    observations = tf.convert_to_tensor(observations, DTYPE)
     particles = tf.cast(initial_sample(num_particles, seed), DTYPE)
-    initial_covariance = symmetrize(initial_covariance)
-    covariances = tf.tile(initial_covariance[tf.newaxis, :, :], [num_particles, 1, 1])
-    log_weights = tf.fill([num_particles], -tf.math.log(tf.cast(num_particles, DTYPE)))
-    pseudo_time = (
-        tf.constant([1.0], dtype=DTYPE)
-        if pseudo_time_steps is None
-        else validate_pseudo_time_steps_tf(pseudo_time_steps)
-    )
-    filtered_means = []
-    filtered_variances = []
-    particle_covariances_by_time = []
-    predicted_covariances_by_time = []
-    corrected_log_weights_by_time = []
-    ess_by_time = []
-    diagnostics: list[dict[str, Any]] = []
-    resampling_count = 0
-    log_likelihood = tf.constant(0.0, dtype=DTYPE)
-
-    for t, observation in enumerate(tf.unstack(tf.cast(observations, DTYPE), axis=0)):
-        ancestors = tf.identity(particles)
-        previous_covariances = tf.identity(covariances)
-        pre_flow = tf.cast(transition_sample(ancestors, seed, int(t)), DTYPE)
-        step_fn = (
-            li_coates_ledh_alg1_time_step_vectorized_particles_tf
-            if vectorized_particles
-            else li_coates_ledh_alg1_time_step_tf
-        )
-        step = step_fn(
-            ancestors=ancestors,
-            previous_covariances=previous_covariances,
-            pre_flow_particles=pre_flow,
-            observation=observation,
-            transition_mean_fn=transition_mean_fn,
-            transition_log_density_fn=transition_log_density_fn,
-            observation_mean_fn=observation_mean_fn,
-            observation_jacobian_fn=observation_jacobian_fn,
-            process_noise_covariance_fn=process_noise_covariance_fn,
-            observation_covariance_fn=observation_covariance_fn,
-            time_index=int(t),
-            pseudo_time_steps=pseudo_time,
-            alpha=alpha,
-            beta=beta,
-            kappa=kappa,
-            covariance_floor=covariance_floor,
-            rank_tolerance=rank_tolerance,
-        )
-        post_flow = step.post_flow_particles
-        target_transition = tf.cast(
-            transition_log_density_fn(post_flow, ancestors, int(t)),
-            DTYPE,
-        )
-        target_observation = tf.cast(
-            observation_log_density_fn(post_flow, observation, int(t)),
-            DTYPE,
-        )
-        corrected_log_weights = (
-            log_weights
-            + target_transition
-            + target_observation
-            - step.pre_flow_log_density
-            + step.forward_log_det
-        )
-        corrected_log_weights_by_time.append(corrected_log_weights)
-        weights, incremental = normalize_log_weights_tf(corrected_log_weights)
-        log_likelihood = log_likelihood + incremental
-        ess = 1.0 / tf.reduce_sum(weights * weights)
-        mean, variance = weighted_mean_and_variance_tf(post_flow, weights)
-        filtered_means.append(mean)
-        filtered_variances.append(variance)
-        particle_covariances_by_time.append(step.updated_covariances)
-        predicted_covariances_by_time.append(step.predicted_covariances)
-        ess_by_time.append(ess)
-        if not _finite_bool(corrected_log_weights):
-            raise FloatingPointError("Algorithm 1 corrected log weights are non-finite")
-
-        normalized_log_weights = tf.math.log(tf.maximum(weights, tf.constant(1e-300, dtype=DTYPE)))
-        trigger_resampling = bool((ess < ess_threshold_ratio * num_particles).numpy())
-        if resampling_route == "classical_resampling" and bool(
-            trigger_resampling
-        ):
-            indices = tf.random.stateless_categorical(
-                tf.reshape(tf.math.log(tf.maximum(weights, 1e-300)), [1, -1]),
-                num_particles,
-                seed=_seed_pair(seed, 9000 + t),
-                dtype=tf.int32,
-            )[0]
-            particles, covariances = apply_classical_resampling_state_tf(
-                particles=post_flow,
-                covariances=step.updated_covariances,
-                ancestor_indices=indices,
-            )
-            log_weights = tf.fill([num_particles], -tf.math.log(tf.cast(num_particles, DTYPE)))
-            resampling_count += 1
-            resampling_diag = {
-                "resampled": True,
-                "resampling_method": "stateless_multinomial_with_covariance_gather",
-                "ancestor_indices": [int(v) for v in tf.unstack(indices)],
-            }
-        elif resampling_route in {
-            OT_ANNEALED_COVARIANCE_CARRY_ROUTE,
-            OT_SINKHORN_COVARIANCE_CARRY_ROUTE,
-        } and trigger_resampling:
-            particles, covariances, resampling_diag = apply_ot_resampling_state_tf(
-                particles=post_flow,
-                covariances=step.updated_covariances,
-                weights=weights,
-                log_weights=normalized_log_weights,
-                resampling_route=resampling_route,
-                covariance_floor=covariance_floor,
-                sinkhorn_epsilon=sinkhorn_epsilon,
-                sinkhorn_iterations=sinkhorn_iterations,
-                sinkhorn_tolerance=sinkhorn_tolerance,
-                sinkhorn_epsilon_policy=sinkhorn_epsilon_policy,
-                annealed_scaling=annealed_scaling,
-                annealed_convergence_threshold=annealed_convergence_threshold,
-                transport_gradient_mode=transport_gradient_mode,
-            )
-            log_weights = tf.fill([num_particles], -tf.math.log(tf.cast(num_particles, DTYPE)))
-            resampling_count += 1
-            resampling_diag.update(
-                {
-                    "ess_trigger_threshold": float(ess_threshold_ratio),
-                    "ess_triggered": True,
-                    "resampling_route": resampling_route,
-                }
-            )
+    pseudo_time = validate_pseudo_time_steps_tf(
+        tf.constant([1.0], DTYPE) if pseudo_time_steps is None else pseudo_time_steps)
+    call = make_alg1_filter(tf.TensorSpec(observations.shape, DTYPE),
+        tf.TensorSpec(particles.shape, DTYPE), tf.TensorSpec(pseudo_time.shape, DTYPE),
+        transition_sample=transition_sample, transition_mean_fn=transition_mean_fn,
+        transition_log_density_fn=transition_log_density_fn,
+        observation_mean_fn=observation_mean_fn,
+        observation_jacobian_fn=observation_jacobian_fn,
+        observation_log_density_fn=observation_log_density_fn,
+        process_noise_covariance_fn=process_noise_covariance_fn,
+        observation_covariance_fn=observation_covariance_fn,
+        seed=seed, resampling_route=resampling_route, ess_threshold_ratio=ess_threshold_ratio,
+        alpha=alpha, beta=beta, kappa=kappa, covariance_floor=covariance_floor,
+        rank_tolerance=rank_tolerance, sinkhorn_epsilon=sinkhorn_epsilon,
+        sinkhorn_iterations=sinkhorn_iterations, sinkhorn_tolerance=sinkhorn_tolerance,
+        sinkhorn_epsilon_policy=sinkhorn_epsilon_policy, annealed_scaling=annealed_scaling,
+        annealed_convergence_threshold=annealed_convergence_threshold,
+        transport_gradient_mode=transport_gradient_mode, jit_compile=jit_compile)
+    total, history = call(observations, particles, tf.cast(initial_covariance, DTYPE), pseudo_time)
+    means, variances, updated, predicted, corrected, ess, diag, transport = history
+    reports = host_reports(diag, call.step_metadata)
+    transport_reports = host_reports(transport, call.transport_metadata)
+    # All Python iteration here serializes completed tensor histories only.
+    for report, transport_report in zip(reports, transport_reports):
+        report.update(jit_compile=jit_compile, time_loop_route="tf_while_loop",
+            particle_batch_route="tf_while_loop_fixed_rows", canonical_algorithm_admitted=False,
+            pfpf_correction="log_target_transition_plus_observation_minus_q0_plus_forward_logdet",
+            ess_trigger_threshold=float(ess_threshold_ratio), resampling_route=resampling_route)
+        if report["resampled"]:
+            report.update(transport_report)
         else:
-            particles = post_flow
-            covariances = step.updated_covariances
-            log_weights = normalized_log_weights
-            resampling_diag = {
-                "resampled": False,
-                "resampling_method": "none",
-                "ess_trigger_threshold": float(ess_threshold_ratio),
-                "ess_triggered": False,
-            }
-        diagnostics.append(
-            {
-                "time_index": int(t),
-                "ess": _float(ess),
-                "ess_ratio": _float(ess / tf.cast(num_particles, DTYPE)),
-                "pfpf_correction": "log_target_transition_plus_observation_minus_q0_plus_forward_logdet",
-                "finite_corrected_log_weights": _finite_bool(corrected_log_weights),
-                "min_corrected_log_weight": _float(tf.reduce_min(corrected_log_weights)),
-                "max_corrected_log_weight": _float(tf.reduce_max(corrected_log_weights)),
-                **step.diagnostics,
-                **resampling_diag,
-            }
-        )
-
-    filtered_means_tensor = tf.stack(filtered_means, axis=0)
-    filtered_variances_tensor = tf.stack(filtered_variances, axis=0)
-    particle_covariances_tensor = tf.stack(particle_covariances_by_time, axis=0)
-    predicted_covariances_tensor = tf.stack(predicted_covariances_by_time, axis=0)
-    corrected_log_weights_tensor = tf.stack(corrected_log_weights_by_time, axis=0)
-    ess_tensor = tf.stack(ess_by_time, axis=0)
-    finite = bool(
-        tf.math.is_finite(log_likelihood).numpy()
-        and _finite_bool(filtered_means_tensor)
-        and _finite_bool(filtered_variances_tensor)
-        and _finite_bool(particle_covariances_tensor)
-        and _finite_bool(predicted_covariances_tensor)
-        and _finite_bool(corrected_log_weights_tensor)
-        and _finite_bool(ess_tensor)
-    )
-    return LedhPFPFAlg1UKFTFResult(
-        method_id=method_id,
-        route_identifiers=route,
-        seed=int(seed),
-        num_particles=int(num_particles),
-        log_likelihood_estimate=log_likelihood,
-        filtered_means=filtered_means_tensor,
-        filtered_variances=filtered_variances_tensor,
-        particle_covariances_by_time=particle_covariances_tensor,
-        predicted_covariances_by_time=predicted_covariances_tensor,
-        corrected_log_weights_by_time=corrected_log_weights_tensor,
-        ess_by_time=ess_tensor,
-        resampling_count=int(resampling_count),
-        resampling_diagnostics=diagnostics,
-        finite=finite,
-    )
+            report.update(resampling_method="none")
+        if not (report["finite_corrected_log_weights"] and report["finite_forward_log_det"]
+                and report["finite_post_flow"] and report["valid_pseudo_time"]
+                and transport_report["valid"]):
+            raise FloatingPointError("Algorithm 1 filter violated a numerical or resampling veto")
+    finite = bool(tf.reduce_all(tf.stack([tf.reduce_all(tf.math.is_finite(v))
+        for v in (total, means, variances, updated, predicted, corrected, ess)])).numpy())
+    route = algorithm1_route_identifiers(resampling_route=resampling_route)
+    return LedhPFPFAlg1UKFTFResult(method_id, route, int(seed), int(num_particles),
+        total, means, variances, updated, predicted, corrected, ess,
+        sum(int(row["resampled"]) for row in reports), reports, finite)
 
 
 @tf.function(jit_compile=True, reduce_retracing=True)
@@ -1335,16 +1113,11 @@ def run_ledh_pfpf_alg1_scalar_sv_graph_tf(
         seed=_seed_pair(seed, 110),
         dtype=DTYPE,
     )
-    transition_standard_normals = tf.stack(
-        [
-            tf.random.stateless_normal(
-                [int(num_particles)],
-                seed=_seed_pair(seed, 1110 + t),
-                dtype=DTYPE,
-            )
-            for t in range(horizon)
-        ],
-        axis=0,
+    transition_standard_normals = _stateless_normal_bank(
+        horizon=horizon,
+        num_particles=int(num_particles),
+        seed=seed,
+        salt=1110,
     )
     kernel_result = _run_ledh_pfpf_alg1_scalar_sv_graph_kernel_tf(
         flow_observations=flow_observations,
@@ -1665,16 +1438,11 @@ def ledh_pfpf_alg1_scalar_sv_graph_log_likelihood_tf(
         seed=_seed_pair(seed, 110),
         dtype=DTYPE,
     )
-    transition_standard_normals = tf.stack(
-        [
-            tf.random.stateless_normal(
-                [int(num_particles)],
-                seed=_seed_pair(seed, 1110 + t),
-                dtype=DTYPE,
-            )
-            for t in range(horizon)
-        ],
-        axis=0,
+    transition_standard_normals = _stateless_normal_bank(
+        horizon=horizon,
+        num_particles=int(num_particles),
+        seed=seed,
+        salt=1110,
     )
     kernel = (
         _ledh_pfpf_alg1_scalar_sv_graph_loglik_kernel_tf
@@ -1777,24 +1545,20 @@ def carry_covariances_with_canonical_transport_tf(
     canonical_transport = tf.cast(canonical_transport, DTYPE)
     covariances = tf.cast(covariances, DTYPE)
     carried_raw = tf.einsum("ji,iab->jab", canonical_transport, covariances)
-    implemented_rows = []
-    min_eigenvalues = []
-    projection_residuals = []
-    for row in tf.unstack(carried_raw, axis=0):
-        implemented, diag = stabilize_covariance_tf(
-            row,
-            covariance_floor=covariance_floor,
-        )
-        implemented_rows.append(implemented)
-        min_eigenvalues.append(diag["min_raw_eigenvalue"])
-        projection_residuals.append(diag["psd_projection_residual"])
-    carried = tf.stack(implemented_rows, axis=0)
+    state_dim = carried_raw.shape[-1]
+    if state_dim is None:
+        raise ValueError("covariance carry requires a static state dimension")
+
+    symmetric = symmetrize(carried_raw)
+    eigenvalues, _, _, carried, _ = psd_eigh(symmetric, tf.cast(covariance_floor, DTYPE))
+    min_eigenvalues = tf.stop_gradient(tf.reduce_min(eigenvalues, axis=-1))
+    projection_residuals = tf.stop_gradient(tf.linalg.norm(carried-symmetric, axis=[-2, -1]))
     diagnostics = {
         "covariance_carry_route": tf.constant(OT_COVARIANCE_CARRY_ROUTE),
         "finite_carried_covariances": tf.reduce_all(tf.math.is_finite(carried)),
-        "min_carried_covariance_eigenvalue": tf.reduce_min(tf.stack(min_eigenvalues)),
+        "min_carried_covariance_eigenvalue": tf.reduce_min(min_eigenvalues),
         "covariance_carry_psd_projection_residual": tf.reduce_max(
-            tf.stack(projection_residuals)
+            projection_residuals
         ),
         "covariance_transport_shape": tf.shape(canonical_transport),
         "state_transport_shape": tf.shape(canonical_transport),
@@ -1832,7 +1596,7 @@ def apply_ot_resampling_state_tf(
     cost_scale_diagnostics: dict[str, Any] = {
         "sinkhorn_epsilon_policy": sinkhorn_epsilon_policy,
         "nominal_epsilon": nominal_sinkhorn_epsilon,
-        "effective_epsilon": effective_sinkhorn_epsilon,
+        "effective_epsilon": _float(effective_sinkhorn_epsilon),
     }
     if resampling_route == OT_SINKHORN_COVARIANCE_CARRY_ROUTE:
         cost_matrix = pairwise_cost = None
@@ -1841,14 +1605,15 @@ def apply_ot_resampling_state_tf(
             pairwise_cost = tf.reduce_sum(diff * diff, axis=2)
             cost_mean = tf.reduce_mean(pairwise_cost)
             cost_max = tf.reduce_max(pairwise_cost)
-            effective_sinkhorn_epsilon = max(
-                nominal_sinkhorn_epsilon,
-                float(cost_mean.numpy()),
-            )
+            # Preserve the original host-float epsilon selection's derivative:
+            # the selected value is fixed during the diagnostic pullback.
+            effective_sinkhorn_epsilon = tf.stop_gradient(tf.maximum(
+                tf.constant(nominal_sinkhorn_epsilon, DTYPE), cost_mean
+            ))
             cost_matrix = pairwise_cost
             cost_scale_diagnostics.update(
                 {
-                    "effective_epsilon": effective_sinkhorn_epsilon,
+                    "effective_epsilon": _float(effective_sinkhorn_epsilon),
                     "sinkhorn_cost_scale_statistic": "pairwise_squared_euclidean_mean",
                     "sinkhorn_cost_min": _float(tf.reduce_min(pairwise_cost)),
                     "sinkhorn_cost_mean": _float(cost_mean),
@@ -1899,24 +1664,17 @@ def apply_ot_resampling_state_tf(
     else:
         raise ValueError(f"unknown P8h OT resampling route: {resampling_route}")
 
-    transport_shape = tf.shape(canonical_transport)
-    particle_count = tf.shape(particles)[0]
     if len(canonical_transport.shape) != 2:
         raise ValueError("P8h canonical transport must have rank 2")
-    if bool(
-        tf.logical_or(
-            transport_shape[0] != particle_count,
-            transport_shape[1] != particle_count,
-        ).numpy()
-    ):
+    if canonical_transport.shape != (particles.shape[0], particles.shape[0]):
         raise ValueError("P8h canonical transport must have shape [N, N]")
     row_sums = tf.reduce_sum(canonical_transport, axis=1)
     row_sum_residual = tf.reduce_max(tf.abs(row_sums - 1.0))
-    if float(row_sum_residual.numpy()) > float(canonical_row_sum_tolerance):
+    if tf.executing_eagerly() and float(row_sum_residual.numpy()) > float(canonical_row_sum_tolerance):
         raise FloatingPointError(
             "P8h canonical transport row sums exceeded declared tolerance"
         )
-    if not _finite_bool(canonical_transport):
+    if tf.executing_eagerly() and not _finite_bool(canonical_transport):
         raise FloatingPointError("P8h canonical transport is non-finite")
 
     carried_covariances, covariance_diag = carry_covariances_with_canonical_transport_tf(
@@ -1929,9 +1687,9 @@ def apply_ot_resampling_state_tf(
         "resampled": True,
         "resampling_method": resampling_method,
         "transport_method": resampling_method,
-        "epsilon": float(effective_sinkhorn_epsilon),
+        "epsilon": _float(effective_sinkhorn_epsilon),
         "nominal_epsilon": nominal_sinkhorn_epsilon,
-        "effective_epsilon": float(effective_sinkhorn_epsilon),
+        "effective_epsilon": _float(effective_sinkhorn_epsilon),
         "sinkhorn_epsilon_policy": sinkhorn_epsilon_policy,
         "sinkhorn_iterations": int(sinkhorn_iterations),
         "max_iterations": int(sinkhorn_iterations),
@@ -1970,13 +1728,17 @@ def apply_ot_resampling_state_tf(
             }
         }
     )
-    if not diagnostics["finite_transport"] or not diagnostics["finite_particles"]:
-        raise FloatingPointError("P8h OT resampling emitted non-finite state")
-    if not bool(tf.reduce_all(tf.math.is_finite(carried_covariances)).numpy()):
-        raise FloatingPointError("P8h OT covariance carry emitted non-finite state")
-    diagnostics["canonical_transport_shape"] = [
-        int(v) for v in tf.shape(canonical_transport).numpy().tolist()
-    ]
+    valid = (
+        tf.reduce_all(tf.math.is_finite(canonical_transport))
+        & tf.reduce_all(tf.math.is_finite(transported_particles))
+        & tf.reduce_all(tf.math.is_finite(carried_covariances))
+        & (row_sum_residual <= canonical_row_sum_tolerance)
+        & tf.cast(helper_diagnostics.get("valid", True), tf.bool)
+    )
+    diagnostics["valid"] = bool(valid.numpy()) if tf.executing_eagerly() else valid
+    if tf.executing_eagerly() and not diagnostics["valid"]:
+        raise FloatingPointError("P8h OT resampling or covariance carry emitted invalid state")
+    diagnostics["canonical_transport_shape"] = canonical_transport.shape.as_list()
     return transported_particles, carried_covariances, diagnostics
 
 
@@ -2009,6 +1771,10 @@ def validate_pseudo_time_steps_tf(
     """Validate the Algorithm 1 pseudo-time grid increments."""
 
     steps = tf.reshape(tf.cast(pseudo_time_steps, DTYPE), [-1])
+    if not tf.executing_eagerly():
+        if steps.shape[0] is None or steps.shape[0] < 1:
+            raise ValueError("Algorithm 1 requires a fixed nonempty pseudo-time grid")
+        return steps  # The enclosing endpoint returns validity for its host veto.
     if int(tf.size(steps).numpy()) == 0:
         raise ValueError("Algorithm 1 pseudo-time grid must contain at least one step")
     if not _finite_bool(steps):
@@ -2028,18 +1794,49 @@ def _weighted_covariance(centered: tf.Tensor, weights: tf.Tensor) -> tf.Tensor:
 
 
 def _seed_pair(seed: int, salt: int) -> tf.Tensor:
-    return tf.constant([int(seed) % 2147483647, int(salt) % 2147483647], dtype=tf.int32)
+    return tf.stack((tf.cast(seed % 2147483647, tf.int32), tf.cast(salt % 2147483647, tf.int32)))
+
+
+def _stateless_normal_bank(
+    *, horizon: int, num_particles: int, seed: int, salt: int
+) -> tf.Tensor:
+    """Generate the fixed random bank with TensorFlow control flow."""
+
+    horizon = int(horizon)
+    num_particles = int(num_particles)
+    base_seed = tf.constant(int(seed) % 2147483647, tf.int32)
+    base_salt = tf.constant(int(salt) % 2147483647, tf.int32)
+
+    def draw(time_index):
+        pair = tf.stack((base_seed, tf.math.floormod(base_salt + time_index, 2147483647)))
+        return tf.random.stateless_normal([num_particles], seed=pair, dtype=DTYPE)
+
+    return tf.map_fn(
+        draw,
+        tf.range(horizon, dtype=tf.int32),
+        fn_output_signature=tf.TensorSpec([num_particles], DTYPE),
+        parallel_iterations=1,
+        infer_shape=True,
+    )
 
 
 def _finite_bool(value: tf.Tensor) -> bool:
-    return bool(tf.reduce_all(tf.math.is_finite(tf.cast(value, DTYPE))).numpy())
+    finite = tf.reduce_all(tf.math.is_finite(tf.cast(value, DTYPE)))
+    return bool(finite.numpy()) if tf.executing_eagerly() else finite
 
 
 def _float(value: tf.Tensor) -> float:
-    return float(tf.cast(value, DTYPE).numpy())
+    value = tf.cast(value, DTYPE)
+    return float(value.numpy()) if tf.executing_eagerly() else value
+
+
+def _host_int(value):
+    return int(value.numpy()) if tf.executing_eagerly() else value
 
 
 def _tensor_diag_to_python(diagnostics: Mapping[str, Any]) -> dict[str, Any]:
+    if not tf.executing_eagerly():
+        return dict(diagnostics)
     converted: dict[str, Any] = {}
     for key, value in diagnostics.items():
         if isinstance(value, tf.Tensor):

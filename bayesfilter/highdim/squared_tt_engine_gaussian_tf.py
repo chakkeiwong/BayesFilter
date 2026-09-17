@@ -144,13 +144,21 @@ def _christoffel_rows(
     before the fit (V1 contract unchanged).
     """
 
+    rows, weights, row_ess, valid = _christoffel_rows_tensor(config, count, dimension, seed, degree)
+    if not bool(valid.numpy()):
+        raise ValueError("christoffel rows: endpoint hit or non-finite inverse CDF")
+    return rows, weights, float(row_ess.numpy())
+
+
+def _christoffel_rows_tensor(config, count, dimension, seed, degree):
+    """The same frozen row law with tensor status for native preparation."""
     uniform = _design_rows(config, count, dimension, seed)
-    max_abs = float(tf.reduce_max(tf.abs(uniform)).numpy())
-    if max_abs >= 1.0:
-        raise ValueError(
-            "christoffel rows: uniform design touched the open-interval "
-            "boundary; inverse CDF would be ill-defined (fail closed)"
-        )
+    return _christoffel_rows_from_uniform(uniform, dimension, degree)
+
+
+def _christoffel_rows_from_uniform(uniform, dimension, degree):
+    """Shared deterministic row transformation for reference and XLA designs."""
+    valid = tf.reduce_max(tf.abs(uniform)) < 1.
     probabilities = 0.5 * (uniform + 1.0)
     beta = _christoffel_beta(dimension)
     grid, cdf = _christoffel_axis_table(degree, beta)
@@ -164,8 +172,7 @@ def _christoffel_rows(
     grid_lo = tf.gather(grid, upper - 1)
     fraction = (flat - cdf_lo) / tf.maximum(cdf_hi - cdf_lo, 1e-300)
     rows = tf.reshape(grid_lo + fraction * (grid_hi - grid_lo), tf.shape(probabilities))
-    if not bool(tf.reduce_all(tf.math.is_finite(rows)).numpy()):
-        raise ValueError("christoffel rows: non-finite row after inverse CDF")
+    valid &= tf.reduce_all(tf.math.is_finite(rows))
     values = HermiteBasis1D(max_degree=degree).evaluate(tf.reshape(rows, [-1]))
     log_mixture = tf.reshape(
         tf.math.log(
@@ -178,7 +185,7 @@ def _christoffel_rows(
     # Class-A observability (campaign plan CF2): the effective sample
     # size of the importance weights is computed here anyway — emit it.
     row_ess = 1.0 / tf.reduce_sum(tf.square(weights))
-    return rows, weights, float(row_ess.numpy())
+    return rows, weights, row_ess, valid
 
 
 def _log_eta(points: tf.Tensor) -> tf.Tensor:
@@ -264,6 +271,36 @@ def student_t_margin(nu: float, alpha: float) -> float:
     )
 
 
+@tf.function(
+    input_signature=[tf.TensorSpec([], tf.float64), tf.TensorSpec([], tf.float64)],
+    jit_compile=True,
+    autograph=False,
+)
+def _student_t_nu_criterion_tf(alpha, cap):
+    def margin(nu):
+        s_star = tf.maximum((nu + 1.0) / (1.0 - alpha) - nu, 0.0)
+        log_const = (
+            tf.math.lgamma((nu + 1.0) / 2.0) - tf.math.lgamma(nu / 2.0)
+            + 0.5 * tf.math.log(2.0 / nu)
+        )
+        return (
+            -(1.0 - alpha) * s_star / 2.0
+            + ((nu + 1.0) / 2.0) * tf.math.log1p(s_star / nu) - log_const
+        )
+
+    def step(index, lo, hi):
+        mid = 0.5 * (lo + hi)
+        accepted = margin(mid) <= cap
+        return index + 1, tf.where(accepted, mid, lo), tf.where(accepted, hi, mid)
+
+    lo, hi = tf.constant(1.5, tf.float64), tf.constant(500.0, tf.float64)
+    _, result, _ = tf.while_loop(
+        lambda index, lo, hi: index < 80, step, (tf.constant(0), lo, hi),
+        maximum_iterations=80,
+    )
+    return tf.where(margin(hi) <= cap, hi, result), margin(lo) <= cap
+
+
 def student_t_nu_criterion(alpha_max: float, cap_per_axis: float) -> float:
     """Two-sided nu selection (campaign plan C2, review CF5 repair):
     the LARGEST nu (lightest tails, least bulk dilution) whose per-axis
@@ -272,24 +309,21 @@ def student_t_nu_criterion(alpha_max: float, cap_per_axis: float) -> float:
     domination itself holds for every finite nu (the margin cap, tied
     to the ratio guard at tau >= TAU_MIN, is what selects)."""
 
-    lo, hi = 1.5, 500.0
-    if student_t_margin(lo, alpha_max) > cap_per_axis:
+    if not 0.0 < alpha_max < 1.0:
+        raise ValueError("alpha must be in (0, 1)")
+    result, admissible = _student_t_nu_criterion_tf(
+        tf.convert_to_tensor(alpha_max, tf.float64),
+        tf.convert_to_tensor(cap_per_axis, tf.float64),
+    )
+    if not bool(admissible.numpy()):
         raise ValueError(
             "no admissible nu: margin cap violated even at nu=1.5 — "
             "re-declare the cap or the hint class (fail closed)"
         )
-    if student_t_margin(hi, alpha_max) <= cap_per_axis:
-        return hi
-    for _ in range(80):
-        mid = 0.5 * (lo + hi)
-        if student_t_margin(mid, alpha_max) <= cap_per_axis:
-            lo = mid
-        else:
-            hi = mid
-    return lo
+    return float(result.numpy())
 
 
-def run_value_filter_branch_axis_gaussian(
+def run_value_filter_branch_axis_gaussian_reference(
     adapter,
     observations: tf.Tensor,
     config: EngineConfig,
@@ -298,7 +332,7 @@ def run_value_filter_branch_axis_gaussian(
     initial_moment_hint: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     defensive_nu: float | None = None,
 ) -> tuple[tf.Tensor, list[dict]]:
-    """Gaussian-reference value filter. `predictive_moment_hint(t, y_t)`
+    """Independent eager Gaussian-reference value filter. `predictive_moment_hint(t, y_t)`
     returns JOINT moments (mean [2n], cov [2n,2n]) of (x_t, x_{t-1}) in
     (current, previous) order for t >= 1; `initial_moment_hint(y_0)`
     returns the t=0 moments (mean [n], cov [n,n]) of x_0 | y_0. Hints
@@ -523,3 +557,17 @@ __all__ = [
     "TAU_MIN",
     "run_value_filter_branch_axis_gaussian",
 ]
+
+
+def run_value_filter_branch_axis_gaussian(adapter, observations, config, *,
+    predictive_moment_hint, initial_moment_hint, defensive_nu=None, jit_compile=True):
+    """Public Gaussian filter with one XLA-default numerical recurrence.
+
+    Moment callbacks must index prepared tensors; stateful Python/NumPy
+    companion filters belong to the explicit independent reference API.
+    """
+    from bayesfilter.highdim.squared_tt_engine_gaussian_xla_tf import _run_value_filter_branch_axis_gaussian_xla
+    value, diagnostics, _ = _run_value_filter_branch_axis_gaussian_xla(
+        adapter, observations, config, predictive_moment_hint=predictive_moment_hint,
+        initial_moment_hint=initial_moment_hint, defensive_nu=defensive_nu, jit_compile=jit_compile)
+    return value, diagnostics

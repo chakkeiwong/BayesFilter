@@ -2,28 +2,25 @@
 
 Implements survey eqs. (76)--(78): forward-curve loadings, Gauss--Legendre
 maturity averaging, and the two bound maps. All runtime tensors are
-float64 TensorFlow. The Gauss--Legendre nodes/weights are host-side module
-constants (declared boundary in the master program, Sec. 5).
+float64 TensorFlow, including Gauss--Legendre node and weight preparation.
 """
 
 from __future__ import annotations
 
-import numpy as _np  # host-side constants only; see module docstring
 import tensorflow as tf
+
+from bayesfilter.ops.quadrature_tf import gauss_legendre
 
 DTYPE = tf.float64
 DEFAULT_QUADRATURE_ORDER = 40
 
 
-def gauss_legendre_unit(order: int) -> tuple[tf.Tensor, tf.Tensor]:
+def gauss_legendre_unit(order: int, *, jit_compile=True) -> tuple[tf.Tensor, tf.Tensor]:
     """Nodes and weights of order-``order`` Gauss--Legendre on [0, 1]."""
-    x, w = _np.polynomial.legendre.leggauss(int(order))
+    x, w = gauss_legendre(order, DTYPE, jit_compile=jit_compile)
     nodes = 0.5 * (x + 1.0)
     weights = 0.5 * w
-    return (
-        tf.constant(nodes, dtype=DTYPE),
-        tf.constant(weights, dtype=DTYPE),
-    )
+    return nodes, weights
 
 
 def dns_loadings(s: tf.Tensor, decay: float) -> tf.Tensor:
@@ -57,6 +54,8 @@ def yield_curve(
     alpha: float,
     bound_map: str,
     order: int = DEFAULT_QUADRATURE_ORDER,
+    *,
+    jit_compile: bool = True,
 ) -> tf.Tensor:
     """Bounded-forward yields y(tau) for one country (survey eq. (78)).
 
@@ -65,7 +64,7 @@ def yield_curve(
     """
     factors = tf.convert_to_tensor(factors, DTYPE)
     maturities = tf.convert_to_tensor(maturities, DTYPE)
-    nodes, weights = gauss_legendre_unit(order)
+    nodes, weights = gauss_legendre_unit(order, jit_compile=jit_compile)
     # horizons s_{ik} = tau_i * v_k, shape [M, K]
     horizons = maturities[:, None] * nodes[None, :]
     loadings = dns_loadings(horizons, decay)  # [M, K, 3]

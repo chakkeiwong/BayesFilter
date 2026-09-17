@@ -9,19 +9,22 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
-import numpy as np
 import tensorflow as tf
+from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_self_adjoint_eig, xla_svd
 
 from bayesfilter.inference._exact_incumbent import (
     ExactCandidate,
     candidates_from_rows,
     select_exact_incumbent,
 )
-
+from bayesfilter.ops.geometry_random_tf import STREAM_ID, GeometryTensorStream
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 LOW_RANK_SPD_QUADRATIC_GEOMETRY_NONCLAIMS = (
     "low-rank quadratic geometry diagnostic only",
@@ -84,12 +87,14 @@ class LowRankSPDQuadraticGeometryConfig:
             "center_log_prob_tolerance",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value <= 0.0:
+            if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be positive and finite")
             object.__setattr__(self, name, value)
         holdout = float(self.holdout_fraction)
-        if not np.isfinite(holdout) or not 0.0 <= holdout < 0.8:
-            raise ValueError("holdout_fraction must be finite and satisfy 0 <= value < 0.8")
+        if not math.isfinite(holdout) or not 0.0 <= holdout < 0.8:
+            raise ValueError(
+                "holdout_fraction must be finite and satisfy 0 <= value < 0.8"
+            )
         object.__setattr__(self, "holdout_fraction", holdout)
         if float(self.max_condition_number) <= 1.0:
             raise ValueError("max_condition_number must be greater than 1")
@@ -123,6 +128,7 @@ class LowRankSPDQuadraticGeometryConfig:
                 self.constrain_center_refinement_to_trust_region
             ),
             "seed": self.seed,
+            "random_stream": STREAM_ID,
         }
 
 
@@ -134,21 +140,21 @@ class LowRankSPDQuadraticGeometryResult:
     status: str
     dimension: int
     rank: int
-    center: np.ndarray
-    scale: np.ndarray
-    precision: np.ndarray | None
-    covariance: np.ndarray | None
-    q_basis: np.ndarray | None
-    linear_term: np.ndarray | None
+    center: tf.Tensor
+    scale: tf.Tensor
+    precision: tf.Tensor | None
+    covariance: tf.Tensor | None
+    q_basis: tf.Tensor | None
+    linear_term: tf.Tensor | None
     intercept: float | None
     lambda0: float | None
-    mu: np.ndarray | None
-    refined_center: np.ndarray | None
+    mu: tf.Tensor | None
+    refined_center: tf.Tensor | None
     center_refinement_accepted: bool
     diagnostics: Mapping[str, Any]
-    best_evaluated_position: np.ndarray | None = None
+    best_evaluated_position: tf.Tensor | None = None
     best_evaluated_value: float | None = None
-    best_evaluated_score: np.ndarray | None = None
+    best_evaluated_score: tf.Tensor | None = None
     best_evaluated_source: str | None = None
     best_evaluated_index: int | None = None
     exact_evaluation_count: int = 0
@@ -158,31 +164,33 @@ class LowRankSPDQuadraticGeometryResult:
         object.__setattr__(self, "dimension", int(self.dimension))
         object.__setattr__(self, "rank", int(self.rank))
         for name in ("center", "scale"):
-            array = np.asarray(getattr(self, name), dtype=float).copy()
-            array.setflags(write=False)
+            array = numeric_tensor(getattr(self, name), tf.float64)
             object.__setattr__(self, name, array)
         for name in ("precision", "covariance", "q_basis", "linear_term", "mu"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         if self.refined_center is not None:
-            refined = np.asarray(self.refined_center, dtype=float).copy()
-            refined.setflags(write=False)
+            refined = numeric_tensor(self.refined_center, tf.float64)
             object.__setattr__(self, "refined_center", refined)
         for name in ("best_evaluated_position", "best_evaluated_score"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).reshape([-1]).copy()
-                array.setflags(write=False)
+                array = tf.reshape(numeric_tensor(value, tf.float64), [-1])
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "accepted", bool(self.accepted))
         object.__setattr__(self, "status", str(self.status))
-        object.__setattr__(self, "center_refinement_accepted", bool(self.center_refinement_accepted))
-        object.__setattr__(self, "exact_evaluation_count", int(self.exact_evaluation_count))
+        object.__setattr__(
+            self, "center_refinement_accepted", bool(self.center_refinement_accepted)
+        )
+        object.__setattr__(
+            self, "exact_evaluation_count", int(self.exact_evaluation_count)
+        )
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
-        object.__setattr__(self, "nonclaims", tuple(str(item) for item in self.nonclaims))
+        object.__setattr__(
+            self, "nonclaims", tuple(str(item) for item in self.nonclaims)
+        )
 
     def payload(self, *, include_arrays: bool = False) -> Mapping[str, Any]:
         payload: dict[str, Any] = {
@@ -228,9 +236,7 @@ def fit_low_rank_spd_quadratic_geometry(
     value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     center: Any,
     *,
-    batched_value_and_score_fn: Callable[
-        [tf.Tensor], tuple[tf.Tensor, tf.Tensor]
-    ]
+    batched_value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]]
     | None = None,
     scale: Any | None = None,
     config: LowRankSPDQuadraticGeometryConfig | None = None,
@@ -248,20 +254,21 @@ def fit_low_rank_spd_quadratic_geometry(
 
     cfg = LowRankSPDQuadraticGeometryConfig() if config is None else config
     center_np = _vector(center, "center")
-    dim = int(center_np.size)
+    dim = int(center_np.shape[0])
     scale_np = _scale_vector(scale, dim)
     requested_rank = min(int(cfg.rank), dim)
     rank = min(requested_rank, max(dim - 1, 0))
     regression_parameter_count = 1 + dim + 1 + rank
-    required_finite_samples = int(cfg.min_samples_per_parameter) * regression_parameter_count
+    required_finite_samples = (
+        int(cfg.min_samples_per_parameter) * regression_parameter_count
+    )
     sample_count = (
         int(cfg.sample_count)
         if cfg.sample_count is not None
         else max(required_finite_samples + 20, 8 * regression_parameter_count)
     )
 
-    base_seed = int(cfg.seed[0]) ^ (int(cfg.seed[1]) << 16)
-    rng = np.random.default_rng(base_seed)
+    rng = GeometryTensorStream(cfg.seed)
 
     center_value, center_score, center_status = _evaluate_value_score(
         value_and_score_fn,
@@ -286,7 +293,7 @@ def fit_low_rank_spd_quadratic_geometry(
             ),
         )
     center_score_z = center_score * scale_np
-    center_score_norm = float(np.linalg.norm(center_score_z))
+    center_score_norm = float(tf.linalg.norm(center_score_z))
 
     q_basis, pilot_diagnostics, pilot_candidates = _pilot_q_basis(
         value_and_score_fn,
@@ -306,7 +313,7 @@ def fit_low_rank_spd_quadratic_geometry(
         radius=float(cfg.trust_radius),
         rng=rng,
     )
-    theta_samples = center_np[np.newaxis, :] + z_samples * scale_np[np.newaxis, :]
+    theta_samples = center_np[None, :] + z_samples * scale_np[None, :]
     values, scores = _evaluate_values_scores(
         value_and_score_fn,
         theta_samples,
@@ -331,8 +338,10 @@ def fit_low_rank_spd_quadratic_geometry(
     ]
     exact_evaluation_count = len(exact_candidates)
     incumbent = select_exact_incumbent(exact_candidates)
-    finite_mask = np.isfinite(values) & np.all(np.isfinite(scores), axis=1)
-    finite_sample_count = int(np.sum(finite_mask))
+    finite_mask = tf.math.is_finite(values) & tf.reduce_all(
+        tf.math.is_finite(scores), axis=1
+    )
+    finite_sample_count = int(tf.math.count_nonzero(finite_mask))
     diagnostics = _base_diagnostics(
         cfg=cfg,
         dim=dim,
@@ -351,7 +360,7 @@ def fit_low_rank_spd_quadratic_geometry(
             "design_evaluation_route": (
                 "batched_value_and_score"
                 if batched_value_and_score_fn is not None
-                else "scalar_value_and_score_loop"
+                else "tensorflow_scalar_row_loop"
             ),
         }
     )
@@ -367,20 +376,20 @@ def fit_low_rank_spd_quadratic_geometry(
             exact_evaluation_count=exact_evaluation_count,
         )
 
-    z_finite = z_samples[finite_mask]
-    y_finite = values[finite_mask]
-    score_finite = scores[finite_mask] * scale_np[np.newaxis, :]
+    z_finite = tf.boolean_mask(z_samples, finite_mask)
+    y_finite = tf.boolean_mask(values, finite_mask)
+    score_finite = tf.boolean_mask(scores, finite_mask) * scale_np[None, :]
     order = rng.permutation(finite_sample_count)
-    holdout_count = int(np.floor(float(cfg.holdout_fraction) * finite_sample_count))
+    holdout_count = math.floor(float(cfg.holdout_fraction) * finite_sample_count)
     max_holdout = max(0, finite_sample_count - required_finite_samples)
     holdout_count = min(holdout_count, max_holdout)
     holdout_index = order[:holdout_count]
     train_index = order[holdout_count:]
-    z_train = z_finite[train_index]
-    y_train = y_finite[train_index]
-    score_train = score_finite[train_index]
-    z_holdout = z_finite[holdout_index]
-    y_holdout = y_finite[holdout_index]
+    z_train = tf.gather(z_finite, train_index)
+    y_train = tf.gather(y_finite, train_index)
+    score_train = tf.gather(score_finite, train_index)
+    z_holdout = tf.gather(z_finite, holdout_index)
+    y_holdout = tf.gather(y_finite, holdout_index)
 
     fit = _fit_constrained_quadratic(
         z_train,
@@ -405,16 +414,16 @@ def fit_low_rank_spd_quadratic_geometry(
             exact_evaluation_count=exact_evaluation_count,
         )
 
-    precision = np.asarray(fit["precision"], dtype=float)
-    covariance = np.linalg.inv(precision)
-    covariance = 0.5 * (covariance + covariance.T)
-    linear = np.asarray(fit["linear_term"], dtype=float)
+    precision = numeric_tensor(fit["precision"], tf.float64)
+    covariance = tf.linalg.inv(precision)
+    covariance = 0.5 * (covariance + tf.transpose(covariance))
+    linear = numeric_tensor(fit["linear_term"], tf.float64)
     train_pred = _predict_quadratic(
         z_train,
         intercept=float(fit["intercept"]),
         linear=linear,
         lambda0=float(fit["lambda0"]),
-        mu=np.asarray(fit["mu"], dtype=float),
+        mu=numeric_tensor(fit["mu"], tf.float64),
         q_basis=q_basis,
     )
     train_rmse = _rmse(y_train, train_pred)
@@ -424,14 +433,14 @@ def fit_low_rank_spd_quadratic_geometry(
             intercept=float(fit["intercept"]),
             linear=linear,
             lambda0=float(fit["lambda0"]),
-            mu=np.asarray(fit["mu"], dtype=float),
+            mu=numeric_tensor(fit["mu"], tf.float64),
             q_basis=q_basis,
         )
         holdout_rmse = _rmse(y_holdout, holdout_pred)
         # A log density is defined only up to an additive constant. Scale the
         # relative gate by local variation, never by the arbitrary level at
         # the fit center, so shifting every target value cannot relax the gate.
-        holdout_scale = max(1.0, float(np.std(y_train - center_value)))
+        holdout_scale = max(1.0, float(tf.math.reduce_std(y_train - center_value)))
         holdout_threshold = max(
             float(cfg.holdout_rmse_abs_tolerance),
             float(cfg.holdout_rmse_rel_tolerance) * holdout_scale,
@@ -463,9 +472,11 @@ def fit_low_rank_spd_quadratic_geometry(
     ):
         exact_candidates.append(
             ExactCandidate(
-                position=np.asarray(center_refinement["refined_center"], dtype=float),
+                position=numeric_tensor(
+                    center_refinement["refined_center"], tf.float64
+                ),
                 value=float(center_refinement["refined_log_prob"]),
-                score=np.asarray(refined_score, dtype=float),
+                score=numeric_tensor(refined_score, tf.float64),
                 evaluation_index=exact_evaluation_count - 1,
                 source_role="surrogate_replay",
                 eligible=bool(center_refinement.get("refined_target_finite", True)),
@@ -547,7 +558,7 @@ def fit_low_rank_spd_quadratic_geometry(
         )
 
     refined_center = (
-        np.asarray(center_refinement["refined_center"], dtype=float)
+        numeric_tensor(center_refinement["refined_center"], tf.float64)
         if center_refinement["accepted"]
         else None
     )
@@ -564,7 +575,7 @@ def fit_low_rank_spd_quadratic_geometry(
         linear_term=linear,
         intercept=float(fit["intercept"]),
         lambda0=float(fit["lambda0"]),
-        mu=np.asarray(fit["mu"], dtype=float),
+        mu=numeric_tensor(fit["mu"], tf.float64),
         refined_center=refined_center,
         center_refinement_accepted=bool(center_refinement["accepted"]),
         diagnostics=diagnostics,
@@ -578,315 +589,319 @@ def fit_low_rank_spd_quadratic_geometry(
 
 
 def _fit_constrained_quadratic(
-    z_train: np.ndarray,
-    y_train: np.ndarray,
-    score_train: np.ndarray,
+    z_train: tf.Tensor,
+    y_train: tf.Tensor,
+    score_train: tf.Tensor,
     *,
-    q_basis: np.ndarray,
+    q_basis: tf.Tensor,
     cfg: LowRankSPDQuadraticGeometryConfig,
     dim: int,
     rank: int,
-    center_score_z: np.ndarray,
+    center_score_z: tf.Tensor,
 ) -> Mapping[str, Any]:
-    z_np = np.asarray(z_train, dtype=float)
-    y_np = np.asarray(y_train, dtype=float)
-    score_np = np.asarray(score_train, dtype=float)
-    q_np = np.asarray(q_basis, dtype=float)
-    center_score_np = np.asarray(center_score_z, dtype=float)
+    inputs = tuple(
+        numeric_tensor(value, tf.float64)
+        for value in (z_train, y_train, score_train, q_basis, center_score_z)
+    )
+    z, _, score, _, center_score = inputs
     if (
-        z_np.ndim != 2
-        or z_np.shape[1] != dim
-        or score_np.shape != z_np.shape
-        or center_score_np.shape != (dim,)
+        z.shape.rank != 2
+        or z.shape[1] != dim
+        or score.shape != z.shape
+        or center_score.shape != (dim,)
     ):
         return {"status": "fit_shape_mismatch"}
-
-    design, response = _score_curvature_design(
-        z_np,
-        score_np,
-        center_score_np,
-        q_basis=q_np,
-        dim=dim,
-        rank=rank,
-    )
     try:
-        raw_solution, residuals, design_rank, singular_values = np.linalg.lstsq(
-            design,
-            response,
-            rcond=None,
+        result = _run_numerical(
+            _quadratic_fit_kernel,
+            *inputs,
+            tf.constant(cfg.eigenvalue_floor, tf.float64),
+            tf.constant(cfg.max_condition_number, tf.float64),
         )
-    except np.linalg.LinAlgError:
+    except tf.errors.OpError:
         return {"status": "score_curvature_lstsq_failed"}
-    if not np.all(np.isfinite(raw_solution)):
+    if not bool(result.pop("finite")):
         return {"status": "fit_nonfinite"}
-
-    raw_lambda = float(raw_solution[0])
-    raw_mu = np.asarray(raw_solution[1 : 1 + rank], dtype=float)
-    lambda0 = max(float(cfg.eigenvalue_floor), raw_lambda)
-    if not np.isfinite(lambda0) or lambda0 <= 0.0:
-        return {"status": "fit_nonfinite"}
-    mu_upper = (float(cfg.max_condition_number) - 1.0) * lambda0
-    mu = np.clip(raw_mu, 0.0, mu_upper)
-
-    precision = lambda0 * np.eye(dim, dtype=float)
-    if rank:
-        precision = precision + (q_np * mu[np.newaxis, :]) @ q_np.T
-    precision = 0.5 * (precision + precision.T)
-    linear = center_score_np
-    prediction_without_intercept = _predict_quadratic(
-        z_np,
-        intercept=0.0,
-        linear=linear,
-        lambda0=lambda0,
-        mu=mu,
-        q_basis=q_np,
+    result["score_design_condition_number"] = _design_condition_number(
+        result.pop("singular_values")
     )
-    intercept = float(np.mean(y_np - prediction_without_intercept))
-    residual = (
-        _predict_quadratic(
-            z_np,
-            intercept=intercept,
-            linear=linear,
-            lambda0=lambda0,
-            mu=mu,
-            q_basis=q_np,
-        )
-        - y_np
+    residual_sum_squares = result.pop("residual_sum_squares")
+    result["score_lstsq_residual_sum_squares"] = (
+        float(residual_sum_squares)
+        if int(result["score_design_rank"]) == rank + 1 and z.shape[0] * dim > rank + 1
+        else None
     )
-    predicted_score_delta = design @ np.concatenate([[lambda0], mu])
-    score_residual = predicted_score_delta - response
-    loss_value = float(np.mean(np.square(residual)))
-    score_rmse = float(np.sqrt(np.mean(np.square(score_residual))))
-    finite = bool(
-        np.isfinite(loss_value)
-        and np.isfinite(lambda0)
-        and np.all(np.isfinite(mu))
-        and np.all(np.isfinite(precision))
-        and np.all(np.isfinite(linear))
-        and np.isfinite(score_rmse)
-    )
-    if not finite:
-        return {"status": "fit_nonfinite"}
     return {
         "status": "usable",
         "fit_method": "score_difference_linear_least_squares_with_value_intercept",
         "optimizer_converged": True,
         "optimizer_failed": False,
         "optimizer_iterations": 0,
-        "loss": loss_value,
-        "score_rmse": score_rmse,
-        "score_design_rank": int(design_rank),
-        "score_design_condition_number": _design_condition_number(singular_values),
-        "score_lstsq_residual_sum_squares": (
-            None if np.size(residuals) == 0 else float(np.sum(residuals))
-        ),
-        "raw_lambda0": raw_lambda,
-        "raw_mu": raw_mu,
-        "mu_clipped_count": int(np.sum((raw_mu < 0.0) | (raw_mu > mu_upper))),
-        "intercept": intercept,
-        "linear_term": linear,
-        "lambda0": lambda0,
-        "mu": mu,
-        "precision": precision,
-        "condition_bound": float((lambda0 + float(np.max(mu, initial=0.0))) / lambda0),
+        **result,
     }
 
 
 def _score_curvature_design(
-    z_train: np.ndarray,
-    score_train_z: np.ndarray,
-    center_score_z: np.ndarray,
-    *,
-    q_basis: np.ndarray,
-    dim: int,
-    rank: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    rows: list[np.ndarray] = []
-    response: list[float] = []
-    for z_row, score_row in zip(z_train, score_train_z, strict=True):
-        score_delta = center_score_z - score_row
-        zq = z_row @ q_basis if rank else np.zeros([0], dtype=float)
-        for coord in range(dim):
-            row = np.empty(1 + rank, dtype=float)
-            row[0] = z_row[coord]
-            if rank:
-                row[1:] = zq * q_basis[coord, :]
-            rows.append(row)
-            response.append(float(score_delta[coord]))
-    return np.vstack(rows), np.asarray(response, dtype=float)
+    z_train, score_train_z, center_score_z, *, q_basis, dim, rank
+):
+    z = numeric_tensor(z_train, tf.float64)
+    score = numeric_tensor(score_train_z, tf.float64)
+    center = numeric_tensor(center_score_z, tf.float64)
+    q = numeric_tensor(q_basis, tf.float64)
+    projected = tf.matmul(z, q)
+    design = tf.concat((z[..., None], projected[:, None, :] * q[None, :, :]), axis=2)
+    return tf.reshape(design, [-1, rank + 1]), tf.reshape(center[None, :] - score, [-1])
 
 
-def _design_condition_number(singular_values: np.ndarray) -> float | None:
-    values = np.asarray(singular_values, dtype=float)
-    values = values[np.isfinite(values) & (values > 0.0)]
-    if values.size == 0:
+def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *, use_xla_svd=True):
+    dim, rank = q.shape
+    design, response = _score_curvature_design(
+        z, score, center_score, q_basis=q, dim=dim, rank=rank
+    )
+    reduced_q, reduced_r = tf.linalg.qr(design, full_matrices=False)
+    if use_xla_svd:
+        decomposition = xla_svd(
+            reduced_r, max_iter=100, epsilon=math.ulp(1.0), precision_config=""
+        )
+        singular, left_r, right_r = decomposition.s, decomposition.u, decomposition.v
+    else:
+        # Explicit graph-reference diagnostic; the default XLA tolerance remains fixed.
+        singular, left_r, right_r = tf.linalg.svd(reduced_r, full_matrices=False)
+    extent = singular.shape[0]
+    left = tf.matmul(reduced_q, left_r[:, :extent])
+    right = right_r[:, :extent]
+    # NumPy lstsq(rcond=None) uses eps*max(rows,columns), unlike Eigen COD.
+    threshold = tf.reduce_max(singular) * tf.constant(
+        math.ulp(1.0) * max(design.shape), tf.float64
+    )
+    keep = singular > threshold
+    inverse = tf.where(keep, tf.math.reciprocal(singular), tf.zeros_like(singular))
+    raw = tf.linalg.matvec(
+        right, inverse * tf.linalg.matvec(left, response, transpose_a=True)
+    )
+    lambda0 = tf.maximum(floor, raw[0])
+    raw_mu = raw[1:]
+    upper = (condition_cap - 1.0) * lambda0
+    mu = tf.clip_by_value(raw_mu, 0.0, upper)
+    precision = lambda0 * tf.eye(dim, dtype=tf.float64) + tf.matmul(
+        q * mu[None, :], q, transpose_b=True
+    )
+    precision = 0.5 * (precision + tf.transpose(precision))
+    without_intercept = _predict_quadratic(
+        z,
+        intercept=tf.constant(0.0, tf.float64),
+        linear=center_score,
+        lambda0=lambda0,
+        mu=mu,
+        q_basis=q,
+    )
+    intercept = tf.reduce_mean(y - without_intercept)
+    residual = intercept + without_intercept - y
+    score_residual = (
+        tf.linalg.matvec(design, tf.concat((lambda0[None], mu), axis=0)) - response
+    )
+    loss = tf.reduce_mean(residual**2)
+    score_rmse = tf.sqrt(tf.reduce_mean(score_residual**2))
+    finite = (
+        tf.reduce_all(tf.math.is_finite(raw))
+        & tf.math.is_finite(loss)
+        & tf.math.is_finite(lambda0)
+        & (lambda0 > 0.0)
+        & tf.reduce_all(tf.math.is_finite(mu))
+        & tf.reduce_all(tf.math.is_finite(precision))
+        & tf.reduce_all(tf.math.is_finite(center_score))
+        & tf.math.is_finite(score_rmse)
+    )
+    return {
+        "loss": loss,
+        "score_rmse": score_rmse,
+        "finite": finite,
+        "score_design_rank": tf.math.count_nonzero(keep),
+        "singular_values": singular,
+        "residual_sum_squares": tf.reduce_sum(
+            (tf.linalg.matvec(design, raw) - response) ** 2
+        ),
+        "raw_lambda0": raw[0],
+        "raw_mu": raw_mu,
+        "mu_clipped_count": tf.math.count_nonzero((raw_mu < 0.0) | (raw_mu > upper)),
+        "intercept": intercept,
+        "linear_term": center_score,
+        "lambda0": lambda0,
+        "mu": mu,
+        "precision": precision,
+        "condition_bound": (
+            lambda0 + tf.reduce_max(tf.concat((mu, tf.zeros([1], tf.float64)), axis=0))
+        )
+        / lambda0,
+    }
+
+
+@lru_cache(maxsize=64)
+def _compiled_numerical(kernel, signature):
+    return tf.function(
+        kernel, input_signature=signature, jit_compile=True, autograph=False
+    )
+
+
+def _run_numerical(kernel, *inputs):
+    return _compiled_numerical(
+        kernel, tuple(tf.TensorSpec(value.shape, value.dtype) for value in inputs)
+    )(*inputs)
+
+
+def _design_condition_number(singular_values: tf.Tensor) -> float | None:
+    values = numeric_tensor(singular_values, tf.float64)
+    valid = tf.math.is_finite(values) & (values > 0.0)
+    if not bool(tf.reduce_any(valid)):
         return None
-    return float(np.max(values) / np.min(values))
+    return float(
+        tf.reduce_max(tf.where(valid, values, tf.zeros_like(values)))
+        / tf.reduce_min(
+            tf.where(
+                valid, values, tf.fill(values.shape, tf.constant(math.inf, tf.float64))
+            )
+        )
+    )
 
 
 def _pilot_q_basis(
-    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    value_and_score_fn,
     *,
-    batched_value_and_score_fn: Callable[
-        [tf.Tensor], tuple[tf.Tensor, tf.Tensor]
-    ]
-    | None,
-    center: np.ndarray,
-    scale: np.ndarray,
-    rank: int,
-    cfg: LowRankSPDQuadraticGeometryConfig,
-    rng: np.random.Generator,
-    center_value: float,
-    center_score_z: np.ndarray,
-    start_index: int,
-) -> tuple[np.ndarray, Mapping[str, Any], tuple[ExactCandidate, ...]]:
-    dim = int(center.size)
+    batched_value_and_score_fn,
+    center,
+    scale,
+    rank,
+    cfg,
+    rng,
+    center_value,
+    center_score_z,
+    start_index,
+):
+    dim = int(center.shape[0])
     if rank == 0:
-        return (
-            np.zeros([dim, 0], dtype=float),
-            {"positive_curvature_count": 0},
-            (),
-        )
+        return tf.zeros([dim, 0], tf.float64), {"positive_curvature_count": 0}, ()
     count = (
         int(cfg.pilot_direction_count)
         if cfg.pilot_direction_count is not None
         else max(4 * dim, 2 * rank + 8)
     )
-    directions = rng.normal(size=(count, dim))
-    norms = np.linalg.norm(directions, axis=1)
-    directions = directions[norms > 0.0] / norms[norms > 0.0, np.newaxis]
-    sketch = np.zeros([dim, dim], dtype=float)
-    curvatures: list[float] = []
+    directions = numeric_tensor(rng.normal(size=(count, dim)), tf.float64)
+    norms = tf.linalg.norm(directions, axis=1)
+    directions = (
+        tf.boolean_mask(directions, norms > 0.0)
+        / tf.boolean_mask(norms, norms > 0.0)[:, None]
+    )
     h = float(cfg.pilot_radius)
+    plus = center[None, :] + h * directions * scale[None, :]
+    minus = center[None, :] - h * directions * scale[None, :]
+    split = int(directions.shape[0])
     if batched_value_and_score_fn is None:
-        pilot_rows = []
-        pilot_candidates: list[ExactCandidate] = []
-        for direction in directions:
-            plus = center + (h * direction) * scale
-            minus = center - (h * direction) * scale
-            value_plus, score_plus, status_plus = _evaluate_value_score(
-                value_and_score_fn, plus
-            )
-            value_minus, score_minus, status_minus = _evaluate_value_score(
-                value_and_score_fn, minus
-            )
-            pilot_rows.append(
-                (value_plus, score_plus, status_plus, value_minus, score_minus, status_minus)
-            )
-            pilot_candidates.extend(
-                (
-                    ExactCandidate(
-                        position=plus,
-                        value=value_plus,
-                        score=score_plus,
-                        evaluation_index=start_index + len(pilot_candidates),
-                        source_role="pilot",
-                        eligible=status_plus == "finite",
-                    ),
-                    ExactCandidate(
-                        position=minus,
-                        value=value_minus,
-                        score=score_minus,
-                        evaluation_index=start_index + len(pilot_candidates) + 1,
-                        source_role="pilot",
-                        eligible=status_minus == "finite",
-                    ),
-                )
-            )
-        evaluation_route = "scalar_value_and_score_loop"
-        evaluation_batch_size = 1
+        points = tf.reshape(tf.stack((plus, minus), axis=1), [-1, dim])
+        route, batch_size = "tensorflow_scalar_row_loop", 1
     else:
-        plus_points = center[np.newaxis, :] + h * directions * scale[np.newaxis, :]
-        minus_points = center[np.newaxis, :] - h * directions * scale[np.newaxis, :]
-        pilot_points = np.concatenate((plus_points, minus_points), axis=0)
-        pilot_values, pilot_scores = _evaluate_values_scores(
-            value_and_score_fn,
-            pilot_points,
-            batched_value_and_score_fn=batched_value_and_score_fn,
-        )
-        pilot_candidates = list(
-            candidates_from_rows(
-                pilot_points,
-                pilot_values,
-                pilot_scores,
-                start_index=start_index,
-                source_role="pilot",
-            )
-        )
-        split = int(directions.shape[0])
-        pilot_rows = []
-        for index in range(split):
-            value_plus = float(pilot_values[index])
-            score_plus = pilot_scores[index]
-            value_minus = float(pilot_values[split + index])
-            score_minus = pilot_scores[split + index]
-            status_plus = (
-                "finite"
-                if np.isfinite(value_plus) and np.all(np.isfinite(score_plus))
-                else "nonfinite"
-            )
-            status_minus = (
-                "finite"
-                if np.isfinite(value_minus) and np.all(np.isfinite(score_minus))
-                else "nonfinite"
-            )
-            pilot_rows.append(
-                (value_plus, score_plus, status_plus, value_minus, score_minus, status_minus)
-            )
-        evaluation_route = "batched_value_and_score"
-        evaluation_batch_size = int(pilot_points.shape[0])
+        points = tf.concat((plus, minus), axis=0)
+        route, batch_size = "batched_value_and_score", 2 * split
+    values, scores = _evaluate_values_scores(
+        value_and_score_fn,
+        points,
+        batched_value_and_score_fn=batched_value_and_score_fn,
+    )
+    candidates = candidates_from_rows(
+        points, values, scores, start_index=start_index, source_role="pilot"
+    )
+    if batched_value_and_score_fn is None:
+        score_plus, score_minus = scores[::2], scores[1::2]
+    else:
+        score_plus, score_minus = scores[:split], scores[split:]
+    q_full, eigenvalues, count_positive, minimum, maximum = _run_numerical(
+        _pilot_sketch_kernel,
+        directions,
+        score_plus,
+        score_minus,
+        scale,
+        tf.constant(h, tf.float64),
+    )
+    q = _run_numerical(_thin_qr, q_full[:, :rank])
+    positive = int(count_positive)
+    return (
+        q,
+        {
+            "pilot_direction_count": count,
+            "finite_positive_curvature_count": positive,
+            "curvature_min": float(minimum) if positive else None,
+            "curvature_max": float(maximum) if positive else None,
+            "curvature_source": "central_score_difference_directional_curvature",
+            "center_score_norm": float(tf.linalg.norm(center_score_z)),
+            "sketch_eigenvalues": tuple(float(value) for value in eigenvalues[::-1]),
+            "basis_source": "directional_curvature_sketch"
+            if positive
+            else "identity_fallback",
+            "evaluation_route": route,
+            "evaluation_batch_size": batch_size,
+        },
+        tuple(candidates),
+    )
 
-    for direction, pilot_row in zip(directions, pilot_rows, strict=True):
-        (
-            _value_plus,
-            score_plus,
-            status_plus,
-            _value_minus,
-            score_minus,
-            status_minus,
-        ) = pilot_row
-        if status_plus != "finite" or status_minus != "finite":
-            continue
-        score_plus_z = score_plus * scale
-        score_minus_z = score_minus * scale
-        curvature = float(
-            np.dot(score_minus_z - score_plus_z, direction) / (2.0 * h)
+
+def _thin_qr(matrix):
+    return tf.linalg.qr(matrix, full_matrices=False)[0]
+
+
+def _pilot_sketch_kernel(directions, plus, minus, scale, h):
+    curvature = tf.reduce_sum((minus * scale - plus * scale) * directions, axis=1) / (
+        2.0 * h
+    )
+    valid = (
+        tf.reduce_all(tf.math.is_finite(plus), axis=1)
+        & tf.reduce_all(tf.math.is_finite(minus), axis=1)
+        & tf.math.is_finite(curvature)
+        & (curvature > 0.0)
+    )
+    count, dimension = directions.shape
+
+    def add(i, sketch):
+        contribution = curvature[i] * (directions[i, :, None] * directions[i, None, :])
+        return i + 1, tf.where(valid[i], sketch + contribution, sketch)
+
+    _, sketch = tf.while_loop(
+        lambda i, _: i < count,
+        add,
+        (tf.constant(0), tf.zeros([dimension, dimension], tf.float64)),
+        maximum_iterations=count,
+    )
+    positive = tf.math.count_nonzero(valid)
+
+    def fitted():
+        values, vectors = xla_self_adjoint_eig(
+            0.5 * (sketch + tf.transpose(sketch)), lower=True,
+            max_iter=100, epsilon=math.ulp(1.0),
         )
-        if np.isfinite(curvature) and curvature > 0.0:
-            curvatures.append(curvature)
-            sketch += curvature * np.outer(direction, direction)
-    if curvatures:
-        eigvals, eigvecs = np.linalg.eigh(0.5 * (sketch + sketch.T))
-        order = np.argsort(eigvals)[::-1]
-        q = eigvecs[:, order[:rank]]
-    else:
-        q = np.eye(dim, rank, dtype=float)
-        eigvals = np.zeros(dim, dtype=float)
-    q, _ = np.linalg.qr(q)
-    q = q[:, :rank]
-    return q, {
-        "pilot_direction_count": int(count),
-        "finite_positive_curvature_count": int(len(curvatures)),
-        "curvature_min": None if not curvatures else float(np.min(curvatures)),
-        "curvature_max": None if not curvatures else float(np.max(curvatures)),
-        "curvature_source": "central_score_difference_directional_curvature",
-        "center_score_norm": float(np.linalg.norm(center_score_z)),
-        "sketch_eigenvalues": tuple(float(value) for value in np.sort(eigvals)[::-1]),
-        "basis_source": (
-            "directional_curvature_sketch" if curvatures else "identity_fallback"
+        return vectors[:, ::-1], values
+
+    vectors, values = tf.cond(
+        positive > 0,
+        fitted,
+        lambda: (
+            tf.eye(dimension, dtype=tf.float64),
+            tf.zeros([dimension], tf.float64),
         ),
-        "evaluation_route": evaluation_route,
-        "evaluation_batch_size": evaluation_batch_size,
-    }, tuple(pilot_candidates)
+    )
+    return (
+        vectors,
+        values,
+        positive,
+        tf.reduce_min(tf.where(valid, curvature, tf.constant(math.inf, tf.float64))),
+        tf.reduce_max(tf.where(valid, curvature, tf.zeros_like(curvature))),
+    )
 
 
 def _evaluate_center_refinement(
     *,
     value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
-    center: np.ndarray,
-    scale: np.ndarray,
-    precision: np.ndarray,
-    linear: np.ndarray,
+    center: tf.Tensor,
+    scale: tf.Tensor,
+    precision: tf.Tensor,
+    linear: tf.Tensor,
     cfg: LowRankSPDQuadraticGeometryConfig,
     center_value: float,
     center_score_norm: float,
@@ -905,11 +920,11 @@ def _evaluate_center_refinement(
                 "step_method": "exact_spd_quadratic_trust_region",
                 "trust_region_constrained": True,
             }
-        z_star = np.asarray(step["step"], dtype=float)
+        z_star = numeric_tensor(step["step"], tf.float64)
     else:
         try:
-            z_star = np.linalg.solve(precision, linear)
-        except np.linalg.LinAlgError:
+            z_star = tf.linalg.solve(precision, linear[:, None])[:, 0]
+        except tf.errors.OpError:
             return {"accepted": False, "reason": "precision_solve_failed"}
         step = {
             "status": "usable",
@@ -918,11 +933,11 @@ def _evaluate_center_refinement(
             "boundary_active": False,
             "lagrange_multiplier": 0.0,
             "predicted_improvement": float(
-                np.dot(linear, z_star)
-                - 0.5 * np.dot(z_star, precision @ z_star)
+                tf.reduce_sum(linear * z_star)
+                - 0.5 * tf.reduce_sum(z_star * tf.linalg.matvec(precision, z_star))
             ),
         }
-    z_norm = float(np.linalg.norm(z_star))
+    z_norm = float(tf.linalg.norm(z_star))
     refined = center + z_star * scale
     value, score, status = _evaluate_value_score(value_and_score_fn, refined)
     if status != "finite":
@@ -939,7 +954,7 @@ def _evaluate_center_refinement(
             "exact_evaluation_count": 1,
             "refined_target_finite": False,
         }
-    score_norm = float(np.linalg.norm(score * scale))
+    score_norm = float(tf.linalg.norm(score * scale))
     actual_improvement = float(value - center_value)
     predicted_improvement = float(step["predicted_improvement"])
     improvement_ratio = (
@@ -955,7 +970,7 @@ def _evaluate_center_refinement(
         and (not constrained or predicted_improvement > 0.0)
         and (
             not constrained
-            or (improvement_ratio is not None and np.isfinite(improvement_ratio))
+            or (improvement_ratio is not None and math.isfinite(improvement_ratio))
         )
     )
     reasons = []
@@ -970,7 +985,7 @@ def _evaluate_center_refinement(
     if constrained and predicted_improvement <= 0.0:
         reasons.append("predicted_improvement_not_positive")
     if constrained and (
-        improvement_ratio is None or not np.isfinite(improvement_ratio)
+        improvement_ratio is None or not math.isfinite(improvement_ratio)
     ):
         reasons.append("improvement_ratio_nonfinite")
     return {
@@ -1006,13 +1021,18 @@ def _canonical_replay(
     if incumbent is None:
         return {"attempted": False, "valid": False, "matches": False}
     value, score, status = _evaluate_value_score(
-        value_and_score_fn, np.asarray(incumbent.position, dtype=float)
+        value_and_score_fn, numeric_tensor(incumbent.position, tf.float64)
     )
     valid = status == "finite"
     matches = bool(
         valid
-        and np.isclose(value, incumbent.value, rtol=1.0e-10, atol=1.0e-12)
-        and np.allclose(score, incumbent.score, rtol=1.0e-9, atol=1.0e-11)
+        and abs(value - incumbent.value) <= 1.0e-12 + 1.0e-10 * abs(incumbent.value)
+        and bool(
+            tf.reduce_all(
+                tf.abs(score - incumbent.score)
+                <= 1.0e-11 + 1.0e-9 * tf.abs(incumbent.score)
+            )
+        )
     )
     return {
         "attempted": True,
@@ -1024,174 +1044,223 @@ def _canonical_replay(
     }
 
 
-def _solve_spd_quadratic_trust_region(
-    precision: np.ndarray,
-    linear: np.ndarray,
-    *,
-    radius: float,
-) -> Mapping[str, Any]:
-    """Solve ``max b'z - 0.5 z'Kz`` over an Euclidean trust ball.
-
-    For positive-definite ``K``, the constrained solution satisfies
-    ``(K + lambda I) z = b``. The unconstrained solution is used when it lies
-    inside the ball; otherwise a deterministic bisection solves
-    ``||z(lambda)||_2 = radius``.
-    """
-
-    matrix = np.asarray(precision, dtype=float)
-    vector = np.asarray(linear, dtype=float).reshape([-1])
+def _solve_spd_quadratic_trust_region(precision, linear, *, radius):
+    """Solve the same SPD quadratic trust ball with native bracketing/bisection."""
+    matrix = numeric_tensor(precision, tf.float64)
+    vector = tf.reshape(numeric_tensor(linear, tf.float64), [-1])
     radius_value = float(radius)
     if (
-        matrix.ndim != 2
-        or matrix.shape != (vector.size, vector.size)
-        or not np.all(np.isfinite(matrix))
-        or not np.all(np.isfinite(vector))
-        or not np.isfinite(radius_value)
+        matrix.shape.rank != 2
+        or matrix.shape != (vector.shape[0], vector.shape[0])
+        or not bool(tf.reduce_all(tf.math.is_finite(matrix)))
+        or not bool(tf.reduce_all(tf.math.is_finite(vector)))
+        or not math.isfinite(radius_value)
         or radius_value <= 0.0
     ):
         return {"status": "trust_region_invalid_input"}
-    symmetric = 0.5 * (matrix + matrix.T)
     try:
-        eigenvalues, eigenvectors = np.linalg.eigh(symmetric)
-    except np.linalg.LinAlgError:
+        result = _run_numerical(
+            _trust_region_kernel, matrix, vector, tf.constant(radius_value, tf.float64)
+        )
+    except tf.errors.OpError:
         return {"status": "trust_region_eigendecomposition_failed"}
-    if not np.all(np.isfinite(eigenvalues)) or float(np.min(eigenvalues)) <= 0.0:
-        return {"status": "trust_region_precision_not_spd"}
-
-    projected = eigenvectors.T @ vector
-
-    def solution(lagrange_multiplier: float) -> np.ndarray:
-        return eigenvectors @ (projected / (eigenvalues + lagrange_multiplier))
-
-    unconstrained = solution(0.0)
-    unconstrained_norm = float(np.linalg.norm(unconstrained))
-    if unconstrained_norm <= radius_value * (1.0 + 1.0e-12):
-        step = unconstrained
-        lagrange_multiplier = 0.0
-        boundary_active = False
-        iterations = 0
-    else:
-        lower = 0.0
-        upper = 1.0
-        while float(np.linalg.norm(solution(upper))) > radius_value:
-            upper *= 2.0
-            if not np.isfinite(upper):
-                return {"status": "trust_region_bracket_failed"}
-        iterations = 0
-        for iterations in range(1, 101):
-            midpoint = 0.5 * (lower + upper)
-            midpoint_norm = float(np.linalg.norm(solution(midpoint)))
-            if midpoint_norm > radius_value:
-                lower = midpoint
-            else:
-                upper = midpoint
-            if upper - lower <= 1.0e-12 * max(1.0, upper):
-                break
-        lagrange_multiplier = upper
-        step = solution(lagrange_multiplier)
-        boundary_active = True
-
-    step_norm = float(np.linalg.norm(step))
-    predicted_improvement = float(
-        np.dot(vector, step) - 0.5 * np.dot(step, symmetric @ step)
-    )
-    if (
-        not np.all(np.isfinite(step))
-        or not np.isfinite(predicted_improvement)
-        or step_norm > radius_value * (1.0 + 1.0e-10)
-    ):
-        return {"status": "trust_region_solution_invalid"}
+    status = int(result.pop("status_code"))
+    if status:
+        return {
+            "status": (
+                "trust_region_precision_not_spd",
+                "trust_region_bracket_failed",
+                "trust_region_solution_invalid",
+            )[status - 1]
+        }
+    result = {
+        key: value if key == "step" else value.numpy().item()
+        for key, value in result.items()
+    }
     return {
         "status": "usable",
-        "step": step,
         "step_method": "exact_spd_quadratic_trust_region",
-        "boundary_active": boundary_active,
-        "lagrange_multiplier": float(lagrange_multiplier),
-        "bisection_iterations": int(iterations),
-        "unconstrained_step_norm": unconstrained_norm,
+        **result,
+    }
+
+
+def _trust_region_kernel(matrix, vector, radius):
+    symmetric = 0.5 * (matrix + tf.transpose(matrix))
+    eigenvalues, eigenvectors = xla_self_adjoint_eig(
+        symmetric, lower=True, max_iter=100, epsilon=math.ulp(1.0)
+    )
+    eigenvalues = tf.ensure_shape(eigenvalues, vector.shape)
+    eigenvectors = tf.ensure_shape(eigenvectors, matrix.shape)
+    spd = tf.reduce_all(tf.math.is_finite(eigenvalues)) & (
+        tf.reduce_min(eigenvalues) > 0.0
+    )
+    projected = tf.linalg.matvec(eigenvectors, vector, transpose_a=True)
+
+    def solution(multiplier):
+        return tf.linalg.matvec(eigenvectors, projected / (eigenvalues + multiplier))
+
+    unconstrained = solution(tf.constant(0.0, tf.float64))
+    norm = tf.linalg.norm(unconstrained)
+    boundary = norm > radius * (1.0 + 1e-12)
+
+    def constrained():
+        _, upper = tf.while_loop(
+            lambda i, u: tf.math.is_finite(u) & (tf.linalg.norm(solution(u)) > radius),
+            lambda i, u: (i + 1, 2.0 * u),
+            (tf.constant(0), tf.constant(1.0, tf.float64)),
+            maximum_iterations=1024,
+        )
+
+        def bisect(i, lower, upper):
+            middle = 0.5 * (lower + upper)
+            outside = tf.linalg.norm(solution(middle)) > radius
+            return (
+                i + 1,
+                tf.where(outside, middle, lower),
+                tf.where(outside, upper, middle),
+            )
+
+        iterations, _, multiplier = tf.while_loop(
+            lambda i, l, u: (
+                (i < 100)
+                & (u - l > 1e-12 * tf.maximum(tf.constant(1.0, tf.float64), u))
+            ),
+            bisect,
+            (tf.constant(0), tf.constant(0.0, tf.float64), upper),
+            maximum_iterations=100,
+        )
+        return solution(multiplier), multiplier, iterations, tf.math.is_finite(upper)
+
+    step, multiplier, iterations, bracket = tf.cond(
+        boundary,
+        constrained,
+        lambda: (
+            unconstrained,
+            tf.constant(0.0, tf.float64),
+            tf.constant(0),
+            tf.constant(True),
+        ),
+    )
+    step_norm = tf.linalg.norm(step)
+    predicted = tf.reduce_sum(vector * step) - 0.5 * tf.reduce_sum(
+        step * tf.linalg.matvec(symmetric, step)
+    )
+    valid = (
+        tf.reduce_all(tf.math.is_finite(step))
+        & tf.math.is_finite(predicted)
+        & (step_norm <= radius * (1.0 + 1e-10))
+    )
+    return {
+        "status_code": tf.where(~spd, 1, tf.where(~bracket, 2, tf.where(~valid, 3, 0))),
+        "step": step,
+        "boundary_active": boundary,
+        "lagrange_multiplier": multiplier,
+        "bisection_iterations": iterations,
+        "unconstrained_step_norm": norm,
         "step_norm": step_norm,
-        "predicted_improvement": predicted_improvement,
+        "predicted_improvement": predicted,
     }
 
 
 def _evaluate_values_scores(
-    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
-    theta_samples: np.ndarray,
-    *,
-    batched_value_and_score_fn: Callable[
-        [tf.Tensor], tuple[tf.Tensor, tf.Tensor]
-    ]
-    | None = None,
-) -> tuple[np.ndarray, np.ndarray]:
-    samples = np.asarray(theta_samples, dtype=float)
-    if samples.ndim != 2:
+    value_and_score_fn, theta_samples, *, batched_value_and_score_fn=None
+):
+    samples = numeric_tensor(theta_samples, tf.float64)
+    if samples.shape.rank != 2:
         raise ValueError("theta_samples must have shape [batch, dimension]")
-    if batched_value_and_score_fn is not None:
-        try:
-            values, scores = batched_value_and_score_fn(
-                tf.constant(samples, dtype=tf.float64)
-            )
-            values_np = np.asarray(
-                tf.convert_to_tensor(values, dtype=tf.float64).numpy(), dtype=float
-            )
-            scores_np = np.asarray(
-                tf.convert_to_tensor(scores, dtype=tf.float64).numpy(), dtype=float
-            )
-        except Exception:  # noqa: BLE001 - fail-closed diagnostic path.
-            return (
-                np.full(samples.shape[0], np.nan, dtype=float),
-                np.full(samples.shape, np.nan, dtype=float),
-            )
-        if values_np.shape != (samples.shape[0],) or scores_np.shape != samples.shape:
-            return (
-                np.full(samples.shape[0], np.nan, dtype=float),
-                np.full(samples.shape, np.nan, dtype=float),
-            )
-        finite = np.isfinite(values_np) & np.all(np.isfinite(scores_np), axis=1)
-        return (
-            np.where(finite, values_np, np.nan),
-            np.where(finite[:, np.newaxis], scores_np, np.nan),
-        )
-
-    values = []
-    scores = []
-    for theta in samples:
-        value, score, status = _evaluate_value_score(value_and_score_fn, theta)
-        values.append(value if status == "finite" else np.nan)
-        scores.append(score if status == "finite" else np.full_like(theta, np.nan, dtype=float))
-    return np.asarray(values, dtype=float), np.asarray(scores, dtype=float)
-
-
-def _evaluate_value_score(
-    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
-    theta: np.ndarray,
-) -> tuple[float, np.ndarray, str]:
+    count, dimension = samples.shape
+    nan = tf.constant(math.nan, tf.float64)
     try:
-        value, score = value_and_score_fn(tf.constant(theta, dtype=tf.float64))
-        value_np = float(tf.convert_to_tensor(value, dtype=tf.float64).numpy())
-        score_np = np.asarray(tf.reshape(tf.convert_to_tensor(score, dtype=tf.float64), [-1]).numpy(), dtype=float)
-    except Exception:  # noqa: BLE001 - diagnostic rejection path.
-        return float("nan"), np.full_like(theta, np.nan, dtype=float), "exception"
-    if not np.isfinite(value_np) or not np.all(np.isfinite(score_np)):
-        return value_np, score_np, "nonfinite"
-    return value_np, score_np, "finite"
+        call = _compiled_cloud(
+            value_and_score_fn, batched_value_and_score_fn, count, dimension
+        )
+        values, scores = call(samples)
+    except Exception:  # noqa: BLE001 - preserve fail-closed callback boundary.
+        return tf.fill([count], nan), tf.fill(samples.shape, nan)
+    finite = tf.math.is_finite(values) & tf.reduce_all(
+        tf.math.is_finite(scores), axis=1
+    )
+    return tf.where(finite, values, nan), tf.where(finite[:, None], scores, nan)
+
+
+@lru_cache(maxsize=64)
+def _compiled_cloud(scalar, batched, count, dimension):
+    @tf.function(
+        input_signature=[tf.TensorSpec([count, dimension], tf.float64)],
+        jit_compile=True,
+        autograph=False,
+    )
+    def evaluate(points):
+        if batched is not None:
+            values, scores = batched(points)
+            return (
+                tf.ensure_shape(tf.convert_to_tensor(values, tf.float64), [count]),
+                tf.ensure_shape(
+                    tf.convert_to_tensor(scores, tf.float64), [count, dimension]
+                ),
+            )
+
+        def row(i, values, scores):
+            value, score = scalar(points[i])
+            value = tf.reshape(tf.convert_to_tensor(value, tf.float64), [])
+            score = tf.ensure_shape(
+                tf.reshape(tf.convert_to_tensor(score, tf.float64), [-1]), [dimension]
+            )
+            return (
+                i + 1,
+                tf.tensor_scatter_nd_update(values, [[i]], [value]),
+                tf.tensor_scatter_nd_update(scores, [[i]], score[None, :]),
+            )
+
+        _, values, scores = tf.while_loop(
+            lambda i, *_: i < count,
+            row,
+            (
+                tf.constant(0),
+                tf.zeros([count], tf.float64),
+                tf.zeros([count, dimension], tf.float64),
+            ),
+            maximum_iterations=count,
+        )
+        return values, scores
+
+    return evaluate
+
+
+def _evaluate_value_score(value_and_score_fn, theta):
+    point = numeric_tensor(theta, tf.float64)
+    try:
+        value, score = _run_numerical(value_and_score_fn, point)
+        value = float(tf.convert_to_tensor(value, tf.float64))
+        score = tf.reshape(tf.convert_to_tensor(score, tf.float64), [-1])
+    except Exception:  # noqa: BLE001 - preserve fail-closed callback boundary.
+        return (
+            math.nan,
+            tf.fill(point.shape, tf.constant(math.nan, tf.float64)),
+            "exception",
+        )
+    if not math.isfinite(value) or not bool(tf.reduce_all(tf.math.is_finite(score))):
+        return value, score, "nonfinite"
+    return value, score, "finite"
 
 
 def _predict_quadratic(
-    z: np.ndarray,
+    z: tf.Tensor,
     *,
     intercept: float,
-    linear: np.ndarray,
+    linear: tf.Tensor,
     lambda0: float,
-    mu: np.ndarray,
-    q_basis: np.ndarray,
-) -> np.ndarray:
-    zq = z @ q_basis
+    mu: tf.Tensor,
+    q_basis: tf.Tensor,
+) -> tf.Tensor:
+    zq = tf.matmul(z, q_basis)
     return (
-        float(intercept)
-        + z @ linear
-        - 0.5 * float(lambda0) * np.sum(np.square(z), axis=1)
-        - 0.5 * np.sum(np.square(zq) * mu[np.newaxis, :], axis=1)
+        tf.convert_to_tensor(intercept, tf.float64)
+        + tf.linalg.matvec(z, linear)
+        - 0.5
+        * tf.convert_to_tensor(lambda0, tf.float64)
+        * tf.reduce_sum(tf.square(z), axis=1)
+        - 0.5 * tf.reduce_sum(tf.square(zq) * mu[None, :], axis=1)
     )
 
 
@@ -1200,25 +1269,18 @@ def _sample_trust_ball(
     dim: int,
     *,
     radius: float,
-    rng: np.random.Generator,
-) -> np.ndarray:
-    directions = rng.normal(size=(int(sample_count), int(dim)))
-    norms = np.linalg.norm(directions, axis=1)
-    bad = norms <= 0.0
-    while np.any(bad):
-        directions[bad] = rng.normal(size=(int(np.sum(bad)), int(dim)))
-        norms = np.linalg.norm(directions, axis=1)
-        bad = norms <= 0.0
-    directions = directions / norms[:, np.newaxis]
-    radii = float(radius) * rng.random(int(sample_count)) ** (1.0 / float(dim))
-    return directions * radii[:, np.newaxis]
+    rng: GeometryTensorStream,
+) -> tf.Tensor:
+    return numeric_tensor(
+        rng.ball(int(sample_count), int(dim), radius=float(radius)), tf.float64
+    )
 
 
 def _rejected_result(
     *,
     status: str,
-    center: np.ndarray,
-    scale: np.ndarray,
+    center: tf.Tensor,
+    scale: tf.Tensor,
     dim: int,
     rank: int,
     diagnostics: Mapping[str, Any],
@@ -1264,6 +1326,7 @@ def _base_diagnostics(
 ) -> dict[str, Any]:
     return {
         "config": cfg.payload(),
+        "random_stream": STREAM_ID,
         "dimension": int(dim),
         "rank": int(rank),
         "regression_parameter_count": int(regression_parameter_count),
@@ -1281,25 +1344,25 @@ def _base_diagnostics(
     }
 
 
-def _vector(value: Any, name: str) -> np.ndarray:
-    vector = np.asarray(value, dtype=float).reshape([-1])
-    if vector.ndim != 1 or vector.size <= 0:
+def _vector(value: Any, name: str) -> tf.Tensor:
+    vector = tf.reshape(numeric_tensor(value, tf.float64), [-1])
+    if vector.shape.rank != 1 or vector.shape[0] <= 0:
         raise ValueError(f"{name} must be a non-empty vector")
-    if not np.all(np.isfinite(vector)):
+    if not bool(tf.reduce_all(tf.math.is_finite(vector))):
         raise ValueError(f"{name} must be finite")
     return vector
 
 
-def _scale_vector(value: Any | None, dim: int) -> np.ndarray:
+def _scale_vector(value: Any | None, dim: int) -> tf.Tensor:
     if value is None:
-        scale = np.ones(int(dim), dtype=float)
+        scale = tf.ones([int(dim)], tf.float64)
     else:
-        scale = np.asarray(value, dtype=float).reshape([-1])
-        if scale.size == 1:
-            scale = np.full(int(dim), float(scale[0]), dtype=float)
+        scale = tf.reshape(numeric_tensor(value, tf.float64), [-1])
+        if scale.shape[0] == 1:
+            scale = tf.fill([int(dim)], scale[0])
     if scale.shape != (int(dim),):
         raise ValueError("scale must be scalar or match center dimension")
-    if not np.all(np.isfinite(scale)) or np.any(scale <= 0.0):
+    if not bool(tf.reduce_all(tf.math.is_finite(scale) & (scale > 0.0))):
         raise ValueError("scale must be positive finite")
     return scale
 
@@ -1317,25 +1380,36 @@ def _normalize_seed(seed: int | Sequence[int]) -> tuple[int, int]:
 
 
 def _eigen_summary(matrix: Any) -> Mapping[str, Any]:
-    square = np.asarray(matrix, dtype=float)
-    symmetric = 0.5 * (square + square.T)
-    eigvals = np.linalg.eigvalsh(symmetric)
-    finite = bool(np.all(np.isfinite(eigvals)))
-    positive = bool(finite and float(np.min(eigvals)) > 0.0)
+    square = numeric_tensor(matrix, tf.float64)
+    symmetric = 0.5 * (square + tf.transpose(square))
+    eigvals = tf.linalg.eigvalsh(symmetric)
+    finite = bool(tf.reduce_all(tf.math.is_finite(eigvals)))
+    positive = bool(finite and float(tf.reduce_min(eigvals)) > 0.0)
     return {
         "finite": finite,
         "positive": positive,
-        "min": float(np.min(eigvals)) if finite else float("nan"),
-        "max": float(np.max(eigvals)) if finite else float("nan"),
+        "min": float(tf.reduce_min(eigvals)) if finite else float("nan"),
+        "max": float(tf.reduce_max(eigvals)) if finite else float("nan"),
         "condition_number": (
-            float(np.max(eigvals) / np.min(eigvals)) if positive else float("inf")
+            float(tf.reduce_max(eigvals) / tf.reduce_min(eigvals))
+            if positive
+            else float("inf")
         ),
         "eigenvalues": tuple(float(value) for value in eigvals),
     }
 
 
-def _rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    return float(np.sqrt(np.mean(np.square(np.asarray(y_true) - np.asarray(y_pred)))))
+def _rmse(y_true: tf.Tensor, y_pred: tf.Tensor) -> float:
+    return float(
+        tf.sqrt(
+            tf.reduce_mean(
+                tf.square(
+                    numeric_tensor(y_true, tf.float64)
+                    - numeric_tensor(y_pred, tf.float64)
+                )
+            )
+        )
+    )
 
 
 def _artifact_hash(payload: Mapping[str, Any]) -> str:
@@ -1350,10 +1424,6 @@ def _json_ready(value: Any) -> Any:
         return tuple(_json_ready(item) for item in value)
     if isinstance(value, list):
         return [_json_ready(item) for item in value]
-    if isinstance(value, np.ndarray):
-        return _json_ready(value.tolist())
-    if isinstance(value, np.generic):
-        return value.item()
-    if isinstance(value, tf.Tensor):
-        return _json_ready(value.numpy())
+    if tf.is_tensor(value) or hasattr(value, "__array_interface__"):
+        return numeric_tensor(value).numpy().tolist()
     return value

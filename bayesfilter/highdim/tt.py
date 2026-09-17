@@ -200,6 +200,7 @@ class FunctionalTT:
         self,
         points: tf.Tensor,
         budget: ComplexityBudget | None = None,
+        *, jit_compile: bool = True,
     ) -> tf.Tensor:
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         assert_tf_float64("points", values)
@@ -214,18 +215,14 @@ class FunctionalTT:
         )
         if result.status is not HighDimStatus.OK:
             raise ValueError(HighDimStatus.COMPLEXITY_GATE.value)
-        n_points = tf.shape(values)[0]
-        vector = tf.ones([n_points, 1], dtype=tf.float64)
-        for axis, core in enumerate(self.cores):
-            basis_values = self.product_basis.evaluate_axis(axis, values[:, axis])
-            matrices = tf.einsum("nl,alb->nab", basis_values, core.values)
-            vector = tf.einsum("na,nab->nb", vector, matrices)
-        return tf.reshape(vector, [n_points])
+        from bayesfilter.highdim.tt_native_control_tf import functional_tt_primitive
+        return functional_tt_primitive(self.product_basis, self.cores, points=values, jit_compile=jit_compile)
 
     def integrate_all(
         self,
         measure: MassMeasure | None = None,
         budget: ComplexityBudget | None = None,
+        *, jit_compile: bool = True,
     ) -> tf.Tensor:
         active_budget = budget or self.complexity_budget
         result = active_budget.validate(
@@ -235,17 +232,17 @@ class FunctionalTT:
         if result.status is not HighDimStatus.OK:
             raise ValueError(HighDimStatus.COMPLEXITY_GATE.value)
         active_measure = measure or self.measure_convention.mass_measure
-        vector = tf.ones([1], dtype=tf.float64)
-        for axis, core in enumerate(self.cores):
-            integrals = self.product_basis.bases[axis].integral_vector(active_measure)
-            matrix = tf.einsum("l,alb->ab", integrals, core.values)
-            vector = tf.einsum("a,ab->b", vector, matrix)
-        return tf.reshape(vector, [])
+        from bayesfilter.highdim.tt_native_control_tf import functional_tt_primitive
+        return functional_tt_primitive(
+            self.product_basis, self.cores, integrate_axes=tuple(range(len(self.cores))),
+            measure=active_measure, jit_compile=jit_compile,
+        )[1]
 
     def contract_axes(
         self,
         integrate_axes: Sequence[int],
         budget: ComplexityBudget | None = None,
+        *, jit_compile: bool = True,
     ) -> TTContractedRepresentation:
         axes = tuple(sorted(set(int(axis) for axis in integrate_axes)))
         dimension = len(self.cores)
@@ -260,21 +257,12 @@ class FunctionalTT:
             raise ValueError(HighDimStatus.COMPLEXITY_GATE.value)
         kept_axes = tuple(axis for axis in range(dimension) if axis not in axes)
         active_measure = self.measure_convention.mass_measure
-        pending = tf.eye(self.cores[0].left_rank, dtype=tf.float64)
-        kept_core_values: list[tf.Tensor] = []
-        for axis, core in enumerate(self.cores):
-            if axis in axes:
-                integrals = self.product_basis.bases[axis].integral_vector(active_measure)
-                matrix = tf.einsum("l,alb->ab", integrals, core.values)
-                pending = tf.matmul(pending, matrix)
-            else:
-                kept_core_values.append(tf.einsum("ea,alb->elb", pending, core.values))
-                pending = tf.eye(core.right_rank, dtype=tf.float64)
-        scalar_value = None
-        if kept_core_values:
-            kept_core_values[-1] = tf.einsum("elb,bc->elc", kept_core_values[-1], pending)
-        elif axes:
-            scalar_value = tf.reshape(pending, [])
+        from bayesfilter.highdim.tt_native_control_tf import functional_tt_primitive
+        kept_core_values, scalar = functional_tt_primitive(
+            self.product_basis, self.cores, integrate_axes=axes,
+            measure=active_measure, jit_compile=jit_compile,
+        )
+        scalar_value = None if kept_axes else scalar
         diagnostics = {
             "status": HighDimStatus.OK.value,
             "integrated_axes": axes,

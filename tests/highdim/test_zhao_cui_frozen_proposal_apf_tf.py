@@ -245,6 +245,8 @@ def test_24d_posterior_proposal_matches_exact_gaussian_value_and_score() -> None
     assert manifest["pseudo_marginal_exact_target_claimed"] is False
 
     compiled = program.compiled()
+    assert compiled is program.compiled()
+    assert compiled is not program.compiled(jit_compile=False)
     compiled_result = compiled(theta)
     tf.debugging.assert_near(
         compiled_result["log_likelihood"], result["log_likelihood"], atol=2e-11

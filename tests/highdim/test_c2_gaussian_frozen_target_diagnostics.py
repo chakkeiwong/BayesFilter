@@ -64,7 +64,7 @@ def captured_run():
         seed=7712,
         row_design="sobol",
     )
-    initial_hint, predictive_hint = oracle._exact_hint_factories(model)
+    initial_hint, predictive_hint = oracle._prepared_hint_factories(model, observations)
     plain_value, plain_diagnostics = run_value_filter_branch_axis_gaussian_xla(
         adapter,
         observations,
@@ -72,7 +72,7 @@ def captured_run():
         predictive_moment_hint=predictive_hint,
         initial_moment_hint=initial_hint,
     )
-    initial_hint, predictive_hint = oracle._exact_hint_factories(model)
+    initial_hint, predictive_hint = oracle._prepared_hint_factories(model, observations)
     captured_value, captured_diagnostics, snapshots = (
         run_value_filter_branch_axis_gaussian_xla_diagnostic(
             adapter,
@@ -84,7 +84,7 @@ def captured_run():
             run_identity="cpu-stage0-lgssm-n1-t3-seed308",
         )
     )
-    initial_hint, predictive_hint = oracle._exact_hint_factories(model)
+    initial_hint, predictive_hint = oracle._prepared_hint_factories(model, observations)
     retained_value, retained_diagnostics, retained_snapshots = (
         run_value_filter_branch_axis_gaussian_xla_retained_proposal_diagnostic(
             adapter,
@@ -339,18 +339,21 @@ def test_snapshot_tensor_round_trip_preserves_identity(captured_run) -> None:
 def test_compiled_wrappers_have_explicit_signatures_and_bounded_traces(
     captured_run,
 ) -> None:
-    config_cache = engine._STEP_CACHE[captured_run["adapter"]][captured_run["config"]]
+    from bayesfilter.highdim.squared_tt_gaussian_native_tf import _CACHE
+    config_cache = _CACHE[captured_run["adapter"]]
     assert config_cache
-    for compiled, _shapes in config_cache.values():
+    for compiled in config_cache.values():
         assert compiled.input_signature is not None
         assert compiled.experimental_get_tracing_count() == 1
 
 
 def test_production_and_evaluator_are_wired_to_shared_assembler() -> None:
-    transition_source = inspect.getsource(engine._run_value_filter_branch_axis_gaussian_xla)
+    from bayesfilter.highdim.squared_tt_gaussian_native_tf import make_gaussian_value_filter
+    transition_source = inspect.getsource(make_gaussian_value_filter)
     evaluator_source = inspect.getsource(engine._make_frozen_transition_evaluator)
     assert "_assemble_transition_target(" in transition_source
     assert "_assemble_transition_target(" in evaluator_source
+    assert "make_gaussian_value_filter(" in inspect.getsource(engine._run_value_filter_branch_axis_gaussian_xla)
 
 
 def test_t0_capture_is_rejected_as_a_separate_fit(captured_run) -> None:

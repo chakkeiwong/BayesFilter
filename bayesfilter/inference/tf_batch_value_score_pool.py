@@ -17,6 +17,7 @@ _TARGET: Any | None = None
 _READY_BARRIER: Any | None = None
 _METADATA: Mapping[str, Any] | None = None
 _STATUS_CALLS: Mapping[int, Any] = {}
+_VALUE_SCORE_CALLS: Mapping[int, Any] = {}
 
 # Preserve admission for the historical worker route while allowing the
 # current status-bearing batch-native target to use the same CPU pool.
@@ -52,7 +53,7 @@ def _worker_init(
     barrier: Any,
     assigned_cpu: int | tuple[int, ...] | None,
 ) -> None:
-    global _TARGET, _READY_BARRIER, _METADATA, _STATUS_CALLS
+    global _TARGET, _READY_BARRIER, _METADATA, _STATUS_CALLS, _VALUE_SCORE_CALLS
 
     expected = _worker_environment(cores)
     mismatched = {
@@ -84,7 +85,15 @@ def _worker_init(
         _bind_process_threads_to_cpus(cpu_group)
     _TARGET = target
     status_method = getattr(target, "neutra_batch_log_prob_and_grad_status", None)
-    status_jit_compile = bool(getattr(target, "_jit_compile", False))
+    status_jit_compile = bool(getattr(target, "_jit_compile", True))
+    _VALUE_SCORE_CALLS = {
+        int(size): tf.function(
+            target.batch_value_and_score,
+            input_signature=(tf.TensorSpec([int(size), int(target.parameter_dim)], tf.float64),),
+            jit_compile=status_jit_compile, autograph=False,
+        )
+        for size in batch_sizes
+    }
     _STATUS_CALLS = (
         {
             int(size): tf.function(
@@ -173,7 +182,7 @@ def _worker_evaluate(payload: Mapping[str, Any]) -> Mapping[str, Any]:
                     f"target status field {key!r} must have shape [row_count]"
                 )
     else:
-        value, score = _TARGET.batch_value_and_score(rows)
+        value, score = _VALUE_SCORE_CALLS[int(payload["row_count"])](rows)
         status = {}
     assigned_cpu = _METADATA.get("assigned_cpu")
     if _METADATA.get("assigned_cpus"):

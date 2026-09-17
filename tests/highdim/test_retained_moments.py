@@ -10,10 +10,12 @@ or the M^(p) constants are wrong, not resolution).
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from bayesfilter.highdim.filtering import AffineCoordinateMap
@@ -87,3 +89,40 @@ def test_u_map_mom_1_covariance_psd() -> None:
     _mean, cov = retained_reference_moments(retained)
     eig = np.linalg.eigvalsh(cov.numpy())
     assert eig[0] > 0.0, f"covariance not PD: {eig}"
+
+
+@pytest.mark.parametrize("jit", [False, True])
+@pytest.mark.parametrize("mixed_degrees", [False, True])
+def test_public_moments_compile_complete_result_and_reuse_live_inputs(jit, mixed_degrees):
+    from bayesfilter.highdim.bases import LegendreBasis1D, ProductBasis
+    from bayesfilter.highdim.retained_moments_tf import retained_moment_program
+    from bayesfilter.highdim.retained_quadratic_form_tf import prefix_gram_matrix
+
+    initial = _random_retained(2, 2, 3, 1e-3, 17)
+    if mixed_degrees:
+        first_basis, second_basis = initial.prefix_basis.bases
+        basis = ProductBasis((LegendreBasis1D(first_basis.domain, 1), second_basis),
+                             initial.prefix_basis.convention)
+        cores = (TTCore(initial.prefix_cores[0].values[:, :2]), initial.prefix_cores[1])
+        normalizer = tf.reduce_sum(prefix_gram_matrix(cores, basis) * initial.suffix_gram) + initial.tau
+        initial = replace(initial, prefix_basis=basis, prefix_cores=cores,
+                          z_complete_ref=normalizer)
+    program, inputs = retained_moment_program(initial, jit_compile=jit)
+    first = retained_reference_moments(initial, jit_compile=jit)
+    cores = tuple(TTCore(core.values + 0.03) for core in initial.prefix_cores)
+    gram = initial.suffix_gram * 1.1
+    tau = initial.tau * 1.2
+    normalizer = tf.reduce_sum(prefix_gram_matrix(cores, initial.prefix_basis) * gram) + tau
+    changed = replace(initial, prefix_cores=cores, suffix_gram=gram,
+                      tau=tau, z_complete_ref=normalizer)
+    same_program, _ = retained_moment_program(changed, jit_compile=jit)
+    assert same_program is program
+    actual = retained_reference_moments(changed, jit_compile=jit)
+    mass, mean, covariance = _dense_reference_moments(changed, 8)
+    np.testing.assert_allclose(mass, 1.0, atol=1e-10)
+    np.testing.assert_allclose(actual[0], mean, atol=1e-10, rtol=1e-10)
+    np.testing.assert_allclose(actual[1], covariance, atol=1e-10, rtol=1e-10)
+    assert float(tf.reduce_max(tf.abs(first[0] - actual[0]))) > 1e-5
+    assert program.experimental_get_tracing_count() == 1
+    if jit:
+        assert "HloModule" in program.experimental_get_compiler_ir(*inputs)(stage="hlo")

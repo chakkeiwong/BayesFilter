@@ -35,6 +35,7 @@ def tf_batched_svd_sigma_point_value_and_score_custom_gradient(
     principal_sqrt_reconstruction_tolerance: tf.Tensor | float = 1.0e-10,
     principal_sqrt_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
     jitter: tf.Tensor | float = 0.0,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
     """Return batched value, analytic score, and diagnostics.
 
@@ -67,6 +68,7 @@ def tf_batched_svd_sigma_point_value_and_score_custom_gradient(
         principal_sqrt_backend=principal_sqrt_backend,
         jitter=jitter,
         allow_fixed_null_support=False,
+        jit_compile=jit_compile,
     )
     value_tensor = tf.stop_gradient(tf.convert_to_tensor(value, dtype=tf.float64))
     score_tensor = tf.stop_gradient(tf.convert_to_tensor(score, dtype=tf.float64))

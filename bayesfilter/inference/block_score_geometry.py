@@ -13,14 +13,22 @@ the block family nor moves the center.
 
 from __future__ import annotations
 
+import math
+import sys
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from functools import lru_cache
+from typing import Any
 
-import numpy as np
 import tensorflow as tf
 
 from bayesfilter.inference.fixed_center_curvature import compare_precision_geometry
-
+from bayesfilter.ops.host_tensor_io import numeric_tensor
+from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
+from bayesfilter.ops.symmetric_matrix_tf import (
+    symmetric_score_design as _symmetric_score_design,
+    unpack_symmetric as _unpack_symmetric,
+)
 
 BLOCK_SCORE_GEOMETRY_NONCLAIMS = (
     "fixed-center block score geometry is an HMC initializer only",
@@ -88,7 +96,7 @@ class BlockScoreGeometryConfig:
             "principal_angle_degrees_cap",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value <= 0.0:
+            if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be positive and finite")
             object.__setattr__(self, name, value)
         if self.max_condition_number < 1.0:
@@ -103,10 +111,7 @@ class BlockScoreGeometryConfig:
         object.__setattr__(self, "principal_subspace_rank", rank)
 
     def payload(self) -> Mapping[str, Any]:
-        return {
-            name: getattr(self, name)
-            for name in self.__dataclass_fields__
-        }
+        return {name: getattr(self, name) for name in self.__dataclass_fields__}
 
 
 @dataclass(frozen=True)
@@ -116,8 +121,8 @@ class BlockScoreGeometryResult:
     accepted: bool
     status: str
     blocks: tuple[ScoreGeometryBlock, ...]
-    precision_z: np.ndarray | None
-    covariance_z: np.ndarray | None
+    precision_z: tf.Tensor | None
+    covariance_z: tf.Tensor | None
     diagnostics: Mapping[str, Any]
     nonclaims: tuple[str, ...] = BLOCK_SCORE_GEOMETRY_NONCLAIMS
 
@@ -128,12 +133,11 @@ class BlockScoreGeometryResult:
         for name in ("precision_z", "covariance_z"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=np.float64).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
 
-    def position_geometry(self, scale: Any) -> Mapping[str, np.ndarray]:
+    def position_geometry(self, scale: Any) -> Mapping[str, tf.Tensor]:
         """Convert qualified standardized geometry to parameter coordinates."""
 
         if not self.accepted or self.precision_z is None or self.covariance_z is None:
@@ -142,23 +146,29 @@ class BlockScoreGeometryResult:
         dimension = int(self.precision_z.shape[0])
         if scale_tf.shape != (dimension,):
             raise ValueError("scale shape must match geometry dimension")
-        if not bool(tf.reduce_all(tf.math.is_finite(scale_tf) & (scale_tf > 0.0)).numpy()):
+        if not bool(
+            tf.reduce_all(tf.math.is_finite(scale_tf) & (scale_tf > 0.0)).numpy()
+        ):
             raise ValueError("scale must be positive and finite")
         scale_matrix = tf.linalg.diag(scale_tf)
         inverse_scale = tf.linalg.diag(1.0 / scale_tf)
         covariance = tf.matmul(
-            tf.matmul(scale_matrix, tf.convert_to_tensor(self.covariance_z, tf.float64)),
+            tf.matmul(
+                scale_matrix, tf.convert_to_tensor(self.covariance_z, tf.float64)
+            ),
             scale_matrix,
         )
         precision = tf.matmul(
-            tf.matmul(inverse_scale, tf.convert_to_tensor(self.precision_z, tf.float64)),
+            tf.matmul(
+                inverse_scale, tf.convert_to_tensor(self.precision_z, tf.float64)
+            ),
             inverse_scale,
         )
         factor = tf.linalg.cholesky(covariance)
         return {
-            "precision": precision.numpy(),
-            "covariance": covariance.numpy(),
-            "factor": factor.numpy(),
+            "precision": precision,
+            "covariance": covariance,
+            "factor": factor,
         }
 
     def payload(self, *, include_matrices: bool = False) -> Mapping[str, Any]:
@@ -198,9 +208,15 @@ def fit_block_diagonal_score_geometry(
     dimension = int(center.shape[0])
     declared_blocks = _validate_blocks(blocks, dimension)
     training_z = _replicate_tensor(training_offsets_z, dimension, "training_offsets_z")
-    training_scores = _replicate_tensor(training_scores_z, dimension, "training_scores_z")
-    selection_z = _replicate_tensor(selection_offsets_z, dimension, "selection_offsets_z")
-    selection_scores = _replicate_tensor(selection_scores_z, dimension, "selection_scores_z")
+    training_scores = _replicate_tensor(
+        training_scores_z, dimension, "training_scores_z"
+    )
+    selection_z = _replicate_tensor(
+        selection_offsets_z, dimension, "selection_offsets_z"
+    )
+    selection_scores = _replicate_tensor(
+        selection_scores_z, dimension, "selection_scores_z"
+    )
     audit_z = _matrix_tensor(audit_offsets_z, dimension, "audit_offsets_z")
     audit_scores = _matrix_tensor(audit_scores_z, dimension, "audit_scores_z")
     if training_z.shape != training_scores.shape:
@@ -211,20 +227,22 @@ def fit_block_diagonal_score_geometry(
         raise ValueError("audit offset and score shapes must match")
     replicate_count = int(training_z.shape[0])
     if replicate_count < 2 or int(selection_z.shape[0]) != replicate_count:
-        raise ValueError("at least two matching training/selection replicates are required")
+        raise ValueError(
+            "at least two matching training/selection replicates are required"
+        )
     finite_inputs = tf.reduce_all(
         tf.math.is_finite(
             tf.concat(
-            (
-                tf.reshape(center, [-1]),
-                tf.reshape(training_z, [-1]),
-                tf.reshape(training_scores, [-1]),
-                tf.reshape(selection_z, [-1]),
-                tf.reshape(selection_scores, [-1]),
-                tf.reshape(audit_z, [-1]),
-                tf.reshape(audit_scores, [-1]),
-            ),
-            axis=0,
+                (
+                    tf.reshape(center, [-1]),
+                    tf.reshape(training_z, [-1]),
+                    tf.reshape(training_scores, [-1]),
+                    tf.reshape(selection_z, [-1]),
+                    tf.reshape(selection_scores, [-1]),
+                    tf.reshape(audit_z, [-1]),
+                    tf.reshape(audit_scores, [-1]),
+                ),
+                axis=0,
             )
         )
     )
@@ -272,14 +290,20 @@ def fit_block_diagonal_score_geometry(
         for report in replicates
     )
     consensus_selection = [
-        _score_diagnostics(consensus, center, selection_z[index], selection_scores[index])
+        _score_diagnostics(
+            consensus, center, selection_z[index], selection_scores[index]
+        )
         for index in range(replicate_count)
     ]
     consensus_selection_rmse = float(
-        tf.reduce_mean(tf.convert_to_tensor([item[0] for item in consensus_selection], tf.float64)).numpy()
+        tf.reduce_mean(
+            tf.convert_to_tensor([item[0] for item in consensus_selection], tf.float64)
+        ).numpy()
     )
     consensus_selection_unexplained = float(
-        tf.reduce_mean(tf.convert_to_tensor([item[1] for item in consensus_selection], tf.float64)).numpy()
+        tf.reduce_mean(
+            tf.convert_to_tensor([item[1] for item in consensus_selection], tf.float64)
+        ).numpy()
     )
     audit_rmse, audit_unexplained = _score_diagnostics(
         consensus, center, audit_z, audit_scores
@@ -288,7 +312,11 @@ def fit_block_diagonal_score_geometry(
         tf.linalg.cholesky(consensus), tf.eye(dimension, dtype=tf.float64)
     )
     inverse_residual = float(
-        tf.reduce_max(tf.abs(tf.matmul(consensus, covariance) - tf.eye(dimension, dtype=tf.float64))).numpy()
+        tf.reduce_max(
+            tf.abs(
+                tf.matmul(consensus, covariance) - tf.eye(dimension, dtype=tf.float64)
+            )
+        ).numpy()
     )
     diagnostics = {
         "family": "block_diagonal_symmetric_score_regression",
@@ -314,7 +342,10 @@ def fit_block_diagonal_score_geometry(
         "fallback_used": False,
     }
     status = "qualified_for_hmc_initialization"
-    if not selection_passed or consensus_selection_rmse > cfg.selection_relative_rmse_cap:
+    if (
+        not selection_passed
+        or consensus_selection_rmse > cfg.selection_relative_rmse_cap
+    ):
         status = "selection_score_fit_rejected"
     elif not bool(stability["passed"]):
         status = "replicate_stability_rejected"
@@ -328,8 +359,8 @@ def fit_block_diagonal_score_geometry(
         accepted=status == "qualified_for_hmc_initialization",
         status=status,
         blocks=declared_blocks,
-        precision_z=consensus.numpy(),
-        covariance_z=covariance.numpy(),
+        precision_z=consensus,
+        covariance_z=covariance,
         diagnostics=diagnostics,
     )
 
@@ -348,24 +379,13 @@ def _fit_replicate(
     for block in blocks:
         z_block = offsets[:, block.start : block.stop]
         response_block = response[:, block.start : block.stop]
-        design = _symmetric_score_design(z_block, block.size)
         coefficient_count = block.size * (block.size + 1) // 2
-        flat_design = tf.reshape(design, [-1, coefficient_count])
-        flat_response = tf.reshape(response_block, [-1, 1])
-        singular = tf.linalg.svd(flat_design, compute_uv=False)
-        tolerance = (
-            tf.reduce_max(singular)
-            * tf.cast(tf.shape(flat_design)[0], tf.float64)
-            * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
+        block_precision, eigenvalues, rank_tensor, row_rank_tensor = (
+            _compiled_block_fit(int(z_block.shape[0]), block.size)(
+                z_block, response_block, tf.constant(config.ridge, tf.float64)
+            )
         )
-        rank = int(tf.reduce_sum(tf.cast(singular > tolerance, tf.int32)).numpy())
-        row_singular = tf.linalg.svd(z_block, compute_uv=False)
-        row_tolerance = (
-            tf.reduce_max(row_singular)
-            * tf.cast(tf.shape(z_block)[0], tf.float64)
-            * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
-        )
-        row_rank = int(tf.reduce_sum(tf.cast(row_singular > row_tolerance, tf.int32)).numpy())
+        rank, row_rank = int(rank_tensor), int(row_rank_tensor)
         if rank < coefficient_count or row_rank < block.size:
             reports.append(
                 {
@@ -377,20 +397,10 @@ def _fit_replicate(
                 }
             )
             return precision, reports, "block_design_rank_deficient"
-        ridge = tf.sqrt(tf.constant(config.ridge, tf.float64)) * tf.eye(
-            coefficient_count, dtype=tf.float64
-        )
-        coefficients = tf.linalg.lstsq(
-            tf.concat((flat_design, ridge), axis=0),
-            tf.concat((flat_response, tf.zeros([coefficient_count, 1], tf.float64)), axis=0),
-            fast=False,
-        )[:, 0]
-        block_precision = _unpack_symmetric(coefficients, block.size)
-        eigenvalues = tf.linalg.eigvalsh(block_precision)
         minimum = float(tf.reduce_min(eigenvalues).numpy())
         maximum = float(tf.reduce_max(eigenvalues).numpy())
         nonpositive = int(tf.reduce_sum(tf.cast(eigenvalues <= 0.0, tf.int32)).numpy())
-        condition = np.inf if minimum <= 0.0 else maximum / minimum
+        condition = math.inf if minimum <= 0.0 else maximum / minimum
         reports.append(
             {
                 **block.payload(),
@@ -408,7 +418,7 @@ def _fit_replicate(
         )
         if nonpositive:
             return precision, reports, "raw_block_precision_not_spd"
-        if not np.isfinite(condition) or condition > config.max_condition_number:
+        if not math.isfinite(condition) or condition > config.max_condition_number:
             return precision, reports, "block_condition_number_rejected"
         indices = tf.range(block.start, block.stop, dtype=tf.int32)
         grid = tf.stack(tf.meshgrid(indices, indices, indexing="ij"), axis=-1)
@@ -449,14 +459,15 @@ def _stability(
         for right_index in range(left_index + 1, len(precisions)):
             metrics = dict(
                 compare_precision_geometry(
-                    left.numpy(), precisions[right_index].numpy(), subspace_rank=rank
+                    left, precisions[right_index], subspace_rank=rank
                 )
             )
             generalized = metrics["generalized_eigenvalues"]
             checks = {
                 "generalized_eigenvalue_spread": bool(
                     generalized is not None
-                    and generalized["spread"] <= config.generalized_eigenvalue_spread_cap
+                    and generalized["spread"]
+                    <= config.generalized_eigenvalue_spread_cap
                 ),
                 "trace_normalized_frobenius": bool(
                     metrics["trace_normalized_frobenius"]
@@ -483,7 +494,11 @@ def _stability(
                     "metrics": metrics,
                 }
             )
-    return {"passed": passed, "principal_subspace_rank": rank, "comparisons": comparisons}
+    return {
+        "passed": passed,
+        "principal_subspace_rank": rank,
+        "comparisons": comparisons,
+    }
 
 
 def _validate_blocks(
@@ -523,32 +538,46 @@ def _matrix_tensor(value: Any, dimension: int, name: str) -> tf.Tensor:
     return tensor
 
 
-def _symmetric_score_design(z: tf.Tensor, dimension: int) -> tf.Tensor:
-    columns = []
-    for row in range(dimension):
-        for column in range(row, dimension):
-            contribution = z[:, column, None] * tf.one_hot(
-                row, dimension, dtype=tf.float64
-            )[None, :]
-            if row != column:
-                contribution += z[:, row, None] * tf.one_hot(
-                    column, dimension, dtype=tf.float64
-                )[None, :]
-            columns.append(contribution)
-    return tf.stack(columns, axis=2)
+@lru_cache(maxsize=64)
+def _compiled_block_fit(row_count, dimension):
+    @tf.function(
+        input_signature=(
+            tf.TensorSpec([row_count, dimension], tf.float64),
+            tf.TensorSpec([row_count, dimension], tf.float64),
+            tf.TensorSpec([], tf.float64),
+        ),
+        jit_compile=True,
+        autograph=False,
+    )
+    def fit(offsets, response, ridge_value):
+        count = dimension * (dimension + 1) // 2
+        design = tf.reshape(_symmetric_score_design(offsets, dimension), [-1, count])
+        singular = tf.linalg.svd(design, compute_uv=False)
+        tolerance = (
+            tf.reduce_max(singular)
+            * tf.cast(tf.shape(design)[0], tf.float64)
+            * sys.float_info.epsilon
+        )
+        rank = tf.math.count_nonzero(singular > tolerance, dtype=tf.int32)
+        row_singular = tf.linalg.svd(offsets, compute_uv=False)
+        row_tolerance = (
+            tf.reduce_max(row_singular)
+            * tf.cast(row_count, tf.float64)
+            * sys.float_info.epsilon
+        )
+        row_rank = tf.math.count_nonzero(row_singular > row_tolerance, dtype=tf.int32)
+        ridge = tf.sqrt(ridge_value) * tf.eye(count, dtype=tf.float64)
+        coefficients = complete_orthogonal_lstsq(
+            tf.concat((design, ridge), axis=0),
+            tf.concat(
+                (tf.reshape(response, [-1, 1]), tf.zeros([count, 1], tf.float64)),
+                axis=0,
+            ),
+        )[:, 0]
+        precision = _unpack_symmetric(coefficients, dimension)
+        return precision, tf.linalg.eigvalsh(precision), rank, row_rank
 
-
-def _unpack_symmetric(coefficients: tf.Tensor, dimension: int) -> tf.Tensor:
-    matrix = tf.zeros([dimension, dimension], tf.float64)
-    index = 0
-    for row in range(dimension):
-        for column in range(row, dimension):
-            value = coefficients[index]
-            matrix += tf.scatter_nd([[row, column]], [value], [dimension, dimension])
-            if row != column:
-                matrix += tf.scatter_nd([[column, row]], [value], [dimension, dimension])
-            index += 1
-    return matrix
+    return fit
 
 
 def _rejected(
@@ -571,10 +600,8 @@ def _json_ready(value: Any) -> Any:
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):
         return [_json_ready(item) for item in value]
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if tf.is_tensor(value) or hasattr(value, "__array_interface__"):
+        return numeric_tensor(value).numpy().tolist()
     return value
 
 

@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, os.environ.get("FILTER_REPAIR_SOURCE_ROOT", str(Path(__file__).resolve().parents[1])))
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
 if __name__ == "__main__":

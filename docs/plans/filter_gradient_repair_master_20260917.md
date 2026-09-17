@@ -26,6 +26,20 @@ such; relabeling an active runtime or deleting its tests cannot close a finding.
 No algorithm substitution, changed score definition, hidden stop-gradient,
 new reset rule, relaxed tolerance, or numerical retuning counts as a repair.
 
+Owner-approved September 17 exception: migrate the two geometry initializers'
+NumPy PCG64 probe-cloud RNG to the versioned TensorFlow stream
+`geometry_tf_philox_cpu_xla_v1`. Seeds intentionally produce different clouds;
+record the stream ID, seed, call order, shape and TensorFlow environment.
+Numerical before/after comparisons must inject identical frozen clouds into
+both versions. This does not authorize changing the sampling distribution,
+thresholds, holdout roles or fit algorithm.
+
+Scope confirmed by the owner on September 17: repair execution and block
+unsupported canonical LEDH claims. The full canonical LEDH rebuild is outside
+this campaign. Existing AD and finite-program manual-JVP scores retain their
+explicit diagnostic semantics and cannot advertise training/HMC or canonical
+admission. Compilation evidence does not remove that restriction.
+
 ## Completion ledger and order
 
 Each finding must have source changes or a supported non-runtime classification,
@@ -108,6 +122,15 @@ environment, hardware, outcomes and wall time in ordinary JSON/log files under
 evidence. Crash recovery charges unfinished attempts their reserved timeout.
 No posterior chains or learned-transport training campaigns are in this budget.
 
+September 18 isolation repair: validate in linked worktree
+`/tmp/bayesfilter-filter-gradient-xla-validation-20260918` on branch
+`repair/filter-gradient-xla-validation-20260918` when concurrent unrelated
+edits occur in the primary checkout. Commit campaign changes separately from
+those edits. All worktrees share the original artifact root, lock and cumulative
+budget through Git's common directory. Use the same bounded driver in that
+worktree; its absolute program path is the only additional approval prefix.
+The target, fixtures, seeds, hardware, tolerances and promotion gates are unchanged.
+
 Stop the affected measurement on invalid comparison, corrupted artifacts,
 numerical mismatch, uncontrolled allocation or GPU contention. Repair local
 harness defects within the same scope/budget. A failing candidate prevents its
@@ -122,8 +145,14 @@ Use one reusable tool-approval prefix for the bounded campaign driver:
 /home/ubuntu/miniforge3/envs/tf-gpu/bin/python /home/ubuntu/workspace/BayesFilter/scripts/run_filter_repair_campaign.py
 ```
 
-Its allowed actions are status, a fixed test group, a registered measurement,
-audit, comparison and gate verification. It has no arbitrary shell/command
+Its allowed actions are status, pause, a fixed test group, a registered measurement,
+the sequential registered matrix, audit, comparison and gate verification.
+The matrix has qualification, three-repeat and current-source test stages;
+it resumes current evidence, stops on source changes or candidate failure,
+checks GPU2 contention before each launch, and uses the same cumulative budget.
+The pause action lets the active worker finish and stops before the next
+worker. A subsequent explicit matrix command resumes the campaign.
+It has no arbitrary shell/command
 argument, package installation, network operation, deletion, Git merge or push.
 This process allow list is distinct from the source policy exemptions: those
 must name exact reference/reporting/schema functions with reviewed reasons;

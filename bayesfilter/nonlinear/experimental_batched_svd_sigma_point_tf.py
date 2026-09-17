@@ -1184,7 +1184,20 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
         tf.zeros_like(d_covariance),
         tf.where(tf.math.is_finite(d_covariance), d_covariance, tf.zeros_like(d_covariance)),
     )
-    if factor_backend == "tensorflow_eigh_strict_cached":
+    if factor_backend == "tensorflow_eigh":
+        # The factor and its Frechet derivative share one eigenbasis. Solving
+        # a second eigensystem of the rounded factor amplifies eigensolver
+        # error for small eigenvalues under XLA. This is the same Sylvester
+        # solution: (V' dC V)_ij / (sqrt(lambda_i) + sqrt(lambda_j)).
+        root_values, root_vectors = tf.linalg.eigh(_symmetrize(safe_covariance))
+        root_values = tf.sqrt(tf.maximum(root_values, tf.constant(0.0, tf.float64)))
+        factor = _symmetrize(
+            root_vectors @ tf.linalg.diag(root_values) @ tf.linalg.matrix_transpose(root_vectors)
+        )
+        d_factor = _principal_sqrt_frechet_derivative_from_eigh(
+            root_vectors, root_values, safe_d_covariance
+        )
+    elif factor_backend == "tensorflow_eigh_strict_cached":
         factor, factor_eigenvalues, factor_eigenvectors = (
             _tensorflow_strict_cached_factor_eigensystem(
                 solver_eigenvalues,
@@ -1297,6 +1310,22 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
         tf.zeros_like(scaled_tolerance),
     )
     reconstruction_margin = safe_max_residual - safe_scaled_tolerance
+    # Preserve exactly the same absolute-plus-relative rule when XLA removes
+    # Assert operations. A raw absolute-residual test at the enclosing filter
+    # rejects valid scaled derivatives and is not equivalent to this guard.
+    reconstruction_invalid = tf.logical_or(
+        tf.reduce_any(
+            tf.logical_or(
+                reconstruction_margin > 0.0,
+                tf.logical_not(tf.math.is_finite(max_residual) & tf.math.is_finite(scaled_tolerance)),
+            ),
+            axis=-1,
+        ),
+        tf.logical_not(tf.reduce_all(tf.math.is_finite(d_factor), axis=[-3, -2, -1])),
+    )
+    classified_invalid_count = tf.cast(
+        tf.logical_or(combined_classified_invalid, reconstruction_invalid), tf.int32
+    )
     with tf.control_dependencies(
         [
             tf.debugging.assert_all_finite(
@@ -3208,9 +3237,10 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
     tf.debugging.assert_less_equal(max_fixed_null_derivative_residual, fixed_null_tolerance,
                                    message="blocked_moving_structural_null")
     if backend_name == "tf_principal_sqrt_ukf":
-        factor_valid = max_factor_derivative_residual <= principal_sqrt_reconstruction_tolerance
-        tf.debugging.assert_less_equal(max_factor_derivative_residual, principal_sqrt_reconstruction_tolerance,
-                                       message="blocked_principal_sqrt_reconstruction")
+        factor_valid = tf.logical_and(
+            max_placement_classified_invalid_count == 0,
+            max_innovation_classified_invalid_count == 0,
+        )
     else:
         no_floor = tf.logical_and(max_placement_floor_count == 0, max_innovation_floor_count == 0)
         separated = tf.logical_and(min_placement_eigen_gap > spectral_gap_tolerance,
@@ -3438,6 +3468,7 @@ def tf_batched_svd_sigma_point_value_and_score(
         principal_sqrt_backend=principal_sqrt_backend,
         jitter=jitter,
         allow_fixed_null_support=allow_fixed_null_support,
+        jit_compile=jit_compile,
     )
 
 

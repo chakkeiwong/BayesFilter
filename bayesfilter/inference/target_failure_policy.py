@@ -6,7 +6,11 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
+import math
+
+import tensorflow as tf
+
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 
 TARGET_FAILURE_LABELS = frozenset(
@@ -93,9 +97,9 @@ class TargetFailurePolicy:
             raise ValueError("target_scope must be non-empty")
         fallback = float(self.fallback_log_prob)
         gradient_value = float(self.fallback_gradient_value)
-        if not np.isfinite(fallback):
+        if not math.isfinite(fallback):
             raise ValueError("fallback_log_prob must be finite")
-        if not np.isfinite(gradient_value):
+        if not math.isfinite(gradient_value):
             raise ValueError("fallback_gradient_value must be finite")
         failure_labels = tuple(str(label) for label in self.allowed_failure_labels)
         branch_labels = tuple(str(label) for label in self.allowed_branch_labels)
@@ -126,9 +130,9 @@ class TargetFailurePolicy:
             raise ValueError(f"target branch label is not allowed: {branch!r}")
         return branch
 
-    def fallback_score(self, reference: Any) -> np.ndarray:
-        array = np.asarray(reference, dtype=float)
-        return np.full_like(array, self.fallback_gradient_value, dtype=float)
+    def fallback_score(self, reference: Any) -> tf.Tensor:
+        array = numeric_tensor(reference, tf.float64)
+        return tf.fill(tf.shape(array), tf.constant(self.fallback_gradient_value, tf.float64))
 
 
 @dataclass(frozen=True)
@@ -136,7 +140,7 @@ class TargetPolicyEvaluation:
     """Structured value/score result from a target failure policy."""
 
     value: float
-    score: np.ndarray
+    score: tf.Tensor
     fallback_used: bool
     branch_label: str
     failure_label: str | None
@@ -147,11 +151,11 @@ class TargetPolicyEvaluation:
 
     @property
     def value_finite(self) -> bool:
-        return bool(np.isfinite(self.value))
+        return bool(math.isfinite(self.value))
 
     @property
     def score_finite(self) -> bool:
-        return bool(np.all(np.isfinite(self.score)))
+        return bool(tf.reduce_all(tf.math.is_finite(self.score)))
 
     def payload(self) -> dict[str, Any]:
         return {
@@ -216,13 +220,13 @@ def evaluate_target_with_failure_policy(
             details=exc.details,
         )
 
-    value_array = np.asarray(value, dtype=float)
-    score_array = np.asarray(score, dtype=float)
+    value_array = numeric_tensor(value, tf.float64)
+    score_array = numeric_tensor(score, tf.float64)
     if value_array.shape != ():
         raise ValueError("target value must be scalar")
-    if score_array.shape != np.asarray(position, dtype=float).shape:
+    if score_array.shape != numeric_tensor(position, tf.float64).shape:
         raise ValueError("target score shape must match position shape")
-    if not np.all(np.isfinite(value_array)) or not np.all(np.isfinite(score_array)):
+    if not tf.reduce_all(tf.math.is_finite(value_array)) or not tf.reduce_all(tf.math.is_finite(score_array)):
         if not policy.catch_nonfinite_output:
             raise FloatingPointError("target value/score is nonfinite")
         return _fallback_evaluation(
@@ -231,8 +235,8 @@ def evaluate_target_with_failure_policy(
             failure_label="nonfinite_value_gradient",
             exception_type=None,
             details={
-                "value_finite": bool(np.all(np.isfinite(value_array))),
-                "score_finite": bool(np.all(np.isfinite(score_array))),
+                "value_finite": bool(tf.reduce_all(tf.math.is_finite(value_array))),
+                "score_finite": bool(tf.reduce_all(tf.math.is_finite(score_array))),
             },
         )
     return TargetPolicyEvaluation(
@@ -346,7 +350,7 @@ def _fallback_evaluation(
             "exception_type": exception_type,
             "details": {} if details is None else dict(details),
             "value_finite": True,
-            "score_finite": bool(np.all(np.isfinite(score))),
+            "score_finite": bool(tf.reduce_all(tf.math.is_finite(score))),
         },
         nonclaims=policy.nonclaims,
     )

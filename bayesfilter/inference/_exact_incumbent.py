@@ -10,28 +10,30 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-import numpy as np
+import math
+
+import tensorflow as tf
+
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 
 @dataclass(frozen=True)
 class ExactCandidate:
     """One exact value/score evaluation and its eligibility metadata."""
 
-    position: np.ndarray
+    position: tf.Tensor
     value: float
-    score: np.ndarray
+    score: tf.Tensor
     evaluation_index: int
     source_role: str
     eligible: bool = True
     canonical_replay: bool = False
 
     def __post_init__(self) -> None:
-        position = np.asarray(self.position, dtype=float).reshape([-1]).copy()
-        score = np.asarray(self.score, dtype=float).reshape([-1]).copy()
+        position = tf.reshape(numeric_tensor(self.position, dtype=tf.float64), [-1])
+        score = tf.reshape(numeric_tensor(self.score, dtype=tf.float64), [-1])
         if position.shape != score.shape:
             raise ValueError("position and score must have the same vector shape")
-        position.setflags(write=False)
-        score.setflags(write=False)
         object.__setattr__(self, "position", position)
         object.__setattr__(self, "score", score)
         object.__setattr__(self, "value", float(self.value))
@@ -46,9 +48,9 @@ class ExactCandidate:
 
         return bool(
             self.eligible
-            and np.isfinite(self.value)
-            and np.all(np.isfinite(self.position))
-            and np.all(np.isfinite(self.score))
+            and math.isfinite(self.value)
+            and tf.reduce_all(tf.math.is_finite(self.position))
+            and tf.reduce_all(tf.math.is_finite(self.score))
         )
 
 
@@ -57,37 +59,40 @@ def select_exact_incumbent(
 ) -> ExactCandidate | None:
     """Return the earliest highest-value strict-finite eligible candidate."""
 
-    incumbent: ExactCandidate | None = None
-    for candidate in candidates:
-        if not candidate.strict_finite_eligible:
-            continue
-        if incumbent is None or candidate.value > incumbent.value:
-            incumbent = candidate
-    return incumbent
+    records = tuple(candidates)
+    if not records:
+        return None
+    eligible = tf.constant([candidate.strict_finite_eligible for candidate in records])
+    if not bool(tf.reduce_any(eligible)):
+        return None
+    values = tf.constant([candidate.value for candidate in records], tf.float64)
+    eligible_values = tf.where(eligible, values, tf.constant(float("-inf"), tf.float64))
+    # TensorFlow argmax retains the first exact tie, including signed zero.
+    return records[int(tf.argmax(eligible_values))]
 
 
 def candidates_from_rows(
-    positions: np.ndarray,
-    values: np.ndarray,
-    scores: np.ndarray,
+    positions: tf.Tensor,
+    values: tf.Tensor,
+    scores: tf.Tensor,
     *,
     start_index: int,
     source_role: str,
-    eligibility: np.ndarray | None = None,
+    eligibility: tf.Tensor | None = None,
 ) -> tuple[ExactCandidate, ...]:
     """Build deterministic candidate records from one exact batched evaluation."""
 
-    positions_np = np.asarray(positions, dtype=float)
-    values_np = np.asarray(values, dtype=float).reshape([-1])
-    scores_np = np.asarray(scores, dtype=float)
-    if positions_np.ndim != 2 or scores_np.shape != positions_np.shape:
+    positions_np = numeric_tensor(positions, dtype=tf.float64)
+    values_np = tf.reshape(numeric_tensor(values, dtype=tf.float64), [-1])
+    scores_np = numeric_tensor(scores, dtype=tf.float64)
+    if positions_np.shape.rank != 2 or scores_np.shape != positions_np.shape:
         raise ValueError("positions and scores must have shape [batch, dimension]")
     if values_np.shape != (positions_np.shape[0],):
         raise ValueError("values must have shape [batch]")
     if eligibility is None:
-        eligible_np = np.ones(positions_np.shape[0], dtype=bool)
+        eligible_np = tf.ones(positions_np.shape[0], dtype=tf.bool)
     else:
-        eligible_np = np.asarray(eligibility, dtype=bool).reshape([-1])
+        eligible_np = tf.reshape(numeric_tensor(eligibility, dtype=tf.bool), [-1])
         if eligible_np.shape != (positions_np.shape[0],):
             raise ValueError("eligibility must have shape [batch]")
     return tuple(

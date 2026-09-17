@@ -92,7 +92,7 @@ def _check_hint(mean: tf.Tensor, cov: tf.Tensor, n: int) -> tuple[tf.Tensor, tf.
     return mean, chol
 
 
-def run_value_filter_branch_axis_adapted(
+def run_value_filter_branch_axis_adapted_reference(
     adapter,
     observations: tf.Tensor,
     config: EngineConfig,
@@ -101,7 +101,7 @@ def run_value_filter_branch_axis_adapted(
     map_kappa_prev: float = 3.0,
     map_kappa_current: float = 4.0,
 ) -> tuple[tf.Tensor, list[dict]]:
-    """Adapted-map value filter (v2 triangular). `predictive_moment_hint(t, y_t)`
+    """Independent eager adapted-map value filter (v2 triangular). `predictive_moment_hint(t, y_t)`
     must return the JOINT moments (mean [2n], cov [2n,2n]) of
     (x_t, x_{t-1}) in (current, previous) order (M2-joint; design note
     Section 9). Cholesky of the joint covariance yields (L_cc, L_pc, L_pp)."""
@@ -405,3 +405,12 @@ def run_value_filter_branch_axis_adapted(
 
 
 __all__ = ["run_value_filter_branch_axis_adapted"]
+
+
+def run_value_filter_branch_axis_adapted(adapter, observations, config, *,
+    predictive_moment_hint, map_kappa_prev=3.0, map_kappa_current=4.0, jit_compile=True):
+    """Public adapted filter with tensor-indexed hints and XLA-default execution."""
+    from bayesfilter.highdim.squared_tt_engine_adapted_xla_tf import run_value_filter_branch_axis_adapted_xla
+    return run_value_filter_branch_axis_adapted_xla(adapter, observations, config,
+        predictive_moment_hint=predictive_moment_hint, map_kappa_prev=map_kappa_prev,
+        map_kappa_current=map_kappa_current, jit_compile=jit_compile)

@@ -396,268 +396,47 @@ class FixedTTSIRTTransport:
             ),
         }
 
-    def inverse_transport(self, reference_points: tf.Tensor) -> tf.Tensor:
+    def inverse_transport(self, reference_points: tf.Tensor, *, jit_compile=True) -> tf.Tensor:
+        from bayesfilter.highdim.ttsirt_native_tf import evaluate_transport
         values = _validate_map_points("reference_points", reference_points, self.dimension)
-        if not bool(
-            tf.reduce_all((values >= 0.0) & (values <= 1.0)).numpy()
-        ):
-            raise ValueError(f"reference_points: {HighDimStatus.INVERSE_BRACKET_FAILURE.value}")
-        sample_count = int(values.shape[1])
-        current = []
-        for axis in range(self.dimension):
-            prefix = (
-                tf.stack(current, axis=1)
-                if current
-                else tf.zeros([sample_count, 0], dtype=tf.float64)
-            )
-            current.append(
-                self._inverse_axis_batch(axis, prefix, values[axis])
-            )
-        return tf.stack(current, axis=0)
+        return evaluate_transport(self, "inverse", tf.zeros([0, values.shape[1]], tf.float64),
+                                  values, jit_compile=jit_compile)
 
-    def forward_transport(self, local_points: tf.Tensor) -> tf.Tensor:
+    def forward_transport(self, local_points: tf.Tensor, *, jit_compile=True) -> tf.Tensor:
+        from bayesfilter.highdim.ttsirt_native_tf import evaluate_transport
         values = _validate_map_points("local_points", local_points, self.dimension)
-        columns = []
-        for sample_index in range(int(values.shape[1])):
-            sample = values[:, sample_index]
-            u_rows = []
-            for axis in range(self.dimension):
-                prefix = tf.reshape(sample[:axis], [1, axis])
-                cdf_value, _, status, diagnostics = self._cdf_at(
-                    axis,
-                    prefix,
-                    tf.reshape(sample[axis], []),
-                )
-                if status is not HighDimStatus.OK:
-                    raise ValueError(f"forward_transport: {status.value}: {diagnostics}")
-                u_rows.append(tf.reshape(cdf_value, []))
-            columns.append(tf.stack(u_rows))
-        return tf.transpose(tf.stack(columns, axis=0))
+        return evaluate_transport(self, "forward", tf.zeros([0, values.shape[1]], tf.float64),
+                                  values, jit_compile=jit_compile)
 
-    def forward_log_jacobian(self, local_points: tf.Tensor) -> tf.Tensor:
+    def forward_log_jacobian(self, local_points: tf.Tensor, *, jit_compile=True) -> tf.Tensor:
+        from bayesfilter.highdim.ttsirt_native_tf import evaluate_transport
         values = _validate_map_points("local_points", local_points, self.dimension)
-        terms = []
-        for sample_index in range(int(values.shape[1])):
-            sample = values[:, sample_index]
-            sample_terms = []
-            for axis in range(self.dimension):
-                prefix = tf.reshape(sample[:axis], [1, axis])
-                _, density_value, status, diagnostics = self._cdf_at(
-                    axis,
-                    prefix,
-                    tf.reshape(sample[axis], []),
-                )
-                if status is not HighDimStatus.OK:
-                    raise ValueError(f"forward_log_jacobian: {status.value}: {diagnostics}")
-                sample_terms.append(tf.math.log(tf.reshape(density_value, [])))
-            terms.append(tf.reduce_sum(tf.stack(sample_terms)))
-        return tf.stack(terms)
+        return evaluate_transport(self, "log_jacobian", tf.zeros([0, values.shape[1]], tf.float64),
+                                  values, jit_compile=jit_compile)
 
-    def conditional_inverse_transport(
-        self,
-        conditioning_points: tf.Tensor,
-        reference_points: tf.Tensor,
-    ) -> tf.Tensor:
-        condition = tf.convert_to_tensor(conditioning_points, dtype=tf.float64)
-        reference = tf.convert_to_tensor(reference_points, dtype=tf.float64)
-        if condition.shape.rank != 2 or reference.shape.rank != 2:
-            raise ValueError(f"conditional_inverse_transport: {HighDimStatus.INVALID_SHAPE.value}")
-        if int(condition.shape[0]) + int(reference.shape[0]) != self.dimension:
-            raise ValueError(f"conditional_inverse_transport: {HighDimStatus.INVALID_SHAPE.value}")
-        if int(condition.shape[1]) not in (1, int(reference.shape[1])):
-            raise ValueError(f"conditional_inverse_transport: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(
-            tf.reduce_all(tf.math.is_finite(condition)).numpy()
-            and tf.reduce_all(tf.math.is_finite(reference)).numpy()
-        ):
-            raise ValueError(f"conditional_inverse_transport: {HighDimStatus.NONFINITE_VALUE.value}")
-        if not bool(
-            tf.reduce_all((reference >= 0.0) & (reference <= 1.0)).numpy()
-        ):
-            raise ValueError(
-                f"conditional_inverse_transport: {HighDimStatus.INVERSE_BRACKET_FAILURE.value}"
-            )
-        dx = int(condition.shape[0])
-        dr = int(reference.shape[0])
-        sample_count = int(reference.shape[1])
-        prefixes = (
-            tf.transpose(condition)
-            if int(condition.shape[1]) > 1
-            else tf.tile(tf.transpose(condition), [sample_count, 1])
-        )
-        generated = []
-        for local_axis in range(dr):
-            axis = dx + local_axis
-            value = self._inverse_axis_batch(
-                axis,
-                prefixes,
-                reference[local_axis],
-            )
-            generated.append(value)
-            prefixes = tf.concat([prefixes, value[:, tf.newaxis]], axis=1)
-        return tf.stack(generated, axis=0)
+    def conditional_inverse_transport(self, conditioning_points, reference_points, *, jit_compile=True):
+        return self._conditional_evaluate("inverse", conditioning_points, reference_points,
+                                         broadcast=True, jit_compile=jit_compile)
 
-    def conditional_inverse_transport_suffix(
-        self,
-        conditioning_points: tf.Tensor,
-        reference_points: tf.Tensor,
-    ) -> tf.Tensor:
-        """Invert the upper conditional map for a fixed suffix.
+    def conditional_inverse_transport_suffix(self, conditioning_points, reference_points, *, jit_compile=True):
+        """Invert the upper conditional map from the last generated axis."""
+        return self._conditional_evaluate("inverse_suffix", conditioning_points, reference_points,
+                                         broadcast=True, jit_compile=jit_compile)
 
-        This is the dependency order used by Zhao-Cui Eq. (20): the supplied
-        suffix is held fixed while generated coordinates are inverted from
-        the last generated axis back to the first.  It is distinct from the
-        natural lower-prefix route exposed by ``conditional_inverse_transport``.
-        """
+    def conditional_forward_transport_suffix(self, conditioning_points, generated_points, *, jit_compile=True):
+        """Evaluate the existing upper conditional grid-CDF map."""
+        return self._conditional_evaluate("forward_suffix", conditioning_points, generated_points,
+                                         broadcast=True, jit_compile=jit_compile)
 
-        condition = tf.convert_to_tensor(conditioning_points, dtype=tf.float64)
-        reference = tf.convert_to_tensor(reference_points, dtype=tf.float64)
-        if condition.shape.rank != 2 or reference.shape.rank != 2:
-            raise ValueError(
-                f"conditional_inverse_transport_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        generated_dimension = int(reference.shape[0])
-        conditioning_dimension = int(condition.shape[0])
-        if generated_dimension + conditioning_dimension != self.dimension:
-            raise ValueError(
-                f"conditional_inverse_transport_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        sample_count = int(reference.shape[1])
-        if int(condition.shape[1]) not in (1, sample_count):
-            raise ValueError(
-                f"conditional_inverse_transport_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        if not bool(
-            tf.reduce_all(tf.math.is_finite(condition)).numpy()
-            and tf.reduce_all(tf.math.is_finite(reference)).numpy()
-        ):
-            raise ValueError(
-                f"conditional_inverse_transport_suffix: {HighDimStatus.NONFINITE_VALUE.value}"
-            )
-        if not bool(
-            tf.reduce_all((reference >= 0.0) & (reference <= 1.0)).numpy()
-        ):
-            raise ValueError(
-                f"conditional_inverse_transport_suffix: {HighDimStatus.INVERSE_BRACKET_FAILURE.value}"
-            )
-        suffix = (
-            tf.transpose(condition)
-            if int(condition.shape[1]) > 1
-            else tf.tile(tf.transpose(condition), [sample_count, 1])
-        )
-        generated = tf.TensorArray(tf.float64, size=generated_dimension)
-        known = suffix
-        for axis in range(generated_dimension - 1, -1, -1):
-            value = self._inverse_axis_suffix_batch(
-                axis,
-                known,
-                reference[axis],
-            )
-            generated = generated.write(axis, value)
-            known = tf.concat([value[:, tf.newaxis], known], axis=1)
-        return generated.stack()
+    def conditional_forward_log_jacobian_suffix(self, conditioning_points, generated_points, *, jit_compile=True):
+        return self._conditional_evaluate("log_jacobian_suffix", conditioning_points, generated_points,
+                                         broadcast=True, jit_compile=jit_compile)
 
-    def conditional_forward_transport_suffix(
-        self,
-        conditioning_points: tf.Tensor,
-        generated_points: tf.Tensor,
-    ) -> tf.Tensor:
-        """Evaluate the upper conditional KR map for a fixed suffix."""
-
-        condition = tf.convert_to_tensor(conditioning_points, dtype=tf.float64)
-        generated = tf.convert_to_tensor(generated_points, dtype=tf.float64)
-        if condition.shape.rank != 2 or generated.shape.rank != 2:
-            raise ValueError(
-                f"conditional_forward_transport_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        generated_dimension = int(generated.shape[0])
-        if generated_dimension + int(condition.shape[0]) != self.dimension:
-            raise ValueError(
-                f"conditional_forward_transport_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        sample_count = int(generated.shape[1])
-        if int(condition.shape[1]) not in (1, sample_count):
-            raise ValueError(
-                f"conditional_forward_transport_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        if int(condition.shape[1]) == 1:
-            suffix = tf.tile(tf.transpose(condition), [sample_count, 1])
-        else:
-            suffix = tf.transpose(condition)
-        if not bool(
-            tf.reduce_all(tf.math.is_finite(suffix)).numpy()
-            and tf.reduce_all(tf.math.is_finite(generated)).numpy()
-        ):
-            raise ValueError(
-                f"conditional_forward_transport_suffix: {HighDimStatus.NONFINITE_VALUE.value}"
-            )
-        known = suffix
-        uniforms = tf.TensorArray(tf.float64, size=generated_dimension)
-        for axis in range(generated_dimension - 1, -1, -1):
-            cdf, _, status, diagnostics = self._cdf_at_suffix(
-                axis,
-                known,
-                generated[axis],
-            )
-            if status is not HighDimStatus.OK:
-                raise ValueError(
-                    f"conditional_forward_transport_suffix: {status.value}: {diagnostics}"
-                )
-            uniforms = uniforms.write(axis, cdf)
-            known = tf.concat([generated[axis][:, tf.newaxis], known], axis=1)
-        return uniforms.stack()
-
-    def conditional_forward_log_jacobian_suffix(
-        self,
-        conditioning_points: tf.Tensor,
-        generated_points: tf.Tensor,
-    ) -> tf.Tensor:
-        """Log density of the same numerical upper conditional map."""
-
-        condition = tf.convert_to_tensor(conditioning_points, dtype=tf.float64)
-        generated = tf.convert_to_tensor(generated_points, dtype=tf.float64)
-        if condition.shape.rank != 2 or generated.shape.rank != 2:
-            raise ValueError(
-                f"conditional_forward_log_jacobian_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        generated_dimension = int(generated.shape[0])
-        sample_count = int(generated.shape[1])
-        if generated_dimension + int(condition.shape[0]) != self.dimension:
-            raise ValueError(
-                f"conditional_forward_log_jacobian_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        if int(condition.shape[1]) not in (1, sample_count):
-            raise ValueError(
-                f"conditional_forward_log_jacobian_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        known = (
-            tf.tile(tf.transpose(condition), [sample_count, 1])
-            if int(condition.shape[1]) == 1
-            else tf.transpose(condition)
-        )
-        log_density = tf.zeros([sample_count], dtype=tf.float64)
-        for axis in range(generated_dimension - 1, -1, -1):
-            _, density, status, diagnostics = self._cdf_at_suffix(
-                axis,
-                known,
-                generated[axis],
-            )
-            if status is not HighDimStatus.OK:
-                raise ValueError(
-                    f"conditional_forward_log_jacobian_suffix: {status.value}: {diagnostics}"
-                )
-            log_density += tf.math.log(density)
-            known = tf.concat([generated[axis][:, tf.newaxis], known], axis=1)
-        if not bool(tf.reduce_all(tf.math.is_finite(log_density)).numpy()):
-            raise ValueError(
-                f"conditional_forward_log_jacobian_suffix: {HighDimStatus.NONFINITE_VALUE.value}"
-            )
-        return log_density
-
-    def eval_pdf(self, local_points: tf.Tensor) -> tf.Tensor:
+    def eval_pdf(self, local_points: tf.Tensor, *, jit_compile=True) -> tf.Tensor:
+        from bayesfilter.highdim.ttsirt_native_tf import evaluate_transport
         values = _validate_map_points("local_points", local_points, self.dimension)
-        reference_density = tf.exp(self.density.log_density(tf.transpose(values)))
-        return reference_density * self._reference_measure_density(values)
+        return evaluate_transport(self, "pdf", tf.zeros([0, values.shape[1]], tf.float64),
+                                  values, jit_compile=jit_compile)
 
     def potential(self, local_points: tf.Tensor) -> tf.Tensor:
         return -tf.math.log(self.eval_pdf(local_points))
@@ -671,117 +450,29 @@ class FixedTTSIRTTransport:
         del reference_points
         return tf.math.log(self.eval_pdf(local_points))
 
-    def conditional_proposal_log_density(
-        self,
-        *,
-        conditioning_points: tf.Tensor,
-        generated_points: tf.Tensor,
-    ) -> tf.Tensor:
-        """Evaluate the suffix density using the Proposition-2 prefix marginal."""
+    def conditional_proposal_log_density(self, *, conditioning_points, generated_points, jit_compile=True):
+        return self._conditional_evaluate("conditional_logpdf", conditioning_points, generated_points,
+                                         broadcast=False, jit_compile=jit_compile)
 
-        condition = tf.convert_to_tensor(conditioning_points, dtype=tf.float64)
-        generated = tf.convert_to_tensor(generated_points, dtype=tf.float64)
-        if condition.shape.rank != 2 or generated.shape.rank != 2:
-            raise ValueError(
-                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        conditioning_dimension = int(condition.shape[0])
-        if conditioning_dimension < 1 or conditioning_dimension >= self.dimension:
-            raise ValueError(
-                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        if conditioning_dimension + int(generated.shape[0]) != self.dimension:
-            raise ValueError(
-                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        if int(condition.shape[1]) != int(generated.shape[1]):
-            raise ValueError(
-                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        if not bool(
-            tf.reduce_all(tf.math.is_finite(condition)).numpy()
-            and tf.reduce_all(tf.math.is_finite(generated)).numpy()
-        ):
-            raise ValueError(
-                f"conditional_proposal_log_density: {HighDimStatus.NONFINITE_VALUE.value}"
-            )
+    def conditional_proposal_log_density_suffix(self, *, conditioning_points, generated_points, jit_compile=True):
+        return self._conditional_evaluate("conditional_logpdf_suffix", conditioning_points, generated_points,
+                                         broadcast=False, jit_compile=jit_compile)
 
-        joint_points = tf.concat([condition, generated], axis=0)
-        joint_log_density = tf.math.log(self.eval_pdf(joint_points))
-        prefix_axes = tuple(range(conditioning_dimension))
-        prefix_relative_density = self.density.normalized_marginal_density_values(
-            prefix_axes,
-            tf.transpose(condition),
-        )
-        prefix_reference_density = tf.ones(
-            [tf.shape(condition)[1]], dtype=tf.float64
-        )
-        for axis in prefix_axes:
-            prefix_reference_density = (
-                prefix_reference_density
-                * self._axis_reference_measure_density(axis, condition[axis])
-            )
-        prefix_log_density = tf.math.log(
-            prefix_relative_density * prefix_reference_density
-        )
-        result = joint_log_density - prefix_log_density
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(
-                f"conditional_proposal_log_density: {HighDimStatus.NONFINITE_VALUE.value}"
-            )
-        return result
-
-    def conditional_proposal_log_density_suffix(
-        self,
-        *,
-        conditioning_points: tf.Tensor,
-        generated_points: tf.Tensor,
-    ) -> tf.Tensor:
-        """Evaluate a suffix-conditioned density for the upper KR route."""
-
-        condition = tf.convert_to_tensor(conditioning_points, dtype=tf.float64)
-        generated = tf.convert_to_tensor(generated_points, dtype=tf.float64)
-        if condition.shape.rank != 2 or generated.shape.rank != 2:
-            raise ValueError(
-                f"conditional_proposal_log_density_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        conditioning_dimension = int(condition.shape[0])
-        if conditioning_dimension < 1 or conditioning_dimension >= self.dimension:
-            raise ValueError(
-                f"conditional_proposal_log_density_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        if conditioning_dimension + int(generated.shape[0]) != self.dimension:
-            raise ValueError(
-                f"conditional_proposal_log_density_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        if int(condition.shape[1]) != int(generated.shape[1]):
-            raise ValueError(
-                f"conditional_proposal_log_density_suffix: {HighDimStatus.INVALID_SHAPE.value}"
-            )
-        joint = tf.concat([generated, condition], axis=0)
-        joint_log_density = tf.math.log(self.eval_pdf(joint))
-        suffix_axes = tuple(
-            range(self.dimension - conditioning_dimension, self.dimension)
-        )
-        suffix_relative_density = self.density.normalized_marginal_density_values(
-            suffix_axes,
-            tf.transpose(condition),
-        )
-        suffix_reference_density = tf.ones(
-            [tf.shape(condition)[1]], dtype=tf.float64
-        )
-        for axis in suffix_axes:
-            suffix_reference_density *= self._axis_reference_measure_density(
-                axis, condition[axis - suffix_axes[0]]
-            )
-        result = joint_log_density - tf.math.log(
-            suffix_relative_density * suffix_reference_density
-        )
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(
-                f"conditional_proposal_log_density_suffix: {HighDimStatus.NONFINITE_VALUE.value}"
-            )
-        return result
+    def _conditional_evaluate(self, operation, conditioning_points, values, *, broadcast, jit_compile):
+        from bayesfilter.highdim.ttsirt_native_tf import evaluate_transport
+        condition = tf.convert_to_tensor(conditioning_points, tf.float64)
+        generated = tf.convert_to_tensor(values, tf.float64)
+        if (condition.shape.rank != 2 or generated.shape.rank != 2
+                or not condition.shape.is_fully_defined() or not generated.shape.is_fully_defined()
+                or condition.shape[0]+generated.shape[0] != self.dimension):
+            raise ValueError(HighDimStatus.INVALID_SHAPE.value)
+        if not broadcast and (condition.shape[0] < 1 or condition.shape[0] >= self.dimension):
+            raise ValueError(HighDimStatus.INVALID_SHAPE.value)
+        allowed_counts = (1, generated.shape[1]) if broadcast else (generated.shape[1],)
+        if condition.shape[1] not in allowed_counts:
+            raise ValueError(HighDimStatus.INVALID_SHAPE.value)
+        condition = tf.broadcast_to(condition, [condition.shape[0], generated.shape[1]])
+        return evaluate_transport(self, operation, condition, generated, jit_compile=jit_compile)
 
     def marginalize(self, keep_axes: tuple[int, ...]):
         return self.density.marginal_density(tuple(int(axis) for axis in keep_axes))

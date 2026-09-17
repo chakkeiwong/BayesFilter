@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
+import tensorflow as tf
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ class SpectralDerivativeCertificationResult:
     """Numerical gate for spectral derivative promotion."""
 
     object_name: str
-    singular_or_eigen_values: np.ndarray
+    singular_or_eigen_values: tf.Tensor
     derivative_policy: str
     min_gap: float
     gap_tolerance: float
@@ -51,8 +51,7 @@ class SpectralDerivativeCertificationResult:
     source: str = "spectral_derivative_certification"
 
     def __post_init__(self) -> None:
-        values = np.asarray(self.singular_or_eigen_values, dtype=float).copy()
-        values.setflags(write=False)
+        values = tf.identity(tf.convert_to_tensor(self.singular_or_eigen_values, dtype=tf.float64))
         object.__setattr__(self, "object_name", str(self.object_name))
         object.__setattr__(self, "singular_or_eigen_values", values)
         object.__setattr__(self, "derivative_policy", str(self.derivative_policy))
@@ -117,16 +116,17 @@ def certify_spectral_derivative_region(
         raise ValueError(
             "derivative_policy must be spectral or non_spectral_custom_gradient"
         )
-    spectral_values = np.sort(np.asarray(values, dtype=float).ravel())
-    if spectral_values.size == 0:
+    spectral_values = tf.sort(tf.reshape(tf.convert_to_tensor(values, dtype=tf.float64), [-1]))
+    size = int(tf.size(spectral_values).numpy())
+    if size == 0:
         raise ValueError("spectral values must not be empty")
-    if spectral_values.size == 1:
+    if size == 1:
         min_gap = float("inf")
     else:
-        min_gap = float(np.min(np.diff(spectral_values)))
+        min_gap = float(tf.reduce_min(spectral_values[1:] - spectral_values[:-1]).numpy())
     blockers: list[str] = []
     warning_label: str | None = None
-    if not np.all(np.isfinite(spectral_values)):
+    if not bool(tf.reduce_all(tf.math.is_finite(spectral_values)).numpy()):
         blockers.append("spectral values are nonfinite")
     if policy == "spectral" and min_gap <= float(gap_tolerance):
         blockers.append(

@@ -13,6 +13,8 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
+
 
 def _as_float64(value: Any, name: str) -> tf.Tensor:
     tensor = tf.convert_to_tensor(value)
@@ -45,14 +47,21 @@ def _relative_response_rmse(
 ) -> tf.Tensor:
     response = center_score[tf.newaxis, :] - scores
     prediction = tf.matmul(offsets, precision, transpose_b=True)
-    scale = tf.maximum(tf.reduce_max(tf.abs(response)), tf.reduce_max(tf.abs(prediction)))
+    scale = tf.maximum(
+        tf.reduce_max(tf.abs(response)), tf.reduce_max(tf.abs(prediction))
+    )
     scaled_response = tf.math.divide_no_nan(response, scale)
     scaled_prediction = tf.math.divide_no_nan(prediction, scale)
     error = tf.linalg.norm(scaled_prediction - scaled_response)
     response_norm = tf.linalg.norm(scaled_response)
     return tf.where(
-        response_norm > 0.0, error / response_norm,
-        tf.where(error == 0.0, tf.constant(0.0, tf.float64), tf.constant(float("inf"), tf.float64)),
+        response_norm > 0.0,
+        error / response_norm,
+        tf.where(
+            error == 0.0,
+            tf.constant(0.0, tf.float64),
+            tf.constant(float("inf"), tf.float64),
+        ),
     )
 
 
@@ -89,7 +98,7 @@ def fit_dense_score_precision_tf(
     tf.debugging.assert_equal(tf.shape(scores), tf.shape(offsets))
     tf.debugging.assert_greater_equal(tf.shape(offsets)[0], dimension)
     response = center[tf.newaxis, :] - scores
-    coefficient = tf.linalg.lstsq(offsets, response, fast=False)
+    coefficient = complete_orthogonal_lstsq(offsets, response)
     raw_precision = _symmetric(coefficient)
     singular_values = tf.linalg.svd(offsets, compute_uv=False)
     largest_singular = tf.reduce_max(singular_values)

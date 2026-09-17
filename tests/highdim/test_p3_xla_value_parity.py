@@ -17,7 +17,7 @@ os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 import numpy as np
 import pytest
 
-from bayesfilter.highdim.squared_tt_engine_v0_tf import run_value_filter_branch_axis
+from bayesfilter.highdim.squared_tt_engine_v0_tf import run_value_filter_branch_axis_reference as run_value_filter_branch_axis
 from bayesfilter.highdim.squared_tt_engine_xla_tf import run_value_filter_branch_axis_xla
 from tests.highdim.test_p2_adjoint_engine_fd import _config, _family
 

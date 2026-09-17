@@ -1,4 +1,9 @@
-"""Canonical fixed-noise LGSSM LEDH graph with the Contract E-Chol reset."""
+"""Fixed-noise LGSSM finite-program diagnostic with the Contract E-Chol reset.
+
+The historical ``canonical`` API names identify the reset. This program does
+not implement the August 21 canonical LEDH rebuild or its analytical recursive
+score, and cannot support canonical LEDH, NeuTra training, or HMC admission.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +22,8 @@ from bayesfilter.highdim.transport_chunk_policy import validate_transport_chunks
 
 PARAMETER_NAMES = ("phi1", "phi2", "phi3", "q_scale", "r_scale")
 PARAMETER_COUNT = len(PARAMETER_NAMES)
+CANONICAL_LEDH_ADMITTED = False
+SCORE_PROVENANCE = "finite_program_manual_jvp_diagnostic_only"
 STATE_DIMENSION = 3
 OBSERVATION_DIMENSION = 3
 DTYPE = tf.float64
@@ -154,9 +161,9 @@ def _lgssm_component_tangents(theta: tf.Tensor, batch_size: int) -> dict[str, tf
     observation_identity = tf.eye(OBSERVATION_DIMENSION, dtype=dtype)
     zero_state = tf.zeros([STATE_DIMENSION, STATE_DIMENSION], dtype)
     zero_observation = tf.zeros([OBSERVATION_DIMENSION, OBSERVATION_DIMENSION], dtype)
-    d_transition_matrix_single = tf.stack(
-        [tf.linalg.diag(tf.one_hot(index, STATE_DIMENSION, dtype=dtype)) for index in range(STATE_DIMENSION)]
-        + [zero_state, zero_state],
+    d_transition_matrix_single = tf.concat(
+        [tf.transpose(tf.linalg.diag(state_identity), [1, 2, 0]),
+         tf.zeros([STATE_DIMENSION, STATE_DIMENSION, 2], dtype)],
         axis=-1,
     )
     d_transition_covariance_single = tf.stack(
@@ -213,21 +220,19 @@ def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
     chol_inverse = tf.linalg.triangular_solve(
         chol, tf.eye(dimension, batch_shape=[batch_size], dtype=chol.dtype)
     )
-    columns = []
-    for index in range(PARAMETER_COUNT):
-        tangent = matrix_tangent[..., index]
-        half_tangent = tf.constant(0.5, chol.dtype) * tangent
+    def direction(index):
+        half_tangent = tf.constant(0.5, chol.dtype) * matrix_tangent[..., index]
         symmetric_tangent = half_tangent + tf.linalg.matrix_transpose(half_tangent)
-        right_solved = tf.linalg.matmul(
-            symmetric_tangent, chol_inverse, transpose_b=True
-        )
+        right_solved = tf.linalg.matmul(symmetric_tangent, chol_inverse, transpose_b=True)
         inner = tf.linalg.matmul(chol_inverse, right_solved)
         lower = tf.linalg.band_part(inner, -1, 0)
-        phi = tf.linalg.set_diag(
-            lower, tf.constant(0.5, chol.dtype) * tf.linalg.diag_part(lower)
-        )
-        columns.append(tf.linalg.matmul(chol, phi))
-    return tf.stack(columns, axis=-1)
+        phi = tf.linalg.set_diag(lower, tf.constant(0.5, chol.dtype) * tf.linalg.diag_part(lower))
+        return tf.linalg.matmul(chol, phi)
+
+    columns = tf.map_fn(direction, tf.range(PARAMETER_COUNT),
+                        fn_output_signature=tf.TensorSpec(chol.shape, chol.dtype),
+                        parallel_iterations=1)
+    return tf.transpose(columns, [1, 2, 3, 0])
 
 
 def _cholesky_solve_jvp(
@@ -239,24 +244,21 @@ def _cholesky_solve_jvp(
 ) -> tf.Tensor:
     chol_tangent = _cholesky_jvp(chol, matrix_tangent)
     first_solution = tf.linalg.triangular_solve(chol, right_hand_side)
-    columns = []
-    for index in range(PARAMETER_COUNT):
+    def direction(index):
         first_tangent = tf.linalg.triangular_solve(
-            chol,
-            right_hand_side_tangent[..., index]
+            chol, right_hand_side_tangent[..., index]
             - tf.linalg.matmul(chol_tangent[..., index], first_solution),
         )
-        columns.append(
-            tf.linalg.triangular_solve(
-                chol,
-                first_tangent
-                - tf.linalg.matmul(
-                    chol_tangent[..., index], solution, transpose_a=True
-                ),
-                adjoint=True,
-            )
+        return tf.linalg.triangular_solve(
+            chol, first_tangent
+            - tf.linalg.matmul(chol_tangent[..., index], solution, transpose_a=True),
+            adjoint=True,
         )
-    return tf.stack(columns, axis=-1)
+
+    columns = tf.map_fn(direction, tf.range(PARAMETER_COUNT),
+                        fn_output_signature=tf.TensorSpec(solution.shape, solution.dtype),
+                        parallel_iterations=1)
+    return tf.transpose(columns, [1, 2, 3, 0])
 
 
 def _lgssm_flow_forward_core(
@@ -400,18 +402,15 @@ def _lgssm_flow_jvp_core(
     d_prior_chol = _cholesky_jvp(
         forward["prior_chol"], transition_covariance_tangent
     )
-    d_prior_chol_inverse = tf.stack(
-        [
-            tf.linalg.triangular_solve(
-                forward["prior_chol"],
-                -tf.linalg.matmul(
-                    d_prior_chol[..., index], forward["prior_chol_inverse"]
-                ),
-            )
-            for index in range(PARAMETER_COUNT)
-        ],
-        axis=-1,
-    )
+    d_prior_chol_inverse = tf.transpose(tf.map_fn(
+        lambda index: tf.linalg.triangular_solve(
+            forward["prior_chol"],
+            -tf.linalg.matmul(d_prior_chol[..., index], forward["prior_chol_inverse"]),
+        ),
+        tf.range(PARAMETER_COUNT),
+        fn_output_signature=tf.TensorSpec(forward["prior_chol_inverse"].shape, dtype),
+        parallel_iterations=1,
+    ), [1, 2, 3, 0])
     d_affine = (
         tf.einsum("bijq,bjk->bikq", d_post_chol, forward["prior_chol_inverse"])
         + tf.einsum("bij,bjkq->bikq", forward["post_chol"], d_prior_chol_inverse)
@@ -520,28 +519,27 @@ def _normalize_log_weights_jvp_core(
     shifted_exponential = tf.exp(logits - finite_max)
     exponential_sum = tf.reduce_sum(shifted_exponential, axis=1)
     reciprocal_sum = tf.math.reciprocal(exponential_sum)
-    increment_columns = []
-    log_weight_columns = []
-    weight_columns = []
-    for index in range(PARAMETER_COUNT):
-        direction = logits_tangent[..., index]
+    def direction(index):
+        tangent = logits_tangent[..., index]
         shifted_tangent = tf.add_n(
-            [direction, tf.broadcast_to(-tf.zeros_like(finite_max), tf.shape(direction))]
+            [tangent, tf.broadcast_to(-tf.zeros_like(finite_max), tf.shape(tangent))]
         )
-        exponential_tangent = shifted_tangent * shifted_exponential
-        increment_tangent = tf.reduce_sum(exponential_tangent, axis=1) * reciprocal_sum
+        increment_tangent = tf.reduce_sum(shifted_tangent * shifted_exponential, axis=1) * reciprocal_sum
         log_weight_tangent = tf.add_n(
-            [
-                direction,
-                tf.broadcast_to(-increment_tangent[:, None], tf.shape(direction)),
-            ]
+            [tangent, tf.broadcast_to(-increment_tangent[:, None], tf.shape(tangent))]
         )
-        increment_columns.append(increment_tangent)
-        log_weight_columns.append(log_weight_tangent)
-        weight_columns.append(log_weight_tangent * forward["normalized_weights"])
-    increment_tangent = tf.stack(increment_columns, axis=-1)
-    normalized_log_weights_tangent = tf.stack(log_weight_columns, axis=-1)
-    normalized_weights_tangent = tf.stack(weight_columns, axis=-1)
+        return increment_tangent, log_weight_tangent, log_weight_tangent * forward["normalized_weights"]
+
+    increments, log_weights, weights = tf.map_fn(
+        direction, tf.range(PARAMETER_COUNT),
+        fn_output_signature=(tf.TensorSpec(logits.shape[:1], logits.dtype),
+                             tf.TensorSpec(logits.shape, logits.dtype),
+                             tf.TensorSpec(logits.shape, logits.dtype)),
+        parallel_iterations=1,
+    )
+    increment_tangent = tf.transpose(increments, [1, 0])
+    normalized_log_weights_tangent = tf.transpose(log_weights, [1, 2, 0])
+    normalized_weights_tangent = tf.transpose(weights, [1, 2, 0])
     return {
         **forward,
         "increment_tangent": increment_tangent,
@@ -707,6 +705,7 @@ def _canonical_primal_core(
     row_chunk_size: int,
     col_chunk_size: int,
 ) -> dict[str, tf.Tensor]:
+    """Independent unrolled test reference, never a runtime/tuning endpoint."""
     validate_transport_chunks(
         int(prepared["initial_noise"].shape[1]),
         row_chunk_size=row_chunk_size,
@@ -1090,6 +1089,7 @@ def _canonical_manual_jvp_core(
     row_chunk_size: int,
     col_chunk_size: int,
 ) -> dict[str, tf.Tensor]:
+    """Independent unrolled JVP test reference for the fused recurrence."""
     validate_transport_chunks(
         int(prepared["initial_noise"].shape[1]),
         row_chunk_size=row_chunk_size,
@@ -1769,7 +1769,7 @@ def make_canonical_value_and_score_tf(
     dtype: tf.dtypes.DType = DTYPE,
     cache_same_cloud_geometry: bool = False,
 ):
-    """Bind fixed prepared inputs into the one admissible value-and-score graph."""
+    """Bind fixed prepared inputs into the diagnostic value-and-score graph."""
 
     if min(steps, balance_steps, row_chunk_size, col_chunk_size) <= 0:
         raise ValueError(
@@ -1822,7 +1822,7 @@ def make_canonical_prepared_value_and_score_tf(
     dtype: tf.dtypes.DType = DTYPE,
     cache_same_cloud_geometry: bool = False,
 ):
-    """Compile the canonical route once for fixed-shape prepared seed batches."""
+    """Compile the diagnostic route once for fixed-shape prepared seed batches."""
 
     if min(
         batch_size,

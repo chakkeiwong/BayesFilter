@@ -1,0 +1,992 @@
+# Filter execution repair record
+
+Work continues on `repair/filter-gradient-xla-20260917`. No merge is authorized
+by the current evidence. All findings remain open until their complete route
+tests, policy checks and paired measurements are recorded.
+
+The owner confirmed execution repair plus blocking unsupported canonical LEDH
+claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
+training/HMC capability and its obsolete admitted factory now fail closed.
+Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
+
+## Focused execution and repairs
+
+- Run 00009: 45 preparation/consumer tests pass. It covers TF quadrature,
+  Hilbert ordering, polynomial bases, retained moments, numeric identity bytes,
+  predator-prey derivatives and state consumers. Earlier run 00008 exposed
+  TensorArray clear-after-read and an incorrect new SIR reference fourth stage;
+  the simulator's existing half-step fourth stage was preserved.
+- Runs 00006 and 00011: native GenUT loops exposed AD/XLA zero-capacity
+  TensorList failures. Skipping the statically configured zero-iteration
+  correction preserves the original no-op. Run 00013 passes the public
+  graph/XLA score test. Reverse AD differentiates the same independent-row
+  scalar program, without pfor or canonical-score claims. Active corrections,
+  multi-date cases and baseline comparisons are still required.
+- Run 00010: replacing LGSSM parameter unrolling by native mapped directions
+  restores the original operation layout. Fourteen tests pass. Three strict AD
+  rounding checks fail on newly created September fixtures: 1 and 2 ULPs in
+  float64 and 3 ULPs in float32. Run 00012 executes exactly these tests against
+  pinned, unchanged baseline source and reproduces all three discrepancies.
+
+## Review of replacement LGSSM fixtures
+
+The old tests depend on missing July JSON fixtures. Those files also cannot
+serve as current LEDH evidence under the August 21 invalidation. Fresh, fixed
+September mechanics inputs were supplied without consulting old results.
+Their AD bit-equality thresholds do not transfer automatically from different
+inputs. The unchanged September baseline exhibits exactly the same errors as
+the repaired native-direction implementation (runs 00012 and 00010).
+
+The three replacement-fixture assertions now forbid exceeding those observed
+baseline errors (1/2/3 ULPs), while normalization and other zero-ULP assertions
+remain unchanged. This is an explicit test-contract correction, not a numerical
+repair or evidence that the full algorithm is canonical. Closing F02 additionally
+requires before/after output parity and enclosing XLA/memory checks. A worse
+candidate cannot be excused by further increasing these bounds.
+
+The original four vectorized derivative edits changed reduction layout and
+initially produced larger discrepancies (run 00007). They were replaced with
+native parameter loops; no numerical tolerance was changed to accept those
+larger errors.
+
+## Source scope note
+
+The new predator-prey derivative follows the existing local standard RK4
+program. The inspected author predator step uses a half-step fourth stage;
+that difference predates this execution repair and was not changed. No
+source-faithfulness or scientific admission follows from this mechanical
+derivative repair.
+
+## Remaining work
+
+Recovery verified run 00026 (14 CPU-pool tests), run 00027 (26 joint-center
+and exact-incumbent tests), and run 00028 (CPU-target checks) passed. These
+are focused evidence, not closure of the affected findings.
+
+Run 00029 passed all six actual-SV checks (FD, batch permutation, diagnostic
+trace API, analytical XLA parity). Run 00030 passed 14 TT contraction/ALS
+checks, including sweep-count-independent graph size. Run 00032 passed both
+complete generic branch-axis value parity checks at the unchanged 1e-12
+relative threshold. These need final-source confirmation after dependent edits.
+
+The first complete actual-SV FP64 GPU/XLA pair (after run 00031, baseline
+run 00033, T=4/B=2) has identical input hashes and exactly identical outputs.
+Nodes: 10390 -> 2425; cold execution including compile: 20.77 -> 6.98 s;
+warm median: 14.86 -> 32.06 ms; peak TF allocation: 8,527,872 -> 16,916,480
+bytes; peak host HWM: 1,444,306,944 -> 1,255,276,544 bytes. This is one
+process per arm, not a final repeated comparison. Warm slowdown triggers
+investigation; the near-2x device increase also requires explanation. Native
+control-flow overhead and checkpoint lifetimes are candidate mechanisms.
+Do not close F05 or claim a performance improvement from this pair.
+The measurement worker now uses TensorFlow's public device synchronization
+barrier before starting the output-copy timer. Earlier pairs synchronized via
+the output copies, so their end-to-end comparisons remain descriptive but their
+copy-time field also includes any outstanding device work. Final comparisons
+must use the corrected worker in both arms.
+
+The generic adjoint candidate now uses the existing XLA scaled CholeskyQR2
+backend for the same augmented ridge objective because the original
+`lstsq(fast=False)` cannot compile under XLA. No ridge or threshold was changed.
+The original scalar and analytical-score tests, condition veto checks, and
+paired complete-endpoint evidence must pass before this candidate is accepted.
+
+The actual-SV TT refactor preserves the existing `extension_or_invention`
+classification in the July 31 fixed-branch admission plan. Inspected anchors:
+Zhao--Cui paper Algorithm 2 (local text lines 693--725), Algorithm 3
+(890--918), SV example (1994--2038), and author
+`eg2_sv/mainscript.m` configuration/solve plus `models/sv/{setup,transition,
+like,priorpdf}.m`. The author uses rank-adaptive functional TT construction;
+the local fixed two-axis ALS route is not that implementation. This change
+only replaces the existing dates, fixed `(0,1,1,0)` sweeps and manual
+directional replay by native tensor recurrences. It makes no new source
+faithfulness or admission claim. The August 10 local closed derivative
+derivation supplies the same-program formula, including scale/ridge terms.
+
+Runs 00015–00016 found that the now-compiled batched CPU target fails its
+existing FP64 square-root reconstruction threshold (roughly 4e-9 versus
+1e-10). The TensorFlow generic XLA eigensolver convergence tolerance is a
+candidate cause. The repair candidate uses the same XLA symmetric Jacobi
+operation with FP64 machine epsilon and at most 100 sweeps. It changes no
+model, covariance ridge, acceptance threshold or score definition. Require
+eigensystem/reconstruction and gradient checks plus complete scalar/batch
+target parity before accepting it; preserve any unsuccessful evidence.
+
+Complete the CPU pool and SGQF consumer tests, TT/adjoint and particle/flow
+recurrences, reachable inference NumPy migration, stable-signature and source
+policy guards, complete measurement fixtures and repeated paired comparisons.
+The campaign gate must reject missing, skipped or stale-source evidence.
+
+## September 17 continuation: compact checkpoints and graph failure
+
+Runs 00039 and 00040 pass the TT contraction/analytical-direction checks and
+all six complete actual-SV checks after compact checkpoint reconstruction.
+Run 00041 executes that implementation on GPU2/XLA. Device peak drops to
+4,333,568 bytes (baseline run 00033: 8,527,872; prior candidate run 00037:
+16,916,480). Trace is 0.79 s, cold execution 4.18 s, warm median 19.66 ms,
+and host HWM 1,253,552,128 bytes. These remain single-process diagnostics;
+the warm regression relative to the old 14.86 ms baseline still requires
+repeated matched-worker measurements and an explicit terminal assessment.
+
+Run 00038 exposed five dense LEDH graph failures returning empty float32
+tensors where traced outputs were nonempty float64 tensors. CPU-only
+localization reproduced the failure with AutoGraph disabled and transport
+removed. Disabling Grappler arithmetic, constant, or dependency optimization
+restored the expected values. Isolating the unchanged flow calculation in a
+fixed-signature function with `_noinline=True` also restored them while leaving
+the optimizer enabled. Plain function encapsulation without that attribute did
+not work. Run 00042 checks all existing dense LEDH tests with this local
+function boundary; enclosing XLA and score compilation remain separate gates.
+That temporary function-boundary workaround failed reverse differentiation in
+run 00042 and was removed. Hoisting the invariant process/observation
+covariance stabilization outside the time loop fixes both value and derivative
+execution, with normal optimizer settings. Run 00045 passes all 30 dense LEDH
+tests, including two new complete value/score XLA checks. No tolerance,
+covariance regularizer, score, or transport branch was changed.
+
+The new bootstrap regression group exposed a reference-helper unpacking typo
+in run 00043 (fixed), then two actual seeded-resampling mismatches under XLA in
+run 00044. All graph-mode cases and the no-resampling XLA case pass. This is
+an unresolved random-stream compatibility issue; the mismatch is not excused
+as numerical noise or hidden by loosening output tolerances.
+
+Run 00054 had one float32 Contract-E assertion at 2 ULP for the aggregate
+score. The pinned unchanged source in run 00055 reproduced the same failure
+and value, so the assertion was corrected to the observed baseline bound of 2
+ULP. The per-batch score remains within the existing 3-ULP baseline bound.
+
+## Recovery through run 00092
+
+Run 00088 passed all 28 Algorithm-1 and determinant checks. The original
+detached epsilon selection and report derivatives remain detached. Observation
+eigensystems are hoisted; pseudo-time histories use fixed tensor buffers.
+The explicit non-XLA Algorithm-1 reference mode requires a local no-inline
+coefficient boundary; the XLA path keeps coefficients inline because saved
+transpose dimensions otherwise lose their static shape. This is not canonical
+algorithm or analytical-score admission.
+
+Run 00089 passed all seven annealed transport checks. Conditional VJPs now
+recompute only the selected branch, preserving tensor and variable captures.
+Fixed active-row padding uses dense selection to avoid sparse-gradient shape
+changes. Failed attempts 00073--00086 remain preserved.
+
+Run 00090 passed 20/24 complete OT and structural checks; all XLA cases passed.
+The four non-XLA LEDH gradient failures came from nested covariance
+factorizations. Hoisting invariant prior/observation factors while retaining
+both original stabilization operations repaired the failure. Run 00091 passed
+all 24 cases at the original 1e-10 thresholds. The temporary graph-reference
+context/no-inline workaround was then removed. Run 00092 passed six captured
+gradient checks, including both branches, mixed captures and variable updates.
+Final-source endpoint confirmation remains required.
+
+Unrecorded direct CPU diagnostics before run 00090 are conservatively charged
+30 process-minutes in supplemental-compute-0001.json. This is a recovery budget
+estimate, not a measured runtime; the driver includes it in remaining budget.
+
+The adapted and Gaussian TT routes are being moved to complete native date
+recurrences. Runs 00093--00094 identified graph-time object validation and an
+XLA-unsupported log determinant. The adapted triangular map uses its unchanged
+sum of log diagonals for the determinant. Full parity and consumer checks are
+still pending; these findings remain open.
+
+## Native mapped TT and measurement guard continuation
+
+Run 00095 passed all 13 mapped-TT parity/veto checks: horizons 1 and 4,
+graph/XLA, Gaussian reference and Student-t floor. Run 00096 passed all 13
+Gaussian consumer checks, including the existing Student-t lane parity,
+retained-capture bit identity, frozen target RMS/Gram identities and snapshot
+serialization. The reference tests now freeze their independent NumPy Kalman
+hints before invoking runtime; three active frozen-artifact benchmark consumers
+use the shared tensor-indexed hint reader. Other legacy hint factories still
+need consumer review. Snapshot construction consumes completed histories.
+
+The existing adapted and Gaussian programs remain local extensions. Inspected
+again: paper Algorithm 2, equations (15)--(16), local extracted lines 693--725;
+Section 5.2, lines 1581--1594; author
+`third_party/audit/zhao_cui_tensor_ssm_p10/source/models/full_sol.m:64` through
+the sequential fit/normalizer update; and
+`deep-tensor.dev/src/@TTSIRT/marginalise.m:25` through its final defensive
+normalizer at line 85. The author uses adaptive TTSIRT fitting and QR-based
+marginalization. The local frozen ALS/Gram and C2 row law remain existing
+extensions, not new source-faithfulness evidence. The mechanical refactor
+preserves their formulas, floor clamp and detached floor adaptation.
+
+Run 00097 passed the campaign/source guard group, including new rejection tests
+for stale source, output structure/type mismatch, numerical/resource failures
+misclassified as compilation failures, and regression thresholds. The comparison
+runner now requires both registered extents (except the four fixed audit
+fixtures), three repeats, current imported sources, matching fixture/hardware,
+20 warm calls, and genuine XLA/HLO. It records baseline compilation failures and
+may compare a valid explicit graph/host reference separately; no XLA timing is
+invented. Eager host reference runs are explicitly labeled and may contain the
+baseline's nested step compilation. Regression investigation acceptance is not
+yet implemented: flagged differences currently keep the gate closed.
+
+Run 00098 passed the new complete Gaussian TT CPU/XLA measurement smoke.
+Run 00099 passed on idle GPU2: 6,285 GraphDef nodes, trace 2.64 s, first execution
+7.46 s, median of 20 warm calls 14.35 ms, TF peak 4,013,568 bytes and zero warm
+current-allocation range. This is a worker/endpoint smoke, not a before/after
+performance claim. Its worker subsequently changed to add more fixtures, so it
+is intentionally ineligible for the final matched matrix.
+
+## Scalar adjacent TT continuation
+
+Run 00100 completed all 24 endpoint checks. Run 00101 passed the 13 mapped TT
+checks after the observability-only finiteness correction. The structural
+factory now has a cache identity regression test; its final rerun is pending.
+
+The scalar adjacent TT route is being moved to one native date/ALS endpoint.
+Source anchors were re-inspected: paper Algorithm 2 equations (15)/(16), local
+text lines 695-720, and author `models/full_sol.m:73-125`. Its fixed ALS fit
+remains the existing `extension_or_invention`. No source-faithfulness promotion
+is sought. Reports and per-update hashes are constructed from completed tensor
+histories, and the original t=1 warm-start rule is retained even when t=0 fits
+an adjacent state.
+
+Review rejected substituting the other TT route's CholeskyQR2 backend: the
+scalar route allows condition vetoes through 1e16, beyond that backend's Gram
+conditioning range. A plain full-rank QR candidate passed initial primitive
+tests in run 00102, but code review found that Eigen's original complete
+orthogonal decomposition truncates numerical rank. The replacement now uses
+native column-pivoted Householder QR and a complete orthogonal decomposition
+with Eigen's epsilon*column-count pivot threshold. Anchors are TensorFlow's
+bundled `matrix_solve_ls_op_impl.h:146-160`, Eigen
+`ColPivHouseholderQR.h:375`, and
+`CompleteOrthogonalDecomposition.h:455-570`. Solver identity is recorded as
+`tensorflow_native_complete_orthogonal_decomposition`; it never claims to be
+the old `lstsq(fast=False)` implementation.
+
+Run 00105 passed 20 primitive tests, including rank-truncated and rank-deficient
+baseline parity, graph/XLA execution, and high-condition full-rank diagnostics.
+Runs 00104/00106 exposed a TensorFlow conditional-gradient capture assertion.
+Run 00107 passed the graph value/score baseline comparisons and rejection
+tests, but XLA differentiated detached SVD diagnostics; those outputs are now
+detached as they were at the original host boundary. Run 00108 then exposed
+variant FakeParam gradient state under conditional ALS. Runs 00109-00111
+preserve failures while localizing eager preparation captures in the branch
+pullback. No threshold or scalar has been relaxed; F05 remains open pending
+complete XLA, final-source parity and measurement evidence.
+
+Runs 00112--00114 localized the remaining TensorFlow FakeParam variant state
+to reporting and fixed basis calculations. Residual/pre-update snapshots are
+now detached explicitly, preserving their original reporting-only role. Fixed
+basis tables are prepared outside the parameter tape; the native core/date
+recurrences remain differentiable. Run 00115 passed the focused XLA score.
+Run 00116 exposed a zero-iteration date-gradient buffer at T=2 and cancellation
+from forming basis outer products before the square-root core contraction.
+The T=2 static shape case avoids the empty loop; retained marginal evaluation
+again contracts each basis/core before the outer product. Run 00117 passed all
+11 scalar checks at the original thresholds. Run 00119 passed all 12 checks,
+including T=3/T=6 baseline value/score parity, identical graph node counts and
+one trace per fixed shape. No marginal floor or tolerance was changed.
+
+Run 00118 passed 21 QR/COD tests, including the actual COD pullback and the
+public fit backend dispatch/metadata consistency check. The fixed solver API
+now accepts and actually executes the native backend it reports. Additional
+rectangular/multiple-response coverage was added while migrating geometry.
+
+Run 00120 passed the factor-correlation geometry suite after removing direct
+and indirect NumPy, native tensor encode/decode, replacing implicit pfor with
+a parameter-direction TensorFlow loop, and adding a bounded-cache stable XLA
+boundary around preparation, L-BFGS and fit diagnostics. This preserves the
+original objective, anchors, thresholds and fit rejection rules. HMC tuning
+interface and its public capability registry were re-inspected; no HMC tuner
+or sampler mathematics changes are included. GPU and matched baseline evidence
+remain pending. All F01--F20 remain open; no merge is authorized by these
+subset checks alone.
+
+## Recovery and auxiliary consumers
+
+Runs 00122--00132 extended rectangular COD coverage, confirmed APF execution,
+and exercised complete retained-moment, particle, Algorithm-1 and scalar-TT
+endpoints. The first particle observation-gradient smokes failed XLA because
+nested map functions created dynamic TensorLists. Fixed dense-buffer row loops
+and batched covariance stabilization repaired those paths; runs 00126/00129
+passed. Run 00131 executed the complete scalar-TT value/score on GPU2. These
+are endpoint smokes, not a performance comparison or canonical LEDH admission.
+
+Run 00132 passed 28 Algorithm-1/solver checks. Run 00133 passed all 25 OT and
+structural endpoint checks after correcting the cache test's callback fixture.
+Run 00134 passed the campaign guard checks, including matching exact measurement
+sets for documented tradeoff reviews and refusing to waive ongoing memory
+growth. No investigation has been accepted by a review artifact yet.
+
+Fixed-center curvature now uses immutable TensorFlow outputs and compiled
+dense fitting, matrix comparison and shrinkage kernels. Host validation checks
+raw buffer layouts before tensor conversion, retaining exact overlapping-view
+rejection, disjoint interleaved views, and signed-zero-normalized copied-row
+rejection. The interval helper describes storage only; it does not compute
+numerical arrays. Existing thresholds, selection order and audit-only veto are
+unchanged. Run 00135 passed 120 checks but exposed the dense solver's missing
+dynamic-row support; run 00136 passed all 121 fixed-center, buffer and downstream
+curvature checks after repairing it.
+
+Block-score geometry no longer imports NumPy or uses its epsilon helper.
+Packed symmetric score design and unpacking are tensor operations shared with
+the sequential initializer. A stable XLA factory encloses each declared block
+fit, preserving the rank and SPD vetoes. Run 00137 passed its existing suite.
+The heterogeneous block/replicate reporting and initializer controller are
+still host orchestration; these checks do not certify a whole HMC tuner.
+
+COD now supports one dynamic-row signature across underdetermined and tall
+systems. Run 00138 exposed XLA compiling an inactive pullback branch with a
+rectangular triangular solve; shape-valid padding fixes that inactive branch
+without changing the selected full-rank formula. Run 00139 passed 25 COD checks,
+including one-trace dynamic-row primal/FD-gradient checks in graph and XLA.
+The wider TT suites must be rerun against the final shared solver.
+
+Run 00140 passed the sequential initializer suite after replacing its direct
+and indirect NumPy dependence with TensorFlow and standard-library scalar
+validation. Its optimizer-wide runtime qualification remains outside F18's
+auxiliary migration scope. Two other initializer modules still depend on
+NumPy PCG64 probe-cloud streams; exact preservation versus an explicitly
+versioned TensorFlow stream remains unresolved. No stream was silently changed.
+
+Run 00141 passed the complete GenUT CPU/XLA measurement smoke. Run 00142 tests
+the Contract E builder. Baseline builder smokes, the final matched GPU matrix,
+source exemptions and stable-signature guards remain pending. F01--F20 remain
+open, and the branch must not merge while those gates are incomplete.
+
+## Geometry stream decision and recovery
+
+Run 00142 passed the complete Contract E CPU/XLA smoke. Run 00143 preserved a
+baseline GenUT tracing failure (ForwardAccumulator/ensure_shape TraceType).
+Runs 00144--00146 developed a provisional exact PCG64 compatibility stream;
+the last passed nine diagnostic checks. The owner then explicitly selected a
+versioned TensorFlow stream. The provisional source and tests are removed;
+their run records remain historical engineering evidence. Read-only upstream
+NumPy source inspection during the provisional work did not change packages.
+
+The replacement `geometry_tf_philox_cpu_xla_v1` fixes Philox, CPU/XLA placement,
+FP64 draws, SHA-256 seed/call/domain mapping and per-call shape. The approved
+change alters seeded draws, so frozen common clouds are required for numerical
+baseline comparisons. No distribution, fit threshold or holdout role changes.
+Skeptical review identified accidental comparison of different random inputs
+as the principal risk; stream metadata and frozen-cloud regression checks
+address it. Reproducibility binds the recorded TensorFlow version.
+
+Run 00147 passed 13 quadratic checks and failed three. Two failures require
+restoring Python scalar reporting types. The other expected exact hashes
+between differently shaped scalar/batch XLA reductions despite already passing
+1e-12 numerical comparisons. Exact artifact hashing is retained; reproducible
+hashes are now checked within each route and scalar/batch numerical tolerances
+remain unchanged. This is not a waiver of numerical parity.
+
+## Geometry and signature recovery through run 00161
+
+Run 00148 preserved the missing XLA StatelessShuffle kernel. Fisher-Yates with
+unbiased integer rejection replaced that primitive; run 00149 passed all four
+new-stream tests. Run 00151 passed the initializer suite, and run 00155 passed
+five checks including the default XLA locator. Runs 00150/00152 exposed both
+old seed-specific fixture assumptions and FP64 eig/SVD residuals up to 1.5e-7.
+Explicit XLA Jacobi precision and shape restoration repaired those residuals;
+run 00154 passed 22 quadratic tests, including complete pinned-baseline parity
+with identical frozen clouds, rank deficiency, and budget/eligibility checks.
+The original NumPy rank cutoff and numerical tolerances were preserved.
+
+Run 00158 passed 30 signature/Kalman/moment-teacher checks after fixing a new
+fixture's missing time axes. Run 00159 passed the Algorithm-1/solver group,
+including its new observation-gradient case. Further review found that the
+signature wrapper rounded Python lists to float32 before float64 entry points.
+Endpoint dtype declarations now preserve list precision and index/mask types.
+Run 00160 passed 31 checks; one new test mishandled IndexedSlices returned by a
+gather gradient. Its assertion now materializes that gradient as a tensor.
+
+The old Contract E primal/JVP date recurrences and scaled TT forward replay
+are independent reference helpers, not the runtime factory implementations.
+Their documentation now makes that role explicit. Consumer discovery found
+one obsolete July canonical-selection script still using the primal helper;
+new launches are disabled under the August 21 invalidation. Historical source
+and artifacts remain preserved. The active fused recurrence's small parameter
+basis comprehension was also replaced by a tensor diagonal construction.
+
+The active Student-t defensive-floor configuration selector still had an
+80-step Python numerical bisection. Its unchanged interval, formula, iteration
+count and selection criterion are being migrated to one native XLA loop.
+This is a mechanical repair to an existing local extension, with no new
+Zhao-Cui source-faithfulness claim. Focused scalar-baseline tests are required.
+
+## Frozen moment-hint consumers and reset checks
+
+Run 00161 passed all 32 signature checks. Run 00162 passed the Student-t
+selector/reference checks without changing its interval, formula or threshold.
+Runs 00163--00165 isolated two moment-hint defects: tracing an empty T=1
+history update, and XLA eigenvectors producing GH weights with about 1e-9
+error despite accurate eigenvalues. A static T=1 branch avoids the invalid
+update. Weights now use the equivalent normalized Hermite recurrence
+`w_i=1/(n*p_{n-1}(x_i)^2)` at the same nodes. Tightening the eigen epsilon
+alone did not fix the vectors; that failed trial remains recorded.
+
+Run 00166 passed all 12 GH/moment checks at unchanged tolerances, including
+orders 2/9/17 and n=1/2 full histories. Run 00167 passed 19 checks, adding
+native Kalman joint hints on identical legacy PCG fixtures and a complete
+adapted TT consumer. Compiled consumers now index frozen TF histories rather
+than executing stateful NumPy callbacks. Fixture generation and independent
+oracle code remain explicitly diagnostic. The LGSSM runtime density callback
+also no longer executes NumPy factorization.
+
+Run 00168 attempted the old phase-3 reset suite and found its July certificate
+files absent; those historical LEDH results are also ineligible under the
+August invalidation. They were not restored, regenerated or used as baselines.
+The campaign reset group now uses fresh independent cloud fixtures and checks
+the primitive value, covariance identities, all five analytical pullbacks,
+JVP/VJP duality, finite differences and enclosing XLA. Run 00169 passed these
+checks. This is primitive engineering evidence, not canonical LEDH admission.
+The stable-signature wrapper also restores its truthful `_jit_compile=True`
+introspection attribute for compatibility.
+
+No finding is closed by these focused runs. Final source guards, repeated
+matched GPU measurements and the full current-source test gate remain pending.
+
+## Public fitter and TT algebra recovery
+
+Run 00170 passed the compiled Gaussian consumer group. Runs 00171--00172
+identified stale solver metadata and a missing test import in the public ALS
+migration. Run 00174 passed the new frozen-reference/cache checks after core,
+point, weight and holdout values became explicit signature inputs. Runs 00173
+and 00175 each passed all 39 TT algebra/analytical derivative checks. Full
+current-source fitter and consumer groups remain required. The source guard
+is under construction; unreviewed entries remain violations, not exceptions.
+
+The public squared-density migration preserves its paired contraction and
+33-point suffix trapezoid rule. Before implementation, paper Eq. (13),
+Proposition 2 and conditional construction were reread at
+`.localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt:539`
+and author `@TTSIRT/marginalise.m:25-85` in the vendored source. The paired
+normalizer/marginal operation retains its existing paper relationship; the
+finite-grid conditional remains an existing `extension_or_invention`, not the
+paper's algebraic CDF construction. This is an execution refactor with no new
+source-faithfulness claim. Frozen original-source numerical tests check both
+measures, heterogeneous degrees, empty/full marginals and every conditional
+axis; enclosing HLO and bounded graph size check compilation.
+
+## Recovery through run 00191
+
+Runs 00176--00178 repaired and passed the squared-density group. Run 00179
+passed the public fitter group. The TT map group failed in 00180 and passed
+in 00181; simulation retries 00182--00185 ended in a pass. Runs 00186 and
+00187 passed preparation and SGQF. TTSIRT runs 00188/00189 passed; broader
+00190 exposed CPU XLA's unsupported determinant operation in affine maps.
+The existing native slogdet primitive repairs it. Run 00191 passed 22 checks,
+including affine roundtrip/determinant and empty suffix transport shapes.
+Earlier failures remain recorded and consume budget. The three unfinished
+Gaussian benchmark callers now obtain callbacks via PreparedMomentHints.callbacks.
+
+Scalar retained-grid repair was reviewed against paper Algorithm 2/(15)--(16)
+and author models/full_sol.m:73--125. It preserves the existing
+extension_or_invention classification, one-axis weighted ALS, raw propagation
+weights, max-shift derivative, and explicit model parameter-score methods.
+All parameter columns share a matrix solve; no AD replacement is permitted.
+The legacy value moments are unnormalized sums while derivative moment reports
+use quotients. This discrepancy is preserved, not silently numerically repaired.
+Pinned-source parity, finite differences, bounded graphs, and veto checks are
+required before this endpoint can close any finding. F01--F20 remain open.
+
+## Scalar, panel and source-guard recovery through run 00197
+
+Run 00192 failed during scalar test collection; 00193 passed 12 checks and
+00194 passed the expanded 15-check group. Run 00195 passed all nine retained
+panel checks. Run 00196 passed the 15 scalar checks again after runtime model
+binding and report refactors. Run 00197 passed TTSIRT with the heterogeneous
+constant/correlated/constant transition schema regression included.
+
+Panel checks cover exact transformed and KSC mixture endpoints, heterogeneous
+gamma/beta/sigma, pinned-source values and reordered analytical scores at
+1e-10, independent finite differences at 2e-7, coordinate report semantics,
+changed-input signature reuse, HLO and width-independent graph size. These
+remain local retained-grid extensions, not Zhao-Cui source-faithfulness or
+batch-native NeuTra training evidence.
+
+The exact source guard now participates in both the policy tests and terminal
+merge gate. Its policy JSON is part of current-source provenance. Negative
+tests exercise new/changed numerical loops, NumPy, host callbacks, disabled
+JIT defaults and stale exceptions. Review exposed missing checks for explicit
+non-XLA tf.function calls and bare decorators; those checks are now included.
+Fifteen individually reviewed graph boundaries were classified: thirteen
+private enclosed graphs (with named enclosing endpoints and compilation tests)
+and two explicit Algorithm-1 graph-reference paths. None exempts numerical
+Python iteration. The guard covers 136 sources and 740 exact exceptions;
+selected scopes in mixed modules remain a qualification limit.
+
+The stronger guard found a remaining non-XLA start-bank selector. After reading
+the HMC tuning interface and capability registry, only its compilation default
+was changed; chronological greedy eligibility, endpoints, thresholds and
+public tuner authority remain unchanged. A new focused group includes the
+existing frozen oracle and boundary tests plus HLO/signature checks. Full
+current-source tests, remaining classifications and matched repeated GPU
+measurements are still required. No F01--F20 closure or merge is claimed.
+
+## Recovery through run 00201
+
+Run 00198 passed the start-bank group, including the frozen oracle and enclosing
+XLA checks. Run 00199 passed all 25 campaign/policy checks. Run 00200 passed
+the TT algebra group. Run 00201 passed the first squared-density GPU/XLA
+measurement at size 1. This single measurement is qualification, not a repeated
+performance result.
+
+Recovery verified 201 recorded attempts and no active numerical worker. Charged
+time is 12014.481 CPU seconds and 273.560 GPU seconds, leaving 16785.519 CPU
+seconds and 14126.440 GPU seconds under the original budget. GPU2 was idle
+(18 MiB driver reservation, zero utilization) before run 00202. The eight newly
+registered numerical fixtures still need baseline, graph and XLA qualification
+and matched repeats. All findings remain open.
+
+## Recovery through run 00214
+
+Runs 00202--00208 passed candidate GPU/XLA qualification for TTSIRT preparation,
+the SV/SIR/predator-prey simulators, scalar/panel retained filters and panel KSC.
+Runs 00209--00210 passed candidate GPU graph qualification for squared density
+and TTSIRT preparation. Run 00211 failed on the simulator's GPU uint64 AddN;
+signed int64 counter addition between bitcasts preserves modular arithmetic
+and passed the graph retry in 00212. Run 00214 passed the seeded-simulator
+regression group. Run 00213 recorded a pinned-baseline XLA tracing failure:
+Generator.from_seed creates a variable inside repeated tracing. That failure
+has no timing comparison; the valid eager baseline must be measured separately.
+
+Recovery verified 213 attempts: 12014.481 CPU seconds and 414.857 GPU seconds.
+The source guard still has incomplete scopes in mixed filtering modules.
+Direct exact-transformed SGQF and other active SV component recurrences are
+being added to its coverage as they are repaired, with pinned-source parity,
+analytical finite differences and enclosing compilation checks. A selected-scope
+guard pass cannot close the repository-wide audit. No finding is closed.
+
+## Recovery through run 00216
+
+Run 00215 passed all six direct exact-transformed SGQF checks, including pinned
+value/score/history parity, every analytical score column against finite
+differences, stable signatures, HLO and bounded graphs. Run 00216 passed the
+campaign/policy group. These are focused checks; subsequent source edits mean
+they do not satisfy the terminal current-source gate. The augmented-noise
+SGQF wrapper and remaining component recurrences are now being migrated,
+preserving their distinct value and diagnostic/analytical score definitions.
+
+## Recovery through run 00219
+
+Run 00217 passed all nine direct/augmented SGQF checks. Expanded mixture tests
+in 00218 exposed a fixture keyword error and a float32 literal in the float64
+derivative branch; both were repaired. Run 00219 passed 24 checks and failed
+five graph-reference cases. Every tested XLA mixture value/score, derivative
+history, metadata, finite difference and bounded-graph check passed. The
+one-coordinate graph cases return malformed tensors (empty float32 outputs
+instead of float64 histories); this is unresolved and is not excused by the
+passing XLA cases. Optimizer localization is the next bounded diagnostic.
+
+At recovery, 219 attempts consumed 12171.107 CPU seconds and 414.857 GPU
+seconds of the original 28800/14400-second budgets. F01--F20 remain open.
+
+## Scalar graph optimizer repair through run 00226
+
+Runs 00220--00225 localized the malformed scalar graph outputs. Optimizer
+options merge rather than replace, so independent probes explicitly reset all
+five investigated options. Disabling arithmetic, constant or dependency
+optimization restored the Kalman outputs; disabling function or loop
+optimization did not. Fixed output buffers and hoisted mixture constants were
+insufficient. Removing redundant 1x1 transposes, while preserving the original
+add-and-scale symmetrization arithmetic, repaired Kalman and the shared
+sigma-point/SGQF recurrences with normal optimizer settings. No global optimizer
+disable or no-inline boundary is retained.
+
+Run 00226 passed all 37 SV checks. Temporary monkeypatch/optimizer localization
+tests were then removed; default-optimizer graph/XLA endpoint parity remains.
+The bounded-graph test now compares two date/component extents within each
+scalar/matrix specialization, since removing scalar transposes legitimately
+changes the graph size across those two static shapes. It also verifies finite
+differences, changed-input signature reuse and HLO. Numerical tolerances are
+unchanged. The shared symmetrization change still requires affected Kalman and
+SGQF consumer confirmation.
+
+The remaining dense scalar and Gaussian-to-TT loops in `filtering.py` are
+numerical work, not artifact-only loops. Their native migration preserves the
+existing local quadrature/ALS extension. Reinspected anchors are paper
+Algorithm 2/(15)--(16), extracted lines 693--725, and author
+`source/models/full_sol.m:73--125`. The author uses adaptive TTIRT/TTSIRT;
+this repair makes no new source-faithfulness claim. Public endpoint parity,
+unchanged vetoes and bounded enclosing compilation are required.
+
+## Recovery through run 00232
+
+Run 00227 passed 27 filtering-wrapper checks. Runs 00228 and 00229 each passed
+17 Kalman checks and failed the same SVD-CUT graph-autodiff Hessian check on
+the candidate and pinned baseline respectively. Values and first derivatives
+agree, but the graph Hessian is NaN. This pre-existing failure remains a repair
+trigger. Run 00230 passed 29 filtering-wrapper checks after restoring the
+Gaussian TT normalizer veto. Run 00231 passed 24 squared-density/chunk checks,
+including partial-block arithmetic, pinned-source parity and enclosing HLO.
+Run 00232 passed all 26 SGQF value, score, integration and consumer checks.
+
+Recovery status: 232 attempts, 12811.444 CPU seconds and 414.857 GPU seconds
+charged against the original 28800/14400-second budgets. The next Kalman
+diagnostic isolates nondifferentiable reporting norms from recurrence-state
+cotangents; no likelihood, point-placement or covariance derivative is stopped.
+All F01--F20 findings remain open pending terminal current-source evidence.
+
+## Recovery through run 00235
+
+Runs 00233 and 00234 passed all 18 Kalman checks. Reporting-only zero residual
+norms contaminated the graph Hessian through undefined norm derivatives.
+Stopping those diagnostic residual cotangents repaired the Hessian; likelihood,
+covariance and sigma-point derivatives remain live. Run 00234 additionally
+checked the Hessian against a centered finite difference of the compiled score
+without relaxing tolerance. Run 00235 passed 30 filtering-wrapper checks,
+including bitwise pinned-source parity of heterogeneous default TT cores.
+
+The full mixed-module audit distinguishes completed result assembly, fixed
+schemas and host validation from numerical recurrence. Remaining all-axes
+multistate retained-grid loops are explicitly historical under AGENTS.md.
+The old leaderboard helper `_zhao_cui_predator_prey_tt_value_score` has no
+callers; the active dispatch rejects the retained-grid route. Existing HMC
+route-policy regression tests are added to the campaign wrapper group.
+The exact-node guard is being extended to both complete mixed modules and
+their new native implementations. This classification grants no scientific
+or HMC admission to a reference route.
+
+Through 00235 the original budget has consumed 12965.982 CPU seconds and
+414.857 GPU seconds. All findings remain open for terminal evidence.
+
+## Recovery through run 00237
+
+Run 00236 passed the campaign/policy group. Run 00237 passed all 29 retained SV
+tests after removing temporary optimizer-localization probes. The exact-node
+guard covers 139 sources and 818 exceptions, including the complete mixed
+filtering and SV modules. The expanded wrapper group is running as 00238.
+
+Benchmark review still finds missing complete SV, dense/Gaussian wrapper and
+frozen-cloud geometry coverage. These fixtures must be added before freezing
+the harness for repeated measurements. A graph diagnostic for the mixture UKF
+must disable its nested recurrence compilation explicitly; an outer non-XLA
+wrapper alone is insufficient. This is a diagnostic switch with XLA still the
+default. Full current-source tests and matched measurements remain required;
+no finding closure or integration is authorized by these focused passes.
+
+## Recovery through run 00254
+
+Run 00238 passed 40 wrapper and route-policy checks; 00239 and 00241 passed
+the campaign/policy group. Run 00240 qualified the direct SV score on GPU/XLA.
+Runs 00242--00250 completed its two-size qualification: the baseline's host
+`.numpy()` validation prevents graph/XLA tracing, its eager reference passes,
+and both candidate modes preserve the values, score and histories. Runs
+00251--00254 record the same baseline limitation for augmented SGQF; its eager
+reference and candidate graph mode agree. The matrix then stopped before
+another launch on GPU2's 7% utilization reading (18 MiB reservation). No
+contention threshold was relaxed.
+
+The endpoint fixtures and sequential matrix now cover the remaining SV,
+dense/Gaussian filter and frozen-cloud quadratic-fit calculations. Review found
+that the mixture UKF's diagnostic switch stopped at an inner recurrence. The
+switch now propagates through both value and principal-square-root score
+calculations, preserves XLA defaults, and labels non-XLA score metadata as a
+reference exception. A regression checks pinned-source parity and the complete
+graph for nested XLA. The value UKF fixture is added alongside its score fixture.
+These changes require fresh qualification and final current-harness repeats.
+The quadratic fixture covers the numerical fit, not the whole host-controlled
+initializer. All findings remain open.
+
+## Recovery through run 00258
+
+Run 00255 passed 31 SV checks and failed two UKF value cases because the
+intermediate likelihood wrapper omitted the diagnostic JIT keyword. The
+wrapper now propagates it; run 00256 passed all 33 cases, including pinned
+value/score/history parity and full-graph inspection for nested compilation.
+
+Runs 00257--00258 preserved the direct-SV baseline graph failure and successful
+eager reference under the updated fixture harness. The matrix again stopped
+on GPU2's 7% utilization sample after its own worker exited, with reservation
+back at 18 MiB. The driver now waits for two consecutive idle samples, with
+at most six samples and ten seconds of intervening waits. The original
+100 MiB / 5% thresholds remain unchanged; persistent contention still vetoes
+launch. Preflight samples are recorded in each subsequent matrix run. Focused
+tests check stale utilization recovery and both original veto thresholds.
+
+## Recovery through run 00284
+
+Run 00259 passed the campaign/policy group. Runs 00260--00277 qualified
+direct-SV and augmented-SGQF at both extents: baseline graph/XLA attempts fail
+on host validation, its eager execution passes, and candidate graph/XLA
+values, scores and histories match. Runs 00278--00282 qualified the first
+mixture-SGQF extent with maximum absolute discrepancy 2.22e-16. Run 00283
+preserves the second-extent baseline graph failure; run 00284 hit the unchanged
+300-second limit in the eager baseline, with repeated component-filter tracing
+and compilation. No timing or parity result is inferred from that timeout.
+
+The mixture-only timing fixture is now a scalar panel at T=1 and T=2, keeping
+the same frozen components, model, quadrature, numerical tolerances and twenty
+warm calls. This bounds the legacy repeated-compilation cost. Wider-panel
+correctness remains covered by the SV tests; no wider-panel performance claim
+is authorized. All timing repeats must use the revised harness in both arms.
+
+Review found that the test gate accepted skipped tests when pytest returned
+zero. It now requires readable, nonempty JUnit results without skipped, failed
+or errored cases. The GPU categorical stream comparison has a dedicated GPU
+group and contention preflight; CPU tests no longer silently skip that check.
+Three static-name defects in touched files were also repaired: the attempt04
+TensorFlow import, frozen-APF reporting variable and Lane-B ProductBasis type.
+These do not change numerical algorithms. All findings remain open pending
+complete current-source checks and repeated measurements.
+
+## Recovery through run 00343
+
+Run 00285 passed the campaign/policy checks. Run 00286 qualified the larger
+quadratic fit on GPU/XLA with complete HLO, one trace, no callbacks and stable
+warm allocator current. Runs 00287--00336 qualified both extents of direct SV,
+augmented SGQF, mixture SGQF value/score and mixture Kalman. The legacy graph
+and XLA attempts fail on host validation; their eager references pass and
+candidate graph/XLA outputs meet the unchanged FP64 parity criterion. Runs
+00337--00341 qualified the first CUT4 extent; 00342 preserves the baseline
+graph failure and 00343 completed its eager reference.
+
+The launcher stopped between workers on its source-change guard when the
+existing target-failure consumer tests were added to the required inventory.
+Review found a Gaussian-TT benchmark output indexing defect: packed core
+history has shape [dates, core_count, packed_width]. The fixture now reshapes
+the first core to the legacy [dates, 1, 7, 1] output. This changes harness
+provenance and requires fresh pairs; no old pair is silently reused. Direct
+GPU jobs now receive the same contention preflight as matrix jobs, and parity
+logs identify the actual eager reference separately from failed graph attempts.
+
+Through 00343 the campaign has consumed 13361.483 CPU seconds and 1788.036 GPU
+seconds of the original 28800/14400-second budgets. All findings remain open.
+
+## Recovery through run 00391
+
+Runs 00344--00363 qualified CUT4, dense/Gaussian filtering and the frozen-cloud
+quadratic fit. Gaussian-TT graph/XLA outputs matched the eager baseline within
+4.44e-16; the quadratic fit matched within 9.77e-15. The latter remains a fit
+benchmark, not whole-initializer qualification. Baseline symbolic-tracing
+failures remain recorded. Runs 00364--00388 passed rectangular, factor,
+covariance, Sinkhorn, SQMC and baseline DNS checks. Candidate DNS graph mode
+failed in 00389 because its quadrature helper forced nested XLA. The diagnostic
+JIT option now reaches DNS and retained-moment quadrature; defaults remain XLA.
+
+Further review confirmed non-XLA TT core/row preparation outside the compiled
+recurrences. Compiled preparation now preserves the original Philox words,
+BoxMullerDouble floor/output order, Sobol points, seed salts and Christoffel
+transformation. No random-stream migration is applied to these TT algorithms.
+Runs 00390/00391 passed independent draw/row/weight/status parity, complete HLO,
+stable signatures and date-independent graph size. The full adapted/Gaussian
+TT consumer group is running as 00392. Before this mechanical repair, paper
+Algorithm 2/(15)--(16), extracted lines 693--725, and author
+`third_party/audit/zhao_cui_tensor_ssm_p10/source/models/full_sol.m:73--125`
+were reinspected. Existing fixed-row ALS remains a local extension; this
+repair introduces no source-faithfulness claim.
+
+Runner review also found that KeyboardInterrupt could abandon a live worker
+and its attempt record. Interrupted workers are now terminated and charged
+their observed duration with exit 130. The harness changes invalidate previous
+measurement pairs for final comparison; fresh current-harness pairs are
+required. All F01--F20 findings remain open.
+
+## Preparation review through run 00430
+
+Run 00392 passed all 16 mapped-TT consumer checks; 00393 passed the policy and
+runner checks, and 00394 passed the primitive/retained-moment group including
+the non-XLA boundary regressions. Fresh qualification 00395--00428 preserved
+Kalman/SRUKF, Sinkhorn, SQMC, DNS and the first retained-moment graph outputs.
+DNS's corrected graph/XLA comparisons matched within 1.25e-16. The matrix was
+interrupted during GPU preflight after 00428, with no active worker lost.
+
+The wider preparation review found eager basis recurrences in public TT-fit,
+fixed marginal and scalar-retained preparation. They now compile by default,
+with point values as signature inputs and native inlining inside an enclosing
+graph. The exact guard covers 140 sources and 815 schema/host/reference/graph
+exceptions. Run 00429 exposed missing required MeasureConvention fields in a
+new test fixture; 00430 passed all 14 preparation checks after that test-only
+repair. Existing numerical tolerances, ranks, row laws and fitting objectives
+are unchanged. Affected complete scalar/fitter checks and the remaining full
+matrix are still required; no finding is closed.
+
+## Recovered scalar reference through run 00433
+
+Run 00431 completed with seven passes and five failures in the old scalar
+adjacent-TT oracle: that test imported the frozen filter module but used the
+current fitter and density dependencies. Its eager gradient tape then crossed
+the newly compiled preparation boundary. This mixed implementation was not
+the pinned baseline and cannot be used to judge numerical parity.
+
+The scalar reference now runs in a separate CPU process with the complete
+baseline Python package and its original fixture builder extracted from Git.
+It uses the same locally installed Sylvester library as the current process.
+Run 00432 preserved an import failure due to the absent untracked library in
+the snapshot; the explicit library path repaired that harness defect. Run
+00433 passed all 12 scalar checks, including independent baseline values and
+scores, transition-before-first-observation behavior, condition vetoes,
+signature reuse and horizon-independent graph size at the original tolerance.
+No numerical implementation or tolerance was changed by this repair.
+
+Four nested-graph exception records now name the actual
+`native_fixed_tt_fit.program` enclosing endpoint instead of its obsolete
+`evaluate` name. Retained scalar, fitter and policy checks precede resuming
+the matched measurement matrix. All F01--F20 remain open until the full
+current-source gate passes.
+
+Runs 00434--00436 passed 15 scalar-retained, 37 fitter and 38 campaign/policy
+checks. Runs 00437--00450 qualified retained moments at both extents and SGQF
+derivatives at the first extent plus the larger graph calculation. SGQF
+baseline XLA failed on its original TensorListReserve; its valid graph and
+eager comparisons are preserved. The repaired XLA derivative matched within
+4.44e-15 at the first extent; the larger graph difference was 8.88e-15.
+
+Review found that the matrix used eager as the reference after every baseline
+XLA failure even when the corresponding graph arm had passed. The comparison
+report already preferred graph in this case. The controller now applies the
+same order, preserving the failed XLA attempt separately. Run 00452's redundant
+eager worker was interrupted and charged 157.342 seconds; no result is claimed.
+Run 00453 passed all 40 campaign/policy checks, including both branches of
+reference selection. The numerical harness is unchanged, so existing matched
+measurements retain their provenance eligibility.
+
+Runs 00454--00472 completed both SGQF derivative, joint-target and GenUT
+extents in graph/XLA. GenUT's pinned symbolic-tracing failures remain explicit;
+its repaired outputs agree with the isolated eager baseline to 7.22e-16.
+Run 00473 was rejected by the import-provenance guard: the frozen snapshot
+omitted the two `experiments` parent package markers, so Python selected the
+live regular package. Its log is retained, but it supplies no comparison.
+
+Snapshot preparation now includes both parent `__init__.py` files from the
+same pinned commit. Existing snapshots receive only those missing markers,
+with their hashes added to the manifest; numerical baseline files are neither
+changed nor replaced. Run 00474 passed all 41 policy/runner tests, including
+new-snapshot creation, old-snapshot recovery and import isolation with the live
+checkout on the search path. The benchmark harness itself is unchanged.
+
+## Static quadrature regression repair through run 00504
+
+Runs 00475--00502 passed Contract E, generic TT and adapted TT qualification
+at both extents, with the baseline's symbolic failures recorded. Maximum
+observed absolute discrepancies were 8.88e-16, 3.02e-14 and 3.39e-13,
+respectively, within the unchanged comparison criterion. Run 00503 preserves
+the Gaussian-TT baseline graph failure; the matrix then stopped at its
+source-change guard, between workers.
+
+An early inspection of the first-repeat metrics identified roughly 16x warm
+DNS slowdown and 4--6x retained-moment slowdown. The repaired quadrature helper
+was recalculating its parameter-independent Jacobi eigenproblem on every
+kernel call; the original NumPy rule had been evaluated only during tracing.
+The helper now caches bounded order/dtype/JIT-specific tensor constants after
+compiled TensorFlow preparation, lifted out of enclosing graphs. No dynamic
+model, fit or score input is cached, and no numerical tolerance is changed.
+Static preparation can occur during the first consumer trace and its cost is
+included in that trace timing. Run 00504 passed all 24 primitive/moment checks,
+including preparation HLO, numerical derivatives, and reuse across separate
+consumer graphs. Fresh DNS/retained measurements and downstream checks remain
+required before accepting the performance repair.
+
+The bounded driver also now supports `pause` through the existing approval
+prefix. It preserves the active worker and checks the request before launching
+another one; an explicit matrix restart clears the consumed request. This
+avoids terminating numerical work merely to inspect or repair a later stage.
+
+Run 00505 passed all 42 policy/runner checks, including the pause boundary.
+Runs 00506--00509 preserve DNS parity at both sizes. The first-size XLA warm
+median is 0.4185 ms versus the pinned baseline's 0.4161 ms; this removes the
+earlier roughly 16x slowdown. Runs 00510--00513 preserve retained-moment
+parity. Their XLA warm times improve from the earlier 4--6x slowdown to about
+2x the tiny unrolled baseline, but that remaining regression is still open for
+three-repeat investigation. All eight new candidate runs have zero warm
+allocator-current range. These are single-process qualification measurements,
+not the final repeated comparison or finding closure.
+
+## Compatibility recovery through run 00523
+
+Run 00514 passed 14 preparation checks. Runs 00515--00516 requalified the
+first joint-target extent; the matrix then stopped on GPU2 contention from
+an unrelated MacroFinance process. Runs 00517--00519 passed 40 filtering,
+33 SV/SGQF and 13 start-bank tests. Run 00520 failed three of 32 signature
+checks because the mechanics-reference moment teacher still calls
+`SquaredTTDensity._defensive_marginal_values`, removed in the execution refactor.
+
+The helper is restored through the compiled density dispatcher. Its operation
+shares the existing marginal defensive term and returns before evaluating an
+unneeded TT normalizer. Full-axis, reference-measure, Lebesgue-volume, empty-axis
+and unsupported-custom-density behavior is checked against the pinned source.
+This restores the existing local extension; it adds no source-faithfulness
+claim. Paper Proposition 2/(14), local text lines 594--626, and author
+`third_party/audit/zhao_cui_tensor_ssm_p10/source/deep-tensor.dev/src/@TTSIRT/marginalise.m:25`
+through its final defensive normalizer were reread before the repair.
+The explicitly diagnostic moment-teacher reference retains its reference role.
+
+Runs 00521--00523 passed 32 signature, 31 squared-density and 42 policy/runner
+checks. No policy exception or comparison tolerance was added. GPU2 was idle
+on recovery; its contention gate remains active. Retained-moment optimized HLO
+still contains basis-evaluation loops inside the axis recurrence; this is a
+candidate explanation for the remaining timing regression, not a resolution.
+The full current-source tests and repeated comparisons remain pending.
+
+## Complete public boundaries through run 00529
+
+Runs 00524--00526 passed preparation, filtering-wrapper and SV/SGQF checks.
+The matrix was paused between workers for two additional review findings:
+the public squared-TT normalized methods performed their last exponential or
+division eagerly, and the public retained-moment helper compiled quadrature
+but relied on its caller to compile the complete moments. Both are execution
+gaps even when an enclosing benchmark function compiles successfully.
+
+Normalized squared-TT results now complete inside the existing dispatcher.
+Retained moments now use a bounded, explicit-signature cache, with core values,
+suffix Gram matrix, defensive weight and normalizer passed as live tensors.
+The moment formulas and quadrature rule are unchanged. Four existing exact
+shape-packing exceptions moved with the numerical body; four new exact entries
+cover shape inspection, TensorSpecs and object/tensor packing in its wrapper.
+No numerical recurrence is exempted. Run 00527 passed 26 primitive/moment
+checks, including dense-quadrature parity after changing every numerical
+input family. Run 00528 passed 33 squared-density checks, including complete
+normalized-result HLO and unchanged frozen-source parity.
+
+Fresh remote fetch found no change to `origin/main`. Unrelated worktree edits
+to HMC preparation/tuning were observed and preserved; they are not campaign
+repairs. The matrix source guard remains active.
+
+Run 00529 exposed five harness-test failures caused by controller unit tests
+reading the live campaign's pause request. The affected tests now use temporary
+output roots; run 00530 passed all 42 checks with the real campaign still paused.
+Runs 00531--00533 passed preparation, filtering-wrapper and SV/SGQF checks before
+another deliberate pause for analytical-gradient review.
+
+## Analytical adjoint and provenance review
+
+Review found a missing pullback for the squared-TT relative Gram floor, also
+present in the pinned source. If `A = G + rho * trace(G)/r * I`, its pullback is
+`G_bar = A_bar + rho * trace(A_bar)/r * I`. The forward program uses this
+Gram-dependent floor, but the reverse program retained only `A_bar` from the
+Cholesky pullback. This is a missing term of the declared total derivative of
+the existing scalar, not a proposal to replace the score definition or filter.
+
+Run 00534 retained two passing original full-path FD tests and demonstrated
+two new failures. At the explicit diagnostic floor 0.1, the analytical score
+was -0.6143184409037679 versus same-value-program FD 5.946229346998066. With fixed
+defensive weight zero, its square-root pullback divided by zero even though
+that amplitude is constant in the differentiated model parameters. The repair
+adds the trace-floor pullback and a zero-safe division for that constant-zero
+branch. No value formula, default control or tolerance changes. Run 00535 is
+the verification attempt; paired default-control benchmark parity remains
+required independently.
+
+The comparison review also found that imported-source hashes were checked
+against current files but not against the worker launch snapshot. A source
+edit during a worker could therefore be attributed to already-loaded code.
+Candidate comparisons now require both matches. New launch snapshots include
+the two parent experiment package markers; old snapshots may use only their
+identical pinned baseline marker hashes. Focused tests cover both mid-worker
+changes and this bounded marker recovery. This changes controller validation,
+not the measurement harness, fixtures or numerical comparison tolerances.
+
+Run 00535 passed all four full-path adjoint FD checks, including both new
+regressions, at the original 1e-6 FD criterion. Run 00536 passed 28 primitive
+and retained-moment tests after batching independent Legendre evaluations.
+This performance repair preserves each axis's original Gauss-Legendre order
+and normalized-polynomial recurrence, including heterogeneous degrees; padded
+weights are zero and inactive basis columns are masked. The complete moment
+calculation uses one shared polynomial recurrence followed by tensor axis
+contractions, with the existing branch implementation retained for other basis
+families. No model parameter or derivative-bearing numerical input is cached.
+Six exact fixed-schema entries cover rule binding, packing and type/shape
+inspection; no numerical recurrence is exempted. Repeated GPU timing, memory
+and default-control adjoint parity are still pending.
+
+Run 00537 passed all 43 policy/runner checks, including measurement-launch
+provenance. Runs 00538--00540 passed preparation, filtering wrappers and SV/SGQF.
+The source guard then stopped the matrix because concurrent unrelated work
+modified `bayesfilter/inference/hmc_preparation.py`. Those edits, and related
+`hmc_kernel_tuning.py` edits, are preserved outside the campaign checkpoint.
+Validation moves to a linked worktree to freeze its source. The driver derives
+the artifact root from Git's common directory, so this isolation cannot reset
+the budget, split the campaign lock or overwrite earlier evidence. No final
+finding closure or merge decision has been issued.
