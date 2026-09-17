@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import math
+from collections.abc import Mapping
+from dataclasses import dataclass
+from itertools import pairwise
 from pathlib import Path
-from typing import Mapping
 
 import tensorflow as tf
 
+from bayesfilter.highdim import source_route_preparation_tf as preparation_tf
 from bayesfilter.highdim.bases import (
     BoundedInterval,
     LegendreBasis1D,
@@ -26,7 +28,11 @@ from bayesfilter.highdim.diagnostics import (
     assert_tf_float64,
     freeze_mapping,
 )
-from bayesfilter.highdim.fitting import FixedTTFitConfig, FixedTTFitSampleBatch, FixedTTFitter
+from bayesfilter.highdim.fitting import (
+    FixedTTFitConfig,
+    FixedTTFitSampleBatch,
+    FixedTTFitter,
+)
 from bayesfilter.highdim.fixed_branch import BranchIdentity, BranchManifest
 from bayesfilter.highdim.models import zhao_cui_sir_austria_model
 from bayesfilter.highdim.squared_tt import (
@@ -3436,22 +3442,9 @@ def _p59_author_sir_36d_coordinate_frame_for_time(
 ) -> SourceRouteCoordinateFrame:
     if int(time_index) < 1:
         raise ValueError("time_index must be positive")
-    previous = model.initial_mean
-    current = model.transition_mean(previous)[0]
-    for _ in range(2, int(time_index) + 1):
-        previous = current
-        current = model.transition_mean(previous)[0]
-    center = tf.concat([model.transition_mean(model.initial_mean)[0], model.initial_mean], axis=0)
-    if int(time_index) != 1:
-        center = tf.concat([current, previous], axis=0)
-    scale = tf.concat(
-        [
-            tf.sqrt(tf.linalg.diag_part(model.process_covariance)),
-            tf.sqrt(tf.linalg.diag_part(model.initial_covariance)),
-        ],
-        axis=0,
-    )
-    matrix = tf.linalg.diag(scale)
+    center, matrix = preparation_tf.coordinate_frame_program(model)(
+        tf.constant(int(time_index), tf.int32), model.initial_mean,
+        model.process_covariance, model.initial_covariance)
     return SourceRouteCoordinateFrame(
         mu=center,
         matrix=matrix,
@@ -3460,17 +3453,7 @@ def _p59_author_sir_36d_coordinate_frame_for_time(
 
 
 def _p59_author_sir_reference_points(sample_count: int, target_dim: int) -> tf.Tensor:
-    columns = []
-    base = tf.linspace(
-        tf.constant(-0.75, dtype=tf.float64),
-        tf.constant(0.75, dtype=tf.float64),
-        int(target_dim),
-    )
-    for index in range(int(sample_count)):
-        shift = tf.cast(index, tf.float64) / tf.cast(max(int(sample_count) - 1, 1), tf.float64)
-        shifted = tf.math.floormod(base + 0.17 * shift + 1.0, 2.0) - 1.0
-        columns.append(shifted)
-    return tf.stack(columns, axis=1)
+    return preparation_tf.reference_points_program(int(sample_count), int(target_dim), False)()
 
 
 def _p59_reference_convention() -> MeasureConvention:
@@ -5530,16 +5513,10 @@ def _source_route_constant_path_initial_cores(
         raise ValueError(f"constant_value: {HighDimStatus.NONFINITE_VALUE.value}")
     if bool((values <= 0.0).numpy()):
         raise ValueError(f"constant_value: {HighDimStatus.NONFINITE_VALUE.value}")
-    cores = []
-    for axis in range(len(ranks) - 1):
-        core_values = tf.zeros(
-            [int(ranks[axis]), int(basis_dim), int(ranks[axis + 1])],
-            dtype=tf.float64,
-        )
-        entry = values if axis == 0 else tf.constant(1.0, dtype=tf.float64)
-        indices = tf.constant([[0, 0, 0]], dtype=tf.int64)
-        cores.append(TTCore(tf.tensor_scatter_nd_update(core_values, indices, [entry])))
-    return tuple(cores)
+    packed = preparation_tf.initial_cores_program(tuple(ranks), int(basis_dim), False)(
+        values, tf.constant(0., tf.float64))
+    return tuple(TTCore(packed[axis, :left, :, :right])
+                 for axis, (left, right) in enumerate(pairwise(ranks)))
 
 
 def _source_route_seeded_channel_initial_cores(
@@ -5563,46 +5540,11 @@ def _source_route_seeded_channel_initial_cores(
         raise ValueError(f"basis_dim: {HighDimStatus.INVALID_SHAPE.value}")
     max_rank = max(int(rank) for rank in ranks)
     extra_count = max(max_rank - 1, 0)
-    seeded_scale = (
-        values * tf.constant(float(epsilon) / float(extra_count), dtype=tf.float64)
-        if extra_count > 0
-        else tf.constant(0.0, dtype=tf.float64)
-    )
-    cores = []
-    for axis in range(dim):
-        left_rank = int(ranks[axis])
-        right_rank = int(ranks[axis + 1])
-        core_values = tf.zeros(
-            [left_rank, int(basis_dim), right_rank],
-            dtype=tf.float64,
-        )
-        updates = []
-        indices = []
-        if left_rank > 0 and right_rank > 0:
-            indices.append([0, 0, 0])
-            updates.append(values if axis == 0 else tf.constant(1.0, dtype=tf.float64))
-        for channel in range(1, min(left_rank, right_rank)):
-            basis_index = _p70_seeded_basis_index(axis=axis, channel=channel, basis_dim=int(basis_dim))
-            indices.append([channel, basis_index, channel])
-            updates.append(tf.constant(1.0, dtype=tf.float64))
-        if axis == 0:
-            for channel in range(1, right_rank):
-                basis_index = _p70_seeded_basis_index(axis=axis, channel=channel, basis_dim=int(basis_dim))
-                indices.append([0, basis_index, channel])
-                updates.append(seeded_scale)
-        if axis == dim - 1:
-            for channel in range(1, left_rank):
-                basis_index = _p70_seeded_basis_index(axis=axis, channel=channel, basis_dim=int(basis_dim))
-                indices.append([channel, basis_index, 0])
-                updates.append(tf.constant(1.0, dtype=tf.float64))
-        if indices:
-            core_values = tf.tensor_scatter_nd_update(
-                core_values,
-                tf.constant(indices, dtype=tf.int64),
-                tf.stack(updates),
-            )
-        cores.append(TTCore(core_values))
-    return tuple(cores)
+    per_channel = float(epsilon) / extra_count if extra_count else 0.
+    packed = preparation_tf.initial_cores_program(tuple(ranks), int(basis_dim), True)(
+        values, tf.constant(per_channel, tf.float64))
+    return tuple(TTCore(packed[axis, :left, :, :right])
+                 for axis, (left, right) in enumerate(pairwise(ranks)))
 
 
 def _p70_seeded_basis_index(*, axis: int, channel: int, basis_dim: int) -> int:
@@ -5674,44 +5616,23 @@ def _p70_channel_activity_diagnostics(
     rank = int(fit_rank)
     if len(cores) != dim:
         raise ValueError(f"cores: {HighDimStatus.INVALID_SHAPE.value}")
-    scores_by_bond = []
-    first_scores: list[float] = []
-    for bond in range(max(dim - 1, 0)):
-        left = cores[bond].values
-        right = cores[bond + 1].values
-        bond_scores = []
-        channel_count = min(int(left.shape[2]), int(right.shape[0]))
-        for channel in range(channel_count):
-            left_norm = float(tf.norm(left[:, :, channel]).numpy())
-            right_norm = float(tf.norm(right[channel, :, :]).numpy())
-            score = left_norm * right_norm
-            bond_scores.append(score)
-            if channel == 0:
-                first_scores.append(score)
-        scores_by_bond.append(tuple(bond_scores))
-    a_ref = max(first_scores) if first_scores else 0.0
-    if not math.isfinite(a_ref) or a_ref <= 0.0:
-        threshold = math.inf
-        status = "rank_channel_activity_failed"
-    else:
-        threshold = max(
-            P70_CHANNEL_ACTIVITY_ABS_TOL,
-            P70_CHANNEL_ACTIVITY_REL_TOL * a_ref,
-        )
-        status = "ok"
+    width = max(int(core.values.shape[1]) for core in cores)
+    padded_rank = max(rank, *(max(int(core.values.shape[0]), int(core.values.shape[2])) for core in cores))
+    packed = tf.stack(tuple(tf.pad(core.values, [[0, padded_rank - core.values.shape[0]],
+        [0, width - core.values.shape[1]], [0, padded_rank - core.values.shape[2]]]) for core in cores))
+    channel_counts = tuple(min(int(left.values.shape[2]), int(right.values.shape[0]))
+                           for left, right in pairwise(cores))
+    scores, reference, cutoff, counts, inactive, valid = preparation_tf.channel_activity(
+        packed, tf.constant(channel_counts, tf.int32), rank, P70_CHANNEL_ACTIVITY_ABS_TOL,
+        P70_CHANNEL_ACTIVITY_REL_TOL)
+    scores_by_bond = tuple(tuple(row[:count]) for row, count in zip(
+        scores.numpy().tolist(), channel_counts, strict=True))
+    a_ref, threshold = float(reference.numpy()), float(cutoff.numpy())
+    status = "ok" if bool(valid.numpy()) else "rank_channel_activity_failed"
     b_min = max(1, math.ceil(0.25 * max(dim - 1, 0)))
-    active_counts = {}
-    inactive_channels = []
-    for channel in range(1, rank):
-        active_count = 0
-        for bond_scores in scores_by_bond:
-            if channel < len(bond_scores) and bond_scores[channel] >= threshold:
-                active_count += 1
-        active_counts[channel] = active_count
-        if active_count < b_min:
-            inactive_channels.append(channel)
-    if inactive_channels:
-        status = "rank_channel_activity_failed"
+    active_counts = dict(enumerate(counts.numpy().tolist()[1:rank], start=1))
+    inactive_channels = tuple(index for index, is_inactive in enumerate(inactive.numpy().tolist())
+                              if is_inactive)
     return {
         "status": status,
         "score_by_bond": tuple(scores_by_bond),
@@ -5835,17 +5756,7 @@ def _source_route_initial_core_values(
 
 
 def _p59_author_sir_unit_reference_points(sample_count: int, target_dim: int) -> tf.Tensor:
-    columns = []
-    base = tf.linspace(
-        tf.constant(0.15, dtype=tf.float64),
-        tf.constant(0.85, dtype=tf.float64),
-        int(target_dim),
-    )
-    for index in range(int(sample_count)):
-        shift = tf.cast(index, tf.float64) / tf.cast(max(int(sample_count), 1), tf.float64)
-        shifted = tf.math.floormod(base + 0.13 * shift, 0.8) + 0.1
-        columns.append(shifted)
-    return tf.stack(columns, axis=1)
+    return preparation_tf.reference_points_program(int(sample_count), int(target_dim), True)()
 
 
 def _p59_author_sir_defensive_tau_tensor() -> tf.Tensor:
@@ -8989,14 +8900,6 @@ def source_route_recenter(
     log_weight_tensor = tf.convert_to_tensor(log_weights, dtype=tf.float64)
     if log_weight_tensor.shape != (int(sample_tensor.shape[1]),):
         raise ValueError(f"log_weights: {HighDimStatus.INVALID_SHAPE.value}")
-    finite_columns = tf.reduce_all(tf.math.is_finite(sample_tensor), axis=0)
-    finite_weights = tf.math.is_finite(log_weight_tensor)
-    keep = tf.logical_and(finite_columns, finite_weights)
-    if not bool(tf.reduce_any(keep).numpy()):
-        raise ValueError(f"samples/log_weights: {HighDimStatus.NONFINITE_VALUE.value}")
-    sample_tensor = tf.boolean_mask(sample_tensor, keep, axis=1)
-    log_weight_tensor = tf.boolean_mask(log_weight_tensor, keep)
-    weights = tf.exp(normalize_log_weights(log_weight_tensor))
     if float(expansion_factor) <= 0.0:
         raise ValueError("expansion_factor must be positive")
     jitter = float(covariance_jitter)
@@ -9009,30 +8912,10 @@ def source_route_recenter(
     if min_ess < 0.0:
         raise ValueError("min_ess_for_quantile_scale must be nonnegative")
     assert_tf_float64("samples", sample_tensor)
-    mu = tf.reduce_sum(sample_tensor * weights[tf.newaxis, :], axis=1)
-    centered = sample_tensor - mu[:, tf.newaxis]
-    covariance = tf.einsum("n,in,jn->ij", weights, centered, centered)
-    covariance = 0.5 * (covariance + tf.transpose(covariance))
-    if jitter > 0.0:
-        dim = int(sample_tensor.shape[0])
-        covariance = covariance + tf.eye(dim, dtype=tf.float64) * tf.constant(
-            jitter,
-            dtype=tf.float64,
-        )
-    matrix = tf.linalg.cholesky(covariance)
-    ess = effective_sample_size_from_log_weights(log_weight_tensor)
-    if bool(use_quantile_scale) and bool((ess > min_ess).numpy()):
-        standardized = tf.linalg.triangular_solve(matrix, centered, lower=True)
-        scale_diag = _source_route_computeL_quantile_scale(
-            standardized,
-            weights,
-            quantile_fraction=q,
-        )
-        matrix = tf.matmul(matrix, tf.linalg.diag(scale_diag))
-    matrix = matrix * tf.constant(
-        float(expansion_factor),
-        dtype=tf.float64,
-    )
+    mu, matrix, valid = preparation_tf.recenter(sample_tensor, log_weight_tensor,
+        float(expansion_factor), jitter, q, min_ess, use_quantile_scale=bool(use_quantile_scale))
+    if not bool(valid.numpy()):
+        raise ValueError(f"samples/log_weights: {HighDimStatus.NONFINITE_VALUE.value}")
     return SourceRouteCoordinateFrame(
         mu=mu,
         matrix=matrix,
@@ -9265,24 +9148,10 @@ def _source_route_computeL_quantile_scale(
     normalized_weights = tf.convert_to_tensor(weights, dtype=tf.float64)
     if samples.shape.rank != 2 or normalized_weights.shape != (int(samples.shape[1]),):
         raise ValueError(f"quantile scale: {HighDimStatus.INVALID_SHAPE.value}")
-    q = tf.constant(float(quantile_fraction), dtype=tf.float64)
-    normal_q = tfp_normal_quantile(q)
-    scales = []
-    for axis in range(int(samples.shape[0])):
-        values = samples[axis, :]
-        order = tf.argsort(values, stable=True)
-        sorted_values = tf.gather(values, order)
-        sorted_weights = tf.gather(normalized_weights, order)
-        cumulative = tf.cumsum(sorted_weights)
-        left_index = tf.argmax(tf.cast(cumulative > q, tf.int32), output_type=tf.int32)
-        right_index = tf.argmax(
-            tf.cast(cumulative > (1.0 - q), tf.int32),
-            output_type=tf.int32,
-        )
-        width = tf.gather(sorted_values, right_index) - tf.gather(sorted_values, left_index)
-        scale = -width / normal_q / 2.0
-        scales.append(tf.maximum(scale, tf.constant(1e-12, dtype=tf.float64)))
-    return tf.stack(scales)
+    q = float(quantile_fraction)
+    if not math.isfinite(q) or not 0. < q < 1.:
+        raise ValueError("probability must be in (0, 1)")
+    return preparation_tf.quantile_scale(samples, normalized_weights, q)
 
 
 def tfp_normal_quantile(probability: tf.Tensor) -> tf.Tensor:

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 import tensorflow as tf
 
 from bayesfilter.highdim import ledh_contract_e_tp_tf as tp
 from bayesfilter.highdim.models import PredatorPreySSM, p30_predator_prey_fixture_model
-
 
 DTYPE = tf.float64
 ALGORITHM_ID = tp.ALGORITHM_ID
@@ -70,7 +71,6 @@ def _affine_ledh_flow(
     observation: tf.Tensor,
     observation_covariance: tf.Tensor,
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-    dimension = int(prior_covariance.shape[0])
     prior_precision = tf.linalg.inv(prior_covariance)
     observation_precision = tf.linalg.inv(observation_covariance)
     posterior_covariance = tf.linalg.inv(prior_precision + observation_precision)
@@ -108,7 +108,7 @@ def _teacher_step(
 ) -> dict[str, tf.Tensor]:
     if time_index == 0:
         prior_mean = tf.repeat(
-            model.initial_mean[None, :], tf.shape(standard_points)[0], axis=0
+            model.initial_mean[None, :], int(standard_points.shape[0]), axis=0
         )
         prior_covariance = model.initial_covariance
         chol = tf.linalg.cholesky(prior_covariance)
@@ -118,9 +118,11 @@ def _teacher_step(
         base_log_weights = standard_log_weights
         previous = None
     else:
-        parent_count = tf.shape(parents)[0]
-        innovation_count = tf.shape(standard_points)[0]
-        previous = tf.repeat(parents, innovation_count, axis=0)
+        # These are fixed quadrature/chart extents, including in the loop adjoint.
+        parent_count = int(parents.shape[0])
+        innovation_count = int(standard_points.shape[0])
+        parent_indices = tf.range(parent_count * innovation_count) // innovation_count
+        previous = tf.gather(parents, parent_indices)
         prior_mean = model.transition_mean(theta, previous)
         prior_covariance = model.process_covariance
         chol = tf.linalg.cholesky(prior_covariance)
@@ -128,7 +130,7 @@ def _teacher_step(
             tf.tile(standard_points, [parent_count, 1]), chol, transpose_b=True
         )
         base_log_weights = (
-            tf.repeat(parent_log_weights, innovation_count)
+            tf.gather(parent_log_weights, parent_indices)
             + tf.tile(standard_log_weights, [parent_count])
         )
     particles, proposal_log_density, forward_log_det = _affine_ledh_flow(
@@ -197,7 +199,7 @@ def target_continuation_log_likelihood(
     if future_count is None or future_count < 1:
         return tf.zeros([tf.shape(points)[0]], DTYPE)
     child_log = tf.zeros([tf.shape(grid)[0]], DTYPE)
-    for local_index in range(future_count - 1, 0, -1):
+    def backward(local_index, child_log):
         absolute_time = first_future_time_index + local_index
         transition = _pairwise_transition(
             model, theta, grid, grid, absolute_time
@@ -212,6 +214,11 @@ def target_continuation_log_likelihood(
             + child_log[None, :],
             axis=1,
         )
+        return local_index - 1, child_log
+
+    _, child_log = tf.while_loop(lambda local_index, _: local_index > 0, backward,
+        (tf.constant(future_count - 1), child_log), maximum_iterations=future_count - 1,
+        parallel_iterations=1)
     transition = _pairwise_transition(
         model, theta, points, grid, first_future_time_index
     )
@@ -248,6 +255,8 @@ def gaussian_closure_continuation_log_likelihood(
     future_observations: tf.Tensor,
     standard_points: tf.Tensor,
     standard_weights: tf.Tensor,
+    *,
+    future_count: tf.Tensor | None = None,
 ) -> tf.Tensor:
     """Approximate a future likelihood by fixed Gaussian quadrature filtering."""
 
@@ -255,30 +264,12 @@ def gaussian_closure_continuation_log_likelihood(
     observations = tf.convert_to_tensor(future_observations, DTYPE)
     standard_points = tf.convert_to_tensor(standard_points, DTYPE)
     weights = tf.convert_to_tensor(standard_weights, DTYPE)
-    covariance = tf.zeros([tf.shape(means)[0], 2, 2], DTYPE)
     values = tf.zeros([tf.shape(means)[0]], DTYPE)
-    for local_index, observation in enumerate(tf.unstack(observations, axis=0)):
-        if local_index == 0:
-            predicted_mean = model.transition_mean(theta, means)
-            predicted_covariance = tf.broadcast_to(
-                model.process_covariance[None, :, :],
-                [tf.shape(means)[0], 2, 2],
-            )
-        else:
-            chol = tf.linalg.cholesky(covariance)
-            sigma_points = means[:, None, :] + tf.einsum(
-                "md,ned->nme", standard_points, chol
-            )
-            transitioned = tf.reshape(
-                model.transition_mean(theta, tf.reshape(sigma_points, [-1, 2])),
-                [tf.shape(means)[0], tf.shape(standard_points)[0], 2],
-            )
-            predicted_mean = tf.einsum("m,nmd->nd", weights, transitioned)
-            centered = transitioned - predicted_mean[:, None, :]
-            predicted_covariance = (
-                tf.einsum("m,nmi,nmj->nij", weights, centered, centered)
-                + model.process_covariance[None, :, :]
-            )
+    if observations.shape[0] == 0:
+        return values
+    count = tf.shape(observations)[0] if future_count is None else future_count
+
+    def update(predicted_mean, predicted_covariance, observation, values):
         innovation_covariance = (
             predicted_covariance + model.observation_covariance[None, :, :]
         )
@@ -306,7 +297,28 @@ def gaussian_closure_continuation_log_likelihood(
             tf.linalg.matmul(gain, innovation_covariance), gain, transpose_b=True
         )
         covariance = 0.5 * (covariance + tf.linalg.matrix_transpose(covariance))
-    return values
+        return means, covariance, values
+
+    means, covariance, values = update(model.transition_mean(theta, means),
+        tf.broadcast_to(model.process_covariance[None, :, :], [tf.shape(means)[0], 2, 2]),
+        observations[0], values)
+
+    def step(local_index, means, covariance, values):
+        chol = tf.linalg.cholesky(covariance)
+        sigma_points = means[:, None, :] + tf.einsum("md,ned->nme", standard_points, chol)
+        transitioned = tf.reshape(
+            model.transition_mean(theta, tf.reshape(sigma_points, [-1, 2])),
+            [tf.shape(means)[0], tf.shape(standard_points)[0], 2])
+        predicted_mean = tf.einsum("m,nmd->nd", weights, transitioned)
+        centered = transitioned - predicted_mean[:, None, :]
+        predicted_covariance = (tf.einsum("m,nmi,nmj->nij", weights, centered, centered)
+                                + model.process_covariance[None, :, :])
+        return (local_index + 1, *update(predicted_mean, predicted_covariance, observations[local_index], values))
+
+    _, _, _, values = tf.while_loop(lambda local_index, *_: local_index < count, step,
+        (tf.constant(1), means, covariance, values), maximum_iterations=observations.shape[0] - 1,
+        parallel_iterations=1)
+    return tf.where(count > 0, values, tf.zeros_like(values))
 
 
 def _features(
@@ -318,16 +330,21 @@ def _features(
     grid_weights: tf.Tensor,
     *,
     first_future_time_index: int,
+    future_count: tf.Tensor | None = None,
 ) -> tf.Tensor:
     prey, predator = tf.unstack(points, axis=1)
-    if int(future_observations.shape[0]) == 1:
+    count = tf.shape(future_observations)[0] if future_count is None else future_count
+
+    def one_step():
         continuation_log = one_step_target_continuation_log_likelihood(
             model, theta, points, future_observations[0]
         )
         reference_log = one_step_target_continuation_log_likelihood(
             model, theta, model.initial_mean[None, :], future_observations[0]
         )[0]
-    else:
+        return continuation_log, reference_log
+
+    def multiple_steps():
         continuation_log = gaussian_closure_continuation_log_likelihood(
             model,
             theta,
@@ -335,6 +352,7 @@ def _features(
             future_observations,
             grid_points,
             grid_weights,
+            future_count=count,
         )
         reference_log = gaussian_closure_continuation_log_likelihood(
             model,
@@ -343,7 +361,19 @@ def _features(
             future_observations,
             grid_points,
             grid_weights,
+            future_count=count,
         )[0]
+        return continuation_log, reference_log
+
+    if future_observations.shape[0] == 0:
+        continuation_log, reference_log = multiple_steps()
+    elif future_observations.shape[0] == 1:
+        continuation_log, reference_log = one_step()
+    else:
+        single, single_reference = one_step()
+        multiple, multiple_reference = multiple_steps()
+        continuation_log = tf.where(count == 1, single, multiple)
+        reference_log = tf.where(count == 1, single_reference, multiple_reference)
     common_reference = tf.maximum(reference_log, tf.reduce_max(continuation_log))
     return tf.stack(
         [
@@ -359,6 +389,13 @@ def _features(
     )
 
 
+@lru_cache(maxsize=16)
+def _recursive_program(specifications, lookahead_steps):
+    return tf.function(lambda *values: contract_e_tp_predator_prey_recursive_core(
+        *values, lookahead_steps=lookahead_steps), input_signature=specifications,
+        jit_compile=True, autograph=False)
+
+
 def contract_e_tp_predator_prey_recursive_core(
     theta: tf.Tensor,
     observations: tf.Tensor,
@@ -371,7 +408,15 @@ def contract_e_tp_predator_prey_recursive_core(
     *,
     lookahead_steps: int,
 ) -> dict[str, tf.Tensor]:
-    model = p30_predator_prey_fixture_model()
+    if tf.executing_eagerly():
+        values = (tf.convert_to_tensor(theta, DTYPE), tf.convert_to_tensor(observations, DTYPE),
+            tf.convert_to_tensor(standard_nodes, DTYPE), tf.convert_to_tensor(standard_weights, DTYPE),
+            tf.convert_to_tensor(active_indices, tf.int32), tf.convert_to_tensor(row_scales, DTYPE),
+            tf.convert_to_tensor(continuation_grid_points, DTYPE), tf.convert_to_tensor(continuation_grid_weights, DTYPE))
+        specifications = tuple(tf.TensorSpec(value.shape, value.dtype) for value in values)
+        return _recursive_program(specifications, int(lookahead_steps))(*values)
+    with tf.init_scope():
+        model = p30_predator_prey_fixture_model()
     theta = tf.reshape(tf.convert_to_tensor(theta, DTYPE), [6])
     observations = tf.reshape(tf.convert_to_tensor(observations, DTYPE), [-1, 2])
     time_steps = observations.shape[0]
@@ -384,38 +429,29 @@ def contract_e_tp_predator_prey_recursive_core(
     parents, parent_log_weights, standard_points, standard_log_weights = initial_rule(
         model, standard_nodes, standard_weights
     )
-    # Preserve an explicit zero derivative for horizons before theta enters.
-    total = tf.constant(0.0, DTYPE) * tf.reduce_sum(theta)
-    increments = []
-    minimum_weights = []
-    condition_numbers = []
-    residuals = []
-    valid = []
-    for time_index in range(time_steps):
-        teacher = _teacher_step(
-            model,
-            theta,
-            parents,
-            parent_log_weights,
-            standard_points,
-            standard_log_weights,
-            observations[time_index],
-            time_index,
-        )
-        total += teacher["increment"]
-        increments.append(teacher["increment"])
-        if time_index + 1 == time_steps:
-            valid.append(tf.constant(True))
-            continue
-        stop = min(time_steps, time_index + 1 + lookahead_steps)
+    teacher = _teacher_step(model, theta, parents, parent_log_weights,
+        standard_points, standard_log_weights, observations[0], 0)
+    # The initial observation does not depend on theta in this model.
+    total = tf.constant(0.0, DTYPE) * tf.reduce_sum(theta) + teacher["increment"]
+    increments = tf.TensorArray(DTYPE, time_steps, element_shape=[]).write(0, teacher["increment"])
+    minimum_weights = tf.TensorArray(DTYPE, time_steps - 1, element_shape=[])
+    condition_numbers = tf.TensorArray(DTYPE, time_steps - 1, element_shape=[])
+    residuals = tf.TensorArray(DTYPE, time_steps - 1, element_shape=[FEATURE_COUNT])
+    valid = tf.TensorArray(tf.bool, time_steps, element_shape=[]).write(time_steps - 1, True)
+
+    def project(teacher, time_index):
+        window_size = min(time_steps, lookahead_steps)
+        future_indices = tf.minimum(time_index + 1 + tf.range(window_size), time_steps - 1)
+        future_count = tf.minimum(time_steps - time_index - 1, lookahead_steps)
         features = _features(
             model,
             theta,
             teacher["particles"],
-            observations[time_index + 1 : stop],
+            tf.gather(observations, future_indices),
             continuation_grid_points,
             continuation_grid_weights,
             first_future_time_index=time_index + 1,
+            future_count=future_count,
         )
         projection = tp._contract_e_tp_dense_square_forward_core(
             teacher["particles"],
@@ -424,19 +460,46 @@ def contract_e_tp_predator_prey_recursive_core(
             active_indices[time_index],
             row_scales[time_index],
         )
-        parents = projection["student_points"]
-        parent_log_weights = tf.math.log(projection["student_weights"])
-        minimum_weights.append(projection["minimum_weight"])
-        condition_numbers.append(projection["condition_number"])
-        residuals.append(projection["feature_residual"])
-        valid.append(projection["valid_chart"])
+        return projection
+
+    if time_steps > 1:
+        first = project(teacher, tf.constant(0))
+        parents = first["student_points"]
+        parent_log_weights = tf.math.log(first["student_weights"])
+        minimum_weights = minimum_weights.write(0, first["minimum_weight"])
+        condition_numbers = condition_numbers.write(0, first["condition_number"])
+        residuals = residuals.write(0, first["feature_residual"])
+        valid = valid.write(0, first["valid_chart"])
+
+        def step(time_index, parents, parent_log_weights, total, increments,
+                 minimum_weights, condition_numbers, residuals, valid):
+            teacher = _teacher_step(model, theta, parents, parent_log_weights,
+                standard_points, standard_log_weights, observations[time_index], 1)
+
+            result = project(teacher, time_index)
+            return (time_index + 1, result["student_points"], tf.math.log(result["student_weights"]),
+                total + teacher["increment"], increments.write(time_index, teacher["increment"]),
+                minimum_weights.write(time_index, result["minimum_weight"]),
+                condition_numbers.write(time_index, result["condition_number"]),
+                residuals.write(time_index, result["feature_residual"]),
+                valid.write(time_index, result["valid_chart"]))
+
+        _, parents, parent_log_weights, total, increments, minimum_weights, condition_numbers, residuals, valid = tf.while_loop(
+            lambda time_index, *_: time_index < time_steps - 1, step,
+            (tf.constant(1), parents, parent_log_weights, total, increments,
+             minimum_weights, condition_numbers, residuals, valid),
+            maximum_iterations=time_steps - 2, parallel_iterations=1)
+        terminal = _teacher_step(model, theta, parents, parent_log_weights,
+            standard_points, standard_log_weights, observations[-1], 1)
+        total += terminal["increment"]
+        increments = increments.write(time_steps - 1, terminal["increment"])
     return {
         "objective": total,
-        "increment_history": tf.stack(increments),
-        "minimum_weight_history": tf.stack(minimum_weights) if minimum_weights else tf.zeros([0], DTYPE),
-        "condition_number_history": tf.stack(condition_numbers) if condition_numbers else tf.zeros([0], DTYPE),
-        "feature_residual_history": tf.stack(residuals) if residuals else tf.zeros([0, FEATURE_COUNT], DTYPE),
-        "valid_history": tf.stack(valid),
+        "increment_history": increments.stack(),
+        "minimum_weight_history": minimum_weights.stack(),
+        "condition_number_history": condition_numbers.stack(),
+        "feature_residual_history": residuals.stack(),
+        "valid_history": valid.stack(),
     }
 
 

@@ -8,15 +8,17 @@ evidence and it does not differentiate through proposal construction.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import hashlib
 import json
 import math
-from typing import Mapping, Sequence
+from collections import OrderedDict
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
+from functools import lru_cache
 
 import tensorflow as tf
 
-from bayesfilter.highdim.bases import ProductBasis
+from bayesfilter.highdim.bases import ProductBasis, _hermite_normalized_values
 from bayesfilter.highdim.retained_quadratic_form_tf import (
     TTCore,
     suffix_gram_matrix,
@@ -31,7 +33,11 @@ from bayesfilter.highdim.squared_tt_engine_gaussian_xla_tf import (
     gaussian_xla_retained_proposal_snapshot_fingerprint,
 )
 from bayesfilter.highdim.squared_tt_engine_v0_tf import DiscreteIndicatorBasis1D
-
+from bayesfilter.ops.stateless_gamma_tf import philox_gamma_float64
+from bayesfilter.ops.stateless_random_tf import (
+    philox_normal_float64,
+    philox_uniform_float64,
+)
 
 DTYPE = tf.float64
 ROUTE_ID = "c2_gaussian_hermite_retained_tt_proposal_v1"
@@ -41,7 +47,16 @@ KR_INVERSE_ID = "paired_environment_bisection_float64_v1"
 DEFAULT_BISECTION_ITERATIONS = 64
 DEFAULT_INNER_BRACKET = 12.0
 DEFAULT_OUTER_BRACKET = 24.0
-_COMPILED_SAMPLER_CACHE: dict[tuple[str, int, int, bool], object] = {}
+_COMPILED_SAMPLER_CACHE = OrderedDict()
+_COMPILED_DENSITY_CACHE = OrderedDict()
+
+
+@lru_cache(maxsize=16)
+def _gram_program(shape, degree):
+    return tf.function(
+        lambda points: normalized_hermite_incomplete_gram(points, degree),
+        input_signature=[tf.TensorSpec(shape, DTYPE)], jit_compile=True, autograph=False,
+    )
 
 
 def normalized_hermite_incomplete_gram(
@@ -51,54 +66,54 @@ def normalized_hermite_incomplete_gram(
     """Return M_ab(z)=int_-inf^z psi_a psi_b phi for every input z.
 
     The basis is psi_k=He_k/sqrt(k!), matching ``HermiteBasis1D``.  The
-    implementation is a fixed finite sum, so its graph size depends only on
-    the setup-static degree.
+    Polynomial order and contraction sums use tensor recurrences; matrix
+    entries share the recurrence instead of expanding one graph per degree.
     """
 
     if int(max_degree) < 0:
         raise ValueError("max_degree must be nonnegative")
     z = tf.convert_to_tensor(points, DTYPE)
+    if tf.executing_eagerly():
+        return _gram_program(tuple(z.shape), int(max_degree))(z)
     flat = tf.reshape(z, [-1])
     maximum_order = 2 * int(max_degree)
 
-    hermites = [tf.ones_like(flat)]
+    hermites = tf.TensorArray(DTYPE, maximum_order + 1, element_shape=flat.shape,
+                              clear_after_read=False).write(0, tf.ones_like(flat))
     if maximum_order >= 1:
-        hermites.append(flat)
-    for order in range(1, maximum_order):
-        hermites.append(
-            flat * hermites[order]
-            - tf.cast(order, DTYPE) * hermites[order - 1]
-        )
+        hermites = hermites.write(1, flat)
+
+    def polynomial_step(order, values):
+        value = flat * values.read(order) - tf.cast(order, DTYPE) * values.read(order - 1)
+        return order + 1, values.write(order + 1, value)
+
+    _, hermites = tf.while_loop(lambda order, _: order < maximum_order, polynomial_step,
+        (tf.constant(1), hermites), maximum_iterations=max(0, maximum_order - 1))
 
     log_two_pi = tf.constant(math.log(2.0 * math.pi), DTYPE)
     phi = tf.exp(-0.5 * tf.square(flat) - 0.5 * log_two_pi)
     cdf = 0.5 * tf.math.erfc(-flat / tf.sqrt(tf.constant(2.0, DTYPE)))
-    antiderivatives = [cdf]
-    for order in range(1, maximum_order + 1):
-        antiderivatives.append(-phi * hermites[order - 1])
+    antiderivatives = tf.concat([cdf[None, :], -phi[None, :] * hermites.stack()[:-1]], 0)
+    degrees = tf.range(max_degree + 1)
+    left, right = degrees[:, None], degrees[None, :]
+    factorials = tf.math.cumprod(tf.cast(tf.maximum(degrees, 1), DTYPE))
+    normalization_squared = factorials[:, None] * factorials[None, :]
 
-    rows = []
-    for left_degree in range(max_degree + 1):
-        columns = []
-        for right_degree in range(max_degree + 1):
-            value = tf.zeros_like(flat)
-            for contraction in range(min(left_degree, right_degree) + 1):
-                coefficient = (
-                    math.factorial(contraction)
-                    * math.comb(left_degree, contraction)
-                    * math.comb(right_degree, contraction)
-                )
-                order = left_degree + right_degree - 2 * contraction
-                value = value + tf.cast(coefficient, DTYPE) * antiderivatives[order]
-            value = value / tf.constant(
-                math.sqrt(
-                    math.factorial(left_degree) * math.factorial(right_degree)
-                ),
-                DTYPE,
-            )
-            columns.append(value)
-        rows.append(tf.stack(columns, axis=-1))
-    matrix = tf.stack(rows, axis=-2)
+    def contraction_step(contraction, values):
+        valid = contraction <= tf.minimum(left, right)
+        coefficient = normalization_squared / (
+            factorials[contraction]
+            * tf.gather(factorials, tf.maximum(left - contraction, 0))
+            * tf.gather(factorials, tf.maximum(right - contraction, 0)))
+        order = tf.maximum(left + right - 2 * contraction, 0)
+        term = coefficient[:, :, None] * tf.gather(antiderivatives, order)
+        return contraction + 1, values + tf.where(valid[:, :, None], term, 0.0)
+
+    _, values = tf.while_loop(lambda contraction, _: contraction <= max_degree,
+        contraction_step,
+        (tf.constant(0), tf.zeros([max_degree + 1, max_degree + 1, tf.size(flat)], DTYPE)),
+        maximum_iterations=max_degree + 1, parallel_iterations=1)
+    matrix = tf.transpose(values / tf.sqrt(normalization_squared)[:, :, None], [2, 0, 1])
     output_shape = tf.concat(
         [tf.shape(z), [max_degree + 1, max_degree + 1]], axis=0
     )
@@ -106,24 +121,13 @@ def normalized_hermite_incomplete_gram(
 
 
 def _normalized_hermite_values(points: tf.Tensor, max_degree: int) -> tf.Tensor:
-    points = tf.convert_to_tensor(points, DTYPE)
-    flat = tf.reshape(points, [-1])
-    values = [tf.ones_like(flat)]
-    if max_degree >= 1:
-        values.append(flat)
-    for degree in range(1, max_degree):
-        degree_value = tf.cast(degree, DTYPE)
-        values.append(
-            (
-                flat * values[degree]
-                - tf.sqrt(degree_value) * values[degree - 1]
-            )
-            / tf.sqrt(degree_value + 1.0)
-        )
-    stacked = tf.stack(values, axis=-1)
-    return tf.reshape(
-        stacked, tf.concat([tf.shape(points), [max_degree + 1]], axis=0)
-    )
+    return _hermite_normalized_values(points, max_degree)
+
+
+def _pack_prefix_cores(core_values):
+    rank = max(max(core.shape[0], core.shape[2]) for core in core_values)
+    return tf.stack(tuple(tf.pad(core, [[0, rank - core.shape[0]], [0, 0],
+        [0, rank - core.shape[2]]]) for core in core_values))
 
 
 def _prefix_row_vectors(
@@ -133,22 +137,51 @@ def _prefix_row_vectors(
     if not core_values:
         raise ValueError("at least one prefix core is required")
     degree = int(core_values[0].shape[1]) - 1
-    state = tf.ones([tf.shape(points)[0], 1], DTYPE)
-    for axis, core in enumerate(core_values):
-        basis = _normalized_hermite_values(points[:, axis], degree)
-        state = tf.einsum("na,akb,nk->nb", state, core, basis)
-    return state
+    packed = _pack_prefix_cores(core_values)
+    state = tf.one_hot(tf.zeros([tf.shape(points)[0]], tf.int32), packed.shape[1], dtype=DTYPE)
+    basis = _normalized_hermite_values(points, degree)
+
+    def step(axis, state):
+        return axis + 1, tf.einsum("na,akb,nk->nb", state, packed[axis], basis[:, axis])
+
+    _, state = tf.while_loop(lambda axis, _: axis < len(core_values), step,
+        (tf.constant(0), state), maximum_iterations=len(core_values), parallel_iterations=1)
+    return state[:, :core_values[-1].shape[2]]
+
+
+def _packed_right_environments(packed, suffix_gram):
+    count, rank = packed.shape[:2]
+    state = tf.pad(suffix_gram, [[0, rank - suffix_gram.shape[0]],
+                               [0, rank - suffix_gram.shape[1]]])
+    values = tf.TensorArray(DTYPE, count + 1, element_shape=[rank, rank]).write(count, state)
+
+    def step(index, state, values):
+        core = packed[count - index - 1]
+        state = tf.einsum("akb,ckd,bd->ac", core, core, state)
+        return index + 1, state, values.write(count - index - 1, state)
+
+    _, _, values = tf.while_loop(lambda index, *_: index < count, step,
+        (tf.constant(0), state, values), maximum_iterations=count, parallel_iterations=1)
+    return values.stack()
+
+
+@lru_cache(maxsize=16)
+def _environments_program(specifications):
+    return tf.function(lambda *values: _paired_right_environments(values[:-1], values[-1]),
+                       input_signature=specifications, jit_compile=True, autograph=False)
 
 
 def _paired_right_environments(
     core_values: Sequence[tf.Tensor], suffix_gram: tf.Tensor
 ) -> tuple[tf.Tensor, ...]:
-    environments = [tf.convert_to_tensor(suffix_gram, DTYPE)]
-    for core in reversed(tuple(core_values)):
-        environments.append(
-            tf.einsum("akb,ckd,bd->ac", core, core, environments[-1])
-        )
-    return tuple(reversed(environments))
+    if tf.executing_eagerly():
+        values = (*core_values, suffix_gram)
+        signature = tuple(tf.TensorSpec(value.shape, DTYPE) for value in values)
+        return _environments_program(signature)(*values)
+    packed = _pack_prefix_cores(core_values)
+    values = _packed_right_environments(packed, tf.convert_to_tensor(suffix_gram, DTYPE))
+    return tuple(values[axis, :core.shape[0], :core.shape[0]]
+                 for axis, core in enumerate(core_values)) + (values[-1, :suffix_gram.shape[0], :suffix_gram.shape[1]],)
 
 
 def _conditional_mass(
@@ -329,6 +362,9 @@ class GaussianHermiteRetainedProposal:
         return self.z_h + self.tau_abs
 
     def reference_quadratic_form(self, reference_points: tf.Tensor) -> tf.Tensor:
+        reference_points = tf.convert_to_tensor(reference_points, DTYPE)
+        if tf.executing_eagerly():
+            return self._compiled_density(reference_points.shape, "reference_quadratic_form")(reference_points)
         vectors = _prefix_row_vectors(self.prefix_core_values, reference_points)
         return tf.einsum("na,ab,nb->n", vectors, self.suffix_gram, vectors)
 
@@ -336,6 +372,8 @@ class GaussianHermiteRetainedProposal:
         reference = tf.ensure_shape(
             tf.convert_to_tensor(reference_points, DTYPE), [None, self.dimension]
         )
+        if tf.executing_eagerly():
+            return self._compiled_density(reference.shape, "reference_log_density")(reference)
         quadratic = self.reference_quadratic_form(reference)
         valid_quadratic = tf.where(
             quadratic >= 0.0,
@@ -363,6 +401,8 @@ class GaussianHermiteRetainedProposal:
         physical = tf.ensure_shape(
             tf.convert_to_tensor(physical_points, DTYPE), [None, self.dimension]
         )
+        if tf.executing_eagerly():
+            return self._compiled_density(physical.shape, "physical_log_density")(physical)
         centered = physical - self.coordinate_offset[None, :]
         reference = tf.transpose(
             tf.linalg.triangular_solve(
@@ -371,6 +411,18 @@ class GaussianHermiteRetainedProposal:
         )
         log_det = tf.reduce_sum(tf.math.log(tf.linalg.diag_part(self.coordinate_matrix)))
         return self.reference_log_density(reference) - log_det
+
+    def _compiled_density(self, shape, endpoint):
+        key = (self.proposal_id, tuple(shape), endpoint)
+        if key in _COMPILED_DENSITY_CACHE:
+            _COMPILED_DENSITY_CACHE.move_to_end(key)
+            return _COMPILED_DENSITY_CACHE[key]
+        program = tf.function(getattr(self, endpoint), input_signature=[tf.TensorSpec(shape, DTYPE)],
+                              jit_compile=True, autograph=False)
+        _COMPILED_DENSITY_CACHE[key] = program
+        if len(_COMPILED_DENSITY_CACHE) > 16:
+            _COMPILED_DENSITY_CACHE.popitem(last=False)
+        return program
 
     def sample_reference(
         self,
@@ -392,6 +444,9 @@ class GaussianHermiteRetainedProposal:
             tf.convert_to_tensor(defensive_samples, DTYPE),
             [particle_count, self.dimension],
         )
+        if tf.executing_eagerly():
+            return self._compiled_sampler(particle_count, bisection_iterations,
+                jit_compile=True, physical=False)(mixture_uniforms, hermite_uniforms, defensive_samples)
         hermite_result = self._inverse_polynomial_component(
             hermite_uniforms, bisection_iterations=int(bisection_iterations)
         )
@@ -427,6 +482,11 @@ class GaussianHermiteRetainedProposal:
         *,
         bisection_iterations: int = DEFAULT_BISECTION_ITERATIONS,
     ) -> Mapping[str, tf.Tensor]:
+        if tf.executing_eagerly():
+            mixture_uniforms = tf.reshape(tf.convert_to_tensor(mixture_uniforms, DTYPE), [-1])
+            return self.compiled_sampler(mixture_uniforms.shape[0],
+                bisection_iterations=bisection_iterations)(
+                    mixture_uniforms, hermite_uniforms, defensive_samples)
         result = dict(
             self.sample_reference(
                 mixture_uniforms,
@@ -454,6 +514,10 @@ class GaussianHermiteRetainedProposal:
         bisection_iterations: int = DEFAULT_BISECTION_ITERATIONS,
         jit_compile: bool = True,
     ):
+        return self._compiled_sampler(particle_count, bisection_iterations,
+                                      jit_compile=jit_compile, physical=True)
+
+    def _compiled_sampler(self, particle_count, bisection_iterations, *, jit_compile, physical):
         count = int(particle_count)
         dimension = self.dimension
         cache_key = (
@@ -461,9 +525,11 @@ class GaussianHermiteRetainedProposal:
             count,
             int(bisection_iterations),
             bool(jit_compile),
+            bool(physical),
         )
         cached = _COMPILED_SAMPLER_CACHE.get(cache_key)
         if cached is not None:
+            _COMPILED_SAMPLER_CACHE.move_to_end(cache_key)
             return cached
 
         @tf.function(
@@ -476,7 +542,8 @@ class GaussianHermiteRetainedProposal:
             autograph=False,
         )
         def sample(mixture_uniforms, hermite_uniforms, defensive_samples):
-            return self.sample_physical(
+            endpoint = self.sample_physical if physical else self.sample_reference
+            return endpoint(
                 mixture_uniforms,
                 hermite_uniforms,
                 defensive_samples,
@@ -484,6 +551,8 @@ class GaussianHermiteRetainedProposal:
             )
 
         _COMPILED_SAMPLER_CACHE[cache_key] = sample
+        if len(_COMPILED_SAMPLER_CACHE) > 16:
+            _COMPILED_SAMPLER_CACHE.popitem(last=False)
         return sample
 
     def _inverse_polynomial_component(
@@ -491,20 +560,21 @@ class GaussianHermiteRetainedProposal:
     ) -> Mapping[str, tf.Tensor]:
         uniforms = tf.convert_to_tensor(uniforms, DTYPE)
         particle_count = tf.shape(uniforms)[0]
-        right_environments = _paired_right_environments(
-            self.prefix_core_values, self.suffix_gram
-        )
-        left = tf.ones([particle_count, 1, 1], DTYPE)
-        generated = []
-        residuals = []
-        conditional_masses = []
-        endpoint_margins = []
-        bracket_flags = []
+        packed = _pack_prefix_cores(self.prefix_core_values)
+        right_environments = _packed_right_environments(packed, self.suffix_gram)
+        initial = tf.one_hot(tf.zeros([particle_count], tf.int32), packed.shape[1], dtype=DTYPE)
+        left = initial[:, :, None] * initial[:, None, :]
+        generated = tf.TensorArray(DTYPE, self.dimension, element_shape=uniforms[:, 0].shape)
+        residuals = tf.TensorArray(DTYPE, self.dimension, element_shape=[])
+        conditional_masses = tf.TensorArray(DTYPE, self.dimension, element_shape=[])
+        endpoint_margins = tf.TensorArray(DTYPE, self.dimension, element_shape=[])
+        bracket_flags = tf.TensorArray(tf.bool, self.dimension, element_shape=[])
 
-        for axis, core in enumerate(self.prefix_core_values):
+        def axis_step(axis, left, generated, residuals, conditional_masses, endpoint_margins, bracket_flags):
+            core = packed[axis]
             right = right_environments[axis + 1]
             denominator = _conditional_mass(left, core, right)
-            conditional_masses.append(tf.reduce_min(denominator))
+            conditional_masses = conditional_masses.write(axis, tf.reduce_min(denominator))
             target = uniforms[:, axis]
             inner_lower = tf.fill([particle_count], tf.constant(-DEFAULT_INNER_BRACKET, DTYPE))
             inner_upper = tf.fill([particle_count], tf.constant(DEFAULT_INNER_BRACKET, DTYPE))
@@ -538,8 +608,8 @@ class GaussianHermiteRetainedProposal:
                 & (lower_cdf <= target)
                 & (target <= upper_cdf)
             )
-            bracket_flags.append(tf.reduce_all(bracket_valid))
-            endpoint_margins.append(
+            bracket_flags = bracket_flags.write(axis, tf.reduce_all(bracket_valid))
+            endpoint_margins = endpoint_margins.write(axis,
                 tf.reduce_min(tf.minimum(target - lower_cdf, upper_cdf - target))
             )
 
@@ -568,19 +638,25 @@ class GaussianHermiteRetainedProposal:
             root_cdf = _conditional_cdf(
                 left, core, right, root, self.degree, denominator
             )
-            residuals.append(tf.reduce_max(tf.abs(root_cdf - target)))
-            generated.append(root)
+            residuals = residuals.write(axis, tf.reduce_max(tf.abs(root_cdf - target)))
+            generated = generated.write(axis, root)
             left = _update_left_environment(left, core, root, self.degree)
+            return axis + 1, left, generated, residuals, conditional_masses, endpoint_margins, bracket_flags
 
-        reference_points = tf.stack(generated, axis=1)
+        _, _, generated, residuals, conditional_masses, endpoint_margins, bracket_flags = tf.while_loop(
+            lambda axis, *_: axis < self.dimension, axis_step,
+            (tf.constant(0), left, generated, residuals, conditional_masses, endpoint_margins, bracket_flags),
+            maximum_iterations=self.dimension, parallel_iterations=1)
+        reference_points = tf.transpose(generated.stack())
+        residuals = residuals.stack()
         return {
             "reference_points": reference_points,
-            "maximum_inverse_cdf_residual": tf.reduce_max(tf.stack(residuals)),
-            "minimum_conditional_mass": tf.reduce_min(tf.stack(conditional_masses)),
-            "minimum_endpoint_margin": tf.reduce_min(tf.stack(endpoint_margins)),
-            "cdf_bracket_valid": tf.reduce_all(tf.stack(bracket_flags)),
+            "maximum_inverse_cdf_residual": tf.reduce_max(residuals),
+            "minimum_conditional_mass": tf.reduce_min(conditional_masses.stack()),
+            "minimum_endpoint_margin": tf.reduce_min(endpoint_margins.stack()),
+            "cdf_bracket_valid": tf.reduce_all(bracket_flags.stack()),
             "finite": tf.reduce_all(tf.math.is_finite(reference_points))
-            & tf.reduce_all(tf.math.is_finite(tf.stack(residuals))),
+            & tf.reduce_all(tf.math.is_finite(residuals)),
         }
 
     def manifest_payload(self) -> Mapping[str, object]:
@@ -602,6 +678,23 @@ class GaussianHermiteRetainedProposal:
             "complete_mixture_density": True,
             "exact_pseudo_marginal_claimed": False,
         }
+
+
+@lru_cache(maxsize=16)
+def _snapshot_preparation_program(dimension, degree, branch_count, specifications):
+    current_basis = _hermite_product_basis(dimension, degree)
+    mixed_basis = ProductBasis(
+        list(current_basis.bases) + [DiscreteIndicatorBasis1D(branch_count)]
+        + list(current_basis.bases), current_basis.convention)
+
+    @tf.function(input_signature=specifications, jit_compile=True, autograph=False)
+    def prepare(raw_increment, corrected_increment, z_h, mean, chol, *core_values):
+        suffix = tuple(TTCore(value) for value in core_values[dimension:])
+        gram = suffix_gram_matrix(suffix, mixed_basis, axis_offset=dimension)
+        tau_relative = tf.math.expm1(raw_increment - corrected_increment)
+        return (gram, tau_relative * z_h, mean[:dimension], chol[:dimension, :dimension],
+                z_h * (1.0 + tau_relative))
+    return prepare
 
 
 def retained_proposal_from_transition_snapshot(
@@ -626,28 +719,13 @@ def retained_proposal_from_transition_snapshot(
         if snapshot.basis_identity != "hermite_reference_counting_branch_v1":
             raise ValueError("snapshot does not use the C2 Hermite/counting basis")
         n = int(snapshot.state_dim)
-        full_cores = tuple(
-            TTCore(tf.convert_to_tensor(value, DTYPE))
-            for value in snapshot.fitted_core_values
-        )
-        current_basis = _hermite_product_basis(n, snapshot.basis_degree)
-        mixed_basis = ProductBasis(
-            list(current_basis.bases)
-            + [DiscreteIndicatorBasis1D(snapshot.branch_count)]
-            + list(_hermite_product_basis(n, snapshot.basis_degree).bases),
-            current_basis.convention,
-        )
-        suffix_gram = suffix_gram_matrix(
-            full_cores[n:], mixed_basis, axis_offset=n
-        )
-        tau_relative = tf.math.expm1(
-            snapshot.raw_increment - snapshot.corrected_increment
-        )
-        tau_abs = tau_relative * snapshot.z_h
-        prefix_core_values = tuple(core.values for core in full_cores[:n])
-        coordinate_offset = snapshot.joint_mean[:n]
-        coordinate_matrix = snapshot.joint_chol[:n, :n]
-        expected_complete = snapshot.z_h * (1.0 + tau_relative)
+        values = (snapshot.raw_increment, snapshot.corrected_increment, snapshot.z_h,
+                  snapshot.joint_mean, snapshot.joint_chol, *snapshot.fitted_core_values)
+        specifications = tuple(tf.TensorSpec(value.shape, DTYPE) for value in values)
+        suffix_gram, tau_abs, coordinate_offset, coordinate_matrix, expected_complete = (
+            _snapshot_preparation_program(n, snapshot.basis_degree, snapshot.branch_count,
+                                          specifications)(*values))
+        prefix_core_values = snapshot.fitted_core_values[:n]
         source_fingerprint = gaussian_xla_frozen_snapshot_fingerprint(snapshot)
     proposal = GaussianHermiteRetainedProposal(
         prefix_core_values=prefix_core_values,
@@ -667,6 +745,25 @@ def retained_proposal_from_transition_snapshot(
     return proposal
 
 
+@lru_cache(maxsize=16)
+def _random_inputs_program(count, dimension, defensive_nu):
+    @tf.function(input_signature=[tf.TensorSpec([2], tf.int64)],
+                 jit_compile=True, autograph=False)
+    def generate(seed):
+        mixture = philox_uniform_float64([count], seed + [0, 1])
+        hermite = philox_uniform_float64([count, dimension], seed + [0, 2])
+        normal = philox_normal_float64([count, dimension], seed + [0, 3])
+        if defensive_nu is None:
+            defensive = normal
+        else:
+            chi_square = philox_gamma_float64([count, dimension], seed + [0, 4],
+                tf.constant(defensive_nu / 2., DTYPE), tf.constant(.5, DTYPE))
+            defensive = normal / tf.sqrt(chi_square / defensive_nu)
+        return mixture, hermite, defensive
+
+    return generate
+
+
 def stateless_proposal_random_inputs(
     proposal: GaussianHermiteRetainedProposal,
     particle_count: int,
@@ -675,29 +772,13 @@ def stateless_proposal_random_inputs(
     """Generate one fixed set of mixture, KR, and defensive random inputs."""
 
     count = int(particle_count)
-    dimension = proposal.dimension
     first_seed, second_seed = (int(seed[0]), int(seed[1]))
-    mixture = tf.random.stateless_uniform(
-        [count], [first_seed, second_seed + 1], dtype=DTYPE
-    )
-    hermite = tf.random.stateless_uniform(
-        [count, dimension], [first_seed, second_seed + 2], dtype=DTYPE
-    )
-    normal = tf.random.stateless_normal(
-        [count, dimension], [first_seed, second_seed + 3], dtype=DTYPE
-    )
-    if proposal.defensive_nu is None:
-        defensive = normal
-    else:
-        chi_square = tf.random.stateless_gamma(
-            [count, dimension],
-            [first_seed, second_seed + 4],
-            alpha=tf.constant(proposal.defensive_nu / 2.0, DTYPE),
-            beta=tf.constant(0.5, DTYPE),
-            dtype=DTYPE,
-        )
-        defensive = normal / tf.sqrt(chi_square / proposal.defensive_nu)
-    return mixture, hermite, defensive
+    if count < 0:
+        raise ValueError("particle_count must be nonnegative")
+    if not -2**63 <= first_seed < 2**63 or not -2**63 <= second_seed < 2**63 - 4:
+        raise ValueError("proposal seed and offsets must fit int64")
+    return _random_inputs_program(count, proposal.dimension, proposal.defensive_nu)(
+        tf.constant([first_seed, second_seed], tf.int64))
 
 
 def _proposal_fingerprint(proposal: GaussianHermiteRetainedProposal) -> str:
@@ -729,11 +810,11 @@ def _require_all_finite(name: str, value: tf.Tensor) -> None:
 
 __all__ = [
     "DEFAULT_BISECTION_ITERATIONS",
-    "GaussianHermiteRetainedProposal",
     "INCOMPLETE_GRAM_ID",
     "KR_INVERSE_ID",
     "ROUTE_CLASSIFICATION",
     "ROUTE_ID",
+    "GaussianHermiteRetainedProposal",
     "normalized_hermite_incomplete_gram",
     "retained_proposal_from_transition_snapshot",
     "stateless_proposal_random_inputs",

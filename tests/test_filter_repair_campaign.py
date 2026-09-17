@@ -155,6 +155,20 @@ def test_additional_harness_keeps_original_measurements_and_binds_extension():
     measurement = {"schema": "filter_repair_measurement.v2", "harness_sha256": original}
     with pytest.raises(ValueError, match="Stale measurement harness"):
         comparison.current_provenance({}, measurement, "before", additional, {})
+    forecast = driver.measurement_harness("ssl_forecast")
+    assert {name: forecast[name] for name in original} == original
+    assert set(forecast) - set(original) == {
+        "filter_repair_forecast_worker.py", "filter_repair_forecast_fixtures.py",
+    }
+    with pytest.raises(ValueError, match="Stale measurement harness"):
+        comparison.current_provenance({}, measurement, "before", forecast, {})
+    preparation = driver.measurement_harness("ukf_initializer")
+    assert {name: preparation[name] for name in original} == original
+    assert set(preparation) - set(original) == {
+        "filter_repair_preparation_worker.py", "filter_repair_preparation_fixtures.py",
+    }
+    with pytest.raises(ValueError, match="Stale measurement harness"):
+        comparison.current_provenance({}, measurement, "before", preparation, {})
 
 
 def test_source_guard_blocks_otherwise_complete_gate(tmp_path, monkeypatch, capsys):

@@ -6,8 +6,10 @@ import hashlib
 import json
 import operator
 import struct
+from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Any, Literal
 
 import tensorflow as tf
@@ -29,7 +31,7 @@ from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
     ssl_lstm_transition,
     tf_ssl_lstm_svd_ukf_score,
 )
-
+from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 
 A2_CONTRACT_SIGNATURE = (
     "8719aa65943dcc9e4b0499debfff8ec13a96d4cec12dc48d70a8922920058804"
@@ -459,6 +461,26 @@ def _innovation_bank_signature(bank: SSLLSTMInnovationBank) -> str:
     )
 
 
+@lru_cache(maxsize=16)
+def _innovation_bank_program(count, replications):
+    @tf.function(input_signature=[tf.TensorSpec([2], tf.int32),
+        tf.TensorSpec([], tf.int32), tf.TensorSpec([], tf.int32)],
+        jit_compile=True, autograph=False)
+    def generate(root_seed, role_code, arm):
+        role_seed = tf.random.experimental.stateless_fold_in(root_seed, role_code, alg="philox")
+        arm_seed = tf.random.experimental.stateless_fold_in(role_seed, arm, alg="philox")
+        terminal_seed = tf.random.experimental.stateless_fold_in(arm_seed, FAMILY_CODES["terminal"], alg="philox")
+        process_seed = tf.random.experimental.stateless_fold_in(arm_seed, FAMILY_CODES["process"], alg="philox")
+        observation_seed = tf.random.experimental.stateless_fold_in(arm_seed, FAMILY_CODES["observation"], alg="philox")
+        return (
+            philox_normal_float64([count, replications, STATE_DIM], terminal_seed),
+            philox_normal_float64([count, replications, FORECAST_HORIZON, LATENT_DIM], process_seed),
+            philox_normal_float64([count, replications, FORECAST_HORIZON, OBSERVATION_DIM], observation_seed),
+            (role_seed, arm_seed, terminal_seed, process_seed, observation_seed),
+        )
+    return generate
+
+
 def make_ssl_lstm_innovation_bank(
     config: SSLLSTMForecastConfig,
     draw_count: int,
@@ -486,45 +508,10 @@ def make_ssl_lstm_innovation_bank(
     if role == "independent_arm" and arm <= 0:
         raise ValueError("independent_arm requires a positive arm_id")
     root_seed = _require_seed(seed)
-    role_seed = tf.random.experimental.stateless_fold_in(
-        root_seed,
-        tf.constant(ROLE_CODES[role], tf.int32),
-        alg="philox",
-    )
-    arm_seed = tf.random.experimental.stateless_fold_in(
-        role_seed,
-        tf.constant(arm, tf.int32),
-        alg="philox",
-    )
-
-    def family_seed(name: str) -> tf.Tensor:
-        return tf.random.experimental.stateless_fold_in(
-            arm_seed,
-            tf.constant(FAMILY_CODES[name], tf.int32),
-            alg="philox",
-        )
-
-    terminal_seed = family_seed("terminal")
-    process_seed = family_seed("process")
-    observation_seed = family_seed("observation")
-    terminal = tf.random.stateless_normal(
-        [count, config.replication_count, STATE_DIM],
-        terminal_seed,
-        dtype=tf.float64,
-        alg="philox",
-    )
-    process = tf.random.stateless_normal(
-        [count, config.replication_count, FORECAST_HORIZON, LATENT_DIM],
-        process_seed,
-        dtype=tf.float64,
-        alg="philox",
-    )
-    observation = tf.random.stateless_normal(
-        [count, config.replication_count, FORECAST_HORIZON, OBSERVATION_DIM],
-        observation_seed,
-        dtype=tf.float64,
-        alg="philox",
-    )
+    with tf.device("/CPU:0"):
+        terminal, process, observation, seeds = _innovation_bank_program(
+            count, config.replication_count)(root_seed, tf.constant(ROLE_CODES[role], tf.int32),
+                                             tf.constant(arm, tf.int32))
     provisional = SSLLSTMInnovationBank(
         terminal_standard_normal=terminal,
         process_standard_normal=process,
@@ -534,13 +521,7 @@ def make_ssl_lstm_innovation_bank(
         role=role,
         role_code=ROLE_CODES[role],
         arm_id=arm,
-        derived_seeds=(
-            role_seed,
-            arm_seed,
-            terminal_seed,
-            process_seed,
-            observation_seed,
-        ),
+        derived_seeds=seeds,
         content_signature="",
     )
     signature = _innovation_bank_signature(provisional)
@@ -851,18 +832,9 @@ def _terminal_batch_core(
     )
 
 
-_TERMINAL_PROGRAM_CACHE: dict[
-    tuple[str, int],
-    Callable[[tf.Tensor], tuple[tf.Tensor, ...]],
-] = {}
-_TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE: dict[
-    int,
-    Callable[[tf.Tensor], tuple[tf.Tensor, ...]],
-] = {}
-_FORECAST_PROGRAM_CACHE: dict[
-    tuple[str, int],
-    Callable[..., tuple[tf.Tensor, ...]],
-] = {}
+_TERMINAL_PROGRAM_CACHE = OrderedDict()
+_TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE = OrderedDict()
+_FORECAST_PROGRAM_CACHE = OrderedDict()
 
 
 def ssl_lstm_terminal_compiled_program(
@@ -891,6 +863,9 @@ def ssl_lstm_terminal_compiled_program(
             reduce_retracing=True,
         )
         _TERMINAL_PROGRAM_CACHE[key] = compiled
+        if len(_TERMINAL_PROGRAM_CACHE) > 16:
+            _TERMINAL_PROGRAM_CACHE.popitem(last=False)
+    _TERMINAL_PROGRAM_CACHE.move_to_end(key)
     return compiled
 
 
@@ -910,6 +885,9 @@ def ssl_lstm_terminal_covariance_audit_compiled_program(
             reduce_retracing=True,
         )
         _TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE[count] = compiled
+        if len(_TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE) > 16:
+            _TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE.popitem(last=False)
+    _TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE.move_to_end(count)
     return compiled
 
 
@@ -1083,13 +1061,7 @@ def _forecast_batch_core(
         terminal_standard_normal,
         terminal_factor,
     )
-    state_rows = []
-    deterministic_rows = []
-    process_rows = []
-    observation_mean_rows = []
-    observation_noise_rows = []
-    observation_rows = []
-    for draw_index in range(draw_count):
+    def draw_forecast(draw_index):
         full = config.posterior_config.parameter_mask.embed(free_draws[draw_index])
         components = make_ssl_lstm_svd_ukf_components(
             full,
@@ -1098,14 +1070,8 @@ def _forecast_batch_core(
             std_floor=config.posterior_config.std_floor,
         )
         params = components.parameters
-        previous = terminal_states[draw_index]
-        draw_states = []
-        draw_deterministic = []
-        draw_process = []
-        draw_observation_mean = []
-        draw_observation_noise = []
-        draw_observations = []
-        for horizon_index in range(FORECAST_HORIZON):
+        def step(previous_outputs, horizon_index):
+            previous = previous_outputs[0]
             deterministic = ssl_lstm_transition(params, previous)
             process_noise = (
                 process_standard_normal[draw_index, :, horizon_index, :]
@@ -1124,27 +1090,23 @@ def _forecast_batch_core(
                 * params.observation_std[tf.newaxis, :]
             )
             observations = observation_mean + observation_noise
-            draw_states.append(next_state)
-            draw_deterministic.append(deterministic)
-            draw_process.append(process_noise)
-            draw_observation_mean.append(observation_mean)
-            draw_observation_noise.append(observation_noise)
-            draw_observations.append(observations)
-            previous = next_state
-        state_rows.append(tf.stack(draw_states, axis=1))
-        deterministic_rows.append(tf.stack(draw_deterministic, axis=1))
-        process_rows.append(tf.stack(draw_process, axis=1))
-        observation_mean_rows.append(tf.stack(draw_observation_mean, axis=1))
-        observation_noise_rows.append(tf.stack(draw_observation_noise, axis=1))
-        observation_rows.append(tf.stack(draw_observations, axis=1))
+            return next_state, deterministic, process_noise, observation_mean, observation_noise, observations
+
+        initial = (terminal_states[draw_index], tf.zeros([replication_count, STATE_DIM], tf.float64),
+            tf.zeros([replication_count, LATENT_DIM], tf.float64),
+            tf.zeros([replication_count, OBSERVATION_DIM], tf.float64),
+            tf.zeros([replication_count, OBSERVATION_DIM], tf.float64),
+            tf.zeros([replication_count, OBSERVATION_DIM], tf.float64))
+        history = tf.scan(step, tf.range(FORECAST_HORIZON), initializer=initial, parallel_iterations=1)
+        return tuple(tf.transpose(value, [1, 0, 2]) for value in history)
+
+    histories = tf.map_fn(draw_forecast, tf.range(draw_count),
+        fn_output_signature=tuple(tf.TensorSpec([replication_count, FORECAST_HORIZON, width], tf.float64)
+            for width in (STATE_DIM, STATE_DIM, LATENT_DIM, OBSERVATION_DIM, OBSERVATION_DIM, OBSERVATION_DIM)),
+        parallel_iterations=1)
     return (
         tf.ensure_shape(terminal_states, [draw_count, replication_count, STATE_DIM]),
-        tf.stack(state_rows, axis=0),
-        tf.stack(deterministic_rows, axis=0),
-        tf.stack(process_rows, axis=0),
-        tf.stack(observation_mean_rows, axis=0),
-        tf.stack(observation_noise_rows, axis=0),
-        tf.stack(observation_rows, axis=0),
+        *histories,
     )
 
 
@@ -1202,7 +1164,57 @@ def ssl_lstm_forecast_compiled_program(
             reduce_retracing=True,
         )
         _FORECAST_PROGRAM_CACHE[key] = compiled
+        if len(_FORECAST_PROGRAM_CACHE) > 16:
+            _FORECAST_PROGRAM_CACHE.popitem(last=False)
+    _FORECAST_PROGRAM_CACHE.move_to_end(key)
     return compiled
+
+
+_CHUNKED_FORECAST_PROGRAM_CACHE = OrderedDict()
+
+
+def _embed_draws(values, mask):
+    count = values.shape[0]
+    row, column = tf.meshgrid(tf.range(count), tf.constant(mask.free_indices, tf.int32), indexing="ij")
+    indices = tf.reshape(tf.stack([row, column], axis=-1), [-1, 2])
+    return tf.tensor_scatter_nd_update(tf.broadcast_to(mask.full_values[None, :],
+        [count, mask.full_dimension]), indices, tf.reshape(values, [-1]))
+
+
+def _chunked_forecast_program(config, draw_count, chunk_size):
+    key = (config.signature(), draw_count, chunk_size)
+    if key in _CHUNKED_FORECAST_PROGRAM_CACHE:
+        _CHUNKED_FORECAST_PROGRAM_CACHE.move_to_end(key)
+        return _CHUNKED_FORECAST_PROGRAM_CACHE[key]
+    signature = ssl_lstm_forecast_compiled_program(config, draw_count).input_signature
+    replications = config.replication_count
+
+    @tf.function(input_signature=signature, jit_compile=True, autograph=False)
+    def program(*inputs):
+        if chunk_size == draw_count:
+            history = _forecast_batch_core(*inputs, config)
+        else:
+            whole, remainder = divmod(draw_count, chunk_size)
+
+            def chunk(index):
+                start = index * chunk_size
+                rows = tuple(tf.gather(value, start + tf.range(chunk_size)) for value in inputs)
+                return _forecast_batch_core(*rows, config)
+
+            output_specs = (tf.TensorSpec([chunk_size, replications, STATE_DIM], tf.float64),
+                *tuple(tf.TensorSpec([chunk_size, replications, FORECAST_HORIZON, width], tf.float64)
+                    for width in (STATE_DIM, STATE_DIM, LATENT_DIM, OBSERVATION_DIM, OBSERVATION_DIM, OBSERVATION_DIM)))
+            blocks = tf.map_fn(chunk, tf.range(whole), fn_output_signature=output_specs, parallel_iterations=1)
+            history = tuple(tf.reshape(value, [whole * chunk_size, *value.shape[2:]]) for value in blocks)
+            if remainder:
+                tail = _forecast_batch_core(*(value[whole * chunk_size:] for value in inputs), config)
+                history = tuple(tf.concat([value, suffix], axis=0) for value, suffix in zip(history, tail, strict=True))
+        return history, _embed_draws(inputs[0], config.posterior_config.parameter_mask)
+
+    _CHUNKED_FORECAST_PROGRAM_CACHE[key] = program
+    if len(_CHUNKED_FORECAST_PROGRAM_CACHE) > 16:
+        _CHUNKED_FORECAST_PROGRAM_CACHE.popitem(last=False)
+    return program
 
 
 def _device_rows(devices: list[Any]) -> tuple[tuple[str, str], ...]:
@@ -1299,24 +1311,14 @@ def forecast_ssl_lstm_paths(
         innovation_bank.observation_standard_normal,
     )
     if resolved.jit_compile:
-        chunk_rows: list[list[tf.Tensor]] = [[] for _ in _FORECAST_OUTPUT_NAMES]
-        for start in range(0, draw_count, chunk_size):
-            stop = min(start + chunk_size, draw_count)
-            compiled = ssl_lstm_forecast_compiled_program(resolved, stop - start)
-            chunk = compiled(*(tensor[start:stop] for tensor in inputs))
-            for rows, tensor in zip(chunk_rows, chunk, strict=True):
-                rows.append(tensor)
-        tensors = tuple(tf.concat(rows, axis=0) for rows in chunk_rows)
+        tensors, full_parameters = _chunked_forecast_program(resolved, draw_count, chunk_size)(*inputs)
     else:
         if chunk_size != draw_count:
             raise ValueError("draw_chunk_size is supported only for compiled forecasts")
         tensors = _forecast_batch_core(*inputs, resolved)
+        full_parameters = _embed_draws(values, resolved.posterior_config.parameter_mask)
     tensors = tuple(tensors)
     _require_finite_forecast_outputs(tensors)
-    full_parameters = tf.stack(
-        [resolved.posterior_config.parameter_mask.embed(values[index]) for index in range(draw_count)],
-        axis=0,
-    )
     runtime_role, runtime_trust, physical, logical, output_devices = (
         _resolve_runtime_provenance(
             resolved,

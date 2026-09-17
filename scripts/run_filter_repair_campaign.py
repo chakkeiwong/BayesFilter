@@ -25,6 +25,8 @@ from pathlib import Path
 from enforce_filter_gradient_policy import verify as verify_source_policy
 from filter_repair_endpoint_fixtures import FIXTURES as ENDPOINT_FIXTURES
 from filter_repair_additional_fixtures import FIXTURES as ADDITIONAL_FIXTURES
+from filter_repair_forecast_fixtures import FIXTURES as FORECAST_FIXTURES
+from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -46,6 +48,20 @@ BASELINE_PARENT_PACKAGES = (
 )
 BUDGET_SECONDS = {"CPU": 8 * 3600, "GPU": 4 * 3600}
 TEST_GROUPS = {
+    "gamma_random_gpu": ("tests/test_filter_repair_gamma_random.py",
+        "tests/test_filter_repair_hermite_proposal.py::test_complete_proposal_random_inputs_preserve_existing_draws_and_hlo",
+        "tests/test_filter_repair_student_proposal.py"),
+    "student_proposal": ("tests/test_filter_repair_student_proposal.py",
+        "tests/highdim/test_c2_transformed_observation_student_proposal_tf.py"),
+    "gamma_random": ("tests/test_filter_repair_gamma_random.py",),
+    "source_preparation": ("tests/test_filter_repair_source_preparation.py",
+        "tests/highdim/test_p49_source_route_recenter_normalizer.py",
+        "tests/highdim/test_p55_source_route_target_transport.py",
+        "tests/highdim/test_p57_m6_sequential_fixed_hmc_source_loop.py"),
+    "predator_tp": ("tests/test_filter_repair_predator_tp.py", "tests/highdim/test_ledh_contract_e_tp_predator_prey.py"),
+    "predictive": ("tests/test_filter_repair_predictive.py", "tests/test_ssl_lstm_predictive_tf.py", "tests/test_ssl_lstm_complexity_predictive_tf.py"),
+    "complexity_target": ("tests/test_ssl_lstm_complexity_target_tf.py",),
+    "hermite_proposal": ("tests/test_filter_repair_hermite_proposal.py", "tests/highdim/test_c2_gaussian_hermite_proposal_tf.py"),
     "teacher_identity": ("tests/test_filter_repair_dispatch_identity.py",
         "tests/highdim/test_ledh_contract_e_schema_v2_factory.py",
         "tests/highdim/test_zhao_cui_moment_teacher_integration.py::test_factory_identity_binds_teacher_particle_controls_and_source",
@@ -145,8 +161,10 @@ TEST_GROUPS = {
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES)
 
 
-TEST_DEVICES = {"random_gpu": "GPU"}
+TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU"}
 FIXTURES += ADDITIONAL_FIXTURES
+FIXTURES += FORECAST_FIXTURES
+FIXTURES += PREPARATION_FIXTURES
 
 
 def sha(path):
@@ -158,6 +176,10 @@ def measurement_harness(fixture):
              "filter_repair_endpoint_fixtures.py")
     if fixture in ADDITIONAL_FIXTURES:
         names += ("filter_repair_additional_worker.py", "filter_repair_additional_fixtures.py")
+    if fixture in FORECAST_FIXTURES:
+        names += ("filter_repair_forecast_worker.py", "filter_repair_forecast_fixtures.py")
+    if fixture in PREPARATION_FIXTURES:
+        names += ("filter_repair_preparation_worker.py", "filter_repair_preparation_fixtures.py")
     return {name: sha(ROOT / "scripts" / name) for name in names}
 
 
@@ -254,6 +276,10 @@ def run_job(args):
         ensure_baseline()
         source = BASELINE_ROOT if args.arm == "before" else ROOT
         worker = "filter_repair_additional_worker.py" if args.fixture in ADDITIONAL_FIXTURES else "filter_repair_benchmark_worker.py"
+        if args.fixture in FORECAST_FIXTURES:
+            worker = "filter_repair_forecast_worker.py"
+        if args.fixture in PREPARATION_FIXTURES:
+            worker = "filter_repair_preparation_worker.py"
         command = [sys.executable, str(ROOT / "scripts" / worker), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
     elif args.action == "audit":
         command = [sys.executable, "scripts/audit_filter_gradient_policy.py", "--output", str(directory / "audit.json.gz"), "--markdown", str(directory / "audit.md")]

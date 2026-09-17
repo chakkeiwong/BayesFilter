@@ -2,6 +2,21 @@
   "schema": "filter_gradient_runtime_policy.v1",
   "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance.",
   "sources": {
+    "bayesfilter/highdim/source_route.py": [
+      "_p59_author_sir_36d_coordinate_frame_for_time",
+      "_p59_author_sir_reference_points",
+      "_p59_author_sir_unit_reference_points",
+      "_source_route_constant_path_initial_cores",
+      "_source_route_seeded_channel_initial_cores",
+      "_p70_channel_activity_diagnostics",
+      "source_route_recenter",
+      "_source_route_computeL_quantile_scale"
+    ],
+    "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py": null,
+    "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py": null,
+    "bayesfilter/highdim/ledh_contract_e_tp_predator_prey_tf.py": null,
+    "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py": null,
+    "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py": null,
     "bayesfilter/adapters/bgs.py": null,
     "bayesfilter/backends.py": null,
     "bayesfilter/hardbound/dns_curve_tf.py": null,
@@ -134,11 +149,7 @@
     "bayesfilter/nonlinear/sigma_points_tf.py": null,
     "bayesfilter/nonlinear/srukf_factor_tf.py": null,
     "bayesfilter/nonlinear/ssl_lstm_complexity_batched_target_tf.py": null,
-    "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py": {
-      "python_iteration": [
-        "SSLLSTMComplexityPosteriorTarget.full_theta"
-      ]
-    },
+    "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py": null,
     "bayesfilter/nonlinear/ssl_lstm_posterior_tf.py": {
       "python_iteration": [
         "SSLLSTMParameterMask.embed"
@@ -154,6 +165,7 @@
     "bayesfilter/ops/quadrature_tf.py": null,
     "bayesfilter/ops/slogdet_tf.py": null,
     "bayesfilter/ops/stateless_random_tf.py": null,
+    "bayesfilter/ops/stateless_gamma_tf.py": null,
     "bayesfilter/ops/symmetric_matrix_tf.py": null,
     "bayesfilter/testing/direct_factor_srukf_adapters_tf.py": null,
     "bayesfilter/testing/ksc_gaussian_sum_ukf_neutra_target_tf.py": null,
@@ -186,9 +198,490 @@
     "bayesfilter/highdim/ttsirt_native_tf.py": null,
     "bayesfilter/highdim/ttsirt_proposal_native_tf.py": null,
     "bayesfilter/highdim/filtering_native_tf.py": null,
-    "bayesfilter/highdim/sv_panel_quadrature_native_tf.py": null
+    "bayesfilter/highdim/sv_panel_quadrature_native_tf.py": null,
+    "bayesfilter/highdim/source_route_preparation_tf.py": null
   },
   "exceptions": [
+    {
+      "path": "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py",
+      "function": "C2TransformedObservationStudentProposal.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "726f763af168591695ba44a1653fb91af580e2b1971f54b41c7b234bce54845e",
+      "role": "host_validation",
+      "reason": "Hash the immutable named proposal settings and tensors after compiled geometry preparation; this does not compute proposal values."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_source_route_constant_path_initial_cores",
+      "kind": "python_iteration",
+      "ast_sha256": "500ce8262f091a31d2737d0ec1ffc1f97a09f54a3f13864e0e16845222965747",
+      "role": "fixed_schema",
+      "reason": "Unpack the compiled tensor's heterogeneous TT core shapes into existing TTCore records. No coefficient calculation occurs in this loop."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_source_route_seeded_channel_initial_cores",
+      "kind": "python_iteration",
+      "ast_sha256": "55935503f4992f511c615986744947b095c097d8a5595fb217a4142094a2bc49",
+      "role": "fixed_schema",
+      "reason": "Read the immutable TT rank schema to configure padded tensor dimensions and the existing per-channel epsilon."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_source_route_seeded_channel_initial_cores",
+      "kind": "python_iteration",
+      "ast_sha256": "500ce8262f091a31d2737d0ec1ffc1f97a09f54a3f13864e0e16845222965747",
+      "role": "fixed_schema",
+      "reason": "Unpack the compiled tensor's heterogeneous TT core shapes into existing TTCore records. All seeded channel values are calculated in XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_p70_channel_activity_diagnostics",
+      "kind": "python_iteration",
+      "ast_sha256": "519a37c6251b6917788989fb01745590f0ce4d60956dec63bebf7d6737d68dae",
+      "role": "fixed_schema",
+      "reason": "Read the basis widths of heterogeneous TT core tensor shapes."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_p70_channel_activity_diagnostics",
+      "kind": "python_iteration",
+      "ast_sha256": "ad7f31807a8bd1a00792b26f5154c6726ac04976d91f83d93673cacd1a59bea1",
+      "role": "fixed_schema",
+      "reason": "Read static TT core ranks to select a padded input shape."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_p70_channel_activity_diagnostics",
+      "kind": "python_iteration",
+      "ast_sha256": "9b61f778a66e54a123a2945e8818fea16464f6fea4f10d5a227ad2969db947d6",
+      "role": "fixed_schema",
+      "reason": "Pack heterogeneous core tensors into padded leading-axis storage; scores and acceptance decisions are computed by the native tensor kernel."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_p70_channel_activity_diagnostics",
+      "kind": "python_iteration",
+      "ast_sha256": "142edd52ff288b21381aff29c7f69d54d29f9e1834c5599b86805f70f3ae944b",
+      "role": "fixed_schema",
+      "reason": "Read neighboring static TT bond dimensions to mask padded channels."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_p70_channel_activity_diagnostics",
+      "kind": "python_iteration",
+      "ast_sha256": "2e383dafee8e11d4ad0a7514c93e21db0a82a27a8a693b625787d2f205b4ca7a",
+      "role": "host_reporting",
+      "reason": "Format already-computed bond scores in the established ragged tuple reporting schema."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "_p70_channel_activity_diagnostics",
+      "kind": "python_iteration",
+      "ast_sha256": "0b6099dada99711ec87a37b561e1edf44d4a62ab50f0af14ea4e8dc68cbb97db",
+      "role": "host_reporting",
+      "reason": "Format the completed XLA inactivity mask as channel identifiers; the failure decision has already been computed in the kernel."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "_pack_prefix_cores",
+      "kind": "python_iteration",
+      "ast_sha256": "03ce10df8355e6a8447ef2ab8fcc5385512f43f74aebca22e25a9ff58ef99dd1",
+      "role": "fixed_schema",
+      "reason": "Pack heterogeneous static TT core shapes for one tensor axis recurrence; no numerical axis iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "_pack_prefix_cores",
+      "kind": "python_iteration",
+      "ast_sha256": "0705a53c551988d77e797fa03415602be5f4180784821858efa05d0e24fbe2e5",
+      "role": "fixed_schema",
+      "reason": "Pack heterogeneous static TT core shapes for one tensor axis recurrence; no numerical axis iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "_paired_right_environments",
+      "kind": "python_iteration",
+      "ast_sha256": "c9548979ac276d3aa970e4ad5322adbf11d9b97c347d026618f30832cca840ec",
+      "role": "fixed_schema",
+      "reason": "Build fixed tensor signatures and unpack heterogeneous output ranks from the native environment recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "_paired_right_environments",
+      "kind": "python_iteration",
+      "ast_sha256": "de7d8582d6852341b35e68d90c8c7a835f7fd7742795378aee9e9ff3494286c5",
+      "role": "fixed_schema",
+      "reason": "Build fixed tensor signatures and unpack heterogeneous output ranks from the native environment recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "GaussianHermiteRetainedProposal.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "29258b6f6992cb63be751a3c15816de99ddbefc0479f96c7b3824e5f1d8be0aa",
+      "role": "host_validation",
+      "reason": "Convert immutable core inputs and validate their shapes, rank links and finite values before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "GaussianHermiteRetainedProposal.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "e85314d53bd9cda855ea3f15ba14d187a7a1bc31ed5a644144ba64872b5db843",
+      "role": "host_validation",
+      "reason": "Convert immutable core inputs and validate their shapes, rank links and finite values before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "_snapshot_preparation_program.prepare",
+      "kind": "python_iteration",
+      "ast_sha256": "a339ec8d3445c2033290f981dfbebab1f74c1b2157ba55129d0a80ef7b286049",
+      "role": "fixed_schema",
+      "reason": "Wrap fixed heterogeneous input tensors as TTCore records for the native suffix contraction."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "retained_proposal_from_transition_snapshot",
+      "kind": "python_iteration",
+      "ast_sha256": "c9548979ac276d3aa970e4ad5322adbf11d9b97c347d026618f30832cca840ec",
+      "role": "fixed_schema",
+      "reason": "Build the stable tensor input signature for compiled snapshot preparation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "_proposal_fingerprint",
+      "kind": "python_iteration",
+      "ast_sha256": "15d9f4e0a0c1b2a017c8f9fae73d4246106e410a1a08ab779c88f53e46612ee7",
+      "role": "host_reporting",
+      "reason": "Serialize named immutable tensors into the existing source/proposal fingerprint, without array arithmetic."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py",
+      "function": "_proposal_fingerprint",
+      "kind": "python_iteration",
+      "ast_sha256": "41956ff22c9bb66d3b59054a4f439a61aff21432e59ae872003dac2efeeb1479",
+      "role": "host_reporting",
+      "reason": "Serialize named immutable tensors into the existing source/proposal fingerprint, without array arithmetic."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_contract_e_tp_predator_prey_tf.py",
+      "function": "contract_e_tp_predator_prey_recursive_core",
+      "kind": "python_iteration",
+      "ast_sha256": "bbe4fee018d1f15dc304cb1bb68c14b8ee4413d9ad438f228ad8d2986cc013b0",
+      "role": "fixed_schema",
+      "reason": "Construct the fixed tensor signature for the enclosing native TP recurrence; numerical parity remains a separate open gate."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_raw_float64_sha256",
+      "kind": "python_iteration",
+      "ast_sha256": "027ecd5c8b5bad79aa597254503e09e21ac578915cecfabf4a96ea9406812da0",
+      "role": "host_reporting",
+      "reason": "Encode materialized float64 elements with standard-library struct for the existing artifact hash."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_seed_values",
+      "kind": "python_iteration",
+      "ast_sha256": "834f6280518fccb519fa678d2d15a6e28a93bcfe3d653a31210f03e64ac071af",
+      "role": "host_reporting",
+      "reason": "Materialize the two integer seed fields for metadata."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_validate_innovation_bank",
+      "kind": "python_iteration",
+      "ast_sha256": "981640bf1944f8d68f547a7844697835a99152eb73532370084b3f1502201a66",
+      "role": "host_validation",
+      "reason": "Validate the three named innovation families and independently verify their recorded seed identities; no forecast or draw generation."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_validate_innovation_bank",
+      "kind": "python_iteration",
+      "ast_sha256": "0db8787b4ac73f1f902a0c217075ed6b62552e5d87007e23a6f93369c00b3bab",
+      "role": "host_validation",
+      "reason": "Validate the three named innovation families and independently verify their recorded seed identities; no forecast or draw generation."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_validate_innovation_bank",
+      "kind": "python_iteration",
+      "ast_sha256": "5097eb5054c784d3dd11214ee97ae1ccb2462dc5b22fb119b8fe14b9140169ba",
+      "role": "host_validation",
+      "reason": "Validate the three named innovation families and independently verify their recorded seed identities; no forecast or draw generation."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_innovation_bank_signature",
+      "kind": "python_iteration",
+      "ast_sha256": "c0ea8271a54ab6b900b15e04c45b007333f115dad8eccf951510018627929376",
+      "role": "host_reporting",
+      "reason": "Serialize root and family seed metadata at the artifact boundary."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_innovation_bank_signature",
+      "kind": "python_iteration",
+      "ast_sha256": "0782f6c617fbf5b1466479e491f2c99a199a5c7f80abfa03a9ce090f30220a80",
+      "role": "host_reporting",
+      "reason": "Serialize root and family seed metadata at the artifact boundary."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_require_valid_terminal",
+      "kind": "python_iteration",
+      "ast_sha256": "38125d8ce115dd9b342b6b48ae05c65f17dfa70812f3a58aa0c66a5fa4e7efba",
+      "role": "host_validation",
+      "reason": "Validate the fixed output field schema and materialized validity codes after the compiled terminal program."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_require_valid_terminal",
+      "kind": "python_iteration",
+      "ast_sha256": "76ac56e3296670b906cbaf8403e16aea6b0dba483f90ea5d983ebb81ddd2cf99",
+      "role": "host_validation",
+      "reason": "Validate the fixed output field schema and materialized validity codes after the compiled terminal program."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_require_valid_terminal",
+      "kind": "python_iteration",
+      "ast_sha256": "855841eec1b7e06948a4a0adfa209f5a2308307e0ba8d243cc7bc706510f09a5",
+      "role": "host_validation",
+      "reason": "Validate the fixed output field schema and materialized validity codes after the compiled terminal program."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_require_finite_forecast_outputs",
+      "kind": "python_iteration",
+      "ast_sha256": "fad0c14ef40e03276c350f2f560869e1415b6e852762033992843964142ee0fc",
+      "role": "host_validation",
+      "reason": "Check finiteness of the fixed named forecast output fields at the public boundary."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "extract_ssl_lstm_terminal_state",
+      "kind": "python_iteration",
+      "ast_sha256": "dc55df77a6a07b4a84e5d8ba13757356707059041f2b22374f2f6674b9a894d7",
+      "role": "fixed_schema",
+      "reason": "Unpack one batch row across the fixed terminal result dataclass fields."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_forecast_batch_core.draw_forecast",
+      "kind": "python_iteration",
+      "ast_sha256": "6e91df6d1699fd48101db6f36f8942e8eec2ca080dd57fc9ec5ed0040a55c2f2",
+      "role": "fixed_schema",
+      "reason": "Reorder axes of the six fixed output fields; draw and date recurrences use TensorFlow control flow."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_forecast_batch_core",
+      "kind": "python_iteration",
+      "ast_sha256": "c76c418f0f58f5e78983fcb983c005034884ea539a6acc09b071d12f4f63c0d0",
+      "role": "fixed_schema",
+      "reason": "Declare shapes for the six fixed forecast outputs."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_chunked_forecast_program.program.chunk",
+      "kind": "python_iteration",
+      "ast_sha256": "f9c71e7d41317ce1e5b70f43d51a9aa766ff05a58a30e761846e85a92dea634d",
+      "role": "fixed_schema",
+      "reason": "Gather the same chunk from the fixed input field tuple inside native chunk control flow."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_chunked_forecast_program.program",
+      "kind": "python_iteration",
+      "ast_sha256": "9d7467651668330e92d7b22c98f1496d89a71a4f9fc9ae713a45a04d800d5f81",
+      "role": "fixed_schema",
+      "reason": "Declare, reshape and concatenate the fixed forecast output tuple; no numerical iteration over draws or chunks."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_chunked_forecast_program.program",
+      "kind": "python_iteration",
+      "ast_sha256": "f26b47d82e4dce168e721211decc1cac96b68971c0655670c4cffb9733ec4a6a",
+      "role": "fixed_schema",
+      "reason": "Declare, reshape and concatenate the fixed forecast output tuple; no numerical iteration over draws or chunks."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_chunked_forecast_program.program",
+      "kind": "python_iteration",
+      "ast_sha256": "8c28c42ca3fbdf5d53a17a0977c3a8394483d554c8c784f58bd1f8cfb1629f13",
+      "role": "fixed_schema",
+      "reason": "Declare, reshape and concatenate the fixed forecast output tuple; no numerical iteration over draws or chunks."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_chunked_forecast_program.program",
+      "kind": "python_iteration",
+      "ast_sha256": "983248c5549e150b38b1558c84f78a1d500ae0b9f8f508b386248431fdc2739e",
+      "role": "fixed_schema",
+      "reason": "Declare, reshape and concatenate the fixed forecast output tuple; no numerical iteration over draws or chunks."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_device_rows",
+      "kind": "python_iteration",
+      "ast_sha256": "dc4288f7f5f21536572493958710ebead5c4d12e68c58e7b853eef4ea7b7fef2",
+      "role": "host_reporting",
+      "reason": "Record device names and types for provenance."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_resolve_runtime_provenance",
+      "kind": "python_iteration",
+      "ast_sha256": "ac0a752ddd0212875175af1a22b30885b36fdae2b5306ddde1d162ee95a9ccd5",
+      "role": "host_validation",
+      "reason": "Inspect reported output/device metadata and reject inconsistent execution provenance."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_resolve_runtime_provenance",
+      "kind": "python_iteration",
+      "ast_sha256": "c3a7c60b4cef2fec9901b588dc98c5b16de4f54056a910a2975951defabe0212",
+      "role": "host_validation",
+      "reason": "Inspect reported output/device metadata and reject inconsistent execution provenance."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_resolve_runtime_provenance",
+      "kind": "python_iteration",
+      "ast_sha256": "e31a59d769b4c4b7611858d2d79aaec616f6e208b99652472e02d89c55195221",
+      "role": "host_validation",
+      "reason": "Inspect reported output/device metadata and reject inconsistent execution provenance."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "forecast_ssl_lstm_paths",
+      "kind": "python_iteration",
+      "ast_sha256": "f36cdd3213815f09bc998fc3edcc44ceeefc3386d10bbd2e713c0580173cd5e7",
+      "role": "host_reporting",
+      "reason": "Materialize terminal validity codes for the returned provenance record."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py",
+      "function": "_squeeze_terminal",
+      "kind": "python_iteration",
+      "ast_sha256": "5762df6143bc4d02cb594563ee030247f029438e1563c8b9f5ceb390d5685f92",
+      "role": "fixed_schema",
+      "reason": "Remove the singleton row dimension across the fixed terminal dataclass schema."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "_require_seed",
+      "kind": "python_iteration",
+      "ast_sha256": "12c0cc0e9f4f21475c85af81305036bcaa6d1e86b2700cf61095ae7ad6428b8e",
+      "role": "host_validation",
+      "reason": "Materialize and validate the two integer seed fields."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "_value_model",
+      "kind": "python_iteration",
+      "ast_sha256": "eaa17f192a8d8a59db5bd812237bf638e24c34e829e687d6fb7509d1c108b291",
+      "role": "fixed_schema",
+      "reason": "Build immutable state-coordinate labels from static model dimensions."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "_value_model",
+      "kind": "python_iteration",
+      "ast_sha256": "e23dd23fac23f071094421e976bd034dce77735f388f7beedc416f89fb5ee3f2",
+      "role": "fixed_schema",
+      "reason": "Build immutable state-coordinate labels from static model dimensions."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "_value_model",
+      "kind": "python_iteration",
+      "ast_sha256": "a5b2ef33cc049e4375493c2a1c749c52e8c936d5e6cf7af525296d8aec8d34bd",
+      "role": "fixed_schema",
+      "reason": "Build immutable state-coordinate labels from static model dimensions."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "calibration_seed_roots",
+      "kind": "python_iteration",
+      "ast_sha256": "3febbaf5515ef9286d90ba4b05131d601f2553e25e9d700c90e76f06d926b103",
+      "role": "fixed_schema",
+      "reason": "Declare the existing four integer seed domains; no random draw or statistical calculation."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "complexity_calibration_signature",
+      "kind": "python_iteration",
+      "ast_sha256": "000795c850b910150158a61f7b1a771436621b64ab8abcc704c98c736294e627",
+      "role": "host_reporting",
+      "reason": "Serialize the fixed calibration seed-root metadata."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "calibration_from_observation_banks",
+      "kind": "python_iteration",
+      "ast_sha256": "bcc93b89721e024572f8ce48f9f12ef9eb74864c2e748d5281e3e6fae131465d",
+      "role": "fixed_schema",
+      "reason": "Validate bank shapes and pack tensor arguments for the compiled moment reduction."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "calibration_from_observation_banks",
+      "kind": "python_iteration",
+      "ast_sha256": "9d22ccd5f8aba3f041690decaed6d1db86e96a1eb18dbab4d95fe530c73b4b34",
+      "role": "fixed_schema",
+      "reason": "Validate bank shapes and pack tensor arguments for the compiled moment reduction."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "_calibration_forecast_program",
+      "kind": "python_iteration",
+      "ast_sha256": "f14b9e641f29d409724e47c901c4fbe567cdb3929e3d9a5bad6b99951eb89159",
+      "role": "fixed_schema",
+      "reason": "Declare the three fixed innovation-field signatures for native chunk evaluation."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "calibrate_complexity_horizon_scales",
+      "kind": "python_iteration",
+      "ast_sha256": "64421901d029b5923caa1be76f35729652326fff77afd4729ac18af4446026cf",
+      "role": "host_reporting",
+      "reason": "Construct metadata hashes from already computed chunk seeds; all forecast and calibration numerics execute in tensor programs."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py",
+      "function": "calibrate_complexity_horizon_scales",
+      "kind": "python_iteration",
+      "ast_sha256": "06e02b2962e581b83a42aef92de8f6a809e18e1e27aa74c7ec2148eb12915024",
+      "role": "host_reporting",
+      "reason": "Construct metadata hashes from already computed chunk seeds; all forecast and calibration numerics execute in tensor programs."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py",
+      "function": "ComplexityTargetConfig.signature_payload",
+      "kind": "python_iteration",
+      "ast_sha256": "50672a50f17483af6bff2d97ccaabfa36cff2c31cd0e8b1e32c786c6e5f68091",
+      "role": "host_reporting",
+      "reason": "Serialize existing fixture, observation and prior tensors into standard-library scalar payloads without NumPy arithmetic."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py",
+      "function": "ComplexityTargetConfig.signature_payload",
+      "kind": "python_iteration",
+      "ast_sha256": "7bb4268c279de2fdcc49da355191216ea26950f0c697d76930924936b65a49c8",
+      "role": "host_reporting",
+      "reason": "Serialize existing fixture, observation and prior tensors into standard-library scalar payloads without NumPy arithmetic."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py",
+      "function": "ComplexityTargetConfig.signature_payload",
+      "kind": "python_iteration",
+      "ast_sha256": "059fe769e8b61f566e2680e8a0c6c1a560efe5717aef38bc39f6f3d9f3bccf0c",
+      "role": "host_reporting",
+      "reason": "Serialize existing fixture, observation and prior tensors into standard-library scalar payloads without NumPy arithmetic."
+    },
     {
       "path": "bayesfilter/ops/fixed_signature_tf.py",
       "function": "fixed_signature_function.decorate",

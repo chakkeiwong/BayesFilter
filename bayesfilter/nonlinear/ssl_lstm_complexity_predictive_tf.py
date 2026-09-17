@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from functools import lru_cache
+from typing import Any
 
 import tensorflow as tf
 
@@ -19,9 +22,9 @@ from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
     ssl_lstm_transition,
     unpack_ssl_lstm_parameters,
 )
+from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 from bayesfilter.structural import StatePartition, StructuralFilterConfig
 from bayesfilter.structural_tf import TFStructuralStateSpace
-
 
 FORECAST_HORIZON = 10
 FORECAST_REPLICATION_COUNT = 2
@@ -85,24 +88,9 @@ class ComplexityForecastWorker:
     def evaluate(self, free: Any, seed: Any) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         values = tf.ensure_shape(tf.convert_to_tensor(free, tf.float64), [4])
         root = tf.ensure_shape(tf.convert_to_tensor(seed, tf.int32), [2])
-        terminal = tf.random.stateless_normal(
-            (1, FORECAST_REPLICATION_COUNT, self.state_dim),
-            _fold(root, TERMINAL_FAMILY),
-            dtype=tf.float64,
-            alg="philox",
-        )
-        process = tf.random.stateless_normal(
-            (1, FORECAST_REPLICATION_COUNT, FORECAST_HORIZON, self.q),
-            _fold(root, PROCESS_FAMILY),
-            dtype=tf.float64,
-            alg="philox",
-        )
-        observation = tf.random.stateless_normal(
-            (1, FORECAST_REPLICATION_COUNT, FORECAST_HORIZON),
-            _fold(root, OBSERVATION_FAMILY),
-            dtype=tf.float64,
-            alg="philox",
-        )
+        with tf.device("/CPU:0"):
+            terminal, process, observation = _innovation_program(
+                self.q, self.state_dim, 1, FORECAST_REPLICATION_COUNT, FORECAST_HORIZON)(root)
         means, variances, observations, _terminal, status = self.program(
             values[tf.newaxis, :], terminal, process, observation
         )
@@ -144,6 +132,19 @@ def _fold(seed: tf.Tensor, value: int) -> tf.Tensor:
         tf.constant(int(value), tf.int32),
         alg="philox",
     )
+
+
+@lru_cache(maxsize=16)
+def _innovation_program(q, state_dim, count, replications, horizon):
+    @tf.function(input_signature=[tf.TensorSpec([2], tf.int32)],
+                 jit_compile=True, autograph=False)
+    def generate(root):
+        return (
+            philox_normal_float64([count, replications, state_dim], _fold(root, TERMINAL_FAMILY)),
+            philox_normal_float64([count, replications, horizon, q], _fold(root, PROCESS_FAMILY)),
+            philox_normal_float64([count, replications, horizon], _fold(root, OBSERVATION_FAMILY)),
+        )
+    return generate
 
 
 def _covariance_factor(covariance: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
@@ -249,6 +250,7 @@ def _single_forecast_core(
         backend="tf_principal_sqrt_ukf",
         innovation_floor=tf.constant(1.0e-12, tf.float64),
         return_filtered=True,
+        jit_compile=target._jit_compile,
     )
     if filtered.filtered_means is None or filtered.filtered_covariances is None:
         raise RuntimeError("principal-root terminal filter must return history")
@@ -260,11 +262,9 @@ def _single_forecast_core(
         terminal_mean[tf.newaxis, :]
         + terminal_standard_normal @ tf.transpose(terminal_factor)
     )
-    state = terminal_states
-    conditional_rows = []
-    observation_rows = []
     variance = tf.square(params.observation_std[0])
-    for horizon_index in range(horizon):
+    def step(previous, horizon_index):
+        state = previous[0]
         deterministic = ssl_lstm_transition(params, state)
         state = tf.concat(
             (
@@ -283,11 +283,14 @@ def _single_forecast_core(
             + params.observation_std[0]
             * observation_standard_normal[:, horizon_index]
         )
-        conditional_rows.append(means)
-        observation_rows.append(observations)
-    conditional_means = tf.stack(conditional_rows, axis=-1)
+        return state, means, observations
+
+    empty = tf.zeros([terminal_standard_normal.shape[0]], tf.float64)
+    _, conditional_rows, observation_rows = tf.scan(step, tf.range(horizon),
+        initializer=(terminal_states, empty, empty), parallel_iterations=1)
+    conditional_means = tf.transpose(conditional_rows)
     conditional_variances = tf.fill(tf.shape(conditional_means), variance)
-    observations = tf.stack(observation_rows, axis=-1)
+    observations = tf.transpose(observation_rows)
     finite = tf.reduce_all(
         tf.math.is_finite(
             tf.concat(
@@ -313,9 +316,7 @@ def _single_forecast_core(
     )
 
 
-_PROGRAM_CACHE: dict[
-    tuple[int, int, int, int, str], Callable[..., tuple[tf.Tensor, ...]]
-] = {}
+_PROGRAM_CACHE = OrderedDict()
 
 
 def complexity_forecast_compiled_program(
@@ -332,9 +333,10 @@ def complexity_forecast_compiled_program(
     if count <= 0 or replications <= 0:
         raise ComplexityPredictiveError("draw and replication counts must be positive")
     state_dim = int(target.config.static_config.augmented_state_dim)
-    key = (target.q, count, replications, horizon, target.target_signature())
+    key = (target.q, count, replications, horizon, target.target_signature(), target._jit_compile)
     cached = _PROGRAM_CACHE.get(key)
     if cached is not None:
+        _PROGRAM_CACHE.move_to_end(key)
         return cached
 
     def program(
@@ -375,6 +377,8 @@ def complexity_forecast_compiled_program(
         reduce_retracing=True,
     )
     _PROGRAM_CACHE[key] = compiled
+    if len(_PROGRAM_CACHE) > 16:
+        _PROGRAM_CACHE.popitem(last=False)
     return compiled
 
 
@@ -396,24 +400,9 @@ def forecast_complexity_conditional_moments(
     target = complexity_posterior_target(int(q), jit_compile=True)
     state_dim = int(target.config.static_config.augmented_state_dim)
     root, seed_values = _require_seed(seed)
-    terminal = tf.random.stateless_normal(
-        (count, replications, state_dim),
-        _fold(root, TERMINAL_FAMILY),
-        dtype=tf.float64,
-        alg="philox",
-    )
-    process = tf.random.stateless_normal(
-        (count, replications, horizon, int(q)),
-        _fold(root, PROCESS_FAMILY),
-        dtype=tf.float64,
-        alg="philox",
-    )
-    observation = tf.random.stateless_normal(
-        (count, replications, horizon),
-        _fold(root, OBSERVATION_FAMILY),
-        dtype=tf.float64,
-        alg="philox",
-    )
+    with tf.device("/CPU:0"):
+        terminal, process, observation = _innovation_program(
+            int(q), state_dim, count, replications, horizon)(root)
     program = complexity_forecast_compiled_program(
         target,
         draw_count=count,
@@ -425,20 +414,7 @@ def forecast_complexity_conditional_moments(
     )
     if not bool(tf.reduce_all(status).numpy()):
         raise ComplexityPredictiveError("q-general forecast failed finite/covariance gate")
-    signature = _canonical_hash(
-        {
-            "schema": "bayesfilter.ssl_lstm.complexity_predictive.v1",
-            "q": int(q),
-            "draw_count": count,
-            "replication_count": replications,
-            "horizon": horizon,
-            "seed": list(seed_values),
-            "target_signature": target.target_signature(),
-            "filter_backend": "tf_principal_sqrt_ukf",
-            "terminal_covariance_factor": "cholesky_same_gaussian_law",
-            "conditional_variance": "observation_std**2",
-        }
-    )
+    signature = _forecast_signature(int(q), count, replications, horizon, seed_values, target.target_signature())
     return ComplexityConditionalForecast(
         conditional_means=means,
         conditional_variances=variances,
@@ -452,6 +428,23 @@ def forecast_complexity_conditional_moments(
         seed=seed_values,
         target_signature=target.target_signature(),
         construction_signature=signature,
+    )
+
+
+def _forecast_signature(q, count, replications, horizon, seed_values, target_signature):
+    return _canonical_hash(
+        {
+            "schema": "bayesfilter.ssl_lstm.complexity_predictive.v1",
+            "q": int(q),
+            "draw_count": count,
+            "replication_count": replications,
+            "horizon": horizon,
+            "seed": list(seed_values),
+            "target_signature": target_signature,
+            "filter_backend": "tf_principal_sqrt_ukf",
+            "terminal_covariance_factor": "cholesky_same_gaussian_law",
+            "conditional_variance": "observation_std**2",
+        }
     )
 
 
@@ -488,6 +481,19 @@ def complexity_calibration_signature(
     )
 
 
+@lru_cache(maxsize=16)
+def _calibration_moments_program(shape):
+    @tf.function(input_signature=[tf.TensorSpec(shape, tf.float64)],
+                 jit_compile=True, autograph=False)
+    def moments(observations):
+        path_count = shape[0] * shape[1]
+        center = tf.reduce_mean(observations, axis=(0, 1))
+        scale = tf.sqrt(tf.reduce_sum(tf.square(observations - center), axis=(0, 1))
+                        / tf.cast(path_count - 1, tf.float64))
+        return center, scale
+    return moments
+
+
 def calibration_from_observation_banks(
     observation_banks: tuple[tf.Tensor, ...],
     *,
@@ -514,13 +520,7 @@ def calibration_from_observation_banks(
     observations = tf.concat(
         [tf.convert_to_tensor(row, tf.float64) for row in observation_banks], axis=0
     )
-    path_count = int(observations.shape[0] * observations.shape[1])
-    center = tf.reduce_mean(observations, axis=(0, 1))
-    centered = observations - center
-    scale = tf.sqrt(
-        tf.reduce_sum(tf.square(centered), axis=(0, 1))
-        / tf.cast(path_count - 1, tf.float64)
-    )
+    center, scale = _calibration_moments_program(tuple(observations.shape))(observations)
     if not bool(
         tf.reduce_all(tf.math.is_finite(center)).numpy()
         and tf.reduce_all(tf.math.is_finite(scale)).numpy()
@@ -549,6 +549,60 @@ def calibration_from_observation_banks(
     )
 
 
+@lru_cache(maxsize=16)
+def _calibration_innovations_program(q, state_dim, count):
+    chunks = count // FORECAST_CHUNK_SIZE
+    blocks = CALIBRATION_CHAIN_COUNT * chunks
+    innovation = _innovation_program(q, state_dim, FORECAST_CHUNK_SIZE,
+                                     FORECAST_REPLICATION_COUNT, FORECAST_HORIZON)
+
+    @tf.function(input_signature=[tf.TensorSpec([CALIBRATION_CHAIN_COUNT, 2], tf.int32)],
+                 jit_compile=True, autograph=False)
+    def generate(roots):
+        def block(index):
+            seed = tf.random.experimental.stateless_fold_in(
+                roots[index // chunks], index % chunks, alg="philox")
+            return seed, *innovation.python_function(seed)
+        return tf.map_fn(block, tf.range(blocks), fn_output_signature=(
+            tf.TensorSpec([2], tf.int32),
+            tf.TensorSpec([FORECAST_CHUNK_SIZE, FORECAST_REPLICATION_COUNT, state_dim], tf.float64),
+            tf.TensorSpec([FORECAST_CHUNK_SIZE, FORECAST_REPLICATION_COUNT, FORECAST_HORIZON, q], tf.float64),
+            tf.TensorSpec([FORECAST_CHUNK_SIZE, FORECAST_REPLICATION_COUNT, FORECAST_HORIZON], tf.float64),
+        ), parallel_iterations=1)
+    return generate
+
+
+_CALIBRATION_PROGRAM_CACHE = OrderedDict()
+
+
+def _calibration_forecast_program(target, count):
+    key = (target.target_signature(), count)
+    if key in _CALIBRATION_PROGRAM_CACHE:
+        _CALIBRATION_PROGRAM_CACHE.move_to_end(key)
+        return _CALIBRATION_PROGRAM_CACHE[key]
+    blocks = CALIBRATION_CHAIN_COUNT * count // FORECAST_CHUNK_SIZE
+    forecast = complexity_forecast_compiled_program(target, draw_count=FORECAST_CHUNK_SIZE)
+    innovation_signature = tuple(tf.TensorSpec([blocks, *spec.shape], spec.dtype)
+                                 for spec in forecast.input_signature[1:])
+
+    @tf.function(input_signature=(tf.TensorSpec([4], tf.float64), *innovation_signature),
+                 jit_compile=True, autograph=False)
+    def program(center, terminal, process, observation):
+        draws = tf.broadcast_to(center[None, :], [FORECAST_CHUNK_SIZE, 4])
+        def block(rows):
+            result = forecast.python_function(draws, *rows)
+            return result[2], tf.reduce_all(result[4])
+        banks, valid = tf.map_fn(block, (terminal, process, observation), fn_output_signature=(
+            tf.TensorSpec([FORECAST_CHUNK_SIZE, FORECAST_REPLICATION_COUNT, FORECAST_HORIZON], tf.float64),
+            tf.TensorSpec([], tf.bool)), parallel_iterations=1)
+        return tf.reshape(banks, [CALIBRATION_CHAIN_COUNT, count,
+                                 FORECAST_REPLICATION_COUNT, FORECAST_HORIZON]), valid
+    _CALIBRATION_PROGRAM_CACHE[key] = program
+    if len(_CALIBRATION_PROGRAM_CACHE) > 16:
+        _CALIBRATION_PROGRAM_CACHE.popitem(last=False)
+    return program
+
+
 def calibrate_complexity_horizon_scales(
     *,
     q: int,
@@ -562,31 +616,21 @@ def calibrate_complexity_horizon_scales(
         raise ComplexityPredictiveError(
             "calibration draw count must be divisible by forecast chunk size"
         )
-    truth_chunk = tf.repeat(
-        target.config.prior_center[tf.newaxis, :], FORECAST_CHUNK_SIZE, axis=0
-    )
     roots = calibration_seed_roots(q)
-    banks = []
+    with tf.device("/CPU:0"):
+        seeds, terminal, process, observation = _calibration_innovations_program(
+            int(q), target.config.static_config.augmented_state_dim, count)(tf.constant(roots, tf.int32))
+    banks, valid = _calibration_forecast_program(target, count)(
+        target.config.prior_center, terminal, process, observation)
+    if not bool(tf.reduce_all(valid)):
+        raise ComplexityPredictiveError("q-general forecast failed finite/covariance gate")
+    seed_rows = tf.reshape(seeds, [CALIBRATION_CHAIN_COUNT, count // FORECAST_CHUNK_SIZE, 2]).numpy().tolist()
+    target_signature = target.target_signature()
     signatures = []
     for chain_index, root in enumerate(roots):
-        chunks = []
-        chunk_signatures = []
-        root_tensor = tf.constant(root, tf.int32)
-        for chunk_index in range(count // FORECAST_CHUNK_SIZE):
-            chunk_seed = tf.random.experimental.stateless_fold_in(
-                root_tensor,
-                tf.constant(chunk_index, tf.int32),
-                alg="philox",
-            )
-            forecast = forecast_complexity_conditional_moments(
-                truth_chunk,
-                q=q,
-                seed=chunk_seed,
-                replication_count=FORECAST_REPLICATION_COUNT,
-            )
-            chunks.append(forecast.observations)
-            chunk_signatures.append(forecast.construction_signature)
-        banks.append(tf.concat(chunks, axis=0))
+        chunk_signatures = [_forecast_signature(int(q), FORECAST_CHUNK_SIZE,
+            FORECAST_REPLICATION_COUNT, FORECAST_HORIZON, seed, target_signature)
+            for seed in seed_rows[chain_index]]
         signatures.append(
             _canonical_hash(
                 {
@@ -597,10 +641,10 @@ def calibrate_complexity_horizon_scales(
             )
         )
     return calibration_from_observation_banks(
-        tuple(banks),
+        tuple(tf.unstack(banks, num=CALIBRATION_CHAIN_COUNT)),
         q=q,
         seed_roots=roots,
-        target_signature=target.target_signature(),
+        target_signature=target_signature,
         forecast_signatures=tuple(signatures),
     )
 
@@ -608,13 +652,13 @@ def calibrate_complexity_horizon_scales(
 __all__ = [
     "CALIBRATION_CHAIN_COUNT",
     "CALIBRATION_DRAWS_PER_CHAIN",
+    "FORECAST_CHUNK_SIZE",
+    "FORECAST_HORIZON",
+    "FORECAST_REPLICATION_COUNT",
     "ComplexityCalibrationScale",
     "ComplexityConditionalForecast",
     "ComplexityForecastWorker",
     "ComplexityPredictiveError",
-    "FORECAST_HORIZON",
-    "FORECAST_CHUNK_SIZE",
-    "FORECAST_REPLICATION_COUNT",
     "calibrate_complexity_horizon_scales",
     "calibration_from_observation_banks",
     "calibration_seed_roots",
