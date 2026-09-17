@@ -1,0 +1,126 @@
+{
+  "classification": "calibration_curves_not_admission",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "candidate_list": [
+    {
+      "name": "N4096-warm",
+      "n": 4096,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "N4096-flow-3",
+      "n": 4096,
+      "controls": {
+        "substeps": 3,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "N4096-flow-1",
+      "n": 4096,
+      "controls": {
+        "substeps": 1,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "N4096-flow-40",
+      "n": 4096,
+      "controls": {
+        "substeps": 40,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    }
+  ],
+  "parameter_design": [
+    -0.9,
+    0.0,
+    0.9
+  ],
+  "dataset_replicates": [
+    0,
+    2
+  ],
+  "curves": []
+}

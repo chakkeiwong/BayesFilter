@@ -1,0 +1,22 @@
+# LEDH endpoint inventory after bounded execution
+
+Evidence is scoped to executed checks. The initial gaps were reproduced and repaired; this ledger does not issue admission identity. Final decisions are in [the result note](../../ledh-graceful-failure-execution-result-2026-09-18.md).
+
+| Endpoint / call chain | Executable evidence | Remaining boundary |
+|---|---|---|
+| `canonical_value_and_analytical_score` → shared UKF/flow/weights/reset/correction | Saved full-feature healthy value/score unchanged; actual invalid covariance/callback tests; first/middle/last status injections; parameter-dependency finite differences | All possible producer faults, native custom-op internals, and all models are not exhaustively tested |
+| `canonical_batch_fused_value_score` → same recursion | Real mixed rows/directions; CPU graph/XLA and GPU float32/64; nested annealing parity; invalid sentinel preserved | Maps per-cloud/direction evaluations; not batch-native NeuTra training |
+| `canonical_batch_fused_value_score_whileloop` → same recursion | Same mixed-row/direction GPU checks; parity and status injection through actual wrapper | No independent reduced algorithm is introduced; broad model admission remains pending |
+| `DualParameterLEDHTarget.__call__` / explicit status / graph factories → canonical wrapper | Exact finite-program value compared to exact-config call; custom gradient compared to biased-config analytical score; finite value survives bad force; deterministic repeated calls | Does not certify that the finite value equals the true model likelihood |
+| Unified reset → exact-block transport → shared correction | N≤3000 single-block tests; N4096/K2048 GPU/XLA row-mass and derivative ladders; fixed particle-count policy | Full returned transport/tangent matrices require quadratic memory |
+| LG1 physical / unconstrained fixture → linear parameter adapter → canonical wrapper | Stationary initialization, Q/R/observation dependencies, proper prior and one chart Jacobian; chart-overflow vs physical-support regression | Fixture/source hashes are not canonical/tuning authority; cap16 full-scope derivative/admission work not completed |
+| Typed force/target → neural-force transition → TFP kernel / while-loop chain | Real LEDH numerical endpoint rejects and preserves cache; valid endpoint with failed force uses deterministic flagged extension; reversal and scalar/dense inverse-mass tests; trace preservation | No posterior-exclusion mass bound, convergence, or retained posterior admission |
+| `bind_neural_force_hmc_tuning_runner` → public `tune_hmc_kernel` → TensorFlow diagnostic tuner | Actual LG1 call passed diagnostic health and refused retained handoff; adaptation/verification/repair trace tests and serialization roundtrip | CPU/non-XLA diagnostic exception only; admitted TensorFlow/GPU/XLA tuning path remains missing |
+| LG2/LG4/LG20 fixture construction | Exact source specifications and generic analytical linear adapter exist | Full scope execution not checked; blocked by LG1-first prerequisite |
+| SV20/SV40, PP20, SIR3 | Model requirements audited in master | Canonical SV proposal conformance unresolved; corrected PP/fixed-SIR adapters and numerical checks not implemented |
+
+Main evidence directories: `final-baseline-cpu-01`, `containment-gpu-01`, `dependencies-cpu-01`, `stage-propagation-cpu-01`, `matrix-families-{cpu,gpu}-01`, `block-transport-gpu-04`, `lg1-calibration-diagnostic-01`, `hmc-real-cpu-01`, `tuner-telemetry-tests-cpu-01`, `public-tuner-cpu-02`, and `corrected-regressions-cpu-01`. Each has a command log and manifest.
+
+`operation-inventory.json` discovers 250 potentially sensitive operations across 11 source files, with function/line/hash anchors. Discovery is not a proof of safe wiring. Active canonical factorization consumers were inspected alongside the executed endpoint tests. Three older LGSSM reference functions in `ledh_canonical_score_stages_tf.py` still contain raw Cholesky calls and are found only in independent stage/step/recursion tests in the inspected repository search; they are not new admitted runtime routes. Other external/native consumers are not checked.
+
+Initial-stage failures use time `-1`; the stage code distinguishes them from the all-healthy sentinel. Stage injections exercise the status producer boundary, not every natural numerical fault. Caller configuration errors remain errors, not probabilistic support rejections. The chart/physical-prior checks keep numerical exclusion distinct from legitimate prior support.

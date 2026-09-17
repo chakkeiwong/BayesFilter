@@ -387,7 +387,8 @@ def _sigma_points_with_tangent(
     )
     scale_c = tf.constant(scale, dtype=dtype)
     valid, chol = safe_cholesky(scale_c * stabilized, "sigma_points")
-    d_chol = _cholesky_forward_differential(chol, scale_c * d_stabilized)
+    from bayesfilter.highdim.ledh_numerical_safety_tf import cholesky_differential
+    d_chol = cholesky_differential(chol, scale_c * d_stabilized, valid)
     if standard_points is not None:
         return (means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, chol),
                 d_means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, d_chol),
@@ -595,10 +596,12 @@ def quadrature_update_with_parameter_tangent(
     d_cross_cov = tf.einsum(
         "s,nsi,nsj->nij", cov_w, d_centered_x, centered_y
     ) + tf.einsum("s,nsi,nsj->nij", cov_w, centered_x, d_centered_y)
-    chol = tf.linalg.cholesky(
-        innovation_cov
-        + tf.constant(jitter, dtype=dtype) * tf.eye(obs_dim, dtype=dtype)
+    from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
+    innovation_valid, chol = safe_cholesky(
+        innovation_cov + tf.constant(jitter, dtype=dtype) * tf.eye(obs_dim, dtype=dtype),
+        "ukf_innovation",
     )
+    valid = valid & innovation_valid
     gain = tf.linalg.matrix_transpose(
         tf.linalg.cholesky_solve(chol, tf.linalg.matrix_transpose(cross_cov))
     )

@@ -59,6 +59,7 @@ def _output_signature(
         ),
         "target_source_id": tf.TensorSpec([], tf.int32),
         "valid": tf.TensorSpec([], tf.bool),
+        "value_valid": tf.TensorSpec([], tf.bool),
     }
     signature.update(
         {key: tf.TensorSpec([state_dim], dtype) for key in _VECTOR_KEYS}
@@ -92,6 +93,7 @@ def batched_higher_moment_shape_jvp(
     pairwise_particle_rms_cap: float = 0.0,
     coordinatewise_standardized_cap: float = 0.0,
     coordinatewise_standardized_cap_power: int = 8,
+    active: Tensor | None = None,
 ) -> dict[str, Tensor]:
     """Correct B clouds with K analytical tangent directions.
 
@@ -120,9 +122,14 @@ def batched_higher_moment_shape_jvp(
     weights_tangent_by_row = tf.transpose(weights_tangent, [1, 2, 0])
     points_tangent_by_row = tf.transpose(points_tangent, [1, 2, 3, 0])
 
+    if active is None:
+        active = tf.ones([tf.shape(source)[0]],tf.bool)
+    signature = _output_signature(particle_count,state_dim,direction_count,dtype)
+
     def correct_row(row):
-        row_source, row_weights, row_source_tangent, row_weights_tangent, row_points, row_points_tangent = row
-        return higher_moment_shape_jvp(
+        row_source, row_weights, row_source_tangent, row_weights_tangent, row_points, row_points_tangent, row_active = row
+        def evaluate():
+            return higher_moment_shape_jvp(
             row_source,
             row_weights,
             row_source_tangent,
@@ -143,6 +150,10 @@ def batched_higher_moment_shape_jvp(
             coordinatewise_standardized_cap_power=coordinatewise_standardized_cap_power,
         )
 
+        def inactive():
+            return {key:tf.zeros(spec.shape,spec.dtype) for key,spec in signature.items()}
+        return tf.cond(row_active,evaluate,inactive)
+
     result = tf.map_fn(
         correct_row,
         (
@@ -152,6 +163,7 @@ def batched_higher_moment_shape_jvp(
             weights_tangent_by_row,
             points,
             points_tangent_by_row,
+            active,
         ),
         fn_output_signature=_output_signature(
             particle_count, state_dim, direction_count, dtype

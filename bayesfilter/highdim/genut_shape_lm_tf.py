@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import tensorflow as tf
 
+from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
+
 
 GENUT_SHAPE_SOLVER_ID = "genut_column_scaled_lm_smooth_rms_trust_v1"
 
@@ -35,15 +37,24 @@ def scaled_lm_coefficients_value(
     )
     system += tf.cast(damping, dtype) * tf.eye(2, dtype=dtype)
     rhs = tf.linalg.matvec(scaled_jacobian, residual, transpose_a=True)
-    scaled_coefficient = tf.linalg.solve(system, rhs[..., None])[..., 0]
+    system_valid, _ = safe_cholesky(system,"genut_lm_system")
+    system_valid &= tf.reduce_all(tf.math.is_finite(rhs),axis=-1)
+    safe_system = tf.where(system_valid[...,None,None],system,tf.eye(2,dtype=dtype))
+    safe_rhs = tf.where(system_valid[...,None],rhs,tf.zeros_like(rhs))
+    scaled_coefficient = tf.linalg.solve(safe_system,safe_rhs[...,None])[...,0]
+    # An internal invalid result remains visible to the enclosing correction's
+    # validity check; the factor passed to every solve is still safe.
+    scaled_coefficient = tf.where(system_valid[...,None],scaled_coefficient,
+                                  tf.constant(float('nan'),dtype))
     coefficient = (
         tf.cast(strength, dtype) * scaled_coefficient / column_scale
     )
-    eigenvalues = tf.linalg.eigvalsh(system)
+    eigenvalues = tf.linalg.eigvalsh(safe_system)
     return {
         "coefficient": coefficient,
         "column_scale": column_scale,
-        "scaled_system": system,
+        "scaled_system": safe_system,
+        "value_valid": system_valid,
         "scaled_system_condition": eigenvalues[..., -1]
         / eigenvalues[..., 0],
     }

@@ -8,11 +8,11 @@ import numpy as np
 import tensorflow as tf
 
 from bayesfilter.highdim.ledh_canonical_batch_fused_tf import (
-    canonical_batch_fused_value_score,
+    canonical_batch_fused_value_score, PerPointScoreModel,
 )
 
 
-class PathologicalLGSSM:
+class PathologicalLGSSM(PerPointScoreModel):
     """LGSSM with pathologically small process noise to trigger degeneracy.
 
     Implements PerPointScoreModel interface for canonical_batch_fused_value_score.
@@ -24,23 +24,18 @@ class PathologicalLGSSM:
         self.dtype = dtype
 
         # PerPointScoreModel required attributes
-        self.process_covariance = tf.constant(
+        process_covariance = tf.constant(
             tiny_noise * np.eye(state_dim), dtype=dtype
         )
-        self.observation_covariance = tf.constant(
+        observation_covariance = tf.constant(
             1.0 * np.eye(state_dim), dtype=dtype
         )
 
-        # Bind the instance methods as attributes for PerPointScoreModel
-        self.transition_mean_fn = self._transition_mean_fn
-        self.transition_mean_tangent_fn = self._transition_mean_tangent_fn
-        self.observation_fn = self._observation_fn
-        self.observation_jacobian_fn = self._observation_jacobian_fn
-        self.observation_tangent_fn = self._observation_tangent_fn
-
-        # Optional observation log density (not used in this test)
-        self.observation_log_density_fn = None
-        self.observation_log_density_tangent_fn = None
+        super().__init__(
+            self._transition_mean_fn, self._transition_mean_tangent_fn,
+            self._observation_fn, self._observation_jacobian_fn,
+            self._observation_tangent_fn, process_covariance,
+            observation_covariance)
 
     def _transition_mean_fn(self, theta_rows, points):
         """Identity dynamics: f(x) = x (no parameter dependence)."""
@@ -80,24 +75,24 @@ class TestLEDHGracefulFailureIntegration(tf.test.TestCase):
 
     def test_pathological_lgssm_returns_neg_inf(self):
         """Test that pathological LGSSM returns -inf without crashing."""
-        # Create pathological model (tiny process noise)
+        # Invalid covariance gives an unconditional failure expectation.
         model = PathologicalLGSSM(
             state_dim=self.state_dim,
-            tiny_noise=1e-20  # Extremely small to trigger degeneracy
+            tiny_noise=-0.1  # Indefinite process covariance must fail
         )
 
         # Initial state
         initial_states = tf.zeros(
-            [1, self.num_particles, self.state_dim], dtype=self.dtype
+            [self.num_particles, self.state_dim], dtype=self.dtype
         )
         initial_covariances = (
-            tf.eye(self.state_dim, dtype=self.dtype)[None, None, :, :]
+            tf.eye(self.state_dim, batch_shape=[self.num_particles], dtype=self.dtype)
             * 0.01
         )
 
         # Zero noises (deterministic dynamics will cause particle collapse)
         noises = tf.zeros(
-            [self.horizon, self.state_dim], dtype=self.dtype
+            [self.horizon, self.num_particles, self.state_dim], dtype=self.dtype
         )
 
         # Observations far from initial state (strong likelihood)
@@ -134,19 +129,12 @@ class TestLEDHGracefulFailureIntegration(tf.test.TestCase):
             reset_ridge=1e-5,  # Weak ridge
         )
 
-        # Should return -inf (not crash)
-        # Note: Depending on when failure occurs, may return finite or -inf
-        # The key is no crash and no NaN
-        self.assertFalse(tf.math.is_nan(value[0]).numpy())
-
-        # If invalid, should be -inf with zero score
-        if tf.math.is_inf(value[0]).numpy():
-            self.assertTrue(value[0].numpy() < 0)
-            self.assertAllClose(
-                score[0].numpy(),
-                np.zeros(self.param_dim),
-                atol=1e-10
-            )
+        self.assertEqual(float(value[0]), float('-inf'))
+        self.assertAllEqual(score[0], tf.zeros([self.param_dim], self.dtype))
+        self.assertFalse(bool(valid['value_valid'][0]))
+        self.assertFalse(bool(valid['force_valid'][0]))
+        self.assertEqual(int(valid['first_failure_time'][0]), -1)
+        self.assertEqual(int(valid['first_failure_stage'][0]), 0)
 
     def test_normal_lgssm_returns_finite(self):
         """Test that normal LGSSM returns finite values."""
@@ -158,17 +146,17 @@ class TestLEDHGracefulFailureIntegration(tf.test.TestCase):
 
         # Initial state
         initial_states = tf.zeros(
-            [1, self.num_particles, self.state_dim], dtype=self.dtype
+            [self.num_particles, self.state_dim], dtype=self.dtype
         )
         initial_covariances = (
-            tf.eye(self.state_dim, dtype=self.dtype)[None, None, :, :]
+            tf.eye(self.state_dim, batch_shape=[self.num_particles], dtype=self.dtype)
             * 0.1
         )
 
         # Small noises
         generator = tf.random.Generator.from_seed(42)
         noises = generator.normal(
-            [self.horizon, self.state_dim], dtype=self.dtype
+            [self.horizon, self.num_particles, self.state_dim], dtype=self.dtype
         ) * 0.1
 
         # Observations near initial state
