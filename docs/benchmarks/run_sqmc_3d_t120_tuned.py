@@ -47,12 +47,15 @@ ROUTES = [
     "repaired_permutation_ablation",
 ]
 
+# Repo root for absolute paths
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 # Tuning artifacts from T=20 campaign
 TUNING_ARTIFACTS = {
-    "iid_dual_cap": "docs/tuning/sqmc-lgssm-t20-n1008-iid_dual_cap-20260912/tuning_artifact.json",
-    "previous_inverse_cdf": "docs/tuning/sqmc-lgssm-t20-n1008-previous_inverse_cdf-20260912/tuning_artifact.json",
-    "repaired_permutation": "docs/tuning/sqmc-lgssm-t20-n1008-repaired_permutation-20260912/tuning_artifact.json",
-    "repaired_permutation_ablation": "docs/tuning/sqmc-lgssm-t20-n1008-repaired_permutation_ablation-20260912/tuning_artifact.json",
+    "iid_dual_cap": REPO_ROOT / "docs/tuning/sqmc-lgssm-t20-n1008-iid_dual_cap-20260912/tuning_artifact.json",
+    "previous_inverse_cdf": REPO_ROOT / "docs/tuning/sqmc-lgssm-t20-n1008-previous_inverse_cdf-20260912/tuning_artifact.json",
+    "repaired_permutation": REPO_ROOT / "docs/tuning/sqmc-lgssm-t20-n1008-repaired_permutation-20260912/tuning_artifact.json",
+    "repaired_permutation_ablation": REPO_ROOT / "docs/tuning/sqmc-lgssm-t20-n1008-repaired_permutation_ablation-20260912/tuning_artifact.json",
 }
 
 
@@ -160,7 +163,7 @@ def main() -> int:
         print(f"{'='*78}")
 
         # Load tuned controls
-        artifact_path = Path(TUNING_ARTIFACTS[route])
+        artifact_path = TUNING_ARTIFACTS[route]
         if not artifact_path.exists():
             print(f"ERROR: Tuning artifact not found: {artifact_path}")
             continue
