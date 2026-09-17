@@ -85,7 +85,7 @@ def inspect_source(path, source, scopes=None):
                 call = resolve(ast.unparse(node.func))
                 terminal = call.rsplit(".", 1)[-1]
                 keywords = {keyword.arg: keyword.value for keyword in node.keywords}
-                if call.startswith("numpy."):
+                if call.startswith(("numpy.", "tensorflow.experimental.numpy.")):
                     add(node, "numpy_numerics")
                 if call in ("tensorflow.py_function", "tensorflow.numpy_function"):
                     add(node, "python_numerical_callback")

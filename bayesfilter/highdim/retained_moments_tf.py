@@ -142,7 +142,14 @@ def _retained_reference_moments(retained, *, jit_compile):
                           [[0, 0], [0, width - count], [0, width - count]])
         return evaluate
     if all(isinstance(part, LegendreBasis1D) for part in basis.bases):
-        masses = _legendre_moment_masses(basis, width, jit_compile=jit_compile)
+        # Basis domains and quadrature are immutable setup, independent of the
+        # live cores, Gram matrix, defensive weight and normalizer.
+        with tf.init_scope():
+            prepare_masses = tf.function(
+                lambda: _legendre_moment_masses(basis, width, jit_compile=jit_compile),
+                input_signature=[], jit_compile=jit_compile, autograph=False,
+            )
+            masses = prepare_masses()
     else:
         masses = None
         branches = tuple(mass_branch(axis) for axis in range(n))

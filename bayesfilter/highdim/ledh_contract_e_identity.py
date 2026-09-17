@@ -27,6 +27,7 @@ from typing import Any, Mapping, Sequence
 import tensorflow as tf
 from tensorflow.core.framework import tensor_pb2
 
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function, fixed_signature_metadata
 
 CONTRACT_E_ROUTE_IDENTITY_SCHEMA_VERSION = (
     "bayesfilter.highdim.contract_e_route_identity.v2"
@@ -202,6 +203,24 @@ def _wrapper_payload(value: Any, role_spec: "_CallableRoleSpec") -> dict[str, An
         raise ValueError(f"unsupported wrapper kind: {role_spec.wrapper_kind}")
     if getattr(value, "python_function", None) is None:
         raise ValueError(f"{role_spec.role} must be a TensorFlow function wrapper")
+    dispatch = fixed_signature_metadata(value)
+    if dispatch is not None:
+        if dispatch["jit_compile"] is not role_spec.jit_compile:
+            raise ValueError(f"{role_spec.role} jit_compile does not match the route spec")
+        factory_path = Path(inspect.getsourcefile(fixed_signature_function)).resolve()
+        source = factory_path.read_bytes()
+        factory_code = _find_compiled_code(compile(source, str(factory_path), "exec", dont_inherit=True),
+                                           fixed_signature_function.__qualname__)
+        loaded_digest = _code_digest(fixed_signature_function.__code__)
+        if loaded_digest != _code_digest(factory_code):
+            raise ValueError("dispatcher factory does not match current inspected source")
+        return {
+            "wrapper_kind": "repository_fixed_signature_function",
+            **dispatch,
+            "factory_source_file": factory_path.relative_to(_REPOSITORY_ROOT).as_posix(),
+            "factory_source_sha256": _sha256(source),
+            "factory_loaded_code_sha256": loaded_digest,
+        }
     wrapper_type = type(value)
     if not str(wrapper_type.__module__).startswith("tensorflow."):
         raise ValueError(f"{role_spec.role} has a non-TensorFlow function wrapper")
@@ -636,15 +655,20 @@ class _ContractERouteIdentityFactory:
             raise ValueError(f"{role} callable source is outside the repository") from error
         source_bytes = source_path.read_bytes()
         source_text = source_bytes.decode("utf-8")
-        compiled = compile(source_text, str(source_path), "exec")
+        compiled = compile(source_text, str(source_path), "exec", dont_inherit=True)
         source_code = _find_compiled_code(compiled, function.__qualname__)
         loaded_digest = _code_digest(function.__code__)
         source_digest = _code_digest(source_code)
         if loaded_digest != source_digest:
             raise ValueError(
-                f"{role} loaded callable code does not match current inspected source"
+                f"{role} loaded callable code does not match current inspected source: {symbol}"
             )
         source_segment = inspect.getsource(function).encode("utf-8")
+        if role_spec is None and getattr(value, "python_function", None) is not None:
+            # Dependencies bind their actual wrapper settings. Root roles still
+            # require the registry's exact wrapper and JIT declaration.
+            role_spec = _CallableRoleSpec(role=role, symbol=symbol,
+                wrapper_kind="tensorflow_function", jit_compile=getattr(value, "_jit_compile", None))
         effective_role_spec = role_spec or _CallableRoleSpec(role=role, symbol=symbol)
         return {
             "role": role,
@@ -884,9 +908,8 @@ class _ContractERouteIdentityFactory:
         for role_spec in specification.callable_roles:
             if role_spec.wrapper_kind == "tensorflow_function":
                 wrapper = callables[role_spec.role]
-                wrapper_symbol = (
-                    f"{type(wrapper).__module__}:{type(wrapper).__qualname__}"
-                )
+                wrapper_symbol = ("tensorflow:function" if fixed_signature_metadata(wrapper) is not None else
+                    f"{type(wrapper).__module__}:{type(wrapper).__qualname__}")
                 discovered_external.setdefault(wrapper_symbol, set()).add(
                     role_spec.role
                 )

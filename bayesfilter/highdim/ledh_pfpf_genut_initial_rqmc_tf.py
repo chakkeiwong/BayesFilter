@@ -345,14 +345,20 @@ def finite_value_standard_score_initial_rqmc(
     transport_row_chunk_size: int | None = None,
     transport_col_chunk_size: int | None = None,
     ancestor_uniform_policy: str = "supplied",
-    functional_time_loop: bool = False,
+    functional_time_loop: bool = True,
     epsilon: float = 2.0,
     sinkhorn_steps: int = 8,
     balance_steps: int = 8,
     ridge: float = 1.0e-5,
     marginal_tolerance: float = 1.0e-4,
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
-    """Run a fixed LEDH proposal with exact correction and standard score."""
+    """Run a fixed LEDH proposal with exact correction and standard score.
+
+    The legacy ``functional_time_loop`` option is retained for call compatibility;
+    all time recurrences now use native TensorFlow control flow.
+    """
+
+    del functional_time_loop
 
     theta = tf.convert_to_tensor(theta, initial_noise.dtype)
     observations = tf.convert_to_tensor(observations, theta.dtype)
@@ -1005,17 +1011,14 @@ def finite_value_standard_score_initial_rqmc(
         dual_cap_post_absolute_history,
         dual_cap_radial_scale_history,
     )
-    if functional_time_loop:
-        loop_state = tf.while_loop(
-            lambda observation_index, *_: observation_index
-            < tf.constant(horizon, tf.int32),
-            transition_body,
-            loop_state,
-            parallel_iterations=1,
-        )
-    else:
-        for _observation_index in range(start_index, horizon):
-            loop_state = transition_body(*loop_state)
+    loop_state = tf.while_loop(
+        lambda observation_index, *_: observation_index
+        < tf.constant(horizon, tf.int32),
+        transition_body,
+        loop_state,
+        maximum_iterations=horizon - start_index,
+        parallel_iterations=1,
+    )
 
     (
         _,

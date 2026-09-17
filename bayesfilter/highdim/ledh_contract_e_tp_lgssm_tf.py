@@ -13,6 +13,7 @@ import tensorflow as tf
 
 from bayesfilter.highdim import ledh_contract_e_canonical_lgssm_tf as lgssm
 from bayesfilter.highdim import ledh_contract_e_tp_tf as tp
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 
 
 ALGORITHM_ID = tp.ALGORITHM_ID
@@ -350,7 +351,8 @@ def _conditional_future_log_likelihood(
         [lgssm.STATE_DIMENSION, lgssm.STATE_DIMENSION], theta.dtype
     )
     values = tf.zeros([tf.shape(points)[0]], theta.dtype)
-    for observation in tf.unstack(future_observations, axis=0):
+    def step(time_index, means, covariance, values):
+        observation = future_observations[time_index]
         means = tf.linalg.matmul(means, transition, transpose_b=True)
         covariance = transition @ covariance @ tf.transpose(transition) + transition_covariance
         predicted = tf.linalg.matmul(means, observation_matrix, transpose_b=True)
@@ -373,6 +375,13 @@ def _conditional_future_log_likelihood(
         )
         covariance = covariance - gain @ observation_matrix @ covariance
         covariance = 0.5 * (covariance + tf.transpose(covariance))
+        return time_index + 1, means, covariance, values
+
+    _, _, _, values = tf.while_loop(
+        lambda time_index, *_: time_index < tf.shape(future_observations)[0],
+        step, (tf.constant(0), means, covariance, values),
+        maximum_iterations=tf.shape(future_observations)[0], parallel_iterations=1,
+    )
     return values
 
 
@@ -423,9 +432,13 @@ def _backward_information_parameters(
         [lgssm.STATE_DIMENSION, lgssm.STATE_DIMENSION], theta.dtype
     )
     information_vector = tf.zeros([lgssm.STATE_DIMENSION], theta.dtype)
-    matrix_history = []
-    vector_history = []
-    for observation in reversed(tf.unstack(observations[1:], axis=0)):
+    matrix_history = tf.TensorArray(theta.dtype, size=time_steps - 1,
+                                   element_shape=information_matrix.shape)
+    vector_history = tf.TensorArray(theta.dtype, size=time_steps - 1,
+                                   element_shape=information_vector.shape)
+
+    def step(time_index, information_matrix, information_vector, matrix_history, vector_history):
+        observation = observations[time_index + 1]
         child_matrix = information_matrix + observation_information
         child_vector = information_vector + tf.linalg.matvec(
             tf.transpose(observation_matrix),
@@ -449,12 +462,17 @@ def _backward_information_parameters(
         information_vector = tf.linalg.matvec(
             tf.transpose(transition) @ transition_precision, solved_vector
         )
-        matrix_history.append(information_matrix)
-        vector_history.append(information_vector)
-    return (
-        tf.stack(list(reversed(matrix_history))),
-        tf.stack(list(reversed(vector_history))),
+        return (time_index - 1, information_matrix, information_vector,
+                matrix_history.write(time_index, information_matrix),
+                vector_history.write(time_index, information_vector))
+
+    _, _, _, matrix_history, vector_history = tf.while_loop(
+        lambda time_index, *_: time_index >= 0, step,
+        (tf.constant(time_steps - 2), information_matrix, information_vector,
+         matrix_history, vector_history),
+        maximum_iterations=time_steps - 1, parallel_iterations=1,
     )
+    return matrix_history.stack(), vector_history.stack()
 
 
 def _finite_lookahead_information_parameters(
@@ -462,25 +480,7 @@ def _finite_lookahead_information_parameters(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Return exact information features for each bounded future window."""
 
-    if lookahead_steps < 1:
-        raise ValueError("lookahead_steps must be positive")
-    observations = tf.convert_to_tensor(observations, theta.dtype)
-    time_steps = observations.shape[0]
-    if time_steps is None or time_steps < 2:
-        return (
-            tf.zeros([0, lgssm.STATE_DIMENSION, lgssm.STATE_DIMENSION], theta.dtype),
-            tf.zeros([0, lgssm.STATE_DIMENSION], theta.dtype),
-        )
-    matrices = []
-    vectors = []
-    for time_index in range(time_steps - 1):
-        stop = min(time_steps, time_index + 1 + lookahead_steps)
-        local_matrices, local_vectors = _backward_information_parameters(
-            theta, observations[time_index:stop]
-        )
-        matrices.append(local_matrices[0])
-        vectors.append(local_vectors[0])
-    return tf.stack(matrices), tf.stack(vectors)
+    return _finite_lookahead_information_parameters_loop(theta, observations, lookahead_steps)
 
 
 def _finite_lookahead_information_parameters_loop(
@@ -657,85 +657,16 @@ def contract_e_tp_lgssm_recursive_core(
 ) -> dict[str, tf.Tensor]:
     """Execute the finite recursive corrected-LEDH Contract E--TP scalar."""
 
-    observations = tf.convert_to_tensor(observations, theta.dtype)
-    time_steps = observations.shape[0]
-    if time_steps is None or time_steps < 1:
-        raise ValueError("LGSSM Contract E--TP requires a static positive horizon")
-    if active_indices.shape != (time_steps - 1, FEATURE_COUNT):
-        raise ValueError(
-            f"active_indices must have shape {(time_steps - 1, FEATURE_COUNT)}"
-        )
-    if row_scales.shape != (time_steps - 1, FEATURE_COUNT):
-        raise ValueError(f"row_scales must have shape {(time_steps - 1, FEATURE_COUNT)}")
-    parents, parent_log_weights, innovations, innovation_log_weights = initial_parents(
-        theta, standard_nodes, standard_weights
+    result = _contract_e_tp_lgssm_loop_core(
+        theta, observations, standard_nodes, standard_weights, active_indices,
+        row_scales, feature_mode="next_predictive", lookahead_steps=None,
     )
-    total = tf.constant(0.0, theta.dtype)
-    increments = []
-    minimum_weights = []
-    condition_numbers = []
-    feature_residuals = []
-    target_history = []
-    matched_history = []
-    valid_history = []
-    incoming_weight_history = []
-    for time_index in range(time_steps):
-        incoming_weight_history.append(tf.exp(parent_log_weights))
-        next_observation = (
-            observations[time_index + 1] if time_index + 1 < time_steps else None
-        )
-        teacher = _teacher_step(
-            theta,
-            parents,
-            parent_log_weights,
-            innovations,
-            innovation_log_weights,
-            observations[time_index],
-            next_observation,
-        )
-        total += teacher["increment"]
-        increments.append(teacher["increment"])
-        if next_observation is None:
-            valid_history.append(teacher["flow_valid"])
-            continue
-        projection = tp._contract_e_tp_dense_square_forward_core(
-            teacher["particles"],
-            teacher["log_unnormalized_weights"],
-            teacher["features"],
-            active_indices[time_index],
-            row_scales[time_index],
-        )
-        parents = projection["student_points"]
-        parent_log_weights = tf.math.log(projection["student_weights"])
-        minimum_weights.append(projection["minimum_weight"])
-        condition_numbers.append(projection["condition_number"])
-        feature_residuals.append(projection["feature_residual"])
-        target_history.append(projection["target"])
-        matched_history.append(projection["matched_target"])
-        valid_history.append(teacher["flow_valid"] & projection["valid_chart"])
-    return {
-        "objective": total,
-        "increment_history": tf.stack(increments),
-        "minimum_weight_history": tf.stack(minimum_weights)
-        if minimum_weights
-        else tf.zeros([0], theta.dtype),
-        "condition_number_history": tf.stack(condition_numbers)
-        if condition_numbers
-        else tf.zeros([0], theta.dtype),
-        "feature_residual_history": tf.stack(feature_residuals)
-        if feature_residuals
-        else tf.zeros([0, FEATURE_COUNT], theta.dtype),
-        "target_history": tf.stack(target_history)
-        if target_history
-        else tf.zeros([0, FEATURE_COUNT], theta.dtype),
-        "matched_target_history": tf.stack(matched_history)
-        if matched_history
-        else tf.zeros([0, FEATURE_COUNT], theta.dtype),
-        "valid_history": tf.stack(valid_history),
-        "final_particles": teacher["particles"],
-        "final_log_unnormalized_weights": teacher["log_unnormalized_weights"],
-        "incoming_weight_history": incoming_weight_history,
-    }
+    result["incoming_weight_history"] = [result.pop("initial_incoming_weights")] + tf.unstack(
+        tf.exp(tf.math.log(result.pop("post_reset_incoming_weight_history"))), axis=0
+    )
+    result.pop("score_mark_mean_history")
+    result.pop("score_mark_center_residual_history")
+    return result
 
 
 def contract_e_tp_lgssm_score_informed_recursive_core(
@@ -757,157 +688,16 @@ def contract_e_tp_lgssm_score_informed_recursive_core(
         "finite_lookahead",
     ):
         raise ValueError(f"unknown score-informed feature mode: {feature_mode}")
-    observations = tf.convert_to_tensor(observations, theta.dtype)
-    time_steps = observations.shape[0]
-    if time_steps is None or time_steps < 1:
-        raise ValueError("LGSSM Contract E--TP requires a static positive horizon")
-    feature_count = (
-        PROGRESSIVE_FEATURE_COUNT
-        if feature_mode == "progressive_target_model_score"
-        else CONTINUATION_FEATURE_COUNT
+    if feature_mode == "finite_lookahead" and lookahead_steps is None:
+        raise ValueError("finite_lookahead requires lookahead_steps")
+    result = _contract_e_tp_lgssm_loop_core(
+        theta, observations, standard_nodes, standard_weights, active_indices,
+        row_scales, feature_mode=feature_mode, lookahead_steps=lookahead_steps,
     )
-    if active_indices.shape != (time_steps - 1, feature_count):
-        raise ValueError(
-            f"active_indices must have shape {(time_steps - 1, feature_count)}"
-        )
-    if row_scales.shape != (time_steps - 1, feature_count):
-        raise ValueError(
-            f"row_scales must have shape {(time_steps - 1, feature_count)}"
-        )
-
-    parents, parent_log_weights, innovations, innovation_log_weights = initial_parents(
-        theta, standard_nodes, standard_weights
+    result["incoming_weight_history"] = [result.pop("initial_incoming_weights")] + tf.unstack(
+        tf.exp(tf.math.log(result.pop("post_reset_incoming_weight_history"))), axis=0
     )
-    parent_score_marks = _initial_target_model_score_marks(theta, parents)
-    if feature_mode == "exact_continuation":
-        continuation_matrices, continuation_vectors = (
-            _backward_information_parameters(theta, observations)
-        )
-    elif feature_mode == "finite_lookahead":
-        if lookahead_steps is None:
-            raise ValueError("finite_lookahead requires lookahead_steps")
-        continuation_matrices, continuation_vectors = (
-            _finite_lookahead_information_parameters(
-                theta, observations, lookahead_steps
-            )
-        )
-    total = tf.constant(0.0, theta.dtype)
-    increments = []
-    minimum_weights = []
-    condition_numbers = []
-    feature_residuals = []
-    target_history = []
-    matched_history = []
-    valid_history = []
-    score_mark_mean_history = []
-    score_mark_center_residual_history = []
-    incoming_weight_history = []
-    for time_index in range(time_steps):
-        incoming_weight_history.append(tf.exp(parent_log_weights))
-        flow = _flow_correction(
-            theta, parents, innovations, observations[time_index]
-        )
-        innovation_count = tf.shape(innovations)[0]
-        log_weights = _combine_parent_innovation_log_weights(
-            parent_log_weights,
-            innovation_log_weights,
-            flow["log_correction"],
-        )
-        increment = tf.reduce_logsumexp(log_weights)
-        total += increment
-        increments.append(increment)
-        if feature_mode == "progressive_target_model_score":
-            teacher_score_marks = _target_model_progressive_score_marks(
-                theta,
-                parents,
-                parent_log_weights,
-                parent_score_marks,
-                flow["particles"],
-                observations[time_index],
-            )
-            normalized_weights = tf.nn.softmax(log_weights)
-            score_mean = tf.einsum(
-                "n,np->p", normalized_weights, teacher_score_marks
-            )
-            centered_marks = teacher_score_marks - score_mean[None, :]
-            score_mark_mean_history.append(score_mean)
-            score_mark_center_residual_history.append(
-                tf.einsum("n,np->p", normalized_weights, centered_marks)
-            )
-        if time_index + 1 == time_steps:
-            valid_history.append(flow["flow_valid"])
-            continue
-
-        if feature_mode == "progressive_target_model_score":
-            features, _, centered_marks = _progressive_features(
-                theta,
-                flow["particles"],
-                log_weights,
-                teacher_score_marks,
-                innovations,
-                innovation_log_weights,
-                observations[time_index + 1],
-            )
-        else:
-            features = _continuation_features_from_information(
-                flow["particles"],
-                continuation_matrices[time_index],
-                continuation_vectors[time_index],
-            )
-        projection = tp._contract_e_tp_dense_square_forward_core(
-            flow["particles"],
-            log_weights,
-            features,
-            active_indices[time_index],
-            row_scales[time_index],
-        )
-        parents = projection["student_points"]
-        parent_log_weights = tf.math.log(projection["student_weights"])
-        if feature_mode == "progressive_target_model_score":
-            parent_score_marks = tf.gather(
-                centered_marks, active_indices[time_index]
-            )
-            parent_score_marks -= tf.einsum(
-                "n,np->p", projection["student_weights"], parent_score_marks
-            )[None, :]
-        minimum_weights.append(projection["minimum_weight"])
-        condition_numbers.append(projection["condition_number"])
-        feature_residuals.append(projection["feature_residual"])
-        target_history.append(projection["target"])
-        matched_history.append(projection["matched_target"])
-        valid_history.append(flow["flow_valid"] & projection["valid_chart"])
-
-    return {
-        "objective": total,
-        "increment_history": tf.stack(increments),
-        "minimum_weight_history": tf.stack(minimum_weights)
-        if minimum_weights
-        else tf.zeros([0], theta.dtype),
-        "condition_number_history": tf.stack(condition_numbers)
-        if condition_numbers
-        else tf.zeros([0], theta.dtype),
-        "feature_residual_history": tf.stack(feature_residuals)
-        if feature_residuals
-        else tf.zeros([0, feature_count], theta.dtype),
-        "target_history": tf.stack(target_history)
-        if target_history
-        else tf.zeros([0, feature_count], theta.dtype),
-        "matched_target_history": tf.stack(matched_history)
-        if matched_history
-        else tf.zeros([0, feature_count], theta.dtype),
-        "valid_history": tf.stack(valid_history),
-        "score_mark_mean_history": tf.stack(score_mark_mean_history)
-        if score_mark_mean_history
-        else tf.zeros([0, lgssm.PARAMETER_COUNT], theta.dtype),
-        "score_mark_center_residual_history": tf.stack(
-            score_mark_center_residual_history
-        )
-        if score_mark_center_residual_history
-        else tf.zeros([0, lgssm.PARAMETER_COUNT], theta.dtype),
-        "final_particles": flow["particles"],
-        "final_log_unnormalized_weights": log_weights,
-        "incoming_weight_history": incoming_weight_history,
-    }
+    return result
 
 
 def contract_e_tp_lgssm_finite_lookahead_loop_core(
@@ -922,25 +712,63 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
 ) -> dict[str, tf.Tensor]:
     """Execute finite-lookahead Contract E--TP with a functional time loop."""
 
+    return _contract_e_tp_lgssm_loop_core(
+        theta, observations, standard_nodes, standard_weights, active_indices,
+        row_scales, feature_mode="finite_lookahead", lookahead_steps=lookahead_steps,
+    )
+
+
+def _contract_e_tp_lgssm_loop_core(
+    theta: tf.Tensor,
+    observations: tf.Tensor,
+    standard_nodes: tf.Tensor,
+    standard_weights: tf.Tensor,
+    active_indices: tf.Tensor,
+    row_scales: tf.Tensor,
+    *,
+    feature_mode: str,
+    lookahead_steps: int | None,
+) -> dict[str, tf.Tensor]:
+    """Carry the fixed projection chart through a bounded native recursion."""
+
     theta = tf.reshape(tf.convert_to_tensor(theta), [lgssm.PARAMETER_COUNT])
     observations = tf.convert_to_tensor(observations, theta.dtype)
     time_steps = observations.shape[0]
     if time_steps is None or time_steps < 1:
         raise ValueError("LGSSM Contract E--TP requires a static positive horizon")
-    if active_indices.shape != (time_steps - 1, CONTINUATION_FEATURE_COUNT):
+    progressive = feature_mode == "progressive_target_model_score"
+    feature_count = PROGRESSIVE_FEATURE_COUNT if progressive else FEATURE_COUNT
+    if active_indices.shape != (time_steps - 1, feature_count):
         raise ValueError(
             "active_indices must have shape "
-            f"{(time_steps - 1, CONTINUATION_FEATURE_COUNT)}"
+            f"{(time_steps - 1, feature_count)}"
         )
-    if row_scales.shape != (time_steps - 1, CONTINUATION_FEATURE_COUNT):
+    if row_scales.shape != (time_steps - 1, feature_count):
         raise ValueError(
             "row_scales must have shape "
-            f"{(time_steps - 1, CONTINUATION_FEATURE_COUNT)}"
+            f"{(time_steps - 1, feature_count)}"
         )
 
     parents, parent_log_weights, innovations, innovation_log_weights = initial_parents(
         theta, standard_nodes, standard_weights
     )
+    parent_score_marks = _initial_target_model_score_marks(theta, parents)
+
+    def score_state(parents, log_parent_weights, parent_marks, particles, log_weights, observation):
+        if progressive:
+            marks = _target_model_progressive_score_marks(
+                theta, parents, log_parent_weights, parent_marks, particles, observation
+            )
+            normalized = tf.nn.softmax(log_weights)
+            mean = tf.einsum("n,np->p", normalized, marks)
+            residual = tf.einsum("n,np->p", normalized, marks - mean[None, :])
+            return marks, mean, residual
+        return (
+            tf.zeros([tf.shape(particles)[0], lgssm.PARAMETER_COUNT], theta.dtype),
+            tf.zeros([lgssm.PARAMETER_COUNT], theta.dtype),
+            tf.zeros([lgssm.PARAMETER_COUNT], theta.dtype),
+        )
+
     initial_incoming_weights = tf.exp(parent_log_weights)
     if time_steps == 1:
         terminal = _flow_correction(
@@ -953,40 +781,66 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
             terminal["log_correction"],
         )
         terminal_increment = tf.reduce_logsumexp(terminal_log_weights)
+        _, score_mean, score_residual = score_state(
+            parents, parent_log_weights, parent_score_marks, terminal["particles"],
+            terminal_log_weights, observations[0],
+        )
         return {
             "objective": terminal_increment,
             "increment_history": terminal_increment[None],
             "minimum_weight_history": tf.zeros([0], theta.dtype),
             "condition_number_history": tf.zeros([0], theta.dtype),
             "feature_residual_history": tf.zeros(
-                [0, CONTINUATION_FEATURE_COUNT], theta.dtype
+                [0, feature_count], theta.dtype
             ),
             "target_history": tf.zeros(
-                [0, CONTINUATION_FEATURE_COUNT], theta.dtype
+                [0, feature_count], theta.dtype
             ),
             "matched_target_history": tf.zeros(
-                [0, CONTINUATION_FEATURE_COUNT], theta.dtype
+                [0, feature_count], theta.dtype
             ),
             "valid_history": terminal["flow_valid"][None],
-            "score_mark_mean_history": tf.zeros(
+            "score_mark_mean_history": score_mean[None, :] if progressive else tf.zeros(
                 [0, lgssm.PARAMETER_COUNT], theta.dtype
             ),
-            "score_mark_center_residual_history": tf.zeros(
+            "score_mark_center_residual_history": score_residual[None, :] if progressive else tf.zeros(
                 [0, lgssm.PARAMETER_COUNT], theta.dtype
             ),
             "final_particles": terminal["particles"],
             "final_log_unnormalized_weights": terminal_log_weights,
             "initial_incoming_weights": initial_incoming_weights,
             "post_reset_incoming_weight_history": tf.zeros(
-                [0, CONTINUATION_FEATURE_COUNT], theta.dtype
+                [0, feature_count], theta.dtype
             ),
         }
 
-    continuation_matrices, continuation_vectors = (
-        _finite_lookahead_information_parameters_loop(
+    if feature_mode == "finite_lookahead":
+        continuation_matrices, continuation_vectors = _finite_lookahead_information_parameters_loop(
             theta, observations, lookahead_steps
         )
-    )
+    elif feature_mode == "exact_continuation":
+        continuation_matrices, continuation_vectors = _backward_information_parameters(
+            theta, observations
+        )
+
+    def features_and_marks(time_index, particles, log_weights, teacher_marks):
+        if progressive:
+            features, _, centered = _progressive_features(
+                theta, particles, log_weights, teacher_marks, innovations,
+                innovation_log_weights, observations[time_index + 1],
+            )
+            return features, tf.gather(centered, active_indices[time_index])
+        if feature_mode == "next_predictive":
+            features = _features(
+                theta, particles, innovations, innovation_log_weights,
+                observations[time_index + 1],
+            )
+        else:
+            features = _continuation_features_from_information(
+                particles, continuation_matrices[time_index], continuation_vectors[time_index]
+            )
+        return features, tf.zeros([feature_count, lgssm.PARAMETER_COUNT], theta.dtype)
+
     increment_history = tf.TensorArray(
         theta.dtype, size=time_steps, clear_after_read=False
     )
@@ -1000,19 +854,19 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         theta.dtype,
         size=time_steps - 1,
         clear_after_read=False,
-        element_shape=tf.TensorShape([CONTINUATION_FEATURE_COUNT]),
+        element_shape=tf.TensorShape([feature_count]),
     )
     target_history = tf.TensorArray(
         theta.dtype,
         size=time_steps - 1,
         clear_after_read=False,
-        element_shape=tf.TensorShape([CONTINUATION_FEATURE_COUNT]),
+        element_shape=tf.TensorShape([feature_count]),
     )
     matched_target_history = tf.TensorArray(
         theta.dtype,
         size=time_steps - 1,
         clear_after_read=False,
-        element_shape=tf.TensorShape([CONTINUATION_FEATURE_COUNT]),
+        element_shape=tf.TensorShape([feature_count]),
     )
     valid_history = tf.TensorArray(
         tf.bool, size=time_steps, clear_after_read=False
@@ -1021,7 +875,15 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         theta.dtype,
         size=time_steps - 1,
         clear_after_read=False,
-        element_shape=tf.TensorShape([CONTINUATION_FEATURE_COUNT]),
+        element_shape=tf.TensorShape([feature_count]),
+    )
+    score_means = tf.TensorArray(
+        theta.dtype, size=time_steps if progressive else 0, clear_after_read=False,
+        element_shape=[lgssm.PARAMETER_COUNT],
+    )
+    score_residuals = tf.TensorArray(
+        theta.dtype, size=time_steps if progressive else 0, clear_after_read=False,
+        element_shape=[lgssm.PARAMETER_COUNT],
     )
 
     first_flow = _flow_correction(theta, parents, innovations, observations[0])
@@ -1032,10 +894,12 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         first_flow["log_correction"],
     )
     first_increment = tf.reduce_logsumexp(first_log_weights)
-    first_features = _continuation_features_from_information(
-        first_flow["particles"],
-        continuation_matrices[0],
-        continuation_vectors[0],
+    teacher_marks, score_mean, score_residual = score_state(
+        parents, parent_log_weights, parent_score_marks, first_flow["particles"],
+        first_log_weights, observations[0],
+    )
+    first_features, parent_score_marks = features_and_marks(
+        0, first_flow["particles"], first_log_weights, teacher_marks,
     )
     first_projection = tp._contract_e_tp_dense_square_forward_core(
         first_flow["particles"],
@@ -1046,6 +910,12 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
     )
     parents = first_projection["student_points"]
     parent_log_weights = tf.math.log(first_projection["student_weights"])
+    if progressive:
+        parent_score_marks -= tf.einsum(
+            "n,np->p", first_projection["student_weights"], parent_score_marks
+        )[None, :]
+        score_means = score_means.write(0, score_mean)
+        score_residuals = score_residuals.write(0, score_residual)
     increment_history = increment_history.write(0, first_increment)
     minimum_weight_history = minimum_weight_history.write(
         0, first_projection["minimum_weight"]
@@ -1072,6 +942,7 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         time_index: tf.Tensor,
         _parents: tf.Tensor,
         _parent_log_weights: tf.Tensor,
+        _parent_score_marks: tf.Tensor,
         _total: tf.Tensor,
         *_histories: tf.TensorArray,
     ) -> tf.Tensor:
@@ -1081,6 +952,7 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         time_index: tf.Tensor,
         parents: tf.Tensor,
         parent_log_weights: tf.Tensor,
+        parent_score_marks: tf.Tensor,
         total: tf.Tensor,
         increment_history: tf.TensorArray,
         minimum_weight_history: tf.TensorArray,
@@ -1090,6 +962,8 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         matched_target_history: tf.TensorArray,
         valid_history: tf.TensorArray,
         post_reset_incoming_history: tf.TensorArray,
+        score_means: tf.TensorArray,
+        score_residuals: tf.TensorArray,
     ):
         flow = _flow_correction(
             theta, parents, innovations, observations[time_index]
@@ -1100,10 +974,12 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
             flow["log_correction"],
         )
         increment = tf.reduce_logsumexp(log_weights)
-        features = _continuation_features_from_information(
-            flow["particles"],
-            continuation_matrices[time_index],
-            continuation_vectors[time_index],
+        teacher_marks, score_mean, score_residual = score_state(
+            parents, parent_log_weights, parent_score_marks, flow["particles"],
+            log_weights, observations[time_index],
+        )
+        features, parent_score_marks = features_and_marks(
+            time_index, flow["particles"], log_weights, teacher_marks,
         )
         projection = tp._contract_e_tp_dense_square_forward_core(
             flow["particles"],
@@ -1114,6 +990,12 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         )
         parents = projection["student_points"]
         parent_log_weights = tf.math.log(projection["student_weights"])
+        if progressive:
+            parent_score_marks -= tf.einsum(
+                "n,np->p", projection["student_weights"], parent_score_marks
+            )[None, :]
+            score_means = score_means.write(time_index, score_mean)
+            score_residuals = score_residuals.write(time_index, score_residual)
         increment_history = increment_history.write(time_index, increment)
         minimum_weight_history = minimum_weight_history.write(
             time_index, projection["minimum_weight"]
@@ -1138,6 +1020,7 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
             time_index + 1,
             parents,
             parent_log_weights,
+            parent_score_marks,
             total + increment,
             increment_history,
             minimum_weight_history,
@@ -1147,6 +1030,8 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
             matched_target_history,
             valid_history,
             post_reset_incoming_history,
+            score_means,
+            score_residuals,
         )
 
     if time_steps > 2:
@@ -1154,6 +1039,7 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
             _,
             parents,
             parent_log_weights,
+            parent_score_marks,
             total,
             increment_history,
             minimum_weight_history,
@@ -1163,6 +1049,8 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
             matched_target_history,
             valid_history,
             post_reset_incoming_history,
+            score_means,
+            score_residuals,
         ) = tf.while_loop(
             cond,
             body,
@@ -1170,6 +1058,7 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
                 tf.constant(1, tf.int32),
                 parents,
                 parent_log_weights,
+                parent_score_marks,
                 total,
                 increment_history,
                 minimum_weight_history,
@@ -1179,6 +1068,8 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
                 matched_target_history,
                 valid_history,
                 post_reset_incoming_history,
+                score_means,
+                score_residuals,
             ),
             maximum_iterations=time_steps - 2,
             parallel_iterations=1,
@@ -1193,6 +1084,13 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         terminal_flow["log_correction"],
     )
     terminal_increment = tf.reduce_logsumexp(terminal_log_weights)
+    if progressive:
+        _, score_mean, score_residual = score_state(
+            parents, parent_log_weights, parent_score_marks, terminal_flow["particles"],
+            terminal_log_weights, observations[time_steps - 1],
+        )
+        score_means = score_means.write(time_steps - 1, score_mean)
+        score_residuals = score_residuals.write(time_steps - 1, score_residual)
     increment_history = increment_history.write(
         time_steps - 1, terminal_increment
     )
@@ -1208,12 +1106,8 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
         "target_history": target_history.stack(),
         "matched_target_history": matched_target_history.stack(),
         "valid_history": valid_history.stack(),
-        "score_mark_mean_history": tf.zeros(
-            [0, lgssm.PARAMETER_COUNT], theta.dtype
-        ),
-        "score_mark_center_residual_history": tf.zeros(
-            [0, lgssm.PARAMETER_COUNT], theta.dtype
-        ),
+        "score_mark_mean_history": score_means.stack(),
+        "score_mark_center_residual_history": score_residuals.stack(),
         "final_particles": terminal_flow["particles"],
         "final_log_unnormalized_weights": terminal_log_weights,
         "initial_incoming_weights": initial_incoming_weights,
@@ -1223,6 +1117,7 @@ def contract_e_tp_lgssm_finite_lookahead_loop_core(
     }
 
 
+@fixed_signature_function(dtype_like="theta")
 def exact_kalman_value(theta: tf.Tensor, observations: tf.Tensor) -> tf.Tensor:
     """Differentiable transition-first Kalman likelihood for the same target."""
 
@@ -1236,7 +1131,8 @@ def exact_kalman_value(theta: tf.Tensor, observations: tf.Tensor) -> tf.Tensor:
     observation_matrix = components["observation_matrix"]
     observation_covariance = components["observation_covariance"][0]
     total = tf.constant(0.0, theta.dtype)
-    for observation in tf.unstack(observations, axis=0):
+    def step(time_index, mean, covariance, total):
+        observation = observations[time_index]
         mean = tf.linalg.matvec(transition, mean)
         covariance = transition @ covariance @ tf.transpose(transition) + transition_covariance
         predicted = tf.linalg.matvec(observation_matrix, mean)
@@ -1259,6 +1155,13 @@ def exact_kalman_value(theta: tf.Tensor, observations: tf.Tensor) -> tf.Tensor:
         mean = mean + tf.linalg.matvec(gain, residual)
         covariance = covariance - gain @ observation_matrix @ covariance
         covariance = 0.5 * (covariance + tf.transpose(covariance))
+        return time_index + 1, mean, covariance, total
+
+    _, _, _, total = tf.while_loop(
+        lambda time_index, *_: time_index < tf.shape(observations)[0],
+        step, (tf.constant(0), mean, covariance, total),
+        maximum_iterations=tf.shape(observations)[0], parallel_iterations=1,
+    )
     return total
 
 

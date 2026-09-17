@@ -3,10 +3,24 @@
 from __future__ import annotations
 
 import inspect
+import types
 import weakref
 from functools import lru_cache, wraps
 
 import tensorflow as tf
+
+_DISPATCHERS = weakref.WeakKeyDictionary()
+
+
+def fixed_signature_metadata(value):
+    """Identify a repository-created dispatcher without trusting copied attributes."""
+    if not isinstance(value, types.FunctionType) or value not in _DISPATCHERS:
+        return None
+    function, code, metadata = _DISPATCHERS[value]
+    if (value.__code__ is not code or value.python_function is not function
+            or value._jit_compile is not True):
+        raise ValueError("fixed-signature dispatcher was modified")
+    return dict(metadata)
 
 
 def fixed_signature_function(
@@ -112,6 +126,17 @@ def fixed_signature_function(
             p.experimental_get_tracing_count() for p in programs.values()
         )
         dispatch.specialization_cache_info = compiled.cache_info
+        _DISPATCHERS[dispatch] = (function, dispatch.__code__, {
+            "jit_compile": True,
+            "autograph": False,
+            "signature_policy": "bounded_tensor_shape_dtype_specialization_v1",
+            "max_specializations": max_specializations,
+            "static_parameters": tuple(sorted(static_names)),
+            "dtype_like": dtype_like,
+            "floating_dtype": None if floating_dtype is None else tf.as_dtype(floating_dtype).name,
+            "tensor_dtypes": tuple(sorted((name, tf.as_dtype(dtype).name)
+                                          for name, dtype in input_dtypes.items())),
+        })
         return dispatch
 
     return decorate

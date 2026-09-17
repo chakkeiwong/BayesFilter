@@ -990,3 +990,206 @@ Validation moves to a linked worktree to freeze its source. The driver derives
 the artifact root from Git's common directory, so this isolation cannot reset
 the budget, split the campaign lock or overwrite earlier evidence. No final
 finding closure or merge decision has been issued.
+
+## Isolated validation recovery on September 18
+
+Campaign checkpoint `4e0d02b3` is checked out on
+`repair/filter-gradient-xla-validation-20260918` in the linked validation
+worktree. The original checkout's concurrent HMC preparation/tuning edits are
+excluded and preserved. The local Sylvester op library was copied unchanged
+(SHA-256 `cc2ad31f8eab27bb90449b7e77eae0c6aac34ab7ac4dfe4662510a0eb96a7022`).
+Run 00541 passed all 44 policy/controller checks. Runs 00542--00551 passed
+preparation, filtering wrappers, SV/SGQF, start-bank, signatures, Contract E
+reset, Student-t selection, moment hints, QR and scalar TT groups. The matrix
+then paused at a worker boundary for a controller provenance repair.
+
+The comparison controller previously required the candidate's measured source
+directory to equal the current checkout, discarding valid measurements when
+validation moved to a linked worktree. Reuse now requires the measured directory
+to match its recorded launch directory and share the current Git common
+directory/campaign root. Every imported source must still match both its launch
+snapshot and the current validation source. Different repositories, changed
+code, mismatched launch roots and stale harnesses remain ineligible. This
+localized repair changes no fixture, numerical kernel, tolerance or budget.
+
+Runs 00552/00553 passed all 45 policy/controller checks. Qualification reused
+unchanged Kalman/SRUKF and DNS evidence and refreshed the affected routes.
+Runs 00554--00572 preserved Sinkhorn, SQMC, retained moments, SGQF derivatives,
+joint-target and completed GenUT comparisons. The matrix paused after 00572.
+
+Retained-moment runs 00561/00563 measured 0.5870/0.7424 ms warm XLA medians
+against baseline 0.4302/0.5374 ms, respectively. Both had zero warm allocator
+current range and errors below 8e-16. Optimized HLO still contained the fixed
+basis-polynomial recurrence inside each moment call. The immutable Legendre
+moment matrices now use a separate zero-input compiled preparation lifted out
+of the complete moment graph. All numerical density inputs remain live. The
+existing graph/XLA mixed-degree and changed-input parity test also requires
+the prepared matrix capture. No new policy exception is required; repeated
+measurements remain necessary before a performance conclusion.
+
+## Additional execution closure found on September 18
+
+The broader scan found omitted latent-SIR parameter derivatives and initial-RQMC
+time recursion. Both now use native TensorFlow operations/control flow. The
+SIR public tensor entries also use bounded fixed-signature XLA specializations.
+Runs 00589--00591 exposed fixture defects, not accepted comparisons: the SIR
+fixture used an invalid finite transport/reset configuration, and the RQMC
+FP64 fixture did not supply dtype-consistent observation callbacks. The corrected
+SIR fixture uses the existing reduced-model scale and 20/100 transport settings;
+the RQMC reference arm explicitly binds the unchanged linear observation matrix
+at FP64. These are new fixture qualification choices, not runtime retuning.
+Run 00592 passed all 11 checks (174.90 process seconds): T=2/4 graph and XLA
+value/score/history parity at 1e-10, HLO, no callbacks, and Cholesky/inverse
+directional checks against finite differences. Pinned function bodies here are
+local refactor oracles; isolated source-process timing remains outstanding.
+
+This scan also found unguarded Contract E--TP recursions, moment-teacher
+preparation and score directions, TT proposal/source-route operations, and
+predictive helpers. Several are explicitly independent references or host
+metadata, but classification is incomplete and the current 142-source guard
+does not establish repository-wide compliance. F02/F04/F09/F11/F17/F19 remain
+open for this wider closure. No merge or policy-completion claim is authorized
+by the passing subset. In particular, the Contract E--TP helper contained
+another Python-unrolled Kalman likelihood and backward information recursions;
+their native-control-flow repair is now under focused validation. Run 00593
+failed at test import before any numerical check; the corrected import is
+retried within the unchanged campaign budget.
+
+Run 00594 passed all five Kalman/backward-information checks, including
+derivative finite differences, enclosing HLO and constant graph-node counts.
+Run 00595 passed the policy/controller group after registering the additional
+isolated measurement harness. Runs 00596--00609 passed paired SIR T=2/4
+graph/XLA and RQMC T=2 graph/XLA plus T=4 graph qualification with exact
+before/after values. Before run 00610, the driver stopped at its GPU2 contention
+check: the MacroFinance dense-affine validation worker occupied the device.
+No worker was killed or GPU contention limit changed. CPU/source work continues.
+Cumulative charged time through 00609 is 15,978.406 CPU and 4,886.611 GPU seconds
+against 28,800/14,400 seconds. Timing repeats and remaining additional fixtures
+are still pending.
+
+Further review identified `tf.experimental.numpy.finfo` in the Contract E--TP
+chart diagnostics. Exact IEEE epsilon constants replace that indirect NumPy
+call; the source detector now recognizes TensorFlow's NumPy namespace and its
+import aliases. This repair preserves the existing FP16/FP32/FP64 epsilons and
+does not add an unsupported dtype or change a chart threshold.
+
+Run 00610 passed 14 checks and failed four multi-date XLA comparisons at the
+chart condition-number diagnostic: XLA versus eager SVD differed by up to
+approximately 1.1e-9 relative. All graph comparisons passed. The test had
+compared XLA to an eager baseline, violating the campaign's matched-execution
+contract for the diagnostic. The repair compares baseline and candidate in the
+same graph/XLA mode at the unchanged 1e-10 threshold, and separately retains
+eager-reference objective and gradient checks at that threshold. Fresh charts
+are built once by a diagnostic LP and held fixed across all arms and finite
+differences; no historical chart or LEDH result is reused. No mathematical
+gate or runtime chart tolerance is relaxed.
+
+Run 00611 passed all 18 repaired LGSSM Contract E--TP checks in 143.916 process
+seconds. Predictive, progressive-score, full-continuation and finite-lookahead
+recursions preserve their complete same-mode histories and scores at 1e-10;
+objective/score also match the eager authority and directional finite
+differences. The bounded core's graph-node count is independent of horizon.
+
+The next repair batches UKF Gaussian projection across basis axes and replaces
+seeded TT channel scatter loops with tensor masks. The original deterministic
+channel rule, quadrature order, Gaussian projection and measure are retained.
+This initializer remains `extension_or_invention`; the Zhao-Cui paper Algorithm
+2/(15)--(16), text lines 693--717, and author `models/full_sol.m:64`--125 were
+reinspected. Those anchors describe sequential approximation and coordinate
+preparation, not this UKF initializer. No new source-faithfulness claim is made.
+Legendre axes use one batched polynomial recurrence; other basis implementations
+use fixed-schema dispatch inside a native axis map. Fresh tests compare mixed
+degrees/domains, both measures, live frame changes and exact channel values.
+
+Run 00612 found a tracing error in packing basis-domain tensors with
+`tf.constant`. The repair packs the immutable bounds with TensorFlow before
+tracing. Run 00613 passed all 24 focused and existing UKF-initializer checks in
+9.636 process seconds. Its default
+projection and channel programs emit HLO and have fixed signatures; the
+Legendre projection graph does not grow with dimension. Other basis dispatch
+and the paired isolated GPU benchmark remain pending.
+
+SIR runs 00596--00599 localize the initial memory flag: baseline graph/XLA host
+peaks were 1,578,401,792/1,861,824,512 bytes; candidate peaks were
+1,579,151,360/1,862,483,968. Prepared/traced RSS is similar, and the difference
+appears during the first compiled execution. Candidate versus baseline XLA
+peak differs by only 659,456 bytes in this process pair. Candidate XLA GPU
+peak is 91,648 bytes versus graph 557,312; warm current bytes stay exactly
+23,552 across all 20 XLA calls, with only 12,288 bytes RSS movement. This
+supports first-execution compilation/runtime overhead rather than a new
+fixed-shape device leak; it does not identify each host allocation. Three
+process repeats are still required before accepting a memory/performance
+tradeoff or reporting a stable ratio.
+
+Consumer tracing of `linear/types.py` found only the independent NumPy Kalman
+filter and derivative modules plus lazy public exports; TensorFlow filters use
+`types_tf.py`. Its module documentation now makes that reference-only role
+explicit. No runtime implementation was reclassified to excuse a violation.
+
+The full UKF numerical initializer now encloses covariance stabilization,
+frame formation, projection and channel construction in one program. Run
+00614 passed 27 checks and caught one raw eigenvector-sign parity failure.
+TensorFlow eager and XLA `SelfAdjointEigV2` return opposite eigenvector signs
+on the same separated-eigenvalue fixture. The algorithm specifies no sign
+convention. This must not be silently repaired with an invented sign policy.
+Review of all repository consumers found no use of this returned frame as a
+reference-coordinate map: the projection uses only row squared norms, and
+downstream density training consumes the resulting cores. The explicit
+reference-coordinate inputs are unchanged. Validation therefore requires
+unchanged eigenvalues/covariance, sign-aligned frame equality and frame Gram
+equality, each at 1e-10; all TT coefficients/cores retain ordinary elementwise
+1e-10 parity. Raw eigenvector/frame bitwise compatibility across execution
+backends is not claimed. This documented decomposition-gauge check does not
+apply to SRUKF sigma-point factors, where orientation can change the target.
+
+Run 00615 passed all 28 UKF initializer checks, including heterogeneous
+Legendre/Lagrange dispatch and the complete default compiled initializer.
+The exact policy guard covers 146 reviewed sources; this remains a subset,
+not evidence of repository-wide compliance.
+
+Run 00616 failed four new moment-teacher checks before a numerical conclusion:
+the comparison helper applied `is_finite` to integer preparation fields and
+the controls fixture omitted eight required fields. The two polynomial checks
+passed. The harness now compares integer fields exactly and supplies the
+existing integration fixture's controls. This retry retains the algorithm,
+inputs and FP64 tolerances. Recovery found no active campaign worker; charged
+time is 16,245.435 CPU and 4,886.611 GPU seconds before the retry.
+
+Run 00617 passed the six corrected moment-teacher checks (34.090 process
+seconds). The next preparation/freezing checks retain FP64 atol=rtol=1e-10.
+For the existing FP32-only nonlinear teacher, the predeclared tolerance is
+1e-6 for preparation/random draws and 1e-5 for complete same-XLA moment
+directions, with exact integer/Boolean branch parity. These allow FP32
+libm/contraction rounding, remain stricter than its existing 1e-2/2e-2
+finite-difference score checks, and are not a TF32 claim. Random uniform bits
+must match exactly. The stream conversion follows installed TSL
+`random_distributions_utils.h:33` and `:72`; it does not migrate the TT stream.
+The preparation uses the original power-specific quadrature orders and
+first-valid-row selection. Scale-shift loops return explicit validity and
+convergence status; their public boundaries preserve the original errors.
+
+Run 00618 passed all 18 teacher execution checks in 112.998 process seconds.
+Run 00619 passed 15 existing numerical/consumer checks and failed three route
+identity checks: the reset's bounded signature dispatcher was rejected because
+the factory recognized only direct TensorFlow wrapper types. This is a real
+cross-module compatibility gap in the earlier signature repair. The factory
+now recognizes only registered repository dispatchers, binds their immutable
+signature settings and factory source, and still rejects copied attributes,
+substituted callables and changed JIT settings. The dependency closure records
+each actual wrapper. This does not grant canonical LEDH admission.
+
+Run 00620 passed 31 identity checks and exposed another source-verification
+defect in all three teacher identities: `compile()` inherited the identity
+module's future-annotations flag when checking a dependency that did not
+declare it. Source recompilation now uses `dont_inherit=True`; a regression
+check binds a dependency without that future import. Run 00621 passed all 35
+identity checks in 27.879 process seconds. Exact registered-symbol, wrapper,
+source-change and non-admission checks remain enforced. The guard now covers
+149 reviewed sources with 870 exact schema/validation/reference exceptions.
+
+Run 00622 passed all 19 final teacher execution checks, including unchanged
+preparation/freezing graph size at T=2/4. Run 00623 passed all 32 signature,
+Kalman covariance-derivative, correlated-Kalman and padded teacher checks.
+The teacher consumer numerical checks passed in 00619; its three identity
+failures are repaired and pass in 00621. Paired teacher/initializer/TP
+measurements and wider uncovered-route repairs remain open.

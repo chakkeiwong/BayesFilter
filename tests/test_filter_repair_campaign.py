@@ -139,6 +139,24 @@ def test_parity_rejects_nonfinite_and_discrete_mismatch():
             comparison.compare_values(before,after)
 
 
+def test_additional_harness_keeps_original_measurements_and_binds_extension():
+    driver = load("run_filter_repair_campaign")
+    comparison = load("compare_filter_repair_campaign")
+    original = driver.measurement_harness("covariance")
+    additional = driver.measurement_harness("latent_sir")
+    assert set(original) == {
+        "filter_repair_benchmark_worker.py", "measure_filter_xla_memory.py",
+        "filter_repair_endpoint_fixtures.py",
+    }
+    assert {name: additional[name] for name in original} == original
+    assert set(additional) - set(original) == {
+        "filter_repair_additional_worker.py", "filter_repair_additional_fixtures.py",
+    }
+    measurement = {"schema": "filter_repair_measurement.v2", "harness_sha256": original}
+    with pytest.raises(ValueError, match="Stale measurement harness"):
+        comparison.current_provenance({}, measurement, "before", additional, {})
+
+
 def test_source_guard_blocks_otherwise_complete_gate(tmp_path, monkeypatch, capsys):
     driver = load("run_filter_repair_campaign")
     ledger = tmp_path / "docs/plans/filter_gradient_repair_ledger_20260917.json"
@@ -185,24 +203,24 @@ def test_required_test_evidence_requires_readable_junit(tmp_path):
 
 def test_baseline_failure_cannot_hide_numerical_or_resource_errors():
     comparison = load("compare_filter_repair_campaign")
-    assert comparison.baseline_compilation_failure(dict(phase="trace",error_type="AttributeError",
-        error="SymbolicTensor has no attribute numpy")) == "baseline_host_operation_during_trace"
-    assert comparison.baseline_compilation_failure(dict(phase="first_execution",error_type="InvalidArgumentError",
-        error="Detected unsupported operations on XLA_CPU_JIT")) == "baseline_xla_compilation_failure"
-    assert comparison.baseline_compilation_failure(dict(phase="trace", error_type="TypeError",
-        error="batch_finite_value_score tf.ensure_shape: Could not generate a generic TraceType")) == "baseline_forward_accumulator_shape_tracing_failure"
-    generator_failure = dict(phase="trace", error_type="ValueError", fixture="simulation_sv",
-        error="Generator.from_seed: tf.function only supports singleton tf.Variables")
+    assert comparison.baseline_compilation_failure({"phase": "trace","error_type": "AttributeError",
+        "error": "SymbolicTensor has no attribute numpy"}) == "baseline_host_operation_during_trace"
+    assert comparison.baseline_compilation_failure({"phase": "first_execution","error_type": "InvalidArgumentError",
+        "error": "Detected unsupported operations on XLA_CPU_JIT"}) == "baseline_xla_compilation_failure"
+    assert comparison.baseline_compilation_failure({"phase": "trace", "error_type": "TypeError",
+        "error": "batch_finite_value_score tf.ensure_shape: Could not generate a generic TraceType"}) == "baseline_forward_accumulator_shape_tracing_failure"
+    generator_failure = {"phase": "trace", "error_type": "ValueError", "fixture": "simulation_sv",
+        "error": "Generator.from_seed: tf.function only supports singleton tf.Variables"}
     assert comparison.baseline_compilation_failure(generator_failure) == "baseline_generator_variable_created_during_trace"
     assert comparison.baseline_compilation_failure({**generator_failure, "fixture": "tt"}) is None
     assert comparison.baseline_compilation_failure({**generator_failure, "phase": "warm"}) is None
-    nested = dict(phase="trace", jit="off", error_type="RuntimeError",
-        error="Invalid callback/compilation boundary", graph={"callbacks": [], "nested_xla": ["inner"]})
+    nested = {"phase": "trace", "jit": "off", "error_type": "RuntimeError",
+        "error": "Invalid callback/compilation boundary", "graph": {"callbacks": [], "nested_xla": ["inner"]}}
     assert comparison.baseline_compilation_failure(nested) == "baseline_forced_nested_xla_requires_eager_reference"
     assert comparison.baseline_compilation_failure({**nested, "graph": {"callbacks": ["PyFunc"], "nested_xla": ["inner"]}}) is None
     for phase,error in (("warm","NaN in XLA"),("first_execution","XLA out of memory"),
                          ("preparation","SymbolicTensor")):
-        assert comparison.baseline_compilation_failure(dict(phase=phase,error=error,error_type="RuntimeError")) is None
+        assert comparison.baseline_compilation_failure({"phase": phase,"error": error,"error_type": "RuntimeError"}) is None
 
 
 def test_matrix_test_failure_stops_remaining_groups(tmp_path, monkeypatch):
@@ -251,6 +269,7 @@ def test_pause_request_stops_between_workers_without_taking_active_lock(tmp_path
 @pytest.mark.parametrize("graph_passes", [False, True])
 def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch, graph_passes):
     import argparse
+
     import compare_filter_repair_campaign as comparison
 
     driver = load("run_filter_repair_campaign")
@@ -264,14 +283,14 @@ def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch
     for arm, mode in (("before", "off"), ("before", "on"), ("before", "eager"),
                       ("after", "off"), ("after", "on")):
         failed = arm == "before" and (mode == "on" or mode == "off" and not graph_passes)
-        value = dict(status="failed" if failed else "passed", jit=mode)
+        value = {"status": "failed" if failed else "passed", "jit": mode}
         if failed:
             value.update(phase="first_execution", error_type="InvalidArgumentError",
                          error="Detected unsupported operations on XLA_GPU_JIT")
         path = tmp_path / f"{arm}-{mode}.json"
         path.write_text(json.dumps(value))
-        rows.append(dict(key=["measure", "policy", arm, "rectangular", mode, 1, 0, "GPU"],
-                         result=str(path), state=value["status"]))
+        rows.append({"key": ["measure", "policy", arm, "rectangular", mode, 1, 0, "GPU"],
+                         "result": str(path), "state": value["status"]})
     monkeypatch.setattr(driver, "records", lambda: rows)
     monkeypatch.setattr(driver, "run_job", lambda _: pytest.fail("Valid reference already exists"))
     monkeypatch.setattr(comparison, "current_provenance", lambda *_: None)
@@ -305,9 +324,9 @@ def test_gpu_idle_rechecks_recent_utilization_and_records_samples(monkeypatch):
     sleeps = []
     monkeypatch.setattr(driver.time, "sleep", sleeps.append)
     assert driver.check_gpu_idle() == [
-        dict(memory_mib=18, utilization_percent=7),
-        dict(memory_mib=18, utilization_percent=0),
-        dict(memory_mib=18, utilization_percent=0),
+        {"memory_mib": 18, "utilization_percent": 7},
+        {"memory_mib": 18, "utilization_percent": 0},
+        {"memory_mib": 18, "utilization_percent": 0},
     ]
     assert sleeps == [2, 2]
 
@@ -325,8 +344,8 @@ def test_gpu_idle_keeps_original_contention_thresholds(monkeypatch, reading):
 
 def test_regression_thresholds_require_investigation():
     comparison = load("compare_filter_repair_campaign")
-    before = dict(warm_median_seconds=1.,device_peak_bytes=1024,host_peak_bytes=2048,
-        late_device_growth_bytes=0,late_host_growth_bytes=0)
+    before = {"warm_median_seconds": 1.,"device_peak_bytes": 1024,"host_peak_bytes": 2048,
+        "late_device_growth_bytes": 0,"late_host_growth_bytes": 0}
     assert comparison.regression_reasons(before,before) == []
     for field,value,reason in (("warm_median_seconds",1.21,"warm_time_over_20_percent"),
         ("device_peak_bytes",2049,"device_peak_over_2x"),
@@ -341,9 +360,10 @@ def test_candidate_measurement_source_freshness(tmp_path,monkeypatch):
     monkeypatch.setattr(comparison,"ROOT",tmp_path)
     module = tmp_path / "kernel.py"
     module.write_text("x=1\n")
-    measurement = dict(schema="filter_repair_measurement.v2",harness_sha256={},
-        source_root=str(tmp_path),imported_source_sha256={"kernel.py":hashlib.sha256(module.read_bytes()).hexdigest()},status="failed")
-    run = {"state": "failed", "source_sha256": dict(measurement["imported_source_sha256"])}
+    measurement = {"schema": "filter_repair_measurement.v2","harness_sha256": {},
+        "source_root": str(tmp_path),"imported_source_sha256": {"kernel.py":hashlib.sha256(module.read_bytes()).hexdigest()},"status": "failed"}
+    run = {"state": "failed", "cwd": str(tmp_path),
+           "source_sha256": dict(measurement["imported_source_sha256"])}
     comparison.current_provenance(run,measurement,"after",{}, {})
     module.write_text("x=2\n")
     with pytest.raises(ValueError,match="Stale candidate source"):
@@ -362,19 +382,47 @@ def test_legacy_parent_marker_provenance_requires_pinned_source(tmp_path, monkey
     module.parent.mkdir(parents=True)
     module.write_text("# Package marker\n")
     digest = hashlib.sha256(module.read_bytes()).hexdigest()
-    measurement = dict(schema="filter_repair_measurement.v2", harness_sha256={},
-        source_root=str(tmp_path), imported_source_sha256={relative: digest}, status="failed")
-    run = dict(state="failed", source_sha256={})
+    measurement = {"schema": "filter_repair_measurement.v2", "harness_sha256": {},
+        "source_root": str(tmp_path), "imported_source_sha256": {relative: digest}, "status": "failed"}
+    run = {"state": "failed", "cwd": str(tmp_path), "source_sha256": {}}
     comparison.current_provenance(run, measurement, "after", {}, {relative: digest})
     for baseline in ({}, {relative: "different"}):
         with pytest.raises(ValueError, match="changed during measurement"):
             comparison.current_provenance(run, measurement, "after", {}, baseline)
 
 
+def test_candidate_evidence_reuse_requires_shared_repository_and_exact_sources(tmp_path, monkeypatch):
+    import hashlib
+
+    comparison = load("compare_filter_repair_campaign")
+    primary, validation = tmp_path / "primary", tmp_path / "validation"
+    primary.mkdir()
+    validation.mkdir()
+    monkeypatch.setattr(comparison, "ROOT", validation)
+    monkeypatch.setattr(comparison, "campaign_output_root", lambda _: primary / "artifacts")
+    module = validation / "kernel.py"
+    module.write_text("x=1\n")
+    digest = hashlib.sha256(module.read_bytes()).hexdigest()
+    measurement = {"schema": "filter_repair_measurement.v2", "harness_sha256": {},
+        "source_root": str(primary), "imported_source_sha256": {"kernel.py": digest}, "status": "failed"}
+    run = {"state": "failed", "cwd": str(primary), "source_sha256": {"kernel.py": digest}}
+    comparison.current_provenance(run, measurement, "after", {}, {})
+    with pytest.raises(ValueError, match="source root mismatch"):
+        comparison.current_provenance({**run, "cwd": str(validation)}, measurement, "after", {}, {})
+    with pytest.raises(ValueError, match="changed during measurement"):
+        comparison.current_provenance({**run, "source_sha256": {}}, measurement, "after", {}, {})
+    module.write_text("x=2\n")
+    with pytest.raises(ValueError, match="Stale candidate source"):
+        comparison.current_provenance(run, measurement, "after", {}, {})
+    monkeypatch.setattr(comparison, "campaign_output_root", lambda root: root / "artifacts")
+    with pytest.raises(ValueError, match="different campaign repository"):
+        comparison.current_provenance(run, measurement, "after", {}, {})
+
+
 def test_investigation_review_requires_current_runs_and_cannot_waive_growth(tmp_path):
     comparison = load("compare_filter_repair_campaign")
     (tmp_path / "review.md").write_text("Mechanism and alternatives checked on current repeated runs.\n")
-    finding = dict(fixture="tt",size=2,jit="on",reasons=["warm_time_over_20_percent"],runs=["run-a", "run-b", "run-c"])
+    finding = {"fixture": "tt","size": 2,"jit": "on","reasons": ["warm_time_over_20_percent"],"runs": ["run-a", "run-b", "run-c"]}
     review = {**finding,"evidence":["review.md"],"disposition":"accept_documented_tradeoff",
         "mechanism":"Native recurrence overhead measured for the tiny fixture.",
         "alternatives_checked":"Unrolling violates the fixed-graph contract.",

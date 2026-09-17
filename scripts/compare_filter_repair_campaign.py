@@ -10,7 +10,14 @@ import statistics
 from pathlib import Path
 
 from run_filter_repair_campaign import (
-    BASELINE, BASELINE_PARENT_PACKAGES, BASELINE_ROOT, FIXTURES, ROOT, records,
+    BASELINE,
+    BASELINE_PARENT_PACKAGES,
+    BASELINE_ROOT,
+    FIXTURES,
+    ROOT,
+    campaign_output_root,
+    measurement_harness,
+    records,
 )
 
 ONE_SIZE = frozenset(("rectangular", "factor", "covariance", "sinkhorn_jvp"))
@@ -108,8 +115,12 @@ def current_provenance(run, measurement, arm, current_hashes, baseline_hashes):
         if any(baseline_hashes.get(path) != digest for path, digest in imported.items()):
             raise ValueError("Baseline source contamination")
     else:
-        if Path(measurement["source_root"]).resolve() != ROOT.resolve():
+        measured_root = Path(measurement["source_root"]).resolve()
+        if measured_root != Path(run.get("cwd", "")).resolve():
             raise ValueError("Candidate source root mismatch")
+        if (measured_root != ROOT.resolve()
+                and campaign_output_root(measured_root) != campaign_output_root(ROOT)):
+            raise ValueError("Candidate source belongs to a different campaign repository")
         for path, digest in imported.items():
             # Older snapshots omit the two inert parent package markers.
             launched_digest = run.get("source_sha256", {}).get(path)
@@ -189,8 +200,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    harness = {name: hashlib.sha256((ROOT / "scripts" / name).read_bytes()).hexdigest()
-               for name in ("filter_repair_benchmark_worker.py", "measure_filter_xla_memory.py", "filter_repair_endpoint_fixtures.py")}
     marker = json.loads((BASELINE_ROOT / "source-manifest.json").read_text())
     if marker["commit"] != BASELINE:
         raise ValueError("Wrong pinned baseline")
@@ -201,7 +210,7 @@ def main():
             continue
         value = json.loads(Path(run["result"]).read_text())
         try:
-            current_provenance(run, value, arm, harness, marker["files"])
+            current_provenance(run, value, arm, measurement_harness(name), marker["files"])
         except (ValueError, KeyError) as exc:
             excluded.append({"run": run["result"], "reason": str(exc)})
             continue
@@ -214,7 +223,7 @@ def main():
             for jit in ("off", "on"):
                 for repeat in range(3):
                     keys = [(arm, name, jit, size, repeat, device) for arm in ("before", "after")]
-                    identity = dict(fixture=name, size=size, jit=jit, repeat=repeat)
+                    identity = {"fixture": name, "size": size, "jit": jit, "repeat": repeat}
                     if not all(key in measurements for key in keys):
                         result["missing"].append(identity)
                         continue
@@ -269,8 +278,8 @@ def main():
             if len(small) == len(large) == 3:
                 delta = statistics.median(p["after"]["graph_nodes"] for p in large)-statistics.median(p["after"]["graph_nodes"] for p in small)
                 if delta > 50:
-                    result["investigations"].append(dict(fixture=name,jit=jit,reason="graph_growth_with_extent",additional_nodes=delta,
-                        runs=[pair["after_run"] for pair in (*small,*large)]))
+                    result["investigations"].append({"fixture": name,"jit": jit,"reason": "graph_growth_with_extent","additional_nodes": delta,
+                        "runs": [pair["after_run"] for pair in (*small,*large)]})
     reviews = json.loads(REVIEW_PATH.read_text())["reviews"] if REVIEW_PATH.is_file() else []
     result["investigations"], result["resolved_investigations"] = reviewed_investigations(result["investigations"], reviews)
     result["passed"] = not (result["missing"] or result["failures"] or result["investigations"])

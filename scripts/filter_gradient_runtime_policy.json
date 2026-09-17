@@ -1,6 +1,6 @@
 {
   "schema": "filter_gradient_runtime_policy.v1",
-  "scope_note": "Filtering and gradient closure from F01-F20. Inference helper findings cover NumPy/identity and selected compiled kernels; this is not whole-optimizer qualification. Mixed filtering modules are covered in full, with exact historical-reference and host-boundary dispositions.",
+  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance.",
   "sources": {
     "bayesfilter/adapters/bgs.py": null,
     "bayesfilter/backends.py": null,
@@ -19,11 +19,16 @@
     "bayesfilter/highdim/generalized_sv_sgqf_tf.py": null,
     "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": null,
     "bayesfilter/highdim/ledh_contract_e_identity.py": null,
+    "bayesfilter/highdim/ledh_contract_e_latent_sir_tf.py": null,
     "bayesfilter/highdim/ledh_contract_e_reset_tf.py": null,
+    "bayesfilter/highdim/ledh_contract_e_tp_lgssm_tf.py": null,
+    "bayesfilter/highdim/ledh_contract_e_tp_tf.py": null,
     "bayesfilter/highdim/ledh_contract_e_tp_structural_tf.py": null,
     "bayesfilter/highdim/ledh_pfpf_genut_initialization_tf.py": null,
+    "bayesfilter/highdim/ledh_pfpf_genut_initial_rqmc_tf.py": null,
     "bayesfilter/highdim/models.py": null,
     "bayesfilter/highdim/native_generalized_sv.py": null,
+    "bayesfilter/highdim/moment_teacher_native_tf.py": null,
     "bayesfilter/highdim/retained_moments_tf.py": null,
     "bayesfilter/highdim/retained_quadratic_form_tf.py": null,
     "bayesfilter/highdim/scalar_adjacent_native_tf.py": null,
@@ -44,6 +49,8 @@
     "bayesfilter/highdim/tt_native_control_tf.py": null,
     "bayesfilter/highdim/tt_preparation_tf.py": null,
     "bayesfilter/highdim/ukf_scout.py": null,
+    "bayesfilter/highdim/ukf_initializer.py": null,
+    "bayesfilter/highdim/ukf_initializer_tf.py": null,
     "bayesfilter/highdim/zhao_cui_actual_sv_batched_tt_tf.py": null,
     "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py": {
       "python_iteration": [
@@ -53,6 +60,8 @@
     "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": null,
     "bayesfilter/highdim/zhao_cui_frozen_proposal_apf_tf.py": null,
     "bayesfilter/highdim/zhao_cui_moment_teacher_xla.py": null,
+    "bayesfilter/highdim/zhao_cui_moment_teacher_lgssm_tf.py": null,
+    "bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py": null,
     "bayesfilter/independent_score/sir_observation_simulator_tf.py": null,
     "bayesfilter/inference/_exact_incumbent.py": {
       "python_iteration": []
@@ -180,6 +189,366 @@
     "bayesfilter/highdim/sv_panel_quadrature_native_tf.py": null
   },
   "exceptions": [
+    {
+      "path": "bayesfilter/ops/fixed_signature_tf.py",
+      "function": "fixed_signature_function.decorate",
+      "kind": "python_iteration",
+      "ast_sha256": "b70ef764056d67c7f89a7bfe1771856fa311756257b54ecde2bf60d06f5704b2",
+      "role": "fixed_schema",
+      "reason": "Record named tensor dtype overrides in the repository-issued dispatcher metadata; no numerical values or calculations."
+    },
+    {
+      "path": "bayesfilter/highdim/moment_teacher_native_tf.py",
+      "function": "operator_power_program",
+      "kind": "python_iteration",
+      "ast_sha256": "4a8d21a9bde27ed23139c008419d71da1ddf50ef852876b5d33988f9b642fd28",
+      "role": "fixed_schema",
+      "reason": "Dispatch the three immutable quadrature orders to their compiled preparation programs; polynomial and power contractions are batched tensor operations."
+    },
+    {
+      "path": "bayesfilter/highdim/moment_teacher_native_tf.py",
+      "function": "operator_power_program",
+      "kind": "python_iteration",
+      "ast_sha256": "f2f47578b291333357db05999fb3feb4e609bb78be743106b008490a789a1278",
+      "role": "fixed_schema",
+      "reason": "Pad immutable quadrature node shapes for the batched compiled contraction; no numerical recurrence or sample dispatch."
+    },
+    {
+      "path": "bayesfilter/highdim/moment_teacher_native_tf.py",
+      "function": "operator_power_program",
+      "kind": "python_iteration",
+      "ast_sha256": "592be9feb65eb0aa5d243cd5f432fdb4c5d84fa9157a7f14920ed3fb8e6bbd31",
+      "role": "fixed_schema",
+      "reason": "Pad immutable quadrature weight shapes for the batched compiled contraction; no numerical recurrence or sample dispatch."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_lgssm_tf.py",
+      "function": "MomentTeacherControls.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "adbdcc216d507fdbad9b4276493293c8c30e41263603eb7affafeb036f36846c",
+      "role": "host_validation",
+      "reason": "Validate integer control-field types before constructing a fixed execution scope."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_lgssm_tf.py",
+      "function": "MomentTeacherControls.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "2c584e53a3e242cb9851d2428e8ab16f892fba780fe522f25bef6d0b0ccc9bf0",
+      "role": "host_validation",
+      "reason": "Check positivity of immutable control fields before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_lgssm_tf.py",
+      "function": "freeze_teacher_scale_shift_indices",
+      "kind": "python_iteration",
+      "ast_sha256": "6001c8e4bb041a196757728619f76ce28ae221b7227a6c8723f97074da10e923",
+      "role": "fixed_schema",
+      "reason": "Build input TensorSpecs from field names, shapes and dtypes; the maximizing-row recurrence executes inside the compiled program."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_lgssm_tf.py",
+      "function": "route_identity_prepared_inputs",
+      "kind": "python_iteration",
+      "ast_sha256": "f4cbc7a68a0243fdd6bd15970e65f5c15cb2212acd8713cf688ed3ea9a4fc502",
+      "role": "fixed_schema",
+      "reason": "Assemble prepared identity fields without filtering or gradient calculations."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_lgssm_tf.py",
+      "function": "route_identity_prepared_inputs",
+      "kind": "python_iteration",
+      "ast_sha256": "b1fee8261c551972915bb7529b71cfd417c079baa8a11831bf099f22373c65d6",
+      "role": "fixed_schema",
+      "reason": "Convert named immutable controls to identity payload tensors; no data-dependent numerical iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py",
+      "function": "NonlinearMomentTeacherTuningArtifact.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "0cb6e3d108c48214850a911c8687de1ffaa6b99ca88da96321d88b5c136195e4",
+      "role": "host_validation",
+      "reason": "Validate nonempty artifact identity strings."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py",
+      "function": "freeze_nonlinear_teacher_scale_shift_indices",
+      "kind": "python_iteration",
+      "ast_sha256": "6001c8e4bb041a196757728619f76ce28ae221b7227a6c8723f97074da10e923",
+      "role": "fixed_schema",
+      "reason": "Build input TensorSpecs from field names, shapes and dtypes; the maximizing-row recurrence executes inside the compiled program."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py",
+      "function": "route_identity_prepared_inputs",
+      "kind": "python_iteration",
+      "ast_sha256": "2916770f82724fb4bc252a38e53f25067c17ba7260ae4d3a4adfddee32f1d78e",
+      "role": "fixed_schema",
+      "reason": "Assemble prepared identity fields without filtering or gradient calculations."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py",
+      "function": "route_identity_prepared_inputs",
+      "kind": "python_iteration",
+      "ast_sha256": "9e9f0c3c7b5aab8e0b092abfa195a97a12c297d9b068ca7f84c0a711822f0db7",
+      "role": "fixed_schema",
+      "reason": "Convert named immutable controls to identity payload tensors; no data-dependent numerical iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_build_ukf_initializer",
+      "kind": "python_iteration",
+      "ast_sha256": "1257c850e5c08dbac32b612062ac339b2ef503bfa65cdad570f335216a74bbe9",
+      "role": "fixed_schema",
+      "reason": "Unpack completed compiled coefficient tensors into the public heterogeneous tuple schema."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_build_ukf_initializer",
+      "kind": "python_iteration",
+      "ast_sha256": "e25449583394f0b8891357f043d4563438110be7413ff989c22000d0903d0bcb",
+      "role": "fixed_schema",
+      "reason": "Unpack completed compiled padded core tensors into TTCore result records."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer_tf.py",
+      "function": "initializer_program",
+      "kind": "python_iteration",
+      "ast_sha256": "b930b9c9b0d11210697f8d4f6566d054767f80db76109b096b3a1921c3a3609e",
+      "role": "fixed_schema",
+      "reason": "Read declared basis widths when binding the complete initializer program."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerConfig.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "56cfaac2e97302eaf09442d59b29f42151e9452f9b1cd387a869240da2a084aa",
+      "role": "host_validation",
+      "reason": "Normalize the static TT rank schema."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerConfig.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "de6cbb034c748220b345d3bcf567fdd1b30d51a0efddccfd982725786b880ba2",
+      "role": "host_validation",
+      "reason": "Validate positive static TT ranks."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerConfig.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "a6a194ba99fee91e551a70a8c0ae60426afabc0d8d907a6be5a688d51e877e3e",
+      "role": "host_validation",
+      "reason": "Validate the uniform internal-rank contract."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerConfig.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "cf9e0131ab00408a61bd8374254bd8703ad0c9f1fc743b58f1063bc0e1db40f1",
+      "role": "host_validation",
+      "reason": "Validate the fixed set of scalar configuration fields."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerConfig.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "bee5472f1300a36f75a99689285a3f7871348f430ec5a6e57a4a8b8d658bcda6",
+      "role": "host_validation",
+      "reason": "Inspect declared basis degrees to validate the quadrature order."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerConfig.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "60942329c87fcdb8b2f836fa0fffe45aad55adc38a7a179cd9307809a748b714",
+      "role": "host_validation",
+      "reason": "Reject schemas lacking the required quadratic basis term."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerResult.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "50a9ceff4b6ee3b4d9aa436198af71909068a4528968da0a7bdfa8c11a59f93a",
+      "role": "fixed_schema",
+      "reason": "Wrap completed heterogeneous output tensors in TTCore records."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerResult.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "faa6b60f19c736ecf6fbf43ec259de649a242ed55f6c2ddd3ff7ca729036fe3c",
+      "role": "fixed_schema",
+      "reason": "Normalize completed coefficient record dtypes."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "P76UKFInitializerResult.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "642aa91b09c260a2b49d36719802d5aede456e63fec73373b865cdc515db97ca",
+      "role": "host_validation",
+      "reason": "Check the two fixed matrix fields at the result boundary."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_gaussian_sqrt_projection_coefficients",
+      "kind": "python_iteration",
+      "ast_sha256": "f59b13e091e891c3d7119b569fbfed368d5d9ea68203668fd8fc527b5b919a18",
+      "role": "fixed_schema",
+      "reason": "Unpack the batched compiled coefficients into the heterogeneous public tuple schema."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_rank_one_ukf_sqrt_cores",
+      "kind": "python_iteration",
+      "ast_sha256": "4fcf62964839a9fb15c907f805407e98be81d5475a2757b0a9023b467905e5ee",
+      "role": "fixed_schema",
+      "reason": "Wrap each completed coefficient tensor as a rank-one core record."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_embed_rank_one_with_seeded_channels",
+      "kind": "python_iteration",
+      "ast_sha256": "644a86b7f05ba61437a757c7f3f7eb839be0bdf72a182355350c54abb3545beb",
+      "role": "fixed_schema",
+      "reason": "Normalize input coefficient tensor dtypes before fixed-schema packing."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_embed_rank_one_with_seeded_channels",
+      "kind": "python_iteration",
+      "ast_sha256": "55935503f4992f511c615986744947b095c097d8a5595fb217a4142094a2bc49",
+      "role": "host_validation",
+      "reason": "Normalize the declared integer rank tuple."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_embed_rank_one_with_seeded_channels",
+      "kind": "python_iteration",
+      "ast_sha256": "de6cbb034c748220b345d3bcf567fdd1b30d51a0efddccfd982725786b880ba2",
+      "role": "host_validation",
+      "reason": "Reject nonpositive declared TT ranks."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_embed_rank_one_with_seeded_channels",
+      "kind": "python_iteration",
+      "ast_sha256": "a6a194ba99fee91e551a70a8c0ae60426afabc0d8d907a6be5a688d51e877e3e",
+      "role": "host_validation",
+      "reason": "Enforce uniform internal ranks before constructing the numerical program."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_embed_rank_one_with_seeded_channels",
+      "kind": "python_iteration",
+      "ast_sha256": "be37bda20000c43f2a6d20604e169dd4c63b540c7ed9d55b418138e628bf715c",
+      "role": "host_validation",
+      "reason": "Validate that each heterogeneous coefficient input is a vector."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_embed_rank_one_with_seeded_channels",
+      "kind": "python_iteration",
+      "ast_sha256": "17a9109a1177828ca1c4f5232f9a6ed4624771001f2a3d0f4d9f486db6f8bcda",
+      "role": "fixed_schema",
+      "reason": "Inspect input vector widths for the static padding schema."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_embed_rank_one_with_seeded_channels",
+      "kind": "python_iteration",
+      "ast_sha256": "408b2d83adc5e49cbe1c6787e2453ac2e6a38661732358c40c489adf164d3989",
+      "role": "fixed_schema",
+      "reason": "Pad heterogeneous vector inputs into one tensor; channel arithmetic is inside embedding_program."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "p76_embed_rank_one_with_seeded_channels",
+      "kind": "python_iteration",
+      "ast_sha256": "70ce134573321b552e0d4fe824199caf425cb6ef4ee54c2a225c4c744026ce19",
+      "role": "fixed_schema",
+      "reason": "Unpack the completed compiled tensor into variable-rank TTCore records."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer.py",
+      "function": "_shape_payload",
+      "kind": "python_iteration",
+      "ast_sha256": "19a89d1a22a7aadea5b4b86bddfd6aa7255ed51942b3c2103350fde03ce5225e",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor shape metadata."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer_tf.py",
+      "function": "projection_program",
+      "kind": "python_iteration",
+      "ast_sha256": "b930b9c9b0d11210697f8d4f6566d054767f80db76109b096b3a1921c3a3609e",
+      "role": "fixed_schema",
+      "reason": "Inspect fixed basis widths for the batched padded kernel."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer_tf.py",
+      "function": "projection_program",
+      "kind": "python_iteration",
+      "ast_sha256": "bb934c55016874ca23d0b13f2c571913e63c6ccbef2ff83d7525dfd368227a0c",
+      "role": "fixed_schema",
+      "reason": "Pack immutable basis-domain endpoints into a tensor."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer_tf.py",
+      "function": "projection_program",
+      "kind": "python_iteration",
+      "ast_sha256": "6682e0f99798e7fe89a13efc5c2fdac6133fa4c4943415f96bc615d94b55051d",
+      "role": "fixed_schema",
+      "reason": "Dispatch by fixed basis implementation type; no tensor or parameter data selects a route."
+    },
+    {
+      "path": "bayesfilter/highdim/ukf_initializer_tf.py",
+      "function": "projection_program.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "d9c2bc259e2a41cdc165fd046e9b197cf34cc55b316225e449da8ec00dc253a0",
+      "role": "fixed_schema",
+      "reason": "Bind heterogeneous basis implementations to fixed switch branches; numerical axis traversal uses tf.map_fn."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_contract_e_tp_lgssm_tf.py",
+      "function": "",
+      "kind": "python_iteration",
+      "ast_sha256": "cdbbd59595ec01fa505f3bcb12dacc6be7856071a9924e6c84276e5152699fc5",
+      "role": "fixed_schema",
+      "reason": "Build the fixed tuple of score-feature display names from parameter names; no tensor calculation."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_contract_e_tp_tf.py",
+      "function": "_contract_e_tp_streaming_square_vjp_core.body",
+      "kind": "python_iteration",
+      "ast_sha256": "bb70f319635a6974453386eb74d59480762c28d6ae5c71c8dca3336d47694223",
+      "role": "fixed_schema",
+      "reason": "Zip the fixed heterogeneous input-source tuple and sum each tensor's block cotangent. Particle, time, feature and parameter axes stay tensor-native."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_contract_e_tp_tf.py",
+      "function": "_contract_e_tp_streaming_square_vjp_core",
+      "kind": "python_iteration",
+      "ast_sha256": "4475807995517a933d354d0a0f94b13c43a672f6635b95ad917af913c6aaba46",
+      "role": "fixed_schema",
+      "reason": "Allocate one tensor cotangent per heterogeneous source in the callable's fixed input schema."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_contract_e_latent_sir_tf.py",
+      "function": "_as_prepared_tensors",
+      "kind": "python_iteration",
+      "ast_sha256": "3a83be072329e0b632f3e414ffd52be586ffd9ab8f5d6cfce4b2545b312539f0",
+      "role": "host_validation",
+      "reason": "Check the required prepared-input field names before tracing; no numerical values are computed."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_pfpf_genut_initial_rqmc_tf.py",
+      "function": "standard_pairwise_backward_marks._block_slice",
+      "kind": "python_iteration",
+      "ast_sha256": "9b967e650d1e4a6fed3803734ffb88852939936841e9e06123fd9c3a2ae20f24",
+      "role": "fixed_schema",
+      "reason": "Pack a fixed tensor slice shape from declared dimensions; all child/parent score calculations execute in TensorFlow."
+    },
     {
       "path": "bayesfilter/highdim/filtering.py",
       "function": "FixedBranchFilterConfig.__post_init__",
@@ -5626,7 +5995,7 @@
       "path": "bayesfilter/highdim/ledh_contract_e_identity.py",
       "function": "_ContractERouteIdentityFactory.issue",
       "kind": "python_iteration",
-      "ast_sha256": "6fc02ef7fc837584c64554e94368b3a0fec471cbdbdb9cac9839319363c24089",
+      "ast_sha256": "6088218a88615724811b55d4fc41c9bb6dea61005c9b1e8d3a2b2804f8689d9e",
       "occurrences": 1,
       "role": "host_validation",
       "reason": "Inspect declared schema, source identity or completed numerical values at a host validity boundary; no filtering or score recurrence."

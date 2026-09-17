@@ -124,5 +124,7 @@ def test_public_moments_compile_complete_result_and_reuse_live_inputs(jit, mixed
     np.testing.assert_allclose(actual[1], covariance, atol=1e-10, rtol=1e-10)
     assert float(tf.reduce_max(tf.abs(first[0] - actual[0]))) > 1e-5
     assert program.experimental_get_tracing_count() == 1
+    assert any(value.shape == (2, 3, 4, 4)
+               for value in program.get_concrete_function().captured_inputs)
     if jit:
         assert "HloModule" in program.experimental_get_compiler_ir(*inputs)(stage="hlo")

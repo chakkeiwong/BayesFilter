@@ -1,4 +1,8 @@
-"""Core linear Gaussian state-space types."""
+"""NumPy data containers for independent reference Kalman implementations.
+
+TensorFlow filtering and derivative runtimes use ``types_tf``. These legacy
+containers remain publicly readable for reference comparisons only.
+"""
 
 from __future__ import annotations
 

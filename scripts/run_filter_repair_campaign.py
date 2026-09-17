@@ -24,6 +24,7 @@ from pathlib import Path
 
 from enforce_filter_gradient_policy import verify as verify_source_policy
 from filter_repair_endpoint_fixtures import FIXTURES as ENDPOINT_FIXTURES
+from filter_repair_additional_fixtures import FIXTURES as ADDITIONAL_FIXTURES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -45,6 +46,19 @@ BASELINE_PARENT_PACKAGES = (
 )
 BUDGET_SECONDS = {"CPU": 8 * 3600, "GPU": 4 * 3600}
 TEST_GROUPS = {
+    "teacher_identity": ("tests/test_filter_repair_dispatch_identity.py",
+        "tests/highdim/test_ledh_contract_e_schema_v2_factory.py",
+        "tests/highdim/test_zhao_cui_moment_teacher_integration.py::test_factory_identity_binds_teacher_particle_controls_and_source",
+        "tests/highdim/test_zhao_cui_moment_teacher_nonlinear.py::test_repository_factory_binds_nonlinear_model_and_prepared_program",
+        "tests/highdim/test_zhao_cui_moment_teacher_actual_sv.py::test_factory_binds_actual_sv_and_rejects_cross_model_substitution"),
+    "teacher_consumers": ("tests/highdim/test_zhao_cui_moment_teacher_integration.py",
+        "tests/highdim/test_zhao_cui_moment_teacher_nonlinear.py",
+        "tests/highdim/test_zhao_cui_moment_teacher_actual_sv.py"),
+    "moment_teacher": ("tests/test_filter_repair_moment_teacher.py",),
+    "ukf_initializer": ("tests/test_filter_repair_ukf_initializer.py", "tests/highdim/test_p76_ukf_initializer.py"),
+    "tp_recursions": ("tests/test_filter_repair_tp_recursions.py",),
+    "information_recursions": ("tests/test_filter_repair_information_recursions.py",),
+    "remaining_routes": ("tests/test_filter_repair_remaining_routes.py",),
     "tt_preparation": ("tests/test_filter_repair_tt_preparation.py",),
     "filtering_wrappers": ("tests/test_filter_repair_filtering.py", "tests/highdim/test_filtering_kalman_exact.py", "tests/highdim/test_zhao_cui_hmc_default_route_policy.py"),
     "sv_sgqf": ("tests/test_filter_repair_sv_sgqf.py",),
@@ -132,10 +146,19 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {"random_gpu": "GPU"}
+FIXTURES += ADDITIONAL_FIXTURES
 
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def measurement_harness(fixture):
+    names = ("filter_repair_benchmark_worker.py", "measure_filter_xla_memory.py",
+             "filter_repair_endpoint_fixtures.py")
+    if fixture in ADDITIONAL_FIXTURES:
+        names += ("filter_repair_additional_worker.py", "filter_repair_additional_fixtures.py")
+    return {name: sha(ROOT / "scripts" / name) for name in names}
 
 
 def git(*args):
@@ -230,7 +253,8 @@ def run_job(args):
     elif args.action == "measure":
         ensure_baseline()
         source = BASELINE_ROOT if args.arm == "before" else ROOT
-        command = [sys.executable, str(ROOT / "scripts/filter_repair_benchmark_worker.py"), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
+        worker = "filter_repair_additional_worker.py" if args.fixture in ADDITIONAL_FIXTURES else "filter_repair_benchmark_worker.py"
+        command = [sys.executable, str(ROOT / "scripts" / worker), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
     elif args.action == "audit":
         command = [sys.executable, "scripts/audit_filter_gradient_policy.py", "--output", str(directory / "audit.json.gz"), "--markdown", str(directory / "audit.md")]
     elif args.action == "compare":
@@ -346,15 +370,13 @@ def run_matrix(args):
 
     ensure_baseline()
     marker = json.loads((BASELINE_ROOT / "source-manifest.json").read_text())
-    harness = {name: sha(ROOT / "scripts" / name) for name in (
-        "filter_repair_benchmark_worker.py", "measure_filter_xla_memory.py", "filter_repair_endpoint_fixtures.py")}
     available = {}
     for row in records():
         if row["key"][0] != "measure" or not Path(row["result"]).is_file():
             continue
         value = json.loads(Path(row["result"]).read_text())
         try:
-            current_provenance(row, value, row["key"][2], harness, marker["files"])
+            current_provenance(row, value, row["key"][2], measurement_harness(row["key"][3]), marker["files"])
         except (ValueError, KeyError):
             continue
         available[tuple(row["key"][2:])] = (row, value)
@@ -376,13 +398,14 @@ def run_matrix(args):
             if not Path(row["result"]).is_file():
                 raise RuntimeError(f"Missing measurement artifact after exit {code}: {row['log']}")
             value = json.loads(Path(row["result"]).read_text())
-            current_provenance(row, value, arm, harness, marker["files"])
+            current_provenance(row, value, arm, measurement_harness(name), marker["files"])
             available[key] = row, value
         if value["status"] != "passed" and (arm != "before" or not baseline_compilation_failure(value)):
             raise RuntimeError(f"Measurement failure requires repair: {row['result']}")
         return row, value
 
     fixtures = ((args.fixture,) if args.selection == "fixture" else
+                ADDITIONAL_FIXTURES if args.selection == "additional" else
                 ENDPOINT_FIXTURES if args.selection == "new" else FIXTURES)
     for name in fixtures:
         for size in ((1,) if name in ONE_SIZE else (1, 2)):
@@ -407,7 +430,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("status", "test", "measure", "matrix", "pause", "audit", "compare", "gate"))
     parser.add_argument("--stage", choices=("qualify", "repeat", "tests"), default="qualify")
-    parser.add_argument("--selection", choices=("fixture", "new", "all"), default="all")
+    parser.add_argument("--selection", choices=("fixture", "new", "additional", "all"), default="all")
     parser.add_argument("--group", choices=tuple(TEST_GROUPS), default="policy")
     parser.add_argument("--fixture", choices=FIXTURES, default="covariance")
     parser.add_argument("--arm", choices=("before", "after"), default="after")
