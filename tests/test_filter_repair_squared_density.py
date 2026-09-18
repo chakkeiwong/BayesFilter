@@ -94,6 +94,97 @@ def test_conditional_enclosing_hlo_and_graph_size_are_bounded():
     assert counts[0] == counts[1]
 
 
+def test_public_density_and_previous_marginal_enclose_full_xla_and_input_gradient(original):
+    density = _density(2)
+    arguments = dict(density.__dict__)
+    arguments["defensive_density"] = original.TensorProductReferenceDensity(
+        density.sqrt_tt.product_basis, density.measure_convention, density.defensive_density.floor)
+    reference = original.SquaredTTDensity(**arguments)
+    marginal = density.marginal_density((0,))
+    points = tf.constant([[-.6, .2], [.1, -.4], [.7, .5]], tf.float64)
+
+    def evaluate(query):
+        with tf.GradientTape() as tape:
+            tape.watch(query)
+            outputs = (density.unnormalized_density(query), density.log_density(query),
+                density.normalized_retained_density_values((0, 1), query),
+                marginal.normalized_retained_density_values(query[:, :1]), density.normalizer())
+            loss = tf.add_n([tf.reduce_sum(value) for value in outputs])
+        return outputs, tape.gradient(loss, query)
+
+    def authority(query):
+        return (reference.unnormalized_density(query), reference.log_density(query),
+            reference.normalized_retained_density_values((0, 1), query),
+            reference.normalized_marginal_density_values((0,), query[:, :1]), reference.normalizer())
+
+    specs = [tf.TensorSpec(points.shape, tf.float64)]
+    graph = tf.function(evaluate, input_signature=specs, jit_compile=False, autograph=False)
+    xla = tf.function(evaluate, input_signature=specs, jit_compile=True, autograph=False)
+    actual = xla(points)
+    for value, expected in zip(actual[0], authority(points), strict=True):
+        tf.debugging.assert_near(value, expected, atol=1e-10, rtol=1e-10)
+    tf.debugging.assert_near(actual[1], graph(points)[1], atol=1e-10, rtol=1e-10)
+    direction, step = .1 * tf.cos(points), 1e-5
+    plus = tf.add_n([tf.reduce_sum(value) for value in authority(points + step * direction)])
+    minus = tf.add_n([tf.reduce_sum(value) for value in authority(points - step * direction)])
+    tf.debugging.assert_near(tf.reduce_sum(actual[1] * direction), (plus - minus) / (2 * step),
+                             atol=1e-8, rtol=1e-7)
+    definition = graph.get_concrete_function().graph.as_graph_def()
+    assert not any(function.attr.get("_XlaMustCompile") and function.attr["_XlaMustCompile"].b
+                   for function in definition.library.function)
+    assert xla.experimental_get_tracing_count() == 1
+    assert "HloModule" in xla.experimental_get_compiler_ir(points)(stage="hlo")
+    bad = tf.fill(points.shape, tf.constant(float("nan"), tf.float64))
+    assert not bool(tf.reduce_all(tf.math.is_finite(xla(bad)[0][3])))
+
+
+@pytest.mark.parametrize("axes", [(), (0,), (2, 0), (0, 1, 2)])
+def test_heterogeneous_marginal_preserves_query_and_core_pullbacks(axes):
+    from bayesfilter.highdim.tt_native_control_tf import squared_marginal
+
+    density = _density(3, lebesgue=True)
+    basis = density.sqrt_tt.product_basis
+    values = tuple(core.values for core in density.sqrt_tt.cores)
+    points = tf.gather(tf.constant([[-.6, .2, .3], [.1, -.4, .6], [.7, .5, -.2]],
+                                  tf.float64), tf.constant(axes, tf.int32), axis=1)
+
+    def authority(query, coefficients):
+        # Independent reference retains the original unpadded, ordered product.
+        state = tf.ones([query.shape[0], 1, 1], query.dtype)
+        for axis, core in enumerate(coefficients):
+            if axis in axes:
+                phi = basis.evaluate_axis(axis, query[:, axes.index(axis)])
+                state = tf.einsum("naA,nl,nm,alb,AmB->nbB", state, phi, phi, core, core)
+            else:
+                gram = basis.bases[axis].mass_matrix(basis.convention.mass_measure)
+                state = tf.einsum("naA,lm,alb,AmB->nbB", state, gram, core, core)
+        return state[:, 0, 0]
+
+    def differentiate(function, query, coefficients):
+        with tf.GradientTape() as tape:
+            tape.watch((query, coefficients))
+            output = function(query, coefficients)
+            loss = tf.reduce_sum(output)
+        return output, tape.gradient(loss, (query, coefficients),
+                                     unconnected_gradients=tf.UnconnectedGradients.ZERO)
+
+    def evaluate(query, coefficients):
+        return differentiate(lambda q, c: squared_marginal(
+            tuple(highdim.TTCore(value) for value in c), basis, axes, q), query, coefficients)
+
+    expected = differentiate(authority, points, values)
+    specs = [tf.TensorSpec(points.shape, tf.float64),
+             tuple(tf.TensorSpec(value.shape, tf.float64) for value in values)]
+    for jit in (False, True):
+        program = tf.function(evaluate, input_signature=specs, jit_compile=jit, autograph=False)
+        actual = program(points, values)
+        for value, reference in zip(tf.nest.flatten(actual), tf.nest.flatten(expected), strict=True):
+            tf.debugging.assert_near(value, reference, atol=1e-10, rtol=1e-10)
+        assert program.experimental_get_tracing_count() == 1
+        if jit:
+            assert "HloModule" in program.experimental_get_compiler_ir(points, values)(stage="hlo")
+
+
 @pytest.mark.parametrize("operation,axes", [("normalized_retained", (0, 1)), ("normalized_marginal", (0,))])
 def test_complete_normalized_result_is_inside_compiled_boundary(original, operation, axes):
     density = _density(2, lebesgue=True)

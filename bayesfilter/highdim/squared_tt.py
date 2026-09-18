@@ -153,13 +153,12 @@ class SquaredTTDensity:
             raise ValueError(HighDimStatus.INVALID_BRANCH_MISMATCH.value)
 
     def unnormalized_density(self, points: tf.Tensor) -> tf.Tensor:
+        from bayesfilter.highdim.source_route_numerics_tf import finite
+
         values = tf.convert_to_tensor(points, dtype=tf.float64)
-        if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
-            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        values = finite(values, "points")
         result = self._evaluate("unnormalized", points=values)
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
-        return result
+        return finite(result, "unnormalized_density")
 
     def _evaluate(self, operation, **kwargs):
         from bayesfilter.highdim.squared_tt_density_native_tf import evaluate_density
@@ -171,22 +170,31 @@ class SquaredTTDensity:
         if bool((z <= self.normalizer_floor).numpy()):
             raise ValueError(HighDimStatus.NORMALIZER_FLOOR_EXCEEDED.value)
 
+    def _validated_normalized(self, result, z):
+        if tf.inside_function():
+            valid = tf.math.is_finite(z) & (z > self.normalizer_floor)
+            return tf.where(valid, result, tf.constant(float("nan"), result.dtype))
+        self._validate_normalizer(z)
+        return result
+
     def sqrt_square_normalizer(self, *, jit_compile=True) -> tf.Tensor:
         return self._evaluate("sqrt_normalizer", jit_compile=jit_compile)
 
     def normalizer(self, *, jit_compile=True) -> tf.Tensor:
         z = self._evaluate("normalizer", jit_compile=jit_compile)
-        self._validate_normalizer(z)
-        return z
+        return self._validated_normalized(z, z)
 
     def log_density(self, points: tf.Tensor, *, jit_compile=True) -> tf.Tensor:
+        from bayesfilter.highdim.source_route_numerics_tf import finite
+
         values = tf.convert_to_tensor(points, dtype=tf.float64)
-        if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
-            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        values = finite(values, "points")
         result, z, raw = self._evaluate("log_density", points=values, jit_compile=jit_compile)
-        self._validate_normalizer(z)
-        if not bool(tf.reduce_all(tf.math.is_finite(raw)).numpy()):
-            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        result = self._validated_normalized(result, z)
+        checked = finite(raw, "raw_density")
+        if tf.inside_function():
+            result = tf.where(tf.reduce_all(tf.math.is_finite(checked)), result,
+                              tf.constant(float("nan"), result.dtype))
         return result
 
     def normalized_retained_density_values(self, keep_axes: Sequence[int], points: tf.Tensor) -> tf.Tensor:
@@ -198,6 +206,8 @@ class SquaredTTDensity:
         contraction path.
         """
 
+        from bayesfilter.highdim.source_route_numerics_tf import finite
+
         axes = tuple(sorted(set(int(axis) for axis in keep_axes)))
         dimension = len(self.sqrt_tt.cores)
         if axes != tuple(range(dimension)):
@@ -205,12 +215,13 @@ class SquaredTTDensity:
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         if values.shape.rank != 2 or values.shape[1] != dimension:
             raise ValueError(f"points: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
-            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        values = finite(values, "points")
         result, z, raw = self._evaluate("normalized_retained", points=values)
-        self._validate_normalizer(z)
-        if not bool(tf.reduce_all(tf.math.is_finite(raw)).numpy()):
-            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        result = self._validated_normalized(result, z)
+        checked = finite(raw, "raw_density")
+        if tf.inside_function():
+            result = tf.where(tf.reduce_all(tf.math.is_finite(checked)), result,
+                              tf.constant(float("nan"), result.dtype))
         return result
 
     def marginal_density(self, keep_axes: Sequence[int]) -> SquaredTTMarginal:
@@ -245,6 +256,8 @@ class SquaredTTDensity:
         keep_axes: Sequence[int],
         points: tf.Tensor,
     ) -> tf.Tensor:
+        from bayesfilter.highdim.source_route_numerics_tf import finite
+
         axes = tuple(sorted(set(int(axis) for axis in keep_axes)))
         dimension = len(self.sqrt_tt.cores)
         if any(axis < 0 or axis >= dimension for axis in axes):
@@ -255,15 +268,11 @@ class SquaredTTDensity:
             values = values[:, tf.newaxis]
         if values.shape.rank != 2 or values.shape[1] != len(axes):
             raise ValueError(f"points: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
-            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        values = finite(values, "points")
         if not axes and isinstance(self.defensive_density, TensorProductReferenceDensity):
             raise ValueError("ProductBasis requires at least one basis")
         normalized, z = self._evaluate("normalized_marginal", keep_axes=axes, points=values)
-        self._validate_normalizer(z)
-        if not bool(tf.reduce_all(tf.math.is_finite(normalized)).numpy()):
-            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
-        return normalized
+        return finite(self._validated_normalized(normalized, z), "normalized_marginal")
 
     def _source_style_marginal_unnormalized_values(
         self,

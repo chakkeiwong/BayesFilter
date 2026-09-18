@@ -11,6 +11,7 @@ from pathlib import Path
 
 import tensorflow as tf
 
+from bayesfilter.highdim import source_route_numerics_tf as numerics_tf
 from bayesfilter.highdim import source_route_preparation_tf as preparation_tf
 from bayesfilter.highdim.bases import (
     BoundedInterval,
@@ -412,7 +413,7 @@ class SourceRouteCoordinateFrame:
         return int(self.mu.shape[0])
 
     def log_abs_det(self) -> tf.Tensor:
-        return tf.math.log(tf.abs(tf.linalg.det(self.matrix)))
+        return numerics_tf.log_abs_det(self.matrix)
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -438,9 +439,10 @@ class SourceRouteSampleDiagnostics:
         ess = tf.convert_to_tensor(self.effective_sample_size, dtype=tf.float64)
         if ess.shape.rank != 0:
             raise ValueError(f"effective_sample_size: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.math.is_finite(ess).numpy()) or bool((ess <= 0.0).numpy()):
-            raise ValueError(f"effective_sample_size: {HighDimStatus.NONFINITE_VALUE.value}")
-        if bool((ess > float(self.sample_count) + 1e-9).numpy()):
+        ess = numerics_tf.positive(ess, "effective_sample_size")
+        if tf.inside_function():
+            ess = tf.where(ess <= float(self.sample_count) + 1e-9, ess, tf.constant(float("nan"), ess.dtype))
+        elif bool((ess > float(self.sample_count) + 1e-9).numpy()):
             raise ValueError("effective_sample_size cannot exceed sample_count")
         if int(self.enhancement_attempts) < 0:
             raise ValueError("enhancement_attempts must be nonnegative")
@@ -474,8 +476,8 @@ class SourceRouteNormalizerContribution:
         ):
             if value.shape.rank != 0:
                 raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
-            if not bool(tf.math.is_finite(value).numpy()):
-                raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
+        log_z = numerics_tf.finite(log_z, "log_transport_normalizer")
+        shift = numerics_tf.finite(shift, "shift_constant")
         if str(self.log_abs_det_policy) not in ("included_in_target", "separate_term"):
             raise ValueError("log_abs_det_policy must be included_in_target or separate_term")
         object.__setattr__(self, "log_transport_normalizer", log_z)
@@ -483,7 +485,7 @@ class SourceRouteNormalizerContribution:
         object.__setattr__(self, "log_abs_det_policy", str(self.log_abs_det_policy))
 
     def log_increment(self) -> tf.Tensor:
-        return self.log_transport_normalizer - self.shift_constant
+        return numerics_tf.normalizer_increment(self.log_transport_normalizer, self.shift_constant)
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -514,11 +516,8 @@ class SourceRouteSampleBatch:
             raise ValueError(f"log_weights: {HighDimStatus.INVALID_SHAPE.value}")
         assert_tf_float64("samples", samples)
         assert_tf_float64("log_weights", log_weights)
-        if not bool(
-            tf.reduce_all(tf.math.is_finite(samples)).numpy()
-            and tf.reduce_all(tf.math.is_finite(log_weights)).numpy()
-        ):
-            raise ValueError(f"SourceRouteSampleBatch: {HighDimStatus.NONFINITE_VALUE.value}")
+        samples = numerics_tf.finite(samples, "SourceRouteSampleBatch")
+        log_weights = numerics_tf.finite(log_weights, "SourceRouteSampleBatch")
         if int(self.time_index) < 0:
             raise ValueError("time_index must be nonnegative")
         if not str(self.route_label).strip():
@@ -685,13 +684,9 @@ class SourceRouteTarget:
             raise ValueError(f"reference_points: {HighDimStatus.INVALID_SHAPE.value}")
         if int(reference.shape[0]) != self.coordinate_frame.dimension:
             raise ValueError(f"reference_points: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(reference)).numpy()):
-            raise ValueError(f"reference_points: {HighDimStatus.NONFINITE_VALUE.value}")
-        return (
-            tf.linalg.matmul(self.coordinate_frame.matrix, reference)
-            + self.coordinate_frame.mu[:, tf.newaxis]
-        )
+        return numerics_tf.physical_points(reference, self.coordinate_frame.mu, self.coordinate_frame.matrix)
 
+    @numerics_tf.compiled_method
     def negative_log_density(self, reference_points: tf.Tensor) -> tf.Tensor:
         physical = self.physical_points_from_reference(reference_points)
         negative_log_physical = _finite_vector(
@@ -711,6 +706,7 @@ class SourceRouteTarget:
             shift_constant=self.shift_constant,
         )
 
+    @numerics_tf.compiled_method
     def log_target_density(self, reference_points: tf.Tensor) -> tf.Tensor:
         return -self.negative_log_density(reference_points)
 
@@ -773,6 +769,7 @@ class SourceRouteTransportProtocol:
             raise ValueError(f"log_normalizer: {HighDimStatus.NONFINITE_VALUE.value}")
         object.__setattr__(self, "route_label", str(self.route_label))
 
+    @numerics_tf.compiled_method
     def inverse_transport(self, reference_points: tf.Tensor) -> tf.Tensor:
         result = tf.convert_to_tensor(
             self.transport_object.inverse_transport(reference_points),
@@ -780,10 +777,9 @@ class SourceRouteTransportProtocol:
         )
         if result.shape != tf.convert_to_tensor(reference_points, dtype=tf.float64).shape:
             raise ValueError(f"inverse_transport: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(f"inverse_transport: {HighDimStatus.NONFINITE_VALUE.value}")
-        return result
+        return numerics_tf.finite(result, "inverse_transport")
 
+    @numerics_tf.compiled_method
     def log_reference_density(self, reference_points: tf.Tensor) -> tf.Tensor:
         if not callable(getattr(self.transport_object, "log_reference_density", None)):
             raise TypeError(
@@ -798,6 +794,7 @@ class SourceRouteTransportProtocol:
             raise ValueError(f"log_reference_density: {HighDimStatus.INVALID_SHAPE.value}")
         return values
 
+    @numerics_tf.compiled_method
     def forward_transport(self, local_points: tf.Tensor) -> tf.Tensor:
         result = tf.convert_to_tensor(
             self.transport_object.forward_transport(local_points),
@@ -805,10 +802,9 @@ class SourceRouteTransportProtocol:
         )
         if result.shape != tf.convert_to_tensor(local_points, dtype=tf.float64).shape:
             raise ValueError(f"forward_transport: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(f"forward_transport: {HighDimStatus.NONFINITE_VALUE.value}")
-        return result
+        return numerics_tf.finite(result, "forward_transport")
 
+    @numerics_tf.compiled_method
     def conditional_inverse_transport(
         self,
         conditioning_points: tf.Tensor,
@@ -826,21 +822,17 @@ class SourceRouteTransportProtocol:
             raise ValueError(
                 f"conditional_inverse_transport: {HighDimStatus.INVALID_SHAPE.value}"
             )
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(
-                f"conditional_inverse_transport: {HighDimStatus.NONFINITE_VALUE.value}"
-            )
-        return result
+        return numerics_tf.finite(result, "conditional_inverse_transport")
 
+    @numerics_tf.compiled_method
     def eval_pdf(self, local_points: tf.Tensor) -> tf.Tensor:
         values = _finite_vector("eval_pdf", self.transport_object.eval_pdf(local_points))
         local = tf.convert_to_tensor(local_points, dtype=tf.float64)
         if local.shape.rank != 2 or values.shape != (int(local.shape[1]),):
             raise ValueError(f"eval_pdf: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(values > 0.0).numpy()):
-            raise ValueError(f"eval_pdf: {HighDimStatus.NONFINITE_VALUE.value}")
-        return values
+        return numerics_tf.positive(values, "eval_pdf")
 
+    @numerics_tf.compiled_method
     def potential(self, local_points: tf.Tensor) -> tf.Tensor:
         values = _finite_vector("potential", self.transport_object.potential(local_points))
         local = tf.convert_to_tensor(local_points, dtype=tf.float64)
@@ -848,6 +840,7 @@ class SourceRouteTransportProtocol:
             raise ValueError(f"potential: {HighDimStatus.INVALID_SHAPE.value}")
         return values
 
+    @numerics_tf.compiled_method
     def proposal_log_density(
         self,
         *,
@@ -878,11 +871,12 @@ class SourceRouteTransportProtocol:
             raise ValueError(f"marginalize: {HighDimStatus.INVALID_SHAPE.value}")
         return result
 
+    @numerics_tf.compiled_method
     def log_normalizer(self) -> tf.Tensor:
         value = tf.convert_to_tensor(self.transport_object.log_normalizer(), dtype=tf.float64)
-        if value.shape.rank != 0 or not bool(tf.math.is_finite(value).numpy()):
+        if value.shape.rank != 0:
             raise ValueError(f"log_normalizer: {HighDimStatus.NONFINITE_VALUE.value}")
-        return value
+        return numerics_tf.finite(value, "log_normalizer")
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -8094,6 +8088,7 @@ class SourceRouteRetainedObject:
         object.__setattr__(self, "diagnostics", freeze_mapping(self.diagnostics))
 
 
+@numerics_tf.compiled
 def normalize_log_weights(log_weights: tf.Tensor) -> tf.Tensor:
     """Return log weights normalized to sum to one."""
 
@@ -8101,6 +8096,7 @@ def normalize_log_weights(log_weights: tf.Tensor) -> tf.Tensor:
     return values - tf.reduce_logsumexp(values)
 
 
+@numerics_tf.compiled
 def effective_sample_size_from_log_weights(log_weights: tf.Tensor) -> tf.Tensor:
     """Compute ESS from finite log weights."""
 
@@ -8127,6 +8123,7 @@ def source_route_needs_enhancement(
     return bool((diagnostics.effective_sample_size < required).numpy())
 
 
+@numerics_tf.compiled
 def source_route_proposal_log_weights(
     *,
     log_target_density: tf.Tensor,
@@ -8150,6 +8147,7 @@ def source_route_proposal_log_weights(
     return log_target - log_proposal
 
 
+@numerics_tf.compiled
 def source_route_proposal_log_weights_from_negative_log_target(
     *,
     negative_log_target: tf.Tensor,
@@ -8166,6 +8164,7 @@ def source_route_proposal_log_weights_from_negative_log_target(
     return -neg_log_target - log_proposal
 
 
+@numerics_tf.compiled
 def source_route_discrete_log_normalizer_from_correction(
     *,
     log_proposal_density: tf.Tensor,
@@ -8182,6 +8181,7 @@ def source_route_discrete_log_normalizer_from_correction(
     return tf.reduce_logsumexp(log_proposal + correction)
 
 
+@numerics_tf.compiled
 def source_route_equal_weight_log_normalizer_estimate(
     correction_log_weights: tf.Tensor,
 ) -> tf.Tensor:
@@ -8334,20 +8334,13 @@ def source_route_generate_retained_samples(
         raise ValueError(f"reference_samples: {HighDimStatus.INVALID_SHAPE.value}")
     if int(reference.shape[0]) != target.coordinate_frame.dimension:
         raise ValueError(f"reference_samples: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(reference)).numpy()):
-        raise ValueError(f"reference_samples: {HighDimStatus.NONFINITE_VALUE.value}")
-    local_samples = transport.inverse_transport(reference)
-    physical_samples = target.physical_points_from_reference(local_samples)
-    proposal_log_density = transport.proposal_log_density(
-        local_points=local_samples,
-        reference_points=reference,
-    )
-    target_log_density = target.log_target_density(local_samples)
-    correction = source_route_proposal_log_weights(
-        log_target_density=target_log_density,
-        log_proposal_density=proposal_log_density,
-    )
-    normalized_correction = normalize_log_weights(correction)
+    from bayesfilter.highdim.source_route_runtime_tf import retained_program
+
+    reference = numerics_tf.finite(reference, "reference_samples")
+    program = retained_program(target, transport, reference.shape)
+    evaluate = program.inline_function if tf.inside_function() else program
+    (physical_samples, proposal_log_density, target_log_density, correction,
+     normalized_correction, ess, log_z) = evaluate(reference)
     retained_batch = SourceRouteSampleBatch(
         samples=physical_samples,
         log_weights=normalized_correction,
@@ -8355,9 +8348,10 @@ def source_route_generate_retained_samples(
         route_label=SOURCE_FAITHFUL_ROUTE_LABEL,
         sample_origin="retained_from_transport",
     )
-    diagnostics = retained_batch.diagnostics()
+    diagnostics = SourceRouteSampleDiagnostics(sample_count=retained_batch.sample_count,
+                                               effective_sample_size=ess)
     normalizer = SourceRouteNormalizerContribution(
-        log_transport_normalizer=transport.log_normalizer(),
+        log_transport_normalizer=log_z,
         shift_constant=target.shift_constant,
         log_abs_det_policy=target.log_abs_det_policy,
     )
@@ -8399,24 +8393,12 @@ def source_route_previous_marginal_log_density(
     if points.shape.rank != 2 or int(points.shape[0]) != len(keep):
         raise ValueError(f"physical_points: {HighDimStatus.INVALID_SHAPE.value}")
     assert_tf_float64("physical_points", points)
-    if not bool(tf.reduce_all(tf.math.is_finite(points)).numpy()):
-        raise ValueError(f"physical_points: {HighDimStatus.NONFINITE_VALUE.value}")
-    transport = SourceRouteTransportProtocol(
-        previous_retained_object.transport_object
-    )
-    marginal_transport = transport.marginalize(keep)
-    mu_prefix = tf.gather(frame.mu, keep)
-    matrix_prefix = tf.gather(tf.gather(frame.matrix, keep, axis=0), keep, axis=1)
-    local_points = tf.linalg.solve(
-        matrix_prefix,
-        points - mu_prefix[:, tf.newaxis],
-    )
-    eval_pdf = _source_route_eval_marginal_pdf(marginal_transport, local_points)
-    if not bool(tf.reduce_all(eval_pdf > 0.0).numpy()):
-        raise ValueError(f"previous_marginal_eval_pdf: {HighDimStatus.NONFINITE_VALUE.value}")
-    log_density = tf.math.log(eval_pdf) - tf.math.log(
-        tf.abs(tf.linalg.det(matrix_prefix))
-    )
+    from bayesfilter.highdim.source_route_runtime_tf import previous_marginal_program
+
+    points = numerics_tf.finite(points, "physical_points")
+    program, marginal_transport = previous_marginal_program(previous_retained_object, keep, points.shape)
+    evaluate = program.inline_function if tf.inside_function() else program
+    local_points, log_density = evaluate(points)
     return SourceRoutePreviousMarginalDensityResult(
         previous_retained_object=previous_retained_object,
         keep_axes=keep,
@@ -8579,9 +8561,7 @@ def _source_route_eval_marginal_pdf(marginal_transport: object, local_points: tf
         raise TypeError("marginal transport must provide eval_pdf or normalized_retained_density_values")
     if values.shape != (int(local.shape[1]),):
         raise ValueError(f"previous_marginal_eval_pdf: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
-        raise ValueError(f"previous_marginal_eval_pdf: {HighDimStatus.NONFINITE_VALUE.value}")
-    return values
+    return numerics_tf.finite(values, "previous_marginal_eval_pdf")
 
 
 def source_route_sequential_negative_log_physical_density(
@@ -8934,11 +8914,10 @@ def source_route_reference_log_density_from_physical(
     if log_density.shape.rank not in (0, 1):
         raise ValueError(f"log_physical_density: {HighDimStatus.INVALID_SHAPE.value}")
     assert_tf_float64("log_physical_density", log_density)
-    if not bool(tf.reduce_all(tf.math.is_finite(log_density)).numpy()):
-        raise ValueError(f"log_physical_density: {HighDimStatus.NONFINITE_VALUE.value}")
-    return log_density + coordinate_frame.log_abs_det()
+    return numerics_tf.reference_log_density(log_density, coordinate_frame.matrix)
 
 
+@numerics_tf.compiled
 def source_route_shifted_negative_log_target(
     *,
     negative_log_target: tf.Tensor,
@@ -8954,12 +8933,7 @@ def source_route_shifted_negative_log_target(
         raise ValueError(f"shift_constant: {HighDimStatus.INVALID_SHAPE.value}")
     assert_tf_float64("negative_log_target", target)
     assert_tf_float64("shift_constant", shift)
-    if not bool(
-        tf.reduce_all(tf.math.is_finite(target)).numpy()
-        and tf.math.is_finite(shift).numpy()
-    ):
-        raise ValueError(f"source_route_shifted_negative_log_target: {HighDimStatus.NONFINITE_VALUE.value}")
-    return target - shift
+    return numerics_tf.finite(target, "negative_log_target") - numerics_tf.finite(shift, "shift_constant")
 
 
 def source_route_log_normalizer_update(
@@ -8969,14 +8943,14 @@ def source_route_log_normalizer_update(
 ) -> tf.Tensor:
     """Return the source-style log-likelihood increment `log(z) - const`."""
 
-    normalizer = SourceRouteNormalizerContribution(
-        log_transport_normalizer=log_transport_normalizer,
-        shift_constant=shift_constant,
-        log_abs_det_policy="included_in_target",
-    )
-    return normalizer.log_increment()
+    log_z = tf.convert_to_tensor(log_transport_normalizer, tf.float64)
+    shift = tf.convert_to_tensor(shift_constant, tf.float64)
+    if log_z.shape.rank != 0 or shift.shape.rank != 0:
+        raise ValueError(f"normalizer contribution: {HighDimStatus.INVALID_SHAPE.value}")
+    return numerics_tf.normalizer_increment(log_z, shift)
 
 
+@numerics_tf.compiled
 def source_route_residual_negative_log_target(
     *,
     full_negative_log_target: tf.Tensor,
@@ -8993,6 +8967,7 @@ def source_route_residual_negative_log_target(
     return full - preconditioner
 
 
+@numerics_tf.compiled
 def source_route_preconditioned_target_identity_error(
     *,
     full_negative_log_target: tf.Tensor,
@@ -9154,14 +9129,14 @@ def _source_route_computeL_quantile_scale(
     return preparation_tf.quantile_scale(samples, normalized_weights, q)
 
 
+@numerics_tf.compiled
 def tfp_normal_quantile(probability: tf.Tensor) -> tf.Tensor:
     """Return the standard-normal quantile using TensorFlow primitives."""
 
     p = tf.convert_to_tensor(probability, dtype=tf.float64)
     if p.shape.rank != 0:
         raise ValueError(f"probability: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.math.is_finite(p).numpy()) or not bool((p > 0.0).numpy() and (p < 1.0).numpy()):
-        raise ValueError("probability must be in (0, 1)")
+    p = tf.where(tf.math.is_finite(p) & (p > 0.) & (p < 1.), p, tf.constant(float("nan"), tf.float64))
     return tf.sqrt(tf.constant(2.0, dtype=tf.float64)) * tf.math.erfinv(
         2.0 * p - 1.0
     )
@@ -9172,9 +9147,7 @@ def _finite_vector(name: str, value: tf.Tensor) -> tf.Tensor:
     if tensor.shape.rank != 1:
         raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
     assert_tf_float64(name, tensor)
-    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
-        raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tensor
+    return numerics_tf.finite(tensor, name)
 
 
 def _finite_same_shape_vectors(

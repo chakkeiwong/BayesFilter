@@ -10,8 +10,40 @@
       "_source_route_seeded_channel_initial_cores",
       "_p70_channel_activity_diagnostics",
       "source_route_recenter",
-      "_source_route_computeL_quantile_scale"
+      "_source_route_computeL_quantile_scale",
+      "SourceRouteCoordinateFrame.log_abs_det",
+      "SourceRouteTarget.physical_points_from_reference",
+      "SourceRouteTarget.negative_log_density",
+      "SourceRouteTarget.log_target_density",
+      "SourceRouteTransportProtocol.inverse_transport",
+      "SourceRouteTransportProtocol.forward_transport",
+      "SourceRouteTransportProtocol.conditional_inverse_transport",
+      "SourceRouteTransportProtocol.log_reference_density",
+      "SourceRouteTransportProtocol.eval_pdf",
+      "SourceRouteTransportProtocol.potential",
+      "SourceRouteTransportProtocol.proposal_log_density",
+      "SourceRouteTransportProtocol.log_normalizer",
+      "source_route_generate_retained_samples",
+      "source_route_previous_marginal_log_density",
+      "_source_route_eval_marginal_pdf",
+      "SourceRouteNormalizerContribution.log_increment",
+      "normalize_log_weights",
+      "effective_sample_size_from_log_weights",
+      "source_route_proposal_log_weights",
+      "source_route_proposal_log_weights_from_negative_log_target",
+      "source_route_discrete_log_normalizer_from_correction",
+      "source_route_equal_weight_log_normalizer_estimate",
+      "source_route_shifted_negative_log_target",
+      "source_route_log_normalizer_update",
+      "source_route_reference_log_density_from_physical",
+      "source_route_residual_negative_log_target",
+      "source_route_preconditioned_target_identity_error",
+      "tfp_normal_quantile",
+      "_finite_vector",
+      "_finite_same_shape_vectors"
     ],
+    "bayesfilter/highdim/source_route_numerics_tf.py": null,
+    "bayesfilter/highdim/source_route_runtime_tf.py": null,
     "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py": null,
     "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py": null,
     "bayesfilter/highdim/ledh_contract_e_tp_predator_prey_tf.py": null,
@@ -256,6 +288,94 @@
     "bayesfilter/highdim/stochastic_training_native_tf.py": null
   },
   "exceptions": [
+    {
+      "path": "bayesfilter/highdim/source_route_numerics_tf.py",
+      "function": "compiled_method.prepare",
+      "kind": "python_iteration",
+      "ast_sha256": "903fd824f318e2dab0aacbe930b3e3dd30158fe3d231175885c8f95eebb3c6e9",
+      "role": "fixed_schema",
+      "reason": "Convert named method arguments to tensors at the fixed-signature boundary; no numerical row/date iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_numerics_tf.py",
+      "function": "compiled_method.prepare",
+      "kind": "python_iteration",
+      "ast_sha256": "39f3feee5ae635e652a78856729ad10beed8470a1c86863ec3d33b28eb053340",
+      "role": "fixed_schema",
+      "reason": "Construct TensorSpec metadata for the fixed method argument schema."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_runtime_tf.py",
+      "function": "_tensor_program",
+      "kind": "python_iteration",
+      "ast_sha256": "1cd65b20f4396ed279504a927ec778706ccf27448116e5792f1163133441ce6a",
+      "role": "fixed_schema",
+      "reason": "Classify captured tensor/resource dtypes so the custom rule preserves all derivatives without duplicating variable handles."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_runtime_tf.py",
+      "function": "_tensor_program.bound_captures",
+      "kind": "python_iteration",
+      "ast_sha256": "001d7edc172324e5aaa3cc66637647fb73d0ced95ae7d730c119195d05640e38",
+      "role": "fixed_schema",
+      "reason": "Rebind the concrete function's declared capture slots to tensor inputs; no numerical operation is performed by this schema assembly."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_runtime_tf.py",
+      "function": "_tensor_program",
+      "kind": "python_iteration",
+      "ast_sha256": "f9a2211b26fd7dd52c15e7edc2840692b07a123b76ce0b209526e441b0da697e",
+      "role": "fixed_schema",
+      "reason": "Thread the fixed captured-tensor tuple as explicit custom-gradient inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "source_route_previous_marginal_log_density",
+      "kind": "python_iteration",
+      "ast_sha256": "296ff1b6cb46bfc48ff2c3957f45cf64c3cc86fcb7423eea6d620236134d9bd2",
+      "role": "fixed_schema",
+      "reason": "Normalize the immutable retained prefix-axis schema; density evaluation runs in the compiled program."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "_basis_rows_with_pullback",
+      "kind": "python_iteration",
+      "ast_sha256": "98513068c9e508b63e2a097449b478e6be75e4f2f7c14ea5ccd130a51f7c8f63",
+      "role": "fixed_schema",
+      "reason": "Map the immutable retained-axis schema to query columns before tensor evaluation."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "_basis_rows_with_pullback.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "be280b86646f55cb7c42a522fa3fdf041a7780cf77004d850e3cf9acac3ba900",
+      "role": "fixed_schema",
+      "reason": "Construct heterogeneous basis callables; map_fn and switch_case evaluate numerical axes."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "_basis_rows_with_pullback.evaluate.pullback",
+      "kind": "python_iteration",
+      "ast_sha256": "5fdd6170f29acdbce076369269f2dd515d2a5bcf8d8990fa68d7a1318106c140",
+      "role": "fixed_schema",
+      "reason": "Construct heterogeneous derivative callables; the complete query pullback executes in native tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "squared_marginal",
+      "kind": "python_iteration",
+      "ast_sha256": "93d432189a0d61c48e20e9a54a112a7eaa9a42a57cd9e37c2f2d959e8938c8b4",
+      "role": "fixed_schema",
+      "reason": "Select padding width from static heterogeneous core shapes."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "core_matrices",
+      "kind": "python_iteration",
+      "ast_sha256": "93d432189a0d61c48e20e9a54a112a7eaa9a42a57cd9e37c2f2d959e8938c8b4",
+      "role": "fixed_schema",
+      "reason": "Select padding width from static heterogeneous core shapes."
+    },
     {
       "path": "bayesfilter/highdim/stochastic_density_training.py",
       "function": "P75TrainableTTConfig.__post_init__",

@@ -1013,6 +1013,8 @@ def _validate_map_points(name: str, points: tf.Tensor, dimension: int) -> tf.Ten
     values = tf.convert_to_tensor(points, dtype=tf.float64)
     if values.shape.rank != 2 or int(values.shape[0]) != int(dimension):
         raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
+    if tf.inside_function():
+        return tf.where(tf.reduce_all(tf.math.is_finite(values)), values, tf.constant(float("nan"), values.dtype))
     if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
         raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
     return values

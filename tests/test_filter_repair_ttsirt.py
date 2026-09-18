@@ -90,6 +90,43 @@ def test_transport_vetoes_and_bisection_graph_are_preserved():
         replace(transport, cdf_config=replace(transport.cdf_config, max_batch_working_bytes=1)).inverse_transport(values)
 
 
+@pytest.mark.parametrize("suffix", [False, True])
+def test_public_transport_complete_enclosing_graph_and_xla_with_invalid_status(suffix):
+    from dataclasses import replace
+
+    transport = _correlated_transport()
+    transport = replace(transport, cdf_config=replace(transport.cdf_config, grid_size=9, bisection_steps=8))
+    points = tf.constant([[.2, .5, .8], [.3, .7, .4]], DTYPE)
+
+    def evaluate(query):
+        if suffix:
+            condition = tf.constant([[.1, -.3, .2]], DTYPE)
+            local = transport.conditional_inverse_transport_suffix(condition, query[:1])
+            return (local, transport.conditional_forward_transport_suffix(condition, local),
+                transport.conditional_forward_log_jacobian_suffix(condition, local),
+                transport.conditional_proposal_log_density_suffix(conditioning_points=condition, generated_points=local))
+        local = transport.inverse_transport(query)
+        return (local, transport.forward_transport(local), transport.forward_log_jacobian(local),
+                transport.eval_pdf(local), transport.proposal_log_density(local_points=local, reference_points=query))
+
+    expected = evaluate(points)
+    signature = [tf.TensorSpec(points.shape, DTYPE)]
+    graph = tf.function(evaluate, input_signature=signature, jit_compile=False, autograph=False)
+    xla = tf.function(evaluate, input_signature=signature, jit_compile=True, autograph=False)
+    for result in (graph(points), xla(points)):
+        for actual, reference in zip(result, expected, strict=True):
+            tf.debugging.assert_near(actual, reference, atol=2e-12, rtol=2e-12)
+    definition = graph.get_concrete_function().graph.as_graph_def()
+    assert not any(function.attr.get("_XlaMustCompile") and function.attr["_XlaMustCompile"].b
+                   for function in definition.library.function)
+    assert not any(node.op in ("PyFunc", "EagerPyFunc")
+                   for node in [*definition.node, *(node for fn in definition.library.function for node in fn.node_def)])
+    assert xla.experimental_get_tracing_count() == 1
+    assert "HloModule" in xla.experimental_get_compiler_ir(points)(stage="hlo")
+    for invalid in (points + 1., tf.fill(points.shape, tf.constant(float("nan"), DTYPE))):
+        assert not bool(tf.reduce_all(tf.math.is_finite(xla(invalid)[0])))
+
+
 def _compiler_inputs(steps, map_kind):
     maps = {
         "identity": lambda: IdentityCoordinateMap(1),

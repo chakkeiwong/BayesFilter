@@ -339,24 +339,78 @@ def make_fixed_squared_marginal(product_basis, initial_cores, keep_axes, points,
     return contract
 
 
+def _basis_rows_with_pullback(product_basis, keep_axes, points, width):
+    """Evaluate heterogeneous bases before differentiating core contractions.
+
+    The full query pullback recomputes each local derivative in its own Case
+    branch. Polynomial-loop TensorLists therefore never cross a Case boundary.
+    Core coefficients remain ordinary inputs to the subsequent contractions.
+    """
+    count, rows = len(product_basis.bases), points.shape[0]
+    columns = {axis: column for column, axis in enumerate(keep_axes)}
+
+    def branch(axis, query):
+        def evaluate():
+            if axis not in columns:
+                return tf.zeros([rows, width], points.dtype)
+            local = product_basis.bases[axis]
+            value = product_basis.evaluate_axis(axis, query[:, columns[axis]])
+            return tf.pad(value, ((0, 0), (0, width - local.basis_dim)))
+        return evaluate
+
+    @tf.custom_gradient
+    def evaluate(query):
+        branches = tuple(branch(axis, query) for axis in range(count))
+        result = tf.map_fn(lambda axis: tf.switch_case(axis, branches), tf.range(count),
+            fn_output_signature=tf.TensorSpec([rows, width], points.dtype),
+            parallel_iterations=1)
+
+        def pullback(cotangent):
+            def derivative_branch(axis):
+                def derivative():
+                    if axis not in columns:
+                        return tf.zeros([rows], points.dtype)
+                    local = product_basis.bases[axis]
+                    coordinate = query[:, columns[axis]]
+                    local_cotangent = cotangent[axis, :, :local.basis_dim]
+                    if callable(getattr(local, "derivative", None)):
+                        return tf.reduce_sum(local_cotangent * local.derivative(coordinate), axis=1)
+                    with tf.GradientTape() as tape:
+                        tape.watch(coordinate)
+                        value = product_basis.evaluate_axis(axis, coordinate)
+                    return tape.gradient(value, coordinate, output_gradients=local_cotangent,
+                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
+                return derivative
+
+            derivatives = tuple(derivative_branch(axis) for axis in range(count))
+            gradient = tf.map_fn(lambda axis: tf.switch_case(axis, derivatives), tf.range(count),
+                fn_output_signature=tf.TensorSpec([rows], points.dtype), parallel_iterations=1)
+            return tf.transpose(tf.gather(gradient, tf.constant(keep_axes, tf.int32)))
+
+        return result, pullback
+
+    return evaluate(points)
+
+
 def squared_marginal(cores, product_basis, keep_axes, points):
     """Contract the paired cores in the original axis order with native control."""
     count = len(cores)
     rank = max(max(core.left_rank, core.right_rank) for core in cores) ** 2
+    width = max(core.basis_dim for core in cores)
     columns = {axis: column for column, axis in enumerate(keep_axes)}
+    basis_rows = _basis_rows_with_pullback(product_basis, keep_axes, points, width)
+    masses = basis_masses(product_basis, cores)
 
     def branch(axis):
         def matrix():
             core = cores[axis]
             if axis in columns:
-                phi = product_basis.evaluate_axis(axis, points[:, columns[axis]])
+                phi = basis_rows[axis, :, :core.basis_dim]
                 paired = tf.einsum(
                     "nl,nm,alb,AmB->naAbB", phi, phi, core.values, core.values
                 )
             else:
-                gram = product_basis.bases[axis].mass_matrix(
-                    product_basis.convention.mass_measure
-                )
+                gram = masses[axis]
                 paired = tf.einsum("alb,AmB,lm->aAbB", core.values, core.values, gram)
                 paired = tf.broadcast_to(paired[None], [points.shape[0], *paired.shape])
             values = tf.reshape(
@@ -457,12 +511,15 @@ def add_core_tensors(left, right):
 
 def core_matrices(product_basis, points, cores):
     rank = max(max(core.left_rank, core.right_rank) for core in cores)
+    width = max(core.basis_dim for core in cores)
+    basis_rows = _basis_rows_with_pullback(
+        product_basis, tuple(range(len(cores))), points, width)
 
     # Each branch is a static heterogeneous basis/core type specialization.
     # tf.map_fn drives the numerical axis iteration with one traced body.
     def branch(axis):
         def evaluate():
-            values = product_basis.evaluate_axis(axis, points[:, axis])
+            values = basis_rows[axis, :, :cores[axis].basis_dim]
             matrix = tf.einsum("nl,alb->nab", values, cores[axis].values)
             return tf.pad(
                 matrix,

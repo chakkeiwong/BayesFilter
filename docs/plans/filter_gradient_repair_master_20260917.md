@@ -207,6 +207,25 @@ the existing dtype, comparison thresholds, three repeats and cumulative budget.
 Keep baseline graph/XLA failures visible and compare to a valid eager reference
 where necessary; no historical fitted parent is required for these checks.
 
+Source-route boundary checks also compare the unchanged affine density,
+stability shift, proposal correction, normalized weights, ESS and normalizer
+calculation at four/eight samples. Preserve host rejection and keep invalid
+inputs nonfinite inside enclosing XLA, where assertions can be discarded.
+Use the same GPU, FP64 tolerance, frozen inputs and existing budget. These
+helper checks cannot close retained-object/date-loop or transport coverage.
+
+Complete source endpoint qualification additionally covers retained samples,
+proposal/target densities, correction and normalized weights, ESS, normalizer
+increments, and previous-marginal values/query gradients at four/eight rows.
+Use the same fresh correlated two-axis TT and fixed affine frame in both arms,
+with grid size 9, eight bisection steps, the existing 1e-12 CDF tolerances and
+zero allowed floors. These small extents diagnose execution only. Check
+captured tensor and variable pullbacks as well as explicit query derivatives;
+an external tape must not silently lose coefficients captured by a callback.
+Prepare immutable marginal metadata outside tracing, retaining every numerical
+query in the compiled boundary. The remaining sequential date loop is a
+separate open gate; endpoint qualification cannot close it.
+
 Stop the affected measurement on invalid comparison, corrupted artifacts,
 numerical mismatch, uncontrolled allocation or GPU contention. Repair local
 harness defects within the same scope/budget. A failing candidate prevents its

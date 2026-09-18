@@ -1900,3 +1900,129 @@ Focused lint and whitespace checks pass. Remote fetch still finds no incoming
 origin/main commits; integration remains gated. Centered callback/schedule
 measurements, higher-rank performance, source-route repair and terminal repeated
 comparisons remain outstanding.
+
+## Source scalar boundaries and enclosing TT pullbacks, September 18
+
+Recovery preserved commit `2be8da66` and the uncommitted source-route/TT work.
+The original 4 GPU / 8 CPU process-hour caps remain active; the proposed larger
+budget has not been approved. Source work remains a mechanical execution repair
+of the fixed-HMC adaptation, with no canonical LEDH rebuild or numerical
+retuning. Paper section 3.1, equations (13)--(14), section 4.1, and author
+`models/full_sol.m:21--130`, `@TTFun/int_reference.m:22--29` were re-inspected.
+The existing grid-CDF construction remains an extension, not new source-fidelity
+evidence.
+
+Run 00871 passed the policy/controller checks. Runs 00872--00879 qualified the
+unchanged Philox/Fisher--Yates prefix schedule at both extents; the baseline's
+unsupported XLA StatelessShuffle remains a recorded baseline failure. Run 00880
+passed 26 source scalar/affine checks. Runs 00881--00890 qualified weights,
+proposal corrections, ESS, shifts, normalizer increments and affine density
+at four/eight rows, candidate graph/XLA against the valid eager baseline.
+Maximum discrepancy was 3.55e-15; baseline graph/XLA host-materialization
+failures remain visible. These are qualification checks, not terminal repeats.
+
+The public TTSIRT boundary now inlines the numerical body into an enclosing
+function and propagates failed status as NaN, preserving host rejection.
+Run 00891 passed all three enclosing map/density and status checks. Squared-TT
+public values and normalizers use the same pattern, keeping normalizer-floor
+and finiteness vetoes in compiled output even when XLA discards assertions.
+
+Run 00892 exposed unsupported FakeParam in the gradient of heterogeneous
+basis Case branches. The first attempted local custom pullback failed during
+tracing in 00893 because an eager captured tensor crossed that gradient boundary.
+That attempt was replaced: the heterogeneous basis table is evaluated before
+core contractions, with a complete query pullback computed in separate local
+derivative branches. Core coefficients remain ordinary differentiable inputs;
+the paired-core contraction order is unchanged. No gradient was dropped and
+no tolerance was changed. Run 00894 passed the enclosing density gradient check;
+00895 passed it plus four independent query/core pullback checks, including
+empty and reordered retained axes, graph/XLA, and heterogeneous basis sizes.
+
+The source guard passes for 167 reviewed sources and 1,059 exact exceptions.
+Five new exceptions cover static shape/axis maps and callable construction;
+all numerical axis evaluation and differentiation uses tensor control flow.
+This remains partial repository coverage. Artifact source closure now includes
+the new source numerical helpers, native density/control/transport and slogdet
+dependencies. Fresh reload checks and the affected TT suites precede the next
+checkpoint. Runtime target callbacks, retained sampling, previous-marginal
+wrappers, the source-date loop, higher-rank performance, the TP residual gate,
+and terminal repeated comparisons remain open.
+
+Run 00896 passed all 39 TT algebra/fixed-branch derivative checks; 00898 passed
+all 38 squared-density/failure-exit checks. Complete source target and transport
+methods now default to bounded fixed-signature XLA programs. Run 00897 passed
+27 method/scalar/affine checks, and 00904 passed them again after the shared
+pullback repair. The remaining Python source-date loop is not reclassified as
+compliant by these changes.
+
+Retained-sample generation and previous-marginal evaluation now have complete
+compiled boundaries. Host result construction retains its error checks;
+enclosing graphs carry nonfinite invalid results instead of relying on XLA's
+discarded assertions. Immutable marginal preparation is lifted out of a first
+trace without moving numerical query values out of the compiled calculation.
+In 00899 the first compiled previous-marginal query derivative passed, but an
+external tape exposed TensorList crossing at the XLA boundary. Run 00900 passed
+the initial recomputed-pullback repair. Review then required coverage of captured
+coefficients, not only explicit queries, before accepting that boundary.
+
+The final pullback threads every captured tensor through the custom rule and
+handles variable resources through TensorFlow's variable pullback. It recomputes
+the same finite program and preserves full derivatives. The concrete-function
+capture interface is TensorFlow-version-sensitive and is checked on the pinned
+2.19.1 environment, including tensor and variable coefficients. Run 00901
+recorded a tuple/list harness-interface error; 00902 exposed a duplicate variable
+resource in XLA. Correcting both produced 00903's ten passing checks. After
+sharing the rule across complete methods, 00905 passed all twelve runtime
+checks, including pinned-source retained gradients with respect to query,
+affine mean/matrix, and callback coefficients. No stop-gradient, tolerance,
+seed, target formula or score classification changed.
+
+Run 00906 passed all six Austria training/artifact consumer checks, including
+fresh reload and tamper rejection with the expanded numerical source closure.
+The current policy guard covers 168 sources with 1,065 exact exceptions; new
+exceptions are only argument/capture metadata assembly and retained-axis schema
+normalization. Focused correctness lint and whitespace checks pass. Broader
+lint still reports a pre-existing unused trapezoid re-export in transport.py
+and legacy style warnings; these do not alter numerical validation.
+
+Run 00907 recorded a fixture-construction error (required CDF settings omitted).
+The fixture was repaired by declaring the same controls in both arms. Runs
+00908--00917 qualified complete retained samples at four/eight rows. Baseline
+graph and XLA both fail on host `.numpy()`; its eager result remains the valid
+value authority. Candidate graph/XLA parity passed, with maximum XLA error
+4.44e-16. All candidate graphs have no Python callbacks, one trace, and stable
+live GPU allocations across 20 warm calls. These are one-process qualification
+measurements, not the required three-process terminal repeats.
+
+At four rows, candidate graph/XLA warm medians are 23.975/1.646 ms, sampled
+host maxima about 1,275.5/1,201.9 MiB, and device peaks 54,528/32,000 bytes.
+At eight rows the corresponding values are 23.696/1.662 ms,
+1,270.4/1,201.8 MiB, and 64,768/39,936 bytes. Baseline eager warm medians are
+126.034/124.690 ms for four/eight rows; its sampled host maxima are about
+1,077.3/1,067.4 MiB and device peaks 23,040/32,000 bytes. This compares the
+available legacy execution to repaired modes and does not invent a baseline
+XLA result. XLA's higher host footprint than legacy eager is bounded here;
+live device allocation is constant at 6,656 bytes across warmed calls.
+The non-XLA graph's small absolute device peak exceeds twice legacy eager at
+four rows, while XLA reduces that graph overhead; track this diagnostic
+separately from the unresolved higher-rank and TP residual issues.
+
+Runs 00918--00927 qualified complete previous-marginal values and input
+gradients at both sample counts. Baseline graph/XLA host-materialization
+failures remain recorded. Graph parity is exact; the eight-row XLA maximum
+error is 5.55e-17. Candidate graph/XLA warm medians are 5.256/0.813 ms at
+four rows and 5.661/0.878 ms at eight rows. XLA first execution takes
+0.872/0.877 seconds. Sampled XLA host peaks are about 1,267.8/1,267.6 MiB,
+versus 1,310.6/1,309.4 MiB for graph and 1,100.8/1,102.9 MiB for baseline
+eager. XLA device peaks are 32,000/39,680 bytes, with live allocations constant
+at 10,752 bytes over all 20 warmed calls. These remain qualification evidence.
+
+Run 00928 passes the updated policy/controller tests. Checkpoint review found
+no changed numerical target, seeded draws, tolerance, or score semantics.
+The derivative-capture regression was a real repair requirement and is now
+covered by explicit tensor, variable and full retained-endpoint checks.
+No independent reviewer was used in this checkpoint; the source review,
+pinned comparisons, independent derivatives and executed consumers are the
+available evidence. A fresh fetch finds no incoming commits on origin/main
+or the active repair branch. The checkpoint may be committed and pushed on
+the repair branch; all F01--F20 terminal decisions and integration remain open.

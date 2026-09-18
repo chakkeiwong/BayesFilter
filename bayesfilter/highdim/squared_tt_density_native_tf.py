@@ -170,4 +170,5 @@ def density_program(density, operation, *, points=None, keep_axes=(), axis=None,
 
 def evaluate_density(density, operation, **kwargs):
     program, arguments = density_program(density, operation, **kwargs)
-    return program(*arguments)
+    evaluate = program.python_function if tf.inside_function() else program
+    return evaluate(*arguments)

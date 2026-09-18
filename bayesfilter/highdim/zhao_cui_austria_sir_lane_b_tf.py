@@ -639,14 +639,19 @@ def source_closure() -> Mapping[str, str]:
         models,
         sir_latent_preclip_tf,
         source_route,
+        source_route_numerics_tf,
+        source_route_runtime_tf,
         squared_tt,
+        squared_tt_density_native_tf,
         stochastic_density_training,
         stochastic_training_native_tf,
         transport,
         tt,
+        tt_native_control_tf,
+        ttsirt_native_tf,
         zhao_cui_austria_sir_lane_b_target_tf,
     )
-    from bayesfilter.ops import fixed_signature_tf, stateless_random_tf
+    from bayesfilter.ops import fixed_signature_tf, slogdet_tf, stateless_random_tf
 
     modules = (
         bases,
@@ -657,13 +662,19 @@ def source_closure() -> Mapping[str, str]:
         models,
         sir_latent_preclip_tf,
         source_route,
+        source_route_numerics_tf,
+        source_route_runtime_tf,
         squared_tt,
+        squared_tt_density_native_tf,
         stochastic_density_training,
         stochastic_training_native_tf,
         transport,
         tt,
+        tt_native_control_tf,
+        ttsirt_native_tf,
         zhao_cui_austria_sir_lane_b_target_tf,
         fixed_signature_tf,
+        slogdet_tf,
         stateless_random_tf,
     )
     paths = [Path(inspect.getfile(module)).resolve() for module in modules]

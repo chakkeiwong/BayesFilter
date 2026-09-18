@@ -203,6 +203,10 @@ def transport_program(transport, operation, count, conditioning_dimension=0, *, 
 
 def evaluate_transport(transport, operation, condition, values, *, jit_compile=True):
     program = transport_program(transport, operation, values.shape[1], condition.shape[0], jit_compile=jit_compile)
+    if tf.inside_function():
+        result, code = program.python_function(*transport_arguments(transport), condition, values)
+        # The same status veto must survive even if enclosing XLA drops Assert.
+        return tf.where(code == 0, result, tf.constant(float("nan"), result.dtype))
     result, code = program(*transport_arguments(transport), condition, values)
     check_transport_status(code)
     return result
