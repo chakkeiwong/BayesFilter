@@ -12,6 +12,9 @@ from dataclasses import replace
 
 import tensorflow as tf
 from tensorflow.python.eager import record
+from tensorflow.python.eager.polymorphic_function.polymorphic_function import (
+    OptionalXlaContext,
+)
 
 from bayesfilter.highdim import fitting as old
 from bayesfilter.highdim.diagnostics import HighDimStatus
@@ -21,6 +24,7 @@ from bayesfilter.highdim.tt_native_control_tf import (
     fixed_core_matrices,
     row_environments,
 )
+from bayesfilter.ops.compiled_tensor_program_tf import _capture_pullback_coefficient
 from bayesfilter.ops.qr_lstsq_tf import (
     BACKEND,
     condition_number,
@@ -239,26 +243,39 @@ class NativeFixedTTFit:
                     result, (packed, target), output_gradients=upstream
                 )
 
-            forward.get_concrete_function()
-            accepted_backward.get_concrete_function()
-            backward_concrete = accepted_backward.get_concrete_function()
+            forward_concrete = forward.get_concrete_function()
+            backward_concrete = None
+
+            def complete_backward():
+                nonlocal backward_concrete
+                if backward_concrete is None:
+                    with forward_concrete.graph.as_default(), OptionalXlaContext(self.jit_compile):
+                        backward_concrete = accepted_backward.get_concrete_function()
+                return backward_concrete
 
             @tf.custom_gradient
             def call(packed, target):
-                # Lift immutable preparation captures into this FuncGraph before
-                # the branch-gradient graph is built (TF's cond gradient cannot
-                # resolve an eager tensor discovered only by the pullback).
-                captures = [
-                    tf.identity(value) for value in backward_concrete.captured_inputs
-                ]
+                # Bind the fixed design's primal captures without constructing
+                # unused accepted-update pullbacks during value-only fitting.
+                graph = tf.compat.v1.get_default_graph()
+                captures = {value.ref(): graph.capture(value)
+                            for value in forward_concrete.captured_inputs}
                 with record.stop_recording():
                     result = forward(packed, target)
 
                 def grad(*upstream):
+                    backward = complete_backward()
+
+                    def capture(value):
+                        if value.ref() in captures:
+                            return captures[value.ref()]
+                        return _capture_pullback_coefficient(value, tf.compat.v1.get_default_graph())
+
+                    coefficients = [capture(value) for value in backward.captured_inputs]
                     return tf.cond(
                         result[-1] == 0,
-                        lambda: backward_concrete._call_flat(
-                            [packed, target, upstream[0]], captured_inputs=captures
+                        lambda: backward._call_flat(
+                            [packed, target, upstream[0]], captured_inputs=coefficients
                         ),
                         lambda: (upstream[0], tf.zeros_like(target)),
                     )

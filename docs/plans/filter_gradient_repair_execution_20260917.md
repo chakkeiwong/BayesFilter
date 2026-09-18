@@ -2431,3 +2431,65 @@ Runs 01025/01026 pass all 11 sequential and 46 preparation checks on GPU3 in
 The checkpoint includes the lazy helper, exact capture exceptions, compiled
 reachable preparation, restored vetoes, and the failed-consumer localization.
 It is qualified by these focused tests; it is not a completed F01--F20 repair.
+
+## September 19: fixed-design fitting derivative construction
+
+Checkpoint `c4351f8c` is committed and pushed. The next localized change
+defers each existing accepted-update pullback until a gradient requests it,
+and binds the same immutable design captures through the containing function
+graph. It preserves the original derivative with respect to packed cores and
+target values; fixed design/weights and diagnostic fields keep their existing
+roles. No solver, rank, schedule, threshold or numerical formula changes.
+
+Run 01028 initially passes the three graph cases and fails all three XLA
+cases because the diagnostic harness placed an external tape across the
+fitter's raw XLA loop. The prior source fails there too: TensorList outputs
+cannot cross that boundary. The repaired check encloses value and gradient in
+one graph, matching the scalar filtering consumer. The original external-tape
+limitation is preserved as evidence, not relabeled as a passing API. Run 01029
+then passes all six CPU cases: value-only construction cannot call an unused
+pullback, later gradients remain available, and heterogeneous accepted/rejected
+updates match `c4351f8c` at the unchanged FP64 threshold. Ruff subsequently
+required explicit binding of the test's fitter closure; the numerical test is
+unchanged. The full tests still need final verification after that edit.
+
+Run 01030 reaches the 60-second GPU ceiling at 60.369 seconds after five
+progress markers, without a completed JUnit. It is failed/incomplete, not a
+six-case GPU pass. GPU charges are now 14,352.925 of 14,400 seconds, below the
+minimum 60-second launch reservation. No further GPU job is authorized under
+the current cap. The 16 GPU / 12 CPU hour proposal remains pending; the driver
+caps are unchanged. The fitting source remains under CPU consumer review and
+cannot claim complete GPU qualification or large-case memory closure.
+
+Run 01031 passes all 37 existing fixed-fit checks on CPU in 54.179 seconds.
+Run 01032 passes all 12 scalar adjacent-TT checks in 136.506 seconds, including
+the independently pinned value/score comparator, condition rejection, and
+unchanged graph size across three/six dates. With those consumer vetoes clear,
+01033 retries the single P59 assembly test under a 300-second driver ceiling
+and the same 45-second stack diagnostic. It is still localization, not a
+terminal memory measurement, and all failure time consumes the original cap.
+
+Run 01033 times out at 301.873 seconds, with no complete assertions/JUnit.
+Its 45-second stack is already in `model.simulate` after the initial target
+fit, so the lazy fitter clears the stage localized in 01024. Trusted RSS
+observations are 6,765,624 KiB at 01:27 and 11,041,004 KiB at 04:20. These
+are snapshots, not a final peak or a matched before/after comparison. The
+later assembly still fails its bounded check. Next localization must capture
+the later fitting/retained-transport stage before another broad retry; do not
+attribute the earlier 27.67 GiB entirely to the repaired eager derivatives.
+
+Run 01034 passes the final six fitter pullback checks on CPU in 36.044 seconds;
+01035 passes all 59 policy/controller checks in 7.731 seconds. Static coverage
+remains 171 sources with 1,097 exact exceptions, all capture changes limited to
+fixed graph schemas. Focused Ruff and whitespace checks pass. Charges through
+01035 are 26,346.748 CPU / 14,352.925 GPU seconds. Remaining authorization is
+2,453.252 CPU seconds and 47.075 GPU seconds; no GPU launch fits its reservation.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Preserve deferred fitter pullbacks as a repair-branch checkpoint | Six final CPU pullback, 37 fitter and 12 scalar consumer checks pass | GPU group timed out; large assembly still timed out; broader campaign gates open | Later large-case graph construction and full GPU result | Continue CPU localization or finish GPU qualification when the pending budget amendment is approved | Completed repair, memory acceptance, runtime ranking, or permission to merge |
+
+No worker is left running at this checkpoint. The concise recovery map is
+`docs/plans/filter_gradient_repair_resume_20260919.md`. The original master
+budget remains unchanged; the pending amendment cannot be inferred from a
+generic instruction to continue. No merge to main was performed.

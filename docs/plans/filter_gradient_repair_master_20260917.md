@@ -285,6 +285,17 @@ Test scalar and larger captures, repeated calls and resource updates before
 repeating the same public sequence memory fixture. This changes construction
 timing only, not the gradient definition or the CPU/GPU comparison contract.
 
+September 19 fitter localization: the 36-dimensional preparation consumer
+exceeds its bounded test and reaches 27.67 GiB observed RSS. Its timed stack
+shows construction of per-core fitting update graphs. Defer the existing
+accepted-update pullback graphs until requested, retaining the original
+fixed-design derivative, accepted/rejected branches, solver, ranks, sweep
+order and every threshold. Qualify value-only construction, heterogeneous
+core/target pullbacks, rejection derivatives and the existing scalar consumer
+against the prior source before retrying the full assembly. Do not extend
+the 900-second ceiling or regard a passing tiny fit as large-case closure.
+Duplicate forward environment construction remains a separate investigation.
+
 The next reachable preparation repair must enclose prior sampling, transition
 noise and model callbacks, deterministic weighted resampling, recentering,
 local clipping, target evaluation and target-value construction. Its consumers

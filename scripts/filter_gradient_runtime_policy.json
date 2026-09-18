@@ -5754,10 +5754,18 @@
       "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
       "function": "NativeFixedTTFit._branches.branch.call",
       "kind": "python_iteration",
-      "ast_sha256": "42966572f13f11fba9ee8a35d21a777141ea52bfd525c4f4c667148e7d82744c",
+      "ast_sha256": "bb9c1e17bda1c2e17e3775d6809dd0509f1f1be8178229eda4cbe34d98ff123c",
       "occurrences": 1,
       "role": "fixed_schema",
-      "reason": "Fixed heterogeneous tuple/signature packing or callback construction; numerical updates execute in native tensor recurrences."
+      "reason": "Bind the fixed update graph's captured design tensors before a later pullback is requested; no numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
+      "function": "NativeFixedTTFit._branches.branch.call.grad",
+      "kind": "python_iteration",
+      "ast_sha256": "b248a4e963486e211d3545345be77e12610cebd97243088d117208f24a45bb46",
+      "role": "fixed_schema",
+      "reason": "Bind the lazily constructed pullback's fixed capture schema to the enclosing graph; fitted axes and sweeps execute in TensorFlow control flow."
     },
     {
       "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
