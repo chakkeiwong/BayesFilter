@@ -8,11 +8,25 @@ reference measurements. These fixtures do not grant scientific admission.
 import inspect
 
 FIXTURES = ("source_recenter", "gamma_preparation", "student_proposal",
-            "ukf_initializer", "moment_teacher")
+            "ukf_initializer", "moment_teacher", "austria_preparation")
 
 
 def fixture(tf, name, size, jit):
     dtype = tf.float64
+    if name == "austria_preparation":
+        from bayesfilter.highdim.zhao_cui_austria_sir_parameter_density_training_tf import (
+            batch_native_t1_from_common_noise,
+        )
+
+        count = 8 * size
+        theta = tf.constant([[0., 0., 0.], [.03, -.02, .01], [-.03, .02, -.01]], dtype)
+        noise = tf.reshape(tf.sin(tf.cast(tf.range(count * 18), dtype)), [count, 18])
+        inputs = (theta, noise, .4 * noise, tf.linspace(tf.constant(4., dtype), 8., 9))
+        core = getattr(batch_native_t1_from_common_noise, "python_function", batch_native_t1_from_common_noise)
+        return core, inputs, {"parameter_rows": 3, "samples": count, "state_dimension": 18,
+            "substeps": 4, "boundary": "complete_common_noise_proposal_density_and_analytical_score",
+            "route": "existing_half_step_fourth_stage_execution_adaptation"}
+
     if name == "source_recenter":
         from bayesfilter.highdim import source_route
 

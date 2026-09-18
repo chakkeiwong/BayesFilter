@@ -27,8 +27,7 @@ from bayesfilter.nonlinear.ssl_lstm_posterior_tf import (
 )
 from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
     make_ssl_lstm_svd_ukf_components,
-    ssl_lstm_observation,
-    ssl_lstm_transition,
+    ssl_lstm_parameter_slices,
     tf_ssl_lstm_svd_ukf_score,
 )
 from bayesfilter.ops.stateless_random_tf import philox_normal_float64
@@ -1061,49 +1060,53 @@ def _forecast_batch_core(
         terminal_standard_normal,
         terminal_factor,
     )
-    def draw_forecast(draw_index):
-        full = config.posterior_config.parameter_mask.embed(free_draws[draw_index])
-        components = make_ssl_lstm_svd_ukf_components(
-            full,
-            config.posterior_config.static_config,
-            evidence_path=A2_RESULT_PATH,
-            std_floor=config.posterior_config.std_floor,
-        )
-        params = components.parameters
-        def step(previous_outputs, horizon_index):
-            previous = previous_outputs[0]
-            deterministic = ssl_lstm_transition(params, previous)
-            process_noise = (
-                process_standard_normal[draw_index, :, horizon_index, :]
-                * params.process_std[tf.newaxis, :]
-            )
-            next_state = tf.concat(
-                [
-                    deterministic[:, :LATENT_DIM] + process_noise,
-                    deterministic[:, LATENT_DIM:],
-                ],
-                axis=1,
-            )
-            observation_mean = ssl_lstm_observation(params, next_state)
-            observation_noise = (
-                observation_standard_normal[draw_index, :, horizon_index, :]
-                * params.observation_std[tf.newaxis, :]
-            )
-            observations = observation_mean + observation_noise
-            return next_state, deterministic, process_noise, observation_mean, observation_noise, observations
+    # The draw and replication axes are independent. Carry them together
+    # through one date recurrence, preserving the scalar adapter's algebra.
+    posterior = config.posterior_config
+    static = posterior.static_config
+    k, h, d = static.latent_dim, static.hidden_dim, static.observation_dim
+    slices = ssl_lstm_parameter_slices(static)
+    full = _embed_draws(free_draws, posterior.parameter_mask)
+    lstm_input = tf.reshape(full[:, slices.lstm_input_start:slices.lstm_recurrent_start], [draw_count, 4, h, k])
+    lstm_recurrent = tf.reshape(full[:, slices.lstm_recurrent_start:slices.lstm_bias_start], [draw_count, 4, h, h])
+    lstm_bias = tf.reshape(full[:, slices.lstm_bias_start:slices.latent_weight_start], [draw_count, 4, h])
+    latent_weight = tf.reshape(full[:, slices.latent_weight_start:slices.latent_bias_start], [draw_count, k, h])
+    latent_bias = full[:, slices.latent_bias_start:slices.observation_weight_start]
+    observation_weight = tf.reshape(full[:, slices.observation_weight_start:slices.observation_bias_start], [draw_count, d, k])
+    observation_bias = full[:, slices.observation_bias_start:slices.initial_mean_start]
+    floor = tf.constant(posterior.std_floor, tf.float64)
+    process_std = tf.nn.softplus(full[:, slices.process_std_start:slices.observation_std_start]) + floor
+    observation_std = tf.nn.softplus(full[:, slices.observation_std_start:]) + floor
 
-        initial = (terminal_states[draw_index], tf.zeros([replication_count, STATE_DIM], tf.float64),
-            tf.zeros([replication_count, LATENT_DIM], tf.float64),
-            tf.zeros([replication_count, OBSERVATION_DIM], tf.float64),
-            tf.zeros([replication_count, OBSERVATION_DIM], tf.float64),
-            tf.zeros([replication_count, OBSERVATION_DIM], tf.float64))
-        history = tf.scan(step, tf.range(FORECAST_HORIZON), initializer=initial, parallel_iterations=1)
-        return tuple(tf.transpose(value, [1, 0, 2]) for value in history)
+    def step(previous_outputs, horizon_index):
+        previous = previous_outputs[0]
+        z, hidden, cell = previous[:, :, :k], previous[:, :, k:k+h], previous[:, :, k+h:]
+        pre = (tf.einsum("bghk,brk->brgh", lstm_input, z)
+               + tf.einsum("bghl,brl->brgh", lstm_recurrent, hidden)
+               + lstm_bias[:, None, :, :])
+        input_gate = tf.math.sigmoid(pre[:, :, 0, :])
+        forget_gate = tf.math.sigmoid(pre[:, :, 1, :])
+        output_gate = tf.math.sigmoid(pre[:, :, 2, :])
+        candidate = tf.math.tanh(pre[:, :, 3, :])
+        cell = forget_gate * cell + input_gate * candidate
+        hidden = output_gate * tf.math.tanh(cell)
+        latent = tf.einsum("bkh,brh->brk", latent_weight, hidden) + latent_bias[:, None, :]
+        deterministic = tf.concat([latent, hidden, cell], axis=2)
+        process_noise = process_standard_normal[:, :, horizon_index, :] * process_std[:, None, :]
+        next_state = tf.concat([latent + process_noise, hidden, cell], axis=2)
+        observation_mean = (tf.einsum("bdk,brk->brd", observation_weight, next_state[:, :, :k])
+                            + observation_bias[:, None, :])
+        observation_noise = observation_standard_normal[:, :, horizon_index, :] * observation_std[:, None, :]
+        observations = observation_mean + observation_noise
+        return next_state, deterministic, process_noise, observation_mean, observation_noise, observations
 
-    histories = tf.map_fn(draw_forecast, tf.range(draw_count),
-        fn_output_signature=tuple(tf.TensorSpec([replication_count, FORECAST_HORIZON, width], tf.float64)
-            for width in (STATE_DIM, STATE_DIM, LATENT_DIM, OBSERVATION_DIM, OBSERVATION_DIM, OBSERVATION_DIM)),
-        parallel_iterations=1)
+    initial = (terminal_states, tf.zeros([draw_count, replication_count, STATE_DIM], tf.float64),
+        tf.zeros([draw_count, replication_count, LATENT_DIM], tf.float64),
+        tf.zeros([draw_count, replication_count, OBSERVATION_DIM], tf.float64),
+        tf.zeros([draw_count, replication_count, OBSERVATION_DIM], tf.float64),
+        tf.zeros([draw_count, replication_count, OBSERVATION_DIM], tf.float64))
+    history = tf.scan(step, tf.range(FORECAST_HORIZON), initializer=initial, parallel_iterations=1)
+    histories = tuple(tf.transpose(value, [1, 2, 0, 3]) for value in history)
     return (
         tf.ensure_shape(terminal_states, [draw_count, replication_count, STATE_DIM]),
         *histories,

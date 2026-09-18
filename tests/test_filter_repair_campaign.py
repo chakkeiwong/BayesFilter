@@ -169,6 +169,13 @@ def test_additional_harness_keeps_original_measurements_and_binds_extension():
     }
     with pytest.raises(ValueError, match="Stale measurement harness"):
         comparison.current_provenance({}, measurement, "before", preparation, {})
+    centered = driver.measurement_harness("centered_child")
+    assert {name: centered[name] for name in original} == original
+    assert set(centered) - set(original) == {
+        "filter_repair_centered_worker.py", "filter_repair_centered_fixtures.py",
+    }
+    with pytest.raises(ValueError, match="Stale measurement harness"):
+        comparison.current_provenance({}, measurement, "before", centered, {})
 
 
 def test_source_guard_blocks_otherwise_complete_gate(tmp_path, monkeypatch, capsys):

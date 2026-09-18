@@ -15,6 +15,7 @@ from typing import Mapping, Sequence
 
 import tensorflow as tf
 
+from bayesfilter.highdim import centered_tt_native_tf as centered_native
 from bayesfilter.highdim.bases import ProductBasis
 from bayesfilter.highdim.diagnostics import MassMeasure
 from bayesfilter.highdim.fixed_branch import BranchIdentity, BranchManifest
@@ -203,35 +204,16 @@ class CenteredThetaFeatures:
         parameter = tf.convert_to_tensor(theta, DTYPE)
         if parameter.shape.rank != 2 or parameter.shape[1] != PARAMETER_DIM:
             raise ValueError("batched theta must have shape [batch,3]")
-        values = []
-        rows = []
-        for identifier in self.feature_ids:
-            family, left, right = _parse_feature_id(identifier)
-            if family == "linear":
-                values.append(parameter[:, left])
-                rows.append(
-                    tf.broadcast_to(
-                        tf.one_hot(left, PARAMETER_DIM, dtype=DTYPE)[tf.newaxis, :],
-                        [tf.shape(parameter)[0], PARAMETER_DIM],
-                    )
-                )
-            elif family == "quadratic":
-                values.append(tf.square(parameter[:, left]))
-                rows.append(
-                    2.0
-                    * parameter[:, left, tf.newaxis]
-                    * tf.one_hot(left, PARAMETER_DIM, dtype=DTYPE)[tf.newaxis, :]
-                )
-            else:
-                values.append(parameter[:, left] * parameter[:, right])
-                rows.append(
-                    parameter[:, right, tf.newaxis]
-                    * tf.one_hot(left, PARAMETER_DIM, dtype=DTYPE)[tf.newaxis, :]
-                    + parameter[:, left, tf.newaxis]
-                    * tf.one_hot(right, PARAMETER_DIM, dtype=DTYPE)[tf.newaxis, :]
-                )
-        feature_values = tf.stack(values, axis=1)
-        jacobian = tf.stack(rows, axis=1)
+        # Identifiers are immutable schema; evaluate all numerical features
+        # and their analytical derivatives in a single batched kernel.
+        parsed = tuple(_parse_feature_id(identifier) for identifier in self.feature_ids)
+        families = tf.constant(tuple(0 if row[0] == "linear" else 1 for row in parsed), tf.int32)
+        left = tf.constant(tuple(row[1] for row in parsed), tf.int32)
+        right = tf.constant(tuple(row[2] for row in parsed), tf.int32)
+        evaluate = centered_native.feature_values_and_jacobian
+        if tf.inside_function():
+            evaluate = evaluate.python_function
+        feature_values, jacobian = evaluate(parameter, families, left, right)
         tf.debugging.assert_all_finite(feature_values, "centered feature values")
         tf.debugging.assert_all_finite(jacobian, "centered feature Jacobian")
         return feature_values, jacobian
@@ -287,77 +269,20 @@ def _validate_component(
 def _evaluate_component(
     component: Sequence[tf.Tensor], basis: object, points: tf.Tensor
 ) -> tf.Tensor:
-    values = tf.convert_to_tensor(points, DTYPE)
-    sample_count = tf.shape(values)[0]
-    vector = tf.ones([sample_count, 1], DTYPE)
-    for axis, core in enumerate(component):
-        basis_values = basis.evaluate_axis(axis, values[:, axis])
-        matrices = tf.einsum("nl,alb->nab", basis_values, core)
-        vector = tf.einsum("na,nab->nb", vector, matrices)
-    return tf.reshape(vector, [sample_count])
+    return centered_native.evaluate_components((component,), basis, points)[:, 0]
 
 
 def _cross_mass(
     left: Sequence[tf.Tensor], right: Sequence[tf.Tensor], basis: object
 ) -> tf.Tensor:
-    vector = tf.ones([1], DTYPE)
-    active_measure = lane_b_measure_convention().mass_measure
-    for axis, (left_core, right_core) in enumerate(zip(left, right)):
-        mass = basis.bases[axis].mass_matrix(active_measure)
-        paired = tf.einsum("alb,AmB,lm->aAbB", left_core, right_core, mass)
-        matrix = tf.reshape(
-            paired,
-            [
-                int(left_core.shape[0]) * int(right_core.shape[0]),
-                int(left_core.shape[2]) * int(right_core.shape[2]),
-            ],
-        )
-        vector = tf.einsum("a,ab->b", vector, matrix)
-    return tf.reshape(vector, [])
+    return centered_native.cross_components((left,), (right,), basis)[0, 0]
 
 
 def _cross_prefix_values(
-    left: Sequence[tf.Tensor],
-    right: Sequence[tf.Tensor],
-    basis: object,
+    left: Sequence[tf.Tensor], right: Sequence[tf.Tensor], basis: object,
     points: tf.Tensor,
 ) -> tf.Tensor:
-    values = tf.convert_to_tensor(points, DTYPE)
-    prefix_dim = int(values.shape[1])
-    sample_count = tf.shape(values)[0]
-    vector = tf.ones([sample_count, 1], DTYPE)
-    active_measure = lane_b_measure_convention().mass_measure
-    for axis, (left_core, right_core) in enumerate(zip(left, right)):
-        if axis < prefix_dim:
-            evaluated = basis.evaluate_axis(axis, values[:, axis])
-            paired = tf.einsum(
-                "nl,nm,alb,AmB->naAbB",
-                evaluated,
-                evaluated,
-                left_core,
-                right_core,
-            )
-        else:
-            mass = basis.bases[axis].mass_matrix(active_measure)
-            static_pair = tf.einsum(
-                "alb,AmB,lm->aAbB", left_core, right_core, mass
-            )
-            paired = tf.broadcast_to(
-                static_pair[tf.newaxis, ...],
-                tf.concat(
-                    [tf.reshape(sample_count, [1]), tf.shape(static_pair)], axis=0
-                ),
-            )
-        matrix = tf.reshape(
-            paired,
-            [
-                sample_count,
-                int(left_core.shape[0]) * int(right_core.shape[0]),
-                int(left_core.shape[2]) * int(right_core.shape[2]),
-            ],
-        )
-        vector = tf.einsum("na,nab->nb", vector, matrix)
-    return tf.reshape(vector, [sample_count])
+    return centered_native.cross_components((left,), (right,), basis, points)[:, 0, 0]
 
 
 @dataclass(frozen=True)
@@ -406,12 +331,7 @@ class LaneBCenteredResidualChild:
             for index, component in enumerate(self.residual_components)
         )
         components = (parent_component,) + residuals
-        gram_rows = []
-        for left in components:
-            gram_rows.append(
-                tf.stack([_cross_mass(left, right, basis) for right in components])
-            )
-        gram = tf.stack(gram_rows)
+        gram = centered_native.cross_components(components, components, basis)
         gram = 0.5 * (gram + tf.transpose(gram))
         tf.debugging.assert_all_finite(gram, "centered component Gram matrix")
         object.__setattr__(self, "residual_components", residuals)
@@ -450,14 +370,9 @@ class LaneBCenteredResidualChild:
         values = tf.convert_to_tensor(points, DTYPE)
         if values.shape.rank != 2 or values.shape[1] != len(self.components[0]):
             raise ValueError("centered child points have the wrong shape")
-        return tf.stack(
-            [
-                _evaluate_component(component, self._basis, values)
-                for component in self.components
-            ],
-            axis=1,
-        )
+        return centered_native.evaluate_components(self.components, self._basis, values)
 
+    @centered_native.compiled_child_method
     def amplitude_and_jacobian(
         self, theta: tf.Tensor, points: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
@@ -467,6 +382,7 @@ class LaneBCenteredResidualChild:
         derivative = tf.einsum("nc,cp->np", component_values, feature_jacobian)
         return amplitude, derivative
 
+    @centered_native.compiled_child_method
     def log_normalizer_and_score(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         weights, feature_jacobian = self.features.augmented_values_and_jacobian(theta)
         gram_times_weights = tf.linalg.matvec(self.gram, weights)
@@ -479,10 +395,12 @@ class LaneBCenteredResidualChild:
         tf.debugging.assert_all_finite(derivative, "centered child normalizer score")
         return tf.math.log(normalizer), derivative / normalizer
 
+    @centered_native.compiled_child_method
     def increment_and_score(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         log_normalizer, score = self.log_normalizer_and_score(theta)
         return log_normalizer - self._shift, score
 
+    @centered_native.compiled_child_method
     def unnormalized_log_density_and_score(
         self, theta: tf.Tensor, points: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
@@ -493,6 +411,7 @@ class LaneBCenteredResidualChild:
         tf.debugging.assert_positive(rho, "centered child density")
         return tf.math.log(rho), score
 
+    @centered_native.compiled_child_method
     def point_log_density_and_score(
         self, theta: tf.Tensor, points: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
@@ -500,6 +419,7 @@ class LaneBCenteredResidualChild:
         log_normalizer, normalizer_score = self.log_normalizer_and_score(theta)
         return log_rho - log_normalizer, rho_score - normalizer_score[tf.newaxis, :]
 
+    @centered_native.compiled_child_method
     def prefix_log_marginal_and_score(
         self, theta: tf.Tensor, local_prefix_points: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
@@ -509,18 +429,7 @@ class LaneBCenteredResidualChild:
         prefix_dim = int(points.shape[1])
         if prefix_dim <= 0 or prefix_dim > len(self.components[0]):
             raise ValueError("prefix dimension is out of range")
-        cross_rows = []
-        for left in self.components:
-            cross_rows.append(
-                tf.stack(
-                    [
-                        _cross_prefix_values(left, right, self._basis, points)
-                        for right in self.components
-                    ],
-                    axis=1,
-                )
-            )
-        cross = tf.stack(cross_rows, axis=1)
+        cross = centered_native.cross_components(self.components, self.components, self._basis, points)
         cross = 0.5 * (cross + tf.transpose(cross, [0, 2, 1]))
         weights, feature_jacobian = self.features.augmented_values_and_jacobian(theta)
         cross_times_weights = tf.einsum("nij,j->ni", cross, weights)

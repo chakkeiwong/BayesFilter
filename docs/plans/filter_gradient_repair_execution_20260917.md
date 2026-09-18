@@ -1350,3 +1350,177 @@ UKF comparisons include projected coefficients, cores, eigenvalues and frame
 covariance; arbitrary eigenvector signs are excluded from elementwise parity.
 The baseline APIs and their host-validation/tracing failures are retained.
 These fixtures do not close source-route sequential preparation or TP parity.
+
+The completed SSL comparison triggered the declared performance investigation:
+candidate XLA warm medians were 0.750/1.027 ms versus baseline 0.598/0.700 ms
+for 2/4 draws (25%/47% slower). Graph nodes fell from 2,387/4,747 to 476;
+candidate host peaks were 954 MiB versus 1,007/1,089 MiB, with no continuing
+device allocation growth. Inspection found a serial native loop over draws
+enclosing the time loop. The next repair batches draws and replications in
+one time recurrence using the same gate/transition/emission equations and
+parameter embedding. Distinct-draw parity and isolation are checked before
+remeasuring; no tolerance, seed, law or data change is proposed.
+
+Runs 00686/00688 passed complexity forecast graph/XLA at size 1 (maximum
+errors 2.22e-16/0). Run 00689 retained the baseline graph-mode nested-XLA
+failure, 00690 passed its eager reference, 00691 passed candidate graph parity
+at size 2, and 00692 passed baseline XLA. The controller was then paused and
+drained before the SSL batching edit. Commit 7e4f399a preserves the prior
+implementation, tests, incomplete fixtures and explicit TP blocker.
+
+Runs 00693 and 00694 both passed the 71-check forecast group, including distinct
+draws and isolation. The second run was redundant and is charged in full; it
+adds no independent evidence. Two unused scalar-forecast imports were removed
+after both workers exited. The new SSL measurements remain required.
+
+Austria-SIR review found another four-substep Python recurrence in
+_batch_native_transition_mean_and_jacobian. Before its mechanical refactor,
+the paper's SIR section (local text 2282--2310) and author
+models/sir_austria/sir_step.mlx, extracted document lines 7--18, were
+reinspected alongside odefun.mlx:19--24. The paper specifies 0.02 observation
+intervals and 0.005 integration steps; the author source uses a half-step
+fourth stage. The refactor preserves that existing variant and analytical
+tangent propagation, with native tensor substeps and an XLA-default bounded
+complete-data endpoint. This is a mechanical fixed-HMC execution adaptation;
+it does not resolve the module's other TT/optimizer/prefix preparation loops.
+Pinned complete-data score parity and independent transition directional
+finite differences are required before its measurements.
+
+Run 00695 passed four new Austria recurrence/derivative checks but its existing
+consumer rejected the sealed Lane-B state hash. The same consumer passed on
+the isolated pinned baseline in 00696, so this is an actual compatibility gap
+from the earlier general simulator compilation repair. General simulation
+parity at 1e-12 did not establish byte identity of frozen scientific inputs.
+The repair preserves the four existing dataset hashes and seed 81120 by
+reproducing the baseline once in a fresh, recorded process and storing that
+exact immutable dataset as repository input. The zero-argument sealed-data
+API will load those tensors; the general simulator remains compiled and
+continues to preserve the original stream and numerical tolerance. No new
+data, RNG migration, hash update, target change or tolerance change is allowed.
+
+Run 00697 reproduced and exported the baseline sealed dataset after all four
+original hashes passed. sealed_sir_dataset_tf.py stores those FP64 literals
+and returns them through one fixed XLA signature; the loader retains every
+original hash and clipping check. This is a fixed scientific input asset,
+not an alternative simulation algorithm. Its Python module hash participates
+in the existing imported-source provenance and stale-evidence checks.
+
+Run 00698 passed the four new Austria checks and all sealed input hashes, but
+failed the existing scalar-authority complete-data score gate (atol 6e-13).
+Recovery drained the remote fetch and confirmed no numerical worker was active.
+The next diagnostic separates transition-mean, analytical-tangent and score
+rounding while retaining that stricter gate. The original comparison contract,
+dataset, seeds, budget and source anchors remain unchanged. This is a repair
+trigger, not evidence to relax parity or promote the candidate.
+
+Run 00699 localized the mismatch: transition-mean differences of 5.68e-14
+were amplified to 2.60e-12 in the complete-data score; tangent differences
+were at most 7.11e-15. A boundary on only the final RK increment (00700) was
+insufficient. The repaired state recurrence retains each scalar arithmetic
+boundary through the identity nextafter(x,x), with the exact identity
+pullback. It remains batch-native TensorFlow/XLA, with unchanged equations,
+substeps and tolerances. Run 00701 passed all six checks, including the
+original strict consumer. Explicit ordinary-gradient preservation and GPU
+checks follow before any promotion. Failed attempts remain in the budget.
+
+Run 00702 passed GPU values, explicit scores and strict scalar parity, but the
+new ordinary-gradient diagnostic placed its tape outside the compiled loop,
+triggering TensorList crossing the XLA boundary. Moving the whole value and
+gradient calculation inside that diagnostic's compiled signature repaired the
+harness. Run 00703 passed all six GPU checks, including the identity pullback.
+The rounding boundary changes no score definition and does not introduce a
+stop-gradient. Existing module lint debt (import ordering, obsolete noqa and
+unsorted exports) was observed separately; the new test/data files pass lint.
+
+Run 00704 passed both sealed-data checks and 00705 passed all 49 controller /
+policy checks. The guard remains a 158-source reviewed subset with 929 exact
+exceptions. The new complete Austria preparation fixture compares every
+returned tensor from three parameter rows and 8/16 samples; its outputs include
+proposal points, all densities and analytical complete-data scores.
+
+Runs 00706--00717 completed the three-repeat SSL rerun at both extents, with
+exact output parity in graph and XLA modes. The XLA repeat-median warm times
+are 0.606/0.606 ms versus baseline 0.598/0.700 ms for 2/4 draws. The previous
+25%/47% regressions are removed (now about +1.4%/-13.4%, descriptive only).
+Graph nodes are 293 at both extents, versus 2,387/4,747. Host peaks are about
+951 MiB versus 1,007/1,089 MiB; device peaks are 16,640/23,040 bytes versus
+16,640/26,112. These are allocator measurements, not driver reservation.
+Source-route and Austria TT execution debt and the raw TP residual gate remain
+open; this successful repair does not establish campaign completion.
+
+The complexity matrix was paused after 00724 to repair shared Austria TT
+contractions. Runs 00718/00723 preserve the baseline's invalid nested-XLA graph
+diagnostic; 00719/00724 passed its eager reference. Runs 00720--00722 passed
+candidate graph and both XLA arms at size 1. Those measurements remain
+reusable only if their imported dependencies are unchanged.
+
+Pre-edit TT classification: centered external-parameter density remains the
+existing `extension_or_invention`; execution refactoring cannot close its
+source-faithfulness gap. Paper section 3.1, equations (13)--(14), local text
+532--642, and author @TTFun/eval_reference.m, int_reference.m and
+models/tensordot/ttdot.m were inspected for the amplitude/product/integral
+contractions. The next helper pads fixed heterogeneous core shapes and moves
+the original axis products to native tensor loops, batching components and
+component pairs. No ranks, measures, fit, regularization, sample law or
+normalization changes are included. Pinned values, cross masses, prefix
+marginals, ordinary gradients and enclosing HLO are required before consumer
+use. A compiled backward recomputation keeps TensorLists within XLA when
+an eager diagnostic tape calls the public compiled primitive.
+
+Runs 00725--00727 exposed three distinct compiler boundaries: heterogeneous
+basis branches exporting variant loop state, external tapes trying to export
+compiled contraction state, and a zero-iteration Legendre loop with no XLA
+adjoint storage. The primitive recomputes local basis pullbacks inside branches,
+uses existing analytical basis derivatives where available, and supplies an
+explicit compiled full pullback at its public boundary. The internal detached
+forward invocation is fully restored by that pullback; no input derivative is
+omitted. Constant/linear Legendre polynomials now have explicit tensor formulas,
+preserving exact values while removing their empty loop. This shared source
+repair invalidates earlier imported-basis measurements; the campaign's source
+checks must force those reruns. The next suite includes actual centered
+Lagrange bases as well as heterogeneous Legendre degrees, masses and ranks.
+
+Run 00728 passed all 12 centered primitive checks on CPU; 00729 passed the
+complete freshly issued centered-child consumer. The parent is an exact
+constant-density test fixture issued against current source, not a historical
+trained artifact. Pinned values, manual theta scores and ordinary derivatives
+passed unchanged 1e-10 gates. No missing historical tensor asset or stale
+identity was bypassed. Recovery confirmed charged time of 19,703.127 CPU /
+5,966.385 GPU seconds, with the measurement matrix paused and no worker active.
+
+The trainer now batches parent/component mass and prefix contractions and
+reduces regularization over its packed position. The next GPU check covers
+the complete absolute-density, point/global/prefix score loss and every core
+gradient against the pinned implementation, as well as enclosing HLO. This is
+execution parity of the existing extension; no optimizer, loss weight, rank,
+dataset, tolerance or source-faithfulness status changes.
+
+Run 00730 passed all 14 centered-TT checks on GPU (204.344 process seconds),
+including the full composite training loss and every core gradient. Complete
+immutable-child public endpoints now use bounded XLA signatures and a complete
+compiled input pullback; the next check also differentiates the returned
+analytical score and query coordinates. The quadratic solver's numerical
+iteration is moved to one XLA while loop. Its existing convergence, curvature
+failure, iteration count and trace schedule are compared to the pinned solver,
+with independent diagonal solutions and a nonfinite-action veto. Host trace
+serialization occurs only after the numerical solve has finished. The six
+existing compiled training callback factories now use bounded explicit tensor
+signatures. Unreviewed initializer and optimizer scopes remain open.
+
+Run 00731 passed six finite quadratic-solver cases on CPU. Run 00732 passed
+the complete public centered-child CPU endpoint, including gradients of scores
+and query coordinates across its default XLA boundary. Run 00733 passed two
+GPU optimizer updates against the pinned callback and verified a single stable
+signature. New isolated fixtures cover complete centered-child values/scores at
+residual ranks 2/3 and 4/8 query rows, and complete quadratic solves at 4/8
+coordinates. Parent density, residual cores, equations and thresholds are fixed;
+core hashes enter the matched fixture identity. These use the existing two-size,
+three-repeat, 20-warm-call contract and unchanged total budget. No historical
+centered training result is used. Baseline host/tracing failures remain evidence.
+
+Run 00734 passed the complete centered-child and quadratic-solver GPU group
+(seven checks, 85.103 seconds). The default complete child calls retain host
+finite-output checks because XLA may discard assertions inside compiled graphs.
+All new helper, test and measurement files pass lint. The exact policy guard
+covers 161 source files / 964 reviewed exceptions; its scope statement still
+explicitly excludes unreviewed initializer and source-route execution debt.

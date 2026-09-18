@@ -8,7 +8,9 @@ from typing import Callable, Sequence
 
 import tensorflow as tf
 
+from bayesfilter.highdim import centered_tt_native_tf as centered_native
 from bayesfilter.highdim.bases import ProductBasis
+from bayesfilter.highdim.centered_training_native_tf import quadratic_cg_program
 from bayesfilter.highdim.models import parameterized_zhao_cui_sir_austria_model
 from bayesfilter.highdim.zhao_cui_austria_sir_centered_density_tf import (
     CenteredThetaFeatures,
@@ -26,6 +28,7 @@ from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_tf import (
     balanced_initial_cores,
     lane_b_measure_convention,
 )
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 
 
 DTYPE = tf.float64
@@ -54,13 +57,24 @@ _DEGREE = tf.convert_to_tensor(_BASE_MODEL._neighbor_degree, DTYPE)  # noqa: SLF
 _INITIAL_MEAN = tf.convert_to_tensor(_BASE_MODEL.initial_mean, DTYPE)
 
 
+@tf.custom_gradient
+def _sir_rounded(value):
+    """Retain FP64 operation boundaries needed by the strict scalar score API.
+
+    nextafter(x, x) is the floating-point identity, including signed zero.
+    Its identity derivative preserves gradients through the rounded program.
+    The bit-level operation prevents XLA from fusing across this boundary.
+    """
+    return tf.math.nextafter(value, value), lambda cotangent: cotangent
+
+
 def _batch_native_transition_mean_and_jacobian(
     theta: tf.Tensor, z0: tf.Tensor
 ) -> tuple[tf.Tensor, tf.Tensor]:
     parameters = tf.convert_to_tensor(theta, DTYPE)
     state = tf.convert_to_tensor(z0, DTYPE)
-    kappa = tf.constant(0.1, DTYPE) * tf.exp(parameters[:, 0])
-    nu = tf.constant(18.0, DTYPE) * tf.exp(parameters[:, 1])
+    kappa = _sir_rounded(tf.constant(0.1, DTYPE) * tf.exp(parameters[:, 0]))
+    nu = _sir_rounded(tf.constant(18.0, DTYPE) * tf.exp(parameters[:, 1]))
     tangent = tf.zeros(tf.concat([tf.shape(state), [PARAMETER_DIM]], axis=0), DTYPE)
     parameter_eye = tf.eye(PARAMETER_DIM, dtype=DTYPE)
 
@@ -69,13 +83,13 @@ def _batch_native_transition_mean_and_jacobian(
         infectious = values[:, :, 1::2]
         d_susceptible = derivatives[:, :, 0::2, :]
         d_infectious = derivatives[:, :, 1::2, :]
-        susceptible_neighbor = (
+        susceptible_neighbor = _sir_rounded(
             tf.einsum("tnj,kj->tnk", susceptible, _ADJACENCY)
-            - susceptible * _DEGREE[tf.newaxis, tf.newaxis, :]
+            - _sir_rounded(susceptible * _DEGREE[tf.newaxis, tf.newaxis, :])
         )
-        infectious_neighbor = (
+        infectious_neighbor = _sir_rounded(
             tf.einsum("tnj,kj->tnk", infectious, _ADJACENCY)
-            - infectious * _DEGREE[tf.newaxis, tf.newaxis, :]
+            - _sir_rounded(infectious * _DEGREE[tf.newaxis, tf.newaxis, :])
         )
         d_susceptible_neighbor = (
             tf.einsum("tnjp,kj->tnkp", d_susceptible, _ADJACENCY)
@@ -85,8 +99,8 @@ def _batch_native_transition_mean_and_jacobian(
             tf.einsum("tnjp,kj->tnkp", d_infectious, _ADJACENCY)
             - d_infectious * _DEGREE[tf.newaxis, tf.newaxis, :, tf.newaxis]
         )
-        infection = (
-            kappa[:, tf.newaxis, tf.newaxis] * susceptible * infectious
+        infection = _sir_rounded(
+            _sir_rounded(kappa[:, tf.newaxis, tf.newaxis] * susceptible) * infectious
         )
         d_infection = kappa[:, tf.newaxis, tf.newaxis, tf.newaxis] * (
             infectious[:, :, :, tf.newaxis] * d_susceptible
@@ -94,10 +108,11 @@ def _batch_native_transition_mean_and_jacobian(
         ) + infection[:, :, :, tf.newaxis] * parameter_eye[
             0, tf.newaxis, tf.newaxis, tf.newaxis, :
         ]
-        rhs_susceptible = -infection + 0.5 * susceptible_neighbor
-        rhs_infectious = (
-            infection
-            - nu[:, tf.newaxis, tf.newaxis] * infectious
+        rhs_susceptible = _sir_rounded(-infection + 0.5 * susceptible_neighbor)
+        rhs_infectious = _sir_rounded(
+            _sir_rounded(
+                infection - _sir_rounded(nu[:, tf.newaxis, tf.newaxis] * infectious)
+            )
             + 0.5 * infectious_neighbor
         )
         d_rhs_susceptible = -d_infection + 0.5 * d_susceptible_neighbor
@@ -120,17 +135,38 @@ def _batch_native_transition_mean_and_jacobian(
         )
 
     step = tf.constant(0.005, DTYPE)
-    for _ in range(4):
+    # Mechanical fixed-HMC execution adaptation of sir_step.mlx:7--18.
+    # Preserve the author's half-step fourth stage, including its difference
+    # from the standard fourth-order RK formula named in paper section 6.3.
+    def substep(index, state, tangent):
         k1, d1 = rhs(state, tangent)
-        k2, d2 = rhs(state + 0.5 * step * k1, tangent + 0.5 * step * d1)
-        k3, d3 = rhs(state + 0.5 * step * k2, tangent + 0.5 * step * d2)
+        k2, d2 = rhs(
+            _sir_rounded(state + _sir_rounded(0.5 * step * k1)),
+            tangent + 0.5 * step * d1,
+        )
+        k3, d3 = rhs(
+            _sir_rounded(state + _sir_rounded(0.5 * step * k2)),
+            tangent + 0.5 * step * d2,
+        )
         # Preserve the Zhao-Cui half-step fourth-stage variant.
-        k4, d4 = rhs(state + 0.5 * step * k3, tangent + 0.5 * step * d3)
-        state = state + (step / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        k4, d4 = rhs(
+            _sir_rounded(state + _sir_rounded(0.5 * step * k3)),
+            tangent + 0.5 * step * d3,
+        )
+        weighted = _sir_rounded(_sir_rounded(k1 + 2.0 * k2) + 2.0 * k3)
+        increment = (step / 6.0) * _sir_rounded(weighted + k4)
+        state = _sir_rounded(state + _sir_rounded(increment))
         tangent = tangent + (step / 6.0) * (d1 + 2.0 * d2 + 2.0 * d3 + d4)
+        return index + 1, state, tangent
+
+    _, state, tangent = tf.while_loop(
+        lambda index, *_: index < 4, substep, (tf.constant(0), state, tangent),
+        maximum_iterations=4, parallel_iterations=1,
+    )
     return state, tangent
 
 
+@fixed_signature_function(floating_dtype=DTYPE)
 def batch_native_t1_from_common_noise(
     theta: tf.Tensor,
     initial_noise: tf.Tensor,
@@ -1422,20 +1458,12 @@ class CenteredResidualTrainer:
                 variable.assign(value)
 
     def _component_values(self, flat_points: tf.Tensor) -> tf.Tensor:
-        parent_values = _evaluate_component(self.parent.cores, self.basis, flat_points)
-        residual_values = [
-            _evaluate_component(component, self.basis, flat_points)
-            for component in self.residual_variables
-        ]
-        return tf.stack([parent_values, *residual_values], axis=1)
+        return centered_native.evaluate_components(
+            (self.parent.cores,) + self.residual_variables, self.basis, flat_points)
 
     def _gram(self) -> tf.Tensor:
         components = (self.parent.cores,) + self.residual_variables
-        rows = [
-            tf.stack([_cross_mass(left, right, self.basis) for right in components])
-            for left in components
-        ]
-        gram = tf.stack(rows)
+        gram = centered_native.cross_components(components, components, self.basis)
         return 0.5 * (gram + tf.transpose(gram))
 
     def absolute_density_loss(
@@ -1532,8 +1560,9 @@ class CenteredResidualTrainer:
                 derivative_target_score,
                 derivative_importance_log_weight,
             )
-        l1 = tf.add_n([tf.reduce_sum(tf.abs(value)) for value in self.trainable_variables])
-        l2 = tf.add_n([tf.reduce_sum(tf.square(value)) for value in self.trainable_variables])
+        position = self.position()
+        l1 = tf.reduce_sum(tf.abs(position))
+        l2 = tf.reduce_sum(tf.square(position))
         total = (
             data_loss
             + derivative_weight_tensor * derivative_loss
@@ -1575,10 +1604,8 @@ class CenteredResidualTrainer:
         )
         tf.debugging.assert_non_negative(standard_error, "global score MCSE")
         components = (self.parent.cores,) + self.residual_variables
-        cross = tf.stack(
-            [_cross_mass(components[0], component, self.basis) for component in components[1:]]
-        )
-        parent_mass = _cross_mass(components[0], components[0], self.basis)
+        parent_cross = centered_native.cross_components(components[:1], components, self.basis)[0]
+        cross, parent_mass = parent_cross[1:], parent_cross[0]
         child_score = 2.0 * cross / (
             parent_mass + tf.constant(self.parent.settings.tau, DTYPE)
         )
@@ -1608,20 +1635,11 @@ class CenteredResidualTrainer:
             raise ValueError("prefix target and MCSE arrays have the wrong shape")
         tf.debugging.assert_non_negative(standard_error, "prefix score MCSE")
         components = (self.parent.cores,) + self.residual_variables
-        parent_prefix = _cross_prefix_values(
-            components[0], components[0], self.basis, points
-        ) + tf.constant(self.parent.settings.tau, DTYPE)
-        prefix_cross = tf.stack(
-            [
-                _cross_prefix_values(components[0], component, self.basis, points)
-                for component in components[1:]
-            ],
-            axis=1,
-        )
-        parent_mass = _cross_mass(components[0], components[0], self.basis)
-        global_cross = tf.stack(
-            [_cross_mass(components[0], component, self.basis) for component in components[1:]]
-        )
+        prefix_pairs = centered_native.cross_components(components[:1], components, self.basis, points)[:, 0]
+        parent_prefix = prefix_pairs[:, 0] + tf.constant(self.parent.settings.tau, DTYPE)
+        prefix_cross = prefix_pairs[:, 1:]
+        parent_cross = centered_native.cross_components(components[:1], components, self.basis)[0]
+        global_cross, parent_mass = parent_cross[1:], parent_cross[0]
         child_score = (
             2.0 * prefix_cross / parent_prefix[:, tf.newaxis]
             - 2.0
@@ -1668,10 +1686,8 @@ class CenteredResidualTrainer:
         target_point_score = target_score - target_normalizer_score[tf.newaxis, :]
         # The exact child normalizer score follows from cross-component masses.
         components = (self.parent.cores,) + self.residual_variables
-        cross = tf.stack(
-            [_cross_mass(components[0], component, self.basis) for component in components[1:]]
-        )
-        parent_mass = _cross_mass(components[0], components[0], self.basis)
+        parent_cross = centered_native.cross_components(components[:1], components, self.basis)[0]
+        cross, parent_mass = parent_cross[1:], parent_cross[0]
         child_normalizer_score = 2.0 * cross / (
             parent_mass + tf.constant(self.parent.settings.tau, DTYPE)
         )
@@ -1948,71 +1964,25 @@ def solve_quadratic_value_gradient_with_conjugate_gradient(
         raise ValueError("conjugate-gradient max_iterations must be positive")
     if int(trace_interval) <= 0:
         raise ValueError("conjugate-gradient trace_interval must be positive")
-    zero = tf.zeros_like(tf.convert_to_tensor(initial_position, DTYPE))
-    _zero_value, affine_gradient = value_and_gradient(zero)
-    rhs = -affine_gradient
-
-    def hessian_action(vector: tf.Tensor) -> tf.Tensor:
-        _value, gradient = value_and_gradient(tf.convert_to_tensor(vector, DTYPE))
-        action = gradient - affine_gradient
-        tf.debugging.assert_all_finite(action, "quadratic Hessian action")
-        return action
-
-    position = tf.identity(tf.convert_to_tensor(initial_position, DTYPE))
-    residual = rhs - hessian_action(position)
-    direction = tf.identity(residual)
-    residual_squared = tf.reduce_sum(tf.square(residual))
-    initial_residual_norm = tf.sqrt(residual_squared)
-    rhs_norm = tf.linalg.norm(rhs)
-    residual_scale = tf.maximum(rhs_norm, tf.constant(1.0, DTYPE))
-    threshold = tf.constant(float(tolerance), DTYPE) * residual_scale
-    minimum_curvature = tf.constant(float("inf"), DTYPE)
-    trace: list[tuple[int, tf.Tensor, tf.Tensor]] = [
-        (0, initial_residual_norm, initial_residual_norm / residual_scale)
-    ]
-    converged = bool((initial_residual_norm <= threshold).numpy())
-    failed = False
-    completed = 0
-    for iteration in range(1, int(max_iterations) + 1):
-        if converged or failed:
-            break
-        action = hessian_action(direction)
-        curvature = tf.tensordot(direction, action, axes=1)
-        minimum_curvature = tf.minimum(minimum_curvature, curvature)
-        if not bool(tf.math.is_finite(curvature).numpy()) or float(curvature) <= 0.0:
-            failed = True
-            break
-        step = residual_squared / curvature
-        position = position + step * direction
-        residual = residual - step * action
-        next_residual_squared = tf.reduce_sum(tf.square(residual))
-        residual_norm = tf.sqrt(next_residual_squared)
-        relative = residual_norm / residual_scale
-        completed = iteration
-        if iteration % int(trace_interval) == 0 or iteration == int(max_iterations):
-            trace.append((iteration, residual_norm, relative))
-        converged = bool((residual_norm <= threshold).numpy())
-        if converged:
-            if trace[-1][0] != iteration:
-                trace.append((iteration, residual_norm, relative))
-            residual_squared = next_residual_squared
-            break
-        beta = next_residual_squared / residual_squared
-        direction = residual + beta * direction
-        residual_squared = next_residual_squared
-    final_residual_norm = tf.sqrt(residual_squared)
-    tf.debugging.assert_all_finite(position, "conjugate-gradient position")
-    tf.debugging.assert_all_finite(final_residual_norm, "conjugate-gradient residual")
+    initial = tf.convert_to_tensor(initial_position, DTYPE)
+    program = quadratic_cg_program(value_and_gradient, tf.TensorSpec(initial.shape, DTYPE),
+                                   int(max_iterations), int(trace_interval))
+    result = program(initial, tf.constant(float(tolerance), DTYPE))
+    # Host assertions and trace serialization follow the complete XLA solve.
+    # No materialized residual or flag controls a numerical iteration.
+    tf.debugging.assert_equal(result["finite_actions"], True, "quadratic Hessian action")
+    tf.debugging.assert_all_finite(result["position"], "conjugate-gradient position")
+    tf.debugging.assert_all_finite(result["residual_norm"], "conjugate-gradient residual")
+    trace = tuple((index, result["trace_norms"][index], result["trace_relative"][index])
+                  for index, keep in enumerate(result["trace_keep"].numpy().tolist()) if keep)
     return QuadraticConjugateGradientResult(
-        position=position,
-        converged=converged,
-        failed=failed,
-        num_iterations=completed,
-        initial_residual_norm=initial_residual_norm,
-        residual_norm=final_residual_norm,
-        relative_residual_norm=final_residual_norm / residual_scale,
-        minimum_curvature=minimum_curvature,
-        trace=tuple(trace),
+        position=result["position"],
+        converged=bool(result["converged"]), failed=bool(result["failed"]),
+        num_iterations=int(result["num_iterations"]),
+        initial_residual_norm=result["initial_residual_norm"],
+        residual_norm=result["residual_norm"],
+        relative_residual_norm=result["relative_residual_norm"],
+        minimum_curvature=result["minimum_curvature"], trace=trace,
     )
 
 
@@ -2231,7 +2201,7 @@ def make_compiled_core_affine_total_score_value_and_gradient(
         num_elems=parent.settings.basis_num_elems,
     )
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def value_and_gradient(position: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.convert_to_tensor(position, DTYPE)
         with tf.GradientTape() as tape:
@@ -2292,7 +2262,7 @@ def make_compiled_core_affine_gate_minimax_value_and_gradient(
     inverse_temperature = tf.constant(1.0 / float(temperature), DTYPE)
     temperature_tensor = tf.constant(float(temperature), DTYPE)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def value_and_gradient(position: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.convert_to_tensor(position, DTYPE)
         with tf.GradientTape() as tape:
@@ -2386,7 +2356,7 @@ def make_compiled_full_tt_gate_minimax_value_and_gradient(
     inverse_temperature = tf.constant(1.0 / float(temperature), DTYPE)
     temperature_tensor = tf.constant(float(temperature), DTYPE)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def value_and_gradient(position: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.reshape(tf.convert_to_tensor(position, DTYPE), [-1])
         with tf.GradientTape() as tape:
@@ -2453,7 +2423,7 @@ def make_compiled_absolute_train_step(
     if hasattr(optimizer, "build"):
         optimizer.build(trainer.trainable_variables)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def train_step(
         theta: tf.Tensor,
         local_points: tf.Tensor,
@@ -2505,11 +2475,7 @@ def make_compiled_absolute_train_step(
             tf.debugging.assert_all_finite(
                 variable, f"nonfinite updated residual core: {index}"
             )
-        maximum_core_magnitude = tf.reduce_max(
-            tf.stack(
-                [tf.reduce_max(tf.abs(value)) for value in trainer.trainable_variables]
-            )
-        )
+        maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             terms.total_loss,
             terms.absolute_density_loss,
@@ -2539,7 +2505,7 @@ def make_compiled_origin_score_prefit_step(
     if hasattr(optimizer, "build"):
         optimizer.build(trainer.trainable_variables)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def prefit_step(
         origin_local_points: tf.Tensor,
         origin_complete_data_score: tf.Tensor,
@@ -2571,11 +2537,7 @@ def make_compiled_origin_score_prefit_step(
             tf.debugging.assert_all_finite(
                 variable, f"nonfinite origin score prefit core: {index}"
             )
-        maximum_core_magnitude = tf.reduce_max(
-            tf.stack(
-                [tf.reduce_max(tf.abs(value)) for value in trainer.trainable_variables]
-            )
-        )
+        maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             loss,
             metrics["target_likelihood_score"],
@@ -2617,7 +2579,7 @@ def make_compiled_origin_total_score_train_step(
     if hasattr(optimizer, "build"):
         optimizer.build(trainer.trainable_variables)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def train_step(
         point_local_points: tf.Tensor,
         point_target_score: tf.Tensor,
@@ -2638,9 +2600,7 @@ def make_compiled_origin_total_score_train_step(
             prefix = trainer.origin_prefix_score_metrics_arrays(
                 prefix_local_points, prefix_target_score, prefix_score_standard_error
             )
-            l2 = tf.add_n(
-                [tf.reduce_sum(tf.square(value)) for value in trainer.trainable_variables]
-            )
+            l2 = tf.reduce_sum(tf.square(trainer.position()))
             total = (
                 tf.constant(float(point_weight), DTYPE) * point["loss"]
                 + tf.constant(float(global_weight), DTYPE) * global_metrics["loss"]
@@ -2667,11 +2627,7 @@ def make_compiled_origin_total_score_train_step(
             gradients, tf.constant(float(gradient_clip_norm), DTYPE)
         )
         optimizer.apply_gradients(zip(clipped, trainer.trainable_variables))
-        maximum_core_magnitude = tf.reduce_max(
-            tf.stack(
-                [tf.reduce_max(tf.abs(value)) for value in trainer.trainable_variables]
-            )
-        )
+        maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             total,
             point["loss"],

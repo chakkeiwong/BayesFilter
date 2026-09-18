@@ -75,6 +75,27 @@ def test_draw_and_time_recurrence_matches_pinned_forecast(count, jit):
     _graph(candidate)
 
 
+@pytest.mark.parametrize("jit", [False, True])
+def test_batched_forecast_preserves_distinct_draws_and_isolation(jit):
+    before = _before("ssl_lstm_predictive_tf")
+    config = predictive.SSLLSTMForecastConfig()
+    inputs = list(_forecast_inputs(4))
+    inputs[0] += tf.reshape(tf.linspace(tf.constant(-.15, D), .1, 16), [4, 4])
+    specs = tuple(tf.TensorSpec(x.shape, x.dtype) for x in inputs)
+    actual = tf.function(lambda *args: predictive._forecast_batch_core(*args, config),
+                         input_signature=specs, jit_compile=jit, autograph=False)
+    reference = tf.function(lambda *args: before._forecast_batch_core(*args, config),
+                            input_signature=specs, jit_compile=jit, autograph=False)
+    result = actual(*inputs)
+    _compare(result, reference(*inputs))
+    changed = list(inputs)
+    changed[0] = tf.tensor_scatter_nd_add(inputs[0], [[3, 0], [3, 2]], tf.constant([.1, -.1], D))
+    alternative = actual(*changed)
+    for old, new in zip(result, alternative, strict=True):
+        np.testing.assert_array_equal(old[:3], new[:3])
+    assert float(tf.reduce_max(tf.abs(result[-1][3] - alternative[-1][3]))) > 1e-5
+
+
 @pytest.mark.parametrize("count", [2, 5])
 def test_innovation_banks_preserve_seeds_and_original_normal_stream(count):
     before = _before("ssl_lstm_predictive_tf")

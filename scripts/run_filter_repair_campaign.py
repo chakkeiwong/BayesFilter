@@ -27,6 +27,7 @@ from filter_repair_endpoint_fixtures import FIXTURES as ENDPOINT_FIXTURES
 from filter_repair_additional_fixtures import FIXTURES as ADDITIONAL_FIXTURES
 from filter_repair_forecast_fixtures import FIXTURES as FORECAST_FIXTURES
 from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
+from filter_repair_centered_fixtures import FIXTURES as CENTERED_FIXTURES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -48,6 +49,17 @@ BASELINE_PARENT_PACKAGES = (
 )
 BUDGET_SECONDS = {"CPU": 8 * 3600, "GPU": 4 * 3600}
 TEST_GROUPS = {
+    "centered_callbacks": ("tests/test_filter_repair_centered_tt.py::test_centered_training_callback_has_stable_signature_and_preserves_update",),
+    "centered_gpu": ("tests/test_filter_repair_centered_tt.py::test_complete_centered_child_scores_preserve_pinned_consumer",
+        "tests/test_filter_repair_centered_solver.py"),
+    "centered_solver": ("tests/test_filter_repair_centered_solver.py",
+        "tests/highdim/test_zhao_cui_austria_sir_parameter_density_training_tf.py::test_matrix_free_conjugate_gradient_solves_quadratic_callback"),
+    "centered_consumer": ("tests/test_filter_repair_centered_tt.py::test_complete_centered_child_scores_preserve_pinned_consumer",),
+    "centered_tt": ("tests/test_filter_repair_centered_tt.py",),
+    "sealed_sir": ("tests/test_filter_repair_sealed_sir.py",),
+    "austria_consumer": ("tests/highdim/test_zhao_cui_austria_sir_parameter_density_training_tf.py::test_batch_native_target_and_score_match_scalar_theta_authority",),
+    "austria_preparation": ("tests/test_filter_repair_austria_preparation.py",
+        "tests/highdim/test_zhao_cui_austria_sir_parameter_density_training_tf.py::test_batch_native_target_and_score_match_scalar_theta_authority"),
     "gamma_random_gpu": ("tests/test_filter_repair_gamma_random.py",
         "tests/test_filter_repair_hermite_proposal.py::test_complete_proposal_random_inputs_preserve_existing_draws_and_hlo",
         "tests/test_filter_repair_student_proposal.py"),
@@ -161,10 +173,11 @@ TEST_GROUPS = {
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES)
 
 
-TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU"}
+TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU"}
 FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES
+FIXTURES += CENTERED_FIXTURES
 
 
 def sha(path):
@@ -180,6 +193,8 @@ def measurement_harness(fixture):
         names += ("filter_repair_forecast_worker.py", "filter_repair_forecast_fixtures.py")
     if fixture in PREPARATION_FIXTURES:
         names += ("filter_repair_preparation_worker.py", "filter_repair_preparation_fixtures.py")
+    if fixture in CENTERED_FIXTURES:
+        names += ("filter_repair_centered_worker.py", "filter_repair_centered_fixtures.py")
     return {name: sha(ROOT / "scripts" / name) for name in names}
 
 
@@ -280,6 +295,8 @@ def run_job(args):
             worker = "filter_repair_forecast_worker.py"
         if args.fixture in PREPARATION_FIXTURES:
             worker = "filter_repair_preparation_worker.py"
+        if args.fixture in CENTERED_FIXTURES:
+            worker = "filter_repair_centered_worker.py"
         command = [sys.executable, str(ROOT / "scripts" / worker), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
     elif args.action == "audit":
         command = [sys.executable, "scripts/audit_filter_gradient_policy.py", "--output", str(directory / "audit.json.gz"), "--markdown", str(directory / "audit.md")]

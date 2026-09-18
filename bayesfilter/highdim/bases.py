@@ -834,6 +834,12 @@ def p85_author_sir_lagrangep_algebraic_product_basis_spec(
 
 def _legendre_values(xi: tf.Tensor, max_degree: int) -> tf.Tensor:
     xi = tf.convert_to_tensor(xi, dtype=tf.float64)
+    # A zero-iteration TensorArray loop has no adjoint storage in XLA. Keep
+    # the exact constant/linear polynomials explicit so their gradients compile.
+    if max_degree == 0:
+        return tf.ones_like(xi)[..., tf.newaxis]
+    if max_degree == 1:
+        return tf.stack([tf.ones_like(xi), xi], axis=-1)
     flat = tf.reshape(xi, [-1])
     values = tf.TensorArray(tf.float64, size=max_degree + 1, element_shape=flat.shape, clear_after_read=False).write(0, tf.ones_like(flat))
     if max_degree >= 1:
