@@ -28,6 +28,7 @@ from filter_repair_additional_fixtures import FIXTURES as ADDITIONAL_FIXTURES
 from filter_repair_forecast_fixtures import FIXTURES as FORECAST_FIXTURES
 from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
 from filter_repair_centered_fixtures import FIXTURES as CENTERED_FIXTURES
+from filter_repair_initialization_fixtures import FIXTURES as INITIALIZATION_FIXTURES
 from filter_repair_training_fixtures import FIXTURES as TRAINING_FIXTURES
 from filter_repair_stochastic_fixtures import FIXTURES as STOCHASTIC_FIXTURES
 
@@ -193,6 +194,7 @@ FIXTURES += PREPARATION_FIXTURES
 FIXTURES += CENTERED_FIXTURES
 FIXTURES += TRAINING_FIXTURES
 FIXTURES += STOCHASTIC_FIXTURES
+FIXTURES += INITIALIZATION_FIXTURES
 
 
 def sha(path):
@@ -215,6 +217,9 @@ def measurement_harness(fixture):
                   "filter_repair_centered_fixtures.py")
     if fixture in STOCHASTIC_FIXTURES:
         names += ("filter_repair_stochastic_worker.py", "filter_repair_stochastic_fixtures.py")
+    if fixture in INITIALIZATION_FIXTURES:
+        names += ("filter_repair_initialization_worker.py", "filter_repair_initialization_fixtures.py",
+                  "filter_repair_centered_fixtures.py")
     return {name: sha(ROOT / "scripts" / name) for name in names}
 
 
@@ -323,6 +328,8 @@ def run_job(args):
             worker = "filter_repair_training_worker.py"
         if args.fixture in STOCHASTIC_FIXTURES:
             worker = "filter_repair_stochastic_worker.py"
+        if args.fixture in INITIALIZATION_FIXTURES:
+            worker = "filter_repair_initialization_worker.py"
         command = [sys.executable, str(ROOT / "scripts" / worker), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
     elif args.action == "audit":
         command = [sys.executable, "scripts/audit_filter_gradient_policy.py", "--output", str(directory / "audit.json.gz"), "--markdown", str(directory / "audit.md")]

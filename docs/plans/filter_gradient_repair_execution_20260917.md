@@ -1768,3 +1768,45 @@ removed six host-schema exceptions. New helpers, fixtures and tests pass Ruff.
 The earlier qualification measurements precede this assignment-guard repair;
 fresh current-source qualification and repeats remain required. No F01--F20
 closure, merge or push is claimed by this checkpoint.
+
+Checkpoint 0549f794 preserves the stochastic update repair. Runs 00812 and
+00813 passed nine seeded-initializer and three prefix-target GPU checks.
+Public preparation now honors enclosing graph/XLA boundaries, lifting immutable
+basis/data validation outside the numerical trace and inlining the same tensor
+program inside the enclosing graph. All original Philox draws are preserved.
+Runs 00814--00823 qualified complete balanced/residual/connected initialization
+at ranks two and three. Candidate graph and XLA results match the valid eager
+baseline exactly, including every returned core. Baseline basis-validation
+tracing failures are retained.
+
+The host telemetry review found a decreasing sampled /proc VmHWM after
+preparation. A separate 64 MiB CPU-only standard-library allocation reproduced
+the effect without TensorFlow. The observations and limits are recorded in
+filter_gradient_repair_memory_observability_20260918.md. Host maxima remain
+approximate sampled measurements; all memory and numerical gates are unchanged.
+
+Runs 00824--00833 qualified complete prefix training targets at both extents
+against the valid eager baseline. The maximum discrepancy was 1.7204e-12;
+baseline tracing failures remain preserved and no baseline compilation timing
+is inferred. Three-process repeats for the initializer, prefix and stochastic
+fixtures are still pending. Run 00834 found 37 current comparison pairs and
+695 missing pairs, with no current numerical comparison failures. Older
+measurements with stale harness or shared-source hashes remain historical
+campaign evidence. Charge through 00834 is 20,882.313 CPU / 8,676.105 GPU
+process-seconds; the proposed larger budget has not been authorized.
+
+Recovery review confirms that initializer changes preserve enclosing graph/XLA
+boundaries and lift only immutable basis preparation and sealed-data validation
+out of tracing. Next source repairs cover centered-training assignment guards,
+default residual scaling, complete batch/ratio target preparation, and the
+existing shuffled minibatch stream. These are execution repairs to the existing
+extension_or_invention training construction, not a source-faithfulness claim.
+Keep its loss, clipping, ranks, seeded draws and numerical tolerances unchanged.
+Compare valid updates to the pinned baseline and reject invalid compiled
+updates without mutating parameters or optimizer slots. Finish source audit
+before broad repeats to limit further evidence invalidation.
+
+Run 00835 passed the recovered checkpoint's controller/policy checks in 7.580
+CPU seconds. Focused initializer fixture/test lint and whitespace checks pass.
+The exact guard still covers 166 sources and 1,048 exceptions; its passing
+status does not close the remaining execution findings.

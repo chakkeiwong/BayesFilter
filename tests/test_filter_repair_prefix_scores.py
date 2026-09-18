@@ -39,3 +39,25 @@ def test_complete_prefix_training_targets_preserve_seeded_estimates(rows, sample
     reference = program(points, global_score.score, global_score.score_standard_error, noise, observation)
     for value, authority in zip(changed, reference, strict=True):
         np.testing.assert_allclose(value[1:], authority[1:], atol=1e-12, rtol=1e-12)
+
+
+def test_public_prefix_target_has_pure_enclosing_graph_and_xla_boundaries():
+    mean = candidate._BASE_MODEL.transition_mean(candidate._INITIAL_MEAN[None])[0]
+    points = tf.stack([mean, mean + .1])
+    estimate = candidate.RatioScoreEstimate(value=tf.constant(.1, D), score=tf.constant([.2, -.1, .3], D),
+        score_standard_error=tf.constant([.02, .03, .01], D), effective_sample_size=tf.constant(6., D))
+
+    def evaluate(points):
+        outputs = candidate.estimate_t1_prefix_scores(prefix_points=points, global_score=estimate,
+            sample_count=8, seed=1729)
+        return tuple((row.value, row.score, row.score_standard_error, row.effective_sample_size) for row in outputs)
+
+    graph = tf.function(evaluate, input_signature=[tf.TensorSpec([2, 18], D)], jit_compile=False, autograph=False)
+    compiled = tf.function(evaluate, input_signature=graph.input_signature, jit_compile=True, autograph=False)
+    for actual, reference in zip(tf.nest.flatten(compiled(points)), tf.nest.flatten(graph(points)), strict=True):
+        np.testing.assert_allclose(actual, reference, atol=1e-10, rtol=1e-10)
+    definition = graph.get_concrete_function().graph.as_graph_def()
+    assert not any(function.attr.get("_XlaMustCompile") and function.attr["_XlaMustCompile"].b
+                   for function in definition.library.function)
+    _graph(graph)
+    assert "HloModule" in compiled.experimental_get_compiler_ir(points)(stage="hlo")

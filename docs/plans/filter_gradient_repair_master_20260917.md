@@ -122,6 +122,35 @@ environment, hardware, outcomes and wall time in ordinary JSON/log files under
 evidence. Crash recovery charges unfinished attempts their reserved timeout.
 No posterior chains or learned-transport training campaigns are in this budget.
 
+### Proposed budget amendment, September 18 (not yet authorized)
+
+The comparison audit at run 00834 has only 37 current pairs and 695 missing
+pairs. Earlier measurements are preserved but many have stale harness or
+shared-source hashes. GPU2 still has unrelated work; completing matched groups
+on idle GPU3 requires both arms and every repeat on that same device.
+Enumeration of the registered matrix finds 1,521 pending GPU jobs and 24 CPU
+jobs. Using historical per-fixture/arm/mode/size median durations where known,
+and 30 seconds for 708 jobs without a measured duration, estimates 33,764 GPU
+and 720 CPU process-seconds. This is a planning estimate, not a runtime bound.
+Passed test-group durations sum to 4,262 seconds; nine groups have no passing
+duration, including the unresolved TP residual check.
+
+Propose increasing the cumulative caps to **16 GPU process-hours and 12 CPU
+process-hours**, inclusive of all time already charged. Through 00834 the
+charge is 8,676.105 GPU and 20,882.313 CPU seconds. The existing caps remain
+active until the owner approves this amendment. No extra device class, package
+change, posterior sampling, training campaign, algorithm change or relaxed
+criterion is authorized by this proposal. One GPU worker at a time, the
+300/900-second worker limits, three-repeat rule and contention checks remain.
+
+Complete the remaining source/callback audit before the terminal repeat
+matrix. Use only focused qualification during implementation, then freeze
+source and harness for final repeats and affected suites. A new repair after
+freezing invalidates its affected measurements and consumes the same total
+budget. This addresses the avoidable evidence churn found in the recovery
+review. A failed gate still blocks integration; budget authorization cannot
+substitute for source coverage, numerical parity or final review.
+
 September 18 isolation repair: validate in linked worktree
 `/tmp/bayesfilter-filter-gradient-xla-validation-20260918` on branch
 `repair/filter-gradient-xla-validation-20260918` when concurrent unrelated

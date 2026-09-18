@@ -562,7 +562,9 @@ def balanced_initial_cores(
         else 0.0
     )
     widths = product_basis.basis_dim_tuple()
-    packed = balanced_core_program(tuple(ranks), tuple(widths))(tf.constant(seeded_scale, DTYPE))
+    program = balanced_core_program(tuple(ranks), tuple(widths))
+    evaluate = program.python_function if tf.inside_function() else program
+    packed = evaluate(tf.constant(seeded_scale, DTYPE))
     return tuple(packed[axis, :ranks[axis], :width, :ranks[axis + 1]]
                  for axis, width in enumerate(widths))
 

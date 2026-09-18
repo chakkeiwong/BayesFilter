@@ -670,7 +670,9 @@ def embed_residual_component_with_connected_channels(
         return tuple(embedded)
     shapes = tuple(tuple(core.shape) for core in embedded)
     packed = centered_native.pack_components((tuple(embedded),))[0]
-    result = training_native.connected_channels_program(tuple(shape[1] for shape in shapes), int(target_rank), old_rank)(
+    program = training_native.connected_channels_program(tuple(shape[1] for shape in shapes), int(target_rank), old_rank)
+    evaluate = program.python_function if tf.inside_function() else program
+    result = evaluate(
         packed, tf.constant(int(seed), tf.int32), tf.constant(float(seeded_channel_epsilon), DTYPE))
     return tuple(result[axis, :shape[0], :shape[1], :shape[2]] for axis, shape in enumerate(shapes))
 
@@ -1057,14 +1059,18 @@ def fixed_rank_initial_residual_components(
         arm_id=f"centered_residual_rank_{int(rank)}_initialization",
         rank=int(rank),
     )
-    basis = centered_lane_b_product_basis(
-        order=settings.basis_order,
-        num_elems=settings.basis_num_elems,
-    )
+    # Basis schema and verified mass matrices are immutable preparation data.
+    with tf.init_scope():
+        basis = centered_lane_b_product_basis(
+            order=settings.basis_order,
+            num_elems=settings.basis_num_elems,
+        )
     balanced = balanced_initial_cores(settings, basis)
     shapes = tuple(tuple(core.shape) for core in balanced)
     packed = centered_native.pack_components((balanced,))[0]
-    result = training_native.residual_noise_program(shapes, features.feature_count)(
+    program = training_native.residual_noise_program(shapes, features.feature_count)
+    evaluate = program.python_function if tf.inside_function() else program
+    result = evaluate(
         packed, tf.constant(int(seed), tf.int32), tf.constant(amplitude_scale, DTYPE), tf.constant(perturbation_scale, DTYPE))
     return tuple(tuple(row[axis, :shape[0], :shape[1], :shape[2]] for axis, shape in enumerate(shapes))
                  for row in tf.unstack(result, axis=0))
@@ -2404,9 +2410,15 @@ def estimate_t1_prefix_scores(
         raise ValueError("prefix_points must have shape [point_count,18]")
     if int(sample_count) < 2:
         raise ValueError("prefix score estimation requires at least two samples")
-    _states, observations, _all = generate_sealed_lane_b_dataset()
-    noise = _prefix_noise_program(int(sample_count))(tf.constant([int(seed), 991], tf.int32))
-    result = _prefix_score_program(int(points.shape[0]), int(sample_count))(
+    # Keep sealed-data decoding and hash validation outside the numerical graph.
+    with tf.init_scope():
+        _states, observations, _all = generate_sealed_lane_b_dataset()
+    noise_program = _prefix_noise_program(int(sample_count))
+    score_program = _prefix_score_program(int(points.shape[0]), int(sample_count))
+    draw = noise_program.python_function if tf.inside_function() else noise_program
+    evaluate = score_program.python_function if tf.inside_function() else score_program
+    noise = draw(tf.constant([int(seed), 991], tf.int32))
+    result = evaluate(
         points, global_score.score, global_score.score_standard_error, noise, observations[0])
     # The independent estimate also supplies training targets; its numerical
     # point/sample calculation is therefore runtime code. Only result-object

@@ -46,6 +46,26 @@ def test_balanced_initialization_rejects_invalid_seeded_basis_index():
         native.balanced_core_program((1, 2, 1), (1, 3))
 
 
+def test_complete_seeded_initialization_preserves_enclosing_graph_boundary():
+    parent, features = _fresh_parent(), CenteredThetaFeatures()
+
+    def evaluate():
+        residual = candidate.fixed_rank_initial_residual_components(parent=parent,
+            features=features, rank=2, seed=1729)
+        return residual, candidate.embed_residual_component_with_connected_channels(residual[0],
+            target_rank=4, seed=1729, seeded_channel_epsilon=.03)
+
+    graph = tf.function(evaluate, input_signature=[], jit_compile=False, autograph=False)
+    compiled = tf.function(evaluate, input_signature=[], jit_compile=True, autograph=False)
+    for actual, reference in zip(tf.nest.flatten(compiled()), tf.nest.flatten(graph()), strict=True):
+        np.testing.assert_allclose(actual, reference, atol=1e-14, rtol=1e-14)
+    definition = graph.get_concrete_function().graph.as_graph_def()
+    assert not any(function.attr.get("_XlaMustCompile") and function.attr["_XlaMustCompile"].b
+                   for function in definition.library.function)
+    _graph(graph)
+    assert "HloModule" in compiled.experimental_get_compiler_ir()(stage="hlo")
+
+
 @pytest.mark.parametrize("rank,seed", [(1, 1729), (3, -17)])
 def test_complete_residual_initializer_preserves_original_seeded_draws(rank, seed, monkeypatch):
     before = _original("zhao_cui_austria_sir_parameter_density_training_tf")
