@@ -49,6 +49,9 @@ BASELINE_PARENT_PACKAGES = (
 )
 BUDGET_SECONDS = {"CPU": 8 * 3600, "GPU": 4 * 3600}
 TEST_GROUPS = {
+    "centered_random": ("tests/test_filter_repair_centered_random.py",),
+    "prefix_scores": ("tests/test_filter_repair_prefix_scores.py",),
+    "centered_initializers": ("tests/test_filter_repair_centered_initializers.py",),
     "centered_callbacks": ("tests/test_filter_repair_centered_tt.py::test_centered_training_callback_has_stable_signature_and_preserves_update",),
     "centered_gpu": ("tests/test_filter_repair_centered_tt.py::test_complete_centered_child_scores_preserve_pinned_consumer",
         "tests/test_filter_repair_centered_solver.py"),

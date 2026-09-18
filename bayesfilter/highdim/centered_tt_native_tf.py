@@ -33,7 +33,29 @@ def pack_components(components):
         for component, row in zip(components, shapes, strict=True)))
 
 
+def _homogeneous_basis_table(basis, points, width, *, paired):
+    """Evaluate a shared immutable basis across all observed coordinates."""
+    local = basis.bases[0]
+    count, prefix, rows = len(basis.bases), points.shape[1], points.shape[0]
+    if prefix:
+        values = local.evaluate(tf.reshape(points, [-1]))
+        values = tf.pad(values, ((0, 0), (0, width-local.basis_dim)))
+        values = tf.transpose(tf.reshape(values, [rows, prefix, width]), [1, 0, 2])
+        if not paired:
+            return values
+        observed = tf.einsum("anl,anm->anlm", values, values)
+    else:
+        observed = tf.zeros([0, rows, width, width], D)
+    mass = local.mass_matrix(basis.convention.mass_measure)
+    padding = width - local.basis_dim
+    mass = tf.pad(mass, ((0, padding), (0, padding)))
+    integrated = tf.broadcast_to(mass, [count-prefix, rows, width, width])
+    return tf.concat([observed, integrated], axis=0)
+
+
 def _basis_table(basis, points, width, *, paired):
+    if all(local is basis.bases[0] for local in basis.bases):
+        return _homogeneous_basis_table(basis, points, width, paired=paired)
     count, prefix = len(basis.bases), points.shape[1]
     rows = points.shape[0]
 

@@ -79,7 +79,20 @@
         "CenteredResidualTrainer.origin_global_score_metrics_arrays",
         "CenteredResidualTrainer.origin_prefix_score_metrics_arrays",
         "CenteredResidualTrainer.origin_point_score_metrics_arrays",
-        "solve_quadratic_value_gradient_with_conjugate_gradient"
+        "solve_quadratic_value_gradient_with_conjugate_gradient",
+        "_additive_rank_two_component",
+        "_additive_pair_rank_seven_component",
+        "_parent_additive_cross_features",
+        "additive_prefix_score_operator",
+        "_within_region_feature_values",
+        "_within_region_cross_features",
+        "within_region_pair_prefix_score_operator",
+        "_prefix_score_program",
+        "_prefix_noise_program",
+        "fixed_rank_initial_residual_components",
+        "embed_residual_component_with_connected_channels",
+        "target_informed_additive_score_initialization",
+        "target_informed_within_region_pair_score_initialization"
       ]
     },
     "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": null,
@@ -213,7 +226,13 @@
     "bayesfilter/highdim/sealed_sir_dataset_tf.py": null,
     "bayesfilter/highdim/centered_tt_native_tf.py": null,
     "bayesfilter/highdim/centered_training_native_tf.py": null,
-    "bayesfilter/highdim/zhao_cui_austria_sir_centered_density_tf.py": null
+    "bayesfilter/highdim/zhao_cui_austria_sir_centered_density_tf.py": null,
+    "bayesfilter/highdim/centered_initializer_native_tf.py": null,
+    "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_tf.py": {
+      "python_iteration": [
+        "balanced_initial_cores"
+      ]
+    }
   },
   "exceptions": [
     {
@@ -8193,15 +8212,6 @@
       "reason": "Explicit debug/reference artifact serializer; this flag describes the recorded diagnostic and does not configure a runtime kernel."
     },
     {
-      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
-      "function": "estimate_t1_prefix_scores",
-      "kind": "python_iteration",
-      "ast_sha256": "4a016fa968b1c6f2f44de5f470f5fcc2e1b063e0ad193403d9de12c46c7c2394",
-      "occurrences": 1,
-      "role": "independent_reference",
-      "reason": "Explicit independent quadrature, conditional-ratio or finite-difference diagnostic; does not provide the admitted runtime analytical score."
-    },
-    {
       "path": "bayesfilter/highdim/zhao_cui_frozen_proposal_apf_tf.py",
       "function": "PreparedFrozenProposalBranch.__post_init__",
       "kind": "python_iteration",
@@ -8964,14 +8974,6 @@
     },
     {
       "path": "bayesfilter/highdim/zhao_cui_austria_sir_centered_density_tf.py",
-      "function": "centered_lane_b_product_basis",
-      "kind": "python_iteration",
-      "ast_sha256": "53bcf8b08244b4c105b3a8a76c1a59fdf800d13605aadd16127592a58751c056",
-      "role": "fixed_schema",
-      "reason": "Build frozen heterogeneous basis metadata before numerical evaluation."
-    },
-    {
-      "path": "bayesfilter/highdim/zhao_cui_austria_sir_centered_density_tf.py",
       "function": "CenteredThetaFeatures.__post_init__",
       "kind": "python_iteration",
       "ast_sha256": "ecd3d74c8d4327e219ca184fa532f8c18dc010a34f3caaf641507d188b6e9b66",
@@ -9138,6 +9140,281 @@
       "ast_sha256": "9c626a9e08c2652c6cfab2741cb0ac00e4cbafda3a5aecf77cba9a833b3ea32a",
       "role": "host_reporting",
       "reason": "Serialize the completed tensor-loop trace to the existing public tuple; no host value controls solver iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_tt_native_tf.py",
+      "function": "_basis_table",
+      "kind": "python_iteration",
+      "ast_sha256": "05faf417261a31feadc4dc7b1c9990533f2d8e261ea1cbfb59637a5893eb387a",
+      "role": "fixed_schema",
+      "reason": "Check immutable basis object identity to select one batched evaluation for replicated bases; no numerical data or recurrence is inspected."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "_additive_rank_two_component",
+      "kind": "python_iteration",
+      "ast_sha256": "0196d992e372d1c798563895e3e37b2596ffb29a20831a9962330cef02963f11",
+      "role": "host_validation",
+      "reason": "Validate the fixed per-axis basis dimension schema before batched additive-core encoding."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "_integrals",
+      "kind": "python_iteration",
+      "ast_sha256": "05faf417261a31feadc4dc7b1c9990533f2d8e261ea1cbfb59637a5893eb387a",
+      "role": "fixed_schema",
+      "reason": "Specialize immutable heterogeneous basis types and their constant integral-vector schemas; numerical axis evaluation uses TensorFlow control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "_integrals",
+      "kind": "python_iteration",
+      "ast_sha256": "95440ee6c5fe2017ed959278e2e78d19066994431d5406a2b7a6caab17b9a498",
+      "role": "fixed_schema",
+      "reason": "Specialize immutable heterogeneous basis types and their constant integral-vector schemas; numerical axis evaluation uses TensorFlow control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "_select_columns",
+      "kind": "python_iteration",
+      "ast_sha256": "236f7b400c6a528f73c67140e27f995123e465ee55c910e0e0ee94b617ac501b",
+      "role": "fixed_schema",
+      "reason": "Construct static flattened indices from heterogeneous basis widths for the declared feature output schema."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "feature_values",
+      "kind": "python_iteration",
+      "ast_sha256": "ec1e7cbea821eae7a129dca3f296753b15158b731b4a382fe75547749ab9a9b2",
+      "role": "fixed_schema",
+      "reason": "Determine padded basis width from immutable shape metadata."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "compiled_initializer",
+      "kind": "python_iteration",
+      "ast_sha256": "9e7130244d09584eb7e1d58599eff6697c43d606e62327669d174f6dbfd72e64",
+      "role": "fixed_schema",
+      "reason": "Bind immutable parent and static initializer controls, tensor argument signatures, and dataclass result fields; all numerical preparation and its complete pullback execute inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "compiled_initializer.decorate.dispatch",
+      "kind": "python_iteration",
+      "ast_sha256": "f7d867c094508ac9febed5e69d098e70ef3edc65843a72069d57bb9e9e7ad44c",
+      "role": "fixed_schema",
+      "reason": "Bind immutable parent and static initializer controls, tensor argument signatures, and dataclass result fields; all numerical preparation and its complete pullback execute inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "compiled_initializer.decorate.dispatch",
+      "kind": "python_iteration",
+      "ast_sha256": "2666675946be0dc47081544b583aa5d712ffffc628d9cc9fad56602e29531db3",
+      "role": "fixed_schema",
+      "reason": "Bind immutable parent and static initializer controls, tensor argument signatures, and dataclass result fields; all numerical preparation and its complete pullback execute inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "compiled_initializer.decorate.dispatch",
+      "kind": "python_iteration",
+      "ast_sha256": "903fd824f318e2dab0aacbe930b3e3dd30158fe3d231175885c8f95eebb3c6e9",
+      "role": "fixed_schema",
+      "reason": "Bind immutable parent and static initializer controls, tensor argument signatures, and dataclass result fields; all numerical preparation and its complete pullback execute inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "compiled_initializer.decorate.dispatch",
+      "kind": "python_iteration",
+      "ast_sha256": "48a320a0cc4fc3bdee70f8af0217dc6e32f3351fec4ac60884dcc6bd08e1da5a",
+      "role": "fixed_schema",
+      "reason": "Bind immutable parent and static initializer controls, tensor argument signatures, and dataclass result fields; all numerical preparation and its complete pullback execute inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "compiled_initializer.decorate.dispatch.numerical",
+      "kind": "python_iteration",
+      "ast_sha256": "2e783df7140ede735b9377dc73cf2011af633792572f894c9f9fe7bceb15181c",
+      "role": "fixed_schema",
+      "reason": "Bind immutable parent and static initializer controls, tensor argument signatures, and dataclass result fields; all numerical preparation and its complete pullback execute inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_initializer_native_tf.py",
+      "function": "compiled_initializer.decorate.dispatch",
+      "kind": "python_iteration",
+      "ast_sha256": "e4cdae485debe62ac23ecbd21131ed9fff6cae98e8dd3320760accab56ac4712",
+      "role": "fixed_schema",
+      "reason": "Bind immutable parent and static initializer controls, tensor argument signatures, and dataclass result fields; all numerical preparation and its complete pullback execute inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "estimate_t1_prefix_scores",
+      "kind": "python_iteration",
+      "ast_sha256": "70113ec3b1ffc77b72aa5a6522a9d375f931f758fb7d3c55b7509a7b17d5dce3",
+      "role": "host_reporting",
+      "reason": "Construct existing result dataclasses from completed compiled batched values/scores/errors/ESS; this former independent-reference exemption no longer covers numerical point iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "embed_residual_component_with_connected_channels",
+      "line": 661,
+      "kind": "python_iteration",
+      "ast_sha256": "531800b6433c795bbba6cd0b55d4b5248ae002c36835f36148c2920a0626b1b4",
+      "role": "fixed_schema",
+      "reason": "Read existing bond rank from fixed core shapes."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "embed_residual_component_with_connected_channels",
+      "line": 664,
+      "kind": "python_iteration",
+      "ast_sha256": "4da53b37144c305884655ea6a1b2d0e3f9b766a1c12526d5136e7e917f2cb95a",
+      "role": "fixed_schema",
+      "reason": "Capture fixed padded core shapes for compiled initialization."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "embed_residual_component_with_connected_channels",
+      "line": 666,
+      "kind": "python_iteration",
+      "ast_sha256": "45aba31b4073c6a2ecd104d348d221ccd9d4ed8df9007561964386665318fcd1",
+      "role": "fixed_schema",
+      "reason": "Extract fixed basis widths from core shape metadata."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "embed_residual_component_with_connected_channels",
+      "line": 668,
+      "kind": "python_iteration",
+      "ast_sha256": "7708682fc5438f74e12f37dea622d16033951b5d73752533609c2478f598737f",
+      "role": "fixed_schema",
+      "reason": "Unpack heterogeneous public tuple schema after native connected-channel initialization."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "target_informed_additive_score_initialization",
+      "line": 809,
+      "kind": "python_iteration",
+      "ast_sha256": "29bab39345f76a2aaec8b7dd2c0e504a790a7173ae8dc76e973191cc67cbb865",
+      "role": "host_validation",
+      "reason": "Validate fixed basis widths before compiling the initializer."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "target_informed_additive_score_initialization",
+      "line": 873,
+      "kind": "python_iteration",
+      "ast_sha256": "f8c91d9c1ee859b5eb73e82b5eed54b780b3c6624ec1e90d525dd7e492451fdb",
+      "role": "host_validation",
+      "reason": "Validate presence of the optional prefix-input schema; no tensor-value decision.",
+      "occurrences": 2
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "target_informed_additive_score_initialization",
+      "line": 933,
+      "kind": "python_iteration",
+      "ast_sha256": "edc1e11f5ea5ec720274574d3fc392b403912a882666062bac9254f540bf7447",
+      "role": "fixed_schema",
+      "reason": "Restore component tuple and TT boundary-rank schema after the batched tensor encoding."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "target_informed_within_region_pair_score_initialization",
+      "line": 973,
+      "kind": "python_iteration",
+      "ast_sha256": "1c5571521f560eda60cee1ba581017a9647f9ce25adb42ea74dab9709785072d",
+      "role": "host_validation",
+      "reason": "Validate three static positive initializer configuration scalars."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "target_informed_within_region_pair_score_initialization",
+      "line": 1088,
+      "kind": "python_iteration",
+      "ast_sha256": "edc1e11f5ea5ec720274574d3fc392b403912a882666062bac9254f540bf7447",
+      "role": "fixed_schema",
+      "reason": "Restore component tuple and TT boundary-rank schema after the batched tensor encoding."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "fixed_rank_initial_residual_components",
+      "line": 1118,
+      "kind": "python_iteration",
+      "ast_sha256": "8c707eea2e2e9b4d1ca27167704d1cab05ba5c00aa3bff51ed2f4737c703bc9d",
+      "role": "host_validation",
+      "reason": "Validate the two static seeded-core scale options before compilation."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "fixed_rank_initial_residual_components",
+      "line": 1134,
+      "kind": "python_iteration",
+      "ast_sha256": "2c33add6936c52588b3262425d8a1759df4eed94bd2a27ae4c9e6431fa7ed922",
+      "role": "fixed_schema",
+      "reason": "Read fixed core shapes for the complete random-initialization signature."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "fixed_rank_initial_residual_components",
+      "line": 1138,
+      "kind": "python_iteration",
+      "ast_sha256": "3c00f49e6ff4dbe2aaed5c818272aaa94a3c48f819b0a5d4d29fc315c9a18b91",
+      "role": "fixed_schema",
+      "reason": "Unpack the completed native component/core bank into the existing heterogeneous public tuple schema."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "fixed_rank_initial_residual_components",
+      "line": 1138,
+      "kind": "python_iteration",
+      "ast_sha256": "80b32415c53b70168be1e4630b9fbdbb513cec73a13ee6e30e974ccee9e190fe",
+      "role": "fixed_schema",
+      "reason": "Slice fixed boundary ranks and basis widths from the completed native core bank."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_training_native_tf.py",
+      "function": "residual_noise_program",
+      "line": 47,
+      "kind": "python_iteration",
+      "ast_sha256": "b10091d851ae160fb3981dc4348f08bcd30931269bb0b9962a4598f041521f13",
+      "role": "fixed_schema",
+      "reason": "Find the fixed padded rank from Python core shape metadata; no tensor computation."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_training_native_tf.py",
+      "function": "residual_noise_program",
+      "line": 48,
+      "kind": "python_iteration",
+      "ast_sha256": "45aba31b4073c6a2ecd104d348d221ccd9d4ed8df9007561964386665318fcd1",
+      "role": "fixed_schema",
+      "reason": "Extract fixed basis widths from core shape metadata."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_training_native_tf.py",
+      "function": "residual_noise_program",
+      "line": 50,
+      "kind": "python_iteration",
+      "ast_sha256": "fc048dc8f54d06a0834be7bbee669eaa6f12081b5018a5f092dcbc2473baa186",
+      "role": "fixed_schema",
+      "reason": "Map fixed core schemas to distinct shape branches before tracing; actual draws use native component/axis loops."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_training_native_tf.py",
+      "function": "residual_noise_program.evaluate.component.axis_value",
+      "line": 64,
+      "kind": "python_iteration",
+      "ast_sha256": "31db45c2a5e782c45ccd481a942d79085ba9c969de39e23f8c52a5d9a87a0098",
+      "role": "fixed_schema",
+      "reason": "Register one callable per distinct random-output shape; runtime axis and component selection execute in native loops."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_tf.py",
+      "function": "balanced_initial_cores",
+      "line": 564,
+      "kind": "python_iteration",
+      "ast_sha256": "a330c8e1e1aa4615309e967b1a6a9ea25285e906d7d2c757c45d276d40cdb712",
+      "role": "fixed_schema",
+      "reason": "Restore each fixed TT core shape after batched balanced-core construction."
     }
   ]
 }

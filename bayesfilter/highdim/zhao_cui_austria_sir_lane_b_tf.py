@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import inspect
 import json
 import math
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Mapping, Sequence
 
@@ -17,6 +17,7 @@ from bayesfilter.highdim.bases import (
     ProductBasis,
     p85_author_sir_lagrangep_algebraic_product_basis_spec,
 )
+from bayesfilter.highdim.centered_training_native_tf import balanced_core_program
 from bayesfilter.highdim.diagnostics import (
     DensityMeasure,
     MassMeasure,
@@ -42,11 +43,10 @@ from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_target_tf import (
     LANE_B_TARGET_ID,
     SIR_JOINT_DIM,
     LaneBT1ProposalCloud,
+    t1_joint_log_density,
     target_manifest,
     tensor_sha256,
-    t1_joint_log_density,
 )
-
 
 DTYPE = tf.float64
 BASELINE_ID = "zhao_cui_austria_sir_fixed_variant_training_base_v1"
@@ -559,47 +559,10 @@ def balanced_initial_cores(
         if extra_count
         else 0.0
     )
-    cores = []
-    for axis, basis_dim in enumerate(product_basis.basis_dim_tuple()):
-        left_rank = int(ranks[axis])
-        right_rank = int(ranks[axis + 1])
-        values = tf.zeros([left_rank, int(basis_dim), right_rank], DTYPE)
-        # Lagrange cardinal coefficients of one are the constant function.
-        constant_indices = tf.constant(
-            [[0, basis_index, 0] for basis_index in range(int(basis_dim))],
-            tf.int64,
-        )
-        values = tf.tensor_scatter_nd_update(
-            values,
-            constant_indices,
-            tf.ones([int(basis_dim)], DTYPE),
-        )
-        indices: list[list[int]] = []
-        updates: list[float] = []
-        for channel in range(1, min(left_rank, right_rank)):
-            # Carry the seeded channel as a constant so its amplitude does not
-            # become a product of 36 nonconstant cardinal values.
-            for basis_index in range(int(basis_dim)):
-                indices.append([channel, basis_index, channel])
-                updates.append(1.0)
-        if axis == 0:
-            for channel in range(1, right_rank):
-                basis_index = 1 + ((axis + channel - 1) % max(int(basis_dim) - 1, 1))
-                indices.append([0, basis_index, channel])
-                updates.append(seeded_scale)
-        if axis == SIR_JOINT_DIM - 1:
-            for channel in range(1, left_rank):
-                for basis_index in range(int(basis_dim)):
-                    indices.append([channel, basis_index, 0])
-                    updates.append(1.0)
-        if indices:
-            values = tf.tensor_scatter_nd_update(
-                values,
-                tf.constant(indices, tf.int64),
-                tf.constant(updates, DTYPE),
-            )
-        cores.append(values)
-    return tuple(cores)
+    widths = product_basis.basis_dim_tuple()
+    packed = balanced_core_program(tuple(ranks), tuple(widths))(tf.constant(seeded_scale, DTYPE))
+    return tuple(packed[axis, :ranks[axis], :width, :ranks[axis + 1]]
+                 for axis, width in enumerate(widths))
 
 
 def make_compiled_train_step(
@@ -679,10 +642,19 @@ def _file_sha256(path: Path) -> str:
 
 
 def source_closure() -> Mapping[str, str]:
-    from bayesfilter.highdim import bases, diagnostics, fixed_branch, models
-    from bayesfilter.highdim import sir_latent_preclip_tf, source_route, squared_tt
-    from bayesfilter.highdim import stochastic_density_training, transport, tt
-    from bayesfilter.highdim import zhao_cui_austria_sir_lane_b_target_tf
+    from bayesfilter.highdim import (
+        bases,
+        diagnostics,
+        fixed_branch,
+        models,
+        sir_latent_preclip_tf,
+        source_route,
+        squared_tt,
+        stochastic_density_training,
+        transport,
+        tt,
+        zhao_cui_austria_sir_lane_b_target_tf,
+    )
 
     modules = (
         bases,

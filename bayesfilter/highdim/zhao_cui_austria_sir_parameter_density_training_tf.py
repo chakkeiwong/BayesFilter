@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
 import math
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, replace
+from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.highdim import centered_initializer_native_tf as initializer_native
+from bayesfilter.highdim import centered_training_native_tf as training_native
 from bayesfilter.highdim import centered_tt_native_tf as centered_native
 from bayesfilter.highdim.bases import ProductBasis
 from bayesfilter.highdim.centered_training_native_tf import quadratic_cg_program
@@ -26,10 +29,9 @@ from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_target_tf import (
 from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_tf import (
     LaneBT1Artifact,
     balanced_initial_cores,
-    lane_b_measure_convention,
 )
 from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
-
+from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 
 DTYPE = tf.float64
 PARAMETER_DIM = 3
@@ -52,8 +54,8 @@ TARGET_INFORMED_WITHIN_REGION_PAIR_INITIALIZATION_ID = (
 WITHIN_REGION_PAIR_AXES = tuple((axis, axis + 1) for axis in range(0, JOINT_DIM, 2))
 _PARAMETERIZED_MODEL = parameterized_zhao_cui_sir_austria_model()
 _BASE_MODEL = _PARAMETERIZED_MODEL.base_model
-_ADJACENCY = tf.convert_to_tensor(_BASE_MODEL._adjacency_matrix, DTYPE)  # noqa: SLF001
-_DEGREE = tf.convert_to_tensor(_BASE_MODEL._neighbor_degree, DTYPE)  # noqa: SLF001
+_ADJACENCY = tf.convert_to_tensor(_BASE_MODEL._adjacency_matrix, DTYPE)
+_DEGREE = tf.convert_to_tensor(_BASE_MODEL._neighbor_degree, DTYPE)
 _INITIAL_MEAN = tf.convert_to_tensor(_BASE_MODEL.initial_mean, DTYPE)
 
 
@@ -483,31 +485,7 @@ def _parent_additive_cross_features(
 ) -> tf.Tensor:
     """Return exact <h0, phi_axis,index> features under the reference measure."""
 
-    active_measure = lane_b_measure_convention().mass_measure
-    transfer = []
-    for axis, core in enumerate(parent.cores):
-        integral = basis.bases[axis].integral_vector(active_measure)
-        transfer.append(tf.einsum("lir,i->lr", core, integral))
-    left = [tf.ones([1], DTYPE)]
-    for matrix in transfer:
-        left.append(tf.einsum("l,lr->r", left[-1], matrix))
-    right: list[tf.Tensor] = [tf.zeros([1], DTYPE)] * (len(parent.cores) + 1)
-    right[-1] = tf.ones([1], DTYPE)
-    for axis in range(len(parent.cores) - 1, -1, -1):
-        right[axis] = tf.einsum("lr,r->l", transfer[axis], right[axis + 1])
-    features = []
-    for axis, core in enumerate(parent.cores):
-        mass = basis.bases[axis].mass_matrix(active_measure)
-        features.append(
-            tf.einsum(
-                "l,lir,ij,r->j",
-                left[axis],
-                core,
-                mass,
-                right[axis + 1],
-            )
-        )
-    return tf.concat(features, axis=0)
+    return initializer_native.feature_integrals(parent.cores, basis)
 
 
 def additive_prefix_score_operator(
@@ -527,51 +505,7 @@ def additive_prefix_score_operator(
         order=parent.settings.basis_order,
         num_elems=parent.settings.basis_num_elems,
     )
-    point_count = tf.shape(points)[0]
-    active_measure = lane_b_measure_convention().mass_measure
-    transfers = []
-    evaluated_basis = []
-    for axis, core in enumerate(parent.cores):
-        if axis < prefix_dim:
-            evaluated = basis.evaluate_axis(axis, points[:, axis])
-            evaluated_basis.append(evaluated)
-            transfers.append(tf.einsum("ni,lir->nlr", evaluated, core))
-        else:
-            integral = basis.bases[axis].integral_vector(active_measure)
-            static = tf.einsum("lir,i->lr", core, integral)
-            transfers.append(
-                tf.broadcast_to(
-                    static[tf.newaxis, :, :],
-                    [point_count, int(static.shape[0]), int(static.shape[1])],
-                )
-            )
-    left = [tf.ones([point_count, 1], DTYPE)]
-    for matrix in transfers:
-        left.append(tf.einsum("nl,nlr->nr", left[-1], matrix))
-    right: list[tf.Tensor] = [tf.zeros([point_count, 1], DTYPE)] * (
-        JOINT_DIM + 1
-    )
-    right[-1] = tf.ones([point_count, 1], DTYPE)
-    for axis in range(JOINT_DIM - 1, -1, -1):
-        right[axis] = tf.einsum(
-            "nlr,nr->nl", transfers[axis], right[axis + 1]
-        )
-    parent_prefix_integral = tf.reshape(left[-1], [point_count])
-    cross_features = []
-    for axis, core in enumerate(parent.cores):
-        if axis < prefix_dim:
-            cross_features.append(
-                parent_prefix_integral[:, tf.newaxis] * evaluated_basis[axis]
-            )
-        else:
-            mass = basis.bases[axis].mass_matrix(active_measure)
-            replaced = tf.einsum("lir,ij->ljr", core, mass)
-            cross_features.append(
-                tf.einsum(
-                    "nl,ljr,nr->nj", left[axis], replaced, right[axis + 1]
-                )
-            )
-    prefix_cross = tf.concat(cross_features, axis=1)
+    prefix_cross = initializer_native.feature_integrals(parent.cores, basis, points)
     prefix_normalizer = _cross_prefix_values(
         parent.cores, parent.cores, basis, points
     ) + tf.constant(parent.settings.tau, DTYPE)
@@ -589,20 +523,7 @@ def additive_prefix_score_operator(
 
 
 def _within_region_feature_values(basis: object, points: tf.Tensor) -> tf.Tensor:
-    values = tf.convert_to_tensor(points, DTYPE)
-    axis_values = [
-        basis.evaluate_axis(axis, values[:, axis]) for axis in range(JOINT_DIM)
-    ]
-    additive = tf.concat(axis_values, axis=1)
-    pairs = [
-        tf.reshape(
-            axis_values[left][:, :, tf.newaxis]
-            * axis_values[right][:, tf.newaxis, :],
-            [tf.shape(values)[0], -1],
-        )
-        for left, right in WITHIN_REGION_PAIR_AXES
-    ]
-    return tf.concat([additive, *pairs], axis=1)
+    return initializer_native.feature_values(basis, points)
 
 
 def _basis_feature_component(
@@ -632,40 +553,7 @@ def _within_region_cross_features(
 ) -> tf.Tensor:
     """Cross <h0,feature> globally or conditionally at prefix points."""
 
-    basis_dims = basis.basis_dim_tuple()
-    components = []
-    for axis, width in enumerate(basis_dims):
-        for basis_index in range(int(width)):
-            components.append(
-                _basis_feature_component(
-                    axis_indices=(axis,),
-                    basis_indices=(basis_index,),
-                    basis_dims=basis_dims,
-                )
-            )
-    width = int(basis_dims[0])
-    for left, right in WITHIN_REGION_PAIR_AXES:
-        for left_index in range(width):
-            for right_index in range(width):
-                components.append(
-                    _basis_feature_component(
-                        axis_indices=(left, right),
-                        basis_indices=(left_index, right_index),
-                        basis_dims=basis_dims,
-                    )
-                )
-    if local_prefix_points is None:
-        return tf.stack(
-            [_cross_mass(parent.cores, component, basis) for component in components]
-        )
-    points = tf.convert_to_tensor(local_prefix_points, DTYPE)
-    return tf.stack(
-        [
-            _cross_prefix_values(parent.cores, component, basis, points)
-            for component in components
-        ],
-        axis=1,
-    )
+    return initializer_native.feature_integrals(parent.cores, basis, local_prefix_points, include_pairs=True)
 
 
 def within_region_pair_prefix_score_operator(
@@ -706,85 +594,8 @@ def _additive_pair_rank_seven_component(
         values[additive_count:],
         [len(WITHIN_REGION_PAIR_AXES), int(basis_dim), int(basis_dim)],
     )
-    rank = int(basis_dim) + 2
-    cores = []
-    pair_lookup = {left: index for index, (left, _right) in enumerate(WITHIN_REGION_PAIR_AXES)}
-    for axis in range(JOINT_DIM):
-        width = int(basis_dim)
-        if axis == 0:
-            core = tf.zeros([1, width, rank], DTYPE)
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 0] for j in range(width)], tf.int32),
-                tf.ones([width], DTYPE),
-            )
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 1] for j in range(width)], tf.int32),
-                additive[axis],
-            )
-            for j in range(width):
-                core = tf.tensor_scatter_nd_update(
-                    core, tf.constant([[0, j, 2 + j]], tf.int32), tf.ones([1], DTYPE)
-                )
-        elif axis == JOINT_DIM - 1:
-            core = tf.zeros([rank, width, 1], DTYPE)
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 0] for j in range(width)], tf.int32),
-                additive[axis],
-            )
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[1, j, 0] for j in range(width)], tf.int32),
-                tf.ones([width], DTYPE),
-            )
-            pair_values = pair[pair_lookup[axis - 1]]
-            for left_index in range(width):
-                core = tf.tensor_scatter_nd_update(
-                    core,
-                    tf.constant([[2 + left_index, j, 0] for j in range(width)], tf.int32),
-                    pair_values[left_index],
-                )
-        elif axis % 2 == 0:
-            core = tf.zeros([rank, width, rank], DTYPE)
-            for state in (0, 1):
-                core = tf.tensor_scatter_nd_update(
-                    core,
-                    tf.constant([[state, j, state] for j in range(width)], tf.int32),
-                    tf.ones([width], DTYPE),
-                )
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 1] for j in range(width)], tf.int32),
-                additive[axis],
-            )
-            for j in range(width):
-                core = tf.tensor_scatter_nd_update(
-                    core, tf.constant([[0, j, 2 + j]], tf.int32), tf.ones([1], DTYPE)
-                )
-        else:
-            core = tf.zeros([rank, width, rank], DTYPE)
-            for state in (0, 1):
-                core = tf.tensor_scatter_nd_update(
-                    core,
-                    tf.constant([[state, j, state] for j in range(width)], tf.int32),
-                    tf.ones([width], DTYPE),
-                )
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 1] for j in range(width)], tf.int32),
-                additive[axis],
-            )
-            pair_values = pair[pair_lookup[axis - 1]]
-            for left_index in range(width):
-                core = tf.tensor_scatter_nd_update(
-                    core,
-                    tf.constant([[2 + left_index, j, 1] for j in range(width)], tf.int32),
-                    pair_values[left_index],
-                )
-        cores.append(core)
-    return tuple(cores)
+    packed = training_native.additive_pair_core_banks(additive[None], pair[None])[0]
+    return training_native.unpack_additive_bank(packed)
 
 
 def _additive_rank_two_component(
@@ -795,25 +606,8 @@ def _additive_rank_two_component(
         raise ValueError("additive coefficients must have shape [dimension,basis_dim]")
     if any(int(width) != int(values.shape[1]) for width in basis_dims):
         raise ValueError("additive coefficients require equal axis basis dimensions")
-    cores = []
-    for axis, width in enumerate(basis_dims):
-        one = tf.ones([int(width)], DTYPE)
-        zero = tf.zeros([int(width)], DTYPE)
-        coefficient = values[axis]
-        if axis == 0:
-            core = tf.stack([one, coefficient], axis=1)[tf.newaxis, :, :]
-        elif axis == len(basis_dims) - 1:
-            core = tf.stack([coefficient, one], axis=0)[:, :, tf.newaxis]
-        else:
-            core = tf.stack(
-                [
-                    tf.stack([one, coefficient], axis=1),
-                    tf.stack([zero, one], axis=1),
-                ],
-                axis=0,
-            )
-        cores.append(core)
-    return tuple(cores)
+    packed = training_native.additive_core_banks(values[None])[0]
+    return training_native.unpack_additive_bank(packed)
 
 
 def embed_residual_component_at_rank(
@@ -867,47 +661,11 @@ def embed_residual_component_with_connected_channels(
     old_rank = max(int(core.shape[0]) for core in component)
     if int(target_rank) <= old_rank:
         return tuple(embedded)
-    epsilon = tf.constant(float(seeded_channel_epsilon), DTYPE)
-    for channel in range(old_rank, int(target_rank)):
-        first_noise = tf.random.stateless_normal(
-            [int(embedded[0].shape[1])],
-            seed=tf.constant([int(seed) + channel, 1], tf.int32),
-            dtype=DTYPE,
-        )
-        last_noise = tf.random.stateless_normal(
-            [int(embedded[-1].shape[1])],
-            seed=tf.constant([int(seed) + channel, 2], tf.int32),
-            dtype=DTYPE,
-        )
-        embedded[0] = tf.tensor_scatter_nd_update(
-            embedded[0],
-            tf.constant(
-                [[0, basis_index, channel] for basis_index in range(int(embedded[0].shape[1]))],
-                tf.int32,
-            ),
-            epsilon * first_noise,
-        )
-        for axis in range(1, len(embedded) - 1):
-            embedded[axis] = tf.tensor_scatter_nd_update(
-                embedded[axis],
-                tf.constant(
-                    [
-                        [channel, basis_index, channel]
-                        for basis_index in range(int(embedded[axis].shape[1]))
-                    ],
-                    tf.int32,
-                ),
-                tf.ones([int(embedded[axis].shape[1])], DTYPE),
-            )
-        embedded[-1] = tf.tensor_scatter_nd_update(
-            embedded[-1],
-            tf.constant(
-                [[channel, basis_index, 0] for basis_index in range(int(embedded[-1].shape[1]))],
-                tf.int32,
-            ),
-            epsilon * last_noise,
-        )
-    return tuple(embedded)
+    shapes = tuple(tuple(core.shape) for core in embedded)
+    packed = centered_native.pack_components((tuple(embedded),))[0]
+    result = training_native.connected_channels_program(tuple(shape[1] for shape in shapes), int(target_rank), old_rank)(
+        packed, tf.constant(int(seed), tf.int32), tf.constant(float(seeded_channel_epsilon), DTYPE))
+    return tuple(result[axis, :shape[0], :shape[1], :shape[2]] for axis, shape in enumerate(shapes))
 
 
 def core_tangent_to_residual_component(
@@ -1010,6 +768,7 @@ def core_tangent_banks_from_residual_components(
     )
 
 
+@initializer_native.compiled_initializer(TargetInformedAdditiveInitialization)
 def target_informed_additive_score_initialization(
     *,
     parent: LaneBT1Artifact,
@@ -1047,12 +806,9 @@ def target_informed_additive_score_initialization(
         num_elems=parent.settings.basis_num_elems,
     )
     basis_dims = basis.basis_dim_tuple()
-    if len(set(int(width) for width in basis_dims)) != 1:
+    if len({int(width) for width in basis_dims}) != 1:
         raise ValueError("additive initialization requires equal axis basis dimensions")
-    feature_values = tf.concat(
-        [basis.evaluate_axis(axis, points[:, axis]) for axis in range(JOINT_DIM)],
-        axis=1,
-    )
+    feature_values = initializer_native.feature_values(basis, points)[:, :sum(basis_dims)]
     parent_amplitude = _evaluate_component(parent.cores, basis, points)
     rho = tf.square(parent_amplitude) + tf.constant(parent.settings.tau, DTYPE)
     point_factor = 2.0 * parent_amplitude / rho
@@ -1173,9 +929,9 @@ def target_informed_additive_score_initialization(
     )
     width = int(basis_dims[0])
     coefficient_tensor = tf.reshape(coefficients, [JOINT_DIM, width, PARAMETER_DIM])
+    packed = training_native.additive_core_banks(tf.transpose(coefficient_tensor, [2, 0, 1]))
     components = tuple(
-        _additive_rank_two_component(coefficient_tensor[:, :, index], basis_dims)
-        for index in range(PARAMETER_DIM)
+        training_native.unpack_additive_bank(bank) for bank in tf.unstack(packed, axis=0)
     )
     fitted_prefix_score = tf.linalg.matmul(prefix_operator, coefficients)
     prefix_standardized_residual = tf.math.divide_no_nan(
@@ -1198,6 +954,7 @@ def target_informed_additive_score_initialization(
     )
 
 
+@initializer_native.compiled_initializer(TargetInformedPairInitialization)
 def target_informed_within_region_pair_score_initialization(
     *,
     parent: LaneBT1Artifact,
@@ -1324,12 +1081,11 @@ def target_informed_within_region_pair_score_initialization(
             axis=2,
         )
     )
-    components = tuple(
-        _additive_pair_rank_seven_component(
-            coefficients[:, parameter_index], basis_dim=basis_dim
-        )
-        for parameter_index in range(PARAMETER_DIM)
-    )
+    coefficient_rows = tf.transpose(coefficients)
+    packed = training_native.additive_pair_core_banks(
+        tf.reshape(coefficient_rows[:, :JOINT_DIM * basis_dim], [PARAMETER_DIM, JOINT_DIM, basis_dim]),
+        tf.reshape(coefficient_rows[:, JOINT_DIM * basis_dim:], [PARAMETER_DIM, JOINT_DIM // 2, basis_dim, basis_dim]))
+    components = tuple(training_native.unpack_additive_bank(bank) for bank in tf.unstack(packed, axis=0))
     fitted_prefix = tf.linalg.matmul(prefix_operator, coefficients)
     return TargetInformedPairInitialization(
         residual_components=components,
@@ -1375,23 +1131,12 @@ def fixed_rank_initial_residual_components(
         num_elems=settings.basis_num_elems,
     )
     balanced = balanced_initial_cores(settings, basis)
-    components = []
-    for component_index in range(features.feature_count):
-        cores = []
-        for axis, core in enumerate(balanced):
-            noise = tf.random.stateless_normal(
-                tf.shape(core),
-                seed=tf.constant(
-                    [int(seed) + 104729 * component_index, axis + 1], tf.int32
-                ),
-                dtype=DTYPE,
-            )
-            value = core + tf.constant(perturbation_scale, DTYPE) * noise
-            if axis == 0:
-                value = tf.constant(amplitude_scale, DTYPE) * value
-            cores.append(value)
-        components.append(tuple(cores))
-    return tuple(components)
+    shapes = tuple(tuple(core.shape) for core in balanced)
+    packed = centered_native.pack_components((balanced,))[0]
+    result = training_native.residual_noise_program(shapes, features.feature_count)(
+        packed, tf.constant(int(seed), tf.int32), tf.constant(amplitude_scale, DTYPE), tf.constant(perturbation_scale, DTYPE))
+    return tuple(tuple(row[axis, :shape[0], :shape[1], :shape[2]] for axis, shape in enumerate(shapes))
+                 for row in tf.unstack(result, axis=0))
 
 
 class CenteredResidualTrainer:
@@ -2698,6 +2443,69 @@ def estimate_t1_ratio_score(
     )
 
 
+@lru_cache(maxsize=16)
+def _prefix_score_program(point_count, sample_count):
+    """Compile the full existing conditional-ratio training-target calculation."""
+    @tf.function(input_signature=[tf.TensorSpec([point_count, STATE_DIM], DTYPE),
+        tf.TensorSpec([PARAMETER_DIM], DTYPE), tf.TensorSpec([PARAMETER_DIM], DTYPE),
+        tf.TensorSpec([sample_count, STATE_DIM], DTYPE), tf.TensorSpec([OBSERVATION_DIM], DTYPE)],
+        jit_compile=True, autograph=False)
+    def evaluate(points, global_score, global_standard_error, noise, observation):
+        # This model-local Jacobian builds proposal geometry. It is not the
+        # analytical complete-data parameter score calculated below.
+        initial = _INITIAL_MEAN[None, :]
+        with tf.GradientTape(persistent=True) as tape:
+            tape.watch(initial)
+            transition_at_mean = _BASE_MODEL.transition_mean(initial)
+        jacobian = tf.reshape(tape.jacobian(transition_at_mean, initial,
+            experimental_use_pfor=False), [STATE_DIM, STATE_DIM])
+        precision = tf.eye(STATE_DIM, dtype=DTYPE) + tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
+        factor = tf.linalg.cholesky(precision)
+        covariance = tf.linalg.cholesky_solve(factor, tf.eye(STATE_DIM, dtype=DTYPE))
+        innovation = points - transition_at_mean[0]
+        conditional_mean = _INITIAL_MEAN[None] + tf.linalg.matmul(
+            tf.linalg.matmul(innovation, jacobian), covariance, transpose_b=True)
+        centered = tf.transpose(tf.linalg.triangular_solve(factor, tf.transpose(noise), lower=True, adjoint=True))
+        z0 = conditional_mean[:, None] + centered[None]
+        delta = z0 - conditional_mean[:, None]
+        q_log = (-.5 * tf.cast(STATE_DIM, DTYPE) * LOG_TWO_PI
+                 + tf.reduce_sum(tf.math.log(tf.linalg.diag_part(factor)))
+                 - .5 * tf.einsum("pni,ij,pnj->pn", delta, precision, delta))
+        flat_z0 = tf.reshape(z0, [point_count * sample_count, STATE_DIM])
+        flat_z1 = tf.reshape(tf.broadcast_to(points[:, None], [point_count, sample_count, STATE_DIM]),
+                            [point_count * sample_count, STATE_DIM])
+        mean, tangent = _batch_native_transition_mean_and_jacobian(
+            tf.zeros([1, PARAMETER_DIM], DTYPE), flat_z0[None])
+        residual = flat_z1 - mean[0]
+        local_score = tf.reshape(tf.reduce_sum(residual[..., None] * tangent[0], axis=1),
+                                 [point_count, sample_count, PARAMETER_DIM])
+        zeros = tf.zeros([0], DTYPE)
+        log_numerator = (_BASE_MODEL.initial_log_density(zeros, flat_z0)
+                         + _BASE_MODEL.transition_log_density(zeros, flat_z0, flat_z1, t=1))
+        log_weight = tf.reshape(log_numerator, [point_count, sample_count]) - q_log
+        maximum = tf.reduce_max(log_weight, axis=1)
+        scaled = tf.exp(log_weight - maximum[:, None])
+        weights = scaled / tf.reduce_sum(scaled, axis=1, keepdims=True)
+        conditional_score = tf.reduce_sum(weights[..., None] * local_score, axis=1)
+        mean_scaled = tf.reduce_mean(scaled, axis=1)
+        influence = scaled[..., None] * (local_score - conditional_score[:, None]) / mean_scaled[:, None, None]
+        variance = tf.reduce_sum(tf.square(influence), axis=1) / tf.cast(sample_count - 1, DTYPE)
+        conditional_se = tf.sqrt(variance / tf.cast(sample_count, DTYPE))
+        observation_score = (tf.reduce_sum(tf.square(observation[None] - points[:, 1::2]) / 100., axis=1)
+                             - tf.cast(OBSERVATION_DIM, DTYPE))[:, None] * tf.one_hot(2, PARAMETER_DIM, dtype=DTYPE)[None]
+        return (tf.exp(maximum) * mean_scaled, conditional_score + observation_score - global_score[None],
+                tf.sqrt(tf.square(conditional_se) + tf.square(global_standard_error)[None]),
+                tf.math.reciprocal(tf.reduce_sum(tf.square(weights), axis=1)))
+
+    return evaluate
+
+
+@lru_cache(maxsize=16)
+def _prefix_noise_program(sample_count):
+    return tf.function(lambda seed: philox_normal_float64([sample_count, STATE_DIM], seed),
+        input_signature=[tf.TensorSpec([2], tf.int32)], jit_compile=True, autograph=False)
+
+
 def estimate_t1_prefix_scores(
     *,
     prefix_points: tf.Tensor,
@@ -2712,96 +2520,17 @@ def estimate_t1_prefix_scores(
         raise ValueError("prefix_points must have shape [point_count,18]")
     if int(sample_count) < 2:
         raise ValueError("prefix score estimation requires at least two samples")
-    model = parameterized_zhao_cui_sir_austria_model()
-    latent_model = __import__(
-        "bayesfilter.highdim.sir_latent_preclip_tf",
-        fromlist=["latent_preclip_zhao_cui_sir_austria_model"],
-    ).latent_preclip_zhao_cui_sir_austria_model()
     _states, observations, _all = generate_sealed_lane_b_dataset()
-    theta = tf.zeros([PARAMETER_DIM], DTYPE)
-    prior_mean = model.base_model.initial_mean
-    with tf.GradientTape(persistent=True) as tape:
-        mean_variable = tf.Variable(prior_mean[tf.newaxis, :])
-        transition_at_mean = latent_model.transition_mean(
-            theta, mean_variable, time_index=1
-        )
-    jacobian = tf.reshape(
-        tape.jacobian(transition_at_mean, mean_variable, experimental_use_pfor=False), [STATE_DIM, STATE_DIM]
-    )
-    del tape
-    precision = tf.eye(STATE_DIM, dtype=DTYPE) + tf.linalg.matmul(
-        jacobian, jacobian, transpose_a=True
-    )
-    precision_chol = tf.linalg.cholesky(precision)
-    covariance = tf.linalg.cholesky_solve(
-        precision_chol, tf.eye(STATE_DIM, dtype=DTYPE)
-    )
-    noise = tf.random.stateless_normal(
-        [int(sample_count), STATE_DIM],
-        seed=tf.constant([int(seed), 991], tf.int32),
-        dtype=DTYPE,
-    )
-    output = []
-    for point_index, z1 in enumerate(tf.unstack(points, axis=0)):
-        innovation = z1 - transition_at_mean[0]
-        conditional_mean = prior_mean + tf.linalg.matvec(
-            covariance, tf.linalg.matvec(jacobian, innovation, transpose_a=True)
-        )
-        centered = tf.linalg.triangular_solve(
-            precision_chol,
-            tf.transpose(noise),
-            lower=True,
-            adjoint=True,
-        )
-        z0 = conditional_mean[tf.newaxis, :] + tf.transpose(centered)
-        delta = z0 - conditional_mean[tf.newaxis, :]
-        q_log = (
-            -0.5 * tf.cast(STATE_DIM, DTYPE) * LOG_TWO_PI
-            + tf.reduce_sum(tf.math.log(tf.linalg.diag_part(precision_chol)))
-            - 0.5 * tf.einsum("ni,ij,nj->n", delta, precision, delta)
-        )
-        tiled_z1 = tf.broadcast_to(z1[tf.newaxis, :], [int(sample_count), STATE_DIM])
-        log_numerator = model.initial_log_density(theta, z0) + model.transition_log_density(
-            theta, z0, tiled_z1, t=1
-        )
-        conditional_local_score = (
-            model.initial_log_density_parameter_score(theta, z0)
-            + model.transition_log_density_parameter_score(theta, z0, tiled_z1, t=1)
-        )
-        log_weight = log_numerator - q_log
-        maximum = tf.reduce_max(log_weight)
-        scaled = tf.exp(log_weight - maximum)
-        weights = scaled / tf.reduce_sum(scaled)
-        conditional_score = tf.reduce_sum(
-            weights[:, tf.newaxis] * conditional_local_score, axis=0
-        )
-        mean_scaled = tf.reduce_mean(scaled)
-        influence = scaled[:, tf.newaxis] * (
-            conditional_local_score - conditional_score[tf.newaxis, :]
-        ) / mean_scaled
-        variance = tf.reduce_sum(tf.square(influence), axis=0) / tf.cast(
-            sample_count - 1, DTYPE
-        )
-        conditional_se = tf.sqrt(variance / tf.cast(sample_count, DTYPE))
-        observation_score = model.observation_log_density_parameter_score(
-            theta, z1[tf.newaxis, :], observations[0], t=1
-        )[0]
-        prefix_score = conditional_score + observation_score - global_score.score
-        prefix_se = tf.sqrt(
-            tf.square(conditional_se) + tf.square(global_score.score_standard_error)
-        )
-        conditional_mass = tf.exp(maximum) * mean_scaled
-        output.append(
-            RatioScoreEstimate(
-                value=conditional_mass,
-                score=prefix_score,
-                score_standard_error=prefix_se,
-                effective_sample_size=tf.math.reciprocal(
-                    tf.reduce_sum(tf.square(weights))
-                ),
-            )
-        )
-    return tuple(output)
+    noise = _prefix_noise_program(int(sample_count))(tf.constant([int(seed), 991], tf.int32))
+    result = _prefix_score_program(int(points.shape[0]), int(sample_count))(
+        points, global_score.score, global_score.score_standard_error, noise, observations[0])
+    # The independent estimate also supplies training targets; its numerical
+    # point/sample calculation is therefore runtime code. Only result-object
+    # construction remains on the host after the complete compiled endpoint.
+    return tuple(RatioScoreEstimate(value=value, score=score, score_standard_error=standard_error,
+                                   effective_sample_size=ess)
+        for value, score, standard_error, ess in zip(*tf.nest.map_structure(tf.unstack, result), strict=True))
+
 
 
 __all__ = [
@@ -2810,24 +2539,24 @@ __all__ = [
     "CenteredResidualTrainer",
     "CoreAffineTangentTrainer",
     "QuadraticConjugateGradientResult",
-    "core_affine_origin_total_score_loss_arrays",
-    "core_tangent_banks_from_residual_components",
-    "core_affine_tangent_banks_from_position",
-    "fixed_rank_initial_residual_components",
     "RatioScoreEstimate",
     "T1ParameterDensityBatch",
     "batch_native_t1_from_common_noise",
     "build_t1_parameter_density_batch",
+    "core_affine_origin_total_score_loss_arrays",
+    "core_affine_tangent_banks_from_position",
+    "core_tangent_banks_from_residual_components",
     "core_tangent_to_residual_component",
     "estimate_t1_prefix_scores",
     "estimate_t1_ratio_score",
+    "fixed_rank_initial_residual_components",
     "make_compiled_absolute_train_step",
-    "make_compiled_core_affine_total_score_value_and_gradient",
     "make_compiled_core_affine_gate_minimax_value_and_gradient",
+    "make_compiled_core_affine_total_score_value_and_gradient",
     "make_compiled_full_tt_gate_minimax_value_and_gradient",
     "make_compiled_origin_total_score_train_step",
-    "rotating_prefix_minibatch_indices",
     "residual_components_from_position",
     "residual_components_position",
+    "rotating_prefix_minibatch_indices",
     "solve_quadratic_value_gradient_with_conjugate_gradient",
 ]

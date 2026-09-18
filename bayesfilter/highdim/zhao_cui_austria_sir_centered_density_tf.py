@@ -168,9 +168,14 @@ def _freeze_centered_basis_evaluation(basis: object) -> _CenteredFrozenEvaluatio
 
 
 def centered_lane_b_product_basis(*, order: int, num_elems: int) -> ProductBasis:
-    base = lane_b_product_basis(order=int(order), num_elems=int(num_elems))
+    # Basis types, nodes and measures are immutable setup configuration.
+    with tf.init_scope():
+        base = lane_b_product_basis(order=int(order), num_elems=int(num_elems))
+        # The Lane-B factory uses a replicated ProductBasisSpec. Share its immutable
+        # evaluation object so all coordinates can use one batched basis operation.
+        frozen = _freeze_centered_basis_evaluation(base.bases[0])
     return ProductBasis(
-        tuple(_freeze_centered_basis_evaluation(basis) for basis in base.bases),
+        (frozen,) * len(base.bases),
         base.convention,
     )
 

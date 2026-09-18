@@ -1524,3 +1524,100 @@ finite-output checks because XLA may discard assertions inside compiled graphs.
 All new helper, test and measurement files pass lint. The exact policy guard
 covers 161 source files / 964 reviewed exceptions; its scope statement still
 explicitly excludes unreviewed initializer and source-route execution debt.
+
+Checkpoint e67b8375 preserves the preceding repairs. Run 00735 passed all
+49 policy/controller checks. Runs 00736--00742 began complete centered-child
+measurements. Size 1 graph/XLA and size 2 graph matched within 3.56e-15;
+size 2 XLA candidate had not launched when the matrix was paused and drained.
+At size 1, XLA nodes fell 70,311 to 9,909 and host peak fell 2,527 to 1,665 MiB,
+but warm time rose 1.72 to 3.26 ms. Graph warm time also rose 36.7 to 140.4 ms.
+These single-process observations trigger repair, not a reported timing ratio.
+Fixed-shape allocator growth was zero; XLA device peaks were 141,824/159,744 bytes.
+
+Inspection found a redundant heterogeneous-basis branch per axis although the
+Lane-B factory explicitly builds a replicated ProductBasisSpec. The next repair
+shares that immutable basis and evaluates all coordinates in one batched call;
+heterogeneous bases retain their existing native branch evaluation. TT products,
+core ranks, feature definitions, queries and gradients are unchanged. The full
+primitive/consumer/gradient suite must pass before remeasuring the same fixture.
+
+Run 00743 passed all 15 GPU centered primitive, consumer, gradient and optimizer
+checks after shared-basis batching. The subsequent matrix launch was vetoed by
+GPU2 contention (523 MiB, observed utilization up to 97%); it created no new
+numerical run. The unrelated process was left intact. CPU repair work continues.
+
+The existing additive and adjacent-pair TT initializers now encode their same
+finite-state coefficient layout as batched tensors. Fixed boundary ranks are
+unpacked only after encoding; there are no Python basis/channel scatter loops.
+The parent-plus-additive and disjoint-pair construction remains the existing
+extension, with no change to its ranks or fit equations. Exact core equality,
+complete coefficient pullbacks and multi-component parity against the pinned
+scatter construction are required. Other initializer contractions remain open.
+
+Run 00744 caught a float32 literal in the FP64 pair-encoding Select operation.
+An explicit FP64 zero repaired the dtype error; 00745 passed all nine checks,
+including the pre-existing strict matrix-free solve test and exact core and
+pullback parity at basis widths 3/5. Charged time through 00745 is 19,799.661 CPU
+/ 6,842.117 GPU seconds. A request for an owner decision on the TP residual
+comparison is pending; its raw 1e-10 gate has not been changed.
+
+Initializer feature operators now compute their original forward/backward TT
+messages with two tensor scans, then batch all single-axis and adjacent-pair
+integrals. The pair construction retains the all-ones coefficient function on
+unselected axes, so it does not assume a partition of unity when contracting
+an arbitrary basis. Complete compiled pullbacks cover parent cores and query
+coordinates. Rank-2, 36-axis prefix/global comparisons and independent directional
+finite differences precede integration measurements. No fit law, regularizer,
+ridge, feature ordering, rank, or sampling stream changes are included.
+
+Run 00746 passed both new 36-axis initializer-operator tests on CPU (165.566
+seconds), including pinned integrals and core/query finite differences. This
+does not establish the historical artifact-dependent integration suite, whose
+required tensor assets remain absent. The complete fitted initializer and its
+coefficient pullback are being checked separately in 00747. Routine lint repairs
+in the touched training module removed one newly unused import and its existing
+import/export formatting warnings; no numerical formulas changed in that cleanup.
+
+Call-chain review found that the independent-reference exemption on
+estimate_t1_prefix_scores is too broad: run_zhao_cui_austria_sir_parameter_density_t1.py
+uses it to build fit targets (for example lines 1733--1745 before this repair).
+It is therefore runtime preparation debt and must be tensorized; an independent
+comparison use cannot exempt these actual training consumers. Its non-pfor
+Jacobian choice was repaired previously, but its point iteration and enclosing
+XLA boundary still need repair. No all-path policy compliance claim is made.
+
+Run 00747 passed all four centered-initializer CPU checks (228.898 seconds),
+including both complete fitted initializers, every returned field, coefficient
+pullbacks and HLO. Run 00748 passed both compiled prefix-training-target checks
+(15.750 seconds), preserving the original Philox stream at positive and negative
+seeds and testing batch isolation. These checks supersede the broad reference
+exemption on the actual prefix training-target consumer. GPU evidence and
+complete before/after measurements remain required.
+
+Recovery confirmed 20,209.875 CPU / 6,842.117 GPU process-seconds charged, no
+active numerical worker, and continuing unrelated GPU2 contention. The next
+bounded CPU check covers the previously untested balanced, seeded residual and
+connected-channel initializers. Review caught and removed an unintended equal-
+basis-width restriction; first/last random shapes and the original seed schedule
+are preserved. Distinct shape branches replace one branch per axis. Invalid
+first-axis width-one seeded channels fail before compilation, rather than
+silently dropping an out-of-bounds update. The work remains an execution repair
+of the existing extension, with no algorithm or RNG migration. The raw TP
+residual gate remains unchanged pending the already requested owner decision.
+
+Run 00749 passed all eight seeded-initializer CPU checks (23.217 seconds):
+mixed basis widths, ranks 1/3, positive/negative seeds, residual initialization,
+connected-channel values and input gradients, HLO, and stable tracing. Recovery
+collected run 00750, which passed all four complete centered-initializer CPU
+checks (228.229 seconds). Runs 00751--00753 then passed the two prefix-target
+checks, nine centered-solver checks, and 49 policy/controller checks. Total
+charged time through 00753 is 20,493.437 CPU / 6,842.117 GPU process-seconds.
+
+The checkpoint review inspected the new initializer contractions, heterogeneous
+seeded-core shapes, complete coefficient pullbacks, exact policy exceptions,
+and actual prefix-target training consumers. Numerical values, feature order,
+fit controls and existing Philox draws remain covered by pinned comparisons;
+no new RNG migration or scientific admission is claimed. The passing static
+guard covers 163 source files and 994 exact exceptions, not all reachable
+runtime paths. Remaining optimizer/core-affine and source-route recurrences,
+fresh GPU checks, and complete measurements keep F01--F20 and merge open.
