@@ -1712,3 +1712,59 @@ GPU3 launch was vetoed before worker allocation because an unrelated process
 held 417 MiB; it produced no measurement. GPU follow-up and initializer timing
 remain required. Focused lint passes for the new helper, fixtures and tests;
 the campaign driver retains previously existing import/dict style findings.
+
+Checkpoint f048c5c9 preserves the core-affine repair. Runs 00775 and 00776
+passed 48 stochastic TT checks each on CPU and GPU3, including all existing
+P75/P76 checks and fresh baseline/finite-difference checks. Core contractions,
+penalties, seeded core initialization, complete objectives and two optimizer
+steps preserve the existing extension and seeded stream. Compiled updates
+carry a finite/domain status through XLA and reject invalid updates before
+assignment. Both objectives preserve all input/core pullbacks at their public
+compiled boundaries. Source guard now covers 166 sources / 1,054 exact
+exceptions; only schema handling and validation were exempted.
+
+Run 00777 passed four Austria training/calibration GPU checks. The batch-native
+training factory now has bounded explicit signatures; penalties are tensor
+reductions, and the original one-core normalizer rescale is a cached XLA
+calculation. Fresh two-step baseline parity, HLO, stable tracing, target mass,
+and invalid-calibration no-mutation checks passed. Artifact source closure now
+also includes these native execution dependencies. Numerical measurements for
+these changes remain pending, so no finding is closed.
+
+Run 00778 reproduced the unchanged stochastic trainer's graph failure: its
+regularization uses a Python boolean test of a symbolic tensor. The controller
+initially stopped because TensorFlow's error puts backticks around `tf.Tensor`.
+The classifier now recognizes that exact trace-time error only; a regression
+check rejects the same text under another exception type or execution phase.
+The frozen baseline is unchanged. Its valid eager path supplies parity, and
+its unavailable graph/XLA time remains explicitly unavailable.
+
+Recovery collected 00779--00808: complete stochastic density loss/gradient,
+density Adam update and square-root prefit update qualified at both extents
+against the valid eager baseline. Baseline graph/XLA host-operation failures
+remain recorded. Candidate maximum discrepancies were below 1.8e-15, with exact
+prefit-update parity. These are qualification observations, not repeat results.
+Charge through 00808 is 20,872.611 CPU / 8,140.058 GPU process-seconds.
+
+Review found the public train_step and prefit_step still used their old update
+body when called inside tf.function. Its assertions can be discarded by XLA,
+so this path could mutate parameters on an invalid calculation even though
+the standalone compiled wrapper rejected it. Both paths now call the same
+guarded tensor update. Rejected updates preserve parameters and optimizer slots
+and emit a nonfinite gradient norm when XLA removes the assertion. The Austria
+training callback uses the same assignment guard, preserving its existing loss.
+This is a validity repair; no clipping threshold or accepted calculation changes.
+Enclosing-XLA rejection, unchanged valid two-step updates, and fresh artifact
+reload/source-closure checks precede new timing repeats. Algebra anchors remain
+paper section 3.1 equations (13)--(14) and the cited author integration/product
+recurrences; the stochastic training construction remains extension_or_invention.
+
+Runs 00809 and 00810 passed 50 stochastic and six Austria consumer GPU checks
+(70.800 / 54.780 process-seconds), including invalid enclosing-XLA no-mutation,
+valid two-step optimizer parity, fresh artifact reload and tensor tamper rejection.
+Run 00811 passed the policy/controller checks. The exact guard covers 166 sources
+and 1,048 exceptions with no stale exceptions; removing duplicate update bodies
+removed six host-schema exceptions. New helpers, fixtures and tests pass Ruff.
+The earlier qualification measurements precede this assignment-guard repair;
+fresh current-source qualification and repeats remain required. No F01--F20
+closure, merge or push is claimed by this checkpoint.

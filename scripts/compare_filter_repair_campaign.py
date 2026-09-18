@@ -89,7 +89,8 @@ def baseline_compilation_failure(measurement):
         return "baseline_generator_variable_created_during_trace"
     if phase == "trace" and measurement.get("error_type") in (
             "AttributeError", "TypeError", "NotImplementedError", "OperatorNotAllowedInGraphError"):
-        if any(text in error for text in ("SymbolicTensor", "symbolic tf.Tensor", "symbolic Tensor")):
+        if any(text in error for text in ("SymbolicTensor", "symbolic tf.Tensor",
+                                         "symbolic `tf.Tensor`", "symbolic Tensor")):
             return "baseline_host_operation_during_trace"
         if (measurement.get("error_type") == "TypeError"
                 and "Could not generate a generic TraceType" in error

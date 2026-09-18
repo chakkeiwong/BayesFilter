@@ -29,6 +29,7 @@ from filter_repair_forecast_fixtures import FIXTURES as FORECAST_FIXTURES
 from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
 from filter_repair_centered_fixtures import FIXTURES as CENTERED_FIXTURES
 from filter_repair_training_fixtures import FIXTURES as TRAINING_FIXTURES
+from filter_repair_stochastic_fixtures import FIXTURES as STOCHASTIC_FIXTURES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -50,6 +51,13 @@ BASELINE_PARENT_PACKAGES = (
 )
 BUDGET_SECONDS = {"CPU": 8 * 3600, "GPU": 4 * 3600}
 TEST_GROUPS = {
+    "stochastic_training": ("tests/test_filter_repair_stochastic_training.py",
+        "tests/highdim/test_p75_stochastic_density_training.py",
+        "tests/highdim/test_p76_corrected_heldout_metric.py"),
+    "lane_b_training": ("tests/test_filter_repair_lane_b_training.py",
+        "tests/highdim/test_zhao_cui_austria_sir_lane_b_tf.py::test_exact_core_rescale_recovers_requested_normalizer",
+        "tests/highdim/test_zhao_cui_austria_sir_lane_b_tf.py::test_compiled_training_kernel_matches_eager_training_base_update",
+        "tests/highdim/test_zhao_cui_austria_sir_lane_b_tf.py::test_artifact_reload_identity_and_tensor_tamper_rejection"),
     "core_tangents": ("tests/test_filter_repair_core_tangents.py",),
     "centered_random": ("tests/test_filter_repair_centered_random.py",),
     "prefix_scores": ("tests/test_filter_repair_prefix_scores.py",),
@@ -184,6 +192,7 @@ FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES
 FIXTURES += CENTERED_FIXTURES
 FIXTURES += TRAINING_FIXTURES
+FIXTURES += STOCHASTIC_FIXTURES
 
 
 def sha(path):
@@ -204,6 +213,8 @@ def measurement_harness(fixture):
     if fixture in TRAINING_FIXTURES:
         names += ("filter_repair_training_worker.py", "filter_repair_training_fixtures.py",
                   "filter_repair_centered_fixtures.py")
+    if fixture in STOCHASTIC_FIXTURES:
+        names += ("filter_repair_stochastic_worker.py", "filter_repair_stochastic_fixtures.py")
     return {name: sha(ROOT / "scripts" / name) for name in names}
 
 
@@ -310,6 +321,8 @@ def run_job(args):
             worker = "filter_repair_centered_worker.py"
         if args.fixture in TRAINING_FIXTURES:
             worker = "filter_repair_training_worker.py"
+        if args.fixture in STOCHASTIC_FIXTURES:
+            worker = "filter_repair_stochastic_worker.py"
         command = [sys.executable, str(ROOT / "scripts" / worker), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
     elif args.action == "audit":
         command = [sys.executable, "scripts/audit_filter_gradient_policy.py", "--output", str(directory / "audit.json.gz"), "--markdown", str(directory / "audit.md")]

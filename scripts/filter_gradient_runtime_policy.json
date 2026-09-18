@@ -235,12 +235,304 @@
     "bayesfilter/highdim/centered_initializer_native_tf.py": null,
     "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_tf.py": {
       "python_iteration": [
-        "balanced_initial_cores"
+        "balanced_initial_cores",
+        "make_compiled_train_step",
+        "calibrate_trainer_normalizer"
       ]
     },
-    "bayesfilter/highdim/core_tangent_native_tf.py": null
+    "bayesfilter/highdim/core_tangent_native_tf.py": null,
+    "bayesfilter/highdim/stochastic_density_training.py": null,
+    "bayesfilter/highdim/stochastic_training_native_tf.py": null
   },
   "exceptions": [
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "P75TrainableTTConfig.__post_init__",
+      "line": 93,
+      "kind": "python_iteration",
+      "ast_sha256": "56cfaac2e97302eaf09442d59b29f42151e9452f9b1cd387a869240da2a084aa",
+      "role": "host_validation",
+      "reason": "Validate immutable rank schema and scalar configuration before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "P75TrainableTTConfig.__post_init__",
+      "line": 96,
+      "kind": "python_iteration",
+      "ast_sha256": "de6cbb034c748220b345d3bcf567fdd1b30d51a0efddccfd982725786b880ba2",
+      "role": "host_validation",
+      "reason": "Validate immutable rank schema and scalar configuration before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "P75TrainableTTConfig.__post_init__",
+      "line": 99,
+      "kind": "python_iteration",
+      "ast_sha256": "c56d693cafb3b4df6c71f9fce542a0313b67d9f4ec762980cc96ed3383921b97",
+      "role": "host_validation",
+      "reason": "Validate immutable rank schema and scalar configuration before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "P75ObjectiveBatch.__post_init__",
+      "line": 174,
+      "kind": "python_iteration",
+      "ast_sha256": "210af306d52474d3726653960188babe27e9425eca9a002998070dfdb4a9d29e",
+      "role": "host_validation",
+      "reason": "Validate and copy training provenance records at the host boundary."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "P75ObjectiveBatch.__post_init__",
+      "line": 175,
+      "kind": "python_iteration",
+      "ast_sha256": "4f77b5e30a2254a0c48746dbba57ba4ea7a0f0a41d539204604dfe24a2c33f22",
+      "role": "host_validation",
+      "reason": "Validate and copy training provenance records at the host boundary."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "P76CorrectedHeldoutMetricBatch.__post_init__",
+      "line": 234,
+      "kind": "python_iteration",
+      "ast_sha256": "210af306d52474d3726653960188babe27e9425eca9a002998070dfdb4a9d29e",
+      "role": "host_validation",
+      "reason": "Validate and copy independent heldout provenance records at the host boundary."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "TrainableFunctionalTT.__init__",
+      "line": 338,
+      "kind": "python_iteration",
+      "ast_sha256": "b8d2722bc8721ac24b06aa347e0f3cdceb02919839547e44ab18f5813c5b026c",
+      "role": "fixed_schema",
+      "reason": "Convert the fixed heterogeneous core tuple and allocate its trainable variables once."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "TrainableFunctionalTT.__init__",
+      "line": 341,
+      "kind": "python_iteration",
+      "ast_sha256": "12d6ccd9934902fe619d332bbf3615697a2d19694a7dec5c7cdd7cc694c612a6",
+      "role": "fixed_schema",
+      "reason": "Convert the fixed heterogeneous core tuple and allocate its trainable variables once."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "TrainableFunctionalTT.snapshot_functional_tt",
+      "line": 650,
+      "kind": "python_iteration",
+      "ast_sha256": "07aea1058fe133dc87a1b1469ad764e597c38f2a7e5b43947328c36321c026dc",
+      "role": "fixed_schema",
+      "reason": "Snapshot the fixed heterogeneous core tuple for artifact construction."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "TrainableFunctionalTT._prefit_regularization",
+      "line": 715,
+      "kind": "python_iteration",
+      "ast_sha256": "22105655127bb7dce51c90556b32dda450e2825d5dfc2683d7216b20f253c596",
+      "role": "fixed_schema",
+      "reason": "Convert the fixed reference-core schema; numerical penalties are one tensor reduction."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "TrainableFunctionalTT._random_initial_core_tensors",
+      "line": 721,
+      "kind": "python_iteration",
+      "ast_sha256": "09b1983b2097e29b75adf811a0894002ead257071c0c5309497c1363495e6a37",
+      "role": "fixed_schema",
+      "reason": "Describe static core shapes; seeded draws execute in a compiled tensor recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "TrainableFunctionalTT._validate_core_tensors",
+      "line": 728,
+      "kind": "python_iteration",
+      "ast_sha256": "e1e10324ab8d435aad9cb2a163b77da0d0e6f1e5e9f3d9a7b6c29b3f2b2b566f",
+      "role": "host_validation",
+      "reason": "Validate rank, width, dtype and finite entries of the declared core schema."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "_validate_p76_metric_provenance",
+      "line": 791,
+      "kind": "python_iteration",
+      "ast_sha256": "4c23293636416b3e19bc4a484096d2fb0d8977dcf37f55765fd4b23be25a75c6",
+      "role": "host_validation",
+      "reason": "Reject disallowed provenance labels before numerical work."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "_assert_p76_metric_records",
+      "line": 799,
+      "kind": "python_iteration",
+      "ast_sha256": "7cdd16085f920d47389e31e7b3bdb2e914f150bdddef49fa3fc5385f3b99775a",
+      "role": "host_validation",
+      "reason": "Validate host provenance records without numerical iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "_assert_all_finite",
+      "line": 865,
+      "kind": "python_iteration",
+      "ast_sha256": "d5c486542c90cfd09f6aad6d533426b60a8d459ca5b2627b79471b5fe77de3d7",
+      "role": "host_validation",
+      "reason": "Emit assertions for the fixed output/variable schema; does not compute numerical results."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "_assert_no_audit_leakage",
+      "line": 873,
+      "kind": "python_iteration",
+      "ast_sha256": "86b4fdb3480534210e1168de3d0ddcb0456fe453c9dd782666648e0e21bacf15",
+      "role": "host_validation",
+      "reason": "Check host record roles and identifier sets for audit leakage."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "_assert_no_audit_leakage",
+      "line": 876,
+      "kind": "python_iteration",
+      "ast_sha256": "2138ba8a456f3d8e45d0232f8622a365aa0b82891d73000c14b571015b648ba2",
+      "role": "host_validation",
+      "reason": "Check host record roles and identifier sets for audit leakage."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_density_training.py",
+      "function": "_assert_no_audit_leakage",
+      "line": 881,
+      "kind": "python_iteration",
+      "ast_sha256": "321ee0212adb55187eef4e66432181a6c5b33c39e7289921eebe4f53987b498f",
+      "role": "host_validation",
+      "reason": "Check host record roles and identifier sets for audit leakage."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "flat_cores",
+      "line": 33,
+      "kind": "python_iteration",
+      "ast_sha256": "b00980a1c92c12868dc833da681fc4aac5c73605c3b31976b5e202040136a4c6",
+      "role": "fixed_schema",
+      "reason": "Flatten and concatenate the fixed heterogeneous tensor schema; arithmetic follows as tensor operations."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "random_core_program",
+      "line": 44,
+      "kind": "python_iteration",
+      "ast_sha256": "5ca9788a1befa9ad5d6a380002d0412ae51db29bc0f67ddaa246d9bb48790980",
+      "role": "fixed_schema",
+      "reason": "Select static shape specializations and padded storage extent before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "random_core_program",
+      "line": 45,
+      "kind": "python_iteration",
+      "ast_sha256": "21f8b4679ab42970e3ff9f999154d6936d700ca875d1cd3f566504fda894e16e",
+      "role": "fixed_schema",
+      "reason": "Select static shape specializations and padded storage extent before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "random_core_program.generate.at_axis",
+      "line": 56,
+      "kind": "python_iteration",
+      "ast_sha256": "1f9cbb6382f8cec682154fe5df04e10c4285af268f4140ba7dab35b876ad84ec",
+      "role": "fixed_schema",
+      "reason": "Construct one callable per distinct core shape; TensorFlow selects the branch and iterates random draws."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "random_cores",
+      "line": 67,
+      "kind": "python_iteration",
+      "ast_sha256": "e90d4621a3f59d34f402541636991d7e6fefffa43f6e5e063eda2d71ee90665d",
+      "role": "fixed_schema",
+      "reason": "Restore heterogeneous output shapes from the complete compiled random draw tensor."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "_arguments",
+      "line": 77,
+      "kind": "python_iteration",
+      "ast_sha256": "d071e2d77b2c6b7eb8aebf3235ec61752b7b056a793a08bb95462a4c57c081fe",
+      "role": "fixed_schema",
+      "reason": "Extract record tensor fields and explicit TensorSpecs; numerical values are passed as inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "_arguments",
+      "line": 81,
+      "kind": "python_iteration",
+      "ast_sha256": "14f921e99776eb0a0b4b4e60190048b6ee9d279b19471e0852fd3004b2c49196",
+      "role": "fixed_schema",
+      "reason": "Extract record tensor fields and explicit TensorSpecs; numerical values are passed as inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "_arguments",
+      "line": 82,
+      "kind": "python_iteration",
+      "ast_sha256": "035f1be2c78d53611273ee577583a2ca44e71b547512c403713680b06c2738ca",
+      "role": "fixed_schema",
+      "reason": "Extract record tensor fields and explicit TensorSpecs; numerical values are passed as inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "_arguments",
+      "line": 83,
+      "kind": "python_iteration",
+      "ast_sha256": "be0daaa39b49db075da2bff5f63b35f7a705edb31a58bcd2ac3467bafdcc2f9b",
+      "role": "fixed_schema",
+      "reason": "Extract record tensor fields and explicit TensorSpecs; numerical values are passed as inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "_arguments.restore",
+      "line": 90,
+      "kind": "python_iteration",
+      "ast_sha256": "181c41691e032e9b80161494ddee5ca1aacf7ae0113d84933bc8044168a7f5a8",
+      "role": "fixed_schema",
+      "reason": "Restore the fixed argument structure from compiled tensor inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "_outputs",
+      "line": 101,
+      "kind": "python_iteration",
+      "ast_sha256": "c704ee3bb5b389048d8b0d5d45c84c5fd3a09320848f7b5bdb0ac59d7154e92e",
+      "role": "fixed_schema",
+      "reason": "Extract numerical fields from the fixed result record without computing them."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "call_method",
+      "line": 125,
+      "kind": "python_iteration",
+      "ast_sha256": "256cf5489ec7392f59d19174aa7884e8a28b74ab9f45561ffe6cba09595b9f7b",
+      "role": "fixed_schema",
+      "reason": "Pass core variable reads and declared shapes as explicit compiled inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "call_method",
+      "line": 126,
+      "kind": "python_iteration",
+      "ast_sha256": "4797603497a21a70a92892127001de28d6342e00c1ac351ec5d76db1a1e219b9",
+      "role": "fixed_schema",
+      "reason": "Pass core variable reads and declared shapes as explicit compiled inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
+      "function": "checked_optimizer_update",
+      "line": 179,
+      "kind": "python_iteration",
+      "ast_sha256": "91e73de08c268659738f444738fcef09567a4e3299f7bde0998eb9e28f710052",
+      "role": "host_validation",
+      "reason": "Reject a missing gradient in the fixed optimizer variable schema during tracing."
+    },
     {
       "path": "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py",
       "function": "C2TransformedObservationStudentProposal.__post_init__",

@@ -159,6 +159,15 @@ includes every returned numerical field relevant to the endpoint. A baseline
 that cannot trace retains its failed attempt and uses its valid eager reference
 for parity, without inventing a baseline compilation time.
 
+Generic stochastic TT coverage uses fresh fixed heterogeneous cores, four/eight
+axes and four/eight rows. Compare the complete density objective/gradient and
+one Adam update for both density fitting and square-root prefit. Every timed
+update restores identical input parameters and optimizer slots in both arms;
+reset time is included and no optimizer trajectory is treated as a frozen
+input. Preserve all returned numerical terms, updated parameters, and optimizer
+state. Use the existing loss, clipping, regularization, and seed semantics;
+these fixtures establish execution parity, not a trained-model quality claim.
+
 Stop the affected measurement on invalid comparison, corrupted artifacts,
 numerical mismatch, uncontrolled allocation or GPU contention. Repair local
 harness defects within the same scope/budget. A failing candidate prevents its

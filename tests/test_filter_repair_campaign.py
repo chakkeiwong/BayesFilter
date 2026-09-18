@@ -396,6 +396,15 @@ def test_repeat_aggregation_rejects_mixed_physical_devices():
         comparison.validate_repeat_hardware([original, alternate, alternate])
 
 
+def test_baseline_python_tensor_condition_is_a_tracing_failure_only():
+    comparison = load("compare_filter_repair_campaign")
+    failure = {"phase": "trace", "error_type": "OperatorNotAllowedInGraphError",
+               "error": "Using a symbolic `tf.Tensor` as a Python `bool` is not allowed."}
+    assert comparison.baseline_compilation_failure(failure) == "baseline_host_operation_during_trace"
+    assert comparison.baseline_compilation_failure({**failure, "phase": "first_execution"}) is None
+    assert comparison.baseline_compilation_failure({**failure, "error_type": "RuntimeError"}) is None
+
+
 def test_gpu_idle_rechecks_recent_utilization_and_records_samples(monkeypatch):
     driver = load("run_filter_repair_campaign")
     samples = iter(("18, 7", "18, 0", "18, 0"))

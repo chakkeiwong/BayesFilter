@@ -12,6 +12,7 @@ from typing import Callable, Mapping, Sequence
 
 import tensorflow as tf
 
+from bayesfilter.highdim import stochastic_training_native_tf as training_native
 from bayesfilter.highdim.bases import (
     AlgebraicMap,
     ProductBasis,
@@ -47,6 +48,7 @@ from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_target_tf import (
     target_manifest,
     tensor_sha256,
 )
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 
 DTYPE = tf.float64
 BASELINE_ID = "zhao_cui_austria_sir_fixed_variant_training_base_v1"
@@ -575,7 +577,7 @@ def make_compiled_train_step(
         optimizer.build(trainer.variables)
     config = trainer.config
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def compiled_step(
         points: tf.Tensor,
         target_values: tf.Tensor,
@@ -590,16 +592,15 @@ def make_compiled_train_step(
             alpha = raw_alpha / tf.reduce_sum(raw_alpha)
             cross_entropy = -tf.reduce_sum(alpha * tf.math.log(rho))
             log_normalizer = tf.math.log(normalizer)
-            l1 = tf.add_n([tf.reduce_sum(tf.abs(core)) for core in trainer.variables])
-            l2 = tf.add_n([tf.reduce_sum(tf.square(core)) for core in trainer.variables])
+            l1, l2 = training_native.core_penalties(trainer.variables)
             regularization = config.l1_weight * l1 + config.l2_weight * l2
             total_loss = cross_entropy + log_normalizer + regularization
         gradients = tape.gradient(total_loss, trainer.variables)
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            gradients,
-            tf.constant(config.gradient_clip_norm, DTYPE),
-        )
-        optimizer.apply_gradients(zip(clipped, trainer.variables))
+        valid = tf.reduce_all(tf.math.is_finite(tf.stack((total_loss, cross_entropy,
+            log_normalizer, regularization))))
+        valid &= (normalizer > config.normalizer_floor) & tf.reduce_all(rho > 0.)
+        gradient_norm, _valid = training_native.checked_optimizer_update(
+            optimizer, trainer.variables, gradients, config.gradient_clip_norm, valid)
         return (
             total_loss,
             cross_entropy,
@@ -619,22 +620,7 @@ def calibrate_trainer_normalizer(
 ) -> tf.Tensor:
     """Scale h through one core so integral(h^2)+tau equals the target mass."""
 
-    target = tf.exp(tf.reshape(tf.convert_to_tensor(target_log_normalizer, DTYPE), []))
-    square_mass = trainer.sqrt_square_normalizer()
-    defensive_mass = trainer.defensive_density.normalizer(
-        trainer.config.product_basis.convention.mass_measure
-    )
-    defensive = trainer.config.tau * defensive_mass
-    tf.debugging.assert_greater(target, defensive, "normalizer target must exceed tau")
-    tf.debugging.assert_positive(square_mass, "square-root TT mass must be positive")
-    scale = tf.sqrt((target - defensive) / square_mass)
-    trainer.variables[0].assign(trainer.variables[0] * scale)
-    tf.debugging.assert_near(
-        trainer.normalizer(),
-        target,
-        atol=tf.constant(1e-12, DTYPE) * (1.0 + tf.abs(target)),
-    )
-    return scale
+    return training_native.calibrate_normalizer(trainer, target_log_normalizer)
 
 
 def _file_sha256(path: Path) -> str:
@@ -644,6 +630,8 @@ def _file_sha256(path: Path) -> str:
 def source_closure() -> Mapping[str, str]:
     from bayesfilter.highdim import (
         bases,
+        centered_training_native_tf,
+        centered_tt_native_tf,
         diagnostics,
         fixed_branch,
         models,
@@ -651,13 +639,17 @@ def source_closure() -> Mapping[str, str]:
         source_route,
         squared_tt,
         stochastic_density_training,
+        stochastic_training_native_tf,
         transport,
         tt,
         zhao_cui_austria_sir_lane_b_target_tf,
     )
+    from bayesfilter.ops import fixed_signature_tf, stateless_random_tf
 
     modules = (
         bases,
+        centered_training_native_tf,
+        centered_tt_native_tf,
         diagnostics,
         fixed_branch,
         models,
@@ -665,9 +657,12 @@ def source_closure() -> Mapping[str, str]:
         source_route,
         squared_tt,
         stochastic_density_training,
+        stochastic_training_native_tf,
         transport,
         tt,
         zhao_cui_austria_sir_lane_b_target_tf,
+        fixed_signature_tf,
+        stateless_random_tf,
     )
     paths = [Path(inspect.getfile(module)).resolve() for module in modules]
     paths.append(Path(__file__).resolve())
