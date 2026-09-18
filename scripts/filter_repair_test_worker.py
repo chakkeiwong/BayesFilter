@@ -1,5 +1,6 @@
 """Configure the campaign device before pytest imports numerical test modules."""
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -14,7 +15,13 @@ if __name__ == "__main__":
         configure_tensorflow_gpu_memory_growth,
     )
 
-    configure_tensorflow_gpu_memory_growth(tf, require_gpu=os.environ.get("CUDA_VISIBLE_DEVICES") != "-1")
+    memory_policy = configure_tensorflow_gpu_memory_growth(
+        tf, require_gpu=os.environ.get("CUDA_VISIBLE_DEVICES") != "-1")
+    print(json.dumps({"tensorflow_version": tf.__version__, "gpu_memory_policy": memory_policy,
+                      "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+                      "tf32_enabled": tf.config.experimental.tensor_float_32_execution_enabled(),
+                      "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+                      if os.environ.get("CUDA_VISIBLE_DEVICES") != "-1" else "explicit_cpu_reference"}), flush=True)
     import pytest
 
     raise SystemExit(pytest.main(sys.argv[1:]))

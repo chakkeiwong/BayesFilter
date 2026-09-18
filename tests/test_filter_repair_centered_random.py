@@ -86,7 +86,7 @@ def test_connected_channel_initialization_preserves_mixed_widths_draws_and_gradi
         with tf.GradientTape() as tape:
             tape.watch(cores)
             output = module.embed_residual_component_with_connected_channels(cores, **options)
-            objective = sum(tf.reduce_sum(value**2) for value in output)
+            objective = sum(tf.reduce_sum(tf.square(value)) for value in output)
         outputs.append(output)
         gradients.append(tape.gradient(objective, cores))
     for result, authority in zip(tf.nest.flatten(outputs[0]), tf.nest.flatten(outputs[1]), strict=True):

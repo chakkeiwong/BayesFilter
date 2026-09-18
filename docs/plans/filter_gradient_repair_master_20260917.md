@@ -131,6 +131,15 @@ budget through Git's common directory. Use the same bounded driver in that
 worktree; its absolute program path is the only additional approval prefix.
 The target, fixtures, seeds, hardware, tolerances and promotion gates are unchanged.
 
+September 18 contention repair: focused correctness tests may explicitly use
+`--test-gpu-index 3` on the idle RTX 4090 while GPU2 has unrelated work. This
+uses the same GPU hardware class, contention thresholds, process limit, and
+cumulative budget. The option is restricted to tests and their matrix stage;
+all before/after measurements remain pinned to GPU2. Test logs record the
+visible device, TensorFlow version, TF32 state and verified memory-growth
+policy. This is an infrastructure repair, not a change to the comparison
+contract or authorization for additional compute.
+
 Stop the affected measurement on invalid comparison, corrupted artifacts,
 numerical mismatch, uncontrolled allocation or GPU contention. Repair local
 harness defects within the same scope/budget. A failing candidate prevents its

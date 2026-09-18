@@ -278,13 +278,14 @@ def run_job(args):
     attempts = [row for row in rows if row["key"] == key and row["source_sha256"] == hashes]
     if len(attempts) >= 3:
         raise RuntimeError("Three attempts consumed for this exact job; inspect/repair scope before retry")
+    gpu_index = getattr(args, "test_gpu_index", 2) if args.action == "test" else 2
     if device == "GPU" and getattr(args, "gpu_preflight", None) is None:
-        args.gpu_preflight = check_gpu_idle()
+        args.gpu_preflight = check_gpu_idle(gpu_index)
     directory = OUTPUT / f"run-{len(rows) + 1:05d}"
     directory.mkdir(exist_ok=False)
     result = directory / "result.json"
     env = os.environ.copy()
-    env.update({"CUDA_VISIBLE_DEVICES": "2" if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
+    env.update({"CUDA_VISIBLE_DEVICES": str(gpu_index) if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
     if args.action == "test":
         if args.arm == "before":
             ensure_baseline()
@@ -365,12 +366,14 @@ def gate():
     return 0 if complete else 1
 
 
-def check_gpu_idle():
+def check_gpu_idle(gpu_index=2):
+    if gpu_index not in (2, 3):
+        raise ValueError("Campaign GPU index must be 2 or 3")
     samples, consecutive_idle = [], 0
     # Utilization is sampled over an interval and can outlive the prior worker.
     for attempt in range(6):
         output = subprocess.check_output([
-            "nvidia-smi", "-i", "2", "--query-gpu=memory.used,utilization.gpu",
+            "nvidia-smi", "-i", str(gpu_index), "--query-gpu=memory.used,utilization.gpu",
             "--format=csv,noheader,nounits",
         ], text=True, timeout=5)
         memory, utilization = (int(value.strip()) for value in output.strip().split(","))
@@ -380,7 +383,7 @@ def check_gpu_idle():
             return samples
         if attempt < 5:
             time.sleep(2)
-    raise RuntimeError(f"GPU2 contention veto after bounded recheck: {samples}")
+    raise RuntimeError(f"GPU{gpu_index} contention veto after bounded recheck: {samples}")
 
 
 def check_matrix_state(frozen):
@@ -408,7 +411,7 @@ def run_matrix(args):
             job = argparse.Namespace(**vars(args))
             job.action, job.group, job.arm, job.device = "test", group, "after", device
             if device == "GPU":
-                job.gpu_preflight = check_gpu_idle()
+                job.gpu_preflight = check_gpu_idle(getattr(args, "test_gpu_index", 2))
             code = run_job(job)
             if code:
                 return code
@@ -484,7 +487,12 @@ def main():
     parser.add_argument("--size", type=int, choices=(1, 2), default=1)
     parser.add_argument("--repeat", type=int, choices=(0, 1, 2), default=0)
     parser.add_argument("--device", choices=("CPU", "GPU"), default="GPU")
+    parser.add_argument("--test-gpu-index", type=int, choices=(2, 3), default=2,
+                        help="Physical GPU for correctness tests only; paired measurements remain on GPU2")
     args = parser.parse_args()
+    if args.test_gpu_index != 2 and not (args.action == "test" or
+                                       (args.action == "matrix" and args.stage == "tests")):
+        parser.error("--test-gpu-index is only available for correctness tests")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     if args.action == "pause":
         save_json(OUTPUT / "pause-request.json", {"requested_utc": datetime.now(timezone.utc).isoformat()})

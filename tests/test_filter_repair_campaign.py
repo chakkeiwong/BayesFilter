@@ -324,18 +324,39 @@ def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch
     assert pairs == [(expected, "off"), (expected, "on")]
 
 
-def test_gpu_test_group_uses_gpu_and_preflight(tmp_path, monkeypatch):
+@pytest.mark.parametrize("gpu_index", (2, 3))
+def test_gpu_test_group_uses_gpu_and_preflight(tmp_path, monkeypatch, gpu_index):
     import argparse
     driver = load("run_filter_repair_campaign")
     monkeypatch.setattr(driver, "OUTPUT", tmp_path)
     monkeypatch.setattr(driver, "TEST_GROUPS", {"random_gpu": ()})
     monkeypatch.setattr(driver, "source_hashes", dict)
     monkeypatch.setattr(driver, "records", list)
-    monkeypatch.setattr(driver, "check_gpu_idle", lambda: ["idle"])
+    checked = []
+    monkeypatch.setattr(driver, "check_gpu_idle", lambda index: checked.append(index) or ["idle"])
     jobs = []
     monkeypatch.setattr(driver, "run_job", lambda job: jobs.append(job) or 0)
-    assert driver.run_matrix(argparse.Namespace(stage="tests")) == 0
+    assert driver.run_matrix(argparse.Namespace(stage="tests", test_gpu_index=gpu_index)) == 0
     assert jobs[0].device == "GPU" and jobs[0].gpu_preflight == ["idle"]
+    assert checked == [gpu_index] and jobs[0].test_gpu_index == gpu_index
+
+
+def test_alternate_gpu_option_cannot_change_measurement_device(monkeypatch):
+    driver = load("run_filter_repair_campaign")
+    monkeypatch.setattr(sys, "argv", ["driver", "measure", "--test-gpu-index", "3"])
+    monkeypatch.setattr(driver, "run_job", lambda _: pytest.fail("Invalid device selection must not launch"))
+    with pytest.raises(SystemExit) as error:
+        driver.main()
+    assert error.value.code == 2
+
+
+def test_gpu_preflight_queries_selected_device(monkeypatch):
+    driver = load("run_filter_repair_campaign")
+    commands = []
+    monkeypatch.setattr(driver.subprocess, "check_output", lambda command, **_: commands.append(command) or "18, 0")
+    monkeypatch.setattr(driver.time, "sleep", lambda _: None)
+    driver.check_gpu_idle(3)
+    assert len(commands) == 2 and all(command[1:3] == ["-i", "3"] for command in commands)
 
 
 def test_gpu_idle_rechecks_recent_utilization_and_records_samples(monkeypatch):

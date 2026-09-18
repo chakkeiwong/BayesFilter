@@ -1621,3 +1621,42 @@ no new RNG migration or scientific admission is claimed. The passing static
 guard covers 163 source files and 994 exact exceptions, not all reachable
 runtime paths. Remaining optimizer/core-affine and source-route recurrences,
 fresh GPU checks, and complete measurements keep F01--F20 and merge open.
+
+Checkpoint 841dc969 preserves the initializer/prefix repair. Run 00754 passed
+52 policy/controller checks after adding the test-only GPU3 selector; tests
+verify the selected device preflight and prohibit using the option to change
+paired measurement hardware. Run 00755 passed five seeded-initializer GPU checks
+but failed three exact derivative-identity assertions. Candidate and pinned
+gradients matched exactly; both differed from `2*x` by at most 2.78e-17 because
+the diagnostic objective used `x**2` (Pow). Replacing this test-only objective
+with `tf.square` gives its direct `2*x` derivative without weakening any
+tolerance. Numerical implementation, random streams, and the raw TP 1e-10 gate
+are unchanged. The failure and retry are charged to the original GPU budget.
+
+Runs 00756--00758 passed the eight seeded-core GPU checks, four complete
+initializer GPU checks, and two prefix-target GPU checks (27.627, 310.262 and
+21.605 seconds). All used idle GPU3 with verified memory growth and recorded
+TF32/device provenance. These are correctness results, not paired GPU2 timings.
+Remote fetch found origin/main still at 3582b4ac; checkpoint 841dc969 is seven
+commits ahead, with no incoming commits. Integration remains conditional.
+
+The next bounded repair addresses the existing core-affine product-rule block
+encoding and coordinate masks. It preserves the current extension's exact
+parent/tangent blocks, heterogeneous ranks and widths, parameter order, and
+ordinary training-loss gradients. Classification remains extension_or_invention;
+the author source does not establish this parameterized tangent construction.
+The underlying amplitude/mass products were rechecked against paper section 3.1,
+equations (13)--(14), local text lines 539--651, and author
+`third_party/audit/zhao_cui_tensor_ssm_p10/source/deep-tensor.dev/src/@TTFun/int_reference.m:22--29`
+and `source/models/tensordot/ttdot.m:20--23`. Tests must compare original blocks,
+round-trip inversion, parent-block rejection, complete loss/gradient consumers,
+stable HLO signatures and directional finite differences. No rank, loss,
+regularization, RNG or source-faithfulness change is proposed.
+
+Run 00759 passed all 15 centered primitive, public value/score, input-gradient,
+training-loss and optimizer-consumer GPU checks (191.239 seconds). Total
+charge through 00759 is 20,501.218 CPU / 7,421.328 GPU process-seconds. GPU3
+correctness evidence is fresh for this checkpoint; GPU2 measurements remain
+pending. New numerical helper/tests pass Ruff and whitespace checks. The wider
+lint invocation found existing import/export and artifact-exception style debt
+in the two Lane-B modules; no blanket repository lint success is claimed.
