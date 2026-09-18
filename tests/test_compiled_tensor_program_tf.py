@@ -9,6 +9,51 @@ from bayesfilter.ops.compiled_tensor_program_tf import tensor_program
 
 
 @pytest.mark.parametrize("jit_compile", [False, True])
+@pytest.mark.parametrize("nesting", ["none", "cond", "while_cond"])
+@pytest.mark.parametrize("shape", [(), (256,)])
+def test_value_only_preparation_defers_pullback_with_backward_only_capture(jit_compile, nesting, shape):
+    coefficient = tf.fill(shape, tf.constant(3., tf.float64))
+    pullback_traces = []
+
+    @tf.custom_gradient
+    def cubic(x):
+        def pullback(incoming):
+            pullback_traces.append(True)
+            return incoming * coefficient * x**2
+
+        return x**3, pullback
+
+    signature = [tf.TensorSpec(shape, tf.float64)]
+
+    def enclosing(x):
+        local = tensor_program(cubic, signature, False)
+
+        def branch():
+            return tf.cond(tf.reduce_all(x > 0.), lambda: local.python_function(x), lambda: x**3)
+
+        if nesting == "cond":
+            return branch()
+        _, output = tf.while_loop(lambda index, _: index < 2,
+            lambda index, total: (index + 1, total + branch()),
+            (tf.constant(0), tf.zeros_like(x)), maximum_iterations=2)
+        return output * .5
+
+    with tf.init_scope():
+        program = tensor_program(cubic if nesting == "none" else enclosing, signature, jit_compile)
+    value = tf.fill(shape, tf.constant(2., tf.float64))
+    tf.debugging.assert_equal(program(value), tf.fill(shape, tf.constant(8., tf.float64)))
+    assert not pullback_traces
+    for _ in range(2):
+        with tf.GradientTape() as tape:
+            tape.watch(value)
+            output = program(value)
+        tf.debugging.assert_near(tape.gradient(output, value), tf.fill(shape, tf.constant(12., tf.float64)),
+                                 atol=1e-12, rtol=1e-12)
+    assert len(pullback_traces) == 1
+    assert program.experimental_get_tracing_count() == 1
+
+
+@pytest.mark.parametrize("jit_compile", [False, True])
 def test_program_prepared_inside_initialization_retains_later_derivatives(jit_compile):
     # Marginal/metadata preparation may lift cold program construction out of
     # tracing. Pausing that outer tape must not freeze a zero pullback forever.

@@ -11,6 +11,9 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.highdim import source_route as candidate
+from bayesfilter.highdim import (
+    source_route_preparation_runtime_tf as preparation_runtime,
+)
 from bayesfilter.highdim import source_route_preparation_tf as native
 from bayesfilter.highdim.models import zhao_cui_sir_austria_model
 from bayesfilter.highdim.tt import TTCore
@@ -134,3 +137,147 @@ def test_design_and_channel_graphs_do_not_grow_with_dimension():
     for create in (lambda dimension: native.reference_points_program(8, dimension, True),
                    lambda dimension: native.initial_cores_program((1, *([3] * (dimension - 1)), 1), 4, True)):
         assert len(_graph(create(3))) == len(_graph(create(8)))
+
+
+def test_reachable_author_sampling_push_and_resampling_preserve_stream_and_xla():
+    model = zhao_cui_sir_austria_model()
+    original = _original("source_route")
+    sample_count = 4
+    prior = candidate._p59_author_sir_prior_sample_batch(
+        model=model, sample_count=sample_count, seed=6301)
+    frozen_prior = original._p59_author_sir_prior_sample_batch(
+        model=model, sample_count=sample_count, seed=6301)
+    tf.debugging.assert_near(prior.samples, frozen_prior.samples, atol=1e-12, rtol=1e-12)
+    observation = model.simulate(final_time=2, seed=5901)[1][1]
+    pushed = candidate._p59_author_sir_source_push_result(
+        model=model, previous_batch=prior, observation=observation,
+        time_index=1, process_noise_seed=6401)
+    frozen_pushed = original._p59_author_sir_source_push_result(
+        model=model, previous_batch=frozen_prior, observation=observation,
+        time_index=1, process_noise_seed=6401)
+    tf.debugging.assert_near(pushed.augmented_batch.samples,
+                             frozen_pushed.augmented_batch.samples, atol=1e-10, rtol=1e-10)
+    tf.debugging.assert_near(pushed.augmented_batch.log_weights,
+                             frozen_pushed.augmented_batch.log_weights, atol=1e-12, rtol=1e-12)
+    samples, indices = candidate._p59_author_sir_deterministic_weighted_resample(
+        samples=pushed.augmented_batch.samples,
+        log_weights=pushed.augmented_batch.log_weights)
+    frozen_samples, frozen_indices = original._p59_author_sir_deterministic_weighted_resample(
+        samples=frozen_pushed.augmented_batch.samples,
+        log_weights=frozen_pushed.augmented_batch.log_weights)
+    tf.debugging.assert_near(samples, frozen_samples, atol=1e-10, rtol=1e-10)
+    tf.debugging.assert_equal(indices, frozen_indices)
+    prior_program = preparation_runtime.prior_sample_program(
+        model.parameter_dim(), model.state_dim(), sample_count)
+    push_program = preparation_runtime.source_push_program(
+        model, model.parameter_dim(), model.state_dim(), sample_count, 1)
+    resample_program = preparation_runtime.deterministic_weighted_resample_program(
+        int(pushed.augmented_batch.samples.shape[0]), sample_count)
+    assert "HloModule" in prior_program.experimental_get_compiler_ir(
+        model.initial_mean, model.initial_covariance, preparation_runtime.seed_state(6301))(stage="hlo")
+    noise = preparation_runtime.normal_matrix_program(sample_count, model.state_dim())(
+        preparation_runtime.seed_state(6401))
+    assert "HloModule" in push_program.experimental_get_compiler_ir(
+        prior.samples, prior.log_weights, noise, observation)(stage="hlo")
+    assert "HloModule" in resample_program.experimental_get_compiler_ir(
+        pushed.augmented_batch.samples, pushed.augmented_batch.log_weights)(stage="hlo")
+
+
+@pytest.mark.parametrize("invalid", ["route", "dimension", "time", "type"])
+def test_reachable_push_preserves_input_vetoes(invalid):
+    model = zhao_cui_sir_austria_model()
+    values = tf.zeros([model.parameter_dim() + model.state_dim(), 2], D)
+    prior = candidate.SourceRouteSampleBatch(values, tf.zeros([2], D), 0,
+        candidate.SOURCE_FAITHFUL_ROUTE_LABEL, "prior")
+    if invalid == "route":
+        prior = replace(prior, route_label="unsupported")
+    elif invalid == "dimension":
+        prior = replace(prior, samples=values[:-1])
+    elif invalid == "type":
+        prior = object()
+    error, message = {
+        "route": (ValueError, "source_faithful_filtering input"),
+        "dimension": (ValueError, "dimension must equal"),
+        "time": (ValueError, "time_index must advance"),
+        "type": (TypeError, "previous_batch must be"),
+    }[invalid]
+    with pytest.raises(error, match=message):
+        candidate._p59_author_sir_source_push_result(model=model, previous_batch=prior,
+            observation=tf.zeros([1], D), time_index=0 if invalid == "time" else 1,
+            process_noise_seed=6401)
+
+
+@pytest.mark.parametrize("jit_compile", [False, True])
+def test_source_coordinate_and_target_preparation_preserves_complete_pullbacks(jit_compile):
+    matrix = tf.constant([[1.2, .1], [.2, .9]], D)
+    center = tf.constant([.1, -.2], D)
+    samples = tf.constant([[-2., -.1, .4, 2.], [-.3, .4, .1, .8]], D)
+    sources = (matrix, center, samples)
+    program = preparation_runtime.coordinate_transform_program(2, 4, jit_compile=jit_compile)
+
+    def reference(a, b, x):
+        local = tf.linalg.solve(a, x - b[:, None])
+        mask = tf.abs(local) > tf.constant(1., D)
+        clipped = tf.clip_by_value(local, -1., 1.)
+        return local, mask, tf.reduce_mean(tf.cast(mask, D)), clipped, a @ clipped + b[:, None]
+
+    outcomes = []
+    for call in (reference, program):
+        with tf.GradientTape() as tape:
+            tape.watch(sources)
+            outputs = call(*sources)
+            loss = tf.reduce_sum(outputs[0]) + tf.reduce_sum(outputs[3]) + tf.reduce_sum(outputs[4])
+        outcomes.append((outputs, tape.gradient(loss, sources)))
+    tf.debugging.assert_equal(outcomes[0][0][1], outcomes[1][0][1])
+    for actual, expected in zip(tf.nest.flatten(outcomes[1]), tf.nest.flatten(outcomes[0]), strict=True):
+        if actual.dtype != tf.bool:
+            tf.debugging.assert_near(actual, expected, atol=1e-10, rtol=1e-10)
+
+    negative_log = tf.constant([2., 3., 4.], D)
+    log_det = tf.constant(.3, D)
+    fixed_shift = tf.constant(.8, D)
+    for fixed in (False, True):
+        sources = (negative_log, log_det, fixed_shift) if fixed else (negative_log, log_det)
+        compiled = (preparation_runtime.target_values_with_shift_program if fixed
+                    else preparation_runtime.target_values_program)(3, jit_compile=jit_compile)
+        outcomes = []
+        for native_call in (False, True):
+            with tf.GradientTape() as tape:
+                tape.watch(sources)
+                if native_call:
+                    result = compiled(*sources)
+                    assert bool(result[-1])
+                    values = result[:-1]
+                else:
+                    local = negative_log - log_det
+                    shift = fixed_shift if fixed else tf.reduce_min(local)
+                    weights = tf.exp(-.5 * (local - shift))
+                    values = (local, weights) if fixed else (local, shift, weights)
+                loss = tf.add_n([tf.reduce_sum(value) for value in values])
+            outcomes.append((values, tape.gradient(loss, sources)))
+        for actual, expected in zip(tf.nest.flatten(outcomes[1]), tf.nest.flatten(outcomes[0]), strict=True):
+            assert actual is not None and expected is not None
+            tf.debugging.assert_near(actual, expected, atol=1e-10, rtol=1e-10)
+
+
+@pytest.mark.parametrize("fixed", [False, True])
+@pytest.mark.parametrize("invalid", ["positive_infinity", "negative_infinity", "nan", "log_det", "shift"])
+def test_target_preparation_does_not_hide_nonfinite_inputs(fixed, invalid):
+    value = {"positive_infinity": float("inf"), "negative_infinity": -float("inf"),
+             "nan": float("nan")}.get(invalid, 4.)
+    negative_log = tf.constant([2., 3., value], D)
+    log_det = tf.constant(-float("inf") if invalid == "log_det" else .3, D)
+    shift = tf.constant(-float("inf") if invalid == "shift" else .8, D)
+    if not fixed and invalid == "shift":
+        # The computed shift cannot be invalid without an invalid local target.
+        negative_log = tf.fill([3], tf.constant(float("inf"), D))
+    program = (preparation_runtime.target_values_with_shift_program if fixed
+               else preparation_runtime.target_values_program)(3)
+    inputs = (negative_log, log_det, shift) if fixed else (negative_log, log_det)
+    assert not bool(program(*inputs)[-1])
+
+
+def test_resample_preserves_nonfinite_weight_rejection():
+    with pytest.raises(ValueError, match="NONFINITE_VALUE"):
+        candidate._p59_author_sir_deterministic_weighted_resample(
+            samples=tf.zeros([2, 3], D), log_weights=tf.constant([0., float("inf"), 1.], D))

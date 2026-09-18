@@ -2291,3 +2291,143 @@ with 170 guarded sources and 1,095 exact exceptions. The campaign comparison
 currently has 18 valid matched pairs and 840 missing matrix pairs, so the
 terminal gate remains closed. Current original-cap charges are 21,554 CPU
 seconds and 14,067 GPU seconds; no budget amendment has been applied.
+
+## Recovery: reachable preparation and cold derivative graphs
+
+Runs 01007--01008 pass the 45 focused source-preparation checks with compiled
+prior generation, source push, midpoint resampling, affine solve/clipping and
+target shifting. The prior stream and resampling indices are preserved; this
+does not use the separately approved geometry RNG migration. Run 01009 adds
+the existing P59 36-dimensional assembly suite and times out at 300.97 seconds,
+after the first 45 checks. No JUnit artifact was completed, so the group fails.
+Two direct CPU localizations were interrupted with no passing outcome. Their
+partial timings place preparation at a few seconds, fitting at tens of seconds,
+and the next delay at retained transport construction. Conservatively charge
+these unlogged processes 1,800 seconds in supplemental-compute-0003.json.
+Run 01010 retries the unchanged registered group under the existing allowed
+900-second limit. The original cumulative caps still apply.
+
+Skeptical review: a blanket timeout increase or an eager fallback would not
+answer the compile/memory question. The shared tensor boundary eagerly builds
+every complete derivative graph during value-only preparation. Investigate
+deferring that construction until a pullback is requested, while retaining
+all tensor/resource captures and the existing XLA-context distinction. Use
+the existing independent nested Case/While, init-scope, variable-update and
+public pullback checks as correctness vetoes. Then recheck the bounded P59
+endpoint and compare the same sequence fixture with the prior candidate's
+host snapshots. Stable values alone do not establish gradient correctness;
+small CPU diagnostics cannot replace the outstanding GPU terminal repeats.
+No source equation, score meaning, tolerance or seed changes are included.
+
+Run 01010 times out at 903.227 seconds after the same first 45 preparation
+checks. Its process imported the eager-pullback helper, so it does not validate
+the later lazy construction change. Run 01011 passes the ten existing helper
+checks. Skeptical review adds a custom-gradient-only captured coefficient and
+first proves the new defect in 01012: all four added cases fail with a missing
+capture. Run 01013 repairs direct captures but still fails the two nested
+branches because TensorFlow's Case gradient requires graph-tensor inputs.
+Run 01014 passes all six public pullback checks on CPU. Binding a new eager
+coefficient through the enclosing function graph fixes the nested case;
+01015 passes all 14 helper checks. The further loop/large-capture expansion
+remains under qualification. These failures are retained; no gradient is
+dropped and no tolerance is relaxed.
+
+Run 01016 passes all 22 helper checks, including looped conditionals and
+256-element coefficients captured only by a custom pullback. Run 01017 passes
+all 11 source-sequential checks on CPU in 69.112 seconds. Runs 01018/01019
+qualify the four-/two-date public endpoints on GPU3 with the lazy pullback.
+Their outputs are byte-for-byte equal as serialized JSON numbers to the prior
+candidate runs 01003/00997, and differ from baseline 00999/00993 by at most
+8.882e-16. The host-call mode still encloses the default XLA date kernel.
+
+The source fixture hash changed from `1006e22b913ce5e83d92dafaf1ccb4d033c86f25471b9620a5938648d35025ba`
+to `b294e675af2fcdd8c55d31a79dda3c91aa021a2a7fa6baa1197b59101c6a724c`.
+Reconstructing the old text by changing only the six-key dictionary literal
+back to the original `dict(...)` expression exactly reproduces the old hash.
+Keys, value expressions and evaluation order are identical. This permits a
+descriptive diagnostic comparison; the terminal comparison guard remains
+unchanged and those older harness artifacts are not made current. The
+standard-library analysis and input/result checksums are saved in
+`docs/plans/artifacts/filter-gradient-repair-20260917/lazy-pullback-diagnostic-01019.json`.
+
+| Dates | Public candidate | Cold execution s | Warm median ms | Host maximum MiB | Device peak bytes |
+|---|---|---:|---:|---:|---:|
+| 2 | prior, 00997 | 9.716 | 61.338 | 1572.9 | 37,632 |
+| 2 | lazy pullback, 01019 | 6.622 | 66.758 | 1327.5 | 37,632 |
+| 4 | prior, 01003 | 14.876 | 127.162 | 1854.8 | 45,824 |
+| 4 | lazy pullback, 01018 | 8.858 | 134.056 | 1445.0 | 45,824 |
+
+Host maximum fell by 245.4/409.8 MiB in these single-process observations.
+The remaining increase relative to the original public baseline is
+234.9/362.6 MiB, so the four-date case still triggers investigation. Warm
+medians are 8.8%/5.4% higher than the prior candidate. Device current bytes
+remain constant across the 20 warm calls; RSS increases by only 148/212 KiB
+from first to last warm call. These observations support deferred graph
+construction as an explanation for some host cost, but do not isolate its
+causal effect from the accompanying preparation-module import changes or
+establish a repeat-median performance result.
+
+Recovery review before 01020 retained the original caps (24,750.136 CPU and
+14,100.906 GPU seconds charged), the 900-second preparation ceiling, and all
+numerical thresholds. Run 01020 retries the full registered preparation group
+with the lazy helper; its result is still required. Review also found that the
+unfinished push replacement dropped the original input-route and increasing
+time checks, and target shifting checked only the exponentiated output, which
+could hide positive infinity as zero. Restore those existing vetoes, check
+coordinate/target pullbacks, and eliminate redundant eager weight arithmetic
+before accepting this preparation change. Re-inspected anchors are paper
+Algorithm 2/(15)--(16), local paper text 693--725 and 1103--1142, and author
+`models/full_sol.m:21--130`. This is a repair of the fixed-HMC adaptation and
+existing local extensions, with no new source-faithfulness claim.
+
+Run 01020 was interrupted through the campaign driver after 854.417 seconds;
+the lazy helper still had not completed the first 36-dimensional P59 test,
+after 45 preceding checks. A trusted process observation at 12:01 elapsed
+recorded worker RSS 29,009,676 KiB (27.67 GiB) and 109% CPU. This is a host
+growth investigation trigger, not a passing consumer result. The full run
+remains charged and failed; no completed JUnit was produced. Do not repeat
+that broad run unchanged. A bounded stage/stack localization is needed before
+another consumer attempt; small replay improvements did not close this gate.
+
+Run 01021 passes all 22 helper checks on GPU3 in 13.895 seconds. Preparation
+review restores route/type/dimension/time vetoes, callback output-shape vetoes,
+and finite local target/shift status. Deterministic resampling now performs
+weight normalization only inside its compiled kernel, with a finite-input
+check at the host boundary. New tests cover rejected inputs and independent
+coordinate/target pullbacks; the focused preparation group is registered
+separately while the complete consumer group remains required.
+
+Run 01022 passes all 46 focused preparation checks on CPU in 12.692 seconds.
+The next localization selects only the existing first P59 assembly test with
+pytest's 45-second traceback diagnostic and a 120-second driver ceiling.
+It executes the unchanged consumer, records its stack in the campaign log,
+and remains failed unless the full assertions complete. This is evidence to
+distinguish fitting, tracing and compilation cost before another repair,
+not permission to retry the earlier high-memory 900-second job unchanged.
+
+Run 01023 passes all six public TT/density/transport pullbacks on GPU3 in
+53.636 seconds. Run 01024 reaches its 120-second ceiling; its 45-second stack
+is in `NativeFixedTTFit._branches`, building an update's row environments
+during `forward.get_concrete_function()`. This establishes expensive fitter
+tracing, but does not prove which stage held all 27.67 GiB in 01020. Inspection
+also finds eager construction of every accepted-update derivative graph in
+that same branch factory. The next bounded repair will defer those graphs
+while retaining the existing accepted/rejected-branch derivative and static
+fit design. Shared-environment duplication remains a separate possible cost.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Preserve lazy helper and corrected preparation checkpoint | 22 GPU helper, 46 CPU preparation and six GPU public pullback checks pass | Full P59 preparation remains failed; four-date host overhead is above the investigation threshold | Large fitting/transport graph construction and remaining callback coverage | Qualify the sequential consumer, then localize/defer fitter derivative construction with focused parity checks | Merge readiness, repository-wide compliance, terminal speed or memory ranking |
+
+Focused Ruff passes on the helper, new preparation module and their tests;
+the static guard passes with 171 sources and 1,096 exact exceptions. Full Ruff
+on the three large modified legacy modules also reports 15 inherited style
+findings, outside the changed lines. These are not described as a clean
+repository lint result. Remote fetch finds no incoming main or repair-branch
+commits. Main remains gated.
+
+Runs 01025/01026 pass all 11 sequential and 46 preparation checks on GPU3 in
+100.048/24.070 seconds. Run 01027 passes the policy/controller checks on CPU.
+The checkpoint includes the lazy helper, exact capture exceptions, compiled
+reachable preparation, restored vetoes, and the failed-consumer localization.
+It is qualified by these focused tests; it is not a completed F01--F20 repair.

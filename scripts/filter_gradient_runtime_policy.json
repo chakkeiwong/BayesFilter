@@ -48,6 +48,7 @@
     "bayesfilter/highdim/source_route_numerics_tf.py": null,
     "bayesfilter/highdim/source_route_runtime_tf.py": null,
     "bayesfilter/highdim/source_route_sequential_tf.py": null,
+    "bayesfilter/highdim/source_route_preparation_runtime_tf.py": null,
     "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py": null,
     "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py": null,
     "bayesfilter/highdim/ledh_contract_e_tp_predator_prey_tf.py": null,
@@ -313,9 +314,17 @@
       "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
       "function": "tensor_program.evaluate",
       "kind": "python_iteration",
-      "ast_sha256": "64dc794ac4fff9a134b37211b03539ba3f92d6af1ad60cfa2700287dd10aef2e",
+      "ast_sha256": "c3b9dd46edbd031b4a16fbe6768b6f7e2b8fe24a10c79144841d0bb8e57f3f46",
       "role": "fixed_schema",
-      "reason": "Bind the fixed derivative capture list, including variable handles, to forward branch inputs so the backward graph introduces no eager resources."
+      "reason": "Bind the fixed primal capture schema, including variable handles, to forward branch inputs before lazy pullback construction; no numerical-axis iteration."
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.evaluate.pullback",
+      "kind": "python_iteration",
+      "ast_sha256": "b248a4e963486e211d3545345be77e12610cebd97243088d117208f24a45bb46",
+      "role": "fixed_schema",
+      "reason": "Bind the completed backward graph's fixed capture schema, retaining custom-gradient-only coefficients through enclosing graph captures; no numerical-axis iteration."
     },
     {
       "path": "bayesfilter/highdim/source_route.py",
@@ -10312,7 +10321,7 @@
       "kind": "non_xla_function",
       "ast_sha256": "8f87a87aabd1883d544b4e90b21da6277582ebb9b02b3deecac1ec99b3cb6aa6",
       "role": "enclosed_graph",
-      "reason": "Pretraced complete VJP remains inside the public XLA-default program and each native Case branch.",
+      "reason": "Complete VJP is traced once on demand and remains inside the public XLA-default program and each native Case branch.",
       "enclosing_endpoint": "bayesfilter.ops.compiled_tensor_program_tf.tensor_program returned program",
       "compilation_test": "tests/test_filter_repair_source_sequential.py::test_repeated_transport_keeps_all_captured_core_frame_and_callback_derivatives"
     },

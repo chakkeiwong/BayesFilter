@@ -16,6 +16,15 @@ def in_xla_context():
     return GraphOrParentsInXlaContext(tf.compat.v1.get_default_graph())
 
 
+def _capture_pullback_coefficient(value, graph):
+    # Case/While gradient inputs must be graph tensors. Lift an eager
+    # coefficient through the enclosing function before binding the branch.
+    with graph.as_default():
+        if not tf.is_symbolic_tensor(value) and getattr(graph, "is_control_flow_graph", False):
+            value = _capture_pullback_coefficient(value, graph.outer_graph)
+        return graph.capture(value)
+
+
 def tensor_program(function, signature, jit_compile):
     """Keep loop tapes internal without dropping captured tensor derivatives.
 
@@ -60,35 +69,43 @@ def tensor_program(function, signature, jit_compile):
         return tf.compat.v1.gradients(tf.nest.flatten(outputs), sources, grad_ys=cotangent,
                                       unconnected_gradients=tf.UnconnectedGradients.ZERO)
 
-    # Build the derivative before an enclosing loop requests its gradient.
-    # Nested branch rules then call tensor-valued VJP programs instead of
-    # exporting TensorLists or rebuilding an eager-captured gradient function.
-    # Graph differentiation remains valid when an enclosing init_scope pauses
-    # tape recording during cold construction. Resource handles are bound to
-    # this graph explicitly, so their derivatives do not depend on eager reads.
-    # TensorFlow builds a ConcreteFunction's backward graph under its forward
-    # graph, outside the tf.function tracing context. Keep the XLA context
-    # active there while building branch gradients, so it uses tensor-valued
-    # intermediates instead of graph-only Optionals. Graph diagnostic calls
-    # retain their normal intermediates. This context does not compile them.
-    with concrete.graph.as_default(), OptionalXlaContext(compile_gradients):
-        derivative_concrete = derivative.get_concrete_function()
+    derivative_concrete = None
+
+    def complete_derivative():
+        nonlocal derivative_concrete
+        # A value-only call needs no pullback graph. Build it once on demand
+        # under the primal's original context, including when an init_scope
+        # paused tape recording during preparation. The VJP still stays inside
+        # the compiled boundary and never exports loop TensorLists.
+        if derivative_concrete is None:
+            with concrete.graph.as_default(), OptionalXlaContext(compile_gradients):
+                derivative_concrete = derivative.get_concrete_function()
+        return derivative_concrete
 
     @tf.custom_gradient
     def evaluate(*values):
         graph = tf.compat.v1.get_default_graph()
         values = tuple(graph.capture(value) for value in values)
         arguments, tensor_captures = values[:argument_count], values[argument_count:]
-        # Bind pullback-only captures in the forward graph. Introducing an
-        # eager resource while TensorFlow constructs a Case/While gradient
-        # leaves that gradient with a tensor outside its graph.
-        derivative_captures = [graph.capture(value) for value in derivative_concrete.captured_inputs]
+        # Bind primal resources before TensorFlow constructs a Case/While
+        # gradient, so that gradient does not introduce eager resource handles.
+        primal_captures = {value.ref(): graph.capture(value) for value in concrete.captured_inputs}
         result = concrete._call_flat(list(arguments), captured_inputs=bound_captures(tensor_captures))
 
         def pullback(*cotangent, variables=None):
+            backward = complete_derivative()
+
+            def capture(value):
+                if value.ref() in primal_captures:
+                    return primal_captures[value.ref()]
+                # A nested custom gradient can introduce coefficients unused
+                # by its primal. Bind those in the current backward graph.
+                return _capture_pullback_coefficient(value, tf.compat.v1.get_default_graph())
+
+            derivative_captures = [capture(value) for value in backward.captured_inputs]
             incoming = tuple(tf.zeros(spec.shape, spec.dtype) if value is None else value
                              for value, spec in zip(cotangent, output_specs, strict=True))
-            gradients = derivative_concrete._call_flat(
+            gradients = backward._call_flat(
                 [*values, *incoming], captured_inputs=derivative_captures)
             if variables is None:
                 return gradients[:input_count]

@@ -36,6 +36,16 @@ from bayesfilter.highdim.fitting import (
 )
 from bayesfilter.highdim.fixed_branch import BranchIdentity, BranchManifest
 from bayesfilter.highdim.models import zhao_cui_sir_austria_model
+from bayesfilter.highdim.source_route_preparation_runtime_tf import (
+    coordinate_transform_program,
+    deterministic_weighted_resample_program,
+    normal_matrix_program,
+    prior_sample_program,
+    seed_state,
+    source_push_program,
+    target_values_program,
+    target_values_with_shift_program,
+)
 from bayesfilter.highdim.squared_tt import (
     SquaredTTDensity,
     SquaredTTMarginal,
@@ -3050,16 +3060,13 @@ def _p59_author_sir_prior_sample_batch(
     n = int(sample_count)
     if n <= 0:
         raise ValueError("sample_count must be positive")
-    generator = tf.random.Generator.from_seed(int(seed))
-    initial_chol = tf.linalg.cholesky(model.initial_covariance)
-    noise = generator.normal([n, model.state_dim()], dtype=tf.float64)
-    x0 = model.initial_mean[tf.newaxis, :] + tf.linalg.matmul(
-        noise,
-        initial_chol,
-        transpose_b=True,
+    samples = prior_sample_program(
+        model.parameter_dim(), model.state_dim(), n, jit_compile=True
+    )(
+        model.initial_mean,
+        model.initial_covariance,
+        seed_state(seed),
     )
-    theta = tf.zeros([model.parameter_dim(), n], dtype=tf.float64)
-    samples = tf.concat([theta, tf.transpose(x0)], axis=0)
     return SourceRouteSampleBatch(
         samples=samples,
         log_weights=_p59_author_sir_uniform_log_weights(n),
@@ -3098,42 +3105,49 @@ def _p59_author_sir_source_push_result(
     time_index: int,
     process_noise_seed: int,
 ) -> SourceRoutePushResult:
+    if not isinstance(previous_batch, SourceRouteSampleBatch):
+        raise TypeError("previous_batch must be a SourceRouteSampleBatch")
+    if previous_batch.route_label != SOURCE_FAITHFUL_ROUTE_LABEL:
+        raise ValueError("source push requires source_faithful_filtering input")
     n = previous_batch.sample_count
+    d = model.parameter_dim()
     m = model.state_dim()
-    generator = tf.random.Generator.from_seed(int(process_noise_seed))
-    transition_noise = generator.normal([n, m], dtype=tf.float64)
+    if d < 0 or m <= 0:
+        raise ValueError("parameter_dim must be nonnegative and state_dim positive")
+    if previous_batch.dimension != d + m:
+        raise ValueError("previous_batch dimension must equal parameter_dim + state_dim")
+    if int(time_index) <= previous_batch.time_index:
+        raise ValueError("time_index must advance")
     y_t = tf.convert_to_tensor(observation, dtype=tf.float64)
-
-    def transition_fn(previous_samples: tf.Tensor, step_index: int) -> tf.Tensor:
-        values = tf.convert_to_tensor(previous_samples, dtype=tf.float64)
-        theta = tf.transpose(values[: model.parameter_dim(), :])
-        previous_state = tf.transpose(values[model.parameter_dim() :, :])
-        pushed = model.transition_push_from_standard_normal(
-            theta,
-            previous_state,
-            transition_noise,
-            t=int(step_index),
-        )
-        return tf.transpose(pushed)
-
-    def log_likelihood_fn(propagated_samples: tf.Tensor, step_index: int) -> tf.Tensor:
-        values = tf.convert_to_tensor(propagated_samples, dtype=tf.float64)
-        theta = tf.transpose(values[: model.parameter_dim(), :])
-        current_state = tf.transpose(values[model.parameter_dim() :, :])
-        return model.observation_log_density(
-            theta,
-            current_state,
-            y_t,
-            t=int(step_index),
-        )
-
-    return source_route_push_and_augment_samples(
-        previous_batch=previous_batch,
-        transition_fn=transition_fn,
-        log_likelihood_fn=log_likelihood_fn,
-        parameter_dim=model.parameter_dim(),
-        state_dim=m,
+    transition_noise = normal_matrix_program(n, m, jit_compile=True)(
+        seed_state(process_noise_seed)
+    )
+    propagated_samples, propagated_log_weights, augmented_samples, _ = source_push_program(
+        model, d, m, n, int(time_index), jit_compile=True
+    )(
+        previous_batch.samples,
+        previous_batch.log_weights,
+        transition_noise,
+        y_t,
+    )
+    propagated = SourceRouteSampleBatch(
+        samples=propagated_samples,
+        log_weights=propagated_log_weights,
         time_index=int(time_index),
+        route_label=SOURCE_FAITHFUL_ROUTE_LABEL,
+        sample_origin="propagated",
+    )
+    augmented = SourceRouteSampleBatch(
+        samples=augmented_samples,
+        log_weights=propagated_log_weights,
+        time_index=int(time_index),
+        route_label=SOURCE_FAITHFUL_ROUTE_LABEL,
+        sample_origin="augmented_propagated",
+    )
+    return SourceRoutePushResult(
+        propagated_batch=propagated,
+        augmented_batch=augmented,
+        diagnostics=augmented.diagnostics(enhancement_attempts=0),
     )
 
 
@@ -3143,21 +3157,13 @@ def _p59_author_sir_deterministic_weighted_resample(
     log_weights: tf.Tensor,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     values = tf.convert_to_tensor(samples, dtype=tf.float64)
-    weights = tf.exp(normalize_log_weights(log_weights))
-    if values.shape.rank != 2 or weights.shape != (int(values.shape[1]),):
+    log_weights = _finite_vector("log_weights", log_weights)
+    if values.shape.rank != 2 or log_weights.shape != (int(values.shape[1]),):
         raise ValueError(f"resample inputs: {HighDimStatus.INVALID_SHAPE.value}")
     n = int(values.shape[1])
-    positions = (
-        tf.cast(tf.range(n), tf.float64) + tf.constant(0.5, dtype=tf.float64)
-    ) / tf.cast(n, tf.float64)
-    cdf = tf.cumsum(weights)
-    cdf = tf.concat(
-        [cdf[:-1], tf.ones([1], dtype=tf.float64)],
-        axis=0,
-    )
-    indices = tf.searchsorted(cdf, positions, side="left", out_type=tf.int32)
-    indices = tf.minimum(indices, tf.fill([n], n - 1))
-    return tf.gather(values, indices, axis=1), indices
+    return deterministic_weighted_resample_program(
+        int(values.shape[0]), n, jit_compile=True
+    )(values, log_weights)
 
 
 def _p59_author_sir_source_fit_data_for_step(
@@ -3213,19 +3219,13 @@ def _p59_author_sir_source_fit_data_for_step(
         samples=push.augmented_batch.samples,
         log_weights=push.augmented_batch.log_weights,
     )
-    local_unclipped = tf.linalg.solve(
-        frame.matrix,
-        resampled - frame.mu[:, tf.newaxis],
+    local_unclipped, _clipped_mask, clip_fraction, local_fit_points, physical_fit_points = (
+        coordinate_transform_program(
+            int(resampled.shape[0]), int(resampled.shape[1]), jit_compile=True
+        )(frame.matrix, frame.mu, resampled)
     )
-    clipped_mask = tf.abs(local_unclipped) > tf.constant(1.0, dtype=tf.float64)
-    clip_fraction = tf.reduce_mean(tf.cast(clipped_mask, tf.float64))
     if bool((clip_fraction >= 1.0).numpy()):
         raise ValueError("source_fit_data_all_local_entries_clipped")
-    local_fit_points = tf.clip_by_value(local_unclipped, -1.0, 1.0)
-    physical_fit_points = (
-        tf.linalg.matmul(frame.matrix, local_fit_points)
-        + frame.mu[:, tf.newaxis]
-    )
     prior_log_density, transition_log_density, likelihood_log_density = (
         _p59_author_sir_source_density_callbacks(model, observations[t])
     )
@@ -3241,14 +3241,10 @@ def _p59_author_sir_source_fit_data_for_step(
         time_index=t,
         previous_retained_object=previous_for_density,
     )
-    local_negative_log = negative_log_physical - frame.log_abs_det()
-    shift = tf.reduce_min(local_negative_log)
-    shifted = source_route_shifted_negative_log_target(
-        negative_log_target=local_negative_log,
-        shift_constant=shift,
-    )
-    target_values = tf.exp(-0.5 * shifted)
-    if not bool(tf.reduce_all(tf.math.is_finite(target_values)).numpy()):
+    local_negative_log, shift, target_values, target_valid = target_values_program(
+        n, jit_compile=True
+    )(negative_log_physical, frame.log_abs_det())
+    if not bool(target_valid.numpy()):
         raise ValueError("nonfinite_source_fit_target_values")
     manifest = {
         "fit_data_mode": P63_AUTHOR_SIR_SOURCE_FIT_DATA_MODE,
@@ -3343,19 +3339,13 @@ def _p69_author_sir_source_diagnostic_data_for_step(
         samples=push.augmented_batch.samples,
         log_weights=push.augmented_batch.log_weights,
     )
-    local_unclipped = tf.linalg.solve(
-        frame.matrix,
-        resampled - frame.mu[:, tf.newaxis],
+    local_unclipped, _clipped_mask, clip_fraction, local_points, physical_points = (
+        coordinate_transform_program(
+            int(resampled.shape[0]), int(resampled.shape[1]), jit_compile=True
+        )(frame.matrix, frame.mu, resampled)
     )
-    clipped_mask = tf.abs(local_unclipped) > tf.constant(1.0, dtype=tf.float64)
-    clip_fraction = tf.reduce_mean(tf.cast(clipped_mask, tf.float64))
     if bool((clip_fraction >= 1.0).numpy()):
         raise ValueError("diagnostic_data_all_local_entries_clipped")
-    local_points = tf.clip_by_value(local_unclipped, -1.0, 1.0)
-    physical_points = (
-        tf.linalg.matmul(frame.matrix, local_points)
-        + frame.mu[:, tf.newaxis]
-    )
     prior_log_density, transition_log_density, likelihood_log_density = (
         _p59_author_sir_source_density_callbacks(model, observations[t])
     )
@@ -3371,13 +3361,10 @@ def _p69_author_sir_source_diagnostic_data_for_step(
         time_index=t,
         previous_retained_object=previous_for_density,
     )
-    local_negative_log = negative_log_physical - frame.log_abs_det()
-    shifted = source_route_shifted_negative_log_target(
-        negative_log_target=local_negative_log,
-        shift_constant=shift_constant,
-    )
-    target_values = tf.exp(-0.5 * shifted)
-    if not bool(tf.reduce_all(tf.math.is_finite(target_values)).numpy()):
+    local_negative_log, target_values, target_valid = target_values_with_shift_program(
+        n, jit_compile=True
+    )(negative_log_physical, frame.log_abs_det(), shift_constant)
+    if not bool(target_valid.numpy()):
         raise ValueError("nonfinite_source_diagnostic_target_values")
     manifest = {
         "fit_data_mode": P63_AUTHOR_SIR_SOURCE_FIT_DATA_MODE,

@@ -274,6 +274,17 @@ construction inside an outer `tf.init_scope()`. Any TensorFlow
 upgrade requires these checks again. These AD pullbacks preserve the existing
 external-tape semantics and do not establish a canonical analytical LEDH score.
 
+September 18 cold-graph repair: defer complete VJP graph construction until a
+pullback is requested. This supersedes eager pretracing above while retaining
+graph differentiation under the original primal/XLA context. Bind primal
+resources before branch gradients and bind custom-gradient-only coefficients
+through the enclosing function graph. A value-only call must not trace the
+pullback; subsequent gradients must preserve explicit inputs, tensor/resource
+captures, initialization-scope behavior, and nested Case/While semantics.
+Test scalar and larger captures, repeated calls and resource updates before
+repeating the same public sequence memory fixture. This changes construction
+timing only, not the gradient definition or the CPU/GPU comparison contract.
+
 The next reachable preparation repair must enclose prior sampling, transition
 noise and model callbacks, deterministic weighted resampling, recentering,
 local clipping, target evaluation and target-value construction. Its consumers
