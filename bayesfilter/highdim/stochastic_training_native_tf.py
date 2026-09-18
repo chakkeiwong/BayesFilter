@@ -119,12 +119,16 @@ def _validity(trainer, operation, arguments, outputs):
     return valid
 
 
-def call_method(trainer, operation, *, result_type=None, result_metadata=None, **arguments):
+def call_method(trainer, operation, *, result_type=None, result_metadata=None,
+                state_attribute="cores", validity_fn=None, **arguments):
     """Bounded explicit tensor signatures; variable values never enter the cache."""
     values, specs, layout, restore = _arguments(trainer, operation, arguments)
-    cores = tuple(tf.convert_to_tensor(core, D) for core in trainer.cores)
+    state = getattr(trainer, state_attribute)
+    cores = tuple(tf.convert_to_tensor(core, D) for core in tf.nest.flatten(state))
     core_specs = tuple(tf.TensorSpec(core.shape, D) for core in cores)
-    key = (operation, core_specs, specs, layout)
+    key = (operation, state_attribute, validity_fn, core_specs, specs, layout)
+    if not hasattr(trainer, "_execution_programs"):
+        trainer._execution_programs = OrderedDict()
     cache = trainer._execution_programs
     if key not in cache:
         count = len(cores)
@@ -132,10 +136,11 @@ def call_method(trainer, operation, *, result_type=None, result_metadata=None, *
         def numerical(*tensors):
             proxy = object.__new__(type(trainer))
             proxy.__dict__.update(trainer.__dict__)
-            proxy.cores = tensors[:count]
+            setattr(proxy, state_attribute, tf.nest.pack_sequence_as(state, tensors[:count]))
             supplied = restore(tensors[count:])
             outputs = _outputs(getattr(proxy, operation)(**supplied))
-            return outputs, _validity(proxy, operation, supplied, outputs)
+            valid = (_validity if validity_fn is None else validity_fn)(proxy, operation, supplied, outputs)
+            return outputs, valid
 
         forward = tf.function(numerical, input_signature=(*core_specs, *specs),
                               jit_compile=True, autograph=False)
@@ -169,7 +174,7 @@ def call_method(trainer, operation, *, result_type=None, result_metadata=None, *
     cache.move_to_end(key)
     evaluate, structure = cache[key]
     result = evaluate(*cores, *values)
-    tf.debugging.assert_equal(result[-1], True, message="invalid stochastic density calculation")
+    tf.debugging.assert_equal(result[-1], True, message="invalid compiled density calculation")
     output = tf.nest.pack_sequence_as(structure, result[:-1])
     return output if result_type is None else result_type(**output, **(result_metadata or {}))
 

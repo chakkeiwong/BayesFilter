@@ -40,6 +40,30 @@ def philox_normal_float64(shape, seed):
     return tf.reshape(tf.reshape(values, [-1])[:count], shape)
 
 
+def philox_shuffle_indices(size, seed):
+    """Preserve TF shuffle_common.h's forward Fisher-Yates and Philox words.
+
+    The original shuffle consumes exactly size-1 sequential uint32 samples,
+    swapping i with i + sample % (size-i). Explicit words and tensor swaps
+    preserve that finite program in both graph and XLA execution.
+    """
+    indices = tf.range(size, dtype=tf.int32)
+    if size <= 1:
+        return indices
+    words = tf.random.stateless_uniform([size - 1], seed, minval=None, maxval=None,
+        dtype=tf.uint32, alg="philox")
+
+    def swap(index, permutation):
+        offset = tf.cast(words[index] % tf.cast(size - index, tf.uint32), tf.int32)
+        other = index + offset
+        positions = tf.stack([index, other])
+        values = tf.gather(permutation, tf.stack([other, index]))
+        return index + 1, tf.tensor_scatter_nd_update(permutation, positions[:, None], values)
+
+    return tf.while_loop(lambda index, _: index < size - 1, swap,
+        (tf.constant(0), indices), maximum_iterations=size - 1, parallel_iterations=1)[1]
+
+
 def stateless_categorical_cpu_stream(logits, count, seed):
     """One-row inverse-CDF draw matching TF's CPU categorical random stream.
 

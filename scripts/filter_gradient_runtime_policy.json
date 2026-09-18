@@ -97,7 +97,18 @@
         "core_tangent_banks_from_residual_components",
         "core_affine_released_coordinate_mask",
         "core_affine_origin_total_score_loss_arrays",
-        "CoreAffineTangentTrainer.residual_variables"
+        "CoreAffineTangentTrainer.residual_variables",
+        "CenteredResidualTrainer.__init__",
+        "make_compiled_absolute_train_step",
+        "make_compiled_origin_score_prefit_step",
+        "make_compiled_origin_total_score_train_step",
+        "_physical_to_local_and_reference_batch",
+        "_parameter_density_batch_arrays",
+        "build_t1_parameter_density_batch",
+        "_ratio_score_arrays",
+        "estimate_t1_ratio_score",
+        "_prefix_minibatch_program",
+        "rotating_prefix_minibatch_indices"
       ]
     },
     "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": null,
@@ -511,9 +522,9 @@
       "function": "call_method",
       "line": 125,
       "kind": "python_iteration",
-      "ast_sha256": "256cf5489ec7392f59d19174aa7884e8a28b74ab9f45561ffe6cba09595b9f7b",
+      "ast_sha256": "49ff492ce81c2fe12ad750ebdcb83b1cd173714b742b52d5a29d3228d99272d1",
       "role": "fixed_schema",
-      "reason": "Pass core variable reads and declared shapes as explicit compiled inputs."
+      "reason": "Flatten the declared core-variable schema and pass its reads as explicit compiled inputs; no numerical recurrence."
     },
     {
       "path": "bayesfilter/highdim/stochastic_training_native_tf.py",
@@ -9911,6 +9922,54 @@
       "ast_sha256": "21f8b4679ab42970e3ff9f999154d6936d700ca875d1cd3f566504fda894e16e",
       "role": "fixed_schema",
       "reason": "Compute static reshape sizes for restoring the public tangent tuple."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "CenteredResidualTrainer.__init__",
+      "kind": "python_iteration",
+      "ast_sha256": "a291757bbd0f261e9da67ea068c3946b3faf04ba4df168b85e9dddf2465493c9",
+      "role": "fixed_schema",
+      "reason": "Unpack completed compiled residual scaling into the fixed component/core tuple."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "CenteredResidualTrainer.__init__",
+      "kind": "python_iteration",
+      "ast_sha256": "6b0ead5345e9dbba3574695465f45036ee9925d077ba50786c3b337c8f90f4e3",
+      "role": "fixed_schema",
+      "reason": "Restore fixed per-axis ranks and basis widths after the native scaling program."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "CenteredResidualTrainer.__init__",
+      "kind": "python_iteration",
+      "ast_sha256": "d7bc4aeee4084e39705944ad6455c727124948212f054b33ecc6abbd9ede3c24",
+      "role": "fixed_schema",
+      "reason": "Validate fixed component arity and register the heterogeneous trainable resource schema."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "CenteredResidualTrainer.__init__",
+      "kind": "python_iteration",
+      "ast_sha256": "24b6f63ba8e615e526a249c1d662a4243223f1740f6dc2561641fa27bd09675b",
+      "role": "fixed_schema",
+      "reason": "Create named variable resources from supplied core tensors; no core-value calculation."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "make_compiled_origin_total_score_train_step",
+      "kind": "python_iteration",
+      "ast_sha256": "853fc045d08e36171030ca5114ec48f4ca1e80cf893474a3d9b60fb7443c8a4b",
+      "role": "host_validation",
+      "reason": "Validate four static loss/clip configuration values before constructing the compiled update."
+    },
+    {
+      "path": "bayesfilter/highdim/centered_training_native_tf.py",
+      "function": "compiled_trainer_method.decorate.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "424bce71c216416e704c02ce0e2d628de2e8035b8ce2140a81de05f3d0ceec75",
+      "role": "fixed_schema",
+      "reason": "Preserve original tf.cast dtype normalization for three named scalar loss options before packing the explicit tensor signature."
     }
   ]
 }

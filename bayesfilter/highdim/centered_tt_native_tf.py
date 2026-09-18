@@ -126,6 +126,11 @@ def _values(basis, packed, points):
     if points.shape[1] != count:
         raise ValueError("points must include every TT axis")
     table = _basis_table(basis, points, width, paired=False)
+    if rank == 1:
+        # Rank-one matrix products are scalar products. Contract every axis
+        # together; reduce_prod's pullback also handles one or more zero cores.
+        factors = tf.einsum("knl,ckl->nck", table, packed[:, :, 0, :, 0])
+        return tf.reduce_prod(factors, axis=-1)
     initial = tf.broadcast_to(tf.one_hot(0, rank, dtype=D), [components, points.shape[0], rank])
 
     def step(axis, state):
@@ -144,6 +149,10 @@ def _cross(basis, left, right, points):
         raise ValueError("cross components must have compatible axes and bases")
     table = _basis_table(basis, points, width, paired=True)
     rank = left_rank * right_rank
+    if rank == 1:
+        factors = tf.einsum("ikl,jkm,knlm->nijk", left[:, :, 0, :, 0],
+                            right[:, :, 0, :, 0], table)
+        return tf.reduce_prod(factors, axis=-1)
     rows = points.shape[0]
     initial = tf.broadcast_to(tf.one_hot(0, rank, dtype=D), [left_count, right_count, rows, rank])
 

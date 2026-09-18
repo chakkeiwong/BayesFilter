@@ -16,6 +16,10 @@ from bayesfilter.highdim import core_tangent_native_tf as tangent_native
 from bayesfilter.highdim.bases import ProductBasis
 from bayesfilter.highdim.centered_training_native_tf import quadratic_cg_program
 from bayesfilter.highdim.models import parameterized_zhao_cui_sir_austria_model
+from bayesfilter.highdim.stochastic_training_native_tf import (
+    checked_optimizer_update,
+    flat_cores,
+)
 from bayesfilter.highdim.zhao_cui_austria_sir_centered_density_tf import (
     CenteredThetaFeatures,
     LaneBCenteredResidualChild,
@@ -32,7 +36,11 @@ from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_tf import (
     balanced_initial_cores,
 )
 from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
-from bayesfilter.ops.stateless_random_tf import philox_normal_float64
+from bayesfilter.ops.slogdet_tf import slogdet_tf
+from bayesfilter.ops.stateless_random_tf import (
+    philox_normal_float64,
+    philox_shuffle_indices,
+)
 
 DTYPE = tf.float64
 PARAMETER_DIM = 3
@@ -252,15 +260,15 @@ def batch_native_t1_from_common_noise(
 
 
 def _physical_to_local_and_reference_batch(
-    joint_points: tf.Tensor, parent: LaneBT1Artifact
+    joint_points: tf.Tensor, frame_mu: tf.Tensor, frame_matrix: tf.Tensor
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     values = tf.convert_to_tensor(joint_points, DTYPE)
     theta_count = tf.shape(values)[0]
     sample_count = tf.shape(values)[1]
     flat = tf.reshape(values, [-1, JOINT_DIM])
     local_columns = tf.linalg.triangular_solve(
-        parent.frame.matrix,
-        tf.transpose(flat) - parent.frame.mu[:, tf.newaxis],
+        frame_matrix,
+        tf.transpose(flat) - frame_mu[:, tf.newaxis],
         lower=True,
     )
     local = tf.transpose(local_columns)
@@ -270,7 +278,7 @@ def _physical_to_local_and_reference_batch(
         1.0 - tf.square(tf.clip_by_value(reference, -1.0 + 1e-12, 1.0 - 1e-12))
     )
     log_coordinate_jacobian = (
-        parent.frame.log_abs_det()
+        slogdet_tf(frame_matrix)[1]
         + tf.reduce_sum(reference_to_local_log_jacobian, axis=1)
     )
     return (
@@ -344,6 +352,37 @@ class T1ParameterDensityBatch:
         object.__setattr__(self, "complete_data_score", score)
 
 
+@fixed_signature_function(floating_dtype=DTYPE)
+def _parameter_density_batch_arrays(
+    theta: tf.Tensor,
+    initial_noise: tf.Tensor,
+    transition_noise: tf.Tensor,
+    observation: tf.Tensor,
+    frame_mu: tf.Tensor,
+    frame_matrix: tf.Tensor,
+    shift_constant: tf.Tensor,
+) -> dict[str, tf.Tensor]:
+    evaluated = batch_native_t1_from_common_noise.python_function(
+        theta, initial_noise, transition_noise, observation
+    )
+    local, reference, coordinate_log_jacobian = _physical_to_local_and_reference_batch(
+        evaluated["joint_points"], frame_mu, frame_matrix
+    )
+    log_target = (
+        evaluated["complete_log_density"]
+        + coordinate_log_jacobian
+        - REFERENCE_LOG_DENSITY
+        + shift_constant
+    )
+    return {"theta": theta, "physical_points": evaluated["joint_points"],
+        "local_points": local, "reference_points": reference,
+        "target_log_density_reference": log_target,
+        "proposal_log_density": evaluated["proposal_log_density"],
+        "coordinate_log_jacobian": coordinate_log_jacobian,
+        "observation_log_density": evaluated["observation_log_density"],
+        "complete_data_score": evaluated["complete_data_score"]}
+
+
 def build_t1_parameter_density_batch(
     *,
     parent: LaneBT1Artifact,
@@ -352,31 +391,14 @@ def build_t1_parameter_density_batch(
     transition_noise: tf.Tensor,
     role: str,
 ) -> T1ParameterDensityBatch:
-    _states, observations, _all = generate_sealed_lane_b_dataset()
-    evaluated = batch_native_t1_from_common_noise(
-        theta, initial_noise, transition_noise, observations[0]
-    )
-    local, reference, coordinate_log_jacobian = _physical_to_local_and_reference_batch(
-        evaluated["joint_points"], parent
-    )
-    log_target = (
-        evaluated["complete_log_density"]
-        + coordinate_log_jacobian
-        - REFERENCE_LOG_DENSITY
-        + parent.shift_constant
-    )
-    return T1ParameterDensityBatch(
-        theta=theta,
-        physical_points=evaluated["joint_points"],
-        local_points=local,
-        reference_points=reference,
-        target_log_density_reference=log_target,
-        proposal_log_density=evaluated["proposal_log_density"],
-        coordinate_log_jacobian=coordinate_log_jacobian,
-        observation_log_density=evaluated["observation_log_density"],
-        complete_data_score=evaluated["complete_data_score"],
-        role=str(role),
-    )
+    with tf.init_scope():
+        _states, observations, _all = generate_sealed_lane_b_dataset()
+    evaluate = _parameter_density_batch_arrays
+    if tf.inside_function():
+        evaluate = evaluate.python_function
+    arrays = evaluate(theta, initial_noise, transition_noise, observations[0],
+        parent.frame.mu, parent.frame.matrix, parent.shift_constant)
+    return T1ParameterDensityBatch(**arrays, role=str(role))
 
 
 @dataclass(frozen=True)
@@ -525,25 +547,6 @@ def additive_prefix_score_operator(
 
 def _within_region_feature_values(basis: object, points: tf.Tensor) -> tf.Tensor:
     return initializer_native.feature_values(basis, points)
-
-
-def _basis_feature_component(
-    *,
-    axis_indices: Sequence[int],
-    basis_indices: Sequence[int],
-    basis_dims: Sequence[int],
-) -> tuple[tf.Tensor, ...]:
-    selected = dict(zip((int(axis) for axis in axis_indices), (int(index) for index in basis_indices)))
-    cores = []
-    for axis, width in enumerate(basis_dims):
-        values = tf.ones([1, int(width), 1], DTYPE)
-        if axis in selected:
-            values = tf.reshape(
-                tf.one_hot(selected[axis], int(width), dtype=DTYPE),
-                [1, int(width), 1],
-            )
-        cores.append(values)
-    return tuple(cores)
 
 
 def _within_region_cross_features(
@@ -1093,17 +1096,12 @@ class CenteredResidualTrainer:
             num_elems=parent.settings.basis_num_elems,
         )
         if initial_residual_components is None:
-            initial_residual_components = tuple(
-                tuple(
-                    (
-                        tf.constant(1e-3 * (component_index + 1), DTYPE) * core
-                        if axis == 0
-                        else tf.identity(core)
-                    )
-                    for axis, core in enumerate(parent.cores)
-                )
-                for component_index in range(self.features.feature_count)
-            )
+            packed = centered_native.pack_components((parent.cores,))[0]
+            values = training_native.default_residual_program(
+                tuple(packed.shape), self.features.feature_count)(packed)
+            initial_residual_components = tuple(tuple(
+                row[axis, :core.shape[0], :core.shape[1], :core.shape[2]]
+                for axis, core in enumerate(parent.cores)) for row in tf.unstack(values))
         if len(initial_residual_components) != self.features.feature_count:
             raise ValueError("one initial residual component is required per feature")
         variables = []
@@ -1148,6 +1146,7 @@ class CenteredResidualTrainer:
         gram = centered_native.cross_components(components, components, self.basis)
         return 0.5 * (gram + tf.transpose(gram))
 
+    @training_native.compiled_trainer_method(result_type=AbsoluteDensityLossTerms)
     def absolute_density_loss(
         self,
         batch: T1ParameterDensityBatch,
@@ -1174,6 +1173,7 @@ class CenteredResidualTrainer:
             derivative_weight=derivative_weight,
         )
 
+    @training_native.compiled_trainer_method(result_type=AbsoluteDensityLossTerms)
     def absolute_density_loss_arrays(
         self,
         theta: tf.Tensor,
@@ -1213,7 +1213,7 @@ class CenteredResidualTrainer:
         )
         mass_estimate = tf.reduce_mean(absolute_weights, axis=1)
         centered_mass = absolute_weights - mass_estimate[:, tf.newaxis]
-        mass_se = tf.sqrt(
+        mass_se = training_native.metric_sqrt(
             tf.reduce_sum(tf.square(centered_mass), axis=1)
             / tf.cast(sample_count * (sample_count - 1), DTYPE)
         )
@@ -1262,6 +1262,7 @@ class CenteredResidualTrainer:
             minimum_rho=tf.reduce_min(rho),
         )
 
+    @training_native.compiled_trainer_method()
     def origin_point_score_loss_arrays(
         self,
         local_points: tf.Tensor,
@@ -1275,6 +1276,7 @@ class CenteredResidualTrainer:
         )
         return tf.reduce_sum(tf.square(metrics["normalized_score_residual_rms"]))
 
+    @training_native.compiled_trainer_method()
     def origin_global_score_metrics_arrays(
         self,
         target_score: tf.Tensor,
@@ -1301,6 +1303,7 @@ class CenteredResidualTrainer:
             "standardized_residual": tf.abs(standardized),
         }
 
+    @training_native.compiled_trainer_method()
     def origin_prefix_score_metrics_arrays(
         self,
         local_prefix_points: tf.Tensor,
@@ -1338,6 +1341,7 @@ class CenteredResidualTrainer:
             "standardized_residual": tf.abs(standardized),
         }
 
+    @training_native.compiled_trainer_method()
     def origin_point_score_metrics_arrays(
         self,
         local_points: tf.Tensor,
@@ -1379,7 +1383,7 @@ class CenteredResidualTrainer:
         child_point_score_mean = tf.reduce_sum(
             normalized[:, tf.newaxis] * child_point_score, axis=0
         )
-        child_point_score_standard_deviation = tf.sqrt(
+        child_point_score_standard_deviation = training_native.metric_sqrt(
             tf.reduce_sum(
                 normalized[:, tf.newaxis]
                 * tf.square(
@@ -1395,7 +1399,7 @@ class CenteredResidualTrainer:
             )
         )
         scale = tf.maximum(scale, tf.constant(1e-6, DTYPE))
-        residual_rms = tf.sqrt(
+        residual_rms = training_native.metric_sqrt(
             tf.reduce_sum(
                 normalized[:, tf.newaxis] * tf.square(residual), axis=0
             )
@@ -1420,6 +1424,7 @@ class CenteredResidualTrainer:
             ),
         }
 
+    @training_native.compiled_trainer_method()
     def heldout_metrics(self, batch: T1ParameterDensityBatch) -> dict[str, tf.Tensor]:
         parameters = batch.theta
         theta_count = tf.shape(parameters)[0]
@@ -1446,7 +1451,7 @@ class CenteredResidualTrainer:
             mean_scaled
         )
         centered_scaled = scaled - mean_scaled[:, tf.newaxis]
-        scaled_standard_error = tf.sqrt(
+        scaled_standard_error = training_native.metric_sqrt(
             tf.reduce_sum(tf.square(centered_scaled), axis=1)
             / tf.cast(sample_count * (sample_count - 1), DTYPE)
         )
@@ -1456,7 +1461,7 @@ class CenteredResidualTrainer:
             - batch.target_log_density_reference
             + target_log_mass[:, tf.newaxis]
         )
-        centered_log_rms = tf.sqrt(
+        centered_log_rms = training_native.metric_sqrt(
             tf.reduce_sum(normalized * tf.square(log_density_residual), axis=1)
         )
         return {
@@ -1567,6 +1572,7 @@ class CoreAffineTangentTrainer:
         delegate.residual_variables = self.residual_variables
         return delegate
 
+    @training_native.compiled_trainer_method(state_attribute="tangent_variables")
     def origin_point_score_metrics_arrays(
         self,
         local_points: tf.Tensor,
@@ -1577,6 +1583,7 @@ class CoreAffineTangentTrainer:
             local_points, target_complete_data_score, importance_log_weight
         )
 
+    @training_native.compiled_trainer_method(state_attribute="tangent_variables")
     def origin_global_score_metrics_arrays(
         self, target_score: tf.Tensor, score_standard_error: tf.Tensor
     ) -> dict[str, tf.Tensor]:
@@ -1584,6 +1591,7 @@ class CoreAffineTangentTrainer:
             target_score, score_standard_error
         )
 
+    @training_native.compiled_trainer_method(state_attribute="tangent_variables")
     def origin_prefix_score_metrics_arrays(
         self,
         local_prefix_points: tf.Tensor,
@@ -1594,6 +1602,7 @@ class CoreAffineTangentTrainer:
             local_prefix_points, target_score, score_standard_error
         )
 
+    @training_native.compiled_trainer_method(state_attribute="tangent_variables")
     def heldout_metrics(self, batch: T1ParameterDensityBatch) -> dict[str, tf.Tensor]:
         return self._delegate().heldout_metrics(batch)
 
@@ -2080,36 +2089,13 @@ def make_compiled_absolute_train_step(
                 derivative_weight=tf.constant(derivative_weight, DTYPE),
             )
         gradients = tape.gradient(terms.total_loss, trainer.trainable_variables)
-        if any(gradient is None for gradient in gradients):
-            raise ValueError("absolute density training has a missing gradient")
-        for name, value in (
-            ("total_loss", terms.total_loss),
-            ("absolute_density_loss", terms.absolute_density_loss),
-            ("derivative_matching_loss", terms.derivative_matching_loss),
-            ("exact_child_mass", terms.exact_child_mass),
-            ("target_log_density_term", terms.target_log_density_term),
-            ("target_mass_estimate", terms.target_mass_estimate),
-            ("target_mass_standard_error", terms.target_mass_standard_error),
-            ("minimum_rho", terms.minimum_rho),
-        ):
-            tf.debugging.assert_all_finite(value, f"nonfinite training term: {name}")
-        for index, gradient in enumerate(gradients):
-            tf.debugging.assert_all_finite(
-                gradient, f"nonfinite residual gradient: {index}"
-            )
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            gradients, tf.constant(gradient_clip_norm, DTYPE)
-        )
-        tf.debugging.assert_all_finite(gradient_norm, "nonfinite gradient norm")
-        for index, gradient in enumerate(clipped):
-            tf.debugging.assert_all_finite(
-                gradient, f"nonfinite clipped residual gradient: {index}"
-            )
-        optimizer.apply_gradients(zip(clipped, trainer.trainable_variables))
-        for index, variable in enumerate(trainer.trainable_variables):
-            tf.debugging.assert_all_finite(
-                variable, f"nonfinite updated residual core: {index}"
-            )
+        valid = tf.reduce_all(tf.math.is_finite(flat_cores((
+            terms.total_loss, terms.absolute_density_loss, terms.derivative_matching_loss,
+            terms.exact_child_mass, terms.target_log_density_term, terms.target_mass_estimate,
+            terms.target_mass_standard_error, terms.minimum_rho))))
+        gradient_norm, valid = checked_optimizer_update(optimizer,
+            trainer.trainable_variables, gradients, gradient_clip_norm, valid)
+        tf.debugging.assert_equal(valid, True, message="invalid absolute density training step")
         maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             terms.total_loss,
@@ -2154,24 +2140,9 @@ def make_compiled_origin_score_prefit_step(
             )
             loss = metrics["loss"]
         gradients = tape.gradient(loss, trainer.trainable_variables)
-        if any(gradient is None for gradient in gradients):
-            raise ValueError("origin score prefit has a missing gradient")
-        tf.debugging.assert_all_finite(loss, "nonfinite origin score prefit loss")
-        for index, gradient in enumerate(gradients):
-            tf.debugging.assert_all_finite(
-                gradient, f"nonfinite origin score prefit gradient: {index}"
-            )
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            gradients, tf.constant(gradient_clip_norm, DTYPE)
-        )
-        tf.debugging.assert_all_finite(
-            gradient_norm, "nonfinite origin score prefit gradient norm"
-        )
-        optimizer.apply_gradients(zip(clipped, trainer.trainable_variables))
-        for index, variable in enumerate(trainer.trainable_variables):
-            tf.debugging.assert_all_finite(
-                variable, f"nonfinite origin score prefit core: {index}"
-            )
+        gradient_norm, valid = checked_optimizer_update(optimizer,
+            trainer.trainable_variables, gradients, gradient_clip_norm, tf.math.is_finite(loss))
+        tf.debugging.assert_equal(valid, True, message="invalid origin score prefit step")
         maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             loss,
@@ -2243,25 +2214,14 @@ def make_compiled_origin_total_score_train_step(
                 + tf.constant(float(l2_weight), DTYPE) * l2
             )
         gradients = tape.gradient(total, trainer.trainable_variables)
-        if any(gradient is None for gradient in gradients):
-            raise ValueError("origin total-score training has a missing gradient")
-        for value in (
-            total,
-            point["loss"],
-            global_metrics["loss"],
-            prefix["loss"],
-            global_metrics["standardized_residual"],
-            prefix["standardized_residual"],
-        ):
-            tf.debugging.assert_all_finite(value, "nonfinite total-score training term")
-        for index, gradient in enumerate(gradients):
-            tf.debugging.assert_all_finite(
-                gradient, f"nonfinite total-score gradient: {index}"
-            )
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            gradients, tf.constant(float(gradient_clip_norm), DTYPE)
-        )
-        optimizer.apply_gradients(zip(clipped, trainer.trainable_variables))
+        valid = tf.reduce_all(tf.math.is_finite(flat_cores((total, point["loss"],
+            global_metrics["loss"], prefix["loss"], global_metrics["standardized_residual"],
+            prefix["standardized_residual"]))))
+        valid &= tf.reduce_all(global_score_standard_error >= 0.)
+        valid &= tf.reduce_all(prefix_score_standard_error >= 0.)
+        gradient_norm, valid = checked_optimizer_update(optimizer,
+            trainer.trainable_variables, gradients, float(gradient_clip_norm), valid)
+        tf.debugging.assert_equal(valid, True, message="invalid origin total-score training step")
         maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             total,
@@ -2276,6 +2236,17 @@ def make_compiled_origin_total_score_train_step(
         )
 
     return train_step
+
+
+@lru_cache(maxsize=16)
+def _prefix_minibatch_program(pool_count, batch_count):
+    @tf.function(input_signature=[tf.TensorSpec([2], tf.int32), tf.TensorSpec([], tf.int32)],
+                 jit_compile=True, autograph=False)
+    def evaluate(seed, batch_in_epoch):
+        permutation = philox_shuffle_indices(pool_count, seed)
+        return tf.slice(permutation, [batch_in_epoch * batch_count], [batch_count])
+
+    return evaluate
 
 
 def rotating_prefix_minibatch_indices(
@@ -2295,12 +2266,9 @@ def rotating_prefix_minibatch_indices(
     batches_per_epoch = pool_count // batch_count
     epoch = update_index // batches_per_epoch
     batch_in_epoch = update_index % batches_per_epoch
-    permutation = tf.random.experimental.stateless_shuffle(
-        tf.range(pool_count, dtype=tf.int32),
-        seed=tf.constant([int(seed), epoch], tf.int32),
-    )
-    first = batch_in_epoch * batch_count
-    return permutation[first : first + batch_count]
+    program = _prefix_minibatch_program(pool_count, batch_count)
+    evaluate = program.python_function if tf.inside_function() else program
+    return evaluate(tf.constant([int(seed), epoch], tf.int32), tf.constant(batch_in_epoch, tf.int32))
 
 
 def estimate_t1_ratio_score(
@@ -2309,11 +2277,18 @@ def estimate_t1_ratio_score(
     index = int(theta_index)
     if index < 0 or index >= int(batch.theta.shape[0]):
         raise IndexError("theta_index out of range")
-    log_weight = batch.observation_log_density[index]
+    evaluate = _ratio_score_arrays.python_function if tf.inside_function() else _ratio_score_arrays
+    value, score, standard_error, ess = evaluate(
+        batch.observation_log_density[index], batch.complete_data_score[index])
+    return RatioScoreEstimate(value=value, score=score, score_standard_error=standard_error,
+                              effective_sample_size=ess)
+
+
+@fixed_signature_function(floating_dtype=DTYPE)
+def _ratio_score_arrays(log_weight: tf.Tensor, local_score: tf.Tensor) -> tuple[tf.Tensor, ...]:
     maximum = tf.reduce_max(log_weight)
     scaled = tf.exp(log_weight - maximum)
     weights = scaled / tf.reduce_sum(scaled)
-    local_score = batch.complete_data_score[index]
     score = tf.reduce_sum(weights[:, tf.newaxis] * local_score, axis=0)
     mean_scaled = tf.reduce_mean(scaled)
     influence = scaled[:, tf.newaxis] * (
@@ -2325,12 +2300,7 @@ def estimate_t1_ratio_score(
     )
     standard_error = tf.sqrt(variance / tf.cast(sample_count, DTYPE))
     value = tf.exp(maximum) * mean_scaled
-    return RatioScoreEstimate(
-        value=value,
-        score=score,
-        score_standard_error=standard_error,
-        effective_sample_size=tf.math.reciprocal(tf.reduce_sum(tf.square(weights))),
-    )
+    return value, score, standard_error, tf.math.reciprocal(tf.reduce_sum(tf.square(weights)))
 
 
 @lru_cache(maxsize=16)

@@ -89,6 +89,52 @@ def test_complete_component_pair_contractions_and_derivatives(dimension, jit, fa
         assert "HloModule" in call.experimental_get_compiler_ir(components, points)(stage="hlo")
 
 
+@pytest.mark.parametrize("dimension", [4, 36])
+@pytest.mark.parametrize("zero_cores", [False, True])
+def test_rank_one_axis_products_preserve_values_and_zero_core_gradients(dimension, zero_cores):
+    local = LegendreBasis1D(BoundedInterval(-1., 1.), 1)
+    basis = ProductBasis((local,) * dimension, lane_b_measure_convention())
+    components = tuple(tuple(tf.reshape(tf.constant([1., .03 * np.sin(axis + index)], D), [1, 2, 1])
+                             for axis in range(dimension)) for index in range(2))
+    if zero_cores:
+        components = tuple(tuple(tf.zeros_like(core) if axis in range(1, index + 2) else core
+                                 for axis, core in enumerate(row)) for index, row in enumerate(components))
+    points = tf.reshape(tf.linspace(tf.constant(-.6, D), .7, 4 * dimension), [4, dimension])
+    before = _original("zhao_cui_austria_sir_centered_density_tf")
+
+    def endpoint(cores, query, *, candidate):
+        with tf.GradientTape() as tape:
+            tape.watch((cores, query))
+            if candidate:
+                values = native.evaluate_components(cores, basis, query)
+                mass = native.cross_components(cores, cores, basis)
+                prefix = native.cross_components(cores, cores, basis, query[:, :2])
+            else:
+                values = tf.stack([before._evaluate_component(row, basis, query) for row in cores], 1)
+                mass = tf.stack([tf.stack([before._cross_mass(left, right, basis) for right in cores])
+                                 for left in cores])
+                prefix = tf.stack([tf.stack([before._cross_prefix_values(left, right, basis, query[:, :2])
+                                             for right in cores], 1) for left in cores], 1)
+            objective = tf.reduce_sum(values) + tf.reduce_sum(mass) + tf.reduce_sum(prefix)
+        return (values, mass, prefix), tape.gradient(objective, (cores, query))
+
+    call = tf.function(lambda cores, query: endpoint(cores, query, candidate=True),
+        input_signature=[tf.nest.map_structure(lambda value: tf.TensorSpec(value.shape, D), components),
+                         tf.TensorSpec(points.shape, D)], jit_compile=True, autograph=False)
+    actual = call(components, points)
+    expected = endpoint(components, points, candidate=False)
+    for result, authority in zip(tf.nest.flatten(actual), tf.nest.flatten(expected), strict=True):
+        np.testing.assert_allclose(result, authority, atol=1e-10, rtol=1e-10)
+    if zero_cores:
+        assert float(tf.linalg.norm(actual[1][0][0][1])) > 0.
+        np.testing.assert_array_equal(actual[1][0][1][1], tf.zeros([1, 2, 1], D))
+    graph = call.get_concrete_function().graph.as_graph_def()
+    nodes = list(graph.node) + [node for function in graph.library.function for node in function.node_def]
+    assert not any(node.op in ("While", "StatelessWhile", "PyFunc", "EagerPyFunc") for node in nodes)
+    assert call.experimental_get_tracing_count() == 1
+    assert "HloModule" in call.experimental_get_compiler_ir(components, points)(stage="hlo")
+
+
 @pytest.mark.parametrize("degree", [0, 1, 3])
 def test_legendre_endpoint_gradients_compile_at_zero_substeps(degree):
     basis = LegendreBasis1D(BoundedInterval(-1., 1.), degree)

@@ -1,11 +1,12 @@
-"""Native execution of the existing centered-density quadratic solve.
+"""Native execution of existing centered-density initialization and training.
 
 This preserves the finite conjugate-gradient algorithm, convergence threshold,
 curvature veto and trace schedule. It makes no Zhao-Cui source-faithfulness
 claim. The callback is the same fixed affine quadratic gradient as before.
 """
 
-from functools import lru_cache
+from functools import lru_cache, wraps
+from inspect import signature
 
 import tensorflow as tf
 
@@ -13,6 +14,70 @@ from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 
 D = tf.float64
+
+
+@tf.custom_gradient
+def metric_sqrt(value):
+    """Keep unused zero-valued metrics from contributing a 0/0 pullback.
+
+    A compiled multi-output VJP receives zero cotangents for unused metrics.
+    An active cotangent at zero retains the ordinary singular sqrt derivative.
+    """
+    root = tf.sqrt(value)
+    return root, lambda cotangent: tf.math.xdivy(cotangent, 2. * root)
+
+
+def _method_validity(trainer, operation, arguments, outputs):
+    from bayesfilter.highdim.stochastic_training_native_tf import flat_cores
+
+    valid = tf.reduce_all(tf.math.is_finite(flat_cores(tf.nest.flatten(outputs))))
+    if operation == "absolute_density_loss":
+        valid &= tf.reduce_all(arguments["batch"].theta[0] == 0.)
+    if operation == "absolute_density_loss_arrays" and arguments["derivative_points"] is None:
+        valid &= arguments["derivative_weight"] == 0.
+    if operation in ("origin_global_score_metrics_arrays", "origin_prefix_score_metrics_arrays"):
+        valid &= tf.reduce_all(arguments["score_standard_error"] >= 0.)
+    return valid
+
+
+def compiled_trainer_method(*, result_type=None, state_attribute="residual_variables"):
+    """Use explicit mutable-core inputs and the existing compiled full pullback."""
+    from bayesfilter.highdim.stochastic_training_native_tf import call_method
+
+    def decorate(method):
+        api = signature(method)
+
+        @wraps(method)
+        def evaluate(trainer, *args, **kwargs):
+            if tf.inside_function():
+                return method(trainer, *args, **kwargs)
+            bound = api.bind(trainer, *args, **kwargs)
+            bound.apply_defaults()
+            arguments = dict(bound.arguments)
+            arguments.pop(next(iter(api.parameters)))
+            # These options were cast by the original loss. In particular,
+            # tf.cast(Python float, float64) preserves its float32 conversion.
+            arguments = {name: tf.cast(value, D) if name in (
+                "l1_weight", "l2_weight", "derivative_weight") else value
+                for name, value in arguments.items()}
+            return call_method(trainer, method.__name__, result_type=result_type,
+                state_attribute=state_attribute, validity_fn=_method_validity, **arguments)
+
+        return evaluate
+
+    return decorate
+
+
+@lru_cache(maxsize=16)
+def default_residual_program(shape, component_count):
+    """Scale only the first parent core for every existing residual feature."""
+    @tf.function(input_signature=[tf.TensorSpec(shape, D)], jit_compile=True, autograph=False)
+    def evaluate(parent):
+        scale = tf.constant(1e-3, D) * tf.cast(tf.range(component_count) + 1, D)
+        factors = tf.where(tf.range(shape[0])[None, :] == 0, scale[:, None], tf.constant(1., D))
+        return parent[None] * factors[:, :, None, None, None]
+
+    return evaluate
 
 
 @lru_cache(maxsize=16)

@@ -1810,3 +1810,93 @@ Run 00835 passed the recovered checkpoint's controller/policy checks in 7.580
 CPU seconds. Focused initializer fixture/test lint and whitespace checks pass.
 The exact guard still covers 166 sources and 1,048 exceptions; its passing
 status does not close the remaining execution findings.
+
+Run 00836 passed all three centered Adam-update checks, including two-step
+pinned parity and invalid enclosing-XLA no-mutation. Run 00837 passed 12
+shuffle checks but exposed unsupported MatrixDeterminant in complete batch
+preparation and two stale historical parent fixtures. The repair uses the
+existing native pivoted determinant helper and invokes the unchanged consumer
+checks with fresh exact parents, preserving artifact stale-source rejection.
+Run 00838 passed all 16 preparation checks, including non-diagonal chart parity,
+exact Philox/Fisher-Yates draws and pure enclosing graph/XLA programs.
+
+Direct centered loss/metric calls also needed complete compiled boundaries.
+The existing stochastic objective/pullback helper now accepts an explicit
+nested core-state schema; changing variable values never become cached inputs.
+Run 00839 passed four checks but detected NaN core-affine gradients at the zero
+tangent initialization. The multi-output pullback supplied zero cotangents to
+an unused zero-valued standard-deviation metric, producing 0/0 in sqrt's VJP.
+The repair preserves sqrt values and every active derivative, using TensorFlow
+xdivy only to propagate an exactly zero cotangent as zero. An active derivative
+at zero remains singular. No epsilon, clipping, changed objective or hidden
+stop-gradient is introduced. Dedicated zero/active pullback and complete
+input/core gradient checks precede acceptance; the failed attempt is retained.
+
+Runs 00840--00843 passed all six centered objective/update checks, 50 shared
+stochastic-training checks, 16 centered preparation checks, and the refreshed
+policy/controller checks. The zero-cotangent repair preserves active derivatives;
+the invalid-update checks preserve parameters and Adam slots inside enclosing
+XLA programs. The exact guard covers 166 sources and 1,053 exceptions without
+violations or stale entries. This remains partial source coverage.
+
+Runs 00844--00853 qualified complete centered batch/ratio target preparation at
+four/eight rows. The original graph and XLA routes fail on host `.numpy()`
+preparation, so their valid eager route supplies the reference. Candidate graph
+and XLA outputs pass the unchanged combined absolute/relative criterion; maximum
+absolute discrepancies are 1.5853629520279355e-10 and 1.1368683772161603e-13,
+respectively. These are qualification observations; three-process performance
+comparisons are pending. Recovery through 00853 confirms 20,897.424 CPU and
+9,478.729 GPU process-seconds charged against the unchanged 28,800/14,400 caps.
+
+The next audit boundary is source_route.py target/transport evaluation,
+retained-sample generation, previous-marginal evaluation and the sequential
+date recurrence. These are reachable from p59_author_sir_step_spec_assembly
+and remain execution debt. The formula anchors were re-inspected in the paper's
+section 4.1 (local text lines 1103--1142) and author models/full_sol.m:21--130,
+including the previous affine-prefix marginal, proposal correction and shifted
+normalizer. Frozen transports/schedules are a fixed_hmc_adaptation of those
+operations. Compilation cannot establish source-faithfulness of the separate
+TT fitting construction or confer HMC/scientific admission. Host construction
+of records and identities must remain distinct from the numerical calculation;
+simply marking the active sequential caller diagnostic would not repair it.
+
+The centered-objective qualification exposes the same small-contraction warm
+regression as the core-affine endpoint. At four rows, runs 00856/00857 report
+71.822/4.103 seconds for XLA first execution and approximately 2,703/1,367 MiB
+sampled host peaks, but 1.875/6.389 ms warm medians. No continuing device
+allocation appears in the twenty warm calls. The next bounded investigation
+specializes rank-one TT products as batched scalar products across axes, using
+the same amplitude/mass formula. It must preserve derivatives at zero cores as
+well as ordinary off-origin inputs; there is no division-by-product gradient,
+epsilon or rank change. Re-inspected anchors are paper section 3.1 equations
+(13)--(14), author int_reference.m:22--29 and ttdot.m:20--23. The centered
+construction remains extension_or_invention. Higher-rank contractions and the
+core-affine regression remain open unless measured evidence resolves them.
+
+Run 00862 passed 19 centered-TT GPU checks after the rank-one specialization,
+including one/two-zero-core pullbacks, complete child values/scores, training
+losses and updates. Runs 00863--00866 qualified both centered-objective extents
+against the unchanged graph/XLA baseline: all pass, with maximum discrepancy
+below 3e-16. The four-row XLA warm median is 1.014 ms, compared with 6.389 ms
+before this specialization and 1.875 ms for the pinned unrolled baseline. This
+is a single-process qualification, not a repeated performance claim.
+
+Run 00867 passed seven checks but the new direct batch-loss check found a
+2.2164e-9 discrepancy. The wrapper converted Python scalar loss weights
+directly to float64, whereas the original method's tf.cast first rounds Python
+floats through float32. Preserve that existing conversion at the wrapper's
+input boundary, including direct arrays and batch APIs; tensor-valued weights
+retain their dtype semantics. No numerical tolerance changes. This failure
+does not appear in enclosing compiled callbacks, whose weights are already
+explicit float64 tensors.
+
+Run 00868 passed both direct batch-objective/metric checks after restoring
+scalar conversion semantics, including external input/core pullbacks and the
+arrays API with no derivative-matching inputs. Run 00869 passed all six Austria
+consumer checks, including fresh artifact reload and tamper rejection. Run
+00870 passed all 50 shared stochastic-training checks. The policy change adds
+one exact scalar-input schema exception, not a numerical iteration exemption.
+Focused lint and whitespace checks pass. Remote fetch still finds no incoming
+origin/main commits; integration remains gated. Centered callback/schedule
+measurements, higher-rank performance, source-route repair and terminal repeated
+comparisons remain outstanding.

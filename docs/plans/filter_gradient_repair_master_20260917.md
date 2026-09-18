@@ -1,6 +1,6 @@
 # Complete filter and gradient execution repair
 
-Status: executing on `repair/filter-gradient-xla-20260917`; merge is gated.
+Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is gated.
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
@@ -196,6 +196,16 @@ reset time is included and no optimizer trajectory is treated as a frozen
 input. Preserve all returned numerical terms, updated parameters, and optimizer
 state. Use the existing loss, clipping, regularization, and seed semantics;
 these fixtures establish execution parity, not a trained-model quality claim.
+
+Centered-training coverage also includes the complete absolute-density objective
+and gradient, all three Adam callbacks, complete batch/ratio target preparation,
+and the existing shuffled prefix schedule. Use fresh exact parents, four/eight
+sample rows and 32/64 schedule rows. Preserve every returned numerical field
+and optimizer slot, restoring identical state before each update as above.
+Stream checks require exact original Philox/Fisher-Yates permutations. Reuse
+the existing dtype, comparison thresholds, three repeats and cumulative budget.
+Keep baseline graph/XLA failures visible and compare to a valid eager reference
+where necessary; no historical fitted parent is required for these checks.
 
 Stop the affected measurement on invalid comparison, corrupted artifacts,
 numerical mismatch, uncontrolled allocation or GPU contention. Repair local

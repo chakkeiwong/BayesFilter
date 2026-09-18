@@ -28,6 +28,7 @@ from filter_repair_additional_fixtures import FIXTURES as ADDITIONAL_FIXTURES
 from filter_repair_forecast_fixtures import FIXTURES as FORECAST_FIXTURES
 from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
 from filter_repair_centered_fixtures import FIXTURES as CENTERED_FIXTURES
+from filter_repair_centered_training_fixtures import FIXTURES as CENTERED_TRAINING_FIXTURES
 from filter_repair_initialization_fixtures import FIXTURES as INITIALIZATION_FIXTURES
 from filter_repair_training_fixtures import FIXTURES as TRAINING_FIXTURES
 from filter_repair_stochastic_fixtures import FIXTURES as STOCHASTIC_FIXTURES
@@ -64,6 +65,10 @@ TEST_GROUPS = {
     "prefix_scores": ("tests/test_filter_repair_prefix_scores.py",),
     "centered_initializers": ("tests/test_filter_repair_centered_initializers.py",),
     "centered_callbacks": ("tests/test_filter_repair_centered_tt.py::test_centered_training_callback_has_stable_signature_and_preserves_update",),
+    "centered_updates": ("tests/test_filter_repair_centered_updates.py",),
+    "centered_batch_objectives": ("tests/test_filter_repair_centered_updates.py::test_public_batch_metrics_and_absolute_loss_preserve_external_pullbacks",),
+    "centered_preparation": ("tests/test_filter_repair_centered_preparation.py",
+        "tests/highdim/test_zhao_cui_austria_sir_parameter_density_training_tf.py::test_rotating_prefix_schedule_covers_each_epoch_exactly"),
     "centered_gpu": ("tests/test_filter_repair_centered_tt.py::test_complete_centered_child_scores_preserve_pinned_consumer",
         "tests/test_filter_repair_centered_solver.py"),
     "centered_solver": ("tests/test_filter_repair_centered_solver.py",
@@ -195,6 +200,7 @@ FIXTURES += CENTERED_FIXTURES
 FIXTURES += TRAINING_FIXTURES
 FIXTURES += STOCHASTIC_FIXTURES
 FIXTURES += INITIALIZATION_FIXTURES
+FIXTURES += CENTERED_TRAINING_FIXTURES
 
 
 def sha(path):
@@ -219,6 +225,9 @@ def measurement_harness(fixture):
         names += ("filter_repair_stochastic_worker.py", "filter_repair_stochastic_fixtures.py")
     if fixture in INITIALIZATION_FIXTURES:
         names += ("filter_repair_initialization_worker.py", "filter_repair_initialization_fixtures.py",
+                  "filter_repair_centered_fixtures.py")
+    if fixture in CENTERED_TRAINING_FIXTURES:
+        names += ("filter_repair_centered_training_worker.py", "filter_repair_centered_training_fixtures.py",
                   "filter_repair_centered_fixtures.py")
     return {name: sha(ROOT / "scripts" / name) for name in names}
 
@@ -330,6 +339,8 @@ def run_job(args):
             worker = "filter_repair_stochastic_worker.py"
         if args.fixture in INITIALIZATION_FIXTURES:
             worker = "filter_repair_initialization_worker.py"
+        if args.fixture in CENTERED_TRAINING_FIXTURES:
+            worker = "filter_repair_centered_training_worker.py"
         command = [sys.executable, str(ROOT / "scripts" / worker), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
     elif args.action == "audit":
         command = [sys.executable, "scripts/audit_filter_gradient_policy.py", "--output", str(directory / "audit.json.gz"), "--markdown", str(directory / "audit.md")]
