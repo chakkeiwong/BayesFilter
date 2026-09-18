@@ -1660,3 +1660,55 @@ correctness evidence is fresh for this checkpoint; GPU2 measurements remain
 pending. New numerical helper/tests pass Ruff and whitespace checks. The wider
 lint invocation found existing import/export and artifact-exception style debt
 in the two Lane-B modules; no blanket repository lint success is claimed.
+
+Run 00760 passed the refreshed 52 controller/policy checks. The core-affine
+repair now uses one tensor-index encoding/decoding program across every core
+and parameter component; Python only describes and packs the fixed tensor
+schema. Run 00761 passed all six heterogeneous block, exact inverse/mask,
+corruption-veto and bounded-graph checks, plus the complete loss/gradient and
+directional comparisons before a final inspection-helper error. The test called
+the bounded dispatcher's graph accessor without its required position argument.
+The retry supplies that argument; no numerical source or tolerance changed.
+
+Run 00762 passed seven core-affine CPU checks. After adding a graph-reference
+purity check and preserving the enclosing compilation boundary, 00763 and
+00764 passed all eight core-affine GPU and CPU checks. Run 00765 passed the
+expanded controller/policy checks, including same-device comparison resumption
+and repeat aggregation. The guard covers 164 reviewed sources and 1,016 exact
+exceptions; this is not repository-wide closure.
+
+Runs 00766–00773 qualified the complete core-affine point/global/prefix loss
+and training gradient at four and eight query rows on GPU3. All four matched
+graph/XLA pairs passed at the unchanged tolerance; maximum absolute discrepancy
+was 4.45e-16. Both extents traced once, had no numerical callbacks, and used
+10,355 candidate graph nodes versus 44,990 baseline nodes. The explicit graph
+arms had no nested XLA. Verified memory growth remained enabled.
+
+These are qualification observations, not three-repeat timing claims. At four
+rows the XLA trace/first-call times were 3.083/7.346 seconds versus
+12.506/37.534 seconds; host high-water memory was 1,433 versus 2,113 MiB.
+The candidate warm median was 5.775 ms versus 2.042 ms, and at eight rows it
+was 5.355 ms versus 1.992 ms. Graph warm latency also increased. This triggers
+the predeclared performance investigation; reduced compilation cost does not
+close it. Device allocator peaks were 195.25/227 KiB versus 186.5/206.25 KiB,
+and live allocator bytes stayed constant across all 20 warm calls.
+
+Recovery charge through 00773: 20,577.311 CPU and 7,795.484 GPU process-seconds.
+Next checks cover the recent fitted-initializer boundary repair, then complete
+initializer measurements. Review of the native TT contractions identifies
+sequential small tensor loops as a plausible warm-latency mechanism; repeat
+evidence and an explicit investigation are still required before acceptance.
+Generic stochastic TT density training remains numerical execution debt:
+core evaluation/mass products, penalties, seeded preparation, and optimizer
+steps must preserve the existing extension's loss, gradients, RNG stream and
+metadata while moving into stable compiled boundaries. The paper's section
+3.1, equations (13)–(14), and author int_reference.m:22–29 / ttdot.m:20–23
+were re-inspected for the underlying amplitude/mass algebra. No source-route,
+fit-method, L1 selection, or scientific admission claim changes.
+
+Run 00774 passed all four initializer CPU reference checks, including full
+coefficient pullbacks and the new graph-reference purity assertion. An earlier
+GPU3 launch was vetoed before worker allocation because an unrelated process
+held 417 MiB; it produced no measurement. GPU follow-up and initializer timing
+remain required. Focused lint passes for the new helper, fixtures and tests;
+the campaign driver retains previously existing import/dict style findings.

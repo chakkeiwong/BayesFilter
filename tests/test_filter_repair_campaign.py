@@ -288,7 +288,8 @@ def test_pause_request_stops_between_workers_without_taking_active_lock(tmp_path
 
 
 @pytest.mark.parametrize("graph_passes", [False, True])
-def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch, graph_passes):
+@pytest.mark.parametrize("gpu_index", [2, 3])
+def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch, graph_passes, gpu_index):
     import argparse
 
     import compare_filter_repair_campaign as comparison
@@ -311,6 +312,7 @@ def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch
         path = tmp_path / f"{arm}-{mode}.json"
         path.write_text(json.dumps(value))
         rows.append({"key": ["measure", "policy", arm, "rectangular", mode, 1, 0, "GPU"],
+                         "device": "GPU", "environment": {"CUDA_VISIBLE_DEVICES": str(gpu_index)},
                          "result": str(path), "state": value["status"]})
     monkeypatch.setattr(driver, "records", lambda: rows)
     monkeypatch.setattr(driver, "run_job", lambda _: pytest.fail("Valid reference already exists"))
@@ -318,10 +320,35 @@ def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch
     pairs = []
     monkeypatch.setattr(comparison, "compare_pair",
                         lambda before, after: pairs.append((before["jit"], after["jit"])) or 0.0)
-    args = argparse.Namespace(stage="qualify", selection="fixture", fixture="rectangular")
+    args = argparse.Namespace(stage="qualify", selection="fixture", fixture="rectangular", measurement_gpu_index=gpu_index)
     assert driver.run_matrix(args) == 0
     expected = "off" if graph_passes else "eager"
     assert pairs == [(expected, "off"), (expected, "on")]
+
+
+def test_measurement_matrix_does_not_reuse_a_different_physical_gpu(tmp_path, monkeypatch):
+    import argparse
+    driver = load("run_filter_repair_campaign")
+    monkeypatch.setattr(driver, "OUTPUT", tmp_path)
+    monkeypatch.setattr(driver, "BASELINE_ROOT", tmp_path)
+    (tmp_path / "source-manifest.json").write_text('{"files": {}}')
+    result = tmp_path / "prior.json"
+    result.write_text('{"status": "passed"}')
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    monkeypatch.setattr(driver, "ensure_baseline", lambda: None)
+    monkeypatch.setattr(driver, "records", lambda: [{"key": ["measure", "policy", "before", "rectangular", "off", 1, 0, "GPU"],
+        "device": "GPU", "environment": {"CUDA_VISIBLE_DEVICES": "2"}, "result": str(result)}])
+    selected = []
+    monkeypatch.setattr(driver, "check_gpu_idle", lambda index: selected.append(index) or ["idle"])
+
+    def launch(job):
+        assert job.measurement_gpu_index == 3 and job.arm == "before"
+        raise RuntimeError("fresh_worker_required")
+
+    monkeypatch.setattr(driver, "run_job", launch)
+    with pytest.raises(RuntimeError, match="fresh_worker_required"):
+        driver.run_matrix(argparse.Namespace(stage="qualify", selection="fixture", fixture="rectangular", measurement_gpu_index=3))
+    assert selected == [3]
 
 
 @pytest.mark.parametrize("gpu_index", (2, 3))
@@ -357,6 +384,16 @@ def test_gpu_preflight_queries_selected_device(monkeypatch):
     monkeypatch.setattr(driver.time, "sleep", lambda _: None)
     driver.check_gpu_idle(3)
     assert len(commands) == 2 and all(command[1:3] == ["-i", "3"] for command in commands)
+
+
+def test_repeat_aggregation_rejects_mixed_physical_devices():
+    comparison = load("compare_filter_repair_campaign")
+    original = {"hardware_scope": {"environment": {"CUDA_VISIBLE_DEVICES": "2"}}}
+    alternate = {"hardware_scope": {"environment": {"CUDA_VISIBLE_DEVICES": "3"}}}
+    comparison.validate_repeat_hardware([original] * 3)
+    comparison.validate_repeat_hardware([alternate] * 3)
+    with pytest.raises(ValueError, match="same physical GPU"):
+        comparison.validate_repeat_hardware([original, alternate, alternate])
 
 
 def test_gpu_idle_rechecks_recent_utilization_and_records_samples(monkeypatch):

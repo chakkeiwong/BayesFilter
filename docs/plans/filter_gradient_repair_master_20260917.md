@@ -140,6 +140,25 @@ visible device, TensorFlow version, TF32 state and verified memory-growth
 policy. This is an infrastructure repair, not a change to the comparison
 contract or authorization for additional compute.
 
+September 18 sustained-contention amendment: new measurement groups may also
+select GPU3 explicitly, preserving the RTX 4090 hardware class and original
+compute budget. Within each fixture/size/mode, both source arms and all three
+fresh-process repeats must use the same physical GPU. The driver must not
+resume a GPU2 arm into a GPU3 pair, and the comparator must reject mixed-device
+repeat aggregates. Existing GPU2 measurements remain usable only in complete
+matched groups. This supersedes the temporary test-only restriction above;
+GPU2 remains the default selection. The contention thresholds, memory-growth
+policy, scientific fixtures, tolerances and stop conditions are unchanged.
+
+Extend numerical preparation coverage to the complete core-affine loss/gradient,
+additive and pair fitted initializers, seeded balanced/residual initialization,
+and prefix-score training targets. Use fresh exact constant-density parents
+and frozen tensor inputs, the original settings/seeds, two extents and three
+repeats with 20 warm calls. No fitted historical parent is reused. Each result
+includes every returned numerical field relevant to the endpoint. A baseline
+that cannot trace retains its failed attempt and uses its valid eager reference
+for parity, without inventing a baseline compilation time.
+
 Stop the affected measurement on invalid comparison, corrupted artifacts,
 numerical mismatch, uncontrolled allocation or GPU contention. Repair local
 harness defects within the same scope/budget. A failing candidate prevents its

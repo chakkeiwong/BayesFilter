@@ -154,6 +154,12 @@ def compare_pair(before, after):
     return compare_values(before["values"], after["values"])
 
 
+def validate_repeat_hardware(pairs):
+    scopes = {json.dumps(pair["hardware_scope"], sort_keys=True) for pair in pairs}
+    if len(scopes) != 1:
+        raise ValueError("Fresh-process repeats must use the same physical GPU and environment")
+
+
 def regression_reasons(before, after):
     reasons = []
     if after["warm_median_seconds"] > 1.2 * before["warm_median_seconds"]:
@@ -245,6 +251,8 @@ def main():
                     try:
                         error = compare_pair(before, after)
                         pair = {**identity, "before": summarize(before), "after": summarize(after),
+                                "hardware_scope": {field: after[field] for field in
+                                                   ("hardware", "environment", "tensorflow", "tf32", "device")},
                                 "max_absolute_error": error, "before_run": before_run["result"], "after_run": after_run["result"],
                                 "baseline_compilation_failure": reason, "baseline_attempt": original_before}
                         pair["before_mode"] = before["jit"]
@@ -256,6 +264,11 @@ def main():
         groups.setdefault((pair["fixture"], pair["size"], pair["jit"]), []).append(pair)
     for (name, size, jit), pairs in groups.items():
         if len(pairs) != 3:
+            continue
+        try:
+            validate_repeat_hardware(pairs)
+        except ValueError as exc:
+            result["failures"].append({"fixture": name, "size": size, "jit": jit, "reason": str(exc)})
             continue
         summaries = {arm: {field: (max if field.startswith("late_") else statistics.median)(pair[arm][field] for pair in pairs)
                            for field in pairs[0][arm]} for arm in ("before", "after")}

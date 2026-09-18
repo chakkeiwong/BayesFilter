@@ -92,7 +92,12 @@
         "fixed_rank_initial_residual_components",
         "embed_residual_component_with_connected_channels",
         "target_informed_additive_score_initialization",
-        "target_informed_within_region_pair_score_initialization"
+        "target_informed_within_region_pair_score_initialization",
+        "core_tangent_to_residual_component",
+        "core_tangent_banks_from_residual_components",
+        "core_affine_released_coordinate_mask",
+        "core_affine_origin_total_score_loss_arrays",
+        "CoreAffineTangentTrainer.residual_variables"
       ]
     },
     "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": null,
@@ -232,7 +237,8 @@
       "python_iteration": [
         "balanced_initial_cores"
       ]
-    }
+    },
+    "bayesfilter/highdim/core_tangent_native_tf.py": null
   },
   "exceptions": [
     {
@@ -9415,6 +9421,204 @@
       "ast_sha256": "a330c8e1e1aa4615309e967b1a6a9ea25285e906d7d2c757c45d276d40cdb712",
       "role": "fixed_schema",
       "reason": "Restore each fixed TT core shape after batched balanced-core construction."
+    },
+    {
+      "path": "bayesfilter/highdim/zhao_cui_austria_sir_parameter_density_training_tf.py",
+      "function": "core_tangent_banks_from_residual_components",
+      "line": 689,
+      "kind": "python_iteration",
+      "ast_sha256": "12415bfb7abb8b01fc33ab983de48579d993bd3d44f23e4836e12394aec068e1",
+      "role": "fixed_schema",
+      "reason": "Preserve the fixed nested component tuple for native block decoding; no coefficient computation."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "block_program",
+      "line": 25,
+      "kind": "python_iteration",
+      "ast_sha256": "3fde34db3ce93f11add03b625649ad40f83c0874879fd5abc0f2e22aee2a3ec6",
+      "role": "host_validation",
+      "reason": "Validate immutable rank-three shape metadata before constructing a specialization."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "block_program",
+      "line": 27,
+      "kind": "python_iteration",
+      "ast_sha256": "21f8b4679ab42970e3ff9f999154d6936d700ca875d1cd3f566504fda894e16e",
+      "role": "fixed_schema",
+      "reason": "Determine flattened input sizes from static core shapes."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "block_program",
+      "line": 29,
+      "kind": "python_iteration",
+      "ast_sha256": "862e25cae491dd1fb1dad0f27e4836a0b9fb44be4e45dbc75d1a5b65ba05da1a",
+      "role": "fixed_schema",
+      "reason": "Describe the original first/middle/last block output shapes; coefficient selection occurs in the tensor layout."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "block_program",
+      "line": 32,
+      "kind": "python_iteration",
+      "ast_sha256": "5bd9f89efd092d06a3a28cfeea4a6d99a72d7771976124dc9e6d27c9a888abe8",
+      "role": "fixed_schema",
+      "reason": "Determine flattened output sizes from static block shapes."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "_parent_schema",
+      "line": 85,
+      "kind": "python_iteration",
+      "ast_sha256": "eef2910ef3c287b3aa3e776991e704ccf4e0573206c1b9bc96d643be8a6e35b9",
+      "role": "fixed_schema",
+      "reason": "Bind the heterogeneous input tensor tuple without evaluating a core contraction."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "_parent_schema",
+      "line": 86,
+      "kind": "python_iteration",
+      "ast_sha256": "5952914b98fcb0ebc60b395ee936db6fa4f5e509063388f6f6883829aa5a2b22",
+      "role": "fixed_schema",
+      "reason": "Read fixed input shapes for the bounded compiled signature."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "_parent_schema",
+      "line": 87,
+      "kind": "python_iteration",
+      "ast_sha256": "f353071c7252152155e1f5fb4acdfcc73bc9cedb5f93f7670428a827f42d90a4",
+      "role": "host_validation",
+      "reason": "Reject dynamic or non-rank-three core schemas before specialization."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "_flatten",
+      "line": 93,
+      "kind": "python_iteration",
+      "ast_sha256": "b00980a1c92c12868dc833da681fc4aac5c73605c3b31976b5e202040136a4c6",
+      "role": "fixed_schema",
+      "reason": "Pack heterogeneous tensors into the numerical input vector using fixed reshapes."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "_unpack",
+      "line": 97,
+      "kind": "python_iteration",
+      "ast_sha256": "d11d64480ee136761478331d0c75f4aed611947a9acab56e22196b1e3dfe57d5",
+      "role": "fixed_schema",
+      "reason": "Restore the existing heterogeneous output tuple after the compiled coefficient gather."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "_unpack",
+      "line": 97,
+      "kind": "python_iteration",
+      "ast_sha256": "77c8c0e46525e16f2bc965b46423a7bbce304018bcec2905aa7a5d27db6d2b85",
+      "role": "fixed_schema",
+      "reason": "Restore the existing heterogeneous output tuple after the compiled coefficient gather."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "encode_components",
+      "line": 103,
+      "kind": "python_iteration",
+      "ast_sha256": "2cf40c9baa5e8f7bd535c6fedf350af1122960155d8552700ad5c21c7b7d4141",
+      "role": "fixed_schema",
+      "reason": "Bind the parameter/core tensor input schema; numerical construction is batched inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "encode_components",
+      "line": 103,
+      "kind": "python_iteration",
+      "ast_sha256": "bfc2beb52f9773ab9cfacd5715792d8b71da66a95084721feb07a73d5be34dfe",
+      "role": "fixed_schema",
+      "reason": "Bind the parameter/core tensor input schema; numerical construction is batched inside XLA."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "encode_components",
+      "line": 105,
+      "kind": "python_iteration",
+      "ast_sha256": "cc4b652037c10e23cc448b18c90c87c5845830e07ecf9277683bbb57e931e7d4",
+      "role": "host_validation",
+      "reason": "Check exact parent/tangent shape correspondence before compilation."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "encode_components",
+      "line": 105,
+      "kind": "python_iteration",
+      "ast_sha256": "91406fbc7486d1c20ca4dc98e4088363a0eecca2055070626fe3bfd52d17b2d6",
+      "role": "host_validation",
+      "reason": "Check exact parent/tangent shape correspondence before compilation."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "encode_components",
+      "line": 108,
+      "kind": "python_iteration",
+      "ast_sha256": "fed3ee3d1a51816709af1be17bb7e60c207dfa3dba415992f73df6d9ccde1b6d",
+      "role": "fixed_schema",
+      "reason": "Pack fixed parameter/core inputs for one batched compiled encoding."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "decode_components",
+      "line": 114,
+      "kind": "python_iteration",
+      "ast_sha256": "db3a207108773654322ea09df8373b3805ab500d03203d6c7369dbecb51a56e3",
+      "role": "fixed_schema",
+      "reason": "Bind the fixed component/core tensor schema before compiled decoding."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "decode_components",
+      "line": 114,
+      "kind": "python_iteration",
+      "ast_sha256": "12874dd0146907be0791bef36bb9f2dc6b6edff1446bcc76dafcccd754bcebd4",
+      "role": "fixed_schema",
+      "reason": "Bind the fixed component/core tensor schema before compiled decoding."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "decode_components",
+      "line": 117,
+      "kind": "python_iteration",
+      "ast_sha256": "f914cec48b7feb0285460ed13b419f7a5432cabcae8e7ae89bf1654ee0ac6177",
+      "role": "host_validation",
+      "reason": "Validate exact heterogeneous product-rule block shapes."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "decode_components",
+      "line": 117,
+      "kind": "python_iteration",
+      "ast_sha256": "91406fbc7486d1c20ca4dc98e4088363a0eecca2055070626fe3bfd52d17b2d6",
+      "role": "host_validation",
+      "reason": "Validate exact heterogeneous product-rule block shapes."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "decode_components",
+      "line": 119,
+      "kind": "python_iteration",
+      "ast_sha256": "1ffbc7909f490ae59a4cc5fa7136430fc863ddc6fe9982e02bf8fddaa73fda5b",
+      "role": "fixed_schema",
+      "reason": "Pack existing component tensors for one compiled inverse and parent-block check."
+    },
+    {
+      "path": "bayesfilter/highdim/core_tangent_native_tf.py",
+      "function": "decode_components",
+      "line": 121,
+      "kind": "python_iteration",
+      "ast_sha256": "21f8b4679ab42970e3ff9f999154d6936d700ca875d1cd3f566504fda894e16e",
+      "role": "fixed_schema",
+      "reason": "Compute static reshape sizes for restoring the public tangent tuple."
     }
   ]
 }

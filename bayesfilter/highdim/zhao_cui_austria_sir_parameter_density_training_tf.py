@@ -12,6 +12,7 @@ import tensorflow as tf
 from bayesfilter.highdim import centered_initializer_native_tf as initializer_native
 from bayesfilter.highdim import centered_training_native_tf as training_native
 from bayesfilter.highdim import centered_tt_native_tf as centered_native
+from bayesfilter.highdim import core_tangent_native_tf as tangent_native
 from bayesfilter.highdim.bases import ProductBasis
 from bayesfilter.highdim.centered_training_native_tf import quadratic_cg_program
 from bayesfilter.highdim.models import parameterized_zhao_cui_sir_austria_model
@@ -594,7 +595,10 @@ def _additive_pair_rank_seven_component(
         values[additive_count:],
         [len(WITHIN_REGION_PAIR_AXES), int(basis_dim), int(basis_dim)],
     )
-    packed = training_native.additive_pair_core_banks(additive[None], pair[None])[0]
+    encode = training_native.additive_pair_core_banks
+    if tf.inside_function():
+        encode = encode.python_function
+    packed = encode(additive[None], pair[None])[0]
     return training_native.unpack_additive_bank(packed)
 
 
@@ -606,7 +610,10 @@ def _additive_rank_two_component(
         raise ValueError("additive coefficients must have shape [dimension,basis_dim]")
     if any(int(width) != int(values.shape[1]) for width in basis_dims):
         raise ValueError("additive coefficients require equal axis basis dimensions")
-    packed = training_native.additive_core_banks(values[None])[0]
+    encode = training_native.additive_core_banks
+    if tf.inside_function():
+        encode = encode.python_function
+    packed = encode(values[None])[0]
     return training_native.unpack_additive_bank(packed)
 
 
@@ -675,28 +682,7 @@ def core_tangent_to_residual_component(
 ) -> tuple[tf.Tensor, ...]:
     """Encode a corewise product-rule tangent as one exact block TT."""
 
-    parents = tuple(tf.convert_to_tensor(core, DTYPE) for core in parent_cores)
-    tangents = tuple(tf.convert_to_tensor(core, DTYPE) for core in tangent_cores)
-    if len(parents) < 2 or len(tangents) != len(parents):
-        raise ValueError("parent and tangent core sequences must have equal length at least two")
-    for axis, (parent, tangent) in enumerate(zip(parents, tangents)):
-        if parent.shape.rank != 3 or tangent.shape != parent.shape:
-            raise ValueError(f"core tangent shape mismatch at axis {axis}")
-    output = []
-    for axis, (parent, tangent) in enumerate(zip(parents, tangents)):
-        left_rank = int(parent.shape[0])
-        width = int(parent.shape[1])
-        right_rank = int(parent.shape[2])
-        if axis == 0:
-            output.append(tf.concat([parent, tangent], axis=2))
-        elif axis == len(parents) - 1:
-            output.append(tf.concat([tangent, parent], axis=0))
-        else:
-            zero = tf.zeros([left_rank, width, right_rank], DTYPE)
-            upper = tf.concat([parent, tangent], axis=2)
-            lower = tf.concat([zero, parent], axis=2)
-            output.append(tf.concat([upper, lower], axis=0))
-    return tuple(output)
+    return tangent_native.encode_components(parent_cores, (tangent_cores,))[0]
 
 
 def core_tangent_banks_from_residual_components(
@@ -706,66 +692,11 @@ def core_tangent_banks_from_residual_components(
 ) -> tuple[tuple[tf.Tensor, ...], ...]:
     """Invert the exact product-rule block encoding into axis-major banks."""
 
-    parents = tuple(tf.convert_to_tensor(core, DTYPE) for core in parent_cores)
-    components = tuple(
-        tuple(tf.convert_to_tensor(core, DTYPE) for core in component)
-        for component in residual_components
-    )
-    if len(parents) < 2 or len(components) != PARAMETER_DIM:
+    components = tuple(tuple(component) for component in residual_components)
+    if len(components) != PARAMETER_DIM:
         raise ValueError("three residual components and at least two parent cores are required")
-    parameter_tangents = []
-    for parameter, component in enumerate(components):
-        if len(component) != len(parents):
-            raise ValueError(
-                f"residual component {parameter} does not match the parent dimension"
-            )
-        tangents = []
-        for axis, (parent, block) in enumerate(zip(parents, component)):
-            left_rank = int(parent.shape[0])
-            width = int(parent.shape[1])
-            right_rank = int(parent.shape[2])
-            if axis == 0:
-                if block.shape != (left_rank, width, 2 * right_rank):
-                    raise ValueError("first product-rule block has the wrong shape")
-                tf.debugging.assert_equal(
-                    block[:, :, :right_rank],
-                    parent,
-                    message="first product-rule parent block mismatch",
-                )
-                tangents.append(block[:, :, right_rank:])
-            elif axis == len(parents) - 1:
-                if block.shape != (2 * left_rank, width, right_rank):
-                    raise ValueError("last product-rule block has the wrong shape")
-                tf.debugging.assert_equal(
-                    block[left_rank:, :, :],
-                    parent,
-                    message="last product-rule parent block mismatch",
-                )
-                tangents.append(block[:left_rank, :, :])
-            else:
-                if block.shape != (2 * left_rank, width, 2 * right_rank):
-                    raise ValueError("middle product-rule block has the wrong shape")
-                tf.debugging.assert_equal(
-                    block[:left_rank, :, :right_rank],
-                    parent,
-                    message="upper-left product-rule parent block mismatch",
-                )
-                tf.debugging.assert_equal(
-                    block[left_rank:, :, :right_rank],
-                    tf.zeros_like(parent),
-                    message="lower-left product-rule zero block mismatch",
-                )
-                tf.debugging.assert_equal(
-                    block[left_rank:, :, right_rank:],
-                    parent,
-                    message="lower-right product-rule parent block mismatch",
-                )
-                tangents.append(block[:left_rank, :, right_rank:])
-        parameter_tangents.append(tuple(tangents))
-    return tuple(
-        tuple(parameter_tangents[parameter][axis] for parameter in range(PARAMETER_DIM))
-        for axis in range(len(parents))
-    )
+    tangents = tangent_native.decode_components(parent_cores, components)
+    return tuple(zip(*tangents, strict=True))
 
 
 @initializer_native.compiled_initializer(TargetInformedAdditiveInitialization)
@@ -929,7 +860,7 @@ def target_informed_additive_score_initialization(
     )
     width = int(basis_dims[0])
     coefficient_tensor = tf.reshape(coefficients, [JOINT_DIM, width, PARAMETER_DIM])
-    packed = training_native.additive_core_banks(tf.transpose(coefficient_tensor, [2, 0, 1]))
+    packed = training_native.additive_core_banks.python_function(tf.transpose(coefficient_tensor, [2, 0, 1]))
     components = tuple(
         training_native.unpack_additive_bank(bank) for bank in tf.unstack(packed, axis=0)
     )
@@ -1082,7 +1013,7 @@ def target_informed_within_region_pair_score_initialization(
         )
     )
     coefficient_rows = tf.transpose(coefficients)
-    packed = training_native.additive_pair_core_banks(
+    packed = training_native.additive_pair_core_banks.python_function(
         tf.reshape(coefficient_rows[:, :JOINT_DIM * basis_dim], [PARAMETER_DIM, JOINT_DIM, basis_dim]),
         tf.reshape(coefficient_rows[:, JOINT_DIM * basis_dim:], [PARAMETER_DIM, JOINT_DIM // 2, basis_dim, basis_dim]))
     components = tuple(training_native.unpack_additive_bank(bank) for bank in tf.unstack(packed, axis=0))
@@ -1617,15 +1548,8 @@ class CoreAffineTangentTrainer:
 
     @property
     def residual_variables(self) -> tuple[tuple[tf.Tensor, ...], ...]:
-        return tuple(
-            core_tangent_to_residual_component(
-                parent_cores=self.parent.cores,
-                tangent_cores=tuple(
-                    bank[parameter] for bank in self.tangent_variables
-                ),
-            )
-            for parameter in range(PARAMETER_DIM)
-        )
+        return tangent_native.encode_components(
+            self.parent.cores, tuple(zip(*self.tangent_variables, strict=True)))
 
     def _delegate(self) -> CenteredResidualTrainer:
         # Operator methods only inspect these fields; gradients flow through
@@ -1820,42 +1744,7 @@ def core_affine_released_coordinate_mask(
 ) -> tf.Tensor:
     """Mark full-TT coordinates fixed by the product-rule block manifold."""
 
-    parents = tuple(tf.convert_to_tensor(core, DTYPE) for core in parent_cores)
-    if len(parents) < 2:
-        raise ValueError("at least two parent cores are required")
-    component_mask = []
-    for axis, parent in enumerate(parents):
-        left_rank = int(parent.shape[0])
-        width = int(parent.shape[1])
-        right_rank = int(parent.shape[2])
-        fixed = tf.ones_like(parent, dtype=tf.bool)
-        free = tf.zeros_like(parent, dtype=tf.bool)
-        if axis == 0:
-            mask = tf.concat([fixed, free], axis=2)
-        elif axis == len(parents) - 1:
-            mask = tf.concat([free, fixed], axis=0)
-        else:
-            upper = tf.concat([fixed, free], axis=2)
-            lower = tf.concat([fixed, fixed], axis=2)
-            mask = tf.concat([upper, lower], axis=0)
-        expected = (
-            (left_rank, width, 2 * right_rank)
-            if axis == 0
-            else (2 * left_rank, width, right_rank)
-            if axis == len(parents) - 1
-            else (2 * left_rank, width, 2 * right_rank)
-        )
-        if mask.shape != expected:
-            raise ValueError("released-coordinate mask shape mismatch")
-        component_mask.append(mask)
-    return tf.concat(
-        [
-            tf.reshape(mask, [-1])
-            for _parameter in range(PARAMETER_DIM)
-            for mask in component_mask
-        ],
-        axis=0,
-    )
+    return tangent_native.released_coordinate_mask(parent_cores, PARAMETER_DIM)
 
 
 def core_affine_origin_total_score_loss_arrays(
@@ -1881,13 +1770,8 @@ def core_affine_origin_total_score_loss_arrays(
     banks = core_affine_tangent_banks_from_position(
         parent_cores=parent.cores, position=position
     )
-    components = tuple(
-        core_tangent_to_residual_component(
-            parent_cores=parent.cores,
-            tangent_cores=tuple(bank[parameter] for bank in banks),
-        )
-        for parameter in range(PARAMETER_DIM)
-    )
+    components = tangent_native.encode_components(
+        parent.cores, tuple(zip(*banks, strict=True)))
     delegate = object.__new__(CenteredResidualTrainer)
     delegate.parent = parent
     delegate.features = CenteredThetaFeatures()

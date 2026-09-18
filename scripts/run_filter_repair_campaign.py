@@ -28,6 +28,7 @@ from filter_repair_additional_fixtures import FIXTURES as ADDITIONAL_FIXTURES
 from filter_repair_forecast_fixtures import FIXTURES as FORECAST_FIXTURES
 from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
 from filter_repair_centered_fixtures import FIXTURES as CENTERED_FIXTURES
+from filter_repair_training_fixtures import FIXTURES as TRAINING_FIXTURES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -49,6 +50,7 @@ BASELINE_PARENT_PACKAGES = (
 )
 BUDGET_SECONDS = {"CPU": 8 * 3600, "GPU": 4 * 3600}
 TEST_GROUPS = {
+    "core_tangents": ("tests/test_filter_repair_core_tangents.py",),
     "centered_random": ("tests/test_filter_repair_centered_random.py",),
     "prefix_scores": ("tests/test_filter_repair_prefix_scores.py",),
     "centered_initializers": ("tests/test_filter_repair_centered_initializers.py",),
@@ -181,6 +183,7 @@ FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES
 FIXTURES += CENTERED_FIXTURES
+FIXTURES += TRAINING_FIXTURES
 
 
 def sha(path):
@@ -198,6 +201,9 @@ def measurement_harness(fixture):
         names += ("filter_repair_preparation_worker.py", "filter_repair_preparation_fixtures.py")
     if fixture in CENTERED_FIXTURES:
         names += ("filter_repair_centered_worker.py", "filter_repair_centered_fixtures.py")
+    if fixture in TRAINING_FIXTURES:
+        names += ("filter_repair_training_worker.py", "filter_repair_training_fixtures.py",
+                  "filter_repair_centered_fixtures.py")
     return {name: sha(ROOT / "scripts" / name) for name in names}
 
 
@@ -278,7 +284,8 @@ def run_job(args):
     attempts = [row for row in rows if row["key"] == key and row["source_sha256"] == hashes]
     if len(attempts) >= 3:
         raise RuntimeError("Three attempts consumed for this exact job; inspect/repair scope before retry")
-    gpu_index = getattr(args, "test_gpu_index", 2) if args.action == "test" else 2
+    gpu_index = (getattr(args, "test_gpu_index", 2) if args.action == "test"
+                 else getattr(args, "measurement_gpu_index", 2) if args.action == "measure" else 2)
     if device == "GPU" and getattr(args, "gpu_preflight", None) is None:
         args.gpu_preflight = check_gpu_idle(gpu_index)
     directory = OUTPUT / f"run-{len(rows) + 1:05d}"
@@ -301,6 +308,8 @@ def run_job(args):
             worker = "filter_repair_preparation_worker.py"
         if args.fixture in CENTERED_FIXTURES:
             worker = "filter_repair_centered_worker.py"
+        if args.fixture in TRAINING_FIXTURES:
+            worker = "filter_repair_training_worker.py"
         command = [sys.executable, str(ROOT / "scripts" / worker), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
     elif args.action == "audit":
         command = [sys.executable, "scripts/audit_filter_gradient_policy.py", "--output", str(directory / "audit.json.gz"), "--markdown", str(directory / "audit.md")]
@@ -423,6 +432,9 @@ def run_matrix(args):
     for row in records():
         if row["key"][0] != "measure" or not Path(row["result"]).is_file():
             continue
+        if (row["device"] == "GPU" and row.get("environment", {}).get("CUDA_VISIBLE_DEVICES")
+                != str(getattr(args, "measurement_gpu_index", 2))):
+            continue
         value = json.loads(Path(row["result"]).read_text())
         try:
             current_provenance(row, value, row["key"][2], measurement_harness(row["key"][3]), marker["files"])
@@ -441,7 +453,7 @@ def run_matrix(args):
             job.action, job.fixture, job.size, job.repeat = "measure", name, size, repeat
             job.arm, job.jit, job.device = arm, mode, device
             if device == "GPU":
-                job.gpu_preflight = check_gpu_idle()
+                job.gpu_preflight = check_gpu_idle(getattr(args, "measurement_gpu_index", 2))
             code = run_job(job)
             row = records()[-1]
             if not Path(row["result"]).is_file():
@@ -488,11 +500,16 @@ def main():
     parser.add_argument("--repeat", type=int, choices=(0, 1, 2), default=0)
     parser.add_argument("--device", choices=("CPU", "GPU"), default="GPU")
     parser.add_argument("--test-gpu-index", type=int, choices=(2, 3), default=2,
-                        help="Physical GPU for correctness tests only; paired measurements remain on GPU2")
+                        help="Physical GPU for correctness tests only")
+    parser.add_argument("--measurement-gpu-index", type=int, choices=(2, 3), default=2,
+                        help="Physical GPU for fresh matched before/after groups; never mix repeat devices")
     args = parser.parse_args()
     if args.test_gpu_index != 2 and not (args.action == "test" or
                                        (args.action == "matrix" and args.stage == "tests")):
         parser.error("--test-gpu-index is only available for correctness tests")
+    if args.measurement_gpu_index != 2 and not (args.action == "measure" or
+            (args.action == "matrix" and args.stage in ("qualify", "repeat"))):
+        parser.error("--measurement-gpu-index is only available for measurements")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     if args.action == "pause":
         save_json(OUTPUT / "pause-request.json", {"requested_utc": datetime.now(timezone.utc).isoformat()})

@@ -116,3 +116,13 @@ def test_complete_score_initializer_and_coefficient_pullback(pair_features, monk
     assert program.experimental_get_tracing_count() == 1
     assert "HloModule" in program.experimental_get_compiler_ir(
         points, target, kwargs["importance_log_weight"], points[:2, :18], target[:2], tf.ones([2, 3], D))(stage="hlo")
+    # The explicit graph diagnostic must not hide a separately compiled
+    # coefficient-to-core encoder inside the enclosing initializer.
+    reference = tf.function(lambda targets: call(**{**kwargs,
+        "target_complete_data_score": targets}).coefficient_rms,
+        input_signature=[tf.TensorSpec(target.shape, D)],
+        jit_compile=False, autograph=False)
+    np.testing.assert_allclose(reference(target), result.coefficient_rms, atol=1e-10, rtol=1e-10)
+    graph = reference.get_concrete_function().graph.as_graph_def()
+    assert not any(function.attr.get("_XlaMustCompile") and function.attr["_XlaMustCompile"].b
+                   for function in graph.library.function)
