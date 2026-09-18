@@ -25,6 +25,9 @@
       "SourceRouteTransportProtocol.log_normalizer",
       "source_route_generate_retained_samples",
       "source_route_previous_marginal_log_density",
+      "source_route_run_sequential_fixed_hmc",
+      "source_route_sequential_negative_log_physical_density",
+      "SourceRouteSequentialResult.log_marginal_likelihood",
       "_source_route_eval_marginal_pdf",
       "SourceRouteNormalizerContribution.log_increment",
       "normalize_log_weights",
@@ -44,6 +47,7 @@
     ],
     "bayesfilter/highdim/source_route_numerics_tf.py": null,
     "bayesfilter/highdim/source_route_runtime_tf.py": null,
+    "bayesfilter/highdim/source_route_sequential_tf.py": null,
     "bayesfilter/highdim/c2_gaussian_hermite_proposal_tf.py": null,
     "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py": null,
     "bayesfilter/highdim/ledh_contract_e_tp_predator_prey_tf.py": null,
@@ -285,9 +289,138 @@
     },
     "bayesfilter/highdim/core_tangent_native_tf.py": null,
     "bayesfilter/highdim/stochastic_density_training.py": null,
-    "bayesfilter/highdim/stochastic_training_native_tf.py": null
+    "bayesfilter/highdim/stochastic_training_native_tf.py": null,
+    "bayesfilter/ops/compiled_tensor_program_tf.py": null
   },
   "exceptions": [
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.derivative",
+      "kind": "python_iteration",
+      "ast_sha256": "5db5f3aa81b37332187a5c538d400998e40d84e971324d902832ac228dcd0e72",
+      "role": "fixed_schema",
+      "reason": "Bind the fixed captured-variable resource schema to graph inputs before constructing the complete symbolic VJP; no iteration over numerical axes or variable values."
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "1ee2fafa0d970fa2f2a0fbd85428541d279219e15f4975690ec7f2efd533e181",
+      "role": "fixed_schema",
+      "reason": "Bind the fixed argument tuple to the current branch graph before constructing its custom pullback; no numerical-axis iteration."
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "64dc794ac4fff9a134b37211b03539ba3f92d6af1ad60cfa2700287dd10aef2e",
+      "role": "fixed_schema",
+      "reason": "Bind the fixed derivative capture list, including variable handles, to forward branch inputs so the backward graph introduces no eager resources."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "SourceRouteSequentialResult.log_marginal_likelihood",
+      "kind": "python_iteration",
+      "ast_sha256": "64a04a9b4bdf8341782d272fa9a016380a4202485f2ceb2c3d4f771c456d65ec",
+      "role": "fixed_schema",
+      "reason": "Collect stored normalizer tensors; subtraction and date reduction execute in total_log_normalizer."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "SourceRouteSequentialResult.log_marginal_likelihood",
+      "kind": "python_iteration",
+      "ast_sha256": "521c816ad760137ad0b99db5723a547a88a31f1fb9190615089ee54acfe592a7",
+      "role": "fixed_schema",
+      "reason": "Collect stored shift tensors as inputs to the compiled total-normalizer calculation."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "source_route_run_sequential_fixed_hmc",
+      "kind": "python_iteration",
+      "ast_sha256": "44747285539d0b89352c28f0d1fe9dfc4fe3a41d93fe0be4cdf24b400c495021",
+      "role": "host_validation",
+      "reason": "Check immutable step-spec object types before numerical execution."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "source_route_run_sequential_fixed_hmc",
+      "kind": "python_iteration",
+      "ast_sha256": "2ebe07b3422eef800c7b21217f3aaa6da6116042579125d87f46df7f56e4da9b",
+      "role": "host_validation",
+      "reason": "Validate the static consecutive date schedule."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "source_route_run_sequential_fixed_hmc",
+      "kind": "python_iteration",
+      "ast_sha256": "c8a9845d458e033ae458058f1ce9ca0d40ba4fca5f1e115d36668dcbbaba23ca",
+      "role": "fixed_schema",
+      "reason": "Pass stored reference tensors into the compiled date program without evaluating any date on the host."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "source_route_run_sequential_fixed_hmc",
+      "kind": "python_iteration",
+      "ast_sha256": "709827fa4a607e12bd286e8c3bdf9fdaf40c6d4e2f6e744d4785cd602cb9cd08",
+      "role": "host_reporting",
+      "reason": "After compiled date evaluation, restore records and provenance. Marginal contracted-density metadata is reporting-only: no owned consumer reads contracted_density; numerical previous density uses paired-core evaluation inside the graph."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program",
+      "kind": "python_iteration",
+      "ast_sha256": "ca6111415d6558844eef9fc0ea03d22d4dc52abf5ca7a3bf8cc47fb628a34720",
+      "role": "fixed_schema",
+      "reason": "Key the bounded cache by immutable target, transport, callback, axes and query-shape schemas; numerical query values remain explicit inputs."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program",
+      "kind": "python_iteration",
+      "ast_sha256": "106758d427777db9d19847941c9833054eb804fd9c1b32cb0cdbdfd7d7f63cf6",
+      "role": "fixed_schema",
+      "reason": "Prepare callable/output schemas; the owned fixed-TTSIRT path uses schema-only marginal views and performs no numerical date calculation here. Caller-owned contract test doubles keep their diagnostic preparation."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program",
+      "kind": "python_iteration",
+      "ast_sha256": "ead0094ead4b2bd92d00b05cf40a2db43c50ab5c1a19c678ef200db5e41b317e",
+      "role": "fixed_schema",
+      "reason": "Calculate packed output extents from immutable per-step tensor shapes."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program",
+      "kind": "python_iteration",
+      "ast_sha256": "149916bf8b35ad95e5a112469a97ad6b03b8bb5c25fd904925e77f86326c46e9",
+      "role": "fixed_schema",
+      "reason": "Calculate each output field's static packed size."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program",
+      "kind": "python_iteration",
+      "ast_sha256": "d08b9b6c2275f9144174b91a7abb60ecf4db606890ed8f4e4d30511239c9c276",
+      "role": "fixed_schema",
+      "reason": "Construct explicit tensor signatures for the heterogeneous reference-input tuple."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "unpack_step",
+      "kind": "python_iteration",
+      "ast_sha256": "fcd8824081335e8f2c6ee745b9a6e4350ccb61e7c6e5182b3133e806e727dd69",
+      "role": "fixed_schema",
+      "reason": "Restore output field lengths from the immutable result-shape schema."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "unpack_step",
+      "kind": "python_iteration",
+      "ast_sha256": "b726afc2264234abe3f1bbb7b433309e9dc35c8ad34041cd213cf6d81495ac47",
+      "role": "fixed_schema",
+      "reason": "Reshape packed output fields into the predeclared result schema without numerical date computation."
+    },
     {
       "path": "bayesfilter/highdim/source_route_numerics_tf.py",
       "function": "compiled_method.prepare",
@@ -305,24 +438,24 @@
       "reason": "Construct TensorSpec metadata for the fixed method argument schema."
     },
     {
-      "path": "bayesfilter/highdim/source_route_runtime_tf.py",
-      "function": "_tensor_program",
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program",
       "kind": "python_iteration",
       "ast_sha256": "1cd65b20f4396ed279504a927ec778706ccf27448116e5792f1163133441ce6a",
       "role": "fixed_schema",
       "reason": "Classify captured tensor/resource dtypes so the custom rule preserves all derivatives without duplicating variable handles."
     },
     {
-      "path": "bayesfilter/highdim/source_route_runtime_tf.py",
-      "function": "_tensor_program.bound_captures",
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.bound_captures",
       "kind": "python_iteration",
       "ast_sha256": "001d7edc172324e5aaa3cc66637647fb73d0ced95ae7d730c119195d05640e38",
       "role": "fixed_schema",
       "reason": "Rebind the concrete function's declared capture slots to tensor inputs; no numerical operation is performed by this schema assembly."
     },
     {
-      "path": "bayesfilter/highdim/source_route_runtime_tf.py",
-      "function": "_tensor_program",
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program",
       "kind": "python_iteration",
       "ast_sha256": "f9a2211b26fd7dd52c15e7edc2840692b07a123b76ce0b209526e441b0da697e",
       "role": "fixed_schema",
@@ -346,19 +479,11 @@
     },
     {
       "path": "bayesfilter/highdim/tt_native_control_tf.py",
-      "function": "_basis_rows_with_pullback.evaluate",
+      "function": "_basis_rows_with_pullback",
       "kind": "python_iteration",
-      "ast_sha256": "be280b86646f55cb7c42a522fa3fdf041a7780cf77004d850e3cf9acac3ba900",
+      "ast_sha256": "9ac3e017ab10dd30c4f058ca9e3ba4c32ed8a3b756ac07d4acd106be887ac377",
       "role": "fixed_schema",
       "reason": "Construct heterogeneous basis callables; map_fn and switch_case evaluate numerical axes."
-    },
-    {
-      "path": "bayesfilter/highdim/tt_native_control_tf.py",
-      "function": "_basis_rows_with_pullback.evaluate.pullback",
-      "kind": "python_iteration",
-      "ast_sha256": "5fdd6170f29acdbce076369269f2dd515d2a5bcf8d8990fa68d7a1318106c140",
-      "role": "fixed_schema",
-      "reason": "Construct heterogeneous derivative callables; the complete query pullback executes in native tensor control flow."
     },
     {
       "path": "bayesfilter/highdim/tt_native_control_tf.py",
@@ -9020,8 +9145,8 @@
     },
     {
       "path": "bayesfilter/highdim/ttsirt_native_tf.py",
-      "function": "transport_program",
-      "line": 146,
+      "function": "transport_program.evaluate",
+      "line": 167,
       "kind": "python_iteration",
       "ast_sha256": "cf139e7d1d33b8220733c857f984f55a1d59def2ae9f527d84d95027ead58733",
       "role": "fixed_schema",
@@ -10090,6 +10215,130 @@
       "ast_sha256": "424bce71c216416e704c02ce0e2d628de2e8035b8ce2140a81de05f3d0ceec75",
       "role": "fixed_schema",
       "reason": "Preserve original tf.cast dtype normalization for three named scalar loss options before packing the explicit tensor signature."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "_transport_schema",
+      "kind": "python_iteration",
+      "ast_sha256": "21176c3b009182c3872679af81f98e3cc27e01be90960ed63798f5a131ed55df",
+      "role": "fixed_schema",
+      "reason": "Build a unique immutable transport-object/input-shape dispatch schema; no numerical evaluation."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "_transport_schema",
+      "kind": "python_iteration",
+      "ast_sha256": "22157c310da51fab98cf36e1f94d6a62c0fd614d1b8805f3056a60233c501561",
+      "role": "fixed_schema",
+      "reason": "Collect the prepared transport objects from the schema map."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program",
+      "kind": "python_iteration",
+      "ast_sha256": "a29dc346254cdbadc183c817f9ed5896f84ba3fd2b6d30f5ebc60924d02de65d",
+      "role": "fixed_schema",
+      "reason": "Determine the padded query extent from static TensorShape metadata."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program",
+      "kind": "python_iteration",
+      "ast_sha256": "7375bee4297b06aa1e633aa6e8cf3c944d5efb789116998f1d6c5a2dede07c45",
+      "role": "fixed_schema",
+      "reason": "Determine the padded transport-output extent from static TensorShape metadata."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program.numerical",
+      "kind": "python_iteration",
+      "ast_sha256": "febfe5dff8f70b418c42bfedbaeea6e2a895304da30e1705d77e308401e4782e",
+      "role": "fixed_schema",
+      "reason": "Pack the fixed heterogeneous input tuple into tensor rows; all transport/date evaluation uses native control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program.numerical.step",
+      "kind": "python_iteration",
+      "ast_sha256": "af7e58fc12f33200b0e4519021b78a43483d74d8e8980a5eefdaaae65ea65db8",
+      "role": "fixed_schema",
+      "reason": "Construct one callable branch per distinct immutable transport/shape, not per date."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program.numerical.step.target_values",
+      "kind": "python_iteration",
+      "ast_sha256": "888d45f201a98016c53e90e448e6aa9b19a33e4aa93fa7a46cce0c97a4e24c67",
+      "role": "fixed_schema",
+      "reason": "Pack the fixed ten-field numerical output schema."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_sequential_tf.py",
+      "function": "sequential_program.numerical.step",
+      "kind": "python_iteration",
+      "ast_sha256": "ffa3271410e7c93cde81c8f89759357f12cea98749be9425818039cc88524d0d",
+      "role": "fixed_schema",
+      "reason": "Construct heterogeneous frozen target callback branches; shared transport calculation precedes this dispatch."
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program",
+      "kind": "non_xla_function",
+      "ast_sha256": "11b1704de26bf610aef8c7d27d8a841b12ccef9ba2f80abb02af585725f9dfd8",
+      "role": "enclosed_graph",
+      "reason": "Private finite program and recomputed full pullback are enclosed by the returned XLA-default tensor_program boundary; it is never a standalone numerical endpoint.",
+      "enclosing_endpoint": "bayesfilter.ops.compiled_tensor_program_tf.tensor_program returned program",
+      "compilation_test": "tests/test_filter_repair_source_sequential.py::test_repeated_transport_keeps_all_captured_core_frame_and_callback_derivatives"
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program",
+      "kind": "python_iteration",
+      "ast_sha256": "2f9144d9550420f95ea0e6e433ac5e58494a6415c93eff38d62ce1ddf0b3b01f",
+      "role": "fixed_schema",
+      "reason": "Construct cotangent TensorSpecs from the fixed output tensor schema."
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program",
+      "kind": "python_iteration",
+      "ast_sha256": "7b86ec6c353971e15489acef6cc23d9882096e46d5ff6719e79c6f4fc5eb91e9",
+      "role": "fixed_schema",
+      "reason": "Construct pullback capture TensorSpecs from the concrete-function signature."
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.derivative",
+      "kind": "non_xla_function",
+      "ast_sha256": "8f87a87aabd1883d544b4e90b21da6277582ebb9b02b3deecac1ec99b3cb6aa6",
+      "role": "enclosed_graph",
+      "reason": "Pretraced complete VJP remains inside the public XLA-default program and each native Case branch.",
+      "enclosing_endpoint": "bayesfilter.ops.compiled_tensor_program_tf.tensor_program returned program",
+      "compilation_test": "tests/test_filter_repair_source_sequential.py::test_repeated_transport_keeps_all_captured_core_frame_and_callback_derivatives"
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.evaluate.pullback",
+      "kind": "python_iteration",
+      "ast_sha256": "4ecfbc85fb17645b696c490c2a459fdf615691ecce72e2093562df5c726a512b",
+      "role": "fixed_schema",
+      "reason": "Normalize absent cotangents to zero in the fixed output tuple; no numerical axis iteration."
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.evaluate.pullback",
+      "kind": "python_iteration",
+      "ast_sha256": "e6edc3b1f49646d2d167be4cf2ad7d8f7fd527802b323555910565d18a32236a",
+      "role": "fixed_schema",
+      "reason": "Bind computed variable gradients to resource identities for schema reordering."
+    },
+    {
+      "path": "bayesfilter/ops/compiled_tensor_program_tf.py",
+      "function": "tensor_program.evaluate.pullback",
+      "kind": "python_iteration",
+      "ast_sha256": "2b990dfc42a3c8695c22fdc1fadd5af74bb8090f3d7b313e723478908177887c",
+      "role": "fixed_schema",
+      "reason": "Return the fixed variable-gradient tuple in TensorFlow-specified resource order."
     }
   ]
 }

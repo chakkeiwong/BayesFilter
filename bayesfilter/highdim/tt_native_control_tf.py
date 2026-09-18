@@ -13,6 +13,12 @@ from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.ops.compiled_tensor_program_tf import (
+    call_tensor_program,
+    in_xla_context,
+    tensor_program,
+)
+
 _PRIMITIVE_CACHE = OrderedDict()
 
 
@@ -48,7 +54,8 @@ def functional_tt_primitive(product_basis, cores, *, points=None, integrate_axes
         if len(_PRIMITIVE_CACHE) > 16:
             _PRIMITIVE_CACHE.popitem(last=False)
     values = tuple(core.values for core in cores)
-    return program(points, values) if axes is None else program(values)
+    arguments = (points, values) if axes is None else (values,)
+    return call_tensor_program(program, arguments, jit_compile=jit_compile)
 
 
 def functional_tt_jvp(product_basis, cores, dot_cores, *, points=None, core_index=None,
@@ -339,58 +346,60 @@ def make_fixed_squared_marginal(product_basis, initial_cores, keep_axes, points,
     return contract
 
 
-def _basis_rows_with_pullback(product_basis, keep_axes, points, width):
-    """Evaluate heterogeneous bases before differentiating core contractions.
+def _basis_axis_program(product_basis, axis, rows, width, dtype):
+    """Keep each polynomial recurrence and its full VJP inside one Case arm."""
+    key = ("basis_pullback", id(product_basis), axis, rows, width, dtype, in_xla_context())
+    if key not in _PRIMITIVE_CACHE:
+        local = product_basis.bases[axis]
 
-    The full query pullback recomputes each local derivative in its own Case
-    branch. Polynomial-loop TensorLists therefore never cross a Case boundary.
-    Core coefficients remain ordinary inputs to the subsequent contractions.
+        def numerical(coordinate):
+            value = product_basis.evaluate_axis(axis, coordinate)
+            return tf.pad(value, ((0, 0), (0, width - local.basis_dim)))
+
+        # This private callable inherits compilation from the enclosing TT
+        # program. It has no eager/public endpoint and carries only tensor
+        # inputs/outputs across the heterogeneous Case boundary.
+        program = tensor_program(numerical, [tf.TensorSpec([rows], dtype)], jit_compile=False)
+        _PRIMITIVE_CACHE[key] = (product_basis, program)
+        if len(_PRIMITIVE_CACHE) > 16:
+            _PRIMITIVE_CACHE.popitem(last=False)
+    _PRIMITIVE_CACHE.move_to_end(key)
+    return _PRIMITIVE_CACHE[key][1]
+
+
+def _basis_rows_with_pullback(product_basis, keep_axes, points, width):
+    """Evaluate heterogeneous bases with complete local recomputed pullbacks.
+
+    Polynomial-loop TensorLists stay inside each local callable. Captured
+    basis tensors are explicit pullback inputs, so nested date/coordinate
+    gradients cannot introduce eager captures or drop their dependence.
     """
+    if not tf.inside_function():
+        # Fitting's public design-matrix helper also calls this primitive from
+        # the host. Compile the whole axis recurrence before local Case rules
+        # bind graph captures; those local rules require a function graph.
+        key = ("basis_rows_pullback", id(product_basis), tuple(keep_axes),
+               tuple(points.shape), width, points.dtype)
+        if key not in _PRIMITIVE_CACHE:
+            program = tensor_program(lambda query: _basis_rows_with_pullback(
+                product_basis, keep_axes, query, width), [tf.TensorSpec(points.shape, points.dtype)], True)
+            _PRIMITIVE_CACHE[key] = (product_basis, program)
+            if len(_PRIMITIVE_CACHE) > 16:
+                _PRIMITIVE_CACHE.popitem(last=False)
+        _PRIMITIVE_CACHE.move_to_end(key)
+        return _PRIMITIVE_CACHE[key][1](points)
     count, rows = len(product_basis.bases), points.shape[0]
     columns = {axis: column for column, axis in enumerate(keep_axes)}
 
-    def branch(axis, query):
-        def evaluate():
-            if axis not in columns:
-                return tf.zeros([rows, width], points.dtype)
-            local = product_basis.bases[axis]
-            value = product_basis.evaluate_axis(axis, query[:, columns[axis]])
-            return tf.pad(value, ((0, 0), (0, width - local.basis_dim)))
-        return evaluate
+    def branch(axis):
+        if axis not in columns:
+            return lambda: tf.zeros([rows, width], points.dtype)
+        program = _basis_axis_program(product_basis, axis, rows, width, points.dtype)
+        return lambda: program.python_function(points[:, columns[axis]])
 
-    @tf.custom_gradient
-    def evaluate(query):
-        branches = tuple(branch(axis, query) for axis in range(count))
-        result = tf.map_fn(lambda axis: tf.switch_case(axis, branches), tf.range(count),
-            fn_output_signature=tf.TensorSpec([rows, width], points.dtype),
-            parallel_iterations=1)
-
-        def pullback(cotangent):
-            def derivative_branch(axis):
-                def derivative():
-                    if axis not in columns:
-                        return tf.zeros([rows], points.dtype)
-                    local = product_basis.bases[axis]
-                    coordinate = query[:, columns[axis]]
-                    local_cotangent = cotangent[axis, :, :local.basis_dim]
-                    if callable(getattr(local, "derivative", None)):
-                        return tf.reduce_sum(local_cotangent * local.derivative(coordinate), axis=1)
-                    with tf.GradientTape() as tape:
-                        tape.watch(coordinate)
-                        value = product_basis.evaluate_axis(axis, coordinate)
-                    return tape.gradient(value, coordinate, output_gradients=local_cotangent,
-                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
-                return derivative
-
-            derivatives = tuple(derivative_branch(axis) for axis in range(count))
-            gradient = tf.map_fn(lambda axis: tf.switch_case(axis, derivatives), tf.range(count),
-                fn_output_signature=tf.TensorSpec([rows], points.dtype), parallel_iterations=1)
-            return tf.transpose(tf.gather(gradient, tf.constant(keep_axes, tf.int32)))
-
-        return result, pullback
-
-    return evaluate(points)
-
+    branches = tuple(branch(axis) for axis in range(count))
+    return tf.map_fn(lambda axis: tf.switch_case(axis, branches), tf.range(count),
+        fn_output_signature=tf.TensorSpec([rows, width], points.dtype), parallel_iterations=1)
 
 def squared_marginal(cores, product_basis, keep_axes, points):
     """Contract the paired cores in the original axis order with native control."""

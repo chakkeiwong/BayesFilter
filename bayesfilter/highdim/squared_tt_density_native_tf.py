@@ -12,6 +12,7 @@ import tensorflow as tf
 from bayesfilter.highdim.diagnostics import MassMeasure
 from bayesfilter.highdim.tt import TTCore
 from bayesfilter.highdim.tt_native_control_tf import prefix_rows, squared_marginal
+from bayesfilter.ops.compiled_tensor_program_tf import call_tensor_program
 from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 
 _DENSITY_CACHE = OrderedDict()
@@ -170,5 +171,4 @@ def density_program(density, operation, *, points=None, keep_axes=(), axis=None,
 
 def evaluate_density(density, operation, **kwargs):
     program, arguments = density_program(density, operation, **kwargs)
-    evaluate = program.python_function if tf.inside_function() else program
-    return evaluate(*arguments)
+    return call_tensor_program(program, arguments, jit_compile=kwargs.get("jit_compile", True))

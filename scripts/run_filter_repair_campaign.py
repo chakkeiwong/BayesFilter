@@ -53,7 +53,13 @@ BASELINE_PARENT_PACKAGES = (
     "experiments/__init__.py", "experiments/dpf_implementation/__init__.py",
 )
 BUDGET_SECONDS = {"CPU": 8 * 3600, "GPU": 4 * 3600}
+TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 TEST_GROUPS = {
+    "public_pullbacks": ("tests/test_filter_repair_public_pullbacks.py",),
+    "tensor_program": ("tests/test_compiled_tensor_program_tf.py",),
+    "source_sequential_captures": ("tests/test_filter_repair_source_sequential.py::test_repeated_transport_keeps_all_captured_core_frame_and_callback_derivatives",),
+    "source_sequential": ("tests/test_filter_repair_source_sequential.py",
+        "tests/highdim/test_p57_m6_sequential_fixed_hmc_source_loop.py"),
     "source_runtime": ("tests/test_filter_repair_source_runtime.py",
         "tests/highdim/test_p57_m6_sequential_fixed_hmc_source_loop.py"),
     "density_enclosing": ("tests/test_filter_repair_squared_density.py::test_public_density_and_previous_marginal_enclose_full_xla_and_input_gradient",
@@ -315,7 +321,9 @@ def ensure_baseline():
 def run_job(args):
     rows = records()
     device = args.device
-    timeout = 900 if args.action == "test" else 300
+    timeout = getattr(args, "test_timeout_seconds", 900) if args.action == "test" else 300
+    if args.action == "test" and timeout not in TEST_TIMEOUT_SECONDS:
+        raise ValueError("Test timeout must be one of the bounded registered limits")
     if charged_seconds(rows, device) + timeout > BUDGET_SECONDS[device]:
         raise RuntimeError(f"{device} campaign budget exhausted")
     key = [args.action, args.group, args.arm, args.fixture, args.jit, args.size, args.repeat, device]
@@ -449,6 +457,11 @@ def check_matrix_state(frozen):
         raise RuntimeError("Source changed during the campaign matrix")
 
 
+def measurement_modes(name):
+    """Keep complete public replay timing alongside numerical compilation arms."""
+    return ("off", "on", "eager") if name == "source_route_sequence" else ("off", "on")
+
+
 def run_matrix(args):
     """Resume registered jobs sequentially; failures retain their original evidence."""
     from compare_filter_repair_campaign import (
@@ -518,7 +531,7 @@ def run_matrix(args):
     for name in fixtures:
         for size in ((1,) if name in ONE_SIZE else (1, 2)):
             for repeat in (range(1) if args.stage == "qualify" else range(3)):
-                for mode in ("off", "on"):
+                for mode in measurement_modes(name):
                     before_run, before = execute(name, size, repeat, "before", mode)
                     baseline_attempt = before_run["result"]
                     if before["status"] != "passed" and mode == "on":
@@ -546,11 +559,16 @@ def main():
     parser.add_argument("--size", type=int, choices=(1, 2), default=1)
     parser.add_argument("--repeat", type=int, choices=(0, 1, 2), default=0)
     parser.add_argument("--device", choices=("CPU", "GPU"), default="GPU")
+    parser.add_argument("--test-timeout-seconds", type=int, choices=TEST_TIMEOUT_SECONDS, default=900,
+                        help="Smaller focused-test reservation; cumulative caps and 900-second ceiling remain fixed")
     parser.add_argument("--test-gpu-index", type=int, choices=(2, 3), default=2,
                         help="Physical GPU for correctness tests only")
     parser.add_argument("--measurement-gpu-index", type=int, choices=(2, 3), default=2,
                         help="Physical GPU for fresh matched before/after groups; never mix repeat devices")
     args = parser.parse_args()
+    if args.test_timeout_seconds != 900 and not (args.action == "test" or
+                                               (args.action == "matrix" and args.stage == "tests")):
+        parser.error("--test-timeout-seconds is only available for correctness tests")
     if args.test_gpu_index != 2 and not (args.action == "test" or
                                        (args.action == "matrix" and args.stage == "tests")):
         parser.error("--test-gpu-index is only available for correctness tests")

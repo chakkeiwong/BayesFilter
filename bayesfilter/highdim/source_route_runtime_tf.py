@@ -11,58 +11,11 @@ from collections import OrderedDict
 import tensorflow as tf
 
 from bayesfilter.highdim import source_route_numerics_tf as numerics
+from bayesfilter.ops.compiled_tensor_program_tf import tensor_program as _tensor_program
 
 D = tf.float64
 _PROGRAMS = OrderedDict()
 _MARGINALS = OrderedDict()
-
-
-def _tensor_program(function, signature, jit_compile):
-    """Keep loop tapes internal without dropping captured tensor derivatives.
-
-    The custom rule is inside the compiled boundary, so both the primal and
-    its recomputed complete VJP compile without exporting loop TensorLists.
-    Explicitly thread every captured tensor through that rule: a caller's tape
-    may watch a target coefficient or frame even though it lives on an object.
-    """
-    raw = tf.function(function, input_signature=signature, jit_compile=jit_compile, autograph=False)
-    concrete = raw.get_concrete_function()
-    argument_count = len(signature)
-    tensor_indices = tuple(index for index, value in enumerate(concrete.captured_inputs)
-                           if value.dtype != tf.resource)
-    positions = dict(zip(tensor_indices, range(len(tensor_indices)), strict=True))
-
-    def bound_captures(tensors):
-        # Variable handles stay captures and use custom_gradient's variable
-        # pullback. Passing the same resource as an argument and capture would
-        # duplicate a variable in the XLA cluster.
-        return [tensors[positions[index]] if index in positions else value
-                for index, value in enumerate(concrete.captured_inputs)]
-
-    @tf.custom_gradient
-    def evaluate(*values):
-        arguments, captures = values[:argument_count], values[argument_count:]
-        result = concrete._call_flat(list(arguments), captured_inputs=bound_captures(captures))
-
-        def pullback(*cotangent, variables=None):
-            sources = (*arguments, *captures, *(variables or ()))
-            with tf.GradientTape() as tape:
-                tape.watch(sources)
-                outputs = concrete._call_flat(list(arguments), captured_inputs=bound_captures(captures))
-            gradients = tape.gradient(outputs, sources, output_gradients=cotangent,
-                unconnected_gradients=tf.UnconnectedGradients.ZERO)
-            if variables is None:
-                return gradients
-            split = argument_count + len(captures)
-            return gradients[:split], list(gradients[split:])
-
-        return result, pullback
-
-    program = tf.function(lambda *arguments: evaluate(*arguments, *(concrete.captured_inputs[index]
-                                                                   for index in tensor_indices)),
-        input_signature=signature, jit_compile=jit_compile, autograph=False)
-    program.inline_function = function
-    return program
 
 
 def _query_program(function, shape, jit_compile):

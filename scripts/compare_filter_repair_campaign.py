@@ -17,6 +17,7 @@ from run_filter_repair_campaign import (
     ROOT,
     campaign_output_root,
     measurement_harness,
+    measurement_modes,
     records,
 )
 
@@ -176,6 +177,15 @@ def regression_reasons(before, after):
     return reasons
 
 
+def performance_comparison(before, after, *, same_timing_scope):
+    """A pure kernel cannot claim speed or memory ratios against public assembly."""
+    reasons = regression_reasons(before, after)
+    if not same_timing_scope:
+        reasons = [reason for reason in reasons if reason.startswith("continuing_")]
+    ratio = after["warm_median_seconds"] / before["warm_median_seconds"] if same_timing_scope else None
+    return ratio, reasons
+
+
 def reviewed_investigations(investigations, reviews, root=ROOT):
     """Resolve only documented explanatory tradeoffs for the actual run set.
 
@@ -227,7 +237,7 @@ def main():
     for name in FIXTURES:
         device = "CPU" if name == "cpu_pool" else "GPU"
         for size in ((1,) if name in ONE_SIZE else (1, 2)):
-            for jit in ("off", "on"):
+            for jit in measurement_modes(name):
                 for repeat in range(3):
                     keys = [(arm, name, jit, size, repeat, device) for arm in ("before", "after")]
                     identity = {"fixture": name, "size": size, "jit": jit, "repeat": repeat}
@@ -257,6 +267,8 @@ def main():
                                 "max_absolute_error": error, "before_run": before_run["result"], "after_run": after_run["result"],
                                 "baseline_compilation_failure": reason, "baseline_attempt": original_before}
                         pair["before_mode"] = before["jit"]
+                        pair["timing_scopes"] = [before.get("timing_scope"), after.get("timing_scope")]
+                        pair["same_timing_scope"] = pair["timing_scopes"][0] == pair["timing_scopes"][1]
                         result["pairs"].append(pair)
                     except (ValueError, KeyError) as exc:
                         result["failures"].append({**identity, "reason": str(exc)})
@@ -273,9 +285,10 @@ def main():
             continue
         summaries = {arm: {field: (max if field.startswith("late_") else statistics.median)(pair[arm][field] for pair in pairs)
                            for field in pairs[0][arm]} for arm in ("before", "after")}
-        reasons = regression_reasons(summaries["before"], summaries["after"])
+        same_scope = all(pair["same_timing_scope"] for pair in pairs)
+        ratio, reasons = performance_comparison(summaries["before"], summaries["after"], same_timing_scope=same_scope)
         aggregate = dict(fixture=name, size=size, jit=jit, **summaries,
-            warm_ratio=summaries["after"]["warm_median_seconds"]/summaries["before"]["warm_median_seconds"],
+            same_timing_scope=same_scope, warm_ratio=ratio,
             repeat_warm_ranges={arm: [min(p[arm]["warm_median_seconds"] for p in pairs),
                 max(p[arm]["warm_median_seconds"] for p in pairs)] for arm in ("before", "after")},
             descriptive_only=True)

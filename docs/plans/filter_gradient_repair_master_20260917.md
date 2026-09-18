@@ -116,6 +116,11 @@ numerical implementations cannot use them to evade the policy.
 The initial total budget is 4 GPU process-hours and 8 CPU process-hours, with
 at most 300 seconds per benchmark worker, 900 seconds per focused test group,
 three unchanged-fixture retries, and fresh numbered artifacts for every attempt.
+Focused tests may select a smaller 60, 120 or 300-second timeout through
+`--test-timeout-seconds`; the default and ceiling remain 900 seconds. The
+selected limit is both the pre-launch reservation and enforced worker timeout,
+and unfinished attempts are charged that same limit. This permits bounded
+checks near the cap without expanding cumulative compute authorization.
 Elapsed failed attempts consume budget. The runner records commands, source,
 environment, hardware, outcomes and wall time in ordinary JSON/log files under
 `docs/plans/artifacts/filter-gradient-repair-20260917/`. No overwrite of prior
@@ -225,6 +230,77 @@ an external tape must not silently lose coefficients captured by a callback.
 Prepare immutable marginal metadata outside tracing, retaining every numerical
 query in the compiled boundary. The remaining sequential date loop is a
 separate open gate; endpoint qualification cannot close it.
+
+Sequential qualification uses the existing frozen source-route replay at two
+and four dates, including different row counts in the correctness fixtures.
+Preserve every retained numerical field, previous-prefix density, callback
+derivative and retained-object link. Numerical date evaluation uses native
+TensorFlow control flow; public record/identity assembly stays on the host.
+The fixed-TTSIRT preparation creates schema-only views, so basis contraction
+and normalization remain inside the date graph. Existing contracted-density
+metadata is constructed only for reporting after numerical execution; no owned
+consumer reads that field. Distinct frozen callbacks have distinct static
+branches, so measure and explain graph-size growth before making a compactness
+claim. This is execution qualification of frozen inputs, not new fitting,
+adaptive-filter, HMC-readiness or source-faithfulness evidence.
+
+Sequential qualification at runs 00931--00940 exposed duplicated transport
+graphs even when dates share the very same frozen transport. The bounded
+repair separates transport dispatch from target/date dispatch: one TensorFlow
+branch per distinct transport object and input shape, with native date
+iteration and padded heterogeneous tensor schemas. Repeated use of one
+transport must not copy its CDF graph for every date. Distinct fitted
+transports and callbacks may still require distinct schemas; do not claim
+constant graph size for that case. Preserve all outputs, callback/query/core
+derivatives, and exact invalid-input behavior. Requalify the same two/four-date
+fixture and retain the failed memory/graph observations as repair evidence.
+
+The expanded captured-core derivative check also found nested basis pullback
+captures and standalone TT TensorList-boundary failures. Preserve complete
+derivatives with complete local recomputed pullbacks and by reusing that
+boundary for public TT/density/transport calls. Pretrace the derivative using
+graph differentiation, which remains valid if an outer initialization scope
+pauses tape recording; bind inputs and resource captures in the forward
+branch, and keep loop tapes internal. The shared boundary belongs in `ops/compiled_tensor_program_tf`
+and must remain covered for explicit inputs, captured tensors and variable
+resources. Pin the comparator's source, TT, density and transport modules
+together; a legacy host loop importing candidate dependencies is not an
+independent baseline. Recheck the source closure and artifact reload after
+moving the helper. These are execution repairs with unchanged score meanings.
+The boundary uses TensorFlow's concrete-function and branch-graph APIs; the
+independent polynomial tests must cover explicit arguments, captured tensors,
+resources and nested control flow in graph and XLA modes, including cold
+construction inside an outer `tf.init_scope()`. Any TensorFlow
+upgrade requires these checks again. These AD pullbacks preserve the existing
+external-tape semantics and do not establish a canonical analytical LEDH score.
+
+The next reachable preparation repair must enclose prior sampling, transition
+noise and model callbacks, deterministic weighted resampling, recentering,
+local clipping, target evaluation and target-value construction. Its consumers
+are `p59_author_sir_step_spec_assembly` and the P72 lower-gate diagnostic.
+Compare the complete first-date and retained-prefix-date preparation results,
+including indices, clipping decisions, frames, shifts and weights. Preserve
+the existing Generator Philox stream (seeds 6301 and 6400+t), all settings and
+the fixed resampling rule; the geometry RNG exception does not cover this
+preparation. Paper section 3.2 Algorithm 2/(15)--(16), section 4.1's previous
+marginal recursion, and author `models/full_sol.m:21--130` anchor the operation
+ordering. Frozen replay is a fixed-HMC adaptation; deterministic resampling,
+bounded local clipping and the grid-CDF fit remain repository extensions.
+This is still an open execution gate, independent of passing replay tests.
+
+Sequential timing review found that the original eager arm included public
+result/identity assembly while the candidate graph/XLA arm contained only the
+complete numerical kernel. Their equal numerical outputs do not justify an
+end-to-end speed or peak-memory ratio. Record each timing scope and suppress
+cross-scope ratios. The sequential matrix therefore additionally measures both
+public endpoints in host-call mode, retaining their actual internal execution
+defaults (candidate numerical XLA; historical eager baseline). Require those
+matched public-endpoint pairs for timing comparisons. Graph/XLA kernel arms
+remain compilation, graph-growth and allocation diagnostics, with the valid
+baseline outputs as their parity authority. The public API fixture must reuse
+the immutable callback/frame/transport schema when reference values change;
+specification object identity alone must not force a new compilation. All
+outputs, 20 warm calls, process repeats, hardware and existing budgets remain.
 
 Stop the affected measurement on invalid comparison, corrupted artifacts,
 numerical mismatch, uncontrolled allocation or GPU contention. Repair local

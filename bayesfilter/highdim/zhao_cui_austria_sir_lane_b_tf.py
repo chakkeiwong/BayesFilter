@@ -641,6 +641,7 @@ def source_closure() -> Mapping[str, str]:
         source_route,
         source_route_numerics_tf,
         source_route_runtime_tf,
+        source_route_sequential_tf,
         squared_tt,
         squared_tt_density_native_tf,
         stochastic_density_training,
@@ -651,7 +652,12 @@ def source_closure() -> Mapping[str, str]:
         ttsirt_native_tf,
         zhao_cui_austria_sir_lane_b_target_tf,
     )
-    from bayesfilter.ops import fixed_signature_tf, slogdet_tf, stateless_random_tf
+    from bayesfilter.ops import (
+        compiled_tensor_program_tf,
+        fixed_signature_tf,
+        slogdet_tf,
+        stateless_random_tf,
+    )
 
     modules = (
         bases,
@@ -664,6 +670,7 @@ def source_closure() -> Mapping[str, str]:
         source_route,
         source_route_numerics_tf,
         source_route_runtime_tf,
+        source_route_sequential_tf,
         squared_tt,
         squared_tt_density_native_tf,
         stochastic_density_training,
@@ -673,6 +680,7 @@ def source_closure() -> Mapping[str, str]:
         tt_native_control_tf,
         ttsirt_native_tf,
         zhao_cui_austria_sir_lane_b_target_tf,
+        compiled_tensor_program_tf,
         fixed_signature_tf,
         slogdet_tf,
         stateless_random_tf,

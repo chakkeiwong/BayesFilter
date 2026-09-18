@@ -1878,8 +1878,11 @@ class SourceRouteSequentialResult:
 
     @property
     def log_marginal_likelihood(self) -> tf.Tensor:
-        increments = [step.normalizer_increment for step in self.steps]
-        return tf.reduce_sum(tf.stack(increments))
+        from bayesfilter.highdim.source_route_sequential_tf import total_log_normalizer
+
+        normalizers = tuple(step.retained_samples.normalizer.log_transport_normalizer for step in self.steps)
+        shifts = tuple(step.retained_samples.normalizer.shift_constant for step in self.steps)
+        return total_log_normalizer(tf.stack(normalizers), tf.stack(shifts))
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -8599,41 +8602,24 @@ def source_route_sequential_negative_log_physical_density(
         raise TypeError("transition_log_density_fn must be callable")
     if not callable(likelihood_log_density_fn):
         raise TypeError("likelihood_log_density_fn must be callable")
-    input_axes = tuple(range(d)) + tuple(range(d + m, d + 2 * m))
-    prior_points = tf.gather(points, input_axes, axis=0)
     if int(time_index) == 1:
         if prior_log_density_fn is None or not callable(prior_log_density_fn):
             raise TypeError("t=1 requires callable prior_log_density_fn")
-        prior_log_density = _finite_vector(
-            "prior_log_density",
-            prior_log_density_fn(prior_points),
-        )
     else:
         if prior_log_density_fn is not None:
             raise ValueError("t>1 uses previous retained marginal, not prior_log_density_fn")
         if previous_retained_object is None:
             raise TypeError("t>1 requires previous_retained_object")
-        keep_axes = tuple(range(d + m))
-        previous_density = source_route_previous_marginal_log_density(
-            previous_retained_object=previous_retained_object,
-            physical_points=prior_points,
-            keep_axes=keep_axes,
-        )
-        prior_log_density = previous_density.log_density
-    transition_log_density = _finite_vector(
-        "transition_log_density",
-        transition_log_density_fn(points, int(time_index)),
-    )
-    likelihood_log_density = _finite_vector(
-        "likelihood_log_density",
-        likelihood_log_density_fn(points, int(time_index)),
-    )
-    if (
-        prior_log_density.shape != transition_log_density.shape
-        or prior_log_density.shape != likelihood_log_density.shape
-    ):
-        raise ValueError(f"source sequential density: {HighDimStatus.INVALID_SHAPE.value}")
-    return -prior_log_density - transition_log_density - likelihood_log_density
+        if not isinstance(previous_retained_object, SourceRouteRetainedObject):
+            raise TypeError("previous_retained_object must be SourceRouteRetainedObject")
+        if d + m > previous_retained_object.coordinate_frame.dimension:
+            raise ValueError(f"keep_axes: {HighDimStatus.INVALID_SHAPE.value}")
+    from bayesfilter.highdim.source_route_sequential_tf import physical_density_program
+
+    program = physical_density_program(int(time_index), d, m, transition_log_density_fn,
+        likelihood_log_density_fn, prior_log_density_fn, previous_retained_object, points.shape)
+    evaluate = program.inline_function if tf.inside_function() else program
+    return numerics_tf.finite(evaluate(points), "source sequential density")
 
 
 def source_route_default_operation_audit(
@@ -8706,58 +8692,47 @@ def source_route_run_sequential_fixed_hmc(
     if audit.status != "PASS_SOURCE_ROUTE_OPERATION_COVERAGE":
         raise ValueError("branch_audit must pass source-route operation coverage")
 
+    from bayesfilter.highdim.source_route_sequential_tf import (
+        sequential_program,
+        unpack_step,
+    )
+
+    program, prepared, lengths = sequential_program(specs)
+    numerical = program(*(spec.reference_samples for spec in specs))
     previous_retained: SourceRouteRetainedObject | None = None
     steps: list[SourceRouteSequentialStepResult] = []
-    for spec in specs:
+    # Numerical date evaluation is complete. This loop constructs identities,
+    # host validation records and the existing heterogeneous public result.
+    for index, spec in enumerate(specs):
         step_target = _source_route_step_target_from_components(
             spec=spec,
             previous_retained_object=previous_retained,
         )
-        current_reference = spec.transport.inverse_transport(spec.reference_samples)
-        current_physical = step_target.physical_points_from_reference(
-            current_reference
-        )
+        (physical, proposal, target_log, correction, weights, ess, log_z,
+         previous_physical, previous_local, previous_log) = unpack_step(
+            numerical[index], prepared[index][2], lengths[index])
         if spec.time_index == 1:
             previous_marginal_density = None
         else:
-            if previous_retained is None:
-                raise ValueError("t>1 requires previous retained object")
-            if (
-                spec.previous_marginal_keep_axes is None
-                or spec.previous_marginal_input_axes is None
-            ):
-                raise ValueError("t>1 requires previous marginal axes")
-            previous_physical = tf.gather(
-                current_physical,
-                spec.previous_marginal_input_axes,
-                axis=0,
-            )
-            previous_marginal_density = source_route_previous_marginal_log_density(
+            previous_marginal_density = SourceRoutePreviousMarginalDensityResult(
                 previous_retained_object=previous_retained,
-                physical_points=previous_physical,
                 keep_axes=spec.previous_marginal_keep_axes,
+                marginal_transport=specs[index-1].transport.marginalize(spec.previous_marginal_keep_axes),
+                physical_points=previous_physical,
+                local_points=previous_local,
+                log_density=previous_log,
             )
 
-        component_negative_log = spec.density_components.negative_log_physical_density(
-            physical_points=current_physical,
-            time_index=spec.time_index,
-            previous_retained_object=previous_retained,
-        )
-        target_negative_log = _finite_vector(
-            "target_negative_log_physical_density",
-            step_target.negative_log_physical_density_fn(current_physical),
-        )
-        tf.debugging.assert_near(
-            target_negative_log,
-            component_negative_log,
-            atol=1e-10,
-        )
-
-        retained_samples = source_route_generate_retained_samples(
-            target=step_target,
-            transport=spec.transport,
-            reference_samples=spec.reference_samples,
-            time_index=spec.time_index,
+        retained_samples = SourceRouteRetainedSampleResult(
+            retained_batch=SourceRouteSampleBatch(samples=physical, log_weights=weights,
+                time_index=spec.time_index, route_label=SOURCE_FAITHFUL_ROUTE_LABEL,
+                sample_origin="retained_from_transport"),
+            proposal_log_density=proposal, target_log_density=target_log,
+            correction_log_weights=correction,
+            diagnostics=SourceRouteSampleDiagnostics(sample_count=spec.reference_samples.shape[1],
+                                                      effective_sample_size=ess),
+            normalizer=SourceRouteNormalizerContribution(log_transport_normalizer=log_z,
+                shift_constant=spec.target.shift_constant, log_abs_det_policy=spec.target.log_abs_det_policy),
         )
         diagnostics = {
             "phase": "P57-M6",

@@ -2026,3 +2026,268 @@ pinned comparisons, independent derivatives and executed consumers are the
 available evidence. A fresh fetch finds no incoming commits on origin/main
 or the active repair branch. The checkpoint may be committed and pushed on
 the repair branch; all F01--F20 terminal decisions and integration remain open.
+
+## Complete frozen-date replay, September 18 continuation
+
+Recovery found checkpoint `e27a6ec0`, the uncommitted sequential repair, no
+running campaign workers, and charges through 00930 of 20,912.738 CPU and
+11,787.014 GPU seconds. The original 8 CPU / 4 GPU process-hour caps remain
+active. Runs 00929/00930 passed the sequential correctness group before this
+continuation (58.588/66.357 seconds, respectively). Numerical date evaluation
+uses TensorFlow control flow; the public host loop assembles retained records,
+identities and reporting metadata after evaluation. Public direct callbacks
+also have compiled boundaries. Reporting still constructs the legacy
+contracted-density metadata; no owned numerical consumer reads that field.
+
+Runs 00931--00940 qualified two/four dates with four samples and the same
+fresh correlated TT. The pinned baseline fails graph/XLA tracing at its host
+`.numpy()` validation, while its eager results remain the numerical authority.
+Candidate graph and XLA pass with maximum discrepancy 8.882e-16. All candidate
+graphs have one trace and no Python callbacks. These are one-process
+qualification measurements, not terminal repeats or scientific admission.
+
+| Dates | Mode | Warm median ms | First execution s | Sampled host maximum MiB | GPU peak bytes |
+|---|---|---:|---:|---:|---:|
+| 2 | baseline eager | 607.175 | 2.867 | 1084.0 | 27,904 |
+| 2 | candidate graph | 62.317 | 4.220 | 1558.0 | 91,136 |
+| 2 | candidate XLA | 3.182 | 4.182 | 1553.8 | 51,456 |
+| 4 | baseline eager | 1323.464 | 3.593 | 1089.4 | 35,584 |
+| 4 | candidate graph | 149.574 | 6.926 | 1947.3 | 156,928 |
+| 4 | candidate XLA | 5.928 | 7.862 | 2130.6 | 86,272 |
+
+XLA live device allocation remains 6,656 bytes over 20 warmed calls. The
+GraphDef nevertheless grows from 7,065 nodes/296 functions at two dates to
+15,155 nodes/642 functions at four dates, and the host-memory increase exceeds
+the 256 MiB investigation threshold. This is a real repair trigger: the
+initial implementation duplicated the same CDF transport graph in each date
+branch. Separate transport dispatch from date-specific target dispatch and
+share each immutable transport/input-shape branch within the native date loop.
+Heterogeneous fitted transports may still require distinct graph schemas;
+constant graph size for that case is not established. Requalify the identical
+fixture after the repair, preserving these observations.
+
+Run 00941 passes all six training/artifact consumer checks, including fresh
+reload and tamper rejection with the sequential helper in the source closure.
+Review also found that rebuilding the component formula would silently ignore
+a subclass override. The native replay now rejects an overridden formula
+explicitly before calculation; arbitrary overridden component methods are
+unsupported by this compiled boundary. Tests must cover that rejection and
+the full shared-transport derivatives with respect to query, frame, variable
+callback coefficients and TT cores. No owned callback uses such an override.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Repair duplicated transport graphs | Numerical qualification passes | Host-memory/graph growth trigger fires | Distinct transport scaling and full derivative coverage | Share transport dispatch, rerun focused checks and qualification | Compactness, terminal performance, repository completion or main readiness |
+
+The reachable preparation audit remains open: `_p59_author_sir_prior_sample_batch`,
+`_p59_author_sir_source_push_result`, deterministic resampling and complete fit
+data preparation still perform numerical work outside an enclosing compiled
+program. The two-step assembly and P72 diagnostic caller reach these helpers.
+They are not made compliant by the sequential endpoint repair or by their
+existing bounded execution labels. Paper section 3.1 equations (13)--(14),
+section 4.1 and author `models/full_sol.m:21--130` were re-inspected here;
+the frozen replay remains a fixed-HMC adaptation and grid-CDF fitting remains
+an extension. No new source-fidelity or analytical-score admission is claimed.
+
+Run 00942 passed eight sequential checks but exposed two new test failures:
+the override-rejection fixture supplied only one date, and the gradient
+comparator mixed the old source module with candidate transport code. After
+fixing the date count, run 00943 passed nine checks but found another mixed
+dependency at the density boundary (TensorList crossing; the worker also
+reported an allocator abort during shutdown). These failed attempts are
+preserved and charged. The comparator now binds pinned TT, squared density,
+transport and source modules together, sharing only the frozen tensor inputs
+and reviewed basis primitives.
+
+Run 00944 then reproduced a genuine candidate gradient failure: a nested basis
+pullback introduced eager constants into a While gradient graph. Moving the
+local derivative table into the forward graph repaired that boundary without
+changing query/core derivatives. Run 00945 advanced to a separate public TT
+contraction failure while constructing marginal metadata under an external
+tape: TensorLists crossed the XLA boundary. The common recomputed-pullback
+helper was moved into `ops/compiled_tensor_program_tf.py` and applied to direct
+TT, density and transport entrypoints. Its captured-tensor/resource treatment
+is unchanged; nested argument schemas are flattened and reconstructed around
+the same finite numerical program. The artifact closure includes the helper.
+
+Run 00946 exposed a further nested CDF coordinate Case gradient with unsupported
+`FakeParam(DT_VARIANT)`. Recompute the complete coordinate pullback within its
+own branch so loop tapes do not cross Case boundaries. That private helper is
+enclosed by the transport's explicit graph/XLA boundary; it does not introduce
+a default non-XLA endpoint. No derivative is dropped and no tolerance, target,
+seeded draw or bisection rule changes. Full captured-gradient, direct-public
+pullback, enclosing-HLO and current consumer checks remain required before a
+passing checkpoint. The broader preparation/TP/performance/terminal gates
+remain open throughout these localized repairs.
+
+Recovery after run 00956 finds no running workers and cumulative charges of
+20,912.738 CPU / 12,681.218 GPU seconds. The original caps remain active;
+the proposed increase has no recorded approval. Runs 00947--00953 exposed
+nested Case/While gradient TensorLists, eager captures and XLA gradient
+construction failures. The pretraced local pullback in 00954 compiled, but
+00955/00956 exposed incorrect zero derivatives (00956: four failed, six passed).
+These are implementation failures and remain a merge veto; no tolerance or
+comparator may be relaxed. The proposed next repair is checked first against
+an independent polynomial derivative with explicit inputs, captured tensors,
+variable resources, native loops and nested Case branches, on a small CPU
+reference. This tests whether tracing under `tf.init_scope()` suppresses the
+derivative tape. Only a passing helper permits the full source replay retry.
+The comparison remains pinned and all failed attempts remain charged.
+
+Run 00957 reproduces zero derivatives in all four independent polynomial
+checks. TensorFlow 2.19.1 `ops.init_scope` explicitly pauses recording via
+`record.stop_recording`; removing both derivative/basis construction scopes
+restores direct derivatives. Runs 00958--00965 then isolate nested resource
+captures and graph-only Optional intermediates; one attempt also caught a
+list/tuple calling-convention error. These small CPU diagnostics remain
+preserved. Runs 00966/00967 pass all four checks after binding the fixed input
+and resource capture schemas to the forward branch, keeping the local custom
+rule inside that branch, and tracing the VJP with TensorFlow's XLA control-flow
+context active on the forward graph. Private functions remain non-XLA graph
+components enclosed by the public XLA-default boundary. No global TensorFlow
+configuration, algorithm, derivative definition or tolerance changed.
+
+Run 00968 passes all ten GPU sequential checks, including the Gaussian query
+derivatives and four-date TT/core/frame/variable derivative comparison.
+The added public-entrypoint tests then exposed a GPU graph backward crash in
+00969. CPU localization 00970 passed TT/transport checks and caught an invalid
+test keyword on a density method without a JIT option. That keyword was
+removed; the method's existing default compiled boundary is still exercised.
+The helper now distinguishes the actual enclosing XLA context from graph
+diagnostics when constructing backward intermediates; private transport
+branches are traced in that context and basis caches distinguish the two.
+Run 00971 passes the independent helper check and 00972 passes all six public
+TT/density/transport external-tape comparisons on GPU. Graph-mode backward
+execution no longer uses the XLA-specific intermediates that triggered the
+crash. Failed runs remain visible; no default fallback was introduced.
+Current focused lint and the static guard pass (170 sources, 1,094 exact
+exceptions). Existing lint findings in untouched portions of the mixed source
+and harness files are not reclassified as fixed by this checkpoint.
+
+Runs 00973--00978 pass 12 source-runtime, ten sequential, five density,
+three transport, six training/artifact, and four independent helper checks,
+respectively, all on GPU. The helper checks also update captured resource
+values between calls and require one trace. Run 00979 exposed four direct
+fitting calls to the basis recurrence outside a function graph (35 checks
+passed). Enclosing that whole primitive before its local branch pullbacks
+repairs the failure; 00980 passes all 39 TT algebra/derivative checks on GPU.
+
+Review before new sequential measurements found unequal timing scopes in
+00931--00940: baseline timings include public record construction while
+candidate timings cover only the numerical date kernel. Numerical parity
+remains useful, but those numbers must not establish public API speed or
+peak-memory ratios. The revised source harness additionally times both public
+endpoints, records the timing scope, and suppresses cross-scope ratios while
+retaining candidate allocation-growth vetoes. Kernel construction now reuses
+its already prepared program instead of tracing a second copy. The public
+comparison also exposed the step-object cache key: replacing only query values
+would retrace. The cache now binds immutable numerical schema and takes query
+values as inputs. A changed-query regression checks reuse and baseline parity.
+Run 00981 passes the controller/policy suite, including the timing-scope guard.
+The original 4 GPU / 8 CPU process-hour caps still apply.
+
+## Initialization-scope derivative repair, September 18 continuation
+
+Recovery confirms the uncommitted work after `e27a6ec0`, no active campaign
+worker, and charges through 00983 of 21,031.719 CPU / 13,589.249 GPU seconds.
+The proposed 16 GPU / 12 CPU cumulative-hour amendment remains unapproved;
+the original caps apply. Run 00982 had passed all 11 sequential GPU checks,
+including query-value cache reuse. Run 00983 then exposed a further genuine
+zero-gradient failure when the helper was constructed under an *outer*
+`tf.init_scope()`. Removing the helper's own initialization scopes had not
+fixed this caller-dependent recording state. This failure remains preserved.
+
+The localized repair uses graph differentiation of the same concrete finite
+program, with captured variable resource handles explicitly bound as graph
+inputs. It therefore does not depend on tape recording during construction.
+The skeptical review checks explicit inputs, captured tensors, updated
+variables, integer output status, nested native loops/Case branches, and both
+graph/XLA contexts; it retains the context distinction needed to avoid the
+earlier GPU backward crash. It changes neither the derivative definition nor
+the numerical program, and introduces no new analytical-score claim.
+
+Run 00984 passes the five original CPU checks. Run 00985 passes ten expanded
+checks, adding outer initialization scopes across modes and nested branches.
+Run 00986 passes all 38 density/failure-exit checks on CPU. The new exact
+policy exception binds only the resource-handle schema comprehension; it
+does not exempt numerical iteration. The guard now covers 170 sources with
+1,095 exact exceptions and still represents partial coverage.
+
+The driver now permits bounded test timeouts of 60, 120 or 300 seconds below
+the unchanged 900-second default/ceiling. The selected timeout is both the
+budget reservation and the enforced worker limit; crash accounting uses the
+same number. This avoids reserving 900 seconds for a ten-second test without
+expanding the campaign cap. Run 00987 passes the policy/controller suite,
+including a near-cap launch/rejection test. Run 00988 passes the ten helper
+checks on GPU3. Runs 00989/00990 pass all 11 sequential and six public
+TT/density/transport pullback checks, respectively, on GPU3.
+
+Pre-measurement review also removed a stale `del jit` in the new sequence
+fixture, which would have prevented preparation of its numerical arm. Source
+results now distinguish the outer host timing mode from the candidate's
+default XLA date program. Matching public API arms remain required; no earlier
+cross-scope speed ratio is reinstated.
+
+Run 00991 passes all 25 full transport/compiler checks on CPU. Runs
+00992--01003 execute the corrected sequential qualification on GPU3, for two
+and four dates, using the frozen correlated TT and four rows. The baseline
+still fails graph/XLA tracing on host validation; those four failed attempts
+are preserved. Every candidate arm passes numerical parity with maximum
+absolute discrepancy 8.882e-16. The matched public endpoints include result
+assembly in both arms; `jit=eager` describes the outer host call, and the
+candidate's numerical date program still defaults to XLA.
+
+| Dates | Matched public arm | Warm median ms | First execution s | Host maximum MiB | Device peak bytes |
+|---|---|---:|---:|---:|---:|
+| 2 | baseline, 00993 | 608.034 | 2.919 | 1092.6 | 27,904 |
+| 2 | candidate, 00997 | 61.338 | 9.716 | 1572.9 | 37,632 |
+| 4 | baseline, 00999 | 1314.118 | 3.533 | 1082.4 | 35,584 |
+| 4 | candidate, 01003 | 127.162 | 14.876 | 1854.8 | 45,824 |
+
+The approximately tenfold warm-time difference is descriptive qualification
+evidence from one process per arm, not a terminal performance claim. Public
+host memory increases by 480.3/772.4 MiB, exceeding the 256 MiB investigation
+threshold; this remains open. First execution includes candidate date-program
+construction and compilation and is slower. No continuing allocator growth
+appears in the 20 warm calls, and the maximum late RSS increase is 136 KiB.
+Verified memory growth is recorded for every GPU arm; allocator peaks here
+are live TensorFlow allocations, not whole-device reservations.
+
+| Dates | Candidate kernel mode | Warm median ms | Host maximum MiB | Device peak bytes | GraphDef nodes/functions |
+|---|---|---:|---:|---:|---:|
+| 2 | graph, 00994 | 56.899 | 1615.4 | 69,376 | 4459 / 189 |
+| 2 | XLA, 00996 | 3.315 | 1589.0 | 39,424 | 4459 / 189 |
+| 4 | graph, 01000 | 118.915 | 1854.7 | 89,600 | 7279 / 301 |
+| 4 | XLA, 01002 | 5.580 | 1882.8 | 52,992 | 7279 / 301 |
+
+These graph/XLA kernel arms have matching timing scopes and frozen inputs.
+They cannot supply a speed ratio against the baseline public endpoint. The
+new four-date graph has 7,279 nodes versus the earlier candidate's 15,155,
+confirming that shared-transport dispatch removed duplication; distinct date
+targets still grow the graph. Host memory is similar in graph and XLA modes,
+and much of the two-date increase is already present after program preparation
+(1363/1371 MiB before first execution). The strongest current explanation is
+retained function/gradient graphs plus compilation and runtime setup, not
+whole-GPU reservation or a warm device leak. Exact attribution and a bounded
+remedy remain unproved; eager pretracing of complete local pullbacks is a
+specific next investigation. Do not trade away captured derivatives to reduce
+memory or treat stable warm allocations as acceptance of the host increase.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Preserve the derivative repair and shared-transport replay checkpoint | Focused/full consumer checks and numerical qualification pass | Host-memory increase remains an investigation trigger; broader gates open | Retained derivative-graph cost and remaining source preparation | Finish current consumer checks, preserve checkpoint, investigate graph preparation under the remaining budget | Repository completion, terminal performance, default readiness, canonical analytical LEDH status or merge readiness |
+
+| Inference status | Finding |
+|---|---|
+| Hard veto screen | Candidate values/gradients pass these fixtures; unrelated TP numerical mismatch remains open |
+| Statistically supported ranking | None; only one process per arm here |
+| Descriptive differences | Lower candidate warm time, higher public cold time and host memory |
+| Default readiness | Not established; all F01--F20 terminal decisions remain open |
+| Next evidence | Host-memory investigation, remaining preparation repair, final source freeze and paired three-process repeats |
+
+Runs 01004--01006 add six GPU lane-B training/artifact checks, 42 CPU source
+runtime checks, and 39 CPU TT algebra checks; all pass. The static guard passes
+with 170 guarded sources and 1,095 exact exceptions. The campaign comparison
+currently has 18 valid matched pairs and 840 missing matrix pairs, so the
+terminal gate remains closed. Current original-cap charges are 21,554 CPU
+seconds and 14,067 GPU seconds; no budget amendment has been applied.

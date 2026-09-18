@@ -10,6 +10,10 @@ import tensorflow as tf
 
 from bayesfilter.highdim.diagnostics import HighDimStatus
 from bayesfilter.highdim.squared_tt_density_native_tf import density_program
+from bayesfilter.ops.compiled_tensor_program_tf import (
+    call_tensor_program,
+    tensor_program,
+)
 
 _PROGRAMS = OrderedDict()
 _ERRORS = (
@@ -141,12 +145,29 @@ def transport_program(transport, operation, count, conditioning_dimension=0, *, 
                 bisect, (tf.constant(0), lo, hi, 0.5*(lo+hi)),
                 maximum_iterations=config.bisection_steps, parallel_iterations=1)
             return transport._axis_reference_to_domain(axis, midpoint), code
-        return calculate
+        # Coordinate Case gradients must carry fixed tensors, not loop tapes
+        # from the CDF and marginal recurrences. Recompute the complete local
+        # VJP within its branch. This private function is always enclosed by
+        # evaluate below, which owns the selected graph/XLA execution mode.
+        local_specs = (*specs[0], *specs[1:4],
+                       tf.TensorSpec([dimension, count], tf.float64),
+                       tf.TensorSpec([count], tf.float64))
 
-    coordinate_branches = tuple(coordinate_branch(axis) for axis in axes) if mode in ("inverse", "forward", "log_jacobian") else ()
+        def flat_calculate(*arguments):
+            return calculate(tuple(arguments[:dimension]), *arguments[dimension:])
+
+        local_program = tensor_program(flat_calculate, local_specs, jit_compile=False)
+
+        def bounded_calculate(cores, tau, normalizer_floor, denominator_floor, state, targets):
+            return local_program.python_function(*cores, tau, normalizer_floor, denominator_floor, state, targets)
+
+        return bounded_calculate
 
     @tf.function(input_signature=specs, jit_compile=jit_compile, autograph=False)
     def evaluate(cores, tau, normalizer_floor, denominator_floor, condition, values):
+        # Build branch pullbacks in the actual enclosing compilation context;
+        # direct graph diagnostics must not reuse XLA-only intermediates.
+        coordinate_branches = tuple(coordinate_branch(axis) for axis in axes) if mode in ("inverse", "forward", "log_jacobian") else ()
         code = _status(tf.constant(0), tf.reduce_all(tf.math.is_finite(condition)) & tf.reduce_all(tf.math.is_finite(values)), 1)
         if coordinate_branches:
             if mode == "inverse":
@@ -207,7 +228,8 @@ def evaluate_transport(transport, operation, condition, values, *, jit_compile=T
         result, code = program.python_function(*transport_arguments(transport), condition, values)
         # The same status veto must survive even if enclosing XLA drops Assert.
         return tf.where(code == 0, result, tf.constant(float("nan"), result.dtype))
-    result, code = program(*transport_arguments(transport), condition, values)
+    result, code = call_tensor_program(program, (*transport_arguments(transport), condition, values),
+                                       jit_compile=jit_compile)
     check_transport_status(code)
     return result
 

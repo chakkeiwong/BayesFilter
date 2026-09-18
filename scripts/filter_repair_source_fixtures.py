@@ -1,6 +1,6 @@
 """Frozen source-route weight and coordinate calculations for comparison."""
 
-FIXTURES = ("source_route_weights", "source_route_retained", "source_route_previous")
+FIXTURES = ("source_route_weights", "source_route_retained", "source_route_previous", "source_route_sequence")
 
 
 def _transport(tf):
@@ -14,10 +14,10 @@ def _transport(tf):
     cores = (highdim.TTCore(tf.constant([[[1., 0.], [0., 1.]]], tf.float64)),
              highdim.TTCore(tf.constant([[[1.], [0.]], [[0.], [.1]]], tf.float64)))
     ftt = highdim.FunctionalTT(cores, basis, convention)
-    arguments = dict(sqrt_tt=ftt,
-        defensive_density=highdim.TensorProductReferenceDensity(basis, convention),
-        tau=tf.constant(.05, tf.float64), normalizer_floor=tf.constant(1e-12, tf.float64),
-        denominator_floor=tf.constant(1e-12, tf.float64), measure_convention=convention)
+    arguments = {"sqrt_tt": ftt,
+        "defensive_density": highdim.TensorProductReferenceDensity(basis, convention),
+        "tau": tf.constant(.05, tf.float64), "normalizer_floor": tf.constant(1e-12, tf.float64),
+        "denominator_floor": tf.constant(1e-12, tf.float64), "measure_convention": convention}
     density = highdim.SquaredTTDensity(**arguments,
         branch_identity=highdim.SquaredTTDensity.expected_branch_identity(**arguments))
     return highdim.FixedTTSIRTTransport(density, highdim.KRCDFConfig(
@@ -25,8 +25,7 @@ def _transport(tf):
         bracket_tolerance=1e-12, denominator_floor=1e-12, max_floor_count=0)), convention
 
 
-def fixture(tf, name, size, jit):
-    del jit
+def fixture(tf, name, size, jit, *, public_boundary=False):
     if name not in FIXTURES:
         raise ValueError(name)
     from bayesfilter.highdim import source_route as source
@@ -41,6 +40,66 @@ def fixture(tf, name, size, jit):
 
     target = source.build_source_route_target(negative_log_physical_density_fn=density,
         coordinate_frame=frame, shift_constant=tf.constant(.35, tf.float64), time_index=1)
+
+    if name == "source_route_sequence":
+        from dataclasses import replace
+        from importlib.util import find_spec
+
+        transport, convention = _transport(tf)
+        protocol = source.SourceRouteTransportProtocol(transport)
+        points = tf.reshape(tf.linspace(tf.constant(.15, tf.float64), .85, 8), [2, 4])
+        components = source.SourceRouteSequentialDensityComponents(parameter_dim=0, state_dim=1,
+            transition_log_density_fn=lambda x, t: -.1 * (x[0] - x[1])**2,
+            likelihood_log_density_fn=lambda x, t: -.2 * x[0]**2,
+            prior_log_density_fn=lambda x: -.1 * x[0]**2)
+        first = source.SourceRouteSequentialStepSpec(target=target, transport=protocol,
+            reference_samples=points, measure_convention=convention, density_components=components)
+        count = 2 * size
+        specs = (first, *(replace(first, target=replace(target, time_index=index+1),
+            density_components=replace(components, prior_log_density_fn=None),
+            previous_marginal_keep_axes=(0,), previous_marginal_input_axes=(1,))
+            for index in range(1, count)))
+        has_native_dates = find_spec("bayesfilter.highdim.source_route_sequential_tf") is not None
+        if not public_boundary and has_native_dates:
+            from bayesfilter.highdim.source_route_sequential_tf import (
+                sequential_program,
+                unpack_step,
+            )
+
+            program, prepared, lengths = sequential_program(specs, jit_compile=jit)
+
+            def evaluate(*queries):
+                packed = program.python_function(*queries) if tf.inside_function() else program(*queries)
+                # Fixed output schema only; every date calculation is in program.
+                fields = tuple(unpack_step(packed[index], row[2], lengths[index])
+                               for index, row in enumerate(prepared))
+                return tuple(row[:7] if index == 0 else row for index, row in enumerate(fields))
+            evaluate.timing_scope = "complete_numerical_date_kernel"
+            evaluate.numerical_execution = "xla" if jit else "graph_reference"
+        else:
+            def evaluate(*queries):
+                # The same public endpoint in each source arm, including its
+                # result assembly. Candidate numerical execution defaults XLA.
+                current = tuple(replace(spec, reference_samples=query)
+                                for spec, query in zip(specs, queries, strict=True))
+                result = source.source_route_run_sequential_fixed_hmc(step_specs=current)
+
+                def fields(step):
+                    value = step.retained_samples
+                    previous = step.previous_marginal_density
+                    return (value.retained_batch.samples, value.proposal_log_density,
+                        value.target_log_density, value.correction_log_weights, value.retained_batch.log_weights,
+                        value.diagnostics.effective_sample_size, value.normalizer.log_transport_normalizer,
+                        *((previous.physical_points, previous.local_points, previous.log_density)
+                          if previous is not None else ()))
+                return tuple(fields(step) for step in result.steps)
+            evaluate.timing_scope = "complete_public_date_endpoint"
+            evaluate.numerical_execution = "default_xla_date_program" if has_native_dates else "legacy_host_date_loop"
+
+        return evaluate, tuple(spec.reference_samples for spec in specs), {
+            "rows": 4, "dimension": 2, "dates": count,
+            "boundary": "complete_frozen_source_date_values_with_previous_marginals",
+            "classification": "fixed_hmc_adaptation_execution_only", "canonical_admitted": False}
 
     if name != "source_route_weights":
         transport, convention = _transport(tf)

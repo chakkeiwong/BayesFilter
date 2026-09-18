@@ -46,6 +46,38 @@ def test_linked_worktrees_share_campaign_budget_and_artifact_root(tmp_path, monk
                for command, _ in calls)
 
 
+def test_small_test_reserves_and_enforces_its_timeout_without_expanding_budget(tmp_path, monkeypatch):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    monkeypatch.setattr(driver, "OUTPUT", tmp_path)
+    monkeypatch.setattr(driver, "records", list)
+    monkeypatch.setattr(driver, "charged_seconds", lambda *_: 239.)
+    monkeypatch.setattr(driver, "BUDGET_SECONDS", {"CPU": 300})
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    monkeypatch.setattr(driver, "git", lambda *_: "test")
+    monkeypatch.setattr(driver, "test_evidence", lambda *_: {"passed": True})
+    waits = []
+
+    class Worker:
+        def wait(self, *, timeout):
+            waits.append(timeout)
+            return 0
+
+    monkeypatch.setattr(driver.subprocess, "Popen", lambda *_, **kwargs: Worker())
+    args = argparse.Namespace(action="test", device="CPU", group="policy", arm="after",
+        fixture="dns", jit="on", size=1, repeat=0, test_timeout_seconds=60)
+    assert driver.run_job(args) == 0
+    run = json.loads((tmp_path / "run-00001/run.json").read_text())
+    assert run["timeout_seconds"] == 60 and waits == [60]
+    monkeypatch.setattr(driver, "charged_seconds", lambda *_: 241.)
+    with pytest.raises(RuntimeError, match="budget exhausted"):
+        driver.run_job(args)
+    args.test_timeout_seconds = 901
+    with pytest.raises(ValueError, match="bounded registered limits"):
+        driver.run_job(args)
+
+
 def test_interrupt_stops_worker_and_finalizes_attempt(tmp_path, monkeypatch):
     import argparse
 
@@ -428,6 +460,23 @@ def test_gpu_idle_keeps_original_contention_thresholds(monkeypatch, reading):
     with pytest.raises(RuntimeError, match="contention veto after bounded recheck"):
         driver.check_gpu_idle()
     assert sleeps == [2] * 5
+
+
+def test_whole_endpoint_and_kernel_timings_cannot_issue_a_speed_ratio():
+    from compare_filter_repair_campaign import performance_comparison
+
+    driver = load("run_filter_repair_campaign")
+    before = dict(warm_median_seconds=2., device_peak_bytes=100, host_peak_bytes=100,
+                  late_device_growth_bytes=0, late_host_growth_bytes=0)
+    after = {**before, "warm_median_seconds": .01, "device_peak_bytes": 1000,
+             "late_device_growth_bytes": 1}
+    ratio, reasons = performance_comparison(before, after, same_timing_scope=False)
+    assert ratio is None
+    assert reasons == ["continuing_device_allocation_growth"]
+    ratio, reasons = performance_comparison(before, after, same_timing_scope=True)
+    assert ratio == .005
+    assert "device_peak_over_2x" in reasons
+    assert driver.measurement_modes("source_route_sequence") == ("off", "on", "eager")
 
 
 def test_regression_thresholds_require_investigation():
