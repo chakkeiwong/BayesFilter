@@ -2694,3 +2694,87 @@ boundary, complete fit/guard input gradients, and invalid-input behavior.
 Focused Ruff and whitespace checks pass. Its exact allowlist addition covers
 only conversion of the static fraction tuple; compiled numerical work is not
 exempted. GPU qualification remains pending, so this is a checkpoint only.
+
+Checkpoint `de363b43` is committed and pushed. The next fitting repair binds
+one update/pullback per distinct core shape/resource-gate outcome and selects
+the scheduled axis as a tensor. Exact local ranks are restored after padded
+environment selection; the original recurrence and solver remain unchanged.
+Run 01060 passes the six previous pullback cases and the new graph-growth
+check. Six additional cases fail before execution because their new fixture
+omitted the two endpoints of the required complete alternating sweep. Correct
+the fixture to the existing canonical schedule; keep the failure artifact.
+
+Run 01061 passes 11 cases but its new heterogeneous repeated-sweep comparison
+fails the unchanged 1e-10 gate for condition-number history in graph and XLA
+modes. Shared-shape history/gradients and late static resource rejection pass.
+Do not waive the diagnostic mismatch: coordinates with unique core shapes
+have no graph-sharing benefit, so retain their original static environment
+selection. Only repeated schemas use tensor coordinate selection. Recheck
+before the large assembly or any memory claim.
+
+Run 01062 passes all 13 CPU fitter cases in 92.547 seconds after retaining
+static selection for unique shapes. It includes unchanged tolerances for
+complete histories and full core/target pullbacks in graph/XLA modes, late
+resource rejection, and graph growth. Add the remaining mixed-schema risk:
+repeated rank-two interior cores with distinct boundary shapes, before the
+large assembly retry. This extends coverage without changing the passed or
+failed fixtures, tolerances, solver settings or production defaults.
+
+Run 01063 passes 13 cases but the two new mixed-schema cases fail the same
+condition-history tolerance. The unscaled normal systems reach condition
+numbers around 1e9; moving rank-two coordinate selection into the common
+graph changes roundoff that propagates through repeated updates. Reject this
+sharing optimization for higher-rank coordinates. Keep their existing static
+compiled graphs and share only matching rank-one cores, including the large
+P59 fixture. This changes no algorithm, gate, solver or derivative. Preserve
+the mixed-schema test as a regression. Higher-rank graph cost remains open.
+
+The fresh syntax inventory `source-inventory-after-01062.json.gz` covers 2,832
+working-tree Python files and 86,970 resolved static edges. Its only parse
+failure is the existing vendored Python-2-style student filter; it is external
+reference code. Counts (including 224 owned NumPy import sites) are search
+leads, not current violation or compliance totals. Continued consumer tracing
+confirms the P73 guard-line result selects renewal data; it is active numerical
+selection despite the script's diagnostic name. Remaining F04/F18 consumer
+classification and numerical preparation therefore remain open.
+
+Run 01064 passes all 15 fitter checks in 127.228 CPU seconds. Rank-one sharing
+and retained higher-rank specialization preserve complete histories and full
+fixed-design core/target pullbacks at the original tolerance in both modes.
+The graph-growth fixture records 1,089/1,273 nodes for four/eight coordinates.
+Focused Ruff, whitespace and the 172-source/1,109-exception static guard pass.
+Next run existing fitting/adjacent consumers, then one matched large assembly
+localization. GPU qualification and higher-rank memory costs remain open.
+
+Runs 01065/01066 pass all 37 existing fitter and 12 adjacent-filter checks in
+45.017/136.803 CPU seconds. The latter uses an isolated pinned baseline for
+complete value/score comparisons, includes first-transition conventions and
+condition vetoes, and preserves the 1e-10 gate. The single large assembly
+retry now uses unchanged 01050/01058 inputs, test/watchdog and 900-second limit;
+it measures the source repair descriptively and remains outside terminal
+three-process admission.
+
+Run 01067 passes the large assembly in 191.789 process-seconds, with final
+high-water RSS 9,939,348 KiB (9.479 GiB). Before rank-one sharing, 01050 took
+354.963 seconds and 16,332,076 KiB (15.576 GiB): observed reductions of 46.0%
+and 39.1%. The original baseline remains 74.134 seconds / 0.658 GiB. The
+comparison is recorded in `assembly-memory-diagnostic-01067.json`, with source
+manifests and limitations. Host-memory acceptance remains open.
+
+The 135-second stack is building sequential transport branch graphs in
+`source_route_sequential_tf.py`, through `transport_program.evaluate` and
+`coordinate_program`; peak RSS grows from 5.62 GiB at that snapshot to the
+final 9.48 GiB. This points to further repeated graph construction, without
+isolating compiler and cache contributions. Next inspect portable reuse of
+coordinate programs while preserving captured coefficient derivatives and
+distinct graph/XLA contexts. Do not clear caches only in one comparison arm.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Retain rank-one fitter graph sharing as a branch checkpoint | 15 focused, 37 existing, 12 complete adjacent checks and large assembly pass | GPU qualification, 9.48 GiB host peak and terminal comparisons remain open | Remaining transport graph/cache cost and higher-rank cost | Review policy guard, checkpoint, then bounded coordinate reuse investigation | Full repair, memory acceptance, GPU performance or merge readiness |
+
+Run 01068 passes all 59 policy/controller checks in 7.631 CPU seconds. The
+checkpoint review keeps higher-rank source arithmetic and every numerical
+threshold unchanged; the only new allowlist entries describe fixed branch
+schemas/callback construction. Total charges are now 28,881.176 CPU and
+14,543.687 GPU seconds. No terminal finding is closed by this checkpoint.

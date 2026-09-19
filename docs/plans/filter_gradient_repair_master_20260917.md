@@ -4,26 +4,30 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `191b9ab6` is committed and pushed.
+September 19 refresh: source checkpoint `de363b43` is committed and pushed;
+the tested rank-one fitter graph repair is the current checkpoint candidate.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01058, charges are 14,543.687 GPU / 28,013.996 CPU seconds;
-remaining allowances are 172,656.313 GPU / 87,186.004 CPU seconds. The earlier
+charge. Through run 01067, charges are 14,543.687 GPU / 28,873.544 CPU seconds;
+remaining allowances are 172,656.313 GPU / 86,326.456 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 172 sources with 1,108 exact
+The repair is incomplete. The static guard covers 172 sources with 1,109 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
 
 Resume in this order, using the same bounded runner and versioned artifacts:
 
-1. Localize the P59 36-dimensional assembly memory regression before a broad
-   retry. Candidate run 01050 now exits successfully in 354.963 seconds with
-   16,332,076 KiB final process high-water RSS; the identical CPU baseline
-   diagnostic 01058 passes in 74.134 seconds with 690,176 KiB. This single pair
-   is a repair trigger, not terminal performance evidence. Inspect graph/cache
-   construction and use bounded stage diagnostics before changing numerics.
+1. Continue localizing the P59 36-dimensional assembly memory regression before
+   a broad retry. Rank-one fitter sharing passes 15 focused and 37 existing
+   fitter checks plus 12 adjacent-filter checks (01064--01066). Assembly 01067
+   passes in 191.789 seconds with 9,939,348 KiB final process high-water RSS,
+   versus candidate 01050's 354.963 seconds / 16,332,076 KiB and original
+   baseline 01058's 74.134 seconds / 690,176 KiB. These single-process CPU
+   observations remain repair diagnostics, not terminal performance evidence.
+   The later stack localizes further graph construction in sequential
+   transport callbacks; inspect their repeated coordinate-program construction.
    Deferred fitter pullbacks pass six GPU checks (01042); the
    coordinate repair passes nine CPU/GPU checks (01041/01043). Affected public
    pullback, sequential and transport suites pass 6/11/25 CPU checks
@@ -55,6 +59,30 @@ comparisons, and repeated broad assembly retries did not identify the later
 failure stage. Therefore complete source work before terminal repeats and use
 bounded localization first. The pinned baseline, evidence contract, failure
 criteria, hardware class, attempt limits and numerical tolerances remain valid.
+
+### Bounded fitting graph repair after 01058
+
+The stack/RSS record in 01050 reaches 4.15 GiB during the initial fit and
+6.39 GiB during the next fit. Inspection finds one full design/update graph
+per axis, even when core shapes match. Share a single update/pullback program
+for matching rank-one core shapes and static resource-gate outcomes; pass
+their scheduled axis as a tensor. Higher-rank coordinates retain the prior
+static selection after mixed-schema diagnostics 01063 showed rounding drift
+in ill-conditioned histories. Preserve the original padded contraction,
+schedule, solver, fixed-design derivative, rejection history and thresholds.
+This is a mechanical repair of the existing weighted-ALS extension, not an
+author TT-cross implementation. Paper Algorithm 2/(15)--(16), lines 693--725,
+and author `models/full_sol.m:21--130` were re-inspected.
+
+The skeptical review identifies risks in heterogeneous rank slicing, resource
+rejections, discrete update order and captured pullback coefficients. First
+run focused value/gradient parity against pinned pre-repair fitting, including
+same-shape and heterogeneous cores, rejection and repeated sweeps. Check graph
+growth before a single assembly retry. Existing numerical gates and the
+900-second focused ceiling apply. Graph node counts and host peaks explain the
+repair; terminal admission still needs current-source GPU checks and matched
+three-process complete endpoint comparisons. No caches may be cleared only
+for one measurement arm, and no timing or memory improvement excuses drift.
 
 ## Question and scope
 

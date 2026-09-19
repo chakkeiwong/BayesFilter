@@ -22,6 +22,7 @@ from bayesfilter.highdim.tt import TTCore
 from bayesfilter.highdim.tt_native_control_tf import (
     fixed_basis_rows,
     fixed_core_matrices,
+    pack_tensors,
     row_environments,
 )
 from bayesfilter.ops.compiled_tensor_program_tf import _capture_pullback_coefficient
@@ -67,12 +68,6 @@ class NativeFixedTTFit:
         if _report_only:
             return
         self.basis_rows = fixed_basis_rows(basis, points, initial_cores, jit_compile=jit_compile)
-        self.solvers = tuple(
-            make_complete_orthogonal_lstsq(
-                points.shape[0] + math.prod(shape), math.prod(shape)
-            )
-            for shape in self.shapes
-        )
         self.branches = self._branches()
 
     def pack(self, values):
@@ -89,23 +84,41 @@ class NativeFixedTTFit:
             for axis, shape in enumerate(self.shapes)
         )
 
-    def design_matrix(self, packed, axis):
+    def design_matrix(self, packed, axis, shape):
         cores = self.unpack(packed)
         matrices = fixed_core_matrices(self.basis_rows, cores)
-        left = row_environments(matrices)[axis]
-        right = row_environments(matrices, reverse=True)[axis]
-        phi = self.basis_rows[axis, :, : self.shapes[axis][1]]
+        # The contraction still visits every core in its original order.
+        # Padding only permits a tensor coordinate to select its environments;
+        # the exact local ranks are restored before forming the design.
+        if isinstance(axis, int):
+            left = row_environments(matrices)[axis]
+            right = row_environments(matrices, reverse=True)[axis]
+        else:
+            left_rows, _ = pack_tensors(row_environments(matrices))
+            right_rows, _ = pack_tensors(row_environments(matrices, reverse=True))
+            left = left_rows[axis, :, :shape[0]]
+            right = right_rows[axis, :, :shape[2]]
+        phi = self.basis_rows[axis, :, :shape[1]]
         return tf.reshape(
             tf.einsum("na,nl,nb->nalb", left, phi, right),
-            [self.points.shape[0], math.prod(self.shapes[axis])],
+            [self.points.shape[0], math.prod(shape)],
         )
 
     def _branches(self):
-        def branch(axis):
-            if self.gates[axis]["status"] != HighDimStatus.OK.value:
+        # Rank-one updates share the same scalar environment operations. Keep
+        # higher-rank coordinates specialized: moving their slice across the
+        # compiled design graph changes rounding in ill-conditioned histories.
+        schemas = tuple((shape, gate["status"] != HighDimStatus.OK.value,
+                         None if shape[0] == shape[2] == 1 else axis)
+                        for axis, (shape, gate) in enumerate(zip(self.shapes, self.gates, strict=True)))
+        unique = tuple(dict.fromkeys(schemas))
+        self.branch_indices = tf.constant(tuple(unique.index(schema) for schema in schemas), tf.int32)
+
+        def branch(shape, resource_blocked, fixed_axis):
+            if resource_blocked:
                 # Static resource rejection at this scheduled axis. Earlier
                 # accepted updates are retained, matching the eager oracle.
-                def blocked(packed, target):
+                def blocked(packed, target, axis):
                     return (
                         packed, tf.zeros([self.width], D), tf.zeros([self.width], D),
                         tf.constant(0.0, D), tf.constant(0.0, D),
@@ -113,9 +126,16 @@ class NativeFixedTTFit:
                     )
                 return blocked
 
-            def update(packed, target):
-                cores = self.unpack(packed)
-                design = self.design_matrix(packed, axis)
+            columns = math.prod(shape)
+            solver = make_complete_orthogonal_lstsq(self.points.shape[0] + columns, columns)
+            schema = (shape, resource_blocked, fixed_axis)
+            if fixed_axis is None and schemas.count(schema) == 1:
+                fixed_axis = schemas.index(schema)
+
+            def update(packed, target, axis):
+                if fixed_axis is not None:
+                    axis = fixed_axis
+                design = self.design_matrix(packed, axis, shape)
                 normal, rhs = old._normal_equations(
                     design, target, self.weights, self.config.ridge
                 )
@@ -123,7 +143,6 @@ class NativeFixedTTFit:
                 finite_normal = tf.reduce_all(
                     tf.math.is_finite(normal)
                 ) & tf.reduce_all(tf.math.is_finite(rhs))
-                columns = math.prod(self.shapes[axis])
 
                 def valid_input():
                     scales, raw, floor = old._weighted_column_scales(
@@ -155,8 +174,8 @@ class NativeFixedTTFit:
                         )
                         solution = tf.cond(
                             accepted,
-                            lambda: self.solvers[axis](matrix, response)[:, 0] / scales,
-                            lambda: tf.reshape(cores[axis].values, [-1]),
+                            lambda: solver(matrix, response)[:, 0] / scales,
+                            lambda: packed[axis, :columns],
                         )
                         code = tf.where(
                             accepted,
@@ -169,7 +188,7 @@ class NativeFixedTTFit:
                         finite,
                         solve,
                         lambda: (
-                            tf.reshape(cores[axis].values, [-1]),
+                            packed[axis, :columns],
                             tf.constant(float("inf"), D),
                             tf.constant(3),
                         ),
@@ -179,7 +198,7 @@ class NativeFixedTTFit:
 
                 def invalid_input():
                     return (
-                        tf.reshape(cores[axis].values, [-1]),
+                        packed[axis, :columns],
                         tf.zeros([columns], D),
                         tf.zeros([columns], D),
                         tf.constant(0.0, D),
@@ -208,6 +227,7 @@ class NativeFixedTTFit:
             signature = [
                 tf.TensorSpec(self.initial.shape, D),
                 tf.TensorSpec([self.points.shape[0]], D),
+                tf.TensorSpec([], tf.int32),
             ]
             forward = tf.function(update, input_signature=signature, autograph=False)
 
@@ -215,15 +235,16 @@ class NativeFixedTTFit:
                 input_signature=[*signature, tf.TensorSpec(self.initial.shape, D)],
                 autograph=False,
             )
-            def accepted_backward(packed, target, upstream):
+            def accepted_backward(packed, target, axis, upstream):
+                if fixed_axis is not None:
+                    axis = fixed_axis
                 with tf.GradientTape() as tape:
                     tape.watch((packed, target))
-                    design = self.design_matrix(packed, axis)
+                    design = self.design_matrix(packed, axis, shape)
                     scales, _, _ = old._weighted_column_scales(
                         design, self.weights, self.config.column_scale_floor
                     )
                     root_weights = tf.sqrt(self.weights)
-                    columns = math.prod(self.shapes[axis])
                     matrix = tf.concat(
                         (
                             design / scales[None, :] * root_weights[:, None],
@@ -236,7 +257,7 @@ class NativeFixedTTFit:
                     response = tf.concat(
                         ((target * root_weights)[:, None], tf.zeros([columns, 1], D)), 0
                     )
-                    solution = self.solvers[axis](matrix, response)[:, 0] / scales
+                    solution = solver(matrix, response)[:, 0] / scales
                     padded = tf.pad(solution, [[0, self.width - columns]])
                     result = tf.tensor_scatter_nd_update(packed, [[axis]], [padded])
                 return tape.gradient(
@@ -254,14 +275,14 @@ class NativeFixedTTFit:
                 return backward_concrete
 
             @tf.custom_gradient
-            def call(packed, target):
+            def call(packed, target, axis):
                 # Bind the fixed design's primal captures without constructing
                 # unused accepted-update pullbacks during value-only fitting.
                 graph = tf.compat.v1.get_default_graph()
                 captures = {value.ref(): graph.capture(value)
                             for value in forward_concrete.captured_inputs}
                 with record.stop_recording():
-                    result = forward(packed, target)
+                    result = forward(packed, target, axis)
 
                 def grad(*upstream):
                     backward = complete_backward()
@@ -272,13 +293,14 @@ class NativeFixedTTFit:
                         return _capture_pullback_coefficient(value, tf.compat.v1.get_default_graph())
 
                     coefficients = [capture(value) for value in backward.captured_inputs]
-                    return tf.cond(
+                    gradients = tf.cond(
                         result[-1] == 0,
                         lambda: backward._call_flat(
-                            [packed, target, upstream[0]], captured_inputs=coefficients
+                            [packed, target, axis, upstream[0]], captured_inputs=coefficients
                         ),
                         lambda: (upstream[0], tf.zeros_like(target)),
                     )
+                    return (*gradients, None)
 
                 # Scales and conditioning reports originally materialized on
                 # the host; only updated core values carry score derivatives.
@@ -291,7 +313,7 @@ class NativeFixedTTFit:
             compiled.get_concrete_function()
             return compiled
 
-        return tuple(branch(axis) for axis in range(len(self.shapes)))
+        return tuple(branch(*schema) for schema in unique)
 
     def __call__(self, target, initial):
         branches = self.branches
@@ -309,7 +331,8 @@ class NativeFixedTTFit:
 
             def take_step():
                 return tf.switch_case(
-                    axis, tuple(lambda fn=fn: fn(packed, target) for fn in branches)
+                    self.branch_indices[axis],
+                    tuple(lambda fn=fn: fn(packed, target, axis) for fn in branches),
                 )
 
             def stopped():

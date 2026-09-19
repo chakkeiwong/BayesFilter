@@ -5747,15 +5747,6 @@
     },
     {
       "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
-      "function": "NativeFixedTTFit.__init__",
-      "kind": "python_iteration",
-      "ast_sha256": "712cef335b586966a47729713642d59cef373b6907561430e71bd2b34fede091",
-      "occurrences": 1,
-      "role": "fixed_schema",
-      "reason": "Fixed heterogeneous tuple/signature packing or callback construction; numerical updates execute in native tensor recurrences."
-    },
-    {
-      "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
       "function": "NativeFixedTTFit.pack",
       "kind": "python_iteration",
       "ast_sha256": "c8ef9f2f1986b2d9c6e9208d6a51adafbef92d9a04d5cf0db5cb3ccb19d66e63",
@@ -5788,24 +5779,6 @@
       "ast_sha256": "b248a4e963486e211d3545345be77e12610cebd97243088d117208f24a45bb46",
       "role": "fixed_schema",
       "reason": "Bind the lazily constructed pullback's fixed capture schema to the enclosing graph; fitted axes and sweeps execute in TensorFlow control flow."
-    },
-    {
-      "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
-      "function": "NativeFixedTTFit._branches",
-      "kind": "python_iteration",
-      "ast_sha256": "c3d799a246908bd8c71fab8ec3b62995429edd1b9d5c291e3bb3a0128a78ce92",
-      "occurrences": 1,
-      "role": "fixed_schema",
-      "reason": "Fixed heterogeneous tuple/signature packing or callback construction; numerical updates execute in native tensor recurrences."
-    },
-    {
-      "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
-      "function": "NativeFixedTTFit.__call__.update.take_step",
-      "kind": "python_iteration",
-      "ast_sha256": "b2972b4fe2cd782f9252b6086c3a2dab06aaad4973f378199e538d5a641fc214",
-      "occurrences": 1,
-      "role": "fixed_schema",
-      "reason": "Fixed heterogeneous tuple/signature packing or callback construction; numerical updates execute in native tensor recurrences."
     },
     {
       "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
@@ -10468,6 +10441,38 @@
       "ast_sha256": "cef3dc81fc16f5f043e61a65e9f9a6e3edee70f83205f2ef957934f97a2ab0a6",
       "role": "fixed_schema",
       "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
+      "function": "NativeFixedTTFit._branches",
+      "kind": "python_iteration",
+      "ast_sha256": "b003b878044c33b019ab47d5db4f6bac38d1621e9bb6006b5ff0ddbae9d59a53",
+      "role": "fixed_schema",
+      "reason": "Bind fixed core shapes and resource-gate schemas; rank-one cores may share a graph, while higher-rank coordinates preserve the prior static arithmetic. No numerical iteration executes here."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
+      "function": "NativeFixedTTFit._branches",
+      "kind": "python_iteration",
+      "ast_sha256": "7de1e39cbd9aa2efcc3122cfebd81b401d159c4e892d49c9331a0dc2993b28a6",
+      "role": "fixed_schema",
+      "reason": "Map fixed coordinate schemas to shared compiled branch indices before tracing the native sweep."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
+      "function": "NativeFixedTTFit._branches",
+      "kind": "python_iteration",
+      "ast_sha256": "7bb85ae20077c0f38bec6d48a0e2fde2226e69675c79e284b93efe55657fab08",
+      "role": "fixed_schema",
+      "reason": "Construct the fixed compiled branch tuple from reviewed shape/axis schemas; updates and complete pullbacks run inside the native sweep."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
+      "function": "NativeFixedTTFit.__call__.update.take_step",
+      "kind": "python_iteration",
+      "ast_sha256": "e54d7eed4d78753289f04777e49e547258d52895242a883e0e3ea6fadc896d8e",
+      "role": "fixed_schema",
+      "reason": "Bind the fixed switch-case callback tuple; runtime coordinate selection and updates execute in the enclosing XLA recurrence."
     }
   ]
 }

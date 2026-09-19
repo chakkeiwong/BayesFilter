@@ -9,6 +9,7 @@ import tensorflow as tf
 from bayesfilter.highdim.fixed_tt_native_fit_tf import NativeFixedTTFit
 from bayesfilter.highdim.tt import TTCore
 from tests.highdim.test_fixed_branch_fit import _config, _grid2, _product_basis
+from tests.test_filter_repair_remaining_routes import _graph
 
 D = tf.float64
 
@@ -101,3 +102,79 @@ def test_lazy_fit_preserves_heterogeneous_core_target_and_rejection_derivatives(
     else:
         assert bool(tf.reduce_any(outcomes[1][2][0] != 0.))
         assert bool(tf.reduce_any(outcomes[1][2][1] != 0.))
+
+
+@pytest.mark.parametrize("jit_compile", [False, True])
+@pytest.mark.parametrize("case", ["shared", "heterogeneous", "mixed_shared", "resource_rejection"])
+def test_shared_update_graph_preserves_order_history_and_full_fixed_design_pullback(
+        original, jit_compile, case):
+    dimension = 4
+    ranks = (1, 1, 1, 1, 1) if case == "shared" else (1, 1, 2, 2, 1)
+    degrees = (1, 1, 1, 1) if case == "shared" else (1, 2, 2, 1)
+    if case == "mixed_shared":
+        dimension, ranks, degrees = 5, (1, 2, 2, 2, 2, 1), (1, 2, 2, 2, 1)
+    basis = _product_basis(degrees)
+    if case == "mixed_shared":
+        points = tf.reshape(.8 * tf.sin(tf.cast(tf.range(12 * dimension), D) * .71), [12, dimension])
+    else:
+        points = tf.reshape(tf.linspace(tf.constant(-.8, D), tf.constant(.9, D), 48), [12, dimension])
+    weights = tf.linspace(tf.constant(.8, D), tf.constant(1.2, D), 12)
+    # Axis 0 is accepted before the larger axis 1 trips the static budget.
+    schedule = tuple(range(dimension)) + tuple(reversed(range(dimension)))
+    config = _config(ranks, sweep_order=schedule, ridge=1e-4, max_sweeps=2,
+                     column_budget=3 if case == "resource_rejection" else 1000)
+    cores = tuple(TTCore(tf.reshape(tf.linspace(tf.constant(.4, D), tf.constant(.9, D),
+        ranks[axis] * (degrees[axis]+1) * ranks[axis+1]),
+        [ranks[axis], degrees[axis]+1, ranks[axis+1]])) for axis in range(dimension))
+    target = 1. + .2 * points[:, 0] + .1 * points[:, 2]**2
+    outcomes = []
+    for create in (original, NativeFixedTTFit):
+        native = create(basis, points, weights, config, cores, jit_compile=jit_compile)
+
+        def scored(fit):
+            @tf.function(input_signature=[tf.TensorSpec(target.shape, D),
+                tf.TensorSpec(fit.initial.shape, D)], jit_compile=jit_compile, autograph=False)
+            def call(value, starting):
+                with tf.GradientTape() as tape:
+                    tape.watch((value, starting))
+                    history = fit(value, starting)
+                    loss = tf.reduce_sum(history["cores"] ** 2)
+                return history, tape.gradient(loss, (value, starting))
+            return call
+
+        program = scored(native)
+        history, gradients = program(target, native.initial)
+        assert bool(history["valid"]) is (case != "resource_rejection")
+        if case == "resource_rejection":
+            assert history["codes"].numpy().tolist() == [0, 6] + [-1] * 14
+        assert all(gradient is not None for gradient in gradients)
+        outcomes.append((history, gradients))
+        _graph(program)
+        if jit_compile:
+            assert "HloModule" in program.experimental_get_compiler_ir(target, native.initial)(stage="hlo")
+    for actual, expected in zip(tf.nest.flatten(outcomes[1]), tf.nest.flatten(outcomes[0]), strict=True):
+        if actual.dtype.is_floating:
+            tf.debugging.assert_near(actual, expected, atol=1e-10, rtol=1e-10,
+                summarize=48)
+        else:
+            tf.debugging.assert_equal(actual, expected)
+
+
+def test_repeated_core_shape_graph_growth_is_linear(record_property):
+    sizes = []
+    for dimension in (4, 8):
+        basis = _product_basis((1,) * dimension)
+        points = tf.reshape(tf.linspace(tf.constant(-.8, D), tf.constant(.8, D),
+            8 * dimension), [8, dimension])
+        weights = tf.ones([8], D)
+        cores = tuple(TTCore(tf.constant([[[1.], [.1]]], D)) for _ in range(dimension))
+        config = _config((1,) * (dimension+1), ridge=1e-5)
+        native = NativeFixedTTFit(basis, points, weights, config, cores)
+        program = tf.function(native, input_signature=[tf.TensorSpec([8], D),
+            tf.TensorSpec(native.initial.shape, D)], jit_compile=True, autograph=False)
+        graph = program.get_concrete_function().graph.as_graph_def()
+        sizes.append(len(graph.node) + sum(len(function.node_def) for function in graph.library.function))
+        assert bool(program(tf.ones([8], D), native.initial)["valid"])
+    print("shared_fit_graph_nodes", sizes)
+    record_property("graph_nodes_4d_8d", str(sizes))
+    assert sizes[1] < 2.3 * sizes[0]
