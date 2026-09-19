@@ -14,6 +14,7 @@ from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 from bayesfilter.ops.generator_stream_tf import (
     generator_seed_state,
     normal_call_program,
@@ -21,6 +22,84 @@ from bayesfilter.ops.generator_stream_tf import (
 
 D = tf.float64
 _PUSH_PROGRAMS = OrderedDict()
+
+
+@fixed_signature_function(floating_dtype=D)
+def normalized_set_weights(weights):
+    """P72 normalization with the existing host-rejection predicate."""
+    total = tf.reduce_sum(weights)
+    valid = (tf.reduce_all(tf.math.is_finite(weights))
+             & ~tf.reduce_any(weights < 0.0) & ~(total <= 0.0))
+    return weights / total, valid
+
+
+@fixed_signature_function(floating_dtype=D)
+def fit_guard_arrays(fit, guard, fit_targets, guard_targets, fit_weights, guard_weights, alpha):
+    """Assemble the existing fit/guard objective with separate set masses."""
+    return (tf.transpose(tf.concat([fit, guard], axis=1)),
+            tf.concat([fit_targets, guard_targets], axis=0),
+            tf.concat([fit_weights, alpha * guard_weights], axis=0))
+
+
+@lru_cache(maxsize=32)
+def guard_line_program(dimension, fit_count, guard_count, fraction_count, *, jit_compile=True):
+    """Construct the P72 fixed-size line cloud before exact-key decisions."""
+    raw_count = 3 * int(fraction_count)
+
+    @tf.function(input_signature=[tf.TensorSpec([dimension, fit_count], D),
+        tf.TensorSpec([dimension, guard_count], D), tf.TensorSpec([fraction_count], D)],
+        jit_compile=jit_compile, autograph=False)
+    def evaluate(fit, guard, fractions):
+        center = tf.reduce_mean(fit, axis=1, keepdims=True)
+        distances = tf.norm(guard - center, axis=0)
+        selected = tf.gather(tf.argsort(distances), [0, guard_count // 2, guard_count - 1])
+        endpoints = tf.gather(guard, selected, axis=1)
+        starts = tf.repeat(center, repeats=3, axis=1)
+        # The original concat orders fractions first, endpoints second.
+        raw = tf.reshape((1.0 - fractions[None, :, None]) * starts[:, None, :]
+                         + fractions[None, :, None] * endpoints[:, None, :],
+                         [dimension, raw_count])
+        return tf.stop_gradient(raw), selected
+
+    return evaluate
+
+
+@lru_cache(maxsize=32)
+def guard_line_unique_program(dimension, raw_count, *, jit_compile=True):
+    """Stable first-occurrence decisions on the realized binary64 columns.
+
+    The old 17-digit key round-trips finite binary64 values. Equality therefore
+    includes signed-zero equivalence, while NaN columns remain unequal. This
+    separate compiled stage prevents the compiler from recomputing interpolated
+    coordinates with different rounding inside different comparisons.
+    """
+    @tf.function(input_signature=[tf.TensorSpec([dimension, raw_count], D)],
+                 jit_compile=jit_compile, autograph=False)
+    def evaluate(raw):
+        same = tf.reduce_all(raw[:, :, None] == raw[:, None, :], axis=0)
+        indices = tf.range(raw_count)
+        first = ~tf.reduce_any(same & (indices[None, :] < indices[:, None]), axis=1)
+        order = tf.argsort(tf.where(first, indices, raw_count + indices))
+        count = tf.reduce_sum(tf.cast(first, tf.int32))
+        return order, count
+
+    return evaluate
+
+
+@lru_cache(maxsize=32)
+def guard_line_selection_program(dimension, raw_count, selected_count, *, jit_compile=True):
+    """Resolve a public output schema after the compiled design returns its count.
+
+    The old public API reconstructed constants from a host array. Its line
+    cloud was a frozen design, so preserve that existing derivative boundary.
+    """
+    @tf.function(input_signature=[tf.TensorSpec([dimension, raw_count], D),
+        tf.TensorSpec([raw_count], tf.int32)], jit_compile=jit_compile, autograph=False)
+    def evaluate(raw, order):
+        indices = order[:selected_count]
+        return tf.stop_gradient(tf.gather(raw, indices, axis=1)), tf.math.floormod(indices, 3)
+
+    return evaluate
 
 
 @lru_cache(maxsize=32)

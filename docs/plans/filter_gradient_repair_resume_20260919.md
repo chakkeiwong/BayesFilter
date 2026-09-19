@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01049,
-charges are 14,543.687 GPU / 27,532.276 CPU seconds, leaving 172,656.313 GPU /
-87,667.724 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01058,
+charges are 14,543.687 GPU / 28,013.996 CPU seconds, leaving 172,656.313 GPU /
+87,186.004 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -78,8 +78,8 @@ Run 01034 passes all six final CPU fitter checks after the closure edit;
 171 sources with 1,097 exact schema/reference exceptions; coverage is partial.
 Focused Ruff and whitespace checks pass.
 
-The latest committed checkpoint is `8bd5b30c`. The budget/watchdog and shared
-TTSIRT coordinate changes remain uncommitted. Run 01038 localizes later graph
+The latest committed and pushed checkpoint is `191b9ab6`, including the
+budget/watchdog and shared TTSIRT coordinate changes. Run 01038 localizes later graph
 growth to retained-sample transport after fitting. The new masked marginal
 and coordinate program preserves the grid-CDF extension and total pullbacks;
 01041/01043 pass all nine checks on CPU/GPU. Run 01042 passes all six deferred
@@ -99,7 +99,23 @@ all 60 preparation checks pass on CPU (01045). Ten repaired preparation
 wrappers were added to the static guard without new exceptions. The policy
 group passes all 59 checks (01049). Finish the remaining preparation/callback
 audit before freezing source/harness for terminal repeats. Avoid repeating
-the broad preparation group until the one-test process exits successfully.
+the broad preparation group until the host-memory regression is localized.
+
+Run 01050 now completes the one-test assembly and exits in 354.963 seconds;
+its final process high-water RSS is 16,332,076 KiB (15.58 GiB). The identical
+baseline CPU diagnostic 01058 passes in 74.134 seconds at 690,176 KiB
+(0.658 GiB). This descriptive single pair triggers graph/cache investigation;
+it does not establish terminal timing ratios or isolated XLA overhead.
+
+Uncommitted P72 preparation repairs normalize weights and assemble fit/guard
+arrays in stable XLA helpers. Line interpolation, exact first-duplicate
+selection and gather use separate compiled stages to preserve comparisons of
+realized binary64 columns; the original frozen-design derivative boundary is
+retained. Failed attempts 01051--01055 are preserved. All 30 CPU checks pass
+in 01057; GPU checks remain pending. Static coverage is 172 sources / 1,108
+exact exceptions and remains partial. Review/checkpoint this repair, then
+continue the memory and remaining callback audit. Both approved GPUs were
+occupied at recovery; do not interfere with unrelated work.
 
 All F01--F20 terminal decisions remain open. Other carried blockers include
 the predator-prey residual about 1.578e-9 against the fixed 1e-10 gate,

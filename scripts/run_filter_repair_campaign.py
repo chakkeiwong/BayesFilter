@@ -106,6 +106,10 @@ TEST_GROUPS = {
         "tests/highdim/test_c2_transformed_observation_student_proposal_tf.py"),
     "gamma_random": ("tests/test_filter_repair_gamma_random.py",),
     "source_preparation_numerics": ("tests/test_filter_repair_source_preparation.py",),
+    "source_guard_preparation": ("tests/test_filter_repair_source_guard_preparation.py",
+        "tests/highdim/test_p72_support_certified_lower_gate.py"),
+    "source_guard_localization": (
+        "tests/test_filter_repair_source_guard_preparation.py::test_guard_lines_preserve_selection_order_duplicate_keys_and_frozen_design[duplicate]",),
     "source_preparation_localization": (
         "tests/highdim/test_p59_author_sir_step_spec_assembly.py::test_p59_9b_assembles_two_author_sir_36d_step_specs",
         "--capture=no", "-p", "no:faulthandler"),

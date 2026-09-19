@@ -4,24 +4,27 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `8bd5b30c` is committed and pushed.
+September 19 refresh: source checkpoint `191b9ab6` is committed and pushed.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01049, charges are 14,543.687 GPU / 27,532.276 CPU seconds;
-remaining allowances are 172,656.313 GPU / 87,667.724 CPU seconds. The earlier
+charge. Through run 01058, charges are 14,543.687 GPU / 28,013.996 CPU seconds;
+remaining allowances are 172,656.313 GPU / 87,186.004 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 172 sources with 1,107 exact
+The repair is incomplete. The static guard covers 172 sources with 1,108 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
 
 Resume in this order, using the same bounded runner and versioned artifacts:
 
-1. Retry the P59 36-dimensional assembly under the existing 900-second ceiling.
-   Run 01044 completes its assertions in 292.905 seconds but its process exceeds
-   the 300-second diagnostic deadline. Record final process high-water RSS and
-   exit status. Deferred fitter pullbacks pass six GPU checks (01042); the
+1. Localize the P59 36-dimensional assembly memory regression before a broad
+   retry. Candidate run 01050 now exits successfully in 354.963 seconds with
+   16,332,076 KiB final process high-water RSS; the identical CPU baseline
+   diagnostic 01058 passes in 74.134 seconds with 690,176 KiB. This single pair
+   is a repair trigger, not terminal performance evidence. Inspect graph/cache
+   construction and use bounded stage diagnostics before changing numerics.
+   Deferred fitter pullbacks pass six GPU checks (01042); the
    coordinate repair passes nine CPU/GPU checks (01041/01043). Affected public
    pullback, sequential and transport suites pass 6/11/25 CPU checks
    (01046--01048). Their GPU checks remain pending during device contention.
@@ -31,6 +34,9 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    Uniform log weights and the weighted target initializer now have stable XLA
    helpers; all 60 preparation checks pass on CPU (01045), with GPU pending.
    Ten additional preparation wrappers are now in the static guard.
+   P72 fit/guard preparation passes 30 CPU checks (01057); separate compiled
+   interpolation and exact duplicate decisions preserve realized-value order.
+   GPU qualification is pending. Finish its review and checkpoint first.
 3. Resolve the predator-prey residual (~1.578e-9 versus the unchanged 1e-10
    gate), core-affine/higher-rank slowdown, centered qualification, and host
    memory regression. Lazy pullbacks reduced measured host memory, but the
@@ -382,6 +388,32 @@ marginal recursion, and author `models/full_sol.m:21--130` anchor the operation
 ordering. Frozen replay is a fixed-HMC adaptation; deterministic resampling,
 bounded local clipping and the grid-CDF fit remain repository extensions.
 This is still an open execution gate, independent of passing replay tests.
+
+September 19 follow-on preparation audit: P72 line probes feed coefficient
+fitting in `scripts/p72_support_certified_lower_gate_diagnostic.py::_fit_p72_step`
+and renewal selection in P73. Their diagnostic harness names do not exempt
+the reachable numerical design construction. Replace the fraction loop and
+host materialized duplicate-column decisions with fixed-signature tensor
+programs that preserve endpoint selection, fraction-major ordering and first
+exact duplicate retention. Interpolation and duplicate detection execute in
+separate XLA calls: predicates must compare the realized coordinates rather
+than compiler-recomputed expressions with different rounding. Return
+fixed-size packed column indices and a count;
+the host may resolve the public variable-length output schema, with selection
+performed by a compiled gather. The original line-cloud construction detaches
+inputs through host materialization; preserve and document that frozen-design
+boundary. P72 set-weight normalization and fit/guard batch assembly must also
+execute in XLA, retaining their validation, weights and audit exclusion. These
+are repository extensions, not author-source changes. Check duplicate/degenerate
+clouds, endpoint indices, frozen output semantics, invalid inputs and full
+training-batch values/derivatives against the pinned baseline before admission.
+
+For the large P59 completion blocker, the existing localization test may also
+run with `--arm before --device CPU --test-timeout-seconds 900`. This uses the
+frozen campaign baseline and the same current watchdog/test harness, with GPUs
+hidden. Compare completion and final process high-water RSS descriptively to
+01050; a single pair is localization evidence only and does not replace the
+three-process GPU/public-endpoint timing matrix or establish memory acceptance.
 
 Sequential timing review found that the original eager arm included public
 result/identity assembly while the candidate graph/XLA arm contained only the

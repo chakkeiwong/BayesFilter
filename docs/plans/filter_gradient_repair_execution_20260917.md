@@ -2626,3 +2626,71 @@ owner-authorized budget.
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
 |---|---|---|---|---|---|
 | Save the coordinate/preparation repair and refreshed driver as a branch checkpoint | Pinned values, complete pullbacks, invalid inputs and affected CPU consumers pass; focused transport/fitter GPU checks pass | Large process exceeded diagnostic deadline; GPU consumers and terminal comparisons remain open | Full large-case completion, final host memory and current-source GPU evidence | One assembly retry at the existing 900-second limit, then remaining audit/qualification | Completed repair, memory acceptance, scientific admission or permission to merge |
+
+Checkpoint `191b9ab6` is committed and pushed; fetching the repair branch found
+no divergent remote changes. The next P59 localization uses the existing
+900-second ceiling. While it runs, read-only preparation audit identifies P72
+line-cloud Python interpolation/duplicate removal and eager fit/guard weights
+as reachable coefficient-fitting operations. They are not reporting-only
+despite the diagnostic consumer names. The master now specifies preserved
+ordering, exact first-duplicate retention, frozen-design differentiation
+semantics and validation before implementation. Source changes wait until
+the current worker exits to keep its recorded source coherent.
+
+Run 01050 completes the large P59 assembly and exits successfully in 354.963
+seconds. Pytest records one passing case; final process high-water RSS at
+pytest return is 16,332,076 KiB (15.58 GiB). It closes this process-completion
+blocker, not the unmatched host-memory comparison or full preparation suite.
+
+Run 01051 passes 28 P72 checks but detects one exact-duplicate mismatch in
+the vectorized line interpolation: compiled output contains ten columns where
+the pinned eager program keeps nine. The first candidate is rejected. Keep
+the exact duplicate criterion; separate the two interpolation products with
+an XLA optimization barrier and recheck, rather than coarsening equality.
+Both approved GPUs remain occupied, so these checks remain CPU diagnostics.
+
+Runs 01052/01053 expose unavailable public-op export and missing barrier
+gradient registration in TensorFlow 2.19.1. Run 01054 restores the original
+frozen-design derivative boundary, but the barrier still leaves the duplicate
+mismatch. Localization 01055 shows identical realized raw columns receiving
+different equality decisions inside the fused compiled expression; returning
+the raw values alone does not force the predicate to use that rounding.
+
+Remove the ineffective barrier/private import. Interpolation now returns a
+fixed-size frozen tensor, and a second stable XLA call compares those realized
+columns and computes first-occurrence ordering/count. A final compiled gather
+resolves the host-selected output shape. There are no Python numerical loops,
+NumPy calculations or non-XLA numerical stages. Run 01056 passes the isolated
+duplicate fixture in 5.777 seconds. Broader and nonzero-degenerate-cloud checks
+must pass before this repair is admitted. No equality tolerance was introduced.
+
+Run 01057 passes all 30 P72 checks, including nonzero degenerate clouds,
+frozen-design behavior, invalid inputs, and full fit/guard derivatives, in
+7.632 seconds on CPU. The remaining large-case memory uncertainty warrants
+one pinned-baseline CPU localization with the identical test/watchdog and
+900-second ceiling. This is a descriptive engineering comparison, with no
+three-process or GPU/default performance conclusion. Source work pauses during
+the measurement to preserve its recorded source.
+
+Run 01058 passes the identical baseline CPU assembly diagnostic in 74.134
+process-seconds (70.29 pytest seconds), with final high-water RSS 690,176 KiB.
+Against candidate 01050, the observed single-process ratios are approximately
+4.79 for elapsed time and 23.66 for peak host RSS. Both use the same test,
+thread settings, watchdog and timeout. Different source implementations are
+the intended comparison; this does not isolate compiler, cached-graph or
+allocator contributions, and has no terminal three-process or GPU conclusion.
+The magnitude triggers memory/graph localization before a broad retry.
+
+Recovery review confirms the enlarged budget is implemented and preserves
+all earlier charges. The master/recovery headers were stale relative to the
+completed assembly and P72 work and have been refreshed. No running campaign
+worker remains. Both approved GPUs have unrelated active work. Next: policy
+regression and checkpoint the reviewed P72 patch, then inspect the large-case
+graph/cache growth with bounded diagnostics. No numerical gates are relaxed.
+
+Run 01059 passes all 59 policy/controller checks in 7.882 CPU seconds. The P72
+review checks ordered first-occurrence selection, the original detached cloud
+boundary, complete fit/guard input gradients, and invalid-input behavior.
+Focused Ruff and whitespace checks pass. Its exact allowlist addition covers
+only conversion of the static fraction tuple; compiled numerical work is not
+exempted. GPU qualification remains pending, so this is a checkpoint only.

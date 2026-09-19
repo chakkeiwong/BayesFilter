@@ -39,7 +39,12 @@ from bayesfilter.highdim.models import zhao_cui_sir_austria_model
 from bayesfilter.highdim.source_route_preparation_runtime_tf import (
     coordinate_transform_program,
     deterministic_weighted_resample_program,
+    fit_guard_arrays,
+    guard_line_program,
+    guard_line_selection_program,
+    guard_line_unique_program,
     normal_matrix_program,
+    normalized_set_weights,
     prior_sample_program,
     seed_state,
     source_push_program,
@@ -4432,12 +4437,10 @@ def _p72_normalize_set_weights(weights: tf.Tensor) -> tf.Tensor:
     tensor = tf.convert_to_tensor(weights, dtype=tf.float64)
     if tensor.shape.rank != 1:
         raise ValueError(f"weights: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
+    normalized, valid = normalized_set_weights(tensor)
+    if not bool(valid.numpy()):
         raise ValueError(f"weights: {HighDimStatus.NONFINITE_VALUE.value}")
-    total = tf.reduce_sum(tensor)
-    if bool(tf.reduce_any(tensor < 0.0).numpy()) or bool((total <= 0.0).numpy()):
-        raise ValueError(f"weights: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tensor / total
+    return normalized
 
 
 def p72_training_batch_from_fit_and_guard(
@@ -4467,9 +4470,10 @@ def p72_training_batch_from_fit_and_guard(
     alpha = float(alpha_guard)
     if alpha < 0.0 or not math.isfinite(alpha):
         raise ValueError("alpha_guard must be finite nonnegative")
-    points = tf.transpose(tf.concat([fit, guard], axis=1))
-    targets = tf.concat([fit_targets, guard_targets], axis=0)
-    weights = tf.concat([fit_set_weights, alpha * guard_set_weights], axis=0)
+    points, targets, weights = fit_guard_arrays(
+        fit, guard, fit_targets, guard_targets, fit_set_weights, guard_set_weights,
+        tf.constant(alpha, tf.float64),
+    )
     manifest = {
         "policy_id": "p72_fit_guard_training_batch.v1",
         "fit_point_count": int(fit.shape[1]),
@@ -4619,41 +4623,26 @@ def p72_guard_line_points(
         raise ValueError(f"line_points: {HighDimStatus.INVALID_SHAPE.value}")
     if int(fit.shape[1]) <= 0 or int(guard.shape[1]) <= 0:
         raise ValueError("line point construction requires nonempty clouds")
-    center = tf.reduce_mean(fit, axis=1, keepdims=True)
-    distances = tf.norm(guard - center, axis=0)
-    sorted_indices = tf.argsort(distances)
-    selected = tf.gather(
-        sorted_indices,
-        tf.constant(
-            [0, int(guard.shape[1]) // 2, int(guard.shape[1]) - 1],
-            dtype=tf.int32,
-        ),
-    )
-    endpoints = tf.gather(guard, selected, axis=1)
-    starts = tf.repeat(center, repeats=int(endpoints.shape[1]), axis=1)
     fractions = tuple(float(value) for value in line_fractions)
-    pieces = []
-    for fraction in fractions:
-        frac = tf.constant(fraction, dtype=tf.float64)
-        pieces.append((1.0 - frac) * starts + frac * endpoints)
-    raw_line_points = tf.concat(pieces, axis=1)
-    unique_columns = []
-    unique_start_indices = []
-    seen_columns = set()
-    endpoint_count = int(endpoints.shape[1])
-    for column_index, column in enumerate(tf.transpose(raw_line_points).numpy()):
-        key = tuple(float(f"{float(value):.17g}") for value in column)
-        if key in seen_columns:
-            continue
-        seen_columns.add(key)
-        unique_columns.append(column)
-        unique_start_indices.append(column_index % endpoint_count)
-    line_points = tf.transpose(tf.constant(unique_columns, dtype=tf.float64))
+    if not fractions:
+        raise ValueError("line_fractions must be nonempty")
+    dimension = int(fit.shape[0])
+    raw_line_points, selected = guard_line_program(
+        dimension, int(fit.shape[1]), int(guard.shape[1]), len(fractions)
+    )(fit, guard, tf.constant(fractions, tf.float64))
+    order, count = guard_line_unique_program(dimension, int(raw_line_points.shape[1]))(
+        raw_line_points
+    )
+    # Only the variable-length public tensor schema is resolved on the host;
+    # interpolation, duplicate detection and column selection are compiled.
+    line_points, start_indices = guard_line_selection_program(
+        dimension, int(raw_line_points.shape[1]), int(count.numpy())
+    )(raw_line_points, order)
     manifest = {
         "policy_id": "p72_guard_line_points.v1",
         "line_fractions": fractions,
-        "selected_guard_indices": tuple(int(i) for i in selected.numpy()),
-        "line_start_indices": tuple(int(i) for i in unique_start_indices),
+        "selected_guard_indices": tuple(selected.numpy().tolist()),
+        "line_start_indices": tuple(start_indices.numpy().tolist()),
         "line_point_count": int(line_points.shape[1]),
         "raw_line_point_count": int(raw_line_points.shape[1]),
         "line_hash": _p69_hash_tensor("p72_guard_line_points_hash.v1", line_points),
