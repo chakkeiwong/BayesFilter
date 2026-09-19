@@ -4,6 +4,52 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+September 19 refresh: source checkpoint `8bd5b30c` is committed and pushed.
+The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
+cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
+charge. Through run 01049, charges are 14,543.687 GPU / 27,532.276 CPU seconds;
+remaining allowances are 172,656.313 GPU / 87,667.724 CPU seconds. The earlier
+16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
+
+The repair is incomplete. The static guard covers 172 sources with 1,107 exact
+exceptions; it explicitly does not cover the whole repository. All F01--F20
+terminal decisions remain open. Focused passes are checkpoint evidence;
+terminal tests and comparisons must match the final source and harness.
+
+Resume in this order, using the same bounded runner and versioned artifacts:
+
+1. Retry the P59 36-dimensional assembly under the existing 900-second ceiling.
+   Run 01044 completes its assertions in 292.905 seconds but its process exceeds
+   the 300-second diagnostic deadline. Record final process high-water RSS and
+   exit status. Deferred fitter pullbacks pass six GPU checks (01042); the
+   coordinate repair passes nine CPU/GPU checks (01041/01043). Affected public
+   pullback, sequential and transport suites pass 6/11/25 CPU checks
+   (01046--01048). Their GPU checks remain pending during device contention.
+2. Finish the reachable preparation/callback audit and explicit F01--F20
+   dispositions. Preserve algorithms, total derivatives, thresholds, ordered
+   operations and every seeded stream except the two approved initializers.
+   Uniform log weights and the weighted target initializer now have stable XLA
+   helpers; all 60 preparation checks pass on CPU (01045), with GPU pending.
+   Ten additional preparation wrappers are now in the static guard.
+3. Resolve the predator-prey residual (~1.578e-9 versus the unchanged 1e-10
+   gate), core-affine/higher-rank slowdown, centered qualification, and host
+   memory regression. Lazy pullbacks reduced measured host memory, but the
+   four-date public endpoint still exceeded the original baseline by 362.6 MiB
+   in a single-process diagnostic. That is an open investigation trigger.
+4. Freeze repaired source and harness, run affected suites and all required
+   paired three-process repeats, and review exact endpoint parity, compiled
+   execution, host/device memory and warmed timing. Preserve invalid or stale
+   evidence without admitting it to terminal comparisons.
+5. Verify the terminal gate, integrate remote changes and retest affected
+   code; merge and push only when every required gate passes.
+
+Refresh review: the prior caps and pending-approval wording were stale; the
+runner and this plan now agree. Source/harness churn invalidated earlier
+comparisons, and repeated broad assembly retries did not identify the later
+failure stage. Therefore complete source work before terminal repeats and use
+bounded localization first. The pinned baseline, evidence contract, failure
+criteria, hardware class, attempt limits and numerical tolerances remain valid.
+
 ## Question and scope
 
 Can every owned runtime route identified in findings F01–F20 preserve its
@@ -113,7 +159,7 @@ Two intra-op threads and one inter-op/OpenBLAS thread. CPU reference/test
 processes explicitly hide GPUs. Test orchestration can use Python loops;
 numerical implementations cannot use them to evade the policy.
 
-The initial total budget is 4 GPU process-hours and 8 CPU process-hours, with
+The active total budget is 52 GPU process-hours and 32 CPU process-hours, with
 at most 300 seconds per benchmark worker, 900 seconds per focused test group,
 three unchanged-fixture retries, and fresh numbered artifacts for every attempt.
 Focused tests may select a smaller 60, 120 or 300-second timeout through
@@ -127,7 +173,12 @@ environment, hardware, outcomes and wall time in ordinary JSON/log files under
 evidence. Crash recovery charges unfinished attempts their reserved timeout.
 No posterior chains or learned-transport training campaigns are in this budget.
 
-### Proposed budget amendment, September 18 (not yet authorized)
+### Historical budget proposal, September 18 (superseded September 19)
+
+The following proposal was not approved and is retained as planning history.
+The September 19 owner authorization above adds 48 GPU / 24 CPU hours to the
+original 4 GPU / 8 CPU caps instead. Its larger active totals are enforced by
+the existing driver; prior accounting is unchanged.
 
 The comparison audit at run 00834 has only 37 current pairs and 695 missing
 pairs. Earlier measurements are preserved but many have stale harness or
@@ -140,10 +191,9 @@ and 720 CPU process-seconds. This is a planning estimate, not a runtime bound.
 Passed test-group durations sum to 4,262 seconds; nine groups have no passing
 duration, including the unresolved TP residual check.
 
-Propose increasing the cumulative caps to **16 GPU process-hours and 12 CPU
-process-hours**, inclusive of all time already charged. Through 00834 the
-charge is 8,676.105 GPU and 20,882.313 CPU seconds. The existing caps remain
-active until the owner approves this amendment. No extra device class, package
+The earlier proposal was **16 GPU process-hours and 12 CPU process-hours**,
+inclusive of all time already charged. Through 00834 the charge was 8,676.105
+GPU and 20,882.313 CPU seconds. No extra device class, package
 change, posterior sampling, training campaign, algorithm change or relaxed
 criterion is authorized by this proposal. One GPU worker at a time, the
 300/900-second worker limits, three-repeat rule and contention checks remain.
@@ -296,6 +346,29 @@ against the prior source before retrying the full assembly. Do not extend
 the 900-second ceiling or regard a passing tiny fit as large-case closure.
 Duplicate forward environment construction remains a separate investigation.
 
+September 19 transport localization: run 01038's 135-second stack reaches
+retained-sample construction and the TTSIRT coordinate/marginal graph builder,
+after both initial and step-one fits. Inspect the later snapshots before the
+next retry. The current coordinate factory duplicates the complete paired-core
+marginal and normalizer graph for each prefix/suffix. Repair by sharing a
+fixed-shape marginal program with a tensor mask and a single coordinate-loop
+body; preserve heterogeneous basis/domain dispatch as a static schema. Compute
+the unchanged normalizer once for the complete transport call. Retain the
+exact paired-core contraction order, forward/suffix endpoint interpolation,
+trapezoid and bisection rules, all floors/status precedence, and full query,
+core, mixture and captured-basis derivatives. No tolerance or fit change is
+authorized. This is a mechanical execution repair of the existing grid-CDF
+extension, not a new source-faithfulness claim. The paper Algorithm 2/(15)--(16)
+and author `models/full_sol.m:33--38,76--130` anchor the surrounding route;
+the local grid-CDF itself remains an extension.
+
+Qualify prefix/suffix, heterogeneous core/basis and both reference measures
+against the pinned previous implementation and independent density identities.
+Check enclosing graph/XLA execution, preserved invalid statuses, external
+pullbacks, and dimension-dependent graph size before the large consumer retry.
+Terminal before/after memory evidence still uses the frozen campaign baseline
+and three fresh-process paired repeats; localization snapshots cannot replace it.
+
 The next reachable preparation repair must enclose prior sampling, transition
 noise and model callbacks, deterministic weighted resampling, recentering,
 local clipping, target evaluation and target-value construction. Its consumers
@@ -335,14 +408,17 @@ a recovery report and further authorization; never mark remaining work done.
 Use one reusable tool-approval prefix for the bounded campaign driver:
 
 ```
-/home/ubuntu/miniforge3/envs/tf-gpu/bin/python /home/ubuntu/workspace/BayesFilter/scripts/run_filter_repair_campaign.py
+/home/ubuntu/miniforge3/envs/tf-gpu/bin/python /tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/run_filter_repair_campaign.py
 ```
 
 Its allowed actions are status, pause, a fixed test group, a registered measurement,
 the sequential registered matrix, audit, comparison and gate verification.
 The matrix has qualification, three-repeat and current-source test stages;
 it resumes current evidence, stops on source changes or candidate failure,
-checks GPU2 contention before each launch, and uses the same cumulative budget.
+checks the selected GPU's contention before each launch, and uses the same
+cumulative budget. The active worktree uses `--test-gpu-index 3` for tests and
+`--measurement-gpu-index 3` for measurement groups. Existing GPU2 evidence
+remains preserved; compared arms and repeats must use the same device.
 The pause action lets the active worker finish and stops before the next
 worker. A subsequent explicit matrix command resumes the campaign.
 It has no arbitrary shell/command

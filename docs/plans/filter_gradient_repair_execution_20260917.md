@@ -2493,3 +2493,136 @@ No worker is left running at this checkpoint. The concise recovery map is
 `docs/plans/filter_gradient_repair_resume_20260919.md`. The original master
 budget remains unchanged; the pending amendment cannot be inferred from a
 generic instruction to continue. No merge to main was performed.
+
+## September 19 owner-authorized budget expansion and refreshed execution
+
+The owner explicitly granted another 48 GPU hours and 24 CPU hours and asked
+to refresh the master program and continue. The runner now enforces cumulative
+caps of 52 GPU / 32 CPU process-hours, adding that allowance to the original
+4 GPU / 8 CPU hours and preserving all prior charges. The earlier proposed
+16 GPU / 12 CPU totals are superseded. Through 01035, remaining allowances are
+172,847.075 GPU / 88,853.252 CPU seconds. No additional compute approval is
+required inside these caps.
+
+The master and recovery map now identify the current checkpoint, open audit,
+numerical/performance blockers, incomplete large assembly and terminal evidence
+requirements. Skeptical refresh review retains the original source baseline,
+fixed numerical gates, hardware class and attempt limits. It requires later
+assembly localization before another broad retry and completion of source work
+before terminal repeats, addressing stale evidence and uninformative retries.
+First resume GPU fitter qualification with a 300-second bound, then localize
+P59 with repeated stacks. All tests continue through the same approved driver.
+
+Run 01036 passes the 59 policy/controller CPU checks in 8.433 seconds after
+the budget update. GPU fitter qualification on GPU3 was vetoed before worker
+launch: six preflight samples each showed 9,185 MiB already in use. A trusted
+device query also showed active work on GPU2; no unrelated process was changed.
+
+CPU localization 01037 fails with SIGSEGV after 138.691 seconds, during the
+third asynchronous faulthandler stack dump. Its 45-second stack is in initial
+fit execution; the 90-second stack reaches step-one fitting. The third stack
+is incomplete and cannot localize the next stage. The crash cause is not
+established. Replace signal-based repeated stack walking with a Python watchdog
+using `sys._current_frames()` and ordinary traceback formatting under the GIL.
+Record process high-water RSS with each snapshot and retry the same 300-second
+diagnostic. This changes only observability; no algorithm, gate or timeout is
+changed. Preserve the failed diagnostic in full and charge its elapsed time.
+
+Run 01038 times out at 301.121 seconds with usable watchdog evidence. At
+135, 180, 225 and 270 seconds it is tracing TTSIRT coordinate/marginal graphs
+for the first retained object, after both initial and step-one fits. Reported
+process high-water RSS grows from 6,856,520 KiB at 135 seconds to 10,708,104 KiB
+at 270 seconds (10.21 GiB). These are high-water observations before timeout,
+not a completed endpoint's final peak or a matched comparison.
+
+The next patch introduces a shared coordinate program and fixed-shape masked
+marginal, retaining the same heterogeneous paired-core contractions. It moves
+the unchanged normalizer outside coordinate iteration. The classification is
+mechanical execution repair of the existing grid-CDF extension. Paper Algorithm
+2/(15)--(16), section 4.1 and author `models/full_sol.m:21--130` were re-inspected;
+no new author-source or canonical-algorithm claim follows from this change.
+
+Run 01039 passes the three existing enclosing graph/XLA and transport-veto
+checks on CPU. Run 01040 passes four checks but exposes an XLA gradient
+FakeParam/TensorList failure in the newly masked Lebesgue defensive-volume
+branch, plus four test-fixture construction errors from omitted required CDF
+settings. The numerical repair moves the volume loop outside the full/partial
+density selection while retaining its ordered product. The test fixture now
+declares the existing thresholds; closures bind their per-mask comparator.
+Run 01041 passes all nine CPU cases in 97.614 process-seconds: heterogeneous
+marginals and all explicit pullbacks under both measures, pinned prefix/suffix
+transport scores in graph/XLA modes, uniform-CDF identity and graph growth.
+Graph node counts for 4/8 dimensions are 1,681/2,761. This is diagnostic
+evidence, not a terminal performance or memory comparison. The static guard
+passes 172 sources / 1,107 exact exceptions; coverage remains partial.
+
+A subsequent trusted query found GPU3 idle. Resume the previously incomplete
+GPU fitter group, then qualify the new transport and affected consumers.
+
+Run 01042 passes all six deferred fitter pullback checks on GPU3 in 62.748
+process-seconds. Run 01043 passes all nine shared-coordinate checks on GPU3 in
+128.015 seconds. These complete the focused GPU qualifications; affected
+consumer suites and large-case assembly remain pending. Charges through 01043
+are 14,543.687 GPU / 26,958.585 CPU seconds.
+
+Recovery review verified the artifacts, preserved uncommitted source, and
+refreshed stale master/recovery counts. The next diagnostic repeats the exact
+P59 assembly with repaired transport and the existing 300-second localization
+bound, recording later stacks and high-water RSS. This answers whether the
+identified graph-construction bottleneck is removed; it cannot establish a
+matched final memory/performance ratio. Numerical thresholds, seeded inputs,
+comparison baseline, attempt limits and promotion gates remain unchanged.
+
+Run 01044 reaches the second fit by 180 seconds and the final sequential
+previous-marginal graph at 270 seconds. It times out after 301.323 seconds;
+the subsequently inspected JUnit records one passing test in 292.905 seconds,
+but the process did not exit before its deadline. Keep the overall timeout
+failure despite the completed assertions. The 270-second high-water RSS is
+13,103,928 KiB (12.50 GiB), still an incomplete-run observation. The repair
+clears the earlier retained-transport stall but does not close large assembly
+ or memory acceptance. After consumer checks, retry this one test under the
+existing 900-second ceiling to obtain a complete result and later snapshots.
+
+GPU public-pullback qualification was vetoed before worker launch: GPU3 had
+9,183 MiB in use throughout preflight, at 83--100% utilization. GPU2 was also
+occupied. Continue CPU/source work and retain the pending GPU consumers.
+
+Reachable preparation audit found uniform log weights and the weighted target
+initializer still executing eager numerical operations. Their new stable XLA
+helpers preserve the same fill/log and weighted-sum quotient, plus the exact
+positive-target/nonnegative-weight validation and error messages. Uniform
+weights correspond to author `models/full_sol.m:22--24`; the weighted fitting
+initializer remains a repository extension. No RNG, thresholds, output
+clipping or new validity criterion is introduced. Add pinned-value,
+independent analytical derivative, enclosing-XLA and invalid-input checks,
+and include ten previously uncovered preparation wrappers in the static
+guard. Host shape checks, rejection, metadata and reporting remain boundaries.
+
+Run 01045 passes all 60 CPU preparation checks in 13.696 seconds, including
+the new input-rejection and analytical weighted-mean derivative checks.
+Runs 01046--01048 pass six public pullback, 11 sequential consumer and 25
+TTSIRT checks on CPU in 37.044, 68.314 and 145.281 seconds. The new helper and
+test files pass Ruff; the mixed source-route module retains the same eight
+pre-existing findings, and the runner retains its same four. Whitespace and
+the static guard pass; the latter still covers only 172 sources with 1,107
+exact exceptions. The additional ten wrappers need no new exceptions.
+
+The localization worker now records final process high-water RSS and pytest
+exit status when pytest returns, in addition to periodic snapshots. This
+distinguishes successful assertions from process cleanup exceeding a deadline.
+It is diagnostic instrumentation only; full memory comparisons still require
+the pinned harness and matched fresh processes.
+
+Run 01049 passes all 59 policy/controller checks in 8.033 seconds. Checkpoint
+review finds unchanged tensor recurrence order and full derivative coverage
+in the new coordinate program; the weighted initializer retains its original
+domain checks and quotient derivative. CPU consumer checks pass, and focused
+coordinate/fitter GPU checks pass, while the latest preparation/GPU consumer
+checks and full large-case process remain pending. No terminal admission or
+merge is justified. The driver preserves its single-worker lock, GPU contention
+veto, existing per-run ceilings and cumulative accounting under the expanded
+owner-authorized budget.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Save the coordinate/preparation repair and refreshed driver as a branch checkpoint | Pinned values, complete pullbacks, invalid inputs and affected CPU consumers pass; focused transport/fitter GPU checks pass | Large process exceeded diagnostic deadline; GPU consumers and terminal comparisons remain open | Full large-case completion, final host memory and current-source GPU evidence | One assembly retry at the existing 900-second limit, then remaining audit/qualification | Completed repair, memory acceptance, scientific admission or permission to merge |

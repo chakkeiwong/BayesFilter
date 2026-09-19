@@ -22,6 +22,70 @@ from tests.test_filter_repair_remaining_routes import _graph, _original
 D = tf.float64
 
 
+@pytest.mark.parametrize("count", [1, 7, 29])
+def test_uniform_source_weights_preserve_baseline_and_xla(count):
+    expected = _original("source_route")._p59_author_sir_uniform_log_weights(count)
+    actual = candidate._p59_author_sir_uniform_log_weights(count)
+    tf.debugging.assert_near(actual, expected, atol=1e-12, rtol=1e-12)
+    tf.debugging.assert_near(tf.reduce_sum(tf.exp(actual)), tf.constant(1., D),
+                             atol=1e-12, rtol=1e-12)
+    call = preparation_runtime.uniform_log_weights_program(count)
+    assert "HloModule" in call.experimental_get_compiler_ir()(stage="hlo")
+    _graph(call)
+    assert call.experimental_get_tracing_count() == 1
+    with pytest.raises(ValueError, match="sample_count must be positive"):
+        candidate._p59_author_sir_uniform_log_weights(0)
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_weighted_target_initializer_preserves_value_and_complete_derivatives(jit):
+    targets = tf.constant([.2, 2.3, 1.7, .8], D)
+    weights = tf.constant([.1, .3, 0., 1.1], D)
+    expected = _original("source_route")._weighted_mean_target_value(targets, weights)
+    with tf.GradientTape() as tape:
+        tape.watch((targets, weights))
+        actual = candidate._weighted_mean_target_value(targets, weights)
+    actual_gradients = tape.gradient(actual, (targets, weights))
+    total = tf.reduce_sum(weights)
+    expected_gradients = (weights / total, (targets - expected) / total)
+    tf.debugging.assert_near(actual, expected, atol=1e-12, rtol=1e-12)
+    call = preparation_runtime.weighted_mean_target_program(4, jit_compile=jit)
+
+    @tf.function(input_signature=call.input_signature, jit_compile=jit, autograph=False)
+    def scored(values, masses):
+        with tf.GradientTape() as tape:
+            tape.watch((values, masses))
+            value, valid = call(values, masses)
+        return value, valid, tape.gradient(value, (values, masses))
+
+    result = scored(targets, weights)
+    assert bool(result[1])
+    tf.debugging.assert_near(result[0], expected, atol=1e-12, rtol=1e-12)
+    for gradients in (actual_gradients, result[2]):
+        for actual_part, expected_part in zip(gradients, expected_gradients, strict=True):
+            assert actual_part is not None
+            tf.debugging.assert_near(actual_part, expected_part, atol=1e-12, rtol=1e-12)
+    scored(targets * 1.1, weights * .9)
+    assert scored.experimental_get_tracing_count() == 1
+    _graph(scored)
+    if jit:
+        assert "HloModule" in scored.experimental_get_compiler_ir(targets, weights)(stage="hlo")
+
+
+@pytest.mark.parametrize("targets,weights,reason", [
+    ([[1.]], [1.], "INVALID_SHAPE"), ([1., 2.], [1.], "INVALID_SHAPE"),
+    ([float("nan")], [1.], "NONFINITE_VALUE"),
+    ([1.], [float("inf")], "NONFINITE_VALUE"),
+    ([0.], [1.], "NONFINITE_VALUE"), ([-1.], [1.], "NONFINITE_VALUE"),
+    ([1.], [-1.], "NONFINITE_VALUE"), ([1.], [0.], "NONFINITE_VALUE"),
+    ([], [], "NONFINITE_VALUE"),
+])
+def test_weighted_target_initializer_preserves_input_rejection(targets, weights, reason):
+    for module in (candidate, _original("source_route")):
+        with pytest.raises(ValueError, match=reason):
+            module._weighted_mean_target_value(tf.constant(targets, D), tf.constant(weights, D))
+
+
 @pytest.mark.parametrize("count,dimension", [(1, 2), (5, 3), (9, 6)])
 @pytest.mark.parametrize("unit", [False, True])
 def test_reference_design_preserves_baseline_and_has_hlo(count, dimension, unit):

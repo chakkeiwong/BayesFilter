@@ -45,6 +45,8 @@ from bayesfilter.highdim.source_route_preparation_runtime_tf import (
     source_push_program,
     target_values_program,
     target_values_with_shift_program,
+    uniform_log_weights_program,
+    weighted_mean_target_program,
 )
 from bayesfilter.highdim.squared_tt import (
     SquaredTTDensity,
@@ -3045,10 +3047,7 @@ def _p59_author_sir_uniform_log_weights(sample_count: int) -> tf.Tensor:
     n = int(sample_count)
     if n <= 0:
         raise ValueError("sample_count must be positive")
-    return tf.fill(
-        [n],
-        -tf.math.log(tf.cast(n, tf.float64)),
-    )
+    return uniform_log_weights_program(n, jit_compile=True)()
 
 
 def _p59_author_sir_prior_sample_batch(
@@ -5711,18 +5710,12 @@ def _weighted_mean_target_value(target_values: tf.Tensor, weights: tf.Tensor) ->
         raise ValueError(f"target_values: {HighDimStatus.INVALID_SHAPE.value}")
     if int(targets.shape[0]) != int(fit_weights.shape[0]):
         raise ValueError(f"target_values: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(
-        tf.reduce_all(tf.math.is_finite(targets)).numpy()
-        and tf.reduce_all(tf.math.is_finite(fit_weights)).numpy()
-    ):
+    mean, valid = weighted_mean_target_program(int(targets.shape[0]), jit_compile=True)(
+        targets, fit_weights
+    )
+    if not bool(valid.numpy()):
         raise ValueError(f"target_values: {HighDimStatus.NONFINITE_VALUE.value}")
-    if bool(
-        tf.reduce_any(targets <= 0.0).numpy()
-        or tf.reduce_any(fit_weights < 0.0).numpy()
-        or (tf.reduce_sum(fit_weights) <= 0.0).numpy()
-    ):
-        raise ValueError(f"target_values: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tf.reduce_sum(fit_weights * targets) / tf.reduce_sum(fit_weights)
+    return mean
 
 
 def _source_route_initial_core_values(

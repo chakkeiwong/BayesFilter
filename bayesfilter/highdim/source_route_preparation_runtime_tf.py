@@ -24,6 +24,51 @@ _PUSH_PROGRAMS = OrderedDict()
 
 
 @lru_cache(maxsize=32)
+def uniform_log_weights_program(sample_count, *, jit_compile=True):
+    """Compile the existing equal-weight prior/retained-prefix rule."""
+
+    count = int(sample_count)
+    if count <= 0:
+        raise ValueError("sample_count must be positive")
+
+    @tf.function(input_signature=[], jit_compile=jit_compile, autograph=False)
+    def evaluate():
+        return tf.fill([count], -tf.math.log(tf.cast(count, D)))
+
+    return evaluate
+
+
+@lru_cache(maxsize=32)
+def weighted_mean_target_program(sample_count, *, jit_compile=True):
+    """Compile the existing fitting initializer and its input-validity flag.
+
+    Keep the original positive-target/nonnegative-weight rule. The host wrapper
+    retains shape checks and the rejection message. No output clipping, new
+    finite-output veto or change to the weighted reduction is introduced.
+    """
+
+    count = int(sample_count)
+    if count < 0:
+        raise ValueError("sample_count must be nonnegative")
+
+    @tf.function(
+        input_signature=[tf.TensorSpec([count], D), tf.TensorSpec([count], D)],
+        jit_compile=jit_compile,
+        autograph=False,
+    )
+    def evaluate(targets, weights):
+        total_weight = tf.reduce_sum(weights)
+        valid = (tf.reduce_all(tf.math.is_finite(targets))
+                 & tf.reduce_all(tf.math.is_finite(weights))
+                 & ~tf.reduce_any(targets <= 0.0)
+                 & ~tf.reduce_any(weights < 0.0)
+                 & ~(total_weight <= 0.0))
+        return tf.reduce_sum(weights * targets) / total_weight, valid
+
+    return evaluate
+
+
+@lru_cache(maxsize=32)
 def normal_matrix_program(sample_count, dimension, *, jit_compile=True):
     """Return a fixed XLA program for one TensorFlow Generator matrix draw."""
 

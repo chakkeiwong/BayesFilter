@@ -3,6 +3,16 @@
   "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance.",
   "sources": {
     "bayesfilter/highdim/source_route.py": [
+      "_p59_author_sir_source_density_callbacks",
+      "_p59_author_sir_uniform_log_weights",
+      "_p59_author_sir_prior_sample_batch",
+      "_p59_author_sir_batch_from_previous_retained_prefix",
+      "_p59_author_sir_source_push_result",
+      "_p59_author_sir_deterministic_weighted_resample",
+      "_p59_author_sir_source_fit_data_for_step",
+      "_p69_author_sir_source_diagnostic_data_for_step",
+      "_p59_author_sir_source_route_target",
+      "_weighted_mean_target_value",
       "_p59_author_sir_36d_coordinate_frame_for_time",
       "_p59_author_sir_reference_points",
       "_p59_author_sir_unit_reference_points",
@@ -291,7 +301,8 @@
     "bayesfilter/highdim/core_tangent_native_tf.py": null,
     "bayesfilter/highdim/stochastic_density_training.py": null,
     "bayesfilter/highdim/stochastic_training_native_tf.py": null,
-    "bayesfilter/ops/compiled_tensor_program_tf.py": null
+    "bayesfilter/ops/compiled_tensor_program_tf.py": null,
+    "bayesfilter/highdim/ttsirt_coordinate_tf.py": null
   },
   "exceptions": [
     {
@@ -9161,24 +9172,6 @@
       "reason": "Fixed core TensorSpecs or callable alternatives for heterogeneous axes; all coordinate updates, bisection and products execute in native tensor control flow."
     },
     {
-      "path": "bayesfilter/highdim/ttsirt_native_tf.py",
-      "function": "transport_program.evaluate",
-      "line": 167,
-      "kind": "python_iteration",
-      "ast_sha256": "cf139e7d1d33b8220733c857f984f55a1d59def2ae9f527d84d95027ead58733",
-      "role": "fixed_schema",
-      "reason": "Fixed core TensorSpecs or callable alternatives for heterogeneous axes; all coordinate updates, bisection and products execute in native tensor control flow."
-    },
-    {
-      "path": "bayesfilter/highdim/ttsirt_native_tf.py",
-      "function": "transport_program.evaluate.step",
-      "line": 163,
-      "kind": "python_iteration",
-      "ast_sha256": "9117a54e67f62cad674470da97dc6f131321b7c868eabb87d7b074ec302efad0",
-      "role": "fixed_schema",
-      "reason": "Fixed core TensorSpecs or callable alternatives for heterogeneous axes; all coordinate updates, bisection and products execute in native tensor control flow."
-    },
-    {
       "path": "bayesfilter/highdim/ttsirt_proposal_native_tf.py",
       "function": "_transport_schema",
       "line": 31,
@@ -10356,6 +10349,114 @@
       "ast_sha256": "2b990dfc42a3c8695c22fdc1fadd5af74bb8090f3d7b313e723478908177887c",
       "role": "fixed_schema",
       "reason": "Return the fixed variable-gradient tuple in TensorFlow-specified resource order."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program",
+      "line": 22,
+      "kind": "python_iteration",
+      "ast_sha256": "89c42a76f0d0a01987ff7827c64b54753e6c1e6fc22fac51668b6be1e30cb63d",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program",
+      "line": 24,
+      "kind": "python_iteration",
+      "ast_sha256": "45aba31b4073c6a2ecd104d348d221ccd9d4ed8df9007561964386665318fcd1",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program",
+      "line": 25,
+      "kind": "python_iteration",
+      "ast_sha256": "b10091d851ae160fb3981dc4348f08bcd30931269bb0b9962a4598f041521f13",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program",
+      "line": 29,
+      "kind": "python_iteration",
+      "ast_sha256": "be018b0e5f105d8d98e9d2ec84b10336537fc32d2c10e5e5c8ce1e437f9f1689",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program.evaluate",
+      "line": 34,
+      "kind": "python_iteration",
+      "ast_sha256": "2ecb2a3907f2dd5cc92924f87bee1d6424d343acc33a0c00a2f563eef06e0dde",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program.evaluate",
+      "line": 58,
+      "kind": "python_iteration",
+      "ast_sha256": "9a88ef3b86f27094c5e5717cd2dc7ab2f4eab5e7d8f2da4a7527fb140138e748",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program.evaluate",
+      "line": 71,
+      "kind": "python_iteration",
+      "ast_sha256": "361591a5e1fc69fbbdf79e626ba113ca4730976d3e6afd833af9bfd3583c63c2",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "coordinate_program",
+      "line": 97,
+      "kind": "python_iteration",
+      "ast_sha256": "b9a6f8f8b5927b8836713ea13b05c140df3fa3371f05f889d0aee53708595c57",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "coordinate_program",
+      "line": 98,
+      "kind": "python_iteration",
+      "ast_sha256": "be018b0e5f105d8d98e9d2ec84b10336537fc32d2c10e5e5c8ce1e437f9f1689",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "coordinate_program",
+      "line": 99,
+      "kind": "python_iteration",
+      "ast_sha256": "0167b78ce854f161c4c6f1938a2ac4be28c903f4e04cad2109ee201e7c4fe8d3",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "coordinate_program.axis_call",
+      "line": 106,
+      "kind": "python_iteration",
+      "ast_sha256": "fe60bf46f5f8ef71544407a71a6782950393d80aa2f8e0840b9e49e0ef30bb93",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "coordinate_program.evaluate",
+      "line": 112,
+      "kind": "python_iteration",
+      "ast_sha256": "cef3dc81fc16f5f043e61a65e9f9a6e3edee70f83205f2ef957934f97a2ab0a6",
+      "role": "fixed_schema",
+      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
     }
   ]
 }

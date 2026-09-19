@@ -13,13 +13,13 @@ until full testing. Canonical LEDH rebuilding is excluded; unsupported claims
 remain blocked. Only the two geometry initializers have approval to migrate
 their random stream. Other seeded draws remain unchanged.
 
-The original cumulative caps are still 4 GPU / 8 CPU process-hours. The
-proposed increase to 16 GPU / 12 CPU hours has not received an answer. Through
-01030, GPU charge is 14,352.925 seconds, leaving 47.075 seconds, which cannot
-cover the runner's minimum 60-second test reservation. Do not launch GPU work
-or modify the caps without the pending approval. Use the driver for authoritative
-CPU accounting, including interrupted runs and supplemental charge files.
-Through 01035, CPU charge is 26,346.748 seconds, leaving 2,453.252 seconds.
+September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
+original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01049,
+charges are 14,543.687 GPU / 27,532.276 CPU seconds, leaving 172,656.313 GPU /
+87,667.724 CPU seconds. No further compute approval is needed within these
+caps. Use the driver for authoritative accounting, including interrupted runs
+and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
 
 Use the existing approved command prefix:
@@ -78,10 +78,28 @@ Run 01034 passes all six final CPU fitter checks after the closure edit;
 171 sources with 1,097 exact schema/reference exceptions; coverage is partial.
 Focused Ruff and whitespace checks pass.
 
-After compute approval, finish GPU fitting
-qualification and the full P59 group, then resolve the remaining reachable
-source audit before freezing source/harness for terminal repeats. Avoid
-repeating the broad 900-second preparation job without a discriminating repair.
+The latest committed checkpoint is `8bd5b30c`. The budget/watchdog and shared
+TTSIRT coordinate changes remain uncommitted. Run 01038 localizes later graph
+growth to retained-sample transport after fitting. The new masked marginal
+and coordinate program preserves the grid-CDF extension and total pullbacks;
+01041/01043 pass all nine checks on CPU/GPU. Run 01042 passes all six deferred
+fitter checks on GPU, closing that focused qualification gap. The current
+static guard passes 172 sources / 1,107 exact exceptions, with partial coverage.
+
+Run 01044 completes its assembly assertions in 292.905 seconds (one passing
+JUnit case), but the process exceeds the 300-second deadline. The 270-second
+RSS high water is 12.50 GiB; final process high-water reporting was added to
+the localization worker for the next attempt. Retry this one assembly test
+under the existing 900-second ceiling. Runs 01046--01048 pass 6/11/25 public
+pullback, sequential and TTSIRT checks on CPU; their GPU qualification is
+pending because both GPU2 and GPU3 had unrelated active work.
+
+Uniform log weights and weighted target means now use stable XLA helpers;
+all 60 preparation checks pass on CPU (01045). Ten repaired preparation
+wrappers were added to the static guard without new exceptions. The policy
+group passes all 59 checks (01049). Finish the remaining preparation/callback
+audit before freezing source/harness for terminal repeats. Avoid repeating
+the broad preparation group until the one-test process exits successfully.
 
 All F01--F20 terminal decisions remain open. Other carried blockers include
 the predator-prey residual about 1.578e-9 against the fixed 1e-10 gate,

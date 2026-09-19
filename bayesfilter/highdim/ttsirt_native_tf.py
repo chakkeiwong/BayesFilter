@@ -10,10 +10,8 @@ import tensorflow as tf
 
 from bayesfilter.highdim.diagnostics import HighDimStatus
 from bayesfilter.highdim.squared_tt_density_native_tf import density_program
-from bayesfilter.ops.compiled_tensor_program_tf import (
-    call_tensor_program,
-    tensor_program,
-)
+from bayesfilter.highdim.ttsirt_coordinate_tf import coordinate_program
+from bayesfilter.ops.compiled_tensor_program_tf import call_tensor_program
 
 _PROGRAMS = OrderedDict()
 _ERRORS = (
@@ -38,8 +36,6 @@ def transport_arguments(transport):
 
 def transport_program(transport, operation, count, conditioning_dimension=0, *, jit_compile=True):
     """Bind a stable enclosing program with all core values as inputs."""
-    from bayesfilter.highdim.transport import _interp_rows
-
     key = (id(transport), operation, count, conditioning_dimension, bool(jit_compile))
     if key in _PROGRAMS:
         _PROGRAMS.move_to_end(key)
@@ -50,7 +46,6 @@ def transport_program(transport, operation, count, conditioning_dimension=0, *, 
     mode = operation.removesuffix("_suffix")
     axes = tuple(range(dr-1, -1, -1)) if suffix else tuple(range(dx, dimension))
     config = transport.cdf_config
-    grid_size = config.grid_size
     if mode in ("inverse", "forward", "log_jacobian"):
         for axis in axes:
             report = transport.batch_working_set_estimate(axis=axis, sample_count=count)
@@ -81,95 +76,16 @@ def transport_program(transport, operation, count, conditioning_dimension=0, *, 
             (tf.constant(0), tf.ones([count], tf.float64)), maximum_iterations=len(branches), parallel_iterations=1)
         return product
 
-    def coordinate_branch(axis):
-        numerator_axes = tuple(range(axis, dimension)) if suffix else tuple(range(axis+1))
-        denominator_axes = tuple(range(axis+1, dimension)) if suffix else tuple(range(axis))
-        numerator_kernel = marginal_kernel(numerator_axes, count*grid_size)
-        denominator_kernel = marginal_kernel(denominator_axes, count) if denominator_axes else None
-
-        def calculate(cores, tau, normalizer_floor, denominator_floor, state, targets):
-            grid = transport._axis_grid(axis)
-            known = tf.transpose(state[axis+1:] if suffix else state[:axis])
-            physical_grid = transport._axis_reference_to_domain(axis, grid)
-            tiled_known = tf.repeat(known[:, None, :], repeats=grid_size, axis=1)
-            tiled_grid = tf.broadcast_to(physical_grid[None, :, None], [count, grid_size, 1])
-            parts = [tiled_grid, tiled_known] if suffix else [tiled_known, tiled_grid]
-            query = tf.reshape(tf.concat(parts, axis=2), [count*grid_size, len(numerator_axes)])
-            numerator, z = numerator_kernel(cores, tau, query)
-            numerator = tf.reshape(numerator/z, [count, grid_size])
-            denominator = tf.ones([count], tf.float64)
-            if denominator_axes:
-                raw_denominator, _ = denominator_kernel(cores, tau, known)
-                denominator = raw_denominator/z
-            code = _status(tf.constant(0), tf.math.is_finite(z), 1)
-            code = _status(code, z > normalizer_floor, 2)
-            code = _status(code, tf.reduce_all(tf.math.is_finite(denominator) & (denominator > denominator_floor)), 3)
-            conditional = numerator/denominator[:, None]
-            if mode != "inverse" and not suffix:
-                code = _status(code, tf.reduce_all(tf.math.is_finite(conditional)), 1)
-            increments = 0.5*(conditional[:, 1:]+conditional[:, :-1])*(grid[1:]-grid[:-1])[None]
-            cdf = tf.concat([tf.zeros([count, 1], tf.float64), tf.cumsum(increments, axis=1)], axis=1)
-            totals = cdf[:, -1]
-            if mode != "inverse" and not suffix:
-                code = _status(code, tf.reduce_all(tf.math.is_finite(totals)), 1)
-            code = _status(code, tf.reduce_all(tf.math.is_finite(cdf)) & tf.reduce_all(totals > config.denominator_floor), 3)
-            cdf /= totals[:, None]
-            minimum = tf.reduce_min(cdf[:, 1:]-cdf[:, :-1])
-            code = _status(code, tf.math.is_finite(minimum), 1)
-            code = _status(code, minimum >= -config.monotonicity_tolerance, 4)
-            if mode != "inverse":
-                reference = transport._axis_domain_to_reference(axis, targets)
-                if mode == "forward":
-                    return _interp_rows(reference, grid, cdf), code
-                if suffix:
-                    # The existing suffix Jacobian extrapolates its endpoint
-                    # density, although its CDF clips. Preserve that behavior.
-                    table = conditional / totals[:, None]
-                    right = tf.clip_by_value(tf.searchsorted(grid, reference, side="right"), 1, grid_size-1)
-                    left = right-1
-                    rows = tf.range(count)
-                    y0 = tf.gather_nd(table, tf.stack([rows, left], 1))
-                    y1 = tf.gather_nd(table, tf.stack([rows, right], 1))
-                    value = y0 + (reference-tf.gather(grid, left))/(tf.gather(grid, right)-tf.gather(grid, left))*(y1-y0)
-                else:
-                    value = _interp_rows(reference, grid, conditional)/totals
-                return tf.math.log(value * transport._axis_domain_to_reference_jacobian(axis, targets)), code
-            lo, hi = tf.fill([count], grid[0]), tf.fill([count], grid[-1])
-
-            def bisect(index, lo, hi, mid):
-                mid = 0.5*(lo+hi)
-                choose_right = _interp_rows(mid, grid, cdf) < targets
-                return index+1, tf.where(choose_right, mid, lo), tf.where(choose_right, hi, mid), mid
-
-            _, _, _, midpoint = tf.while_loop(lambda index, *_: index < config.bisection_steps,
-                bisect, (tf.constant(0), lo, hi, 0.5*(lo+hi)),
-                maximum_iterations=config.bisection_steps, parallel_iterations=1)
-            return transport._axis_reference_to_domain(axis, midpoint), code
-        # Coordinate Case gradients must carry fixed tensors, not loop tapes
-        # from the CDF and marginal recurrences. Recompute the complete local
-        # VJP within its branch. This private function is always enclosed by
-        # evaluate below, which owns the selected graph/XLA execution mode.
-        local_specs = (*specs[0], *specs[1:4],
-                       tf.TensorSpec([dimension, count], tf.float64),
-                       tf.TensorSpec([count], tf.float64))
-
-        def flat_calculate(*arguments):
-            return calculate(tuple(arguments[:dimension]), *arguments[dimension:])
-
-        local_program = tensor_program(flat_calculate, local_specs, jit_compile=False)
-
-        def bounded_calculate(cores, tau, normalizer_floor, denominator_floor, state, targets):
-            return local_program.python_function(*cores, tau, normalizer_floor, denominator_floor, state, targets)
-
-        return bounded_calculate
-
     @tf.function(input_signature=specs, jit_compile=jit_compile, autograph=False)
     def evaluate(cores, tau, normalizer_floor, denominator_floor, condition, values):
         # Build branch pullbacks in the actual enclosing compilation context;
         # direct graph diagnostics must not reuse XLA-only intermediates.
-        coordinate_branches = tuple(coordinate_branch(axis) for axis in axes) if mode in ("inverse", "forward", "log_jacobian") else ()
+        has_coordinates = mode in ("inverse", "forward", "log_jacobian") and dr > 0
         code = _status(tf.constant(0), tf.reduce_all(tf.math.is_finite(condition)) & tf.reduce_all(tf.math.is_finite(values)), 1)
-        if coordinate_branches:
+        if has_coordinates:
+            coordinate = coordinate_program(transport, mode, count, suffix=suffix, jit_compile=False)
+            normalizer = density_program(transport.density, "normalizer", jit_compile=jit_compile)[0]
+            z = normalizer.python_function(cores, tau)
             if mode == "inverse":
                 code = _status(code, tf.reduce_all((values >= 0.0) & (values <= 1.0)), 5)
                 generated = tf.zeros([dr, count], tf.float64)
@@ -181,9 +97,8 @@ def transport_program(transport, operation, count, conditioning_dimension=0, *, 
             def step(index, state, outputs, code):
                 value_index = dr-1-index if suffix else index
                 axis = value_index if suffix else dx+index
-                branches = tuple(lambda fn=fn: fn(cores, tau, normalizer_floor, denominator_floor,
-                    state, values[value_index]) for fn in coordinate_branches)
-                following, new_code = tf.switch_case(index, branches)
+                following, new_code = coordinate.python_function(
+                    *cores, tau, normalizer_floor, denominator_floor, z, state, values[value_index], axis)
                 if mode == "inverse":
                     state = tf.tensor_scatter_nd_update(state, [[axis]], [following])
                 outputs = tf.tensor_scatter_nd_update(outputs, [[value_index]], [following])

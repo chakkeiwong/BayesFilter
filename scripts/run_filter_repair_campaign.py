@@ -52,7 +52,9 @@ BASELINE_ROOT = Path("/tmp/bayesfilter-filter-repair-baseline-3582b4ac")
 BASELINE_PARENT_PACKAGES = (
     "experiments/__init__.py", "experiments/dpf_implementation/__init__.py",
 )
-BUDGET_SECONDS = {"CPU": 8 * 3600, "GPU": 4 * 3600}
+# September 19 owner authorization adds 24 CPU / 48 GPU process-hours to
+# the original cumulative 8 CPU / 4 GPU hours; prior charges remain counted.
+BUDGET_SECONDS = {"CPU": 32 * 3600, "GPU": 52 * 3600}
 TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 TEST_GROUPS = {
     "public_pullbacks": ("tests/test_filter_repair_public_pullbacks.py",),
@@ -66,6 +68,7 @@ TEST_GROUPS = {
         "tests/test_filter_repair_squared_density.py::test_heterogeneous_marginal_preserves_query_and_core_pullbacks"),
     "ttsirt_enclosing": ("tests/test_filter_repair_ttsirt.py::test_public_transport_complete_enclosing_graph_and_xla_with_invalid_status",
         "tests/test_filter_repair_ttsirt.py::test_transport_vetoes_and_bisection_graph_are_preserved"),
+    "ttsirt_coordinates": ("tests/test_filter_repair_ttsirt_coordinates.py",),
     "source_numerics": ("tests/test_filter_repair_source_numerics.py",
         "tests/highdim/test_p49_source_route_sample_proposal.py",
         "tests/highdim/test_p49_source_route_recenter_normalizer.py",
@@ -105,7 +108,7 @@ TEST_GROUPS = {
     "source_preparation_numerics": ("tests/test_filter_repair_source_preparation.py",),
     "source_preparation_localization": (
         "tests/highdim/test_p59_author_sir_step_spec_assembly.py::test_p59_9b_assembles_two_author_sir_36d_step_specs",
-        "--capture=no", "-o", "faulthandler_timeout=45"),
+        "--capture=no", "-p", "no:faulthandler"),
     "source_preparation": ("tests/test_filter_repair_source_preparation.py",
         "tests/highdim/test_p49_source_route_recenter_normalizer.py",
         "tests/highdim/test_p55_source_route_target_transport.py",
@@ -347,6 +350,8 @@ def run_job(args):
     env = os.environ.copy()
     env.update({"CUDA_VISIBLE_DEVICES": str(gpu_index) if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
     if args.action == "test":
+        if args.group == "source_preparation_localization":
+            env["FILTER_REPAIR_REPEAT_STACKS"] = "1"
         if args.arm == "before":
             ensure_baseline()
             env["FILTER_REPAIR_SOURCE_ROOT"] = str(BASELINE_ROOT)
@@ -381,6 +386,8 @@ def run_job(args):
     record = {"schema": "filter_repair_run.v1", "key": key, "started_utc": datetime.now(timezone.utc).isoformat(), "state": "running", "device": device, "timeout_seconds": timeout, "command": command, "cwd": str(ROOT), "environment": {k: env[k] for k in ("CUDA_VISIBLE_DEVICES", "TF_FORCE_GPU_ALLOW_GROWTH", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS", "OPENBLAS_NUM_THREADS", "PYTHONHASHSEED")}, "git_head": git("rev-parse", "HEAD"), "git_diff_stat": git("diff", "--stat"), "source_sha256": hashes, "plan": PLAN, "result": str(result), "log": str(directory / "process.log")}
     if getattr(args, "gpu_preflight", None) is not None:
         record["gpu_preflight"] = args.gpu_preflight
+    if env.get("FILTER_REPAIR_REPEAT_STACKS") == "1":
+        record["diagnostic_stack_interval_seconds"] = 45
     save_json(directory / "run.json", record)
     started = time.monotonic()
     print(json.dumps({"run": str(directory), "command": command}), flush=True)

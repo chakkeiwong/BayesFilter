@@ -2,11 +2,29 @@
 
 import json
 import os
+import resource
 import sys
+import threading
+import time
+import traceback
 from pathlib import Path
 
 sys.path.insert(0, os.environ.get("FILTER_REPAIR_SOURCE_ROOT", str(Path(__file__).resolve().parents[1])))
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+
+
+def sample_main_thread(stop, thread_id):
+    """GIL-safe diagnostic snapshots; no asynchronous signal stack walking."""
+    started = time.monotonic()
+    while not stop.wait(45):
+        print(json.dumps({"diagnostic_elapsed_seconds": time.monotonic() - started,
+                          "host_peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}),
+              file=sys.stderr, flush=True)
+        frame = sys._current_frames().get(thread_id)
+        if frame is not None:
+            traceback.print_stack(frame, file=sys.stderr)
+        del frame
+
 
 if __name__ == "__main__":
     import tensorflow as tf
@@ -24,4 +42,21 @@ if __name__ == "__main__":
                       if os.environ.get("CUDA_VISIBLE_DEVICES") != "-1" else "explicit_cpu_reference"}), flush=True)
     import pytest
 
-    raise SystemExit(pytest.main(sys.argv[1:]))
+    # The registered localization group disables pytest's signal timer. A
+    # Python watchdog records later stages while respecting the main GIL.
+    repeat_stacks = os.environ.get("FILTER_REPAIR_REPEAT_STACKS") == "1"
+    stop = threading.Event()
+    if repeat_stacks:
+        threading.Thread(target=sample_main_thread,
+                         args=(stop, threading.main_thread().ident), daemon=True).start()
+    exit_code = None
+    try:
+        exit_code = pytest.main(sys.argv[1:])
+    finally:
+        stop.set()
+        if repeat_stacks:
+            print(json.dumps({
+                "diagnostic_final_host_peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+                "pytest_exit_code": exit_code,
+            }), file=sys.stderr, flush=True)
+    raise SystemExit(exit_code)
