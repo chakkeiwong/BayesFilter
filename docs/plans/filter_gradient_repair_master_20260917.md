@@ -4,15 +4,15 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `1da3170e` is committed and pushed,
-including the tested shared Legendre marginal and P72 gate calculations.
+September 19 refresh: source checkpoint `b7cfbb14` is committed and pushed,
+including shared Legendre basis/mass graphs and the reviewed forecast repair.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01095, charges are 14,543.687 GPU / 30,620.895 CPU seconds;
-remaining allowances are 172,656.313 GPU / 84,579.105 CPU seconds. The earlier
+charge. Through run 01125, charges are 14,656.427 GPU / 31,024.182 CPU seconds;
+remaining allowances are 172,543.573 GPU / 84,175.818 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 173 sources with 1,123 exact
+The repair is incomplete. The static guard covers 174 sources with 1,144 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
@@ -69,10 +69,23 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    fixture passes CPU graph, XLA and both public source arms (01073--01076),
    with all 11 numerical summaries matching the original exactly. These are
    small diagnostic measurements; GPU and terminal repeats remain pending.
-   The CPU forecast pool still imports NumPy and executes a Python loop over
-   scalar forecasts through `ComplexityForecastWorker.evaluate`; its host
-   status check also prevents tracing the complete callback. Preserve each
-   row's seeds, ordering, validity rejection and raw-byte hashes in its repair.
+   The CPU forecast pool repair now executes a compiled whole shard and uses
+   TensorFlow serialization. All 14 focused checks pass (01098); the three
+   process-pool checks pass (01099), including exact scalar replay and uneven
+   shards. Float32 scalar-factory compatibility is repaired and all 15 focused
+   checks pass in 01101. The pool has 21 exact host-orchestration/reporting
+   exceptions and no numerical row exemption. All 61 policy/controller cases
+   pass (01121). Shard measurements 01103--01114 preserve baseline values,
+   with exact XLA/public outputs and graph differences at most 6.107e-16.
+   The public pool comparison first exposed child-source contamination (01115);
+   source restoration and per-child verification repaired the harness.
+   Runs 01116--01119 match exactly, but the five-row peak sum increases by
+   285.984 MiB, triggering investigation. Final per-worker peak/signature
+   snapshots are now required because a worker may not receive the last task;
+   runs 01122--01125 now pass both pairs exactly with complete final snapshots.
+   The five-row increase remains 279.852 MiB; each worker has both two-/three-row
+   signatures, with one trace each. Investigate compiler/signature overhead
+   before terminal memory acceptance.
    `cpu_xla_cloud`, `quadratic_map_covariance` and `block_coordinate_center`
    also need reachable-consumer classification before the audit can close.
 3. Resolve the predator-prey residual (~1.578e-9 versus the unchanged 1e-10
@@ -93,6 +106,14 @@ comparisons, and repeated broad assembly retries did not identify the later
 failure stage. Therefore complete source work before terminal repeats and use
 bounded localization first. The pinned baseline, evidence contract, failure
 criteria, hardware class, attempt limits and numerical tolerances remain valid.
+
+Recovery after 01099: both approved GPUs are currently idle. Resume focused
+GPU qualification sequentially through the driver while reviewing the forecast
+measurement harness. Do not edit runtime or harness source while a numerical
+worker runs. The remaining memory gap and terminal comparisons are still open;
+none of the focused passes authorizes a merge.
+Run 01100 passes all 29 basis/mass checks on GPU. Remaining affected GPU groups
+still need qualification; the earlier 29 CPU cases do not cover those groups.
 
 ### Bounded fitting graph repair after 01058
 
@@ -214,6 +235,22 @@ and identical input hashes, verify complete shard HLO and one trace per fixed
 signature, then run the existing process-pool startup/replay tests. Include
 uneven shards and invalid-result rejection. Qualified fixtures must measure
 complete public pool overhead separately from numerical kernel time.
+
+Registered measurements use `cpu_forecast_shard` and `cpu_forecast_pool`, both
+explicit CPU generation lanes at q=1, two/five rows, two replications and ten
+forecast dates. Seeds are (20260719, 70001+i), with identical rows in both
+isolated source arms. The shard records graph/XLA numerical execution and
+public host execution separately; the legacy scalar host boundary may reject
+tracing, in which case its public execution is a parity reference only.
+The process pool uses two persistent one-core workers and records full cold
+startup, twenty warm calls, IPC, ordering/identity validation and output
+conversion. Record each call's parent and worker RSS maxima; their sum is a
+high-water sum, not simultaneous live memory. Preserve the 1e-10 parity gate,
+exact replay, one-trace/HLO checks and the existing 256 MiB host-memory repair
+trigger, also applied to the process peak sum. These diagnostic sizes establish
+no scaling, training or posterior claim. Run one qualification pair per extent
+before the existing final three-process repeats; each worker retains the
+300-second ceiling and existing cumulative budget. No additional RNG exception.
 
 Skeptical review: changing output transport from NumPy arrays to TensorFlow
 tensors is the intended backend repair, but no owned consumer may depend on

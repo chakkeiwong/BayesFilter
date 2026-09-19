@@ -194,6 +194,16 @@ def test_additional_harness_keeps_original_measurements_and_binds_extension():
     }
     with pytest.raises(ValueError, match="Stale measurement harness"):
         comparison.current_provenance({}, measurement, "before", forecast, {})
+    pool = driver.measurement_harness("cpu_forecast_shard")
+    assert {name: pool[name] for name in original} == original
+    assert set(pool) - set(original) == {
+        "filter_repair_forecast_pool_worker.py", "filter_repair_forecast_pool_fixtures.py",
+    }
+    assert driver.measurement_device("cpu_forecast_shard") == "CPU"
+    assert driver.measurement_device("cpu_forecast_pool") == "CPU"
+    assert driver.measurement_device("complexity_forecast") == "GPU"
+    assert driver.measurement_modes("cpu_forecast_shard") == ("off", "on", "eager")
+    assert driver.measurement_modes("cpu_forecast_pool") == ("eager",)
     preparation = driver.measurement_harness("ukf_initializer")
     assert {name: preparation[name] for name in original} == original
     assert set(preparation) - set(original) == {
@@ -477,6 +487,43 @@ def test_whole_endpoint_and_kernel_timings_cannot_issue_a_speed_ratio():
     assert ratio == .005
     assert "device_peak_over_2x" in reasons
     assert driver.measurement_modes("source_route_sequence") == ("off", "on", "eager")
+
+
+def test_pool_comparison_rejects_missing_or_contaminated_child_sources():
+    comparison = load("compare_filter_repair_campaign")
+    value = {"schema": "filter_repair_measurement.v2", "harness_sha256": {},
+        "fixture": "cpu_forecast_pool", "status": "passed", "source_root": "/baseline",
+        "imported_source_sha256": {"bayesfilter/worker.py": "before"},
+        "pool_calls": [{"configured_worker_count": 2, "startup_worker_pids": [10, 20]}]}
+    with pytest.raises(ValueError, match="Missing process-pool child"):
+        comparison.current_provenance({}, value, "before", {}, {})
+    value["worker_sources"] = [dict(pid=pid, source_root="/baseline",
+        imported_source_sha256={"bayesfilter/worker.py": "after"}) for pid in [10, 20]]
+    with pytest.raises(ValueError, match="Process-pool source contamination"):
+        comparison.current_provenance({}, value, "before", {}, {})
+    value["worker_sources"][0]["source_root"] = "/candidate"
+    with pytest.raises(ValueError, match="Invalid process-pool child source root"):
+        comparison.current_provenance({}, value, "before", {}, {})
+
+
+def test_pool_summary_requires_complete_consistent_child_memory():
+    comparison = load("compare_filter_repair_campaign")
+    value = {"fixture": "cpu_forecast_pool", "preparation_seconds": 0., "trace_seconds": 0.,
+        "cold": {"synchronized_seconds": 1.}, "graph": {"nodes": 0}, "stages": {},
+        "warm": [{"VmRSS": 10, "VmHWM": 20, "synchronized_seconds": 1., "output_copy_seconds": 0.}]*20}
+    with pytest.raises(ValueError, match="Missing per-call"):
+        comparison.summarize(value)
+    value["pool_calls"] = [{"aggregate_parent_worker_ru_maxrss_bytes": 60,
+        "parent_ru_maxrss_bytes": 20, "worker_ru_maxrss_sum_bytes": 40}]*21
+    with pytest.raises(ValueError, match="final process-pool memory"):
+        comparison.summarize(value)
+    value["pool_final_memory"] = {"aggregate_parent_worker_ru_maxrss_bytes": 80,
+        "parent_ru_maxrss_bytes": 20, "worker_ru_maxrss_sum_bytes": 60}
+    value["worker_sources"] = [{"numerical_ru_maxrss_bytes": 25}, {"numerical_ru_maxrss_bytes": 35}]
+    assert comparison.summarize(value)["pool_rss_peak_sum_bytes"] == 80
+    value["pool_calls"][-1] = {**value["pool_calls"][-1], "worker_ru_maxrss_sum_bytes": 0}
+    with pytest.raises(ValueError, match="Invalid process-pool peak sum"):
+        comparison.summarize(value)
 
 
 def test_regression_thresholds_require_investigation():

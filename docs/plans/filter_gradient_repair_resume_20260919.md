@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01095,
-charges are 14,543.687 GPU / 30,620.895 CPU seconds, leaving 172,656.313 GPU /
-84,579.105 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01125,
+charges are 14,656.427 GPU / 31,024.182 CPU seconds, leaving 172,543.573 GPU /
+84,175.818 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -183,8 +183,8 @@ acceptance remains open. GPU2/GPU3 are occupied by unrelated work.
 
 The next reachable audit debt includes the NumPy/Python scalar forecast
 pool, plus unclassified `cpu_xla_cloud`, `quadratic_map_covariance` and
-`block_coordinate_center` public consumers. No source repair for these has
-yet been made. Preserve per-row random streams and byte hashes in any
+`block_coordinate_center` public consumers. The forecast pool repair is now implemented; the other three helpers
+remain open. Preserve per-row random streams and byte hashes in any
 forecast repair; external CPU sample generation is not NeuTra training.
 
 All F01--F20 terminal decisions remain open. Other carried blockers include
@@ -213,5 +213,37 @@ open. No current GPU qualification or terminal performance claim follows.
 Proceed to the CPU forecast-pool repair recorded in the master. Keep the
 existing per-row seeds, raw-byte hashes, row ordering and validity vetoes.
 Its numerical iteration must run in a native TensorFlow/XLA shard program;
-external forecast generation is not NeuTra training. Neither forecast-pool
-source nor other newly noted inference debt has been changed yet.
+external forecast generation is not NeuTra training. Forecast-pool source is now repaired and tested as recorded below; the other
+newly noted inference debt remains open.
+
+
+Recovery through 01125: GPU basis/mass qualification passes all 29 cases
+(01100). Forecast shards pass all 15 CPU cases after preserving float32 scalar
+factory conversion to float64 (01101); the process pool passes all three
+startup/exact-replay/uneven-shard cases (01099). The static guard now covers
+174 sources / 1,144 exact exceptions, still partial. All 61 policy/controller
+checks pass in 01121, including rejected missing/contaminated child provenance
+and incomplete final process-memory evidence.
+
+New fixtures are `cpu_forecast_shard` (graph, XLA and public scopes) and
+`cpu_forecast_pool` (public process scope only). Both are explicitly CPU sample
+generation, not NeuTra training. Shard runs 01103--01114 match original values
+exactly in XLA/public mode and within 6.107e-16 in graph mode. The legacy
+`.numpy()` boundary cannot trace; those failures remain baseline evidence.
+Those shard artifacts use an earlier fixture-harness version and need final
+remeasurement. Do not mix their timing scope with the public scalar baseline.
+
+Pool run 01115 exposed a spawned-child source-precedence bug in the harness.
+It is contaminated and excluded. The dedicated worker now restores the selected
+source before unpickling; both child source closures are verified after timing.
+Final snapshots include each child's actual RSS maximum even if it did not
+receive the last request. Runs 01122--01125 pass both two/five-row pairs exactly.
+`forecast-pool-memory-diagnostic-01125.json` preserves their summaries/checksums.
+Two-row warm medians are 13.929/4.703 ms before/after; five-row medians are
+37.603/8.459 ms. Peak sums increase by 186.965/279.852 MiB. The latter exceeds
+the unchanged 256 MiB investigation trigger. Both workers cache both two-/
+three-row shard programs, each with one trace; this is a plausible explanation,
+not an isolated cause or terminal memory acceptance. No worker is running at
+this checkpoint. Continue pending GPU qualification and reachable inference
+repairs, then investigate that bounded signature/compiler overhead before
+terminal repeats. The full campaign and merge remain incomplete.

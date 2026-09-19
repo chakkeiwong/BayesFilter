@@ -73,7 +73,11 @@ class ComplexityCalibrationScale:
 
 
 class ComplexityForecastWorker:
-    """Persistent scalar forecast surface for spawned CPU workers."""
+    """Persistent scalar and compiled shard forecasts for external CPU generation.
+
+    Independent forecast rows are mapped by native tensor control flow. This
+    sample-generation endpoint is not a batch-native NeuTra training target.
+    """
 
     def __init__(self, q: int) -> None:
         self.q = int(q)
@@ -84,6 +88,56 @@ class ComplexityForecastWorker:
             replication_count=FORECAST_REPLICATION_COUNT,
         )
         self.state_dim = int(self.target.config.static_config.augmented_state_dim)
+        self._shard_programs = OrderedDict()
+
+    def make_shard_program(self, count: int, *, jit_compile: bool = True):
+        """Compile each row's original seed stream and complete forecast."""
+        count = int(count)
+        if count < 1:
+            raise ComplexityPredictiveError("forecast shard must be nonempty")
+        key = (count, bool(jit_compile))
+        if key not in self._shard_programs:
+            innovation = _innovation_program(self.q, self.state_dim, 1,
+                FORECAST_REPLICATION_COUNT, FORECAST_HORIZON)
+            # The explicit graph diagnostic must also disable the nested UKF
+            # boundary. The default keeps the worker's prepared XLA target.
+            forecast_program = (self.program if jit_compile else complexity_forecast_compiled_program(
+                complexity_posterior_target(self.q, jit_compile=False), draw_count=1,
+                replication_count=FORECAST_REPLICATION_COUNT))
+
+            def at_row(inputs):
+                free, seed = inputs
+                terminal, process, observation = innovation.python_function(seed)
+                means, variances, observations, _terminal, status = forecast_program.python_function(
+                    free[None, :], terminal, process, observation)
+                return means[0], variances[0], observations[0], status[0]
+
+            @tf.function(input_signature=[tf.TensorSpec([count, 4], tf.float64),
+                tf.TensorSpec([count, 2], tf.int32)], jit_compile=jit_compile, autograph=False)
+            def program(rows, seeds):
+                return tf.map_fn(at_row, (rows, seeds), fn_output_signature=(
+                    tf.TensorSpec([FORECAST_REPLICATION_COUNT, FORECAST_HORIZON], tf.float64),
+                    tf.TensorSpec([FORECAST_REPLICATION_COUNT, FORECAST_HORIZON], tf.float64),
+                    tf.TensorSpec([FORECAST_REPLICATION_COUNT, FORECAST_HORIZON], tf.float64),
+                    tf.TensorSpec([], tf.bool)), parallel_iterations=1)
+
+            self._shard_programs[key] = program
+            if len(self._shard_programs) > 16:
+                self._shard_programs.popitem(last=False)
+        self._shard_programs.move_to_end(key)
+        return self._shard_programs[key]
+
+    def evaluate_batch(self, rows: Any, seeds: Any) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        """Evaluate a CPU shard and retain the existing per-row validity veto."""
+        values = tf.convert_to_tensor(rows, tf.float64)
+        if values.shape.rank != 2 or values.shape[1] != 4 or values.shape[0] is None:
+            raise ComplexityPredictiveError("forecast rows must have static shape [batch,4]")
+        roots = tf.ensure_shape(tf.convert_to_tensor(seeds, tf.int32), [values.shape[0], 2])
+        with tf.device("/CPU:0"):
+            means, variances, observations, status = self.make_shard_program(values.shape[0])(values, roots)
+        if not bool(tf.reduce_all(status).numpy()):
+            raise ComplexityPredictiveError("worker forecast failed validity gate")
+        return means, variances, observations
 
     def evaluate(self, free: Any, seed: Any) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         values = tf.ensure_shape(tf.convert_to_tensor(free, tf.float64), [4])

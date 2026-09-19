@@ -26,6 +26,7 @@ from enforce_filter_gradient_policy import verify as verify_source_policy
 from filter_repair_endpoint_fixtures import FIXTURES as ENDPOINT_FIXTURES
 from filter_repair_additional_fixtures import FIXTURES as ADDITIONAL_FIXTURES
 from filter_repair_forecast_fixtures import FIXTURES as FORECAST_FIXTURES
+from filter_repair_forecast_pool_fixtures import FIXTURES as FORECAST_POOL_FIXTURES
 from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
 from filter_repair_centered_fixtures import FIXTURES as CENTERED_FIXTURES
 from filter_repair_centered_training_fixtures import FIXTURES as CENTERED_TRAINING_FIXTURES
@@ -121,6 +122,8 @@ TEST_GROUPS = {
         "tests/highdim/test_p59_author_sir_step_spec_assembly.py"),
     "predator_tp": ("tests/test_filter_repair_predator_tp.py", "tests/highdim/test_ledh_contract_e_tp_predator_prey.py"),
     "predictive": ("tests/test_filter_repair_predictive.py", "tests/test_ssl_lstm_predictive_tf.py", "tests/test_ssl_lstm_complexity_predictive_tf.py"),
+    "forecast_shards": ("tests/test_filter_repair_forecast_pool.py",),
+    "forecast_pool": ("tests/test_cpu_forecast_pool.py",),
     "complexity_target": ("tests/test_ssl_lstm_complexity_target_tf.py",),
     "hermite_proposal": ("tests/test_filter_repair_hermite_proposal.py", "tests/highdim/test_c2_gaussian_hermite_proposal_tf.py"),
     "teacher_identity": ("tests/test_filter_repair_dispatch_identity.py",
@@ -221,7 +224,7 @@ TEST_GROUPS = {
     "consumers": ("tests/test_filter_repair_consumers.py",),
     "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py"),
 }
-FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES)
+FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
 TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU"}
@@ -247,6 +250,8 @@ def measurement_harness(fixture):
         names += ("filter_repair_additional_worker.py", "filter_repair_additional_fixtures.py")
     if fixture in FORECAST_FIXTURES:
         names += ("filter_repair_forecast_worker.py", "filter_repair_forecast_fixtures.py")
+    if fixture in FORECAST_POOL_FIXTURES:
+        names += ("filter_repair_forecast_pool_worker.py", "filter_repair_forecast_pool_fixtures.py")
     if fixture in PREPARATION_FIXTURES:
         names += ("filter_repair_preparation_worker.py", "filter_repair_preparation_fixtures.py")
     if fixture in CENTERED_FIXTURES:
@@ -368,6 +373,8 @@ def run_job(args):
         worker = "filter_repair_additional_worker.py" if args.fixture in ADDITIONAL_FIXTURES else "filter_repair_benchmark_worker.py"
         if args.fixture in FORECAST_FIXTURES:
             worker = "filter_repair_forecast_worker.py"
+        if args.fixture in FORECAST_POOL_FIXTURES:
+            worker = "filter_repair_forecast_pool_worker.py"
         if args.fixture in PREPARATION_FIXTURES:
             worker = "filter_repair_preparation_worker.py"
         if args.fixture in CENTERED_FIXTURES:
@@ -478,8 +485,15 @@ def check_matrix_state(frozen):
 
 def measurement_modes(name):
     """Keep complete public replay timing alongside numerical compilation arms."""
-    return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates")
+    if name == "cpu_forecast_pool":
+        return ("eager",)
+    return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates", "cpu_forecast_shard")
             else ("off", "on"))
+
+
+def measurement_device(name):
+    """Keep external CPU generation separate from the default GPU kernels."""
+    return "CPU" if name in ("cpu_pool", *FORECAST_POOL_FIXTURES) else "GPU"
 
 
 def run_matrix(args):
@@ -524,7 +538,7 @@ def run_matrix(args):
 
     def execute(name, size, repeat, arm, mode):
         check_matrix_state(frozen)
-        device = "CPU" if name == "cpu_pool" else "GPU"
+        device = measurement_device(name)
         key = (arm, name, mode, size, repeat, device)
         if key in available:
             row, value = available[key]

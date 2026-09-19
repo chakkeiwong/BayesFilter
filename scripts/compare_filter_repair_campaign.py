@@ -17,6 +17,7 @@ from run_filter_repair_campaign import (
     ROOT,
     campaign_output_root,
     measurement_harness,
+    measurement_device,
     measurement_modes,
     records,
 )
@@ -60,7 +61,7 @@ def summarize(measurement):
     snapshots = list(measurement["stages"].values()) + warm
     current = [row.get("gpu", {}).get("current", 0) for row in warm]
     rss = [row["VmRSS"] for row in warm]
-    return {"preparation_seconds": measurement["preparation_seconds"],
+    summary = {"preparation_seconds": measurement["preparation_seconds"],
             "trace_seconds": measurement["trace_seconds"],
             "cold_seconds": measurement["cold"]["synchronized_seconds"],
             "warm_median_seconds": statistics.median(row["synchronized_seconds"] for row in warm),
@@ -71,6 +72,23 @@ def summarize(measurement):
             "late_device_growth_bytes": max(current[-5:]) - max(current[5:10]),
             "late_host_growth_bytes": max(rss[-5:]) - max(rss[5:10]),
             "graph_nodes": measurement["graph"]["nodes"]}
+    if measurement.get("fixture") == "cpu_forecast_pool":
+        calls = measurement.get("pool_calls", [])
+        if len(calls) != len(warm) + 1:
+            raise ValueError("Missing per-call process-pool memory evidence")
+        for call in calls:
+            if (call["aggregate_parent_worker_ru_maxrss_bytes"] !=
+                    call["parent_ru_maxrss_bytes"] + call["worker_ru_maxrss_sum_bytes"]):
+                raise ValueError("Invalid process-pool peak sum")
+        final = measurement.get("pool_final_memory", {})
+        children = measurement.get("worker_sources", [])
+        if (not final or not children or final["worker_ru_maxrss_sum_bytes"] !=
+                sum(child["numerical_ru_maxrss_bytes"] for child in children)
+                or final["aggregate_parent_worker_ru_maxrss_bytes"] !=
+                final["parent_ru_maxrss_bytes"] + final["worker_ru_maxrss_sum_bytes"]):
+            raise ValueError("Missing or invalid final process-pool memory evidence")
+        summary["pool_rss_peak_sum_bytes"] = final["aggregate_parent_worker_ru_maxrss_bytes"]
+    return summary
 
 
 def baseline_compilation_failure(measurement):
@@ -108,9 +126,22 @@ def current_provenance(run, measurement, arm, current_hashes, baseline_hashes):
         raise ValueError("Outdated measurement harness")
     if measurement.get("harness_sha256") != current_hashes:
         raise ValueError("Stale measurement harness")
-    imported = measurement.get("imported_source_sha256", {})
+    imported = dict(measurement.get("imported_source_sha256", {}))
     if not imported:
         raise ValueError("Missing imported source provenance")
+    if measurement.get("fixture") == "cpu_forecast_pool" and measurement["status"] == "passed":
+        children = measurement.get("worker_sources", [])
+        calls = measurement.get("pool_calls", [])
+        if (not calls or len(children) != calls[0]["configured_worker_count"]
+                or {child["pid"] for child in children} != set(calls[0]["startup_worker_pids"])):
+            raise ValueError("Missing process-pool child source provenance")
+        for child in children:
+            if child["source_root"] != measurement["source_root"] or not child["imported_source_sha256"]:
+                raise ValueError("Invalid process-pool child source root")
+            for path, digest in child["imported_source_sha256"].items():
+                if path in imported and imported[path] != digest:
+                    raise ValueError("Process-pool source contamination")
+                imported[path] = digest
     if arm == "before":
         if Path(measurement["source_root"]).resolve() != BASELINE_ROOT.resolve():
             raise ValueError("Baseline source root mismatch")
@@ -168,6 +199,9 @@ def regression_reasons(before, after):
         reasons.append("warm_time_over_20_percent")
     if after["device_peak_bytes"] > 2 * before["device_peak_bytes"]:
         reasons.append("device_peak_over_2x")
+    if ("pool_rss_peak_sum_bytes" in before and "pool_rss_peak_sum_bytes" in after
+            and after["pool_rss_peak_sum_bytes"] - before["pool_rss_peak_sum_bytes"] > 256 * 2**20):
+        reasons.append("pool_rss_peak_sum_over_256_MiB")
     if after["host_peak_bytes"] - before["host_peak_bytes"] > 256 * 2**20:
         reasons.append("host_peak_over_256_MiB")
     if after["late_device_growth_bytes"] > 0:
@@ -235,7 +269,7 @@ def main():
     result = {"schema": "filter_repair_comparison.v2", "pairs": [], "missing": [],
               "failures": [], "investigations": [], "excluded": excluded, "aggregates": [], "passed": False}
     for name in FIXTURES:
-        device = "CPU" if name == "cpu_pool" else "GPU"
+        device = measurement_device(name)
         for size in ((1,) if name in ONE_SIZE else (1, 2)):
             for jit in measurement_modes(name):
                 for repeat in range(3):

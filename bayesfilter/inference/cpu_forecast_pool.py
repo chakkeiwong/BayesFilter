@@ -8,13 +8,12 @@ import importlib
 import multiprocessing
 import os
 import resource
+import sys
 import threading
 import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any, Mapping
-
-import numpy as np
-
 
 _WORKER_FORECAST: Any | None = None
 _WORKER_METADATA: Mapping[str, Any] | None = None
@@ -37,8 +36,47 @@ def _worker_environment(cores: int) -> dict[str, str]:
     }
 
 
-def _array_hash(value: np.ndarray) -> str:
-    return hashlib.sha256(np.ascontiguousarray(value).tobytes()).hexdigest()
+def _array_hash(value: Any) -> str:
+    from bayesfilter.ops.host_tensor_io import canonical_numeric_bytes
+
+    return hashlib.sha256(canonical_numeric_bytes(value, byteorder=sys.byteorder)[1]).hexdigest()
+
+
+def _serialize_tensor(value: Any) -> bytes:
+    import tensorflow as tf
+
+    return bytes(tf.io.serialize_tensor(value).numpy())
+
+
+def _scalar_shard_evaluator(method):
+    """Preserve tensor-compatible scalar factories with a compiled row loop.
+
+    External forecast generation is not NeuTra training. A factory with host
+    numerical callbacks fails tracing; there is no Python execution fallback.
+    """
+    import tensorflow as tf
+
+    programs = OrderedDict()
+
+    def at_row(pair):
+        mean, variance, observation = method(pair[0], pair[1])
+        return tf.cast(mean, tf.float64), tf.cast(variance, tf.float64), tf.cast(observation, tf.float64)
+
+    def evaluate(rows, seeds):
+        count = int(rows.shape[0])
+        if count not in programs:
+            programs[count] = tf.function(lambda values, roots: tf.map_fn(
+                at_row, (values, roots),
+                fn_output_signature=(tf.TensorSpec([2, 10], tf.float64),
+                    tf.TensorSpec([2, 10], tf.float64), tf.TensorSpec([2, 10], tf.float64)),
+                parallel_iterations=1), input_signature=[tf.TensorSpec([count, 4], tf.float64),
+                    tf.TensorSpec([count, 2], tf.int32)], jit_compile=True, autograph=False)
+            if len(programs) > 16:
+                programs.popitem(last=False)
+        programs.move_to_end(count)
+        return programs[count](rows, seeds)
+
+    return evaluate
 
 
 def _worker_init(
@@ -73,13 +111,17 @@ def _worker_init(
     if not callable(method):
         raise RuntimeError("forecast worker factory must expose evaluate")
     global _WORKER_FORECAST, _WORKER_METADATA, _WORKER_BARRIER
-    _WORKER_FORECAST = method
+    batch_method = getattr(worker, "evaluate_batch", None)
+    _WORKER_FORECAST = batch_method if callable(batch_method) else _scalar_shard_evaluator(method)
     _WORKER_METADATA = {
         "pid": int(os.getpid()),
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
         "tensorflow_gpu_devices": [],
         "jit_compile": True,
-        "backend": "scalar_q_general_principal_root_forecast_xla",
+        "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+        "sample_wise_python_loop": False,
+        "sample_wise_tensor_mapping": True,
+        "neutra_training_eligible": False,
     }
     _WORKER_BARRIER = startup_barrier
 
@@ -102,20 +144,10 @@ def _worker_eval(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         raise RuntimeError("CPU forecast worker is not initialized")
     import tensorflow as tf
 
-    rows = np.asarray(payload["rows"], dtype=np.float64)
-    seeds = np.asarray(payload["seeds"], dtype=np.int32)
+    rows = tf.io.parse_tensor(payload["rows"], out_type=tf.float64)
+    seeds = tf.io.parse_tensor(payload["seeds"], out_type=tf.int32)
     started = time.perf_counter()
-    means = []
-    variances = []
-    observations = []
-    for row, seed in zip(rows, seeds, strict=True):
-        mean, variance, observation = _WORKER_FORECAST(
-            tf.convert_to_tensor(row, tf.float64),
-            tf.convert_to_tensor(seed, tf.int32),
-        )
-        means.append(np.asarray(mean.numpy(), dtype=np.float64))
-        variances.append(np.asarray(variance.numpy(), dtype=np.float64))
-        observations.append(np.asarray(observation.numpy(), dtype=np.float64))
+    means, variances, observations = _WORKER_FORECAST(rows, seeds)
     return {
         "worker_index": int(payload["worker_index"]),
         "item_start": int(payload["item_start"]),
@@ -125,9 +157,9 @@ def _worker_eval(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         "seeds_hash": str(payload["seeds_hash"]),
         "shard_rows_hash": _array_hash(rows),
         "shard_seeds_hash": _array_hash(seeds),
-        "conditional_means": np.asarray(means, dtype=np.float64),
-        "conditional_variances": np.asarray(variances, dtype=np.float64),
-        "observations": np.asarray(observations, dtype=np.float64),
+        "conditional_means": _serialize_tensor(means),
+        "conditional_variances": _serialize_tensor(variances),
+        "observations": _serialize_tensor(observations),
         "runtime_seconds": float(time.perf_counter() - started),
         "ru_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024),
         "worker_metadata": dict(_WORKER_METADATA),
@@ -152,7 +184,7 @@ class CPUForecastPoolConfig:
 
 
 class CPUForecastPool:
-    """Persistent ordered scalar forecast pool."""
+    """Persistent ordered CPU forecast shards with TensorFlow tensor outputs."""
 
     def __init__(self, config: CPUForecastPoolConfig) -> None:
         self.config = config
@@ -173,16 +205,21 @@ class CPUForecastPool:
         seeds: Any,
         *,
         request_id: str,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, Mapping[str, Any]]:
+    ) -> tuple[Any, Any, Any, Mapping[str, Any]]:
+        import tensorflow as tf
+
+        from bayesfilter.ops.host_tensor_io import numeric_tensor
+
         if not self._opened:
             raise RuntimeError("CPU forecast pool must be opened as a context manager")
-        matrix = np.asarray(rows, dtype=np.float64)
-        seed_matrix = np.asarray(seeds, dtype=np.int32)
-        if matrix.ndim != 2 or matrix.shape[1] != 4:
+        with tf.device("/CPU:0"):
+            matrix = numeric_tensor(rows, tf.float64)
+            seed_matrix = numeric_tensor(seeds, tf.int32)
+        if matrix.shape.rank != 2 or matrix.shape[1] != 4:
             raise ValueError("forecast rows must have shape [batch,4]")
         if seed_matrix.shape != (matrix.shape[0], 2):
             raise ValueError("forecast seeds must have shape [batch,2]")
-        if matrix.shape[0] == 0 or not np.all(np.isfinite(matrix)):
+        if matrix.shape[0] == 0 or not bool(tf.reduce_all(tf.math.is_finite(matrix))):
             raise ValueError("forecast rows must be nonempty and finite")
         request = str(request_id)
         if not request:
@@ -250,8 +287,8 @@ class CPUForecastPool:
                             "request_id": request,
                             "rows_hash": rows_hash,
                             "seeds_hash": seeds_hash,
-                            "rows": matrix[start:stop],
-                            "seeds": seed_matrix[start:stop],
+                            "rows": _serialize_tensor(matrix[start:stop]),
+                            "seeds": _serialize_tensor(seed_matrix[start:stop]),
                         },
                     )
                 )
@@ -283,19 +320,17 @@ class CPUForecastPool:
             expected_start = stop
         if expected_start != matrix.shape[0]:
             raise RuntimeError("forecast worker coverage is incomplete")
-        means = np.concatenate([row["conditional_means"] for row in results], axis=0)
-        variances = np.concatenate(
-            [row["conditional_variances"] for row in results], axis=0
-        )
-        observations = np.concatenate([row["observations"] for row in results], axis=0)
+        means = tf.concat([tf.io.parse_tensor(row["conditional_means"], tf.float64) for row in results], axis=0)
+        variances = tf.concat([tf.io.parse_tensor(row["conditional_variances"], tf.float64) for row in results], axis=0)
+        observations = tf.concat([tf.io.parse_tensor(row["observations"], tf.float64) for row in results], axis=0)
         expected_shape = (matrix.shape[0], 2, 10)
         if means.shape != expected_shape or variances.shape != expected_shape:
             raise RuntimeError("forecast worker conditional-moment shape mismatch")
         if observations.shape != expected_shape:
             raise RuntimeError("forecast worker observation shape mismatch")
-        if not all(np.all(np.isfinite(row)) for row in (means, variances, observations)):
+        if not bool(tf.reduce_all(tf.math.is_finite(tf.stack((means, variances, observations))))):
             raise FloatingPointError("forecast worker returned nonfinite output")
-        if not np.all(variances > 0.0):
+        if not bool(tf.reduce_all(variances > 0.0)):
             raise FloatingPointError("forecast worker returned nonpositive variance")
         if self._startup_metadata is None:
             raise RuntimeError("forecast startup metadata is unavailable")

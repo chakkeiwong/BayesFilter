@@ -2912,3 +2912,58 @@ a cache. GPU qualification remains pending during unrelated device use.
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
 |---|---|---|---|---|---|
 | Retain shared basis/mass graphs as a branch checkpoint | 29 focused, 37 fitter, 38 density, 25 transport, six public pullback, 11 sequential and 59 policy checks pass | 5.33 GiB host peak, GPU qualification and terminal comparison remain open | Remaining compiled graph/cache costs and unreviewed callbacks | Checkpoint and repair the CPU forecast pool; reserve terminal repeats for frozen source | Full repair, memory acceptance or merge readiness |
+
+Checkpoint `b7cfbb14` is committed and pushed. The first CPU forecast-shard
+attempt 01096 passes all XLA/parity/replay/status/serialization cases but fails
+four explicit graph-diagnostic checks: the outer graph still captures the
+worker's XLA-enabled UKF target. Prepare the corresponding non-JIT target only
+for the explicitly requested graph diagnostic; default shard execution stays
+XLA. No numerical formula, random stream or tolerance is changed. The pool
+keeps compatible scalar factories through native compiled mapping, avoiding a
+factory-protocol break; no Python execution fallback is permitted.
+
+Run 01097 passes 12 cases and fails two q=2 graph cases. The fixture compares
+the candidate with JIT disabled against the old worker's JIT-enabled scalar
+program, violating the campaign's same-mode contract. The principal-root
+filter's graph/XLA rounding differs by roughly 1e-9 in the observed forecast.
+Build the pinned scalar program in the same explicit graph mode for that arm,
+with identical target identity, inputs and seeds. Retain the unchanged 1e-10
+before/after criterion. Default XLA cases already pass; this does not establish
+bit equality or numerical equivalence between graph and XLA modes.
+# Forecast pool source-isolation repair after 01115
+
+The first complete pool comparison failed before producing usable outputs:
+spawn re-imported the common diagnostic helper, which prepended the candidate
+checkout. Baseline parent IPC then reached a candidate child decoder. Run
+01115 is contaminated harness evidence and is excluded. The dedicated worker
+now restores the selected source before initializer unpickling, and every child
+reports its actual imported-source hashes after timing under a two-worker
+barrier. The comparator requires both worker records and checks them against
+the frozen baseline or launched candidate manifest. Targets, rows, seeds,
+algorithms, tolerances, hardware and budgets remain unchanged.
+
+Runs 01100--01125 complete focused GPU basis qualification (29 passed), final
+CPU shard checks (15 passed), and expanded policy/controller checks (61 passed).
+The 174-source static guard has 1,144 exact exceptions and remains partial.
+Shard graph/XLA/public measurements retain exact seeded streams; graph output
+differences are at most 6.107e-16, and XLA/public outputs match exactly.
+
+After the 01115 source-isolation failure and repair, final pool runs
+01122--01125 match outputs exactly and verify both child source closures.
+The two/five-row public warm medians are 13.929/37.603 ms before and
+4.703/8.459 ms after. Complete final process RSS peak sums increase by
+186.965/279.852 MiB. Every child has one trace per realized shard signature;
+both two-/three-row signatures appear in each worker for uneven input.
+These single-process-pair observations are descriptive. The five-row memory
+increase crosses the 256 MiB repair trigger and remains open. The artifact
+`forecast-pool-memory-diagnostic-01125.json` records checksums and summaries.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Retain forecast execution repair | Exact public values/replay; complete shard HLO | No numerical veto; memory trigger remains | Signature/compiler overhead and repeat variability | Qualify remaining GPU groups, investigate memory, then final repeats | Complete repair, memory acceptance, training or posterior readiness |
+
+Post-run review: extra compiled programs are a plausible explanation of memory
+use, but two shard sizes and one fresh process per arm cannot isolate the cause.
+The final-memory probe samples every process before provenance hashing and does
+not equate sums of RSS maxima with simultaneous live memory. Earlier source-
+contaminated or stale-harness runs cannot support terminal comparisons.

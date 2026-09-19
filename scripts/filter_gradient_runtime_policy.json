@@ -310,7 +310,8 @@
     "bayesfilter/highdim/stochastic_training_native_tf.py": null,
     "bayesfilter/ops/compiled_tensor_program_tf.py": null,
     "bayesfilter/highdim/ttsirt_coordinate_tf.py": null,
-    "bayesfilter/highdim/source_route_gate_runtime_tf.py": null
+    "bayesfilter/highdim/source_route_gate_runtime_tf.py": null,
+    "bayesfilter/inference/cpu_forecast_pool.py": null
   },
   "exceptions": [
     {
@@ -10589,6 +10590,174 @@
       "ast_sha256": "1d5125a386519229b41ce77922e182a8ad2c39d9bdf69d6cbc85cbccf87e2254",
       "role": "fixed_schema",
       "reason": "Check immutable core/basis width agreement; invalid schemas retain original rejection behavior."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "_worker_init",
+      "kind": "python_iteration",
+      "ast_sha256": "999ad4943546ae4a711569b5b2fb1eb0a824b34e65922f9a73ce82181d8139b1",
+      "role": "host_validation",
+      "reason": "Verify inherited CPU-only environment before worker initialization."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "954d45859adbb56999ddcbf7119f79162555b71ed9bf2cc9b42979a8d879af24",
+      "role": "fixed_schema",
+      "reason": "Snapshot environment keys for spawned-process orchestration."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "183966a798bb64b79bc4fa4e9f62ab1fb0bc952a759af9839d1d2bcff309a7c4",
+      "role": "fixed_schema",
+      "reason": "Launch one readiness task per configured process; no forecast evaluation."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "482940bb31e70d744a9b51132e97d148c7a81b9d84ca8af7a9f644d7d44fba2c",
+      "role": "fixed_schema",
+      "reason": "Await process startup barriers; no numerical row iteration."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "591163af55b16adf60bce8beecec05e5b50d12fb51910067469fc96300002a9b",
+      "role": "host_reporting",
+      "reason": "Collect completed startup RSS by process identifier."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "73004b16a3faa69f84d82afb74cf7aa249311d02bfe4c2c08f844cc47777361d",
+      "role": "host_reporting",
+      "reason": "Serialize startup process/RSS metadata."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "820e521e271932cc578a173026a877b3a20c8983c8fc3a1ea48e87b071544a9e",
+      "role": "fixed_schema",
+      "reason": "Submit serialized contiguous shards to independent processes; each shard has one compiled numerical call."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "d764e1ecdce506507aa9971ad1c180a67aba133f246a5756201cf1888ed10084",
+      "role": "fixed_schema",
+      "reason": "Restore parent environment after process startup/submission."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "d7b0007a1b3fbe475ce41c56a090dd634d58edc7e843a9123b41bd2204e736a7",
+      "role": "fixed_schema",
+      "reason": "Await completed process shard responses."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "3f986f2c842c131c28b94c3d54fba7d2a915d883e63eef7e8fb636c5ebfee722",
+      "role": "host_validation",
+      "reason": "Validate completed shard coverage and identity hashes; no forecast calculation."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "51574384808c10ea2b92c57223c42c0d4706008812826c560c9283d47d7050d2",
+      "role": "fixed_schema",
+      "reason": "Deserialize one completed mean tensor per process for ordered concatenation."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "695f462355cf147fd7a99a9bc54c741c24520f0ef89198b1066e86594b5e5369",
+      "role": "fixed_schema",
+      "reason": "Deserialize one completed variance tensor per process for ordered concatenation."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "b75ae3c1f79d3179454edce62de864d1b4fef2280577647c78cf85fb8d44e7a2",
+      "role": "fixed_schema",
+      "reason": "Deserialize one completed observation tensor per process for ordered concatenation."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "1893fb05d50dcdf49a6056f54216ae137fde2130f91a2dcffbc624e6c3b0a1bd",
+      "role": "host_reporting",
+      "reason": "Read previously recorded startup RSS metadata."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "ca1fa16e2c003e631927efed68afb4e5405ec2499dd68c62f742f7a422020494",
+      "role": "host_reporting",
+      "reason": "Collect completed worker RSS metadata by process identifier."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "ab34d7abb87ae92093c722814f181d412928f750b190d99f3d739376cdb09b04",
+      "role": "host_reporting",
+      "reason": "Report the sum of process RSS high-water values, not numerical algorithm state."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "d9d8d468774ca882de4a4dcf8ddbefde8b1056489a887dcfd1c8e3e8758f18ea",
+      "role": "host_reporting",
+      "reason": "Report distinct completed worker process identifiers."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "f7220cd2be428f454791dcde79593529a84f19759caea8c73b3ff66c164792a8",
+      "role": "host_reporting",
+      "reason": "Copy completed worker provenance records."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "51c5bf22e07bbd1ace8215bc05993240d125d38a1167ff5c3832ebd111540737",
+      "role": "host_reporting",
+      "reason": "Report completed process wall times."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "b75ba9075f4b6bb216f673879ba986a03796c8cc421b9db60cf6ef414ebc6935",
+      "role": "host_reporting",
+      "reason": "Summarize maximum completed process wall time."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_forecast_pool.py",
+      "function": "CPUForecastPool.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "8ed681ac4a7651d7a97db5f6dbde13e005b5de9581e8a48ae9135b94b784374a",
+      "role": "host_reporting",
+      "reason": "Report summed completed-process RSS high water."
     }
   ]
 }
