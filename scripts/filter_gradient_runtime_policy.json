@@ -56,7 +56,11 @@
       "source_route_preconditioned_target_identity_error",
       "tfp_normal_quantile",
       "_finite_vector",
-      "_finite_same_shape_vectors"
+      "_finite_same_shape_vectors",
+      "p72_support_clipping_coverage",
+      "p72_line_probe_diagnostics",
+      "p72_condition_effective_rank_gate",
+      "p72_full_normalizer_gate"
     ],
     "bayesfilter/highdim/source_route_numerics_tf.py": null,
     "bayesfilter/highdim/source_route_runtime_tf.py": null,
@@ -305,7 +309,8 @@
     "bayesfilter/highdim/stochastic_density_training.py": null,
     "bayesfilter/highdim/stochastic_training_native_tf.py": null,
     "bayesfilter/ops/compiled_tensor_program_tf.py": null,
-    "bayesfilter/highdim/ttsirt_coordinate_tf.py": null
+    "bayesfilter/highdim/ttsirt_coordinate_tf.py": null,
+    "bayesfilter/highdim/source_route_gate_runtime_tf.py": null
   },
   "exceptions": [
     {
@@ -10434,15 +10439,6 @@
       "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
     },
     {
-      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
-      "function": "coordinate_program.evaluate",
-      "line": 112,
-      "kind": "python_iteration",
-      "ast_sha256": "cef3dc81fc16f5f043e61a65e9f9a6e3edee70f83205f2ef957934f97a2ab0a6",
-      "role": "fixed_schema",
-      "reason": "Fixed heterogeneous core dimensions, TensorSpecs, coefficient tuple/domain-bound packing or callable basis/domain alternatives. Masked contractions, coordinate updates, volume products and bisection execute only in tensor control flow."
-    },
-    {
       "path": "bayesfilter/highdim/fixed_tt_native_fit_tf.py",
       "function": "NativeFixedTTFit._branches",
       "kind": "python_iteration",
@@ -10473,6 +10469,46 @@
       "ast_sha256": "e54d7eed4d78753289f04777e49e547258d52895242a883e0e3ea6fadc896d8e",
       "role": "fixed_schema",
       "reason": "Bind the fixed switch-case callback tuple; runtime coordinate selection and updates execute in the enclosing XLA recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "p72_condition_effective_rank_gate",
+      "kind": "python_iteration",
+      "ast_sha256": "7a73cec370094ff79223a3fd1a16336c80228c14660db9a314bd62d79bf73cc8",
+      "role": "fixed_schema",
+      "reason": "Parse the heterogeneous recorded spectrum fields into the fixed tensor input tuple; no spectrum reduction is performed here."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "p72_condition_effective_rank_gate",
+      "kind": "python_iteration",
+      "ast_sha256": "652fd581ec0d431ace65b920f79031b0fcb0ac55c4a67b6569a3b93e27d34b7d",
+      "role": "fixed_schema",
+      "reason": "Read immutable spectrum shapes to bind the compiled native-loop signature."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route.py",
+      "function": "p72_condition_effective_rank_gate",
+      "kind": "python_iteration",
+      "ast_sha256": "09ce6bb92fd97bd534bc800b9c0638e81093f23393cdfcbe60eba2216fc3733b",
+      "role": "host_validation",
+      "reason": "Validate materialized scalar solver records and compiled spectrum results, retaining reason order; no tensor numerical iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_gate_runtime_tf.py",
+      "function": "spectrum_rank_program",
+      "kind": "python_iteration",
+      "ast_sha256": "be018b0e5f105d8d98e9d2ec84b10336537fc32d2c10e5e5c8ce1e437f9f1689",
+      "role": "fixed_schema",
+      "reason": "Declare input tensor signatures for heterogeneous recorded spectra."
+    },
+    {
+      "path": "bayesfilter/highdim/source_route_gate_runtime_tf.py",
+      "function": "spectrum_rank_program.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "48a5ae47dd3517e9ba52fb670dc05024d15bc8e9d50b5aee75159c5929262efa",
+      "role": "fixed_schema",
+      "reason": "Construct branch callables for the fixed spectrum schema; the TensorFlow while loop executes every numerical reduction."
     }
   ]
 }

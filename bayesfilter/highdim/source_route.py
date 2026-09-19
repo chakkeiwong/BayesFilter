@@ -36,6 +36,12 @@ from bayesfilter.highdim.fitting import (
 )
 from bayesfilter.highdim.fixed_branch import BranchIdentity, BranchManifest
 from bayesfilter.highdim.models import zhao_cui_sir_austria_model
+from bayesfilter.highdim.source_route_gate_runtime_tf import (
+    finite_tensor,
+    line_probe_program,
+    spectrum_rank_program,
+    support_statistics,
+)
 from bayesfilter.highdim.source_route_preparation_runtime_tf import (
     coordinate_transform_program,
     deterministic_weighted_resample_program,
@@ -4517,7 +4523,7 @@ def p72_support_clipping_coverage(
         fit = tf.convert_to_tensor(fit_points, dtype=tf.float64)
         fit_hash = (
             _p69_hash_tensor("p72_support_fit_points_hash.v1", fit)
-            if bool(tf.reduce_all(tf.math.is_finite(fit)).numpy())
+            if bool(finite_tensor(fit).numpy())
             else None
         )
         return {
@@ -4535,10 +4541,13 @@ def p72_support_clipping_coverage(
         raise ValueError(f"{role}_support: {HighDimStatus.INVALID_SHAPE.value}")
     point_count = int(local.shape[1])
     fit_count = int(fit.shape[1])
-    fit_is_finite = bool(tf.reduce_all(tf.math.is_finite(fit)).numpy())
+    (local_finite, fit_finite, distances_available, nearest_min_value,
+     nearest_median_value, nearest_max_value, fit_loo_max_value,
+     saturated_fraction) = support_statistics(local, fit)
+    fit_is_finite = bool(fit_finite.numpy())
     if point_count <= 0 or fit_count <= 0:
         reasons.append("empty_cloud")
-    local_is_finite = bool(tf.reduce_all(tf.math.is_finite(local)).numpy())
+    local_is_finite = bool(local_finite.numpy())
     if not local_is_finite:
         reasons.append("nonfinite_cloud")
     if not fit_is_finite:
@@ -4554,21 +4563,9 @@ def p72_support_clipping_coverage(
             warnings.append("positive_clip_fraction")
     if max_abs is not None and (not math.isfinite(max_abs)):
         reasons.append("nonfinite_local_max_abs_before_clip")
-    if point_count > 0 and fit_count > 0 and local_is_finite and fit_is_finite:
-        distances = tf.norm(local[:, :, tf.newaxis] - fit[:, tf.newaxis, :], axis=0)
-        nearest = tf.reduce_min(distances, axis=1)
-        fit_pairwise = tf.norm(fit[:, :, tf.newaxis] - fit[:, tf.newaxis, :], axis=0)
-        large = tf.constant(1e300, dtype=tf.float64)
-        fit_leave_one_out = (
-            tf.reduce_min(fit_pairwise + tf.eye(fit_count, dtype=tf.float64) * large, axis=1)
-            if fit_count > 1
-            else tf.zeros([fit_count], dtype=tf.float64)
-        )
-    else:
-        nearest = tf.constant([], dtype=tf.float64)
-        fit_leave_one_out = tf.constant([], dtype=tf.float64)
-    nearest_max = None if int(nearest.shape[0]) <= 0 else float(tf.reduce_max(nearest).numpy())
-    fit_loo_max = None if int(fit_leave_one_out.shape[0]) <= 0 else float(tf.reduce_max(fit_leave_one_out).numpy())
+    available = bool(distances_available.numpy())
+    nearest_max = float(nearest_max_value.numpy()) if available else None
+    fit_loo_max = float(fit_loo_max_value.numpy()) if available else None
     if nearest_max is not None and fit_loo_max is not None and fit_loo_max > 0.0:
         if nearest_max > 10.0 * fit_loo_max:
             warnings.append("cloud_far_from_fit_support")
@@ -4590,19 +4587,15 @@ def p72_support_clipping_coverage(
             if fit_is_finite
             else None
         ),
-        "nearest_fit_distance_min": None if int(nearest.shape[0]) <= 0 else float(tf.reduce_min(nearest).numpy()),
-        "nearest_fit_distance_median": None if int(nearest.shape[0]) <= 0 else _p60_tensor_median_float(nearest),
+        "nearest_fit_distance_min": float(nearest_min_value.numpy()) if available else None,
+        "nearest_fit_distance_median": float(nearest_median_value.numpy()) if available else None,
         "nearest_fit_distance_max": nearest_max,
         "fit_leave_one_out_distance_max": fit_loo_max,
         "clip_fraction": clipped,
         "point_any_saturated_fraction": (
             None
             if point_count <= 0
-            else float(
-                tf.reduce_mean(
-                    tf.cast(tf.reduce_any(tf.abs(local) >= 1.0, axis=0), tf.float64)
-                ).numpy()
-            )
+            else float(saturated_fraction.numpy())
         ),
         "local_max_abs_before_clip": max_abs,
         "effective_support_role": "finite_cloud_diagnostic_not_continuum_support",
@@ -4666,15 +4659,30 @@ def p72_line_probe_diagnostics(
     targets = tf.convert_to_tensor(line_target_values, dtype=tf.float64)
     if points.shape.rank != 2 or targets.shape != (int(points.shape[1]),):
         raise ValueError(f"line_probe: {HighDimStatus.INVALID_SHAPE.value}")
-    predictions = tf.convert_to_tensor(fitted_tt.evaluate(tf.transpose(points)), dtype=tf.float64)
-    if predictions.shape != targets.shape:
-        raise ValueError(f"line_probe_prediction: {HighDimStatus.INVALID_SHAPE.value}")
-    residual = tf.abs(predictions - targets)
     scale = max(float(target_scale), 1e-300)
+    starts = tf.constant([], tf.float64)
+    indices = tf.constant([], tf.int32)
+    endpoint_mode = "none"
+    if start_prediction_values is not None:
+        starts = tf.convert_to_tensor(start_prediction_values, dtype=tf.float64)
+        if starts.shape.rank != 1 or starts.shape[0] is None or int(starts.shape[0]) <= 0:
+            raise ValueError(f"line_start_predictions: {HighDimStatus.INVALID_SHAPE.value}")
+        endpoint_mode = "maximum"
+        if line_start_indices is not None:
+            indices = tf.convert_to_tensor(line_start_indices, dtype=tf.int32)
+            if indices.shape.num_elements() != int(points.shape[1]):
+                raise ValueError(f"line_start_indices: {HighDimStatus.INVALID_SHAPE.value}")
+            endpoint_mode = "indices"
+    program = line_probe_program(fitted_tt, tuple(points.shape), tuple(starts.shape),
+                                 tuple(indices.shape), endpoint_mode)
+    (predictions, maximum, maximum_residual, rms, growth,
+     valid_indices) = program(points, targets, starts, indices, tf.constant(scale, tf.float64))
+    # XLA gathers can clamp invalid indices; preserve rejection at the host.
+    tf.debugging.assert_equal(valid_indices, True, message="line_start_indices out of range")
     reasons: list[str] = []
-    max_abs = float(tf.reduce_max(tf.abs(predictions)).numpy())
-    max_residual = float(tf.reduce_max(residual).numpy())
-    rms_residual = float(tf.sqrt(tf.reduce_mean(tf.square(residual))).numpy())
+    max_abs = float(maximum.numpy())
+    max_residual = float(maximum_residual.numpy())
+    rms_residual = float(rms.numpy())
     if not math.isfinite(max_abs) or not math.isfinite(max_residual) or not math.isfinite(rms_residual):
         reasons.append("line_nonfinite")
     if max_abs > P72_LINE_GROWTH_REL_VETO * scale:
@@ -4684,22 +4692,9 @@ def p72_line_probe_diagnostics(
     if rms_residual > P72_RESIDUAL_RMS_REL_VETO * scale:
         reasons.append("line_rms_residual_veto")
     growth_ratio = None
-    line_start_indices_available = False
+    line_start_indices_available = endpoint_mode == "indices"
     if start_prediction_values is not None:
-        starts = tf.convert_to_tensor(start_prediction_values, dtype=tf.float64)
-        if starts.shape.rank != 1 or starts.shape[0] is None or int(starts.shape[0]) <= 0:
-            raise ValueError(f"line_start_predictions: {HighDimStatus.INVALID_SHAPE.value}")
-        start_scale = tf.maximum(tf.abs(starts), tf.constant(scale, dtype=tf.float64))
-        if line_start_indices is None:
-            denominators = tf.ones_like(predictions) * tf.reduce_max(start_scale)
-        else:
-            indices = tf.reshape(tf.convert_to_tensor(line_start_indices, dtype=tf.int32), [-1])
-            if int(indices.shape[0]) != int(points.shape[1]):
-                raise ValueError(f"line_start_indices: {HighDimStatus.INVALID_SHAPE.value}")
-            denominators = tf.gather(start_scale, indices)
-            line_start_indices_available = True
-        ratios = tf.abs(predictions) / denominators
-        growth_ratio = float(tf.reduce_max(ratios).numpy())
+        growth_ratio = float(growth.numpy())
         if not math.isfinite(growth_ratio) or growth_ratio > P72_LINE_GROWTH_REL_VETO:
             reasons.append("line_endpoint_growth_veto")
     return {
@@ -4796,6 +4791,11 @@ def p72_condition_effective_rank_gate(
     reasons: list[str] = []
     condition_values: list[float] = []
     effective_ranks: list[float] = []
+    spectra = tuple(tf.convert_to_tensor(record["scaled_augmented_singular_values"], tf.float64)
+                    for record in records if record.get("scaled_augmented_singular_values") is not None)
+    ranks, available = spectrum_rank_program(tuple(tuple(value.shape) for value in spectra))(
+        spectra, tf.constant(P72_EFFECTIVE_RANK_TOL, tf.float64))
+    recorded_ranks = iter(zip(ranks.numpy().tolist(), available.numpy().tolist(), strict=True))
     for record in records:
         condition_raw = record.get(
             "scaled_augmented_condition_number",
@@ -4808,15 +4808,10 @@ def p72_condition_effective_rank_gate(
                 reasons.append("p72_condition_admission_veto")
         singular_values = record.get("scaled_augmented_singular_values")
         if singular_values is not None:
-            values = tf.reshape(tf.convert_to_tensor(singular_values, dtype=tf.float64), [-1])
-            if int(values.shape[0]) == 0 or not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
+            rank_value, rank_available = next(recorded_ranks)
+            if not rank_available:
                 reasons.append("p72_effective_rank_unavailable")
                 continue
-            max_sv = tf.reduce_max(values)
-            active = tf.reduce_sum(
-                tf.cast(values > P72_EFFECTIVE_RANK_TOL * max_sv, tf.float64)
-            )
-            rank_value = float(active.numpy())
             effective_ranks.append(rank_value)
             if rank_value < P72_EFFECTIVE_RANK_MIN:
                 reasons.append("p72_effective_rank_veto")

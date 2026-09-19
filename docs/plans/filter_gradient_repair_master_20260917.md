@@ -4,15 +4,15 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `de363b43` is committed and pushed;
-the tested rank-one fitter graph repair is the current checkpoint candidate.
+September 19 refresh: source checkpoint `db3959ac` is committed and pushed,
+including the tested rank-one fitter graph repair.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01067, charges are 14,543.687 GPU / 28,873.544 CPU seconds;
-remaining allowances are 172,656.313 GPU / 86,326.456 CPU seconds. The earlier
+charge. Through run 01077, charges are 14,543.687 GPU / 29,222.518 CPU seconds;
+remaining allowances are 172,656.313 GPU / 85,977.482 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 172 sources with 1,109 exact
+The repair is incomplete. The static guard covers 173 sources with 1,113 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
@@ -28,6 +28,17 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    observations remain repair diagnostics, not terminal performance evidence.
    The later stack localizes further graph construction in sequential
    transport callbacks; inspect their repeated coordinate-program construction.
+   The first safe reduction is the reference grid: the owned `_axis_grid`
+   implementation explicitly ignores its axis and uses the common [-1, 1]
+   interval/configuration. Replace identical Case arms with that one grid;
+   check existing transport values/pullbacks and graph growth before repeating
+   the large diagnostic. Portable cache reuse remains a separate investigation
+   because captured coefficients and graph context must retain their semantics.
+   Recovery confirms all nine coordinate checks pass in 01069 after removing
+   duplicate grid branches; the exact stale allowlist entry is removed and the
+   guard passes. The matched assembly 01070 passes in 188.360 seconds at
+   9,743,236 KiB peak host RSS. This modest descriptive change leaves the
+   memory investigation open; avoid another broad retry without a new repair.
    Deferred fitter pullbacks pass six GPU checks (01042); the
    coordinate repair passes nine CPU/GPU checks (01041/01043). Affected public
    pullback, sequential and transport suites pass 6/11/25 CPU checks
@@ -40,7 +51,12 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    Ten additional preparation wrappers are now in the static guard.
    P72 fit/guard preparation passes 30 CPU checks (01057); separate compiled
    interpolation and exact duplicate decisions preserve realized-value order.
-   GPU qualification is pending. Finish its review and checkpoint first.
+   GPU qualification is pending; its reviewed checkpoint is `de363b43`.
+   The additional support/line/spectrum gate repair passes all 81 CPU checks
+   (01072), with 59 policy/controller checks in 01077. Its new measurement
+   fixture passes CPU graph, XLA and both public source arms (01073--01076),
+   with all 11 numerical summaries matching the original exactly. These are
+   small diagnostic measurements; GPU and terminal repeats remain pending.
 3. Resolve the predator-prey residual (~1.578e-9 versus the unchanged 1e-10
    gate), core-affine/higher-rank slowdown, centered qualification, and host
    memory regression. Lazy pullbacks reduced measured host memory, but the
@@ -83,6 +99,38 @@ growth before a single assembly retry. Existing numerical gates and the
 repair; terminal admission still needs current-source GPU checks and matched
 three-process complete endpoint comparisons. No caches may be cleared only
 for one measurement arm, and no timing or memory improvement excuses drift.
+
+### Remaining P72 numerical gate boundary repair
+
+Consumer inspection confirms `scripts/p73_density_aware_renewal_diagnostic.py`
+uses `p72_line_probe_diagnostics` to select fitting data (lines 429--463).
+Compile the complete line prediction/reduction callback, finite-cloud support
+statistics, and heterogeneous singular-spectrum reductions. Keep scalar record
+validation, ordered reason assembly and hashes at the host boundary. The
+normalizer gate validates already materialized scalar fields and remains host
+validation; its numerical normalizers are computed by the existing compiled
+density path. No thresholds or fit-selection rule change.
+
+This is a mechanical repair of local extension/admission code, not a new
+source-faithfulness claim. Paper Algorithm 2/(15)--(16), lines 693--725, and
+author `models/full_sol.m:21--130` were re-inspected. Risks include nonfinite
+reduction behavior, empty clouds/spectra, strict threshold equality, index
+rejection, ordered reasons, and nested callback compilation. Compare complete
+public records against the frozen baseline, include these boundary cases,
+check enclosing HLO and stable signatures, then run the existing P72 suite.
+The same CPU/GPU qualification requirements, worker ceiling and cumulative
+budget apply. This work cannot close assembly memory, terminal comparison,
+scientific admission or the remaining preparation/callback audit.
+
+The registered `source_guard_gates` fixture includes every numeric summary
+from these three gates at 16/32 cloud points and four/eight recorded spectra.
+Graph/XLA arms measure complete numerical statistics; public eager arms measure
+both source versions including host provenance and record construction. Keep
+the scopes distinct. Legacy graph/XLA failures stay visible; do not synthesize
+baseline compiled timings. Public decisions, hashes, nonfinite rejections and
+threshold boundaries are checked by the paired correctness suite. Qualify one
+small CPU diagnostic before terminal three-process GPU repeats under the same
+20-warm-call measurement contract.
 
 ## Question and scope
 

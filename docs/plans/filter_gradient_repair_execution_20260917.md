@@ -2778,3 +2778,52 @@ checkpoint review keeps higher-rank source arithmetic and every numerical
 threshold unchanged; the only new allowlist entries describe fixed branch
 schemas/callback construction. Total charges are now 28,881.176 CPU and
 14,543.687 GPU seconds. No terminal finding is closed by this checkpoint.
+
+Recovery after `db3959ac` finds 01069 completed successfully: nine coordinate
+checks pass in 94.954 CPU process-seconds. Replacing identical reference-grid
+Case arms preserves the owned axis-independent grid, pinned transport values,
+complete pullbacks and bounded graph growth. The stale exact exception is
+removed; the guard passes 172 sources / 1,108 exceptions. Recovery review
+confirms cumulative caps of 52 GPU / 32 CPU hours, with 28,976.130 CPU and
+14,543.687 GPU seconds charged. Both approved GPUs remain occupied. Run one
+matched assembly diagnostic before any further coordinate-cache change;
+its single-process memory/timing remains descriptive and cannot close the
+terminal comparison gate.
+
+Assembly 01070 passes in 188.360 CPU process-seconds at 9,743,236 KiB final
+RSS high water (9.292 GiB), versus 01067's 191.789 seconds / 9.479 GiB. This
+single descriptive change is small; the baseline memory gap remains open.
+
+Run 01071 passes 69 P72 checks and fails six new fixture expectations: the
+existing API raises while hashing nonfinite predictions instead of returning
+a diagnostic record. Preserve that behavior in both source arms; correct the
+fixture to require the same exception. Numerical gates and tolerances remain
+unchanged. Add nonfinite endpoint-scale cases, where the public record is
+available, to check compiled reduction behavior directly.
+
+Run 01072 passes all 81 P72 preparation/gate checks in 13.095 CPU seconds.
+The numerical boundary includes the fitted-TT callback and line reductions;
+support statistics and heterogeneous spectrum ranks also compile. Host scalar
+record validation, reason order, hash boundaries and original thresholds remain
+unchanged. The fixed-schema allowlist additions cover only tensor signatures,
+branch callables and materialized record validation. The source guard passes
+173 sources / 1,113 exact exceptions; this remains partial coverage.
+
+Runs 01073--01076 qualify the new `source_guard_gates` fixture on CPU. All 11
+numeric summaries match the original public source exactly on identical input
+hashes. Graph and XLA kernels each have 469 nodes and one trace, with no Python
+callbacks and no nested XLA in the graph arm. The XLA arm has enclosing HLO.
+Numerical graph/XLA warm medians are 1.325/0.744 ms; public before/after medians
+are 8.511/3.287 ms. Public candidate host peak is about 172 MiB above baseline.
+Scope distinctions, memory snapshots and manifest hashes are recorded in
+`source-gate-cpu-diagnostic-01076.json`. These are single-process descriptive
+CPU observations, not a terminal performance ranking or GPU qualification.
+
+Run 01077 passes all 59 policy/controller checks in 7.832 CPU seconds. Focused
+Ruff checks pass for new runtime/tests/fixture code; the pre-existing driver's
+import-format and dictionary-style warnings remain outside this repair.
+Whitespace checks pass. Charges are 29,222.518 CPU / 14,543.687 GPU seconds.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Retain P72 numerical gate repair as a branch checkpoint | 81 CPU checks, 59 controller checks and four measurement arms pass | GPU checks, source audit and terminal comparisons remain open | Large assembly graph growth and remaining callbacks | Continue graph-memory repair and qualify GPU when idle | Full repair, scientific admission or merge readiness |

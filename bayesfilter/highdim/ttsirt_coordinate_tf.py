@@ -110,8 +110,9 @@ def coordinate_program(transport, mode, count, *, suffix=False, jit_compile=True
     def evaluate(*arguments):
         cores = arguments[:dimension]
         tau, normalizer_floor, denominator_floor, z, state, targets, axis = arguments[dimension:]
-        grid = tf.switch_case(axis, tuple(lambda index=index: transport._axis_grid(index)
-                                         for index in range(dimension)))
+        # FixedTTSIRTTransport defines one reference interval and grid size for
+        # every coordinate; _axis_grid deliberately ignores its axis argument.
+        grid = transport._axis_grid(0)
         physical_grid = axis_call(transport._axis_reference_to_domain, axis, grid)
         coordinates = tf.range(dimension)
         numerator_keep = coordinates >= axis if suffix else coordinates <= axis

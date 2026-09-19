@@ -107,6 +107,7 @@ TEST_GROUPS = {
     "gamma_random": ("tests/test_filter_repair_gamma_random.py",),
     "source_preparation_numerics": ("tests/test_filter_repair_source_preparation.py",),
     "source_guard_preparation": ("tests/test_filter_repair_source_guard_preparation.py",
+        "tests/test_filter_repair_source_gates.py",
         "tests/highdim/test_p72_support_certified_lower_gate.py"),
     "source_guard_localization": (
         "tests/test_filter_repair_source_guard_preparation.py::test_guard_lines_preserve_selection_order_duplicate_keys_and_frozen_design[duplicate]",),
@@ -476,7 +477,8 @@ def check_matrix_state(frozen):
 
 def measurement_modes(name):
     """Keep complete public replay timing alongside numerical compilation arms."""
-    return ("off", "on", "eager") if name == "source_route_sequence" else ("off", "on")
+    return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates")
+            else ("off", "on"))
 
 
 def run_matrix(args):

@@ -1,6 +1,64 @@
 """Frozen source-route weight and coordinate calculations for comparison."""
 
-FIXTURES = ("source_route_weights", "source_route_retained", "source_route_previous", "source_route_sequence")
+FIXTURES = ("source_route_weights", "source_route_retained", "source_route_previous", "source_route_sequence",
+            "source_guard_gates")
+
+
+def _gate_fixture(tf, size, jit, public_boundary):
+    """The same public gate statistics, with an explicit compiled-kernel arm."""
+    from importlib.util import find_spec
+
+    from bayesfilter.highdim import source_route as source
+
+    fitted = _transport(tf)[0].density.sqrt_tt
+    rows = 16 * size
+    fit = tf.reshape(tf.linspace(tf.constant(-.8, tf.float64), .7, 2*rows), [2, rows])
+    points = tf.reshape(tf.linspace(tf.constant(-.6, tf.float64), .9, 2*rows), [2, rows])
+    targets = tf.linspace(tf.constant(.8, tf.float64), 1.2, rows)
+    starts = tf.constant([.9, 1.1], tf.float64)
+    indices = tf.math.floormod(tf.range(rows), 2)
+    spectra = tuple(tf.constant([2., 1., 1e-14], tf.float64) for _ in range(4*size))
+    support_fields = ("nearest_fit_distance_min", "nearest_fit_distance_median",
+                      "nearest_fit_distance_max", "fit_leave_one_out_distance_max",
+                      "point_any_saturated_fraction")
+    line_fields = ("line_prediction_max_abs", "line_residual_max_abs", "line_residual_rms",
+                   "endpoint_growth_ratio_max")
+    has_native = find_spec("bayesfilter.highdim.source_route_gate_runtime_tf") is not None
+    if has_native and not public_boundary:
+        from bayesfilter.highdim import source_route_gate_runtime_tf as native
+
+        line = native.line_probe_program(fitted, (2, rows), (2,), (rows,), "indices", jit_compile=jit)
+        rank = native.spectrum_rank_program(tuple(tuple(value.shape) for value in spectra), jit_compile=jit)
+
+        def evaluate(fit_cloud, cloud, target_values, start_values, start_indices, *singular_values):
+            support = native.support_statistics.python_function(cloud, fit_cloud)
+            line_values = line.python_function(cloud, target_values, start_values, start_indices,
+                                                tf.constant(1., tf.float64))
+            ranks, _ = rank.python_function(singular_values, tf.constant(source.P72_EFFECTIVE_RANK_TOL, tf.float64))
+            return tf.stack((*support[3:], *line_values[1:5], tf.constant(100., tf.float64),
+                             tf.reduce_min(ranks)))
+        evaluate.timing_scope = "complete_numerical_source_gate_statistics"
+        evaluate.numerical_execution = "xla" if jit else "graph_reference"
+    else:
+        def evaluate(fit_cloud, cloud, target_values, start_values, start_indices, *singular_values):
+            support = source.p72_support_clipping_coverage(role="guard", points=cloud, fit_points=fit_cloud)
+            line = source.p72_line_probe_diagnostics(fitted_tt=fitted, line_points=cloud,
+                line_target_values=target_values, start_prediction_values=start_values,
+                line_start_indices=start_indices, target_scale=1.)
+            records = tuple({"condition_number": 100., "scaled_augmented_singular_values": value}
+                            for value in singular_values)
+            condition = source.p72_condition_effective_rank_gate(records)
+            return tf.stack((*tuple(tf.constant(support[key], tf.float64) for key in support_fields),
+                *tuple(tf.constant(line[key], tf.float64) for key in line_fields),
+                tf.constant(condition["condition_number_max"], tf.float64),
+                tf.constant(condition["effective_rank_min"], tf.float64)))
+        evaluate.timing_scope = "complete_public_source_gate_statistics_and_provenance"
+        evaluate.numerical_execution = "default_xla_gate_programs" if has_native else "legacy_host_gates"
+    return evaluate, (fit, points, targets, starts, indices, *spectra), {
+        "rows": rows, "dimension": 2, "spectra": len(spectra),
+        "fields": (*support_fields, *line_fields, "condition_number_max", "effective_rank_min"),
+        "boundary": "public_source_gate_numeric_fields; decisions_and_hashes_checked_in_correctness_suite",
+        "classification": "extension_or_invention_execution_only", "canonical_admitted": False}
 
 
 def _transport(tf):
@@ -28,6 +86,8 @@ def _transport(tf):
 def fixture(tf, name, size, jit, *, public_boundary=False):
     if name not in FIXTURES:
         raise ValueError(name)
+    if name == "source_guard_gates":
+        return _gate_fixture(tf, size, jit, public_boundary)
     from bayesfilter.highdim import source_route as source
 
     rows = 4 * size

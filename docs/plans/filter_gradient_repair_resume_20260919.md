@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01067,
-charges are 14,543.687 GPU / 28,873.544 CPU seconds, leaving 172,656.313 GPU /
-86,326.456 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01077,
+charges are 14,543.687 GPU / 29,222.518 CPU seconds, leaving 172,656.313 GPU /
+85,977.482 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -131,6 +131,33 @@ or GPU memory claim follows. The 135-second stack points to repeated coordinate
 program construction inside sequential transport branches; investigate safe
 reuse while preserving captured derivatives and distinct graph/XLA contexts.
 Static coverage is now 172 sources / 1,109 exact exceptions, still partial.
+
+Checkpoint `db3959ac` commits and pushes the rank-one fitter repair. Recovered
+run 01069 passes all nine coordinate parity/gradient/graph checks in 94.954
+process-seconds after removing identical reference-grid Case arms. The owned
+grid ignores its axis; no numerical rule or capture behavior changes. The
+current guard passes 172 sources / 1,108 exact exceptions. Both GPU2 and GPU3
+remain occupied. Next run one bounded assembly memory diagnostic with the
+same inputs before further cache work; no runtime edits during that worker.
+
+Assembly 01070 passes in 188.360 seconds at 9,743,236 KiB (9.292 GiB) peak
+host RSS. The small change leaves the assembly memory investigation open.
+New P72 support, line-prediction and recorded-spectrum calculations have
+stable XLA boundaries. All 81 CPU cases pass (01072), including prior P72
+tests and complete baseline records, threshold/empty/nonfinite/index cases.
+The six 01071 failures were fixture assumptions about nonfinite predictions:
+both public versions reject them during provenance hashing; preserve that.
+The 173-source / 1,113-exception guard and all 59 controller checks pass
+(01077). Four new source scopes are guarded without numerical exemptions.
+
+Fixture `source_guard_gates` is registered for both extents and all three
+execution modes. CPU runs 01073--01076 pass graph/XLA kernels and public
+baseline/candidate calls, with 11 exactly matching numeric fields. The
+descriptive artifact is `source-gate-cpu-diagnostic-01076.json`. Public warm
+medians are 8.511/3.287 ms before/after, with about 172 MiB extra candidate
+host peak; numerical graph/XLA medians are 1.325/0.744 ms. These single-process
+CPU observations do not close GPU or terminal repeats. Both approved GPUs
+remain busy. No worker remains running after 01077.
 
 The refreshed syntax inventory is `source-inventory-after-01062.json.gz`:
 2,832 Python files, with the only parse error in external vendored legacy code.
