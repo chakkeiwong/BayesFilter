@@ -13,6 +13,13 @@ from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.highdim.bases import (
+    BoundedInterval,
+    LegendreBasis1D,
+    ProductBasis,
+    _legendre_values,
+)
+from bayesfilter.highdim.diagnostics import MassMeasure
 from bayesfilter.ops.compiled_tensor_program_tf import (
     call_tensor_program,
     in_xla_context,
@@ -195,8 +202,51 @@ def contract_core_axes(cores, product_basis, axes, measure):
     return result, tf.constant(0.0, packed.dtype)
 
 
+def _common_legendre_schema(parts):
+    """Only exact owned classes with a common degree and scalar endpoints."""
+    return bool(parts) and all(
+        type(part) is LegendreBasis1D and type(part.domain) is BoundedInterval
+        and part.basis_dim == parts[0].basis_dim
+        and part.domain.left.shape.rank == part.domain.right.shape.rank == 0
+        for part in parts
+    )
+
+
+def _shared_legendre_rows(product_basis, keep_axes, points, width):
+    """One polynomial body with explicit per-axis interval coefficients."""
+    parts = product_basis.bases
+    count, rows = len(parts), points.shape[0]
+    degree = parts[0].max_degree
+    if not keep_axes:
+        return tf.zeros([count, rows, width], points.dtype)
+    columns = {axis: column for column, axis in enumerate(keep_axes)}
+    selected = tf.constant(tuple(columns.get(axis, -1) for axis in range(count)), tf.int32)
+    bounds = tf.stack(tuple((part.domain.left, part.domain.right) for part in parts))
+    scales = tf.sqrt(tf.cast(2 * tf.range(degree + 1, dtype=tf.int32) + 1, points.dtype))
+
+    def numerical(coordinate, left, right):
+        xi = 2.0 * (coordinate - left) / (right - left) - 1.0
+        value = _legendre_values(xi, degree) * scales
+        return tf.pad(value, ((0, 0), (0, width - degree - 1)))
+
+    # The complete polynomial VJP stays inside this common callable, so no
+    # TensorList tape crosses the surrounding native axis/conditional body.
+    program = tensor_program(numerical, [tf.TensorSpec([rows], points.dtype),
+        tf.TensorSpec([], points.dtype), tf.TensorSpec([], points.dtype)], False)
+
+    def at_axis(axis):
+        return tf.cond(selected[axis] >= 0,
+            lambda: program.python_function(points[:, selected[axis]], bounds[axis, 0], bounds[axis, 1]),
+            lambda: tf.zeros([rows, width], points.dtype))
+
+    return tf.map_fn(at_axis, tf.range(count),
+        fn_output_signature=tf.TensorSpec([rows, width], points.dtype), parallel_iterations=1)
+
+
 def _fixed_basis_rows(product_basis, points, shapes):
     width = max(shape[1] for shape in shapes)
+    if type(product_basis) is ProductBasis and _common_legendre_schema(product_basis.bases):
+        return _shared_legendre_rows(product_basis, tuple(range(len(shapes))), points, width)
 
     def branch(axis):
         return lambda: tf.pad(
@@ -389,6 +439,8 @@ def _basis_rows_with_pullback(product_basis, keep_axes, points, width):
         _PRIMITIVE_CACHE.move_to_end(key)
         return _PRIMITIVE_CACHE[key][1](points)
     count, rows = len(product_basis.bases), points.shape[0]
+    if type(product_basis) is ProductBasis and _common_legendre_schema(product_basis.bases):
+        return _shared_legendre_rows(product_basis, keep_axes, points, width)
     columns = {axis: column for column, axis in enumerate(keep_axes)}
 
     def branch(axis):
@@ -599,6 +651,19 @@ def basis_masses(product_basis, cores, *, axis_offset=0, measure=None):
     """Native evaluation of heterogeneous basis mass matrices."""
     active_measure = product_basis.convention.mass_measure if measure is None else measure
     width = max(core.basis_dim for core in cores)
+    parts = product_basis.bases[axis_offset:axis_offset + len(cores)]
+    if (type(product_basis) is ProductBasis and len(parts) == len(cores)
+            and _common_legendre_schema(parts)
+            and all(core.basis_dim == parts[0].basis_dim for core in cores)):
+        if not isinstance(active_measure, MassMeasure):
+            raise TypeError("measure must be a MassMeasure")
+        identity = tf.eye(parts[0].basis_dim, dtype=tf.float64)
+        if active_measure is MassMeasure.REFERENCE_MEASURE:
+            packed = tf.broadcast_to(identity, [len(cores), *identity.shape])
+        else:
+            bounds = tf.stack(tuple((part.domain.left, part.domain.right) for part in parts))
+            packed = identity[None] * (bounds[:, 1] - bounds[:, 0])[:, None, None]
+        return tuple(packed[axis, :core.basis_dim, :core.basis_dim] for axis, core in enumerate(cores))
 
     def branch(axis):
         def evaluate():

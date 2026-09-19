@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01084,
-charges are 14,543.687 GPU / 29,950.881 CPU seconds, leaving 172,656.313 GPU /
-85,249.119 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01095,
+charges are 14,543.687 GPU / 30,620.895 CPU seconds, leaving 172,656.313 GPU /
+84,579.105 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -193,3 +193,25 @@ core-affine/higher-rank slowdown, centered qualification, incomplete callback
 coverage, and missing terminal comparisons. The latest earlier comparison
 had 18 valid pairs and 840 missing; this is not a current completion result.
 No merge, repository-wide policy-compliance or default-readiness claim is justified.
+
+The subsequent basis/mass repair shares exact owned Legendre schemas with
+tensor interval endpoints. Run 01088 passes 29 focused cases, including
+complete fitter histories/pullbacks with pinned basis helpers in the baseline
+arm. Initial fixture binding and unsupported raw-preparation XLA-gradient
+assumptions in 01085 were corrected; no tolerance changed. The four/eight-axis
+basis graph drops from 390/742 nodes to 174/186. Runs 01089--01093 pass
+37 fitter, 38 density, 25 transport, six public pullback and 11 sequential
+checks. Run 01095 passes all 59 policy/controller cases. Static coverage is
+173 sources / 1,123 exact exceptions, still partial.
+
+Assembly 01094 passes in 112.504 seconds at 5,586,104 KiB (5.327 GiB) host
+peak. `assembly-memory-diagnostic-01094.json` preserves six arms and manifest
+checksums. These single-process CPU observations are 26.0% lower elapsed time
+and 23.8% lower peak than 01083; the 0.658 GiB original baseline gap remains
+open. No current GPU qualification or terminal performance claim follows.
+
+Proceed to the CPU forecast-pool repair recorded in the master. Keep the
+existing per-row seeds, raw-byte hashes, row ordering and validity vetoes.
+Its numerical iteration must run in a native TensorFlow/XLA shard program;
+external forecast generation is not NeuTra training. Neither forecast-pool
+source nor other newly noted inference debt has been changed yet.

@@ -2869,3 +2869,46 @@ GPU qualification or paired three-process endpoint comparisons.
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
 |---|---|---|---|---|---|
 | Retain shared Legendre marginal as a branch checkpoint | 17 coordinate, 25 transport, six public pullback, 11 sequential and 59 policy CPU checks pass | 6.99 GiB assembly host peak, GPU qualification and terminal repeats remain open | Remaining basis/mass/normalizer graph duplication and callback audit debt | Checkpoint, then continue bounded graph investigation and forecast-pool repair | Full repair, memory acceptance or merge readiness |
+
+Checkpoint `1da3170e` is committed and pushed. Basis-sharing attempt 01085
+passes 11 cases and fails 13 new fixture cases. Ten failures are TensorFlow
+signature/IR binding of the fixture's keyword-partial axis tuple; bind that
+tuple positionally. Three attempt to differentiate the original raw fixed
+fitting-design preparation through its unsupported XLA Case/TensorList path.
+Keep that preparation outside the score tape, as fitting does; continue
+checking query/domain pullbacks through the owned basis-row/core-matrix path.
+No runtime code or numerical tolerance changes are made for this correction.
+
+Run 01086 passes 24 corrected basis tests. Add exact schema-width rejection
+before graph sharing; 01087 passes all 25 cases. Review identifies that the
+existing fitter parity fixture imports the current basis helpers in both arms,
+so add a direct fitter history/pullback comparison with the pinned basis helper
+in only the baseline arm. Run 01088 passes all 29 cases in 78.339 seconds,
+including these rank-one/higher-rank graph/XLA histories. Basis graph counts
+for four/eight coordinates are 390/742 before and 174/186 after. Run 01089
+passes all 37 existing fitter tests in 45.058 seconds. Static coverage passes
+173 sources / 1,123 exact exceptions, still partial. Density, transport and
+assembly-memory checks follow before this source change is checkpointed.
+
+Runs 01090--01093 pass 38 density, 25 transport, six public external-pullback
+and 11 sequential-consumer checks in 61.344/120.972/33.589/65.256 CPU seconds.
+The unchanged assembly diagnostic is launched as 01094 under the same
+900-second ceiling. No runtime or harness source edits occur during it.
+
+Assembly 01094 passes and exits in 112.504 CPU seconds at 5,586,104 KiB
+(5.327 GiB) host peak. The new `assembly-memory-diagnostic-01094.json` records
+all six diagnostic arms with manifest checksums. Relative to 01083, observed
+elapsed time is 26.0% lower and peak is 23.8% lower. These are descriptive
+single-process CPU results, not terminal comparisons or isolated compiler
+overhead. The original baseline remains 74.134 seconds / 0.658 GiB.
+
+Run 01095 passes all 59 policy/controller checks. Cumulative charges are
+30,620.895 CPU / 14,543.687 GPU seconds; source coverage is 173 files / 1,123
+exact exceptions. Focused Ruff and whitespace checks pass. Review preserves
+custom/subclass and heterogeneous behavior, invalid-width rejection, full
+query/domain/core gradients, and separate graph/XLA contexts without adding
+a cache. GPU qualification remains pending during unrelated device use.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Retain shared basis/mass graphs as a branch checkpoint | 29 focused, 37 fitter, 38 density, 25 transport, six public pullback, 11 sequential and 59 policy checks pass | 5.33 GiB host peak, GPU qualification and terminal comparison remain open | Remaining compiled graph/cache costs and unreviewed callbacks | Checkpoint and repair the CPU forecast pool; reserve terminal repeats for frozen source | Full repair, memory acceptance or merge readiness |

@@ -6474,7 +6474,7 @@
       "function": "basis_masses",
       "kind": "python_iteration",
       "ast_sha256": "5cc8aae86748260bd7be85da7267de2deb12285f15aaa42024c2647f1e841e3c",
-      "occurrences": 1,
+      "occurrences": 2,
       "role": "fixed_schema",
       "reason": "Pack and unpack fixed heterogeneous core/basis shapes or construct switch branches; all numerical contractions execute in TensorFlow control flow."
     },
@@ -10541,6 +10541,54 @@
       "ast_sha256": "492419afc427b4d9683612e8583926aa8a3563e38905218fe1549a4173a0606e",
       "role": "fixed_schema",
       "reason": "Check exact owned basis/domain classes and static polynomial degree before sharing a numerical graph."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "_common_legendre_schema",
+      "kind": "python_iteration",
+      "ast_sha256": "2349df245a768e38c94043ec51d0bd62241f858234b81feef3ed9d9b84e6bb5c",
+      "role": "fixed_schema",
+      "reason": "Check exact owned basis/domain classes, common degree and scalar endpoint shapes before graph sharing."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "_shared_legendre_rows",
+      "kind": "python_iteration",
+      "ast_sha256": "98513068c9e508b63e2a097449b478e6be75e4f2f7c14ea5ccd130a51f7c8f63",
+      "role": "fixed_schema",
+      "reason": "Build the static retained-axis to query-column mapping; preserve original duplicate-key ordering."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "_shared_legendre_rows",
+      "kind": "python_iteration",
+      "ast_sha256": "b4161500753c344d21d9eb1b03ee311db2265b2d4fd0911a2c55d54d3003ed6a",
+      "role": "fixed_schema",
+      "reason": "Pack the declared axis selection as a tensor index table for native numerical iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "_shared_legendre_rows",
+      "kind": "python_iteration",
+      "ast_sha256": "353ce41349d732167976fd311266e0eb4a293492de47b57ecbdbecb112e6da65",
+      "role": "fixed_schema",
+      "reason": "Pack captured interval endpoints without numerical evaluation; preserve each coefficient derivative."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "basis_masses",
+      "kind": "python_iteration",
+      "ast_sha256": "353ce41349d732167976fd311266e0eb4a293492de47b57ecbdbecb112e6da65",
+      "role": "fixed_schema",
+      "reason": "Pack captured interval endpoints before batched TensorFlow subtraction and mass multiplication."
+    },
+    {
+      "path": "bayesfilter/highdim/tt_native_control_tf.py",
+      "function": "basis_masses",
+      "kind": "python_iteration",
+      "ast_sha256": "1d5125a386519229b41ce77922e182a8ad2c39d9bdf69d6cbc85cbccf87e2254",
+      "role": "fixed_schema",
+      "reason": "Check immutable core/basis width agreement; invalid schemas retain original rejection behavior."
     }
   ]
 }

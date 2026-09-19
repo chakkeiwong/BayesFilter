@@ -162,6 +162,7 @@ TEST_GROUPS = {
     "fixed_fit": ("tests/highdim/test_fixed_branch_fit.py",),
     "fixed_fit_cache": ("tests/highdim/test_fixed_branch_fit.py::test_public_native_fit_matches_original_als_and_reuses_signature",),
     "fixed_fit_pullbacks": ("tests/test_filter_repair_fixed_fit_pullbacks.py",),
+    "basis_graph": ("tests/test_filter_repair_basis_graph.py",),
     "model_simulation": ("tests/test_filter_repair_model_simulation.py",),
     "squared_density": ("tests/highdim/test_squared_tt_density.py", "tests/highdim/test_failure_exits.py", "tests/test_filter_repair_squared_density.py"),
     "ttsirt": ("tests/highdim/test_zhao_cui_frozen_ttsirt_apf_compiler.py", "tests/highdim/test_p57_m2_fixed_ttsirt_transport_contract.py", "tests/test_filter_repair_ttsirt.py"),

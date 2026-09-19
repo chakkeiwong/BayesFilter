@@ -4,15 +4,15 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `147e93ef` is committed and pushed,
-including the tested P72 gate calculations and comparison fixture.
+September 19 refresh: source checkpoint `1da3170e` is committed and pushed,
+including the tested shared Legendre marginal and P72 gate calculations.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01084, charges are 14,543.687 GPU / 29,950.881 CPU seconds;
-remaining allowances are 172,656.313 GPU / 85,249.119 CPU seconds. The earlier
+charge. Through run 01095, charges are 14,543.687 GPU / 30,620.895 CPU seconds;
+remaining allowances are 172,656.313 GPU / 84,579.105 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 173 sources with 1,117 exact
+The repair is incomplete. The static guard covers 173 sources with 1,123 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
@@ -45,6 +45,12 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    151.950 seconds at 7,330,768 KiB (6.991 GiB) host peak. Four/eight-coordinate
    graphs shrink to 997/1,193 nodes. This remains well above the 0.658 GiB
    baseline; inspect remaining basis/mass and normalizer graph duplication.
+   Shared owned-Legendre basis/mass graphs now pass 29 focused, 37 fitter,
+   38 density, 25 transport, six public pullback and 11 sequential checks.
+   Assembly 01094 passes in 112.504 seconds at 5,586,104 KiB (5.327 GiB) host
+   peak. All 59 policy/controller checks pass in 01095. Record these as
+   descriptive CPU improvements, with the original memory gap still open;
+   proceed with the forecast-pool audit repair before another assembly retry.
    Deferred fitter pullbacks pass six GPU checks (01042); the
    coordinate repair passes nine CPU/GPU checks (01041/01043). Affected public
    pullback, sequential and transport suites pass 6/11/25 CPU checks
@@ -164,6 +170,58 @@ diagnostic. Reject numerical drift at the original 1e-10 gate. The local
 Legendre and grid-CDF extension is not an author-algorithm promotion.
 
 ## Question and scope
+
+### Bounded basis graph reduction after 01083
+
+The remaining basis-row and mass helpers build one Case arm for each axis,
+including equal-degree owned Legendre bases. Share these exact-class schemas
+with tensor interval endpoints and one native axis body; preserve the original
+polynomial recurrence and multiplication order. Retain heterogeneous and custom
+basis behavior, every query/domain derivative, axis selection/order and mass
+measure. Do not enlarge global caches or mix graph/XLA contexts. This is a
+mechanical repair of the local Legendre extension, not an author-basis claim;
+paper Algorithm 2/(15)--(16), lines 693--725, and author
+`models/full_sol.m:21--130` were re-inspected.
+
+Skeptical review: shared basis arithmetic must not perturb ill-conditioned
+fitter histories, and a missing derivative or a subclass override is a veto.
+First compare complete values and query/interval gradients with checkpoint
+`1da3170e`, including both measures, permuted/subset axes, higher ranks and
+heterogeneous/custom fallback. Then run existing fitter, density and transport
+checks before one unchanged assembly diagnostic under the same 900-second
+ceiling. Graph counts and single-process RSS are explanatory; terminal paired
+comparisons and GPU checks remain required. Existing 1e-10 gates and cumulative
+budget apply; no retry without addressing the observed failure.
+
+### CPU forecast pool execution repair
+
+The owned pool calls `ComplexityForecastWorker.evaluate` in a Python row loop
+and uses NumPy for transport and validation. Move the complete shard recurrence
+into a stable-signature TensorFlow/XLA program while preserving every row's
+separate seed and existing terminal/process/observation draws. Keep ordered
+process orchestration, request/hash checks, startup barriers and completed
+tensor serialization on the host. Reuse the repository tensor byte helpers to
+preserve the existing contiguous raw-byte identity hashes. Do not reseed a
+whole shard from one row or replace per-row streams with one bulk stream.
+
+This is external forecast generation on multicore CPU. Native tensor mapping
+of independent forecasts is eligible here and must not be described as a
+batch-native NeuTra training target. Preserve finite/covariance/variance vetoes
+and row order. Review the actual owned callback, which currently materializes
+status on the host; wrapping it blindly in `tf.map_fn` is invalid. Baseline
+the committed scalar endpoint on identical rows/seeds, require exact replay
+and identical input hashes, verify complete shard HLO and one trace per fixed
+signature, then run the existing process-pool startup/replay tests. Include
+uneven shards and invalid-result rejection. Qualified fixtures must measure
+complete public pool overhead separately from numerical kernel time.
+
+Skeptical review: changing output transport from NumPy arrays to TensorFlow
+tensors is the intended backend repair, but no owned consumer may depend on
+mutable NumPy output. Only the owned complexity worker and its tests were
+found in the current call-chain search; check its factory protocol explicitly.
+Random stream drift, status loss, row/hash mismatch or unbounded retracing
+are repair triggers and block acceptance. Use the existing bounded driver,
+versioned artifacts and cumulative budget; no training or posterior claim.
 
 Can every owned runtime route identified in findings F01–F20 preserve its
 declared value/score semantics while removing Python numerical iteration,
