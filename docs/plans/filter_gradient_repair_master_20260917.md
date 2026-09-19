@@ -4,20 +4,21 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `85219330` is committed and pushed,
-including block-center preparation and the preserved TP localization evidence.
+September 19 refresh through run 01199: the current checkpoint adds TP
+continuation parity, compiled exact selection and complete sequential score
+fitting, with the consumer qualifications and open measurements below.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01161, charges are 15,874.613 GPU / 31,491.637 CPU seconds;
-remaining allowances are 171,325.387 GPU / 83,708.363 CPU seconds. The earlier
+charge. Through run 01199, charges are 17,412.882 GPU / 32,151.953 CPU seconds;
+remaining allowances are 169,787.118 GPU / 83,048.047 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 179 sources with 1,183 exact
+The repair is incomplete. The static guard covers 180 sources with 1,189 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
 
-Recovery review through 01161 confirms no active worker, the unchanged frozen
+Recovery review through 01199 confirms no active worker, the unchanged frozen
 baseline, and the same cumulative budget (the extension is counted once).
 All six pending TT/preparation GPU groups pass 134 checks (01131--01136).
 The quadratic initializer migration passes 33 CPU checks (01139). Its GPU
@@ -28,8 +29,13 @@ checks pass (01142). Full GPU initializer/joint-center reruns now pass all
 Keep the 256 MiB host-memory investigation trigger and
 all numerical gates intact. Continue the remaining block-center and sequential
 preparation repair; their numerical loops cannot receive host exemptions.
-The first TP projection has exact parity with frozen features (01145), but
-unfrozen features still fail the raw-residual gate. The ineffective first-factor
+The TP continuation repair preserves all reported XLA projection fields
+exactly (01163). Runs 01173/01174 now pass all 22 GPU/CPU cases, with unchanged
+raw-residual and derivative tolerances. The original 1e-5 finite-difference
+stencil failed equally in both GPU source arms (01168); a predeclared step
+ladder identifies cancellation, and two converged fourth-order estimates now
+provide the derivative diagnostic (see the detailed harness review below).
+The ineffective first-factor
 Cholesky trial in 01146 is reverted. GPU2/GPU3 became available, permitting
 the focused GPU qualification below; every new run must recheck contention.
 Block-center preparation and complete callbacks now pass all 43 CPU checks
@@ -49,8 +55,11 @@ Current execution queue, under the same runner, evidence contract and caps:
    numerical control. Include reachable exact-incumbent selection; host record
    assembly must not hide row-wise numerical eligibility checks. Keep external
    DZ5 callback compatibility explicit and qualify actual owned consumers.
-2. Resolve TP continuation-rounding localization and the unchanged raw-residual
-   failure before claiming complete value/gradient/history parity.
+   Include fixed-center replicate/family/shrinkage selection, block-score
+   replicate/stability loops, and mass-matrix construction reached by the
+   sequential/quadratic initializers; these dependencies are not fully compiled.
+2. Retain the qualified TP continuation repair and converged derivative check;
+   run terminal current-source TP tests and paired measurements after freezing.
 3. Investigate remaining TT assembly and forecast-pool host-memory increases,
    core-affine/higher-rank warm-time regressions, and centered qualification.
 4. Finish coverage/dispositions, then freeze source and harness for affected
@@ -281,6 +290,175 @@ reverted. That hypothesis did not explain the discrepancy. Preserve this
 negative result and the unchanged raw-residual gate. Further localization must
 distinguish continuation update arithmetic from feature normalization before
 another runtime repair; local frozen-feature parity is not full-recursion parity.
+Next expose the continuation and reference log likelihoods and their normalized
+exponential on identical frozen teacher particles. Compare graph/XLA separately
+at the same two-step continuation. These intermediate outputs may change XLA
+fusion, so treat their errors as localization only; the original first-projection
+and complete-recursion gates remain the acceptance authorities. No runtime
+change is bundled into this diagnostic.
+
+Run 01162 finds exact reference/max normalization but a 2.842e-14 XLA
+continuation-log difference, producing the same 1.058e-16 feature difference
+as the first-projection failure. Test a bounded execution change: peel one
+initial recurrent Gaussian update before the native loop. The original first
+update was already separate because its covariance starts at zero. This adds
+one fixed body, independent of horizon, and preserves chronological arithmetic;
+it lets the two-step case retain the original straight-line compiler context.
+Dynamic shorter windows select their original state with tensor masks, avoiding
+the previously unsupported conditional-gradient path. Re-run the unchanged
+first-projection and full-recursion gates and graph-growth check; a local pass
+alone is insufficient. Preserve longer-window and total-gradient semantics.
+Revert an ineffective trial, and retain every failed diagnostic.
+Run 01163 passes all eight breakdown checks, with exactly equal XLA
+continuations and first-projection fields. Run 01164 passes ten full cases but
+the two-step XLA gradient hits a zero-capacity loop-tape compiler error. Omit
+the statically empty remainder loop when the fixed initial updates already
+cover the window; it has no numerical iterations to execute. Requalify the
+exact full-recursion failure before extending the window-length checks.
+Run 01165 now passes that exact complete value/gradient/history case, including
+the original raw-residual gate, finite differences and validity. Next exercise
+dynamic zero-through-four-step windows against the original sliced recurrence,
+including complete parameter gradients and one-trace compilation. Then qualify
+the complete TP suite on GPU. The localized result closes neither wider
+performance/memory work nor canonical LEDH admission.
+
+Run 01166 passes both dynamic-window tests, including counts zero through four,
+parameter gradients, HLO and one tracing signature. GPU run 01167 passes 20/21
+cases; the complete four-date/two-step case has exact baseline/candidate values,
+gradients and histories but fails the unchanged directional finite difference
+by 3.22034652e-5 (relative 4.656e-7 versus the 1e-7 gate). Compare the original
+positive/negative perturbed values and gradients in both source arms before
+attributing this to recurrence compilation or conditioning. A baseline failure
+would explain the comparator limitation, not waive the derivative gate.
+Run 01168 confirms exactly equal perturbed values and central differences in
+both GPU arms: the directional score is -69.1603179080489 and the original
+central difference is -69.16028570458366. The same baseline gate fails. Record
+a predeclared eight-step finite-difference ladder (1e-3, 3e-4, 1e-4, 3e-5,
+1e-5, 3e-6, 1e-6, 3e-7) on both source arms to distinguish truncation from
+roundoff amplification. It is explanatory only; neither a favorable step nor
+baseline agreement waives the original test. Keep branch validity visible.
+
+Run 01171 shows the same central differences in both arms at every step, with
+all charts valid. Errors grow from roughly 1e-6 at 1e-3/3e-4 to 3.22e-5 at
+1e-5 and 1.11e-3 at 3e-7. This identifies an unreliable subtraction stencil,
+not evidence of a changed derivative. Repair this diagnostic with fixed central
+stencils at 4e-3, 2e-3 and 1e-3 and two fourth-order Richardson estimates:
+`(4 D(h/2) - D(h))/3`. Require the two estimates to agree and require **both**
+to match the derivative at the unchanged atol=1e-8 / rtol=1e-7; preserve value,
+gradient, raw-residual and branch-parity gates. This supersedes the single
+1e-5 stencil as a pass criterion, retaining its values and failures as explicit
+diagnostics. No candidate-dependent step selection or tolerance change.
+
+Skeptical harness review: a single favorable step could conceal bias, so the
+replacement checks convergence of two fixed estimates and validity of every
+perturbed chart. Apply the same rule to all six existing CPU/GPU fixture cases,
+not only the failing one. The formula cancels the central stencil's O(h^2)
+term; lack of convergence remains a failure. Preserve the source baselines,
+algorithms and numerical parameters. First rerun the exact failing GPU case,
+then the full CPU/GPU suite before closing this focused blocker.
+
+### Exact incumbent selection boundary
+
+The reachable incumbent selector computes finite eligibility once per record
+in Python. Move complete value/position/score eligibility and earliest-maximum
+selection into one stable XLA program. Host iteration may pack record fields
+and restore the chosen original object; it may not evaluate numerical gates.
+Preserve first-record ties including signed zero, eligibility metadata,
+nonfinite rejection, heterogeneous vector widths and empty vectors. Ragged
+row structure is metadata, not permission to assume a common dimension.
+
+Skeptical review: a padded representation must not make empty vectors invalid,
+and masked nonfinite values must never defeat an eligible finite row. Compare
+the pinned implementation and independent Python reference on those boundaries,
+enclose the complete selector in HLO, check one trace across record counts, and
+run actual joint/sequential/quadratic consumers. This is preparation only;
+selection does not issue HMC tuning authority. Preserve existing source/RNG
+contracts and use the same cumulative budget and runner. Outer numerical
+lifecycles remain open after this bounded repair.
+
+The first selector checks (01169/01170) pass, but review identifies a memory
+risk: a single polymorphic TensorFlow trace can still create one XLA executable
+per physical record count. Growing incumbent histories would compile too many
+sizes. Pack records and coordinates into the next powers-of-two capacities,
+mask unused records and make padded coordinates vacuously finite. This leaves
+selection and returned object identity unchanged while reducing physical
+signature counts to logarithmic growth. Test realized public input shapes
+across capacity boundaries, in addition to one graph trace and all boundary
+parity. Preserve zero-width rows and original first ties; do not call padding
+a hard memory cap or constant-size compilation claim.
+
+GPU measurements 01190--01193 preserve exact selector outputs but expose a
+63.9x public warm-time regression: 0.610 ms before versus 38.968 ms after,
+while the complete XLA numerical kernel takes 0.473 ms. The public record
+builder slices and materializes scalar fields repeatedly. Bulk-unstack tensor
+rows, serialize completed values/flags once, and avoid identity reshapes of
+already-flat vectors. These operations only pack immutable records; numerical
+eligibility remains inside XLA. Preserve object identity, buffer snapshots,
+shape rejection and nonfinite behavior. Requalify the same public pair after
+the focused selector tests. The 4.25/25.5 KiB device peaks exceed the existing
+2x trigger; explain the realized allocation difference without waiving it.
+Run 01194 passes all 15 GPU selector checks after bulk transport. Run 01195
+preserves exact outputs and reduces the descriptive public median to 2.437 ms,
+but still exceeds the 0.610 ms baseline; the device peak remains 25.5 KiB
+versus 4.25 KiB. Keep both investigation triggers open. The complete score-fit
+public pair (01186/01187) matches within 8.882e-16, with medians 19.008/2.302 ms
+and no new trigger. Candidate graph/XLA kernels also pass parity (01188/01189),
+with 916/922 graph nodes and no hidden XLA in the graph diagnostic. These are
+single-process, small-extent observations; larger extents and final repeats
+remain required, and cross-scope timing ratios are suppressed.
+
+### Sequential symmetric score-fit compilation
+
+The next preparation kernel encloses cloud generation, scalar/batched exact
+evaluation, symmetric score design, unchanged training/holdout partition,
+rank test, ridge-augmented complete orthogonal least squares, eigenvalue
+projection, and fit diagnostics. Preserve the original coefficient ordering,
+rank threshold, Philox stream, support rejection, status precedence and exact
+cloud winner. Reuse the qualified native COD and binary64 XLA eigensolver;
+do not replace least squares with normal equations or change the ridge.
+
+Skeptical review: rank-deficient branches must retain their rejection and best
+exact row without using a projected fallback; pairing and sample order are
+part of the frozen method. Compare complete records against the pinned helper
+on quadratic/nonquadratic targets, correlated/indefinite curvature, both holdout
+partitions, insufficient support and nonfinite candidates. First use identical
+frozen clouds to isolate the fit, then qualify original seeded end-to-end cloud
+evaluation, callback count, HLO, one-trace reuse and actual sequential consumers
+on CPU/GPU. Keep the original tolerance and use the same driver/budget. This
+bounded kernel does not close the outer search/refinement lifecycle.
+
+Run 01176 passes 13/14 focused cases; an external tape exposes the raw XLA
+eigensolver's missing pullback before the wrapper can detach the fit result.
+The original result crossed NumPy/host-materialization boundaries, so preserve
+that frozen preparation contract inside the compiled return, not afterwards.
+Also reduce the tall design to its thin-QR triangular factor before XlaSvd,
+which computes full factors even when only singular values are consumed.
+This retains singular-value rank testing and the original row-scaled threshold
+without forming a large square observation-space factor or normal equations.
+Recheck complete frozen/seeded records and the external-tape boundary.
+
+Register two preparation comparisons: exact incumbent selection at 32/64
+three-dimensional records, and complete symmetric score fitting at 16/32
+cloud rows and two/four dimensions, with the original seed (2026, 919).
+Measure matching complete public endpoints in host-call mode and numerical
+graph/XLA programs separately. Public candidate calls retain internal XLA;
+graph diagnostics explicitly disable it, including nested helpers. Record all
+returned numerical fields and status/winner identity. Baseline tracing failures
+remain evidence, with its valid public result as the parity authority; forbid
+timing ratios between unequal scopes. Use the existing GPU, twenty warm calls,
+two extents, three terminal repeats and memory/performance investigation gates.
+
+Recovery call-chain audit also confirms `sequential_map_covariance` and
+`quadratic_map_covariance` call `mass_matrix.covariance_from_precision`, whose
+eigendecomposition, floor selection and inversion currently execute eagerly.
+`structured_covariance_from_empirical` also loops over blocks numerically.
+`posterior_local_initializer` reaches `fit_fixed_center_curvature`, whose
+replicate, family, pair-stability and shrinkage loops remain host numerical
+control. `block_score_geometry` has analogous replicate/block/stability loops.
+The static guard excludes iteration for the latter modules and does not cover
+mass_matrix; these are open F18/F19 dependencies, not source exemptions.
+Carry their original decisions, reports, thresholds and HMC authority boundary
+through the migration; removal of NumPy alone did not close XLA execution.
 
 ### Active quadratic and block-center preparation migration
 

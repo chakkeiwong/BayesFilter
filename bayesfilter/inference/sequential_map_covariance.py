@@ -8,10 +8,10 @@ does not certify a global MAP, posterior correctness, or HMC readiness.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
 import math
 import sys
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 import tensorflow as tf
@@ -21,22 +21,21 @@ from bayesfilter.inference._exact_incumbent import (
     candidates_from_rows,
     select_exact_incumbent,
 )
-from bayesfilter.inference.mass_matrix import covariance_from_precision
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
     fit_factor_correlation_score_geometry,
 )
+from bayesfilter.inference.mass_matrix import covariance_from_precision
 from bayesfilter.inference.sequential_preparation_tf import (
     cloud_program,
     evaluation_program,
     trust_region_program,
 )
-from bayesfilter.ops.host_tensor_io import numeric_tensor
-from bayesfilter.ops.symmetric_matrix_tf import (
-    symmetric_score_design as _symmetric_score_design,
-    unpack_symmetric as _unpack_symmetric,
+from bayesfilter.inference.sequential_score_fit_tf import (
+    partition_schema,
+    score_fit_program,
 )
-
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS = (
     "local exact-stationary MAP candidate only",
@@ -1369,114 +1368,42 @@ def _fit_score_curvature(
         )
         support_count = len(train_indices) // 2
     else:
-        holdout_count = max(1, int(round(sample_count * config.holdout_fraction)))
-        train_count = sample_count - holdout_count
         support_count = sample_count
     if support_count * dimension < coefficient_count + dimension:
         return {"status": "insufficient_symmetric_support", "seed": list(seed)}, evaluations
-    z = _antithetic_cloud(sample_count, dimension, radius, seed)
-    theta_rows = center[None, :] + z * scale[None, :]
-    values, scores = _evaluate_cloud(
-        function,
-        theta_rows,
-        dimension,
-        batched_value_and_score_fn=batched_value_and_score_fn,
-    )
+    training_indices, holdout_indices = partition_schema(sample_count,
+        config.holdout_fraction, pair_disjoint=config.pair_disjoint_score_holdout)
+    result = score_fit_program(function, batched_value_and_score_fn, sample_count,
+        dimension, training_indices, holdout_indices)(center, center_score, scale,
+        tf.convert_to_tensor(radius, tf.float64), tf.convert_to_tensor(seed, tf.int32),
+        tf.constant(config.ridge, tf.float64), tf.constant(config.eigenvalue_floor, tf.float64),
+        tf.constant(config.max_condition_number, tf.float64),
+        tf.constant(config.score_holdout_relative_rmse, tf.float64))
     evaluations += sample_count
-    exact_candidates = candidates_from_rows(
-        theta_rows,
-        values,
-        scores,
-        start_index=int(evaluations - sample_count),
-        source_role="score_fit_cloud",
-    )
-    exact_incumbent = select_exact_incumbent(exact_candidates)
+    has_winner = int(result["best_index"]) >= 0
     best_exact = {
-        "best_exact_value": (
-            None if exact_incumbent is None else exact_incumbent.value
-        ),
-        "best_exact_position": (
-            None if exact_incumbent is None else exact_incumbent.position
-        ),
-        "best_exact_score": (
-            None if exact_incumbent is None else exact_incumbent.score
-        ),
-        "best_exact_source": (
-            None if exact_incumbent is None else exact_incumbent.source_role
-        ),
+        "best_exact_value": float(result["best_value"]) if has_winner else None,
+        "best_exact_position": result["best_position"] if has_winner else None,
+        "best_exact_score": result["best_score"] if has_winner else None,
+        "best_exact_source": "score_fit_cloud" if has_winner else None,
     }
-    response = scale[None, :] * center_score[None, :] - scale[None, :] * scores
-    design = _symmetric_score_design(z, dimension)
-    if config.pair_disjoint_score_holdout:
-        train_design_rows = tf.gather(design, train_indices)
-        train_response_rows = tf.gather(response, train_indices)
-        holdout_design_rows = tf.gather(design, holdout_indices)
-        holdout_response_rows = tf.gather(response, holdout_indices)
-    else:
-        train_design_rows = design[:train_count]
-        train_response_rows = response[:train_count]
-        holdout_design_rows = design[train_count:]
-        holdout_response_rows = response[train_count:]
-    train_design = tf.reshape(train_design_rows, [-1, coefficient_count])
-    train_response = tf.reshape(train_response_rows, [-1, 1])
-    singular_values = tf.linalg.svd(train_design, compute_uv=False)
-    tolerance = tf.reduce_max(singular_values) * tf.cast(tf.shape(train_design)[0], tf.float64) * sys.float_info.epsilon
-    rank = int(tf.reduce_sum(tf.cast(singular_values > tolerance, tf.int32)).numpy())
-    if rank < coefficient_count:
-        return {
-            "status": "rank_deficient_symmetric_fit",
-            "rank": rank,
-            "seed": list(seed),
-            **best_exact,
-        }, evaluations
-    ridge = tf.sqrt(tf.constant(config.ridge, tf.float64)) * tf.eye(coefficient_count, dtype=tf.float64)
-    beta = tf.linalg.lstsq(
-        tf.concat([train_design, ridge], axis=0),
-        tf.concat([train_response, tf.zeros([coefficient_count, 1], tf.float64)], axis=0),
-        fast=False,
-    )[:, 0]
-    precision = _unpack_symmetric(beta, dimension)
-    train_prediction = tf.einsum("nrc,c->nr", train_design_rows, beta)
-    holdout_prediction = tf.einsum("nrc,c->nr", holdout_design_rows, beta)
-    train_rmse = float(
-        tf.sqrt(tf.reduce_mean((train_prediction - train_response_rows) ** 2)).numpy()
-    )
-    holdout_error = tf.sqrt(
-        tf.reduce_mean((holdout_prediction - holdout_response_rows) ** 2)
-    )
-    holdout_scale = tf.maximum(
-        tf.sqrt(tf.reduce_mean(holdout_response_rows**2)), 1.0e-15
-    )
-    holdout_relative = float((holdout_error / holdout_scale).numpy())
-    raw_eigenvalues, eigenvectors = tf.linalg.eigh(precision)
-    floor = tf.maximum(
-        tf.constant(config.eigenvalue_floor, tf.float64),
-        tf.reduce_max(raw_eigenvalues) / config.max_condition_number,
-    )
-    projected_eigenvalues = tf.maximum(raw_eigenvalues, floor)
-    projected = tf.matmul(eigenvectors * projected_eigenvalues[None, :], eigenvectors, transpose_b=True)
-    projection_relative = float(
-        (tf.linalg.norm(projected - precision) / tf.maximum(tf.linalg.norm(precision), 1.0e-15)).numpy()
-    )
-    status = "usable" if holdout_relative <= config.score_holdout_relative_rmse else "score_holdout_failed"
+    status = ("rank_deficient_symmetric_fit", "usable", "score_holdout_failed")[int(result["status"])]
+    payload = {"status": status, "rank": int(result["rank"]), "seed": list(seed), **best_exact}
+    if status == "rank_deficient_symmetric_fit":
+        return payload, evaluations
+    # Restore the original host result schema after the complete numerical call.
+    # Fit arrays remain frozen to preserve the old materialization boundary.
     return {
-        "status": status, "seed": list(seed), "rank": rank,
-        "train_score_rmse": train_rmse,
-        "holdout_score_relative_rmse": holdout_relative,
-        "raw_eigenvalues": raw_eigenvalues.numpy(),
-        "projected_eigenvalues": projected_eigenvalues.numpy(),
-        "projection_relative_frobenius": projection_relative,
-        "projected_precision_z": projected.numpy(),
-        **best_exact,
-        **(
-            {
-                "pair_disjoint_score_holdout": True,
-                "training_sample_count": len(train_indices),
-                "holdout_sample_count": len(holdout_indices),
-            }
-            if config.pair_disjoint_score_holdout
-            else {}
-        ),
+        **payload,
+        "train_score_rmse": float(result["train_score_rmse"]),
+        "holdout_score_relative_rmse": float(result["holdout_score_relative_rmse"]),
+        "raw_eigenvalues": tf.stop_gradient(result["raw_eigenvalues"]),
+        "projected_eigenvalues": tf.stop_gradient(result["projected_eigenvalues"]),
+        "projection_relative_frobenius": float(result["projection_relative_frobenius"]),
+        "projected_precision_z": tf.stop_gradient(result["projected_precision_z"]),
+        **({"pair_disjoint_score_holdout": True,
+            "training_sample_count": len(training_indices),
+            "holdout_sample_count": len(holdout_indices)} if config.pair_disjoint_score_holdout else {}),
     }, evaluations
 
 
@@ -1514,27 +1441,8 @@ def _score_fit_partition_indices(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Partition score rows while optionally keeping antithetic pairs together."""
 
-    count = int(sample_count)
-    fraction = float(holdout_fraction)
-    if count <= 1 or not 0.0 < fraction < 1.0:
-        raise ValueError("score-fit partition requires count > 1 and 0 < fraction < 1")
-    if not pair_disjoint:
-        holdout_count = max(1, int(round(count * fraction)))
-        train_count = count - holdout_count
-        return tf.range(train_count, dtype=tf.int64), tf.range(train_count, count, dtype=tf.int64)
-    if count % 2:
-        raise ValueError("pair-disjoint score holdout requires an even sample count")
-    pair_count = count // 2
-    holdout_pair_count = max(1, int(round(pair_count * fraction)))
-    if holdout_pair_count >= pair_count:
-        raise ValueError("pair-disjoint score holdout requires at least one training pair")
-    train_pair_count = pair_count - holdout_pair_count
-    train_positive = tf.range(train_pair_count, dtype=tf.int64)
-    holdout_positive = tf.range(train_pair_count, pair_count, dtype=tf.int64)
-    return (
-        tf.concat((train_positive, train_positive + pair_count), axis=0),
-        tf.concat((holdout_positive, holdout_positive + pair_count), axis=0),
-    )
+    training, holdout = partition_schema(sample_count, holdout_fraction, pair_disjoint=pair_disjoint)
+    return tf.constant(training, tf.int64), tf.constant(holdout, tf.int64)
 
 
 def _evaluate_cloud(

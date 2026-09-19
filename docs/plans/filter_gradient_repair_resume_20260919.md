@@ -15,12 +15,41 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01161,
-charges are 15,874.613 GPU / 31,491.637 CPU seconds, leaving 171,325.387 GPU /
-83,708.363 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01199,
+charges are 17,412.882 GPU / 32,151.953 CPU seconds, leaving 169,787.118 GPU /
+83,048.047 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
+
+Latest recovery queue (supersedes historical pending notes below): TP now passes
+22 CPU/GPU cases (01173/01174), with its unchanged raw-residual gate and two
+converged Richardson estimates at the original derivative tolerance. The old
+1e-5 stencil fails equally in both GPU source arms and remains a diagnostic.
+Complete symmetric score fitting passes 17 CPU/GPU checks (01178/01197).
+GPU consumers pass 40 sequential, 43 block, 26 joint, 33 quadratic-initializer
+and five posterior-initializer cases (01179/01182--01185). The selector then
+received bulk host transport; all 19 focused CPU/GPU cases pass (01196/01198).
+The partial guard covers 180 sources / 1,189 exact exceptions; 61 policy checks
+pass in 01199. New-file Ruff and whitespace pass; the existing sequential
+outer-loop B023 warning remains part of the open lifecycle migration.
+
+The new registered measurements are `exact_incumbent` and
+`sequential_score_fit`, each with graph/XLA kernels and matched public endpoints.
+First small public score-fit pair: 19.008/2.302 ms, error <=8.882e-16, no new
+memory trigger. Selector public pair: 0.610/38.968 ms, repaired to 2.437 ms by
+bulk scalar transport, exact outputs. Its timing and 4.25/25.5 KiB device-peak
+triggers remain open. Full XLA selector time is 0.473 ms; do not compare that
+kernel timing with the public baseline. Preserved descriptive analysis:
+`inference-preparation-diagnostic-01195.json`. Larger extents, causal overhead
+localization and final three-process pairs remain pending.
+
+Continue the current master queue: outer sequential search/fitting and ordered
+block/quadratic lifecycles; fixed-center and block-score numerical control;
+eager mass-matrix construction reached by initializers; external DZ5 callback
+compatibility; TT/forecast-pool/selector memory and timing investigations;
+coverage/dispositions and final frozen-source comparisons. F01--F20 remain
+open. No merge or whole-repository compliance is established by this checkpoint.
 
 Use the existing approved command prefix:
 

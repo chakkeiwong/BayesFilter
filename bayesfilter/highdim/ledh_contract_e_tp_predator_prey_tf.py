@@ -315,9 +315,19 @@ def gaussian_closure_continuation_log_likelihood(
                                 + model.process_covariance[None, :, :])
         return (local_index + 1, *update(predicted_mean, predicted_covariance, observations[local_index], values))
 
-    _, _, _, values = tf.while_loop(lambda local_index, *_: local_index < count, step,
-        (tf.constant(1), means, covariance, values), maximum_iterations=observations.shape[0] - 1,
-        parallel_iterations=1)
+    start = 1
+    if observations.shape[0] > 1:
+        # A fixed initial recurrence preserves the original straight-line XLA
+        # arithmetic for two-step continuations without unrolling the horizon.
+        _, next_means, next_covariance, next_values = step(tf.constant(1), means, covariance, values)
+        means = tf.where(count > 1, next_means, means)
+        covariance = tf.where(count > 1, next_covariance, covariance)
+        values = tf.where(count > 1, next_values, values)
+        start = 2
+    if observations.shape[0] > start:
+        _, _, _, values = tf.while_loop(lambda local_index, *_: local_index < count, step,
+            (tf.constant(start), means, covariance, values), maximum_iterations=observations.shape[0] - start,
+            parallel_iterations=1)
     return tf.where(count > 0, values, tf.zeros_like(values))
 
 

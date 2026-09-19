@@ -8,11 +8,95 @@ reference measurements. These fixtures do not grant scientific admission.
 import inspect
 
 FIXTURES = ("source_recenter", "gamma_preparation", "student_proposal",
-            "ukf_initializer", "moment_teacher", "austria_preparation")
+            "ukf_initializer", "moment_teacher", "austria_preparation",
+            "exact_incumbent", "sequential_score_fit")
 
 
-def fixture(tf, name, size, jit):
+def fixture(tf, name, size, jit, *, public_boundary=False):
     dtype = tf.float64
+    if name == "exact_incumbent":
+        from bayesfilter.inference import _exact_incumbent as selector
+
+        count, dimension = 32 * size, 3
+        positions = tf.reshape(tf.sin(tf.cast(tf.range(count * dimension), dtype)), [count, dimension])
+        values = -tf.reduce_sum(positions ** 2, axis=1)
+        inputs = (positions, -positions, values, tf.range(count) % 3 != 0)
+        native = hasattr(selector, "_incumbent_selection")
+
+        def evaluate(positions, scores, values, flags):
+            if native and not public_boundary:
+                _mask, index = selector._incumbent_selection.python_function(
+                    tf.reshape(positions, [-1]), tf.reshape(scores, [-1]), values,
+                    flags, tf.range(1, count + 1) * dimension)
+                return index, values[index], positions[index], scores[index]
+            records = selector.candidates_from_rows(positions, values, scores,
+                start_index=0, source_role="comparison", eligibility=flags)
+            winner = selector.select_exact_incumbent(records)
+            if winner is None:
+                raise ValueError("frozen incumbent fixture has no eligible candidate")
+            return (tf.constant(winner.evaluation_index, tf.int32), tf.constant(winner.value, dtype),
+                tf.convert_to_tensor(winner.position, dtype), tf.convert_to_tensor(winner.score, dtype))
+
+        evaluate.timing_scope = ("complete_tensor_selection" if native and not public_boundary
+            else "complete_public_record_creation_and_selection")
+        evaluate.execution_backend = "tensorflow" if native else "legacy_numpy_selection_diagnostic_only"
+        return evaluate, inputs, {"records": count, "dimension": dimension,
+            "boundary": "complete_exact_finite_incumbent_selection", "source_role": "fresh_execution_comparison"}
+
+    if name == "sequential_score_fit":
+        from bayesfilter.inference import sequential_map_covariance as sequential
+
+        count, dimension = 16 * size, 2 * size
+        config = sequential.SequentialMapCovarianceConfig()
+        precision = tf.linalg.diag(tf.linspace(tf.constant(1.5, dtype), 3., dimension)) + .1
+
+        def scalar(point):
+            score = -tf.linalg.matvec(precision, point)
+            return .5 * tf.reduce_sum(point * score), score
+
+        def batch(points):
+            scores = -tf.einsum("ij,bj->bi", precision, points)
+            return .5 * tf.reduce_sum(points * scores, 1), scores
+
+        center = tf.linspace(tf.constant(-.13, dtype), .22, dimension)
+        inputs = (center, scalar(center)[1], tf.linspace(tf.constant(.7, dtype), 1.2, dimension),
+            tf.constant(.3, dtype), tf.constant([2026, 919], tf.int32), tf.constant(config.ridge, dtype),
+            tf.constant(config.eigenvalue_floor, dtype), tf.constant(config.max_condition_number, dtype),
+            tf.constant(config.score_holdout_relative_rmse, dtype))
+        native = hasattr(sequential, "score_fit_program")
+        fields = ("rank", "train_score_rmse", "holdout_score_relative_rmse", "raw_eigenvalues",
+            "projected_eigenvalues", "projection_relative_frobenius", "projected_precision_z")
+        if native and not public_boundary:
+            from bayesfilter.inference.sequential_score_fit_tf import partition_schema
+            train, heldout = partition_schema(count, config.holdout_fraction, pair_disjoint=False)
+            program = sequential.score_fit_program(scalar, batch, count, dimension, train, heldout,
+                jit_compile=jit).python_function
+
+            def evaluate(*args):
+                result = program(*args)
+                return (result["status"], *(result[field] for field in fields), result["best_value"],
+                    result["best_position"], result["best_score"])
+        else:
+            def evaluate(center, center_score, scale, radius, seed, ridge, floor, condition_cap, tolerance):
+                result, _count = sequential._fit_score_curvature(scalar, center, center_score, scale,
+                    dimension=dimension, radius=float(radius), sample_count=count,
+                    seed=tuple(int(x) for x in seed), config=config, evaluations=0,
+                    batched_value_and_score_fn=batch)
+                if result["status"] != "usable":
+                    raise ValueError(result["status"])
+                return (tf.constant(1, tf.int32), *(tf.convert_to_tensor(result[field],
+                    tf.int32 if field == "rank" else dtype) for field in fields),
+                    tf.convert_to_tensor(result["best_exact_value"], dtype),
+                    tf.convert_to_tensor(result["best_exact_position"], dtype),
+                    tf.convert_to_tensor(result["best_exact_score"], dtype))
+
+        evaluate.timing_scope = ("complete_tensor_cloud_evaluation_score_fit_and_selection"
+            if native and not public_boundary else "complete_public_cloud_evaluation_score_fit_and_selection")
+        evaluate.execution_backend = ("tensorflow" if native
+            else "legacy_tensorflow_fit_with_numpy_record_selection_diagnostic_only")
+        return evaluate, inputs, {"samples": count, "dimension": dimension, "seed": [2026, 919],
+            "boundary": "complete_existing_symmetric_score_fit", "frozen_result": True}
+
     if name == "austria_preparation":
         from bayesfilter.highdim.zhao_cui_austria_sir_parameter_density_training_tf import (
             batch_native_t1_from_common_noise,

@@ -3162,3 +3162,136 @@ legacy sequential module/test were left outside this localized change.
 Charges through 01161 are 15,874.613 GPU / 31,491.637 CPU seconds; remaining
 allowances are 171,325.387 GPU / 83,708.363 CPU seconds under the same 52/32-hour
 caps. No worker remains running at this checkpoint.
+
+## TP arithmetic repair and derivative diagnostic, 01162--01172
+
+The frozen continuation breakdown in 01162 localizes the XLA error to a
+2.842170943040401e-14 continuation-log difference; reference and normalization
+maximum match exactly. That difference produces the previously observed
+1.0581813203458523e-16 normalized-feature error. Exposing intermediates can
+change fusion, so the complete original endpoint remains the parity authority.
+
+Peeling one initial recurrent update preserves the original straight-line
+arithmetic for a two-step window while keeping horizon-independent native
+iteration for its remainder. The existing first update remains separate. All
+eight breakdown cases pass in 01163 with exact XLA continuation and projection
+fields. Run 01164 passes ten full cases but finds an XLA zero-capacity loop-tape
+failure; omit a statically empty remainder loop. The original complete CPU
+failure case then passes in 01165, and both dynamic-window tests pass in 01166
+for counts zero through four, including parameter gradients, HLO and one trace.
+
+GPU run 01167 passes 20/21 cases. Values, gradients and every residual-history
+field match exactly, but the independent central finite difference at 1e-5
+fails. Run 01168 retains that failure and evaluates both perturbed source arms:
+both return the same directional score (-69.1603179080489), central difference
+(-69.16028570458366), and perturbed values. This failure is present in the
+baseline; it does not demonstrate a refactor error or waive derivative checking.
+
+The predeclared eight-step diagnostic in 01171 preserves exact perturbed-value
+parity and chart validity throughout. Central-difference error grows from about
+1e-6 at 1e-3/3e-4 to 3.22e-5 at 1e-5 and 1.11e-3 at 3e-7. Replace the unreliable
+single stencil with two fixed fourth-order Richardson estimates from central
+differences at 4e-3, 2e-3 and 1e-3. Both must converge and both must match the
+score at the unchanged atol=1e-8 / rtol=1e-7. Original 1e-5 results remain
+diagnostic output; source values, derivatives, residuals and branch gates are
+unchanged. The exact GPU case passes in 01172 (97.218 driver seconds). The
+full CPU/GPU suite remains required before closing this focused blocker.
+
+## Compiled exact incumbent selection, 01169--01170
+
+`_exact_incumbent` now packs immutable fields and ragged-vector metadata at
+the host boundary, computes all finite eligibility and earliest-maximum
+selection in one XLA function, and returns the original selected object.
+Empty vectors remain vacuously finite; mixed dimensions, ineligible rows,
+nonfinite coordinates/scores/values, first-record ties and signed zero retain
+the pinned behavior. TensorFlow traces once across input record counts; XLA
+specializes physical sizes. No per-record numerical predicate is exempted.
+
+All 14 focused cases pass on CPU (01169, 4.825 seconds) and GPU (01170,
+6.328 seconds), including pinned selection, independent scalar reference,
+record identity and HLO. Six exact schema exceptions replace the module's
+previous broad iteration exclusion; the partial guard covers 179 sources with
+1,189 exceptions. Existing initializer consumers still require requalification.
+
+The next call-chain audit also confirms eager mass-matrix construction reached
+by sequential/quadratic initializers and remaining fixed-center/block-score
+replicate, stability, family and shrinkage loops. These are explicit F18/F19
+debt in the refreshed master/ledger; NumPy removal was not full XLA closure.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain TP arithmetic repair for qualification | Exact CPU/GPU baseline fields; original raw-residual gate passes | Original GPU finite-difference stencil fails equally in both arms | Full converged-diagnostic suite still pending | Execute full CPU/GPU group | No canonical LEDH admission |
+| Retain exact selector repair | 14 pinned/independent/HLO cases pass on both devices | No focused selection veto | Actual initializer consumer regression and terminal comparisons pending | Qualify consumers and continue lifecycle migration | No campaign completion |
+| Keep merge gated | Master and runner budgets agree | Remaining numerical control and memory/performance investigations open | Final source/harness not frozen | Continue current master queue | No merge readiness |
+
+
+## Complete fit qualification and first preparation measurements, 01173--01199
+
+All 22 TP tests pass on GPU (01173, 387.473 seconds) and CPU (01174,
+277.862 seconds). The original raw-residual comparison remains unchanged.
+The fixed, converged derivative diagnostic now passes every fixture; the old
+stencil and failed GPU results remain recorded above.
+
+Exact selection uses geometric record/coordinate capacities to avoid a new
+physical XLA size for every appended record; all 15 GPU cases pass in 01175.
+The complete sequential score-fit program encloses the original seeded cloud,
+full target callback, symmetric design, holdout partition, COD solve, rank and
+projection decisions, and exact winner. It preserves the original frozen
+preparation boundary. Run 01176 passes 13 cases and exposes missing raw-XLA
+eigensolver gradients when an external tape sees the function before the host
+wrapper detaches its arrays. Detaching the original frozen outputs inside the
+compiled return repairs that boundary; 01177 passes all 14 cases. Thin QR
+reduces the tall SVD input without forming normal equations, retaining the
+original row-scaled rank threshold. Expanded nonfinite-value and graph-growth
+checks bring the group to 17 passes on GPU/CPU (01178/01197).
+
+| Run | GPU consumer | Passed | Driver seconds |
+| --- | --- | ---: | ---: |
+| 01179 | Sequential initializer | 40 | 110.330 |
+| 01182 | Block-center initializer | 43 | 107.441 |
+| 01183 | Exact incumbent and joint center | 26 | 76.635 |
+| 01184 | Complete quadratic initializer | 33 | 100.177 |
+| 01185 | Posterior local initializer | 5 | 44.259 |
+
+The current-source source guard passes for 180 sources / 1,189 exceptions,
+with no numerical exemption in the new score-fit kernel. Scope remains partial.
+Policy/controller groups 01180 and 01199 pass all 61 checks. New-file Ruff and
+whitespace checks pass. The legacy sequential loop-closure B023 finding remains
+part of the open outer-lifecycle migration, not an admitted source exception.
+
+Registered fixtures now measure complete exact selection and complete score
+fitting, separating public endpoints from numerical graph/XLA calls. Baseline
+NumPy roles are explicitly diagnostic; imported source provenance and all
+numerical output fields remain recorded. Runs 01186--01193 qualify the small
+extent. Score-fit public medians are 19.008/2.302 ms before/after, values agree
+within 8.882e-16, host peaks differ by about 3.29 MiB, and device peaks are
+8,404,224/23,808 bytes. Cold calls take 0.803/2.384 seconds. Graph/XLA numerical
+medians are 6.677/1.276 ms; their graphs have 916/922 nodes. The graph arm has
+no nested XLA or raw XLA op. These are single-process descriptive observations.
+
+Exact selection first exposes 0.610/38.968 ms public medians despite exact
+outputs; its numerical XLA kernel takes 0.473 ms. Bulk-unstack rows, serialize
+completed values/flags once and skip identity reshapes of already-flat vectors.
+Run 01194 passes all 15 GPU cases. Remeasurement 01195 lowers the public median
+to 2.437 ms, but the warm-time trigger remains open. Device peaks remain
+4,352/26,112 bytes; fixed-shape warm allocator current is stable. The small
+absolute allocation needs explanation rather than silently ignoring the 2x
+trigger. Added empty-record/zero-width checks pass in both final GPU and CPU
+runs 01196/01198 (19 cases each). The broader consumers above precede only
+this bulk transport optimization; final consumer qualification remains gated.
+
+The preserved descriptive analysis is
+`artifacts/filter-gradient-repair-20260917/inference-preparation-diagnostic-01195.json`.
+No cross-scope timing ratio is reported. Larger extents and terminal fresh-process
+repeats remain required, alongside the preexisting TT/forecast memory issues.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain TP and complete-fit repairs | Complete focused CPU/GPU parity and consumer checks pass | No focused numerical mismatch | Final source and larger-scope timing/memory not qualified | Continue lifecycle repair and registered comparisons | No whole-repository completion or LEDH admission |
+| Keep selector performance investigation open | Exact output/identity parity and compiled selection pass | Public timing and device-peak triggers remain | Residual tensor packing/record overhead and scaling | Localize phases and measure larger extent | No accepted performance tradeoff yet |
+| Keep merge gated | 61 current policy/controller checks pass | Call-chain debt, memory regressions and terminal evidence remain open | Entire final source/harness remains unfrozen | Execute the refreshed master queue | No merge readiness |
+
+Through 01199 the authoritative driver charges 17,412.882 GPU and 32,151.953
+CPU seconds. Remaining allowances are 169,787.118 GPU / 83,048.047 CPU seconds
+under the same 52/32-hour cumulative caps. The extension is counted once.
+No numerical worker remains running at this checkpoint.

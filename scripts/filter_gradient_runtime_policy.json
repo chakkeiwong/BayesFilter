@@ -171,9 +171,7 @@
     "bayesfilter/highdim/zhao_cui_moment_teacher_lgssm_tf.py": null,
     "bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py": null,
     "bayesfilter/independent_score/sir_observation_simulator_tf.py": null,
-    "bayesfilter/inference/_exact_incumbent.py": {
-      "python_iteration": []
-    },
+    "bayesfilter/inference/_exact_incumbent.py": null,
     "bayesfilter/inference/block_score_geometry.py": {
       "python_iteration": []
     },
@@ -205,7 +203,9 @@
         "_antithetic_cloud",
         "_orthogonal_antithetic_cloud",
         "_evaluate_cloud",
-        "_solve_trust_region_tf"
+        "_solve_trust_region_tf",
+        "_fit_score_curvature",
+        "_score_fit_partition_indices"
       ]
     },
     "bayesfilter/inference/target_failure_policy.py": {
@@ -384,7 +384,8 @@
         "_json_ready"
       ]
     },
-    "bayesfilter/inference/sequential_preparation_tf.py": null
+    "bayesfilter/inference/sequential_preparation_tf.py": null,
+    "bayesfilter/inference/sequential_score_fit_tf.py": null
   },
   "exceptions": [
     {
@@ -11143,6 +11144,60 @@
       "ast_sha256": "2cbb26191ebe51061c2bd3c50d5be2af09f5ef8dfb008dda86ed547cbe6430a8",
       "role": "host_reporting",
       "reason": "Serialize completed record fields using ordinary Python containers."
+    },
+    {
+      "path": "bayesfilter/inference/_exact_incumbent.py",
+      "function": "_select_records",
+      "line": 85,
+      "kind": "python_iteration",
+      "ast_sha256": "978fdb2f54b8c9b2df7de953e4372abe899ce22da54c2d9c88fa4b9e08e5e47d",
+      "role": "fixed_schema",
+      "reason": "Pack immutable record fields and ragged vector-width metadata only; all finite eligibility and ranking execute in _incumbent_selection."
+    },
+    {
+      "path": "bayesfilter/inference/_exact_incumbent.py",
+      "function": "_select_records",
+      "line": 86,
+      "kind": "python_iteration",
+      "ast_sha256": "bb72b5379de05289f759fe52fca122d3bc464912b266a1a3ec83a2445adb9fdd",
+      "role": "fixed_schema",
+      "reason": "Pack immutable record fields and ragged vector-width metadata only; all finite eligibility and ranking execute in _incumbent_selection."
+    },
+    {
+      "path": "bayesfilter/inference/_exact_incumbent.py",
+      "function": "_select_records",
+      "line": 87,
+      "kind": "python_iteration",
+      "ast_sha256": "55c9d80a8d4090278f40f0b0e0d2e2dcd47b462203952b73ecba3f852aaccd43",
+      "role": "fixed_schema",
+      "reason": "Pack immutable record fields and ragged vector-width metadata only; all finite eligibility and ranking execute in _incumbent_selection."
+    },
+    {
+      "path": "bayesfilter/inference/_exact_incumbent.py",
+      "function": "_select_records",
+      "line": 93,
+      "kind": "python_iteration",
+      "ast_sha256": "550c72ec79c0bf47d618fbe326f26d434b038476f4225d4ce37126acd00c8ef8",
+      "role": "fixed_schema",
+      "reason": "Pack immutable record fields and ragged vector-width metadata only; all finite eligibility and ranking execute in _incumbent_selection."
+    },
+    {
+      "path": "bayesfilter/inference/_exact_incumbent.py",
+      "function": "_select_records",
+      "line": 94,
+      "kind": "python_iteration",
+      "ast_sha256": "6fdc0fbb88414a586bacfbf815935c789e606ddf63c8ea7342fad7c6ad0faf86",
+      "role": "fixed_schema",
+      "reason": "Pack immutable record fields and ragged vector-width metadata only; all finite eligibility and ranking execute in _incumbent_selection."
+    },
+    {
+      "path": "bayesfilter/inference/_exact_incumbent.py",
+      "function": "candidates_from_rows",
+      "line": 148,
+      "kind": "python_iteration",
+      "ast_sha256": "bc75fe643859d3afd3461894739f98047f34df956892f24e05adb93f29120f76",
+      "role": "fixed_schema",
+      "reason": "Construct public immutable records and provenance indices from completed tensor rows; no numerical eligibility or ranking."
     }
   ]
 }

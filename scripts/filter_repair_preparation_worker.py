@@ -13,6 +13,14 @@ def main():
     def measure_preparation(args, result):
         for name in ("filter_repair_preparation_worker.py", "filter_repair_preparation_fixtures.py"):
             result["harness_sha256"][name] = hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+
+        def scoped_fixture(tf, name, size, jit):
+            evaluate, inputs, dimensions = fixture(tf, name, size, jit, public_boundary=args.jit == "eager")
+            if hasattr(evaluate, "timing_scope"):
+                result["timing_scope"] = evaluate.timing_scope
+            return evaluate, inputs, dimensions
+
+        worker.fixture = scoped_fixture
         measure(args, result)
         # tf.nest sorts mapping keys; the teacher's scalar validity is last.
         # Equal invalid fits cannot qualify this execution comparison.

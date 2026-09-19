@@ -120,8 +120,13 @@ TEST_GROUPS = {
         "tests/highdim/test_p55_source_route_target_transport.py",
         "tests/highdim/test_p57_m6_sequential_fixed_hmc_source_loop.py",
         "tests/highdim/test_p59_author_sir_step_spec_assembly.py"),
-    "predator_tp": ("tests/test_filter_repair_predator_tp.py", "tests/highdim/test_ledh_contract_e_tp_predator_prey.py"),
+    "predator_tp": ("tests/test_filter_repair_predator_tp.py", "tests/highdim/test_ledh_contract_e_tp_predator_prey.py",
+        "tests/test_filter_repair_predator_tp_localization.py"),
+    "predator_tp_residual": ("tests/test_filter_repair_predator_tp.py::test_complete_predator_tp_same_mode_value_gradient_and_history[True-4-2]",),
+    "predator_tp_difference": ("tests/test_filter_repair_predator_tp_localization.py::test_gpu_finite_difference_step_localization",),
     "predator_tp_localization": ("tests/test_filter_repair_predator_tp_localization.py",),
+    "predator_tp_continuation": ("tests/test_filter_repair_predator_tp_localization.py::test_continuation_rounding_breakdown",),
+    "predator_tp_continuation_windows": ("tests/test_filter_repair_predator_tp_localization.py::test_dynamic_continuation_windows_keep_values_and_total_gradients",),
     "predator_tp_fixed_features": ("tests/test_filter_repair_predator_tp_localization.py::test_first_tp_projection_breakdown[features-False]",
         "tests/test_filter_repair_predator_tp_localization.py::test_first_tp_projection_breakdown[features-True]"),
     "predictive": ("tests/test_filter_repair_predictive.py", "tests/test_ssl_lstm_predictive_tf.py", "tests/test_ssl_lstm_complexity_predictive_tf.py"),
@@ -179,6 +184,7 @@ TEST_GROUPS = {
     "fixed_geometry": ("tests/test_fixed_center_curvature.py", "tests/test_filter_repair_host_io.py", "tests/test_posterior_curvature_refinement.py"),
     "block_geometry": ("tests/test_block_score_geometry.py",),
     "sequential_geometry": ("tests/test_sequential_map_covariance.py",),
+    "sequential_score_fit": ("tests/test_filter_repair_sequential_score_fit.py",),
     "sequential_preparation": ("tests/test_filter_repair_sequential_preparation.py",),
     "block_center": ("tests/test_block_coordinate_center.py", "tests/test_filter_repair_block_center.py"),
     "quadratic_geometry": ("tests/test_quadratic_geometry.py", "tests/test_filter_repair_geometry_parity.py"),
@@ -219,6 +225,7 @@ TEST_GROUPS = {
         "test_target_failure_policy_labels_are_bounded_and_backend_breakdown_is_separate",
         "test_target_failure_policy_classifies_sampler_energy_error_after_valid_target",
     )) + ("tests/test_linear_kalman_svd_tf.py::test_target_failure_policy_does_not_activate_on_valid_lgssm_value",),
+    "exact_incumbent": ("tests/test_filter_repair_exact_incumbent.py", "tests/test_exact_incumbent.py"),
     "joint_center": ("tests/test_exact_incumbent.py", "tests/test_joint_center.py"),
     "apf": ("tests/highdim/test_zhao_cui_frozen_proposal_apf_tf.py", "tests/highdim/test_c2_sv_frozen_proposal_apf_tf.py"),
     "preparation": ("tests/test_backend_readiness.py", "tests/highdim/test_bases.py", "tests/highdim/test_c2_hermite_basis.py", "tests/highdim/test_p86_lagrangep_mass_integral.py", "tests/highdim/test_retained_moments.py", "tests/test_filter_repair_primitives.py", "tests/test_filter_repair_consumers.py"),
@@ -237,8 +244,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
-    "sequential_preparation": "GPU", "sequential_geometry": "GPU", "block_center": "GPU",
-    "quadratic_initializer": "GPU", "joint_center": "GPU"}
+    "sequential_preparation": "GPU", "sequential_geometry": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
+    "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU"}
 FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES
@@ -498,7 +505,8 @@ def measurement_modes(name):
     """Keep complete public replay timing alongside numerical compilation arms."""
     if name == "cpu_forecast_pool":
         return ("eager",)
-    return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates", "cpu_forecast_shard")
+    return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates", "cpu_forecast_shard",
+            "exact_incumbent", "sequential_score_fit")
             else ("off", "on"))
 
 
