@@ -4,15 +4,15 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `db3959ac` is committed and pushed,
-including the tested rank-one fitter graph repair.
+September 19 refresh: source checkpoint `147e93ef` is committed and pushed,
+including the tested P72 gate calculations and comparison fixture.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01077, charges are 14,543.687 GPU / 29,222.518 CPU seconds;
-remaining allowances are 172,656.313 GPU / 85,977.482 CPU seconds. The earlier
+charge. Through run 01084, charges are 14,543.687 GPU / 29,950.881 CPU seconds;
+remaining allowances are 172,656.313 GPU / 85,249.119 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 173 sources with 1,113 exact
+The repair is incomplete. The static guard covers 173 sources with 1,117 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
@@ -39,6 +39,12 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    guard passes. The matched assembly 01070 passes in 188.360 seconds at
    9,743,236 KiB peak host RSS. This modest descriptive change leaves the
    memory investigation open; avoid another broad retry without a new repair.
+   The subsequent shared rank-one Legendre marginal passes all 17 coordinate,
+   25 transport, six public pullback and 11 sequential CPU checks (01079--01082),
+   plus all 59 policy/controller checks (01084). Assembly 01083 passes in
+   151.950 seconds at 7,330,768 KiB (6.991 GiB) host peak. Four/eight-coordinate
+   graphs shrink to 997/1,193 nodes. This remains well above the 0.658 GiB
+   baseline; inspect remaining basis/mass and normalizer graph duplication.
    Deferred fitter pullbacks pass six GPU checks (01042); the
    coordinate repair passes nine CPU/GPU checks (01041/01043). Affected public
    pullback, sequential and transport suites pass 6/11/25 CPU checks
@@ -57,6 +63,12 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    fixture passes CPU graph, XLA and both public source arms (01073--01076),
    with all 11 numerical summaries matching the original exactly. These are
    small diagnostic measurements; GPU and terminal repeats remain pending.
+   The CPU forecast pool still imports NumPy and executes a Python loop over
+   scalar forecasts through `ComplexityForecastWorker.evaluate`; its host
+   status check also prevents tracing the complete callback. Preserve each
+   row's seeds, ordering, validity rejection and raw-byte hashes in its repair.
+   `cpu_xla_cloud`, `quadratic_map_covariance` and `block_coordinate_center`
+   also need reachable-consumer classification before the audit can close.
 3. Resolve the predator-prey residual (~1.578e-9 versus the unchanged 1e-10
    gate), core-affine/higher-rank slowdown, centered qualification, and host
    memory regression. Lazy pullbacks reduced measured host memory, but the
@@ -131,6 +143,25 @@ baseline compiled timings. Public decisions, hashes, nonfinite rejections and
 threshold boundaries are checked by the paired correctness suite. Qualify one
 small CPU diagnostic before terminal three-process GPU repeats under the same
 20-warm-call measurement contract.
+
+### Bounded transport graph reduction after 01070
+
+The large assembly uses equal-shaped rank-one Legendre cores. Its masked
+marginal currently constructs a separate basis/mass/contraction Case graph
+for every axis, despite the common algebra. Share that body for exactly this
+static schema, passing each core and interval endpoints as tensors. Keep the
+existing paired-core einsums, polynomial recurrence, multiplication order,
+measure convention and all per-axis domain derivatives. Distinct basis
+families, degrees or core shapes retain their existing heterogeneous path.
+This reduces graph duplication without introducing a cross-context cache.
+
+Review risks: tensor-selected bounds must retain every captured derivative;
+nonconstant rank-one cores, unequal domains, both measures and graph/XLA
+execution need pinned parity. CDF/bisection and veto rules stay unchanged.
+Use focused complete coordinate and marginal pullback tests first, then the
+existing public/sequential/transport checks and one unchanged assembly memory
+diagnostic. Reject numerical drift at the original 1e-10 gate. The local
+Legendre and grid-CDF extension is not an author-algorithm promotion.
 
 ## Question and scope
 

@@ -10509,6 +10509,38 @@
       "ast_sha256": "48a5ae47dd3517e9ba52fb670dc05024d15bc8e9d50b5aee75159c5929262efa",
       "role": "fixed_schema",
       "reason": "Construct branch callables for the fixed spectrum schema; the TensorFlow while loop executes every numerical reduction."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "_shared_legendre_marginal",
+      "kind": "python_iteration",
+      "ast_sha256": "1d636a189d3b36d59dc3cd243e71af182c605de7e83d9e2d8303faa69ed25b52",
+      "role": "fixed_schema",
+      "reason": "Pack the fixed core input tuple before the native coordinate recurrence; no numerical coordinate evaluation in Python."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "_shared_legendre_marginal",
+      "kind": "python_iteration",
+      "ast_sha256": "361591a5e1fc69fbbdf79e626ba113ca4730976d3e6afd833af9bfd3583c63c2",
+      "role": "fixed_schema",
+      "reason": "Pack per-axis interval tensor coefficients while preserving their individual derivatives."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program",
+      "kind": "python_iteration",
+      "ast_sha256": "b90863cb6d35cac9051f9a36cbd103cb655f9a47a25eeb627f5af9e957b50a4d",
+      "role": "fixed_schema",
+      "reason": "Check immutable core-shape equality to select the shared rank-one body."
+    },
+    {
+      "path": "bayesfilter/highdim/ttsirt_coordinate_tf.py",
+      "function": "masked_marginal_program",
+      "kind": "python_iteration",
+      "ast_sha256": "492419afc427b4d9683612e8583926aa8a3563e38905218fe1549a4173a0606e",
+      "role": "fixed_schema",
+      "reason": "Check exact owned basis/domain classes and static polynomial degree before sharing a numerical graph."
     }
   ]
 }

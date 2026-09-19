@@ -7,6 +7,7 @@ from dataclasses import replace
 import pytest
 import tensorflow as tf
 
+from bayesfilter import highdim
 from bayesfilter.highdim.squared_tt_density_native_tf import density_program
 from bayesfilter.highdim.transport import FixedTTSIRTTransport, KRCDFConfig
 from bayesfilter.highdim.ttsirt_coordinate_tf import masked_marginal_program
@@ -15,6 +16,62 @@ from tests.highdim.test_zhao_cui_frozen_ttsirt_apf_compiler import _constant_tra
 from tests.test_filter_repair_squared_density import _density
 
 D = tf.float64
+
+
+def _rank_one_density(dimension=3, lebesgue=False):
+    convention = highdim.MeasureConvention(
+        density_measure=(highdim.DensityMeasure.REFERENCE_LEBESGUE if lebesgue
+                         else highdim.DensityMeasure.REFERENCE_MEASURE),
+        mass_measure=(highdim.MassMeasure.REFERENCE_LEBESGUE if lebesgue
+                      else highdim.MassMeasure.REFERENCE_MEASURE), reference_weight_name="omega")
+    basis = highdim.ProductBasis(tuple(highdim.LegendreBasis1D(
+        highdim.BoundedInterval(-1. - .1*axis, 1. + .3*axis), 2)
+        for axis in range(dimension)), convention)
+    cores = tuple(highdim.TTCore(tf.reshape(tf.constant([1., .02*(axis+1), -.01], D), [1, 3, 1]))
+                  for axis in range(dimension))
+    fitted = highdim.FunctionalTT(cores, basis, convention)
+    arguments = {"sqrt_tt": fitted, "measure_convention": convention,
+        "defensive_density": highdim.TensorProductReferenceDensity(basis, convention, tf.constant(.04, D)),
+        "tau": tf.constant(.03, D), "normalizer_floor": tf.constant(1e-12, D),
+        "denominator_floor": tf.constant(1e-12, D)}
+    return highdim.SquaredTTDensity(**arguments,
+        branch_identity=highdim.SquaredTTDensity.expected_branch_identity(**arguments))
+
+
+@pytest.fixture(scope="module")
+def previous_masked():
+    source = subprocess.check_output(["git", "show",
+        "147e93ef:bayesfilter/highdim/ttsirt_coordinate_tf.py"], text=True)
+    spec = importlib.util.spec_from_loader("masked_before_legendre_sharing", loader=None)
+    module = importlib.util.module_from_spec(spec)
+    exec(compile(source, "masked_before_legendre_sharing.py", "exec"), module.__dict__)  # noqa: S102
+    return module
+
+
+@pytest.mark.parametrize("lebesgue", [False, True])
+@pytest.mark.parametrize("jit", [False, True])
+def test_shared_legendre_marginal_keeps_core_query_and_captured_domain_derivatives(previous_masked, lebesgue, jit):
+    density = _rank_one_density(lebesgue=lebesgue)
+    cores = tuple(core.values for core in density.sqrt_tt.cores)
+    bounds = tuple(value for part in density.sqrt_tt.product_basis.bases
+                   for value in (part.domain.left, part.domain.right))
+    points = tf.constant([[-.4, .1, .3], [.2, -.3, .6]], D)
+    sources = (*cores, *bounds, density.tau, density.defensive_density.floor, points)
+    programs = tuple(create(density, 2, jit_compile=jit) for create in
+                     (previous_masked.masked_marginal_program, masked_marginal_program))
+    for mask in ((True, False, True), (False, True, False), (True, True, True)):
+        results = []
+        for program in programs:
+            with tf.GradientTape() as tape:
+                tape.watch(sources)
+                values = program(*cores, density.tau, points, tf.constant(mask))
+                loss = tf.reduce_sum(values * tf.constant([.3, -.1], D))
+            gradients = tape.gradient(loss, sources)
+            assert all(value is not None for value in gradients)
+            results.append((values, gradients))
+        for actual, expected in zip(tf.nest.flatten(results[1]), tf.nest.flatten(results[0]), strict=True):
+            tf.debugging.assert_near(actual, expected, atol=1e-10, rtol=1e-10)
+    assert programs[1].experimental_get_tracing_count() == 1
 
 
 @pytest.fixture(scope="module")
@@ -69,8 +126,10 @@ def test_masked_marginal_preserves_heterogeneous_values_and_all_pullbacks(lebesg
 
 @pytest.mark.parametrize("suffix", [False, True])
 @pytest.mark.parametrize("jit", [False, True])
-def test_shared_coordinate_preserves_pinned_transport_and_complete_score(previous, suffix, jit):
-    transport = FixedTTSIRTTransport(_density(3, lebesgue=True),
+@pytest.mark.parametrize("rank_one", [False, True])
+def test_shared_coordinate_preserves_pinned_transport_and_complete_score(previous, suffix, jit, rank_one):
+    density = _rank_one_density(lebesgue=True) if rank_one else _density(3, lebesgue=True)
+    transport = FixedTTSIRTTransport(density,
         KRCDFConfig(grid_size=5, bisection_steps=4, monotonicity_tolerance=1e-10,
                     bracket_tolerance=1e-10, denominator_floor=1e-12, max_floor_count=0))
     query = tf.constant([[-.23, .42], [.37, -.16]], D)

@@ -2827,3 +2827,45 @@ Whitespace checks pass. Charges are 29,222.518 CPU / 14,543.687 GPU seconds.
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
 |---|---|---|---|---|---|
 | Retain P72 numerical gate repair as a branch checkpoint | 81 CPU checks, 59 controller checks and four measurement arms pass | GPU checks, source audit and terminal comparisons remain open | Large assembly graph growth and remaining callbacks | Continue graph-memory repair and qualify GPU when idle | Full repair, scientific admission or merge readiness |
+
+Checkpoint `147e93ef` is committed and pushed after a fresh fetch confirmed
+no repair-branch divergence. Main remains unmerged. The next shared rank-one
+Legendre marginal attempt 01078 passes 13 checks and fails four XLA pullback
+cases: an unwrapped polynomial recurrence exports variant tapes through its
+conditional branch (`FakeParam`). Retain the existing complete-recomputed
+pullback boundary around that recurrence, now shared across axes; do not
+change the derivative, recurrence or tests. Graph-mode parity already passes,
+but no memory claim follows before all 17 checks pass.
+
+Run 01079 passes all 17 coordinate checks in 166.635 CPU seconds after
+restoring the shared polynomial pullback boundary. Both measures preserve
+core/query/mixture/defensive and captured interval derivatives for nonconstant
+rank-one cores and distinct bounds. Complete prefix/suffix transport scores
+also pass against the pinned implementation. Four/eight-coordinate graphs
+have 997/1,193 nodes, versus 01069's 1,447/2,227. No cross-graph cache is added.
+
+Runs 01080--01082 pass 25 transport, six public external-pullback and 11
+sequential-consumer checks in 134.884/34.785/66.862 CPU seconds. Focused Ruff
+and whitespace checks pass. The static guard passes 173 sources / 1,117
+exact exceptions, still partial coverage. Run one unchanged large assembly
+diagnostic next to measure this source change; GPU qualification is pending.
+
+Recovery confirms assembly 01083 passed in 151.950 CPU process-seconds at
+7,330,768 KiB (6.991 GiB) host peak, and 01084 passed all 59 policy/controller
+checks in 8.134 seconds. `assembly-memory-diagnostic-01083.json` records the
+five matched diagnostic arms with manifest checksums. The single-process
+19.3% elapsed / 24.8% peak reductions relative to 01070 are descriptive;
+the 0.658 GiB original baseline gap still blocks memory acceptance.
+
+Refresh review: master/recovery accounting and exception counts were stale;
+the runner already has the correct authorized 52 GPU / 32 CPU cumulative
+hours. Through 01084 it charges 14,543.687 GPU / 29,950.881 CPU seconds.
+No additional allocation is added. No worker remains running. GPU2/GPU3
+are occupied, so continue bounded CPU diagnostics without interfering.
+The pinned baseline, unchanged tolerances, fixed arithmetic and derivative
+checks remain appropriate. Focused passing runs cannot replace final-source
+GPU qualification or paired three-process endpoint comparisons.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Retain shared Legendre marginal as a branch checkpoint | 17 coordinate, 25 transport, six public pullback, 11 sequential and 59 policy CPU checks pass | 6.99 GiB assembly host peak, GPU qualification and terminal repeats remain open | Remaining basis/mass/normalizer graph duplication and callback audit debt | Checkpoint, then continue bounded graph investigation and forecast-pool repair | Full repair, memory acceptance or merge readiness |

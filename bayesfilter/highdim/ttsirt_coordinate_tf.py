@@ -7,6 +7,12 @@ Python constructs only the heterogeneous basis/domain and tensor schemas.
 
 import tensorflow as tf
 
+from bayesfilter.highdim.bases import (
+    BoundedInterval,
+    LegendreBasis1D,
+    ProductBasis,
+    _legendre_values,
+)
 from bayesfilter.highdim.diagnostics import MassMeasure
 from bayesfilter.highdim.squared_tt import TensorProductReferenceDensity
 from bayesfilter.highdim.tt import TTCore
@@ -16,6 +22,54 @@ from bayesfilter.ops.compiled_tensor_program_tf import tensor_program
 D = tf.float64
 
 
+def _shared_legendre_marginal(basis, cores, points, keep, rows):
+    """The same paired-core recurrence for equal-shaped Legendre cores.
+
+Bounds are tensors, so axes can have distinct intervals and retain their
+captured derivatives. Only the common degree/core schema is specialized.
+"""
+    dimension = len(cores)
+    width = cores[0].basis_dim
+    packed = tf.stack(tuple(core.values for core in cores))
+    bounds = tf.stack(tuple((part.domain.left, part.domain.right) for part in basis.bases))
+    scales = tf.sqrt(tf.cast(2 * tf.range(width, dtype=tf.int32) + 1, D))
+
+    def basis_values(coordinate, left, right):
+        # LegendreBasis1D.evaluate and BoundedInterval.to_reference, with
+        # their original operation order and shared polynomial recurrence.
+        xi = 2.0 * (coordinate - left) / (right - left) - 1.0
+        return _legendre_values(xi, width - 1) * scales
+
+    # Keep the polynomial recurrence and its complete pullback in one common
+    # boundary. A bare recurrence leaks variant tapes through the outer Cond.
+    basis_program = tensor_program(basis_values,
+        [tf.TensorSpec([rows], D), tf.TensorSpec([], D), tf.TensorSpec([], D)], False)
+
+    def step(axis, state):
+        core = packed[axis]
+        length = bounds[axis, 1] - bounds[axis, 0]
+
+        def retained():
+            phi = basis_program.python_function(points[:, axis], bounds[axis, 0], bounds[axis, 1])
+            return tf.einsum("nl,nm,alb,AmB->naAbB", phi, phi, core, core)
+
+        def integrated():
+            mass = tf.eye(width, dtype=D)
+            if basis.convention.mass_measure is MassMeasure.REFERENCE_LEBESGUE:
+                mass *= length
+            paired = tf.einsum("alb,AmB,lm->aAbB", core, core, mass)
+            return tf.broadcast_to(paired[None], [rows, *paired.shape])
+
+        paired = tf.cond(keep[axis], retained, integrated)
+        matrix = tf.reshape(paired, [rows, 1, 1])
+        return axis + 1, tf.einsum("na,nab->nb", state, matrix)
+
+    start = tf.one_hot(tf.zeros([rows], tf.int32), 1, dtype=D)
+    _, state = tf.while_loop(lambda axis, _: axis < dimension, step,
+        (tf.constant(0), start), maximum_iterations=dimension, parallel_iterations=1)
+    return state
+
+
 def masked_marginal_program(density, rows, *, jit_compile=True):
     """Evaluate nonempty transport marginals with a fixed full-query shape."""
     basis = density.sqrt_tt.product_basis
@@ -23,6 +77,10 @@ def masked_marginal_program(density, rows, *, jit_compile=True):
     dimension = len(shapes)
     width = max(shape[1] for shape in shapes)
     rank = max(max(shape[0], shape[2]) for shape in shapes) ** 2
+    shared_legendre = (type(basis) is ProductBasis and rank == 1
+        and all(shape == shapes[0] for shape in shapes)
+        and all(type(part) is LegendreBasis1D and type(part.domain) is BoundedInterval
+                and part.basis_dim == width for part in basis.bases))
     defensive = density.defensive_density
     if dimension > 1 and not isinstance(defensive, TensorProductReferenceDensity):
         raise NotImplementedError("source-style defensive marginal requires tensor-product reference density")
@@ -33,7 +91,7 @@ def masked_marginal_program(density, rows, *, jit_compile=True):
     def evaluate(*arguments):
         cores = tuple(TTCore(value) for value in arguments[:dimension])
         tau, points, keep = arguments[dimension:]
-        masses = basis_masses(basis, cores)
+        masses = None if shared_legendre else basis_masses(basis, cores)
 
         def branch(axis):
             core = cores[axis]
@@ -55,14 +113,17 @@ def masked_marginal_program(density, rows, *, jit_compile=True):
 
             return matrix
 
-        branches = tuple(branch(axis) for axis in range(dimension))
-        start = tf.one_hot(tf.zeros([rows], tf.int32), rank, dtype=D)
+        if shared_legendre:
+            state = _shared_legendre_marginal(basis, cores, points, keep, rows)
+        else:
+            branches = tuple(branch(axis) for axis in range(dimension))
+            start = tf.one_hot(tf.zeros([rows], tf.int32), rank, dtype=D)
 
-        def step(axis, state):
-            return axis+1, tf.einsum("na,nab->nb", state, tf.switch_case(axis, branches))
+            def step(axis, state):
+                return axis+1, tf.einsum("na,nab->nb", state, tf.switch_case(axis, branches))
 
-        _, state = tf.while_loop(lambda axis, _: axis < dimension, step,
-            (tf.constant(0), start), maximum_iterations=dimension, parallel_iterations=1)
+            _, state = tf.while_loop(lambda axis, _: axis < dimension, step,
+                (tf.constant(0), start), maximum_iterations=dimension, parallel_iterations=1)
 
         if isinstance(defensive, TensorProductReferenceDensity):
             volume = tf.constant(1.0, D)

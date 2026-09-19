@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01077,
-charges are 14,543.687 GPU / 29,222.518 CPU seconds, leaving 172,656.313 GPU /
-85,977.482 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01084,
+charges are 14,543.687 GPU / 29,950.881 CPU seconds, leaving 172,656.313 GPU /
+85,249.119 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -163,6 +163,29 @@ The refreshed syntax inventory is `source-inventory-after-01062.json.gz`:
 2,832 Python files, with the only parse error in external vendored legacy code.
 P73 renewal uses the line-gate result to select data, so those reductions remain
 active numerical preparation work despite the diagnostic script name.
+
+The recovered 01084 worker has exited successfully: all 59 policy/controller
+checks pass. The shared rank-one Legendre marginal preserves the original
+paired-core recurrence and all captured interval derivatives. Its initial
+01078 failure (variant tapes crossing Cond) is repaired by the existing
+complete-pullback wrapper around the common polynomial recurrence. Runs
+01079--01082 pass 17 coordinate, 25 transport, six public external-pullback
+and 11 sequential CPU checks. Static coverage is 173 sources / 1,117 exact
+exceptions, explicitly partial. No cross-context cache was introduced.
+
+Assembly 01083 passes in 151.950 process-seconds with 7,330,768 KiB (6.991 GiB)
+host high-water RSS. Relative to 01070, these single-process observations
+are 19.3% lower elapsed time / 24.8% lower memory; the original baseline is
+still 74.134 seconds / 0.658 GiB. `assembly-memory-diagnostic-01083.json`
+preserves all five arms and manifest checksums. Remaining basis/mass graphs
+and repeated normalizer construction need investigation; terminal memory
+acceptance remains open. GPU2/GPU3 are occupied by unrelated work.
+
+The next reachable audit debt includes the NumPy/Python scalar forecast
+pool, plus unclassified `cpu_xla_cloud`, `quadratic_map_covariance` and
+`block_coordinate_center` public consumers. No source repair for these has
+yet been made. Preserve per-row random streams and byte hashes in any
+forecast repair; external CPU sample generation is not NeuTra training.
 
 All F01--F20 terminal decisions remain open. Other carried blockers include
 the predator-prey residual about 1.578e-9 against the fixed 1e-10 gate,
