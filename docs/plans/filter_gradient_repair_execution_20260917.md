@@ -2995,3 +2995,73 @@ called by `scripts/run_ccma_full_partition_center_sweep.py:485`. These are activ
 preparation paths despite diagnostic labels. Their NumPy and numerical-control
 migration remains open; the HMC interface/registry was inspected without
 changing any tuner or running HMC chains.
+
+
+## Recovery and GPU qualification through 01136
+
+Checkpoint `a44250a0` commits and pushes the tested CPU score-cloud repair,
+GPU invalid-index fixture correction and accounting through 01130. Sequential
+GPU runs 01131--01136 pass all six pending groups: 15 fixed-fit pullback,
+60 source-preparation, six public pullback, 11 sequential, 25 transport and
+17 coordinate checks (134 total). Driver elapsed times are respectively
+197.504, 25.920, 48.565, 96.868, 160.261 and 209.274 seconds. GPU2 growth and
+contention checks passed. This closes those focused qualifications, not the
+terminal full-source gate. Charges through 01136 are 15,443.652 GPU and
+31,062.057 CPU seconds under the unchanged 52/32-hour caps.
+
+The preparation call-chain audit confirms that quadratic-map and block-center
+wrappers affect active numerical decisions. The downstream sequential locator
+also retains Python cloud/trust-region/search loops; F18/F19 now record those
+explicitly. External DZ5 callbacks also mix host recording with target calls;
+complete consumer qualification remains open. No external code or HMC tuner
+was changed.
+
+## Quadratic initializer localization, 01137--01138
+
+The wrapper migration removes NumPy and uses immutable TensorFlow snapshots,
+compiled target callbacks, precision/score/centeredness kernels and the existing
+joint locator's XLA default. The host iteration across successive geometry fits
+remains open and is not a numerical-loop exception.
+
+Run 01137 passes 28 cases and fails three. One new badly scaled matrix exposes
+the default XLA eigen epsilon dropping a small off-diagonal contribution
+(eigenvalue error about 8.16e-8). Applying the existing geometry kernels' explicit
+binary64 Jacobi precision repairs it without changing the 1e-10 comparison gate.
+Run 01138 passes all 21 focused cases, including actual XLA locator execution
+and callback HLO. It also executes the pinned original wrapper and confirms
+both versions share the other two failures on current probe clouds:
+`geometry_holdout_fit_rejected` and
+`maximum_refinement_steps_without_terminal_score`.
+
+The original acceptance fixtures were selected under the old geometry stream.
+Their bounded retry injects the exact frozen legacy clouds, as required by the
+approved stream migration, while separate tests retain current-stream pinned
+wrapper decisions and iteration parity. No seed search, gate, fit, acceptance
+criterion or refinement budget changed. Run 01139 records that check.
+
+| Decision | Primary criterion | Veto status | Uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Continue repair | Focused GPU groups pass | Terminal blockers remain | Scope is partial | Finish active preparation and memory investigations | No merge readiness |
+| Qualify quadratic wrapper kernels | 01138 pinned decisions and HLO pass | 01137 preserved; eigen repair passes | Frozen-cloud full suite pending | Inspect 01139 then GPU qualification | No full initializer compilation claim |
+
+Run 01139 passes all 33 CPU initializer cases, including the frozen-cloud
+acceptance fixtures. Run 01140 passes 32 GPU cases and fails the real enabled
+locator: TensorFlow places int32 resource counters on CPU, and GPU/XLA cannot
+access those resources. Existing broad initializer assertions had allowed a
+locator fallback, so only the explicit real-locator acceptance check exposed it.
+
+Both single and staged joint locators now use int64 accounting resources and
+matching caps. No optimizer state, arithmetic, evaluation limits or decisions
+change. The exact GPU failure reproducer passes in 01141 (14.496 seconds).
+Both GPU2 and GPU3 failed the unchanged contention preflight before any
+worker was launched. Run 01142 instead passes all 26 joint-center checks on
+CPU (68.816 seconds). The broader GPU regression and full initializer GPU
+rerun remain pending. The partial static guard now covers
+177 sources / 1,171 exceptions; quadratic iterative numerical control remains
+explicitly uncovered and open.
+
+Run 01143 passes all 61 policy/controller checks. Charges through 01143 are
+15,585.869 GPU / 31,305.720 CPU seconds, leaving 171,614.131 GPU / 83,894.280 CPU
+seconds. All F01--F20 terminal dispositions remain open; no merge is authorized
+by these focused results. Focused Ruff passes (existing joint-center import
+ordering excluded), and whitespace checks pass.

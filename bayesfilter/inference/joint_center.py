@@ -469,8 +469,10 @@ def locate_joint_center(
             scale=tf.convert_to_tensor(scale_tensor, tf.float64),
         )
 
-    attempts = tf.Variable(0, trainable=False, dtype=tf.int32)
-    target_rows = tf.Variable(0, trainable=False, dtype=tf.int32)
+    # TensorFlow pins int32 resources to the host. Integer accounting must
+    # stay with the GPU/XLA optimizer; int64 preserves all bounded counts.
+    attempts = tf.Variable(0, trainable=False, dtype=tf.int64)
+    target_rows = tf.Variable(0, trainable=False, dtype=tf.int64)
     best_callback_value = tf.Variable(
         initial_value, trainable=False, dtype=tf.float64
     )
@@ -480,10 +482,10 @@ def locate_joint_center(
     best_callback_score = tf.Variable(
         tf.constant(initial_score, tf.float64), trainable=False, dtype=tf.float64
     )
-    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int32)
+    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int64)
     cap_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
     wall_time_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
-    cap = tf.constant(cfg.max_objective_evaluations, tf.int32)
+    cap = tf.constant(cfg.max_objective_evaluations, tf.int64)
     started = time.monotonic()
 
     def wall_guard_passed() -> tf.Tensor:
@@ -789,8 +791,9 @@ def locate_joint_center_staged(
             scale=scale_np,
         )
 
-    attempts = tf.Variable(0, trainable=False, dtype=tf.int32)
-    target_rows = tf.Variable(0, trainable=False, dtype=tf.int32)
+    # Keep staged-optimizer accounting on the same XLA device as its state.
+    attempts = tf.Variable(0, trainable=False, dtype=tf.int64)
+    target_rows = tf.Variable(0, trainable=False, dtype=tf.int64)
     best_callback_value = tf.Variable(
         initial_value, trainable=False, dtype=tf.float64
     )
@@ -800,10 +803,10 @@ def locate_joint_center_staged(
     best_callback_score = tf.Variable(
         tf.constant(initial_score, tf.float64), trainable=False, dtype=tf.float64
     )
-    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int32)
+    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int64)
     cap_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
     wall_time_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
-    cap = tf.constant(cfg.max_objective_evaluations, tf.int32)
+    cap = tf.constant(cfg.max_objective_evaluations, tf.int64)
     started = time.monotonic()
 
     def wall_guard_passed() -> tf.Tensor:

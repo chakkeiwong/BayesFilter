@@ -4,25 +4,30 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `bbfaf742` is committed and pushed,
-including compiled forecast shards and independently verified process comparisons.
+September 19 refresh: source checkpoint `a44250a0` is committed and pushed,
+including the CPU score-cloud repair and earlier compiled forecast shards.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01130, charges are 14,705.260 GPU / 31,062.057 CPU seconds;
-remaining allowances are 172,494.740 GPU / 84,137.943 CPU seconds. The earlier
+charge. Through run 01143, charges are 15,585.869 GPU / 31,305.720 CPU seconds;
+remaining allowances are 171,614.131 GPU / 83,894.280 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 176 sources with 1,157 exact
+The repair is incomplete. The static guard covers 177 sources with 1,171 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
 
-Recovery review through 01130 confirms no active worker, the unchanged frozen
+Recovery review through 01143 confirms no active worker, the unchanged frozen
 baseline, and the same cumulative budget (the extension is counted once).
-The CPU score-cloud repair passes 11 checks; all 61 policy/controller checks
-pass. Commit that tested checkpoint, then finish the pending GPU qualification
-groups sequentially before changing the remaining preparation kernels. Keep
-the 256 MiB host-memory investigation trigger and all numerical gates intact.
+All six pending TT/preparation GPU groups pass 134 checks (01131--01136).
+The quadratic initializer migration passes 33 CPU checks (01139). Its GPU
+suite exposed the joint-locator int32 resource-placement failure; int64
+accounting repairs that reproducer (01141), and all 26 joint-center CPU
+checks pass (01142). Both approved GPUs then became occupied; full GPU
+initializer/joint-center reruns remain pending. All 61 policy/controller
+checks pass in 01143. Keep the 256 MiB host-memory investigation trigger and
+all numerical gates intact. Continue the remaining block-center and sequential
+preparation repair; their numerical loops cannot receive host exemptions.
 
 Resume in this order, using the same bounded runner and versioned artifacts:
 
@@ -223,6 +228,45 @@ checks before one unchanged assembly diagnostic under the same 900-second
 ceiling. Graph counts and single-process RSS are explanatory; terminal paired
 comparisons and GPU checks remain required. Existing 1e-10 gates and cumulative
 budget apply; no retry without addressing the observed failure.
+
+### Active quadratic and block-center preparation migration
+
+Consumer inspection confirms that the two public wrappers' outputs select real
+initial centers/covariances. Their diagnostic names do not permit NumPy
+numerical decisions. Migrate immutable arrays, coordinate transformations,
+score summaries, centeredness, cycle/reversal checks and target callbacks to
+TensorFlow with stable XLA signatures; restore the existing joint locator's
+XLA default. Preserve coordinate scaling order, objective/score thresholds,
+transaction ordering, failure statuses, row counts and callback records.
+Use the pinned original wrappers for same-input checks of decisions/records,
+independent quadratic identities, invalid inputs and existing consumer tests.
+No new RNG change, fit algorithm, tuner, HMC chain or tolerance is authorized.
+
+Skeptical call-chain review also finds numerical Python iteration in the
+downstream `sequential_map_covariance` search, scalar cloud and trust-region
+paths, and host control across successive geometry fits. These remain F18/F19
+repair work; removing caller NumPy alone cannot close complete execution.
+Classify schema/reporting separately and do not allowlist numerical loops.
+First qualify the bounded wrapper kernels and real callers, then migrate the
+remaining numerical control with unchanged fit/selection semantics. The
+existing per-run limits, current cumulative budget, final paired comparisons
+and memory triggers apply. Read the HMC interface and capability registry;
+these helpers issue no tuning authority.
+
+The external DZ5 wrapper also records some callback results with `.numpy()`
+inside the callback. Such callbacks are not valid enclosing-XLA implementations;
+record consumer compatibility explicitly rather than silently running an eager
+fallback. The local repair tests must distinguish tensor-compatible callback
+execution from host reporting. Whole-consumer qualification remains open when
+an external adapter mixes these roles.
+
+Run 01140 passes 32 initializer cases on GPU but exposes a real locator failure:
+TensorFlow pins its int32 resource counters to CPU, so the GPU/XLA optimizer
+cannot access them. Migrate only the accounting resources and matching cap to
+int64 in both single/staged locators. This preserves bounded integer counts,
+evaluation order and all numerical state. Qualify the actual locator first,
+then the existing joint-center suite and affected initializer checks. This is
+a portability repair, not a CPU fallback or optimizer change.
 
 ### CPU score-cloud broker repair
 

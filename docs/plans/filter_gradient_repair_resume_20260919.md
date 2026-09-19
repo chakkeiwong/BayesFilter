@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01130,
-charges are 14,705.260 GPU / 31,062.057 CPU seconds, leaving 172,494.740 GPU /
-84,137.943 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01143,
+charges are 15,585.869 GPU / 31,305.720 CPU seconds, leaving 171,614.131 GPU /
+83,894.280 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -257,3 +257,36 @@ all 11 cases in 01129 and all 61 policy/controller checks in 01130. The mutable
 variable snapshot defect found in 01128 is repaired. The current static guard
 covers 176 sources / 1,157 exceptions, explicitly partial. The numerical CPU
 B=1 worker remains unchanged and is not a NeuTra training endpoint.
+
+
+Recovery through 01143: all six pending GPU groups pass in 01131--01136
+(15 fixed-fit pullback, 60 preparation, six public pullback, 11 sequential,
+25 transport and 17 coordinate checks). The CPU score-cloud checkpoint
+`a44250a0` is committed and pushed.
+
+Quadratic-map preparation now uses TensorFlow snapshots and stable XLA
+callbacks/score/precision/centeredness kernels, with the joint locator's JIT
+default restored. Run 01137 exposes a default XLA eigen precision loss and
+two inherited seed-specific failures. Explicit binary64 Jacobi precision
+repairs the eigen comparison. Run 01138 proves the pinned wrapper shares the
+current-cloud rejection statuses. Run 01139 passes all 33 CPU cases: original
+acceptance fixtures use their frozen legacy clouds; separate checks retain
+current-stream decisions and iteration parity. No RNG, numerical gate, fit or
+refinement budget changed. Iteration across whole geometry fits remains open.
+
+GPU run 01140 passes 32 cases but exposes int32 resource counters pinned to CPU
+in `joint_center`. Both normal/staged locators now use int64 accounting resources
+and matching caps. The exact GPU reproducer passes in 01141; all 26 joint-center
+CPU checks pass in 01142. Both GPU2/GPU3 subsequently fail contention preflight.
+Pending: full `quadratic_initializer` and `joint_center` GPU groups. All 61
+policy/controller cases pass (01143). The static guard is 177 sources / 1,171
+reviewed exceptions; the quadratic iterative numerical loop is explicitly
+uncovered, not exempted. Focused Ruff passes with the existing joint-center
+import-order warning excluded; whitespace checks pass. No worker is running.
+
+The F18/F19 ledger now explicitly tracks block-center and sequential-locator
+cloud/search/trust-region numerical loops. External DZ5 callbacks also mix
+`.numpy()` reporting into their target callbacks, so complete consumer
+qualification is still open. Next repair those actual preparation dependencies
+and continue memory investigations. All F01--F20 terminal decisions and merge
+remain open. Do not count the compute extension again.
