@@ -4,20 +4,20 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `a44250a0` is committed and pushed,
-including the CPU score-cloud repair and earlier compiled forecast shards.
+September 19 refresh: source checkpoint `22485606` is committed and pushed,
+including quadratic preparation kernels and the locator GPU resource repair.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01143, charges are 15,585.869 GPU / 31,305.720 CPU seconds;
-remaining allowances are 171,614.131 GPU / 83,894.280 CPU seconds. The earlier
+charge. Through run 01149, charges are 15,585.869 GPU / 31,407.087 CPU seconds;
+remaining allowances are 171,614.131 GPU / 83,792.913 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 177 sources with 1,171 exact
+The repair is incomplete. The static guard covers 178 sources with 1,183 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
 
-Recovery review through 01143 confirms no active worker, the unchanged frozen
+Recovery review through 01149 confirms no active worker, the unchanged frozen
 baseline, and the same cumulative budget (the extension is counted once).
 All six pending TT/preparation GPU groups pass 134 checks (01131--01136).
 The quadratic initializer migration passes 33 CPU checks (01139). Its GPU
@@ -28,6 +28,15 @@ initializer/joint-center reruns remain pending. All 61 policy/controller
 checks pass in 01143. Keep the 256 MiB host-memory investigation trigger and
 all numerical gates intact. Continue the remaining block-center and sequential
 preparation repair; their numerical loops cannot receive host exemptions.
+The first TP projection has exact parity with frozen features (01145), but
+unfrozen features still fail the raw-residual gate. The ineffective first-factor
+Cholesky trial in 01146 is reverted. GPU2/GPU3 remain occupied by unrelated
+allocations at recovery; resume bounded CPU preparation work meanwhile.
+Block-center preparation and complete callbacks now pass all 43 CPU checks
+(01148), including pinned public/private records and strict boundary decisions.
+All 61 policy/controller checks pass in 01149. The enclosing ordered sweep and
+sequential locator remain open; the guard excludes that numerical loop rather
+than granting a host exception. GPU block-center qualification is pending.
 
 Resume in this order, using the same bounded runner and versioned artifacts:
 
@@ -229,6 +238,29 @@ ceiling. Graph counts and single-process RSS are explanatory; terminal paired
 comparisons and GPU checks remain required. Existing 1e-10 gates and cumulative
 budget apply; no retry without addressing the observed failure.
 
+### Predator-prey residual localization after 01143
+
+While GPU correctness qualification is held by contention, isolate the first
+TP projection using the unchanged four-date/two-step fixture from 00645.
+Compare the pinned and candidate teacher, continuation/feature matrix, scaled
+chart, fitted weights and raw residual under identical graph/XLA contexts.
+Use frozen realized teacher inputs as a second view to distinguish upstream
+rounding from projection arithmetic. Preserve the original raw residual and
+1e-10 gate; report intermediate differences without promoting local parity to
+full-recursion correctness. No canonical LEDH claim, score substitution,
+source/math change or tolerance relaxation. Use one bounded CPU diagnostic
+group through the existing runner, then repair only the localized cause.
+
+Runs 01144/01145 localize the mismatch: identical teacher particles/log weights
+but 1.058e-16 continuation-feature differences produce 3.77e-10 to 8.25e-10
+raw residual differences; supplying identical features makes every reported
+projection field exactly equal in graph and XLA mode. The first-factor Cholesky
+trial in 01146 leaves these errors unchanged (four passes, two failures); it is
+reverted. That hypothesis did not explain the discrepancy. Preserve this
+negative result and the unchanged raw-residual gate. Further localization must
+distinguish continuation update arithmetic from feature normalization before
+another runtime repair; local frozen-feature parity is not full-recursion parity.
+
 ### Active quadratic and block-center preparation migration
 
 Consumer inspection confirms that the two public wrappers' outputs select real
@@ -252,6 +284,28 @@ remaining numerical control with unchanged fit/selection semantics. The
 existing per-run limits, current cumulative budget, final paired comparisons
 and memory triggers apply. Read the HMC interface and capability registry;
 these helpers issue no tuning authority.
+
+The next bounded step removes block-center NumPy and compiles its complete
+target callbacks, embedding, cycle/reversal tests and score summaries. Compare
+public/private records, exact row counts and ordered transaction decisions
+against the pinned wrapper on identical inputs. Exercise strict threshold
+edges, partial partitions, nonfinite callbacks, immutable snapshots and complete
+callback HLO. A compiled callback must return a nonfinite rejection signal in
+graph context; host replay retains its ValueError. The ordered sweep still
+depends on the host-controlled sequential locator and remains explicitly open
+until that dependency and the enclosing recurrence are migrated. No numerical
+loop receives a reporting exemption, and no RNG or stopping criterion changes.
+
+Next migrate the sequential helper's scalar-cloud iteration, orthogonal-frame
+generation and trust-region bracket/bisection to stable native XLA programs.
+Preserve the existing Philox words and Box-Muller ordering with the already
+qualified compatibility primitive; no new random stream is permitted. Retain
+the 80/80 trust-region limits, comparison signs, eigensolver precision and raw
+predicted improvement. Use pinned eager helpers and independent SPD KKT checks,
+multiple frame/count extents, scalar/batched score parity, HLO and one-trace
+checks before existing sequential and block consumer suites. The outer search,
+selection and fit lifecycle remains a distinct open repair. This is numerical
+preparation, not a batch-native NeuTra training target or HMC tuner.
 
 The external DZ5 wrapper also records some callback results with `.numpy()`
 inside the callback. Such callbacks are not valid enclosing-XLA implementations;

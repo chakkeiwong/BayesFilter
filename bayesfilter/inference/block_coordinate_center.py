@@ -12,18 +12,19 @@ are deliberately discarded at the transaction boundary.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
-import numpy as np
 import tensorflow as tf
 
 from bayesfilter.inference.sequential_map_covariance import (
     SequentialMapCovarianceConfig,
     estimate_sequential_map_covariance,
 )
-
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 BLOCK_COORDINATE_CENTER_NONCLAIMS = (
     "one ordered block-coordinate sweep only",
@@ -55,7 +56,7 @@ _DISCARDED_INTERNAL_GEOMETRY_FIELDS = frozenset(
         "projected_eigenvalues",
     }
 )
-_EPS64_SQRT = float(np.sqrt(np.finfo(np.float64).eps))
+_EPS64_SQRT = math.sqrt(math.ulp(1.0))
 
 
 @dataclass(frozen=True)
@@ -98,9 +99,9 @@ class BlockCoordinateCenterConfig:
         repeat_factor = float(self.repeat_threshold_factor)
         if rows <= 0:
             raise ValueError("max_physical_target_rows must be positive")
-        if not np.isfinite(ratio) or ratio <= 1.0:
+        if not math.isfinite(ratio) or ratio <= 1.0:
             raise ValueError("reversal_ratio must be finite and greater than one")
-        if not np.isfinite(repeat_factor) or repeat_factor <= 0.0:
+        if not math.isfinite(repeat_factor) or repeat_factor <= 0.0:
             raise ValueError("repeat_threshold_factor must be positive finite")
         object.__setattr__(self, "max_physical_target_rows", rows)
         object.__setattr__(self, "reversal_ratio", ratio)
@@ -123,10 +124,10 @@ class BlockCoordinateCenterResult:
 
     completed: bool
     status: str
-    initial_center: np.ndarray
-    final_center: np.ndarray
-    initial_score: np.ndarray
-    final_score: np.ndarray
+    initial_center: tf.Tensor
+    final_center: tf.Tensor
+    initial_score: tf.Tensor
+    final_score: tf.Tensor
     initial_objective: float
     final_objective: float
     initial_score_l2: float
@@ -150,8 +151,7 @@ class BlockCoordinateCenterResult:
 
     def __post_init__(self) -> None:
         for name in ("initial_center", "final_center", "initial_score", "final_score"):
-            array = np.asarray(getattr(self, name), dtype=float).copy()
-            array.setflags(write=False)
+            array = tf.identity(numeric_tensor(getattr(self, name), tf.float64))
             object.__setattr__(self, name, array)
         object.__setattr__(self, "completed", bool(self.completed))
         object.__setattr__(self, "status", str(self.status))
@@ -241,32 +241,19 @@ def classify_center_trace_cycles(
     """
 
     threshold = float(repeat_threshold)
-    if not np.isfinite(threshold) or threshold <= 0.0:
+    if not math.isfinite(threshold) or threshold <= 0.0:
         raise ValueError("repeat_threshold must be positive finite")
-    centers = tuple(np.asarray(center, dtype=float).reshape(-1) for center in standardized_centers)
-    if any(
-        center.shape != centers[0].shape or not np.all(np.isfinite(center))
-        for center in centers
-    ) if centers else False:
-        raise ValueError("standardized centers must be finite and shape-compatible")
-    if len(centers) < 3:
+    centers = tuple(tf.reshape(numeric_tensor(center, tf.float64), [-1]) for center in standardized_centers)
+    if not centers:
         return {"repeat_cycle": False, "two_step_return_cycle": False}
-
-    current_displacement = float(np.linalg.norm(centers[-1] - centers[-2]))
-    repeat = bool(
-        current_displacement > threshold
-        and any(
-            float(np.linalg.norm(centers[-1] - prior)) <= threshold
-            for prior in centers[:-2]
-        )
+    if any(center.shape != centers[0].shape for center in centers):
+        raise ValueError("standardized centers must be finite and shape-compatible")
+    repeat, two_step, finite = _numerical_call(
+        _cycle_core, tf.stack(centers), tf.constant(threshold, tf.float64)
     )
-    prior_displacement = float(np.linalg.norm(centers[-2] - centers[-3]))
-    two_step = bool(
-        current_displacement > threshold
-        and prior_displacement > threshold
-        and float(np.linalg.norm(centers[-1] - centers[-3])) <= threshold
-    )
-    return {"repeat_cycle": repeat, "two_step_return_cycle": two_step}
+    if not bool(finite):
+        raise ValueError("standardized centers must be finite and shape-compatible")
+    return {"repeat_cycle": bool(repeat), "two_step_return_cycle": bool(two_step)}
 
 
 def locate_block_coordinate_center(
@@ -285,7 +272,7 @@ def locate_block_coordinate_center(
     """Execute one ordered, nonoverlapping transactional Gauss-Seidel sweep."""
 
     cfg = BlockCoordinateCenterConfig() if config is None else config
-    center = tf.reshape(tf.convert_to_tensor(initial_center, tf.float64), [-1])
+    center = tf.reshape(numeric_tensor(initial_center, tf.float64), [-1])
     if center.shape[0] is None:
         raise ValueError("initial_center must have a static dimension")
     dimension = int(center.shape[0])
@@ -294,11 +281,9 @@ def locate_block_coordinate_center(
     scale_tf = (
         tf.ones([dimension], tf.float64)
         if scale is None
-        else tf.reshape(tf.convert_to_tensor(scale, tf.float64), [-1])
+        else tf.reshape(numeric_tensor(scale, tf.float64), [-1])
     )
-    if scale_tf.shape != (dimension,) or not bool(
-        tf.reduce_all(tf.math.is_finite(scale_tf) & (scale_tf > 0.0)).numpy()
-    ):
+    if scale_tf.shape != (dimension,) or not bool(_numerical_call(_valid_scale_core, scale_tf)):
         raise ValueError("scale must be positive finite with one entry per coordinate")
     ordered_blocks = _validate_blocks(blocks, dimension)
     prospective_rows = 1 + sum(
@@ -315,8 +300,8 @@ def locate_block_coordinate_center(
         value_and_score_fn, center, dimension
     )
     initial_value = float(initial_value_tf.numpy())
-    initial_score_np = np.asarray(initial_score_tf.numpy(), dtype=float)
-    initial_center_np = np.asarray(center.numpy(), dtype=float)
+    initial_center_tf = tf.identity(center)
+    block_bounds = tf.constant([(block.start, block.stop) for block in ordered_blocks], tf.int32)
     physical_rows = 1
     sequential_rows = 0
     current_value = initial_value
@@ -331,9 +316,9 @@ def locate_block_coordinate_center(
     status = "sweep_incomplete"
     completed = False
     post_update_block_maxima: dict[str, float] = {}
-    standardized_trace = [initial_center_np / np.asarray(scale_tf.numpy(), dtype=float)]
+    standardized_trace = [_numerical_call(tf.math.divide, initial_center_tf, scale_tf)]
     repeat_threshold = cfg.repeat_threshold_factor * _EPS64_SQRT * max(
-        1.0, float(np.sqrt(dimension))
+        1.0, math.sqrt(dimension)
     )
     _emit_progress(progress_callback, "sweep_started", block_count=len(ordered_blocks))
 
@@ -348,22 +333,27 @@ def locate_block_coordinate_center(
             block_name=block.name,
         )
 
-        def block_value_score(block_position: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-            full = _embed_scalar(center_before, block_position, block.start, block.stop)
-            value, score = _full_value_score(value_and_score_fn, full, dimension)
-            return value, score[block.start : block.stop]
+        def block_value_score(block_position: tf.Tensor, *, block=block,
+                              center_before=center_before) -> tuple[tf.Tensor, tf.Tensor]:
+            value, score, finite = _block_target_program(
+                value_and_score_fn, dimension, block.start, block.stop, None
+            )(center_before, block_position)
+            if tf.executing_eagerly() and not bool(finite):
+                raise ValueError("full target replay must be finite")
+            return value, score
 
         block_batched = None
         if batched_value_and_score_fn is not None:
 
-            def block_batched(block_positions: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-                full = _embed_batch(
-                    center_before, block_positions, block.start, block.stop
-                )
-                values, scores = _full_batched_value_score(
-                    batched_value_and_score_fn, full, dimension
-                )
-                return values, scores[:, block.start : block.stop]
+            def block_batched(block_positions: tf.Tensor, *, block=block,
+                              center_before=center_before) -> tuple[tf.Tensor, tf.Tensor]:
+                values, scores, finite = _block_target_program(
+                    batched_value_and_score_fn, dimension, block.start, block.stop,
+                    int(block_positions.shape[0]),
+                )(center_before, block_positions)
+                if tf.executing_eagerly() and not bool(finite):
+                    raise ValueError("batched full target rows must be finite")
+                return values, scores
 
         sequential_result = estimate_sequential_map_covariance(
             block_value_score,
@@ -413,7 +403,7 @@ def locate_block_coordinate_center(
             )
             break
 
-        candidate_tf = tf.reshape(tf.convert_to_tensor(candidate, tf.float64), [-1])
+        candidate_tf = tf.reshape(numeric_tensor(candidate, tf.float64), [-1])
         if candidate_tf.shape != (block.stop - block.start,):
             status = "invalid_sequential_candidate_shape"
             break
@@ -451,24 +441,26 @@ def locate_block_coordinate_center(
         current_score = candidate_score
         accepted_count += 1
         standardized_trace.append(
-            np.asarray(center.numpy(), dtype=float)
-            / np.asarray(scale_tf.numpy(), dtype=float)
+            _numerical_call(tf.math.divide, center, scale_tf)
         )
         cycles = classify_center_trace_cycles(standardized_trace, repeat_threshold)
         repeat_cycle = repeat_cycle or cycles["repeat_cycle"]
         two_step_cycle = two_step_cycle or cycles["two_step_return_cycle"]
         reversal_diagnostics = []
-        scaled_score = tf.abs(current_score * scale_tf)
-        for prior in ordered_blocks[:block_index]:
-            post_maximum = post_update_block_maxima[prior.name]
-            current_maximum = float(
-                tf.reduce_max(scaled_score[prior.start : prior.stop]).numpy()
-            )
-            floor = _EPS64_SQRT * max(1.0, post_maximum)
-            material = bool(
-                current_maximum - post_maximum > floor
-                and current_maximum > cfg.reversal_ratio * post_maximum
-            )
+        maxima = _numerical_call(_block_maxima_core, current_score, scale_tf, block_bounds)
+        prior_maxima = tf.constant(
+            [post_update_block_maxima[prior.name] for prior in ordered_blocks[:block_index]],
+            tf.float64,
+        )
+        floors, materials, block_reversal_tf = _numerical_call(
+            _reversal_core, maxima[:block_index], prior_maxima,
+            tf.constant(cfg.reversal_ratio, tf.float64),
+        )
+        for prior, post_maximum, current_maximum, floor, material in zip(
+            ordered_blocks[:block_index], prior_maxima.numpy().tolist(),
+            maxima[:block_index].numpy().tolist(), floors.numpy().tolist(),
+            materials.numpy().tolist(), strict=True,
+        ):
             reversal_diagnostics.append(
                 {
                     "block_name": prior.name,
@@ -479,9 +471,7 @@ def locate_block_coordinate_center(
                     "material_reversal": material,
                 }
             )
-        post_update_block_maxima[block.name] = float(
-            tf.reduce_max(scaled_score[block.start : block.stop]).numpy()
-        )
+        post_update_block_maxima[block.name] = float(maxima[block_index])
         records.append(
             _private_record(
                 block,
@@ -506,9 +496,7 @@ def locate_block_coordinate_center(
             handoff_status=sequential_result.status,
             exact_evaluations=exact_evaluations,
         )
-        block_reversal = any(
-            row["material_reversal"] for row in reversal_diagnostics
-        )
+        block_reversal = bool(block_reversal_tf)
         material_reversal = material_reversal or block_reversal
         if block_reversal and cfg.stop_on_material_reversal:
             status = "material_block_score_reversal"
@@ -518,56 +506,34 @@ def locate_block_coordinate_center(
             break
     else:
         completed = True
-        final_score_np = np.asarray(current_score.numpy(), dtype=float)
-        initial_scaled = initial_score_np * np.asarray(scale_tf.numpy(), dtype=float)
-        final_scaled = final_score_np * np.asarray(scale_tf.numpy(), dtype=float)
-        scheduled_block_maxima_no_worse = all(
-            float(np.max(np.abs(final_scaled[block.start : block.stop])))
-            <= float(np.max(np.abs(initial_scaled[block.start : block.stop])))
-            + _EPS64_SQRT
-            * max(
-                1.0,
-                float(np.max(np.abs(initial_scaled[block.start : block.stop]))),
-            )
-            for block in ordered_blocks
+        no_worse_tf, progress_tf = _numerical_call(
+            _terminal_core, initial_score_tf, current_score, scale_tf, block_bounds,
+            tf.constant(initial_value, tf.float64), tf.constant(current_value, tf.float64),
+            tf.constant(cfg.require_scheduled_block_maxima_no_worse),
         )
-        progress = bool(
-            current_value >= initial_value
-            and _resolvable_decrease(
-                float(np.linalg.norm(initial_scaled)),
-                float(np.linalg.norm(final_scaled)),
-            )
-            and _resolvable_decrease(
-                float(np.max(np.abs(initial_scaled))),
-                float(np.max(np.abs(final_scaled))),
-            )
-            and (
-                scheduled_block_maxima_no_worse
-                or not cfg.require_scheduled_block_maxima_no_worse
-            )
-        )
+        scheduled_block_maxima_no_worse = bool(no_worse_tf)
+        progress = bool(progress_tf)
         status = (
             "sweep_completed_with_resolvable_progress"
             if progress
             else "sweep_completed_without_resolvable_progress"
         )
 
-    final_center_np = np.asarray(center.numpy(), dtype=float)
-    final_score_np = np.asarray(current_score.numpy(), dtype=float)
-    scale_np = np.asarray(scale_tf.numpy(), dtype=float)
+    initial_l2, initial_max = _numerical_call(_score_summary_core, initial_score_tf, scale_tf)
+    final_l2, final_max = _numerical_call(_score_summary_core, current_score, scale_tf)
     result = BlockCoordinateCenterResult(
         completed=completed,
         status=status,
-        initial_center=initial_center_np,
-        final_center=final_center_np,
-        initial_score=initial_score_np,
-        final_score=final_score_np,
+        initial_center=initial_center_tf,
+        final_center=center,
+        initial_score=initial_score_tf,
+        final_score=current_score,
         initial_objective=initial_value,
         final_objective=current_value,
-        initial_score_l2=float(np.linalg.norm(initial_score_np * scale_np)),
-        final_score_l2=float(np.linalg.norm(final_score_np * scale_np)),
-        initial_score_max_abs=float(np.max(np.abs(initial_score_np * scale_np))),
-        final_score_max_abs=float(np.max(np.abs(final_score_np * scale_np))),
+        initial_score_l2=float(initial_l2),
+        final_score_l2=float(final_l2),
+        initial_score_max_abs=float(initial_max),
+        final_score_max_abs=float(final_max),
         completed_block_count=len(records),
         accepted_block_count=accepted_count,
         transaction_rejection_count=transaction_rejections,
@@ -621,14 +587,8 @@ def _full_value_score(
     position: tf.Tensor,
     dimension: int,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    value, score = function(position)
-    value = tf.reshape(tf.convert_to_tensor(value, tf.float64), [])
-    score = tf.reshape(tf.convert_to_tensor(score, tf.float64), [-1])
-    if score.shape != (dimension,):
-        raise ValueError("full score must have one entry per coordinate")
-    if not bool(
-        (tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score))).numpy()
-    ):
+    value, score, finite = _target_program(function, dimension, None)(position)
+    if tf.executing_eagerly() and not bool(finite):
         raise ValueError("full target replay must be finite")
     return value, score
 
@@ -638,21 +598,10 @@ def _full_batched_value_score(
     positions: tf.Tensor,
     dimension: int,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    row_count = positions.shape[0]
-    values, scores = function(positions)
-    values = tf.reshape(tf.convert_to_tensor(values, tf.float64), [-1])
-    scores = tf.convert_to_tensor(scores, tf.float64)
-    if row_count is None or values.shape != (row_count,) or scores.shape != (
-        row_count,
-        dimension,
-    ):
-        raise ValueError("batched full target must preserve row and score shapes")
-    if not bool(
-        (
-            tf.reduce_all(tf.math.is_finite(values))
-            & tf.reduce_all(tf.math.is_finite(scores))
-        ).numpy()
-    ):
+    if positions.shape[0] is None:
+        raise ValueError("batched full target must have a static row count")
+    values, scores, finite = _target_program(function, dimension, int(positions.shape[0]))(positions)
+    if tf.executing_eagerly() and not bool(finite):
         raise ValueError("batched full target rows must be finite")
     return values, scores
 
@@ -663,7 +612,7 @@ def _embed_scalar(
     block = tf.reshape(tf.convert_to_tensor(block_position, tf.float64), [-1])
     if block.shape != (stop - start,):
         raise ValueError("block candidate has the wrong dimension")
-    return tf.concat([center[:start], block, center[stop:]], axis=0)
+    return _embedding_program(int(center.shape[0]), start, stop, None)(center, block)
 
 
 def _embed_batch(
@@ -672,17 +621,123 @@ def _embed_batch(
     block = tf.convert_to_tensor(block_positions, tf.float64)
     if block.shape.rank != 2 or block.shape[0] is None or block.shape[1] != stop - start:
         raise ValueError("batched block candidates must have static [rows, block] shape")
-    rows = int(block.shape[0])
-    return tf.concat(
-        [
-            tf.broadcast_to(center[None, :start], [rows, start]),
-            block,
-            tf.broadcast_to(
-                center[None, stop:], [rows, int(center.shape[0]) - stop]
-            ),
-        ],
-        axis=1,
-    )
+    return _embedding_program(int(center.shape[0]), start, stop, int(block.shape[0]))(center, block)
+
+
+@lru_cache(maxsize=64)
+def _numerical_program(function, specifications):
+    return tf.function(function, input_signature=specifications, jit_compile=True, autograph=False)
+
+
+def _numerical_call(function, *arguments):
+    specifications = tuple(tf.TensorSpec(value.shape, value.dtype) for value in arguments)
+    return _numerical_program(function, specifications)(*arguments)
+
+
+@lru_cache(maxsize=64)
+def _target_program(function, dimension, rows):
+    shape = [dimension] if rows is None else [rows, dimension]
+
+    @tf.function(input_signature=[tf.TensorSpec(shape, tf.float64)], jit_compile=True, autograph=False)
+    def evaluate(position):
+        values, scores = function(position)
+        values = tf.reshape(tf.convert_to_tensor(values, tf.float64), [] if rows is None else [-1])
+        scores = tf.convert_to_tensor(scores, tf.float64)
+        if rows is None:
+            scores = tf.reshape(scores, [-1])
+            if scores.shape != (dimension,):
+                raise ValueError("full score must have one entry per coordinate")
+        elif values.shape != (rows,) or scores.shape != (rows, dimension):
+            raise ValueError("batched full target must preserve row and score shapes")
+        finite = tf.reduce_all(tf.math.is_finite(values)) & tf.reduce_all(tf.math.is_finite(scores))
+        # An XLA assertion alone can be discarded. Retain a numerical rejection
+        # signal when this callback is enclosed by another compiled locator.
+        nan = tf.constant(float("nan"), tf.float64)
+        return tf.where(finite, values, nan), tf.where(finite, scores, nan), finite
+
+    return evaluate
+
+
+@lru_cache(maxsize=64)
+def _embedding_program(dimension, start, stop, rows):
+    block_shape = [stop - start] if rows is None else [rows, stop - start]
+
+    @tf.function(input_signature=[tf.TensorSpec([dimension], tf.float64),
+        tf.TensorSpec(block_shape, tf.float64)], jit_compile=True, autograph=False)
+    def embed(center, block):
+        if rows is None:
+            return tf.concat([center[:start], block, center[stop:]], axis=0)
+        return tf.concat([
+            tf.broadcast_to(center[None, :start], [rows, start]), block,
+            tf.broadcast_to(center[None, stop:], [rows, dimension - stop]),
+        ], axis=1)
+
+    return embed
+
+
+@lru_cache(maxsize=64)
+def _block_target_program(function, dimension, start, stop, rows):
+    block_shape = [stop - start] if rows is None else [rows, stop - start]
+
+    @tf.function(input_signature=[tf.TensorSpec([dimension], tf.float64),
+        tf.TensorSpec(block_shape, tf.float64)], jit_compile=True, autograph=False)
+    def evaluate(center, block):
+        full = _embedding_program(dimension, start, stop, rows)(center, block)
+        values, scores, finite = _target_program(function, dimension, rows)(full)
+        return values, scores[start:stop] if rows is None else scores[:, start:stop], finite
+
+    return evaluate
+
+
+def _cycle_core(centers, threshold):
+    finite = tf.reduce_all(tf.math.is_finite(centers))
+    if centers.shape[0] < 3:
+        return tf.constant(False), tf.constant(False), finite
+    moved = tf.linalg.norm(centers[-1] - centers[-2]) > threshold
+    repeat = moved & tf.reduce_any(tf.linalg.norm(centers[-1] - centers[:-2], axis=1) <= threshold)
+    two_step = (moved & (tf.linalg.norm(centers[-2] - centers[-3]) > threshold)
+        & (tf.linalg.norm(centers[-1] - centers[-3]) <= threshold))
+    return repeat, two_step, finite
+
+
+def _valid_scale_core(scale):
+    return tf.reduce_all(tf.math.is_finite(scale) & (scale > 0.0))
+
+
+def _score_summary_core(score, scale):
+    scaled = score * scale
+    return tf.linalg.norm(scaled), tf.reduce_max(tf.abs(scaled))
+
+
+def _block_maxima_core(score, scale, bounds):
+    coordinates = tf.range(tf.shape(score)[0])[None, :]
+    selected = (coordinates >= bounds[:, :1]) & (coordinates < bounds[:, 1:])
+    return tf.reduce_max(tf.where(selected, tf.abs(score * scale)[None, :],
+        tf.constant(float("-inf"), tf.float64)), axis=1)
+
+
+def _reversal_core(current, previous, ratio):
+    floor = tf.constant(_EPS64_SQRT, tf.float64) * tf.maximum(previous, 1.0)
+    material = ((current - previous) > floor) & (current > ratio * previous)
+    return floor, material, tf.reduce_any(material)
+
+
+def _terminal_core(initial, final, scale, bounds, initial_value, final_value, require_no_worse):
+    initial_maxima = _block_maxima_core(initial, scale, bounds)
+    final_maxima = _block_maxima_core(final, scale, bounds)
+    epsilon = tf.constant(_EPS64_SQRT, tf.float64)
+    no_worse = tf.reduce_all(final_maxima <= initial_maxima + epsilon * tf.maximum(initial_maxima, 1.0))
+    initial_l2, initial_max = _score_summary_core(initial, scale)
+    final_l2, final_max = _score_summary_core(final, scale)
+    progress = ((final_value >= initial_value)
+        & (initial_l2 - final_l2 > epsilon * tf.maximum(tf.abs(initial_l2), 1.0))
+        & (initial_max - final_max > epsilon * tf.maximum(tf.abs(initial_max), 1.0))
+        & (no_worse | ~require_no_worse))
+    return no_worse, progress
+
+
+def _displacement_core(before, after):
+    return tf.linalg.norm(after - before)
 
 
 def _exact_evaluation_count(diagnostics: Mapping[str, Any]) -> int:
@@ -724,7 +779,7 @@ def _private_record(
             "objective_after": objective_after,
             "score_before": score_before,
             "score_after": score_after,
-            "displacement_l2": tf.linalg.norm(center_after - center_before),
+            "displacement_l2": _numerical_call(_displacement_core, center_before, center_after),
             "locator_history": _without_internal_geometry(
                 diagnostics.get("history", ())
             ),
@@ -762,12 +817,8 @@ def _emit_progress(
 
 
 def _json_ready(value: Any) -> Any:
-    if isinstance(value, tf.Tensor):
-        return _json_ready(value.numpy())
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if tf.is_tensor(value) or hasattr(value, "dtype"):
+        return numeric_tensor(value).numpy().tolist()
     if isinstance(value, Mapping):
         return {str(key): _json_ready(child) for key, child in value.items()}
     if isinstance(value, (tuple, list)):

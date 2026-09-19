@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01143,
-charges are 15,585.869 GPU / 31,305.720 CPU seconds, leaving 171,614.131 GPU /
-83,894.280 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01149,
+charges are 15,585.869 GPU / 31,407.087 CPU seconds, leaving 171,614.131 GPU /
+83,792.913 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -290,3 +290,23 @@ cloud/search/trust-region numerical loops. External DZ5 callbacks also mix
 qualification is still open. Next repair those actual preparation dependencies
 and continue memory investigations. All F01--F20 terminal decisions and merge
 remain open. Do not count the compute extension again.
+
+Recovery through 01146: checkpoint `22485606` is committed and pushed.
+The TP breakdown 01144 has identical teacher values but 1.058e-16 feature
+differences amplified to 3.77e-10--8.25e-10 raw residual differences in XLA.
+Frozen-feature runs 01145 match exactly in graph and XLA. The first-factor
+Cholesky trial 01146 does not change these errors and is reverted. The original
+1e-10 residual gate and full-recursion blocker remain open. GPU2/GPU3 still
+retain unrelated allocations; no numerical worker is running. Continue bounded
+block-center preparation migration through the existing driver.
+
+Block-center NumPy is removed; cycle/reversal/score summaries, embedding and
+complete scalar/batched target callbacks now have bounded stable XLA programs.
+Run 01147 exposes a float32 constant inference error; explicit binary64 operand
+inference repairs it. Run 01148 passes all 43 original and pinned-record,
+threshold, serialization and enclosing-callback checks. Run 01149 passes all
+61 policy/controller cases; the partial guard is 178 sources / 1,183 exact
+exceptions. The whole ordered sweep remains uncovered and open alongside its
+sequential locator dependency. GPU qualification remains pending. Next migrate
+sequential cloud and trust-region helper loops without changing seeded streams,
+then qualify their actual consumers. No worker is running.

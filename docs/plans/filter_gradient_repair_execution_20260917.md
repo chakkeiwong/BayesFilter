@@ -3065,3 +3065,51 @@ Run 01143 passes all 61 policy/controller checks. Charges through 01143 are
 seconds. All F01--F20 terminal dispositions remain open; no merge is authorized
 by these focused results. Focused Ruff passes (existing joint-center import
 ordering excluded), and whitespace checks pass.
+
+## First TP projection localization, 01144--01146
+
+Run 01144 passes graph cases but fails both XLA raw-residual comparisons.
+Teacher points/log weights match exactly; continuation-feature differences of
+1.0581813203458523e-16 amplify through the ill-conditioned projection to
+8.249116945080459e-10 (original teachers) and 3.774403012357652e-10 (identical
+frozen teacher) raw-residual differences. Run 01145 supplies identical features
+and obtains exactly equal projection fields in both graph and XLA contexts.
+This localizes the observed first-projection difference upstream of projection.
+
+The trial in 01146 computes the first posterior-covariance factor before the
+native loop. Four cases pass and the same two XLA cases fail with unchanged
+errors, so the trial is reverted. No residual definition or tolerance changes.
+The failed hypothesis does not reject the execution-repair direction; inspect
+continuation arithmetic and normalization before another runtime trial.
+
+| Decision | Primary criterion | Veto status | Uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Preserve TP blocker | Original 1e-10 raw-residual gate fails | 01146 trial ineffective and reverted | Continuation rounding operation not yet isolated | Further bounded localization | No full-recursion or canonical LEDH parity |
+| Continue preparation repair | Budget available; no active worker | Both GPUs have unrelated allocations | Enclosing locator/sweep still uses host numerical control | Block-center kernels, then sequential dependency | No full execution-policy closure |
+
+Charges through 01146 are 15,585.869 GPU / 31,368.403 CPU seconds under the
+unchanged 52/32-hour cumulative caps. The extension is counted once.
+
+## Block-center numerical preparation, 01147--01149
+
+The active block-center wrapper now uses TensorFlow snapshots and stable XLA
+programs for conditional target/score callbacks, embedding, cycle/reversal
+tests and complete score summaries. The ordered sweep still depends on a
+host-controlled sequential locator; neither numerical lifecycle is exempted.
+Scalar/batched callback programs retain a nonfinite signal in compiled context
+and the original finite-replay ValueError at the host boundary.
+
+Run 01147 passes 26 checks and fails 17 due to one float32-inferred Maximum
+constant. With binary64 operand inference fixed, 01148 passes all 43 cases in
+17.408 driver seconds. Checks include complete pinned public/private records,
+row accounting and progress events, actual scalar/batched coupled-quadratic
+sweeps, strict reversal/cycle edges, partial partitions, immutable non-native
+buffers, nonfinite rejection and complete callback HLO with one trace.
+
+Run 01149 passes all 61 policy/controller cases in 8.282 seconds. The guard
+covers 178 sources / 1,183 exact schema, validation and reporting exceptions;
+the enclosing numerical sweep is explicitly outside this partial iteration
+coverage. Focused Ruff and whitespace checks pass. GPU qualification and
+terminal timing/memory evidence remain pending. Charges are 15,585.869 GPU /
+31,407.087 CPU seconds. Continue the sequential helper migration under the
+same plan; this is focused execution evidence, not campaign completion.
