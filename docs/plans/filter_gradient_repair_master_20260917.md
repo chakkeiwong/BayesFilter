@@ -4,18 +4,25 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `b7cfbb14` is committed and pushed,
-including shared Legendre basis/mass graphs and the reviewed forecast repair.
+September 19 refresh: source checkpoint `bbfaf742` is committed and pushed,
+including compiled forecast shards and independently verified process comparisons.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01125, charges are 14,656.427 GPU / 31,024.182 CPU seconds;
-remaining allowances are 172,543.573 GPU / 84,175.818 CPU seconds. The earlier
+charge. Through run 01130, charges are 14,705.260 GPU / 31,062.057 CPU seconds;
+remaining allowances are 172,494.740 GPU / 84,137.943 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 174 sources with 1,144 exact
+The repair is incomplete. The static guard covers 176 sources with 1,157 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
+
+Recovery review through 01130 confirms no active worker, the unchanged frozen
+baseline, and the same cumulative budget (the extension is counted once).
+The CPU score-cloud repair passes 11 checks; all 61 policy/controller checks
+pass. Commit that tested checkpoint, then finish the pending GPU qualification
+groups sequentially before changing the remaining preparation kernels. Keep
+the 256 MiB host-memory investigation trigger and all numerical gates intact.
 
 Resume in this order, using the same bounded runner and versioned artifacts:
 
@@ -63,7 +70,8 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    Ten additional preparation wrappers are now in the static guard.
    P72 fit/guard preparation passes 30 CPU checks (01057); separate compiled
    interpolation and exact duplicate decisions preserve realized-value order.
-   GPU qualification is pending; its reviewed checkpoint is `de363b43`.
+   GPU qualification passes all 81 guard/preparation checks in 01127; its
+   earlier preparation checkpoint is `de363b43`.
    The additional support/line/spectrum gate repair passes all 81 CPU checks
    (01072), with 59 policy/controller checks in 01077. Its new measurement
    fixture passes CPU graph, XLA and both public source arms (01073--01076),
@@ -86,8 +94,10 @@ Resume in this order, using the same bounded runner and versioned artifacts:
    The five-row increase remains 279.852 MiB; each worker has both two-/three-row
    signatures, with one trace each. Investigate compiler/signature overhead
    before terminal memory acceptance.
-   `cpu_xla_cloud`, `quadratic_map_covariance` and `block_coordinate_center`
-   also need reachable-consumer classification before the audit can close.
+   `cpu_xla_cloud` now has TensorFlow transport/result construction; all 11
+   process and boundary checks pass in 01129. Its numerical XLA worker is
+   unchanged. `quadratic_map_covariance` and `block_coordinate_center` have
+   confirmed active preparation consumers and remain migration work.
 3. Resolve the predator-prey residual (~1.578e-9 versus the unchanged 1e-10
    gate), core-affine/higher-rank slowdown, centered qualification, and host
    memory regression. Lazy pullbacks reduced measured host memory, but the
@@ -213,6 +223,30 @@ checks before one unchanged assembly diagnostic under the same 900-second
 ceiling. Graph counts and single-process RSS are explanatory; terminal paired
 comparisons and GPU checks remain required. Existing 1e-10 gates and cumulative
 budget apply; no retry without addressing the observed failure.
+
+### CPU score-cloud broker repair
+
+`cpu_xla_cloud` exports a persistent CPU process broker whose actual worker
+already compiles the complete supplied B=1 value/score callback with a fixed
+signature and XLA enabled. Its Python loops dispatch tasks, wait for futures
+and pack completed results; they do not calculate scores. Remove NumPy from
+input validation, transport and immutable result construction using TensorFlow
+and standard-library types. Preserve exact task/row order, inherited CPU-only
+bootstrap, worker persistence, heartbeat semantics, exception propagation and
+the existing numerical callback. Keep TensorFlow imports lazy so spawned
+children still configure their environment before framework import. This
+scalar independent-score lane is ineligible for NeuTra training.
+
+Skeptical review: a top-level TensorFlow import would break bootstrap isolation;
+mutable inputs must become immutable result snapshots, and tensor conversion
+must preserve binary64 values and noncontiguous/non-native-order buffers.
+Exercise the real two-process quadratic value/score fixture, reversed rows,
+invalid shapes/nonfinite inputs and worker failures before exact static
+classification. No numerical algorithm, RNG or HMC tuner changes are included.
+The source audit also finds real MacroFinance consumers of the quadratic MAP
+and block-coordinate initializers; their diagnostic names do not exempt active
+numerical decisions. Keep those distinct repairs open. The HMC interface and
+capability registry were inspected; these are preparation helpers, not tuners.
 
 ### CPU forecast pool execution repair
 

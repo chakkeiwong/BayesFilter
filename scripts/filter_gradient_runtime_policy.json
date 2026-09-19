@@ -311,7 +311,9 @@
     "bayesfilter/ops/compiled_tensor_program_tf.py": null,
     "bayesfilter/highdim/ttsirt_coordinate_tf.py": null,
     "bayesfilter/highdim/source_route_gate_runtime_tf.py": null,
-    "bayesfilter/inference/cpu_forecast_pool.py": null
+    "bayesfilter/inference/cpu_forecast_pool.py": null,
+    "bayesfilter/inference/cpu_xla_cloud.py": null,
+    "bayesfilter/cpu_xla_worker_bootstrap.py": null
   },
   "exceptions": [
     {
@@ -10758,6 +10760,110 @@
       "ast_sha256": "8ed681ac4a7651d7a97db5f6dbde13e005b5de9581e8a48ae9135b94b784374a",
       "role": "host_reporting",
       "reason": "Report summed completed-process RSS high water."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudResult.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "89f3daf4ab5497607f5e208d2e8925101839190d34b4655ee6f06ef763f2c53c",
+      "role": "host_reporting",
+      "reason": "Normalize completed worker process identifiers in immutable result metadata."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudResult.__post_init__",
+      "kind": "python_iteration",
+      "ast_sha256": "ff11308e45c140b2c241b28c9d1908ba8839d647b17c8530348b01864c0e0b13",
+      "role": "host_reporting",
+      "reason": "Copy completed worker bootstrap metadata."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudResult.payload",
+      "kind": "python_iteration",
+      "ast_sha256": "b7d239447d442aaf178216e2c950b5a32921d983e5b86c52206ab06b058787d5",
+      "role": "host_reporting",
+      "reason": "Serialize completed worker bootstrap metadata."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "376acc57e522cbaacc926588ad0a8f1f9ed8d1145f4ce96572fd3c1f69ac4b5b",
+      "role": "fixed_schema",
+      "reason": "Submit row tasks to independent persistent processes; numerical work executes in the fixed-signature XLA worker."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "b5d92b357b98247612b0d7b07d3c11a5724f817a0f4a9142a88e85c1d6a26f8d",
+      "role": "fixed_schema",
+      "reason": "Wait for process futures and emit liveness/progress events; no numerical score recurrence."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "d5691ec8392e941b139f501326b8f0f271c2c7f4aafa1b8885408d8ce1d2648e",
+      "role": "fixed_schema",
+      "reason": "Collect completed futures and count completed tasks for progress reporting."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "7f4d664b52166fabb5ea6b6c3c1467e97a749af69dda65180064a46452ed135f",
+      "role": "fixed_schema",
+      "reason": "Pack completed scalar values into a TensorFlow result tensor."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "162806ad6be53e576373baaf9786f28a62eef94fee9b648b4a21f17e49a99484",
+      "role": "fixed_schema",
+      "reason": "Pack completed score rows into a TensorFlow result tensor."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "22ca279c7e0aa538fc20e1264f467d4e361020b82ffd7eb80e25689a5c017226",
+      "role": "host_reporting",
+      "reason": "Report distinct completed worker process identifiers."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "417b2527bfd0abfdb03715db34e867a321bfa5c32024350a18e15a9daa713f55",
+      "role": "host_reporting",
+      "reason": "Index completed bootstrap records by process identifier."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "4299001d2dc0ca44ccf3dd69e5e953549942a983e33046d3600343d2536752db",
+      "role": "host_reporting",
+      "reason": "Serialize bootstrap records in process identifier order."
+    },
+    {
+      "path": "bayesfilter/inference/cpu_xla_cloud.py",
+      "function": "CPUXLACloudEvaluator._launch_pool_and_submit",
+      "kind": "python_iteration",
+      "ast_sha256": "376acc57e522cbaacc926588ad0a8f1f9ed8d1145f4ce96572fd3c1f69ac4b5b",
+      "role": "fixed_schema",
+      "reason": "Submit initial process tasks while inherited CPU-only environment is held; no numerical row calculation."
+    },
+    {
+      "path": "bayesfilter/cpu_xla_worker_bootstrap.py",
+      "function": "initialize_cpu_xla_worker",
+      "kind": "python_iteration",
+      "ast_sha256": "f8ef6b9a5a02828ad09b1cf2fdde98628b7976bddf91aa9c8d4dc2c17497d534",
+      "role": "host_validation",
+      "reason": "Inspect framework module import status before CPU-only worker initialization."
     }
   ]
 }

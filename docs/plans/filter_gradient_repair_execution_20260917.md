@@ -1,6 +1,6 @@
 # Filter execution repair record
 
-Work continues on `repair/filter-gradient-xla-20260917`. No merge is authorized
+Work continues on `repair/filter-gradient-xla-validation-20260918`. No merge is authorized
 by the current evidence. All findings remain open until their complete route
 tests, policy checks and paired measurements are recorded.
 
@@ -2967,3 +2967,31 @@ use, but two shard sizes and one fresh process per arm cannot isolate the cause.
 The final-memory probe samples every process before provenance hashing and does
 not equate sums of RSS maxima with simultaneous live memory. Earlier source-
 contaminated or stale-harness runs cannot support terminal comparisons.
+
+
+GPU guard/preparation run 01126 passes 79 cases but exposes two invalid-input
+fixture assumptions: legacy GPU GatherV2 silently fills out-of-range indices,
+whereas CPU raises. The existing repaired host validity flag rejects on both
+devices. The independent invalid-input authority is now explicitly on CPU,
+while the candidate still runs on the selected device. No numerical code or
+tolerance changed. Run 01127 passes all 81 cases on GPU.
+
+The CPU score-cloud broker now uses TensorFlow input/result tensors, preserving
+its unchanged fixed-signature XLA worker. Tests in 01128 catch a mutable-variable
+alias, repaired with an explicit tensor snapshot. The optional custom-op test
+preloader also invalidated the framework-free bootstrap fixture; only that
+quadratic test disables the optional preload. Run 01129 passes all 11 checks,
+including exact expected scores, persistence/order, noncontiguous/non-native
+buffers, mutable-variable isolation, invalid inputs and process failure.
+All 61 policy/controller checks pass in 01130. Static coverage is 176 sources /
+1,157 exact exceptions. Existing typing-style warnings remain in this legacy
+broker; focused new-test lint and whitespace checks pass. No numerical kernel
+or RNG changed, and no new speed or memory claim is made for this broker.
+
+Read-only consumer search confirms the quadratic MAP initializer is called by
+MacroFinance's `two_currency_double_zlb_dz5_identification.py:2589` and
+`daily_asset_midas_quadratic_covariance.py:329`; the block-coordinate helper is
+called by `scripts/run_ccma_full_partition_center_sweep.py:485`. These are active
+preparation paths despite diagnostic labels. Their NumPy and numerical-control
+migration remains open; the HMC interface/registry was inspected without
+changing any tuner or running HMC chains.

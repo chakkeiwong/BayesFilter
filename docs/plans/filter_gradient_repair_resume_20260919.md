@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01125,
-charges are 14,656.427 GPU / 31,024.182 CPU seconds, leaving 172,543.573 GPU /
-84,175.818 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01130,
+charges are 14,705.260 GPU / 31,062.057 CPU seconds, leaving 172,494.740 GPU /
+84,137.943 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -247,3 +247,13 @@ not an isolated cause or terminal memory acceptance. No worker is running at
 this checkpoint. Continue pending GPU qualification and reachable inference
 repairs, then investigate that bounded signature/compiler overhead before
 terminal repeats. The full campaign and merge remain incomplete.
+
+
+Checkpoint `bbfaf742` (forecast shards and comparison harness) is committed and
+pushed. Subsequent GPU source guard/preparation qualification passes all 81
+cases in 01127 after correcting the legacy GPU-gather test assumption; the
+repaired rejection itself already worked. CPU score-cloud NumPy removal passes
+all 11 cases in 01129 and all 61 policy/controller checks in 01130. The mutable
+variable snapshot defect found in 01128 is repaired. The current static guard
+covers 176 sources / 1,157 exceptions, explicitly partial. The numerical CPU
+B=1 worker remains unchanged and is not a NeuTra training endpoint.

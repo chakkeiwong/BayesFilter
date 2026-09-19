@@ -124,6 +124,7 @@ TEST_GROUPS = {
     "predictive": ("tests/test_filter_repair_predictive.py", "tests/test_ssl_lstm_predictive_tf.py", "tests/test_ssl_lstm_complexity_predictive_tf.py"),
     "forecast_shards": ("tests/test_filter_repair_forecast_pool.py",),
     "forecast_pool": ("tests/test_cpu_forecast_pool.py",),
+    "cpu_cloud": ("tests/test_cpu_xla_cloud.py",),
     "complexity_target": ("tests/test_ssl_lstm_complexity_target_tf.py",),
     "hermite_proposal": ("tests/test_filter_repair_hermite_proposal.py", "tests/highdim/test_c2_gaussian_hermite_proposal_tf.py"),
     "teacher_identity": ("tests/test_filter_repair_dispatch_identity.py",

@@ -109,11 +109,18 @@ def test_line_records_preserve_thresholds_nonfinite_values_and_order(mode, case)
 
 @pytest.mark.parametrize("indices", [[-1, 0], [0, 2], [0]])
 def test_line_indices_remain_rejected_including_xla_clamping(indices):
-    for module in (_original("source_route"), candidate):
+    def reject(module):
         with pytest.raises((ValueError, tf.errors.InvalidArgumentError)):
             module.p72_line_probe_diagnostics(fitted_tt=_Predictions([1., 2.]),
                 line_points=tf.zeros([2, 2], D), line_target_values=tf.ones([2], D),
                 start_prediction_values=tf.ones([2], D), line_start_indices=indices, target_scale=1.)
+
+    # Legacy GatherV2 rejects invalid indices on CPU but silently fills on GPU.
+    # Its CPU behavior defines this invalid-input authority; the repaired host
+    # guard must reject on the actual campaign device before XLA can clamp.
+    with tf.device("/CPU:0"):
+        reject(_original("source_route"))
+    reject(candidate)
 
 
 def test_owned_fitted_tt_prediction_and_reductions_compile_together_without_retracing():
